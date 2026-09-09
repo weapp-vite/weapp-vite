@@ -20,10 +20,13 @@ import {
   registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
+import { resolveMiniProgramModule } from './moduleResolution'
 import { createMiniProgramRuntimeGlobals } from './runtimeGlobals'
+import { closeRuntimeWxsLoader } from './wxs'
 
 export interface HeadlessModuleLoader {
   close: () => void
+  evaluate: <T>(source: string, args: any[]) => T
   executeComponentModule: (filePath: string, id: string) => HeadlessComponentDefinition
   executeAppModule: (filePath: string) => HeadlessAppDefinition
   executePageModule: (filePath: string, route: string) => HeadlessPageDefinition
@@ -184,28 +187,6 @@ function createRequireNotFoundError(request: string, importer: string) {
   return new Error(`Cannot resolve require("${request}") from ${normalize(importer)} in headless runtime.`)
 }
 
-function resolveRequiredModulePath(artifactSource: ArtifactSource, importer: string, request: string) {
-  if (!request.startsWith('.')) {
-    throw createRequireNotFoundError(request, importer)
-  }
-
-  const basePath = path.resolve(path.dirname(importer), request)
-  const candidates = [
-    basePath,
-    `${basePath}.js`,
-    `${basePath}.json`,
-    path.join(basePath, 'index.js'),
-  ]
-
-  for (const candidate of candidates) {
-    if (artifactSource.has(candidate)) {
-      return candidate
-    }
-  }
-
-  throw createRequireNotFoundError(request, importer)
-}
-
 function createExecutionContext(
   registries: HeadlessHostRegistries,
   getCurrentPages: () => any[],
@@ -215,7 +196,8 @@ function createExecutionContext(
   globals: Record<string, unknown>,
   onConsole?: (entry: import('../kernel').RuntimeConsoleEntry) => void,
 ) {
-  const wx = createHeadlessWx(wxDriver)
+  const runtimeConsole = kernel.diagnostics.createConsole(console, onConsole)
+  const wx = createHeadlessWx(wxDriver, runtimeConsole)
 
   return createMiniProgramRuntimeGlobals({
     App(definition: HeadlessAppDefinition) {
@@ -233,7 +215,7 @@ function createExecutionContext(
     Page(definition: HeadlessPageDefinition) {
       return registerPageDefinition(registries, definition)
     },
-    console: kernel.diagnostics.createConsole(console, onConsole),
+    console: runtimeConsole,
     clearInterval: (handle: ReturnType<typeof setInterval>) => kernel.scheduler.clearInterval(handle),
     clearTimeout: (handle: ReturnType<typeof setTimeout>) => kernel.scheduler.clearTimeout(handle),
     getApp,
@@ -298,7 +280,15 @@ export function createModuleLoader(
     registries.currentLoadContext = loadContext
 
     const localRequire = ((request: string) => {
-      const requiredPath = resolveRequiredModulePath(options.artifactSource, resolvedPath, request)
+      const requiredPath = resolveMiniProgramModule(
+        resolvedPath,
+        request,
+        options.miniprogramRootPath,
+        candidate => options.artifactSource.readText(candidate) !== undefined,
+      )
+      if (!requiredPath) {
+        throw createRequireNotFoundError(request, resolvedPath)
+      }
       if (requiredPath.endsWith('.json')) {
         const content = options.artifactSource.readText(requiredPath)
         if (content == null) {
@@ -330,6 +320,10 @@ export function createModuleLoader(
       ])]
       return module
     }
+    catch (error) {
+      moduleCache.delete(resolvedPath)
+      throw error
+    }
     finally {
       registries.currentLoadContext = previousLoadContext
     }
@@ -347,16 +341,21 @@ export function createModuleLoader(
     return executeModule(entryPath, null).exports
   }
 
-  return {
+  const loader: HeadlessModuleLoader = {
+    evaluate<T>(source: string, args: any[]): T {
+      const callback = new vm.Script(`(${source})`).runInNewContext(executionContext)
+      if (typeof callback !== 'function') {
+        throw new TypeError('Headless evaluator must be a function or function source string.')
+      }
+      return callback(...args)
+    },
     close() {
       moduleCache.clear()
+      closeRuntimeWxsLoader(loader)
     },
     executeAppModule(filePath) {
       executeModule(filePath, { kind: 'app' })
-      if (!registries.appDefinition) {
-        throw new Error(`App() was not registered while executing ${normalize(filePath)} in headless runtime.`)
-      }
-      return registries.appDefinition
+      return registries.appDefinition ?? registerAppDefinition(registries, {})
     },
     executePageModule(filePath, route) {
       const componentDefinitions: HeadlessComponentDefinition[] = []
@@ -388,4 +387,5 @@ export function createModuleLoader(
     },
     wx: executionContext.wx,
   }
+  return loader
 }

@@ -61,16 +61,18 @@ function _runE2E() {
       issue-558 augmented slot computed binding
     </view>
 
-    <Cell>
+    <Cell id="issue558-plain-host">
       <issue-558-render-probe
+        id="issue558-plain"
         case-name="plainDefault"
         :value="func(text)"
       />
     </Cell>
 
-    <NamedSlotCard>
+    <NamedSlotCard id="issue558-named-host">
       <template #header>
         <issue-558-render-probe
+          id="issue558-header"
           case-name="namedHeader"
           :value="func(headerText)"
         />
@@ -78,6 +80,7 @@ function _runE2E() {
 
       <template #default>
         <issue-558-render-probe
+          id="issue558-default"
           case-name="explicitDefault"
           :value="func(defaultText)"
         />
@@ -85,34 +88,39 @@ function _runE2E() {
 
       <template #footer="{ suffix }">
         <issue-558-render-probe
+          id="issue558-footer"
           case-name="namedScopedFooter"
           :value="func(text + suffix)"
         />
       </template>
     </NamedSlotCard>
 
-    <DefaultScopedCell v-slot="{ label, count }">
+    <DefaultScopedCell id="issue558-scoped-host" v-slot="{ label, count }">
       <issue-558-render-probe
         v-if="visible"
+        id="issue558-scoped"
         case-name="defaultScoped"
         :value="func(`${label}-${count}-${text}`)"
       />
     </DefaultScopedCell>
 
-    <ListScopedCell v-slot="{ item, index }">
+    <ListScopedCell id="issue558-list-host" v-slot="{ item, index }">
       <issue-558-render-probe
+        :id="`issue558-list-${index}`"
         case-name="listScoped"
         :value="func(`${item.label}-${index}-${text}`)"
       />
     </ListScopedCell>
 
-    <Issue558NestedSlotGroup>
+    <Issue558NestedSlotGroup id="issue558-nested-group">
       <issue-558-render-probe
+        id="issue558-outer"
         case-name="nestedOuter"
         :value="func('outer')"
       />
-      <Issue558NestedSlotCell>
+      <Issue558NestedSlotCell id="issue558-nested-cell">
         <issue-558-render-probe
+          id="issue558-inner"
           case-name="nestedDefault"
           :value="func(nestedText)"
         />

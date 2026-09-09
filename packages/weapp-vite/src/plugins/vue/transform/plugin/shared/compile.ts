@@ -4,11 +4,8 @@ import type { CompilerContext } from '../../../../../context'
 import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import type { ResolvedAppShell } from '../../appShell'
 import MagicString from 'magic-string'
-import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
-import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
-import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
@@ -227,14 +224,6 @@ export async function finalizeTransformCompiledResult(options: {
     pageLayoutSignature,
     appShellSignature,
   })
-  if (configService.isDev && filename.endsWith('.vue')) {
-    const normalizedFilename = normalizeFsResolvedId(filename)
-    const hmr = ctx.runtimeState?.build?.hmr
-    const signatures = resolveVueSfcHmrSignatures(source, filename)
-    if (hmr) {
-      storeVueSfcHmrSignatures(hmr, normalizedFilename, signatures)
-    }
-  }
 
   const relativeBase = resolveVueOutputBase(configService, filename)
   if (relativeBase) {

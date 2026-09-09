@@ -1,9 +1,8 @@
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { HeadlessSession } from '../../runtime'
 import type { HeadlessTestingWaitOptions } from '../pageWait'
-import vm from 'node:vm'
-import { createMiniProgramRuntimeGlobals } from '../../runtime/runtimeGlobals'
 import { HeadlessTestingPageHandle } from '../pageHandle'
+import { resolveTestingPagePath } from '../pagePath'
 import { HeadlessTestingScopeHandle } from './scope'
 import { normalizeNonEmptyInput, normalizeRoute, pollUntil, runWithTimeout } from './shared'
 
@@ -139,39 +138,35 @@ export class HeadlessTestingSessionHandle {
   }
 
   async reLaunch(route: string) {
-    this.session.callWxMethod('reLaunch', {
+    this.invokeNavigation('reLaunch', {
       url: route,
     })
-    const page = this.session.getCurrentPages().at(-1)
-    if (!page) {
-      throw new Error(`Failed to reLaunch route "${route}" through the headless wx runtime.`)
-    }
-    return new HeadlessTestingPageHandle(this.project, page, this.session)
+    return await this.requireCurrentPage('reLaunch', route)
   }
 
   async navigateTo(route: string) {
-    this.session.callWxMethod('navigateTo', {
+    this.invokeNavigation('navigateTo', {
       url: route,
     })
     return await this.requireCurrentPage('navigateTo', route)
   }
 
   async redirectTo(route: string) {
-    this.session.callWxMethod('redirectTo', {
+    this.invokeNavigation('redirectTo', {
       url: route,
     })
     return await this.requireCurrentPage('redirectTo', route)
   }
 
   async navigateBack(delta = 1) {
-    this.session.callWxMethod('navigateBack', {
+    this.invokeNavigation('navigateBack', {
       delta,
     })
     return await this.currentPage()
   }
 
   async switchTab(route: string) {
-    this.session.callWxMethod('switchTab', {
+    this.invokeNavigation('switchTab', {
       url: route,
     })
     return await this.requireCurrentPage('switchTab', route)
@@ -193,7 +188,7 @@ export class HeadlessTestingSessionHandle {
         if (!normalizedRoute) {
           return current
         }
-        if (normalizeRoute(currentPageInstance.route) === normalizeRoute(normalizedRoute)) {
+        if (normalizeRoute(current.path) === resolveTestingPagePath(normalizeRoute(normalizedRoute))) {
           return current
         }
         return null
@@ -225,6 +220,26 @@ export class HeadlessTestingSessionHandle {
     this.session.triggerRouteDone(options)
   }
 
+  private invokeNavigation(methodName: string, options: { url?: string, delta?: number }) {
+    const failure: { received: boolean, error?: unknown } = { received: false }
+    this.session.callWxMethod(methodName, {
+      ...options,
+      fail(error: unknown) {
+        failure.received = true
+        failure.error = error
+      },
+    })
+    if (failure.received) {
+      const error = failure.error
+      const details = error && typeof error === 'object' ? error as { errMsg?: unknown, message?: unknown } : undefined
+      const reason = typeof details?.errMsg === 'string'
+        ? details.errMsg
+        : typeof details?.message === 'string' ? details.message : String(error)
+      const target = options.url ? ` route "${options.url}"` : ''
+      throw new Error(`Failed to ${methodName}${target} through the headless wx runtime: ${reason}`, { cause: error })
+    }
+  }
+
   private async requireCurrentPage(methodName: string, route: string) {
     const page = await this.currentPage()
     if (!page) {
@@ -234,26 +249,9 @@ export class HeadlessTestingSessionHandle {
   }
 
   private async evaluateInRuntime<T>(evaluator: HeadlessTestingEvaluator<T>, args: any[]) {
-    const runtimeGlobals = createMiniProgramRuntimeGlobals({
-      clearInterval: globalThis.clearInterval,
-      clearTimeout: globalThis.clearTimeout,
-      getApp: () => this.session.getApp(),
-      getCurrentPages: () => this.session.getCurrentPages(),
-      setInterval: globalThis.setInterval,
-      setTimeout: globalThis.setTimeout,
-      TextDecoder: globalThis.TextDecoder,
-      TextEncoder: globalThis.TextEncoder,
-      URL: globalThis.URL,
-      wx: this.session.getWx(),
-    }, {})
-    runtimeGlobals.globalThis = runtimeGlobals
     const source = typeof evaluator === 'string'
       ? evaluator
       : Function.prototype.toString.call(evaluator)
-    const fn = new vm.Script(`(${source})`).runInNewContext(runtimeGlobals) as (...values: any[]) => T
-    if (typeof fn !== 'function') {
-      throw new TypeError('Headless evaluator must be a function or function source string.')
-    }
-    return await fn(...args)
+    return await this.session.evaluateRuntime<T>(source, args)
   }
 }

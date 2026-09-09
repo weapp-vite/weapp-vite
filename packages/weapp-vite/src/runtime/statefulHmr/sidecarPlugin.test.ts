@@ -2,10 +2,32 @@ import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { normalizePath } from '../../utils/path'
 import { createStatefulHmrSidecarModuleCode, createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 
 describe('stateful HMR sidecar plugin', () => {
+  it('tracks style dependency changes with a digest without adding CSS to the bundle', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'weapp-vite-style-dependency-'))
+    const source = path.join(root, 'shared.css')
+    const addWatchFile = vi.fn()
+    try {
+      await writeFile(source, '.shared { color: red; }')
+      const id = createSidecarSourceSpecifier(path.join(root, 'page.vue'), source, 'style', true)
+      const plugin = createStatefulHmrSidecarPlugin()
+      const load = plugin.load as (...args: any[]) => any
+      const initial = await load.call({ addWatchFile }, id)
+      await writeFile(source, '.shared { color: blue; }')
+      const updated = await load.call({ addWatchFile }, id)
+      expect(initial.code).toMatch(/^export default "[a-f\d]{64}";\n$/)
+      expect(updated.code).not.toBe(initial.code)
+      expect(addWatchFile).toHaveBeenCalledWith(normalizePath(await realpath(source)))
+    }
+    finally {
+      await rm(root, { force: true, recursive: true })
+    }
+  })
+
   it('replaces raw script sidecars with a stable path module', () => {
     const id = '/project/src/pages/index.ts?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.ts&weapp-vite-sidecar=script&lang.js'
 

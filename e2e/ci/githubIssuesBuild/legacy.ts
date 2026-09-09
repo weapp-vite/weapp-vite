@@ -11,6 +11,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture, sanitizeBuildCommandEnv } from '../../utils/buildLog'
 import { findWevuRuntimeChunk, findWevuVendorChunkContaining } from '../../utils/wevu-vendor'
+import { findMarkupElements } from './markup'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../../e2e-apps/github-issues')
@@ -573,7 +574,8 @@ export function registerGithubIssuesBuildLegacyCases() {
     expect(nativeWxml).toContain('<wxs module="i18n" src="../../i18n/locales.wxs"/>')
     expect(nativeWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
     expect(nativeComponentWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
-    expect(vueJs).toContain('__WEAPP_VITE_I18N__')
+    expect(vueJs).not.toContain('__WEAPP_VITE_I18N__')
+    expect(vueJs).toMatch(/behaviors:\s*\[[\w$.]+\.behavior\]/)
     expect(vueJs).not.toContain('behaviors: [{}]')
     expect(vueWxml).toContain('i18n.t(__wv_i18n_locale, \'issue845.greeting\', { user })')
     expect(ordinaryWxml).toContain('<wxs module="i18n" src="./i18n/locales.wxs"/>')
@@ -946,7 +948,10 @@ export function registerGithubIssuesBuildLegacyCases() {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('issue528-slot-fallback-card class="issue528-card-provided" vue-slots="{{ {header:true,default:true} }}"')
+    expect(findMarkupElements(pageWxml, 'issue528-slot-fallback-card').map(node => node.attribs)).toContainEqual(expect.objectContaining({
+      'class': 'issue528-card-provided',
+      'vue-slots': '{{ {header:true,default:true} }}',
+    }))
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).not.toContain('vue-slot-flags')
@@ -1007,7 +1012,10 @@ export function registerGithubIssuesBuildLegacyCases() {
     const pageWxml = await fs.readFile(pageWxmlPath, 'utf-8')
     const componentWxml = await fs.readFile(componentWxmlPath, 'utf-8')
 
-    expect(pageWxml).toContain('plain-slot-fallback-card class="slot-fallback-off-card-provided" vue-slots="{{ {header:true,default:true} }}"')
+    expect(findMarkupElements(pageWxml, 'plain-slot-fallback-card').map(node => node.attribs)).toContainEqual(expect.objectContaining({
+      'class': 'slot-fallback-off-card-provided',
+      'vue-slots': '{{ {header:true,default:true} }}',
+    }))
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
     expect(pageWxml).not.toContain('generic:scoped-slots-')
@@ -1714,8 +1722,8 @@ export function registerGithubIssuesBuildLegacyCases() {
     expect(pageWxml).toContain('issue597-card vue-slots="{{ {header:true} }}"')
     expect(pageWxml).not.toContain('vue-slots="{{{')
     expect(pageWxml).not.toContain('vue-slots="{{ {[')
-    expect(pageWxml).toContain('<block wx:if="{{abc}}"><view slot="header" class="issue597-header-a" data-issue597-branch="if" /></block>')
-    expect(pageWxml).toContain('<block wx:else><text slot="header" class="issue597-header-b" data-issue597-branch="else" /></block>')
+    expect(pageWxml).toContain('<block wx:if="{{abc}}"><view slot="header" class="issue597-header-a" data-issue597-branch="if">header if branch</view></block>')
+    expect(pageWxml).toContain('<block wx:else><text slot="header" class="issue597-header-b" data-issue597-branch="else">header else branch</text></block>')
     expect(pageWxml).not.toContain('<text slot="header" class="issue597-header-b" data-issue597-branch="else" />\n</issue597-card>')
     expect(pageJs).toContain('_runE2E')
     expect(componentWxml).toContain('<slot name="header" />')
@@ -1864,7 +1872,10 @@ export function registerGithubIssuesBuildLegacyCases() {
       component: true,
       styleIsolation: 'apply-shared',
     })
-    expect(scopedSlotWxml).toContain('<flex-item label="A" value="{{__wvSlotPropsData.xyz}}" /><flex-item label="B" value="{{__wvSlotPropsData.xyz}}" />')
+    expect(findMarkupElements(scopedSlotWxml, 'flex-item').map(node => node.attribs)).toEqual([
+      expect.objectContaining({ label: 'A', value: '{{__wvSlotPropsData.xyz}}' }),
+      expect.objectContaining({ label: 'B', value: '{{__wvSlotPropsData.xyz}}' }),
+    ])
     expect(scopedSlotJs).toMatch(/createWevuScopedSlotComponent\(\s*\{/)
     expect(scopedSlotJs).toContain(JSON.stringify(WEVU_BINDING_MANIFEST_KEY))
     expect(hostWxml).toContain('<scoped-slots-default wx:if="{{__wvSlotOwnerId}}"')
@@ -1922,11 +1933,13 @@ export function registerGithubIssuesBuildLegacyCases() {
       'nested-slot-image': '/components/issue-547/NestedSlotImage/index',
     })
     expect(Object.values(pageJson.usingComponents ?? {})).toContain('/pages/issue-547/index.__scoped-slot-default-0')
-    expect(parentScopedSlotWxml).toContain('<nested-slot-cell generic:scoped-slots-default=')
+    expect(findMarkupElements(parentScopedSlotWxml, 'nested-slot-cell').map(node => node.attribs)).toEqual([
+      expect.objectContaining({ 'generic:scoped-slots-default': expect.any(String) }),
+    ])
     expect(parentScopedSlotWxml).not.toContain('<nested-slot-image')
     expect(parentScopedSlotJson.componentGenerics).toBeUndefined()
     expect(Object.values(parentScopedSlotJson.usingComponents ?? {})).toContain('/pages/issue-547/index.__scoped-slot-default-1')
-    expect(childScopedSlotWxml).toContain('<nested-slot-image />')
+    expect(findMarkupElements(childScopedSlotWxml, 'nested-slot-image')).toHaveLength(1)
   })
 
   it('issue #558: augmented scoped slot runtime bindings read owner proxy', async () => {
@@ -1987,7 +2000,10 @@ export function registerGithubIssuesBuildLegacyCases() {
     expect(scopedSlotFiles.length).toBeGreaterThanOrEqual(5)
     expect(scopedSlotJsFiles.length).toBe(scopedSlotFiles.length)
     expect(scopedSlotJsonFiles.length).toBe(scopedSlotFiles.length)
-    expect(pageWxml).toMatch(/<issue-558-render-probe case-name="plainDefault" value="\{\{__wv_bind_\d+\}\}"/)
+    expect(findMarkupElements(pageWxml, 'issue-558-render-probe').map(node => node.attribs)).toContainEqual(expect.objectContaining({
+      'case-name': 'plainDefault',
+      'value': expect.stringMatching(/^\{\{__wv_bind_\d+\}\}$/),
+    }))
     expect(scopedSlotWxml).not.toContain('case-name="plainDefault"')
     expect(scopedSlotJson).toContain('/components/issue-558/Issue558RenderProbe/index')
     for (const caseName of [
@@ -1999,7 +2015,10 @@ export function registerGithubIssuesBuildLegacyCases() {
       'nestedOuter',
       'nestedDefault',
     ]) {
-      expect(scopedSlotWxml).toMatch(new RegExp(`<issue-558-render-probe case-name="${caseName}" value="\\{\\{__wv_bind_\\d+\\}\\}"`))
+      expect(findMarkupElements(scopedSlotWxml, 'issue-558-render-probe').map(node => node.attribs)).toContainEqual(expect.objectContaining({
+        'case-name': caseName,
+        'value': expect.stringMatching(/^\{\{__wv_bind_\d+\}\}$/),
+      }))
     }
     expect(scopedSlotJs).toContain('__wvOwnerProxy')
     expect(scopedSlotJs).toContain('.func')
@@ -2061,7 +2080,13 @@ export function registerGithubIssuesBuildLegacyCases() {
     expect(Object.values(pageJson.usingComponents ?? {})).not.toContain('/pages/issue-564/index.__scoped-slot-default-1')
     expect(scopedSlotWxml).toContain('<issue-564-native-tabbar-item wx:for="{{__wv_bind_0}}"')
     expect(scopedSlotWxml).not.toContain('wx:for="{{__wvOwner.tabItems}}"')
-    expect(scopedSlotWxml).toContain('>{{__wv_item_0.label}}</issue-564-native-tabbar-item>')
+    const nativeItems = findMarkupElements(scopedSlotWxml, 'issue-564-native-tabbar-item')
+    expect(nativeItems).toHaveLength(1)
+    const inlineLabel = nativeItems[0].children.find(node => 'name' in node && node.name === 'text')
+    expect(inlineLabel).toMatchObject({
+      attribs: { class: 'issue564-slot-label', id: `{{${nativeItems[0].attribs['wx:for-item']}.label}}` },
+      children: [{ type: 'text', data: `{{${nativeItems[0].attribs['wx:for-item']}.label}}` }],
+    })
     expect(scopedSlotWxml).not.toContain('generic:scoped-slots-default')
     expect(Object.values(scopedSlotJson.usingComponents ?? {})).toContain('/components/issue-564/native-tabbar-item/index')
     expect(Object.values(scopedSlotJson.usingComponents ?? {})).not.toContain('/pages/issue-564/index.__scoped-slot-default-1')

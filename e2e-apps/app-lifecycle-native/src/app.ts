@@ -1,8 +1,10 @@
+import { readHostLifecycle } from '../../shared/appLifecycle'
 import { APP_HOOKS, finalizeAppLifecycle, recordAppLifecycle } from './shared/lifecycle'
 
 const SOURCE = 'app.native'
 
 App({
+  readHostLifecycle,
   globalData: {
     __lifecycleLogs: [],
     __lifecycleOrder: 0,

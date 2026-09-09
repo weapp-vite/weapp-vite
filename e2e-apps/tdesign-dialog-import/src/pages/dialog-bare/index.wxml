@@ -1,19 +1,19 @@
 <view id="dialog-bare-root" class="page">
   <text class="title">tdesign Dialog bare import</text>
-  <text class="line">confirmType = {{confirmType}}</text>
+  <text id="dialog-confirm-type" class="line">confirmType = {{confirmType}}</text>
   <text class="line">defaultType = {{defaultType}}</text>
   <text class="line">defaultConfirmType = {{defaultConfirmType}}</text>
-  <text class="line">lastAction = {{lastAction}}</text>
+  <text id="dialog-action" class="line">lastAction = {{lastAction}}</text>
   <text class="line">lastTrigger = {{lastTrigger}}</text>
-  <text class="line">lastPayload = {{lastPayload || 'none'}}</text>
-  <text class="line">lastError = {{lastError || 'none'}}</text>
-  <text class="line">dialogVisible = {{dialogVisible}}</text>
+  <text id="dialog-payload" class="line">lastPayload = {{lastPayload || 'none'}}</text>
+  <text id="dialog-error" class="line">lastError = {{lastError || 'none'}}</text>
+  <text id="dialog-visible" class="line">dialogVisible = {{dialogVisible}}</text>
   <text class="line">lastTitle = {{lastTitle || 'none'}}</text>
-  <text class="line">counts = open {{openCount}}, settle {{settleCount}}</text>
+  <text id="dialog-counts" class="line">counts = open {{openCount}}, settle {{settleCount}}</text>
   <text class="line">toastType = {{toastType}}</text>
   <text class="line">toastDefaultType = {{toastDefaultType}}</text>
-  <text class="line">toastCount = {{toastCount}}</text>
-  <text class="line">lastToastAction = {{lastToastAction}}</text>
+  <text id="toast-count" class="line">toastCount = {{toastCount}}</text>
+  <text id="toast-action" class="line">lastToastAction = {{lastToastAction}}</text>
   <text class="line">lastToastTrigger = {{lastToastTrigger}}</text>
   <text class="line">lastToastError = {{lastToastError || 'none'}}</text>
   <text class="line">lastToastMessage = {{lastToastMessage || 'none'}}</text>

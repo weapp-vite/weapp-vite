@@ -3,7 +3,10 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { dialogImportCheckpoints } from './dialogImportDom'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
+import { tapRendered, xpathClass } from './tdesignDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/tdesign-dialog-import')
@@ -91,10 +94,11 @@ async function waitForRenderedSelector(page: any, selector: string) {
   throw new Error(`Timed out waiting rendered selector: ${selector}`)
 }
 
-async function triggerRenderedHandler(page: any, selector: string, method: string) {
+async function triggerRenderedHandler(page: any, selector: string) {
   await waitForRenderedSelector(page, selector)
-  await page.callMethod(method)
-  await page.waitFor(240)
+  const elements = await page.$$(selector, { fallback: false })
+  expect(elements).toHaveLength(1)
+  await elements[0].tap()
 }
 
 async function readPageDebugSnapshot(page: any) {
@@ -191,8 +195,10 @@ async function verifyDialogPageFlow(
   options: {
     openSelector: string
     title: string
+    check: (id: string) => Promise<unknown>
   },
 ) {
+  await options.check('initial')
   await page.callMethod('_resetE2E')
   const reset = await waitForRuntimeState(
     page,
@@ -210,9 +216,10 @@ async function verifyDialogPageFlow(
     lastPayload: '',
     lastReturnedPromise: false,
   })
+  await options.check('reset')
 
   const openMarker = collector.mark()
-  await triggerRenderedHandler(page, options.openSelector, 'onOpenDialog')
+  await triggerRenderedHandler(page, options.openSelector)
   const opened = await waitForRuntimeState(
     page,
     runtime => runtime.openCount === 1 && runtime.dialogVisible === true && runtime.lastAction === 'opening',
@@ -231,9 +238,10 @@ async function verifyDialogPageFlow(
     lastReturnedPromise: true,
   })
   expect(collector.getSince(openMarker)).toEqual([])
+  await options.check('open')
 
   const cancelMarker = collector.mark()
-  await page.callMethod('_cancelDialogE2E')
+  await tapRendered(page, `${xpathClass('t-dialog__footer')}//button[descendant::*[text()="取消"]]`)
   const cancelled = await waitForRuntimeState(
     page,
     runtime => runtime.openCount === 1 && runtime.settleCount === 1 && runtime.dialogVisible === false && runtime.lastAction === 'cancelled',
@@ -252,6 +260,7 @@ async function verifyDialogPageFlow(
     lastReturnedPromise: true,
   })
   expect(collector.getSince(cancelMarker)).toEqual([])
+  await options.check('cancel')
 
   const reopenMarker = collector.mark()
   await page.callMethod('_openDialogE2E')
@@ -273,9 +282,10 @@ async function verifyDialogPageFlow(
     lastReturnedPromise: true,
   })
   expect(collector.getSince(reopenMarker)).toEqual([])
+  await options.check('reopen')
 
   const confirmMarker = collector.mark()
-  await page.callMethod('_confirmDialogE2E')
+  await tapRendered(page, `${xpathClass('t-dialog__footer')}//button[descendant::*[text()="确定"]]`)
   const confirmed = await waitForRuntimeState(
     page,
     runtime => runtime.openCount === 2 && runtime.settleCount === 2 && runtime.dialogVisible === false && runtime.lastAction === 'confirmed',
@@ -293,6 +303,7 @@ async function verifyDialogPageFlow(
     lastReturnedPromise: true,
   })
   expect(collector.getSince(confirmMarker)).toEqual([])
+  await options.check('confirm')
 }
 
 async function verifyToastPageFlow(
@@ -301,10 +312,12 @@ async function verifyToastPageFlow(
   options: {
     toastSelector: string
     message: string
+    check: (id: string) => Promise<unknown>
   },
 ) {
   const toastMarker = collector.mark()
-  await triggerRenderedHandler(page, options.toastSelector, 'onOpenToast')
+  await triggerRenderedHandler(page, options.toastSelector)
+  await options.check('toast')
   const shown = await waitForRuntimeState(
     page,
     runtime => runtime.toastCount === 1 && runtime.lastToastAction === 'shown',
@@ -327,17 +340,21 @@ afterAll(async () => {
 
 describe('e2e app: tdesign-dialog-import (runtime)', { concurrent: false }, () => {
   it('keeps bare dialog import callable in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/tdesign-dialog-import', dialogImportCheckpoints('bare'))
     const opened = await openRenderedDialogPage(ctx, '/pages/dialog-bare/index', '#dialog-bare-root')
+    const check = (id: string) => dom.check(id, opened.miniProgram, opened.page)
     const collector = attachRuntimeErrorCollector(opened.miniProgram)
 
     try {
       await verifyDialogPageFlow(opened.page, collector, {
         openSelector: '#dialog-bare-open',
         title: 'issue-dialog-bare confirm title',
+        check,
       })
       await verifyToastPageFlow(opened.page, collector, {
         toastSelector: '#dialog-bare-toast',
         message: 'issue-dialog-bare toast user-tap',
+        check,
       })
     }
     finally {
@@ -346,17 +363,21 @@ describe('e2e app: tdesign-dialog-import (runtime)', { concurrent: false }, () =
   })
 
   it('keeps explicit /index dialog import callable in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/tdesign-dialog-import', dialogImportCheckpoints('index'))
     const opened = await openRenderedDialogPage(ctx, '/pages/dialog-index/index', '#dialog-index-root')
+    const check = (id: string) => dom.check(id, opened.miniProgram, opened.page)
     const collector = attachRuntimeErrorCollector(opened.miniProgram)
 
     try {
       await verifyDialogPageFlow(opened.page, collector, {
         openSelector: '#dialog-index-open',
         title: 'issue-dialog-index confirm title',
+        check,
       })
       await verifyToastPageFlow(opened.page, collector, {
         toastSelector: '#dialog-index-toast',
         message: 'issue-dialog-index toast user-tap',
+        check,
       })
     }
     finally {

@@ -17,6 +17,8 @@ const parseSummary = ref('pending')
 const stringifySummary = ref('pending')
 const namedRouteSummary = ref('pending')
 const aliasSummary = ref('pending')
+const namedFullPath = ref('pending')
+const aliasFullPath = ref('pending')
 const relativeSummary = ref('pending')
 const hashOnlySummary = ref('pending')
 const forwardSummary = ref('pending')
@@ -43,9 +45,11 @@ async function runE2E() {
   })
 
   const namedResolved = router.resolve('/pages/router-showcase/profile/12/detail/logs?from=named')
+  namedFullPath.value = namedResolved.fullPath
   namedRouteSummary.value = `${namedResolved.fullPath}|${namedResolved.matched?.length ?? 0}`
 
   const aliasResolved = router.resolve('/router-profile/9/detail-alias/trace')
+  aliasFullPath.value = aliasResolved.fullPath
   const aliasLeaf = aliasResolved.matched[aliasResolved.matched.length - 1]
   aliasSummary.value = `${aliasResolved.fullPath}|${aliasLeaf?.aliasPath ?? 'none'}`
 
@@ -130,6 +134,12 @@ const _runE2E = runE2E
     </view>
     <view id="router-showcase-alias" class="router-showcase-page__line">
       alias summary = {{ aliasSummary }}
+    </view>
+    <view id="router-showcase-named-path" class="router-showcase-page__line">
+      named path = {{ namedFullPath }}
+    </view>
+    <view id="router-showcase-alias-path" class="router-showcase-page__line">
+      alias path = {{ aliasFullPath }}
     </view>
     <view id="router-showcase-relative" class="router-showcase-page__line">
       relative summary = {{ relativeSummary }}

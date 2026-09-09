@@ -88,6 +88,7 @@ defineExpose({
     <Issue642Bug7Cell1 id="issue642-bug7-cell1">
       <template #default="{ io }">
         <text
+          id="issue642-bug7-scoped"
           data-issue642-bug7-cell1-state="scoped"
           :data-issue642-bug7-scoped-value="io"
         >
@@ -96,7 +97,7 @@ defineExpose({
       </template>
     </Issue642Bug7Cell1>
     <Issue642Bug7Cell2 id="issue642-bug7-cell2">
-      <text data-issue642-bug7-cell2-state="provided">1234</text>
+      <text id="issue642-bug7-provided" data-issue642-bug7-cell2-state="provided">1234</text>
     </Issue642Bug7Cell2>
   </view>
 </template>

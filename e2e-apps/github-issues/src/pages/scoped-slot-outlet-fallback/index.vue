@@ -20,10 +20,10 @@ defineExpose({
 <template>
   <view class="scoped-slot-outlet-fallback-page">
     <BackList class="scoped-slot-outlet-fallback-card">
-      <view slot="main" data-scoped-slot-outlet-fallback="main">
+      <view id="slot-outlet-main" slot="main" data-scoped-slot-outlet-fallback="main">
         scoped slot outlet native main fallback
       </view>
-      <view slot="footer" data-scoped-slot-outlet-fallback="footer">
+      <view id="slot-outlet-footer" slot="footer" data-scoped-slot-outlet-fallback="footer">
         scoped slot outlet native footer fallback
       </view>
     </BackList>

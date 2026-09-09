@@ -1,8 +1,11 @@
+import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { templateLayoutCheckpoints } from './templateLayoutsDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-regression')
@@ -105,7 +108,7 @@ function normalizeRoutePath(routePath: string) {
   return routePath.replace(LEADING_SLASH_RE, '')
 }
 
-async function waitForCurrentPage(miniProgram: any, expectedPath: string, timeoutMs = 15_000) {
+async function waitForCurrentPage(miniProgram: MiniProgram, expectedPath: string, timeoutMs = 15_000) {
   const normalizedExpectedPath = normalizeRoutePath(expectedPath)
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
@@ -284,7 +287,8 @@ describe('e2e app: template-wevu-regression layouts runtime', { concurrent: fals
     await closeSharedMiniProgram()
   })
 
-  it('switches between default/admin/none layouts at runtime', async () => {
+  it('switches between default/admin/none layouts at runtime', async (context) => {
+    const dom = createDomAcceptance(context, 'e2e-apps/template-wevu-regression', templateLayoutCheckpoints)
     const miniProgram = await getSharedMiniProgram()
 
     try {
@@ -303,6 +307,7 @@ describe('e2e app: template-wevu-regression layouts runtime', { concurrent: fals
       })
       expect(snapshot.currentLayout).toBe('default')
       await expectNoLayoutProps(snapshot.page)
+      await dom.check('initial', miniProgram, snapshot.page)
 
       await callCurrentPageMethod(miniProgram, 'applyAdminLayout')
       snapshot = await waitForLayoutState(miniProgram, {
@@ -318,6 +323,7 @@ describe('e2e app: template-wevu-regression layouts runtime', { concurrent: fals
         title: '业务后台布局',
         subtitle: '这个标题来自 setPageLayout() 传入的 props。',
       })
+      await dom.check('admin', miniProgram, snapshot.page)
 
       await callCurrentPageMethod(miniProgram, 'clearLayout')
       snapshot = await waitForLayoutState(miniProgram, {
@@ -326,6 +332,7 @@ describe('e2e app: template-wevu-regression layouts runtime', { concurrent: fals
       expect(snapshot.currentLayout).toBe('none')
       expect(snapshot.layoutName).toBe('__wv_no_layout')
       await expectNoLayoutProps(snapshot.page)
+      await dom.check('none', miniProgram, snapshot.page)
 
       await callCurrentPageMethod(miniProgram, 'applyDefaultLayout')
       snapshot = await waitForLayoutState(miniProgram, {
@@ -333,6 +340,7 @@ describe('e2e app: template-wevu-regression layouts runtime', { concurrent: fals
       })
       expect(snapshot.currentLayout).toBe('default')
       await expectNoLayoutProps(snapshot.page)
+      await dom.check('default', miniProgram, snapshot.page)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

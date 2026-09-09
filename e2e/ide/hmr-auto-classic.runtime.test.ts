@@ -5,6 +5,7 @@ import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 
@@ -68,6 +69,7 @@ async function waitForRuntimeState(
 
 async function connectAutomatorSession() {
   return await launchAutomator({
+    bridgeProjectMode: 'direct',
     launchMode: 'bridge',
     projectPath: APP_ROOT,
     retryWarmupTimeout: true,
@@ -139,9 +141,25 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
     await cleanupResidualIdeProcesses()
   })
 
-  it('uses direct output and reloads the page instead of preserving its state', async () => {
-    await miniProgram.reLaunch(NATIVE_ROUTE)
+  it('uses direct output and reloads the page instead of preserving its state', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', [
+      ['initial', 'STATEFUL-NATIVE-BASE', 0, ''],
+      ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'],
+      ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''],
+      ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''],
+    ].map(([id, marker, count, input]) => ({
+      id: String(id),
+      route: '/pages/native/index',
+      action: `检查 classic HMR ${id} 阶段的标题、计数和输入`,
+      nodes: [
+        { selector: '.marker', text: String(marker) },
+        { selector: '.count', text: String(count) },
+        { selector: '.input', attributes: { value: String(input) } },
+      ],
+    })))
+    let page = await miniProgram.reLaunch(NATIVE_ROUTE)
     await waitForRuntimeState(state => state.marker === 'STATEFUL-NATIVE-BASE')
+    await dom.check('initial', miniProgram, page)
     await miniProgram.evaluate(() => {
       const pages = getCurrentPages()
       const page = pages[pages.length - 1] as any
@@ -156,6 +174,7 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
       marker: 'STATEFUL-NATIVE-BASE',
       source: 'classic-auto-e2e',
     })
+    await dom.check('prepared', miniProgram, page)
 
     const updatedSource = normalizeNativeSource(originalNativeSource)
       .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
@@ -169,7 +188,7 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
     await miniProgram.disconnect()
     miniProgram = await connectAutomatorSession()
     // 重连 bridge 后宿主可能只恢复 path 而丢失 query，显式重放完整 route 保持断言身份稳定。
-    await miniProgram.reLaunch(NATIVE_ROUTE)
+    page = await miniProgram.reLaunch(NATIVE_ROUTE)
     const reloaded = await waitForRuntimeState(state => (
       state.marker === 'STATEFUL-NATIVE-PATCHED'
       && state.source === 'classic-auto-e2e'
@@ -181,6 +200,7 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
       marker: 'STATEFUL-NATIVE-PATCHED',
       source: 'classic-auto-e2e',
     })
+    await dom.check('reloaded', miniProgram, page)
 
     await miniProgram.evaluate(() => {
       const pages = getCurrentPages()
@@ -188,5 +208,6 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
       page.increment()
     })
     expect((await waitForRuntimeState(state => state.count === 2)).count).toBe(2)
+    await dom.check('updated', miniProgram, page)
   })
 })

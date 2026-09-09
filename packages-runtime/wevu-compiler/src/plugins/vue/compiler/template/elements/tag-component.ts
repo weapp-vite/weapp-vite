@@ -10,9 +10,9 @@ import {
   WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
 import { recordBindingExpression } from '../bindingManifest'
+import { resolveConditionalBranch } from '../conditions'
 import { warn } from '../diagnostics'
-import { normalizeWxmlExpressionWithContext } from '../expression'
-import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
+import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes, isBuiltinTag } from './attrs'
@@ -187,6 +187,7 @@ function shouldAugmentPlainSlot(
 function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext): {
   conditionKind?: 'if' | 'else-if' | 'else'
   condition?: string
+  bindingCondition?: string
 } {
   const directive = node.props.find(
     (prop): prop is DirectiveNode =>
@@ -197,26 +198,7 @@ function resolveTemplateSlotCondition(node: ElementNode, context: TransformConte
   if (!directive) {
     return {}
   }
-  if (directive.name === 'else') {
-    return { conditionKind: 'else' }
-  }
-  const rawExp = directive.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? directive.exp.content : ''
-  const conditionKind = directive.name === 'else-if' ? 'else-if' : 'if'
-  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExp, context.templateSafeCallNames))
-    ? registerRuntimeBindingExpression(rawExp, context, { hint: `template v-${conditionKind}` })
-    : null
-  if (rawExp) {
-    recordBindingExpression(context, {
-      kind: 'if',
-      expression: rawExp,
-      outputPath: runtimeExp?.split('[')[0],
-      sourceLocation: directive.exp?.loc,
-    })
-  }
-  return {
-    conditionKind,
-    condition: runtimeExp ?? (rawExp ? normalizeWxmlExpressionWithContext(rawExp, context) : undefined),
-  }
+  return resolveConditionalBranch(directive, context)
 }
 
 function resolveInlineStaticSlotName(name: string): string | null {
@@ -576,6 +558,7 @@ export function transformComponentWithSlots(
     const slotKey = resolveSlotKey(context, decl.name)
     const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode, {
       hostComponentName: resolveTemplateTagName(node.tag, context),
+      bindingCondition: decl.bindingCondition,
     })
     slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)

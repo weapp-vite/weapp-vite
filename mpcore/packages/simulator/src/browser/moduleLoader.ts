@@ -19,8 +19,10 @@ import {
   registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
+import { resolveMiniProgramModule } from '../runtime/moduleResolution'
 import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
-import { hasBrowserVirtualFile, readBrowserVirtualFile } from './virtualFiles'
+import { readBrowserVirtualFile } from './virtualFiles'
+import { closeBrowserWxsLoader } from './wxs'
 
 export interface BrowserModuleLoader {
   close: () => void
@@ -44,28 +46,6 @@ function createRequireNotFoundError(request: string, importer: string) {
   return new Error(`Cannot resolve require("${request}") from ${normalize(importer)} in browser simulator runtime.`)
 }
 
-function resolveRequiredModulePath(files: BrowserVirtualFiles, importer: string, request: string) {
-  if (!request.startsWith('.')) {
-    throw createRequireNotFoundError(request, importer)
-  }
-
-  const basePath = normalize(join(dirname(importer), request))
-  const candidates = [
-    basePath,
-    `${basePath}.js`,
-    `${basePath}.json`,
-    join(basePath, 'index.js'),
-  ]
-
-  for (const candidate of candidates) {
-    if (hasBrowserVirtualFile(files, candidate)) {
-      return candidate
-    }
-  }
-
-  throw createRequireNotFoundError(request, importer)
-}
-
 function createExecutionContext(
   registries: HeadlessHostRegistries,
   getCurrentPages: () => any[],
@@ -74,7 +54,8 @@ function createExecutionContext(
   kernel: RuntimeKernel,
   globals: Record<string, unknown>,
 ) {
-  const wx = createHeadlessWx(wxDriver)
+  const runtimeConsole = kernel.diagnostics.createConsole()
+  const wx = createHeadlessWx(wxDriver, runtimeConsole)
 
   return createMiniProgramRuntimeGlobals({
     App(definition: HeadlessAppDefinition) {
@@ -94,7 +75,7 @@ function createExecutionContext(
     },
     clearInterval: (handle: ReturnType<typeof setInterval>) => kernel.scheduler.clearInterval(handle),
     clearTimeout: (handle: ReturnType<typeof setTimeout>) => kernel.scheduler.clearTimeout(handle),
-    console: kernel.diagnostics.createConsole(),
+    console: runtimeConsole,
     getApp,
     getCurrentPages,
     globalThis: undefined as any,
@@ -153,7 +134,15 @@ export function createBrowserModuleLoader(
     registries.currentLoadContext = loadContext
 
     const localRequire = ((request: string) => {
-      const requiredPath = resolveRequiredModulePath(files, resolvedPath, request)
+      const requiredPath = resolveMiniProgramModule(
+        resolvedPath,
+        request,
+        options.miniprogramRootPath,
+        candidate => readBrowserVirtualFile(files, candidate) !== undefined,
+      )
+      if (!requiredPath) {
+        throw createRequireNotFoundError(request, resolvedPath)
+      }
       if (requiredPath.endsWith('.json')) {
         const content = readBrowserVirtualFile(files, requiredPath)
         if (typeof content !== 'string') {
@@ -168,19 +157,17 @@ export function createBrowserModuleLoader(
     localRequire.async = request => Promise.resolve().then(() => localRequire(request))
 
     try {
-      const contextEntries = Object.entries(executionContext)
-      // eslint-disable-next-line no-new-func -- 浏览器 simulator 需要在隔离上下文执行已编译的 CommonJS 虚拟模块。
-      const runtime = new Function(
-        ...contextEntries.map(([key]) => key),
-        'exports',
-        'module',
-        'require',
-        '__filename',
-        '__dirname',
-        source,
-      )
-      runtime(
-        ...contextEntries.map(([, value]) => value),
+      // 对象环境保留 require 期间新增、替换的全局绑定；内层函数单独拥有 CommonJS 参数与模块局部声明。
+      // eslint-disable-next-line no-new-func -- 仅浏览器 simulator 执行边界使用动态编译，不进入小程序产物或修改浏览器全局对象。
+      const runtime = new Function(`
+        with (this) {
+          return function(exports, module, require, __filename, __dirname) {
+            ${source}
+          };
+        }
+      `).call(executionContext)
+      runtime.call(
+        executionContext,
         module.exports,
         module,
         localRequire,
@@ -195,6 +182,10 @@ export function createBrowserModuleLoader(
         ...registeredDefinitions,
       ])]
       return module
+    }
+    catch (error) {
+      moduleCache.delete(resolvedPath)
+      throw error
     }
     finally {
       registries.currentLoadContext = previousLoadContext
@@ -213,16 +204,14 @@ export function createBrowserModuleLoader(
     return executeModule(entryPath, null).exports
   }
 
-  return {
+  const loader: BrowserModuleLoader = {
     close() {
       moduleCache.clear()
+      closeBrowserWxsLoader(loader)
     },
     executeAppModule(filePath) {
       executeModule(filePath, { kind: 'app' })
-      if (!registries.appDefinition) {
-        throw new Error(`App() was not registered while executing ${normalize(filePath)} in browser simulator runtime.`)
-      }
-      return registries.appDefinition
+      return registries.appDefinition ?? registerAppDefinition(registries, {})
     },
     executePageModule(filePath, route) {
       const componentDefinitions: HeadlessComponentDefinition[] = []
@@ -254,4 +243,5 @@ export function createBrowserModuleLoader(
     },
     wx: executionContext.wx,
   }
+  return loader
 }

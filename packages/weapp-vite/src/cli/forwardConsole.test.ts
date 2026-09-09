@@ -20,6 +20,14 @@ const colorsMock = vi.hoisted(() => ({
 }))
 let stdoutWriteSpy: ReturnType<typeof vi.spyOn>
 
+function pendingSession() {
+  let resolve!: (value: { close: ReturnType<typeof vi.fn> }) => void
+  const promise = new Promise<{ close: ReturnType<typeof vi.fn> }>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
+}
+
 vi.mock('@vercel/detect-agent', () => ({
   determineAgent: determineAgentMock,
 }))
@@ -170,6 +178,84 @@ describe('forwardConsole', () => {
     await closeActiveForwardConsole()
 
     expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for a pending bridge before pausing it for a screenshot', async () => {
+    const session = pendingSession()
+    const close = vi.fn()
+    startForwardConsoleMock.mockReturnValueOnce(session.promise)
+    const { maybeStartForwardConsole, pauseActiveForwardConsole } = await import('./forwardConsole')
+    const start = maybeStartForwardConsole({
+      platform: 'weapp',
+      cwd: 'project',
+      weappViteConfig: { forwardConsole: true },
+    })
+    await vi.waitFor(() => expect(startForwardConsoleMock).toHaveBeenCalledTimes(1))
+    const paused = vi.fn()
+    const pause = pauseActiveForwardConsole().then((resume) => {
+      paused()
+      return resume
+    })
+    await Promise.resolve()
+    expect(paused).not.toHaveBeenCalled()
+    session.resolve({ close })
+    await start
+    const resume = await pause
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(resume).toBeTypeOf('function')
+    await expect(resume?.()).resolves.toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not resume a paused bridge after shutdown', async () => {
+    const { closeActiveForwardConsole, maybeStartForwardConsole, pauseActiveForwardConsole } = await import('./forwardConsole')
+    await maybeStartForwardConsole({
+      platform: 'weapp',
+      cwd: 'project',
+      weappViteConfig: { forwardConsole: true },
+    })
+    const resume = await pauseActiveForwardConsole()
+    await closeActiveForwardConsole()
+    await expect(resume?.()).resolves.toBe(false)
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes a bridge that finishes resuming during shutdown', async () => {
+    const { closeActiveForwardConsole, maybeStartForwardConsole, pauseActiveForwardConsole } = await import('./forwardConsole')
+    await maybeStartForwardConsole({
+      platform: 'weapp',
+      cwd: 'project',
+      weappViteConfig: { forwardConsole: true },
+    })
+    const resume = await pauseActiveForwardConsole()
+    const session = pendingSession()
+    const close = vi.fn()
+    startForwardConsoleMock.mockReturnValueOnce(session.promise)
+    const resuming = resume?.()
+    const shutdown = closeActiveForwardConsole()
+    session.resolve({ close })
+    await expect(resuming).resolves.toBe(false)
+    await shutdown
+    expect(close).toHaveBeenCalledTimes(1)
+    await closeActiveForwardConsole()
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('shares a pending resume with another start request', async () => {
+    const { maybeStartForwardConsole, pauseActiveForwardConsole } = await import('./forwardConsole')
+    const options = { platform: 'weapp', cwd: 'project', weappViteConfig: { forwardConsole: true } }
+    await maybeStartForwardConsole(options)
+    const resume = await pauseActiveForwardConsole()
+    const session = pendingSession()
+    startForwardConsoleMock.mockReturnValueOnce(session.promise)
+    const resuming = resume?.()
+    const starting = maybeStartForwardConsole(options)
+    await Promise.resolve()
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(2)
+    session.resolve({ close: vi.fn() })
+    await expect(resuming).resolves.toBe(true)
+    await expect(starting).resolves.toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenCalledTimes(2)
   })
 
   it('closes a console forwarding session that finishes after shutdown starts', async () => {

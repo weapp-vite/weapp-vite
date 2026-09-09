@@ -4,14 +4,10 @@ import type { CompilerContext } from '../context'
 import type { MpPlatform, SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
-import {
-  WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX,
-  WEAPP_VITE_SIDECAR_RESOLVED_PREFIX,
-} from '@weapp-core/constants'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
-import path from 'pathe'
 import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
-import { parseLogicalEntryId, parseSidecarModuleId } from '../moduleGraph/protocol'
+import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
+import { parseSidecarModuleId } from '../moduleGraph/protocol'
 import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
 import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
@@ -20,6 +16,7 @@ import { handleWxml, scanWxml } from '../wxml'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { consumePendingOwnerStyleSources } from './css'
 import { transformI18nOutputTemplate } from './i18n'
+import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { hasManagedTailwindcssOutputMarker, isManagedTailwindcssEntry } from './tailwindcssMarker'
@@ -55,31 +52,6 @@ interface OutputAssetEntry {
   output: Extract<OutputBundle[string], { type: 'asset' }>
 }
 
-const GRAPH_ONLY_OUTPUT_MARKERS = [
-  WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX,
-  WEAPP_VITE_SIDECAR_RESOLVED_PREFIX,
-]
-
-function parseGraphOnlyAssetModuleId(fileName: string) {
-  for (const marker of GRAPH_ONLY_OUTPUT_MARKERS) {
-    const markerIndex = fileName.indexOf(marker)
-    if (markerIndex < 0) {
-      continue
-    }
-    const request = fileName.slice(markerIndex)
-    const extension = path.extname(request)
-    const moduleId = `${extension ? request.slice(0, -extension.length) : request}.js`
-    return moduleId
-  }
-}
-
-function parseGraphOnlyAssetOwner(fileName: string) {
-  const moduleId = parseGraphOnlyAssetModuleId(fileName)
-  return moduleId
-    ? parseLogicalEntryId(moduleId)?.sourceId ?? parseSidecarModuleId(moduleId)?.ownerId
-    : undefined
-}
-
 export function normalizeGraphOnlyAssets(
   ctx: CompilerContext,
   bundle: OutputBundle,
@@ -90,7 +62,7 @@ export function normalizeGraphOnlyAssets(
       continue
     }
     const fileName = output.fileName || bundleFileName
-    const moduleId = parseGraphOnlyAssetModuleId(fileName)
+    const moduleId = parseGraphOutputModuleId(fileName)
     const sidecar = moduleId ? parseSidecarModuleId(moduleId) : undefined
     if (
       sidecar?.kind === 'style'
@@ -100,7 +72,7 @@ export function normalizeGraphOnlyAssets(
       delete bundle[bundleFileName]
       continue
     }
-    const ownerId = parseGraphOnlyAssetOwner(fileName)
+    const ownerId = resolveGraphOutputOwner(fileName)
     if (!ownerId) {
       continue
     }
@@ -353,6 +325,7 @@ export function pruneUnchangedDevHmrOutputs(
   rewriteOptions?: RewriteWevuInternalRuntimeImportsOptions,
   options?: {
     runtimeRewriteDone?: boolean
+    preserveCompleteBundle?: boolean
   },
 ) {
   const cache = ctx.runtimeState?.build?.output?.emittedSource
@@ -360,7 +333,7 @@ export function pruneUnchangedDevHmrOutputs(
     return
   }
 
-  const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+  const isHmrBuild = !options?.preserveCompleteBundle && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
   const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   if (!options?.runtimeRewriteDone) {
     rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
@@ -392,6 +365,7 @@ export function pruneUnchangedDevHmrOutputs(
 }
 
 export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
+  let preserveCompleteBundle = false
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
@@ -420,15 +394,20 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
   return {
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
+    configResolved(config) {
+      // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。
+      preserveCompleteBundle = config.experimental?.bundledDev === true
+    },
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
-        const outputBundle = bundle as unknown as OutputBundle
+        const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
+        const outputBundle = assets.bundle
         mergePendingOwnerStyleSources(ctx, outputBundle)
-        rewriteWevuInternalRuntimeImports(bundle as unknown as OutputBundle, wevuRuntimeRewriteOptions)
-        stabilizeWevuRuntimeChunkAccess(bundle as unknown as OutputBundle)
+        rewriteWevuInternalRuntimeImports(outputBundle, wevuRuntimeRewriteOptions)
+        stabilizeWevuRuntimeChunkAccess(outputBundle)
         restoreNativePageLayoutOutputs(ctx, outputBundle)
-        normalizeGraphOnlyAssets(ctx, outputBundle, asset => this.emitFile(asset))
+        normalizeGraphOnlyAssets(ctx, outputBundle, assets.stage)
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
         if (ctx.configService.platform === 'weapp') {
           analyzeGlassEaselBundle(ctx, outputBundle)
@@ -437,13 +416,15 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           outputBundle,
           assetEntries.preprocessorStyleAssets,
           ctx.configService.outputExtensions?.wxss,
-          asset => this.emitFile(asset),
+          assets.stage,
         )
         normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
         pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
           runtimeRewriteDone: true,
+          preserveCompleteBundle,
         })
         syncOutputChunkSourceMapAssets(outputBundle)
+        assets.publish(asset => this.emitFile(asset))
         await flushIndependentOutputs(ctx, subPackageMeta, asset => this.emitFile(asset))
       },
     },

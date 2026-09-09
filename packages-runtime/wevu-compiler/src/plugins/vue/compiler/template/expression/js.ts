@@ -290,7 +290,10 @@ export function normalizeJsExpressionWithContext(
       }
 
       let replacement: t.Expression
-      if (context.rewriteScopedSlot) {
+      if (context.classStyleBindings?.some(binding => binding.name === name)) {
+        replacement = createUnrefCall(createThisMemberAccess(name))
+      }
+      else if (context.rewriteScopedSlot) {
         if (hasOwn(slotProps, name)) {
           const prop = slotProps[name]
           const base = createThisMemberAccess(WEVU_SLOT_PROPS_DATA_KEY)

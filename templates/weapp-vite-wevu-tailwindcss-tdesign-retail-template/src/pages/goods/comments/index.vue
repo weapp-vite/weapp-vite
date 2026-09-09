@@ -152,8 +152,7 @@ function resetListState() {
   pageNum.value = 1
 }
 
-function changeTag(e: { currentTarget?: { dataset?: { commenttype?: string } } }) {
-  const nextCommentType = e.currentTarget?.dataset?.commenttype ?? ''
+function changeTag(nextCommentType: string) {
   if (commentType.value === nextCommentType) {
     return
   }
@@ -202,29 +201,36 @@ definePageJson({
 
 <template>
   <view class="comments-header flex flex-wrap p-[32rpx_32rpx_0rpx] bg-white mt-[-24rpx] ml-[-24rpx]">
-    <t-tag :t-class="`comments-header-tag ${commentType === '' ? 'comments-header-active' : ''}`" data-commentType="" @tap="changeTag">
-      全部({{ countObj.commentCount }})
-    </t-tag>
-    <t-tag
-      v-if="countObj.uidCount !== '0'"
-      :t-class="`comments-header-tag ${commentType === '5' ? 'comments-header-active' : ''}`"
-      data-commentType="5"
-      @tap="changeTag"
-    >
-      自己({{ countObj.uidCount }})
-    </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '4' ? 'comments-header-active' : ''}`" data-commentType="4" @tap="changeTag">
-      带图({{ countObj.hasImageCount }})
-    </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '3' ? 'comments-header-active' : ''}`" data-commentType="3" @tap="changeTag">
-      好评({{ countObj.goodCount }})
-    </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '2' ? 'comments-header-active' : ''}`" data-commentType="2" @tap="changeTag">
-      中评({{ countObj.middleCount }})
-    </t-tag>
-    <t-tag :t-class="`comments-header-tag ${commentType === '1' ? 'comments-header-active' : ''}`" data-commentType="1" @tap="changeTag">
-      差评({{ countObj.badCount }})
-    </t-tag>
+    <view id="comments-filter-all" class="comments-header-tag" @tap="changeTag('')">
+      <t-tag :theme="commentType === '' ? 'danger' : 'default'" :variant="commentType === '' ? 'light-outline' : 'dark'">
+        全部({{ countObj.commentCount }})
+      </t-tag>
+    </view>
+    <view v-if="countObj.uidCount !== '0'" id="comments-filter-own" class="comments-header-tag" @tap="changeTag('5')">
+      <t-tag :theme="commentType === '5' ? 'danger' : 'default'" :variant="commentType === '5' ? 'light-outline' : 'dark'">
+        自己({{ countObj.uidCount }})
+      </t-tag>
+    </view>
+    <view id="comments-filter-image" class="comments-header-tag" @tap="changeTag('4')">
+      <t-tag :theme="commentType === '4' ? 'danger' : 'default'" :variant="commentType === '4' ? 'light-outline' : 'dark'">
+        带图({{ countObj.hasImageCount }})
+      </t-tag>
+    </view>
+    <view id="comments-filter-good" class="comments-header-tag" @tap="changeTag('3')">
+      <t-tag :theme="commentType === '3' ? 'danger' : 'default'" :variant="commentType === '3' ? 'light-outline' : 'dark'">
+        好评({{ countObj.goodCount }})
+      </t-tag>
+    </view>
+    <view id="comments-filter-middle" class="comments-header-tag" @tap="changeTag('2')">
+      <t-tag :theme="commentType === '2' ? 'danger' : 'default'" :variant="commentType === '2' ? 'light-outline' : 'dark'">
+        中评({{ countObj.middleCount }})
+      </t-tag>
+    </view>
+    <view id="comments-filter-bad" class="comments-header-tag" @tap="changeTag('1')">
+      <t-tag :theme="commentType === '1' ? 'danger' : 'default'" :variant="commentType === '1' ? 'light-outline' : 'dark'">
+        差评({{ countObj.badCount }})
+      </t-tag>
+    </view>
   </view>
   <view class="comments-card-list">
     <block v-for="(item, index) in commentList" :key="index">
@@ -254,6 +260,12 @@ definePageJson({
 
 <style>
 .comments-header {
+  --td-tag-danger-color: #fa4126;
+  --td-tag-danger-light-color: #ffece9;
+  --td-tag-default-color: #f5f5f5;
+  --td-tag-default-font-color: #333;
+  --td-tag-medium-padding: 6rpx 14rpx;
+
   display: flex;
   flex-wrap: wrap;
   padding: 32rpx 32rpx 0;
@@ -263,21 +275,8 @@ definePageJson({
 }
 
 .comments-header-tag {
-  justify-content: center;
-  height: 56rpx;
   margin-top: 24rpx;
   margin-left: 24rpx;
-  font-size: 24rpx;
-  color: #333;
-  background-color: #f5f5f5;
-  border: 1px solid #f5f5f5;
-  border-radius: 8rpx;
-}
-
-.comments-header-active {
-  color: #fa4126;
-  background-color: #ffece9;
-  border-color: #fa4126;
 }
 
 .comments-card-list {

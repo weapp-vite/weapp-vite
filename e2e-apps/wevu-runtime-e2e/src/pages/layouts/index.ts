@@ -36,6 +36,10 @@ Page({
     writeLayoutScriptProbe(layoutPageScriptMarker)
     setPageLayout('default')
   },
+  syncScriptMarker() {
+    this.setData({ scriptMarker: layoutPageScriptMarker })
+    return { definitionMarker: layoutPageScriptMarker, dataMarker: this.data.scriptMarker }
+  },
   applyDefaultLayout() {
     this.setData({ currentLayout: 'default' })
     setPageLayout('default')

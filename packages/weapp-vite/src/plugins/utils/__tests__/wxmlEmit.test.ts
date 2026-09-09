@@ -143,11 +143,12 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(() => resolveWxmlEmitContext({} as any)).toThrow('emitWxmlAssets 需要先初始化 wxmlService、configService 和 scanService。')
   })
 
-  it('resolves emit targets for main package, subpackage, and plugin builds', () => {
+  it.each(['pkg', 'pkg/', 'pkg\\'])('resolves exact emit boundaries for main package, subpackage %s, and plugin builds', (root) => {
     const subPackageFile = '/project/src/pkg/pages/detail/index.wxml'
     const pluginFile = '/project/plugin/pages/demo/index.wxml'
     const wxsFile = '/project/src/pages/index/index.wxs.ts'
     ctx.wxmlService!.tokenMap.set(subPackageFile, ctx.wxmlService!.analyze('<view />'))
+    ctx.wxmlService!.tokenMap.set('/project/src/pkg-other/pages/detail/index.wxml', ctx.wxmlService!.analyze('<view />'))
     ctx.wxmlService!.tokenMap.set(pluginFile, ctx.wxmlService!.analyze('<view />'))
     ctx.wxmlService!.tokenMap.set(wxsFile, ctx.wxmlService!.analyze('module.exports = {}'))
     ctx.scanService = {
@@ -166,7 +167,7 @@ describe('emitWxmlAssetsWithCache', () => {
       compiler: ctx as any,
       subPackageMeta: {
         subPackage: {
-          root: 'pkg',
+          root,
         },
       } as any,
     }).map(item => item.fileName)).toEqual(['pkg/pages/detail/index.wxml'])

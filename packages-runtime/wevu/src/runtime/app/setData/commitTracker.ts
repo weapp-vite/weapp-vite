@@ -420,9 +420,11 @@ export function createSetDataCommitTracker(options: {
     const settle: SetDataAdapterSettler = (settlement, cause) => {
       settleRecord(record, settlement, cause)
     }
+    // 宿主会保留对象并在后续路径更新时原地修改，载荷不能与序列化缓存及快照共享引用。
+    const hostPayload = cloneSnapshotValue(update.payload)
     if (typeof options.adapter.__wevu_dispatchSetData === 'function') {
       try {
-        options.adapter.__wevu_dispatchSetData(update.payload, settle)
+        options.adapter.__wevu_dispatchSetData(hostPayload, settle)
       }
       catch (cause) {
         settle('failed', cause)
@@ -430,7 +432,7 @@ export function createSetDataCommitTracker(options: {
     }
     else {
       observeSetDataCompletion({
-        invoke: () => options.adapter.setData?.(update.payload),
+        invoke: () => options.adapter.setData?.(hostPayload),
         completion: 'return',
         settle,
       })

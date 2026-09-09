@@ -53,6 +53,11 @@ on:
         description: templates HMR sample mode, edit-only or best-of-cycle
         required: false
         default: best-of-cycle
+      templates-hmr-snapshot-trace:
+        description: diagnostic snapshot trace (I/O affects timings; requires a final run with trace disabled)
+        type: boolean
+        required: false
+        default: false
       templates-baseline-ref:
         description: templates performance baseline ref for workflow_dispatch
         required: false
@@ -250,11 +255,18 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run templates performance benchmark
+        shell: bash
         working-directory: head
         env:
           TEMPLATES_PERF_BASELINE_DIR: ${{ github.workspace }}/baseline
           TEMPLATES_PERF_OPTIMIZED_DIR: ${{ github.workspace }}/head
-        run: pnpm exec tsx scripts/compare-templates-performance.ts
+          WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE: ${{ github.event_name == 'workflow_dispatch' && inputs['templates-hmr-snapshot-trace'] == true && '1' || '0' }}
+        run: |
+          if [[ "${WEAPP_VITE_STATEFUL_HMR_SNAPSHOT_TRACE}" == "1" ]]; then
+            echo "snapshot trace: enabled (diagnostic run)"
+            echo "- snapshot trace: enabled; 本次仅供诊断。Trace I/O 可能影响耗时，不能代替最终关闭 trace 的完整性能验收。" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          pnpm exec tsx scripts/compare-templates-performance.ts
 
       - name: Upload templates performance report artifact
         if: always()
@@ -262,4 +274,9 @@ jobs:
         with:
           name: templates-performance-report-${{ matrix.os }}
           path: ${{ runner.temp }}/templates-performance-report
-          if-no-files-found: warn
+          if-no-files-found: error
+
+      - name: Verify templates performance report completeness
+        if: always()
+        working-directory: head
+        run: pnpm exec tsx scripts/check-templates-performance-report.ts

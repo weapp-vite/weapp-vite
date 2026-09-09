@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
+import { isIssue779CssContentRequest } from './config/issue779CssPre'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
 const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
@@ -61,6 +62,7 @@ const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.en
 const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
+  'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [
     'pages/issue-338/**',
     'pages/issue-448/**',
@@ -142,10 +144,18 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue930.test.ts': [
     'pages/issue-930/**',
+    'pages/css-nested-vars/**',
     'components/issue-930/**',
   ],
   'github-issues.runtime.issue852.test.ts': [
     'pages/issue-852/**',
+  ],
+  'github-issues.runtime.issue868.test.ts': [
+    'pages/issue-868/**',
+    'components/issue-868/**',
+  ],
+  'github-issues.runtime.issue941.test.ts': [
+    'pages/issue-941/**',
   ],
   'github-issues.runtime.issue826.test.ts': [
     'pages/issue-826/**',
@@ -158,7 +168,13 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue911.test.ts': [
     'pages/issue-550/**',
     'pages/issue-911/**',
+    'pages/issue-911-result/**',
     'shared/issue911.ts',
+  ],
+  'github-issues.runtime.component-instance-apis.test.ts': [
+    'pages/component-instance-apis/**',
+    'pages/component-instance-apis-baseline/**',
+    'components/component-instance-apis/**',
   ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
@@ -341,6 +357,10 @@ function resolveGithubIssuesAutoRoutes() {
     : undefined
 
   if (!matchedRoutes) {
+    const targetName = e2eTargetFile.split('/').at(-1) ?? ''
+    if (/^github-issues\.runtime\..+\.test\.ts$/.test(targetName)) {
+      throw new Error(`Missing github-issues runtime route group: ${targetName}`)
+    }
     return true
   }
 
@@ -524,18 +544,18 @@ const issue779CssPrePlugin = issue779CssPreEnabled
         name: 'github-issues:issue-779-css-pre',
         enforce: 'pre' as const,
         transform(_code: string, id: string) {
-          const normalizedId = id.replaceAll('\\', '/')
-          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+          if (!isIssue779CssContentRequest(id)) {
             return null
           }
-          return `@import "tailwindcss";\n.issue-779-pre-marker { color: rgb(1, 2, 3); }`
+          return `@import "tailwindcss" source(none);\n.issue-779-pre-marker { @apply p-[13px]; color: rgb(1, 2, 3); }`
         },
       },
       {
         name: 'github-issues:issue-779-css-pipeline-probe',
+        enforce: 'pre' as const,
         transform(code: string, id: string) {
           const normalizedId = id.replaceAll('\\', '/')
-          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+          if (!isIssue779CssContentRequest(id)) {
             return null
           }
           if (
@@ -646,6 +666,9 @@ function resolveGithubIssuesBuildConfig() {
 }
 
 const githubIssuesBuildConfig = resolveGithubIssuesBuildConfig()
+const githubIssuesAutoRoutes = resolveGithubIssuesAutoRoutes()
+// 完整示例包含使用 i18n behavior 的页面，必须同步启用对应运行时。
+const githubIssuesI18nEnabled = issue845I18nEnabled || githubIssuesAutoRoutes === true
 
 export default defineConfig({
   plugins: [
@@ -658,7 +681,7 @@ export default defineConfig({
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
   weapp: {
-    ...(issue845I18nEnabled
+    ...(githubIssuesI18nEnabled
       ? {
           i18n: {
             defaultLocale: 'zh-CN',
@@ -671,7 +694,7 @@ export default defineConfig({
       profileJson: true,
     },
     srcRoot: 'src',
-    autoRoutes: resolveGithubIssuesAutoRoutes(),
+    autoRoutes: githubIssuesAutoRoutes,
     subPackages: issue850OutputReplayEnabled
       ? {
           'subpackages/issue-850': {
