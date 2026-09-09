@@ -1,8 +1,10 @@
 import type { RolldownOutput } from 'rolldown'
 import type { MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import type { OutputsHelpers } from '../autoImport/service/outputs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../logger'
+import { createAutoImportScheduling } from '../autoImport/service/scheduling'
 import { createBuildServicePlugin } from '../buildPlugin'
 import { createRuntimeState } from '../runtimeState'
 import { createWatcherServicePlugin } from '../watcherPlugin'
@@ -14,9 +16,9 @@ const isolatedConfigServiceMock = vi.hoisted(() => ({
   importMetaEnvDefineOverride: undefined,
   setImportMetaEnvDefineOverride: vi.fn(),
 }))
-const createCompilerContextInstanceMock = vi.hoisted(() => vi.fn(() => ({
-  configService: isolatedConfigServiceMock,
-})))
+const createCompilerContextInstanceMock = vi.hoisted(() => vi.fn())
+const scheduleManifestWrite = vi.fn()
+let isolatedScheduling: ReturnType<typeof createAutoImportScheduling>
 
 vi.mock('vite', () => ({
   build: buildMock,
@@ -100,7 +102,16 @@ describe('buildService independent bundles', () => {
   beforeEach(() => {
     buildMock.mockReset()
     createCompilerContextInstanceMock.mockClear()
-    isolatedConfigServiceMock.load.mockClear()
+    isolatedConfigServiceMock.load.mockReset()
+    scheduleManifestWrite.mockReset()
+    isolatedScheduling = createAutoImportScheduling({
+      ctx: {} as MutableCompilerContext,
+      outputsHelpers: { scheduleManifestWrite } as unknown as OutputsHelpers,
+    })
+    createCompilerContextInstanceMock.mockReturnValue({
+      autoImportService: isolatedScheduling,
+      configService: isolatedConfigServiceMock,
+    })
     isolatedConfigServiceMock.merge.mockClear()
     isolatedConfigServiceMock.setImportMetaEnvDefineOverride.mockClear()
     loggerErrorSpy.mockClear()
@@ -125,6 +136,37 @@ describe('buildService independent bundles', () => {
     expect(configArg?.build?.write).toBe(false)
     expect(configArg?.build?.watch).toBeNull()
     expect(typeof configArg?.build?.rolldownOptions?.output?.chunkFileNames).toBe('function')
+  })
+
+  it.each([false, true])('keeps config and build support writes isolated and restores scheduling (failure=%s)', async (fail) => {
+    const ctx = createMockCompilerContext()
+    const stages: string[] = []
+    isolatedConfigServiceMock.load.mockImplementation(async () => {
+      await Promise.resolve()
+      isolatedScheduling.deferOrSchedule('manifest', true)
+      stages.push('config')
+    })
+    buildMock.mockImplementationOnce(async () => {
+      await Promise.resolve()
+      isolatedScheduling.deferOrSchedule('manifest', true)
+      stages.push('build')
+      if (fail) {
+        throw new Error('isolated build failed')
+      }
+      return { output: [createChunk('packageB/index.js')] }
+    })
+
+    const result = ctx.buildService!.buildIndependentBundle('packageB', createMeta())
+    if (fail) {
+      await expect(result).rejects.toThrow('isolated build failed')
+    }
+    else {
+      await result
+    }
+    expect(stages).toEqual(['config', 'build'])
+    expect(scheduleManifestWrite).not.toHaveBeenCalled()
+    isolatedScheduling.deferOrSchedule('manifest', true)
+    expect(scheduleManifestWrite).toHaveBeenCalledExactlyOnceWith(true)
   })
 
   it('selects the first output when build returns an array', async () => {
