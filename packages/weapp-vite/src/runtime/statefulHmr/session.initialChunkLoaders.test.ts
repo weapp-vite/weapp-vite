@@ -1,6 +1,7 @@
 import type { InlineConfig, Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrOutputFile } from './outputWriter'
+import type { StatefulHmrViteAdapter } from './viteAdapter'
 import { tmpdir } from 'node:os'
 import { runInNewContext } from 'node:vm'
 import path from 'pathe'
@@ -9,10 +10,7 @@ import { createRuntimeState } from '../runtimeState'
 import { createScanService } from '../scanPlugin/service'
 import { runStatefulHmrDev } from './session'
 
-interface AdapterCallbacks {
-  onOutput: (output: StatefulHmrOutputFile[]) => void
-  waitForInitialBundle: () => Promise<void>
-}
+type AdapterCallbacks = Pick<ConstructorParameters<typeof StatefulHmrViteAdapter>[2], 'onOutput' | 'waitForInitialBundle'>
 
 const harness = vi.hoisted(() => ({
   callbacks: undefined as AdapterCallbacks | undefined,
@@ -75,7 +73,8 @@ describe('stateful session initial chunk package boundaries', () => {
         httpServer: { address: () => undefined },
         close: vi.fn(),
         async listen() {
-          harness.callbacks!.onOutput(harness.output)
+          // 该 fixture 是包含 app 的初始完整输出；沿用正式 adapter 的必填来源与异步完成契约。
+          await harness.callbacks!.onOutput(harness.output, 'full')
           await harness.callbacks!.waitForInitialBundle()
         },
       }

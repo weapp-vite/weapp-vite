@@ -1,15 +1,16 @@
-import type { ResolvedConfig, ViteDevServer } from 'vite'
-import { dev } from 'rolldown/experimental'
 import { describe, expect, it } from 'vitest'
-import { StatefulHmrViteAdapter } from './viteAdapter'
+import { StatefulHmrOutputPublication } from './outputPublication'
+import { createViteDevEngine } from './viteDevEngine'
 
-describe('stateful adapter native full output contract', () => {
+describe('stateful native full output publication contract', () => {
   it('delivers unchanged full output before rebuild resolves without filesystem watching or writes', async () => {
     const outputs: Array<Array<{ fileName: string, source: string }>> = []
+    const sources: string[] = []
     const errors: Error[] = []
     const initialOutput = Promise.withResolvers<void>()
-    // 使用真实原生引擎和固定虚拟模块，验证显式 full 与没有输出的 HMR Noop 不同。
-    const engine = await dev({
+    const publication = new StatefulHmrOutputPublication()
+    // 直接验证 adapter 使用的公开发布协议；固定虚拟入口，无 Vite 插件、watcher 或磁盘写入。
+    const engine = await createViteDevEngine({
       input: 'virtual:output-contract',
       logLevel: 'silent',
       plugins: [{
@@ -26,37 +27,38 @@ describe('stateful adapter native full output contract', () => {
       onOutput(result) {
         if (result instanceof Error) {
           errors.push(result)
+          initialOutput.reject(result)
+          return
         }
-        else {
+        // 来源根据原生实际交付的文件判断；不从重建请求或 engine 完成状态补发完整信号。
+        const source = result.output.some(item => item.fileName === 'app.js') ? 'full' : 'partial'
+        void publication.publish(source, () => {
+          sources.push(source)
           outputs.push(result.output.map(item => ({
             fileName: item.fileName,
             source: item.type === 'chunk' ? item.code : String(item.source),
           })))
-        }
-        initialOutput.resolve()
+        }).then(initialOutput.resolve, initialOutput.reject)
       },
     })
-    const adapter = new StatefulHmrViteAdapter({} as ResolvedConfig, {} as ViteDevServer, {
-      onError: () => {},
-      onOutput: () => {},
-      onPatch: () => false,
-      waitForInitialBundle: async () => {},
-    })
-    Reflect.set(adapter, 'bundledDev', { _devEngine: engine })
+    // 原生启动可能先拒绝，再由初始输出等待观察；提前挂接，避免错误形成未处理拒绝。
+    void initialOutput.promise.catch(() => {})
 
     try {
       await engine.run()
       await initialOutput.promise
       expect(errors).toEqual([])
       expect(outputs).toHaveLength(1)
+      expect(sources).toEqual(['full'])
       expect(outputs[0]).toContainEqual({ fileName: 'app.js', source: expect.any(String) })
 
       for (let iteration = 0; iteration < 3; iteration += 1) {
         const count = outputs.length
-        await adapter.rebuild()
-        // 必须在返回时已经收到 callback，不通过额外 sleep 或轮询掩盖交付顺序。
+        await publication.rebuild(engine, 5_000)
+        // 无源码变更的显式 full 仍须交付 callback；返回后立即断言，无 sleep 或额外轮询。
         expect(errors).toEqual([])
         expect(outputs).toHaveLength(count + 1)
+        expect(sources.at(-1)).toBe('full')
         expect(outputs.at(-1)).toEqual(outputs[0])
       }
     }
