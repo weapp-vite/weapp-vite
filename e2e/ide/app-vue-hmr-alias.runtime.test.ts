@@ -95,9 +95,11 @@ async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnap
         return
       }
       const query = wx.createSelectorQuery().in(page)
-      query.select('.app-vue-hmr-alias-page').fields({ size: true })
-      query.select('.app-vue-hmr-alias-page__label').fields({ size: true })
-      query.select('.app-vue-hmr-alias-page__bootstrap').fields({ size: true })
+      // 查询选项由宿主 JSON 创建，避免 DevTools evaluate 代理对象跨上下文克隆失败。
+      const fields = JSON.parse('{"size":true}')
+      query.select('.app-vue-hmr-alias-page').fields(fields)
+      query.select('.app-vue-hmr-alias-page__label').fields(fields)
+      query.select('.app-vue-hmr-alias-page__bootstrap').fields(fields)
       query.exec(results => resolve({
         route: page.route,
         pageData: page.data,

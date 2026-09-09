@@ -146,9 +146,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR
 
-- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:441`
+- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:443`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:446`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:448`
 - Routes: ``
 - Operations: `check(initial)`, `check(app-update)`, `check(layout-update)`, `check(page-update)`, `check(dependency-update)`
 
@@ -927,9 +927,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### e2e app: issue-340-hoist runtime > reLaunches both subpackage pages with hoisted shared imports intact
 
-- Source: `e2e/ide/issue-340-hoist.runtime.test.ts:264`
+- Source: `e2e/ide/issue-340-hoist.runtime.test.ts:265`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/issue-340-hoist`; checkpoints: `[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ`; source: `e2e/ide/issue-340-hoist.runtime.test.ts:265`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/issue-340-hoist`; checkpoints: `[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ`; source: `e2e/ide/issue-340-hoist.runtime.test.ts:266`
 - Routes: `/subpackages/item/login-required/index`, `/subpackages/user/register/form`
 - Operations: `check(item)`, `check(user)`
 

@@ -122,14 +122,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:441",
+          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:443",
           "name": "app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/app-vue-hmr-alias",
               "checkpoints": "[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa",
-              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:446"
+              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:448"
             }
           ],
           "routes": [
@@ -2333,14 +2333,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/issue-340-hoist.runtime.test.ts:264",
+          "source": "e2e/ide/issue-340-hoist.runtime.test.ts:265",
           "name": "e2e app: issue-340-hoist runtime > reLaunches both subpackage pages with hoisted shared imports intact",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/issue-340-hoist",
               "checkpoints": "[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ",
-              "source": "e2e/ide/issue-340-hoist.runtime.test.ts:265"
+              "source": "e2e/ide/issue-340-hoist.runtime.test.ts:266"
             }
           ],
           "routes": [
@@ -5903,7 +5903,7 @@
     },
     {
       "file": "e2e/ide/app-vue-hmr-alias.runtime.test.ts",
-      "sha256": "1ed8fb3b2f3ab9fe5e1324f0a38e2a3841db9505037e8a5080d9ff07b755181f"
+      "sha256": "7986a712f87c7f1596e1a59cddc50bce735e20d7ce958142a9c5fc6b04273516"
     },
     {
       "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
@@ -6203,7 +6203,7 @@
     },
     {
       "file": "e2e/ide/issue-340-hoist.runtime.test.ts",
-      "sha256": "28619c08fecf99003bb504eed35bef177d600f51ad16ad22fedd49148342e62a"
+      "sha256": "be11ae8a0779e4fdf9a915c4bff48e6cca7ac23bd0c327dbbb1191f1390a54b8"
     },
     {
       "file": "e2e/ide/layout-power-demo-message.runtime.test.ts",
@@ -6807,7 +6807,7 @@
     },
     {
       "file": "e2e/utils/templateAcceptance/features.ts",
-      "sha256": "b17677dac13ffa9154cdbcdcba5ba124d07e8da282d7b5b1bc5d83af5922e350"
+      "sha256": "3a8de83c81e0eecd7582da269b9ef42a3ba7a3fb899b8ddd20d31b45d5a5b318"
     },
     {
       "file": "e2e/utils/templateAcceptance/format.ts",
