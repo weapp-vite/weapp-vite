@@ -1568,7 +1568,7 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       state => state.currentScenarioId === 'route-maze',
       20_000,
     )
-    const launchOptionsJson = '{"path":"pages/hub/index","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}'
+    const launchOptionsJson = '{"path":"pages/hub/index","query":{},"referrerInfo":{},"scene":1001}'
     expect(parseJsonString<{ timeline: string[] }>(initialState.appData).timeline).toEqual([
       `maze:onLaunch:${launchOptionsJson}`,
       `maze:onShow:${launchOptionsJson}`,
@@ -1672,10 +1672,7 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     expect(snapshot.launchOptions).toEqual({
       path: 'pages/hub/index',
       query: {},
-      referrerInfo: {
-        appId: '',
-        extraData: {},
-      },
+      referrerInfo: {},
       scene: 1001,
     })
     expect(snapshot.enterOptions).toEqual(showOptions)
