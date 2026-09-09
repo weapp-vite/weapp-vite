@@ -99,14 +99,16 @@ export function renderAttributes(
     }
     const eventInfo = parseEventAttribute(rawName)
     if (eventInfo) {
-      const event = eventInfo.rawEvent.toLowerCase()
+      const normalizedEvent = eventInfo.rawEvent.toLowerCase()
+      const aliasedEvent = EVENT_KIND_ALIAS[normalizedEvent]
+      const event = aliasedEvent ? normalizedEvent : eventInfo.rawEvent
+      const domEvent = aliasedEvent ?? eventInfo.rawEvent
       const handlerExpr = buildExpression(parseInterpolations(rawValue ?? ''), scopeVar, wxsVar)
-      const domEvent = EVENT_KIND_ALIAS[event] ?? event
       const flags = {
         catch: eventInfo.prefix.includes('catch'),
         capture: eventInfo.prefix.includes('capture'),
       }
-      buffer += ` @${domEvent}=\${ctx.event(${JSON.stringify(event)}, ${handlerExpr}, ${scopeVar}, ${wxsVar}, ${JSON.stringify(flags)})}`
+      buffer += ` \${bindRuntimeEvent(${JSON.stringify(domEvent)}, ctx.event(${JSON.stringify(event)}, ${handlerExpr}, ${scopeVar}, ${wxsVar}, ${JSON.stringify(flags)}), ${JSON.stringify(flags)})}`
       continue
     }
     const useProperty = shouldBindAsProperty(rawName)

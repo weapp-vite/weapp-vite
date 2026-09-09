@@ -6,5 +6,6 @@ describe('web runtime public entry', () => {
     expect(runtime.installWebHostGlobals).toBeTypeOf('function')
     expect(runtime.initializePageRoutes).toBeTypeOf('function')
     expect(runtime.createRenderContext).toBeTypeOf('function')
+    expect(runtime.bindRuntimeEvent).toBeTypeOf('function')
   })
 })
