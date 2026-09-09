@@ -1,13 +1,18 @@
 {
   "pages": [
     "pages/home/index",
-    "pages/login/index"
+    "pages/login/index",
+    "pages/other/index"
   ],
   "tabBar": {
     "list": [
       {
         "pagePath": "pages/home/index",
         "text": "Home"
+      },
+      {
+        "pagePath": "pages/other/index",
+        "text": "Other"
       }
     ]
   }
