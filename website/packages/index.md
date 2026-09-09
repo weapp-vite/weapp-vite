@@ -38,7 +38,7 @@ keywords:
 - 想在 Wevu 项目中静态拦截不支持或高风险的 Vue、Pinia、Vue Router API：用 `@weapp-vite/eslint`
 - 想用 Vitest 测试真实小程序编译产物：用 `@mpcore/test`、`@mpcore/vitest` 与 `@mpcore/weapp-vite`
 - 想低成本测试不依赖模板的 Wevu Composition API：用 `@wevu/test-utils`
-- 想跨页面共享服务端数据、协调请求并在变更后刷新列表：用独立的 `@wevu/query`，不需要 Pinia
+- 想跨页面共享服务端数据、协调请求并在变更后刷新列表：用 `@wevu/query`
 
 ## 包能力矩阵
 

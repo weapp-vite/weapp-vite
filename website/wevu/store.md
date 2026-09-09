@@ -20,7 +20,7 @@ Wevu 内置了类 Pinia 的 Store：
 - 用 `useXxx()` 获取**单例**实例
 - 用 `storeToRefs()` 解构 state/getter，避免丢失响应式
 
-Store 适合客户端状态；服务端列表、详情、请求缓存和跨页刷新使用独立的 [`@wevu/query`](#server-state-query)。它不依赖 Pinia，也不改变现有 Store API。
+Store 适合客户端状态；服务端列表、详情、请求缓存和跨页刷新使用独立的 [`@wevu/query`](#server-state-query)。
 
 :::tip 导入约定
 内置 Store API 从 `wevu` 主入口导入；服务端查询 API 从 `@wevu/query` 导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
@@ -202,7 +202,7 @@ export const usePrefs = defineStore('prefs', {
 
 ## 服务端状态查询：`@wevu/query` {#server-state-query}
 
-`@wevu/query` 是独立的 Wevu 查询包，不是 Pinia Colada 的别名或完整兼容实现。一个 `QueryClient` 管理一份内存缓存；同键请求共享进行中的 Promise，页面分别持有自己的观察者。
+`@wevu/query` 是面向 Wevu 小程序的查询包。一个 `QueryClient` 管理一份内存缓存；同键请求共享进行中的 Promise，页面分别持有自己的观察者。
 
 在 `app.vue` 的 setup 中安装插件，并显式接入微信宿主：
 
