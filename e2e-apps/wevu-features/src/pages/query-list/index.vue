@@ -9,6 +9,10 @@ import {
   readRouteParameter,
 } from '../../shared/queryFixture'
 
+definePageJson({
+  navigationBarTitleText: 'query list',
+})
+
 const baseUrl = shallowRef('')
 const filter = shallowRef('')
 const routeError = shallowRef('')

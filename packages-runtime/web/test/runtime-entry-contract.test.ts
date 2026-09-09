@@ -5,6 +5,10 @@ describe('web runtime public entry', () => {
   it('installs host globals and exposes stable runtime commands', () => {
     expect(runtime.installWebHostGlobals).toBeTypeOf('function')
     expect(runtime.initializePageRoutes).toBeTypeOf('function')
+    expect(runtime.onAppShow).toBeTypeOf('function')
+    expect(runtime.offAppShow).toBeTypeOf('function')
+    expect(runtime.onAppHide).toBeTypeOf('function')
+    expect(runtime.offAppHide).toBeTypeOf('function')
     expect(runtime.createRenderContext).toBeTypeOf('function')
   })
 })

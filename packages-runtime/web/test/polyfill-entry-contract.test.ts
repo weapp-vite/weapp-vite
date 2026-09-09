@@ -46,6 +46,10 @@ describe('polyfill entry installation contract', () => {
     expect(bridge.env.USER_DATA_PATH).toBe('/existing/user-data')
     expect((globalThis as Record<string, unknown>).getApp).toBe(getApp)
     expect((globalThis as Record<string, unknown>).getCurrentPages).toBe(getCurrentPages)
+    expect(api.canIUse('wx.onAppShow')).toBe(true)
+    expect(api.canIUse('wx.offAppShow')).toBe(true)
+    expect(api.canIUse('wx.onAppHide')).toBe(true)
+    expect(api.canIUse('wx.offAppHide')).toBe(true)
 
     await expect(api.setNavigationBarTitle({ title: 'Title' })).resolves.toBeUndefined()
     await expect(api.setNavigationBarColor({ backgroundColor: '#fff' })).resolves.toBeUndefined()

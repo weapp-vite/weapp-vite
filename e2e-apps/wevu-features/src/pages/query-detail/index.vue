@@ -9,6 +9,10 @@ import {
   updateQueryItem,
 } from '../../shared/queryFixture'
 
+definePageJson({
+  navigationBarTitleText: 'query detail',
+})
+
 const baseUrl = shallowRef('')
 const itemId = shallowRef('')
 const routeError = shallowRef('')

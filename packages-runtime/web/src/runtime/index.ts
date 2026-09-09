@@ -101,8 +101,12 @@ export {
   navigateTo,
   navigateToMiniProgram,
   nextTick,
+  offAppHide,
+  offAppShow,
   offNetworkStatusChange,
   offWindowResize,
+  onAppHide,
+  onAppShow,
   onNetworkStatusChange,
   onWindowResize,
   openAppAuthorizeSetting,
@@ -157,6 +161,7 @@ export {
   uploadFile,
   vibrateShort,
 } from './polyfill'
+export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './polyfill'
 export {
   disposeWebRouting,
   getWebRoutingConfig,

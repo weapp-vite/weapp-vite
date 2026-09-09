@@ -39,6 +39,12 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     expect(await fs.pathExists(sfcStylesPageWxssPath)).toBe(true)
     expect(await fs.pathExists(sfcStylesPageJsPath)).toBe(true)
 
+    for (const route of ['pages/query-detail/index', 'pages/query-list/index']) {
+      for (const extension of ['js', 'json', 'wxml']) {
+        expect(await fs.pathExists(path.join(DIST_ROOT, `${route}.${extension}`))).toBe(true)
+      }
+    }
+
     const appJson = await fs.readJson(appJsonPath)
     const indexWxml = await fs.readFile(indexWxmlPath, 'utf8')
     const indexJs = await fs.readFile(indexJsPath, 'utf8')
@@ -52,6 +58,8 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     expect(appJson.pages).toEqual([
       'pages/index/index',
       'pages/native-uses-vue/index',
+      'pages/query-detail/index',
+      'pages/query-list/index',
       'pages/router-coverage/index',
       'pages/router-coverage/main-target/index',
       'pages/router-dynamic/index',
