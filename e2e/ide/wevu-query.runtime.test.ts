@@ -1,10 +1,10 @@
 import type { MiniProgram, Page } from '@weapp-vite/miniprogram-automator'
-import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { HeadlessSession } from '../../mpcore/packages/simulator/src'
+import type { QueryServerHandle } from '../utils/queryFixtureServer'
 import type { RuntimeErrorCollector } from './runtimeErrors'
-import { createServer } from 'node:http'
-import { URL } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { startQueryServer } from '../utils/queryFixtureServer'
 import { installQueryRequestTransport } from '../utils/queryRequestTransport'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
@@ -18,102 +18,6 @@ import {
 const LIST_ROUTE = '/pages/query-list/index'
 const DETAIL_ROUTE = '/pages/query-detail/index'
 const runtimeProvider = resolveRuntimeProviderName()
-
-interface QueryServerState {
-  listCompletions: Record<string, number>
-  listRequests: Record<string, number>
-  mutationRequests: number
-  revision: number
-}
-
-interface QueryServerHandle {
-  baseUrl: string
-  state: QueryServerState
-  stop: () => Promise<void>
-}
-
-function sendJson(response: ServerResponse, statusCode: number, payload: unknown) {
-  response.statusCode = statusCode
-  response.setHeader('content-type', 'application/json; charset=utf-8')
-  response.end(JSON.stringify(payload))
-}
-
-async function handleQueryRequest(
-  request: IncomingMessage,
-  response: ServerResponse,
-  state: QueryServerState,
-) {
-  const requestUrl = new URL(request.url ?? '/', 'http://127.0.0.1')
-  if (request.method === 'GET' && requestUrl.pathname === '/query/items') {
-    const filter = requestUrl.searchParams.get('filter') ?? 'all'
-    const requestNumber = (state.listRequests[filter] ?? 0) + 1
-    const revision = state.revision
-    state.listRequests[filter] = requestNumber
-    let responseDelay = 90
-    if (filter === 'slow') {
-      responseDelay = 650
-    }
-    else if (filter === 'fast') {
-      responseDelay = 30
-    }
-    await delay(responseDelay)
-    state.listCompletions[filter] = (state.listCompletions[filter] ?? 0) + 1
-    sendJson(response, 200, {
-      filter,
-      items: [{ id: '1', title: `item-${filter}-r${revision}` }],
-      requestId: `${filter}-${requestNumber}`,
-      revision,
-    })
-    return
-  }
-
-  const itemId = requestUrl.pathname.match(/^\/query\/items\/([^/]+)$/)?.[1]
-  if (request.method === 'POST' && itemId) {
-    state.mutationRequests += 1
-    state.revision += 1
-    sendJson(response, 200, {
-      id: decodeURIComponent(itemId),
-      revision: state.revision,
-    })
-    return
-  }
-
-  sendJson(response, 404, { error: 'not found' })
-}
-
-async function startQueryServer(): Promise<QueryServerHandle> {
-  const state: QueryServerState = {
-    listCompletions: {},
-    listRequests: {},
-    mutationRequests: 0,
-    revision: 0,
-  }
-  const server = createServer((request, response) => {
-    void handleQueryRequest(request, response, state).catch((error) => {
-      if (!response.writableEnded) {
-        sendJson(response, 500, {
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
-    })
-  })
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', resolve)
-  })
-  const address = server.address()
-  if (!address || typeof address === 'string') {
-    await new Promise<void>(resolve => server.close(() => resolve()))
-    throw new Error('Query fixture server did not expose a TCP port')
-  }
-  return {
-    baseUrl: `http://127.0.0.1:${address.port}`,
-    state,
-    stop: () => new Promise<void>((resolve, reject) => {
-      server.close(error => error ? reject(error) : resolve())
-    }),
-  }
-}
 
 function createListRoute(baseUrl: string, filter: string) {
   return `${LIST_ROUTE}?baseUrl=${encodeURIComponent(baseUrl)}&filter=${encodeURIComponent(filter)}`
@@ -190,7 +94,22 @@ describe(`@wevu/query mini-program runtime [${runtimeProvider}]`, { concurrent: 
     }
   })
 
-  it('deduplicates list subscribers, keeps fresh data, then refreshes invalidated hidden data after back', async () => {
+  it('deduplicates list subscribers, keeps fresh data, then refreshes invalidated hidden data after back', async (context) => {
+    const dom = createDomAcceptance(context, 'e2e-apps/wevu-features', [
+      { id: 'list:fresh', route: LIST_ROUTE, action: '首次共享请求完成后检查两个订阅者', nodes: [
+        { selector: '#query-primary-result', text: 'dedup|revision:0|request:dedup-1|item:item-dedup-r0' },
+        { selector: '#query-secondary-result', text: 'dedup|revision:0|request:dedup-1|item:item-dedup-r0' },
+      ] },
+      { id: 'detail:mutation', route: DETAIL_ROUTE, action: '详情 mutation 完成后检查结果', nodes: [
+        { selector: '#query-mutation-status', text: 'success' },
+        { selector: '#query-mutation-result', text: '1|revision:1' },
+      ] },
+      { id: 'list:refreshed', route: LIST_ROUTE, action: '返回已失效列表后检查共享刷新结果', nodes: [
+        { selector: '#query-primary-result', text: 'dedup|revision:1|request:dedup-2|item:item-dedup-r1' },
+        { selector: '#query-secondary-result', text: 'dedup|revision:1|request:dedup-2|item:item-dedup-r1' },
+        { selector: '#query-list-status', text: 'success' },
+      ] },
+    ])
     const marker = runtimeErrors?.mark() ?? 0
     let listPage = await miniProgram.reLaunch(createListRoute(server.baseUrl, 'dedup'))
     expect(await waitForRenderedSelector(listPage, '#query-list-ready')).toBe(true)
@@ -199,6 +118,7 @@ describe(`@wevu/query mini-program runtime [${runtimeProvider}]`, { concurrent: 
       'dedup|revision:0|request:dedup-1|item:item-dedup-r0',
     )
     expect(server.state.listRequests.dedup).toBe(1)
+    await dom.check('list:fresh', miniProgram, listPage)
 
     await tap(listPage, '#query-open-detail')
     let detailPage = await waitForRoute(miniProgram, DETAIL_ROUTE, '#query-detail-ready')
@@ -215,6 +135,7 @@ describe(`@wevu/query mini-program runtime [${runtimeProvider}]`, { concurrent: 
       { interval: 100, timeout: 8_000 },
     ).toBe('success')
     expect(await readText(detailPage, '#query-mutation-result')).toBe('1|revision:1')
+    await dom.check('detail:mutation', miniProgram, detailPage)
     expect(server.state.mutationRequests).toBe(1)
     await delay(300)
     expect(server.state.listRequests.dedup).toBe(1)
@@ -225,11 +146,22 @@ describe(`@wevu/query mini-program runtime [${runtimeProvider}]`, { concurrent: 
       listPage,
       'dedup|revision:1|request:dedup-2|item:item-dedup-r1',
     )
+    await dom.check('list:refreshed', miniProgram, listPage)
     expect(server.state.listRequests.dedup).toBe(2)
     expect(runtimeErrors?.getSince(marker)).toEqual([])
   }, 45_000)
 
-  it('keeps a slow old-key completion from replacing the active key result', async () => {
+  it('keeps a slow old-key completion from replacing the active key result', async (context) => {
+    const dom = createDomAcceptance(context, 'e2e-apps/wevu-features', [
+      { id: 'race:fast', route: LIST_ROUTE, action: '切换到新 key 后检查较快响应', nodes: [
+        { selector: '#query-primary-result', text: 'fast|revision:1|request:fast-1|item:item-fast-r1' },
+        { selector: '#query-secondary-result', text: 'fast|revision:1|request:fast-1|item:item-fast-r1' },
+      ] },
+      { id: 'race:stable', route: LIST_ROUTE, action: '旧 key 慢请求完成后检查当前界面未被覆盖', nodes: [
+        { selector: '#query-primary-result', text: 'fast|revision:1|request:fast-1|item:item-fast-r1' },
+        { selector: '#query-secondary-result', text: 'fast|revision:1|request:fast-1|item:item-fast-r1' },
+      ] },
+    ])
     const marker = runtimeErrors?.mark() ?? 0
     const listPage = await miniProgram.reLaunch(createListRoute(server.baseUrl, 'race-seed'))
     expect(await waitForRenderedSelector(listPage, '#query-list-ready')).toBe(true)
@@ -243,16 +175,25 @@ describe(`@wevu/query mini-program runtime [${runtimeProvider}]`, { concurrent: 
     await tap(listPage, '#query-use-fast')
     const fastResult = 'fast|revision:1|request:fast-1|item:item-fast-r1'
     await waitForListResult(listPage, fastResult)
+    await dom.check('race:fast', miniProgram, listPage)
     await expect.poll(
       () => server.state.listCompletions.slow ?? 0,
       { interval: 100, timeout: 5_000 },
     ).toBe(1)
     expect(await readText(listPage, '#query-primary-result')).toBe(fastResult)
     expect(await readText(listPage, '#query-secondary-result')).toBe(fastResult)
+    await dom.check('race:stable', miniProgram, listPage)
     expect(runtimeErrors?.getSince(marker)).toEqual([])
   }, 30_000)
 
-  it.runIf(runtimeProvider === 'headless')('defers automatic queries while the app is hidden, then resumes one shared request on app show', async () => {
+  it.runIf(runtimeProvider === 'headless')('defers automatic queries while the app is hidden, then resumes one shared request on app show', async (context) => {
+    const dom = createDomAcceptance(context, 'e2e-apps/wevu-features', [
+      { id: 'app:resumed', route: LIST_ROUTE, action: '应用恢复前台后检查一次共享请求的界面结果', nodes: [
+        { selector: '#query-primary-result', text: 'background|revision:1|request:background-1|item:item-background-r1' },
+        { selector: '#query-secondary-result', text: 'background|revision:1|request:background-1|item:item-background-r1' },
+        { selector: '#query-list-status', text: 'success' },
+      ] },
+    ])
     if (!headlessSession) {
       throw new Error('The headless session must be configured before bootstrap')
     }
@@ -272,6 +213,7 @@ describe(`@wevu/query mini-program runtime [${runtimeProvider}]`, { concurrent: 
       listPage,
       'background|revision:1|request:background-1|item:item-background-r1',
     )
+    await dom.check('app:resumed', miniProgram, listPage)
     expect(server.state.listRequests.background).toBe(1)
     expect(runtimeErrors?.getSince(marker)).toEqual([])
   }, 30_000)
