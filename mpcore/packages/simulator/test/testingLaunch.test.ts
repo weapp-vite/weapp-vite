@@ -115,9 +115,14 @@ App({
 })
 `)
     let configuredSession: HeadlessSession | undefined
+    const phases: string[] = []
     const miniProgram = await launch({
+      onSessionCreated() {
+        phases.push('handle-created')
+      },
       async configureSession(session) {
         configuredSession = session
+        phases.push('session-configured')
         await Promise.resolve()
         session.getWx().setStorageSync('configured-before-bootstrap', 'ready')
       },
@@ -125,6 +130,7 @@ App({
     })
 
     try {
+      expect(phases).toEqual(['handle-created', 'session-configured'])
       expect(configuredSession?.getApp()).not.toBeNull()
       await expect(miniProgram.callWxMethod('getStorageSync', 'bootstrap-observed'))
         .resolves

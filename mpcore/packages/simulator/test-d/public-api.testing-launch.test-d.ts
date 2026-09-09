@@ -7,10 +7,13 @@ import { expectType } from 'tsd'
 import { launch } from '..'
 
 const synchronousOptions: HeadlessTestingLaunchOptions = {
+  onSessionCreated(session) {
+    expectType<HeadlessTestingSessionHandle>(session)
+  },
   configureSession(session) {
     expectType<HeadlessSession>(session)
   },
-  projectPath: '/tmp/project',
+  projectPath: 'fixture-project',
 }
 expectType<Promise<HeadlessTestingSessionHandle>>(launch(synchronousOptions))
 
@@ -19,6 +22,6 @@ const asynchronousOptions: HeadlessTestingLaunchOptions = {
     expectType<HeadlessSession>(session)
     await Promise.resolve()
   },
-  projectPath: '/tmp/project',
+  projectPath: 'fixture-project',
 }
 expectType<Promise<HeadlessTestingSessionHandle>>(launch(asynchronousOptions))
