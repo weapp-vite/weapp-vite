@@ -204,8 +204,12 @@ describe('stateful HMR Vite adapter', () => {
         waitForInitialBundle: async () => {},
       },
     )
+    Reflect.set(adapter as object, 'initialBuildTimeout', 20)
     Reflect.set(adapter as object, 'bundledDev', {
       _devEngine: {
+        ensureCurrentBuildFinish: async () => {
+          calls.push('current-finished')
+        },
         ensureLatestBuildOutput: async () => {
           calls.push('latest-output')
         },
@@ -215,11 +219,11 @@ describe('stateful HMR Vite adapter', () => {
       },
     })
 
-    await adapter.rebuild(async () => {
+    await expect(adapter.rebuild(async () => {
       calls.push('prepare')
-    })
+    })).rejects.toThrow('完整输出')
 
-    expect(calls).toEqual(['prepare', 'trigger-full', 'latest-output'])
+    expect(calls).toEqual(['current-finished', 'prepare', 'trigger-full', 'latest-output'])
   })
 
   it('routes DevEngine no-op updates through the stateful fallback', async () => {

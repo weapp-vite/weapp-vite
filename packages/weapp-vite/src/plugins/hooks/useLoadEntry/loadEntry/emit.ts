@@ -466,10 +466,16 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   ) {
     const layoutStartedAt = performance.now()
     try {
-      replaceLayoutDependencies(id, [])
       const layoutPlan = resolvedPageLayoutPlan === undefined
         ? await resolvePageLayoutPlan(code, id, configService as any)
         : resolvedPageLayoutPlan ?? undefined
+      // loader 已提交完整（含模板传递边）的依赖；输出阶段不能再次清空或降级为直接依赖。
+      if (resolvedPageLayoutPlan === undefined) {
+        const dependencies = layoutPlan
+          ? await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)
+          : []
+        replaceLayoutDependencies(id, new Set(dependencies.map(file => normalizeFsResolvedId(file))))
+      }
       registerNativePageLayoutOutput({
         configService,
         runtimeState,
@@ -478,12 +484,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         plan: layoutPlan,
       })
       if (layoutPlan) {
-        const layoutDependencies = new Set<string>()
-        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)) {
-          layoutDependencies.add(normalizeFsResolvedId(file))
-        }
-        replaceLayoutDependencies(id, layoutDependencies)
-
         const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
         const transformed = applyPageLayoutPlanToNativePage(
           {

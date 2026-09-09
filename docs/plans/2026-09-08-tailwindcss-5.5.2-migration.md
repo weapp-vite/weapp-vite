@@ -36,3 +36,25 @@ pnpm e2e:ide:full:exhaustive
 ```
 
 所有 E2E 串行执行，最终通过状态读取对应提交的严格验收报告；此记录本身不代表全量测试已经通过。
+
+## 历史示例的内置配置迁移
+
+六个历史示例不再注册 `weapp-tailwindcss/vite`：`vite-native`、`vite-native-skyline`、`vite-native-ts-skyline`、`weapp-wechat-zhihu`、`multi-platform-wevu-tdesign-demo` 和 `wevu-vue-sfc-recording-demo`。旧插件会被 preflight 移除，但其选项不会转交给 Core；因此将 `rem2rpx`、真实 `cssEntries` 和 native 的根选择器设置移入 `weapp.tailwindcss`。native 原来的 `__TEST__` 分支仅跳过外置插件，不能迁移成关闭整个内置生成器。
+
+前四个原生示例通过 App 脚本直接 import 纯 CSS 入口，多平台示例通过 App.vue 的 style src 导入；这些新入口只导入 Tailwind theme 与 utilities，继续不启用 preflight；通过 `@config` 保留内容扫描和多平台示例的 MDI 图标插件。v4 不执行旧 `corePlugins.container: false`，因此原本禁用 container 的三个示例使用 `@source not inline("container")` 排除该工具类，避免与知乎等应用的作者 `.container` 冲突。录屏示例继续使用已有 `src/app.css`。SCSS/WXSS 作者样式、Vant/TDesign 样式导入和多平台示例的 page 字体与背景均保留原入口所有权。
+
+构建检查须对应真实页面已有类：native 的 `p-5`、Skyline 的 `text-[100px]`、TS Skyline 的 `text-[200rpx]`、多平台示例的 `p-[24rpx]`。知乎和录屏当前页面使用作者类，分别检查 `.container` 的布局与 `.page` 的 `36rpx` padding；不能把它们声称为已有 Tailwind utility 的运行时验收。最终还需在实际 IDE 验证相应 DOM 与样式，构建成功或保留 CSS 规则均不替代该验收。
+
+迁移构建暴露两处静默丢失：原生 sidecar 中的 CSS `@import` 只经预处理器展开，不会使子入口进入 Core adapter 的模块 transform，因此现在由 App 脚本直接导入生成入口，原相邻 SCSS/WXSS 继续持有作者样式；完整 production 构建同时拒绝未消费的显式 `cssEntries`。筛选构建、开发增量和独立分包沿用本轮访问入口检查，完整主图不要求另一个独立分包拥有的入口出现在主包资产中。
+
+另一处是 `compiler.generate().css` 会裁剪生成样式中的裸标签，不能作为含作者 `page`/`view` 规则的完整样式。adapter 改用公开 `rawCss`，在 CSS owner 合并后统一调用 `compiler.transformCss`；该公开接口仍执行平台样式转换、动态 color-mix 保护与 finalization，不复制上游私有实现。Core/adapter 回归按选择器与声明检查作者样式，并覆盖工具类、单位、根选择器、现代颜色和层/at-rule 清理。探索的 `calc(var(--opacity) * 100%)` 动态 alpha 在旧生成路径与新转换路径均退成基础色，这是尚未验收的上游边界；正式动态 alpha 回归使用上游支持的 `var(--opacity)` 形式且保留 rgba 透明度断言，未将该探索失败改成通过。
+
+`tailwindcss.ts` 已超过 300 行，本轮评估后保留现有 compiler/output 生命周期闭包：入口访问集合、contextual slot、snapshot 与最终消费检查共享同一实例状态，单独抽出这次小段逻辑会增加状态传递和生命周期耦合；新增行为分别沉淀到 outputOwnership、transformedSource 和 Core compatibility 测试。最终转换对含生成入口的 owner 继续透传 `generator.styleOptions`，回归验证其根选择器与 rem2rpx 覆盖仍有效。
+
+原生示例最后一处入口丢失来自 `@wv-keep-import` 启用条件 PostCSS 处理后，普通注释清理一并删除 Tailwind 待生成标记。该标记现在按内部 CSS owner 协议保留，继续由最终生成阶段消费；普通注释仍清理，已排除的平台分支中的标记仍随分支删除。真实 PostCSS 回归同时覆盖三者，避免给业务源码增加占位或绕过严格入口检查。
+
+本轮迁移后的六应用构建与样式 AST 检查全部通过：从 app.wxss 和实际首页样式递归读取可达资源，按具体选择器、属性与值验证，避免仅搜索颜色误命中无关 utility。`p-5` 使用 `calc(var(--spacing) * 5)` 与 page 作用域的 `--spacing: 8rpx`，有效 padding 为 40rpx；不要求打包器必须折叠成单个字面量。新增 Core/owner 回归及既有 Tailwind 生命周期覆盖共 8 文件、52 测试通过，PostCSS 标记回归 7 测试通过，完整公开类型测试通过。这些记录仍是提交前的局部验证，不替代最终提交的全量验收。
+
+人工示例 `vite-native` 的旧配置仍包含无源码的 `pages/features/build/index`，本轮首页构建样式验证不将该历史页面计为已验收。所有新入口、相邻作者样式及真实首页文件均已按实际产物检查。
+
+相关下游回归 `skyline-hmr-fallback`、`template-tailwind-v4-source.build`、`template-tailwind-hmr`、`issue-814-tailwind-dynamic-class.e2e` 串行运行共 4 文件、9 测试通过，包含五套 Tailwind 模板的 HMR 与现有内存预算检查。

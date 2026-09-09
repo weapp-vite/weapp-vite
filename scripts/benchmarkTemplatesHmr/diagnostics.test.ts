@@ -30,3 +30,18 @@ it('redacts encoded graph protocol owners on Windows and POSIX', () => {
     expect(result).not.toMatch(/tester|%2f|%3a/i)
   }
 })
+
+it('redacts absolute paths embedded in bundler identifiers without losing their correlation', () => {
+  const roots = ['/home/example-user/project-name', 'C:/Users/example-user/project-name']
+  for (const root of roots) {
+    const encoded = encodeURIComponent(`${root}/src/entry.ts`).replaceAll('%', '_').replaceAll(/[^\w$]/g, '_')
+    const identifier = `owner_${encoded}_module`
+    const source = `const ${identifier} = 'marker'; export { ${identifier} };`
+    const result = sanitizeBenchmarkDevLog(source, root, '/unrelated-home')
+    expect(result).not.toMatch(/example_user|project_name|_2f|_3a/i)
+    expect(result).toContain('\'marker\'')
+    const labels = result.match(/<path-derived-id:[a-f0-9]+>/g)
+    expect(labels).toHaveLength(2)
+    expect(labels![0]).toBe(labels![1])
+  }
+})

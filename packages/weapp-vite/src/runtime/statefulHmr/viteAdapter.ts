@@ -2,6 +2,7 @@
 
 import type { dev, DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
+import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
@@ -11,6 +12,7 @@ import {
 } from '@weapp-core/constants'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { resolveStatefulHmrModuleRoot, toStableModuleId } from './initialModuleGraph'
+import { StatefulHmrOutputPublication } from './outputPublication'
 import { createViteDevEngine } from './viteDevEngine'
 
 export { toStableModuleId } from './initialModuleGraph'
@@ -75,20 +77,21 @@ interface BundledDevInternal {
   _devEngine?: StatefulHmrDevEngine
   getRolldownOptions: () => Promise<Record<string, any>>
   listen: () => Promise<void>
-  storeOutputFiles: (output: StatefulHmrOutputFile[]) => void
+  storeOutputFiles: (output: StatefulHmrOutputFile[], source?: StatefulHmrOutputSource) => void
 }
 
 export class StatefulHmrViteAdapter {
   private bundledDev?: BundledDevInternal
   private initialOutputError?: Error
   private initialRuntimeValidated = false
+  private readonly publication = new StatefulHmrOutputPublication()
 
   constructor(
     private readonly config: ResolvedConfig,
     private readonly server: ViteDevServer,
     private readonly callbacks: {
       onError: (message: string) => void
-      onOutput: (output: StatefulHmrOutputFile[]) => void
+      onOutput: (output: StatefulHmrOutputFile[], source: StatefulHmrOutputSource) => void | Promise<void>
       onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
       waitForInitialBundle: () => Promise<void>
     },
@@ -111,14 +114,12 @@ export class StatefulHmrViteAdapter {
     this.installListener(bundledDev)
   }
 
-  async rebuild(prepare?: () => Promise<void>): Promise<void> {
+  async rebuild(prepare?: () => void | Promise<void>): Promise<void> {
     const engine = this.bundledDev?._devEngine
     if (!engine) {
       throw new Error('Vite DevEngine 未初始化，无法执行 stateful HMR 完整刷新。')
     }
-    await prepare?.()
-    engine.triggerFullBuild()
-    await engine.ensureLatestBuildOutput()
+    await this.publication.rebuild(engine, this.initialBuildTimeout, prepare)
   }
 
   async registerBundleModules(output: StatefulHmrOutputFile[]): Promise<number> {
@@ -221,14 +222,17 @@ export class StatefulHmrViteAdapter {
 
   private installOutput(bundledDev: BundledDevInternal): void {
     const original = bundledDev.storeOutputFiles.bind(bundledDev)
-    bundledDev.storeOutputFiles = (output) => {
+    bundledDev.storeOutputFiles = (output, source = 'full') => {
       try {
         if (!this.initialRuntimeValidated && output.some(item => item.fileName === 'app.js')) {
           assertStatefulHmrRuntimeOutput(output)
           this.initialRuntimeValidated = true
         }
         original(output)
-        this.callbacks.onOutput(output)
+        void this.publication.publish(source, () => this.callbacks.onOutput(output, source)).catch((error) => {
+          this.initialOutputError = error instanceof Error ? error : new Error(String(error))
+          this.callbacks.onError(this.initialOutputError.message)
+        })
       }
       catch (error) {
         this.initialOutputError = error instanceof Error ? error : new Error(String(error))
@@ -247,7 +251,7 @@ export class StatefulHmrViteAdapter {
         ? rolldownOptions.output[0]
         : rolldownOptions.output
       const engine = await this.createDevEngine(rolldownOptions, outputOptions, {
-        onAdditionalAssets: result => bundledDev.storeOutputFiles(result.output as StatefulHmrOutputFile[]),
+        onAdditionalAssets: result => bundledDev.storeOutputFiles(result.output as StatefulHmrOutputFile[], 'additional'),
         onHmrUpdates: result => this.handleHmrUpdates(result),
         onOutput: (result) => {
           if (result instanceof Error) {
@@ -255,7 +259,8 @@ export class StatefulHmrViteAdapter {
             this.callbacks.onError(result.message)
             return
           }
-          bundledDev.storeOutputFiles(result.output as StatefulHmrOutputFile[])
+          const output = result.output as StatefulHmrOutputFile[]
+          bundledDev.storeOutputFiles(output, output.some(item => item.fileName === 'app.js') ? 'full' : 'partial')
         },
         watch: {
           skipWrite: true,

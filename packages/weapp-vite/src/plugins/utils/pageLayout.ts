@@ -32,9 +32,6 @@ export async function registerResolvedPageLayoutDependencies(
   ownerId: string,
   layouts: ResolvedPageLayout[],
 ) {
-  for (const layout of layouts) {
-    ctx.runtimeState?.build?.hmr?.externalComponentEntryMap?.set(layout.importPath.replace(/^\/+/, ''), layout.file)
-  }
   const dependencies = await expandResolvedPageLayoutFiles(layouts, ctx.configService.platform)
   const transitiveDependencies = new Set(dependencies)
   for (const file of dependencies) {
@@ -45,6 +42,10 @@ export async function registerResolvedPageLayoutDependencies(
     for (const dependency of ctx.wxmlService?.depsMap.get(file) ?? []) {
       transitiveDependencies.add(dependency)
     }
+  }
+  // 异步解析全部成功后同步发布输出映射与完整依赖，失败时保留上一版入口身份。
+  for (const layout of layouts) {
+    ctx.runtimeState?.build?.hmr?.externalComponentEntryMap?.set(layout.importPath.replace(/^\/+/, ''), layout.file)
   }
   ctx.moduleGraphService.replaceEntryDependencies(
     ownerId,

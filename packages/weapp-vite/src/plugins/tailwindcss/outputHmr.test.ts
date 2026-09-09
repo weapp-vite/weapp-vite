@@ -26,7 +26,7 @@ function fixture(entry: string) {
   const cwd = path.resolve('tailwind-output-hmr-fixture')
   const snapshot = { classSet: new Set(), roots: [], sources: [], target: 'weapp' }
   const compiler = {
-    generate: vi.fn(async () => ({ css: '.updated { color: red; }', snapshot, dependencies: [] })),
+    generate: vi.fn(async () => ({ css: '.updated { color: red; }', rawCss: '.updated { color: red; }', snapshot, dependencies: [] })),
     mergeSnapshots: vi.fn(() => snapshot),
     transformCss: vi.fn(async (source: string) => ({ css: source })),
     invalidate: vi.fn(),
@@ -97,7 +97,7 @@ describe('Tailwind content HMR through the CSS owner', () => {
       event: 'update',
       dirtyReasonSummary: dirty ? ['tailwind-content:1'] : ['entry-direct:1'],
     }
-    compiler.generate.mockResolvedValueOnce({ css: '.updated { color: blue; }', snapshot, dependencies: [] })
+    compiler.generate.mockResolvedValueOnce({ css: '.updated { color: blue; }', rawCss: '.updated { color: blue; }', snapshot, dependencies: [] })
     const updated = pendingBundle()
     await generate(manager, updated)
     await generate(owner, updated)

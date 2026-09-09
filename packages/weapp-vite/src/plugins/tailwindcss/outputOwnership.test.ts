@@ -17,25 +17,27 @@ async function generate(plugin: Plugin, bundle: OutputBundle) {
   await handler.call({ addWatchFile: vi.fn() } as any, {} as any, bundle as any, false)
 }
 
-function createFixture(cssEntries = ['src/app.css']) {
+function createFixture(cssEntries = ['src/app.css'], config: Record<string, unknown> = {}, independentRoots: string[] = []) {
   const cwd = path.resolve('tailwind-output-fixture')
   const snapshot = { classSet: new Set(['text-xl']), roots: [], sources: [], target: 'weapp' }
   const generatedCss = ':root { --text-xl--line-height: 1.4; } .text-xl { font-size: 40rpx; line-height: var(--tw-leading, var(--text-xl--line-height)); }'
   const compiler = {
-    generate: vi.fn(async () => ({ css: generatedCss, snapshot, dependencies: [] })),
+    generate: vi.fn(async () => ({ css: generatedCss, rawCss: generatedCss, snapshot, dependencies: [] })),
     mergeSnapshots: vi.fn(() => snapshot),
     transformCss: vi.fn(async (css: string) => ({ css })),
     invalidate: vi.fn(),
   }
   mocks.createCompiler.mockReturnValue(compiler)
   const plugins = createTailwindcssPlugin({
+    scanService: { independentSubPackageMap: new Map(independentRoots.map(root => [root, {}])) },
     configService: {
       absoluteSrcRoot: path.join(cwd, 'src'),
       cwd,
       outputExtensions: { wxml: 'wxml', wxss: 'wxss' },
       platform: 'weapp',
       relativeOutputPath: (file: string) => path.relative(path.join(cwd, 'src'), file),
-      weappViteConfig: { tailwindcss: { cssEntries } },
+      ...config,
+      weappViteConfig: { tailwindcss: { cssEntries }, ...config.weappViteConfig as object },
     },
   } as any)
   return { compiler, plugins, snapshot }
@@ -57,6 +59,47 @@ function readDeclarations(bundle: OutputBundle, selector: string, property: stri
 }
 
 describe('managed Tailwind output ownership', () => {
+  it('rejects an explicit CSS entry that never reached the build graph', async () => {
+    const { plugins } = createFixture(['src/tailwind.css'])
+    const bundle = { 'app.wxss': stylesheet('.author { color: red; }') } as OutputBundle
+
+    await expect(generate(plugins[1]!, bundle)).rejects.toThrow('CSS entries must be imported by the build graph')
+  })
+
+  it('rejects an omitted entry when another configured entry has a valid owner', async () => {
+    const { plugins } = createFixture(['src/app.css', 'src/unused.css'])
+    const bundle = { 'app.wxss': stylesheet(createManagedTailwindcssEntryMarker(0)) } as OutputBundle
+
+    await expect(generate(plugins[1]!, bundle)).rejects.toThrow('unused.css')
+  })
+
+  it('does not require separately owned independent styles in the main output', async () => {
+    const { plugins } = createFixture(['src/app.css', 'src/independent/app.css'], {}, ['independent'])
+    const bundle = { 'app.wxss': stylesheet(createManagedTailwindcssEntryMarker(0)) } as OutputBundle
+
+    await expect(generate(plugins[1]!, bundle)).resolves.toBeUndefined()
+    expect(readDeclarations(bundle, '.text-xl', 'font-size')).toEqual(['40rpx'])
+  })
+
+  it('does not exclude a similarly named main-package directory', async () => {
+    const { plugins } = createFixture(['src/independent-main/app.css'], {}, ['independent'])
+    const bundle = { 'app.wxss': stylesheet('.author { color: red; }') } as OutputBundle
+
+    await expect(generate(plugins[1]!, bundle)).rejects.toThrow('independent-main')
+  })
+
+  it.each([
+    ['development', { isDev: true }],
+    ['scoped production', { weappViteConfig: { buildScope: 'main' } }],
+    ['isolated subpackage', { currentSubPackageRoot: 'independent' }],
+  ] as const)('does not require unvisited inherited entries during %s', async (_name, config) => {
+    const { plugins } = createFixture(['src/tailwind.css'], config)
+    const bundle = { 'app.wxss': stylesheet('.author { color: red; }') } as OutputBundle
+
+    await expect(generate(plugins[1]!, bundle)).resolves.toBeUndefined()
+    expect(readDeclarations(bundle, '.author', 'color')).toEqual(['red'])
+  })
+
   it.each(['same asset', 'reemitted asset', 'renamed asset'] as const)('injects each utility once after %s', async (mode) => {
     const { compiler, plugins } = createFixture()
     const bundle = {
@@ -90,8 +133,8 @@ describe('managed Tailwind output ownership', () => {
   it('merges repeated entry references without duplicating utility rules or modifying binary assets', async () => {
     const { compiler, plugins, snapshot } = createFixture(['src/app.css', 'src/theme.css'])
     compiler.generate
-      .mockResolvedValueOnce({ css: '.gap-4 { gap: 32rpx; }', snapshot, dependencies: [] })
-      .mockResolvedValueOnce({ css: '.text-lg { font-size: 36rpx; }', snapshot, dependencies: [] })
+      .mockResolvedValueOnce({ css: '.gap-4 { gap: 32rpx; }', rawCss: '.gap-4 { gap: 32rpx; }', snapshot, dependencies: [] })
+      .mockResolvedValueOnce({ css: '.text-lg { font-size: 36rpx; }', rawCss: '.text-lg { font-size: 36rpx; }', snapshot, dependencies: [] })
     const logo = Buffer.from([0x89, 0x50, 0x00, 0xFF])
     const bundle = {
       'app.wxss': stylesheet([0, 1, 0].map(createManagedTailwindcssEntryMarker).join('\n')),
@@ -110,7 +153,7 @@ describe('managed Tailwind output ownership', () => {
 
   it('generates fresh utilities from a cached pending owner after a content update', async () => {
     const { compiler, plugins, snapshot } = createFixture()
-    compiler.generate.mockResolvedValueOnce({ css: '.gap-4 { gap: 32rpx; }', snapshot, dependencies: [] })
+    compiler.generate.mockResolvedValueOnce({ css: '.gap-4 { gap: 32rpx; }', rawCss: '.gap-4 { gap: 32rpx; }', snapshot, dependencies: [] })
     const bundle = { 'app.wxss': stylesheet(createManagedTailwindcssEntryMarker(0)) } as OutputBundle
     await generate(plugins[0]!, bundle)
     const pendingOwner = String((bundle['app.wxss'] as OutputAsset).source)
@@ -118,7 +161,7 @@ describe('managed Tailwind output ownership', () => {
     expect(readDeclarations(bundle, '.gap-4', 'gap')).toEqual(['32rpx'])
 
     await plugins[0]!.watchChange?.call({} as any, path.resolve('tailwind-output-fixture/src/page.wxml'), { event: 'update' } as any)
-    compiler.generate.mockResolvedValueOnce({ css: '.gap-8 { gap: 64rpx; }', snapshot, dependencies: [] })
+    compiler.generate.mockResolvedValueOnce({ css: '.gap-8 { gap: 64rpx; }', rawCss: '.gap-8 { gap: 64rpx; }', snapshot, dependencies: [] })
     const updated = { 'app.wxss': stylesheet(pendingOwner) } as OutputBundle
     await generate(plugins[0]!, updated)
     await generate(plugins[1]!, updated)

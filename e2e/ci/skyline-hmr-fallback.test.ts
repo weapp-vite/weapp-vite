@@ -48,6 +48,8 @@ beforeEach(async () => {
       'export default defineConfig({})',
       '',
     ].join('\n'), 'utf8'),
+    fs.writeFile(path.join(APP_ROOT, 'app.js'), 'App({})\n', 'utf8'),
+    fs.remove(path.join(APP_ROOT, 'tailwind.css')),
     fs.writeFile(path.join(APP_ROOT, 'app.wxss'), '@import "./common.wxss";\n', 'utf8'),
     fs.remove(path.join(APP_ROOT, 'postcss.config.js')),
     fs.remove(path.join(APP_ROOT, 'tailwind.config.js')),

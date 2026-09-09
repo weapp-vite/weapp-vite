@@ -16,12 +16,12 @@ afterEach(async () => {
   }
 })
 
-async function fixture() {
+async function fixture(options: NonNullable<Parameters<typeof createCompiler>[0]> = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-tailwind-core-'))
   cleanup.push(() => rm(root, { recursive: true, force: true }))
   await mkdir(path.join(root, 'node_modules'), { recursive: true })
   await symlink(tailwindDirectory, path.join(root, 'node_modules/tailwindcss'), 'junction')
-  const compiler = createCompiler({ appType: 'weapp-vite', tailwindcssBasedir: root })
+  const compiler = createCompiler({ appType: 'weapp-vite', tailwindcssBasedir: root, ...options })
   cleanup.push(() => compiler.dispose())
   const entry = path.join(root, 'app.css')
   const request: CompilerGenerateRequest = {
@@ -65,6 +65,41 @@ async function assertTransforms(compiler: Compiler, request: CompilerGenerateReq
 }
 
 describe('published Tailwind Core compatibility', () => {
+  it('finalizes complete raw CSS without the generator-only pruning of author selectors', async () => {
+    const { compiler, entry, request } = await fixture({ rem2rpx: true, cssSelectorReplacement: { root: ['page', '.tw-page'] } })
+    await writeFile(entry, '@import "tailwindcss" source(none); @source inline("p-[24rpx] p-5 bg-red-500"); page { color: #102340; background: #f4f8ff; } view { font-size: 31rpx; } .author { margin-top: 17rpx; } .alpha { background-color: color-mix(in srgb, #123456 var(--opacity), transparent); }')
+    const generated = await compiler.generate(request)
+    const declarations = (css: string, selector: string, property: string) => {
+      const values: string[] = []
+      postcss.parse(css).walkRules(selector, (rule) => {
+        rule.walkDecls(property, (declaration) => {
+          values.push(declaration.value)
+        })
+      })
+      return values
+    }
+    expect(declarations(generated.rawCss, 'page', 'color'), 'raw author color').toEqual(['#102340'])
+    expect(declarations(generated.css, '.author', 'margin-top'), 'generated class author margin').toEqual(['17rpx'])
+    const finalized = await compiler.transformCss(generated.rawCss, generated.snapshot)
+    expect(declarations(finalized.css, 'page', 'color')).toEqual(['#102340'])
+    expect(declarations(finalized.css, 'page', 'background')).toEqual(['#f4f8ff'])
+    expect(declarations(finalized.css, 'view', 'font-size')).toEqual(['31rpx'])
+    expect(declarations(finalized.css, '.author', 'margin-top')).toEqual(['17rpx'])
+    expect(cssDeclarations(finalized.css, 'padding')).toContain('24rpx')
+    expect(declarations(finalized.css, '.p-5', 'padding')).toEqual(['calc(var(--spacing) * 5)'])
+    expect(cssDeclarations(finalized.css, '--spacing')).toEqual(['8rpx'])
+    const themeSelectors: string[] = []
+    postcss.parse(finalized.css).walkRules((rule) => {
+      rule.walkDecls('--spacing', () => {
+        themeSelectors.push(rule.selector)
+      })
+    })
+    expect(themeSelectors.some(selector => selector.includes('page') && selector.includes('.tw-page'))).toBe(true)
+    expect(declarations(finalized.css, '.bg-red-500', 'background-color')).not.toEqual([])
+    expect(declarations(finalized.css, '.alpha', 'background-color')).toContain('rgba(18, 52, 86, var(--opacity))')
+    expect(finalized.css).not.toMatch(/@(?:layer|property|supports|source|theme|tailwind)\b|oklch\(|color\(display-p3/)
+  })
+
   it('compiles in-memory preprocessed CSS with its file identity instead of rereading disk', async () => {
     const { root, compiler, entry, request } = await fixture()
     await writeFile(entry, '.disk-marker { color: red; }')

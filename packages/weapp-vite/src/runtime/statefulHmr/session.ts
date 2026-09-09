@@ -4,6 +4,7 @@ import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
+import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
@@ -53,6 +54,7 @@ interface StatefulHmrSnapshots {
 }
 
 interface ActiveSnapshotBatch {
+  fullOutputCommitted?: boolean
   traceBatchId?: number
   isSuperseded: () => boolean
   outputTasks: Promise<void>[]
@@ -214,7 +216,7 @@ class StatefulHmrSession {
     )
     this.adapter = new StatefulHmrViteAdapter(server.config, server, {
       onError: message => server.config.logger.error(`[weapp-vite] stateful HMR: ${message}`),
-      onOutput: output => this.handleOutput(output),
+      onOutput: (output, source) => this.handleOutput(output, source),
       onPatch: (files, output) => this.handlePatch(files, output),
       waitForInitialBundle: () => this.waitForInitialBundle(),
     }, devWatchOptions)
@@ -300,7 +302,7 @@ class StatefulHmrSession {
     }
   }
 
-  private handleOutput(output: StatefulHmrOutputFile[]): void {
+  private handleOutput(output: StatefulHmrOutputFile[], source: StatefulHmrOutputSource): Promise<void> {
     const snapshotBatch = this.activeSnapshotBatch
     const outputTask = this.enqueueOutput(async () => {
       if (snapshotBatch?.isSuperseded()) {
@@ -318,7 +320,7 @@ class StatefulHmrSession {
         this.diagnostics?.discarded(snapshotBatch.traceBatchId, 'after-transform')
         return
       }
-      const fullBuild = compatibleOutput.some(item => item.fileName === 'app.js')
+      const fullBuild = source === 'full'
       let buildId: string | undefined
       if (fullBuild) {
         registerStatefulHmrInitialChunkLoaders(compatibleOutput, [...this.ctx.scanService!.subPackageMap.keys()])
@@ -352,6 +354,9 @@ class StatefulHmrSession {
           this.emittedSourceIds.add(sourceId)
         }
         const moduleCount = await this.adapter.registerBundleModules(compatibleOutput)
+        if (snapshotBatch) {
+          snapshotBatch.fullOutputCommitted = true
+        }
         this.server.config.logger.info(`[weapp-vite] 微信状态保持 HMR 已就绪（${moduleCount} modules）`)
         this.initialBundle.resolve()
       }
@@ -362,6 +367,7 @@ class StatefulHmrSession {
         this.initialBundle.reject(error)
       }
     })
+    return outputTask
   }
 
   private handlePatch(files: string[], output: StatefulHmrDevEngineUpdate): boolean {
@@ -524,14 +530,18 @@ class StatefulHmrSession {
         }
       }
       const activeBatch: ActiveSnapshotBatch = { ...batch, traceBatchId, snapshot, outputTasks: [] }
-      this.activeSnapshotBatch = activeBatch
       try {
-        await this.adapter.rebuild()
+        await this.adapter.rebuild(() => {
+          this.activeSnapshotBatch = activeBatch
+        })
         if (!activeBatch.outputTasks.length && !batch.isSuperseded()) {
           throw new Error('微信状态保持 HMR 完整构建未交付可持久化的输出。')
         }
         await Promise.all(activeBatch.outputTasks)
         if (!batch.isSuperseded()) {
+          if (!activeBatch.fullOutputCommitted) {
+            throw new Error('微信状态保持 HMR 完整构建未交付可持久化的原生完整输出。')
+          }
           this.rebuiltEntryGraphRevision = entryGraphRevision
           releaseSourceChanges()
         }

@@ -23,7 +23,7 @@ import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
-import { expandResolvedPageLayoutFiles, registerResolvedPageLayoutDependencies } from '../../../utils/pageLayout'
+import { registerResolvedPageLayoutDependencies } from '../../../utils/pageLayout'
 import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
@@ -441,21 +441,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         }
       }
     }
-    const registerPageLayoutComponentEntries = async (
-      layoutPlan: ResolvedPageLayoutPlan,
-      options?: {
-        trackLayoutDependencies?: boolean
-      },
-    ) => {
-      if (options?.trackLayoutDependencies) {
-        const layoutDependencies = new Set<string>()
-        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)) {
-          layoutDependencies.add(normalizeFsResolvedId(file))
-        }
-        replaceLayoutDependencies(normalizedId, layoutDependencies)
-      }
-
-      await registerResolvedPageLayoutDependencies(ctx, normalizedId, layoutPlan.layouts)
+    const registerPageLayoutComponentEntries = async (layoutPlan: ResolvedPageLayoutPlan) => {
       await registerResolvedPageLayoutEntries({
         layouts: layoutPlan.layouts,
         entries,
@@ -465,6 +451,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         jsonPath,
         platform: configService.platform,
       })
+      await registerResolvedPageLayoutDependencies(ctx, normalizedId, layoutPlan.layouts)
       for (const layout of layoutPlan.layouts) {
         if (layout.kind === 'native') {
           continue
@@ -644,7 +631,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 ? await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
                 : cachedLayoutPlan ?? undefined
               resolvedPageLayoutPlan = layoutPlan ?? null
-              replaceLayoutDependencies(normalizedId, [])
               if (hasLayoutHint) {
                 staticPageLayoutPlanCache.delete(normalizedId)
               }
@@ -652,9 +638,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 staticPageLayoutPlanCache.set(normalizedId, layoutPlan ?? null)
               }
               if (layoutPlan) {
-                await registerPageLayoutComponentEntries(layoutPlan, {
-                  trackLayoutDependencies: hasLayoutHint,
-                })
+                await registerPageLayoutComponentEntries(layoutPlan)
+              }
+              else {
+                replaceLayoutDependencies(normalizedId, [])
               }
             }
             finally {
@@ -666,7 +653,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       else if (type === 'page' && templatePath && !VUE_LIKE_PAGE_ENTRY_RE.test(id)) {
         const layoutStartedAt = performance.now()
         try {
-          replaceLayoutDependencies(normalizedId, [])
           const source = await fs.readFile(id, 'utf-8')
           entryCodeSource = source
           const hasLayoutHint = hasPageLayoutSourceHint(source)
@@ -684,9 +670,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           }
           resolvedPageLayoutPlan = layoutPlan ?? null
           if (layoutPlan) {
-            await registerPageLayoutComponentEntries(layoutPlan, {
-              trackLayoutDependencies: true,
-            })
+            await registerPageLayoutComponentEntries(layoutPlan)
+          }
+          else {
+            replaceLayoutDependencies(normalizedId, [])
           }
         }
         finally {

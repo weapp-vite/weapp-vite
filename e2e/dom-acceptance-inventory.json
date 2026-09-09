@@ -122,14 +122,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:428",
+          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:441",
           "name": "app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/app-vue-hmr-alias",
               "checkpoints": "[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa",
-              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:433"
+              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:446"
             }
           ],
           "routes": [
@@ -5832,7 +5832,7 @@
     },
     {
       "file": "e2e/ide/app-vue-hmr-alias.runtime.test.ts",
-      "sha256": "21993f150500098d97c415386ffb869fe9e48bbf8c001dada3dcd7f515cb2ad8"
+      "sha256": "1ed8fb3b2f3ab9fe5e1324f0a38e2a3841db9505037e8a5080d9ff07b755181f"
     },
     {
       "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
@@ -6593,6 +6593,10 @@
     {
       "file": "e2e/utils/buildLog.ts",
       "sha256": "1c992ab9649f2a56fa6c37e3d7f9f4f02c254f3427999a51b26146e941419868"
+    },
+    {
+      "file": "e2e/utils/cleanupSteps.ts",
+      "sha256": "1c3beb2954939b360cd38e01581287ebaa553aef1bccff3d0edfabe7581b47fc"
     },
     {
       "file": "e2e/utils/componentInstanceApiContract.ts",

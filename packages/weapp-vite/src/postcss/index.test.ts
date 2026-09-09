@@ -1,7 +1,36 @@
 import { describe, expect, it } from 'vitest'
+import { createManagedTailwindcssOutputMarker } from '../plugins/tailwindcssMarker'
 import { cssPostProcess } from './index'
 
 describe('cssPostProcess', () => {
+  it('preserves pending Tailwind output ownership when lowering kept imports', async () => {
+    const marker = createManagedTailwindcssOutputMarker(0)
+    const result = await cssPostProcess([
+      '/* ordinary author comment */',
+      '@wv-keep-import "miniprogram_npm/example/theme.wxss";',
+      marker,
+      '.author { color: red; }',
+    ].join('\n'), { platform: 'weapp' })
+
+    expect(result).toContain('@import "miniprogram_npm/example/theme.wxss";')
+    expect(result).toContain(marker)
+    expect(result).toContain('.author { color: red; }')
+    expect(result).not.toContain('ordinary author comment')
+  })
+
+  it('removes managed output markers in excluded platform branches', async () => {
+    const marker = createManagedTailwindcssOutputMarker(0)
+    const result = await cssPostProcess([
+      '/* #ifdef MP-ALIPAY */',
+      marker,
+      '/* #endif */',
+      '.author { color: red; }',
+    ].join('\n'), { platform: 'weapp' })
+
+    expect(result).not.toContain(marker)
+    expect(result).toContain('.author { color: red; }')
+  })
+
   it('lowers Vue deep selectors in final WeChat CSS', async () => {
     const result = await cssPostProcess(`
 .host :deep() .child,

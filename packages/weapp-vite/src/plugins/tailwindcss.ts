@@ -15,10 +15,12 @@ import fs from 'node:fs'
 import process from 'node:process'
 import path from 'pathe'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { resolveBuildScope } from '../runtime/buildScope'
 import { safeGetPackageInfoSync } from '../runtime/localPkg'
 import { deferWatcherResourceCleanup } from '../runtime/watcherPlugin'
 import { changeFileExtension } from '../utils'
 import { applyOutputChunkTransform } from '../utils/outputChunk'
+import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
@@ -413,7 +415,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
           continue
         }
         const generated = generatedEntries[index]!
-        const generatedCss = await processCssWithCache(generated.css, ctx.configService)
+        // rawCss 保留作者选择器；完整 owner CSS 统一经下方 transformCss 完成小程序降级。
+        const generatedCss = await processCssWithCache(generated.rawCss, ctx.configService)
         hasManagedEntry = true
         isMainChunk ||= normalizeManagedTailwindcssEntryPath(resolved.cssEntries[index]!)
           === normalizeManagedTailwindcssEntryPath(path.resolve(ctx.configService.absoluteSrcRoot, 'app.css'))
@@ -439,6 +442,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
       const transformed = await compiler.transformCss(source, snapshot, {
         isMainChunk,
+        ...(hasManagedEntry && typeof resolved.options.generator === 'object'
+          ? resolved.options.generator.styleOptions
+          : undefined),
       })
       output.source = stripManagedTailwindcssOutputMarkers(
         await stripResidualTailwindSourceDirectives(transformed.css),
@@ -446,11 +452,19 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
 
     if (!ctx.configService.isDev && resolved.options.generator !== false) {
-      const stages = resolved.cssEntries.flatMap((entry, index) =>
-        (resolvedEntryIndexes.has(index) || loadedEntryIndexes.has(index)) && !seenEntries.has(index)
+      const fullProductionGraph = !resolved.autoDetected
+        && !ctx.configService.currentSubPackageRoot
+        && !resolveBuildScope(ctx.configService.weappViteConfig?.buildScope)?.enabled
+      const independentRoots = Array.from(ctx.scanService?.independentSubPackageMap?.keys() ?? [], root =>
+        path.resolve(ctx.configService.absoluteSrcRoot, root))
+      const stages = resolved.cssEntries.flatMap((entry, index) => {
+        // 完整主图必须消费显式入口；独立分包和筛选子图只检查本轮实际访问的入口。
+        const requiredByFullGraph = fullProductionGraph && !independentRoots.some(root => isPathInside(root, entry))
+        const required = requiredByFullGraph || resolvedEntryIndexes.has(index) || loadedEntryIndexes.has(index)
+        return required && !seenEntries.has(index)
           ? [`${entry} (resolved: ${resolvedEntryIndexes.has(index)}, loaded: ${loadedEntryIndexes.has(index)})`]
-          : [],
-      )
+          : []
+      })
       if (stages.length > 0) {
         throw new Error(`weapp.tailwindcss CSS entries must be imported by the build graph: ${stages.join(', ')}`)
       }

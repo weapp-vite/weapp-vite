@@ -715,6 +715,42 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(true)
   })
 
+  it.each([
+    { bundledDev: false, metadataOnly: false },
+    { bundledDev: false, metadataOnly: true },
+    { bundledDev: true, metadataOnly: false },
+    { bundledDev: true, metadataOnly: true },
+  ])('uses native bundle ownership instead of classic event pruning ($bundledDev/$metadataOnly)', async ({ bundledDev, metadataOnly }) => {
+    const state = createState({
+      subPackageMeta: undefined,
+      resolvedConfig: { experimental: { bundledDev } },
+      ctx: {
+        configService: { isDev: true },
+        runtimeState: { build: { hmr: {
+          profile: { event: 'update' },
+          lastEmittedChunkFileNames: new Set(['components/example.js']),
+        } } },
+      },
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set(['components/example.ts']),
+        skipSharedChunkRefresh: metadataOnly,
+      },
+    })
+    const bundle = Object.fromEntries(['app.js', 'components/example.js', 'common.js'].map(fileName => [fileName, {
+      type: 'chunk',
+      fileName,
+      code: 'exports.value = 1',
+      imports: [],
+      dynamicImports: [],
+    }])) as any
+    await createGenerateBundleHook(state, false).call({}, {}, bundle)
+    expect(Boolean(bundle['app.js'])).toBe(bundledDev)
+    expect(Boolean(bundle['common.js'])).toBe(bundledDev)
+    expect(Boolean(bundle['components/example.js'])).toBe(bundledDev || !metadataOnly)
+  })
+
   it('keeps shared chunks during full-entry dev hmr refreshes', async () => {
     const emittedChunkFileNames = new Set<string>(['app.js'])
     const state = createState({

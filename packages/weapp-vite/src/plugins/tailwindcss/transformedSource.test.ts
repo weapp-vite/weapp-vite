@@ -6,6 +6,7 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
+import { postcss } from 'weapp-tailwindcss/core'
 import { compileVueStyleToWxss, readAndParseSfc } from 'wevu/compiler'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
 import { createRuntimeState } from '../../runtime/runtimeState'
@@ -110,7 +111,14 @@ describe('Tailwind transformed source ownership', () => {
         platform: 'weapp',
         outputExtensions: { wxml: 'wxml', wxss: 'wxss' },
         relativeOutputPath: (file: string) => path.relative(path.join(root, 'src'), file).replaceAll('\\', '/'),
-        weappViteConfig: { tailwindcss: kind === 'physical' ? { cssEntries: [entry] } : undefined },
+        weappViteConfig: {
+          tailwindcss: kind === 'physical'
+            ? {
+                cssEntries: [entry],
+                generator: { styleOptions: { rem2rpx: true, cssSelectorReplacement: { root: ['page', '.generator-root'] } } },
+              }
+            : undefined,
+        },
       },
       runtimeState: createRuntimeState(),
     } as unknown as CompilerContext
@@ -131,7 +139,7 @@ describe('Tailwind transformed source ownership', () => {
       expect(await handler(manager.transform)?.call(pluginContext as any, 'export default "digest";', dependency, {} as any)).toBeNull()
       const transform = async (padding: number) => await handler(manager.transform)?.call(
         pluginContext as any,
-        `@import "tailwindcss" source(none); .pre-marker { @apply p-[${padding}px]; color: rgb(1, 2, 3); }`,
+        `@import "tailwindcss" source(none); @source inline("p-5"); page { color: #102340; background: #f4f8ff; } .pre-marker { @apply p-[${padding}px]; color: rgb(1, 2, 3); } .alpha { background-color: color-mix(in srgb, #123456 var(--opacity), transparent); }`,
         requestId,
         {} as any,
       )
@@ -143,6 +151,32 @@ describe('Tailwind transformed source ownership', () => {
       const css = await generate(plugins, typeof initial === 'string' ? initial : initial!.code)
       expect(css).toMatch(/padding:\s*13px/)
       expect(css).toContain('.pre-marker')
+      const pageColors: string[] = []
+      postcss.parse(css).walkRules('page', (rule) => {
+        rule.walkDecls('color', (declaration) => {
+          pageColors.push(declaration.value)
+        })
+      })
+      expect(pageColors).toEqual(['#102340'])
+      const alphaColors: string[] = []
+      postcss.parse(css).walkRules('.alpha', (rule) => {
+        rule.walkDecls('background-color', (declaration) => {
+          alphaColors.push(declaration.value)
+        })
+      })
+      expect(alphaColors).toContain('rgba(18, 52, 86, var(--opacity))')
+      if (kind === 'physical') {
+        const spacing: { selector: string, value: string }[] = []
+        postcss.parse(css).walkRules((rule) => {
+          rule.walkDecls('--spacing', (declaration) => {
+            spacing.push({ selector: rule.selector, value: declaration.value })
+          })
+        })
+        expect(spacing).toHaveLength(1)
+        expect(spacing[0]?.value).toBe('8rpx')
+        expect(spacing[0]?.selector.split(',')).toEqual(expect.arrayContaining(['page', '.generator-root']))
+        expect(spacing[0]?.selector).not.toContain('.tw-root')
+      }
       expect(css).not.toMatch(/disk-marker|@(?:apply|theme|tailwind|source|utility|layer)\b/)
 
       await manager.watchChange?.call(pluginContext as any, entry, { event: 'update' } as any)

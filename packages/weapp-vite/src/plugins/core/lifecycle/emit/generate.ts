@@ -462,9 +462,13 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       ctx.moduleGraphService?.bindPluginContext(this)
       const rolldownBundle = bundle as unknown as OutputBundle
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
-      const hasChunkOutput = pruneHmrMetadataOnlyChunks(rolldownBundle, state)
+      const nativeDevBundle = state.resolvedConfig?.experimental?.bundledDev === true
+      // 原生 DevEngine 自己管理 patch 与 bundle，不能套用 classic 的局部入口发射计划。
+      const hasChunkOutput = nativeDevBundle
+        ? Object.values(rolldownBundle).some(output => output.type === 'chunk')
+        : pruneHmrMetadataOnlyChunks(rolldownBundle, state)
       await emitCurrentStyleSidecarAssets.call(this, state, rolldownBundle)
-      const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(hasChunkOutput, state)
+      const assetOnlyDevHmrBundle = !nativeDevBundle && isAssetOnlyDevHmrBundle(hasChunkOutput, state)
 
       if (isPluginBuild) {
         filterPluginBundleOutputs(rolldownBundle, configService)
@@ -529,9 +533,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           }
           state.hmrState.hasBuiltOnce = true
         }
-        activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
-        retainFullEntryHmrChunks(rolldownBundle, state)
-        pruneUneventedDevHmrChunks(ctx, rolldownBundle)
+        if (!nativeDevBundle) {
+          activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
+          retainFullEntryHmrChunks(rolldownBundle, state)
+          pruneUneventedDevHmrChunks(ctx, rolldownBundle)
+        }
 
         if (assetOnlyDevHmrBundle) {
           state.hmrState.affectedSharedChunkIds?.clear()

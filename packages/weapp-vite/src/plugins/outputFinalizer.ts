@@ -325,6 +325,7 @@ export function pruneUnchangedDevHmrOutputs(
   rewriteOptions?: RewriteWevuInternalRuntimeImportsOptions,
   options?: {
     runtimeRewriteDone?: boolean
+    preserveCompleteBundle?: boolean
   },
 ) {
   const cache = ctx.runtimeState?.build?.output?.emittedSource
@@ -332,7 +333,7 @@ export function pruneUnchangedDevHmrOutputs(
     return
   }
 
-  const isHmrBuild = ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+  const isHmrBuild = !options?.preserveCompleteBundle && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
   const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   if (!options?.runtimeRewriteDone) {
     rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
@@ -364,6 +365,7 @@ export function pruneUnchangedDevHmrOutputs(
 }
 
 export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
+  let preserveCompleteBundle = false
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
@@ -392,6 +394,10 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
   return {
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
+    configResolved(config) {
+      // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。
+      preserveCompleteBundle = config.experimental?.bundledDev === true
+    },
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
@@ -415,6 +421,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
         pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
           runtimeRewriteDone: true,
+          preserveCompleteBundle,
         })
         syncOutputChunkSourceMapAssets(outputBundle)
         assets.publish(asset => this.emitFile(asset))

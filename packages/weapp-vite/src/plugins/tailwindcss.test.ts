@@ -206,6 +206,7 @@ describe('managed Tailwind integration', () => {
         return {
           classSet: new Set(['gap-4.25']),
           css: '.gap-4_d25{gap:17rpx}',
+          rawCss: '.gap-4_d25{gap:17rpx}',
           dependencies: [entry],
           snapshot,
           target: 'weapp',
@@ -379,6 +380,7 @@ describe('managed Tailwind integration', () => {
     const compiler = {
       generate: vi.fn(async () => ({
         css: '',
+        rawCss: '',
         dependencies: [entry],
         snapshot,
       })),

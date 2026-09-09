@@ -5,6 +5,7 @@ import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import logger from '../../../logger'
+import { createModuleGraphService } from '../../../moduleGraph/service'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { toPosixPath } from '../../../utils/path'
@@ -3024,7 +3025,7 @@ import { VueCard } from '../../components'
       return 'console.log("noop")'
     })
 
-    const { loader, jsonService, registerJsonAsset, replaceLayoutDependencies } = createLoader()
+    const { loader, jsonService, registerJsonAsset, replaceLayoutDependencies, replaceEntryDependencies } = createLoader()
     jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
     const pluginCtx = createPluginContext()
 
@@ -3049,10 +3050,10 @@ import { VueCard } from '../../components'
       },
       type: 'component',
     })
-    expect(replaceLayoutDependencies).toHaveBeenNthCalledWith(1, '/project/src/pages/index/index.ts', [])
-    expect(replaceLayoutDependencies).toHaveBeenNthCalledWith(
-      2,
+    expect(replaceLayoutDependencies).not.toHaveBeenCalled()
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(
       '/project/src/pages/index/index.ts',
+      'layout',
       new Set([
         '/project/src/layouts/default/index.json',
         '/project/src/layouts/default/index.wxml',
@@ -3076,6 +3077,62 @@ import { VueCard } from '../../components'
       type: 'asset',
       fileName: 'layouts/default/index.js',
     }))
+  })
+
+  it.each(['retain', 'replace', 'remove', 'resolve-error', 'assets-error'] as const)('publishes native layout dependencies atomically (%s)', async (outcome) => {
+    const page = '/project/src/pages/index/index.ts'
+    const layout = '/project/src/layouts/default/index.ts'
+    const nextLayout = '/project/src/layouts/admin/index.ts'
+    const graph = createModuleGraphService()
+    graph.replaceEntryDependencies(page, 'layout', [layout])
+    mockFindJsonEntry.mockResolvedValue({ path: '/project/src/pages/index/index.json', predictions: [] })
+    mockFindTemplateEntry.mockResolvedValue({ path: '/project/src/pages/index/index.wxml', predictions: [] })
+    readFileMock.mockResolvedValue('Page({})')
+    const { loader, jsonService, replaceLayoutDependencies, replaceEntryDependencies } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({})
+    replaceLayoutDependencies.mockImplementation((owner: string, dependencies: Iterable<string>) => {
+      graph.replaceEntryDependencies(owner, 'layout', dependencies)
+    })
+    replaceEntryDependencies.mockImplementation(graph.replaceEntryDependencies)
+    const failure = new Error('layout resolution failed')
+    mockResolvePageLayoutPlan.mockImplementation(async () => {
+      // 并发模块加载在异步解析期间仍须查询到已登记的布局类型，不能临时切换为 component ID。
+      expect(graph.isLogicalLayoutEntry(layout)).toBe(true)
+      if (outcome === 'resolve-error') {
+        throw failure
+      }
+      if (outcome === 'remove') {
+        return undefined
+      }
+      return {
+        layouts: [{
+          kind: 'native',
+          file: '/project/src/layouts/admin/index',
+          importPath: '/layouts/admin/index',
+        }],
+      }
+    })
+    mockCollectNativeLayoutAssets.mockImplementation(async () => {
+      const published = replaceEntryDependencies.mock.calls.some(([, kind]) => kind === 'layout')
+      expect(graph.isLogicalLayoutEntry(layout)).toBe(!published || outcome === 'retain')
+      if (outcome === 'assets-error') {
+        throw failure
+      }
+      return { script: outcome === 'retain' ? layout : nextLayout }
+    })
+
+    const loading = loader.call(createPluginContext(), page, 'page')
+    if (outcome === 'resolve-error' || outcome === 'assets-error') {
+      await expect(loading).rejects.toThrow(failure)
+      expect(graph.isLogicalLayoutEntry(layout)).toBe(true)
+      expect(replaceLayoutDependencies).not.toHaveBeenCalled()
+      expect(replaceEntryDependencies).not.toHaveBeenCalled()
+      return
+    }
+    await loading
+
+    expect(graph.isLogicalLayoutEntry(layout)).toBe(outcome === 'retain')
+    expect(graph.isLogicalLayoutEntry(nextLayout)).toBe(outcome === 'replace')
   })
 
   it('reuses static native page layout plan during direct script hmr', async () => {

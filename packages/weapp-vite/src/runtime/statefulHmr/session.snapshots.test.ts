@@ -16,7 +16,7 @@ import { runStatefulHmrDev } from './session'
 import { StatefulHmrTransport } from './transport'
 
 interface AdapterCallbacks {
-  onOutput: (output: StatefulHmrOutputFile[]) => void
+  onOutput: (output: StatefulHmrOutputFile[], source?: 'full' | 'additional') => Promise<void>
   onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
   waitForInitialBundle: () => Promise<void>
 }
@@ -27,6 +27,7 @@ const harness = vi.hoisted(() => ({
   writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets) => Promise<void>>(),
   fullBuild: vi.fn<() => Promise<void>>(),
   beforeInitialReady: vi.fn<() => Promise<void>>(),
+  beforeFullPrepare: vi.fn<() => Promise<void>>(),
 }))
 
 vi.mock('vite', async importOriginal => ({
@@ -37,14 +38,18 @@ vi.mock('./outputWriter', () => ({ writeStatefulHmrOutput: harness.writeOutput }
 vi.mock('./viteAdapter', () => ({
   StatefulHmrViteAdapter: class {
     constructor(_config: unknown, _server: unknown, callbacks: AdapterCallbacks) {
-      harness.callbacks = callbacks
+      harness.callbacks = { ...callbacks, onOutput: (output, source = 'full') => callbacks.onOutput(output, source) }
     }
 
     install() {}
     async registerBundleModules() { return 1 }
     async registerPatchModules() {}
     async markPayloadDelivered() {}
-    async rebuild() { await harness.fullBuild() }
+    async rebuild(prepare?: () => void | Promise<void>) {
+      await harness.beforeFullPrepare()
+      await prepare?.()
+      await harness.fullBuild()
+    }
   },
 }))
 
@@ -114,6 +119,7 @@ describe('stateful snapshot output transactions', () => {
     vi.clearAllMocks()
     harness.writeOutput.mockReset().mockResolvedValue()
     harness.beforeInitialReady.mockReset().mockResolvedValue()
+    harness.beforeFullPrepare.mockReset().mockResolvedValue()
     harness.fullBuild.mockReset().mockImplementation(async () => {
       harness.callbacks!.onOutput(appOutput())
     })
@@ -386,7 +392,7 @@ describe('stateful snapshot output transactions', () => {
     harness.callbacks!.onOutput([
       { type: 'asset', fileName: componentJson.fileName, source: JSON.stringify({ options: { multipleSlots: true } }) },
       { type: 'asset', fileName: 'assets/new.svg', source: '<svg />' },
-    ])
+    ], 'additional')
     await vi.advanceTimersByTimeAsync(1)
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
@@ -394,6 +400,52 @@ describe('stateful snapshot output transactions', () => {
     expect(published.get(componentJson.fileName)).toBe(componentJson.source)
     expect(published.get('assets/new.svg')).toBe('<svg />')
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('keeps an older native full output on the adopted snapshot while draining before the new batch', async () => {
+    const session = await start(snapshot('red', []))
+    harness.writeOutput.mockClear()
+    harness.beforeFullPrepare.mockImplementationOnce(async () => {
+      await harness.callbacks!.onOutput(appOutput(), 'full')
+    })
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(writtenAssets().filter(item => item.fileName === styleFile).map(item => item.source)).toEqual([
+      '.probe { color: red; }',
+      '.probe { color: blue; }',
+    ])
+  })
+
+  it('does not acknowledge a full batch from additional chunks and replays its unpublished snapshot', async () => {
+    const session = await start(snapshot('red', []))
+    harness.writeOutput.mockClear()
+    harness.fullBuild.mockImplementationOnce(async () => {
+      await harness.callbacks!.onOutput([{ type: 'chunk', fileName: 'pages/index.js', code: 'Page({})', modules: {} }], 'additional')
+    })
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(writtenAssets().some(item => item.fileName === styleFile)).toBe(false)
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' })
+  })
+
+  it('waits for the actual full callback after additional assets before adopting the snapshot', async () => {
+    const session = await start(snapshot('red', []))
+    harness.writeOutput.mockClear()
+    const gate = Promise.withResolvers<void>()
+    harness.fullBuild.mockImplementationOnce(async () => {
+      await harness.callbacks!.onOutput([{ type: 'asset', fileName: 'extra.svg', source: '<svg/>' }], 'additional')
+      await gate.promise
+      await harness.callbacks!.onOutput(appOutput(), 'full')
+    })
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(writtenAssets().some(item => item.fileName === styleFile)).toBe(false)
+    gate.resolve()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: styleFile, source: '.probe { color: blue; }' })
   })
 
   it('assigns resolved public publication only to the first complete output', async () => {
@@ -494,7 +546,7 @@ describe('stateful snapshot output transactions', () => {
     const session = await start(snapshot('red', []))
     const blocked = Promise.withResolvers<void>()
     harness.writeOutput.mockClear().mockImplementationOnce(async () => await blocked.promise)
-    harness.callbacks!.onOutput([{ type: 'asset', fileName: 'pending.txt', source: 'pending' }])
+    void harness.callbacks!.onOutput([{ type: 'asset', fileName: 'pending.txt', source: 'pending' }], 'additional')
     await vi.advanceTimersByTimeAsync(1)
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
@@ -569,7 +621,7 @@ describe('stateful snapshot output transactions', () => {
     const session = await start()
     const blocked = Promise.withResolvers<void>()
     harness.writeOutput.mockClear().mockImplementationOnce(async () => await blocked.promise)
-    harness.callbacks!.onOutput([{ type: 'asset', fileName: 'pending.txt', source: 'pending' }])
+    void harness.callbacks!.onOutput([{ type: 'asset', fileName: 'pending.txt', source: 'pending' }], 'additional')
     await vi.advanceTimersByTimeAsync(1)
     session.rebuild.mockResolvedValueOnce(snapshot('blue', [])).mockResolvedValue(snapshot('green'))
     session.full()
