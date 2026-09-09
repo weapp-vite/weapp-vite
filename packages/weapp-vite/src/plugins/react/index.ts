@@ -233,6 +233,11 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
         if (template.nativeComponents.length > 0) {
           validateNativeBridgeConfiguration(ctx, bundle, fileName, template.nativeComponents)
         }
+        const jsonFileName = fileName.replace(/\.wxml$/, '.json')
+        const entry = ctx.runtimeState?.build?.hmr?.entriesMap.get(jsonFileName.replace(/\.json$/, ''))
+        if (!bundle[jsonFileName] && (!entry?.json || Object.keys(entry.json).length === 0)) {
+          this.emitFile({ type: 'asset', fileName: jsonFileName, source: '{}' })
+        }
         const existing = bundle[fileName]
         if (existing?.type === 'asset') {
           existing.source = template.source
