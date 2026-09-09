@@ -2624,7 +2624,7 @@ describe('core lifecycle emit hook extra branches', () => {
               'socket.io-client': '^4.8.3',
             },
           },
-          weappViteConfig: {},
+          weappViteConfig: { injectRequestGlobals: { enabled: true, targets: ['Request', 'WebSocket'] } },
         },
       },
     })
@@ -2636,7 +2636,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'import { helper } from "../rolldown-runtime.js";',
           'function installSingleTarget(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
-          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}})',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}});',
           'var Request = class Request { on() {} };',
           'function createPollingRequest(){ return new Request() }',
           'export { createPollingRequest, helper };',

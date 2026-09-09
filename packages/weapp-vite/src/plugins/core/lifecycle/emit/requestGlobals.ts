@@ -40,10 +40,13 @@ import {
   REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE,
   REQUEST_GLOBAL_RUNTIME_CHUNK_FILE_BASENAME,
 } from './constants'
+import { collectTopLevelDeclaredIdentifiers } from './requestGlobals/bindings'
 import { wouldCollapseSupportCreateCycle } from './requestGlobals/chunkGraph'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from './rewrite'
 
 const REQUEST_GLOBAL_APP_MODULE_KEY_PREFIX = '__weappViteRequestGlobalsModule:'
+// 同一轮 emit 的后续 local 安装可以更新框架占位绑定，但不能覆盖模块原有绑定。
+const bundlePassiveBindingTargets = new WeakMap<OutputChunk, Set<string>>()
 
 function resolveChunkRequestGlobalsTargets(
   code: string,
@@ -61,37 +64,6 @@ function resolvePreludeRequestGlobalsTargets(
   mode: 'auto' | 'explicit',
 ) {
   return mode === 'auto' ? targets : resolveChunkRequestGlobalsTargets(code, targets, mode)
-}
-
-function collectTopLevelDeclaredIdentifiers(code: string) {
-  const identifiers = new Set<string>()
-  try {
-    const ast = parseJsLike(code) as any
-    const body = ast?.program?.body
-    if (!Array.isArray(body)) {
-      return identifiers
-    }
-    for (const statement of body) {
-      if (
-        (statement?.type === 'FunctionDeclaration' || statement?.type === 'ClassDeclaration')
-        && statement.id?.type === 'Identifier'
-      ) {
-        identifiers.add(statement.id.name)
-      }
-      if (statement?.type !== 'VariableDeclaration') {
-        continue
-      }
-      for (const declaration of statement.declarations ?? []) {
-        if (declaration?.id?.type === 'Identifier') {
-          identifiers.add(declaration.id.name)
-        }
-      }
-    }
-  }
-  catch {
-    return identifiers
-  }
-  return identifiers
 }
 
 export function resolveRequestGlobalsInstallerName(code: string) {
@@ -256,6 +228,7 @@ export function injectRequestGlobalsBundleRuntime(
     const topLevelDeclaredIdentifiers = collectTopLevelDeclaredIdentifiers(chunk.code)
     const passiveBindingTargets = bindingTargets.filter(target => !topLevelDeclaredIdentifiers.has(target))
     const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, passiveBindingTargets)
+    bundlePassiveBindingTargets.set(chunk, new Set(passiveBindingTargets))
     const syntheticExportCode = exportName
       ? ''
       : `Object.defineProperty(exports,${JSON.stringify(REQUEST_GLOBAL_SYNTHETIC_EXPORT_NAME)},{enumerable:false,get:function(){return ${installerName}}});`
@@ -265,7 +238,8 @@ export function injectRequestGlobalsBundleRuntime(
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_BUNDLE_HOST_REF}.${target}}catch{}`),
     ].join(';')
-    const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode ? `${passiveBindingsCode}\n` : ''}`
+    const actualsDeclaration = `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null));`
+    const bundlePrelude = `/* ${REQUEST_GLOBAL_BUNDLE_MARKER} */ ${passiveBindingsCode || actualsDeclaration}\n`
     editOutputChunkCode(chunk, (magicString) => {
       magicString.prepend(`${bundlePrelude}${syntheticExportCode}`)
       magicString.append(`\n;${runtimeBindingCode};\n`)
@@ -310,7 +284,8 @@ export function injectRequestGlobalsPassiveBindings(
       continue
     }
     const bindingTargets = resolveRequestGlobalsBindingTargets(chunkTargets)
-    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, bindingTargets)
+    const declaredBindings = collectTopLevelDeclaredIdentifiers(chunk.code)
+    const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, bindingTargets.filter(target => !declaredBindings.has(target)))
     if (!passiveBindingsCode) {
       continue
     }
@@ -350,6 +325,9 @@ export function injectRequestGlobalsLocalBindings(
     if (bindingTargets.length === 0) {
       continue
     }
+    const declaredBindings = collectTopLevelDeclaredIdentifiers(chunk.code)
+    const generatedBindings = bundlePassiveBindingTargets.get(chunk)
+    const localBindingTargets = bindingTargets.filter(target => !declaredBindings.has(target) || generatedBindings?.has(target))
     const inlineInstallerName = resolveRequestGlobalsInstallerName(chunk.code)
     const firstRequireMatch = chunk.code.matchAll(REQUEST_GLOBAL_REQUIRE_DECLARATOR_RE).next().value
     let requireImportLiteral: string | null = null
@@ -374,7 +352,7 @@ export function injectRequestGlobalsLocalBindings(
         ? `${REQUEST_GLOBAL_CHUNK_MODULE_REF}[${JSON.stringify(exportName)}](${installerOptionsCode}) || globalThis`
         : null
     if (!installerHostExpression) {
-      const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets)
+      const passiveBindingsCode = createRequestGlobalsPassiveBindingsCode(chunkTargets, localBindingTargets)
       if (!passiveBindingsCode) {
         continue
       }
@@ -386,10 +364,12 @@ export function injectRequestGlobalsLocalBindings(
         ? [`const ${REQUEST_GLOBAL_CHUNK_MODULE_REF} = require(${requireImportLiteral})`]
         : []),
       `const ${REQUEST_GLOBAL_CHUNK_HOST_REF} = ${installerHostExpression}`,
-      `const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`,
+      ...(!declaredBindings.has(REQUEST_GLOBAL_ACTUALS_KEY)
+        ? [`const ${REQUEST_GLOBAL_ACTUALS_KEY} = globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] || (globalThis[${JSON.stringify(REQUEST_GLOBAL_ACTUALS_KEY)}] = Object.create(null))`]
+        : []),
       ...bindingTargets.map(target => `${REQUEST_GLOBAL_ACTUALS_KEY}[${JSON.stringify(target)}] = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
       ...bindingTargets.map(target => `try{globalThis[${JSON.stringify(target)}]=${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}}catch{}`),
-      ...bindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
+      ...localBindingTargets.map(target => `var ${target} = ${REQUEST_GLOBAL_CHUNK_HOST_REF}.${target}`),
     ].join(';')
     if (inlineInstallerName && firstRequireMatch?.[0] && typeof firstRequireMatch.index === 'number') {
       const firstRequireIndex = firstRequireMatch.index
