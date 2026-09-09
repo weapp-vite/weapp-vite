@@ -2,6 +2,7 @@ import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
+import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
@@ -182,7 +183,7 @@ export function createLoadHook(state: CorePluginState) {
         // @ts-ignore Rolldown 的 PluginContext 类型不完整
         const result = await loadProfiledEntry(this, sourceId, 'app')
         if (configService.isDev && sourceId && !sourceId.startsWith('\0')) {
-          resolvedEntryMap.set(sourceId, { id: sourceId } as any)
+          resolvedEntryMap.set(normalizeSourceId(sourceId), { id: sourceId } as any)
         }
         const requestGlobalsTargets = resolveRequestGlobalsTargets(result, sourceId)
         const passiveRequestGlobalsTargets = resolvePassiveTargets(result, requestGlobalsTargets)

@@ -8,6 +8,7 @@ import path from 'pathe'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -162,8 +163,10 @@ function buildCompileVueFileOptions(
       const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
       if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
         const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
-        const isNewEntry = externalComponentEntryMap.get(outputKey) !== resolved.resolvedId
-        externalComponentEntryMap.set(outputKey, resolved.resolvedId)
+        const sourceId = normalizeSourceId(resolved.resolvedId)
+        const previousSourceId = externalComponentEntryMap.get(outputKey)
+        const isNewEntry = !previousSourceId || normalizeSourceId(previousSourceId) !== sourceId
+        externalComponentEntryMap.set(outputKey, sourceId)
         if (isNewEntry && state.emitResolvedComponentEntries !== false && typeof pluginCtx.emitFile === 'function') {
           pluginCtx.emitFile({
             type: 'chunk',

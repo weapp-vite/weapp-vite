@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveSfcStylePreprocessOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
@@ -584,6 +585,44 @@ describe('resolveVueTemplatePlatformOptions', () => {
       fileName: 'weapp_vite_external/uview-plus/components/u-calendar/header.js',
       preserveSignature: 'exports-only',
     })
+  })
+
+  it('registers a component once when Windows resolvers alternate between short and long source paths', async () => {
+    const longId = 'C:/workspace/project/src/components/SharedCard.vue'
+    const shortId = 'C:/WORKSP~1/project/src/components/SharedCard.vue'
+    const originalRealpath = realpathSync.native
+    const realpathSpy = vi.spyOn(realpathSync, 'native').mockImplementation(((id: string) => {
+      return id === shortId || id === longId ? longId : originalRealpath(id)
+    }) as typeof realpathSync.native)
+    try {
+      const registry = new Map<string, string>()
+      const emitFile = vi.fn()
+      const resolver = vi.fn()
+        .mockResolvedValueOnce({ resolvedId: shortId, from: '/components/SharedCard', sourceType: 'wevu-sfc' })
+        .mockResolvedValueOnce({ resolvedId: longId, from: '/components/SharedCard', sourceType: 'wevu-sfc' })
+      createUsingComponentPathResolverMock.mockReturnValueOnce(resolver)
+      const options = createCompileVueFileOptions(
+        { runtimeState: { build: { hmr: { externalComponentEntryMap: registry } } } } as any,
+        { emitFile },
+        'C:/workspace/project/src/pages/index.vue',
+        true,
+        false,
+        { platform: 'weapp', outputExtensions: {}, absoluteSrcRoot: 'C:/workspace/project/src', weappViteConfig: {}, relativeOutputPath: () => 'components/SharedCard.vue' } as any,
+        { reExportResolutionCache: new Map(), classStyleRuntimeWarned: { value: false } },
+      )
+      for (let index = 0; index < 2; index++) {
+        await options.autoUsingComponents?.resolveUsingComponentPath?.('./SharedCard.vue', 'C:/workspace/project/src/pages/index.vue', {
+          localName: 'SharedCard',
+          importedName: 'default',
+          kind: 'default',
+        })
+      }
+      expect(emitFile).toHaveBeenCalledTimes(1)
+      expect(registry.get('components/SharedCard')).toBe(longId)
+    }
+    finally {
+      realpathSpy.mockRestore()
+    }
   })
 
   it('only registers Options API local SFC entries during bundle asset emission', async () => {

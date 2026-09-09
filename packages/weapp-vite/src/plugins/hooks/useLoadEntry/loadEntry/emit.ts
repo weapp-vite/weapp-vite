@@ -13,6 +13,7 @@ import { fs as sharedFs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
+import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { registerNativePageLayoutOutput } from '../../../outputFinalizer/pageLayout'
@@ -408,7 +409,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       continue
     }
 
-    const normalizedResolvedId = normalizeFsResolvedId(resolvedId.id)
+    const normalizedResolvedId = normalizeSourceId(resolvedId.id)
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
       // JSX 入口由 core physical source load 显式监听，不能挂到发现它的 app/component loader。

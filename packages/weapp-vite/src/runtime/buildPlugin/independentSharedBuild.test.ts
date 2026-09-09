@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '../../createContext'
+import { parseLogicalEntryId } from '../../moduleGraph/protocol'
 
 const temporaryRoots: string[] = []
 
@@ -77,6 +78,17 @@ function readOutput(outputs: Array<OutputChunk | OutputAsset>, fileName: string)
   return output!.type === 'chunk' ? output!.code : String(output!.source)
 }
 
+function describeModuleOwner(id: string | null) {
+  if (!id) {
+    return null
+  }
+  const logicalEntry = parseLogicalEntryId(id)
+  const source = (logicalEntry?.sourceId ?? id).replace(/\\/g, '/')
+  const relativeSource = source.match(/\/(src|node_modules)\/(.*)$/)?.[0].slice(1)
+    ?? path.basename(source)
+  return { kind: logicalEntry?.type ?? 'physical', source: relativeSource }
+}
+
 describe('independent shared component output ownership', () => {
   afterEach(async () => {
     await Promise.all(temporaryRoots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
@@ -95,7 +107,17 @@ describe('independent shared component output ownership', () => {
     const names = outputs.map(output => output.fileName)
     const duplicates = outputs
       .filter(output => names.indexOf(output.fileName) !== names.lastIndexOf(output.fileName))
-      .map(output => ({ fileName: output.fileName, type: output.type }))
+      .map(output => ({
+        fileName: output.fileName,
+        type: output.type,
+        ...(output.type === 'chunk'
+          ? {
+              isEntry: output.isEntry,
+              facade: describeModuleOwner(output.facadeModuleId),
+              modules: output.moduleIds.map(describeModuleOwner),
+            }
+          : {}),
+      }))
     expect(new Set(names).size, `Duplicate output owners: ${JSON.stringify(duplicates)}`).toBe(names.length)
     for (const entry of ['components/SharedCard', 'layouts/default']) {
       for (const extension of ['js', 'json', 'wxml', 'wxss']) {

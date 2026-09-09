@@ -1,5 +1,6 @@
 import type { PluginContext } from 'rolldown'
 import type { Mock } from 'vitest'
+import { realpathSync } from 'node:fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
@@ -1769,6 +1770,33 @@ describe('createEntryLoader', () => {
     const addWatchFile = pluginCtx.addWatchFile as Mock
     const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
     expect(watched).not.toContain('/project/src/components/hello/index.vue')
+  })
+
+  it.each([false, true])('stores Windows short-name component resolutions under their canonical source identity (loaded: %s)', async (alreadyLoaded) => {
+    const shortId = 'C:/WORKSP~1/project/src/components/Card.vue'
+    const longId = 'C:/workspace/project/src/components/Card.vue'
+    const originalRealpath = realpathSync.native
+    const realpathSpy = vi.spyOn(realpathSync, 'native').mockImplementation(((id: string) => {
+      return id === shortId || id === longId ? longId : originalRealpath(id)
+    }) as typeof realpathSync.native)
+    try {
+      mockFindJsonEntry.mockResolvedValue({ path: '/project/src/pages/home.json', predictions: [] })
+      existsMock.mockImplementation(async (id: string) => id === shortId)
+      const { loader, jsonService, resolvedEntryMap, loadedEntrySet, emitEntriesChunks } = createLoader({ isDev: true })
+      if (alreadyLoaded) {
+        loadedEntrySet.add(longId)
+      }
+      jsonService.read.mockResolvedValue({ usingComponents: { card: 'components/Card.vue' } })
+      const pluginCtx = createPluginContext()
+      pluginCtx.resolve = vi.fn(async () => ({ id: shortId })) as PluginContext['resolve']
+      await loader.call(pluginCtx, '/project/src/pages/home.js', 'page')
+      expect([...resolvedEntryMap.keys()]).toEqual([longId])
+      expect(resolvedEntryMap.get(longId)?.id).toBe(shortId)
+      expect(emitEntriesChunks).toHaveBeenCalledTimes(alreadyLoaded ? 0 : 1)
+    }
+    finally {
+      realpathSpy.mockRestore()
+    }
   })
 
   it('merges pending auto-import entries for the current importer once', async () => {
