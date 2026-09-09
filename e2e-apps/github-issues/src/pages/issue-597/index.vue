@@ -1,11 +1,16 @@
 <script setup lang="ts">
-const abc = true
+import { ref } from 'wevu'
+
+const abc = ref(true)
 
 definePageJson({
   navigationBarTitleText: 'issue-597',
 })
 
-function _runE2E() {
+function _runE2E(action?: 'toggle') {
+  if (action === 'toggle') {
+    abc.value = !abc.value
+  }
   return {
     ok: true,
     issue: 597,
@@ -21,11 +26,11 @@ function _runE2E() {
 
     <Issue597Card>
       <template v-if="abc" #header>
-        <view class="issue597-header-a" data-issue597-branch="if" />
+        <view class="issue597-header-a" data-issue597-branch="if">header if branch</view>
       </template>
 
       <template v-else #header>
-        <text class="issue597-header-b" data-issue597-branch="else" />
+        <text class="issue597-header-b" data-issue597-branch="else">header else branch</text>
       </template>
     </Issue597Card>
   </view>

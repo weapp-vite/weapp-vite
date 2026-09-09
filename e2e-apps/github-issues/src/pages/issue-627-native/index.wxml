@@ -19,8 +19,8 @@
       data-result="{{item.result}}"
     >
       <text>{{item.key}}</text>
-      <text>{{item.native}}</text>
-      <text>{{item.sfc}}</text>
+      <text id="issue627-native-value-{{index}}">{{item.native}}</text>
+      <text id="issue627-sfc-value-{{index}}">{{item.sfc}}</text>
       <text>{{item.result}}</text>
     </view>
   </view>

@@ -18,7 +18,7 @@ import { openIde, resolveIdeProjectRoot } from '../../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../../runtime'
 import { createAnalyzeController } from './analyze'
-import { createServeMiniProgramDevActions, resolveWebHost, waitForServeShutdownSignal } from './shared'
+import { createServeMiniProgramDevActions, resolveServeIdeOpenStrategy, resolveWebHost, waitForServeShutdownSignal } from './shared'
 
 function writePostOpenSeparator() {
   process.stdout?.write?.('\n')
@@ -82,8 +82,8 @@ export function registerServeCommand(cli: CAC) {
         fallbackProjectPath: configService.cwd,
         openIde: async (projectPath, openOptions) => {
           const forceReopen = openOptions?.forceReopen === true
-          const useAutomatorOpen = openOptions?.openStrategy === 'automator'
-            || openOptions?.useAutomatorOpen === true
+          const openStrategy = resolveServeIdeOpenStrategy(openOptions, options.ideOpenStrategy)
+          const useAutomatorOpen = openStrategy === 'automator'
           await openIde(configService.platform, projectPath, {
             loginRetry: options.loginRetry,
             loginRetryTimeout: options.loginRetryTimeout,
@@ -94,13 +94,24 @@ export function registerServeCommand(cli: CAC) {
             skipAutomatorCompile: !forceReopen,
             skipPostOpenHealthCheck: true,
             trustProject: options.trustProject,
-            openStrategy: openOptions?.openStrategy ?? options.ideOpenStrategy ?? 'cli',
+            openStrategy,
             useAutomatorOpen,
           })
           writePostOpenSeparator()
         },
         projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
-        startForwardConsole: async () => {
+        startForwardConsole: async (openOptions) => {
+          if (resolveServeIdeOpenStrategy(openOptions, options.ideOpenStrategy) === 'automator') {
+            // IDE 启动由 openIde 负责；日志消费者只能连接，不能再次启动或恢复项目。
+            return await maybeStartForwardConsole({
+              openedOnly: true,
+              preferOpenedSession: true,
+              platform: configService.platform,
+              mpDistRoot: configService.mpDistRoot,
+              cwd: configService.cwd,
+              weappViteConfig: configService.weappViteConfig,
+            })
+          }
           return await maybeStartForwardConsole({
             platform: configService.platform,
             mpDistRoot: configService.mpDistRoot,

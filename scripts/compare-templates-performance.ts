@@ -1,4 +1,6 @@
 /* eslint-disable ts/no-use-before-define */
+import type { PeakRssSamplingStats } from './benchmarkTemplatesPerformance/peakRssSampler'
+import type { TemplatesHmrReport } from './templates-performance-integrity'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
@@ -6,7 +8,12 @@ import { stripVTControlCharacters } from 'node:util'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能对比需要调度两个 checkout 的命令并收集报告。 */
 import { execa } from 'execa'
 import path from 'pathe'
-import { createBenchmarkCheckoutPreparationCommands } from './benchmark-checkout-preparation'
+import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand, createBenchmarkTemplateDependenciesCommand } from './benchmark-checkout-preparation'
+import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
+import { createPeakRssSampler } from './benchmarkTemplatesPerformance/peakRssSampler'
+import { runRssSamplingCommand } from './benchmarkTemplatesPerformance/rssCommand'
+import { renderHmrTimingSources } from './benchmarkTemplatesPerformance/timing'
+import { assertTemplatesPerformanceComplete, collectTemplatesPerformanceFailures, parseTemplatesHmrReport } from './templates-performance-integrity'
 
 const baselineDirInput = process.env.TEMPLATES_PERF_BASELINE_DIR
 const baselineDir = baselineDirInput ? path.resolve(baselineDirInput) : ''
@@ -35,6 +42,7 @@ async function main() {
   const baseline = await benchmarkCheckout('baseline', baselineDir)
   const optimized = await benchmarkCheckout('optimized', optimizedDir)
   const report = createReport(baseline, optimized)
+  report.integrity = collectTemplatesPerformanceFailures(report)
   const markdown = renderMarkdown(report)
 
   await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
@@ -47,11 +55,13 @@ async function main() {
       flag: 'a',
     })
   }
+  assertTemplatesPerformanceComplete(report)
 }
 
 async function prepareBenchmarkRunner() {
   process.stdout.write('[templates-perf] runner: build benchmark helper dependency dist\n')
-  await run('pnpm', ['--filter', '@weapp-core/shared', '--if-present', 'build'], optimizedDir)
+  const command = createBenchmarkRunnerPreparationCommand()
+  await run(command.command, command.args, optimizedDir)
 }
 
 async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutResult> {
@@ -64,15 +74,21 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
   for (const command of createBenchmarkCheckoutPreparationCommands()) {
     await run(command.command, command.args, cwd)
   }
-  process.stdout.write(`[templates-perf] ${id} ${commit}: build weapp-vite dependency dist\n`)
-  await run('pnpm', ['--filter', 'weapp-vite...', '--if-present', 'build'], cwd)
-
   const templates = await discoverTemplates(cwd)
+  process.stdout.write(`[templates-perf] ${id} ${commit}: build CLI and selected template dependency dist\n`)
+  const dependencyBuild = createBenchmarkTemplateDependenciesCommand(templates.map(template => template.packageName))
+  await run(dependencyBuild.command, dependencyBuild.args, cwd)
+  const referencedProjects = await discoverBenchmarkTypeScriptProjects(cwd)
+  for (const project of referencedProjects) {
+    process.stdout.write(`[templates-perf] ${id}: prepare referenced project ${project.root}\n`)
+    await prepareTypeScriptProject(cwd, project.root)
+  }
+  await assertBenchmarkTypeScriptPrepared(cwd, referencedProjects)
   await prepareTemplates(id, cwd, templates)
   const build = await benchmarkTemplateBuilds(id, cwd, templates)
 
   process.stdout.write(`[templates-perf] ${id} ${commit}: templates HMR benchmark (${hmrIterations}x)\n`)
-  await run('pnpm', ['exec', 'tsx', 'scripts/benchmark-templates-hmr.ts'], optimizedDir, {
+  const hmrCommand = await run('pnpm', ['exec', 'tsx', 'scripts/benchmark-templates-hmr.ts'], optimizedDir, {
     TEMPLATES_HMR_CLI_PATH: path.join(cwd, 'packages/weapp-vite/bin/weapp-vite.js'),
     TEMPLATES_HMR_ITERATIONS: String(hmrIterations),
     TEMPLATES_HMR_REPORT_DIR: hmrReportDir,
@@ -82,15 +98,27 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
     TEMPLATES_HMR_PROFILE_TIMEOUT_MS: String(hmrProfileTimeoutMs),
     TEMPLATES_HMR_STARTUP_TIMEOUT_MS: String(hmrStartupTimeoutMs),
     TEMPLATES_HMR_SAMPLE_MODE: hmrSampleMode,
-  })
+  }, true)
 
-  const hmr = JSON.parse(await readFile(path.join(hmrReportDir, 'report.json'), 'utf8')) as TemplatesHmrReport
+  const hmrErrors: string[] = []
+  if (hmrCommand.failed || hmrCommand.exitCode !== 0) {
+    hmrErrors.push(`HMR command failed (exit ${hmrCommand.exitCode ?? 'unavailable'}, signal ${hmrCommand.signal ?? 'none'})`)
+  }
+  let hmr: TemplatesHmrReport = { templates: [] }
+  try {
+    const rawReport: unknown = JSON.parse(await readFile(path.join(hmrReportDir, 'report.json'), 'utf8'))
+    hmr = parseTemplatesHmrReport(rawReport)
+  }
+  catch (error) {
+    hmrErrors.push(`HMR report unavailable or malformed: ${sanitizeCheckoutOutput(reportRootDir, error instanceof Error ? error.message : String(error))}`)
+  }
   return {
     id,
     commit,
     templates: templates.map(template => toReportTemplate(cwd, template)),
     build,
     hmr,
+    hmrError: hmrErrors.length ? hmrErrors.join('\n') : undefined,
   }
 }
 
@@ -109,8 +137,9 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         cwd,
         reject: false,
       })
-      const memorySampler = createPeakRssSampler(child.pid)
+      const memorySampler = createPeakRssSampler(async () => typeof child.pid === 'number' ? sampleProcessTreeRssBytes(child.pid) : null)
       const result = await child
+      const totalMs = performance.now() - startedAt
       const memory = await memorySampler.stop()
       const output = `${result.stdout}\n${result.stderr}`
       const sanitizedOutput = sanitizeCheckoutOutput(cwd, output)
@@ -119,10 +148,11 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         iteration: index + 1,
         template: template.id,
         packageName: template.packageName,
-        totalMs: performance.now() - startedAt,
+        totalMs,
         cliBuildMs: parseCliBuildMs(output),
         rssPeakBytes: memory.rssPeakBytes,
-        status: result.exitCode ?? 0,
+        rssSampling: memory.rssSampling,
+        status: result.exitCode ?? 1,
         error: result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput),
       }
       samples.push(sample)
@@ -179,46 +209,26 @@ async function discoverTemplates(cwd: string): Promise<TemplateCase[]> {
 async function prepareTemplates(id: CheckoutId, cwd: string, templates: TemplateCase[]) {
   for (const template of templates) {
     process.stdout.write(`[templates-perf] ${id}: prepare ${template.id}\n`)
-    await run('pnpm', ['--filter', template.packageName, 'exec', 'wv', 'prepare'], cwd)
+    await prepareTypeScriptProject(cwd, path.relative(cwd, template.root))
   }
 }
 
-async function run(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv = {}) {
-  await execa(command, args, {
+async function prepareTypeScriptProject(cwd: string, projectRoot: string) {
+  const result = await execa(process.execPath, createBenchmarkPrepareArgs(projectRoot), { cwd, all: true, reject: false })
+  process.stdout.write(sanitizeCheckoutOutput(cwd, result.all ?? ''))
+  assertBenchmarkPrepareCompleted(projectRoot, { exitCode: result.exitCode, output: result.all ?? '' })
+}
+
+async function run(command: string, args: string[], cwd: string, env: NodeJS.ProcessEnv = {}, collectFailure = false) {
+  return await execa(command, args, {
     cwd,
     stdio: 'inherit',
+    reject: !collectFailure,
     env: {
       ...process.env,
       ...env,
     },
   })
-}
-
-function createPeakRssSampler(rootPid: number | undefined) {
-  let rssPeakBytes: number | null = null
-
-  const sample = async () => {
-    if (typeof rootPid !== 'number') {
-      return
-    }
-    const current = await sampleProcessTreeRssBytes(rootPid).catch(() => null)
-    if (current != null) {
-      rssPeakBytes = Math.max(rssPeakBytes ?? 0, current)
-    }
-  }
-
-  const timer = setInterval(() => {
-    void sample()
-  }, 100)
-  void sample()
-
-  return {
-    async stop() {
-      clearInterval(timer)
-      await sample()
-      return { rssPeakBytes }
-    },
-  }
 }
 
 async function sampleProcessTreeRssBytes(rootPid: number) {
@@ -229,10 +239,10 @@ async function sampleProcessTreeRssBytes(rootPid: number) {
 }
 
 async function sampleUnixProcessTreeRssBytes(rootPid: number) {
-  const { stdout } = await execa('ps', ['-Ao', 'pid=,ppid=,rss='], {
-    reject: false,
-    stdin: 'ignore',
-  })
+  const stdout = await runRssSamplingCommand('ps', ['-Ao', 'pid=,ppid=,rss='])
+  if (stdout === null) {
+    return null
+  }
   const entries = stdout
     .split('\n')
     .map((line) => {
@@ -246,15 +256,12 @@ async function sampleUnixProcessTreeRssBytes(rootPid: number) {
 }
 
 async function sampleWindowsProcessTreeRssBytes(rootPid: number) {
-  const { stdout } = await execa('powershell', [
+  const stdout = await runRssSamplingCommand('powershell', [
     '-NoProfile',
     '-Command',
     'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress',
-  ], {
-    reject: false,
-    stdin: 'ignore',
-  })
-  if (!stdout.trim()) {
+  ])
+  if (!stdout?.trim()) {
     return null
   }
   const parsed = JSON.parse(stdout) as unknown
@@ -457,6 +464,9 @@ function renderMarkdown(report: PerformanceReport) {
     `- HMR max scenarios/template：\`${report.maxHmrScenariosPerTemplate ?? 'all'}\``,
     `- HMR sample mode：\`${report.hmrSampleMode}\``,
     `- HMR startup timeout：\`${report.hmrStartupTimeoutMs}ms\``,
+    `- execution integrity: ${report.integrity?.length ? 'failed' : 'passed'}`,
+    ...(report.integrity ?? []).map(failure => `  - ${failure}`),
+    ...[report.baseline, report.optimized].flatMap(checkout => checkout.hmrError ? [`- ${checkout.id} HMR collection failed: ${checkout.hmrError.replaceAll('\n', '; ')}`] : []),
     '',
     '## 结论',
     '',
@@ -464,13 +474,14 @@ function renderMarkdown(report: PerformanceReport) {
     `- Warm build：${formatMs(warmBuildBaseline.totalAverageMs)} -> ${formatMs(warmBuildOptimized.totalAverageMs)}（${formatPercent(fasterPercent(warmBuildBaseline.totalAverageMs, warmBuildOptimized.totalAverageMs))}）。`,
     `- Build 内存：峰值 RSS 均值 ${formatMemoryMiB(buildAggregate.rssPeakAverageBaselineBytes)} -> ${formatMemoryMiB(buildAggregate.rssPeakAverageOptimizedBytes)}（${formatPercent(buildAggregate.rssPeakReducedPercent)}）。`,
     `- HMR core：${hmrAggregate.scenarioCount} 个共同成功场景，build/transform/write/emit 平均 ${formatMs(hmrAggregate.coreAverageBaselineMs)} -> ${formatMs(hmrAggregate.coreAverageOptimizedMs)}（${formatPercent(hmrAggregate.coreFasterPercent)}），transform/plugin ${formatSmallMs(hmrAggregate.transformAverageBaselineMs)} -> ${formatSmallMs(hmrAggregate.transformAverageOptimizedMs)}（${formatPercent(hmrAggregate.transformFasterPercent)}）。`,
-    `- HMR profile 诊断：best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
+    `- HMR total 诊断：best ${formatMs(hmrAggregate.bestBaselineMs)} -> ${formatMs(hmrAggregate.bestOptimizedMs)}（${formatPercent(hmrAggregate.bestFasterPercent)}），平均 ${formatMs(hmrAggregate.averageBaselineMs)} -> ${formatMs(hmrAggregate.averageOptimizedMs)}（${formatPercent(hmrAggregate.averageFasterPercent)}）。`,
+    ...renderHmrTimingSources(report.baseline.hmr, report.optimized.hmr),
     `- HMR wall 诊断：best ${formatMs(hmrAggregate.wallBestBaselineMs)} -> ${formatMs(hmrAggregate.wallBestOptimizedMs)}（${formatPercent(hmrAggregate.wallBestFasterPercent)}），平均 ${formatMs(hmrAggregate.wallAverageBaselineMs)} -> ${formatMs(hmrAggregate.wallAverageOptimizedMs)}（${formatPercent(hmrAggregate.wallFasterPercent)}）。`,
     `- HMR 内存：heapUsed 均值 ${formatMemoryMiB(hmrAggregate.heapUsedAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.heapUsedAverageOptimizedBytes)}，RSS 均值 ${formatMemoryMiB(hmrAggregate.rssAverageBaselineBytes)} -> ${formatMemoryMiB(hmrAggregate.rssAverageOptimizedBytes)}。`,
     '',
     report.hmrSampleMode === 'edit-only'
-      ? '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态保存后的核心处理路径；profile/wall 保留为 runner I/O 与文件监听抖动诊断。'
-      : '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态快路径；profile best/average 与 wall 保留为 runner I/O 与文件监听抖动诊断。',
+      ? '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态保存后的核心处理路径；total/wall 保留为 runner I/O 与文件监听抖动诊断。'
+      : '正数代表 optimized 更快，负数代表更慢。HMR core 来自 profile 的 build/transform/write/emit 分段，用于观察开发态快路径；total best/average 与 wall 保留为 runner I/O 与文件监听抖动诊断。',
     '',
     '## Build 汇总',
     '',
@@ -491,14 +502,14 @@ function renderMarkdown(report: PerformanceReport) {
     '',
     '## HMR 汇总',
     '',
-    '| 范围 | 场景数 | core 平均 | core 变化 | profile best | best 变化 | profile 平均 | avg 变化 | wall best 变化 | heap | rss | transform 变化 |',
+    '| 范围 | 场景数 | core 平均 | core 变化 | total best | best 变化 | total 平均 | avg 变化 | wall best 变化 | heap | rss | transform 变化 |',
     '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     renderHmrAggregateRow('全部共同成功场景', hmrAggregate),
     ...report.hmr.groups.map(group => renderHmrAggregateRow(`group:${group.group}`, group)),
     '',
     '## HMR 场景明细',
     '',
-    '| template | scenario | core avg | core 变化 | profile best | best 变化 | profile avg | avg 变化 | wall best | wall best 变化 | heap | rss | transform | transform 变化 |',
+    '| template | scenario | core avg | core 变化 | total best | best 变化 | total avg | avg 变化 | wall best | wall best 变化 | heap | rss | transform | transform 变化 |',
     '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     ...report.hmr.rows
       .filter(row => row.comparable)
@@ -810,6 +821,7 @@ interface TemplateBuildSample {
   totalMs: number
   cliBuildMs: number | null
   rssPeakBytes: number | null
+  rssSampling?: PeakRssSamplingStats
   error?: string
   status: number
 }
@@ -844,34 +856,10 @@ interface CheckoutResult {
     templates: TemplateBuildStats[]
   }
   hmr: TemplatesHmrReport
+  hmrError?: string
 }
 
-interface TemplatesHmrReport {
-  templates: TemplateHmrResult[]
-}
-
-interface TemplateHmrResult {
-  error?: string
-  id: string
-  scenarios: TemplateHmrScenario[]
-}
-
-interface TemplateHmrScenario {
-  error?: string
-  group: string
-  id: string
-  label: string
-  samples: Array<{
-    buildCoreMs?: number
-    emitMs?: number
-    heapUsedBytes?: number
-    rssBytes?: number
-    totalMs?: number
-    transformMs?: number
-    wallMs?: number
-    writeMs?: number
-  }>
-}
+type TemplateHmrScenario = TemplatesHmrReport['templates'][number]['scenarios'][number]
 
 interface FlatHmrScenario extends TemplateHmrScenario {
   key: string
@@ -971,6 +959,7 @@ interface HmrGroupAggregateStats extends HmrAggregateStats {
 }
 
 interface PerformanceReport {
+  integrity?: string[]
   generatedAt: string
   benchmark: string
   templateFilter: string[]

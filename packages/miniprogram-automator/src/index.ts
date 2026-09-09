@@ -15,4 +15,5 @@ export { Automator, Connection, ContextElement, CustomElement, Element, InputEle
 export const SmartappAutomator = smartappAutomatorRuntime
 export * from './Launcher'
 export * from './platform'
+export type { ConsoleLogOptions, ConsoleRemoteObject, StructuredConsoleEntry } from './structuredConsole'
 export * from './util'

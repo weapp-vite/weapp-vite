@@ -115,10 +115,6 @@ function addEmittedChunkFileName(
   }
 }
 
-function isCurrentStyleSidecarUpdate(state: CorePluginState) {
-  return state.ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary?.some(item => item.startsWith('style-sidecar:')) === true
-}
-
 export function createSubPackageMatcher(subPackageRoots: string[]) {
   const candidates = subPackageRoots.map(root => ({
     prefix: `${root}/`,
@@ -160,15 +156,11 @@ function createBundleChunkResolver(bundle: OutputBundle) {
   return (fileName: string) => chunksByFileName.get(fileName)
 }
 
-async function emitCurrentStyleSidecarAsset(this: any, state: CorePluginState, bundle: OutputBundle) {
-  if (!isCurrentStyleSidecarUpdate(state)) {
-    return
+async function emitCurrentStyleSidecarAssets(this: any, state: CorePluginState, bundle: OutputBundle) {
+  const files = [...state.hmrState.styleSidecarFiles ?? []]
+  for (const file of files) {
+    await emitStyleSidecarAsset(state.ctx, this, bundle, file, state.resolvedConfig)
   }
-  const currentFile = state.ctx.runtimeState.build.hmr.profile.file
-  if (typeof currentFile !== 'string') {
-    return
-  }
-  await emitStyleSidecarAsset(state.ctx, this, bundle, currentFile, state.resolvedConfig)
 }
 
 function resolveImportedChunkId(importerFileName: string, imported: string) {
@@ -470,9 +462,13 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       ctx.moduleGraphService?.bindPluginContext(this)
       const rolldownBundle = bundle as unknown as OutputBundle
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
-      const hasChunkOutput = pruneHmrMetadataOnlyChunks(rolldownBundle, state)
-      await emitCurrentStyleSidecarAsset.call(this, state, rolldownBundle)
-      const assetOnlyDevHmrBundle = isAssetOnlyDevHmrBundle(hasChunkOutput, state)
+      const nativeDevBundle = state.resolvedConfig?.experimental?.bundledDev === true
+      // 原生 DevEngine 自己管理 patch 与 bundle，不能套用 classic 的局部入口发射计划。
+      const hasChunkOutput = nativeDevBundle
+        ? Object.values(rolldownBundle).some(output => output.type === 'chunk')
+        : pruneHmrMetadataOnlyChunks(rolldownBundle, state)
+      await emitCurrentStyleSidecarAssets.call(this, state, rolldownBundle)
+      const assetOnlyDevHmrBundle = !nativeDevBundle && isAssetOnlyDevHmrBundle(hasChunkOutput, state)
 
       if (isPluginBuild) {
         filterPluginBundleOutputs(rolldownBundle, configService)
@@ -537,9 +533,11 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           }
           state.hmrState.hasBuiltOnce = true
         }
-        activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
-        retainFullEntryHmrChunks(rolldownBundle, state)
-        pruneUneventedDevHmrChunks(ctx, rolldownBundle)
+        if (!nativeDevBundle) {
+          activeImportedChunkIds = prunePartialHmrStableSharedChunks(rolldownBundle, state)
+          retainFullEntryHmrChunks(rolldownBundle, state)
+          pruneUneventedDevHmrChunks(ctx, rolldownBundle)
+        }
 
         if (assetOnlyDevHmrBundle) {
           state.hmrState.affectedSharedChunkIds?.clear()

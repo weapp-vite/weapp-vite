@@ -3,6 +3,8 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { renderedText, tapRendered, TDESIGN_FIXTURE } from './tdesignDom'
 import {
   createTemplateWevuTdesignRegressionLaunchOptions,
 } from './template-wevu-tdesign-regression.shared'
@@ -87,7 +89,13 @@ describe('e2e app: template-wevu-tdesign-regression form', { concurrent: false }
     await closeSharedMiniProgram()
   })
 
-  it('renders urgent controls and exposes initial urgent runtime state', async () => {
+  it('renders urgent controls and exposes initial urgent runtime state', async (ctx) => {
+    const acceptance = createDomAcceptance(ctx, TDESIGN_FIXTURE, [
+      { id: 'initial', route: ROUTE, action: '打开表单并检查加急默认状态', nodes: [renderedText('form-urgent-state', '加急未开启 · 平衡'), { selector: '//*[@aria-role="switch"]', query: 'xpath', attributes: { 'aria-checked': 'false' } }] },
+      { id: 'urgent-on', route: ROUTE, action: '点击加急行，验证开关及节奏联动', nodes: [renderedText('form-urgent-state', '加急已开启 · 快速推进'), { selector: '//*[@aria-role="switch"]', query: 'xpath', attributes: { 'aria-checked': 'true' } }] },
+      { id: 'urgent-off', route: ROUTE, action: '再次点击加急行，验证关闭后保留推进节奏', nodes: [renderedText('form-urgent-state', '加急未开启 · 快速推进'), { selector: '//*[@aria-role="switch"]', query: 'xpath', attributes: { 'aria-checked': 'false' } }] },
+      { id: 'switch-on', route: ROUTE, action: '点击实际 switch 控件，验证事件不会冒泡反转状态', nodes: [renderedText('form-urgent-state', '加急已开启 · 快速推进'), { selector: '//*[@aria-role="switch"]', query: 'xpath', attributes: { 'aria-checked': 'true' } }] },
+    ])
     const miniProgram = await getSharedMiniProgram()
     const page = await resolveFormPage(miniProgram)
     expect(page).toBeTruthy()
@@ -103,5 +111,14 @@ describe('e2e app: template-wevu-tdesign-regression form', { concurrent: false }
     })
 
     expect(page.path).toBe(ROUTE.slice(1))
+    await acceptance.check('initial', miniProgram, page)
+    await tapRendered(page, '//*[@id="form-urgent-row"]')
+    await acceptance.check('urgent-on', miniProgram, page)
+    expect(await getFormState(page)).toMatchObject({ urgent: true, pace: 'fast' })
+    await tapRendered(page, '//*[@id="form-urgent-row"]')
+    await acceptance.check('urgent-off', miniProgram, page)
+    await tapRendered(page, '//*[@aria-role="switch"]')
+    await acceptance.check('switch-on', miniProgram, page)
+    expect(await getFormState(page)).toMatchObject({ urgent: true, pace: 'fast' })
   })
 })

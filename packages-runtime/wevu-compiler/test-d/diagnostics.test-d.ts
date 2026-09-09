@@ -4,14 +4,16 @@ import type {
   SourceSpan,
 } from '@wevu/compiler'
 import { compileJsxFile, compileSfc, compileTemplate } from '@wevu/compiler'
-import { expectError, expectType } from 'tsd'
+import { expectAssignable, expectError, expectNotAssignable, expectType } from 'tsd'
 
 const templateResult = compileTemplate(
   '<view v-html="html" />',
   '/project/src/pages/index.vue',
 )
 expectType<CompilerDiagnostic[]>(templateResult.diagnostics)
-expectType<CompilerDiagnosticCode>('WV1001')
+expectAssignable<CompilerDiagnosticCode>('WV1001')
+expectNotAssignable<CompilerDiagnosticCode>('WV9999')
+expectType<CompilerDiagnosticCode>(templateResult.diagnostics[0]!.code)
 expectType<SourceSpan | undefined>(templateResult.diagnostics[0]?.loc)
 expectError(templateResult.warnings)
 

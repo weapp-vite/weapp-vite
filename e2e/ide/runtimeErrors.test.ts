@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   attachRuntimeErrorCollector,
   isUninspectableDevtoolsConsoleError,
+  normalizeRuntimeConsoleText,
   UNINSPECTABLE_DEVTOOLS_CONSOLE_ERROR_RE,
 } from './runtimeErrors'
 
@@ -29,6 +30,25 @@ function createMiniProgramEmitter() {
 }
 
 describe('runtimeErrors', () => {
+  it('preserves inspected Error message and stack without repeating a matching stack header', () => {
+    const stack = 'Error: Behavior construction failed\n    at register (app.js:1:1)'
+    expect(normalizeRuntimeConsoleText({ type: 'error', args: [{
+      type: 'object',
+      className: 'Error',
+      description: 'Error',
+      value: { name: 'Error', message: 'Behavior construction failed', stack },
+    }] })).toBe(stack)
+  })
+
+  it('retains inspection failures alongside the original remote Error description', () => {
+    expect(normalizeRuntimeConsoleText({ type: 'error', args: [{
+      type: 'object',
+      className: 'Error',
+      description: 'Error',
+      inspectionError: 'getProperties timed out',
+    }] })).toBe('Error\n[console inspection failed] getProperties timed out')
+  })
+
   it('recognizes only the exact uninspectable DevTools console error', () => {
     expect(isUninspectableDevtoolsConsoleError({ type: 'error', args: [{}] })).toBe(true)
     expect(isUninspectableDevtoolsConsoleError({ level: 'error', args: [{}] })).toBe(true)

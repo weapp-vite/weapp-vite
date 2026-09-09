@@ -8,12 +8,12 @@
   <text class="issue466-computed-line">closeType = {{closeType}}</text>
   <text class="issue466-computed-line">defaultConfirmType = {{defaultConfirmType}}</text>
   <text class="issue466-computed-line">lastMethod = {{lastMethod}}</text>
-  <text class="issue466-computed-line">lastAction = {{lastAction}}</text>
+  <text id="issue466-status" class="issue466-computed-line">lastAction = {{lastAction}}</text>
   <text class="issue466-computed-line">lastPayload = {{lastPayload || 'none'}}</text>
   <text class="issue466-computed-line">lastError = {{lastError || 'none'}}</text>
   <text class="issue466-computed-line">dialogVisible = {{dialogVisible}}</text>
   <text class="issue466-computed-line">lastTitle = {{lastTitle || 'none'}}</text>
-  <text class="issue466-computed-line">counts = open {{openCount}}, settle {{settleCount}}</text>
+  <text id="issue466-counts" class="issue466-computed-line">counts = open {{openCount}}, settle {{settleCount}}</text>
   <text class="issue466-computed-line">methodCounts = alert {{alertCount}}, confirm {{confirmCount}}, action {{actionCount}}, close {{closeCount}}</text>
   <button bindtap="_openAlertE2E">打开 alert</button>
   <button bindtap="_openConfirmE2E">打开 confirm</button>

@@ -2,7 +2,9 @@ import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import process from 'node:process'
 
+import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resolveProjectAutomatorPort } from 'weapp-ide-cli'
@@ -12,10 +14,15 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { readEmittedStylesheet, waitForEmittedStylesheet } from '../utils/emittedStylesheet'
+import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createWevuTailwindHmrFileDiagnostics } from '../utils/wevuTailwindHmrDiagnostics'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
+const CLI_PATH = path.resolve(WORKSPACE_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
 const FIXTURE_PARENT = path.resolve(WORKSPACE_ROOT, '.tmp/e2e/ide-wevu-tailwind-hmr')
 const INDEX_ROUTE = '/pages/index/index'
@@ -143,7 +150,7 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
         fs.readFile(indexJsDist, 'utf8').catch(() => ''),
         fs.readFile(distWevuRuntimeJs, 'utf8').catch(() => ''),
         fs.readFile(indexWxmlDist, 'utf8').catch(() => ''),
-        fs.readFile(appWxssDist, 'utf8').catch(() => ''),
+        readEmittedStylesheet(appWxssDist).catch(() => ''),
       ])
       if (
         latestApp.includes('require("./weapp-vendors/wevu-runtime.js")')
@@ -236,18 +243,21 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
       await cleanDevtoolsCache('compile', { cwd: fixtureRoot })
       await removeAutomatorSessionFiles()
       await delay(1_600)
-      devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '--non-interactive'], {
+      devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '--non-interactive'], {
         cwd: fixtureRoot,
         env: createDevProcessEnv(),
         reject: false,
       })
       try {
+        await devProcess.waitForInitialBuild()
         const initialRuntime = await devProcess.waitFor(
           waitForAppRuntimeReady(),
           `wevu Tailwind stateful HMR initial runtime attempt ${attempt}`,
         )
+        await waitForFileContains(path.join(fixtureRoot, 'dist/app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`)
+        await waitForEmittedStylesheet(path.join(fixtureRoot, 'dist/pages/index/index.wxss'), 'background-color: #f6f7fb')
         miniProgram = await launchAutomator({
-          deferBridgeWrapperSyncUntilConnected: true,
+          bridgeProjectMode: 'direct',
           engineBuildFallbackSettleMs: 5_000,
           launchMode: 'bridge',
           maxLaunchRetries: 1,
@@ -295,6 +305,24 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     indexWxmlDist = path.join(distRoot, 'pages/index/index.wxml')
     currentVue = addRuntimeProbe(await fs.readFile(indexVue, 'utf8'))
     await fs.writeFile(indexVue, currentVue, 'utf8')
+    const appVue = path.join(fixtureRoot, 'src/app.vue')
+    const appSource = await fs.readFile(appVue, 'utf8')
+    const setupTag = '<script setup lang="ts">'
+    if (!appSource.startsWith(setupTag)) {
+      throw new Error('Expected the isolated template App to use a script setup block')
+    }
+    await fs.writeFile(appVue, appSource.replace(setupTag, `${setupTag}
+import { getCurrentInstance, onLaunch } from 'wevu'
+const appInstance = getCurrentInstance()
+onLaunch(function (this: Record<string, unknown>) {
+  const launchedAt = Date.now()
+  this.__e2eHmrLaunch = launchedAt
+  if (!appInstance) {
+    throw new Error('App setup instance was unavailable')
+  }
+  appInstance.__e2eHmrLaunch = launchedAt
+  console.info('[hmr-diagnostics:app-launch]', launchedAt)
+})`), 'utf8')
     await removeAutomatorSessionFiles()
   }, 60_000)
 
@@ -306,16 +334,48 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     }
   }, 60_000)
 
-  it('serializes consecutive arbitrary background updates without reloading the page stack', async () => {
+  it('serializes consecutive arbitrary background updates without reloading the page stack', async (context) => {
+    const colors = ['rgb(246, 247, 251)', 'rgb(246, 247, 251)', 'rgb(219, 234, 254)', 'rgba(0, 0, 0, 0)', 'rgb(254, 243, 199)', 'rgb(252, 231, 243)']
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', [...colors.map((color, index) => ({
+      id: `background:${index}`,
+      route: INDEX_ROUTE,
+      action: `背景阶段 ${index}：计算样式、布局与点击计数`,
+      nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true },
+        { selector: '#count-label', text: `已点击 ${index === 0 ? 0 : 1} 次` },
+      ],
+    })), {
+      id: 'local-style-priority',
+      route: INDEX_ROUTE,
+      action: '新增页面局部样式后，验证局部优先级、全局背景与交互状态',
+      nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(252, 231, 243)' }, visible: true },
+        { selector: '#wevu-tailwind-local-probe', text: 'Local style', styles: { 'background-color': 'rgb(31, 41, 55)' }, visible: true },
+        { selector: '#count-label', text: '已点击 1 次' },
+      ],
+    }])
     const initialRuntime = await startDevSession()
+    const initialPage = await waitForIndexPage()
+    await dom.check('background:0', miniProgram, initialPage)
+    await initialPage.callMethodWithOptions('handleCountTap', { routeOnly: true })
+    await dom.check('background:1', miniProgram, initialPage)
 
     const collector = attachRuntimeErrorCollector(miniProgram)
+    const diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template')
+    const fileDiagnostics = createWevuTailwindHmrFileDiagnostics(miniProgram, fixtureRoot, INDEX_ROUTE)
+    const initialIdentity = await diagnostics.initialize()
+    expect(initialIdentity.errors).toEqual([])
+    expect(initialIdentity.pageId).toEqual(expect.any(Number))
+    expect(initialIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+    expect(initialIdentity.runtime?.appLaunchProbe).toEqual(expect.any(Number))
     const marker = collector.mark()
     let previousClass = INITIAL_BACKGROUND_CLASS
     let previousEscapedClass = 'bg-_b_hf6f7fb_B'
     let previousHex = INITIAL_BACKGROUND_HEX
     try {
-      for (const update of BACKGROUND_UPDATES) {
+      for (const [updateIndex, update] of BACKGROUND_UPDATES.entries()) {
+        await diagnostics.capture(`background:${updateIndex + 2}:before`)
+        await fileDiagnostics.capture(`background:${updateIndex + 2}:before`)
         const nextVue = updateRuntimeProbe(
           currentVue,
           previousClass,
@@ -330,20 +390,26 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
         previousClass = update.className
         previousHex = update.hex
 
+        const captureReady = async (phase: string) => {
+          const readyAt = Date.now()
+          await fileDiagnostics.capture(`background:${updateIndex + 2}:${phase}`)
+          return readyAt
+        }
+
         const wxmlReady = waitForFileMatch(
           indexWxmlDist,
           source => update.escapedClass ? source.includes(update.escapedClass) : !source.includes(previousEscapedClass),
           update.escapedClass ? `contain ${update.escapedClass}` : 'remove the arbitrary background class',
-        ).then(() => Date.now())
+        ).then(() => captureReady('wxml-ready'))
         const wxssReady = update.css
-          ? waitForFileContains(appWxssDist, update.css).then(() => Date.now())
+          ? waitForEmittedStylesheet(appWxssDist, update.css).then(() => captureReady('wxss-ready'))
           : wxmlReady
-        const runtimeReady = waitForRuntimeState(update.hex).then(() => Date.now())
-        const [wxmlReadyAt, wxssReadyAt, runtimeReadyAt] = await Promise.all([
+        const runtimeReady = waitForRuntimeState(update.hex).then(() => captureReady('dom-ready'))
+        const [wxmlReadyAt, wxssReadyAt, runtimeReadyAt] = await devProcess!.waitFor(Promise.all([
           wxmlReady,
           wxssReady,
           runtimeReady,
-        ])
+        ]), `Tailwind background ${update.action}: ${update.hex}`)
         const outputMs = Math.max(wxmlReadyAt, wxssReadyAt) - startedAt
         const runtimeMs = runtimeReadyAt - startedAt
         const devtoolsApplyMs = Math.max(0, runtimeReadyAt - Math.max(wxmlReadyAt, wxssReadyAt))
@@ -351,8 +417,24 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
         expect(outputMs).toBeLessThan(45_000)
         expect(runtimeMs).toBeLessThan(45_000)
         expect((await miniProgram.currentPage({ retries: 1, timeout: 6_000 }))?.path).toBe(INDEX_ROUTE.slice(1))
+        await dom.check(`background:${updateIndex + 2}`, miniProgram, await waitForIndexPage())
+        const renderedIdentity = await diagnostics.capture(`background:${updateIndex + 2}:rendered`)
+        expect(renderedIdentity.errors).toEqual([])
+        expect(renderedIdentity.pageId).toBe(initialIdentity.pageId)
+        expect(renderedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
         previousEscapedClass = update.escapedClass
       }
+
+      // 首轮无自有页面样式，完成后再新增局部规则，覆盖仅全局快照与局部样式共存两条路径。
+      currentVue = currentVue.replace('<t-tag ', '<view id="wevu-tailwind-local-probe" class="bg-[#fce7f3] local-priority">Local style</view>\n      <t-tag ')
+      currentVue += '\n<style>\n.local-priority { background-color: #1f2937; }\n</style>\n'
+      await fs.writeFile(indexVue, currentVue, 'utf8')
+      await waitForFileContains(indexWxmlDist, 'wevu-tailwind-local-probe')
+      await dom.check('local-style-priority', miniProgram, await waitForIndexPage())
+      const finalIdentity = await diagnostics.capture('local-style-priority:rendered')
+      expect(finalIdentity.errors).toEqual([])
+      expect(finalIdentity.pageId).toBe(initialIdentity.pageId)
+      expect(finalIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
 
       const runtimeErrors = collector.getSince(marker)
       expect(runtimeErrors).toEqual([])
@@ -363,6 +445,8 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
       expect(initialRuntime.runtime).toContain('Object.defineProperty(exports, "setWevuDefaults"')
     }
     finally {
+      await fileDiagnostics.capture('finally')
+      await diagnostics.capture('finally')
       collector.dispose()
     }
   }, 420_000)

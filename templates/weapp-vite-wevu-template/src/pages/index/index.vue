@@ -19,8 +19,8 @@ const doubled = computed(() => count.value * 2)
         一个尽量小的 Vue SFC 小程序起点，复杂能力示例请看 e2e-apps。
       </view>
       <view class="counter">
-        <text>count: {{ count }}</text>
-        <text>double: {{ doubled }}</text>
+        <text id="counter-value">count: {{ count }}</text>
+        <text id="counter-doubled">double: {{ doubled }}</text>
       </view>
       <button class="action-btn" @tap="count += 1">
         +1

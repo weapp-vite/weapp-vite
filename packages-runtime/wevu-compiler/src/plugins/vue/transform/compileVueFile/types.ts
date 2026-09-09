@@ -2,6 +2,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { AstEngineName } from '../../../../ast/types'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
+import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
 import type { CompilerAppShell, CompilerPageLayoutPlan } from '../../../../types/pageLayout'
@@ -35,6 +36,8 @@ export interface VueTransformResult {
   componentGenerics?: TemplateCompileResult['componentGenerics']
   classStyleWxs?: boolean
   meta?: {
+    /** @internal */
+    componentStyleOptions?: ComponentStyleOptions
     /** @internal */
     runtimeCapabilities?: WevuRuntimeCapabilityMetadata
     hasScriptSetup?: boolean

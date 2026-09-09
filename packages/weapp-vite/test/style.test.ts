@@ -55,5 +55,16 @@ describe('build style', {
     expect(pageWxss).not.toContain('$brand')
     expect(pageWxss).not.toContain('// https://example.com')
     expect(pageWxss).not.toContain('.page {\n  .title')
+
+    const navbarWxss = await fs.readFile(path.resolve(distDir, 'components/Navbar/Navbar.wxss'), 'utf-8')
+    const appWxss = await fs.readFile(path.resolve(distDir, 'app.wxss'), 'utf-8')
+    // 同名 SCSS、CSS、WXSS 都属于组件入口，合并后不能泄漏到页面或应用样式。
+    for (const [extension, selector] of [['scss', '.navbar {'], ['css', '.navbar-css {'], ['wxss', '.navbar-wxss {']]) {
+      const source = await fs.readFile(path.resolve(cwd, `src/components/Navbar/Navbar.${extension}`), 'utf-8')
+      expect(source).toContain(selector)
+      expect(navbarWxss.split(selector)).toHaveLength(2)
+      expect(pageWxss).not.toContain(selector)
+      expect(appWxss).not.toContain(selector)
+    }
   })
 })

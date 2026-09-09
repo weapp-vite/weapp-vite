@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resetAutomatorRuntimeLogs } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -36,6 +37,19 @@ describe('e2e app: github-issues / issue #852', { concurrent: false }, () => {
   })
 
   it('renders numeric separator bindings in real WeChat DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'initial',
+      route: ISSUE_ROUTE,
+      action: '检查组件属性和不同进制数字分隔符表达式的实际文本',
+      nodes: [
+        { selector: '#issue-852-count', scope: ['#issue-852-count-component'], text: 'Count: 1000000' },
+        { selector: '#issue852-decimal', text: 'decimal: 1000000000000' },
+        { selector: '#issue852-fraction', text: 'fraction: 1050.95' },
+        { selector: '#issue852-binary', text: 'binary: 41349' },
+        { selector: '#issue852-octal', text: 'octal: 1198' },
+        { selector: '#issue852-hex', text: 'hex: 10531008' },
+      ],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       resetAutomatorRuntimeLogs(miniProgram)
@@ -68,6 +82,7 @@ describe('e2e app: github-issues / issue #852', { concurrent: false }, () => {
       expect(await root?.attribute('data-binary')).toBe('41349')
       expect(await root?.attribute('data-octal')).toBe('1198')
       expect(await root?.attribute('data-hex')).toBe('10531008')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
 
       const runtimeEntries = miniProgram?.__weappViteRuntimeLogMeta?.entries ?? []
       expect(runtimeEntries

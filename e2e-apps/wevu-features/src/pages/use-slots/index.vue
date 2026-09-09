@@ -93,7 +93,7 @@ const _runE2E = runE2E
       open state: {{ controlState.open ? 'open' : 'closed' }}
     </view>
 
-    <UseSlotsFeature title="组件内 useSlots()" :open="controlState.open">
+    <UseSlotsFeature id="slots-feature" title="组件内 useSlots()" :open="controlState.open">
       <!-- eslint-disable-next-line vue/valid-v-slot -->
       <template #header>
         <view v-if="controlState.withHeader" class="use-slots-page__header">

@@ -57,7 +57,13 @@ exports[`build style > dist > components/Navbar/Navbar.wxml 1`] = `
 exports[`build style > dist > components/Navbar/Navbar.wxss 1`] = `
 ".navbar {
   color: red;
-}"
+}.navbar-css {
+  color: aliceblue;
+}
+.navbar-wxss {
+  color: antiquewhite;
+}
+"
 `;
 
 exports[`build style > dist > pages/index/index.js 1`] = `
@@ -88,15 +94,13 @@ exports[`build style > dist > pages/index/index.wxss 1`] = `
 ".shared-css {
   color: beige;
 }
-
 .page {
   color: red;
 }
-
 .page .title {
   color: red;
   -webkit-background-clip: text;
-  background-clip: text;
+          background-clip: text;
 }"
 `;
 

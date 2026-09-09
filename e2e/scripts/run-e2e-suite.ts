@@ -1,9 +1,11 @@
+import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
-import { runTaskSuite } from './suiteRunner'
+import { isDevtoolsVitestTask, runTaskSuite } from './suiteRunner'
 
 const TASK_FILTER_ENV = 'WEAPP_VITE_E2E_TASK_FILTER'
 const TASK_FROM_ENV = 'WEAPP_VITE_E2E_TASK_FROM'
@@ -28,25 +30,24 @@ function isCurrentModuleEntry(entryArg: string | undefined, moduleUrl: string) {
   }
 }
 
-export function shouldCleanupIdeBeforeEachTask(mode: string) {
-  return mode === 'hmr-regression' || /^ide(?:$|-|:)(?!headless)/.test(mode)
-}
-
-export function shouldStopIdeSuiteAfterTaskFailure(mode: string) {
-  return shouldCleanupIdeBeforeEachTask(mode)
+export function shouldStopIdeSuiteAfterTaskFailure(tasks: SuiteTask[]) {
+  return tasks.some(isDevtoolsVitestTask)
 }
 
 export function createIdeSuiteCleanupHooks(
-  mode: string,
+  tasks: SuiteTask[],
   cleanup: () => Promise<void> = cleanupResidualIdeProcesses,
   cleanCompileCache: () => Promise<void> = () => cleanDevtoolsCacheAndStop('compile'),
 ) {
-  if (!shouldCleanupIdeBeforeEachTask(mode)) {
+  if (!tasks.some(isDevtoolsVitestTask)) {
     return {}
   }
 
   return {
-    beforeEachTask: async () => {
+    beforeEachTask: async (task: SuiteTask) => {
+      if (!isDevtoolsVitestTask(task)) {
+        return
+      }
       await cleanup()
       await cleanCompileCache()
     },
@@ -126,6 +127,7 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   }
 
   let tasks = await getSuiteTasks(mode)
+  const plannedTasks = [...tasks]
 
   if (tasks.length === 0) {
     console.error(`Unknown e2e suite: ${mode}`)
@@ -159,11 +161,17 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
     console.log(`[e2e:${mode}] selected ${tasks.length} task(s)${shardLabel}${from ? ` from=${from}` : ''}${rollFrom ? ` roll-from=${rollFrom}` : ''}${filter ? ` filter=${filter}` : ''}`)
   }
 
-  const cleanupHooks = createIdeSuiteCleanupHooks(mode)
+  const cleanupHooks = createIdeSuiteCleanupHooks(tasks)
   await runTaskSuite(`e2e:${mode}${shardLabel.replace('/', '-')}`, tasks, {
     ...cleanupHooks,
     failOnTaskFailure: !allowFailures,
-    stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(mode),
+    stopOnTaskFailure: !allowFailures && shouldStopIdeSuiteAfterTaskFailure(tasks),
+    reportContext: {
+      ...createAcceptanceIdentity(),
+      strict: isStrictDomAcceptanceSuite(mode),
+      partial: Boolean(filter || from || shardIndex || shardTotal || process.env.WEAPP_VITE_E2E_TEMPLATE),
+      plannedTasks,
+    },
   })
 }
 

@@ -101,11 +101,13 @@ function _resetE2E() {
         primitive-ref-source
       </text>
       <PropsDestructureProbe
+        id="issue300-primitive"
         case-id="primitive"
         :str="strValue"
         :bool="boolValue"
       />
       <StrictNoPropsVarProbe
+        id="issue300-strict-primitive"
         case-id="primitive"
         :str="strValue"
         :bool="boolValue"
@@ -117,11 +119,13 @@ function _resetE2E() {
         ref-object-source
       </text>
       <PropsDestructureProbe
+        id="issue300-ref-object"
         case-id="ref-object"
         :str="refObjectState.str"
         :bool="refObjectState.bool"
       />
       <StrictNoPropsVarProbe
+        id="issue300-strict-ref-object"
         case-id="ref-object"
         :str="refObjectState.str"
         :bool="refObjectState.bool"
@@ -133,11 +137,13 @@ function _resetE2E() {
         reactive-object-source
       </text>
       <PropsDestructureProbe
+        id="issue300-reactive-object"
         case-id="reactive-object"
         :str="reactiveObjectState.str"
         :bool="reactiveObjectState.bool"
       />
       <StrictNoPropsVarProbe
+        id="issue300-strict-reactive-object"
         case-id="reactive-object"
         :str="reactiveObjectState.str"
         :bool="reactiveObjectState.bool"

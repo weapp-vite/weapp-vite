@@ -56,7 +56,6 @@ describe('stateful hmr session', () => {
       type: 'Patch',
       code: 'void 0',
       filename: 'update.js',
-      hmrBoundaries: [['src/pages/index.ts', 'src/pages/index.ts']],
     } as any
 
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], patch)).toBe(true)
@@ -69,8 +68,6 @@ describe('stateful hmr session', () => {
       ['src/pages/index.vue'],
       patch,
       ['entry-direct:1', 'tailwind-content:1'],
-      undefined,
-      undefined,
       { allowTailwindContent: true },
     )).toBe(true)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], {
@@ -78,21 +75,37 @@ describe('stateful hmr session', () => {
       changedIds: [
         'src/pages/index.vue?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.vue&weapp-vite-sidecar=script&lang.js',
       ],
-    }, [], ['/project/src/pages/index.vue'], '/project')).toBe(true)
+    })).toBe(true)
     expect(isSafeJavaScriptPatch(['/project/src/bootstrap/index.ts'], {
       ...patch,
       changedIds: ['src/bootstrap/index.ts'],
-    }, [], ['/project/src/pages/index.vue'], '/project')).toBe(false)
+    })).toBe(true)
     expect(isSafeJavaScriptPatch(['src/layouts/default.vue'], {
       ...patch,
       changedIds: [
         'src/layouts/default.vue?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Flayouts%2Fdefault.vue&weapp-vite-sidecar=script&lang.js',
         'src/layouts/default.vue?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.vue&weapp-vite-sidecar=layout&lang.js',
       ],
-    }, [], ['/project/src/layouts/default.vue'], '/project')).toBe(false)
+    })).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.css'], patch)).toBe(false)
     expect(isSafeJavaScriptPatch(['src/app.json'], patch)).toBe(false)
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], { type: 'FullReload', reason: 'boundary' } as any)).toBe(false)
+  })
+
+  it('keeps safe mixed script and visual updates stateful while synchronizing assets', () => {
+    const reasons = ['entry-mixed-asset:1']
+    const file = 'src/pages/index.vue'
+    expect(requiresStatefulHmrSnapshot(file, reasons)).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(reasons)).toBe(false)
+    expect(isSafeJavaScriptPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' } as any, reasons)).toBe(true)
+  })
+
+  it('rebuilds both code and assets when a mixed SFC edit changes config', () => {
+    const reasons = ['entry-mixed-config:1']
+    const file = 'src/pages/index.vue'
+    expect(requiresStatefulHmrSnapshot(file, reasons)).toBe(true)
+    expect(shouldUseStatefulHmrSnapshotOnly(reasons)).toBe(false)
+    expect(isSafeJavaScriptPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' } as any, reasons)).toBe(false)
   })
 
   it('treats an omitted dirty reason summary as empty', () => {
@@ -103,6 +116,29 @@ describe('stateful hmr session', () => {
     } as any
 
     expect(isSafeJavaScriptPatch(['src/pages/index.ts'], patch, undefined)).toBe(true)
+  })
+
+  it('lets the DevEngine classify a shared TSX module while still refreshing its template snapshot', () => {
+    const file = '/project/src/shared.tsx'
+    const entries = new Set(['/project/src/pages/index.tsx'])
+    const affectedEntries = new Set(entries)
+    expect(shouldRebuildStatefulDependency(file, entries, affectedEntries, true, false)).toBe(false)
+    expect(shouldRebuildStatefulDependency(file, entries, affectedEntries, false, true)).toBe(false)
+    expect(shouldRebuildStatefulDependency(file, entries, affectedEntries, false, false)).toBe(true)
+    expect(requiresStatefulHmrSnapshot(file, ['shared-chunk-source:1'])).toBe(true)
+    expect(isSafeJavaScriptPatch([file], {
+      type: 'Patch',
+      filename: 'update.js',
+      changedIds: [
+        'src/shared.tsx',
+        'src/shared.tsx?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Findex.tsx&weapp-vite-sidecar=jsx&lang.js',
+      ],
+      code: 'export const marker = "updated fragment"',
+    }, ['shared-chunk-source:1'])).toBe(true)
+    expect(isSafeJavaScriptPatch([file], { type: 'Noop' })).toBe(false)
+    expect(isSafeJavaScriptPatch([file], { type: 'FullReload', reason: 'unaccepted dependency' })).toBe(false)
+    expect(shouldUseStatefulHmrSnapshotOnly(['shared-chunk-source:1'])).toBe(false)
+    expect(isStatefulHmrAssetFile(file)).toBe(false)
   })
 
   it('resets retained deltas at the count and byte limits', () => {
@@ -123,7 +159,7 @@ describe('stateful hmr session', () => {
     expect(shouldRestartStatefulHmrServer(['/project/src/pages/index/view.tsx'], [], { renderMode: 'dynamic' })).toBe(false)
   })
 
-  it('rebuilds changed non-entry dependencies when they affect a registered entry', () => {
+  it('only rebuilds affected dependencies missing from the DevEngine graph', () => {
     const entries = new Set(['/project/src/pages/index.vue'])
     expect(shouldRebuildStatefulDependency(
       '/project/src/bootstrap/index.ts',
@@ -145,14 +181,14 @@ describe('stateful hmr session', () => {
       entries,
       new Set(),
       true,
-    )).toBe(true)
+    )).toBe(false)
     expect(shouldRebuildStatefulDependency(
       '/project/src/bootstrap/index.ts',
       entries,
       new Set(),
       false,
       true,
-    )).toBe(true)
+    )).toBe(false)
     expect(shouldRebuildStatefulDependency(
       '/project/src/pages/index.wxml',
       entries,
@@ -245,11 +281,26 @@ describe('stateful hmr session', () => {
       { fileName: 'app.wxss', source: '.same{}', type: 'asset' },
       { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
       { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
+      { fileName: 'layouts/default.js', code: 'plainComponent();', type: 'chunk', modules: {} },
     ])
 
     expect(changed).toEqual([
       { fileName: 'pages/index/index.wxml', source: '<view class="updated"/>', type: 'asset' },
       { fileName: 'pages/about/index.wxml', source: '<view/>', type: 'asset' },
+    ])
+  })
+
+  it('preserves executable DevEngine entries when snapshots contain script assets', () => {
+    const output = [
+      { code: 'statefulComponent();', fileName: 'layouts/default.js', type: 'chunk' },
+    ] as any
+    mergeStatefulHmrSnapshotAssets(output, [
+      { fileName: 'layouts/default.js', source: 'plainComponent();', type: 'asset' },
+      { fileName: '__weapp_vite_app_shell.js', source: 'Component({})', type: 'asset' },
+    ])
+    expect(output).toEqual([
+      { code: 'statefulComponent();', fileName: 'layouts/default.js', type: 'chunk' },
+      { fileName: '__weapp_vite_app_shell.js', source: 'Component({})', type: 'asset' },
     ])
   })
 })

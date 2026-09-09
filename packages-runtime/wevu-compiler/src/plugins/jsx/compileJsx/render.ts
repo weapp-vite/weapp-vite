@@ -39,8 +39,8 @@ function resolveDynamicIslandTemplateName(depth: number) {
     : `${WEVU_JSX_ISLAND_TEMPLATE_NAME}_${depth}`
 }
 
-function compileListExpression(exp: Expression) {
-  return normalizeInterpolationExpression(exp)
+function compileListExpression(exp: Expression, context: JsxCompileContext) {
+  return normalizeInterpolationExpression(exp, context)
 }
 
 function registerDynamicIsland(exp: Expression, context: JsxCompileContext, reason: JsxDynamicIslandReason) {
@@ -237,7 +237,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
   }
 
   recordJsxBinding(context, callee.object as Expression, 'for')
-  const listExp = compileListExpression(callee.object as Expression)
+  const listExp = compileListExpression(callee.object as Expression, context)
   const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
   const itemParam = callback.params[0]
   const indexParam = callback.params[1]
@@ -261,15 +261,14 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
   }
 
   const body = bodyExp ? compileRenderableExpression(bodyExp, context) : ''
-  popScope(context, addedScope.length)
-
   if (!body) {
+    popScope(context, addedScope.length)
     return ''
   }
 
   let keyValue = context.platform.keyThisValue
   if (bodyExp && t.isJSXElement(bodyExp)) {
-    const extracted = extractJsxKeyExpression(bodyExp)
+    const extracted = extractJsxKeyExpression(bodyExp, context)
     if (extracted) {
       keyValue = extracted
     }
@@ -281,6 +280,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
     keyValue = index
   }
 
+  popScope(context, addedScope.length)
   const attrs = [
     ...context.platform.forAttrs(listExp, renderTemplateMustache, item, index),
     context.platform.keyAttr(keyValue),
@@ -292,7 +292,7 @@ function compileMapExpression(exp: t.CallExpression, context: JsxCompileContext)
 function compileConditionalExpression(exp: t.ConditionalExpression, context: JsxCompileContext): string {
   const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
   recordJsxBinding(context, exp.test, 'if')
-  const test = normalizeInterpolationExpression(exp.test)
+  const test = normalizeInterpolationExpression(exp.test, context)
   const consequent = compileRenderableExpression(exp.consequent, context)
   const alternate = compileRenderableExpression(exp.alternate, context)
 
@@ -307,17 +307,17 @@ function compileLogicalExpression(exp: t.LogicalExpression, context: JsxCompileC
   const renderTemplateMustache = (expression: string) => renderMustache(expression, context)
   recordJsxBinding(context, exp.left, 'if')
   if (exp.operator === '&&') {
-    const test = normalizeInterpolationExpression(exp.left)
+    const test = normalizeInterpolationExpression(exp.left, context)
     const content = compileRenderableExpression(exp.right, context)
     return context.platform.wrapIf(test, content, renderTemplateMustache)
   }
   if (exp.operator === '||') {
     const negated = t.unaryExpression('!', t.parenthesizedExpression(t.cloneNode(exp.left, true)))
-    const test = normalizeInterpolationExpression(negated)
+    const test = normalizeInterpolationExpression(negated, context)
     const content = compileRenderableExpression(exp.right, context)
     return context.platform.wrapIf(test, content, renderTemplateMustache)
   }
-  return renderMustache(normalizeInterpolationExpression(exp), context)
+  return renderMustache(normalizeInterpolationExpression(exp, context), context)
 }
 
 export function compileRenderableExpression(exp: Expression, context: JsxCompileContext): string {
@@ -367,7 +367,7 @@ export function compileRenderableExpression(exp: Expression, context: JsxCompile
   }
 
   recordJsxBinding(context, node, 'text')
-  return renderMustache(normalizeInterpolationExpression(node), context)
+  return renderMustache(normalizeInterpolationExpression(node, context), context)
 }
 
 function compileExpressionContainer(node: JSXExpressionContainer, context: JsxCompileContext): string {
@@ -513,7 +513,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
   const showExpression = directives.get('v-show')
   if (showExpression) {
     recordJsxBinding(context, showExpression, 'style')
-    attrs.push(`hidden="${renderMustache(`!(${normalizeInterpolationExpression(showExpression)})`, context)}"`)
+    attrs.push(`hidden="${renderMustache(`!(${normalizeInterpolationExpression(showExpression, context)})`, context)}"`)
   }
   const attrsSegment = attrs.length ? ` ${attrs.join(' ')}` : ''
   const textExpression = directives.get('v-text')
@@ -521,7 +521,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
     recordJsxBinding(context, textExpression, 'text')
   }
   const content = textExpression
-    ? renderMustache(normalizeInterpolationExpression(textExpression), context)
+    ? renderMustache(normalizeInterpolationExpression(textExpression, context), context)
     : compileJsxChildren(node.children, context)
   const element = node.openingElement.selfClosing && !textExpression
     ? `<${tag}${attrsSegment} />`
@@ -530,7 +530,7 @@ function compileJsxElement(node: JSXElement, context: JsxCompileContext): string
   if (ifExpression) {
     recordJsxBinding(context, ifExpression, 'if')
     return context.platform.wrapIf(
-      normalizeInterpolationExpression(ifExpression),
+      normalizeInterpolationExpression(ifExpression, context),
       element,
       expression => renderMustache(expression, context),
     )

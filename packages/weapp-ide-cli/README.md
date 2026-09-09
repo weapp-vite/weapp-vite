@@ -98,10 +98,10 @@ weapp mcp --workspace-root .
 
 从当前版本开始，`weapp-ide-cli` 会在调用微信开发者工具前自动尝试预热本机 DevTools 配置：
 
-- 确保安全设置里启用服务端口
+- 检测安全设置中的服务端口；未启用时请在 IDE 中开启
 - 根据命令或全局配置决定是否自动信任项目
 
-在 macOS 上，它会写入 `~/Library/Application Support/微信开发者工具/*/WeappLocalData` 下对应的本地配置；如果你不希望自动处理，也可以通过下文的 `config` 配置项关闭。
+仅对 IDE 已完成导入的项目更新信任状态，并保留已有能力信息。首次打开项目时，由 IDE 负责初始化项目记录，CLI 不会提前创建不完整的本地缓存；自动化启动使用 IDE 的 `trustProject` 参数。可以通过下文的 `config` 配置项关闭自动处理。
 
 ## 支付宝小程序（minidev）支持
 

@@ -1,4 +1,4 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
 import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
@@ -16,13 +16,16 @@ import type {
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
+import { cloneAppLaunchOptions, createAppLaunchOptions } from '../host/appLaunchOptions'
 import { invokePreparedNavigationApi } from '../host/wx/navigation'
 import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
-import { runComponentPageLifetime } from '../runtime/componentInstance'
+import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
+import { detachComponentRelations } from '../runtime/componentInstance/relations'
 import { createPageInstance } from '../runtime/pageInstance'
+import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
 import {
   applyResizeToSystemInfo,
   createDefaultLocationResult,
@@ -36,6 +39,7 @@ import { createHeadlessWxState } from '../runtime/wxState'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessCanvasContext } from '../view/canvasContext'
+import { customTabBarScopeId } from '../view/customTabBar'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
@@ -151,18 +155,6 @@ function matchesComponentSelector(
 
 function normalizeSelectorParts(selector: string) {
   return selector.trim().split(WHITESPACE_RE).filter(Boolean)
-}
-
-function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessWxLaunchOptions {
-  return {
-    path: stripLeadingSlash(pathname),
-    query: { ...query },
-    referrerInfo: {
-      appId: '',
-      extraData: {},
-    },
-    scene: 1001,
-  }
 }
 
 function readJsonObject(files: BrowserVirtualFiles, filePath: string) {
@@ -295,10 +287,10 @@ export class BrowserHeadlessSession {
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
         getSavedFileInfo: option => this.wxState.getSavedFileInfo(option),
         getSavedFileList: () => this.wxState.getSavedFileList(),
-        getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
+        getEnterOptionsSync: () => this.getEnterOptions(),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
-        getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
+        getLaunchOptionsSync: () => this.getLaunchOptions(),
         getClipboardData: () => this.wxState.getClipboardData(),
         getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
@@ -510,25 +502,11 @@ export class BrowserHeadlessSession {
   }
 
   getLaunchOptions() {
-    return {
-      ...this.launchOptions,
-      query: { ...this.launchOptions.query },
-      referrerInfo: {
-        ...this.launchOptions.referrerInfo,
-        extraData: { ...this.launchOptions.referrerInfo.extraData },
-      },
-    }
+    return cloneAppLaunchOptions(this.launchOptions)
   }
 
   getEnterOptions() {
-    return {
-      ...this.enterOptions,
-      query: { ...this.enterOptions.query },
-      referrerInfo: {
-        ...this.enterOptions.referrerInfo,
-        extraData: { ...this.enterOptions.referrerInfo.extraData },
-      },
-    }
+    return cloneAppLaunchOptions(this.enterOptions)
   }
 
   getMenuButtonBoundingClientRect() {
@@ -1067,8 +1045,8 @@ export class BrowserHeadlessSession {
       return this.appInstance
     }
 
-    this.launchOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
-    this.enterOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
+    this.launchOptions = cloneAppLaunchOptions(launchOptions)
+    this.enterOptions = cloneAppLaunchOptions(launchOptions)
     const appModulePath = join(this.project.miniprogramRootPath, 'app.js')
     this.appDefinition = this.moduleLoader.executeAppModule(appModulePath)
     this.appInstance = createAppInstance(this.appDefinition)
@@ -1376,11 +1354,18 @@ export class BrowserHeadlessSession {
     const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query, {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
+      requestRender: callback => this.requestRender(callback),
     })
     pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
+    pageInstance.getTabBar = () => {
+      if (this.currentPageInstance === pageInstance) {
+        this.renderCurrentPage()
+      }
+      return this.componentCache.get(customTabBarScopeId(pageInstance.route)) ?? null
+    }
     if (this.isTabBarRoute(target.routeRecord.route)) {
       this.tabPages.set(target.routeRecord.route, pageInstance)
     }
@@ -1388,10 +1373,8 @@ export class BrowserHeadlessSession {
   }
 
   private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
-    pageInstance.onLoad?.(query)
-    pageInstance.onShow?.()
-    pageInstance.onReady?.()
-    pageInstance.onRouteDone?.({})
+    runInitialPageLifecycles(pageInstance, query, this.kernel.scheduler, () =>
+      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance, () => this.renderCurrentPage())
   }
 
   private isTabBarRoute(route: string) {
@@ -1470,11 +1453,12 @@ export class BrowserHeadlessSession {
 
   private detachPageComponents(route: string) {
     const prefix = `page:${stripLeadingSlash(route)}`
-    for (const [scopeId, instance] of [...this.componentCache.entries()]) {
-      if (!scopeId.startsWith(prefix)) {
-        continue
-      }
-      instance.__definition__?.lifetimes?.detached?.call(instance)
+    const removed = [...this.componentCache].filter(([scopeId]) => scopeId.startsWith(prefix))
+    for (const [, instance] of removed) {
+      runComponentLifecycle(instance, 'detached')
+    }
+    detachComponentRelations(removed.map(([, instance]) => instance))
+    for (const [scopeId] of removed) {
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
     }

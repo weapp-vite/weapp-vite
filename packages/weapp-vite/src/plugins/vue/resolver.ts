@@ -3,8 +3,11 @@ import type { CompilerContext } from '../../context'
 import { createRequire } from 'node:module'
 import process from 'node:process'
 import path from 'pathe'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import logger from '../../logger'
+import { storeVueSfcHmrSignatures } from '../../runtime/storeVueSfcHmrSignatures'
 import { getPathExistsTtlMs } from '../../utils/cachePolicy'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { toAbsoluteId } from '../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../utils/cache'
 import { VUE_PLUGIN_NAME } from './index'
@@ -135,28 +138,26 @@ export function createVueResolverPlugin(ctx: CompilerContext, options: { react?:
     },
 
     async load(id) {
-      // 加载虚拟模块时，返回实际 .vue 文件的内容
-      if (id.startsWith(VUE_VIRTUAL_MODULE_PREFIX)) {
-        const actualId = id.slice(VUE_VIRTUAL_MODULE_PREFIX.length)
-
-        // 将相对路径转换为绝对路径
-        const absoluteId = toAbsoluteId(actualId, ctx.configService!, undefined, { base: 'cwd' })
-        if (!absoluteId) {
-          return null
-        }
-
-        // 读取并返回实际的 .vue 文件内容
-        const code = await readFileCached(absoluteId, {
-          checkMtime: ctx.configService?.isDev ?? false,
-          encoding: 'utf-8',
-        })
-        return {
-          code,
-          moduleSideEffects: false,
-        }
+      const legacyVirtual = id.startsWith(VUE_VIRTUAL_MODULE_PREFIX)
+      const absoluteId = legacyVirtual
+        ? toAbsoluteId(id.slice(VUE_VIRTUAL_MODULE_PREFIX.length), ctx.configService!, undefined, { base: 'cwd' })
+        : ctx.configService?.isDev && !id.startsWith('\0') && id.endsWith('.vue') && path.isAbsolute(id)
+          ? normalizeFsResolvedId(id)
+          : undefined
+      if (!absoluteId) {
+        return null
       }
 
-      return null
+      const code = await readFileCached(absoluteId, {
+        checkMtime: ctx.configService?.isDev ?? false,
+        encoding: 'utf-8',
+      })
+      const hmr = ctx.runtimeState?.build?.hmr
+      if (ctx.configService?.isDev && hmr && absoluteId.endsWith('.vue')) {
+        // 基线必须来自交给后续 transform 的同一份原始内容，不能在 transform 时重读磁盘。
+        storeVueSfcHmrSignatures(hmr, normalizeFsResolvedId(absoluteId), resolveVueSfcHmrSignatures(code, absoluteId))
+      }
+      return legacyVirtual ? { code, moduleSideEffects: false } : { code }
     },
   }
 }

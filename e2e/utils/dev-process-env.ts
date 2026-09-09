@@ -25,6 +25,7 @@ export function createDevProcessEnv(options: DevProcessEnvOptions = {}): NodeJS.
     env.WEAPP_VITE_DISABLE_SIDECAR_WATCH = '1'
   }
   delete env.CI
+  delete env.TEST
   delete env.VITEST
   delete env.VITEST_MODE
   delete env.VITEST_POOL_ID
