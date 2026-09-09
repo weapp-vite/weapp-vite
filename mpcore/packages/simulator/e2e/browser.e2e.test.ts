@@ -3,6 +3,13 @@ import type { HeadlessWxAppHideOptions, HeadlessWxLaunchOptions } from '../src'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
 import SimulatorE2EApp from '../../../demos/web/src/e2e/SimulatorE2EApp.vue'
+import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
+import { querySelectorAll } from '../src/view/selectors'
+import { componentNavigationFiles } from '../test/helpers/componentNavigation'
+import { conditionalSlotFiles } from '../test/helpers/conditionalSlots'
+import { importedTemplateFiles } from '../test/helpers/importedTemplates'
+import { objectLoopFiles } from '../test/helpers/objectLoops'
+import { wxsFiles } from '../test/helpers/wxs'
 import '../../../demos/web/src/styles.css'
 
 interface SimulatorE2EApi {
@@ -101,6 +108,174 @@ function parseJsonString<T>(value: string): T {
 }
 
 describe('simulator browser e2e', { concurrent: false }, () => {
+  it('renders values read from native component data through a page ref', () => {
+    const files: Array<[string, string]> = [
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({ usingComponents: { probe: '/components/probe' } })],
+      ['pages/index/index.js', `Page({data:{label:'pending'},inspect(){this.setData({label:this.selectComponent('#probe').readNative()})},update(){this.selectComponent('#probe').update();this.inspect()}})`],
+      ['pages/index/index.wxml', '<probe id="probe" /><text id="ref-label">{{label}}</text>'],
+      ['components/probe.json', '{"component":true}'],
+      ['components/probe.js', `Component({data:{label:'native'},methods:{readNative(){return this.__data__.label},update(){this.setData({label:'updated'})}}})`],
+      ['components/probe.wxml', '<text>{{label}}</text>'],
+    ]
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(files) })
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      session.renderCurrentPage()
+      page.inspect()
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#ref-label')?.textContent).toBe('native')
+      page.update()
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#ref-label')?.textContent).toBe('updated')
+    }
+    finally {
+      session.close()
+      preview.remove()
+    }
+  })
+
+  it('retains component lifecycle DOM when returning to a cached tab', () => {
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(componentNavigationFiles) })
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      const page = session.reLaunch('/pages/a/index')
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#history')?.textContent).toBe('hide=0 show=1')
+      session.switchTab('/pages/b/index')
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#history')).toBeNull()
+      session.switchTab('/pages/a/index')
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#history')?.textContent).toBe('hide=1 show=2')
+      page.setData({ visible: false })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#history')).toBeNull()
+    }
+    finally {
+      session.close()
+      preview.remove()
+    }
+  })
+
+  it('renders object WXML loops with string keys and updates their DOM', () => {
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(objectLoopFiles) })
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#api-fetch')?.textContent).toBe('fetch=function')
+      expect(preview.querySelector('#api-xmlHttpRequest')?.textContent).toBe('xmlHttpRequest=undefined')
+      page.setData({ apis: { response: 'function' } })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#api-fetch')).toBeNull()
+      expect(preview.querySelector('#api-response')?.textContent).toBe('response=function')
+    }
+    finally {
+      session.close()
+      preview.remove()
+    }
+  })
+
+  it('queries route attributes in rendered navigation links', () => {
+    const files: Array<[string, string]> = objectLoopFiles.map(([file, source]) => [file, file.endsWith('.wxml')
+      ? '<navigator url="{{url}}"><text class="path">detail</text></navigator>'
+      : source])
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(files) })
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      page.setData({ url: '/pages/detail/index?id=42&from=home' })
+      const rendered = session.renderCurrentPage()
+      const nodes = querySelectorAll(rendered.root, 'navigator[url="/pages/detail/index?id=42&from=home"] .path')
+      expect(nodes).toHaveLength(1)
+    }
+    finally {
+      session.close()
+    }
+  })
+
+  it('renders WXS calls through the browser session without leaking page modules into imports or components', () => {
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(wxsFiles) })
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      const page = session.reLaunch('/pages/index/index')
+      for (const platform of ['weapp', 'updated']) {
+        page.setData({ platform })
+        preview.innerHTML = session.renderCurrentPage().wxml
+        expect(preview.querySelector('#platform-marker')?.textContent).toBe(`MP_PLATFORM=${platform}`)
+        expect(preview.querySelector('#local')?.textContent).toBe(platform)
+        expect(preview.querySelector('#imported')?.textContent).toBe(`imported:${platform}`)
+        expect(preview.querySelector('#component')?.textContent).toBe(`component:${platform}`)
+        expect(preview.querySelector('#import-leak')?.textContent).toBe('')
+        expect(preview.querySelector('#component-leak')?.textContent).toBe('')
+        expect(preview.querySelector('#inline')?.textContent).toBe('undefined:undefined')
+        expect(preview.querySelector('#payload')?.textContent).toBe('wxs-copy')
+        expect(preview.querySelector('#literal')?.textContent).toBe('<tag></script>')
+        expect([...preview.querySelectorAll('.loop')].map(node => node.textContent)).toEqual([platform, 'second'])
+        expect(preview.querySelector('wxs')).toBeNull()
+        expect(page.data.payload).toEqual({ label: 'original' })
+      }
+    }
+    finally {
+      session.close()
+      preview.remove()
+    }
+  })
+
+  it('renders imported templates with private dependencies and component page query', () => {
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(importedTemplateFiles) })
+    const page = session.reLaunch('/pages/index/index?source=router')
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#query')?.textContent).toBe('router:router')
+      expect([...preview.querySelectorAll('.label')].map(node => node.textContent)).toEqual(['initial', 'initial'])
+      expect(preview.querySelector('#not-exported')).toBeNull()
+      page.setData({ label: 'updated' })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect([...preview.querySelectorAll('.label')].map(node => node.textContent)).toEqual(['updated', 'updated'])
+    }
+    finally {
+      preview.remove()
+    }
+  })
+
+  it('removes conditional slot nodes after closing and reopening the host', () => {
+    const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(conditionalSlotFiles) })
+    const page = session.reLaunch('/pages/index/index')
+    const preview = document.createElement('div')
+    document.body.append(preview)
+    try {
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#first')?.textContent).toBe('first-initial')
+      expect(preview.querySelector('#header')?.textContent).toBe('header-initial')
+      expect(preview.querySelector('#second')).toBeNull()
+      page.setData({ branch: 1, open: false, label: 'updated' })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#first')).toBeNull()
+      page.setData({ open: true })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#first')).toBeNull()
+      expect(preview.querySelector('#header')).toBeNull()
+      expect(preview.querySelector('#second')?.textContent).toBe('second-updated')
+      expect(preview.querySelector('#third')).toBeNull()
+      page.setData({ branch: 2 })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      expect(preview.querySelector('#second')).toBeNull()
+      expect(preview.querySelector('#third')?.textContent).toBe('third-updated')
+    }
+    finally {
+      preview.remove()
+    }
+  })
+
   let app: VueApp | undefined
   let defaultViewportSize = { height: 812, width: 375 }
   let mountNode: HTMLDivElement | undefined
@@ -325,7 +500,9 @@ describe('simulator browser e2e', { concurrent: false }, () => {
 
     await waitFor(
       () => bridge.getState(),
-      state => state.currentScenarioId === 'component-page' && state.currentRoute === 'pages/index/index',
+      state => state.currentScenarioId === 'component-page'
+        && state.currentRoute === 'pages/index/index'
+        && parseJsonString<{ lifecycleLog?: string[] }>(state.pageData).lifecycleLog?.includes('routeDone:undefined') === true,
       20_000,
     )
     bridge.triggerRouteDone({ from: 'browser-e2e' })
@@ -339,9 +516,10 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     )
     expect(state.errorMessage).toBe('')
     expect(state.previewMarkup).toContain('data-scenario="component-page"')
+    expect(state.previewMarkup).toContain(`created|attached|load|show|${initialResizeMarker}|ready|routeDone:undefined|routeDone:browser-e2e|resize:412`)
     expect(parseJsonString<Record<string, any>>(state.pageData)).toMatchObject({
-      lifecycleLog: ['created', 'attached', 'load', 'show', 'ready', 'routeDone:undefined', initialResizeMarker, 'routeDone:browser-e2e', 'resize:412'],
-      snapshot: `created|attached|load|show|ready|routeDone:undefined|${initialResizeMarker}|routeDone:browser-e2e|resize:412`,
+      lifecycleLog: ['created', 'attached', 'load', 'show', initialResizeMarker, 'ready', 'routeDone:undefined', 'routeDone:browser-e2e', 'resize:412'],
+      snapshot: `created|attached|load|show|${initialResizeMarker}|ready|routeDone:undefined|routeDone:browser-e2e|resize:412`,
     })
 
     bridge.runPageMethod('openNext')
@@ -369,9 +547,9 @@ describe('simulator browser e2e', { concurrent: false }, () => {
         'attached',
         'load',
         'show',
+        initialResizeMarker,
         'ready',
         'routeDone:undefined',
-        initialResizeMarker,
         'routeDone:browser-e2e',
         'resize:412',
         'hide',
@@ -958,6 +1136,10 @@ describe('simulator browser e2e', { concurrent: false }, () => {
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)
+    const renderedHosts = new DOMParser().parseFromString(bridge.renderCurrentPage(), 'text/html')
+    const host = renderedHosts.querySelector('[data-sim-component="status-card"]')
+    expect(host?.getAttribute('id')).toBe('status-card')
+    expect(host?.querySelector('#status-card-pulse')).not.toBeNull()
     expect(bridge.readScopeSnapshot(scopeIds[0])).toMatchObject({
       properties: {
         count: 3,

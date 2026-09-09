@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   callRoutePageMethod,
   disconnectSharedMiniProgram,
@@ -12,6 +14,7 @@ import {
   releaseSharedMiniProgram,
   verifyRouteRenderedWithRecovery,
 } from './github-issues.runtime.shared'
+import { fallbackPlans } from './githubIssuesDom/fallbacks'
 
 function countToken(wxml: string, token: string) {
   return wxml.split(token).length - 1
@@ -63,6 +66,7 @@ describe('e2e app: github-issues / slot fallback compiler off', { concurrent: fa
   })
 
   it('renders plain slot fallback independently from scopedSlotsCompiler', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', fallbackPlans(resolveRuntimeProviderName()).compilerOff)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(
@@ -113,6 +117,7 @@ describe('e2e app: github-issues / slot fallback compiler off', { concurrent: fa
       expect(computedErrorScript).toContain('console.error')
       expect(computedErrorScript).toContain('[wevu]')
       expect(computedErrorScript).toContain('__wv_bind_0 = missingMigratedComputed()')
+      await dom.check('initial', rendered.miniProgram, rendered.page)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

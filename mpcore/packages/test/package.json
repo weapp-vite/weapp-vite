@@ -42,7 +42,7 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
-    "test:types": "pnpm build && tsd",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

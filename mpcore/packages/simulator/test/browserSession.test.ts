@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFiles,
@@ -361,7 +361,7 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('index')
   })
 
-  it('exposes the active page stack before initial page lifecycles run', () => {
+  it('exposes the active page stack before initial page lifecycles run', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -392,7 +392,7 @@ Page({
     const session = createBrowserHeadlessSession({ files })
 
     const page = session.reLaunch('/pages/index/index')
-
+    await vi.waitFor(() => expect(page.data.lifecycleStacks).toHaveLength(3))
     expect(page.data.lifecycleStacks).toEqual([
       { name: 'load', routes: ['pages/index/index'] },
       { name: 'show', routes: ['pages/index/index'] },
@@ -400,7 +400,7 @@ Page({
     ])
   })
 
-  it('runs Component() pages in browser simulator runtime', () => {
+  it('runs Component() pages in browser simulator runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/next/index'] })],
       ['app.js', 'App({})'],
@@ -454,6 +454,7 @@ Component({
 
     const session = createBrowserHeadlessSession({ files })
     const page = session.reLaunch('/pages/index/index?from=browser')
+    await vi.waitFor(() => expect(page.data.lifecycleLog).toContain('ready'))
     session.triggerRouteDone({ from: 'browser' })
     session.triggerResize({ size: { windowWidth: 412 } })
     page.openNext()
@@ -3145,7 +3146,7 @@ Component({
     const page = session.reLaunch('/pages/lab/index')
     let rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('"value":"stable"')
-    expect(rendered.wxml).not.toContain('"oldValue"')
+    expect(rendered.wxml).toContain('"oldValue":""')
 
     page.flip()
     rendered = session.renderCurrentPage()
@@ -4352,26 +4353,26 @@ Component({
     }
   },
   data: {
-    readyState: 'cold'
+    readyState: 'cold',
+    lifecycleTrace: ''
   },
   lifetimes: {
     created() {
-      this.setData({ readyState: 'created' })
+      this.setData({ readyState: 'created', lifecycleTrace: 'created' })
     },
     ready() {
-      this.setData({ readyState: 'ready' })
+      this.setData({ readyState: 'ready', lifecycleTrace: this.data.lifecycleTrace + ':ready' })
     }
   }
 })
 `],
-      ['components/mini-badge/index.wxml', '<view>{{label}}</view><view>{{readyState}}</view>'],
+      ['components/mini-badge/index.wxml', '<view>{{label}}</view><view>{{readyState}}</view><view>{{lifecycleTrace}}</view>'],
     ])
 
     const session = createBrowserHeadlessSession({ files })
     session.reLaunch('/pages/lab/index')
     let rendered = session.renderCurrentPage()
-    expect(rendered.wxml).toContain('created')
-    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('created:ready')
     expect(rendered.wxml).toContain('ready')
 
     const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
@@ -4493,7 +4494,7 @@ Component({
     const page = session.getCurrentPages()[0]
     expect(page?.data.snapshot).toContain('"bubbles":true')
     expect(page?.data.snapshot).toContain('"composed":true')
-    expect(page?.data.snapshot).toContain('"id":"pulse-node"')
+    expect(page?.data.snapshot).toContain('"id":"status-card"')
   })
 
   it('supports selectOwnerComponent from nested component instances', () => {
@@ -4564,7 +4565,7 @@ Component({
     expect(rendered.wxml).toContain('"status":"stable"')
   })
 
-  it('maps data attributes into event target dataset', () => {
+  it('uses component host datasets instead of inheriting a previous native interaction dataset', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
       ['app.js', 'App({})'],
@@ -4585,7 +4586,7 @@ Page({
   }
 })
 `],
-      ['pages/lab/index.wxml', '<status-card bind:pulse="handlePulse" />'],
+      ['pages/lab/index.wxml', '<status-card data-phase="host" data-card-type="secondary" bind:pulse="handlePulse" />'],
       ['components/status-card/index.json', '{}'],
       ['components/status-card/index.js', `
 Component({
@@ -4616,8 +4617,7 @@ Component({
       id: 'pulse-node',
     })
     const page = session.getCurrentPages()[0]
-    expect(page?.data.snapshot).toContain('"phase":"pulse"')
-    expect(page?.data.snapshot).toContain('"cardType":"primary"')
+    expect(JSON.parse(page!.data.snapshot)).toEqual({ phase: 'host', cardType: 'secondary' })
   })
 
   it('renders wx:if / wx:elif / wx:else branches and wx:for lists', () => {

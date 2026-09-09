@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
@@ -12,6 +13,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { ISSUE642 } from './githubIssuesDom/scopedSlots'
 
 const ISSUE_642_ROUTE = '/pages/issue-642/index'
 
@@ -38,35 +40,6 @@ async function readIssue642WxmlBundle() {
   ]
   const contents = await Promise.all(files.map(async file => await fs.readFile(file, 'utf8')))
   return contents.join('\n')
-}
-
-async function callIssue642Runtime(ctx: { skip: (message?: string) => void }, ...args: any[]) {
-  let lastValue: any
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const miniProgram = await getSharedMiniProgram(ctx)
-    const page = await relaunchPage(miniProgram, ISSUE_642_ROUTE, undefined, 45_000, {
-      readiness: waitForIssue642PageMethod,
-    })
-    if (!page) {
-      throw new Error('Failed to launch issue-642 page')
-    }
-
-    lastValue = await callRoutePageMethodWithOptions(miniProgram, ISSUE_642_ROUTE, '_runE2E', {
-      protocolTimeoutMs: 12_000,
-      readiness: 'route',
-      recoveryAttempts: 3,
-      retries: 10,
-    }, ...args)
-    if (lastValue !== undefined) {
-      return lastValue
-    }
-
-    process.stdout.write(`[github-issues:issue642-runtime] undefined result attempt=${attempt}/3; restarting shared automator\n`)
-    await closeSharedMiniProgram({ force: true }).catch(() => {})
-    await delay(800)
-  }
-
-  throw new Error(`issue-642 runtime returned undefined after recovery attempts: ${String(lastValue)}`)
 }
 
 async function waitForIssue642Runtime(ctx: { skip: (message?: string) => void }, expectedBase: number, timeoutMs = 30_000) {
@@ -119,6 +92,7 @@ describe('e2e app: github-issues / issue #642', { concurrent: false }, () => {
   })
 
   it('keeps vueSlots populated after many dynamic object props on the same component', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE642)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_642_ROUTE, undefined, 45_000, {
@@ -163,8 +137,11 @@ describe('e2e app: github-issues / issue #642', { concurrent: false }, () => {
       expect(countToken(initialWxml, 'data-issue642-slot-state="fallback-default"')).toBe(1)
       expect(countToken(initialWxml, 'data-issue642-slot-state="scoped-provided"')).toBe(1)
       expect(initialWxml).toContain('data-issue642-scoped-value="{{__wvSlotPropsData.io}}"')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
 
-      await callIssue642Runtime(ctx, 'bump')
+      const controls = await issuePage.$$('.issue642-action', { fallback: false, timeout: 5_000 })
+      expect(controls).toHaveLength(1)
+      await controls[0].tap()
 
       const updatedRuntime = await waitForIssue642Runtime(ctx, 2)
       expect(updatedRuntime).toMatchObject({
@@ -187,6 +164,7 @@ describe('e2e app: github-issues / issue #642', { concurrent: false }, () => {
         },
       })
       expect(updatedRuntime.provided.dataVueSlots).toEqual(updatedRuntime.provided.propertyVueSlots)
+      await dom.check('updated', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

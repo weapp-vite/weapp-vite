@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, shallowRef, useTemplateRef } from 'wevu'
+import { nextTick, onReady, ref, shallowRef, useTemplateRef } from 'wevu'
 import NativePropsProbe from '../../components/issue-955/NativePropsProbe/index.vue'
 
 type Transition = 'null' | 'number' | 'string' | 'undefined'
@@ -19,6 +19,11 @@ const content = shallowRef<number | string>('SALE')
 const src = shallowRef<string>()
 const nullable = shallowRef<string | null>(null)
 const probe = useTemplateRef<NativePropsProbeExposed>('probe')
+const pageReady = ref(false)
+
+onReady(() => {
+  pageReady.value = true
+})
 
 definePageJson({
   navigationBarTitleText: 'issue-955',
@@ -83,6 +88,7 @@ defineExpose({
     <text class="issue955-page__title">
       issue-955 native nullable and union props
     </text>
+    <text id="issue955-ready">{{ pageReady ? 'ready' : 'loading' }}</text>
     <NativePropsProbe
       ref="probe"
       :content="content"

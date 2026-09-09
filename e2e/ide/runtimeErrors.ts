@@ -69,7 +69,7 @@ function normalizePreview(raw: any) {
     .join(', ')
 }
 
-function normalizeConsoleArg(raw: any) {
+function normalizeConsoleArgValue(raw: any) {
   if (typeof raw === 'string') {
     return raw
   }
@@ -92,7 +92,11 @@ function normalizeConsoleArg(raw: any) {
             }
           })()
         : ''
-      return [description || errorText || preview || serialized, stack]
+      const summary = errorText || description || preview || serialized
+      if (stack && summary && stack.startsWith(summary)) {
+        return stack
+      }
+      return [summary, stack]
         .filter(Boolean)
         .join('\n')
     }
@@ -118,6 +122,13 @@ function normalizeConsoleArg(raw: any) {
   catch {
     return String(raw)
   }
+}
+
+function normalizeConsoleArg(raw: any) {
+  const text = normalizeConsoleArgValue(raw)
+  return typeof raw?.inspectionError === 'string'
+    ? `${text}\n[console inspection failed] ${raw.inspectionError}`
+    : text
 }
 
 export function normalizeRuntimeConsoleText(entry: any) {

@@ -1,6 +1,6 @@
 import type { CompilerContext } from '../../../../context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
+import { resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
@@ -546,6 +546,9 @@ describe('emitSharedVueEntryAssets', () => {
           buildScope: {
             include: ['subs'],
           },
+          subPackages: {
+            subs: { independent: true },
+          },
           json: {
             defaults: {
               app: {
@@ -635,6 +638,7 @@ describe('emitSharedVueEntryAssets', () => {
         {
           root: 'subs',
           pages: ['issue-793/index'],
+          independent: true,
         },
       ],
       tabBar: {
@@ -1281,6 +1285,7 @@ describe('emitSharedVueEntryAssets', () => {
       refreshToken: 1,
     } as any
     const dirtyVueEntryIds = new Set(['D:\\project\\src\\app.vue'])
+    const vueEntrySfcSignatures = new Map()
     readFileMock.mockResolvedValue(appSource)
     compileVueFileMock.mockResolvedValue({
       template: '<view />',
@@ -1296,7 +1301,7 @@ describe('emitSharedVueEntryAssets', () => {
             hmr: {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
-              vueEntrySfcSignatures: new Map(),
+              vueEntrySfcSignatures,
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -1336,6 +1341,7 @@ describe('emitSharedVueEntryAssets', () => {
       expect.anything(),
     )
     expect(cached.autoRoutesSignature).toBe('current-routes')
+    expect(vueEntrySfcSignatures.get('D:/project/src/app.vue')).toEqual(resolveVueSfcHmrSignatures(appSource, 'D:/project/src/app.vue').blockSignatures)
     expect(cached.refreshToken).toBe(0)
     expect(dirtyVueEntryIds.size).toBe(0)
     expect((result as any).script).toBe('App({ refreshed: true })')

@@ -363,8 +363,8 @@ export interface HeadlessWxLaunchOptions {
   path: string
   query: Record<string, string>
   referrerInfo: {
-    appId: string
-    extraData: Record<string, never>
+    appId?: string
+    extraData?: Record<string, never>
   }
   scene: number
 }

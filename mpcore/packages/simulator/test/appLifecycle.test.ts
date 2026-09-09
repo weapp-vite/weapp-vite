@@ -19,8 +19,8 @@ describe('app lifecycle alignment', () => {
 
     expect(app.globalData.ready).toBe(true)
     expect(app.globalData.logs).toEqual([
-      'onLaunch:{"path":"","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
-      'onShow:{"path":"","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
+      'onLaunch:{"path":"","query":{},"referrerInfo":{},"scene":1001}',
+      'onShow:{"path":"","query":{},"referrerInfo":{},"scene":1001}',
     ])
     expect(session.getWx().canIUse('onAppShow')).toBe(true)
     expect(session.getWx().canIUse('onAppHide')).toBe(true)
@@ -36,11 +36,12 @@ describe('app lifecycle alignment', () => {
     const session = createHeadlessSession({ projectPath })
 
     session.reLaunch('/pages/home/index?from=entry')
+    expect(session.renderCurrentPage().wxml).toContain('>页面已启动</view>')
 
     const app = session.getApp()
     expect(app?.globalData.logs).toEqual([
-      'onLaunch:{"path":"pages/home/index","query":{"from":"entry"},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
-      'onShow:{"path":"pages/home/index","query":{"from":"entry"},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
+      'onLaunch:{"path":"pages/home/index","query":{"from":"entry"},"referrerInfo":{},"scene":1001}',
+      'onShow:{"path":"pages/home/index","query":{"from":"entry"},"referrerInfo":{},"scene":1001}',
     ])
     const timeline = app?.globalData.lifecycle.timeline as string[]
     const pageLoadIndex = timeline.indexOf('page:home:onLoad')
@@ -56,6 +57,7 @@ describe('app lifecycle alignment', () => {
     const session = createHeadlessSession({ projectPath })
 
     session.reLaunch('/pages/home/index?from=entry')
+    expect(session.renderCurrentPage().wxml).toContain('>页面已启动</view>')
     const app = session.getApp()
 
     app?.captureLaunchOptions()
@@ -64,19 +66,13 @@ describe('app lifecycle alignment', () => {
     expect(app?.globalData.launchOptions).toEqual({
       path: 'pages/home/index',
       query: { from: 'entry' },
-      referrerInfo: {
-        appId: '',
-        extraData: {},
-      },
+      referrerInfo: {},
       scene: 1001,
     })
     expect(app?.globalData.enterOptions).toEqual({
       path: 'pages/home/index',
       query: { from: 'entry' },
-      referrerInfo: {
-        appId: '',
-        extraData: {},
-      },
+      referrerInfo: {},
       scene: 1001,
     })
     expect(session.getLaunchOptions()).toEqual(app?.globalData.launchOptions)
@@ -96,9 +92,9 @@ describe('app lifecycle alignment', () => {
 
     const app = session.getApp()
     expect(app?.globalData.logs).toEqual([
-      'onLaunch:{"path":"","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
-      'onShow:{"path":"","query":{},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
-      'onPageNotFound:{"path":"pages/missing/index","query":{"from":"test"},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
+      'onLaunch:{"path":"","query":{},"referrerInfo":{},"scene":1001}',
+      'onShow:{"path":"","query":{},"referrerInfo":{},"scene":1001}',
+      'onPageNotFound:{"path":"pages/missing/index","query":{"from":"test"},"referrerInfo":{},"scene":1001}',
     ])
   })
 
@@ -113,9 +109,9 @@ describe('app lifecycle alignment', () => {
 
     const app = session.getApp()
     expect(app?.globalData.logs).toEqual([
-      'onLaunch:{"path":"pages/missing/index","query":{"from":"entry"},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
-      'onShow:{"path":"pages/missing/index","query":{"from":"entry"},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
-      'onPageNotFound:{"path":"pages/missing/index","query":{"from":"entry"},"referrerInfo":{"appId":"","extraData":{}},"scene":1001}',
+      'onLaunch:{"path":"pages/missing/index","query":{"from":"entry"},"referrerInfo":{},"scene":1001}',
+      'onShow:{"path":"pages/missing/index","query":{"from":"entry"},"referrerInfo":{},"scene":1001}',
+      'onPageNotFound:{"path":"pages/missing/index","query":{"from":"entry"},"referrerInfo":{},"scene":1001}',
     ])
   })
 

@@ -33,6 +33,7 @@ export interface DevModuleGraph {
 }
 
 export interface DevServerGraphHost {
+  environments?: { client?: { bundledDev?: unknown } }
   moduleGraph: DevModuleGraph
   transformRequest?: (url: string) => Promise<unknown>
 }

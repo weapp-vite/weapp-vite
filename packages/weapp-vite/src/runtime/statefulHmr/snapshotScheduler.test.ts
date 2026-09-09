@@ -96,4 +96,52 @@ describe('stateful hmr snapshot scheduler', () => {
     expect(batches.map(batch => batch.mode)).toEqual(['full', 'full'])
     await scheduler.close()
   })
+
+  it('retains failed files and full priority until a new request without retrying forever', async () => {
+    vi.useFakeTimers()
+    const error = new Error('native write failed')
+    const execute = vi.fn().mockRejectedValueOnce(error).mockResolvedValue(undefined)
+    const onError = vi.fn(() => {
+      throw new Error('diagnostic callback failed')
+    })
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute, onError })
+
+    scheduler.request('full', ['pages/first.vue'])
+    await vi.advanceTimersByTimeAsync(40)
+    expect(onError).toHaveBeenCalledWith(error)
+    expect(scheduler.isPending()).toBe(false)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(execute).toHaveBeenCalledTimes(1)
+
+    scheduler.request('refresh', ['pages/second.wxss'])
+    await vi.advanceTimersByTimeAsync(40)
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(execute.mock.calls[1]![0]).toMatchObject({
+      files: ['pages/first.vue', 'pages/second.wxss'],
+      mode: 'full',
+    })
+    await scheduler.close()
+  })
+
+  it('retries a failed in-flight batch once when a newer request is already queued', async () => {
+    vi.useFakeTimers()
+    const first = createDeferred()
+    const execute = vi.fn().mockImplementationOnce(() => first.promise).mockResolvedValue(undefined)
+    const scheduler = new StatefulHmrSnapshotScheduler({ execute })
+
+    scheduler.request('full', ['pages/first.vue'])
+    await vi.advanceTimersByTimeAsync(40)
+    scheduler.request('refresh', ['pages/second.wxss'])
+    first.reject(new Error('write failed after a newer request'))
+    await vi.advanceTimersByTimeAsync(40)
+
+    expect(execute).toHaveBeenCalledTimes(2)
+    expect(execute.mock.calls[1]![0]).toMatchObject({
+      files: ['pages/second.wxss', 'pages/first.vue'],
+      mode: 'full',
+    })
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(execute).toHaveBeenCalledTimes(2)
+    await scheduler.close()
+  })
 })

@@ -7,7 +7,7 @@
   "srcMiniprogramRoot": "dist/",
   "appid": "wxb3d842a4a7e3440d",
   "setting": {
-    "es6": true,
+    "es6": false,
     "postcss": false,
     "compileWorklet": false,
     "minified": false,

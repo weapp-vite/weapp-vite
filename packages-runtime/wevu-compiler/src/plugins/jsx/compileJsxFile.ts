@@ -234,6 +234,7 @@ export async function compileJsxFile(
       hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
       jsxDynamicIslands: dynamicIslands,
+      ...(transformedScript.componentStyleOptions ? { componentStyleOptions: transformedScript.componentStyleOptions } : {}),
       ...(transformedScript.runtimeCapabilities
         ? { runtimeCapabilities: transformedScript.runtimeCapabilities }
         : {}),

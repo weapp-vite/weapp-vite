@@ -46,16 +46,19 @@ function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
   }
 
   const targets = new Set<string>()
-  const currentFile = ctx.runtimeState.build.hmr.profile.file
-  if (typeof currentFile === 'string' && isTemplate(currentFile)) {
-    targets.add(normalizeWatchPath(currentFile))
-  }
-
   const entryIds = hmrState.lastHmrEntryIds?.size
     ? hmrState.lastHmrEntryIds
     : hmrState.lastEmittedEntryIds
 
   for (const entryId of entryIds ?? []) {
+    // 原生 layout 通过组件包裹页面，不在页面 WXML 的 import/include 图中。
+    // 先纳入入口已登记的模板所有权，再统一展开其嵌套模板依赖。
+    for (const dependency of ctx.moduleGraphService?.getEntryDependencies(entryId) ?? []) {
+      const template = normalizeWatchPath(dependency.sourceId)
+      if (isTemplate(template)) {
+        targets.add(template)
+      }
+    }
     const candidates = [
       entryId,
       ctx.configService.relativeAbsoluteSrcRoot(entryId),
@@ -70,6 +73,18 @@ function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
     }
   }
 
+  // 目标属于当前已加载入口；不能读取构建期间继续增长的 watcher 事件队列。
+  const pending = [...targets]
+  while (pending.length) {
+    const current = pending.pop()!
+    for (const dependency of ctx.wxmlService?.depsMap?.get(current) ?? []) {
+      const template = normalizeWatchPath(dependency)
+      if (isTemplate(template) && !targets.has(template)) {
+        targets.add(template)
+        pending.push(template)
+      }
+    }
+  }
   return targets.size ? targets : undefined
 }
 
@@ -87,13 +102,14 @@ export function createRenderStartHook(state: CorePluginState) {
       if (shouldEmitJsonDuringRenderStart(state)) {
         emitJsonAssets.call(this, state)
       }
+      const targetIds = resolveIncrementalHmrWxmlTargetIds(state)
       state.watchFilesSnapshot = emitWxmlAssetsWithCache({
         runtime,
         compiler: ctx,
         subPackageMeta,
         emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
         buildTarget,
-        targetIds: resolveIncrementalHmrWxmlTargetIds(state),
+        targetIds,
       })
     }
     finally {

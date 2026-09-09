@@ -17,7 +17,7 @@ onLoad(async () => {
 
 <template>
   <view id="complex-a-user">
-    <view>{{ userSummary }}</view>
-    <view>{{ asyncSummary }}</view>
+    <view id="complex-a-user-sync">{{ userSummary }}</view>
+    <view id="complex-a-user-async">{{ asyncSummary }}</view>
   </view>
 </template>

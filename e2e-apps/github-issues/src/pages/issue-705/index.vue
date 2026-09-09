@@ -9,6 +9,7 @@ definePageJson({
 const route = useRoute()
 const router = useRouter()
 const routePath = computed(() => route.path)
+const routerRoutePath = computed(() => router.currentRoute.path)
 const hookCalls: Array<{ phase: string, to?: string, from: string }> = []
 const backHookCalls: Array<{ phase: string, to?: string, from: string }> = []
 const BACK_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_back_result__'
@@ -141,6 +142,12 @@ defineExpose({
     <text class="issue705-title">
       issue-705 router route sync
     </text>
+    <view class="issue705-route">
+      route: {{ routePath }}
+    </view>
+    <view class="issue705-router-route">
+      router: {{ routerRoutePath }}
+    </view>
     <button
       class="issue705-push"
       @tap="pushToTarget"

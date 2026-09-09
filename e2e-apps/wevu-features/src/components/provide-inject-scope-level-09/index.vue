@@ -4,7 +4,7 @@ import ProvideInjectScopeLeaf from '../provide-inject-scope-leaf/index.vue'
 
 <template>
   <view class="provide-inject-scope-level">
-    <ProvideInjectScopeLeaf />
+    <ProvideInjectScopeLeaf id="scope-leaf" />
   </view>
 </template>
 

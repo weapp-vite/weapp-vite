@@ -44,14 +44,18 @@
     "test:all": "pnpm test && pnpm test:types && pnpm test:e2e",
     "test:dev": "vitest",
     "test:e2e": "vitest run -c ./vitest.e2e.config.ts",
-    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.{ts,tsx}\"",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@babel/parser": "catalog:",
     "@weapp-core/constants": "workspace:*",
+    "css-select": "^6.0.0",
+    "css-what": "^7.0.0",
+    "fontoxpath": "^3.34.0",
     "htmlparser2": "catalog:",
-    "pathe": "catalog:"
+    "pathe": "catalog:",
+    "postcss": "catalog:"
   },
   "publishConfig": {
     "access": "public",

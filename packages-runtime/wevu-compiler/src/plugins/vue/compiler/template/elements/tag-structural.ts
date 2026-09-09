@@ -2,6 +2,7 @@ import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { recordBindingExpression } from '../bindingManifest'
+import { resolveConditionalBranch, withBindingCondition } from '../conditions'
 import { transformBindDirective } from '../directives/bind'
 import { createForKeyProjection, resolveNativeForKeyValue } from '../directives/forKey'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
@@ -15,13 +16,6 @@ import { transformNormalElement } from './tag-normal'
 import { transformSlotElement } from './tag-slot'
 
 const REGEX_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g
-
-function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
-  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames))
-    ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
-    : null
-  return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
-}
 
 function resolveListExpression(rawExpValue: string, context: TransformContext, hint: string) {
   const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames))
@@ -66,47 +60,29 @@ export function transformIfElement(node: ElementNode, context: TransformContext,
     return transformNormalElement(node, context, transformNode)
   }
 
-  const otherProps = node.props.filter(prop => prop !== ifDirective)
-  const elementWithoutIf = { ...node, props: otherProps }
-
-  const slotDirective = findSlotDirective(elementWithoutIf)
-  const templateSlotChildren = elementWithoutIf.children.filter(
-    child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child as ElementNode),
-  )
-  const content = elementWithoutIf.tag === 'slot'
-    ? transformSlotElement(elementWithoutIf as ElementNode, context, transformNode)
-    : slotDirective || templateSlotChildren.length > 0
-      ? transformComponentWithSlots(elementWithoutIf as ElementNode, context, transformNode)
-      : transformNormalElement(elementWithoutIf as ElementNode, context, transformNode)
-
-  const dir = ifDirective as DirectiveNode
-  if (dir.name === 'if' && dir.exp) {
-    const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-    const expValue = resolveConditionExpression(rawExpValue, context, 'v-if')
-    recordBindingExpression(context, {
-      kind: 'if',
-      expression: rawExpValue,
-      outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
-      sourceLocation: dir.exp.loc,
-    })
-    return context.platform.wrapIf(expValue, content, renderTemplateMustache)
+  const { conditionKind, condition, bindingCondition } = resolveConditionalBranch(ifDirective, context)
+  const content = withBindingCondition(context, bindingCondition, () => {
+    const elementWithoutIf = { ...node, props: node.props.filter(prop => prop !== ifDirective) }
+    if (elementWithoutIf.tag === 'template') {
+      return elementWithoutIf.children.map(child => transformNode(child, context)).join('')
+    }
+    const slotDirective = findSlotDirective(elementWithoutIf)
+    const hasSlotChildren = elementWithoutIf.children.some(
+      child => child.type === NodeTypes.ELEMENT && child.tag === 'template' && findSlotDirective(child),
+    )
+    return elementWithoutIf.tag === 'slot'
+      ? transformSlotElement(elementWithoutIf, context, transformNode)
+      : slotDirective || hasSlotChildren
+        ? transformComponentWithSlots(elementWithoutIf, context, transformNode)
+        : transformNormalElement(elementWithoutIf, context, transformNode)
+  })
+  if (conditionKind === 'if' && condition) {
+    return context.platform.wrapIf(condition, content, renderTemplateMustache)
   }
-  else if (dir.name === 'else-if' && dir.exp) {
-    const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-    const expValue = resolveConditionExpression(rawExpValue, context, 'v-else-if')
-    recordBindingExpression(context, {
-      kind: 'if',
-      expression: rawExpValue,
-      outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
-      sourceLocation: dir.exp.loc,
-    })
-    return context.platform.wrapElseIf(expValue, content, renderTemplateMustache)
+  if (conditionKind === 'else-if' && condition) {
+    return context.platform.wrapElseIf(condition, content, renderTemplateMustache)
   }
-  else if (dir.name === 'else') {
-    return context.platform.wrapElse(content)
-  }
-
-  return content
+  return conditionKind === 'else' ? context.platform.wrapElse(content) : content
 }
 
 export function transformForElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
@@ -145,9 +121,16 @@ export function transformForElement(node: ElementNode, context: TransformContext
   const listExpAst = forInfo.listExp
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
     : undefined
+  // 投影计算遍历原始项，不能沿用模板中祖先项的投影包装访问。
+  const rawListExpAst = rawListExp && context.forStack.some(info => info.itemAccess)
+    ? normalizeJsExpressionWithContext(rawListExp, {
+        ...context,
+        forStack: context.forStack.map(info => ({ ...info, itemAccess: undefined })),
+      }, { hint: 'v-for 原始列表' })
+    : listExpAst
   const scopedForInfo: ForParseResult = listExp
-    ? { ...forInfo, listExp, rawListExp, listExpAst: listExpAst ?? undefined }
-    : { ...forInfo, rawListExp, listExpAst: listExpAst ?? undefined }
+    ? { ...forInfo, listExp, rawListExp, listExpAst: listExpAst ?? undefined, rawListExpAst: rawListExpAst ?? undefined }
+    : { ...forInfo, rawListExp, listExpAst: listExpAst ?? undefined, rawListExpAst: rawListExpAst ?? undefined }
   const scopeNames = [
     forInfo.item,
     forInfo.index,

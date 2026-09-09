@@ -1,8 +1,7 @@
-/* eslint-disable e18e/ban-dependencies -- e2e 测试需要 execa 驱动 CLI 构建。 */
 import { fs } from '@weapp-core/shared/node'
-import { execa } from 'execa'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 
@@ -13,47 +12,45 @@ const CASES = {
 
 async function buildCase(appRoot: string) {
   const distRoot = path.resolve(appRoot, 'dist')
-  const patchCacheRoot = path.resolve(appRoot, 'node_modules/.cache/weapp-tailwindcss')
-  await fs.remove(distRoot)
-  await fs.remove(patchCacheRoot)
-
-  await execa('pnpm', ['exec', 'weapp-tw', 'patch', '--cwd', appRoot, '--clear-cache'], {
-    cwd: path.resolve(import.meta.dirname, '../..'),
-    stdio: 'inherit',
-  })
-
-  await execa('node', [CLI_PATH, 'build', appRoot, '--platform', 'weapp', '--skipNpm'], {
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: appRoot,
+    platform: 'weapp',
     cwd: appRoot,
-    stdio: 'inherit',
+    skipNpm: true,
+    label: `ci:issue-814:${path.basename(appRoot)}`,
   })
 
   const wxml = await fs.readFile(path.resolve(distRoot, 'pages/index/index.wxml'), 'utf-8')
-  const js = await fs.readFile(path.resolve(distRoot, 'pages/index/index.js'), 'utf-8')
-  return { wxml, js }
+  const wxss = await fs.readFile(path.resolve(distRoot, 'app.wxss'), 'utf-8')
+  const jsFiles = (await fs.readdir(distRoot, { recursive: true })).filter(file => file.endsWith('.js')).sort()
+  const js = (await Promise.all(jsFiles.map(file => fs.readFile(path.join(distRoot, file), 'utf-8')))).join('\n')
+  return { wxml, wxss, js }
 }
 
-describe.skip('e2e app: issue #814 tailwind dynamic class matrix', () => {
-  it('tailwind4 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
-    const { wxml, js } = await buildCase(CASES.tailwind4)
+function expectGeneratedClasses(wxml: string, wxss: string) {
+  const dynamicNode = wxml.match(/<view\s[^>]*\bid="issue-814-dynamic"[^>]*>/)?.[0]
+  expect(dynamicNode).toBeDefined()
+  expect(dynamicNode).toMatch(/\bclass="\{\{[^}]+\}\}"/)
+  expect(wxml).toContain('gap-_b24px_B')
+  expect(wxss).toMatch(/\.gap-_b24px_B\s*\{[^}]*\bgap:\s*24px\b/)
+  expect(wxss).toMatch(/\.gap-_b17px_B\s*\{[^}]*\bgap:\s*17px\b/)
+}
 
-    expect(wxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
-    expect(wxml).toContain('gap-_b24px_B')
-    expect(js).toContain('`flex`+')
-    expect(js).toContain('this.bbb')
-    expect(js).toContain('this.aaa')
+describe('e2e app: issue #814 Tailwind Core dynamic class matrix', { concurrent: false }, () => {
+  it('tailwind4 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
+    const { wxml, wxss, js } = await buildCase(CASES.tailwind4)
+
+    expectGeneratedClasses(wxml, wxss)
     expect(js).toContain('gap-_b17px_B')
     expect(js).not.toContain('gap-[17px]')
-  })
+  }, 120_000)
 
-  it('tailwind4-broken keeps dynamic class binding in js but reproduces unescaped arbitrary-value symptom', async () => {
-    const { wxml, js } = await buildCase(CASES.tailwind4Broken)
+  it('jsPreserveClass is a negative control that preserves only the JavaScript candidate', async () => {
+    const { wxml, wxss, js } = await buildCase(CASES.tailwind4Broken)
 
-    expect(wxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
-    expect(wxml).toContain('gap-_b24px_B')
-    expect(js).toContain('`flex`+')
-    expect(js).toContain('this.bbb')
-    expect(js).toContain('this.aaa')
+    expectGeneratedClasses(wxml, wxss)
     expect(js).toContain('gap-[17px]')
     expect(js).not.toContain('gap-_b17px_B')
-  })
+  }, 120_000)
 })

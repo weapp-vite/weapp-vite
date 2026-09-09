@@ -175,7 +175,7 @@ function optionsReset() {
   syncMetricsView()
 }
 
-async function runE2E() {
+async function runMutationE2E() {
   setupInc()
   setupVisit()
   setupRenameAlpha()
@@ -201,6 +201,13 @@ async function runE2E() {
     setupPatched: metrics.setupPatched,
   }
 
+  return {
+    ok: Object.values(beforeResetChecks).every(Boolean),
+    checks: beforeResetChecks,
+  }
+}
+
+async function runResetE2E() {
   setupReset()
   optionsReset()
   await nextTick()
@@ -217,14 +224,9 @@ async function runE2E() {
     actionTriggered: metrics.actionBeforeCount > 0 && metrics.actionAfterCount > 0,
   }
 
-  const checks = {
-    ...beforeResetChecks,
-    ...afterResetChecks,
-  }
-
   return {
-    ok: Object.values(checks).every(Boolean),
-    checks,
+    ok: Object.values(afterResetChecks).every(Boolean),
+    checks: afterResetChecks,
     details: {
       setup: {
         count: setupStore.count.value,
@@ -248,7 +250,19 @@ async function runE2E() {
   }
 }
 
+async function runE2E() {
+  const mutations = await runMutationE2E()
+  const reset = await runResetE2E()
+  return {
+    ...reset,
+    ok: mutations.ok && reset.ok,
+    checks: { ...mutations.checks, ...reset.checks },
+  }
+}
+
 const _runE2E = runE2E
+const _runMutationE2E = runMutationE2E
+const _runResetE2E = runResetE2E
 syncMetricsView()
 </script>
 

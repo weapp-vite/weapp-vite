@@ -1,11 +1,17 @@
 import type { StatefulHmrAuditClient, StatefulHmrAuditControl } from './statefulAuditClient'
 import { setTimeout as sleep } from 'node:timers/promises'
 
+export interface StatefulHmrAuditEvent {
+  type: string
+  targetVersion?: number
+}
+
 export async function waitForStatefulHmrAuditUpdate(options: {
   client: StatefulHmrAuditClient
   readControl: () => Promise<StatefulHmrAuditControl>
   isCurrentUpdate: () => Promise<boolean>
   timeoutMs: number
+  onEvent?: (event: StatefulHmrAuditEvent) => void
 }) {
   const deadline = Date.now() + options.timeoutMs
   let lastError: unknown
@@ -15,6 +21,7 @@ export async function waitForStatefulHmrAuditUpdate(options: {
       await options.client.ensureRegistered(control, Math.max(1, Math.min(30_000, deadline - Date.now())))
       while (Date.now() < deadline) {
         const response = await options.client.poll(Math.max(1, Math.min(30_000, deadline - Date.now())))
+        options.onEvent?.({ type: response.type ?? 'unknown', targetVersion: response.targetVersion })
         if (response.type === 'batch-published' && await options.isCurrentUpdate()) {
           return
         }
@@ -25,6 +32,7 @@ export async function waitForStatefulHmrAuditUpdate(options: {
     }
     catch (error) {
       lastError = error
+      options.onEvent?.({ type: 'request-error' })
     }
     await sleep(Math.min(100, Math.max(0, deadline - Date.now())))
   }

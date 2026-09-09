@@ -1,7 +1,20 @@
 import type { HeadlessWx } from '..'
 import { expectType } from 'tsd'
-import { createHeadlessSession } from '..'
+import {
+  createBrowserHeadlessSession,
+  createBrowserVirtualFiles,
+  createHeadlessSession,
+} from '..'
 
+const browserFiles = createBrowserVirtualFiles([
+  ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+  ['app.js', 'App({})'],
+  ['pages/index/index.js', 'Page({})'],
+  ['pages/index/index.wxml', '<view>hello</view>'],
+])
+
+const browserSession = createBrowserHeadlessSession({ files: browserFiles })
+browserSession.reLaunch('/pages/index/index')
 declare const browserWx: HeadlessWx
 
 expectType<{ errMsg: string } | undefined>(browserWx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
@@ -157,14 +170,13 @@ browserWx.getFileSystemManager().rmdir({
   },
 })
 
-const headlessSession = createHeadlessSession({ projectPath: 'fixture-project' })
-const headlessWx = headlessSession.getWx()
+const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 
-expectType<{ errMsg: string } | undefined>(headlessWx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
-expectType<void>(headlessWx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
-expectType<string>(headlessWx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+expectType<{ errMsg: string } | undefined>(headlessSession.getWx().getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
+expectType<void>(headlessSession.getWx().getFileSystemManager().rmdirSync('headless://saved/archive', true))
+expectType<string>(headlessSession.getWx().getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
 
-headlessWx.getFileSystemManager().access({
+headlessSession.getWx().getFileSystemManager().access({
   path: 'headless://wxfile/temp/0001',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
@@ -177,7 +189,7 @@ headlessWx.getFileSystemManager().access({
   },
 })
 
-headlessWx.getFileSystemManager().readFile({
+headlessSession.getWx().getFileSystemManager().readFile({
   filePath: 'headless://wxfile/temp/0001',
   success: (result) => {
     expectType<{ data: string, errMsg: string }>(result)
@@ -190,7 +202,7 @@ headlessWx.getFileSystemManager().readFile({
   },
 })
 
-headlessWx.getFileSystemManager().stat({
+headlessSession.getWx().getFileSystemManager().stat({
   path: 'headless://wxfile/temp/0001',
   success: (result) => {
     expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } }>(result)
@@ -203,7 +215,7 @@ headlessWx.getFileSystemManager().stat({
   },
 })
 
-headlessWx.getFileSystemManager().readdir({
+headlessSession.getWx().getFileSystemManager().readdir({
   dirPath: 'headless://saved',
   success: (result) => {
     expectType<{ errMsg: string, files: string[] }>(result)
@@ -216,7 +228,7 @@ headlessWx.getFileSystemManager().readdir({
   },
 })
 
-headlessWx.getFileSystemManager().rename({
+headlessSession.getWx().getFileSystemManager().rename({
   oldPath: 'headless://temp/source.txt',
   newPath: 'headless://temp/target.txt',
   success: (result) => {
@@ -230,7 +242,7 @@ headlessWx.getFileSystemManager().rename({
   },
 })
 
-headlessWx.getFileSystemManager().copyFile({
+headlessSession.getWx().getFileSystemManager().copyFile({
   srcPath: 'headless://temp/source.txt',
   destPath: 'headless://temp/copied.txt',
   success: (result) => {
@@ -244,7 +256,7 @@ headlessWx.getFileSystemManager().copyFile({
   },
 })
 
-headlessWx.getFileSystemManager().unlink({
+headlessSession.getWx().getFileSystemManager().unlink({
   filePath: 'headless://temp/source.txt',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
@@ -257,21 +269,7 @@ headlessWx.getFileSystemManager().unlink({
   },
 })
 
-headlessWx.getFileSystemManager().writeFile({
-  filePath: 'headless://temp/source.txt',
-  data: 'payload',
-  success: (result) => {
-    expectType<{ errMsg: string }>(result)
-  },
-  fail: (error) => {
-    expectType<Error>(error)
-  },
-  complete: (result) => {
-    expectType<{ errMsg: string } | undefined>(result)
-  },
-})
-
-headlessWx.getFileSystemManager().appendFile({
+headlessSession.getWx().getFileSystemManager().writeFile({
   filePath: 'headless://temp/source.txt',
   data: 'payload',
   success: (result) => {
@@ -285,7 +283,21 @@ headlessWx.getFileSystemManager().appendFile({
   },
 })
 
-headlessWx.getFileSystemManager().mkdir({
+headlessSession.getWx().getFileSystemManager().appendFile({
+  filePath: 'headless://temp/source.txt',
+  data: 'payload',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+
+headlessSession.getWx().getFileSystemManager().mkdir({
   dirPath: 'headless://saved/example',
   recursive: true,
   success: (result) => {
@@ -299,7 +311,7 @@ headlessWx.getFileSystemManager().mkdir({
   },
 })
 
-headlessWx.getFileSystemManager().rmdir({
+headlessSession.getWx().getFileSystemManager().rmdir({
   dirPath: 'headless://saved/example',
   recursive: true,
   success: (result) => {

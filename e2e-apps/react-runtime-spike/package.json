@@ -21,7 +21,7 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "@swc/core": "1.16.1",
+    "@swc/core": "1.16.2",
     "@types/react": "catalog:",
     "@types/react-reconciler": "catalog:",
     "miniprogram-api-typings": "catalog:",

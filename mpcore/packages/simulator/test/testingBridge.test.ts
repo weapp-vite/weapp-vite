@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { launch } from '../src/testing'
 import { cleanupTempDirs, createAsyncComponentFixture, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
 
@@ -52,7 +52,7 @@ describe('headless testing bridge', () => {
       structuredClone: typeof structuredClone,
       URLSearchParams: typeof URLSearchParams,
       wx: typeof wx,
-      wxFromGlobalThis: typeof (globalThis as typeof globalThis & { wx: unknown }).wx,
+      wxFromGlobalThis: typeof (globalThis as typeof globalThis & { wx?: unknown }).wx,
     }))).resolves.toEqual({
       Buffer: 'undefined',
       fetch: 'undefined',
@@ -76,6 +76,26 @@ describe('headless testing bridge', () => {
       height: 667,
       width: 375,
     })
+  })
+
+  it('updates rendered page data through the protocol without retaining caller objects', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+    try {
+      const page = await miniProgram.reLaunch('/pages/index/index')
+      const payload = { __e2eData: { greeting: 'Updated' } }
+      await page.setData(payload)
+      payload.__e2eData.greeting = 'caller mutation'
+      expect(await (await page.$('#greeting-button'))?.text()).toBe('Updated')
+      await page.setData({ '__e2eData.greeting': 'Restored' })
+      expect(await (await page.$('#greeting-button'))?.text()).toBe('Restored')
+      await miniProgram.close()
+      await expect(page.setData({})).rejects.toThrow()
+    }
+    finally {
+      await miniProgram.close()
+    }
   })
 
   it('calls page methods through the testing bridge', async () => {
@@ -393,11 +413,13 @@ Page({
     if (!homePage) {
       throw new Error('Expected the configured home page to be active.')
     }
+    await vi.waitFor(async () => expect(await homePage.data('logs')).toContain('home:onReady'))
     await homePage.callMethod('goDetailLater')
 
     const detailPage = await miniProgram.waitForCurrentPage('/pages/detail/index')
 
     expect(detailPage).not.toBeNull()
+    await vi.waitFor(async () => expect(await detailPage?.data('logs')).toContain('detail:onReady'))
     expect(await detailPage?.data('logs')).toEqual([
       'home:onLoad:{}',
       'home:onShow',
@@ -536,7 +558,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
 
     expect(trigger).not.toBeNull()
     await trigger?.tap()
@@ -544,7 +566,7 @@ Page({
     expect(await page.data('log')).toEqual(['status-card'])
   })
 
-  it('preserves component event target, currentTarget and mark through the testing bridge', async () => {
+  it('targets custom events at the component host and preserves mark through the testing bridge', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
     const miniProgram = await launch({
@@ -552,17 +574,26 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
 
-    await trigger?.tap({
+    expect(trigger).not.toBeNull()
+    await trigger!.tap({
       mark: {
         source: 'testing-bridge',
       },
     })
 
-    expect(await page.data('eventSnapshot')).toContain('"targetId":"card-trigger"')
-    expect(await page.data('eventSnapshot')).toContain('"currentTargetId":"status-card"')
-    expect(await page.data('eventSnapshot')).toContain('"source":"testing-bridge"')
+    const snapshot = await page.data('eventSnapshot') as string
+    expect(JSON.parse(snapshot) as unknown).toEqual({
+      currentTargetDataset: { role: 'main' },
+      currentTargetId: 'status-card',
+      mark: { source: 'testing-bridge' },
+      targetDataset: { role: 'main' },
+      targetId: 'status-card',
+    })
+    const views = await page.$$('view')
+    expect(await Promise.all(views.map(view => view.text()))).toContain(snapshot)
+    await miniProgram.close()
   })
 
   it('exposes scope snapshots through the testing bridge session handle', async () => {
@@ -616,6 +647,22 @@ Page({
     })
   })
 
+  it('queries rendered component hosts by id and preserves their scoped descendants', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const hosts = await page.$$('#status-card')
+    expect(hosts).toHaveLength(1)
+    expect(await hosts[0]!.attr('class')).toBe('primary-card')
+    expect(await hosts[0]!.attr('data-role')).toBe('main')
+    expect(await (await hosts[0]!.$('#card-trigger'))?.text()).toBe('count: 2')
+    expect(await page.$$('component')).toHaveLength(1)
+    expect(await page.$$('status-card.primary-card')).toHaveLength(1)
+    await (await hosts[0]!.$('#card-trigger'))!.tap()
+    expect(await page.data('log')).toEqual(['status-card'])
+  })
+
   it('clears stale component interaction targets before direct component method calls', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
@@ -625,7 +672,7 @@ Page({
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
     const component = await miniProgram.selectComponent('#status-card')
-    const input = await page.$('#card-input')
+    const input = await (await page.$('#status-card'))!.$('#card-input')
 
     expect(component).not.toBeNull()
     expect(input).not.toBeNull()
@@ -679,7 +726,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const input = await page.$('#card-input')
+    const input = await (await page.$('#status-card'))!.$('#card-input')
 
     expect(input).not.toBeNull()
 
@@ -917,7 +964,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
     const scope = await trigger?.scope()
 
     expect(scope).not.toBeNull()
@@ -938,7 +985,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
     const currentPage = await trigger?.page()
 
     expect(currentPage).not.toBeNull()
@@ -953,7 +1000,7 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const trigger = await page.$('#card-trigger')
+    const trigger = await (await page.$('#status-card'))!.$('#card-trigger')
     const componentScope = await trigger?.componentScope()
     const pageScope = await trigger?.pageScope()
 
@@ -974,7 +1021,8 @@ Page({
     })
 
     const page = await miniProgram.reLaunch('/pages/lab/index')
-    const badgeNode = await page.$('#mini-badge-inner')
+    const card = (await page.$('#status-card'))!
+    const badgeNode = await (await card.$('#mini-badge'))!.$('#mini-badge-inner')
     const ownerScope = await badgeNode?.ownerComponentScope()
 
     expect(ownerScope).not.toBeNull()

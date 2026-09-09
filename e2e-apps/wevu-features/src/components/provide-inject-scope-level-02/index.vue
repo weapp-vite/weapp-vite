@@ -4,7 +4,7 @@ import ProvideInjectScopeLevel03 from '../provide-inject-scope-level-03/index.vu
 
 <template>
   <view class="provide-inject-scope-level">
-    <ProvideInjectScopeLevel03 />
+    <ProvideInjectScopeLevel03 id="scope-level-03" />
   </view>
 </template>
 

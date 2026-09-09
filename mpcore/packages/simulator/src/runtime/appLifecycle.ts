@@ -6,17 +6,6 @@ import type {
 } from '../host'
 import type { HeadlessAppInstance } from './appInstance'
 
-export function cloneHeadlessWxLaunchOptions(options: HeadlessWxLaunchOptions): HeadlessWxLaunchOptions {
-  return {
-    ...options,
-    query: { ...options.query },
-    referrerInfo: {
-      ...options.referrerInfo,
-      extraData: { ...options.referrerInfo.extraData },
-    },
-  }
-}
-
 export class HeadlessAppLifecycle {
   private readonly hideCallbacks: HeadlessWxAppHideCallback[] = []
   private readonly showCallbacks: HeadlessWxAppShowCallback[] = []

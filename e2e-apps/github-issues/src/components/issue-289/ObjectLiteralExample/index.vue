@@ -65,7 +65,7 @@ defineExpose({
           item.tone === 'primary' ? 'object-item-primary' : 'object-item-warning',
         ]"
       >
-        <text>{{ item.label }}</text>
+        <text class="object-item-label">{{ item.label }}</text>
         <text
           v-if="activeId === item.id"
           class="object-item-badge"

@@ -6,11 +6,13 @@ import type {
   HeadlessWxSelectorQueryRequest,
 } from './core'
 import { createHeadlessUniEventBus } from './eventBus'
+import { createHeadlessLogManager } from './logManager'
 
 export * from './api'
 export * from './core'
 export * from './eventBus'
 export * from './fileSystem'
+export type { HeadlessWxGetLogManagerOption, HeadlessWxLogManager } from './logManager'
 export * from './media'
 
 function invokeWxApi<TOption extends HeadlessWxCallbackOption<TResult>, TResult>(
@@ -46,7 +48,7 @@ function resolveCapabilityValue(source: Record<string, any>, schema: string) {
   return current
 }
 
-export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
+export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<Console, 'debug' | 'info' | 'log' | 'warn'> = console): HeadlessWx {
   const eventBus = createHeadlessUniEventBus()
   const rpx2px = (value: number) => {
     const width = driver.getWindowInfoSync().windowWidth
@@ -70,6 +72,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getImageInfo: { return: { errMsg: true, height: true, orientation: true, path: true, type: true, width: true } },
     getLocation: { return: { accuracy: true, altitude: true, errMsg: true, horizontalAccuracy: true, latitude: true, longitude: true, speed: true, verticalAccuracy: true } },
     getLocale: true,
+    getLogManager: { return: { debug: true, info: true, log: true, warn: true } },
     getFileInfo: { return: { digest: true, errMsg: true, size: true } },
     openDocument: { return: { errMsg: true } },
     getVideoInfo: { return: { bitrate: true, duration: true, errMsg: true, fps: true, height: true, orientation: true, size: true, type: true, width: true } },
@@ -233,6 +236,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     },
     getVideoInfo: option => invokeWxApi(() => driver.getVideoInfo(option), option),
     getFileSystemManager: () => driver.getFileSystemManager(),
+    getLogManager: () => createHeadlessLogManager(runtimeConsole),
     getSavedFileInfo: option => invokeWxApi(() => driver.getSavedFileInfo(option), option),
     getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),

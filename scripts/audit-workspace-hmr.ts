@@ -1,5 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 import type { WorkspaceHmrBaseline, WorkspaceHmrThresholds } from './workspace-hmr/baseline'
+import type { DynamicReactDeliveryEvidence, DynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
+import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { execFile as execFileCallback } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
@@ -9,24 +11,33 @@ import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
+import { sanitizeAcceptanceText, sanitizeAcceptanceValue } from '../e2e/scripts/domAcceptanceReport/helpers'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
+import { readEmittedStylesheet, waitForEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
+import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
 import {
   createWorkspaceHmrBaseline,
   evaluateWorkspaceHmrThresholds,
   parseThresholdOverrides,
   renderThresholdMarkdown,
 } from './workspace-hmr/baseline'
+import { collectWorkspaceHmrCleanupErrors, isWorkspaceHmrScenarioRetryable } from './workspace-hmr/cleanup'
+import { prepareDynamicReactMutation } from './workspace-hmr/dynamicReactDelivery'
+import { isDynamicReactTemplateOutput } from './workspace-hmr/reactTemplate'
+import { renderWorkspaceHmrExecution, summarizeWorkspaceHmrExecution } from './workspace-hmr/report'
 import {
   injectReactTemplateMarker,
+  injectVueStyleRule,
   isReactTemplateSource,
   parseStatefulHmrControlSource,
   resolveHmrScriptOutputPath,
   resolveReactTemplateOutputPath,
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
+import { assertWorkspaceHmrSelection, selectWorkspaceHmrProjects } from './workspace-hmr/selection'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
 import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
@@ -68,6 +79,7 @@ interface ScenarioCase {
   expectedMarker?: (marker: string) => string
   mutate: (source: string, marker: string) => string
   statefulClient?: boolean
+  dynamicReactEntry?: string
 }
 
 interface HmrProfileSample {
@@ -128,6 +140,16 @@ interface ScenarioResult {
   profile?: HmrProfileSample
   impact?: ImpactFile[]
   error?: string
+  cleanupErrors?: string[]
+  delivery?: DynamicReactDeliveryEvidence['delivery']
+  deliveryEvidence?: DynamicReactDeliveryEvidence
+  restoreDelivery?: DynamicReactDeliveryEvidence
+  diagnostics?: {
+    transport: StatefulHmrAuditEvent[]
+    output: { path: string, exists: boolean, sha256?: string, bytes?: number, containsMarker?: boolean }
+    reachableStylesheet?: { containsMarker?: boolean, error?: string }
+    recentDevOutput: string
+  }
 }
 
 interface ProjectResult {
@@ -139,6 +161,7 @@ interface ProjectResult {
   startupMs?: number
   thresholds?: WorkspaceHmrThresholds
   scenarios: ScenarioResult[]
+  warmup?: { scenario: string, update?: DynamicReactDeliveryEvidence, restore?: DynamicReactDeliveryEvidence }
   error?: string
 }
 
@@ -205,8 +228,7 @@ async function main() {
   await cleanupResidualDevProcesses()
   await prepareReferencedWorkspaceTsconfigs()
 
-  const projects = (await selectProjectsForRunMode(await discoverProjects()))
-    .filter(project => !projectFilter || project.id.includes(projectFilter))
+  const projects = selectWorkspaceHmrProjects(await selectProjectsForRunMode(await discoverProjects()), projectFilter)
 
   const results: ProjectResult[] = []
   for (const project of projects) {
@@ -216,7 +238,7 @@ async function main() {
 
   const generatedAt = new Date().toISOString()
   let baseline = await readWorkspaceHmrBaseline(baselinePath)
-  if (writeBaseline) {
+  if (writeBaseline && projects.length) {
     baseline = createWorkspaceHmrBaseline(results, {
       generatedAt,
       mode: 'templates-baseline',
@@ -232,11 +254,16 @@ async function main() {
     overrides: parseThresholdOverrides(process.env),
   })
   const summary = summarizeProjectResults(results)
-  const thresholdMarkdown = renderThresholdMarkdown(thresholdEvaluation)
+  const thresholdMarkdown = renderThresholdMarkdown(thresholdEvaluation, summary)
   const report = {
     generatedAt,
     mode: runMode,
     scope: workspaceHmrScope,
+    selection: {
+      filter: projectFilter,
+      status: projects.length ? 'selected' : 'empty',
+      projectCount: projects.length,
+    },
     baseline: baseline ? formatReportPath(baselinePath) : undefined,
     startupTimeoutMs,
     scenarioTimeoutMs,
@@ -250,7 +277,7 @@ async function main() {
     projects: results,
     thresholds: thresholdEvaluation,
   }
-  await writeFile(reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
+  await writeFile(reportJsonPath, `${JSON.stringify(sanitizeAcceptanceValue(report), null, 2)}\n`, 'utf8')
   await writeFile(thresholdMdPath, `${thresholdMarkdown}\n`, 'utf8')
   await writeFile(reportMdPath, renderMarkdown(results, summary, thresholdMarkdown), 'utf8')
   await writeGitHubStepSummary(results, summary, thresholdMarkdown)
@@ -266,6 +293,10 @@ async function main() {
   if (failedProjects.length) {
     process.stdout.write(`[workspace-hmr] failed projects: ${failedProjects.map(project => project.id).join(', ')}\n`)
   }
+  if (!projects.length) {
+    process.stdout.write('[workspace-hmr] no projects selected; this report contains no acceptance results.\n')
+  }
+  assertWorkspaceHmrSelection(projects.length, failOnError)
   if (failOnError && (failedProjects.length || thresholdEvaluation.issues.length)) {
     process.exitCode = 1
   }
@@ -276,20 +307,19 @@ async function prepareReferencedWorkspaceTsconfigs() {
   if (!existsSync(workspaceTsconfigPath)) {
     return
   }
-  const parsed = JSON.parse(await readFile(workspaceTsconfigPath, 'utf8')) as { references?: Array<{ path?: unknown }> }
-  const projectRoots = (parsed.references ?? [])
-    .map(reference => typeof reference.path === 'string' ? reference.path : undefined)
-    .filter((referencePath): referencePath is string => Boolean(referencePath))
-    .map(referencePath => path.resolve(repoRoot, referencePath))
-    .filter(projectRoot => existsSync(path.join(projectRoot, 'package.json')))
-  for (const projectRoot of projectRoots) {
-    if (existsSync(path.join(projectRoot, '.weapp-vite/tsconfig.shared.json'))) {
-      continue
-    }
-    const managedDir = path.join(projectRoot, '.weapp-vite')
-    await mkdir(managedDir, { recursive: true })
-    await writeFile(path.join(managedDir, 'tsconfig.shared.json'), '{"files":[]}\n', 'utf8')
+  const projects = await discoverBenchmarkTypeScriptProjects(repoRoot)
+  for (const project of projects) {
+    process.stdout.write(`[workspace-hmr] prepare referenced project ${project.root}\n`)
+    const args = createBenchmarkPrepareArgs(project.root)
+    const result = await execFile(process.execPath, [cliPath, ...args.slice(1)], {
+      cwd: repoRoot,
+      maxBuffer: 10 * 1024 * 1024,
+    })
+    const output = `${result.stdout}\n${result.stderr}`
+    process.stdout.write(sanitizeAcceptanceText(output, repoRoot))
+    assertBenchmarkPrepareCompleted(project.root, { exitCode: 0, output })
   }
+  await assertBenchmarkTypeScriptPrepared(repoRoot, projects)
 }
 
 async function selectProjectsForRunMode(projects: ProjectCase[]) {
@@ -565,7 +595,7 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
       distRoot,
       '__weapp_vite_hmr/control.js',
     )))
-    scenarios = await discoverScenarios(project)
+    scenarios = await discoverScenarios(project, true)
     selectedScenarios = maxScenariosPerProject
       ? scenarios.slice(0, maxScenariosPerProject)
       : scenarios
@@ -577,36 +607,55 @@ async function auditProject(project: ProjectCase): Promise<ProjectResult> {
     }))
     const runnableScenarios = []
     for (const scenario of selectedScenarios) {
-      if (await pathExists(scenario.outputPath)) {
-        runnableScenarios.push(scenario)
+      if (!(await pathExists(scenario.outputPath))) {
+        throw new Error(`Discovered HMR scenario ${scenario.id} did not produce initial output: ${formatProjectPath(scenario.outputPath)}`)
       }
+      runnableScenarios.push(scenario)
     }
     if (!runnableScenarios.length) {
       throw new Error('No discovered HMR scenario produced an initial output.')
     }
     result.startupMs = performance.now() - startupStart
-    await warmupProjectHmr(project, runnableScenarios[0]!, profilePath, distRoot)
+    const warmupScenario = runnableScenarios[0]!
+    const warmup = await warmupProjectHmr(project, warmupScenario, profilePath, distRoot)
+    if (warmup?.update || warmup?.restore) {
+      result.warmup = { scenario: warmupScenario.id, ...warmup }
+    }
 
     const scenarioResults: ScenarioResult[] = []
     for (const scenario of runnableScenarios) {
-      scenarioResults.push(await auditScenarioWithRetries(project, scenario, profilePath, distRoot))
+      const scenarioResult = await auditScenarioWithRetries(project, scenario, profilePath, distRoot, () => dev.getOutput())
+      scenarioResults.push(scenarioResult)
+      if (scenarioResult.cleanupErrors?.length) {
+        result.scenarios = [
+          ...scenarioResults,
+          ...result.scenarios.slice(scenarioResults.length).map(pending => ({ ...pending, error: 'Not executed: previous scenario did not restore its baseline.' })),
+        ]
+        throw new Error(`Cannot continue after ${scenario.id}: source/output restoration failed.`)
+      }
     }
     result.scenarios = scenarioResults
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const devOutput = dev.getOutput().trim()
-    result.error = devOutput
+    result.error = sanitizeAcceptanceText(devOutput
       ? `${message}\n\nRecent dev output:\n${devOutput.slice(-12_000)}`
-      : message
+      : message)
   }
   finally {
-    await dev.stop(5_000).catch(() => {})
-    for (const [filePath, source] of backups) {
-      await writeFile(filePath, source, 'utf8').catch(() => {})
+    const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
+      { label: 'Failed to stop dev process', run: () => dev.stop(5_000) },
+      ...[...backups].map(([filePath, source]) => ({
+        label: `Failed to restore backup ${formatProjectPath(filePath)}`,
+        run: () => writeFile(filePath, source, 'utf8'),
+      })),
+      { label: 'Failed to clean residual dev processes', run: () => cleanupResidualDevProcesses() },
+    ])
+    if (cleanupErrors.length) {
+      result.error = [result.error, ...cleanupErrors.map(error => sanitizeAcceptanceText(error))].filter(Boolean).join('\n')
     }
     statefulHmrAuditClients.delete(project.root)
-    await cleanupResidualDevProcesses()
   }
 
   return result
@@ -626,37 +675,24 @@ async function warmupProjectHmr(
     return
   }
 
-  if (scenario.statefulClient) {
-    await bindStatefulHmrAuditClient(project)
-  }
+  const mutation = await prepareScenarioMutation(project, scenario)
   const profileLineCount = await countJsonlLines(profilePath)
-  await writeScenarioSource(scenario.sourcePath, updated)
-  if (scenario.statefulClient) {
-    await publishStatefulHmrUpdate(project, async () => (await readFile(scenario.outputPath, 'utf8')).includes(expectedMarker))
-  }
-  else {
-    await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
-  }
-  if (project.hmrRuntime === 'standard') {
-    await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
-  }
+  let delivery: DynamicReactDeliveryEvidence | undefined
+  let restore: DynamicReactDeliveryEvidence | undefined
   try {
-    if (scenario.statefulClient) {
-      await bindStatefulHmrAuditClient(project)
+    await writeScenarioSource(scenario.sourcePath, updated)
+    delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true)
+    if (project.hmrRuntime === 'standard') {
+      await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
   }
   finally {
-    await writeScenarioSource(scenario.sourcePath, original)
-  }
-  if (scenario.statefulClient) {
-    await publishStatefulHmrUpdate(project, async () => !(await readFile(scenario.outputPath, 'utf8')).includes(expectedMarker))
-  }
-  else {
-    await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
+    restore = await restoreScenarioMutation(project, scenario, original, expectedMarker)
   }
   await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs)
   await rm(profilePath, { force: true }).catch(() => {})
   await sleep(settleMs)
+  return { update: delivery, restore }
 }
 
 async function auditScenarioWithRetries(
@@ -664,11 +700,12 @@ async function auditScenarioWithRetries(
   scenario: ScenarioCase,
   profilePath: string,
   distRoot: string,
+  getDevOutput: () => string,
 ) {
-  let result = await auditScenario(project, scenario, profilePath, distRoot)
-  for (let attempt = 1; result.error && attempt <= scenarioRetries; attempt++) {
+  let result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
+  for (let attempt = 1; isWorkspaceHmrScenarioRetryable(result) && attempt <= scenarioRetries; attempt++) {
     process.stdout.write(`[workspace-hmr] retry ${project.id} ${scenario.id}: ${result.error}\n`)
-    result = await auditScenario(project, scenario, profilePath, distRoot)
+    result = await auditScenario(project, scenario, profilePath, distRoot, getDevOutput)
   }
   return result
 }
@@ -678,11 +715,13 @@ async function auditScenario(
   scenario: ScenarioCase,
   profilePath: string,
   distRoot: string,
+  getDevOutput: () => string,
 ): Promise<ScenarioResult> {
   const original = await readFile(scenario.sourcePath, 'utf8')
   const marker = createMarker(project.id, scenario.id)
   const expectedMarker = scenario.expectedMarker?.(marker) ?? marker
   const updated = scenario.mutate(original, marker)
+  const transport: StatefulHmrAuditEvent[] = []
   const result: ScenarioResult = {
     id: scenario.id,
     label: scenario.label,
@@ -699,18 +738,21 @@ async function auditScenario(
   }
 
   try {
-    if (scenario.statefulClient) {
-      await bindStatefulHmrAuditClient(project)
-    }
+    const mutation = await prepareScenarioMutation(project, scenario)
     const profileLineCount = await countJsonlLines(profilePath)
     const before = await snapshotDist(distRoot)
     const startedAt = performance.now()
     await writeScenarioSource(scenario.sourcePath, updated)
-    if (scenario.statefulClient) {
-      await publishStatefulHmrUpdate(project, async () => (await readFile(scenario.outputPath, 'utf8')).includes(expectedMarker))
-    }
-    else {
-      await waitForFileContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs)
+    const delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true, (event) => {
+      transport.push(event)
+      if (transport.length > 32) {
+        transport.shift()
+      }
+    })
+    if (delivery) {
+      result.delivery = delivery.delivery
+      result.deliveryEvidence = delivery
+      result.output = formatProjectPath(path.join(project.distRoot, delivery.output))
     }
     result.observedMs = performance.now() - startedAt
     await sleep(settleMs)
@@ -724,42 +766,53 @@ async function auditScenario(
     result.impact = diffDistSnapshots(before, after)
   }
   catch (error) {
-    result.error = error instanceof Error ? error.message : String(error)
+    result.error = sanitizeAcceptanceText(error instanceof Error ? error.message : String(error))
+    const output = await readFile(scenario.outputPath).catch(() => undefined)
+    result.diagnostics = {
+      transport,
+      output: {
+        path: formatProjectPath(scenario.outputPath),
+        exists: output !== undefined,
+        sha256: output && createHash('sha256').update(output).digest('hex'),
+        bytes: output?.byteLength,
+        containsMarker: output?.toString('utf8').includes(expectedMarker),
+      },
+      recentDevOutput: sanitizeAcceptanceText(getDevOutput().slice(-12_000)),
+    }
+    if (isStylesheetOutput(scenario.outputPath)) {
+      try {
+        result.diagnostics.reachableStylesheet = { containsMarker: (await readEmittedStylesheet(scenario.outputPath)).includes(expectedMarker) }
+      }
+      catch (error) {
+        result.diagnostics.reachableStylesheet = { error: sanitizeAcceptanceText(error instanceof Error ? error.message : String(error)) }
+      }
+    }
   }
   finally {
     const restoreProfileLineCount = await countJsonlLines(profilePath).catch(() => 0)
-    try {
-      try {
-        if (scenario.statefulClient) {
-          await bindStatefulHmrAuditClient(project)
-        }
-      }
-      finally {
-        await writeScenarioSource(scenario.sourcePath, original)
-      }
-    }
-    catch (error) {
-      result.error ??= error instanceof Error ? error.message : String(error)
-    }
-    if (scenario.statefulClient) {
-      await publishStatefulHmrUpdate(project, async () => !(await readFile(scenario.outputPath, 'utf8')).includes(expectedMarker)).catch((error: unknown) => {
-        result.error ??= error instanceof Error ? error.message : String(error)
-      })
-    }
-    else {
-      await waitForFileNotContains(scenario.outputPath, expectedMarker, scenarioTimeoutMs).catch(() => {})
+    const cleanupErrors = await collectWorkspaceHmrCleanupErrors([
+      {
+        label: 'Failed to restore source and verify delivered output',
+        run: async () => {
+          result.restoreDelivery = await restoreScenarioMutation(project, scenario, original, expectedMarker)
+        },
+      },
+      { label: 'Restored output did not settle', run: () => waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs) },
+    ])
+    if (cleanupErrors.length) {
+      result.cleanupErrors = cleanupErrors.map(error => sanitizeAcceptanceText(error))
+      result.error = [result.error, ...result.cleanupErrors].filter(Boolean).join('\n')
     }
     if (project.hmrRuntime === 'standard') {
       await waitForHmrProfileSample(project, profilePath, restoreProfileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
-    await waitForStableDistSnapshot(distRoot, startupDistStableMs, scenarioTimeoutMs).catch(() => {})
     await sleep(settleMs)
   }
 
   return result
 }
 
-async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> {
+async function discoverScenarios(project: ProjectCase, requireOutputs = false): Promise<ScenarioCase[]> {
   const files = (await listFiles(project.sourceRoot))
     .sort((left, right) => scoreSourceFile(project.sourceRoot, left) - scoreSourceFile(project.sourceRoot, right)
       || left.localeCompare(right))
@@ -771,7 +824,7 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   const reactTemplate = findPreferredSource(files, filePath => isReactTemplateSource(filePath) && isPageLikeSource(project.sourceRoot, filePath))
 
   if (reactTemplate) {
-    scenarios.push(createReactTemplateScenario(project, reactTemplate))
+    scenarios.push(await createReactTemplateScenario(project, reactTemplate, requireOutputs))
   }
   else if (nativeTemplate) {
     scenarios.push(createNativeTemplateScenario(project, nativeTemplate))
@@ -791,12 +844,18 @@ async function discoverScenarios(project: ProjectCase): Promise<ScenarioCase[]> 
   return dedupeScenarios(scenarios)
 }
 
-function createReactTemplateScenario(project: ProjectCase, sourcePath: string): ScenarioCase {
+async function createReactTemplateScenario(project: ProjectCase, sourcePath: string, requireOutput: boolean): Promise<ScenarioCase> {
+  const templateOutput = resolveReactTemplateOutputPath(project, sourcePath)
+  const dynamic = await isDynamicReactTemplateOutput(templateOutput, requireOutput)
   return {
     id: 'react-template',
-    label: 'React TSX template',
+    label: dynamic ? 'React TSX dynamic-render script' : 'React TSX static template',
     sourcePath,
-    outputPath: resolveReactTemplateOutputPath(project, sourcePath),
+    outputPath: dynamic ? resolveHmrScriptOutputPath(project, path.join(path.dirname(sourcePath), 'index.ts')) : templateOutput,
+    statefulClient: dynamic && project.hmrRuntime === 'stateful',
+    dynamicReactEntry: dynamic && project.hmrRuntime === 'stateful'
+      ? path.join(path.dirname(templateOutput), 'index.js')
+      : undefined,
     mutate: injectReactTemplateMarker,
   }
 }
@@ -864,7 +923,7 @@ function createVueScenarios(project: ProjectCase, sourcePath: string, source: st
       sourcePath,
       outputPath: styleOutput,
       expectedMarker: marker => toCssIdent(marker),
-      mutate: (source, marker) => insertBeforeClosingTag(source, 'style', `\n.hmr-audit-${toCssIdent(marker)} { color: #0f766e; }\n`),
+      mutate: (source, marker) => injectVueStyleRule(source, `.hmr-audit-${toCssIdent(marker)} { color: #0f766e; }`),
     },
   ].filter((scenario) => {
     if (scenario.id === 'vue-template') {
@@ -905,26 +964,89 @@ function resolveOutputPath(project: ProjectCase, sourcePath: string, outputExt: 
   return path.join(project.distRoot, parsed.dir, `${parsed.name}.${outputExt}`)
 }
 
-function getStatefulHmrAuditClient(project: ProjectCase) {
+async function prepareScenarioMutation(project: ProjectCase, scenario: ScenarioCase) {
+  if (scenario.dynamicReactEntry) {
+    if (scenario.id !== 'react-template' || !scenario.statefulClient) {
+      throw new Error('Full-reload delivery is restricted to explicit stateful dynamic React scenarios.')
+    }
+    const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
+    statefulHmrAuditClients.set(project.root, client)
+    return await prepareDynamicReactMutation({
+      client,
+      distRoot: project.distRoot,
+      entryFile: scenario.dynamicReactEntry,
+      timeoutMs: scenarioTimeoutMs,
+    })
+  }
+  if (scenario.statefulClient) {
+    await prepareStatefulHmrAuditClient(project)
+  }
+}
+
+async function waitForScenarioMutation(
+  project: ProjectCase,
+  scenario: ScenarioCase,
+  mutation: DynamicReactMutation | undefined,
+  marker: string,
+  contains: boolean,
+  onEvent?: (event: StatefulHmrAuditEvent) => void,
+) {
+  if (scenario.dynamicReactEntry) {
+    if (!mutation) {
+      throw new Error('Dynamic React mutation is missing its pre-mutation build identity.')
+    }
+    return await mutation.waitForDelivery(marker, contains, onEvent)
+  }
+  if (scenario.statefulClient) {
+    await publishStatefulHmrUpdate(project, scenario.outputPath, marker, contains, onEvent)
+  }
+  if (contains) {
+    await waitForFileContains(scenario.outputPath, marker, scenarioTimeoutMs)
+  }
+  else {
+    await waitForFileNotContains(scenario.outputPath, marker, scenarioTimeoutMs)
+  }
+}
+
+async function restoreScenarioMutation(project: ProjectCase, scenario: ScenarioCase, source: string, marker: string) {
+  let preparationError: unknown
+  const mutation = await prepareScenarioMutation(project, scenario).catch((error) => {
+    preparationError = error
+    return undefined
+  })
+  // 即使当前构建无法读取，也先恢复源码；缺失构建身份不能被当作恢复验收通过。
+  await writeScenarioSource(scenario.sourcePath, source)
+  if (preparationError) {
+    throw preparationError
+  }
+  return await waitForScenarioMutation(project, scenario, mutation, marker, false)
+}
+
+async function publishStatefulHmrUpdate(
+  project: ProjectCase,
+  outputPath: string,
+  marker: string,
+  contains: boolean,
+  onEvent?: (event: StatefulHmrAuditEvent) => void,
+) {
+  const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
+  const client = await prepareStatefulHmrAuditClient(project)
+  await waitForStatefulHmrAuditUpdate({
+    client,
+    readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
+    isCurrentUpdate: async () => (await readFile(outputPath, 'utf8')).includes(marker) === contains,
+    timeoutMs: scenarioTimeoutMs,
+    onEvent,
+  })
+}
+
+async function prepareStatefulHmrAuditClient(project: ProjectCase) {
   const client = statefulHmrAuditClients.get(project.root) ?? new StatefulHmrAuditClient()
   statefulHmrAuditClients.set(project.root, client)
-  return client
-}
-
-async function bindStatefulHmrAuditClient(project: ProjectCase) {
   const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
   const control = parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
-  await getStatefulHmrAuditClient(project).ensureRegistered(control, Math.min(30_000, scenarioTimeoutMs))
-}
-
-async function publishStatefulHmrUpdate(project: ProjectCase, isCurrentUpdate: () => Promise<boolean>) {
-  const controlPath = path.join(project.distRoot, '__weapp_vite_hmr/control.js')
-  await waitForStatefulHmrAuditUpdate({
-    client: getStatefulHmrAuditClient(project),
-    readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
-    isCurrentUpdate,
-    timeoutMs: scenarioTimeoutMs,
-  })
+  await client.ensureRegistered(control, scenarioTimeoutMs)
+  return client
 }
 
 function scoreSourceFile(sourceRoot: string, filePath: string) {
@@ -1236,6 +1358,10 @@ async function waitForFileContains(filePath: string, marker: string, timeoutMs: 
     await waitForFile(filePath, timeoutMs)
     return
   }
+  if (isStylesheetOutput(filePath)) {
+    await waitForEmittedStylesheet(filePath, marker, { timeoutMs })
+    return
+  }
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     if (await pathExists(filePath)) {
@@ -1254,6 +1380,10 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
     await waitForFile(filePath, timeoutMs)
     return
   }
+  if (isStylesheetOutput(filePath)) {
+    await waitForEmittedStylesheet(filePath, marker, { absent: true, timeoutMs })
+    return
+  }
   const startedAt = Date.now()
   while (Date.now() - startedAt < timeoutMs) {
     if (await pathExists(filePath)) {
@@ -1265,6 +1395,10 @@ async function waitForFileNotContains(filePath: string, marker: string, timeoutM
     await sleep(250)
   }
   throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to remove marker: ${marker}`)
+}
+
+function isStylesheetOutput(filename: string) {
+  return ['.wxss', '.acss'].includes(path.extname(filename))
 }
 
 async function listFiles(root: string) {
@@ -1447,6 +1581,11 @@ interface WorkspaceHmrReportSummary {
   failedProjectCount: number
   scenarioCount: number
   measuredScenarioCount: number
+  executedScenarioCount: number
+  successfulScenarioCount: number
+  failedScenarioCount: number
+  notExecutedScenarioCount: number
+  compilerProfileSampleCount: number
   scenarioP50Ms?: number
   scenarioP95Ms?: number
   scenarioMaxMs?: number
@@ -1488,6 +1627,7 @@ function summarizeProjectResults(results: ProjectResult[]): WorkspaceHmrReportSu
   return {
     projectCount: results.length,
     failedProjectCount: failedProjects.length,
+    ...summarizeWorkspaceHmrExecution(results),
     scenarioCount: results.reduce((count, project) => count + project.scenarios.length, 0),
     measuredScenarioCount: measuredScenarioMs.length,
     scenarioP50Ms: percentile(measuredScenarioMs, 0.5),
@@ -1681,8 +1821,10 @@ async function writeGitHubStepSummary(results: ProjectResult[], summary: Workspa
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
+    `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
     `- projects: ${summary.projectCount}`,
-    `- scenarios: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
+    ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
+    `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P95: ${formatDuration(summary.scenarioP95Ms)}`,
     `- scenario max: ${formatDuration(summary.scenarioMaxMs)}`,
     `- failures: ${failedProjects.length}`,
@@ -1719,8 +1861,10 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
+    `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
     `- generated projects: ${summary.projectCount}`,
-    `- scenarios: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
+    ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
+    `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
     `- scenario P50: ${formatDuration(summary.scenarioP50Ms)}`,
     `- scenario P95: ${formatDuration(summary.scenarioP95Ms)}`,
     `- scenario max: ${formatDuration(summary.scenarioMaxMs)}`,
@@ -1753,7 +1897,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
   lines.push('')
   lines.push('## Top Slow Scenarios', '')
   if (!slowScenarios.length) {
-    lines.push('No measured scenarios.', '')
+    lines.push('No timing threshold samples.', '')
   }
   else {
     lines.push('| project | scenario | total | observed | startup | pending/emitted | impact | top phase | suggestion |')
@@ -1797,11 +1941,16 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
       lines.push(`- project error: ${project.error}`, '')
       continue
     }
-    lines.push('| scenario | total(ms) | observed(ms) | build(ms) | transform(ms) | write(ms) | emit(ms) | dirty | pending | emitted | impact | error |')
-    lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |')
+    if (project.warmup) {
+      lines.push(`- warmup delivery: ${project.warmup.update?.delivery ?? '-'}; restore: ${project.warmup.restore?.delivery ?? '-'}`, '')
+    }
+    lines.push('| scenario | delivery | restore | total(ms) | observed(ms) | build(ms) | transform(ms) | write(ms) | emit(ms) | dirty | pending | emitted | impact | error |')
+    lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |')
     for (const scenario of project.scenarios) {
       lines.push([
         scenario.id,
+        scenario.delivery ?? '-',
+        scenario.restoreDelivery?.delivery ?? '-',
         formatMetric(scenario.totalMs),
         formatMetric(scenario.observedMs),
         formatMetric(scenario.profile?.buildCoreMs),

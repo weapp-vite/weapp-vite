@@ -28,11 +28,11 @@ function _runE2E() {
         compiled virtual host wrapper
       </view>
       <Issue613ViewForwarder>
-        <view class="issue613-forwarded-content" data-issue613-forwarded="compiled-virtual-host">
+        <view id="issue613-virtual-host" class="issue613-forwarded-content" data-issue613-forwarded="compiled-virtual-host">
           issue-613 forwarded via compiled virtual host
         </view>
         <template #footer>
-          <view class="issue613-forwarded-content" data-issue613-forwarded="compiled-footer">
+          <view id="issue613-footer" class="issue613-forwarded-content" data-issue613-forwarded="compiled-footer">
             issue-613 forwarded via compiled footer
           </view>
         </template>
@@ -44,7 +44,7 @@ function _runE2E() {
         compiled view fallback wrapper
       </view>
       <Issue613LegacyViewForwarder>
-        <view class="issue613-forwarded-content" data-issue613-forwarded="compiled-view">
+        <view id="issue613-view" class="issue613-forwarded-content" data-issue613-forwarded="compiled-view">
           issue-613 forwarded via compiled view
         </view>
       </Issue613LegacyViewForwarder>
@@ -55,7 +55,7 @@ function _runE2E() {
         native block wrapper
       </view>
       <issue613-block-forwarder>
-        <view class="issue613-forwarded-content" data-issue613-forwarded="native-block">
+        <view id="issue613-native-block" class="issue613-forwarded-content" data-issue613-forwarded="native-block">
           issue-613 forwarded via native block
         </view>
       </issue613-block-forwarder>

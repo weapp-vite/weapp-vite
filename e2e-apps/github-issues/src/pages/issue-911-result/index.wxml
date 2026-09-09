@@ -1,0 +1,6 @@
+<view id="issue911-result-page">
+  <view id="issue911-result-title">issue-911 guard result</view>
+  <view id="issue911-result-mode">mode: {{mode}}</view>
+  <view id="issue911-result-mounted">mounted: {{mountedCount}}</view>
+  <view wx:for="{{trace}}" wx:key="index" id="issue911-trace-{{index}}" class="issue911-trace">{{item}}</view>
+</view>

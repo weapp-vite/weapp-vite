@@ -5,6 +5,7 @@ import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
   waitForRequestClientsRealRouteDom,
@@ -15,6 +16,7 @@ import {
   REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS,
 } from '../utils/requestClientsRealHostTraceRuntime'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
+import { globalsCheckpoints, QUERY_CHECKPOINTS, requestCheckpoints } from './requestClientsDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/request-clients-real')
@@ -89,6 +91,12 @@ async function waitForVueQueryFinalData(page: any) {
     await page.waitFor(120)
   }
   throw new Error(`timed out waiting for vue-query final page data: ${JSON.stringify(latestData)}`)
+}
+
+async function tapQueryControl(page: any, selector: string) {
+  const controls = await page.$$(selector, { fallback: false, timeout: 5_000 })
+  expect(controls, `Expected one query control: ${selector}`).toHaveLength(1)
+  await controls[0].tap()
 }
 
 async function readHostTrace(miniProgram: any) {
@@ -266,10 +274,14 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('exposes request globals from the Vue app runtime entry', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real', globalsCheckpoints(false))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const { miniProgram } = await reLaunchPage(ctx, '/pages/index/index')
+      const { miniProgram, page } = await reLaunchPage(ctx, '/pages/index/index')
+      await dom.check('initial', miniProgram, page)
+      await page.callMethod('runE2E')
+      await dom.check('refreshed', miniProgram, page)
 
       const appProbe = await miniProgram.evaluate(() => {
         return {
@@ -296,13 +308,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers fetch against a local real server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real', requestCheckpoints('fetch'))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/fetch/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/fetch/index')
+      await dom.check('completed', miniProgram, page)
       const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
@@ -313,13 +328,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers axios against a local real server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real', requestCheckpoints('axios'))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/axios/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/axios/index')
+      await dom.check('completed', miniProgram, page)
       const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
@@ -330,13 +348,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers graphql-request against a local real server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real', requestCheckpoints('graphql-request'))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/graphql-request/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/graphql-request/index')
+      await dom.check('completed', miniProgram, page)
       const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
@@ -347,12 +368,21 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers vue-query with tab switch, refetch and query key rotation against a local real server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real', QUERY_CHECKPOINTS)
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/vue-query/index'))
 
-      await page.callMethod('runE2E')
+      await dom.check('initial', miniProgram, page)
+      await tapQueryControl(page, '#vue-query-start')
+      await dom.check('overview', miniProgram, page)
+      await tapQueryControl(page, '#vue-query-detail')
+      await dom.check('detail', miniProgram, page)
+      await tapQueryControl(page, '#vue-query-refetch')
+      await dom.check('refetched', miniProgram, page)
+      await tapQueryControl(page, '#vue-query-rotate')
+      await dom.check('rotated', miniProgram, page)
       const pageData = await waitForVueQueryFinalData(page)
       await waitForRequestClientsRealSuccessDom(page, '/pages/vue-query/index')
       const currentTrace = await readHostTrace(miniProgram)
@@ -372,13 +402,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers socket.io-client against a local real realtime server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real', requestCheckpoints('socket-io'))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/socket-io/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/socket-io/index')
+      await dom.check('completed', miniProgram, page)
       const pageData = await page.data()
       const snapshot = pageData?.state
       const currentTrace = await readHostTrace(miniProgram)
@@ -399,13 +432,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers native WebSocket against a local real realtime server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real', requestCheckpoints('websocket'))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/websocket/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/websocket/index')
+      await dom.check('completed', miniProgram, page)
       const pageData = await page.data()
       const snapshot = pageData?.state
       const currentTrace = await readHostTrace(miniProgram)

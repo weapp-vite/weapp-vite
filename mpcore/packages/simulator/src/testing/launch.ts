@@ -5,6 +5,7 @@ import { HeadlessTestingSessionHandle } from './sessionHandle'
 export interface HeadlessTestingLaunchOptions {
   projectPath: string
   configureSession?: (session: HeadlessSession) => void | Promise<void>
+  onSessionCreated?: (session: HeadlessTestingSessionHandle) => void | Promise<void>
 }
 
 function resolveInitialRoute(session: ReturnType<typeof createHeadlessSession>) {
@@ -21,14 +22,19 @@ export async function launch(options: HeadlessTestingLaunchOptions) {
   const session = createHeadlessSession({
     projectPath: options.projectPath,
   })
+  const handle = new HeadlessTestingSessionHandle(session.project, session)
   try {
+    await options.onSessionCreated?.(handle)
     await options.configureSession?.(session)
-    session.bootstrap()
     const initialRoute = resolveInitialRoute(session)
     if (initialRoute) {
+      // 首次导航负责以实际入口 path/query 启动 App，再挂载首屏；不能先锁定空启动参数。
       session.reLaunch(`/${initialRoute}`)
     }
-    return new HeadlessTestingSessionHandle(session.project, session)
+    else {
+      session.bootstrap()
+    }
+    return handle
   }
   catch (error) {
     session.close()
