@@ -46,7 +46,7 @@ function _runE2E() {
         :label="label"
         :name="to.name"
       >
-        {{ label }}
+        <text :id="label" class="issue564-slot-label">{{ label }}</text>
       </issue-564-native-tabbar-item>
     </issue-564-native-tabbar>
   </view>

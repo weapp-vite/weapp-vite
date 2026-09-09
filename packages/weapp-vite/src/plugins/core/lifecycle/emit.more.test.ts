@@ -404,7 +404,10 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
   })
 
-  it('emits changed style sidecar assets during metadata-only hmr', async () => {
+  it.each([
+    { files: ['/project/src/pages/hmr/index.wxss', '/project/src/pages/other/index.css'] },
+    { files: [] },
+  ])('emits only the current style plan despite stale script diagnostics ($files)', async ({ files }) => {
     const state = createState({
       ctx: {
         configService: {
@@ -422,7 +425,7 @@ describe('core lifecycle emit hook extra branches', () => {
           build: {
             hmr: {
               profile: {
-                file: '/project/src/pages/hmr/index.wxss',
+                file: '/project/src/pages/hmr/index.ts',
                 dirtyReasonSummary: ['style-sidecar:1'],
               },
             },
@@ -433,6 +436,7 @@ describe('core lifecycle emit hook extra branches', () => {
         },
       },
       hmrState: {
+        styleSidecarFiles: new Set(files),
         hasBuiltOnce: true,
         didEmitAllEntries: false,
       },
@@ -443,13 +447,16 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({ emitFile }, {}, bundle)
 
-    expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
-      state.ctx,
-      expect.objectContaining({ emitFile }),
-      bundle,
-      '/project/src/pages/hmr/index.wxss',
-      undefined,
-    )
+    expect(emitStyleSidecarAssetMock).toHaveBeenCalledTimes(files.length)
+    for (const file of files) {
+      expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
+        state.ctx,
+        expect.objectContaining({ emitFile }),
+        bundle,
+        file,
+        undefined,
+      )
+    }
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {
@@ -706,6 +713,42 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['weapp-vendors/wevu-src.js']).toBeDefined()
     expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(true)
+  })
+
+  it.each([
+    { bundledDev: false, metadataOnly: false },
+    { bundledDev: false, metadataOnly: true },
+    { bundledDev: true, metadataOnly: false },
+    { bundledDev: true, metadataOnly: true },
+  ])('uses native bundle ownership instead of classic event pruning ($bundledDev/$metadataOnly)', async ({ bundledDev, metadataOnly }) => {
+    const state = createState({
+      subPackageMeta: undefined,
+      resolvedConfig: { experimental: { bundledDev } },
+      ctx: {
+        configService: { isDev: true },
+        runtimeState: { build: { hmr: {
+          profile: { event: 'update' },
+          lastEmittedChunkFileNames: new Set(['components/example.js']),
+        } } },
+      },
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set(['components/example.ts']),
+        skipSharedChunkRefresh: metadataOnly,
+      },
+    })
+    const bundle = Object.fromEntries(['app.js', 'components/example.js', 'common.js'].map(fileName => [fileName, {
+      type: 'chunk',
+      fileName,
+      code: 'exports.value = 1',
+      imports: [],
+      dynamicImports: [],
+    }])) as any
+    await createGenerateBundleHook(state, false).call({}, {}, bundle)
+    expect(Boolean(bundle['app.js'])).toBe(bundledDev)
+    expect(Boolean(bundle['common.js'])).toBe(bundledDev)
+    expect(Boolean(bundle['components/example.js'])).toBe(bundledDev || !metadataOnly)
   })
 
   it('keeps shared chunks during full-entry dev hmr refreshes', async () => {
@@ -2581,7 +2624,7 @@ describe('core lifecycle emit hook extra branches', () => {
               'socket.io-client': '^4.8.3',
             },
           },
-          weappViteConfig: {},
+          weappViteConfig: { injectRequestGlobals: { enabled: true, targets: ['Request', 'WebSocket'] } },
         },
       },
     })
@@ -2593,7 +2636,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'import { helper } from "../rolldown-runtime.js";',
           'function installSingleTarget(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
-          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}})',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}});',
           'var Request = class Request { on() {} };',
           'function createPollingRequest(){ return new Request() }',
           'export { createPollingRequest, helper };',

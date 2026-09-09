@@ -25,9 +25,9 @@ function _runE2E() {
       issue-547 nested augmented slot
     </view>
 
-    <NestedSlotGroup>
-      <NestedSlotCell>
-        <NestedSlotImage />
+    <NestedSlotGroup id="issue547-group">
+      <NestedSlotCell id="issue547-cell">
+        <NestedSlotImage id="issue547-image" />
       </NestedSlotCell>
     </NestedSlotGroup>
   </view>

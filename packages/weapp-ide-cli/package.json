@@ -63,6 +63,7 @@
     "release": "node scripts/release.js",
     "test:dev": "vitest",
     "test": "vitest run",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "weapp": "tsx src/cli.ts",
     "debug": "tsx src/cli.ts config",
@@ -101,5 +102,11 @@
   },
   "devDependencies": {
     "@types/node": "catalog:"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }

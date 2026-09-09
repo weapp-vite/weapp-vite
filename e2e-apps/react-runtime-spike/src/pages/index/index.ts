@@ -10,7 +10,7 @@ Page({
       cn: [],
     },
   },
-  eh(event: WechatMiniprogram.BaseEvent) {
+  __weapp_vite_react_event(event: WechatMiniprogram.BaseEvent) {
     roots.get(this)?.dispatchEvent(event)
   },
   onLoad() {

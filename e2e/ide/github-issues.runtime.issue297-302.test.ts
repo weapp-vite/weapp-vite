@@ -1,18 +1,24 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  closeSharedMiniProgram,
   DIST_ROOT,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
 } from './github-issues.runtime.shared'
+import { runGithubDom } from './githubIssuesDom'
+import { CALL_EXPRESSIONS, LOOP_CLASSES, SETUP_CALL_EXPRESSIONS } from './githubIssuesDom/expressions'
 
 describe('e2e app: github-issues / issue-297-302', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
 
-  it('issue #297: compiles complex call expressions', async () => {
+  it('issue #297: compiles complex call expressions', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -42,9 +48,10 @@ describe('e2e app: github-issues / issue-297-302', { concurrent: false }, () => 
     expect(issuePageJs).toContain('_runE2E')
 
     expect(issuePageJs).toContain('Hello')
+    await runGithubDom(ctx, '/pages/issue-297/index', CALL_EXPRESSIONS)
   })
 
-  it('issue #297: setup method call variants remain stable across expression contexts', async () => {
+  it('issue #297: setup method call variants remain stable across expression contexts', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -78,9 +85,10 @@ describe('e2e app: github-issues / issue-297-302', { concurrent: false }, () => 
     expect(issuePageJs).toContain('_runE2E')
 
     expect(issuePageJs).toContain('toggleOptionalInvoker')
+    await runGithubDom(ctx, '/pages/issue-297-setup-method-calls/index', SETUP_CALL_EXPRESSIONS)
   })
 
-  it('issue #302: compiles v-for class bindings with active state updates', async () => {
+  it('issue #302: compiles v-for class bindings with active state updates', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-302/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-302/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -95,5 +103,6 @@ describe('e2e app: github-issues / issue-297-302', { concurrent: false }, () => 
 
     expect(issuePageJs).toContain('issue302-item-active')
     expect(issuePageJs).toContain('issue302-item-inactive')
+    await runGithubDom(ctx, '/pages/issue-302/index', LOOP_CLASSES)
   })
 })

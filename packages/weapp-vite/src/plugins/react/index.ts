@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { transformWithOxc } from 'vite'
 import { baseTemplate } from './baseTemplate'
+import { validateNativeBridgeConfiguration } from './nativeBridge'
 import {
   compileStaticReactPage,
   hasNativeComponentBridge,
@@ -230,26 +231,7 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
     generateBundle(_options, bundle) {
       for (const [fileName, template] of templates) {
         if (template.nativeComponents.length > 0) {
-          const jsonFileName = fileName.replace(/\.wxml$/, '.json')
-          const jsonAsset = bundle[jsonFileName]
-          if (jsonAsset?.type !== 'asset') {
-            throw new Error(`[react] ${fileName} 使用了原生组件 bridge，但缺少对应配置 ${jsonFileName}`)
-          }
-          let json: Record<string, unknown>
-          try {
-            json = JSON.parse(String(jsonAsset.source)) as Record<string, unknown>
-          }
-          catch (error) {
-            throw new Error(`[react] 无法解析原生组件配置 ${jsonFileName}`, { cause: error })
-          }
-          const usingComponents = json.usingComponents
-          const registered = usingComponents && typeof usingComponents === 'object' && !Array.isArray(usingComponents)
-            ? usingComponents as Record<string, unknown>
-            : {}
-          const missing = template.nativeComponents.filter(tag => typeof registered[tag] !== 'string')
-          if (missing.length > 0) {
-            throw new Error(`[react] ${fileName} 的原生组件 bridge 未在 ${jsonFileName} 的 usingComponents 注册：${missing.join(', ')}`)
-          }
+          validateNativeBridgeConfiguration(ctx, bundle, fileName, template.nativeComponents)
         }
         const existing = bundle[fileName]
         if (existing?.type === 'asset') {

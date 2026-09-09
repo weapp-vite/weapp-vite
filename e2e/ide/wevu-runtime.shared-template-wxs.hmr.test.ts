@@ -1,17 +1,13 @@
+import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
-  cleanDevtoolsCache,
-  cleanupResidualDevtoolsProcesses,
-  cleanupResidualIdeProcesses,
-} from '../utils/ide-devtools-cleanup'
-import {
-  buildOriginalHmrPageWxml,
-  buildOriginalHmrVueSource,
   buildSharedHmrPageWxml,
   buildSharedHmrVueSource,
   buildSharedWxs,
@@ -19,6 +15,7 @@ import {
   resolveSharedHmrRelativeImports,
 } from '../utils/shared-hmr-fixture'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
+import { CLASSIC_WXS_RELOAD_CHECKPOINT, waitForClassicWxsReload } from './wevuRuntimeDom/classicWxs'
 
 const SHARED_HMR_PATHS = resolveSharedHmrPaths(APP_ROOT)
 const SHARED_HMR_IMPORTS = resolveSharedHmrRelativeImports()
@@ -148,6 +145,7 @@ async function waitForInitialAppserviceReady() {
 async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       projectPath: APP_ROOT,
       skipWarmup: true,
     })
@@ -155,52 +153,14 @@ async function getSharedMiniProgram() {
   return sharedMiniProgram
 }
 
-async function relaunchIdeSession(
-  route: string,
-  options: { allowCurrentSession?: boolean } = {},
-) {
-  const cacheCleanTypes = ['compile', 'all'] as const
-  let lastError: unknown
-  if (options.allowCurrentSession && sharedMiniProgram) {
-    try {
-      const page = await sharedMiniProgram.reLaunch(route)
-      if (page) {
-        await waitForHmrPageReady(page)
-        return page
-      }
-    }
-    catch (error) {
-      lastError = error
-    }
+async function relaunchIdeSession(route: string) {
+  const miniProgram = await getSharedMiniProgram()
+  const page = await miniProgram.reLaunch(route)
+  if (!page) {
+    throw new Error(`Failed to navigate the shared IDE session to route: ${route}`)
   }
-
-  for (const cleanType of cacheCleanTypes) {
-    if (sharedMiniProgram) {
-      await sharedMiniProgram.close().catch(() => {})
-      sharedMiniProgram = null
-    }
-
-    await cleanupResidualDevtoolsProcesses()
-    await cleanDevtoolsCache(cleanType, { cwd: APP_ROOT })
-    await waitForIdeRecompileSettled(cleanType === 'compile' ? 1_200 : 1_600)
-
-    try {
-      const miniProgram = await getSharedMiniProgram()
-      const page = await miniProgram.reLaunch(route)
-      if (page) {
-        await waitForHmrPageReady(page)
-        return page
-      }
-    }
-    catch (error) {
-      lastError = error
-    }
-  }
-
-  if (lastError) {
-    throw lastError
-  }
-  throw new Error(`Failed to relaunch IDE session for route: ${route}`)
+  await waitForHmrPageReady(page)
+  return page
 }
 
 beforeAll(() => {
@@ -210,8 +170,6 @@ beforeAll(() => {
 
 beforeEach(async () => {
   await cleanupResidualIdeProcesses()
-  await fs.writeFile(SHARED_HMR_PATHS.hmrPageWxml, buildOriginalHmrPageWxml(), 'utf8')
-  await fs.writeFile(SHARED_HMR_PATHS.hmrSfcVue, buildOriginalHmrVueSource(), 'utf8')
   await fs.remove(SHARED_HMR_PATHS.sharedDir)
 })
 
@@ -238,11 +196,11 @@ afterAll(async () => {
 })
 
 describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, () => {
-  it('updates runtime pages in DevTools after shared template/include/wxs edits', async () => {
+  it('updates runtime pages in DevTools after shared template/include/wxs edits', async (context) => {
     await fs.remove(DIST_ROOT)
 
-    const originalPageWxml = buildOriginalHmrPageWxml()
-    const originalVueSource = buildOriginalHmrVueSource()
+    const originalPageWxml = await fs.readFile(SHARED_HMR_PATHS.hmrPageWxml, 'utf8')
+    const originalVueSource = await fs.readFile(SHARED_HMR_PATHS.hmrSfcVue, 'utf8')
 
     const initialTemplateMarker = createHmrMarker('IDE-SHARED-TEMPLATE-INIT', 'weapp')
     const pageUpdatedTemplateMarker = createHmrMarker('IDE-SHARED-TEMPLATE-PAGE', 'weapp')
@@ -251,6 +209,30 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
     const updatedIncludeMarker = createHmrMarker('IDE-SHARED-INCLUDE-UPDATE', 'weapp')
     const initialWxsMarker = createHmrMarker('IDE-SHARED-WXS-INIT', 'weapp')
     const updatedWxsMarker = createHmrMarker('IDE-SHARED-WXS-UPDATE', 'weapp')
+    const stages = [
+      { route: '/pages/hmr/index', title: 'HMR', template: initialTemplateMarker, include: initialIncludeMarker, wxs: initialWxsMarker },
+      { route: '/pages/hmr/index', title: 'HMR', template: initialTemplateMarker, include: initialIncludeMarker, wxs: initialWxsMarker },
+      { route: '/pages/hmr/index', title: 'HMR', template: pageUpdatedTemplateMarker, include: initialIncludeMarker, wxs: initialWxsMarker },
+      { route: '/pages/hmr/index', title: 'HMR', template: pageUpdatedTemplateMarker, include: updatedIncludeMarker, wxs: initialWxsMarker },
+      { route: '/pages/hmr-sfc/index', title: 'HMR-SFC', template: pageUpdatedTemplateMarker, wxs: initialWxsMarker },
+      { route: '/pages/hmr-sfc/index', title: 'HMR-SFC', template: runtimeUpdatedTemplateMarker, wxs: initialWxsMarker },
+      { route: '/pages/hmr-sfc/index', title: 'HMR-SFC', template: runtimeUpdatedTemplateMarker, wxs: updatedWxsMarker },
+    ]
+    const checkpoints: DomCheckpoint[] = stages.map((stage, index) => ({
+      id: `shared:${index}`,
+      route: stage.route,
+      action: index === 6
+        ? 'classic WXS 全量刷新后重新进入 SFC 页面，验收重新求值后的 WXS 文本'
+        : `共享模板阶段 ${index}：当前页面的 template/include/WXS 实际文本，模板更新不重新导航`,
+      nodes: [
+        { selector: '.title', text: stage.title },
+        { selector: '.shared-template', text: `${stage.template}: ${stage.wxs}` },
+        ...(stage.include ? [{ selector: '.shared-include', text: stage.include }] : [{ selector: '.marker', text: 'HMR-SFC-SCRIPT' }]),
+        ...(stage.include ? [{ selector: '#shared-hmr-count', text: `count: ${index === 0 ? 0 : 1}` }] : []),
+      ],
+    }))
+    checkpoints.splice(6, 0, CLASSIC_WXS_RELOAD_CHECKPOINT)
+    const dom = createDomAcceptance(context, 'e2e-apps/wevu-runtime-e2e', checkpoints)
     const sharedImportOutputPath = `${DIST_ROOT}/shared-hmr/card-template.${TEMPLATE_EXT}`
     const sharedIncludeOutputPath = `${DIST_ROOT}/shared-hmr/card-include.${TEMPLATE_EXT}`
     const sharedWxsOutputPath = `${DIST_ROOT}/shared-hmr/helper.${SCRIPT_MODULE_EXT}`
@@ -265,7 +247,7 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
         SHARED_HMR_IMPORTS.importTemplateRelative,
         SHARED_HMR_IMPORTS.includeTemplateRelative,
         SHARED_HMR_IMPORTS.helperRelative,
-      ),
+      ).replace('<view class="title">HMR</view>', '<view class="title">HMR</view><view id="shared-hmr-count">count: {{count}}</view>'),
       'utf8',
     )
     await fs.writeFile(
@@ -277,7 +259,7 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
       SHARED_HMR_IMPORTS.importTemplateRelative,
       SHARED_HMR_IMPORTS.includeTemplateRelative,
       SHARED_HMR_IMPORTS.helperRelative,
-    )
+    ).replace('<view class="title">HMR</view>', '<view class="title">HMR</view><view id="shared-hmr-count">count: {{count}}</view>')
     sharedDev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       env: createDevProcessEnv(),
       stdio: 'inherit',
@@ -303,6 +285,9 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
         template: initialTemplateMarker,
         wxs: initialWxsMarker,
       })
+      await dom.check('shared:0', miniProgram, page)
+      await page.callMethodWithOptions('increment', { routeOnly: true })
+      await dom.check('shared:1', miniProgram, page)
 
       const pageUpdatedTemplateSource = buildRuntimeSharedImportTemplate(pageUpdatedTemplateMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedImportTemplate, pageUpdatedTemplateSource)
@@ -314,14 +299,10 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
       )
       await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
-      // DevTools 在 dev 重编译后继续复用旧 automator 会话做 reLaunch 不稳定，
-      // 这里重建会话，确保仍然是 IDE 实际运行态验证而不是仅看 dist。
-      await resetSharedStorageProbes(miniProgram)
-      page = await relaunchIdeSession('/pages/hmr/index', { allowCurrentSession: true })
-      miniProgram = await getSharedMiniProgram()
       await waitForSharedMarkers(miniProgram, {
         template: pageUpdatedTemplateMarker,
       })
+      await dom.check('shared:2', miniProgram, page)
 
       const updatedIncludeSource = buildRuntimeSharedIncludeTemplate(updatedIncludeMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedIncludeTemplate, updatedIncludeSource)
@@ -333,18 +314,16 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
       )
       await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
-      await resetSharedStorageProbes(miniProgram)
-      page = await relaunchIdeSession('/pages/hmr/index', { allowCurrentSession: true })
-      miniProgram = await getSharedMiniProgram()
       await waitForSharedMarkers(miniProgram, {
         include: updatedIncludeMarker,
       })
+      await dom.check('shared:3', miniProgram, page)
 
-      // 微信 DevTools 对 SFC 页面里外部 import/wxs 的运行态缓存不稳定：
-      // dist 已更新时，连续 reLaunch 仍可能继续使用旧的外部模板或脚本模块内容。
-      // shared 依赖追踪由 e2e:ci 的 dev-watch 用例覆盖；这里保留前面的
-      // 原生 WXML 页面 template/include 运行态验证，后续连续外部依赖更新只看 dist，
-      // 避免把 DevTools 缓存缺陷当作产品回归。
+      page = await miniProgram.reLaunch('/pages/hmr-sfc/index')
+      if (!page) {
+        throw new Error('Failed to launch /pages/hmr-sfc/index')
+      }
+      await dom.check('shared:4', miniProgram, page)
       const runtimeUpdatedTemplateSource = buildRuntimeSharedImportTemplate(runtimeUpdatedTemplateMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedImportTemplate, runtimeUpdatedTemplateSource)
       const runtimeUpdatedTemplateOutput = await waitForFileContainsWithRetry(
@@ -356,6 +335,7 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
       expect(runtimeUpdatedTemplateOutput).toContain(runtimeUpdatedTemplateMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
       await waitForIdeRecompileSettled()
+      await dom.check('shared:5', miniProgram, page)
 
       const updatedWxsSource = buildSharedWxs(updatedWxsMarker)
       await replaceFileByRename(SHARED_HMR_PATHS.sharedWxs, updatedWxsSource)
@@ -366,8 +346,13 @@ describe('wevu runtime shared template/wxs hmr (ide)', { concurrent: false }, ()
         updatedWxsSource,
       )
       expect(updatedWxsOutput).toContain(updatedWxsMarker)
-      await replaceFileByRename(SHARED_HMR_PATHS.hmrPageWxml, `${sharedPageWxmlSource}\n`)
-      await waitForIdeRecompileSettled()
+      // classic 的 WXS 更新重启 AppService；这里显式验收刷新，不能按 stateful 状态保持处理。
+      await dom.check(CLASSIC_WXS_RELOAD_CHECKPOINT.id, miniProgram, await waitForClassicWxsReload(miniProgram))
+      page = await miniProgram.reLaunch('/pages/hmr-sfc/index')
+      if (!page) {
+        throw new Error('Failed to re-enter /pages/hmr-sfc/index after classic WXS reload')
+      }
+      await dom.check('shared:6', miniProgram, page)
     }
     finally {
       if (sharedMiniProgram) {

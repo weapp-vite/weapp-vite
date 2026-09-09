@@ -1,3 +1,4 @@
+import { waitForRequestClientsRealWebSocketProbe } from '../../../../../e2e/utils/requestClientsRealWebSocketProbe'
 import {
   createErrorState,
   createRequestCaseState,
@@ -8,24 +9,13 @@ import {
 
 const HTTP_PROTOCOL_RE = /^http/u
 
-interface NativeWebSocketPayload {
-  body?: Record<string, unknown>
-  client: string
-  event?: string
-  message?: string
-  path: string
-  requestCount: number
-  sentAt?: string
-  stage: string
-  transport?: string
-  url?: string
-}
-
 Page({
   data: {
     baseUrl: '',
     connectedReadyState: -1,
     finalReadyState: -1,
+    echoStage: '',
+    echoRun: 0,
     latestRandomMessage: '',
     latestRandomSentAt: '',
     randomPushCount: 0,
@@ -50,6 +40,8 @@ Page({
     this.setData({
       connectedReadyState: -1,
       finalReadyState: -1,
+      echoStage: '',
+      echoRun: 0,
       latestRandomMessage: '',
       latestRandomSentAt: '',
       randomPushCount: 0,
@@ -58,82 +50,17 @@ Page({
     })
 
     try {
-      const payload = await new Promise<{ echoPayload: NativeWebSocketPayload, tickPayload: NativeWebSocketPayload }>((resolve, reject) => {
-        const socket = new WebSocket(websocketUrl)
-        let echoPayload: NativeWebSocketPayload | null = null
-        let settled = false
-        let welcomeReceived = false
-
-        const cleanup = () => {
-          socket.onopen = null
-          socket.onmessage = null
-          socket.onerror = null
-          socket.onclose = null
-        }
-
-        const finalize = (handler: () => void) => {
-          if (settled) {
-            return
-          }
-          settled = true
-          cleanup()
-          handler()
-        }
-
-        socket.onopen = () => {
-          this.setData({
-            connectedReadyState: socket.readyState,
-          })
-          socket.send(JSON.stringify({
-            client: 'native-websocket',
-            run: nextState.runCount,
-          }))
-        }
-
-        socket.onmessage = (event) => {
-          const data = typeof event.data === 'string' ? event.data : ''
-          const parsed = JSON.parse(data) as NativeWebSocketPayload
-          if (!welcomeReceived) {
-            welcomeReceived = true
-            return
-          }
-
-          if (parsed.stage === 'echo') {
-            echoPayload = parsed
-            return
-          }
-
-          if (parsed.stage !== 'tick') {
-            return
-          }
-
-          this.setData({
-            finalReadyState: socket.readyState,
-            latestRandomMessage: parsed.message ?? '',
-            latestRandomSentAt: parsed.sentAt ?? '',
-            randomPushCount: parsed.requestCount,
-          })
-          finalize(() => {
-            socket.close()
-            resolve({
-              echoPayload: echoPayload ?? parsed,
-              tickPayload: parsed,
-            })
-          })
-        }
-
-        socket.onerror = (error) => {
-          finalize(() => {
-            socket.close()
-            reject(error)
-          })
-        }
-
-        socket.onclose = () => {
-          this.setData({
-            finalReadyState: socket.readyState,
-          })
-        }
+      // eslint-disable-next-line mini-program/no-implicit-runtime-polyfill -- fixture 已启用 appPrelude.webRuntime，此处验证注入后的 WebSocket。
+      const socket = new WebSocket(websocketUrl)
+      const payload = await waitForRequestClientsRealWebSocketProbe(socket, nextState.runCount)
+      this.setData({
+        connectedReadyState: payload.connectedReadyState,
+        finalReadyState: payload.finalReadyState,
+        echoStage: payload.echoPayload.stage,
+        echoRun: Number(payload.echoPayload.body?.run),
+        latestRandomMessage: payload.tickPayload.message ?? '',
+        latestRandomSentAt: payload.tickPayload.sentAt ?? '',
+        randomPushCount: payload.tickPayload.requestCount,
       })
 
       if (payload.echoPayload.client !== 'native-websocket' || payload.echoPayload.transport !== 'websocket') {

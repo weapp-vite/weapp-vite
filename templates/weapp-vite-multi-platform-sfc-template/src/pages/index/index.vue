@@ -37,7 +37,7 @@ function increment() {
       status={{ status }}
     </view>
 
-    <PlatformCard :platform="platform" />
+    <PlatformCard id="platform-card-host" :platform="platform" />
 
     <view class="counter-panel">
       <view class="counter-panel__label">

@@ -1161,6 +1161,36 @@ describe('Page', () => {
     })
   })
 
+  it('keeps native page identity separate from an outdated route facade after HMR', async () => {
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.callMethod') {
+        return { result: { definitionMarker: 'updated', dataMarker: 'updated' } }
+      }
+      if (method === 'App.callFunction') {
+        return { result: { definitionMarker: 'initial', dataMarker: 'initial' } }
+      }
+      throw new Error(`Unexpected method: ${method}`)
+    })
+    const page = new Page(createAppServicePageConnection(send), { id: 8, path: '/pages/a', query: {} })
+
+    await expect(page.callMethodWithOptions('syncScriptMarker', { routeOnly: true })).resolves.toEqual({
+      definitionMarker: 'initial',
+      dataMarker: 'initial',
+    })
+    await expect(page.callMethodWithOptions('syncScriptMarker', { fallback: false, timeout: 2_500 })).resolves.toEqual({
+      definitionMarker: 'updated',
+      dataMarker: 'updated',
+    })
+
+    expect(send).toHaveBeenCalledTimes(2)
+    expect(send.mock.calls[0]?.[0]).toBe('App.callFunction')
+    expect(send).toHaveBeenNthCalledWith(2, 'Page.callMethod', {
+      args: [],
+      method: 'syncScriptMarker',
+      pageId: 8,
+    }, { timeout: 2_500 })
+  })
+
   it('polls an asynchronous app-service page method without invoking it again', async () => {
     const callIds: string[] = []
     const send = vi.fn(async (method: string, params?: Record<string, any>) => {

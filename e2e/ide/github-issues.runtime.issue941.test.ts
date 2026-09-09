@@ -1,6 +1,8 @@
+import { ok as assert } from 'node:assert'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -29,6 +31,51 @@ describe('e2e app: github-issues / issue #941', { concurrent: false }, () => {
   }, 30_000)
 
   it('keeps every wx direct-return API out of the Promise bridge', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'initial',
+      route: ISSUE_941_ROUTE,
+      action: '检查尚未执行 adapter 的首屏',
+      nodes: [
+        { selector: '#issue941-title', text: 'issue-941 direct-return adapter' },
+        { selector: '#issue941-cache-options', text: 'cache options: pending' },
+        { selector: '.issue941-result', count: 0 },
+        { selector: '.issue941-void', count: 0 },
+      ],
+    }, {
+      id: 'executed',
+      route: ISSUE_941_ROUTE,
+      action: '运行 direct-return adapter 并检查每个实际执行结果',
+      nodes: [
+        ...[
+          'checkIsPictureInPictureActive',
+          'createBufferURL',
+          'createCacheManager',
+          'createGlobalPayment',
+          'createInferenceSession',
+          'createVideoDecoder',
+          'getApiCategory',
+          'getAppAuthorizeSetting',
+          'getAppBaseInfo',
+          'getDeviceInfo',
+          'getPluginUpdateManager',
+          'getSystemSetting',
+          'getWindowInfo',
+          'isVKSupport',
+        ].map(name => ({ selector: `#issue941-${name}`, text: `${name}: identity preserved, promise no` })),
+        ...[
+          'postMessageToReferrerMiniProgram',
+          'postMessageToReferrerPage',
+          'reportEvent',
+          'reportMonitor',
+          'reportPerformance',
+          'requestAppleSubscribeSign',
+          'revokeBufferURL',
+        ].map(name => ({ selector: `#issue941-${name}`, text: `${name}: undefined yes, promise no` })),
+        { selector: '.issue941-result', count: 14 },
+        { selector: '.issue941-void', count: 7 },
+        { selector: '#issue941-cache-options', text: 'cache options: maxSize' },
+      ],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
     const page = await relaunchPage(miniProgram, ISSUE_941_ROUTE, undefined, 45_000, {
       readiness: async (targetPage) => {
@@ -36,13 +83,15 @@ describe('e2e app: github-issues / issue #941', { concurrent: false }, () => {
         return true
       },
     })
-    expect(page).toBeTruthy()
+    assert(page, 'Expected issue-941 page')
+    await dom.check('initial', await getSharedMiniProgram(ctx), page)
 
-    const result = await page?.callMethodWithOptions('_runE2E', { protocolTimeoutMs: 8_000 })
+    const result = await page.callMethodWithOptions('_runE2E', { timeout: 8_000 })
     expect(result.resultMethods).toHaveLength(14)
     expect(result.resultMethods.every((item: any) => item.sameIdentity && !item.isPromise)).toBe(true)
     expect(result.voidMethods).toHaveLength(7)
     expect(result.voidMethods.every((item: any) => item.isUndefined && !item.isPromise)).toBe(true)
     expect(result.cacheManagerOptions).toEqual(['maxSize'])
+    await dom.check('executed', await getSharedMiniProgram(ctx), page)
   })
 })

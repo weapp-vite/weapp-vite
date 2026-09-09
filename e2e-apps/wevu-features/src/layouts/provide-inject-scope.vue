@@ -16,7 +16,7 @@ provide(LAYOUT_PROVIDE_SCOPE_KEY, 'layout-provide-value')
     <view id="scope-layout-provider" class="provide-inject-scope-layout__line">
       layout provide = layout-provide-value
     </view>
-    <ProvideInjectScopeLayoutProbe />
+    <ProvideInjectScopeLayoutProbe id="scope-layout-probe" />
     <slot />
   </view>
 </template>

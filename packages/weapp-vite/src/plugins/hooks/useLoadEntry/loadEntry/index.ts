@@ -23,7 +23,7 @@ import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
-import { expandResolvedPageLayoutFiles, registerResolvedPageLayoutDependencies } from '../../../utils/pageLayout'
+import { registerResolvedPageLayoutDependencies } from '../../../utils/pageLayout'
 import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
@@ -425,21 +425,23 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
     const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
-    const registerPageLayoutComponentEntries = async (
-      layoutPlan: ResolvedPageLayoutPlan,
-      options?: {
-        trackLayoutDependencies?: boolean
-      },
-    ) => {
-      if (options?.trackLayoutDependencies) {
-        const layoutDependencies = new Set<string>()
-        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)) {
-          layoutDependencies.add(normalizeFsResolvedId(file))
-        }
-        replaceLayoutDependencies(normalizedId, layoutDependencies)
+    // SFC 的配置、watch 基线和返回给后续 transform 的代码共用本轮物理源码，避免异步期间二次读取到下一次保存。
+    if (vueEntryPath) {
+      const source = await readVueSource()
+      if (id.endsWith('.vue')) {
+        entryCodeSource = source
       }
-
-      await registerResolvedPageLayoutDependencies(ctx, normalizedId, layoutPlan.layouts)
+      if (configService.isDev && source !== undefined) {
+        const signatureStartedAt = performance.now()
+        const signatures = resolveVueSfcHmrSignatures(source, vueEntryPath)
+        recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
+        storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, normalizedVueEntryPath!, signatures)
+        if (type === 'app') {
+          appVueNonJsonSignature = signatures.nonJsonSignature
+        }
+      }
+    }
+    const registerPageLayoutComponentEntries = async (layoutPlan: ResolvedPageLayoutPlan) => {
       await registerResolvedPageLayoutEntries({
         layouts: layoutPlan.layouts,
         entries,
@@ -449,6 +451,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         jsonPath,
         platform: configService.platform,
       })
+      await registerResolvedPageLayoutDependencies(ctx, normalizedId, layoutPlan.layouts)
       for (const layout of layoutPlan.layouts) {
         if (layout.kind === 'native') {
           continue
@@ -474,20 +477,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     if (type === 'app') {
-      if (configService.isDev && vueEntryPath) {
-        const vueSource = await readVueSource()
-        if (vueSource) {
-          const signatureStartedAt = performance.now()
-          const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
-          recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
-          appVueNonJsonSignature = signatures.nonJsonSignature
-          storeVueSfcHmrSignatures(
-            ctx.runtimeState.build.hmr,
-            normalizedVueEntryPath!,
-            signatures,
-          )
-        }
-      }
       if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
         await ctx.autoRoutesService.ensureFresh()
         const refreshedConfigFromVue = await extractConfigFromVue(vueEntryPath, {
@@ -642,7 +631,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 ? await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
                 : cachedLayoutPlan ?? undefined
               resolvedPageLayoutPlan = layoutPlan ?? null
-              replaceLayoutDependencies(normalizedId, [])
               if (hasLayoutHint) {
                 staticPageLayoutPlanCache.delete(normalizedId)
               }
@@ -650,9 +638,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 staticPageLayoutPlanCache.set(normalizedId, layoutPlan ?? null)
               }
               if (layoutPlan) {
-                await registerPageLayoutComponentEntries(layoutPlan, {
-                  trackLayoutDependencies: hasLayoutHint,
-                })
+                await registerPageLayoutComponentEntries(layoutPlan)
+              }
+              else {
+                replaceLayoutDependencies(normalizedId, [])
               }
             }
             finally {
@@ -664,7 +653,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       else if (type === 'page' && templatePath && !VUE_LIKE_PAGE_ENTRY_RE.test(id)) {
         const layoutStartedAt = performance.now()
         try {
-          replaceLayoutDependencies(normalizedId, [])
           const source = await fs.readFile(id, 'utf-8')
           entryCodeSource = source
           const hasLayoutHint = hasPageLayoutSourceHint(source)
@@ -682,23 +670,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           }
           resolvedPageLayoutPlan = layoutPlan ?? null
           if (layoutPlan) {
-            await registerPageLayoutComponentEntries(layoutPlan, {
-              trackLayoutDependencies: true,
-            })
+            await registerPageLayoutComponentEntries(layoutPlan)
+          }
+          else {
+            replaceLayoutDependencies(normalizedId, [])
           }
         }
         finally {
           recordEntryDuration('entryLayoutMs', layoutStartedAt)
-        }
-      }
-
-      if (configService.isDev && hasJsonEntry && vueEntryPath) {
-        const vueSource = await readVueSource()
-        if (vueSource) {
-          const signatureStartedAt = performance.now()
-          const signatures = resolveVueSfcHmrSignatures(vueSource, vueEntryPath)
-          recordEntryDuration('entryVueSignatureMs', signatureStartedAt)
-          storeVueSfcHmrSignatures(ctx.runtimeState.build.hmr, normalizedId, signatures)
         }
       }
 

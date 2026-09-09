@@ -1,4 +1,5 @@
 import type { HeadlessBehaviorDefinition, HeadlessComponentDefinition } from './types'
+import { mergeComponentLifetimes } from './lifetimes'
 import { cloneRecord, cloneValue, mergeRecord } from './shared'
 
 export function resolveInitialData(definition: HeadlessComponentDefinition) {
@@ -47,7 +48,8 @@ export function normalizeComponentDefinition(definition: HeadlessComponentDefini
     observers: mergeRecord(...behaviors.map(item => item.observers), definition.observers),
     pageLifetimes: mergeRecord(...behaviors.map(item => item.pageLifetimes), definition.pageLifetimes),
     properties: mergeRecord(...behaviors.map(item => item.properties), definition.properties),
-    lifetimes: mergeRecord(...behaviors.map(item => item.lifetimes), definition.lifetimes),
+    relations: mergeRecord(...behaviors.map(item => item.relations), definition.relations),
+    lifetimes: mergeComponentLifetimes(behaviors, definition),
   }
 
   if (mergedDataEntries.length > 0 || definition.data) {
@@ -255,6 +257,9 @@ export function normalizeComponentPropertyValue(
   rawValue: unknown,
 ) {
   const option = definition.properties?.[key]
+  if (rawValue === null && normalizePropertyType(option) === null) {
+    return null
+  }
   if (rawValue == null) {
     if (option && typeof option === 'object' && !Array.isArray(option) && 'value' in option) {
       return resolvePropertyDefaultValue(option, definition)

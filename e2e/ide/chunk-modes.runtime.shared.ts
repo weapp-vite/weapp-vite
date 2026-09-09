@@ -5,12 +5,15 @@ import { execa } from 'execa'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { runtimeBaseRoutes } from '../chunk-modes.matrix'
-import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { launchAutomator } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   cleanDevtoolsCache,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
 import { assertNoRecentDevtoolsSimulatorBootIssues } from '../utils/ide-devtools-logs'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { chunkRouteCheckpoint } from './chunkModesDom'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
 const PREPARE_SCRIPT_PATH = path.resolve(import.meta.dirname, '../../scripts/chunk-modes-project.mjs')
@@ -40,7 +43,6 @@ const ROUTE_RECOVERY_ERROR_PATTERNS = [
   /route method _runE2E not found/i,
   /route _runE2E .* timed out after/i,
 ]
-const chunkModesIdeSmokeRoutes = [runtimeBaseRoutes[0]!]
 
 interface RuntimeRouteCase {
   route: string
@@ -55,7 +57,6 @@ export interface RuntimeMatrixCase {
 }
 
 let sharedMiniProgram: any = null
-let sharedLaunchInfraUnavailableMessage: string | null = null
 
 async function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -190,7 +191,9 @@ async function closeSharedMiniProgram() {
 async function prepareScenarioProject(runtimeCase: RuntimeMatrixCase) {
   const scenarioRoot = path.join(DIST_MATRIX_ROOT, runtimeCase.id)
   await closeSharedMiniProgram()
-  await cleanupResidualIdeProcesses()
+  if (resolveRuntimeProviderName() === 'devtools') {
+    await cleanupResidualIdeProcesses()
+  }
   await fs.remove(scenarioRoot)
 
   const result = await execa('node', [
@@ -213,14 +216,8 @@ async function prepareScenarioProject(runtimeCase: RuntimeMatrixCase) {
 
 async function getSharedMiniProgram(
   projectPath: string,
-  ctx?: { skip: (message?: string) => void },
   options: { skipWarmup?: boolean } = {},
 ) {
-  if (sharedLaunchInfraUnavailableMessage) {
-    ctx?.skip(sharedLaunchInfraUnavailableMessage)
-    throw new Error(sharedLaunchInfraUnavailableMessage)
-  }
-
   if (!sharedMiniProgram) {
     const previousSkipWarmup = process.env[AUTOMATOR_SKIP_WARMUP_ENV]
     const previousLaunchMode = process.env[AUTOMATOR_LAUNCH_MODE_ENV]
@@ -238,13 +235,6 @@ async function getSharedMiniProgram(
       })
       await delay(1200)
     }
-    catch (error) {
-      if (ctx && isDevtoolsHttpPortError(error)) {
-        sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 chunk-modes IDE 自动化用例。'
-        ctx.skip(sharedLaunchInfraUnavailableMessage)
-      }
-      throw error
-    }
     finally {
       restoreEnvValue(AUTOMATOR_LAUNCH_MODE_ENV, previousLaunchMode)
       restoreEnvValue(AUTOMATOR_SKIP_WARMUP_ENV, previousSkipWarmup)
@@ -257,8 +247,10 @@ async function getSharedMiniProgram(
 async function resetDevtoolsProjectState(projectPath: string) {
   await closeSharedMiniProgram()
   // chunk mode 会连续切换共享 chunk 拓扑；只清 compile cache 时，DevTools 仍可能沿用旧项目索引启动模拟器。
-  await cleanDevtoolsCache('all', { cwd: projectPath }).catch(() => {})
-  await cleanupResidualIdeProcesses()
+  if (resolveRuntimeProviderName() === 'devtools') {
+    await cleanDevtoolsCache('all', { cwd: projectPath }).catch(() => {})
+    await cleanupResidualIdeProcesses()
+  }
 }
 
 async function recoverRouteLaunch(projectPath: string, runtimeCase: RuntimeMatrixCase, route: string, reason: unknown) {
@@ -310,14 +302,13 @@ async function runRouteCaseWithRecovery(
   runtimeCase: RuntimeMatrixCase,
   routeCase: RuntimeRouteCase,
   projectPath: string,
-  ctx: { skip: (message?: string) => void },
   launchOptions: { skipWarmup?: boolean },
 ) {
   let lastError: unknown = null
 
   for (let attempt = 1; attempt <= ROUTE_RECOVERY_ATTEMPTS; attempt += 1) {
     const attemptStartedAt = Date.now()
-    const miniProgram = await getSharedMiniProgram(projectPath, ctx, launchOptions)
+    const miniProgram = await getSharedMiniProgram(projectPath, launchOptions)
     const isInitialRoute = routeCase.route === runtimeCase.routes[0]?.route
     let page: any = null
     try {
@@ -325,7 +316,10 @@ async function runRouteCaseWithRecovery(
         try {
           const result = await callRouteRunE2E(miniProgram, routeCase.route)
           assertRouteRunE2EResult(runtimeCase, routeCase, result)
-          return
+          const currentPage = await waitForCurrentPagePath(miniProgram, routeCase.route)
+          if (currentPage) {
+            return { miniProgram, page: currentPage }
+          }
         }
         catch (error) {
           if (!isRecoverableRouteError(error)) {
@@ -339,10 +333,12 @@ async function runRouteCaseWithRecovery(
           currentPageOnly: isInitialRoute,
         })
       }
-      assertNoRecentDevtoolsSimulatorBootIssues({
-        label: `${runtimeCase.id}:${routeCase.route}`,
-        sinceMs: attemptStartedAt,
-      })
+      if (resolveRuntimeProviderName() === 'devtools') {
+        assertNoRecentDevtoolsSimulatorBootIssues({
+          label: `${runtimeCase.id}:${routeCase.route}`,
+          sinceMs: attemptStartedAt,
+        })
+      }
     }
     catch (error) {
       if (!isRecoverableRouteError(error)) {
@@ -357,7 +353,7 @@ async function runRouteCaseWithRecovery(
       try {
         const result = await callRouteRunE2E(miniProgram, routeCase.route)
         assertRouteRunE2EResult(runtimeCase, routeCase, result)
-        return
+        return { miniProgram, page }
       }
       catch (error) {
         if (!isRecoverableRouteError(error)) {
@@ -384,16 +380,18 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
 
     for (const runtimeCase of runtimeCases) {
       it(`runs without runtime errors in devtools for ${runtimeCase.id}`, async (ctx) => {
+        const dom = createDomAcceptance(ctx, 'e2e-apps/chunk-modes', runtimeCase.routes.map(routeCase => chunkRouteCheckpoint(runtimeCase.id, routeCase)))
         const projectPath = await prepareScenarioProject(runtimeCase)
         await resetDevtoolsProjectState(projectPath)
 
         const launchOptions = {
           skipWarmup: true,
         }
-        await getSharedMiniProgram(projectPath, ctx, launchOptions)
+        await getSharedMiniProgram(projectPath, launchOptions)
 
         for (const routeCase of runtimeCase.routes) {
-          await runRouteCaseWithRecovery(runtimeCase, routeCase, projectPath, ctx, launchOptions)
+          const { miniProgram, page } = await runRouteCaseWithRecovery(runtimeCase, routeCase, projectPath, launchOptions)
+          await dom.check(routeCase.route, miniProgram, page)
         }
       }, CHUNK_MODES_RUNTIME_CASE_TIMEOUT)
     }
@@ -412,8 +410,4 @@ function withRoutes(
 
 export function withBaseRoutes(cases: Array<{ id: string, env: Record<string, string> }>): RuntimeMatrixCase[] {
   return withRoutes(cases, runtimeBaseRoutes)
-}
-
-export function withIdeSmokeRoutes(cases: Array<{ id: string, env: Record<string, string> }>): RuntimeMatrixCase[] {
-  return withRoutes(cases, chunkModesIdeSmokeRoutes)
 }

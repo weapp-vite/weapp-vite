@@ -1,0 +1,15 @@
+{
+  "name": "config-public-types-tsd",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "target": "ES2023",
+      "strict": true,
+      "types": ["node", "miniprogram-api-typings"]
+    }
+  }
+}

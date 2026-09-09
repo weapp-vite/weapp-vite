@@ -40,16 +40,16 @@ const _runE2E = runE2E
       :class="[$style.probe, namedModule.accent]"
       style="border: 4rpx solid #111827"
     >
-      CSS vars + modules
-      <view class="deep-probe">
+      <text id="sfc-style-label">CSS vars + modules</text>
+      <view id="sfc-deep-probe" class="deep-probe">
         deep
       </view>
     </view>
-    <view class="global-probe">
+    <view id="sfc-global-probe" class="global-probe">
       global
     </view>
     <slot>
-      <view class="slot-probe">
+      <view id="sfc-slot-probe" class="slot-probe">
         slotted fallback
       </view>
     </slot>

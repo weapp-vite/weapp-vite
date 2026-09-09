@@ -1,17 +1,23 @@
 import path from 'node:path'
 import process from 'node:process'
+import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   replaceFileByRename,
   waitForFileContains,
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { statefulHmrCheckpoints } from './statefulHmrDom'
+import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
+import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
@@ -20,7 +26,10 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const CONTROL_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
 const UPDATE_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/update.js')
 const NATIVE_SOURCE = path.join(APP_ROOT, 'src/pages/native/index.ts')
+const NATIVE_STYLE = path.join(APP_ROOT, 'src/pages/native/index.wxss')
 const COMPONENT_SOURCE = path.join(APP_ROOT, 'src/pages/component/index.ts')
+const CHILD_SOURCE = path.join(APP_ROOT, 'src/components/native-counter/index.js')
+const VUE_CHILD_SOURCE = path.join(APP_ROOT, 'src/components/vue-counter/index.vue')
 const WEVU_SOURCE = path.join(APP_ROOT, 'src/pages/wevu/index.vue')
 const NATIVE_ROUTE = '/pages/native/index?source=e2e'
 const COMPONENT_ROUTE = '/pages/component/index?source=e2e'
@@ -38,7 +47,10 @@ interface RuntimeState {
 let miniProgram: any
 let devProcess: ReturnType<typeof startDevProcess> | undefined
 let originalComponentSource = ''
+let originalChildSource = ''
+let originalVueChildSource = ''
 let originalNativeSource = ''
+let originalNativeStyle = ''
 let originalWevuSource = ''
 let previousPostConnectRefresh: string | undefined
 let sharedInfraUnavailableMessage = ''
@@ -54,7 +66,11 @@ function normalizeFixtureSource(source: string, runtime: 'component' | 'native' 
   if (runtime === 'wevu') {
     return source
       .replace('STATEFUL-WEVU-PATCHED', 'STATEFUL-WEVU-BASE')
-      .replace('count.value += 2', 'count.value += 1')
+      .replace(/<view class="sfc-template">SFC-(?:TEMPLATE-B|MIXED-TEMPLATE)<\/view>\n {4}/, '')
+      .replace('\n  background-color: #dbeafe;', '')
+      .replace(/count\.value \+= [23]/, 'count.value += 1')
+      .replace(/store\.increment\([23]\)/, 'store.increment(1)')
+      .replace('  added: \'new default\',\n', '')
   }
   const prefix = runtime === 'native' ? 'NATIVE' : 'COMPONENT'
   return source
@@ -67,13 +83,14 @@ async function readRuntimeState(page?: any): Promise<RuntimeState> {
     const pages = getCurrentPages()
     const currentPage = pages[pages.length - 1] as any
     return {
-      data: currentPage.data,
       identity: String(currentPage.__statefulHmrIdentity ?? ''),
       route: String(currentPage.route ?? currentPage.__route__ ?? ''),
       source: String(currentPage.options?.source ?? ''),
     }
   })
-  const data = metadata.data ?? (page ? await page.data() : undefined)
+  const current = await miniProgram.currentPage()
+  expect(current.path).toBe(page?.path ?? current.path)
+  const data = await current.data(undefined, { fallback: false })
   return {
     count: Number(data?.count),
     identity: metadata.identity,
@@ -84,50 +101,22 @@ async function readRuntimeState(page?: any): Promise<RuntimeState> {
 }
 
 async function prepareRuntimeState(identity: string) {
-  return await miniProgram.evaluate((payload: { identity: string }) => {
+  await miniProgram.evaluate((payload: { identity: string }) => {
     const pages = getCurrentPages()
     const page = pages[pages.length - 1] as any
     page.__statefulHmrIdentity = payload.identity
-    page.setData({ input: 'held-input' })
-    return page.data
   }, { identity })
+  const page = await miniProgram.currentPage()
+  const inputs = await page.$$('.input', { fallback: false })
+  expect(inputs).toHaveLength(1)
+  await inputs[0].input('held-input')
 }
 
-async function triggerIncrement(runtime: 'component' | 'native' | 'wevu', page?: any): Promise<unknown> {
-  if (runtime === 'wevu') {
-    return await miniProgram.evaluate(() => {
-      const pages = getCurrentPages()
-      const page = pages[pages.length - 1] as any
-      if (typeof page.__weapp_vite_inline !== 'function') {
-        throw new TypeError('wevu inline handler is unavailable')
-      }
-      return page.__weapp_vite_inline({
-        type: 'tap',
-        currentTarget: {
-          dataset: {
-            wiTap: 'i0',
-          },
-        },
-      })
-    })
-  }
-  const result = await miniProgram.evaluate(() => {
-    const pages = getCurrentPages()
-    const currentPage = pages[pages.length - 1] as any
-    if (typeof currentPage.increment !== 'function') {
-      return { called: false, route: String(currentPage?.route ?? currentPage?.__route__ ?? '') }
-    }
-    currentPage.increment()
-    return { called: true, route: String(currentPage?.route ?? currentPage?.__route__ ?? '') }
-  }, runtime)
-  if (result?.called) {
-    return
-  }
-  if (page && typeof page.callMethod === 'function') {
-    await page.callMethod('increment')
-    return
-  }
-  throw new TypeError(`${runtime} page increment is unavailable on ${result?.route || 'unknown route'}`)
+async function triggerIncrement() {
+  const page = await miniProgram.currentPage()
+  const buttons = await page.$$('.increment', { fallback: false })
+  expect(buttons).toHaveLength(1)
+  await buttons[0].tap()
 }
 
 async function waitForPatchedBehavior(expectedCount: number, page?: any, timeoutMs = 30_000): Promise<RuntimeState> {
@@ -218,11 +207,17 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await cleanupResidualIdeProcesses()
     await cleanDevtoolsCache('all', { cwd: APP_ROOT })
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
+    originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
+    originalVueChildSource = (await fs.readFile(VUE_CHILD_SOURCE, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')
     originalNativeSource = normalizeFixtureSource(await fs.readFile(NATIVE_SOURCE, 'utf8'), 'native')
+    originalNativeStyle = (await fs.readFile(NATIVE_STYLE, 'utf8')).replace('background-color: #dbeafe', 'background-color: #fff')
     originalWevuSource = normalizeFixtureSource(await fs.readFile(WEVU_SOURCE, 'utf8'), 'wevu')
     await Promise.all([
       fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8'),
+      fs.writeFile(CHILD_SOURCE, originalChildSource, 'utf8'),
+      fs.writeFile(VUE_CHILD_SOURCE, originalVueChildSource, 'utf8'),
       fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8'),
+      fs.writeFile(NATIVE_STYLE, originalNativeStyle, 'utf8'),
       fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8'),
     ])
     await fs.remove(DIST_ROOT)
@@ -243,6 +238,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess.waitFor(waitForStatefulHmrControl(CONTROL_FILE), 'stateful HMR control ready')
 
     miniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       projectPath: APP_ROOT,
       projectConfig: {
@@ -284,8 +280,17 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     if (originalNativeSource) {
       await fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8')
     }
+    if (originalNativeStyle) {
+      await fs.writeFile(NATIVE_STYLE, originalNativeStyle, 'utf8')
+    }
     if (originalComponentSource) {
       await fs.writeFile(COMPONENT_SOURCE, originalComponentSource, 'utf8')
+    }
+    if (originalChildSource) {
+      await fs.writeFile(CHILD_SOURCE, originalChildSource, 'utf8')
+    }
+    if (originalVueChildSource) {
+      await fs.writeFile(VUE_CHILD_SOURCE, originalVueChildSource, 'utf8')
     }
     if (originalWevuSource) {
       await fs.writeFile(WEVU_SOURCE, originalWevuSource, 'utf8')
@@ -300,14 +305,17 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await cleanupResidualIdeProcesses()
   })
 
-  it('preserves native Page identity, data, input, route, and query across a JavaScript patch', async (ctx) => {
+  it('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('native'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
     const page = await miniProgram.reLaunch(NATIVE_ROUTE)
     await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('native-instance')
-    await triggerIncrement('native', page)
+    await triggerIncrement()
+    await dom.check('prepared', miniProgram, page)
     expect(await readRuntimeState(page)).toEqual({
       count: 1,
       identity: 'native-instance',
@@ -316,6 +324,13 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       source: 'e2e',
     })
 
+    // 样式 sidecar 先通过真实 watcher 更新，再更新同名脚本，覆盖构建文件身份隔离。
+    const updatedStyle = originalNativeStyle.replace('background-color: #fff', 'background-color: #dbeafe')
+    expect(updatedStyle).not.toBe(originalNativeStyle)
+    await replaceFileByRename(NATIVE_STYLE, updatedStyle)
+    await dom.check('style-updated', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 1, input: 'held-input', identity: 'native-instance' })
+
     const updatedSource = originalNativeSource
       .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
       .replace('this.data.count + 1', 'this.data.count + 2')
@@ -323,9 +338,12 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await replaceFileByRename(NATIVE_SOURCE, updatedSource)
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'native literal patch published')
     await waitForClientVersion(clientVersion + 1)
+    await dom.check('patched', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 1, input: 'held-input', identity: 'native-instance' })
 
-    await triggerIncrement('native', page)
+    await triggerIncrement()
     const state = await waitForPatchedBehavior(3, page)
+    await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(state).toEqual({
       count: 3,
       identity: 'native-instance',
@@ -333,17 +351,32 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       route: 'pages/native/index',
       source: 'e2e',
     })
+
+    const restoreVersion = await readClientVersion()
+    await replaceFileByRename(NATIVE_SOURCE, originalNativeSource)
+    await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 1'), 'native original script restored')
+    await waitForClientVersion(restoreVersion + 1)
+    await replaceFileByRename(NATIVE_STYLE, originalNativeStyle)
+    await dom.check('restored', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 3, input: 'held-input', identity: 'native-instance' })
+    await triggerIncrement()
+    await waitForPatchedBehavior(4, page)
+    await dom.check('restored-updated', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'native-instance' })
   })
 
-  it('rehydrates wevu setup refs while preserving the native page instance', async (ctx) => {
+  it('rehydrates wevu local and store refs while preserving the native page instance', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('wevu'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
     const page = await miniProgram.reLaunch(WEVU_ROUTE)
     await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('wevu-instance')
-    await triggerIncrement('wevu', page)
-    await triggerIncrement('wevu', page)
+    await triggerIncrement()
+    await triggerIncrement()
+    await dom.check('prepared', miniProgram, page)
     expect(await waitForPatchedBehavior(2, page)).toEqual({
       count: 2,
       identity: 'wevu-instance',
@@ -352,16 +385,38 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       source: 'e2e',
     })
 
+    const templateSource = originalWevuSource.replace('<input v-model="input"', '<view class="sfc-template">SFC-TEMPLATE-B</view>\n    <input v-model="input"')
+    await replaceFileByRename(WEVU_SOURCE, templateSource)
+    await devProcess!.waitFor(waitForFileContains(path.join(DIST_ROOT, 'pages/wevu/index.wxml'), 'SFC-TEMPLATE-B'), 'SFC template B emitted')
+    await dom.check('template-b', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
+
+    await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+    await dom.check('template-a', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index' })
+
     const updatedSource = originalWevuSource
+      .replace('<input v-model="input"', '<view class="sfc-template">SFC-MIXED-TEMPLATE</view>\n    <input v-model="input"')
       .replace('STATEFUL-WEVU-BASE', 'STATEFUL-WEVU-PATCHED')
       .replace('count.value += 1', 'count.value += 2')
+      .replace('store.increment(1)', 'store.increment(2)')
+      .replace('  removed: \'initial\',', '  removed: \'initial\',\n  added: \'new default\',')
     const clientVersion = await readClientVersion()
     await replaceFileByRename(WEVU_SOURCE, updatedSource)
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 2'), 'wevu literal patch published')
     await waitForClientVersion(clientVersion + 1)
+    try {
+      await dom.check('patched', miniProgram, await miniProgram.currentPage())
+    }
+    catch (error) {
+      const state = await miniProgram.evaluate((key: string) => (globalThis as any)[key]?.getDebugSnapshot(true), WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
+      throw new Error(`Wevu HMR rendered state mismatch; bridge=${JSON.stringify(state)}`, { cause: error })
+    }
+    expect(await readRuntimeState(page)).toMatchObject({ count: 2, input: 'held-input', identity: 'wevu-instance' })
 
-    await triggerIncrement('wevu', page)
+    await triggerIncrement()
     const state = await waitForPatchedBehavior(4, page)
+    await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(state).toEqual({
       count: 4,
       identity: 'wevu-instance',
@@ -369,16 +424,40 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       route: 'pages/wevu/index',
       source: 'e2e',
     })
+
+    const styleSource = updatedSource
+      .replace('count.value += 2', 'count.value += 3')
+      .replace('store.increment(2)', 'store.increment(3)')
+      .replace('.page {', '.page {\n  background-color: #dbeafe;')
+    const styleClientVersion = await readClientVersion()
+    await replaceFileByRename(WEVU_SOURCE, styleSource)
+    await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 3'), 'mixed SFC script and style patch published')
+    await waitForClientVersion(styleClientVersion + 1)
+    try {
+      await dom.check('mixed-style', miniProgram, await miniProgram.currentPage())
+    }
+    catch (error) {
+      const state = await miniProgram.evaluate((key: string) => (globalThis as any)[key]?.getDebugSnapshot(true), WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
+      throw new Error(`Wevu mixed HMR rendered state mismatch; bridge=${JSON.stringify(state)}`, { cause: error })
+    }
+    expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
+    await triggerIncrement()
+    await waitForPatchedBehavior(7, page)
+    await dom.check('mixed-style-updated', miniProgram, await miniProgram.currentPage())
+    expect(await readRuntimeState(page)).toMatchObject({ count: 7, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
   })
 
   it('preserves native Component identity, data, input, route, and query across a JavaScript patch', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', statefulHmrCheckpoints('component'))
     if (skipIfStatefulHmrTransportUnavailable(ctx)) {
       return
     }
     const page = await miniProgram.reLaunch(COMPONENT_ROUTE)
     await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
     await prepareRuntimeState('component-instance')
-    await triggerIncrement('component', page)
+    await triggerIncrement()
+    await dom.check('prepared', miniProgram, page)
     expect(await waitForPatchedBehavior(1, page)).toEqual({
       count: 1,
       identity: 'component-instance',
@@ -395,13 +474,61 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'this.data.count + 2'), 'component literal patch published')
     await waitForClientVersion(clientVersion + 1)
 
-    await triggerIncrement('component', page)
+    await dom.check('patched', miniProgram, await miniProgram.currentPage())
+
+    await triggerIncrement()
+    await dom.check('updated', miniProgram, await miniProgram.currentPage())
     expect(await waitForPatchedBehavior(3, page)).toEqual({
       count: 3,
       identity: 'component-instance',
       input: 'held-input',
       route: 'pages/component/index',
       source: 'e2e',
+    })
+  })
+
+  it('preserves parent and native child DOM state across a child script patch and restoration', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', nativeChildCheckpoints)
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const control = await fs.readFile(CONTROL_FILE, 'utf8')
+    await verifyNativeChildHmr({
+      dom,
+      miniProgram,
+      async patch(updated) {
+        const version = await readClientVersion()
+        const source = updated
+          ? originalChildSource.replace('this.data.count + 1', 'this.data.count + 2').replace('step:1', 'step:2')
+          : originalChildSource
+        await replaceFileByRename(CHILD_SOURCE, source)
+        await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, updated ? 'step:2' : 'step:1'), 'native child patch published')
+        await waitForClientVersion(version + 1)
+        expect(await fs.readFile(CONTROL_FILE, 'utf8')).toBe(control)
+      },
+    })
+  })
+
+  it('preserves parent and Vue child DOM state across a child script patch and restoration', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', vueChildCheckpoints)
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const control = await fs.readFile(CONTROL_FILE, 'utf8')
+    await verifyNativeChildHmr({
+      dom,
+      miniProgram,
+      childSelector: '#vue-counter',
+      async patch(updated) {
+        const version = await readClientVersion()
+        const source = updated
+          ? originalVueChildSource.replace('count.value += 1', 'count.value += 2').replace('step:1', 'step:2')
+          : originalVueChildSource
+        await replaceFileByRename(VUE_CHILD_SOURCE, source)
+        await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, updated ? 'step:2' : 'step:1'), 'Vue child patch published')
+        await waitForClientVersion(version + 1)
+        expect(await fs.readFile(CONTROL_FILE, 'utf8')).toBe(control)
+      },
     })
   })
 })

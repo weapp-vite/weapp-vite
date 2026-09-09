@@ -55,6 +55,7 @@ export default defineComponent({
       __e2e,
       __e2eText,
       callback,
+      calls,
       handlers,
       runE2E,
       _runE2E: runE2E,
@@ -70,6 +71,9 @@ export default defineComponent({
     </view>
     <view class="summary">
       ok: {{ __e2e.ok }}
+    </view>
+    <view id="function-prop-calls">
+      calls: {{ calls.join(',') || 'none' }}
     </view>
     <x-function-prop-child
       id="function-prop-child"

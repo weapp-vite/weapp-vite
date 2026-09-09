@@ -1,5 +1,6 @@
 import type { Comment, Node, PluginCreator } from 'postcss'
 import type { MpPlatform } from '@/types'
+import { hasManagedTailwindcssOutputMarker } from '../plugins/tailwindcssMarker'
 import { cssAtRulePrefix, ENDIF, IFDEF, IFNDEF } from './constants'
 
 interface ConditionalDirective {
@@ -115,6 +116,10 @@ export const postCreator: PluginCreator<{ platform: MpPlatform }> = (options = {
           }
         },
         Comment(comment) {
+          // 生成占位属于 CSS owner 的持久化协议，由 Tailwind 最终输出阶段消费。
+          if (hasManagedTailwindcssOutputMarker(comment.toString())) {
+            return
+          }
           const directive = parseDirective(comment.text)
           if (!directive) {
             comment.remove()

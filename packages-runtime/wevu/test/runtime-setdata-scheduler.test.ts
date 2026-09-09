@@ -7,6 +7,7 @@ import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { reactive, shallowRef } from '@/reactivity'
 import { createSetDataScheduler } from '@/runtime/app/setData/scheduler'
+import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
 import { resolveBindingDiagnostics, resolveBindingManifest } from '@/runtime/bindingManifest'
 import { runtimeCapabilityRegistry } from '@/runtime/capabilities'
 import { installPatchStrategy } from '@/runtime/features/patchStrategy'
@@ -74,6 +75,39 @@ function createScheduler(options: {
 }
 
 describe('runtime: setData scheduler', () => {
+  it.each([false, true])('dispatches a ref object when it returns to its initial identity (commit-aware=%s)', (commitAware) => {
+    const options = [{ label: 'first' }, { label: 'second' }]
+    const current = shallowRef(options[0])
+    const payloads: Record<string, unknown>[] = []
+    const hostData: Record<string, unknown> = {}
+    const setData = (payload: SetDataPayload) => {
+      payloads.push(structuredClone(payload))
+      for (const [key, value] of Object.entries(payload)) {
+        applySnapshotUpdate(hostData, key, value, 'set', { cloneValue: false })
+      }
+    }
+    const scheduler = createScheduler({
+      state: { current },
+      strategy: 'diff',
+      adapter: commitAware
+        ? {
+            __wevu_dispatchSetData(payload, settle) {
+              setData(payload)
+              settle('committed')
+            },
+          }
+        : { setData },
+    })
+    scheduler.job()
+    current.value = options[1]!
+    scheduler.job()
+    expect(payloads.at(-1)).toEqual({ 'current.label': 'second' })
+    current.value = options[0]!
+    scheduler.job()
+    expect(payloads.at(-1)).toEqual({ 'current.label': 'first' })
+    expect(hostData).toEqual({ current: { label: 'first' } })
+  })
+
   it('handles shallowRef null transitions when comparing value tokens', () => {
     const current = shallowRef<unknown>(null)
     const setData = vi.fn()

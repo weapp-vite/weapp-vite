@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
-import { useRoute, useRouter } from 'wevu/router'
+import { createRouter, useRoute } from 'wevu/router'
 
 definePageJson({
   navigationBarTitleText: '系统设置',
@@ -9,8 +9,9 @@ definePageJson({
 const HOME_PATH = '/pages/index/index'
 const OVERVIEW_PATH = '/pages/overview/index'
 
+// 独立分包拥有独立运行时，需要初始化自己的 router。
+const router = createRouter()
 const route = useRoute()
-const router = useRouter()
 
 const routeSummary = computed(() => route.fullPath || `/${route.path}`)
 

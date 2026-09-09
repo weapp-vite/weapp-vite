@@ -2,6 +2,7 @@ import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(REPO_ROOT, 'e2e-apps/vue-mini-issue151-wevu')
@@ -81,7 +82,21 @@ describe('e2e app: vue-mini issue #151 / wevu', { concurrent: false }, () => {
     await miniProgram?.close?.()
   })
 
-  it('keeps onReady hooks isolated from PageInstance __onReady__ in base lib 3.16.2', async () => {
+  it('keeps onReady hooks isolated from PageInstance __onReady__ in base lib 3.16.2', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/vue-mini-issue151-wevu', [{
+      id: 'ready-hooks',
+      route: ISSUE_151_ROUTE,
+      action: 'switchTab to issue151 and await page/custom-tabbar onReady',
+      nodes: [
+        { selector: '.issue151-title', text: 'vue-mini issue-151 onReady collision probe' },
+        { selector: '.issue151-probe', text: 'ready count: 1' },
+        { selector: '#issue151-hooks', text: 'array' },
+        { selector: '#issue151-tabbar-ready', text: 'true' },
+        { selector: '#issue151-tabbar-hooks', text: 'array' },
+        { selector: '//button[contains(@class,"issue151-tabbar-item")][normalize-space(.)="home"]', query: 'xpath', text: 'home' },
+        { selector: '//button[contains(@class,"issue151-tabbar-item")][normalize-space(.)="issue151"]', query: 'xpath', text: 'issue151' },
+      ],
+    }])
     await sharedMiniProgram.callWxMethodWithOptions('removeStorageSync', {
       timeout: 2_500,
     }, E2E_STATE_STORAGE_KEY).catch(() => {})
@@ -96,5 +111,6 @@ describe('e2e app: vue-mini issue #151 / wevu', { concurrent: false }, () => {
       tabBarHooksType: 'array',
     })
     expect(runtimeResult.readyCount).toBeGreaterThan(0)
+    await dom.check('ready-hooks', sharedMiniProgram, page)
   })
 })

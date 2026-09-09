@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import { createHeadlessSession } from '../src/runtime'
-import { launch } from '../src/testing'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createHeadlessSession as createRuntimeSession } from '../src/runtime'
+import { launch as launchRuntime } from '../src/testing'
 import {
   cleanupTempDirs,
   createAnimationFixture,
@@ -14,17 +14,34 @@ import {
 
 describe('page event alignment', () => {
   const tempDirs: string[] = []
+  const sessions: Array<{ close: () => void | Promise<void> }> = []
 
-  afterEach(() => {
+  function createHeadlessSession(options: Parameters<typeof createRuntimeSession>[0]) {
+    const session = createRuntimeSession(options)
+    sessions.push(session)
+    return session
+  }
+
+  async function launch(options: Parameters<typeof launchRuntime>[0]) {
+    const session = await launchRuntime(options)
+    sessions.push(session)
+    return session
+  }
+
+  afterEach(async () => {
+    for (const session of sessions.splice(0)) {
+      await session.close()
+    }
     cleanupTempDirs(tempDirs)
   })
 
-  it('drives onPageScroll through wx.pageScrollTo and keeps success callbacks', () => {
+  it('drives onPageScroll through wx.pageScrollTo and keeps success callbacks', async () => {
     const projectPath = createPageEventsFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const page = session.reLaunch('/pages/events/index')
+    await vi.waitFor(() => expect(page.data.logs).toContain('onRouteDone:{}'))
     page.runScroll(120)
 
     expect(page.data.scrollTop).toBe(120)
@@ -35,12 +52,13 @@ describe('page event alignment', () => {
     expect(page.data.callbacks).toEqual(['success', 'complete'])
   })
 
-  it('supports wx.pageScrollTo selector targets in headless runtime', () => {
+  it('supports wx.pageScrollTo selector targets in headless runtime', async () => {
     const projectPath = createPageEventsFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const page = session.reLaunch('/pages/events/index')
+    await vi.waitFor(() => expect(page.data.logs).toContain('onRouteDone:{}'))
     page.runScrollBySelector()
 
     expect(page.data.scrollTop).toBe(236)
@@ -57,6 +75,7 @@ describe('page event alignment', () => {
     const miniProgram = await launch({ projectPath })
 
     const page = await miniProgram.reLaunch('/pages/events/index')
+    await vi.waitFor(async () => expect(await page.data('logs')).toContain('onRouteDone:{}'))
     await miniProgram.triggerPullDownRefresh()
     await miniProgram.triggerReachBottom()
     await miniProgram.triggerResize({

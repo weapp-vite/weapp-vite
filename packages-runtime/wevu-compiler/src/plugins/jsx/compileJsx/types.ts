@@ -31,6 +31,7 @@ export interface JsxCompileContext {
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
   scopeStack: string[]
+  setupRefBindings?: Set<string>
   bindingScopeStack: Array<{
     locals: string[]
     sourceExpression: string

@@ -276,9 +276,14 @@ describe('createProject', () => {
     expect(agents).toContain('plugins.*.provider')
 
     const appJson = await readJsonAs<{
-      plugins?: Record<string, { provider?: string }>
+      plugins?: Record<string, { provider?: string, version?: string }>
     }>(path.join(root, 'src/app.json'))
-    expect(appJson.plugins?.['hello-plugin']?.provider).toBe('wxb3d842a4a7e3440d')
+    const projectConfig = await readJsonAs<{ appid: string, compileType: string }>(path.join(root, 'project.config.json'))
+    expect(projectConfig).toMatchObject({ compileType: 'plugin', setting: { es6: false } })
+    expect(appJson.plugins?.['hello-plugin']).toMatchObject({
+      provider: projectConfig.appid,
+      version: 'dev',
+    })
   })
 
   it('preserves existing .gitignore when templates ship gitignore', async () => {

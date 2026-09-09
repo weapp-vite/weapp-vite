@@ -103,9 +103,12 @@ export default defineProject({
       groupOrder: 100,
     },
     dir: packageDir,
-    include: projectTestIncludes,
     exclude: projectTestExcludes,
     alias: [
+      {
+        find: /^@weapp-core\/constants$/,
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/constants/src/index.ts'),
+      },
       {
         find: '@/',
         replacement: `${path.resolve(packageDir, './src')}/`,

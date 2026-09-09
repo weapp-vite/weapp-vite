@@ -5,7 +5,7 @@
   ],
   "plugins": {
     "hello-plugin": {
-      "version": "0.0.1",
+      "version": "dev",
       "provider": "wxb3d842a4a7e3440d"
     }
   }

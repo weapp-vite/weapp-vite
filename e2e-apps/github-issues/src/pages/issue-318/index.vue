@@ -143,6 +143,7 @@ defineExpose({
     <view class="issue318-list">
       <view
         v-for="item in list"
+        :id="`issue318-${item.id}`"
         :key="item.id"
         class="issue318-row"
         :data-line="formatRow(item)"
