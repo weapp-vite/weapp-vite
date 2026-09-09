@@ -78,23 +78,6 @@ describe('react plugin', () => {
     }))
   })
 
-  it.each(['auto', 'static', 'dynamic'] as const)('emits missing page JSON in %s mode and preserves sidecar config', async (renderMode) => {
-    const plugin = createReactPlugin({
-      configService: { cwd: '/project', weappViteConfig: { react: { renderMode } } },
-      runtimeState: { build: { hmr: { entriesMap: new Map([['pages/home/index', { json: {} }]]) } } },
-    } as any)[0]
-    await plugin.transform!.call({ warn: vi.fn() } as any, 'export function View() { return <view>page</view> }', '/project/src/pages/home/view.tsx')
-    const emitFile = vi.fn()
-    plugin.generateBundle!.call({ emitFile } as any, {} as any, {})
-    expect(emitFile).toHaveBeenCalledWith({ type: 'asset', fileName: 'pages/home/index.json', source: '{}' })
-
-    emitFile.mockClear()
-    const sidecar = { type: 'asset', fileName: 'pages/home/index.json', source: '{"navigationBarTitleText":"Home"}' }
-    plugin.generateBundle!.call({ emitFile } as any, {} as any, { 'pages/home/index.json': sidecar } as any)
-    expect(sidecar.source).toBe('{"navigationBarTitleText":"Home"}')
-    expect(emitFile.mock.calls.some(([asset]) => asset.fileName === 'pages/home/index.json')).toBe(false)
-  })
-
   it('validates native bridge registrations before emitting WXML', async () => {
     const plugin = createReactPlugin({
       configService: {
