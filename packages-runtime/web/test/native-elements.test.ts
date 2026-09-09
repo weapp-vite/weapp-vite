@@ -335,4 +335,53 @@ describe('native custom elements', () => {
     expect(viewport.style.overflowX).toBe('hidden')
     expect(viewport.style.overflowY).toBe('hidden')
   })
+
+  it('updates scroll offsets only from changed matching position attributes', () => {
+    const scroll = appendElement<any>('weapp-scroll-view', {
+      'scroll-left': '0',
+      'scroll-top': '0',
+      'scroll-x': '',
+      'scroll-y': '',
+    })
+    const viewport = scroll.shadowRoot!.querySelector('.viewport') as HTMLDivElement
+    scroll.scrollTop = 80
+    scroll.scrollLeft = 64
+
+    scroll.setAttribute('scroll-x', 'false')
+    expect(viewport.style.overflowX).toBe('hidden')
+    expect(scroll.scrollTop).toBe(80)
+    expect(scroll.scrollLeft).toBe(64)
+
+    scroll.setAttribute('scroll-top', '0')
+    scroll.setAttribute('scroll-left', '0')
+    expect(scroll.scrollTop).toBe(80)
+    expect(scroll.scrollLeft).toBe(64)
+
+    scroll.setAttribute('scroll-top', '24')
+    expect(scroll.scrollTop).toBe(24)
+    expect(scroll.scrollLeft).toBe(64)
+
+    scroll.scrollTop = 72
+    scroll.setAttribute('scroll-left', '32')
+    expect(scroll.scrollTop).toBe(72)
+    expect(scroll.scrollLeft).toBe(32)
+  })
+
+  it('preserves user scroll offsets when reconnecting an initialized viewport', () => {
+    const scroll = appendElement<any>('weapp-scroll-view', {
+      'scroll-left': '4',
+      'scroll-top': '8',
+    })
+    scroll.scrollTop = 80
+    scroll.scrollLeft = 64
+
+    scroll.remove()
+    document.body.append(scroll)
+    expect(scroll.scrollTop).toBe(80)
+    expect(scroll.scrollLeft).toBe(64)
+
+    scroll.setAttribute('scroll-top', '12')
+    expect(scroll.scrollTop).toBe(12)
+    expect(scroll.scrollLeft).toBe(64)
+  })
 })
