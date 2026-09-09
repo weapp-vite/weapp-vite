@@ -83,6 +83,23 @@ function sanitizeText(text, replacements) {
   return result
 }
 
+/** 提取可公开的启动错误，保留原因并移除路径、控制令牌与堆栈。 */
+export function sanitizeDiagnosticError(error, roots = []) {
+  const detail = {
+    name: error instanceof Error ? error.name : 'Error',
+    code: typeof error?.code === 'string' ? error.code : 'DIAGNOSTIC_STARTUP_FAILED',
+    message: error instanceof Error ? error.message : String(error),
+  }
+  const text = JSON.stringify(detail)
+  const replacements = discoverReplacements([text], [repoRoot, process.env.GITHUB_WORKSPACE, ...roots])
+  const sanitized = JSON.parse(sanitizeText(text, replacements))
+  // 非仓库路径仍可能出现在系统错误中，不把机器目录带到 Actions 输出。
+  for (const key of ['name', 'code', 'message']) {
+    sanitized[key] = sanitized[key].replace(/(?:[A-Z]:[\\/]|\/)[^\s"'<>]*[\\/][^\s"'<>]*/gi, '<path>')
+  }
+  return sanitized
+}
+
 async function collectFiles(directory, prefix = '') {
   const entries = await readdir(directory, { withFileTypes: true })
   const result = []

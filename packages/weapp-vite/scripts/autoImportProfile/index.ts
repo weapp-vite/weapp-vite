@@ -10,6 +10,7 @@ import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../../e2e/utils/de
 import { startDevProcess } from '../../../../e2e/utils/dev-process'
 import { createDevProcessEnv } from '../../../../e2e/utils/dev-process-env'
 import { HMR_OUTPUT_POLL_INTERVAL_MS, measureFileMarkerUpdate } from '../utils/hmrOutput'
+import { recordStartupError, selectProfilingComponents } from './diagnostics.mjs'
 import { allResolverTags, cliPath, createTempFixtureProject, seedFixture, workspaceRootDir, workspaceRootNodeModulesDir } from './fixture'
 
 const reportRoot = path.resolve(process.env.AUTO_IMPORT_PROFILE_REPORT_DIR ?? '.tmp/auto-import-profile')
@@ -17,7 +18,7 @@ const iterations = Number(process.env.BENCH_ITERATIONS ?? '2')
 const scenarios = (process.env.BENCH_SCENARIOS ?? '1,100').split(',').map(Number)
 const timeoutMs = 90_000
 const firstBuildReady = /小程序初次构建完成[\s\S]*开发服务已就绪/
-const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+let sha = 'unresolved'
 
 interface UpdateSample {
   index: number
@@ -41,11 +42,12 @@ async function measure(group: string, mode: 'baseline' | 'current', usedCount: n
   await mkdir(artifactDir, { recursive: true })
   const project = await createTempFixtureProject(`auto-import-profile-${mode}-${usedCount}-${iteration}`)
   const updates: UpdateSample[] = []
-  const run: Record<string, unknown> = { label, sha, group, mode, usedCount, iteration, status: 'running' }
+  const selection = selectProfilingComponents(allResolverTags, usedCount)
+  const run: Record<string, unknown> = { label, sha, group, mode, usedCount, requestedCount: selection.requestedCount, actualCount: selection.actualCount, iteration, status: 'running' }
   const record = async () => await writeFile(path.join(artifactDir, 'run.json'), JSON.stringify({ ...run, updates }, null, 2))
   await record()
   try {
-    let source = await seedFixture(project.tempDir, allResolverTags.slice(0, usedCount), group === 'support-disabled', mode)
+    let source = await seedFixture(project.tempDir, selection.tags, group === 'support-disabled', mode)
     await rm(path.join(project.tempDir, 'dist'), { recursive: true, force: true })
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
     const pagePath = path.join(project.tempDir, 'src/pages/bench-hmr-auto-import/index.vue')
@@ -125,9 +127,10 @@ async function measure(group: string, mode: 'baseline' | 'current', usedCount: n
 }
 
 async function main() {
-  if (!Number.isInteger(iterations) || iterations < 1 || scenarios.some(count => !Number.isInteger(count) || count < 1 || count > allResolverTags.length)) {
+  if (!Number.isInteger(iterations) || iterations < 1 || scenarios.some(count => !Number.isInteger(count) || count < 1)) {
     throw new Error('Invalid profiling iterations or component counts.')
   }
+  sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
   if (process.env.GITHUB_SHA && process.env.GITHUB_SHA !== sha) {
     throw new Error('Profiling checkout does not match workflow SHA.')
   }
@@ -148,6 +151,7 @@ async function main() {
     runnerImage: process.env.ImageVersion,
     iterations,
     scenarios,
+    componentCounts: scenarios.map(count => ({ requestedCount: count, actualCount: selectProfilingComponents(allResolverTags, count).actualCount })),
     snapshotTrace: true,
     hmrProfile: true,
     updatesPerProcess: 4,
@@ -177,7 +181,9 @@ async function main() {
   process.exitCode = failed ? 1 : 0
 }
 
-void main().catch(() => {
-  console.error('Auto Import diagnostic orchestration failed; inspect raw evidence locally.')
+void main().catch(async (error: unknown) => {
   process.exitCode = 1
+  await recordStartupError(error, { sha, roots: [reportRoot, workspaceRootDir] }).catch(() => {
+    console.error('Unable to persist sanitized startup failure evidence; the sanitized original error appears above.')
+  })
 })
