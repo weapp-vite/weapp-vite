@@ -7,6 +7,11 @@ on:
     - cron: '35 1 * * *'
   workflow_dispatch:
     inputs:
+      diagnostics-only:
+        description: Run isolated profiling jobs only (never counts as final acceptance)
+        type: boolean
+        required: false
+        default: false
       threshold-percent:
         description: relative regression threshold percent
         required: false
@@ -76,7 +81,7 @@ permissions:
 jobs:
   auto-import-performance:
     name: Auto Import Performance (Ubuntu / Node 24)
-    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version')
+    if: (github.event_name != 'workflow_dispatch' || inputs['diagnostics-only'] != true) && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -136,7 +141,7 @@ jobs:
 
   templates-performance:
     name: Templates Performance (${{ matrix.os }} / Node 24)
-    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version')
+    if: (github.event_name != 'workflow_dispatch' || inputs['diagnostics-only'] != true) && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version'))
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
@@ -280,3 +285,67 @@ jobs:
         if: always()
         working-directory: head
         run: pnpm exec tsx scripts/check-templates-performance-report.ts
+
+  auto-import-profiling:
+    name: Diagnostic Only - Auto Import (Ubuntu / Node 24)
+    if: github.event_name == 'workflow_dispatch' && inputs['diagnostics-only'] == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out diagnostic commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+      - name: Build normal workspace artifacts
+        run: pnpm build:pkgs:ci
+      - name: Collect all Auto Import diagnostic samples
+        env:
+          AUTO_IMPORT_PROFILE_REPORT_DIR: .tmp/auto-import-profile
+          BENCH_ITERATIONS: '2'
+          BENCH_SCENARIOS: '1,100'
+        run: node --import tsx packages/weapp-vite/scripts/autoImportProfile/index.ts
+      - name: Sanitize diagnostic artifacts
+        id: sanitize
+        if: always()
+        run: node scripts/workspaceHmrProfile/sanitize.mjs .tmp/auto-import-profile .tmp/auto-import-profile-sanitized
+      - name: Upload sanitized diagnostic evidence
+        if: always() && steps.sanitize.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: diagnostic-auto-import-sanitized-${{ github.sha }}
+          path: .tmp/auto-import-profile-sanitized
+          retention-days: 3
+          if-no-files-found: error
+
+  workspace-hmr-profiling:
+    name: Diagnostic Only - Workspace HMR (Ubuntu / Node 24)
+    if: github.event_name == 'workflow_dispatch' && inputs['diagnostics-only'] == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out diagnostic commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+      - name: Build normal workspace artifacts
+        run: pnpm build:pkgs:ci
+      - name: Collect all Workspace HMR diagnostic samples
+        run: node scripts/workspaceHmrProfile/run.mjs
+      - name: Sanitize diagnostic artifacts
+        id: sanitize
+        if: always()
+        run: node scripts/workspaceHmrProfile/sanitize.mjs .tmp/workspace-hmr-profile .tmp/workspace-hmr-profile-sanitized
+      - name: Upload sanitized diagnostic evidence
+        if: always() && steps.sanitize.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: diagnostic-workspace-hmr-sanitized-${{ github.sha }}
+          path: .tmp/workspace-hmr-profile-sanitized
+          retention-days: 3
+          if-no-files-found: error

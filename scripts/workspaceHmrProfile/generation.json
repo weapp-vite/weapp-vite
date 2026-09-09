@@ -1,0 +1,10 @@
+{
+  "source": "scripts/audit-workspace-hmr.ts",
+  "sourceSha256": "2f6456832f66240e351feba9f3ceafa91e88cfc0e7fba8abd8910ca0ca419fad",
+  "audit": "scripts/workspaceHmrProfile/audit.ts",
+  "auditSha256": "8f753a7bbcdfa023aa23d35628a01d836e97329610a04fafa07dc8f3bf14e77f",
+  "orchestrator": "scripts/workspaceHmrProfile/run.mjs",
+  "orchestratorSha256": "8a24fa1c43890153636f17bc6d506b1c7737b85cfe3424ee7a9e3b97649be10d",
+  "executed": false,
+  "purpose": "diagnostic-only; full acceptance remains required"
+}
