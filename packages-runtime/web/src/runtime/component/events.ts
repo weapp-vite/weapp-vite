@@ -1,4 +1,5 @@
 import type { ComponentPublicInstance } from './types'
+import { invokeMiniProgramEventHandler } from '../inputHandlerResult'
 import {
   EVENT_ATTRIBUTE_PREFIXES,
   EVENT_FLAG_ATTRIBUTE_PREFIXES,
@@ -62,7 +63,7 @@ export function bindRuntimeEvents(
           },
           originalEvent: nativeEvent,
         }
-        handler.call(instance, syntheticEvent)
+        invokeMiniProgramEventHandler(handler, instance, syntheticEvent, nativeEvent)
       }, flags.capture)
     }
   }

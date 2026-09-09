@@ -1,4 +1,5 @@
 import { getNativeComponentDescriptor } from '../../shared/nativeComponents'
+import { dispatchNativeInputEvent } from '../inputHandlerResult'
 import { connectFormControl, disconnectFormControl } from './formControl'
 import { dispatchMiniProgramEvent, readBooleanAttribute, resolveContainingShadowRoot, resolveMaxLength } from './helpers'
 import { ensureNativeComponentStyle } from './style'
@@ -114,7 +115,10 @@ export class WeappInput extends BaseElement {
     const input = document.createElement('input')
     input.addEventListener('input', (event) => {
       event.stopPropagation()
-      dispatchMiniProgramEvent(this, 'input', createInputEventDetail(input))
+      const returnedValue = dispatchNativeInputEvent(this, createInputEventDetail(input))
+      if (returnedValue !== undefined) {
+        input.value = returnedValue
+      }
     })
     input.addEventListener('focus', () => {
       dispatchMiniProgramEvent(this, 'focus', { value: input.value, height: 0 })
