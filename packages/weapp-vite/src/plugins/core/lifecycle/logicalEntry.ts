@@ -1,4 +1,4 @@
-import type { PluginContext } from 'rolldown'
+import type { PluginContext, ResolvedId } from 'rolldown'
 import type { LogicalEntryDependency } from '../../../moduleGraph/logicalEntry'
 import type { SidecarModuleKind } from '../../../moduleGraph/protocol'
 import type { CorePluginState } from '../helpers'
@@ -12,6 +12,7 @@ import {
   parseSidecarSourceRequest,
   resolveVirtualModuleId,
 } from '../../../moduleGraph/protocol'
+import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry, isTemplate } from '../../../utils'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { pathExists as pathExistsCached } from '../../utils/cache'
@@ -179,6 +180,14 @@ export function createLogicalEntryLoadHook(state: CorePluginState) {
         )
       }
       const dependencies = await collectLogicalEntryDependencies(state, this, logicalEntry.sourceId)
+      if (state.ctx.configService.isDev) {
+        // 编译器直接发射的组件同样拥有逻辑入口，不能依赖父入口再次扫描 JSON 才登记。
+        // sourceId 已由发射方解析；保留原始模块身份以及已有解析元数据。
+        const sourceId = normalizeSourceId(logicalEntry.sourceId)
+        if (!state.resolvedEntryMap.has(sourceId)) {
+          state.resolvedEntryMap.set(sourceId, { id: logicalEntry.sourceId } as ResolvedId)
+        }
+      }
       return {
         code: createLogicalEntryModuleCode(logicalEntry, dependencies),
         moduleSideEffects: 'no-treeshake',
