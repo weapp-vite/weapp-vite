@@ -120,6 +120,40 @@ class StatefulHmrSnapshotDiagnostics {
     this.record('snapshot-ready', { batchId, superseded, assets: this.assets(output) })
   }
 
+  entryComparison(data: {
+    batchId?: number
+    mode: StatefulHmrSnapshotMode
+    oldEntryIds: Iterable<string>
+    nextEntryIds: Iterable<string>
+    oldDelegatedComponentEntryIds: Iterable<string>
+    nextDelegatedComponentEntryIds: Iterable<string>
+    entryGraphChanged: boolean
+    entryGraphRevision: number
+    rebuiltEntryGraphRevision: number
+    superseded: boolean
+  }) {
+    const oldEntryIds = new Set(data.oldEntryIds)
+    const nextEntryIds = new Set(data.nextEntryIds)
+    const oldDelegated = new Set(data.oldDelegatedComponentEntryIds)
+    const nextDelegated = new Set(data.nextDelegatedComponentEntryIds)
+    this.record('entry-comparison', {
+      batchId: data.batchId,
+      mode: data.mode,
+      oldEntryIds: [...oldEntryIds].map(id => this.label(id)),
+      nextEntryIds: [...nextEntryIds].map(id => this.label(id)),
+      addedEntryIds: [...nextEntryIds].filter(id => !oldEntryIds.has(id)).map(id => this.label(id)),
+      removedEntryIds: [...oldEntryIds].filter(id => !nextEntryIds.has(id)).map(id => this.label(id)),
+      oldDelegatedComponentEntryIds: [...oldDelegated].map(id => this.label(id)),
+      nextDelegatedComponentEntryIds: [...nextDelegated].map(id => this.label(id)),
+      addedDelegatedComponentEntryIds: [...nextDelegated].filter(id => !oldDelegated.has(id)).map(id => this.label(id)),
+      removedDelegatedComponentEntryIds: [...oldDelegated].filter(id => !nextDelegated.has(id)).map(id => this.label(id)),
+      entryGraphChanged: data.entryGraphChanged,
+      entryGraphRevision: data.entryGraphRevision,
+      rebuiltEntryGraphRevision: data.rebuiltEntryGraphRevision,
+      superseded: data.superseded,
+    })
+  }
+
   diff(batchId: number | undefined, previous: Iterable<StatefulHmrOutputFile>, next: StatefulHmrOutputFile[], selected: StatefulHmrOutputFile[], superseded: boolean) {
     this.record('snapshot-diff', { batchId, superseded, previous: this.assets(previous), next: this.assets(next), selected: this.assets(selected) })
   }

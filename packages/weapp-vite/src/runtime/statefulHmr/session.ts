@@ -516,6 +516,18 @@ class StatefulHmrSession {
     const entryGraphChanged = nextEntryIds !== undefined && (
       nextEntryIds.length !== this.entryIds.size || nextEntryIds.some(id => !this.entryIds.has(id))
     )
+    this.diagnostics?.entryComparison({
+      batchId: traceBatchId,
+      mode: batch.mode,
+      oldEntryIds: this.entryIds,
+      nextEntryIds: nextEntryIds ?? this.entryIds,
+      oldDelegatedComponentEntryIds: this.delegatedComponentEntryIds,
+      nextDelegatedComponentEntryIds: snapshot.delegatedComponentEntryIds ?? this.delegatedComponentEntryIds,
+      entryGraphChanged,
+      entryGraphRevision,
+      rebuiltEntryGraphRevision: this.rebuiltEntryGraphRevision,
+      superseded: batch.isSuperseded(),
+    })
     if (batch.mode === 'full' || entryGraphChanged) {
       if (nextEntryIds) {
         this.entryIds.clear()
