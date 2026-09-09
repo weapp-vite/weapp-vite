@@ -26,6 +26,7 @@ async function waitForCompleteInitialBundle(timeoutMs = 90_000) {
   const controlPath = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
   const styleMarkers = [
     [path.join(DIST_ROOT, 'app.wxss'), '--color-brand: #006241'],
+    [path.join(DIST_ROOT, 'app.wxss'), '.text-white'],
     [path.join(DIST_ROOT, 'sub-normal/pages/index.wxss'), '.text-red-500'],
     [path.join(DIST_ROOT, 'sub-independent/pages/index.wxss'), '.text-blue-500'],
   ] as const
@@ -124,7 +125,9 @@ describe('stateful HMR with root source directory', { concurrent: false }, () =>
         ],
       })
       await expect(fs.pathExists(path.join(DIST_ROOT, 'app.js'))).resolves.toBe(true)
-      await expect(readEmittedStylesheet(path.join(DIST_ROOT, 'app.wxss'))).resolves.toContain('--color-brand: #006241')
+      const appStyle = await readEmittedStylesheet(path.join(DIST_ROOT, 'app.wxss'))
+      expect(appStyle).toContain('--color-brand: #006241')
+      expect(appStyle).toContain('.text-white')
       await expect(fs.readFile(path.join(DIST_ROOT, 'sub-normal/pages/index.wxss'), 'utf8')).resolves.toContain('.text-red-500')
       await expect(fs.readFile(path.join(DIST_ROOT, 'sub-independent/pages/index.wxss'), 'utf8')).resolves.toContain('.text-blue-500')
       await expect(fs.pathExists(path.join(DIST_ROOT, 'tailwind.wxss'))).resolves.toBe(false)

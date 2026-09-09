@@ -65,6 +65,20 @@ async function assertTransforms(compiler: Compiler, request: CompilerGenerateReq
 }
 
 describe('published Tailwind Core compatibility', () => {
+  it('scans a direct CSS entry relative to its nested source directory', async () => {
+    const { root, compiler, request } = await fixture()
+    const entry = path.join(root, 'styles/tailwind.css')
+    await mkdir(path.join(root, 'styles/pages'), { recursive: true })
+    await writeFile(path.join(root, 'styles/pages/index.wxml'), '<view class="w-[37px] text-white" />')
+    await writeFile(path.join(root, 'outside.wxml'), '<view class="w-[99px]" />')
+    await writeFile(entry, '@import "tailwindcss" source(none); @source "./pages/**/*.{wxml,ts}";')
+    request.sourceOptions = { ...request.sourceOptions, cssEntries: [entry] }
+
+    const generated = await assertTransforms(compiler, request, 'w-[37px]', '37px')
+    expect(generated.classSet.has('text-white')).toBe(true)
+    expect(generated.classSet.has('w-[99px]')).toBe(false)
+  })
+
   it('finalizes complete raw CSS without the generator-only pruning of author selectors', async () => {
     const { compiler, entry, request } = await fixture({ rem2rpx: true, cssSelectorReplacement: { root: ['page', '.tw-page'] } })
     await writeFile(entry, '@import "tailwindcss" source(none); @source inline("p-[24rpx] p-5 bg-red-500"); page { color: #102340; background: #f4f8ff; } view { font-size: 31rpx; } .author { margin-top: 17rpx; } .alpha { background-color: color-mix(in srgb, #123456 var(--opacity), transparent); }')

@@ -58,3 +58,9 @@ pnpm e2e:ide:full:exhaustive
 人工示例 `vite-native` 的旧配置仍包含无源码的 `pages/features/build/index`，本轮首页构建样式验证不将该历史页面计为已验收。所有新入口、相邻作者样式及真实首页文件均已按实际产物检查。
 
 相关下游回归 `skyline-hmr-fallback`、`template-tailwind-v4-source.build`、`template-tailwind-hmr`、`issue-814-tailwind-dynamic-class.e2e` 串行运行共 4 文件、9 测试通过，包含五套 Tailwind 模板的 HMR 与现有内存预算检查。
+
+全量云端构建进一步发现 `stateful-hmr-root-tailwind` 指定的是嵌套 `tailwind.css`，而 App 实际导入外层 `app.css`。仅把配置改为外层入口仍无法生成 `.text-white`：直接 Core 最小复现确认，5.5.2 的来源扫描只读取入口原文中的 `@source`，未发现嵌套 CSS 内的来源声明，尽管底层编译仍能展开普通样式。该上游边界另存失败复现，不在 adapter 中新增第二套编译器或扫描器。
+
+此 fixture 按相同迁移边界由 App 直接导入配置的纯 Tailwind CSS 入口，避免间接入口，保留根源码目录、普通/独立分包与生成目录排除场景。现有 HMR 回归同时要求主包真实 `.text-white` 工具类与品牌变量，避免普通作者变量仍存在时掩盖工具类丢失。此次是显式入口迁移，不宣称上游嵌套 `@source` 已修复。
+
+公开 Core 回归验证直接入口位于子目录时，`@source` 仍以该 CSS 所在目录为基准，且 `source(none)` 不扩大到项目其他文件。嵌套 import 的失败证据与脱敏上游复现说明保存在本机，未以 skip 或弱化断言计为通过。
