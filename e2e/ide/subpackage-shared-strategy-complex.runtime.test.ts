@@ -1,8 +1,11 @@
+import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isLikelyRelaunchRetryableError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { complexADom, complexBDom } from './subpackageSharedStrategyDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 
@@ -10,6 +13,8 @@ interface FixtureSuiteOptions {
   suiteName: string
   label: string
   appRoot: string
+  fixture: string
+  checkpoints: DomCheckpoint[]
   routes: Array<{
     dataPaths: string[]
     expected: string[]
@@ -79,7 +84,7 @@ async function readRenderedRouteSnapshot(page: any, routeCase: FixtureSuiteOptio
 }
 
 function createRuntimeSuite(options: FixtureSuiteOptions) {
-  const { suiteName, label, appRoot, routes } = options
+  const { suiteName, label, appRoot, fixture, checkpoints, routes } = options
 
   async function runBuild() {
     const outputRoot = path.join(appRoot, 'dist')
@@ -155,6 +160,7 @@ function createRuntimeSuite(options: FixtureSuiteOptions) {
 
         return {
           miniProgram,
+          page,
           renderedSnapshot: await readRenderedRouteSnapshot(page, routeCase),
         }
       }
@@ -175,7 +181,9 @@ function createRuntimeSuite(options: FixtureSuiteOptions) {
       await closeSharedMiniProgram()
     })
 
-    it('reLaunches all key routes and renders shared markers', async () => {
+    it('reLaunches all key routes and renders shared markers', async (ctx) => {
+      const dom = createDomAcceptance(ctx, fixture, checkpoints)
+      expect(checkpoints.map(checkpoint => checkpoint.route)).toEqual(routes.map(routeCase => routeCase.route))
       let miniProgram = await getSharedMiniProgram()
 
       try {
@@ -186,6 +194,8 @@ function createRuntimeSuite(options: FixtureSuiteOptions) {
           for (const token of routeCase.expected) {
             expect(result.renderedSnapshot).toContain(token)
           }
+          const checkpoint = checkpoints.find(item => item.route === routeCase.route)!
+          await dom.check(checkpoint.id, miniProgram, result.page)
         }
       }
       finally {
@@ -199,6 +209,8 @@ createRuntimeSuite({
   suiteName: 'e2e app: subpackage-shared-strategy-complex-a runtime',
   label: 'ide:subpackage-shared-strategy-complex-a',
   appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-a'),
+  fixture: 'e2e-apps/subpackage-shared-strategy-complex-a',
+  checkpoints: complexADom,
   routes: [
     {
       route: '/pages/index/index',
@@ -231,6 +243,8 @@ createRuntimeSuite({
   suiteName: 'e2e app: subpackage-shared-strategy-complex-b runtime',
   label: 'ide:subpackage-shared-strategy-complex-b',
   appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-b'),
+  fixture: 'e2e-apps/subpackage-shared-strategy-complex-b',
+  checkpoints: complexBDom,
   routes: [
     {
       route: '/pages/home/index',

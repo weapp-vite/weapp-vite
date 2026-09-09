@@ -39,6 +39,7 @@ import type {
 } from './core'
 import type { HeadlessUniEventBus } from './eventBus'
 import type { HeadlessWxFileSystemManager } from './fileSystem'
+import type { HeadlessWxGetLogManagerOption, HeadlessWxLogManager } from './logManager'
 import type {
   HeadlessWxCanvasToTempFilePathOption,
   HeadlessWxCanvasToTempFilePathSuccessResult,
@@ -156,6 +157,7 @@ export interface HeadlessWx extends HeadlessUniEventBus {
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getDeviceInfo: () => HeadlessWxDeviceInfoResult
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
+  getLogManager: (option?: HeadlessWxGetLogManagerOption) => HeadlessWxLogManager
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
   getClipboardData: (option?: HeadlessWxGetClipboardDataOption) => HeadlessWxGetClipboardDataResult | undefined
   getLocation: (option?: HeadlessWxGetLocationOption) => HeadlessWxGetLocationResult | undefined

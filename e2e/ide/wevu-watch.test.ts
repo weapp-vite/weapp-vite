@@ -3,6 +3,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-wevu-ts')
@@ -57,7 +58,18 @@ describe('wevu watch controls (e2e)', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   })
 
-  it('supports pause/resume/stop via destructuring', async () => {
+  it('supports pause/resume/stop via destructuring', async (context) => {
+    const dom = createDomAcceptance(context, 'e2e-apps/app-lifecycle-wevu-ts', [
+      { id: 'watch:initial', route: '/pages/index/index', action: '检查 watcher 初始界面', nodes: [
+        { selector: '#app-lifecycle-route', text: 'App lifecycle wevu' },
+        { selector: '#watch-result', text: 'watch results: 0' },
+        { selector: '.watch-result-value', count: 0 },
+      ] },
+      { id: 'watch:result', route: '/pages/index/index', action: '暂停、恢复、停止后仅呈现恢复阶段的回调值', nodes: [
+        { selector: '#watch-result', text: 'watch results: 1' },
+        { selector: '.watch-result-value', text: '2', count: 1 },
+      ] },
+    ])
     const miniProgram = await getSharedMiniProgram()
 
     try {
@@ -65,6 +77,7 @@ describe('wevu watch controls (e2e)', { concurrent: false }, () => {
       if (!page) {
         throw new Error('Failed to launch index page')
       }
+      await dom.check('watch:initial', miniProgram, page)
       const logs = await page.callMethodWithOptions('runWatchE2E', {
         routeOnly: true,
         timeout: 60_000,
@@ -72,6 +85,7 @@ describe('wevu watch controls (e2e)', { concurrent: false }, () => {
       expect(logs).toEqual([2])
       const storedLogs = await page.data('__watchLogs')
       expect(storedLogs).toEqual([2])
+      await dom.check('watch:result', miniProgram, page)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

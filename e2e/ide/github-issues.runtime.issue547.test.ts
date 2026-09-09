@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -25,6 +26,15 @@ describe('e2e app: github-issues / issue #547', { concurrent: false }, () => {
   })
 
   it('renders nested augmented default slot content in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'initial',
+      route: '/pages/issue-547/index',
+      action: '检查两层 augmented 默认插槽内的最终组件文本',
+      nodes: [
+        { selector: '.issue547-group__title', text: 'issue-547 nested slot group', scope: ['#issue547-group'] },
+        { selector: '.issue547-image', text: 'issue-547 nested slot image', scope: ['#issue547-group', { has: '#issue547-cell' }, '#issue547-cell', { has: '#issue547-image' }, '#issue547-image'] },
+      ],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-547/index', undefined, 30_000, {
@@ -49,6 +59,7 @@ describe('e2e app: github-issues / issue #547', { concurrent: false }, () => {
       const imageWxml = await readDistWxml('components/issue-547/NestedSlotImage/index.wxml')
       expect(imageWxml).toContain('issue-547 nested slot image')
       expect(imageWxml).toContain('data-issue547-image="true"')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

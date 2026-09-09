@@ -287,6 +287,9 @@ export interface WeappHmrConfig {
    */
   runtime?: 'auto' | 'classic' | 'stateful-experimental'
   sharedChunks?: 'full' | 'auto' | 'off'
+  /**
+   * @description 额外刷新已存在的全局样式；auto 仅用于非内置 Tailwind 的实际内容失效，内置集成由原生输出刷新。false 不影响样式编译。
+   */
   touchAppWxss?: boolean | 'auto'
   /**
    * @description HMR 终端日志档位：默认仅输出总耗时，显式开启 concise/verbose 后再展示阶段诊断。

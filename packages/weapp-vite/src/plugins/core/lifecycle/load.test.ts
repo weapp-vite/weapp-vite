@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
@@ -750,8 +751,10 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(unavailableResult).toEqual({ code: 'App({})' })
   })
 
-  it('tracks the dev app entry for shared chunk hmr', async () => {
-    const sourceId = '/project/src/app.ts'
+  it.each([
+    ['/project/src/app.ts', '/project/src/app.ts'],
+    ['C:/WORKSP~1/project/src/app.ts', 'C:/workspace/project/src/app.ts'],
+  ])('tracks the dev app entry %s under its canonical shared chunk hmr identity', async (sourceId, canonicalId) => {
     const resolvedEntryMap = new Map<string, any>()
     const loadEntry = vi.fn(async () => ({ code: 'App({})' }))
     const load = createLoadHook({
@@ -771,9 +774,20 @@ describe('core lifecycle load hook injectWeapi', () => {
       resolvedEntryMap,
     } as any)
 
-    await load.call({}, sourceId)
+    const originalRealpath = realpathSync.native
+    const realpathSpy = vi.spyOn(realpathSync, 'native').mockImplementation(((id: string) => {
+      return id === sourceId ? canonicalId : originalRealpath(id)
+    }) as typeof realpathSync.native)
+    try {
+      await load.call({}, sourceId)
 
-    expect(resolvedEntryMap.get(sourceId)).toEqual({ id: sourceId })
+      expect([...resolvedEntryMap.keys()]).toEqual([canonicalId])
+      expect(resolvedEntryMap.get(canonicalId)).toEqual({ id: sourceId })
+      expect(loadEntry).toHaveBeenCalledWith(sourceId, 'app')
+    }
+    finally {
+      realpathSpy.mockRestore()
+    }
   })
 
   it('returns app result when loadEntry output is non-object', async () => {

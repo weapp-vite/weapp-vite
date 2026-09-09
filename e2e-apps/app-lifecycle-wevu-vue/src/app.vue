@@ -10,11 +10,13 @@ import {
   onThemeChange,
   onUnhandledRejection,
 } from 'wevu'
+import { readHostLifecycle } from '../../shared/appLifecycle'
 import { APP_HOOKS, finalizeAppLifecycle, recordAppLifecycle } from './shared/lifecycle'
 
 const SOURCE = 'app.wevu.vue'
 interface LifecycleApp {
   globalData?: AppLifecycleData
+  readHostLifecycle?: typeof readHostLifecycle
   finalizeLifecycleLogs?: () => void
 }
 
@@ -30,6 +32,7 @@ defineAppJson({
 const app = getCurrentInstance() as LifecycleApp | null
 
 if (app) {
+  app.readHostLifecycle = readHostLifecycle
   app.finalizeLifecycleLogs = () => finalizeAppLifecycle(app, APP_HOOKS, { source: SOURCE })
 }
 

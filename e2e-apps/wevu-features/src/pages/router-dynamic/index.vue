@@ -11,12 +11,16 @@ const optionsSummary = ref('pending')
 const guardSummary = ref('pending')
 const errorSummary = ref('pending')
 const runSummary = ref('idle')
+const baseCurrentPath = ref('pending')
+const optionsCurrentPath = ref('pending')
+const clearedRouteCount = ref<number | null>(null)
 
 async function runE2E() {
   runSummary.value = 'running'
 
   const baseRoutePaths = router.getRoutes().map(item => item.path)
   baseRoutesSummary.value = baseRoutePaths.join(',')
+  baseCurrentPath.value = baseRoutePaths.find(path => path === '/pages/router-dynamic/index') ?? 'missing'
 
   const removeParent = router.addRoute({
     name: 'router-dynamic-parent',
@@ -58,10 +62,12 @@ async function runE2E() {
   const beforeClearCount = router.getRoutes().length
   router.clearRoutes()
   const afterClearCount = router.getRoutes().length
+  clearedRouteCount.value = afterClearCount
   clearSummary.value = `${beforeClearCount}->${afterClearCount}`
 
   const optionsRoutePaths = (router.options.routes ?? []).map(item => item.path).join(',')
   optionsSummary.value = optionsRoutePaths
+  optionsCurrentPath.value = (router.options.routes ?? []).find(item => item.path === '/pages/router-dynamic/index')?.path ?? 'missing'
 
   const offBeforeEach = router.beforeEach((to) => {
     if (to?.path === 'router-guard/block') {
@@ -159,6 +165,15 @@ const _runE2E = runE2E
     </view>
     <view id="router-dynamic-options" class="router-dynamic-page__line">
       options summary = {{ optionsSummary }}
+    </view>
+    <view id="router-dynamic-base-current" class="router-dynamic-page__line">
+      base current path = {{ baseCurrentPath }}
+    </view>
+    <view id="router-dynamic-options-current" class="router-dynamic-page__line">
+      options current path = {{ optionsCurrentPath }}
+    </view>
+    <view id="router-dynamic-cleared-count" class="router-dynamic-page__line">
+      routes after clear = {{ clearedRouteCount === null ? 'pending' : clearedRouteCount }}
     </view>
     <view id="router-dynamic-guard" class="router-dynamic-page__line">
       guard summary = {{ guardSummary }}

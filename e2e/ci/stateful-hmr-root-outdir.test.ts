@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { readEmittedStylesheet } from '../utils/emittedStylesheet'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr-root-tailwind')
@@ -25,6 +26,7 @@ async function waitForCompleteInitialBundle(timeoutMs = 90_000) {
   const controlPath = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
   const styleMarkers = [
     [path.join(DIST_ROOT, 'app.wxss'), '--color-brand: #006241'],
+    [path.join(DIST_ROOT, 'app.wxss'), '.text-white'],
     [path.join(DIST_ROOT, 'sub-normal/pages/index.wxss'), '.text-red-500'],
     [path.join(DIST_ROOT, 'sub-independent/pages/index.wxss'), '.text-blue-500'],
   ] as const
@@ -38,7 +40,7 @@ async function waitForCompleteInitialBundle(timeoutMs = 90_000) {
       try {
         const [appConfig, styles] = await Promise.all([
           fs.readJSON(appJsonPath) as Promise<AppConfig>,
-          Promise.all(styleMarkers.map(([filename]) => fs.readFile(filename, 'utf8'))),
+          Promise.all(styleMarkers.map(([filename]) => readEmittedStylesheet(filename))),
         ])
         if (styles.every((source, index) => source.includes(styleMarkers[index][1]))) {
           return appConfig
@@ -70,7 +72,7 @@ async function waitForCompleteInitialBundle(timeoutMs = 90_000) {
         return `${path.relative(DIST_ROOT, filename)} (invalid JSON)`
       }
     }
-    const source = await fs.readFile(filename, 'utf8')
+    const source = await readEmittedStylesheet(filename)
     return source.includes(expected)
       ? null
       : `${path.relative(DIST_ROOT, filename)} (missing ${expected})`
@@ -123,7 +125,9 @@ describe('stateful HMR with root source directory', { concurrent: false }, () =>
         ],
       })
       await expect(fs.pathExists(path.join(DIST_ROOT, 'app.js'))).resolves.toBe(true)
-      await expect(fs.readFile(path.join(DIST_ROOT, 'app.wxss'), 'utf8')).resolves.toContain('--color-brand: #006241')
+      const appStyle = await readEmittedStylesheet(path.join(DIST_ROOT, 'app.wxss'))
+      expect(appStyle).toContain('--color-brand: #006241')
+      expect(appStyle).toContain('.text-white')
       await expect(fs.readFile(path.join(DIST_ROOT, 'sub-normal/pages/index.wxss'), 'utf8')).resolves.toContain('.text-red-500')
       await expect(fs.readFile(path.join(DIST_ROOT, 'sub-independent/pages/index.wxss'), 'utf8')).resolves.toContain('.text-blue-500')
       await expect(fs.pathExists(path.join(DIST_ROOT, 'tailwind.wxss'))).resolves.toBe(false)

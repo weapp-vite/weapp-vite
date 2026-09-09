@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
@@ -50,6 +51,16 @@ describe('e2e app: github-issues / issue #564', { concurrent: false }, () => {
   })
 
   it('renders native component default content without nested scoped slot components in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'initial',
+      route: ISSUE_564_ROUTE,
+      action: '检查两个原生 tabbar item 接收的默认插槽文本',
+      nodes: [
+        { selector: '#issue-564-home', text: 'issue-564-home' },
+        { selector: '#issue-564-user', text: 'issue-564-user' },
+        { selector: '.issue564-slot-label', count: 2 },
+      ],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_564_ROUTE, undefined, 45_000, {
@@ -80,6 +91,7 @@ describe('e2e app: github-issues / issue #564', { concurrent: false }, () => {
 
       const itemWxml = await fs.readFile(path.join(DIST_ROOT, 'components/issue-564/native-tabbar-item/index.wxml'), 'utf8')
       expect(itemWxml).toContain('data-issue564-label="{{label}}"')
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

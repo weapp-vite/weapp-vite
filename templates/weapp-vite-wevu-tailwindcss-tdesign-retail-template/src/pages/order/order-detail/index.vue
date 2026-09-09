@@ -580,7 +580,7 @@ definePageJson({
         <view :class="orderPayItemClass">
           <text>订单编号</text>
           <view class="pay-item__right" @tap="onOrderNumCopy">
-            <text class="order-no">
+            <text id="order-detail-number" class="order-no">
               {{ order.orderNo }}
             </text>
             <view class="pay-item__right__copy">

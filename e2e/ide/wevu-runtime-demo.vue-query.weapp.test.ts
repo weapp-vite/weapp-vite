@@ -1,7 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 import { APP_ROOT, ensureWevuRuntimeDemoBuilt } from './wevu-runtime-demo.shared'
+import { VUE_QUERY_CHECKPOINTS } from './wevuRuntimeDom/vueQuery'
 
 const ROUTE = '/pages/vue-query/index'
 const VUE_QUERY_STATE_STORAGE_KEY = '__weapp_vite_vue_query_state__'
@@ -40,22 +42,12 @@ async function waitForDataMatch(
   )
 }
 
-async function tapButtonAt(page: any, index: number) {
-  const buttons = await page.$$('button')
-  if (!Array.isArray(buttons) || !buttons[index]) {
-    throw new Error(`Failed to find button at index ${index}`)
+async function tapButton(page: any, selector: string) {
+  const buttons = await page.$$(selector, { fallback: false, timeout: 5_000 })
+  if (buttons.length !== 1) {
+    throw new Error(`Expected exactly one vue-query button: ${selector}`)
   }
-  await buttons[index].tap()
-}
-
-async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...args: any[]) {
-  try {
-    return await page.callMethod(methodName, ...args)
-  }
-  catch {
-    await tapButtonAt(page, tapIndex)
-    return null
-  }
+  await buttons[0].tap()
 }
 
 function expectNoVueQueryRuntimeExpressionErrors(runtimeLogs: string[]) {
@@ -115,6 +107,7 @@ describe('wevu runtime demo vue-query (weapp e2e)', { concurrent: false }, () =>
   })
 
   it('resolves pending query and keeps query state reactive across tab switch and key rotation', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'apps/wevu-runtime-demo', VUE_QUERY_CHECKPOINTS)
     const miniProgram = await getMiniProgram(ctx)
     if (!runtimeErrors) {
       throw new Error('Runtime error collector is not attached.')
@@ -141,10 +134,11 @@ describe('wevu runtime demo vue-query (weapp e2e)', { concurrent: false }, () =>
     ))
 
     expect(initialState.query.data.label).toBe('概览数据')
+    await dom.check('initial', miniProgram, page)
     await expectNoVueQueryRuntimeExpressionErrorsAfterSettled(page, runtimeErrors, initialMarker)
 
     const switchMarker = runtimeErrors.mark()
-    await invokeOrTap(page, 'switchTab', 1, 'detail')
+    await tapButton(page, '#query-switch-detail')
     const switchedState = await waitForDataMatch(miniProgram, snapshot => (
       snapshot.selectedTab === 'detail'
       && snapshot.statusText === '数据就绪'
@@ -155,10 +149,11 @@ describe('wevu runtime demo vue-query (weapp e2e)', { concurrent: false }, () =>
     ))
 
     expect(switchedState.query.data.label).toBe('详情数据')
+    await dom.check('detail', miniProgram, page)
     await expectNoVueQueryRuntimeExpressionErrorsAfterSettled(page, runtimeErrors, switchMarker)
 
     const refreshMarker = runtimeErrors.mark()
-    await invokeOrTap(page, 'resetCacheAndReload', 4)
+    await tapButton(page, '#query-reset-key')
     const refreshedState = await waitForDataMatch(miniProgram, snapshot => (
       snapshot.refreshSeed === 1
       && snapshot.statusText === '数据就绪'
@@ -170,6 +165,7 @@ describe('wevu runtime demo vue-query (weapp e2e)', { concurrent: false }, () =>
 
     expect(refreshedState.queryKey[2]).toBe(1)
     expect(refreshedState.query.data.selectedTab).toBe('detail')
+    await dom.check('refreshed', miniProgram, page)
     await expectNoVueQueryRuntimeExpressionErrorsAfterSettled(page, runtimeErrors, refreshMarker)
   })
 })

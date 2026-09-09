@@ -84,10 +84,10 @@ type CheckoutAddress = (Address | DeliveryAddress) & { checked?: boolean }
 
 interface SettleDetailData extends Omit<SettleDetailResult['data'], 'storeGoodsList' | 'outOfStockGoodsList' | 'abnormalDeliveryGoodsList' | 'inValidGoodsList' | 'limitGoodsList' | 'couponList' | 'userAddress'> {
   storeGoodsList: SettleStoreGoodsItem[]
-  outOfStockGoodsList: OutOfStockGoodsItem[]
-  abnormalDeliveryGoodsList: SettleSkuItem[]
-  inValidGoodsList: SettleSkuItem[]
-  limitGoodsList: SettleSkuItem[]
+  outOfStockGoodsList: OutOfStockGoodsItem[] | null
+  abnormalDeliveryGoodsList: SettleSkuItem[] | null
+  inValidGoodsList: SettleSkuItem[] | null
+  limitGoodsList: SettleSkuItem[] | null
   couponList: OrderCouponItem[]
   userAddress: CheckoutAddress | null
 }
@@ -285,10 +285,11 @@ function initData(resData: SettleDetailData) {
 }
 
 function isInvalidOrder(data: SettleDetailData) {
-  const hasInvalidGoods
-    = data.limitGoodsList.length > 0
-      || data.abnormalDeliveryGoodsList.length > 0
-      || data.inValidGoodsList.length > 0
+  const hasInvalidGoods = Boolean(
+    data.limitGoodsList?.length
+    || data.abnormalDeliveryGoodsList?.length
+    || data.inValidGoodsList?.length,
+  )
   popupShow.value = hasInvalidGoods
   return hasInvalidGoods || data.settleType === 0
 }
@@ -445,12 +446,12 @@ function onNoteCancel() {
 
 async function onSureCommit() {
   const { outOfStockGoodsList, storeGoodsList, inValidGoodsList } = settleDetailData.value
-  if (outOfStockGoodsList.length === 0 && inValidGoodsList.length === 0) {
+  if (!outOfStockGoodsList?.length && !inValidGoodsList?.length) {
     return
   }
 
   const filterOutGoodsList: GoodsRequestItem[] = []
-  outOfStockGoodsList.forEach((outOfStockGoods) => {
+  outOfStockGoodsList?.forEach((outOfStockGoods) => {
     outOfStockGoods.unSettlementGoods.forEach((goods) => {
       filterOutGoodsList.push(handleGoodsRequest({
         ...goods,

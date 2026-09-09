@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'wevu'
 import { useRoute, useRouter } from 'wevu/router'
+import { createNavigationCompletion } from '../../utils/navigationCompletion'
 
 definePageJson({
   navigationBarTitleText: '业务门户',
@@ -49,9 +50,9 @@ const quickLinks = [
   },
 ]
 
-async function pushTo(path: string) {
-  await router.push(path)
-}
+const { pushTo, waitForNavigation } = createNavigationCompletion(path => router.push(path))
+
+defineExpose({ waitForNavigation })
 
 async function relaunchToHome() {
   await router.nativeRouter.reLaunch({

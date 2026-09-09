@@ -27,6 +27,7 @@ import {
   installCommand,
   packageScriptCommand,
 } from './packageManager'
+import { prepareTutorialWorkspace } from './prepare'
 import {
 
   TutorialRunRecorder,
@@ -339,26 +340,12 @@ async function executeTutorialRun(
   }
 }
 
-async function prepareWorkspace(options: TutorialCliOptions, log: (message: string) => void) {
-  if (options.source !== 'workspace' || process.env.TUTORIAL_E2E_SKIP_WORKSPACE_BUILD === '1') {
-    return
-  }
-  await runLoggedCommand({
-    command: { args: ['build:pkgs:ci'], command: 'pnpm' },
-    cwd: REPO_ROOT,
-    label: 'tutorial workspace package build',
-    log,
-    timeoutMs: 30 * 60 * 1000,
-  })
-  process.stdout.write('dist sync: rebuilt weapp-vite before downstream validation\n')
-}
-
 export async function runTutorialE2E(options: TutorialCliOptions) {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tutorial-e2e-'))
   await fs.mkdir(options.reportDir, { recursive: true })
   const setupLog: string[] = []
   try {
-    await prepareWorkspace(options, (message) => {
+    await prepareTutorialWorkspace(options, (message) => {
       setupLog.push(message)
       process.stdout.write(message)
     })

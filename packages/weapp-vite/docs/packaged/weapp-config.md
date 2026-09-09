@@ -184,7 +184,7 @@ export default defineConfig({
 
 内置的 `weapp-tailwindcss` 集成支持显式配置和 Tailwind CSS v4 自动检测。显式配置优先级最高：设置为 `false` 会完全关闭（包括自动检测），设置为 `true` 或对象会按显式选项启用。未配置时，项目解析到 Tailwind CSS v4 且 CSS 模块实际包含 `@import "tailwindcss"`（也支持 `source(...)` 等合法参数）才会自动启用；Tailwind CSS v3、未安装或未引入该模块时不会生成 Tailwind CSS。
 
-启用后，`weapp-vite` 使用 `weapp-tailwindcss@5.4.1/core` 的 compiler 处理 WXSS、WXML 和 JavaScript，通过 `compiler.generate()` 生成 Tailwind CSS，并将结果写入正常的样式产物。WXSS 最终化由 core 统一完成，Tailwind 构建阶段的 `@plugin`、`@source` 等指令不会泄漏到小程序产物：
+启用后，`weapp-vite` 使用 `weapp-tailwindcss@5.5.2` 的 `core` compiler 处理 WXSS、WXML 和 JavaScript，通过 `compiler.generate()` 生成 Tailwind CSS，并将结果写入正常的样式产物。WXSS 最终化由 core 统一完成，Tailwind 构建阶段的 `@plugin`、`@source` 等指令不会泄漏到小程序产物：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -207,7 +207,7 @@ export default defineConfig({
 
 也可以直接写 `tailwindcss: true`，此时默认使用 `src/app.css` 作为入口。入口文件仍必须被项目实际引入，例如在 `app.vue` 中使用 `<style src="./app.css"></style>`；`cssEntries` 只声明 compiler 的入口集合，不能替代模块图导入。
 
-`tailwindcss` 对象会透传 `weapp-tailwindcss/core` 支持的 options。`compiler.maxRoots` 用于限制长期 watch 中保留的 root 数量，`compiler.onRootEvicted` 会在 root 被淘汰时收到对应 id。HMR 会把真实变更文件交给 compiler，由 5.4.1 根据 `@source` glob 精确失效关联 root。
+`tailwindcss` 对象会透传 `weapp-tailwindcss/core` 支持的 options。`compiler.maxRoots` 用于限制长期 watch 中保留的 root 数量，`compiler.onRootEvicted` 会在 root 被淘汰时收到对应 id。HMR 会把真实变更文件交给 compiler，由 compiler 根据 `@source` glob 精确失效关联 root。
 
 一次构建只应使用这一套内置集成，不要再额外注册 `WeappTailwindcss()` Vite 插件。`weapp-vite@6.24.0` 起，preflight 会移除所有 `weapp-tailwindcss:*` 外部插件并输出一次中文迁移警告；请删除对应的 import 和 `plugins` 注册代码。
 
@@ -477,6 +477,12 @@ export default defineConfig({
 `auto` 在 `project.private.config.json` 的 `setting.compileHotReLoad` 严格为 `true` 时选择 `stateful-experimental`，否则选择 `classic`；非微信平台也会回退到 `classic`。该判断只在启动时执行，修改开发者工具设置后需要重启 `wv dev`。启动日志会以 `HMR 模式` 和 `HMR 切换` 两行显示最终模式、选择来源，以及通过 DevTools 热重载开关或 `weapp.hmr.runtime` 切换模式的方法。显式配置通常优先，但 Skyline 兼容降级不受显式配置覆盖。
 
 状态保持模式目前只支持微信小程序 WebView，需要微信开发者工具开启服务端口和热重载。微信开发者工具暂不支持 Skyline 热重载；首次编译检测到任意生成的应用或页面 JSON 使用 `renderer: 'skyline'` 时，`wv dev` 会输出带官方兼容文档链接的警告，将当前项目私有配置中的 `setting.compileHotReLoad` 持久化为 `false`，并强制使用 `classic`，包括显式配置 `stateful-experimental` 的场景。其他私有配置字段不会改变，切回 WebView 后也不会自动重新开启热重载。需要既有写盘/刷新行为时显式配置 `classic`。
+
+### `hmr.touchAppWxss`
+
+默认值为 `auto`，仅在非内置 Tailwind 集成发生真实内容失效时，额外更新已有全局样式的时间戳。内置 `weapp.tailwindcss` 使用 compiler 与 Vite/Rolldown 原生输出作为唯一刷新来源；页面、组件和 layout 的局部样式更新不会额外触碰 `app.wxss`，也不会因为祖先目录能解析到 Tailwind 依赖而触发全局重载。
+
+`true` 保留每次增量构建后的额外全局刷新，可能使微信开发者工具重载 AppService、重置页面状态。`false` 仅关闭额外刷新，不会关闭 Tailwind 内容扫描、样式编译或正常产物更新。该选项只更新已有产物的时间戳，不创建缺失文件、不改写文件内容；除文件不存在外的刷新错误会输出到开发日志。
 
 ### `hmr.logLevel` / `hmr.profileJson`
 

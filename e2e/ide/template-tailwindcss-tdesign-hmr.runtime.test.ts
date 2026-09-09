@@ -1,8 +1,7 @@
-import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-import { inflateSync } from 'node:zlib'
+import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
@@ -11,13 +10,19 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { waitForEmittedStylesheet } from '../utils/emittedStylesheet'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { createTdesignNativeScriptUpdate, tdesignNativeScriptCheckpoints } from './tdesignHmr/nativeScript'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
 const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
 const DIST_ROOT = path.resolve(TEMPLATE_ROOT, 'dist')
 const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
+const INDEX_SOURCE = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.ts')
+const APP_SOURCE = path.resolve(TEMPLATE_ROOT, 'src/app.ts')
 const INDEX_WXML_DIST = path.resolve(TEMPLATE_ROOT, 'dist/pages/index/index.wxml')
 const APP_WXSS_DIST = path.resolve(TEMPLATE_ROOT, 'dist/app.wxss')
 const INDEX_ROUTE = '/pages/index/index'
@@ -33,32 +38,9 @@ const PROBE_ID = 'tailwind-hmr-probe'
 const CURRENT_PAGE_READ_TIMEOUT = 3_000
 const CURRENT_PAGE_READ_RETRIES = 2
 const ROUTE_READY_TIMEOUT = 30_000
-const PNG_SIGNATURE = '89504e470d0a1a0a'
-const SCREENSHOT_COLOR_MIN_MATCHED = 24
-const SCREENSHOT_COLOR_MIN_RATIO = 0.01
-const SCREENSHOT_CAPTURE_TIMEOUT = 30_000
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    return await Promise.race([
-      factory(),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
-        }, timeoutMs)
-      }),
-    ])
-  }
-  finally {
-    if (timer) {
-      clearTimeout(timer)
-    }
-  }
 }
 
 function isDevtoolsPageProtocolUnavailable(error: unknown) {
@@ -73,21 +55,6 @@ function isDevtoolsPageProtocolUnavailable(error: unknown) {
     || message.includes('WebSocket is not open')
     || message.includes('socket hang up')
     || message.includes('Target closed')
-}
-
-function normalizeCssColorToHex(value: unknown) {
-  const text = String(value ?? '').trim().toLowerCase()
-  const hexMatch = text.match(/^#([0-9a-f]{6})$/i)
-  if (hexMatch) {
-    return hexMatch[1]!.toLowerCase()
-  }
-  const rgbMatch = text.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i)
-  if (!rgbMatch) {
-    return ''
-  }
-  return [rgbMatch[1], rgbMatch[2], rgbMatch[3]]
-    .map(channel => Math.max(0, Math.min(255, Number(channel))).toString(16).padStart(2, '0'))
-    .join('')
 }
 
 function replaceLightBackgroundClass(markup: string, hex: string) {
@@ -105,6 +72,7 @@ async function waitForIndexPage(miniProgram: any, timeoutMs = ROUTE_READY_TIMEOU
   while (Date.now() - start <= timeoutMs) {
     try {
       const page = await miniProgram.currentPage({
+        appFunctionFallback: false,
         timeout: CURRENT_PAGE_READ_TIMEOUT,
         retries: CURRENT_PAGE_READ_RETRIES,
       })
@@ -130,25 +98,11 @@ async function waitForIndexPage(miniProgram: any, timeoutMs = ROUTE_READY_TIMEOU
 describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurrent: false }, () => {
   let initialWxml = ''
   let originalWxml = ''
+  let originalAppSource = ''
+  let originalIndexSource = ''
   let miniProgram: any
+  let diagnostics: ReturnType<typeof createHmrRuntimeDiagnostics> | undefined
   let devProcess: ReturnType<typeof startDevProcess> | undefined
-
-  beforeAll(async () => {
-    originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
-    const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
-    if (!rootMarkupMatch) {
-      throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
-    }
-    const probedRootMarkup = replaceLightBackgroundClass(
-      rootMarkupMatch[0].replace('<view ', `<view id="${PROBE_ID}" data-e2e-bg="${INITIAL_BACKGROUND_HEX}" `),
-      INITIAL_BACKGROUND_HEX,
-    )
-    initialWxml = originalWxml.replace(rootMarkupMatch[0], probedRootMarkup)
-    await replaceFileByRename(INDEX_WXML, initialWxml)
-    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
-    await cleanupResidualIdeProcesses()
-    await fs.rm(DIST_ROOT, { force: true, recursive: true })
-  }, 60_000)
 
   async function stopDevSession() {
     if (miniProgram) {
@@ -167,16 +121,23 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
   }
 
   afterAll(async () => {
+    await diagnostics?.capture('finally')
+    await stopDevSession()
     if (originalWxml) {
       await fs.writeFile(INDEX_WXML, originalWxml, 'utf8').catch(() => {})
     }
-    await stopDevSession()
+    if (originalIndexSource) {
+      await fs.writeFile(INDEX_SOURCE, originalIndexSource, 'utf8')
+    }
+    if (originalAppSource) {
+      await fs.writeFile(APP_SOURCE, originalAppSource, 'utf8')
+    }
     await cleanupTrackedDevProcesses()
   }, 60_000)
 
   async function launchRuntimeAutomator() {
     miniProgram = await launchAutomator({
-      deferBridgeWrapperSyncUntilConnected: true,
+      bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       maxLaunchRetries: 1,
       projectPath: TEMPLATE_ROOT,
@@ -195,10 +156,12 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
       reject: false,
     })
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dev-process-started pid=${devProcess.pid ?? 'unknown'}\n`)
+    await devProcess.waitForInitialBuild()
     await devProcess.waitFor(
       Promise.all([
         waitForFileContains(INDEX_WXML_DIST, escapedClass),
-        waitForFileContains(APP_WXSS_DIST, backgroundCss),
+        waitForEmittedStylesheet(APP_WXSS_DIST, backgroundCss),
+        waitForFileContains(path.join(DIST_ROOT, 'app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`),
       ]),
       `tailwindcss tdesign ${label} dist ready`,
     )
@@ -215,243 +178,99 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     )
   }
 
-  async function refreshRuntimeForDistUpdate(label: string) {
-    process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-start label=${label}\n`)
-    await waitForIndexPage(miniProgram)
-    process.stdout.write(`[template-tailwindcss-tdesign:hmr] hmr-settle-ready label=${label} route=${INDEX_ROUTE}\n`)
-  }
-
-  function paethPredictor(left: number, up: number, upLeft: number) {
-    const estimate = left + up - upLeft
-    const leftDistance = Math.abs(estimate - left)
-    const upDistance = Math.abs(estimate - up)
-    const upLeftDistance = Math.abs(estimate - upLeft)
-    if (leftDistance <= upDistance && leftDistance <= upLeftDistance) {
-      return left
-    }
-    return upDistance <= upLeftDistance ? up : upLeft
-  }
-
-  function analyzeScreenshotColor(base64: string, hex: string) {
-    const target = [
-      Number.parseInt(hex.slice(0, 2), 16),
-      Number.parseInt(hex.slice(2, 4), 16),
-      Number.parseInt(hex.slice(4, 6), 16),
-    ]
-    const buffer = Buffer.from(base64, 'base64')
-    if (buffer.subarray(0, 8).toString('hex') !== PNG_SIGNATURE) {
-      throw new Error('Screenshot is not a PNG image')
-    }
-
-    let offset = 8
-    let width = 0
-    let height = 0
-    let colorType = 0
-    const idatChunks: Buffer[] = []
-
-    while (offset + 8 <= buffer.length) {
-      const length = buffer.readUInt32BE(offset)
-      const type = buffer.subarray(offset + 4, offset + 8).toString('ascii')
-      const dataStart = offset + 8
-      const dataEnd = dataStart + length
-      const data = buffer.subarray(dataStart, dataEnd)
-      if (type === 'IHDR') {
-        width = data.readUInt32BE(0)
-        height = data.readUInt32BE(4)
-        colorType = data[9] ?? 0
-      }
-      else if (type === 'IDAT') {
-        idatChunks.push(data)
-      }
-      else if (type === 'IEND') {
-        break
-      }
-      offset = dataEnd + 4
-    }
-
-    const channels = colorType === 6 ? 4 : colorType === 2 ? 3 : colorType === 0 ? 1 : 0
-    if (!width || !height || !channels) {
-      throw new Error(`Unsupported screenshot PNG format: width=${width} height=${height} colorType=${colorType}`)
-    }
-
-    const inflated = inflateSync(Buffer.concat(idatChunks))
-    const rowLength = width * channels
-    const previous = Buffer.alloc(rowLength)
-    const current = Buffer.alloc(rowLength)
-    let sourceOffset = 0
-    let samples = 0
-    let matched = 0
-    const tolerance = 48
-
-    for (let y = 0; y < height; y += 1) {
-      const filter = inflated[sourceOffset]
-      sourceOffset += 1
-      inflated.copy(current, 0, sourceOffset, sourceOffset + rowLength)
-      sourceOffset += rowLength
-      for (let index = 0; index < rowLength; index += 1) {
-        const left = index >= channels ? current[index - channels]! : 0
-        const up = previous[index] ?? 0
-        const upLeft = index >= channels ? previous[index - channels]! : 0
-        if (filter === 1) {
-          current[index] = (current[index]! + left) & 0xFF
-        }
-        else if (filter === 2) {
-          current[index] = (current[index]! + up) & 0xFF
-        }
-        else if (filter === 3) {
-          current[index] = (current[index]! + Math.floor((left + up) / 2)) & 0xFF
-        }
-        else if (filter === 4) {
-          current[index] = (current[index]! + paethPredictor(left, up, upLeft)) & 0xFF
-        }
-      }
-      if (y > Math.floor(height * 0.12) && y % 8 === 0) {
-        for (let x = 0; x < width; x += 8) {
-          const index = x * channels
-          const red = current[index] ?? 0
-          const green = channels === 1 ? red : current[index + 1] ?? 0
-          const blue = channels === 1 ? red : current[index + 2] ?? 0
-          samples += 1
-          if (
-            Math.abs(red - target[0]!) <= tolerance
-            && Math.abs(green - target[1]!) <= tolerance
-            && Math.abs(blue - target[2]!) <= tolerance
-          ) {
-            matched += 1
-          }
-        }
-      }
-      current.copy(previous)
-    }
-
-    return {
-      height,
-      matched,
-      ratio: samples > 0 ? matched / samples : 0,
-      samples,
-      width,
-    }
-  }
-
-  async function waitForScreenshotColor(expectedBg: string, label: string, timeoutMs = 30_000) {
-    const start = Date.now()
-    let lastAnalysis: unknown
-    while (Date.now() - start <= timeoutMs) {
-      try {
-        const screenshot = await miniProgram.screenshot({ timeout: SCREENSHOT_CAPTURE_TIMEOUT })
-        lastAnalysis = analyzeScreenshotColor(screenshot, expectedBg)
-      }
-      catch (error) {
-        lastAnalysis = {
-          error: error instanceof Error ? error.message : String(error),
-        }
-      }
-      if (
-        (lastAnalysis as any).matched >= SCREENSHOT_COLOR_MIN_MATCHED
-        && (lastAnalysis as any).ratio >= SCREENSHOT_COLOR_MIN_RATIO
-      ) {
-        return lastAnalysis
-      }
-      await delay(800)
-    }
-    throw new Error(`Timed out waiting for ${label}; lastAnalysis=${JSON.stringify(lastAnalysis)}`)
-  }
-
-  async function readProbeBackgroundState(expectedBg: string, escapedClass: string) {
+  async function tapModeControl() {
     const page = await waitForIndexPage(miniProgram)
-    const selector = `#${PROBE_ID}`
-    const element = await runWithTimeout(() => page.$(selector, { timeout: 3_000 }), 5_000, 'query Tailwind HMR probe').catch(() => null)
-    const [backgroundColor, outerWxml, size] = element
-      ? await Promise.all([
-          runWithTimeout(() => element.style('background-color'), 5_000, 'read Tailwind HMR probe background').catch(error => `__error__:${error instanceof Error ? error.message : String(error)}`),
-          runWithTimeout(() => element.outerWxml(), 5_000, 'read Tailwind HMR probe wxml').catch(() => ''),
-          runWithTimeout(() => element.size(), 5_000, 'read Tailwind HMR probe size').catch(() => ({ height: 0, width: 0 })),
-        ])
-      : ['', '', { height: 0, width: 0 }]
-    const rendered = await page.renderedSelectorNodes([selector], {
-      timeout: 5_000,
-    }).catch(() => ({}))
-    const renderedNodes = rendered[selector] ?? []
-    const renderedDataMatched = renderedNodes.some((node: any) => {
-      return Object.values(node?.dataset ?? {}).some(value => String(value) === expectedBg)
-    })
-    const nodeCount = Math.max(element ? 1 : 0, renderedNodes.length)
-    const sized = (
-      Number((size as any).width) > 0
-      && Number((size as any).height) > 0
-    ) || renderedNodes.some((node: any) => Number(node?.width) > 0 && Number(node?.height) > 0)
-    const backgroundHex = normalizeCssColorToHex(backgroundColor)
-    return {
-      backgroundColor,
-      backgroundHex,
-      classMatched: outerWxml.includes(escapedClass) || outerWxml.includes(`bg-[#${expectedBg}]`),
-      dataMatched: outerWxml.includes(`data-e2e-bg="${expectedBg}"`) || renderedDataMatched,
-      nodeCount,
-      outerWxml: outerWxml.slice(0, 500),
-      renderedNodes: renderedNodes.slice(0, 3),
-      sized,
-    }
+    const controls = await page.$$('#tailwind-mode', { fallback: false, timeout: 5_000 })
+    expect(controls).toHaveLength(1)
+    await controls[0].tap()
   }
 
-  async function waitForProbeBackgroundColor(expectedBg: string, escapedClass: string, label: string, timeoutMs = 45_000) {
-    const start = Date.now()
-    let lastState: unknown
-    while (Date.now() - start <= timeoutMs) {
-      try {
-        lastState = await readProbeBackgroundState(expectedBg, escapedClass)
-        const state = lastState as Awaited<ReturnType<typeof readProbeBackgroundState>>
-        if (
-          (state.sized && state.backgroundHex === expectedBg)
-          || (state.nodeCount > 0 && state.dataMatched)
-          || (state.sized && state.dataMatched && state.classMatched)
-        ) {
-          return state
-        }
-      }
-      catch (error) {
-        lastState = {
-          error: error instanceof Error ? error.message : String(error),
-        }
-      }
-      await delay(800)
+  beforeAll(async () => {
+    originalIndexSource = await fs.readFile(INDEX_SOURCE, 'utf8')
+    originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
+    const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
+    if (!rootMarkupMatch) {
+      throw new Error(`Expected ${INDEX_WXML} to contain the Tailwind HMR root markup`)
     }
-    throw new Error(`Timed out waiting DOM probe for ${label}; lastState=${JSON.stringify(lastState)}`)
-  }
-
-  async function waitForVisibleBackgroundWithRecovery(
-    expectedBg: string,
-    escapedClass: string,
-    label: string,
-  ) {
-    await refreshRuntimeForDistUpdate(label)
-    try {
-      const state = await waitForProbeBackgroundColor(expectedBg, escapedClass, label, 45_000)
-      process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=dom state=${JSON.stringify(state)}\n`)
-      return state
-    }
-    catch (probeError) {
-      const probeMessage = probeError instanceof Error ? probeError.message : String(probeError)
-      process.stdout.write(`[template-tailwindcss-tdesign:hmr] dom-probe-fallback-screenshot label=${label} reason=${probeMessage}\n`)
-      try {
-        const analysis = await waitForScreenshotColor(expectedBg, label, 45_000)
-        process.stdout.write(`[template-tailwindcss-tdesign:hmr] visible-background-ready label=${label} expected=${expectedBg} evidence=screenshot analysis=${JSON.stringify(analysis)}\n`)
-        return analysis
-      }
-      catch (screenshotError) {
-        const screenshotMessage = screenshotError instanceof Error ? screenshotError.message : String(screenshotError)
-        throw new Error(`Failed to verify ${label} from the active DevTools project. DOM: ${probeMessage}; screenshot: ${screenshotMessage}`)
-      }
-    }
-  }
-
-  it('updates the visible Tailwind arbitrary background color through dev HMR', async () => {
+    const probedRootMarkup = replaceLightBackgroundClass(
+      rootMarkupMatch[0].replace('<view ', `<view id="${PROBE_ID}" data-e2e-bg="${INITIAL_BACKGROUND_HEX}" `),
+      INITIAL_BACKGROUND_HEX,
+    )
+    initialWxml = originalWxml.replace(rootMarkupMatch[0], probedRootMarkup)
+      .replace('<view bind:tap="switchMode"', '<view id="tailwind-mode" bind:tap="switchMode"')
+    await replaceFileByRename(INDEX_WXML, initialWxml)
+    originalAppSource = await fs.readFile(APP_SOURCE, 'utf8')
+    expect(originalAppSource.includes('onLaunch() {')).toBe(true)
+    await fs.writeFile(APP_SOURCE, originalAppSource.replace('onLaunch() {', `onLaunch() {
+    this.__e2eHmrLaunch = Date.now()
+    console.info('[hmr-diagnostics:app-launch]', this.__e2eHmrLaunch)`), 'utf8')
+    await closeSharedMiniProgram(TEMPLATE_ROOT).catch(() => {})
+    await cleanupResidualIdeProcesses()
+    await fs.rm(DIST_ROOT, { force: true, recursive: true })
     await startDevSession()
+    diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-tailwindcss-tdesign-template')
+  }, 420_000)
+
+  it('updates and restores native Page methods with external npm while retaining rendered interaction state', async (context) => {
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-tailwindcss-tdesign-template', tdesignNativeScriptCheckpoints)
+    await dom.check('native-script:initial', miniProgram, await waitForIndexPage(miniProgram))
+    await tapModeControl()
+    await dom.check('native-script:dark', miniProgram, await waitForIndexPage(miniProgram))
+    const initialIdentity = await diagnostics!.initialize()
+    const nativeScript = createTdesignNativeScriptUpdate({
+      diagnostics: diagnostics!,
+      initialIdentity,
+      miniProgram,
+      originalSource: originalIndexSource,
+      sourceFile: INDEX_SOURCE,
+    })
+    await nativeScript.patch()
+    await dom.check('native-script:patched-state', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:patched-state')
+    await tapModeControl()
+    await dom.check('native-script:patched-tap', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:patched-tap')
+    await nativeScript.restore()
+    await dom.check('native-script:restored-state', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:restored-state')
+    await tapModeControl()
+    await dom.check('native-script:restored-tap', miniProgram, await waitForIndexPage(miniProgram))
+    await nativeScript.checkIdentity('native-script:restored-tap')
+  }, 420_000)
+
+  it('updates the visible Tailwind arbitrary background color through dev HMR', async (context) => {
+    const dom = createDomAcceptance(context, 'templates/weapp-vite-tailwindcss-tdesign-template', [
+      { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 light 切换模式' },
+      ] },
+      { id: 'tailwind:dark', route: INDEX_ROUTE, action: '切换暗色模式并记录交互状态', nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(16, 24, 40)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 dark 切换模式' },
+      ] },
+      { id: 'tailwind:hmr-preserved', route: INDEX_ROUTE, action: '修改浅色背景后保留当前暗色交互状态', nodes: [
+        { selector: `#${PROBE_ID}`, attributes: { 'data-e2e-bg': UPDATED_BACKGROUND_HEX }, styles: { 'background-color': 'rgb(16, 24, 40)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 dark 切换模式' },
+      ] },
+      { id: 'tailwind:updated', route: INDEX_ROUTE, action: '切回浅色后验收更新背景和真实布局', nodes: [
+        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(16, 185, 129)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 light 切换模式' },
+      ] },
+      { id: 'tailwind:updated-dark', route: INDEX_ROUTE, action: '在原页面实例再次切换暗色并确认更新仍生效', nodes: [
+        { selector: `#${PROBE_ID}`, attributes: { 'data-e2e-bg': UPDATED_BACKGROUND_HEX }, styles: { 'background-color': 'rgb(16, 24, 40)' }, visible: true },
+        { selector: '#tailwind-mode', text: '当前模式 dark 切换模式' },
+      ] },
+    ])
     await waitForFileContains(INDEX_WXML_DIST, PROBE_ID)
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, INITIAL_ESCAPED_CLASS)
-    await waitForFileContains(APP_WXSS_DIST, INITIAL_BACKGROUND_CSS)
+    await waitForEmittedStylesheet(APP_WXSS_DIST, INITIAL_BACKGROUND_CSS)
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dist-ready label=initial Tailwind background template=${INITIAL_ESCAPED_CLASS} css=${INITIAL_BACKGROUND_CSS}\n`)
-    await waitForVisibleBackgroundWithRecovery(INITIAL_BACKGROUND_HEX, INITIAL_ESCAPED_CLASS, 'initial Tailwind background')
+    const page = await waitForIndexPage(miniProgram)
+    await dom.check('tailwind:initial', miniProgram, page)
+    await tapModeControl()
+    await dom.check('tailwind:dark', miniProgram, page)
+    const initialIdentity = await diagnostics!.initialize()
 
     const updatedWxml = replaceLightBackgroundClass(
       initialWxml.replace(`data-e2e-bg="${INITIAL_BACKGROUND_HEX}"`, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`),
@@ -461,12 +280,25 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await replaceFileByRename(INDEX_WXML, updatedWxml)
     await waitForFileContains(INDEX_WXML_DIST, `data-e2e-bg="${UPDATED_BACKGROUND_HEX}"`)
     await waitForFileContains(INDEX_WXML_DIST, UPDATED_ESCAPED_CLASS)
-    await waitForFileContains(APP_WXSS_DIST, UPDATED_BACKGROUND_CSS)
+    await waitForEmittedStylesheet(APP_WXSS_DIST, UPDATED_BACKGROUND_CSS)
+    await diagnostics!.capture('tailwind:updated-output')
+    await dom.check('tailwind:hmr-preserved', miniProgram, await waitForIndexPage(miniProgram))
+    const preservedIdentity = await diagnostics!.capture('tailwind:preserved-rendered')
+    expect(preservedIdentity.errors).toEqual([])
+    expect(preservedIdentity.pageId).toBe(initialIdentity.pageId)
+    expect(preservedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+    await tapModeControl()
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] dist-ready label=updated Tailwind background template=${UPDATED_ESCAPED_CLASS} css=${UPDATED_BACKGROUND_CSS}\n`)
-    await waitForVisibleBackgroundWithRecovery(
-      UPDATED_BACKGROUND_HEX,
-      UPDATED_ESCAPED_CLASS,
-      'updated Tailwind background',
-    )
+    await dom.check('tailwind:updated', miniProgram, await waitForIndexPage(miniProgram))
+    const updatedIdentity = await diagnostics!.capture('tailwind:updated-rendered')
+    expect(updatedIdentity.errors).toEqual([])
+    expect(updatedIdentity.pageId).toBe(initialIdentity.pageId)
+    expect(updatedIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
+    await tapModeControl()
+    await dom.check('tailwind:updated-dark', miniProgram, await waitForIndexPage(miniProgram))
+    const finalIdentity = await diagnostics!.capture('tailwind:updated-dark-rendered')
+    expect(finalIdentity.errors).toEqual([])
+    expect(finalIdentity.pageId).toBe(initialIdentity.pageId)
+    expect(finalIdentity.runtime).toMatchObject({ pageMarkerRetained: true, appMarkerRetained: true })
   }, 420_000)
 })

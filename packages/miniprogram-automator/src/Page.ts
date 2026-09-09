@@ -9,6 +9,7 @@ import { callRouteMethodViaAppService } from './pageRouteMethod'
 /** IPageOptions 的类型定义。 */
 export interface IPageOptions {
   id: number
+  hasStableIdentity?: boolean
   path: string
   query: any
 }
@@ -115,16 +116,27 @@ export default class Page {
   path = ''
   query: any = {}
   private id: number
+  private hasStableIdentity: boolean
   private elementMap = new Map<string, Element>()
   private preferAppServicePageProtocol = false
   constructor(private connection: Connection, options: IPageOptions) {
     this.id = options.id
+    this.hasStableIdentity = options.hasStableIdentity !== false
     this.path = options.path
     this.query = options.query
     this.preferAppServicePageProtocol = connection.prefersAppServicePageProtocol
   }
 
+  /** 当前页面的协议帧身份，同路由新页面具有独立身份。 */
+  get pageId() {
+    if (!this.hasStableIdentity) {
+      throw new Error('DevTools did not provide a stable page frame identity')
+    }
+    return this.id
+  }
+
   updateFromOptions(options: IPageOptions) {
+    this.hasStableIdentity = options.hasStableIdentity !== false
     this.path = options.path
     this.query = options.query
   }
@@ -188,6 +200,9 @@ export default class Page {
       const element = await this.send('Page.getElementByXpath', { selector }, {
         timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
       })
+      if (element === null) {
+        return null
+      }
       return Element.create(this.connection, { ...element, pageId: this.id }, this.elementMap)
     }
     catch {
@@ -199,7 +214,8 @@ export default class Page {
     const response = await this.send('Page.getElementsByXpath', { selector }, {
       timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
     })
-    const elements = response?.elements
+    // 新版基础库的 WxComponent 桥直接返回数组，旧版页面桥包装在 elements 中。
+    const elements = Array.isArray(response) ? response : response?.elements
     if (!Array.isArray(elements)) {
       throw new TypeError('DevTools Page.getElementsByXpath 返回了无效响应：缺少 elements 数组。')
     }

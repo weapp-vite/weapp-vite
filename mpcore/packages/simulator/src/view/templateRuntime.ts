@@ -1,14 +1,19 @@
+import type { WxsModuleBindings } from './wxs'
 import { resolveTemplateExpression } from './templateExpression'
 
 export interface TemplateNodeLike {
   attribs?: Record<string, string>
   children?: TemplateNodeLike[]
+  data?: string
   name?: string
   type?: string
 }
 
 export interface TemplateRenderState<T extends TemplateNodeLike> {
   definitions: Map<string, T>
+  definitionScopes?: Map<T, Map<string, T>>
+  definitionWxsScopes?: Map<T, WxsModuleBindings>
+  wxsModules?: WxsModuleBindings
   stack: string[]
 }
 

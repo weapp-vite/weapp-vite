@@ -1,12 +1,17 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "types": [
-      "miniprogram-api-typings"
-    ]
-  },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.vue"
-  ]
+  "references": [
+    {
+      "path": "./.weapp-vite/tsconfig.app.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.server.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.node.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.shared.json"
+    }
+  ],
+  "files": []
 }

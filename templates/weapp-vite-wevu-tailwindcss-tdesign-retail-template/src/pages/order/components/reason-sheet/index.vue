@@ -1,11 +1,9 @@
 <script setup lang="ts">
+import type { ReasonSheetOption } from './types'
 import { ref } from 'wevu'
 import { showToast } from '@/hooks/useToast'
 
-export interface ReasonSheetOption {
-  title: string
-  checked?: boolean
-}
+export type { ReasonSheetOption } from './types'
 
 interface ReasonSheetViewOption {
   title: string

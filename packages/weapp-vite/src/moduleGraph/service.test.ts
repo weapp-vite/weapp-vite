@@ -10,6 +10,17 @@ import {
 import { createModuleGraphService } from './service'
 
 describe('module graph protocol', () => {
+  it('distinguishes inert style dependencies from CSS-producing requests', () => {
+    const request = createSidecarSourceSpecifier('C:/project/src/page.vue', 'C:/project/src/shared.css', 'style', true)
+    expect(parseSidecarSourceRequest(request)).toEqual({
+      kind: 'style',
+      ownerId: 'C:/project/src/page.vue',
+      sourceId: 'C:/project/src/shared.css',
+      dependencyOnly: true,
+    })
+    expect(parseSidecarSourceRequest(request.replace('lang.js', 'lang.css'))).toBeUndefined()
+  })
+
   it('round-trips logical entry and sidecar ids without exposing path separators', () => {
     const entryId = createLogicalEntryId('C:\\project\\src\\pages\\home\\index.ts', 'page')
     const sidecarId = createSidecarModuleId(

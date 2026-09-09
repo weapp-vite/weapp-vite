@@ -115,6 +115,7 @@ export interface TransformContext {
   mustacheInterpolation: MustacheInterpolationMode
   formatWxml: boolean
   classStyleBindings: ClassStyleBinding[]
+  bindingConditions?: BindingCondition[]
   classStyleWxs: boolean
   classStyleWxsExtension?: string
   classStyleWxsSrc?: string
@@ -142,6 +143,8 @@ export interface ForParseResult {
   listExp?: string
   rawListExp?: string
   listExpAst?: Expression
+  /** 保留祖先循环原始项访问，供 key 投影计算遍历使用。 */
+  rawListExpAst?: Expression
   projectedListExp?: string
   projectedListExpAst?: Expression
   item?: string
@@ -305,6 +308,17 @@ export type ObjectLiteralBindMode = 'runtime' | 'inline'
 export type MustacheInterpolationMode = 'compact' | 'spaced'
 
 /**
+ * 运行时绑定的条件分支及其循环作用域。
+ */
+export interface BindingCondition {
+  expAst: Expression
+  /** 键投影遍历原始项时使用的条件。 */
+  rawExpAst?: Expression
+  /** 条件必须在对应循环深度进入下一层列表之前求值。 */
+  forDepth: number
+}
+
+/**
  * class/style 绑定信息。
  */
 export interface ClassStyleBinding {
@@ -314,6 +328,7 @@ export interface ClassStyleBinding {
   expAst?: Expression
   errorFallback?: string
   forStack: ForParseResult[]
+  conditions?: BindingCondition[]
 }
 
 /**

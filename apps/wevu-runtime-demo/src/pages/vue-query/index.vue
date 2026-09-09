@@ -113,13 +113,13 @@ watchEffect(syncVueQueryState)
       </view>
       <view class="row">
         <text class="label">status</text>
-        <text class="value">
+        <text id="query-status" class="value">
           {{ statusText }}
         </text>
       </view>
       <view class="row">
         <text class="label">queryKey</text>
-        <text class="value mono">
+        <text id="query-key" class="value mono">
           {{ JSON.stringify(queryKey) }}
         </text>
       </view>
@@ -133,6 +133,8 @@ watchEffect(syncVueQueryState)
         <text class="payload-title">
           最新数据
         </text>
+        <text id="query-payload-label">{{ query.data.label }}</text>
+        <text id="query-payload-tab">{{ query.data.selectedTab }}</text>
         <text class="payload-text mono">
           {{ JSON.stringify(query.data, null, 2) }}
         </text>
@@ -152,7 +154,7 @@ watchEffect(syncVueQueryState)
         <button class="action primary" @tap="() => switchTab('overview')">
           切到 overview
         </button>
-        <button class="action primary" @tap="() => switchTab('detail')">
+        <button id="query-switch-detail" class="action primary" @tap="() => switchTab('detail')">
           切到 detail
         </button>
         <button class="action" @tap="refetchNow">
@@ -161,7 +163,7 @@ watchEffect(syncVueQueryState)
         <button class="action" @tap="invalidateCurrent">
           invalidate 当前 tab
         </button>
-        <button class="action" @tap="resetCacheAndReload">
+        <button id="query-reset-key" class="action" @tap="resetCacheAndReload">
           更换 queryKey
         </button>
       </view>
@@ -173,19 +175,19 @@ watchEffect(syncVueQueryState)
       </view>
       <view class="row">
         <text class="label">isPending</text>
-        <text class="value">
+        <text id="query-pending" class="value">
           {{ query.isPending }}
         </text>
       </view>
       <view class="row">
         <text class="label">isFetching</text>
-        <text class="value">
+        <text id="query-fetching" class="value">
           {{ query.isFetching }}
         </text>
       </view>
       <view class="row">
         <text class="label">isSuccess</text>
-        <text class="value">
+        <text id="query-success" class="value">
           {{ query.isSuccess }}
         </text>
       </view>

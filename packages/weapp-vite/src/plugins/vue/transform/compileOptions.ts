@@ -8,6 +8,7 @@ import path from 'pathe'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -23,6 +24,8 @@ import { isAutoSetDataPickEnabledWithPreset, isWevuMinifyEnabled, resolveWevuDef
 export type CompileVueFileResolvedOptions = CompileVueFileOptions
 
 export type SfcStylePreprocessOptions = NonNullable<NonNullable<CompileVueFileOptions['style']>['preprocessOptions']>
+
+const compileOptionsOwners = new WeakMap<CompileVueFileResolvedOptions, object>()
 
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
@@ -160,8 +163,10 @@ function buildCompileVueFileOptions(
       const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
       if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
         const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
-        const isNewEntry = externalComponentEntryMap.get(outputKey) !== resolved.resolvedId
-        externalComponentEntryMap.set(outputKey, resolved.resolvedId)
+        const sourceId = normalizeSourceId(resolved.resolvedId)
+        const previousSourceId = externalComponentEntryMap.get(outputKey)
+        const isNewEntry = !previousSourceId || normalizeSourceId(previousSourceId) !== sourceId
+        externalComponentEntryMap.set(outputKey, sourceId)
         if (isNewEntry && state.emitResolvedComponentEntries !== false && typeof pluginCtx.emitFile === 'function') {
           pluginCtx.emitFile({
             type: 'chunk',
@@ -439,7 +444,8 @@ export function createCompileVueFileOptions(
     appShellSignature,
   )
   const cached = state.compileOptionsCache?.get(cacheKey)
-  if (cached) {
+  // 解析回调持有当前 hook 的 resolve/emitFile，不能跨 HMR transform 复用旧上下文。
+  if (cached && compileOptionsOwners.get(cached) === pluginCtx) {
     return cached
   }
 
@@ -455,6 +461,7 @@ export function createCompileVueFileOptions(
     pageLayout,
     appShell,
   )
+  compileOptionsOwners.set(created, pluginCtx)
   state.compileOptionsCache?.set(cacheKey, created)
   return created
 }

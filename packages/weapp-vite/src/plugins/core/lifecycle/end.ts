@@ -57,7 +57,18 @@ export function createBuildEndHook(state: CorePluginState) {
 
   return async function buildEnd(this: any) {
     state.ctx.moduleGraphService.bindBuildContext(state, this)
+    // 一次性构建清空 outDir 时必须保留全量输出，不能被单个 sidecar 的诊断范围收窄。
+    // watch 构建仅在启动时清目录，后续更新仍遵循增量契约。
+    const replacesOutput = state.resolvedConfig?.build.emptyOutDir === true && !state.resolvedConfig.build.watch
+    if (replacesOutput) {
+      state.hmrState.didEmitAllEntries = true
+      state.hmrState.skipSharedChunkRefresh = false
+      state.ctx.runtimeState.build.hmr.didEmitAllEntries = true
+    }
     const pendingChanges = state.ctx.moduleGraphService.getPendingChanges()
+    // 发射计划保留当前构建的文件身份，诊断 profile 不参与业务选择。
+    const styleSidecarFiles = new Set<string>()
+    state.hmrState.styleSidecarFiles = styleSidecarFiles
     const affectedEntries = new Set<string>()
     const causes = new Map<string, number>()
     let metadataOnly = pendingChanges.length > 0
@@ -65,6 +76,9 @@ export function createBuildEndHook(state: CorePluginState) {
     for (const change of pendingChanges) {
       const affected = state.ctx.moduleGraphService.collectAffectedEntries(change.file)
       const cause = resolveChangeCause(state, change.file, affected)
+      if (cause === 'style-sidecar' && change.event !== 'delete') {
+        styleSidecarFiles.add(normalizeFsResolvedId(change.file))
+      }
       causes.set(cause, (causes.get(cause) ?? 0) + affected.size)
       if (cause === 'entry-direct' || cause === 'importer-graph' || cause === 'layout-script') {
         metadataOnly = false
@@ -81,8 +95,8 @@ export function createBuildEndHook(state: CorePluginState) {
       const hmr = state.ctx.runtimeState.build.hmr
       state.hmrState.lastHmrEntryIds = new Set(affectedEntries)
       hmr.lastHmrEntryIds = new Set(affectedEntries)
-      state.hmrState.didEmitAllEntries = false
-      state.hmrState.skipSharedChunkRefresh = metadataOnly
+      state.hmrState.didEmitAllEntries = replacesOutput
+      state.hmrState.skipSharedChunkRefresh = metadataOnly && !replacesOutput
       const summary = [...causes.entries()].map(([cause, count]) => `${cause}:${count}`)
       hmr.profile = {
         ...hmr.profile,
