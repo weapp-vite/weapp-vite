@@ -50,8 +50,8 @@ function closeStoreList() {
   showStoreInfoList.value = false
 }
 
-async function goodClickHandle(e: any) {
-  const index = Number(e?.detail?.index)
+async function goodClickHandle(payload: { index?: number }) {
+  const index = Number(payload?.index)
   if (!Number.isFinite(index) || index < 0) {
     return
   }

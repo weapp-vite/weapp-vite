@@ -1,7 +1,7 @@
-import type { ReasonSheetOption } from './index.vue'
+import type { ReasonSheetOption } from './types'
 
 interface ReasonSheetContext {
-  selectComponent?: (selector: string) => ReasonSheetInstance | null
+  selectComponent?: (selector: string) => unknown
 }
 
 interface ReasonSheetInstance {
@@ -27,14 +27,23 @@ export interface ReasonSheetOptions {
   emptyTip?: string
 }
 
+function isReasonSheetInstance(value: unknown): value is ReasonSheetInstance {
+  return typeof value === 'object'
+    && value !== null
+    && 'bindHandlers' in value
+    && typeof value.bindHandlers === 'function'
+    && 'open' in value
+    && typeof value.open === 'function'
+}
+
 function getInstance(context?: ReasonSheetContext | null, selector = '#wr-reason-sheet') {
   let nextContext = context
   if (!nextContext) {
     const pages = getCurrentPages()
-    nextContext = (pages[pages.length - 1] ?? null) as ReasonSheetContext | null
+    nextContext = pages[pages.length - 1] ?? null
   }
   const instance = nextContext?.selectComponent?.(selector) ?? null
-  return instance
+  return isReasonSheetInstance(instance) ? instance : null
 }
 
 export default function reasonSheet(options: ReasonSheetOptions) {

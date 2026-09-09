@@ -13,6 +13,7 @@ import { fs as sharedFs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
+import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { registerNativePageLayoutOutput } from '../../../outputFinalizer/pageLayout'
@@ -23,7 +24,6 @@ import {
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
-import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { emitWxmlAssetFile, resolveWxmlEmitContext } from '../../../utils/wxmlEmit'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
@@ -409,12 +409,10 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       continue
     }
 
-    const normalizedResolvedId = normalizeFsResolvedId(resolvedId.id)
+    const normalizedResolvedId = normalizeSourceId(resolvedId.id)
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
-      if (/\.(?:jsx|tsx)$/.test(normalizedResolvedId)) {
-        addNormalizedWatchFile(pluginCtx, normalizedResolvedId)
-      }
+      // JSX 入口由 core physical source load 显式监听，不能挂到发现它的 app/component loader。
     }
 
     const isForcedEntry = forceEmitEntrySet?.has(entry) === true
@@ -468,10 +466,16 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   ) {
     const layoutStartedAt = performance.now()
     try {
-      replaceLayoutDependencies(id, [])
       const layoutPlan = resolvedPageLayoutPlan === undefined
         ? await resolvePageLayoutPlan(code, id, configService as any)
         : resolvedPageLayoutPlan ?? undefined
+      // loader 已提交完整（含模板传递边）的依赖；输出阶段不能再次清空或降级为直接依赖。
+      if (resolvedPageLayoutPlan === undefined) {
+        const dependencies = layoutPlan
+          ? await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)
+          : []
+        replaceLayoutDependencies(id, new Set(dependencies.map(file => normalizeFsResolvedId(file))))
+      }
       registerNativePageLayoutOutput({
         configService,
         runtimeState,
@@ -480,12 +484,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         plan: layoutPlan,
       })
       if (layoutPlan) {
-        const layoutDependencies = new Set<string>()
-        for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts, configService.platform)) {
-          layoutDependencies.add(normalizeFsResolvedId(file))
-        }
-        replaceLayoutDependencies(id, layoutDependencies)
-
         const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
         const transformed = applyPageLayoutPlanToNativePage(
           {

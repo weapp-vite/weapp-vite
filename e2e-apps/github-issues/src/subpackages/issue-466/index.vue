@@ -392,12 +392,12 @@ async function _runAllDialogMethodsE2E() {
     <text class="issue466-line">closeType = {{ closeType }}</text>
     <text class="issue466-line">defaultConfirmType = {{ defaultConfirmType }}</text>
     <text class="issue466-line">lastMethod = {{ lastMethod }}</text>
-    <text class="issue466-line">lastAction = {{ lastAction }}</text>
+    <text id="issue466-status" class="issue466-line">lastAction = {{ lastAction }}</text>
     <text class="issue466-line">lastPayload = {{ lastPayload || 'none' }}</text>
     <text class="issue466-line">lastError = {{ lastError || 'none' }}</text>
     <text class="issue466-line">dialogVisible = {{ dialogVisible }}</text>
     <text class="issue466-line">lastTitle = {{ lastTitle || 'none' }}</text>
-    <text class="issue466-line">counts = open {{ openCount }}, settle {{ settleCount }}</text>
+    <text id="issue466-counts" class="issue466-line">counts = open {{ openCount }}, settle {{ settleCount }}</text>
     <text class="issue466-line">methodCounts = alert {{ alertCount }}, confirm {{ confirmCount }}, action {{ actionCount }}, close {{ closeCount }}</text>
     <view class="issue466-actions">
       <button class="issue466-button" @tap="_openAlertE2E">

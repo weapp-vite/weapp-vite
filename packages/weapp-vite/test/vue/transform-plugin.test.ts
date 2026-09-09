@@ -680,7 +680,7 @@ describe('vue transform plugin', () => {
     const plugin = createVueTransformPlugin(createCtx() as any)
 
     const res = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
-    expect(res).toEqual({ code: '.a{color:red}', map: null })
+    expect(res).toEqual({ code: '.a{color:red}', map: null, meta: { weappViteStyleSources: [] } })
     expect(readAndParseSfcMock).toHaveBeenCalled()
     expect(readAndParseSfcMock).toHaveBeenCalledWith(vuePath!)
   })
@@ -1247,13 +1247,13 @@ onPageScroll(() => {
     await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const firstLoad = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
-    expect(firstLoad).toEqual({ code: '.a{color:red}', map: null })
+    expect(firstLoad).toEqual({ code: '.a{color:red}', map: null, meta: { weappViteStyleSources: [] } })
     const beforeReadCalls = readAndParseSfcMock.mock.calls.length
 
     plugin.watchChange?.call({}, vuePath!)
 
     const secondLoad = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
-    expect(secondLoad).toEqual({ code: '.a{color:red}', map: null })
+    expect(secondLoad).toEqual({ code: '.a{color:red}', map: null, meta: { weappViteStyleSources: [] } })
     expect(readAndParseSfcMock.mock.calls.length).toBeGreaterThan(beforeReadCalls)
 
     await fs.remove(vuePath!)

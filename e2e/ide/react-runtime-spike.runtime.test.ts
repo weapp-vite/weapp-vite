@@ -3,8 +3,10 @@ import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { counterCheckpoint, GENERIC_ROUTE, INTEROP_EDGES, INTEROP_ROUTE, interopCheckpoint, REACT_FIXTURE, reactControl, STATIC_ROUTE } from './reactRuntimeDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/react-runtime-spike')
@@ -53,7 +55,6 @@ async function waitForReactRuntimePageReady(
             .some(value => normalizeRoute(value) === expected)) as any
         return {
           data: page?.data,
-          hasInteropRunner: typeof page?._runInteropE2E === 'function',
           hasReactEventHandler: typeof page?.__weapp_vite_react_event === 'function',
           hasRuntimeEventHandler: typeof page?.eh === 'function',
           ready: Boolean(page),
@@ -73,74 +74,6 @@ async function waitForReactRuntimePageReady(
   }
 
   throw new Error(`Timed out waiting React runtime page ${route}; lastResult=${JSON.stringify(lastResult)}`)
-}
-
-async function waitForReactInteropResult(
-  app: Awaited<ReturnType<typeof launchAutomator>>,
-  timeoutMs = PAGE_READY_TIMEOUT,
-) {
-  const startedAt = Date.now()
-  let lastResult: unknown
-
-  while (Date.now() - startedAt <= timeoutMs) {
-    try {
-      lastResult = await app.evaluate(() => {
-        return (async () => {
-          const normalizeRoute = (value: unknown) => String(value || '')
-            .split('?', 1)[0]
-            .split('#', 1)[0]
-            .replace(/^\/+/, '')
-            .replace(/\/+$/g, '')
-          const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-          const page = pages
-            .slice()
-            .reverse()
-            .find((item: any) => [item?.route, item?.__route__, item?.path]
-              .some(value => normalizeRoute(value) === 'pages/interop/index')) as any
-          if (!page) {
-            return {
-              ok: false,
-              reason: 'missing-page',
-              routes: pages.map((item: any) => item?.route || item?.__route__ || item?.path || ''),
-            }
-          }
-          if (typeof page._runInteropE2E !== 'function') {
-            return {
-              ok: false,
-              reason: 'missing-method',
-              route: page?.route || page?.__route__ || page?.path || '',
-            }
-          }
-          try {
-            const result = await page._runInteropE2E()
-            return {
-              ok: true,
-              result,
-            }
-          }
-          catch (error) {
-            return {
-              ok: false,
-              error: error instanceof Error ? error.message : String(error),
-              stack: error instanceof Error ? error.stack : '',
-            }
-          }
-        })()
-      })
-      const result = (lastResult as any)?.result
-      if ((lastResult as any)?.ok === true && Array.isArray(result?.props) && result.props.length === 6) {
-        return lastResult
-      }
-    }
-    catch (error) {
-      lastResult = {
-        error: error instanceof Error ? error.message : String(error),
-      }
-    }
-    await delay(220)
-  }
-
-  throw new Error(`Timed out waiting React interop result; lastResult=${JSON.stringify(lastResult)}`)
 }
 
 async function closeReactRuntimeSpikeAutomator(app: Awaited<ReturnType<typeof launchAutomator>> | undefined) {
@@ -178,7 +111,7 @@ async function launchReactRuntimeSpikeAutomator() {
       const message = error instanceof Error ? error.message : String(error)
       process.stdout.write(`[react-runtime-spike:start-retry] attempt=${attempt}/${STARTUP_ATTEMPTS} reason=${message.replace(/\s+/g, ' ').slice(0, 240)}\n`)
       await closeReactRuntimeSpikeAutomator(app)
-      if (attempt < STARTUP_ATTEMPTS) {
+      if (attempt < STARTUP_ATTEMPTS && runtimeProvider === 'devtools') {
         await cleanDevtoolsCache('compile', { cwd: APP_ROOT }).catch(() => {})
         await cleanupResidualIdeProcesses().catch(() => {})
       }
@@ -190,8 +123,10 @@ async function launchReactRuntimeSpikeAutomator() {
 
 describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
   beforeAll(async () => {
-    await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    if (runtimeProvider === 'devtools') {
+      await cleanupResidualIdeProcesses()
+      await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    }
     await fs.rm(DIST_ROOT, { force: true, recursive: true })
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,
@@ -210,101 +145,41 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
     miniProgram = undefined
   })
 
-  it.runIf(runtimeProvider === 'devtools')('renders React hooks and dispatches host events through generic WXML', async () => {
+  it('renders React hooks and dispatches host events through generic WXML', async (context) => {
+    const dom = createDomAcceptance(context, REACT_FIXTURE, [
+      counterCheckpoint({ id: 'initial', action: '首屏显示初始 hooks、context、输入和 keyed 列表', mode: 'generic', count: 0 }),
+      counterCheckpoint({ id: 'incremented', action: '点击 increment 更新 count 和 memo doubled', mode: 'generic', count: 1 }),
+      counterCheckpoint({ id: 'appended', action: '点击 append 保留已有 keyed 项并新增 item-2', mode: 'generic', count: 1, appended: true }),
+      counterCheckpoint({ id: 'input-updated', action: '输入 Ada 并渲染受控问候文本', mode: 'generic', count: 1, appended: true, name: 'Ada' }),
+    ])
     const app = getMiniProgram()
-    await app.reLaunch('/pages/index/index')
+    await app.reLaunch(GENERIC_ROUTE)
     const page = await app.currentPage()
     if (!page) {
       throw new Error('Failed to launch React runtime spike page')
     }
-    await waitForReactRuntimePageReady(app, '/pages/index/index', result => Array.isArray(result?.data?.root?.cn))
-
-    const initialResult = await app.evaluate(() => {
-      const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-      const currentPage = pages[pages.length - 1] as any
-      const findNode = (nodes: any[], predicate: (node: any) => boolean): any => {
-        for (const node of nodes ?? []) {
-          if (predicate(node)) {
-            return node
-          }
-          const nested = findNode(node.cn, predicate)
-          if (nested) {
-            return nested
-          }
-        }
-        return undefined
-      }
-      const readText = (id: string) => {
-        const node = findNode(currentPage.data.root.cn, candidate => candidate.p?.id === id)
-        return node?.cn?.map((child: any) => child.v ?? '').join('') ?? ''
-      }
-      const dispatch = (id: string) => {
-        const node = findNode(currentPage.data.root.cn, candidate => candidate.p?.id === id)
-        currentPage.eh({
-          currentTarget: {
-            dataset: {
-              sid: node.sid,
-            },
-          },
-          type: 'tap',
-        })
-      }
-
-      const initialCount = readText('count')
-      dispatch('increment')
-      dispatch('append')
-      return { initialCount }
-    }) as Record<string, any>
-    await page.waitFor(160)
-
-    const result = await app.evaluate(() => {
-      const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-      const currentPage = pages[pages.length - 1] as any
-      const findNode = (nodes: any[], predicate: (node: any) => boolean): any => {
-        for (const node of nodes ?? []) {
-          if (predicate(node)) {
-            return node
-          }
-          const nested = findNode(node.cn, predicate)
-          if (nested) {
-            return nested
-          }
-        }
-        return undefined
-      }
-      const readText = (id: string) => {
-        const node = findNode(currentPage.data.root.cn, candidate => candidate.p?.id === id)
-        return node?.cn?.map((child: any) => child.v ?? '').join('') ?? ''
-      }
-      let itemCount = 0
-      const visit = (nodes: any[]) => {
-        for (const node of nodes ?? []) {
-          if (node.cl === 'item') {
-            itemCount += 1
-          }
-          visit(node.cn)
-        }
-      }
-      visit(currentPage.data.root.cn)
-      return {
-        countAfterTap: readText('count'),
-        itemCount,
-      }
-    }) as Record<string, any>
-
-    expect(initialResult.initialCount).toContain('count:0 doubled:0')
-    expect(result.countAfterTap).toContain('count:1 doubled:2')
-    expect(result.itemCount).toBe(3)
+    await dom.check('initial', app, page)
+    await (await reactControl(page, '#increment')).tap()
+    await dom.check('incremented', app, page)
+    await (await reactControl(page, '#append')).tap()
+    await dom.check('appended', app, page)
+    await (await reactControl(page, '#name-input')).input('Ada')
+    await dom.check('input-updated', app, page)
   })
 
-  it.runIf(runtimeProvider === 'devtools')('renders the compiled native WXML page with binding-only payloads', async () => {
+  it('renders the compiled native WXML page with binding-only payloads', async (context) => {
+    const dom = createDomAcceptance(context, REACT_FIXTURE, [
+      counterCheckpoint({ id: 'initial', action: '首屏显示静态绑定的 counter 和问候', mode: 'static', count: 0 }),
+      counterCheckpoint({ id: 'incremented', action: '点击 increment 通过最小 setData payload 更新文本', mode: 'static', count: 1 }),
+      counterCheckpoint({ id: 'input-updated', action: '输入 Ada 更新静态 input binding 和问候', mode: 'static', count: 1, name: 'Ada' }),
+    ])
     const app = getMiniProgram()
-    await app.reLaunch('/pages/static/index')
+    await app.reLaunch(STATIC_ROUTE)
     const page = await app.currentPage()
     if (!page) {
       throw new Error('Failed to launch React static binding spike page')
     }
-    await waitForReactRuntimePageReady(app, '/pages/static/index', result => Boolean(result?.data?.slots?.s3))
+    await dom.check('initial', app, page)
 
     const initialCount = await app.evaluate(() => {
       const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
@@ -318,19 +193,8 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
       return currentPage.data.slots.s3.text
     })
 
-    await app.evaluate(() => {
-      const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
-      const currentPage = pages[pages.length - 1] as any
-      currentPage.eh({
-        currentTarget: {
-          dataset: {
-            sid: 's4',
-          },
-        },
-        type: 'tap',
-      })
-    })
-    await page.waitFor(160)
+    await (await reactControl(page, '#increment')).tap()
+    await dom.check('incremented', app, page)
 
     const result = await app.evaluate(() => {
       const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
@@ -347,19 +211,28 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
     expect(result.countAfterTap).toBe('count:1 doubled:2')
     expect(result.payloads).toEqual([{ 'slots.s3.text': 'count:1 doubled:2' }])
     expect(result.payloadBytes).toEqual([37])
+    await (await reactControl(page, '#name-input')).input('Ada')
+    await dom.check('input-updated', app, page)
   })
 
-  it('passes props, change events and default slots across all six interop edges', async () => {
+  it('passes props, change events and default slots across all six interop edges', async (context) => {
+    const dom = createDomAcceptance(context, REACT_FIXTURE, [
+      interopCheckpoint(0, runtimeProvider),
+      ...INTEROP_EDGES.map((_, index) => interopCheckpoint(index + 1, runtimeProvider)),
+    ])
     const app = getMiniProgram()
-    await app.reLaunch('/pages/interop/index')
+    await app.reLaunch(INTEROP_ROUTE)
     const page = await app.currentPage()
     if (!page) {
       throw new Error('Failed to launch React interop page')
     }
-    await waitForReactRuntimePageReady(app, '/pages/interop/index', result => result?.hasInteropRunner === true)
+    await dom.check('initial', app, page)
+    for (const edge of INTEROP_EDGES) {
+      await (await reactControl(page, edge.action, edge.scope)).tap()
+      await dom.check(edge.id, app, page)
+    }
 
-    const interopPayload = await waitForReactInteropResult(app) as Record<string, any>
-    const result = interopPayload.result as Record<string, any>
+    const result = await page.callMethodWithOptions('_readInteropE2E', { routeOnly: true, timeout: 30_000 }) as Record<string, any>
 
     expect(result.props).toEqual([
       { label: 'react-to-native', value: 1 },
@@ -380,9 +253,5 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
       'wevu-to-native',
       'wevu-to-react',
     ])
-    for (const slot of result.slots) {
-      expect(slot.width).toBeGreaterThan(0)
-      expect(slot.height).toBeGreaterThan(0)
-    }
   })
 })

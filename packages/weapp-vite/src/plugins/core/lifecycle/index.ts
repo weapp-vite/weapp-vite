@@ -14,6 +14,7 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   const isPluginBuild = state.buildTarget === 'plugin'
   const loadLogicalEntry = createLogicalEntryLoadHook(state)
   const loadSource = createLoadHook(state)
+  const buildEnd = createBuildEndHook(state)
 
   return {
     name: 'weapp-vite:pre',
@@ -44,6 +45,9 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     },
     renderStart: createRenderStartHook(state),
     generateBundle: createGenerateBundleHook(state, isPluginBuild),
-    buildEnd: createBuildEndHook(state),
+    async buildEnd() {
+      state.entryChunkLifecycle?.endBuild()
+      return await buildEnd.call(this)
+    },
   }
 }

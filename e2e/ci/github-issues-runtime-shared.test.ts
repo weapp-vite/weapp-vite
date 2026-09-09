@@ -16,7 +16,6 @@ import {
 describe('github issues runtime shared relaunch helper', () => {
   it('delegates transient DevTools launch recovery to the shared automator launcher', () => {
     expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
-      deferBridgeWrapperSyncUntilConnected: true,
       projectPath: 'project-root',
       retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,

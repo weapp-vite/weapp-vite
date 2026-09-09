@@ -4,7 +4,7 @@ import { ReactInteropPage } from './view'
 
 const roots = new WeakMap<object, ReturnType<typeof createReactMiniProgramRoot>>()
 
-async function runInteropE2E(currentPage: any) {
+async function readInteropE2E(currentPage: any) {
   const requireComponent = (owner: any, selector: string) => {
     const component = owner?.selectComponent?.(selector)
     if (!component) {
@@ -37,18 +37,6 @@ async function runInteropE2E(currentPage: any) {
       value: component.data.value,
     }))
 
-  reactNative.emitChange()
-  reactWevu.emitChange()
-  nativeWevu.emitChange()
-  wevuNative.emitChange()
-  for (const reactLeaf of [nativeReact, wevuReact]) {
-    reactLeaf.__weapp_vite_react_event({
-      currentTarget: { dataset: { sid: 's3' } },
-      type: 'tap',
-    })
-  }
-
-  await new Promise(resolve => setTimeout(resolve, 160))
   const slots = await Promise.all([
     readSlot(currentPage, '#slot-react-to-native'),
     readSlot(currentPage, '#slot-react-to-wevu'),
@@ -86,8 +74,8 @@ Page({
   __weapp_vite_react_event(event: WechatMiniprogram.BaseEvent) {
     roots.get(this)?.dispatchEvent(event)
   },
-  async _runInteropE2E() {
-    return await runInteropE2E(this)
+  async _readInteropE2E() {
+    return await readInteropE2E(this)
   },
   onLoad() {
     const root = createReactMiniProgramRoot(this, { renderMode: 'static-bindings' })

@@ -111,6 +111,13 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
     ]
   }
 
+  if (!hasManualRelations && configService.platform === 'weapp') {
+    return [{
+      ...packNpmRelationList[0],
+      miniprogramNpmDistDir: resolveDefaultNpmDistDir(configService),
+    }]
+  }
+
   return packNpmRelationList.map((entry) => {
     const rawDir = entry.miniprogramNpmDistDir
     if (!rawDir || path.isAbsolute(rawDir)) {

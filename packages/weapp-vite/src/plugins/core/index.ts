@@ -34,6 +34,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     resolvedEntryMap,
     markEntryDirty,
     emitDirtyEntries,
+    entryChunkLifecycle,
   } = useLoadEntry(ctx, {
     buildTarget,
     hmr: {
@@ -72,6 +73,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     loadedEntrySet,
     markEntryDirty,
     emitDirtyEntries,
+    entryChunkLifecycle,
     entriesMap,
     jsonEmitFilesMap,
     resolvedEntryMap,

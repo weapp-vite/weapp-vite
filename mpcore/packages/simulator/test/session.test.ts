@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createHeadlessSession } from '../src/runtime'
+import { createHeadlessSession as createRuntimeSession } from '../src/runtime'
 import {
   cleanupTempDirs,
   createBaseFixture,
@@ -20,10 +20,24 @@ function writeFixtureFile(target: string, content: string) {
   fs.writeFileSync(target, content)
 }
 
+async function waitForNavigationReady(page: { data: Record<string, any>, route: string } | undefined) {
+  await vi.waitFor(() => expect(page?.data.logs.at(-1)).toBe(`${page?.route.split('/')[1]}:onReady`))
+}
+
 describe('HeadlessSession', () => {
   const tempDirs: string[] = []
+  const sessions: ReturnType<typeof createRuntimeSession>[] = []
+
+  function createHeadlessSession(options: Parameters<typeof createRuntimeSession>[0]) {
+    const session = createRuntimeSession(options)
+    sessions.push(session)
+    return session
+  }
 
   afterEach(() => {
+    for (const session of sessions.splice(0)) {
+      session.close()
+    }
     cleanupTempDirs(tempDirs)
     vi.restoreAllMocks()
   })
@@ -235,7 +249,7 @@ Page({
     })
   })
 
-  it('runs Component() page methods and lifecycles in headless runtime', () => {
+  it('runs Component() page methods and lifecycles in headless runtime', async () => {
     const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-component-page-'))
     tempDirs.push(projectPath)
     writeFixtureFile(path.join(projectPath, 'dist/app.json'), JSON.stringify({
@@ -298,7 +312,7 @@ Component({
 
     const session = createHeadlessSession({ projectPath })
     const page = session.reLaunch('/pages/component/index?from=e2e')
-
+    await vi.waitFor(() => expect(page.runE2E()).toContain('routeDone:undefined'))
     expect(page.runE2E()).toEqual(['created', 'attached', 'load:e2e', 'show', 'ready', 'routeDone:undefined'])
     session.triggerRouteDone({ from: 'headless' })
     session.triggerResize({ size: { windowWidth: 390 } })
@@ -348,7 +362,7 @@ Component({
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
-  it('exposes the active page stack before initial page lifecycles run', () => {
+  it('exposes the active page stack before initial page lifecycles run', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
     const pageModulePath = path.join(projectPath, 'dist/pages/index/index.js')
@@ -377,7 +391,7 @@ Page({
     const session = createHeadlessSession({ projectPath })
 
     const page = session.reLaunch('/pages/index/index')
-
+    await vi.waitFor(() => expect(page.data.lifecycleStacks).toHaveLength(3))
     expect(page.data.lifecycleStacks).toEqual([
       { name: 'load', routes: ['pages/index/index'] },
       { name: 'show', routes: ['pages/index/index'] },
@@ -385,12 +399,13 @@ Page({
     ])
   })
 
-  it('drives navigateTo and navigateBack with devtools-like lifecycle order', () => {
+  it('drives navigateTo and navigateBack with devtools-like lifecycle order', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const homePage = session.reLaunch('/pages/home/index?entry=direct')
+    await waitForNavigationReady(homePage)
     expect(homePage.data.logs).toEqual([
       'home:onLoad:{"entry":"direct"}',
       'home:onShow',
@@ -402,6 +417,7 @@ Page({
     homePage.goDetail()
 
     const detailPage = session.getCurrentPages().at(-1)
+    await waitForNavigationReady(detailPage)
     expect(detailPage?.route).toBe('pages/detail/index')
     expect(detailPage?.data.logs).toEqual([
       'home:onLoad:{"entry":"direct"}',
@@ -429,15 +445,21 @@ Page({
     ])
   })
 
-  it('runs navigation success/fail/complete callbacks through wx api calls', () => {
+  it('runs navigation success/fail/complete callbacks through wx api calls', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const homePage = session.reLaunch('/pages/home/index')
+    await waitForNavigationReady(homePage)
 
     homePage.goDetailWithCallbacks()
     const detailPage = session.getCurrentPages().at(-1)
+    expect(homePage.data.logs.slice(-2)).toEqual([
+      'home:navigateTo:success:pages/detail/index',
+      'home:navigateTo:complete',
+    ])
+    await waitForNavigationReady(detailPage)
     expect(detailPage?.options).toEqual({ from: 'home-callback' })
     expect(detailPage?.data.logs).toEqual([
       'home:onLoad:{}',
@@ -446,6 +468,8 @@ Page({
       'home:onHide',
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
+      'home:navigateTo:success:pages/detail/index',
+      'home:navigateTo:complete',
       'detail:onReady',
     ])
     expect(homePage.data.logs).toEqual([
@@ -455,7 +479,6 @@ Page({
       'home:onHide',
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
-      'detail:onReady',
       'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
     ])
@@ -471,9 +494,9 @@ Page({
       'home:onHide',
       'detail:onLoad:{"from":"home-callback"}',
       'detail:onShow',
-      'detail:onReady',
       'home:navigateTo:success:pages/detail/index',
       'home:navigateTo:complete',
+      'detail:onReady',
       'detail:onUnload',
       'home:onShow',
       'home:navigateTo:fail:Unknown route for headless runtime navigation: ../missing/index',
@@ -481,17 +504,20 @@ Page({
     ])
   })
 
-  it('normalizes navigateBack delta and unloads intermediate pages from top to bottom', () => {
+  it('normalizes navigateBack delta and unloads intermediate pages from top to bottom', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const homePage = session.reLaunch('/pages/home/index')
+    await waitForNavigationReady(homePage)
     homePage.goDetail()
     const detailPage = session.getCurrentPages().at(-1)
+    await waitForNavigationReady(detailPage)
     detailPage?.goSettings()
 
     const settingsPage = session.getCurrentPages().at(-1)
+    await waitForNavigationReady(settingsPage)
     expect(settingsPage?.options).toEqual({ from: 'detail-stack' })
     expect(session.getCurrentPages().map(page => page.route)).toEqual([
       'pages/home/index',
@@ -523,6 +549,7 @@ Page({
 
     detailPage?.goSettings()
     const secondSettingsPage = session.getCurrentPages().at(-1)
+    await waitForNavigationReady(secondSettingsPage)
     secondSettingsPage?.back(-2)
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual([
@@ -532,6 +559,7 @@ Page({
 
     detailPage?.goSettings()
     const thirdSettingsPage = session.getCurrentPages().at(-1)
+    await waitForNavigationReady(thirdSettingsPage)
     thirdSettingsPage?.back(99)
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual([
@@ -567,18 +595,21 @@ Page({
     ])
   })
 
-  it('supports redirectTo, switchTab and reLaunch stack transitions', () => {
+  it('supports redirectTo, switchTab and reLaunch stack transitions', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const homePage = session.reLaunch('/pages/home/index')
+    await waitForNavigationReady(homePage)
     homePage.goDetail()
 
     const detailPage = session.getCurrentPages().at(-1)
+    await waitForNavigationReady(detailPage)
     detailPage?.replaceProfile()
 
     const settingsPage = session.getCurrentPages().at(-1)
+    await waitForNavigationReady(settingsPage)
     expect(session.getCurrentPages()).toHaveLength(2)
     expect(settingsPage?.route).toBe('pages/settings/index')
     expect(settingsPage?.data.logs).toEqual([
@@ -619,6 +650,7 @@ Page({
 
     expect(session.getCurrentPages()).toHaveLength(1)
     const relaunchedProfile = session.getCurrentPages()[0]
+    await waitForNavigationReady(relaunchedProfile)
     expect(relaunchedProfile?.data.logs).toEqual([
       'home:onLoad:{}',
       'home:onShow',
@@ -641,15 +673,17 @@ Page({
     ])
   })
 
-  it('does not synthesize onTabItemTap for programmatic tab switches', () => {
+  it('does not synthesize onTabItemTap for programmatic tab switches', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const homePage = session.reLaunch('/pages/home/index')
+    await waitForNavigationReady(homePage)
     session.switchTab('/pages/profile/index')
 
     const profilePage = session.getCurrentPages()[0]
+    await waitForNavigationReady(profilePage)
     expect(profilePage?.route).toBe('pages/profile/index')
     expect(profilePage?.data.logs).toEqual([
       'home:onLoad:{}',
@@ -694,12 +728,13 @@ Page({
     expect(homePage.data.logs.at(-1)).toBe('home:switchTab:complete')
   })
 
-  it('rejects switchTab urls that contain query parameters', () => {
+  it('rejects switchTab urls that contain query parameters', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const homePage = session.reLaunch('/pages/home/index')
+    await waitForNavigationReady(homePage)
     homePage.goProfileWithQueryCallbacks()
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual([

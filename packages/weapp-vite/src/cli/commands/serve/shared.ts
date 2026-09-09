@@ -20,19 +20,20 @@ export interface CreateServeMiniProgramDevActionsOptions {
   fallbackProjectPath?: string
   openIde: (projectPath?: string, options?: OpenServeIdeOptions) => Promise<void>
   projectPath?: string
-  startForwardConsole?: () => Promise<boolean>
+  startForwardConsole?: (options: OpenServeIdeOptions) => Promise<boolean>
   tryReuseForwardConsole?: () => Promise<boolean>
 }
 
 function startBackgroundForwardConsole(
-  startForwardConsole?: () => Promise<boolean>,
+  startForwardConsole: CreateServeMiniProgramDevActionsOptions['startForwardConsole'],
+  options: OpenServeIdeOptions,
 ) {
   if (!startForwardConsole) {
     return
   }
 
   try {
-    void startForwardConsole().catch((error) => {
+    void startForwardConsole(options).catch((error) => {
       const message = error instanceof Error ? error.message : String(error)
       logger.warn(`[forwardConsole] 后台启动失败：${message}`)
     })
@@ -41,6 +42,10 @@ function startBackgroundForwardConsole(
     const message = error instanceof Error ? error.message : String(error)
     logger.warn(`[forwardConsole] 后台启动失败：${message}`)
   }
+}
+
+export function resolveServeIdeOpenStrategy(options: OpenServeIdeOptions = {}, fallback: 'automator' | 'cli' = 'cli') {
+  return options.openStrategy ?? (options.useAutomatorOpen ? 'automator' : fallback)
 }
 
 export function resolveWebHost(host: GlobalCLIOptions['host']) {
@@ -71,7 +76,7 @@ export function createServeMiniProgramDevActions(
       }
 
       await options.openIde(projectPath, openOptions)
-      startBackgroundForwardConsole(options.startForwardConsole)
+      startBackgroundForwardConsole(options.startForwardConsole, openOptions)
       return openOptions.forceReopen
         ? '已重新打开微信开发者工具项目'
         : '已打开或复用微信开发者工具项目'

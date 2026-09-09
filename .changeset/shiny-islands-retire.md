@@ -2,4 +2,4 @@
 "@mpcore/simulator": patch
 ---
 
-修复模拟器未挂载原生自定义 tabBar 的问题，为每个 tab 页面提供真实 getTabBar 实例、渲染和独立生命周期，并保留缓存页面的组件状态。
+对齐真实微信运行时，自定义 tabBar 本身不触发页面 show、hide 和 resize 生命周期；保留主线已有的页面所有权、独立渲染和缓存实例机制。

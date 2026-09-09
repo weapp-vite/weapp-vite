@@ -1,11 +1,21 @@
-import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
 import type { HeadlessPageInstance } from '../../runtime/pageInstance'
 import type { TemplateRenderState } from '../../view/templateRuntime'
 import type { BrowserRenderedPageTree, BrowserRendererContext, BrowserRenderScope, BrowserSlotContent, DomNodeLike } from './types'
 import { join } from 'pathe'
-import { runComponentLifecycle } from '../../runtime/componentInstance'
-import { CUSTOM_TAB_BAR_ALIAS, CUSTOM_TAB_BAR_COMPONENT_PATH, getCustomTabBarScopeId } from '../../runtime/customTabBar'
-import { createTemplateRenderState, isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
+import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
+import { runComponentLifecycle, runComponentPageLifetime } from '../../runtime/componentInstance'
+import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments } from '../../runtime/componentInstance/attachment'
+import { syncComponentRelations } from '../../runtime/componentInstance/relations'
+import { isPageBeforeReady } from '../../runtime/pageLifecycle'
+import { selectConditionalChildren } from '../../view/conditionalChildren'
+import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
+import { resolveLoopEntries } from '../../view/loopEntries'
+import { linkRenderedParents } from '../../view/renderedTree'
+import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
+import { wxsScopeData } from '../../view/wxs'
+import { resolveBrowserPageStyles } from '../styles'
+import { resolveBrowserComponentPageStyleIsolation } from '../styles/componentPage'
+import { getBrowserWxsLoader } from '../wxs'
 import {
   createBrowserComponentInstance,
   createComponentScope,
@@ -13,7 +23,6 @@ import {
   resolveComponentGenerics,
   resolveComponentProperties,
   resolveComponentRegistryEntry,
-  resolveComponentRegistryEntryByPath,
   syncComponentProperties,
 } from './component'
 import {
@@ -21,14 +30,13 @@ import {
   cloneNode,
   createLoopScope,
   evaluateConditionalBranch,
-  isIgnorableTextNode,
   isTagNode,
   LEADING_SLASH_RE,
   parseTemplateDocument,
+  prepareTemplateRenderState,
   readTemplateSource,
   resolveRawValueByPath,
   serializeDomNode,
-  WX_ELSE_ATTRS,
 } from './shared'
 
 function expandNodeByFor(node: DomNodeLike, scope: BrowserRenderScope) {
@@ -37,12 +45,12 @@ function expandNodeByFor(node: DomNodeLike, scope: BrowserRenderScope) {
     return [{ node, scope, instanceSuffix: '' }]
   }
 
-  const list = resolveRawValueByPath(scope.data, forExpression)
-  const items = Array.isArray(list) ? list : []
+  const list = resolveRawValueByPath(wxsScopeData(scope), forExpression)
+  const items = resolveLoopEntries(list)
   const itemName = node.attribs?.['wx:for-item']?.trim() || 'item'
   const indexName = node.attribs?.['wx:for-index']?.trim() || 'index'
 
-  return items.map((item, index) => ({
+  return items.map(([index, item]) => ({
     node: cloneNode(node),
     scope: createLoopScope(scope, itemName, indexName, item, index),
     instanceSuffix: `:for-${index}`,
@@ -84,61 +92,13 @@ function renderChildren(
 ) {
   const renderedChildren: DomNodeLike[] = []
 
-  for (let index = 0; index < children.length; index += 1) {
-    const child = children[index]!
+  for (const { node: child, index } of selectConditionalChildren(children, node => evaluateConditionalBranch(node, scope))) {
     if (!isTagNode(child)) {
       renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState))
       continue
     }
 
-    if (isTemplateDefinition(child)) {
-      continue
-    }
-
-    const hasConditional = child.attribs?.['wx:if'] != null
-    const isElseBranch = child.attribs?.['wx:elif'] != null || child.attribs?.['wx:else'] != null
-
-    if (hasConditional) {
-      let branchMatched = false
-      let cursor = index
-      while (cursor < children.length) {
-        const branch = children[cursor]!
-        if (cursor !== index && isIgnorableTextNode(branch)) {
-          cursor += 1
-          continue
-        }
-        if (!isTagNode(branch)) {
-          break
-        }
-        if (cursor !== index && !WX_ELSE_ATTRS.has(Object.keys(branch.attribs ?? {}).find(key => key.startsWith('wx:')) ?? '')) {
-          break
-        }
-
-        const isElseOnly = branch.attribs?.['wx:else'] != null
-        const shouldRender = isElseOnly ? !branchMatched : (!branchMatched && evaluateConditionalBranch(branch, scope))
-        if (shouldRender) {
-          renderedChildren.push(...renderNodeVariants(branch, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${cursor}`, seenComponentScopes, templateRenderState))
-          branchMatched = true
-        }
-
-        let nextBranchIndex = cursor + 1
-        while (nextBranchIndex < children.length && isIgnorableTextNode(children[nextBranchIndex]!)) {
-          nextBranchIndex += 1
-        }
-        const nextBranch = children[nextBranchIndex]
-        const hasNextElseBranch = !!nextBranch
-          && isTagNode(nextBranch)
-          && (nextBranch.attribs?.['wx:elif'] != null || nextBranch.attribs?.['wx:else'] != null)
-        if (!hasNextElseBranch) {
-          break
-        }
-        cursor = nextBranchIndex
-      }
-      index = cursor
-      continue
-    }
-
-    if (isElseBranch) {
+    if (isTemplateDefinition(child) || child.name === 'import' || child.name === 'wxs') {
       continue
     }
 
@@ -203,6 +163,9 @@ function renderNodeTree(
   seenComponentScopes: Set<string>,
   templateRenderState: TemplateRenderState<DomNodeLike>,
 ): DomNodeLike {
+  if (scope.wxs !== templateRenderState.wxsModules) {
+    scope = { ...scope, wxs: templateRenderState.wxsModules }
+  }
   const clonedNode = cloneNode(node)
   if (!isTagNode(clonedNode)) {
     applyNodeBindings(clonedNode, scope)
@@ -218,12 +181,13 @@ function renderNodeTree(
     }
   }
 
-  const templateName = resolveTemplateCall(clonedNode, scope.data)
+  const templateName = resolveTemplateCall(clonedNode, wxsScopeData(scope))
   if (templateName) {
     const definition = templateRenderState.definitions.get(templateName)
     const templateScope = {
       ...scope,
-      data: resolveTemplateData(clonedNode, scope.data),
+      data: resolveTemplateData(clonedNode, wxsScopeData(scope)),
+      wxs: definition && templateRenderState.definitionWxsScopes?.get(definition),
     }
     const children = definition && !templateRenderState.stack.includes(templateName)
       ? renderChildren(
@@ -235,7 +199,10 @@ function renderNodeTree(
           `${instancePath}/template-${templateName}`,
           seenComponentScopes,
           {
-            definitions: templateRenderState.definitions,
+            definitions: templateRenderState.definitionScopes?.get(definition) ?? templateRenderState.definitions,
+            definitionScopes: templateRenderState.definitionScopes,
+            definitionWxsScopes: templateRenderState.definitionWxsScopes,
+            wxsModules: templateScope.wxs,
             stack: [...templateRenderState.stack, templateName],
           },
         )
@@ -255,16 +222,22 @@ function renderNodeTree(
     const slotName = clonedNode.attribs?.name?.trim() || 'default'
     const projected = scope.slots?.get(slotName) ?? []
     const children = projected.length
-      ? projected.flatMap(entry => renderNodeVariants(
-          entry.node,
-          entry.scope,
-          context,
-          entry.ownerJsonPath,
-          entry.ownerFilePath,
-          entry.instancePath,
-          seenComponentScopes,
-          entry.templateRenderState,
-        ))
+      ? selectConditionalChildren(
+          projected.map(entry => entry.node),
+          (node, index) => evaluateConditionalBranch(node, projected[index]!.scope),
+        ).flatMap(({ index }) => {
+          const entry = projected[index]!
+          return renderNodeVariants(
+            entry.node,
+            entry.scope,
+            context,
+            entry.ownerJsonPath,
+            entry.ownerFilePath,
+            entry.instancePath,
+            seenComponentScopes,
+            entry.templateRenderState,
+          )
+        })
       : renderChildren(
           clonedNode.children ?? [],
           scope,
@@ -352,12 +325,10 @@ function renderNodeTree(
       seenComponentScopes,
     )
     if (renderedComponentRoot.attribs) {
+      applyNodeBindings(clonedNode, scope)
+      renderedComponentRoot.attribs = { ...clonedNode.attribs, ...renderedComponentRoot.attribs }
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId
-    }
-    if (!componentInstance.__ready__) {
-      runComponentLifecycle(componentInstance, 'ready')
-      componentInstance.__ready__ = true
     }
     return renderedComponentRoot
   }
@@ -376,52 +347,9 @@ function renderNodeTree(
   return clonedNode
 }
 
-function renderCustomTabBar(
-  context: BrowserRendererContext,
-  page: HeadlessPageInstance,
-  pageScope: BrowserRenderScope,
-  customTabBar: HeadlessComponentInstance,
-  seenComponentScopes: Set<string>,
-) {
-  const componentScopeId = getCustomTabBarScopeId(page.route)
-  const componentEntry = resolveComponentRegistryEntryByPath(context, CUSTOM_TAB_BAR_COMPONENT_PATH)
-  const hostNode: DomNodeLike = {
-    attribs: {},
-    children: [],
-    name: CUSTOM_TAB_BAR_ALIAS,
-    type: 'tag',
-  }
-  const componentScope = createComponentScope(
-    hostNode,
-    pageScope,
-    componentScopeId,
-    customTabBar,
-  )
-  context.componentScopes.set(componentScopeId, componentScope)
-  seenComponentScopes.add(componentScopeId)
-
-  const renderedRoot = renderBrowserComponentTemplate(
-    context,
-    componentEntry,
-    renderNodeTree,
-    componentScope,
-    componentScopeId,
-    seenComponentScopes,
-  )
-  renderedRoot.attribs ??= {}
-  renderedRoot.attribs['data-sim-component'] = CUSTOM_TAB_BAR_ALIAS
-  renderedRoot.attribs['data-sim-scope'] = componentScopeId
-  if (!customTabBar.__ready__) {
-    runComponentLifecycle(customTabBar, 'ready')
-    customTabBar.__ready__ = true
-  }
-  return renderedRoot
-}
-
 export function renderBrowserPageTree(
   context: BrowserRendererContext,
   page: HeadlessPageInstance,
-  customTabBar?: HeadlessComponentInstance,
 ): BrowserRenderedPageTree {
   const route = page.route.replace(LEADING_SLASH_RE, '')
   const routeRecord = context.project.routes.find(item => item.route === route)
@@ -434,16 +362,20 @@ export function renderBrowserPageTree(
     data: page.data,
     getMethod: (methodName: string) => {
       const method = page[methodName]
-      return typeof method === 'function' ? method : undefined
+      return typeof method === 'function' ? method.bind(page) : undefined
     },
     getScopeId: () => pageScopeId,
     id: 'page-root',
   }
-  context.componentScopes.clear()
+  for (const scopeId of context.componentScopes.keys()) {
+    if (scopeId === pageScopeId || scopeId.startsWith(`${pageScopeId}/`)) {
+      context.componentScopes.delete(scopeId)
+    }
+  }
   context.componentScopes.set(pageScopeId, pageScope)
   const seenComponentScopes = new Set<string>()
   const root = (document.children ?? [])[0] ?? document
-  const templateRenderState = createTemplateRenderState(root)
+  const templateRenderState = prepareTemplateRenderState(context.files, root, templatePath, context.project.miniprogramRootPath, getBrowserWxsLoader(context.moduleLoader, context.files))
   const renderedRoot = renderNodeTree(
     root,
     pageScope,
@@ -455,28 +387,61 @@ export function renderBrowserPageTree(
     templateRenderState,
   )
 
-  const renderedCustomTabBar = customTabBar
-    ? renderCustomTabBar(context, page, pageScope, customTabBar, seenComponentScopes)
-    : null
-  const combinedRoot: DomNodeLike = renderedCustomTabBar
-    ? {
-        children: [renderedRoot, renderedCustomTabBar],
-        type: 'root',
-      }
-    : renderedRoot
+  const roots = [renderedRoot]
+  if (hasCustomTabBar(context.project.appConfig, route)) {
+    roots.push(renderNodeTree(
+      { type: 'tag', name: 'custom-tab-bar', attribs: {}, children: [] },
+      customTabBarHostScope(),
+      context,
+      'app.json',
+      'app.js',
+      pageScopeId,
+      seenComponentScopes,
+      templateRenderState,
+    ))
+  }
 
-  for (const [scopeId, instance] of [...context.componentCache.entries()]) {
-    if (!scopeId.startsWith(`${pageScopeId}/`) || seenComponentScopes.has(scopeId)) {
-      continue
-    }
+  // Component 页面先创建子树，再执行页面 created/attached，最后统一挂载后代。
+  const pageAttached = attachComponentPage(page)
+  const pageAttaching = isComponentPageAttaching(page)
+  const attached = !pageAttaching && flushComponentAttachments(
+    [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!),
+    (instance) => {
+      runComponentLifecycle(instance, 'attached')
+      if (instance !== context.componentCache.get(customTabBarScopeId(route))) {
+        runComponentPageLifetime(instance, 'show')
+      }
+    },
+  )
+  // detached 仍能读取旧关系；真实宿主随后解除双方关系并调用 unlinked。
+  const removed = [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId))
+  for (const [, instance] of removed) {
     runComponentLifecycle(instance, 'detached')
+  }
+  const instances = [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!)
+  const relationsChanged = !pageAttaching && !hasPendingComponentAttachments(instances) && syncComponentRelations(context.componentCache, seenComponentScopes, pageScopeId)
+  for (const [scopeId] of removed) {
     context.componentCache.delete(scopeId)
     context.componentScopes.delete(scopeId)
   }
 
+  if (pageAttached || attached || relationsChanged) {
+    return renderBrowserPageTree(context, page)
+  }
+
+  if (!isPageBeforeReady(page) && flushComponentReady(instances, instance => runComponentLifecycle(instance, 'ready'))) {
+    return renderBrowserPageTree(context, page)
+  }
+
+  const treeRoot: DomNodeLike = roots.length > 1 ? { type: 'root', children: roots } : renderedRoot
+  linkRenderedParents(treeRoot)
   return {
-    root: combinedRoot,
-    wxml: serializeDomNode(combinedRoot),
+    root: treeRoot,
+    styles: resolveBrowserPageStyles(context.files, resourcePath, {
+      miniprogramRootPath: context.project.miniprogramRootPath,
+      styleIsolation: resolveBrowserComponentPageStyleIsolation(context.files, page, resourcePath, context.project.miniprogramRootPath),
+    }),
+    wxml: roots.map(serializeDomNode).join(''),
   }
 }
 

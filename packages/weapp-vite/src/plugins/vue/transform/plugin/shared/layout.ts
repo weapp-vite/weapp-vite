@@ -1,10 +1,12 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../../../context'
 import { compileVueStyleToWxss, generateScopedId } from 'wevu/compiler'
+import { createStyleSourceMeta } from '../../../../css/styleOwnership'
 import { syncVueSfcStyleDependencies } from '../../../../utils/invalidateEntry'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
 import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { resolvePageLayoutPlan } from '../../pageLayout'
+import { normalizeComparablePath } from '../../pageLayout/shared'
 import { ensureSfcStyleBlocks, isAppEntry, loadTransformPageEntries } from './state'
 
 export async function handleTransformEntryPageLayoutFlow(options: {
@@ -80,7 +82,7 @@ export async function resolveTransformEntryFlags(options: {
     ? configService.absolutePluginRoot ?? configService.absoluteSrcRoot
     : configService.absoluteSrcRoot
   const currentPageMatcher = pageMatcher ?? createPageMatcher({
-    srcRoot: pageSourceRoot,
+    srcRoot: normalizeComparablePath(pageSourceRoot),
     loadEntries: async () => await loadTransformPageEntries(scanService),
     warn: () => {},
   })
@@ -95,7 +97,7 @@ export async function resolveTransformEntryFlags(options: {
   }
 
   return {
-    isPage: await currentPageMatcher.isPageFile(filename),
+    isPage: await currentPageMatcher.isPageFile(normalizeComparablePath(filename)),
     isApp: isAppEntry(filename),
     pageMatcher: currentPageMatcher,
   }
@@ -244,5 +246,6 @@ export async function loadTransformStyleBlock(options: {
   return {
     code: compiled.code,
     map: compiled.map ? JSON.parse(compiled.map) : null,
+    meta: createStyleSourceMeta([...dependencies, ...(compiled.dependencies ?? [])]),
   }
 }

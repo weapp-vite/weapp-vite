@@ -70,6 +70,7 @@ defineComponentJson({
         :key="index"
         class="order-group__item overflow-hidden flex flex-col items-center justify-center flex-1 first:rounded-[0_0_0_16rpx] last:rounded-[0_0_16rpx_0]"
         :data-item="item"
+        :data-order-status="item.tabType"
         @tap="onClickItem"
       >
         <view class="order-group__item__icon icon-class mb-[20rpx] size-[56rpx] relative">

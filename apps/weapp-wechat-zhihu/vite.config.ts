@@ -1,8 +1,11 @@
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
   weapp: {
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['tailwind.css'],
+    },
     hmr: {
       logLevel: 'verbose',
       profileJson: true,
@@ -20,13 +23,6 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    WeappTailwindcss(
-      {
-        rem2rpx: true,
-      },
-    ),
-  ],
   css: {
     preprocessorOptions: {
       scss: {

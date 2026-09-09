@@ -10,18 +10,24 @@ import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
-import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
+import { extractWechatDevtoolsServicePort, terminateCliProcessTree } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
+import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
+import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
   appendIdeReportEvent,
   resolveReportProjectPath,
 } from './ideWarningReport'
+import { registerRuntimeConsoleSession } from './runtimeConsoleSessions'
+import { createRuntimeLogSubscription } from './runtimeLogSubscription'
 import {
   assertRuntimeProviderImplemented,
   resolveRuntimeProviderName,
 } from './runtimeProvider'
+import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
+import { watchResolvedDirectory } from './watchResolvedDirectory'
 
 const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
@@ -87,8 +93,6 @@ const DEFAULT_PAGE_ROOT_QUERY_TIMEOUT = 1_000
 const CURRENT_PAGE_READY_RETRY_DELAY = 220
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 const DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY = 5_000
-const DEFAULT_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY = 2_000
-const DEFAULT_BRIDGE_WARMUP_READY_TIMEOUT = 60_000
 const DEVTOOLS_LOG_SCAN_INTERVAL = 500
 const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
@@ -102,7 +106,6 @@ const AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_D
 const AUTOMATOR_BRIDGE_WRAPPER_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER'
 const AUTOMATOR_CLI_BRIDGE_PATH = path.resolve(import.meta.dirname, './automator.cli-bridge.ts')
 const AUTOMATOR_BRIDGE_WRAPPER_ROOT = path.resolve(import.meta.dirname, '../../.tmp/e2e-ide-bridge-projects')
-const AUTOMATOR_BRIDGE_RUNTIME_ROOT = 'weapp_vite_runtime'
 let bridgeWrapperLaunchSequence = 0
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
@@ -177,19 +180,14 @@ function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
   return parsed
 }
 
-export function resolveBridgeWarmupReadyTimeout(raw: string | undefined) {
-  return resolvePositiveIntEnv(raw, DEFAULT_BRIDGE_WARMUP_READY_TIMEOUT)
-}
-
 export function resolveWarmupCurrentPageReadyTimeout(
   allowRelaunch: boolean | undefined,
-  useBridgeWarmupBudget: boolean,
-  bridgeWarmupReadyTimeout: number,
   relaunchReadyTimeout: number,
 ) {
-  return allowRelaunch === false && useBridgeWarmupBudget
-    ? bridgeWarmupReadyTimeout
-    : Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, relaunchReadyTimeout)
+  if (allowRelaunch === false) {
+    return relaunchReadyTimeout
+  }
+  return Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, relaunchReadyTimeout)
 }
 
 function resolveNonNegativeInt(value: number | undefined, fallback: number) {
@@ -254,13 +252,6 @@ const BRIDGE_CONNECT_SETTLE_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY,
   DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY,
 )
-const BRIDGE_WRAPPER_ASSET_SETTLE_DELAY = resolvePositiveIntEnv(
-  process.env.WEAPP_VITE_E2E_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY,
-  DEFAULT_BRIDGE_WRAPPER_ASSET_SETTLE_DELAY,
-)
-const BRIDGE_WARMUP_READY_TIMEOUT = resolveBridgeWarmupReadyTimeout(
-  process.env.WEAPP_VITE_E2E_BRIDGE_WARMUP_READY_TIMEOUT,
-)
 const TRUST_ALL_PROJECTS = process.env.WEAPP_VITE_E2E_TRUST_PROJECT === '1'
 const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
   .split(ENV_LIST_SPLIT_PATTERN)
@@ -269,7 +260,6 @@ const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
   .map(item => normalizePathForMatch(item))
 
 let versionPatched = false
-let miniProgramOnPatched = false
 let loginPreflightPassed = false
 let localhostListenPatched = false
 const automator = new Automator()
@@ -323,9 +313,9 @@ interface LaunchProjectMeta {
 }
 
 interface BridgeWrapperProject {
-  activate?: () => boolean | Promise<boolean>
   distRoot: string
   path: string
+  runtimeRoot: string
   stopSync?: () => void
 }
 
@@ -355,8 +345,11 @@ interface LaunchAppConfigValidationResult {
 
 type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 
+export type AutomatorBridgeProjectMode = 'direct' | 'snapshot'
+
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
-  deferBridgeWrapperSyncUntilConnected?: boolean
+  /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
+  bridgeProjectMode?: AutomatorBridgeProjectMode
   disableRelaunchSessionRecovery?: boolean
   engineBuildFallbackSettleMs?: number
   launchMode?: 'bridge' | 'direct'
@@ -471,8 +464,8 @@ function shouldDisableAutomatorRelaunchCurrentReady() {
   return process.env[AUTOMATOR_DISABLE_RELAUNCH_CURRENT_READY_ENV] !== '0'
 }
 
-function shouldUseAutomatorBridgeWrapper() {
-  return process.env[AUTOMATOR_BRIDGE_WRAPPER_ENV] !== '0'
+export function resolveAutomatorBridgeProjectMode(requestedMode?: AutomatorBridgeProjectMode): AutomatorBridgeProjectMode {
+  return requestedMode ?? (process.env[AUTOMATOR_BRIDGE_WRAPPER_ENV] === '0' ? 'direct' : 'snapshot')
 }
 
 function resolveConsolePayload(entry: any) {
@@ -575,9 +568,9 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
   }
 
   const onException = (entry: any) => {
-    const text = typeof entry?.exceptionDetails?.text === 'string'
+    const text = typeof entry?.exceptionDetails?.text === 'string' && entry.exceptionDetails.text.trim()
       ? entry.exceptionDetails.text
-      : normalizeRuntimeConsoleText(entry)
+      : normalizeRuntimeConsoleText(entry) || '<empty exception payload>'
     stats.exception += 1
     stats.total += 1
     const runtimeEntry = { level: 'exception', text } satisfies RuntimeLogEntry
@@ -585,14 +578,20 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
     appendRuntimeLogEvent(runtimeEntry)
   }
 
-  miniProgram.on('console', onConsole)
-  miniProgram.on('exception', onException)
+  // SDK 的 on('console') 会隐式发起无超时订阅；先被动挂监听，由启动流程统一等待 enableLog。
+  const addListener = typeof miniProgram.addListener === 'function'
+    ? miniProgram.addListener.bind(miniProgram)
+    : miniProgram.on.bind(miniProgram)
+  addListener('console', onConsole)
+  addListener('exception', onException)
+  const unregisterConsoleSession = registerRuntimeConsoleSession(miniProgram, project)
 
   const meta: RuntimeLogMeta = {
     project,
     entries,
     stats,
     dispose() {
+      unregisterConsoleSession()
       miniProgram.removeListener('console', onConsole)
       miniProgram.removeListener('exception', onException)
     },
@@ -1024,29 +1023,6 @@ function writeJsonObject(filePath: string, value: Record<string, any>) {
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
 }
 
-function writeJsonObjectIfChanged(filePath: string, value: Record<string, any>) {
-  const nextSource = `${JSON.stringify(value, null, 2)}\n`
-  try {
-    if (fs.readFileSync(filePath, 'utf8') === nextSource) {
-      return false
-    }
-  }
-  catch {
-  }
-  fs.mkdirSync(path.dirname(filePath), { recursive: true })
-  fs.writeFileSync(filePath, nextSource, 'utf8')
-  return true
-}
-
-function normalizeBridgeWrapperRuntimeConfig(config: Record<string, any>) {
-  const normalized = { ...config }
-  if (normalized.setting && typeof normalized.setting === 'object') {
-    normalized.setting = { ...normalized.setting }
-    delete normalized.setting.es6
-  }
-  return normalized
-}
-
 function normalizeProjectRelativeRoot(rawRoot: unknown) {
   if (typeof rawRoot !== 'string') {
     return undefined
@@ -1064,7 +1040,7 @@ function normalizeProjectRelativeRoot(rawRoot: unknown) {
 export function createBridgeWrapperProjectConfig(
   source: Record<string, any>,
   patch: Record<string, any> = {},
-  options: { bootstrap?: boolean, miniprogramRoot?: string, precompiled?: boolean } = {},
+  options: { miniprogramRoot?: string, precompiled?: boolean } = {},
 ) {
   const {
     miniprogramRoot: _miniprogramRoot,
@@ -1104,13 +1080,7 @@ export function createBridgeWrapperProjectConfig(
       ...stableRest,
       miniprogramRoot,
       srcMiniprogramRoot: miniprogramRoot,
-      setting: options.bootstrap
-        ? {
-            es6: false,
-            packNpmManually: false,
-            packNpmRelationList: [],
-          }
-        : finalSetting,
+      setting: finalSetting,
       condition: {
         ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
         ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
@@ -1129,12 +1099,6 @@ export function createBridgeWrapperProjectConfig(
       ...(source.condition && typeof source.condition === 'object' ? source.condition : {}),
       ...(patch.condition && typeof patch.condition === 'object' ? patch.condition : {}),
     },
-  }
-  if (options.bootstrap) {
-    config.simulatorType = typeof config.simulatorType === 'string' && config.simulatorType.trim()
-      ? config.simulatorType
-      : 'wechat'
-    config.simulatorPluginLibVersion ??= {}
   }
   return config
 }
@@ -1155,88 +1119,6 @@ function resolveMiniprogramRoot(projectPath: string) {
 
 function resolveBridgeWrapperProjectConfig(projectPath: string) {
   return readJsonObject(path.join(projectPath, 'project.config.json')) ?? {}
-}
-
-function safeStat(targetPath: string) {
-  try {
-    return fs.lstatSync(targetPath)
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return undefined
-    }
-    throw error
-  }
-}
-
-function safeReadDirectory(directoryPath: string) {
-  try {
-    return fs.readdirSync(directoryPath, { withFileTypes: true })
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return undefined
-    }
-    throw error
-  }
-}
-
-function copyDistEntryForBridgeWrapper(
-  sourcePath: string,
-  targetPath: string,
-  isDirectory: boolean,
-  options: { force?: boolean } = {},
-) {
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true })
-  try {
-    if (isDirectory) {
-      const targetStat = safeStat(targetPath)
-      if (targetStat && !targetStat.isDirectory()) {
-        fs.rmSync(targetPath, { recursive: true, force: true })
-      }
-      fs.mkdirSync(targetPath, { recursive: true })
-      const sourceEntries = safeReadDirectory(sourcePath) ?? []
-      const sourceNames = new Set(sourceEntries.map(entry => entry.name))
-      const targetEntries = safeReadDirectory(targetPath) ?? []
-      for (const entry of targetEntries) {
-        if (!sourceNames.has(entry.name)) {
-          fs.rmSync(path.join(targetPath, entry.name), { recursive: true, force: true })
-        }
-      }
-      for (const entry of sourceEntries) {
-        copyDistEntryForBridgeWrapper(
-          path.join(sourcePath, entry.name),
-          path.join(targetPath, entry.name),
-          entry.isDirectory(),
-          options,
-        )
-      }
-      return
-    }
-
-    const sourceStat = safeStat(sourcePath)
-    const targetStat = safeStat(targetPath)
-    if (
-      !options.force
-      && sourceStat?.isFile()
-      && targetStat?.isFile()
-      && sourceStat.size === targetStat.size
-      && Math.abs(targetStat.mtimeMs - sourceStat.mtimeMs) < 1
-    ) {
-      return
-    }
-
-    fs.rmSync(targetPath, { recursive: true, force: true })
-    fs.copyFileSync(sourcePath, targetPath)
-    if (sourceStat?.isFile()) {
-      fs.utimesSync(targetPath, sourceStat.atime, sourceStat.mtime)
-    }
-  }
-  catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error
-    }
-  }
 }
 
 function shouldPreserveBridgeWrapperPath(relativePath: string, preserveRoots: string[]) {
@@ -1315,22 +1197,6 @@ function copyProjectRootForBridgeWrapper(projectPath: string, wrapperRoot: strin
   copyDistEntryForBridgeWrapper(sourcePath, targetPath, entry.isDirectory())
 }
 
-function prepareBridgeWrapperBootstrap(wrapperRoot: string, route: string | undefined) {
-  const pageRoute = (route || '/pages/index/index').replace(LEADING_SLASH_PATTERN, '')
-  const pageRoot = path.join(wrapperRoot, pageRoute)
-  fs.rmSync(wrapperRoot, { force: true, recursive: true })
-  writeJsonObject(path.join(wrapperRoot, 'app.json'), {
-    pages: [pageRoute],
-    subPackages: [],
-  })
-  fs.writeFileSync(path.join(wrapperRoot, 'app.js'), 'App({})\n', 'utf8')
-  fs.writeFileSync(path.join(wrapperRoot, 'app.wxss'), '', 'utf8')
-  writeJsonObject(`${pageRoot}.json`, {})
-  fs.writeFileSync(`${pageRoot}.js`, 'Page({})\n', 'utf8')
-  fs.writeFileSync(`${pageRoot}.wxml`, '<view id="weapp-vite-automator-bootstrap">ready</view>\n', 'utf8')
-  fs.writeFileSync(`${pageRoot}.wxss`, '', 'utf8')
-}
-
 function isPathInsideRoot(root: string, candidate: string) {
   const relative = path.relative(root, candidate)
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
@@ -1347,9 +1213,7 @@ function copyBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, source
   if (!sourceStat) {
     return
   }
-  copyDistEntryForBridgeWrapper(sourcePath, targetPath, sourceStat.isDirectory(), {
-    force: true,
-  })
+  copyDistEntryForBridgeWrapper(sourcePath, targetPath, sourceStat.isDirectory())
 }
 
 function removeBridgeWrapperDistPath(distRoot: string, wrapperRoot: string, sourcePath: string) {
@@ -1445,7 +1309,7 @@ function startBridgeWrapperDistSync(
       return
     }
 
-    const watcher = fs.watch(directoryPath, (_eventType, fileName) => {
+    const watcher = watchResolvedDirectory(directoryPath, (_eventType, fileName) => {
       if (!fileName) {
         syncSnapshot()
         return
@@ -1460,6 +1324,9 @@ function startBridgeWrapperDistSync(
       }
       schedule(changedPath)
     })
+    if (!watcher) {
+      return
+    }
     watcher.on('error', () => {
       watchers.delete(directoryPath)
       syncSnapshot()
@@ -1511,7 +1378,7 @@ function isReadablePageScript(source: string) {
     || source.includes('createWevuComponent')
 }
 
-async function waitForBridgeWrapperWarmupAsset(
+export async function waitForBridgeWrapperWarmupAsset(
   bridgeWrapperProject: BridgeWrapperProject | undefined,
   route: string | undefined,
   project: string,
@@ -1519,7 +1386,7 @@ async function waitForBridgeWrapperWarmupAsset(
   if (!bridgeWrapperProject?.stopSync || !route) {
     return
   }
-  const pageScriptPath = routeToPageScriptPath(bridgeWrapperProject.path, route)
+  const pageScriptPath = routeToPageScriptPath(bridgeWrapperProject.runtimeRoot, route)
   const sourcePageScriptPath = routeToPageScriptPath(bridgeWrapperProject.distRoot, route)
   if (!pageScriptPath || !sourcePageScriptPath) {
     return
@@ -1545,30 +1412,29 @@ async function waitForBridgeWrapperWarmupAsset(
   throw new Error(`Timed out waiting bridge wrapper warmup page script: ${resolveReportProjectPath(pageScriptPath)}\nLatest content:\n${latest.slice(0, 1000)}`)
 }
 
-function prepareAutomatorBridgeWrapperProject(
+export function prepareAutomatorBridgeWrapperProject(
   projectPath: string | undefined,
   projectMeta: LaunchProjectMeta | undefined,
-  options: {
-    deferSyncUntilConnected?: boolean
-    warmupRoute?: string
-  } = {},
+  bridgeProjectMode?: AutomatorBridgeProjectMode,
 ): BridgeWrapperProject | undefined {
   if (!projectPath || !projectMeta) {
-    return projectPath ? { distRoot: '', path: projectPath } : undefined
+    return projectPath ? { distRoot: '', path: projectPath, runtimeRoot: projectPath } : undefined
   }
 
   const distRoot = path.dirname(projectMeta.appConfigPath)
+  // 保留 CLI bridge 连接能力，直接验收 Vite 输出，不创建第二个文件写入者或改写项目配置。
+  if (resolveAutomatorBridgeProjectMode(bridgeProjectMode) === 'direct') {
+    return { distRoot, path: projectPath, runtimeRoot: distRoot }
+  }
   const projectConfig = resolveBridgeWrapperProjectConfig(projectPath)
-  if (projectConfig.compileType === 'plugin' || !shouldUseAutomatorBridgeWrapper()) {
-    return { distRoot, path: projectPath }
+  if (projectConfig.compileType === 'plugin') {
+    return { distRoot, path: projectPath, runtimeRoot: distRoot }
   }
   if (!fs.existsSync(distRoot)) {
-    return { distRoot, path: projectPath }
+    return { distRoot, path: projectPath, runtimeRoot: distRoot }
   }
 
-  // DevTools keeps Builder state keyed by the project path. Reusing a wrapper
-  // path across launches can reopen a stale project before its bootstrap config
-  // is observed, which triggers a simulator rebuild during connection.
+  // DevTools 按项目路径缓存 Builder；每次启动使用独立完整快照，避免沿用旧编译状态。
   const wrapperLaunchId = `${Date.now()}-${process.pid}-${bridgeWrapperLaunchSequence += 1}`
   const hash = crypto
     .createHash('sha1')
@@ -1580,15 +1446,7 @@ function prepareAutomatorBridgeWrapperProject(
     .digest('hex')
     .slice(0, 16)
   const wrapperRoot = path.join(AUTOMATOR_BRIDGE_WRAPPER_ROOT, hash)
-  const wrapperRuntimeRoot = options.deferSyncUntilConnected
-    ? path.join(wrapperRoot, AUTOMATOR_BRIDGE_RUNTIME_ROOT)
-    : wrapperRoot
-  if (options.deferSyncUntilConnected) {
-    prepareBridgeWrapperBootstrap(wrapperRoot, options.warmupRoute)
-  }
-  else {
-    copyBridgeWrapperDistSnapshot(distRoot, wrapperRuntimeRoot)
-  }
+  copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot)
 
   const pluginRoot = normalizeProjectRelativeRoot(projectConfig.pluginRoot)
   const preserveRoots = pluginRoot ? [pluginRoot] : []
@@ -1607,18 +1465,8 @@ function prepareAutomatorBridgeWrapperProject(
   delete bridgePrivateConfig.qcloudRoot
   delete bridgePrivateConfig.srcMiniprogramRoot
   const wrapperProjectConfigPath = path.join(wrapperRoot, 'project.config.json')
-  const finalWrapperProjectConfig = normalizeBridgeWrapperRuntimeConfig(
-    createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, {
-      miniprogramRoot: options.deferSyncUntilConnected ? AUTOMATOR_BRIDGE_RUNTIME_ROOT : undefined,
-    }),
-  )
-  const initialWrapperProjectConfig = options.deferSyncUntilConnected
-    ? createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig, { bootstrap: true })
-    : finalWrapperProjectConfig
-  const normalizedInitialWrapperProjectConfig = options.deferSyncUntilConnected
-    ? normalizeBridgeWrapperRuntimeConfig(initialWrapperProjectConfig)
-    : initialWrapperProjectConfig
-  writeJsonObject(wrapperProjectConfigPath, normalizedInitialWrapperProjectConfig)
+  const wrapperProjectConfig = createBridgeWrapperProjectConfig(projectConfig, projectPrivateConfig)
+  writeJsonObject(wrapperProjectConfigPath, wrapperProjectConfig)
   const wrapperPrivateConfigPath = path.join(wrapperRoot, 'project.private.config.json')
   if (Object.keys(bridgePrivateConfig).length > 0) {
     writeJsonObject(wrapperPrivateConfigPath, bridgePrivateConfig)
@@ -1627,29 +1475,13 @@ function prepareAutomatorBridgeWrapperProject(
     fs.rmSync(wrapperPrivateConfigPath, { force: true })
   }
 
-  let stopSync: (() => void) | undefined
-  const activate = async () => {
-    if (stopSync || !options.deferSyncUntilConnected) {
-      return false
-    }
-    copyBridgeWrapperDistSnapshot(distRoot, wrapperRuntimeRoot, { preserveRoots })
-    process.stdout.write(`[info] [runtime:launch-step] bridge-wrapper-assets-ready project=${resolveReportProjectPath(projectPath)} settle=${BRIDGE_WRAPPER_ASSET_SETTLE_DELAY}ms\n`)
-    await sleep(BRIDGE_WRAPPER_ASSET_SETTLE_DELAY)
-    writeJsonObjectIfChanged(wrapperProjectConfigPath, finalWrapperProjectConfig)
-    process.stdout.write(`[info] [runtime:launch-step] bridge-wrapper-config-ready project=${resolveReportProjectPath(projectPath)} settle=${BRIDGE_WRAPPER_ASSET_SETTLE_DELAY}ms\n`)
-    await sleep(BRIDGE_WRAPPER_ASSET_SETTLE_DELAY)
-    stopSync = startBridgeWrapperDistSync(distRoot, wrapperRuntimeRoot, { preserveRoots })
-    return true
-  }
-  if (!options.deferSyncUntilConnected) {
-    stopSync = startBridgeWrapperDistSync(distRoot, wrapperRuntimeRoot, { preserveRoots })
-  }
+  const stopSync = startBridgeWrapperDistSync(distRoot, wrapperRoot, { preserveRoots })
 
   return {
-    activate,
     distRoot,
     path: wrapperRoot,
-    stopSync: () => stopSync?.(),
+    runtimeRoot: wrapperRoot,
+    stopSync,
   }
 }
 
@@ -1942,7 +1774,7 @@ function handleLaunchError(error: unknown, project: string): never {
   throw error
 }
 
-async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIMEOUT, rootSelectors: string[] = []) {
+async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIMEOUT, rootSelectors: string[] = [], signal?: AbortSignal) {
   const start = Date.now()
   const hasExplicitRootSelectors = rootSelectors.length > 0
   const renderedSelectors = hasExplicitRootSelectors
@@ -1952,9 +1784,11 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
     ? rootSelectors
     : ['page', 'body', 'weapp-app-shell', 'view']
   while (Date.now() - start <= timeoutMs) {
+    signal?.throwIfAborted()
     try {
       if (typeof page?.waitForRendered === 'function') {
         for (const selector of renderedSelectors) {
+          signal?.throwIfAborted()
           const remaining = Math.max(1, timeoutMs - (Date.now() - start))
           const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
           try {
@@ -1969,28 +1803,33 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
             return { selector }
           }
           catch {
+            signal?.throwIfAborted()
             // 旧版 DevTools 的 Page.getElement 可能不可用，但 selectorQuery 失败时仍继续走历史探测。
           }
         }
-        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
-        const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
-        try {
-          const wxml = await runWithTimeout(
-            () => page.waitForRendered({
-              timeout: probeTimeout,
-            }),
-            probeTimeout + 500,
-            'wait rendered page wxml',
-          )
-          if (typeof wxml === 'string' && wxml.trim() && wxml.trim() !== '<text></text>') {
-            return { source: 'wxml' }
+        if (!hasExplicitRootSelectors) {
+          const remaining = Math.max(1, timeoutMs - (Date.now() - start))
+          const probeTimeout = Math.min(ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, remaining)
+          try {
+            const wxml = await runWithTimeout(
+              () => page.waitForRendered({
+                timeout: probeTimeout,
+              }),
+              probeTimeout + 500,
+              'wait rendered page wxml',
+            )
+            if (typeof wxml === 'string' && wxml.trim() && wxml.trim() !== '<text></text>') {
+              return { source: 'wxml' }
+            }
           }
-        }
-        catch {
-          // Page.getElement 在部分 DevTools 页面会短暂不可用，继续走其它探测。
+          catch {
+            signal?.throwIfAborted()
+            // Page.getElement 在部分 DevTools 页面会短暂不可用，继续走其它探测。
+          }
         }
       }
       for (const selector of selectors) {
+        signal?.throwIfAborted()
         const remaining = Math.max(1, timeoutMs - (Date.now() - start))
         const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, remaining)
         if (typeof page?.$$ === 'function') {
@@ -2003,6 +1842,7 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
             return roots[0]
           }
         }
+        signal?.throwIfAborted()
         const root = await runWithTimeout(
           () => page?.$(selector),
           queryTimeout,
@@ -2012,20 +1852,9 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
           return root
         }
       }
-      if (!hasExplicitRootSelectors && typeof page?.data === 'function') {
-        const remaining = Math.max(1, timeoutMs - (Date.now() - start))
-        const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, remaining)
-        await runWithTimeout(
-          () => page.data(undefined, {
-            timeout: queryTimeout,
-          }),
-          queryTimeout + 500,
-          'read current page data',
-        )
-        return { source: 'runtime-data' }
-      }
     }
     catch {
+      signal?.throwIfAborted()
       // Ignore transient query errors during devtools route swaps.
     }
 
@@ -2043,7 +1872,7 @@ async function waitForCurrentRouteReady(
   miniProgram: any,
   route: string,
   timeoutMs = RELAUNCH_READY_TIMEOUT,
-  options: { checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number, rootSelectors?: string[] } = {},
+  options: { onStartupProtocolError?: (error: unknown) => void, signal?: AbortSignal, checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number, rootSelectors?: string[] } = {},
 ) {
   if (typeof miniProgram?.currentPage !== 'function') {
     return null
@@ -2052,6 +1881,7 @@ async function waitForCurrentRouteReady(
   const normalizedRoute = normalizeRouteForCompare(route)
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
+    options.signal?.throwIfAborted()
     const remaining = Math.max(1, timeoutMs - (Date.now() - start))
     const label = `read current page for route ${route}`
     const queryTimeout = Math.min(options.queryTimeoutMs ?? 2_000, remaining)
@@ -2060,18 +1890,23 @@ async function waitForCurrentRouteReady(
       const currentPage = await runWithTimeout(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
+          pageStackFallback: false,
+          retries: 1,
+          timeout: queryTimeout,
         }),
         queryTimeout,
         label,
       )
       if (normalizeRouteForCompare(currentPage?.path ?? '') === normalizedRoute) {
-        const pageRoot = await waitForRelaunchPageRoot(currentPage, Math.min(2_000, remaining), options.rootSelectors)
+        const pageRoot = await waitForRelaunchPageRoot(currentPage, Math.min(2_000, remaining), options.rootSelectors, options.signal)
         if (pageRoot) {
           return currentPage
         }
       }
     }
     catch (error) {
+      options.onStartupProtocolError?.(error)
+      options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
         await miniProgram.close?.().catch(() => {})
         throw error
@@ -2087,7 +1922,7 @@ async function waitForCurrentRouteReady(
 async function waitForAnyCurrentPageReady(
   miniProgram: any,
   timeoutMs = RELAUNCH_READY_TIMEOUT,
-  options: { checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number } = {},
+  options: { onStartupProtocolError?: (error: unknown) => void, signal?: AbortSignal, checkDevtoolsLog?: (label: string) => void, closeOnQueryTimeout?: boolean, queryTimeoutMs?: number } = {},
 ) {
   if (typeof miniProgram?.currentPage !== 'function') {
     return null
@@ -2095,6 +1930,7 @@ async function waitForAnyCurrentPageReady(
 
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
+    options.signal?.throwIfAborted()
     const remaining = Math.max(1, timeoutMs - (Date.now() - start))
     const label = 'read current page'
     const queryTimeout = Math.min(options.queryTimeoutMs ?? 2_000, remaining)
@@ -2103,16 +1939,21 @@ async function waitForAnyCurrentPageReady(
       const currentPage = await runWithTimeout(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
+          pageStackFallback: false,
+          retries: 1,
+          timeout: queryTimeout,
         }),
         queryTimeout,
         label,
       )
-      const pageRoot = await waitForRelaunchPageRoot(currentPage, Math.min(2_000, remaining))
+      const pageRoot = await waitForRelaunchPageRoot(currentPage, Math.min(2_000, remaining), [], options.signal)
       if (pageRoot) {
         return currentPage
       }
     }
     catch (error) {
+      options.onStartupProtocolError?.(error)
+      options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
         await miniProgram.close?.().catch(() => {})
         throw error
@@ -2172,7 +2013,7 @@ function logRuntimeStats(meta: RuntimeLogMeta) {
   }
 }
 
-function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
+export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
   const meta = ensureRuntimeLogMeta(miniProgram, project)
   if (meta.closeWrapped) {
     return miniProgram
@@ -2180,13 +2021,50 @@ function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
   meta.closeWrapped = true
 
   const rawClose = miniProgram.close.bind(miniProgram)
+  const rawDisconnect = typeof miniProgram.disconnect === 'function' ? miniProgram.disconnect.bind(miniProgram) : undefined
+  if (rawDisconnect) {
+    miniProgram.disconnect = (...args: any[]) => {
+      try {
+        return rawDisconnect(...args)
+      }
+      finally {
+        if (!meta.closed) {
+          meta.closed = true
+          meta.dispose()
+          logRuntimeStats(meta)
+        }
+      }
+    }
+  }
   miniProgram.close = async (...args: any[]) => {
     if (meta.closed) {
       return
     }
     meta.closed = true
     try {
-      return await rawClose(...args)
+      let flushFailed = false
+      let flushError: unknown
+      try {
+        await miniProgram.flushConsole?.()
+      }
+      catch (error) {
+        flushFailed = true
+        flushError = error
+      }
+      let result
+      try {
+        result = await rawClose(...args)
+      }
+      catch (error) {
+        if (flushFailed) {
+          throw new AggregateError([flushError, error], 'Console inspection and session close both failed')
+        }
+        throw error
+      }
+      if (flushFailed) {
+        throw flushError
+      }
+      return result
     }
     finally {
       meta.dispose()
@@ -2202,52 +2080,29 @@ export function resetAutomatorRuntimeLogs(miniProgram: any) {
   meta?.reset()
 }
 
-async function clearAutomatorStartupLogs(
-  miniProgram: any,
-  project: string,
-  checkDevtoolsLog: (label: string, force?: boolean) => void,
-) {
-  checkDevtoolsLog('bridge wrapper warmup', true)
-  if (typeof miniProgram?.evaluate !== 'function') {
-    throw new TypeError(`Automator cannot clear startup console after bridge wrapper warmup: ${project}`)
-  }
-
-  const cleared = await runWithTimeout(
-    () => miniProgram.evaluate(() => {
-      const runtimeConsole = Reflect.get(globalThis, 'console') as { clear?: () => void } | undefined
-      if (typeof runtimeConsole?.clear !== 'function') {
-        return false
-      }
-      runtimeConsole.clear()
-      return true
-    }),
-    5_000,
-    `clear startup console ${project}`,
-  )
-  if (!cleared) {
-    throw new Error(`Automator runtime does not support console.clear after bridge wrapper warmup: ${project}`)
-  }
-  resetAutomatorRuntimeLogs(miniProgram)
-  process.stdout.write(`[info] [runtime:launch-step] startup-logs-cleared project=${project}\n`)
-}
-
 async function resolveCurrentPageAfterWarmupFailure(
   miniProgram: any,
   route: string,
   error: unknown,
   project: string,
   rootSelectors: string[] = [],
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted()
   if (typeof miniProgram.currentPage !== 'function') {
     return undefined
   }
 
   try {
+    const queryTimeout = Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, RELAUNCH_READY_TIMEOUT)
     const currentPage = await runWithTimeout(
       () => miniProgram.currentPage({
         appFunctionFallback: false,
+        pageStackFallback: false,
+        retries: 1,
+        timeout: queryTimeout,
       }),
-      Math.min(DEFAULT_PAGE_ROOT_QUERY_TIMEOUT, RELAUNCH_READY_TIMEOUT),
+      queryTimeout,
       `read current page after warmup failure ${route}`,
     )
     const currentRoute = currentPage?.path ?? ''
@@ -2256,7 +2111,7 @@ async function resolveCurrentPageAfterWarmupFailure(
       return undefined
     }
 
-    const pageRoot = await waitForRelaunchPageRoot(currentPage, RELAUNCH_READY_TIMEOUT, rootSelectors)
+    const pageRoot = await waitForRelaunchPageRoot(currentPage, RELAUNCH_READY_TIMEOUT, rootSelectors, signal)
     if (!pageRoot) {
       process.stdout.write(`[info] [runtime:warmup-current-page] route=${route} current=${currentRoute} root=<missing> project=${project}\n`)
       return undefined
@@ -2266,58 +2121,67 @@ async function resolveCurrentPageAfterWarmupFailure(
     return currentPage
   }
   catch {
+    signal?.throwIfAborted()
     return undefined
   }
 }
 
-async function warmupMiniProgramRoute(
+async function warmupMiniProgramRouteImpl(
   miniProgram: any,
   route: string,
   project: string,
-  options: { allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[], useBridgeWarmupBudget?: boolean } = {},
+  options: { onStartupProtocolError?: (error: unknown) => void, signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
 ) {
+  options.signal?.throwIfAborted()
   const currentPageReadyTimeout = resolveWarmupCurrentPageReadyTimeout(
     options.allowRelaunch,
-    options.useBridgeWarmupBudget === true,
-    BRIDGE_WARMUP_READY_TIMEOUT,
     RELAUNCH_READY_TIMEOUT,
   )
   if (options.allowRelaunch === false && options.allowAnyPage) {
     const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
+      onStartupProtocolError: options.onStartupProtocolError,
       checkDevtoolsLog: options.checkDevtoolsLog,
+      signal: options.signal,
       closeOnQueryTimeout: false,
       queryTimeoutMs: 1_500,
     })
+    options.signal?.throwIfAborted()
     if (bootedPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-any current=${bootedPage?.path ?? '<unknown>'} project=${project}\n`)
-      return
+      return true
     }
     process.stdout.write(`[warn] [runtime:launch-step] warmup-any-page-timeout route=${route} project=${project}\n`)
-    return
+    return false
   }
   const currentPage = await waitForCurrentRouteReady(miniProgram, route, currentPageReadyTimeout, {
+    onStartupProtocolError: options.onStartupProtocolError,
     checkDevtoolsLog: options.checkDevtoolsLog,
+    signal: options.signal,
     closeOnQueryTimeout: options.allowRelaunch === false,
-    queryTimeoutMs: currentPageReadyTimeout,
+    queryTimeoutMs: Math.min(2_000, currentPageReadyTimeout),
     rootSelectors: options.rootSelectors,
   })
+  options.signal?.throwIfAborted()
   if (currentPage) {
     process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page project=${project}\n`)
-    return
+    return true
   }
   if (options.allowRelaunch === false) {
     const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
+      onStartupProtocolError: options.onStartupProtocolError,
       checkDevtoolsLog: options.checkDevtoolsLog,
+      signal: options.signal,
       closeOnQueryTimeout: !options.allowAnyPage,
-      queryTimeoutMs: currentPageReadyTimeout,
+      queryTimeoutMs: Math.min(2_000, currentPageReadyTimeout),
     })
+    options.signal?.throwIfAborted()
     if (bootedPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-any current=${bootedPage?.path ?? '<unknown>'} project=${project}\n`)
-      return
+      return true
     }
     if (options.allowAnyPage) {
       process.stdout.write(`[warn] [runtime:launch-step] warmup-any-page-timeout route=${route} project=${project}\n`)
-      return
+      return false
     }
     try {
       await miniProgram.close?.()
@@ -2327,6 +2191,7 @@ async function warmupMiniProgramRoute(
     throw new Error(`Timeout in warmup current page ${route} after ${currentPageReadyTimeout}ms`)
   }
 
+  options.signal?.throwIfAborted()
   let page: any
   try {
     page = await runWithTimeout(
@@ -2336,15 +2201,18 @@ async function warmupMiniProgramRoute(
     )
   }
   catch (error) {
+    options.signal?.throwIfAborted()
     const currentPage = isLikelyRelaunchRetryableError(error)
-      ? await resolveCurrentPageAfterWarmupFailure(miniProgram, route, error, project, options.rootSelectors)
+      ? await resolveCurrentPageAfterWarmupFailure(miniProgram, route, error, project, options.rootSelectors, options.signal)
       : undefined
+    options.signal?.throwIfAborted()
     if (currentPage) {
       page = currentPage
     }
     else if (isGenericDevtoolsRelaunchError(error)) {
       process.stdout.write(`[warn] [runtime:launch-step] warmup-relaunch-retry route=${route} project=${project} delay=${DEFAULT_WARMUP_RELAUNCH_RETRY_DELAY}ms\n`)
       await sleep(DEFAULT_WARMUP_RELAUNCH_RETRY_DELAY)
+      options.signal?.throwIfAborted()
       try {
         page = await runWithTimeout(
           () => miniProgram.reLaunch(route),
@@ -2353,8 +2221,9 @@ async function warmupMiniProgramRoute(
         )
       }
       catch (retryError) {
+        options.signal?.throwIfAborted()
         const retryCurrentPage = isLikelyRelaunchRetryableError(retryError)
-          ? await resolveCurrentPageAfterWarmupFailure(miniProgram, route, retryError, project, options.rootSelectors)
+          ? await resolveCurrentPageAfterWarmupFailure(miniProgram, route, retryError, project, options.rootSelectors, options.signal)
           : undefined
         if (!retryCurrentPage) {
           if (isWarmupRelaunchTimeoutError(retryError)) {
@@ -2380,6 +2249,7 @@ async function warmupMiniProgramRoute(
       throw error
     }
   }
+  options.signal?.throwIfAborted()
   if (!page) {
     throw new Error(`warmup reLaunch returned empty page: ${route}`)
   }
@@ -2393,28 +2263,42 @@ async function warmupMiniProgramRoute(
     }
   }
 
-  const pageRoot = await waitForRelaunchPageRoot(page, RELAUNCH_READY_TIMEOUT, options.rootSelectors)
+  const pageRoot = await waitForRelaunchPageRoot(page, RELAUNCH_READY_TIMEOUT, options.rootSelectors, options.signal)
   if (!pageRoot) {
-    if (normalizeRouteForCompare(page?.path ?? '') === normalizeRouteForCompare(route)) {
-      if (options.rootSelectors?.length) {
-        throw new Error(`Timed out waiting page root after warmup reLaunch: ${route}`)
-      }
-      process.stdout.write(`[warn] [runtime:launch-step] warmup-page-root-missing route=${route} source=relaunch-page project=${project}\n`)
-      return
-    }
+    // reLaunch 可能返回已失效的同路由句柄；只接受重新查询后真实呈现目标节点的当前页。
     const currentPage = await waitForCurrentRouteReady(miniProgram, route, Math.min(RELAUNCH_READY_TIMEOUT, 8_000), {
+      onStartupProtocolError: options.onStartupProtocolError,
       checkDevtoolsLog: options.checkDevtoolsLog,
+      signal: options.signal,
       queryTimeoutMs: 1_500,
       rootSelectors: options.rootSelectors,
     })
+    options.signal?.throwIfAborted()
     if (currentPage) {
       process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} source=current-page-after-root-timeout project=${project}\n`)
-      return
+      return true
     }
     throw new Error(`Timed out waiting page root after warmup reLaunch: ${route}`)
   }
 
   process.stdout.write(`[info] [runtime:launch-step] warmup-ready route=${route} project=${project}\n`)
+  return true
+}
+
+export async function warmupMiniProgramRoute(
+  miniProgram: any,
+  route: string,
+  project: string,
+  options: { signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
+) {
+  const diagnostics = createStartupProtocolDiagnostics(project, route)
+  let ready = false
+  try {
+    ready = await warmupMiniProgramRouteImpl(miniProgram, route, project, { ...options, onStartupProtocolError: diagnostics.record })
+  }
+  finally {
+    diagnostics.finish(ready)
+  }
 }
 
 function isUnsupportedToolCompileError(error: unknown) {
@@ -2477,22 +2361,29 @@ function rememberWechatDevtoolsServicePort(output: string) {
   return servicePort
 }
 
-async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project: string) {
-  await runWithTimeout(
-    () => runWechatIdeEngineBuildByHttp(projectPath, {
-      overallTimeoutMs: 60_000,
-      pollIntervalMs: 1_000,
-    }),
-    70_000,
-    `engine build ${project}`,
-  )
+async function runWechatIdeEngineBuildByRuntimeHttp(projectPath: string, project: string, lifecycle?: AutomatorLaunchLifecycle) {
+  const build = (phase?: AutomatorLaunchLifecycle) => runWechatIdeEngineBuildByHttp(projectPath, {
+    overallTimeoutMs: phase?.remainingMs(60_000) ?? 60_000,
+    timeoutMs: phase?.remainingMs(10_000) ?? 10_000,
+    pollIntervalMs: 1_000,
+    signal: phase?.signal,
+    onProgress: () => phase?.throwIfAborted(),
+  })
+  if (lifecycle) {
+    await lifecycle.phase(70_000, `engine build ${project}`, build)
+  }
+  else {
+    await runWithTimeout(build, 70_000, `engine build ${project}`)
+  }
 }
 
 async function refreshMiniProgramProjectIndex(
   projectPath: string | undefined,
   project: string,
-  options: { allowCliEngineBuildFallback?: boolean, cliPath?: string, cwd?: string, engineBuildFallbackSettleMs?: number, refreshProject?: boolean } = {},
+  options: { allowCliEngineBuildFallback?: boolean, cliPath?: string, cwd?: string, engineBuildFallbackSettleMs?: number, refreshProject?: boolean, lifecycle?: AutomatorLaunchLifecycle } = {},
 ) {
+  const lifecycle = options.lifecycle
+  lifecycle?.throwIfAborted()
   if (!projectPath) {
     return
   }
@@ -2503,30 +2394,41 @@ async function refreshMiniProgramProjectIndex(
 
   if (options.refreshProject) {
     process.stdout.write(`[info] [runtime:launch-step] project-refresh-start project=${project}\n`)
-    await runWithTimeout(
-      () => openWechatIdeProjectByHttp(projectPath, {
-        timeoutMs: PROJECT_REFRESH_TIMEOUT,
-      }),
-      PROJECT_REFRESH_TIMEOUT,
-      `refresh project ${project}`,
-    )
+    const open = (phase?: AutomatorLaunchLifecycle) => openWechatIdeProjectByHttp(projectPath, {
+      timeoutMs: phase?.remainingMs(PROJECT_REFRESH_TIMEOUT) ?? PROJECT_REFRESH_TIMEOUT,
+      signal: phase?.signal,
+    })
+    if (lifecycle) {
+      await lifecycle.phase(PROJECT_REFRESH_TIMEOUT, `refresh project ${project}`, open)
+    }
+    else {
+      await runWithTimeout(open, PROJECT_REFRESH_TIMEOUT, `refresh project ${project}`)
+    }
     await sleep(1_000)
     process.stdout.write(`[info] [runtime:launch-step] project-refresh-ready project=${project}\n`)
   }
 
+  lifecycle?.throwIfAborted()
   process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-start project=${project}\n`)
-  await runWithTimeout(
-    () => resetWechatIdeFileUtilsByHttp(projectPath),
-    10_000,
-    `reset fileutils ${project}`,
-  )
+  const resetFileUtils = (phase?: AutomatorLaunchLifecycle) => resetWechatIdeFileUtilsByHttp(projectPath, {
+    timeoutMs: phase?.remainingMs(10_000) ?? 10_000,
+    signal: phase?.signal,
+  })
+  if (lifecycle) {
+    await lifecycle.phase(10_000, `reset fileutils ${project}`, resetFileUtils)
+  }
+  else {
+    await runWithTimeout(resetFileUtils, 10_000, `reset fileutils ${project}`)
+  }
   process.stdout.write(`[info] [runtime:launch-step] fileutils-reset-ready project=${project}\n`)
 
+  lifecycle?.throwIfAborted()
   process.stdout.write(`[info] [runtime:launch-step] engine-build-start project=${project}\n`)
   try {
-    await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project)
+    await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle)
   }
   catch (error) {
+    lifecycle?.throwIfAborted()
     if (isMissingEngineBuildEndpointError(error)) {
       process.stdout.write(`[warn] [runtime:launch-step] engine-build-http-skip reason=endpoint-missing project=${project}\n`)
       if (options.allowCliEngineBuildFallback === false) {
@@ -2535,11 +2437,15 @@ async function refreshMiniProgramProjectIndex(
         return
       }
       const cliPath = resolveWechatCliPath(options.cliPath)
-      const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+      const build = () => execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
         cwd: options.cwd,
         reject: false,
-        timeout: 70_000,
+        timeout: lifecycle?.remainingMs(70_000) ?? 70_000,
+        cancelSignal: lifecycle?.signal,
+        killDescendants: true,
       })
+      const result = lifecycle ? await lifecycle.step(build, { waitForExit: true }) : await build()
+      lifecycle?.throwIfAborted()
       const combinedOutput = `${typeof result.stderr === 'string' ? result.stderr : ''}\n${typeof result.stdout === 'string' ? result.stdout : ''}`
       rememberWechatDevtoolsServicePort(combinedOutput)
       if ((result.exitCode ?? 1) !== 0) {
@@ -2548,11 +2454,12 @@ async function refreshMiniProgramProjectIndex(
         const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
         if (DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN.test(`${stderr}\n${stdout}`)) {
           try {
-            await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project)
+            await runWechatIdeEngineBuildByRuntimeHttp(projectPath, project, lifecycle)
             process.stdout.write(`[info] [runtime:launch-step] engine-build-ready source=http-after-cli-open project=${project}\n`)
             return
           }
           catch (httpRetryError) {
+            lifecycle?.throwIfAborted()
             if (!isMissingEngineBuildEndpointError(httpRetryError)) {
               throw httpRetryError
             }
@@ -2575,19 +2482,25 @@ async function refreshMiniProgramProjectIndex(
 async function prebuildAutomatorProjectIndex(
   projectPath: string | undefined,
   project: string,
-  options: { cliPath?: string, cwd?: string } = {},
+  options: { cliPath?: string, cwd?: string, lifecycle?: AutomatorLaunchLifecycle } = {},
 ) {
+  const lifecycle = options.lifecycle
+  lifecycle?.throwIfAborted()
   if (!projectPath) {
     return
   }
 
   const cliPath = resolveWechatCliPath(options.cliPath)
   process.stdout.write(`[info] [runtime:launch-step] prebuild-start project=${project}\n`)
-  const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+  const build = () => execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
     cwd: options.cwd,
     reject: false,
-    timeout: 70_000,
+    timeout: lifecycle?.remainingMs(70_000) ?? 70_000,
+    cancelSignal: lifecycle?.signal,
+    killDescendants: true,
   })
+  const result = lifecycle ? await lifecycle.step(build, { waitForExit: true }) : await build()
+  lifecycle?.throwIfAborted()
   if ((result.exitCode ?? 1) !== 0) {
     const stderr = typeof result.stderr === 'string' ? result.stderr.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
     const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
@@ -2748,9 +2661,9 @@ function patchAutomatorVersionCheck() {
   }
   versionPatched = true
   MiniProgram.prototype.checkVersion = async function checkVersionPatched(this: {
-    send: (method: string) => Promise<{ SDKVersion?: string }>
-  }) {
-    const info = await this.send('Tool.getInfo')
+    send: (method: string, params?: Record<string, unknown>, options?: { timeout?: number }) => Promise<{ SDKVersion?: string }>
+  }, timeout?: number) {
+    const info = await this.send('Tool.getInfo', {}, timeout ? { timeout } : undefined)
     const sdkVersion = info?.SDKVersion
     if (!sdkVersion || sdkVersion === 'dev') {
       return
@@ -2763,60 +2676,29 @@ function patchAutomatorVersionCheck() {
   }
 }
 
-function patchMiniProgramOn() {
-  if (miniProgramOnPatched) {
+export async function terminateBridgeCliProcess(cliPid: number) {
+  await terminateCliProcessTree(cliPid)
+}
+
+async function closeLaunchMiniProgram(miniProgram: any) {
+  try {
+    await runWithTimeout(() => miniProgram?.close?.(), 5_000, 'close canceled launch session')
+  }
+  catch {
+    miniProgram?.disconnect?.()
+  }
+}
+
+async function disposeLateBridgeBootstrap(result: { stdout?: unknown }) {
+  let cliPid: unknown
+  try {
+    cliPid = (JSON.parse(typeof result.stdout === 'string' ? result.stdout : '') as AutomatorCliBridgeResult).cliPid
+  }
+  catch {
     return
   }
-  miniProgramOnPatched = true
-  const rawOn = MiniProgram.prototype.on
-  MiniProgram.prototype.on = function onPatched(this: InstanceType<typeof MiniProgram>, eventName: string, listener: (...args: any[]) => void) {
-    if (eventName === 'console') {
-      void this.send('App.enableLog').catch(() => {})
-      this.addListener(eventName, listener)
-      return this
-    }
-    return rawOn.call(this, eventName, listener)
-  } as typeof MiniProgram.prototype.on
-}
-
-function isMissingProcessError(error: unknown) {
-  return error instanceof Error && 'code' in error && error.code === 'ESRCH'
-}
-
-export async function terminateBridgeCliProcess(cliPid: number) {
-  const signalTarget = process.platform === 'win32' ? cliPid : -cliPid
-
-  try {
-    process.kill(signalTarget, 'SIGTERM')
-  }
-  catch (error) {
-    if (isMissingProcessError(error)) {
-      return
-    }
-    throw error
-  }
-
-  const startedAt = Date.now()
-  while (Date.now() - startedAt <= 1_500) {
-    try {
-      process.kill(cliPid, 0)
-      await sleep(120)
-    }
-    catch (error) {
-      if (isMissingProcessError(error)) {
-        return
-      }
-      throw error
-    }
-  }
-
-  try {
-    process.kill(signalTarget, 'SIGKILL')
-  }
-  catch (error) {
-    if (!isMissingProcessError(error)) {
-      throw error
-    }
+  if (typeof cliPid === 'number' && cliPid > 0) {
+    await terminateBridgeCliProcess(cliPid)
   }
 }
 
@@ -2842,18 +2724,20 @@ function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, cliPid: number
 async function launchAutomatorViaCliBridge(
   options: AutomatorCliBridgePayload,
   project: string,
+  lifecycle: AutomatorLaunchLifecycle,
   monitor?: ReturnType<typeof createDevtoolsSimulatorBootLogMonitor>,
 ) {
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-start project=${project}\n`)
-  const result = await execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify(options)], {
+  const result = await lifecycle.step(() => execa('node', ['--import', 'tsx', AUTOMATOR_CLI_BRIDGE_PATH, JSON.stringify({ ...options, timeout: lifecycle.remainingMs(options.timeout) })], {
     cwd: options.cwd,
     reject: false,
-    timeout: options.timeout,
+    cancelSignal: lifecycle.signal,
+    gracefulCancel: true,
     env: {
       ...process.env,
       [AUTOMATOR_LAUNCH_MODE_ENV]: '',
     },
-  })
+  }), { waitForExit: true, disposeLate: disposeLateBridgeBootstrap })
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
 
   if ((result.exitCode ?? 1) !== 0) {
@@ -2881,38 +2765,37 @@ async function launchAutomatorViaCliBridge(
   if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
     throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
   }
+  if (typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0) {
+    lifecycle.own(() => terminateBridgeCliProcess(bridgeResult.cliPid!))
+  }
+  lifecycle.throwIfAborted()
   if (typeof bridgeResult.servicePort === 'number') {
     setRuntimeWechatDevtoolsServicePort(bridgeResult.servicePort)
   }
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-ready endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
 
-  const connectStartedAt = Date.now()
+  const connectDeadlineAt = performance.now() + lifecycle.remainingMs(Math.max(12_000, options.timeout ?? 30_000))
   let lastConnectError: unknown
   let miniProgram: any = null
-  while (Date.now() - connectStartedAt <= Math.max(12_000, options.timeout ?? 30_000)) {
+  while (performance.now() < connectDeadlineAt) {
+    lifecycle.throwIfAborted()
     try {
       monitor?.assertClean(`connect automator bridge ${bridgeResult.wsEndpoint}`)
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-attempt endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
-      miniProgram = await runWithTimeout(
+      miniProgram = await lifecycle.step(
         () => (automator as typeof automator & {
-          connect: (options: { wsEndpoint: string }) => Promise<any>
+          connect: (options: { wsEndpoint: string, timeout?: number }) => Promise<any>
         }).connect({
           wsEndpoint: bridgeResult.wsEndpoint,
+          timeout: lifecycle.remainingMs(4_000),
         }),
-        4_000,
-        `connect automator bridge ${bridgeResult.wsEndpoint}`,
-        async (lateMiniProgram) => {
-          try {
-            await lateMiniProgram?.close?.()
-          }
-          catch {
-          }
-        },
+        { waitForExit: true, disposeLate: closeLaunchMiniProgram },
       )
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-ok endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       break
     }
     catch (error) {
+      lifecycle.throwIfAborted()
       lastConnectError = error
       const message = error instanceof Error ? error.message : String(error)
       if (!DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
@@ -2920,7 +2803,7 @@ async function launchAutomatorViaCliBridge(
         && !BRIDGE_CONNECT_FAILURE_PATTERN.test(message)) {
         throw error
       }
-      await sleep(400)
+      await lifecycle.pause(400)
     }
   }
 
@@ -2948,7 +2831,9 @@ async function launchAutomatorViaCliBridge(
     projectPath: options.projectPath,
     wsEndpoint: bridgeResult.wsEndpoint,
   })
-  await sleep(BRIDGE_CONNECT_SETTLE_DELAY)
+  const releaseSession = lifecycle.own(() => closeLaunchMiniProgram(miniProgram))
+  await lifecycle.pause(BRIDGE_CONNECT_SETTLE_DELAY)
+  releaseSession()
   return miniProgram
 }
 
@@ -2990,12 +2875,25 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   if (provider === 'headless') {
     return launchHeadlessAutomator({
       projectPath: options.projectPath!,
+      onSessionCreated(session) {
+        enhanceMiniProgramWithRuntimeLogs(session, resolveReportProjectPath(options.projectPath!))
+      },
+    }).catch((error: unknown) => {
+      appendIdeReportEvent({
+        source: 'runtime',
+        kind: 'message',
+        project: resolveReportProjectPath(options.projectPath!),
+        level: 'error',
+        channel: 'launch',
+        text: error instanceof Error ? error.stack || error.message : normalizeRuntimeConsoleText(error),
+      })
+      throw error
     })
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { deferBridgeWrapperSyncUntilConnected, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
@@ -3004,19 +2902,19 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const completedRecoverySteps = new Set<string>()
   let forceProjectRefreshAfterRetry = false
-  if (launchMode !== AUTOMATOR_LAUNCH_MODE_BRIDGE) {
-    patchMiniProgramOn()
-  }
   return (async () => {
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
       let miniProgram: any = null
       let bridgeWrapperProject: BridgeWrapperProject | undefined
+      let runtimeLogSubscription: ReturnType<typeof createRuntimeLogSubscription> | undefined
+      const lifecycle = new AutomatorLaunchLifecycle(launchAttemptTimeout, `launch automator#${attempt}`)
+      const attemptDeadlineAt = lifecycle.deadlineAt
       try {
-        return await runWithTimeout(
+        return await lifecycle.run(
           async () => {
             process.stdout.write(`[info] [runtime:launch-step] preflight project=${project}\n`)
             const devtoolsLogMonitor = createDevtoolsSimulatorBootLogMonitor(project)
-            const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
+            const projectMeta = await lifecycle.step(() => resolveLaunchProjectMeta(rest.projectPath))
             const resolvedWarmupRoute = typeof warmupRoute === 'string' && warmupRoute.trim()
               ? `/${warmupRoute.trim().replace(LEADING_SLASH_PATTERN, '')}`
               : projectMeta?.warmupRoute
@@ -3028,12 +2926,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                 }
               : undefined
             bridgeWrapperProject = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta, {
-                  deferSyncUntilConnected: deferBridgeWrapperSyncUntilConnected,
-                  warmupRoute: resolvedWarmupRoute,
-                })
+              ? prepareAutomatorBridgeWrapperProject(rest.projectPath, projectMeta, bridgeProjectMode)
               : undefined
-            await waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project)
+            if (bridgeWrapperProject) {
+              const mode = bridgeWrapperProject.stopSync ? 'snapshot' : 'direct'
+              const runtimeRoot = resolveReportProjectPath(bridgeWrapperProject.runtimeRoot)
+              process.stdout.write(`[info] [runtime:launch-step] bridge-project-ready mode=${mode} runtimeRoot=${runtimeRoot} project=${project}\n`)
+            }
+            await lifecycle.step(() => waitForBridgeWrapperWarmupAsset(bridgeWrapperProject, resolvedWarmupRoute, project))
             const launchProjectPath = bridgeWrapperProject?.path ?? rest.projectPath
             const launchRest = {
               ...rest,
@@ -3041,7 +2941,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
             const launchOptions = {
               ...launchRest,
-              timeout: launchTimeout,
+              timeout: lifecycle.remainingMs(launchTimeout),
               trustProject: resolvedTrustProject,
               ...(mergedProjectConfig ? { projectConfig: mergedProjectConfig } : {}),
             }
@@ -3049,36 +2949,55 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               ? shouldPrebuildAutomatorBridgeProject()
               : shouldPrebuildAutomatorProject()
             if (shouldPrebuild) {
-              await prebuildAutomatorProjectIndex(launchProjectPath, project, {
+              await lifecycle.step(() => prebuildAutomatorProjectIndex(launchProjectPath, project, {
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
-              })
+                lifecycle,
+              }))
             }
+            lifecycle.throwIfAborted()
             process.stdout.write(`[info] [runtime:launch-step] connect-start mode=${launchMode || 'direct'} project=${project}\n`)
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
-              ? await launchAutomatorViaCliBridge(launchOptions, project, devtoolsLogMonitor)
-              : await runWithDevtoolsLogMonitor(
-                  () => automator.launch(launchOptions),
-                  launchTimeout,
+              ? await launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor)
+              : await lifecycle.step(() => runWithDevtoolsLogMonitor(
+                  () => automator.launch({ ...launchOptions, timeout: lifecycle.remainingMs(launchTimeout) }),
+                  lifecycle.remainingMs(launchTimeout),
                   'connect direct',
                   devtoolsLogMonitor,
                   async (lateMiniProgram) => {
                     try {
-                      await lateMiniProgram?.close?.()
+                      await closeLaunchMiniProgram(lateMiniProgram)
                     }
                     catch {
                     }
                   },
-                )
+                ), { disposeLate: closeLaunchMiniProgram })
+            lifecycle.throwIfAborted()
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
-            if (launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE) {
-              patchMiniProgramOn()
-            }
-
-            const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
-            const bridgeWrapperActivated = await bridgeWrapperProject?.activate?.() === true
-            devtoolsLogMonitor.assertClean('bridge wrapper activation')
+            const withRuntimeLogs = await lifecycle.step(() => enhanceMiniProgramWithRuntimeLogs(miniProgram, project))
+            // 订阅从本阶段开始计时，同时遵守原有整个启动 attempt 的截止时间。
+            const subscriptionDeadlineAt = Math.min(performance.now() + launchTimeout, attemptDeadlineAt)
+            const subscriptionTimeout = Math.max(1, Math.floor(subscriptionDeadlineAt - performance.now()))
+            runtimeLogSubscription = createRuntimeLogSubscription({
+              deadlineAt: subscriptionDeadlineAt,
+              timeoutMessages: [
+                `Timeout in runtime log subscription after ${subscriptionTimeout}ms`,
+                `Timeout in launch automator#${attempt} after ${launchAttemptTimeout}ms`,
+              ],
+              subscribe: timeoutMs => miniProgram.enableLog(timeoutMs, { structured: true }),
+              assertClean: () => devtoolsLogMonitor.assertClean('runtime log subscription', true),
+              onRetry: ({ attempt, elapsedMs, remainingMs }) => {
+                process.stdout.write(`[info] [runtime:log-subscription-retry] attempt=${attempt} elapsed=${Math.round(elapsedMs)}ms remaining=${remainingMs}ms project=${project}\n`)
+              },
+            })
+            await runWithDevtoolsLogMonitor(
+              () => runtimeLogSubscription!.wait(),
+              subscriptionTimeout,
+              'runtime log subscription',
+              devtoolsLogMonitor,
+            ).finally(() => runtimeLogSubscription?.abort())
+            lifecycle.throwIfAborted()
             const shouldRefreshProject = refreshProjectAfterConnect
               || shouldRefreshAutomatorBridgeProjectAfterConnect()
               || forceProjectRefreshAfterRetry
@@ -3086,34 +3005,33 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               process.stdout.write(`[info] [runtime:launch-step] post-connect-refresh-skip project=${project}\n`)
             }
             else {
-              await refreshMiniProgramProjectIndex(launchProjectPath, project, {
+              await lifecycle.step(() => refreshMiniProgramProjectIndex(launchProjectPath, project, {
                 allowCliEngineBuildFallback: true,
                 cliPath: rest.cliPath,
                 cwd: rest.cwd,
                 engineBuildFallbackSettleMs,
                 refreshProject: true,
-              })
-              await compileMiniProgramProject(withRuntimeLogs, project)
-              resetAutomatorRuntimeLogs(withRuntimeLogs)
+                lifecycle,
+              }))
+              await lifecycle.step(() => compileMiniProgramProject(withRuntimeLogs, project))
+              // 刷新和编译仍属于同次启动，保留此前错误供会话诊断与关闭摘要使用。
               forceProjectRefreshAfterRetry = false
             }
-            const shouldWarmup = bridgeWrapperActivated || !shouldSkipAutomatorWarmup(skipWarmup)
+            const shouldWarmup = !shouldSkipAutomatorWarmup(skipWarmup)
             if (resolvedWarmupRoute && shouldWarmup) {
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
-              await warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
+              await lifecycle.step(() => warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
+                signal: lifecycle.signal,
                 allowAnyPage: warmupAnyPage,
                 allowRelaunch: warmupAllowRelaunch !== false,
-                checkDevtoolsLog: devtoolsLogMonitor.assertClean,
+                checkDevtoolsLog: (...args) => {
+                  lifecycle.throwIfAborted()
+                  devtoolsLogMonitor.assertClean(...args)
+                },
                 rootSelectors: warmupRootSelectors,
-                useBridgeWarmupBudget: bridgeWrapperActivated,
-              })
+              }))
             }
-            else if (bridgeWrapperActivated) {
-              throw new Error(`Bridge wrapper activation requires a real app warmup route: ${project}`)
-            }
-            if (bridgeWrapperActivated) {
-              await clearAutomatorStartupLogs(withRuntimeLogs, project, devtoolsLogMonitor.assertClean)
-            }
+            lifecycle.throwIfAborted()
             const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs, {
               checkDevtoolsLog: devtoolsLogMonitor.assertClean,
               cliPath: rest.cliPath,
@@ -3126,18 +3044,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             })
             return attachBridgeWrapperSyncCleanup(withRelaunch, bridgeWrapperProject)
           },
-          launchAttemptTimeout,
-          `launch automator#${attempt}`,
-          async (lateMiniProgram) => {
-            try {
-              await lateMiniProgram?.close?.()
-            }
-            catch {
-            }
-          },
         )
       }
-      catch (error) {
+      catch (caughtError) {
+        const error = runtimeLogSubscription?.normalizeError(caughtError) ?? caughtError
+        runtimeLogSubscription?.abort(error)
         if (
           isWarmupRelaunchTimeoutError(error)
           || isWarmupPageRootTimeoutError(error)
@@ -3148,14 +3059,19 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
         bridgeWrapperProject?.stopSync?.()
         if (miniProgram) {
           try {
-            await miniProgram.close()
+            await closeLaunchMiniProgram(miniProgram)
           }
           catch {
           }
         }
 
+        // 日志订阅已在同一连接内等待完整预算；失败时保留真实错误，不再重启 IDE 掩盖启动结果。
+        if (runtimeLogSubscription?.pending) {
+          handleLaunchError(error, project)
+        }
+
         if (!retryWarmupTimeout && (isWarmupRelaunchTimeoutError(error) || isWarmupPageRootTimeoutError(error))) {
-          throw error
+          handleLaunchError(error, project)
         }
 
         if (attempt < launchRetries) {

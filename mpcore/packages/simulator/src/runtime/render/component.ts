@@ -6,7 +6,7 @@ import path from 'node:path'
 import { resolvePluginRequest } from '../../project/plugins'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
-import { createTemplateRenderState } from '../../view/templateRuntime'
+import { wxsScopeData } from '../../view/wxs'
 import {
   cloneValue,
   createComponentInstance,
@@ -15,34 +15,19 @@ import {
   runComponentLifecycle,
   runComponentObservers,
 } from '../componentInstance'
+import { resolveMiniProgramComponent } from '../componentResolution'
+import { getRuntimeWxsLoader } from '../wxs'
 import {
   CLASS_SPLIT_RE,
   collectDataset,
-  createMergedScopeData,
   isMustacheOnly,
   JS_FILE_RE,
   LEADING_SLASH_RE,
   parseTemplateDocument,
+  prepareTemplateRenderState,
   readTemplateSource,
   resolveComponentAttributeValue,
 } from './shared'
-
-export function resolveComponentRegistryEntryByPath(
-  context: RuntimeRendererContext,
-  componentBasePath: string,
-) {
-  const filePath = `${componentBasePath}.js`
-  const templatePath = `${componentBasePath}.wxml`
-  const absoluteFilePath = path.resolve(context.project.miniprogramRootPath, filePath)
-  const absoluteTemplatePath = path.resolve(context.project.miniprogramRootPath, templatePath)
-  const definition = context.moduleLoader.executeComponentModule(absoluteFilePath, componentBasePath)
-  return {
-    definition,
-    filePath,
-    templatePath,
-    absoluteTemplatePath,
-  } satisfies RuntimeComponentRegistryEntry
-}
 
 export function resolveComponentRegistryEntry(
   context: RuntimeRendererContext,
@@ -54,9 +39,21 @@ export function resolveComponentRegistryEntry(
   // eslint-disable-next-line ts/no-use-before-define
   const usingComponents = resolveUsingComponents(context, ownerJsonPath, ownerFilePath)
   const componentBasePath = genericComponentBasePath ?? usingComponents.get(alias)
-  return componentBasePath
-    ? resolveComponentRegistryEntryByPath(context, componentBasePath)
-    : null
+  if (!componentBasePath) {
+    return null
+  }
+
+  const filePath = `${componentBasePath}.js`
+  const templatePath = `${componentBasePath}.wxml`
+  const absoluteFilePath = path.resolve(context.project.miniprogramRootPath, filePath)
+  const absoluteTemplatePath = path.resolve(context.project.miniprogramRootPath, templatePath)
+  const definition = context.moduleLoader.executeComponentModule(absoluteFilePath, componentBasePath)
+  return {
+    definition,
+    filePath,
+    templatePath,
+    absoluteTemplatePath,
+  } satisfies RuntimeComponentRegistryEntry & { absoluteTemplatePath: string }
 }
 
 function readComponentConfig(artifactSource: RuntimeRendererContext['artifactSource'], jsonPath: string) {
@@ -87,9 +84,12 @@ function resolveUsingComponents(
         continue
       }
       const pluginRequest = resolvePluginRequest(context.project.plugins, rawPath, 'publicComponent')
-      const basePath = pluginRequest?.resourcePath ?? (rawPath.startsWith('/')
-        ? rawPath.replace(LEADING_SLASH_RE, '')
-        : path.posix.normalize(path.posix.join(path.posix.dirname(ownerFilePath), rawPath)))
+      const basePath = pluginRequest?.resourcePath ?? resolveMiniProgramComponent(
+        ownerFilePath,
+        rawPath,
+        context.project.miniprogramRootPath,
+        candidate => context.artifactSource.readText(candidate) !== undefined,
+      )
       resolved.set(alias, basePath.replace(LEADING_SLASH_RE, ''))
     }
     return resolved
@@ -157,13 +157,12 @@ export function buildComponentTrigger(
     detail?: unknown,
     triggerOptions?: Record<string, any>,
   ) => {
-    const interactionTarget = instance.__lastInteractionEvent__?.target
-    const interactionCurrentTarget = instance.__lastInteractionEvent__?.currentTarget
-    const componentDataset = context.componentScopes.get(componentScopeId)?.dataset ?? hostDataset
+    const originScope = context.componentScopes.get(componentScopeId)
     const interactionMark = instance.__lastInteractionEvent__?.mark
+    // 自定义事件由组件宿主派发，转发的原生事件仅保留在 detail 中。
     const target = {
-      dataset: interactionTarget?.dataset ?? componentDataset,
-      id: interactionTarget?.id ?? hostId,
+      dataset: originScope?.dataset ?? hostDataset,
+      id: originScope?.hostId ?? hostId,
     }
     let currentScopeId: string | undefined = componentScopeId
 
@@ -183,8 +182,8 @@ export function buildComponentTrigger(
           capturePhase: false,
           composed: triggerOptions?.composed ?? false,
           currentTarget: {
-            dataset: currentScope?.dataset ?? interactionCurrentTarget?.dataset ?? hostDataset,
-            id: currentScope?.hostId ?? interactionCurrentTarget?.id ?? hostId,
+            dataset: currentScope?.dataset ?? hostDataset,
+            id: currentScope?.hostId ?? hostId,
           },
           detail,
           mark: interactionMark,
@@ -225,7 +224,9 @@ export function syncComponentProperties(
     if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
       previousProperties[key] = instance.properties[key]
       instance.properties[key] = nextValue
-      instance.data[key] = nextValue
+      if (Object.hasOwn(definition.properties ?? {}, key)) {
+        instance.data[key] = nextValue
+      }
       changedRootKeys.push(key)
     }
     instance.__propertySnapshots ??= {}
@@ -254,12 +255,12 @@ export function createComponentScope(
       .split(CLASS_SPLIT_RE)
       .map(item => item.trim())
       .filter(Boolean),
-    data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
-    dataset: collectDataset(clonedNode, scope.data),
+    data: { ...componentInstance.data },
+    dataset: collectDataset(clonedNode, wxsScopeData(scope)),
     eventBindings: collectComponentEventBindings(clonedNode),
     getMethod: (methodName: string) => {
       const method = componentInstance?.[methodName]
-      return typeof method === 'function' ? method : undefined
+      return typeof method === 'function' ? method.bind(componentInstance) : undefined
     },
     getScopeId: () => componentScopeId,
     genericComponents,
@@ -299,10 +300,9 @@ export function createRuntimeComponentInstance(
   componentScopeId: string,
   context: RuntimeRendererContext,
   clonedNode: DomNodeLike,
-  componentEntry: RuntimeComponentRegistryEntry,
+  componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
-  registerInstance?: (instance: HeadlessComponentInstance) => void,
 ) {
   const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
     || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
@@ -313,7 +313,6 @@ export function createRuntimeComponentInstance(
     : nextProperties
   const componentInstance = createComponentInstance({
     definition: componentEntry.definition,
-    properties: componentProperties,
     requestRender: callback => context.session.requestRender(callback),
     triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
   })
@@ -321,25 +320,24 @@ export function createRuntimeComponentInstance(
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
+  componentInstance.createSelectorQuery = () => context.moduleLoader.wx.createSelectorQuery().in(componentInstance)
   componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
   componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
   componentInstance.selectOwnerComponent = () => ownerScopeId
     ? context.componentCache.get(ownerScopeId) ?? null
     : null
   context.componentCache.set(componentScopeId, componentInstance)
-  registerInstance?.(componentInstance)
   runComponentLifecycle(componentInstance, 'created')
-  runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(componentProperties), {})
   componentInstance.__propertySnapshots = Object.fromEntries(
     Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
   )
-  runComponentLifecycle(componentInstance, 'attached')
+  syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, componentProperties, {}, [])
   return componentInstance
 }
 
 export function renderRuntimeComponentTemplate(
   context: RuntimeRendererContext,
-  componentEntry: RuntimeComponentRegistryEntry,
+  componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
   renderNodeTree: (
     node: DomNodeLike,
     scope: RuntimeRenderScope,
@@ -357,7 +355,7 @@ export function renderRuntimeComponentTemplate(
   const componentTemplate = readTemplateSource(context.artifactSource, componentEntry.absoluteTemplatePath)
   const componentDocument = parseTemplateDocument(componentTemplate)
   const componentRoot = (componentDocument.children ?? [])[0] ?? componentDocument
-  const templateRenderState = createTemplateRenderState(componentRoot)
+  const templateRenderState = prepareTemplateRenderState(context.artifactSource, componentRoot, componentEntry.absoluteTemplatePath, context.project.miniprogramRootPath, getRuntimeWxsLoader(context.moduleLoader, context.artifactSource))
   return renderNodeTree(
     componentRoot,
     componentScope,

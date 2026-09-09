@@ -3,6 +3,8 @@ import {
   WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
 } from '@weapp-core/constants'
+import { nativeInstanceDefaultsSource } from './nativeInstanceDefaults'
+import { statefulHmrUpdatePropagationSource } from './updatePropagationSource'
 
 export interface StatefulHmrControl {
   buildId: string
@@ -33,6 +35,7 @@ class WeappViteHotContext {
 }
 class WeappViteDevRuntime extends BaseDevRuntime {
   contexts = new Map();
+  initialChunkLoaders = new Map();
   patchedModules = new Set();
   applyingPatch = false;
   currentModuleId = '';
@@ -63,7 +66,6 @@ class WeappViteDevRuntime extends BaseDevRuntime {
     const context = new WeappViteHotContext(moduleId);
     this.registrationModuleId = moduleId;
     if (previous) {
-      context.callbacks = previous.callbacks;
       context.data = previous.data;
     }
     this.contexts.set(moduleId, context);
@@ -77,6 +79,16 @@ class WeappViteDevRuntime extends BaseDevRuntime {
     const previousId = this.currentModuleId;
     this.currentModuleId = id;
     try {
+      if (!this.isExecuted(id) && !this.hasFactory(id)) {
+        const chunk = this.initialChunkLoaders.get(id);
+        if (chunk) {
+          if (chunk.loading) throw new Error('Circular initial HMR chunk loading: ' + id);
+          if (chunk.ids.some((moduleId) => this.patchedModules.has(moduleId))) throw new Error('Initial HMR chunk contains updated modules: ' + id);
+          chunk.loading = true;
+          try { chunk.load(); }
+          finally { chunk.loading = false; }
+        }
+      }
       const result = super.initModule(id);
       if (this.applyingPatch) this.patchedModules.add(id);
       return result;
@@ -85,6 +97,7 @@ class WeappViteDevRuntime extends BaseDevRuntime {
   }
   beginPatch() { this.applyingPatch = true; }
   endPatch() { this.applyingPatch = false; }
+${statefulHmrUpdatePropagationSource}
   applyUpdates(boundaries) {
     for (const [boundary, acceptedVia] of boundaries) {
       const context = this.contexts.get(boundary);
@@ -114,6 +127,7 @@ const wevuRefreshGenerations = new Map();
 const wevuInstanceGenerations = new WeakMap();
 let suppressLifecycles = false;
 const nativeRegistrations = {};
+${nativeInstanceDefaultsSource}
 function getInstances(moduleId) {
   let values = instances.get(moduleId);
   if (!values) instances.set(moduleId, values = new Set());
@@ -126,42 +140,19 @@ function cloneInstanceData(value) {
   for (const [key, child] of Object.entries(value)) result[key] = cloneInstanceData(child);
   return result;
 }
-function countChangedDataKeys(data, initialData) {
-  let changed = 0;
-  for (const [key, value] of Object.entries(data)) {
-    if (!Object.prototype.hasOwnProperty.call(initialData, key)) {
-      changed++;
-      continue;
-    }
-    try {
-      if (JSON.stringify(value) !== JSON.stringify(initialData[key])) changed++;
-    } catch {
-      if (value !== initialData[key]) changed++;
-    }
-  }
-  return changed;
-}
 function rememberInstanceState(instance, moduleId) {
   if (!instance?.data || typeof instance.data !== 'object') return;
-  const data = cloneInstanceData(instance.data);
-  const definitionData = definitions.get(moduleId)?.data;
-  const initialData = definitionData && typeof definitionData === 'object' ? definitionData : {};
-  const changedKeys = countChangedDataKeys(data, initialData);
-  const previous = instanceSnapshots.get(instance) || moduleSnapshots.get(moduleId);
-  if (!previous || changedKeys >= previous.changedKeys) {
-    const snapshot = { changedKeys, data, moduleId };
-    instanceSnapshots.set(instance, snapshot);
-    moduleSnapshots.set(moduleId, snapshot);
-  }
+  // 更新事务内保留进入事务时的状态，不用字段数量猜测宿主重建与用户操作。
+  if (runtime.applyingPatch && instanceSnapshots.has(instance)) return;
+  const snapshot = { data: cloneInstanceData(instance.data), moduleId };
+  instanceSnapshots.set(instance, snapshot);
+  moduleSnapshots.set(moduleId, snapshot);
 }
 function trackInstance(instance, moduleId) {
+  initializeNativeInstanceDefaults(instance, moduleId, false);
   getInstances(moduleId).add(instance);
   if (instanceSnapshots.has(instance)) return;
-  if ((wevuRefreshGenerations.get(moduleId) || 0) > 0) {
-    rememberInstanceState(instance, moduleId);
-    return;
-  }
-  const snapshot = moduleSnapshots.get(moduleId);
+  const snapshot = suppressLifecycles && moduleSnapshots.get(moduleId);
   if (snapshot) {
     instanceSnapshots.set(instance, snapshot);
     restoreInstanceState(instance, moduleId);
@@ -225,7 +216,7 @@ function proxyFunction(moduleId, path, fallback) {
     }
   };
 }
-function decorateObject(value, moduleId, prefix = '', trackLifecycle = false) {
+function decorateObject(value, moduleId, prefix = '', trackLifecycle = false, trackPage = false) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const result = { ...value };
   for (const [key, child] of Object.entries(value)) {
@@ -235,20 +226,37 @@ function decorateObject(value, moduleId, prefix = '', trackLifecycle = false) {
       result[key] = decorateObject(child, moduleId, path);
     }
   }
-  if (!prefix && typeof value.onLoad === 'function') {
+  if (!prefix && trackPage) {
     const onLoad = result.onLoad;
+    const onUnload = result.onUnload;
     result.onLoad = function (...args) {
+      initializeNativeInstanceDefaults(this, moduleId, true);
       trackInstance(this, moduleId);
-      return onLoad.apply(this, args);
+      return onLoad?.apply(this, args);
+    };
+    result.onUnload = function (...args) {
+      try {
+        return onUnload?.apply(this, args);
+      } finally {
+        forgetInstance(this, moduleId);
+      }
     };
   }
   if (!prefix && (trackLifecycle || (result.lifetimes && typeof result.lifetimes === 'object'))) {
     const lifetimes = { ...(result.lifetimes || {}) };
-    const attached = lifetimes.attached;
-    const detached = lifetimes.detached;
+    const created = lifetimes.created || result.created;
+    const attached = lifetimes.attached || result.attached;
+    const detached = lifetimes.detached || result.detached;
     result.lifetimes = lifetimes;
+    if (trackLifecycle) {
+      result.lifetimes.created = function (...args) {
+        initializeNativeInstanceDefaults(this, moduleId, false);
+        return created?.apply(this, args);
+      };
+    }
     if (trackLifecycle || typeof attached === 'function') {
       result.lifetimes.attached = function (...args) {
+        initializeNativeInstanceDefaults(this, moduleId, true);
         trackInstance(this, moduleId);
         return attached?.apply(this, args);
       };
@@ -296,8 +304,8 @@ function decorateWevuComponent(definition, moduleId) {
     result[name] = function (...args) {
       trackInstance(this, moduleId);
       refreshWevuInstance(this, moduleId);
-      if (suppressLifecycles && /^(?:onLoad|onShow|onHide|onUnload)$/.test(name)) return;
       try {
+        if (suppressLifecycles && /^(?:onLoad|onShow|onHide|onUnload)$/.test(name)) return;
         return callLatestWevuFunction(this, name, fallback, args);
       } finally {
         rememberInstanceState(this, moduleId);
@@ -306,16 +314,16 @@ function decorateWevuComponent(definition, moduleId) {
     };
   }
   const lifetimes = { ...(definition.lifetimes || {}) };
-  for (const name of Object.keys(lifetimes)) {
+  for (const name of new Set([...Object.keys(lifetimes), 'attached', 'detached'])) {
     const fallback = lifetimes[name];
-    if (typeof fallback !== 'function') continue;
+    if (typeof fallback !== 'function' && name !== 'attached' && name !== 'detached') continue;
     lifetimes[name] = function (...args) {
-      if (suppressLifecycles) return;
       if (name === 'created' || name === 'attached') {
         trackInstance(this, moduleId);
         refreshWevuInstance(this, moduleId);
       }
       try {
+        if (suppressLifecycles) return;
         return callLatestWevuFunction(this, 'lifetimes.' + name, fallback, args);
       } finally {
         if (name === 'detached') forgetInstance(this, moduleId);
@@ -345,17 +353,21 @@ function registerDefinition(name, definition, nativeRegistration) {
   if (registered.has(moduleId)) {
     return;
   }
+  nativeInitialDefinitions.set(moduleId, definition);
+  const nativeDefinition = wevuRefreshes.has(moduleId)
+    ? definition
+    : decorateObject(definition, moduleId, '', name === 'Component', name === 'Page');
   if (name === 'Component') {
     let pending = pendingNativeDefinitions.get(name);
     if (!pending) pendingNativeDefinitions.set(name, pending = []);
-    pending.push(decorateObject(definition, moduleId, '', true));
+    pending.push(nativeDefinition);
     registered.add(moduleId);
     return;
   }
   const original = nativeRegistration || nativeRegistrations[name];
   if (typeof original !== 'function') throw new Error(name + ' registration API is unavailable');
   registered.add(moduleId);
-  return original.call(globalThis, decorateObject(definition, moduleId));
+  return original.call(globalThis, nativeDefinition);
 }
 globalThis[bridgeKey] = {
   App(definition) { return registerDefinition('App', definition); },
@@ -370,10 +382,29 @@ globalThis[bridgeKey] = {
     return pending;
   },
   isApplying() { return runtime.applyingPatch; },
-  getDebugSnapshot() {
+  getDebugSnapshot(includeState = false) {
     return {
       definitions: [...definitions.keys()],
-      instances: [...instances.entries()].map(([moduleId, values]) => ({ moduleId, count: values.size })),
+      instances: [...instances.entries()].map(([moduleId, values]) => ({
+        moduleId,
+        count: values.size,
+        ...(includeState ? {
+          initialDefinitionData: cloneInstanceData(nativeInitialDefinitions.get(moduleId)?.data),
+          latestDefinitionData: cloneInstanceData(definitions.get(moduleId)?.data),
+          definitionPropertyKeys: Object.keys(definitions.get(moduleId)?.properties || {}),
+          definitionChanged: nativeInitialDefinitions.get(moduleId) !== definitions.get(moduleId),
+          states: [...values].map(instance => ({
+            route: instance.route,
+            pageId: instance.__wxWebviewId__ ?? instance.__webviewId__,
+            instancePropertyKeys: Object.keys(instance.properties || {}),
+            dataReferenceStable: instance.data === instance.data,
+            pendingDefaultKeys: [...(pendingNativeDefaults.get(instance) || [])],
+            data: cloneInstanceData(instance.data),
+            snapshot: cloneInstanceData(instanceSnapshots.get(instance)?.data),
+            generation: wevuInstanceGenerations.get(instance)?.get(moduleId),
+          })),
+        } : {}),
+      })),
       registered: [...registered.values()],
       refreshes: [...wevuRefreshes.keys()],
       refreshGenerations: [...wevuRefreshGenerations.entries()],
@@ -395,8 +426,8 @@ globalThis[bridgeKey] = {
   },
   ready: true,
   beginUpdate() {
-    suppressLifecycles = true;
     rememberTrackedInstances();
+    suppressLifecycles = true;
     runtime.beginPatch();
   },
   endUpdate() {
@@ -434,13 +465,14 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       send(phase === 'registering' ? 'register' : 'poll');
     }, delay);
   };
-  const send = (action) => {
-    activeRequest?.abort?.();
+  const send = (action, failure) => {
+    if (phase === 'stopped') return;
     const generation = ++requestGeneration;
+    activeRequest?.abort?.();
     activeRequest = wx.request({
       url: control.url,
       method: 'POST',
-      data: { token: control.token, action, buildId: control.buildId, sessionId, version },
+      data: { token: control.token, action, buildId: control.buildId, sessionId, version, failure },
       timeout: 30000,
       success(result) {
         if (generation !== requestGeneration) return;
@@ -487,6 +519,8 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     getTransportState() { return { phase, version, lastRequestError, lastResponse }; },
     stop() {
       phase = 'stopped';
+      requestGeneration++;
+      pendingBatch = undefined;
       if (timer) {
         clearTimeout(timer);
         timer = undefined;
@@ -494,25 +528,10 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       activeRequest?.abort?.();
       activeRequest = undefined;
     },
-    applyChangedModules(changedIds) {
+    applyChangedModules(changedIds, preparedUpdate) {
       const runtime = globalThis.__rolldown_runtime__;
       if (!runtime || !Array.isArray(changedIds)) return;
-      const uniqueIds = [...new Set(changedIds.filter((id) => typeof id === 'string'))];
-      const summary = { changedIds: uniqueIds, initialized: [], missing: [], executedBefore: [], executedAfterRemove: [] };
-      for (const id of uniqueIds) {
-        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedBefore.push(id);
-        if (typeof runtime.removeModuleCache === 'function') runtime.removeModuleCache.call(runtime, id);
-        if (typeof runtime.isExecuted === 'function' && runtime.isExecuted(id)) summary.executedAfterRemove.push(id);
-      }
-      for (const id of uniqueIds) {
-        if (typeof runtime.hasFactory === 'function' && !runtime.hasFactory(id)) {
-          summary.missing.push(id);
-          continue;
-        }
-        if (typeof runtime.initModule === 'function') runtime.initModule.call(runtime, id);
-        summary.initialized.push(id);
-      }
-      this.lastApply = summary;
+      this.lastApply = runtime.applyPreparedUpdate(preparedUpdate ?? runtime.prepareUpdate(changedIds));
     },
     receiveBatch(meta, apply) {
       if (phase === 'registering') {
@@ -525,18 +544,20 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
       const bridge = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}];
       if (!bridge?.ready) {
         phase = 'polling';
-        return send('rebuild');
+        return send('rebuild', { reason: 'bridge-not-ready' });
       }
       bridge.beginUpdate?.();
       try {
+        const preparedUpdate = globalThis.__rolldown_runtime__.prepareUpdate(meta.changedIds);
         apply();
-        globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].applyChangedModules(meta.changedIds);
+        globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].applyChangedModules(meta.changedIds, preparedUpdate);
         version = meta.targetVersion;
         phase = meta.compatible === false ? 'relaunching' : 'polling';
       } catch (error) {
         console.error('[weapp-vite] stateful HMR patch failed', error);
         phase = 'polling';
-        return send('rebuild');
+        // 诊断按最坏 JSON 转义预留预算，避免超过服务端请求上限而丢失重建指令。
+        return send('rebuild', { reason: 'patch-failed', message: String(error?.message || error).slice(0, 4096), stack: typeof error?.stack === 'string' ? error.stack.slice(0, 4096) : undefined });
       } finally {
         bridge.endUpdate?.();
       }

@@ -115,9 +115,7 @@ function resolveProjects(): string[] {
 const projects = [
   {
     extends: false,
-    oxc: {
-      include: ['scripts/**/*.ts'],
-    },
+    // 只限制测试发现范围；保留 Vite 默认转换，让跨目录导入的 TypeScript 依赖同样完成类型剥离。
     test: {
       name: 'repo-scripts',
       include: ['scripts/**/*.test.ts'],
@@ -130,11 +128,14 @@ const projects = [
       name: 'e2e-hmr-infra',
       include: [
         'e2e/scripts/e2e-suite-manifest.test.ts',
+        'e2e/scripts/githubIssuesRouteScope.test.ts',
         'e2e/scripts/hmr-guard-manifest.test.ts',
         'e2e/scripts/run-e2e-suite.test.ts',
         'e2e/scripts/suiteRunner.test.ts',
         'e2e/utils/automator.cli-bridge.test.ts',
         'e2e/utils/automator.test.ts',
+        'e2e/utils/automatorWarmup.test.ts',
+        'e2e/utils/cleanupSteps.test.ts',
         'e2e/utils/dev-memory.test.ts',
         'e2e/utils/ide-devtools-cleanup.test.ts',
         'e2e/utils/opened-automator.test.ts',

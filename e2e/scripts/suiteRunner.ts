@@ -1,9 +1,13 @@
-import type { SpawnOptions } from 'node:child_process'
-import type { SuiteTaskArtifact } from './suiteReport'
-import { spawn } from 'node:child_process'
+/* eslint-disable e18e/ban-dependencies -- suite runner 需要 execa 保留跨平台命令参数并正确解析 Windows pnpm.cmd。 */
+import type { Options } from 'execa'
+import type { SuiteReportContext, SuiteTaskArtifact } from './suiteReport'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { execa } from 'execa'
+import { E2E_RUNTIME_PROVIDER_ENV, resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { ACCEPTANCE_DIRTY_ENV, ACCEPTANCE_REPORT_DIR_ENV, ACCEPTANCE_ROOT, ACCEPTANCE_RUN_ID_ENV, ACCEPTANCE_SHA_ENV, ACCEPTANCE_TASK_ENV, createAcceptanceIdentity, DOM_ACCEPTANCE_ENV, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
+import { validateTaskAcceptance } from './domAcceptanceReport/task'
 import { createSuiteReport } from './suiteReport'
 
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
@@ -24,6 +28,8 @@ export interface SuiteTask {
   label: string
   command: string
   args: string[]
+  outOfScopeReason?: string
+  acceptanceTemplates?: string[]
 }
 
 export interface SuiteTaskResult {
@@ -31,6 +37,8 @@ export interface SuiteTaskResult {
   durationMs: number
   exitCode: number
   label: string
+  status?: 'passed' | 'failed' | 'blocked' | 'skipped'
+  reason?: string
 }
 
 interface RunSuiteOptions {
@@ -40,6 +48,7 @@ interface RunSuiteOptions {
   runTask?: (task: SuiteTask) => Promise<number>
   stopOnTaskFailure?: boolean
   writeReport?: boolean
+  reportContext?: SuiteReportContext
 }
 
 function formatDuration(durationMs: number) {
@@ -47,7 +56,7 @@ function formatDuration(durationMs: number) {
 }
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
-const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=(\S+)/
+const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report|dom-acceptance-report)\]\s+index=(\S+)/
 const DEVTOOLS_LAUNCH_SKIP_PATTERN = /\[runtime:launch-skip\]/
 const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
@@ -62,7 +71,10 @@ function shouldEmitReportMarkers(env = process.env) {
   return env[REPORT_MARKER_ENV] === '1'
 }
 
-function isDevtoolsVitestTask(task: SuiteTask) {
+export function isDevtoolsVitestTask(task: SuiteTask) {
+  if (resolveRuntimeProviderName(task.env?.[E2E_RUNTIME_PROVIDER_ENV] ?? process.env[E2E_RUNTIME_PROVIDER_ENV]) !== 'devtools') {
+    return false
+  }
   if (task.command === 'node' && task.args.some(arg => arg.endsWith(TEMPLATE_DEV_OPEN_RUNNER_BASENAME))) {
     return true
   }
@@ -107,7 +119,7 @@ function createTaskArtifactCollector() {
         continue
       }
 
-      const kind = matched[1] as SuiteTaskArtifact['kind']
+      const kind = matched[1] === 'e2e-suite-report' ? 'suite-report' : matched[1] as SuiteTaskArtifact['kind']
       const indexPath = path.isAbsolute(matched[2])
         ? matched[2]
         : path.resolve(ROOT_DIR, matched[2])
@@ -231,7 +243,7 @@ function startTaskHeartbeat(
   }
 }
 
-export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform): SpawnOptions {
+export function getTaskSpawnOptions(task: SuiteTask): Options {
   const shouldDefaultDevtoolsBridgeLaunch = isDevtoolsVitestTask(task)
     && process.env[AUTOMATOR_LAUNCH_MODE_ENV] == null
     && task.env?.[AUTOMATOR_LAUNCH_MODE_ENV] == null
@@ -259,7 +271,13 @@ export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform
       ...task.env,
     },
     stdio: ['inherit', 'pipe', 'pipe'],
-    shell: platform === 'win32',
+    shell: false,
+    buffer: false,
+    reject: false,
+    killDescendants: true,
+    // runner 退出后无法等待升级计时器；退出清理必须直接终止整组进程。
+    killSignal: 'SIGKILL',
+    forceKillAfterDelay: false,
   }
 }
 
@@ -307,7 +325,7 @@ async function defaultRunTask(task: SuiteTask) {
   const taskTimeoutMs = resolveTaskTimeoutMs(task)
 
   return await new Promise<number>((resolve, reject) => {
-    const child = spawn(task.command, task.args, getTaskSpawnOptions(task))
+    const child = execa(task.command, task.args, getTaskSpawnOptions(task))
     const stdoutForwarder = createOutputForwarder(text => process.stdout.write(text), collector)
     const stderrForwarder = createOutputForwarder(text => process.stderr.write(text), collector)
     let exitCode: number | undefined
@@ -317,6 +335,9 @@ async function defaultRunTask(task: SuiteTask) {
     let taskTimeoutTimer: NodeJS.Timeout | undefined
     let forceKillTimer: NodeJS.Timeout | undefined
     let settled = false
+    let exited = false
+    let timedOut = false
+    let forceKillSent = false
 
     function clearGraceTimer() {
       if (stdioCloseGraceTimer) {
@@ -337,7 +358,7 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function killChild(signal: NodeJS.Signals) {
-      if (child.killed) {
+      if (exited && !timedOut) {
         return
       }
       try {
@@ -376,7 +397,7 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function maybeFinalize() {
-      if (settled || exitCode === undefined) {
+      if (settled || exitCode === undefined || (timedOut && !forceKillSent)) {
         return
       }
 
@@ -409,22 +430,27 @@ async function defaultRunTask(task: SuiteTask) {
     }
 
     function onExit(code: number | null) {
-      exitCode = code ?? 1
+      exited = true
+      if (!timedOut) {
+        clearTaskTimers()
+      }
+      exitCode = timedOut ? 1 : code ?? 1
       maybeFinalize()
     }
 
-    child.stdout.on('data', (chunk) => {
+    child.stdout?.on('data', (chunk) => {
       stdoutForwarder.handleText(chunk.toString())
     })
 
-    child.stderr.on('data', (chunk) => {
+    child.stderr?.on('data', (chunk) => {
       stderrForwarder.handleText(chunk.toString())
     })
 
     child.stdout?.on('close', onStdoutClose)
     child.stderr?.on('close', onStderrClose)
-    child.on('error', onError)
-    child.on('exit', onExit)
+    child.nodeChildProcess.on('error', onError)
+    child.nodeChildProcess.on('exit', onExit)
+    void child.then(() => {}, onError)
 
     if (taskTimeoutMs > 0) {
       taskTimeoutTimer = setTimeout(() => {
@@ -432,13 +458,15 @@ async function defaultRunTask(task: SuiteTask) {
           return
         }
         console.error(`[e2e] task timeout after ${formatDuration(taskTimeoutMs)}: ${task.label}`)
-        exitCode = 1
+        timedOut = true
+        clearGraceTimer()
         killChild('SIGTERM')
         forceKillTimer = setTimeout(() => {
+          forceKillSent = true
           killChild('SIGKILL')
-          finalize(1)
+          maybeFinalize()
         }, TASK_KILL_GRACE_MS)
-        forceKillTimer.unref?.()
+        // 入口退出后后代仍可能存活，必须保留计时器引用直到整组强杀完成。
       }, taskTimeoutMs)
       taskTimeoutTimer.unref?.()
     }
@@ -454,6 +482,12 @@ export async function runTaskSuite(
   const runTask = options.runTask ?? defaultRunTask
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
+  const reportContext = options.reportContext ?? {
+    ...createAcceptanceIdentity(),
+    strict: isStrictDomAcceptanceSuite(suiteName),
+    partial: false,
+    plannedTasks: tasks,
+  }
   let devtoolsLoginPreflightPassed = false
   let suiteReportArtifact: SuiteTaskArtifact | undefined
   const ideHmrCompanionSentinelPath = shouldShareIdeHmrCompanion(suiteName)
@@ -466,13 +500,27 @@ export async function runTaskSuite(
   }
 
   for (const [taskIndex, task] of tasks.entries()) {
+    if (task.outOfScopeReason) {
+      continue
+    }
     console.log(formatSuiteProgress(suiteName, results.length, tasks.length, 'running', task.label, taskIndex))
     console.log(`[${suiteName}] run ${task.label}`)
     const startedAt = Date.now()
     const stopHeartbeat = startTaskHeartbeat(suiteName, task.label, startedAt, results.length, tasks.length, taskIndex)
     let exitCode = 1
+    let reason: string | undefined
+    let blocked = false
 
     try {
+      task.env = {
+        ...task.env,
+        [ACCEPTANCE_RUN_ID_ENV]: reportContext.runId,
+        [ACCEPTANCE_SHA_ENV]: reportContext.commitSha,
+        [ACCEPTANCE_DIRTY_ENV]: reportContext.workingTreeDirty == null ? 'unknown' : reportContext.workingTreeDirty ? '1' : '0',
+        [ACCEPTANCE_TASK_ENV]: task.label,
+        [ACCEPTANCE_REPORT_DIR_ENV]: path.join(ACCEPTANCE_ROOT, 'docs/reports/dom-acceptance', reportContext.runId),
+        ...(reportContext.strict ? { [DOM_ACCEPTANCE_ENV]: '1' } : {}),
+      }
       if (devtoolsLoginPreflightPassed && isDevtoolsVitestTask(task)) {
         task.env = {
           ...task.env,
@@ -487,9 +535,22 @@ export async function runTaskSuite(
       }
       await options.beforeEachTask?.(task)
       exitCode = await runTask(task)
+      if (reportContext.strict) {
+        try {
+          await validateTaskAcceptance(task, reportContext)
+        }
+        catch (error) {
+          blocked = exitCode === 0 || !task.artifacts?.some(artifact => artifact.kind === 'dom-acceptance-report')
+          exitCode = 1
+          reason = error instanceof Error ? error.message : String(error)
+          console.error(`[${suiteName}] DOM acceptance: ${reason}`)
+        }
+      }
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
+      reason = message
+      blocked = true
       console.error(`[${suiteName}] task crashed: ${task.label}`)
       console.error(message)
     }
@@ -503,6 +564,8 @@ export async function runTaskSuite(
       label: task.label,
       exitCode,
       durationMs,
+      status: task.devtoolsLaunchSkipped ? 'blocked' : blocked ? 'blocked' : exitCode === 0 ? 'passed' : 'failed',
+      reason,
     })
 
     const status = exitCode === 0 ? 'pass' : 'fail'
@@ -528,7 +591,7 @@ export async function runTaskSuite(
 
   await options.afterAll?.()
   if (writeReport) {
-    const report = createSuiteReport(results, suiteName)
+    const report = createSuiteReport(results, suiteName, undefined, undefined, reportContext)
     suiteReportArtifact = {
       kind: 'suite-report',
       indexPath: path.join(report.reportDir, report.markdownFile),
@@ -550,7 +613,10 @@ export async function runTaskSuite(
     }
   }
 
-  if (failOnTaskFailure && results.some(result => result.exitCode !== 0)) {
+  const incomplete = reportContext.strict && (reportContext.partial
+    || results.length !== reportContext.plannedTasks.filter(task => !task.outOfScopeReason).length
+    || !results.length || results.some(result => result.status !== 'passed'))
+  if ((failOnTaskFailure || reportContext.strict) && (results.some(result => result.exitCode !== 0) || incomplete)) {
     process.exitCode = 1
     return 1
   }

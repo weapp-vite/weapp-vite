@@ -7,6 +7,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
 import { resolveComponentExpression, resolveComponentOptionsObject } from '../../scriptComponent'
+import { analyzeComponentStyleOptions } from '../componentStyleOptions'
 import { getObjectPropertyByKey } from '../utils'
 import { injectBindingManifestContract } from './bindingManifest'
 import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './classStyle'
@@ -330,10 +331,14 @@ export function rewriteDefaultExport(
 
   if (componentOptionsObject && parsedWevuDefaults) {
     transformed = applyWevuDefaultsToComponentOptions({
-      componentExpr: componentOptionsObject,
+      componentExpr: componentExpr!,
       parsedWevuDefaults,
       options,
     }) || transformed
+  }
+
+  if (componentExpr && !options?.isApp && !options?.skipComponentTransform) {
+    state.componentStyleOptions = analyzeComponentStyleOptions(componentExpr, exportPath.scope)
   }
 
   if (componentOptionsObject) {

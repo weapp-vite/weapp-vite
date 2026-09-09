@@ -19,6 +19,7 @@ import { setVueBundlePageLayoutPlan } from './types'
 
 export async function compileVueLikeFile(options: {
   source: string
+  rawSource?: string
   filename: string
   ctx: CompilerContext
   pluginCtx: any
@@ -68,7 +69,7 @@ export async function compileVueLikeFile(options: {
       storeVueSfcHmrSignatures(
         hmr,
         normalizeFsResolvedId(filename),
-        resolveVueSfcHmrSignatures(source, filename),
+        resolveVueSfcHmrSignatures(options.rawSource ?? source, filename),
       )
     }
   }
@@ -101,6 +102,7 @@ export async function finalizeCompiledVueLikeResult(options: {
 
 export async function compileAndFinalizeVueLikeFile(options: {
   source: string
+  rawSource?: string
   filename: string
   ctx: CompilerContext
   pluginCtx: any
@@ -186,8 +188,8 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
         cached.refreshToken = 0
         storeVueSfcHmrSignatures(
           ctx.runtimeState.build.hmr,
-          filename,
-          resolveVueSfcHmrSignatures(source, filename),
+          normalizeFsResolvedId(filename),
+          resolveVueSfcHmrSignatures(rawSource, filename),
         )
         dirtyVueEntryIds?.delete(dirtyEntryId)
         return cached.result
@@ -196,6 +198,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
 
     const compiled = await compileAndFinalizeVueLikeFile({
       source,
+      rawSource,
       filename,
       ctx,
       pluginCtx,

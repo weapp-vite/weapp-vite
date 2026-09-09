@@ -4,7 +4,8 @@ import type { ConfigService } from './config/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import picomatch from 'picomatch'
-import { parseLogicalEntryId, parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
+import { isLogicalEntrySource } from '../moduleGraph/traversal'
 import { isPathInside, normalizeRelativePath } from '../utils/path'
 import { isRegexp } from '../utils/regexp'
 import { normalizeViteId } from '../utils/viteId'
@@ -87,10 +88,7 @@ export function resolvePreservedModuleName(options: ResolvePreservedModuleNameOp
   }
 
   const moduleInfo = ctx.getModuleInfo(id)
-  const isLogicalEntrySource = moduleInfo?.importers?.some((importer) => {
-    return parseLogicalEntryId(importer)?.sourceId === absoluteId
-  })
-  if (isLogicalEntrySource) {
+  if (isLogicalEntrySource(absoluteId, moduleInfo?.importers)) {
     return undefined
   }
 

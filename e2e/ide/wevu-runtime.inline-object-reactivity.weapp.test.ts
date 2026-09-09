@@ -1,7 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { APP_ROOT, normalizeAutomatorWxml, runBuild } from '../wevu-runtime.utils'
+import { INLINE_OBJECT_BOUND_CHECKPOINTS, INLINE_OBJECT_REPEATED_CHECKPOINTS } from './wevuRuntimeDom/reactivity'
 
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -382,18 +384,28 @@ describe('wevu runtime inline object reactivity (weapp e2e)', { concurrent: fals
   })
 
   it('updates qty for minus/plus taps and enforces min bound', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/wevu-runtime-e2e', INLINE_OBJECT_BOUND_CHECKPOINTS)
     await runInlineObjectScenario(ctx, async (page, miniProgram) => {
+      await dom.check('initial', miniProgram, page)
       await runActionsAndExpectQty(page, ['minus'], 1, 6_000, miniProgram)
+      await dom.check('minus', miniProgram, page)
       await runActionsAndExpectQty(page, ['minus'], 1, 6_000, miniProgram)
+      await dom.check('minimum', miniProgram, page)
       await runActionsAndExpectQty(page, ['plus'], 2, 6_000, miniProgram)
+      await dom.check('plus', miniProgram, page)
       await runActionsAndExpectQty(page, ['plus'], 3, 6_000, miniProgram)
+      await dom.check('plus-again', miniProgram, page)
       await runActionsAndExpectQty(page, ['minus'], 2, 6_000, miniProgram)
+      await dom.check('restored', miniProgram, page)
     })
   })
 
   it('keeps qty stable under repeated taps', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/wevu-runtime-e2e', INLINE_OBJECT_REPEATED_CHECKPOINTS)
     await runInlineObjectScenario(ctx, async (page, miniProgram) => {
+      await dom.check('initial', miniProgram, page)
       await runActionsAndExpectQty(page, ['plus', 'plus', 'plus', 'plus', 'plus'], 7, 10_000, miniProgram)
+      await dom.check('increased', miniProgram, page)
       await runActionsAndExpectQty(page, [
         'minus',
         'minus',
@@ -408,7 +420,9 @@ describe('wevu runtime inline object reactivity (weapp e2e)', { concurrent: fals
         'minus',
         'minus',
       ], 1, 10_000, miniProgram)
+      await dom.check('minimum', miniProgram, page)
       await runActionsAndExpectQty(page, ['plus', 'plus', 'plus'], 4, 10_000, miniProgram)
+      await dom.check('increased-again', miniProgram, page)
     })
   })
 })

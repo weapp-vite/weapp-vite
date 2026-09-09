@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createServeMiniProgramDevActions } from './shared'
+import { createServeMiniProgramDevActions, resolveServeIdeOpenStrategy } from './shared'
 
 describe('serve shared helpers', () => {
+  it('resolves the same opening strategy for startup, hotkeys and log consumers', () => {
+    expect(resolveServeIdeOpenStrategy()).toBe('cli')
+    expect(resolveServeIdeOpenStrategy({}, 'automator')).toBe('automator')
+    expect(resolveServeIdeOpenStrategy({ useAutomatorOpen: true })).toBe('automator')
+    expect(resolveServeIdeOpenStrategy({ openStrategy: 'cli', useAutomatorOpen: true }, 'automator')).toBe('cli')
+  })
+
   it('reuses forward console session before reopening ide project', async () => {
     const build = vi.fn().mockResolvedValue(undefined)
     const openIde = vi.fn().mockResolvedValue(undefined)
@@ -39,6 +46,7 @@ describe('serve shared helpers', () => {
 
     expect(openIde).toHaveBeenCalledWith('/project/dist-root', { forceOpen: true })
     expect(startForwardConsole).toHaveBeenCalledTimes(1)
+    expect(startForwardConsole).toHaveBeenCalledWith({ forceOpen: true })
     expect(tryReuseForwardConsole).not.toHaveBeenCalled()
   })
 

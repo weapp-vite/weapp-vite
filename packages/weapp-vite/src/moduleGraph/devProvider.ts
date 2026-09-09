@@ -138,7 +138,7 @@ function createProviderPlugin(
       }
       const sidecarSource = parseSidecarSourceRequest(id)
       if (sidecarSource) {
-        if (sidecarSource.kind === 'style') {
+        if (sidecarSource.kind === 'style' && !sidecarSource.dependencyOnly) {
           return null
         }
         return `export default ${JSON.stringify(sidecarSource.sourceId)};`

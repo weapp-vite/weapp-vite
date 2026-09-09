@@ -32,7 +32,7 @@ function hasMetadataInjectionOptions(source: string, options: TransformScriptOpt
     || options?.bindingManifest
     || options?.pageLayout
     || options?.scopedSlotHostProperties
-    || /\buseSlots\b/.test(source),
+    || /\b(?:useSlots|options|extends|mixins|definitionFilter|behaviors)\b|\\/.test(source),
   )
 }
 
@@ -173,5 +173,6 @@ export function tryFastTransformCompiledScriptSetup(
     code,
     map: null,
     transformed: true,
+    componentStyleOptions: { styleIsolation: { kind: 'absent' }, addGlobalClass: { kind: 'absent' } },
   }
 }

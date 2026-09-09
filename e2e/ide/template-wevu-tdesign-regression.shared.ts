@@ -59,7 +59,7 @@ export function createTemplateWevuTdesignRegressionSkipMessage(label: string) {
 
 export async function assertTemplateWevuTdesignRegressionPageProtocol(miniProgram: any) {
   if (typeof miniProgram.currentPage !== 'function') {
-    return
+    throw new TypeError('DOM acceptance requires the currentPage protocol')
   }
   await miniProgram.currentPage({
     retries: 1,
@@ -67,7 +67,7 @@ export async function assertTemplateWevuTdesignRegressionPageProtocol(miniProgra
   })
 }
 
-export async function relaunchTemplateWevuTdesignRegressionPage(ctx: any, miniProgram: any, route: string, label: string) {
+export async function relaunchTemplateWevuTdesignRegressionPage(_ctx: any, miniProgram: any, route: string, label: string) {
   let lastError: unknown
   for (let attempt = 1; attempt <= RELAUNCH_ATTEMPTS; attempt += 1) {
     try {
@@ -90,8 +90,5 @@ export async function relaunchTemplateWevuTdesignRegressionPage(ctx: any, miniPr
     await delay(500)
   }
 
-  if (lastError && isTemplateWevuTdesignRegressionPageProtocolUnavailable(lastError)) {
-    ctx.skip(createTemplateWevuTdesignRegressionSkipMessage(label))
-  }
-  throw new Error(`Failed to launch route after ${RELAUNCH_ATTEMPTS} attempts: ${route}`)
+  throw new Error(`Failed to launch ${label} route after ${RELAUNCH_ATTEMPTS} attempts: ${route}`, { cause: lastError })
 }

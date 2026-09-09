@@ -15,6 +15,7 @@ interface ClientReport {
   sessionId: string
   token: string
   version: number
+  failure?: unknown
 }
 
 interface PendingPoll {
@@ -97,6 +98,15 @@ export class StatefulHmrTransport {
       return
     }
     if (body.action === 'rebuild') {
+      const failure = body.failure
+      if (failure && typeof failure === 'object' && 'reason' in failure) {
+        const reason = failure.reason
+        if (reason === 'bridge-not-ready' || reason === 'patch-failed') {
+          const message = 'message' in failure && typeof failure.message === 'string' ? failure.message : ''
+          const stack = 'stack' in failure && typeof failure.stack === 'string' ? failure.stack : ''
+          this.server.config.logger.error(`[weapp-vite] stateful HMR client ${reason}: ${message}\n${stack}`)
+        }
+      }
       this.requestFullBuild()
       respond(response, 202, { type: 'rebuilding' })
       return
@@ -197,7 +207,7 @@ export function renderBatch(
     fromVersion: batch.fromVersion,
     targetVersion: batch.targetVersion,
   }
-  const code = batch.deltas.map(delta => delta.code).join('\n')
+  const code = batch.deltas.map(delta => `(() => {\n${indent(delta.code, 2)}\n})();`).join('\n')
   return `// ${nonce}\nglobalThis.__WEAPP_VITE_STATEFUL_HMR_CLIENT__.receiveBatch(${JSON.stringify(metadata)}, () => {\n${indent(code, 2)}\n});\n`
 }
 

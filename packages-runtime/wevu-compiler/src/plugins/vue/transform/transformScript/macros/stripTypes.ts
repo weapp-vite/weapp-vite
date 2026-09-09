@@ -128,6 +128,10 @@ export function createStripTypesVisitors(state: TransformState) {
     },
 
     Function(path: any) {
+      if (t.isIdentifier(path.node.params[0], { name: 'this' })) {
+        path.node.params.shift()
+        state.transformed = true
+      }
       if (path.node.returnType) {
         path.node.returnType = null
         state.transformed = true
