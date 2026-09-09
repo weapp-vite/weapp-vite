@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORTS_ROOT_DIR = path.join(ROOT_DIR, 'docs/reports')
-const REPORT_META_FILE = path.resolve('/tmp', 'weapp-vite-e2e-ide-warning-report-paths.json')
 const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
 const EVENT_LOG_FILE_ENV = 'WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE'
 const REPORT_MARKDOWN_FILE_ENV = 'WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE'
@@ -37,6 +38,9 @@ export interface IdeWarningReportPaths {
 }
 
 export interface IdeReportEvent {
+  recordedAt?: string
+  startupProtocol?: { id: string, method: 'App.getCurrentPage', state: 'retrying' | 'recovered' | 'unresolved', attempts: number, firstFailureAt: string, lastFailureAt: string }
+  acceptanceScope?: { id: string, caseId: string, checkpointId: string, boundary: 'start' | 'end' }
   source: IdeReportSource
   kind: IdeReportKind
   project: string
@@ -187,38 +191,6 @@ function ensureParentDir(filePath: string) {
 function resetFile(filePath: string) {
   ensureParentDir(filePath)
   fs.writeFileSync(filePath, '', 'utf8')
-}
-
-function writeReportMetaFile(paths: IdeWarningReportPaths) {
-  ensureParentDir(REPORT_META_FILE)
-  fs.writeFileSync(REPORT_META_FILE, `${JSON.stringify(paths, null, 2)}\n`, 'utf8')
-}
-
-function readReportMetaFile(): IdeWarningReportPaths | null {
-  try {
-    const raw = fs.readFileSync(REPORT_META_FILE, 'utf8')
-    const parsed = JSON.parse(raw) as Partial<IdeWarningReportPaths>
-    if (
-      typeof parsed.reportSlug !== 'string'
-      || typeof parsed.reportDir !== 'string'
-      || typeof parsed.eventLogPath !== 'string'
-      || typeof parsed.reportMarkdownPath !== 'string'
-      || typeof parsed.reportJsonPath !== 'string'
-    ) {
-      return null
-    }
-
-    return {
-      reportSlug: parsed.reportSlug,
-      reportDir: parsed.reportDir,
-      eventLogPath: parsed.eventLogPath,
-      reportMarkdownPath: parsed.reportMarkdownPath,
-      reportJsonPath: parsed.reportJsonPath,
-    }
-  }
-  catch {
-    return null
-  }
 }
 
 function normalizeSlash(value: string) {
@@ -490,9 +462,10 @@ export function resolveReportProjectPath(projectPath: string | undefined) {
 
 export function initializeIdeWarningReportRun(now = new Date()): IdeWarningReportPaths {
   const { date, timestamp } = formatDateParts(now)
-  const reportSlug = `${date}-${timestamp.slice(-6)}-ide-warning-report`
+  const invocationId = randomUUID()
+  const reportSlug = `${date}-${timestamp.slice(-6)}-${invocationId}-ide-warning-report`
   const reportDir = path.join(REPORTS_ROOT_DIR, reportSlug)
-  const eventLogPath = path.resolve('/tmp', `weapp-vite-e2e-ide-report-${timestamp}.jsonl`)
+  const eventLogPath = path.join(os.tmpdir(), `weapp-vite-e2e-ide-report-${timestamp}-${invocationId}.jsonl`)
   const reportMarkdownPath = path.join(reportDir, 'index.md')
   const reportJsonPath = path.join(reportDir, 'index.json')
 
@@ -525,7 +498,7 @@ export function resolveIdeWarningReportPathsFromEnv(): IdeWarningReportPaths | n
     }
   }
 
-  return readReportMetaFile()
+  return null
 }
 
 export function ensureIdeWarningReportEnv(now = new Date()) {
@@ -548,7 +521,6 @@ export function ensureIdeWarningReportEnv(now = new Date()) {
   process.env[REPORT_JSON_FILE_ENV] = paths.reportJsonPath
   process.env[REPORT_SLUG_ENV] = paths.reportSlug
   process.env[REPORT_DIR_ENV] = paths.reportDir
-  writeReportMetaFile(paths)
   return paths
 }
 
@@ -564,6 +536,7 @@ export function appendIdeReportEvent(event: IdeReportEvent) {
 
   const sanitizedEvent: IdeReportEvent = {
     ...event,
+    recordedAt: new Date().toISOString(),
     project: sanitizeReportText(event.project) || '<unknown-project>',
     channel: typeof event.channel === 'string' ? sanitizeReportText(event.channel) : event.channel,
     label: typeof event.label === 'string' ? sanitizeReportText(event.label) : event.label,

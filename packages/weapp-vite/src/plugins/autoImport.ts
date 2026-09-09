@@ -427,7 +427,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
     }
 
     sidecarWatcherMap.set(AUTO_IMPORT_WATCHER_KEY, {
-      close: () => void watcher.close(),
+      close: () => watcher.close(),
     })
     fileWatcherStarted = true
     await waitForSidecarWatcherReady(watcher)

@@ -181,6 +181,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
       code: source,
       transformed: false,
       ...(runtimeCapabilities ? { runtimeCapabilities } : {}),
+      ...(state.componentStyleOptions ? { componentStyleOptions: state.componentStyleOptions } : {}),
     }
   }
 
@@ -198,5 +199,6 @@ export function transformScript(source: string, options?: TransformScriptOptions
     map: sourceMap ? generated.map as TransformResult['map'] : null,
     transformed: state.transformed,
     ...(runtimeCapabilities ? { runtimeCapabilities } : {}),
+    ...(state.componentStyleOptions ? { componentStyleOptions: state.componentStyleOptions } : {}),
   }
 }

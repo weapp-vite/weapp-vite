@@ -34,13 +34,14 @@ function createReport(commit: string, minimalBytes: number): RuntimeSizeReport {
 
 describe('runtime size report CLI', () => {
   it('parses the check flag without changing existing report options', () => {
+    const cwd = path.resolve('runtime-size-workspace')
     expect(parseRuntimeSizeCliOptions([
       '--root=fixture',
       '--current-json=current.json',
       '--baseline-json=baseline.json',
       '--check',
-    ], '/workspace')).toMatchObject({
-      root: '/workspace/fixture',
+    ], cwd)).toMatchObject({
+      root: path.join(cwd, 'fixture'),
       currentJson: 'current.json',
       baselineJson: 'baseline.json',
       build: false,

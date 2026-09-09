@@ -19,11 +19,11 @@ defineExpose({
   <view class="issue520-page">
     <Issue520ResolverSlotCard>
       <template #header>
-        <text data-issue520-slot="header">
+        <text id="issue520-header" data-issue520-slot="header">
           issue-520 resolver slot header
         </text>
       </template>
-      <text data-issue520-slot="default">
+      <text id="issue520-default" data-issue520-slot="default">
         issue-520 resolver slot default
       </text>
     </Issue520ResolverSlotCard>

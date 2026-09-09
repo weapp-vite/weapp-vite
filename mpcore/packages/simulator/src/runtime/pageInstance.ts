@@ -1,5 +1,7 @@
 import type { HeadlessPageDefinition, HeadlessWxMediaQueryObserver } from '../host'
 import type { HeadlessBackgroundSnapshot, HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
+import type { HeadlessComponentInstance } from './componentInstance'
+import { bindComponentPageAttachment } from '../host/componentPageAttachment'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
@@ -15,13 +17,27 @@ export interface HeadlessPageInstance extends Record<string, any> {
   __route__: string
   __scrollTop__?: number
   data: Record<string, any>
+  properties: Record<string, any>
   options: Record<string, string>
   route: string
   createIntersectionObserver?: (options?: Record<string, any>) => any
   createMediaQueryObserver?: () => HeadlessWxMediaQueryObserver
+  getTabBar?: () => HeadlessComponentInstance | null
   selectAllComponents?: (selector: string) => any[]
   selectComponent?: (selector: string) => any
   setData: (patch: Record<string, any>, callback?: () => void) => void
+}
+
+const pageInstanceIds = new WeakMap<HeadlessPageInstance, number>()
+let nextPageInstanceId = 0
+
+export function getPageInstanceId(page: HeadlessPageInstance) {
+  let id = pageInstanceIds.get(page)
+  if (id === undefined) {
+    id = ++nextPageInstanceId
+    pageInstanceIds.set(page, id)
+  }
+  return id
 }
 
 function bindFunction(target: Record<string, any>, key: string, value: unknown) {
@@ -100,9 +116,11 @@ export function createPageInstance(
     background?: HeadlessBackgroundSnapshot
     backgroundTextStyle?: HeadlessBackgroundTextStyle
     navigationBar?: HeadlessNavigationBarSnapshot
+    requestRender?: (callback?: () => void) => void
   } = {},
 ): HeadlessPageInstance {
   const normalizedRoute = normalizeRoute(route)
+  const data = resolveInitialData(definition)
   const instance: HeadlessPageInstance = {
     __background__: pageState.background
       ? cloneBackgroundSnapshot(pageState.background)
@@ -113,24 +131,36 @@ export function createPageInstance(
       ? cloneNavigationBarSnapshot(pageState.navigationBar)
       : undefined,
     __navigationBarTitle__: pageState.navigationBar?.title,
-    data: resolveInitialData(definition),
+    data,
+    properties: { ...data },
     options: { ...options },
     route: normalizedRoute,
     setData(patch, callback) {
       instance.__lastChangedKeys__ = Object.keys(patch)
       for (const [key, value] of Object.entries(patch)) {
         assignByPath(instance.data, key, value)
+        const rootKey = parseDataPath(key)[0]
+        if (rootKey) {
+          instance.properties[rootKey] = instance.data[rootKey]
+        }
       }
-      callback?.()
+      if (pageState.requestRender) {
+        pageState.requestRender(callback)
+      }
+      else {
+        callback?.()
+      }
     },
   }
 
   for (const [key, value] of Object.entries(definition)) {
-    if (key === 'data') {
+    // options 保存导航参数，properties 是实例数据视图，不能被定义对象覆盖。
+    if (key === 'data' || key === 'options' || key === 'properties') {
       continue
     }
     bindFunction(instance, key, value)
   }
 
+  bindComponentPageAttachment(instance, definition)
   return instance
 }

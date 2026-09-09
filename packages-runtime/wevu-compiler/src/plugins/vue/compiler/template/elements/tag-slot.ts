@@ -23,6 +23,7 @@ import { createWevuRuntimeCapabilityMetadata } from '../../../../../runtimeCapab
 import { renderClassAttribute, renderStyleAttribute, transformAttribute } from '../attributes'
 import { createBindingManifest, recordBindingExpression } from '../bindingManifest'
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
+import { withBindingCondition } from '../conditions'
 import { warn } from '../diagnostics'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
@@ -46,6 +47,7 @@ export interface ScopedSlotDeclaration {
   implicitDefault?: boolean
   conditionKind?: 'if' | 'else-if' | 'else'
   condition?: string
+  bindingCondition?: string
   wrapper?: SlotFallbackWrapperResolveContext['local']
 }
 
@@ -155,6 +157,7 @@ export function buildSlotDeclaration(
     implicitDefault?: boolean
     conditionKind?: 'if' | 'else-if' | 'else'
     condition?: string
+    bindingCondition?: string
     wrapper?: SlotFallbackWrapperResolveContext['local']
     location?: SourceLocation
   },
@@ -167,6 +170,7 @@ export function buildSlotDeclaration(
     implicitDefault: options?.implicitDefault,
     conditionKind: options?.conditionKind,
     condition: options?.condition,
+    bindingCondition: options?.bindingCondition,
     wrapper: options?.wrapper,
   }
 }
@@ -179,6 +183,7 @@ export function createScopedSlotComponent(
   transformNode: TransformNode,
   options?: {
     hostComponentName?: string
+    bindingCondition?: string
   },
 ): { componentName: string, slotKey: string } {
   const ownerHash = hashString(context.filename)
@@ -225,6 +230,7 @@ export function createScopedSlotComponent(
     rewriteScopedSlot: true,
     hasSlotOutlet: false,
     classStyleBindings: [],
+    bindingConditions: undefined,
     classStyleWxs: false,
     forStack: [],
     forIndexSeed: 0,
@@ -243,7 +249,7 @@ export function createScopedSlotComponent(
     ...props,
   }
   let template = withSlotProps(scopedContext, slotMapping, () => {
-    return children.map(child => transformNode(child, scopedContext)).join('')
+    return withBindingCondition(scopedContext, options?.bindingCondition, () => children.map(child => transformNode(child, scopedContext)).join(''))
   })
   if (scopedContext.classStyleWxs) {
     const ext = scopedContext.classStyleWxsExtension || 'wxs'
@@ -561,6 +567,16 @@ export function renderSlotFallback(
     componentName?: string
     wrapper?: SlotFallbackWrapperResolveContext['local']
   },
+): string {
+  // eslint-disable-next-line ts/no-use-before-define
+  return withBindingCondition(context, decl.bindingCondition, () => renderSlotFallbackContent(decl, context, transformNode, options))
+}
+
+function renderSlotFallbackContent(
+  decl: ScopedSlotDeclaration,
+  context: TransformContext,
+  transformNode: TransformNode,
+  options: Parameters<typeof renderSlotFallback>[3],
 ): string {
   const slotAttr = renderSlotNameAttribute(decl.name, context, 'slot')
   const wrapCondition = (content: string) => {

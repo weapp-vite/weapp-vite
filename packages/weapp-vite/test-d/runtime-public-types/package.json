@@ -1,11 +1,12 @@
 {
   "name": "runtime-public-types-tsd",
+  "type": "module",
   "private": true,
   "types": "index.d.ts",
   "tsd": {
     "compilerOptions": {
-      "module": "ESNext",
-      "moduleResolution": "bundler",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
       "target": "ES2023",
       "strict": true,
       "paths": {

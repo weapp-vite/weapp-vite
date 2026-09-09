@@ -1,5 +1,4 @@
 <script lang="ts">
-/* eslint-disable vue/no-reserved-keys */
 import type { LifecycleData, LifecycleEntry, LifecycleInstance } from '../../shared/lifecycle'
 import { defineComponent } from 'wevu'
 import { COMPONENT_HOOKS, finalizeLifecycleLogs, recordLifecycle } from '../../shared/lifecycle'
@@ -37,7 +36,7 @@ export default defineComponent({
   data: () => ({
     __lifecycleLogs: [] as LifecycleEntry[],
     __lifecycleOrder: 0,
-    __lifecycleSeen: {},
+    __lifecycleSeen: {} as Record<string, number>,
     __lifecycleState: {
       tick: 0,
       lastHook: '',
@@ -83,6 +82,10 @@ export default defineComponent({
     <text class="state">
       {{ __lifecycleState.lastHook }}
     </text>
+    <text class="component-attached">attached: {{ __lifecycleSeen.attached ? 'observed' : 'pending' }}</text>
+    <text class="component-ready">ready: {{ __lifecycleSeen.ready ? 'observed' : 'pending' }}</text>
+    <text class="component-show">show: {{ __lifecycleSeen['pageLifetimes.show'] ? 'observed' : 'pending' }}</text>
+    <text class="component-hide">hide: {{ __lifecycleSeen['pageLifetimes.hide'] ? 'observed' : 'pending' }}</text>
   </view>
 </template>
 

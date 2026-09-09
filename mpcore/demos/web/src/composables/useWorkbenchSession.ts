@@ -35,19 +35,22 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     void revision.value
     return collectCallableMethods(session.value)
   })
-  const previewMarkup = computed(() => {
+  const previewRender = computed(() => {
     void revision.value
     if (!session.value || !currentPage.value) {
-      return ''
+      return { wxml: '', cssText: '' }
     }
 
     try {
-      return session.value.renderCurrentPage().wxml
+      const rendered = session.value.renderCurrentPage()
+      return { wxml: rendered.wxml, cssText: rendered.styles.cssText }
     }
     catch (error) {
-      return `<page><view class="sim-preview-error">${String((error as Error).message ?? error)}</view></page>`
+      return { wxml: `<page><view class="sim-preview-error">${String((error as Error).message ?? error)}</view></page>`, cssText: '' }
     }
   })
+  const previewMarkup = computed(() => previewRender.value.wxml)
+  const previewStyles = computed(() => previewRender.value.cssText)
   const pageData = computed(() => {
     void revision.value
     return stringify(currentPage.value?.data ?? {})
@@ -284,6 +287,7 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     pageRoutes,
     pageStack,
     previewMarkup,
+    previewStyles,
     projectLabel,
     requestLogData,
     run,

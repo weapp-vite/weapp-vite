@@ -1,6 +1,7 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
+import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -17,6 +18,8 @@ export interface TransformResult {
   map?: EncodedSourceMapLike | null
   /** @internal */
   runtimeCapabilities?: WevuRuntimeCapabilityMetadata
+  /** @internal */
+  componentStyleOptions?: ComponentStyleOptions
 }
 
 export interface TransformScriptOptions {
@@ -126,6 +129,7 @@ export interface TransformScriptOptions {
 }
 
 export interface TransformState {
+  componentStyleOptions?: ComponentStyleOptions
   transformed: boolean
   defineComponentAliases: Set<string>
   defineComponentDecls: Map<string, t.ObjectExpression>

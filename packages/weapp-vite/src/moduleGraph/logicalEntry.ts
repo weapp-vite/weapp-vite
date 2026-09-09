@@ -38,6 +38,7 @@ export function createLogicalEntryModuleCode(
 }
 
 export function createSidecarModuleCode(ownerId: string, sourceId: string, kind: SidecarModuleKind) {
-  const sourceRequest = createSidecarSourceSpecifier(ownerId, sourceId, kind)
+  // 图依赖只负责失效传播；真实入口和 SFC 样式请求拥有 CSS，不能从依赖边再次内联。
+  const sourceRequest = createSidecarSourceSpecifier(ownerId, sourceId, kind, kind === 'style')
   return `import ${JSON.stringify(sourceRequest)};\nexport default ${JSON.stringify(sourceId)};\n`
 }

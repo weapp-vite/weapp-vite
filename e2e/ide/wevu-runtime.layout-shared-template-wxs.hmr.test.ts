@@ -1,16 +1,16 @@
+import type { DomCheckpoint } from '../utils/domAcceptance/types'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import {
-  cleanDevtoolsCache,
-  cleanupResidualDevtoolsProcesses,
-  cleanupResidualIdeProcesses,
-} from '../utils/ide-devtools-cleanup'
+import { captureHmrProbeFailure } from '../utils/hmrProbeFailureDiagnostics'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile, waitForVendorFileContains } from '../wevu-runtime.utils'
+import { CLASSIC_WXS_RELOAD_CHECKPOINT, waitForClassicWxsReload } from './wevuRuntimeDom/classicWxs'
 
 const DEFAULT_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/default/index.wxml')
 const ADMIN_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/admin/index.wxml')
@@ -27,7 +27,6 @@ const LAYOUT_SHARED_WXS_STORAGE_KEY = '__weapp_vite_layout_shared_wxs_probe__'
 
 let sharedMiniProgram: any = null
 let sharedDev: ReturnType<typeof startDevProcess> | null = null
-let hasLaunchedIdeSession = false
 let previousBridgePostConnectRefresh: string | undefined
 
 function buildSharedImportTemplate(marker: string) {
@@ -144,6 +143,16 @@ async function waitForStorageMarker(miniProgram: any, storageKey: string, expect
     await new Promise(resolve => setTimeout(resolve, 220))
   }
   const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
+  await captureHmrProbeFailure({
+    miniProgram,
+    route: '/pages/layouts/index',
+    storageKey,
+    expected,
+    files: {
+      distRoot: DIST_ROOT,
+      relativePaths: ['shared-layout-hmr/layout-template.wxml', 'shared-layout-hmr/layout-include.wxml', 'shared-layout-hmr/layout-helper.wxs'],
+    },
+  })
   throw new Error(`Timed out waiting storage marker: key=${storageKey} expected=${expected}; reason=${reason}; lastState=${JSON.stringify(lastState)}`)
 }
 
@@ -203,6 +212,7 @@ async function waitForInitialAppserviceReady() {
 async function getSharedMiniProgram() {
   if (!sharedMiniProgram) {
     sharedMiniProgram = await launchAutomator({
+      bridgeProjectMode: 'direct',
       projectPath: APP_ROOT,
       retryWarmupTimeout: true,
     })
@@ -211,55 +221,13 @@ async function getSharedMiniProgram() {
 }
 
 async function relaunchIdeSession(route: string) {
-  if (!hasLaunchedIdeSession) {
-    const miniProgram = await getSharedMiniProgram()
-    const page = await miniProgram.reLaunch(route)
-    if (page) {
-      await waitForLayoutPageReady(page)
-      hasLaunchedIdeSession = true
-      return page
-    }
+  const miniProgram = await getSharedMiniProgram()
+  const page = await miniProgram.reLaunch(route)
+  if (!page) {
+    throw new Error(`Failed to navigate the shared IDE session to route: ${route}`)
   }
-
-  const cacheCleanTypes = ['compile', 'all'] as const
-  let lastError: unknown
-
-  for (const cleanType of cacheCleanTypes) {
-    if (sharedMiniProgram) {
-      await sharedMiniProgram.close().catch(() => {})
-      sharedMiniProgram = null
-    }
-
-    await cleanupResidualDevtoolsProcesses()
-    await cleanDevtoolsCache(cleanType)
-    await waitForIdeRecompileSettled(cleanType === 'compile' ? 1_200 : 1_600)
-
-    try {
-      const miniProgram = await getSharedMiniProgram()
-      const page = await miniProgram.reLaunch(route)
-      if (page) {
-        await waitForLayoutPageReady(page)
-        hasLaunchedIdeSession = true
-        return page
-      }
-    }
-    catch (error) {
-      lastError = error
-      const message = error instanceof Error ? error.message : String(error)
-      if (
-        !message.includes('Timeout in launch automator')
-        && !message.includes('startsWith')
-        && !message.includes('DevTools did not respond to protocol method App.getCurrentPage')
-      ) {
-        throw error
-      }
-    }
-  }
-
-  if (lastError) {
-    throw lastError
-  }
-  throw new Error(`Failed to relaunch IDE session for route: ${route}`)
+  await waitForLayoutPageReady(page)
+  return page
 }
 
 beforeAll(() => {
@@ -268,13 +236,11 @@ beforeAll(() => {
 })
 
 beforeEach(async () => {
-  hasLaunchedIdeSession = false
   await cleanupResidualIdeProcesses()
 })
 
 afterAll(async () => {
   try {
-    hasLaunchedIdeSession = false
     if (sharedMiniProgram) {
       await sharedMiniProgram.close()
       sharedMiniProgram = null
@@ -296,11 +262,11 @@ afterAll(async () => {
 })
 
 describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: false }, () => {
-  it('updates layout runtime output in DevTools after shared template/include/wxs edits', async () => {
+  it('updates layout runtime output in DevTools after shared template/include/wxs edits', async (context) => {
     await fs.remove(DIST_ROOT)
 
-    const originalDefaultLayout = buildDefaultLayoutWxml()
-    const originalAdminLayout = buildAdminLayoutWxml()
+    const originalDefaultLayout = await fs.readFile(DEFAULT_LAYOUT_WXML, 'utf8')
+    const originalAdminLayout = await fs.readFile(ADMIN_LAYOUT_WXML, 'utf8')
 
     const initialTemplateMarker = createHmrMarker('IDE-LAYOUT-SHARED-TEMPLATE-INIT', 'weapp')
     const updatedTemplateMarker = createHmrMarker('IDE-LAYOUT-SHARED-TEMPLATE-UPDATE', 'weapp')
@@ -308,6 +274,31 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
     const updatedIncludeMarker = createHmrMarker('IDE-LAYOUT-SHARED-INCLUDE-UPDATE', 'weapp')
     const initialWxsMarker = createHmrMarker('IDE-LAYOUT-SHARED-WXS-INIT', 'weapp')
     const updatedWxsMarker = createHmrMarker('IDE-LAYOUT-SHARED-WXS-UPDATE', 'weapp')
+    const stages = [
+      { layout: 'default', template: initialTemplateMarker, include: initialIncludeMarker, wxs: initialWxsMarker },
+      { layout: 'default', template: updatedTemplateMarker, include: initialIncludeMarker, wxs: initialWxsMarker },
+      { layout: 'default', template: updatedTemplateMarker, include: updatedIncludeMarker, wxs: initialWxsMarker },
+      { layout: 'admin', template: updatedTemplateMarker, wxs: initialWxsMarker },
+      { layout: 'default', template: updatedTemplateMarker, include: updatedIncludeMarker, wxs: updatedWxsMarker },
+      { layout: 'admin', template: updatedTemplateMarker, wxs: updatedWxsMarker },
+    ]
+    const checkpoints: DomCheckpoint[] = stages.map((stage, index) => ({
+      id: `layout-shared:${index}`,
+      route: '/pages/layouts/index',
+      action: index === 4
+        ? 'classic WXS 全量刷新后重新进入 layouts 页面，验收默认布局及新的 WXS 文本'
+        : index === 5
+          ? '刷新后显式重新切换 admin 布局，验收新的 WXS 文本'
+          : `共享布局阶段 ${index}：模板、include、WXS 结果与当前布局，模板更新不重新导航`,
+      nodes: [
+        { selector: '#layout-current', text: `current: ${stage.layout}` },
+        { selector: '.layout-shared-template', scope: [{ has: `.layout-${stage.layout}` }], text: `${stage.template}: ${stage.wxs}` },
+        ...(stage.include ? [{ selector: '.layout-shared-include', scope: [{ has: `.layout-${stage.layout}` }], text: stage.include }] : []),
+        { selector: '.card__title', count: 3 },
+      ],
+    }))
+    checkpoints.splice(4, 0, CLASSIC_WXS_RELOAD_CHECKPOINT)
+    const dom = createDomAcceptance(context, 'e2e-apps/wevu-runtime-e2e', checkpoints)
 
     await fs.ensureDir(SHARED_DIR)
     await fs.writeFile(SHARED_IMPORT_TEMPLATE, buildSharedImportTemplate(initialTemplateMarker), 'utf8')
@@ -345,28 +336,25 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
         template: initialTemplateMarker,
         wxs: initialWxsMarker,
       })
+      await dom.check('layout-shared:0', miniProgram, page)
 
       const updatedTemplate = buildSharedImportTemplate(updatedTemplateMarker)
       await replaceFileByRename(SHARED_IMPORT_TEMPLATE, updatedTemplate)
       await waitForFileContainsWithRetry(sharedImportOutput, updatedTemplateMarker, SHARED_IMPORT_TEMPLATE, updatedTemplate)
       await waitForIdeRecompileSettled()
-      await resetLayoutStorageProbes(miniProgram)
-      page = await relaunchIdeSession('/pages/layouts/index')
-      miniProgram = await getSharedMiniProgram()
       await waitForLayoutSharedMarkers(miniProgram, {
         template: updatedTemplateMarker,
       })
+      await dom.check('layout-shared:1', miniProgram, page)
 
       const updatedInclude = buildSharedIncludeTemplate(updatedIncludeMarker)
       await replaceFileByRename(SHARED_INCLUDE_TEMPLATE, updatedInclude)
       await waitForFileContainsWithRetry(sharedIncludeOutput, updatedIncludeMarker, SHARED_INCLUDE_TEMPLATE, updatedInclude)
       await waitForIdeRecompileSettled()
-      await resetLayoutStorageProbes(miniProgram)
-      page = await relaunchIdeSession('/pages/layouts/index')
-      miniProgram = await getSharedMiniProgram()
       await waitForLayoutSharedMarkers(miniProgram, {
         include: updatedIncludeMarker,
       })
+      await dom.check('layout-shared:2', miniProgram, page)
 
       await resetLayoutStorageProbes(miniProgram)
       await page.callMethodWithOptions('applyAdminLayout', { routeOnly: true })
@@ -374,19 +362,20 @@ describe('wevu runtime layout shared template/wxs hmr (ide)', { concurrent: fals
       await waitForLayoutSharedMarkers(miniProgram, {
         template: updatedTemplateMarker,
       })
+      await dom.check('layout-shared:3', miniProgram, page)
 
       const updatedWxs = buildSharedWxs(updatedWxsMarker)
       await replaceFileByRename(SHARED_WXS, updatedWxs)
       await waitForFileContainsWithRetry(sharedWxsOutput, updatedWxsMarker, SHARED_WXS, updatedWxs)
-      await waitForIdeRecompileSettled()
-      await resetLayoutStorageProbes(miniProgram)
-      page = await relaunchIdeSession('/pages/layouts/index')
-      miniProgram = await getSharedMiniProgram()
+      // classic 的全量刷新会丢弃 admin 选择；先验收新页面的默认状态，再进行新的交互。
+      await dom.check(CLASSIC_WXS_RELOAD_CHECKPOINT.id, miniProgram, await waitForClassicWxsReload(miniProgram))
+      page = await miniProgram.reLaunch('/pages/layouts/index')
+      if (!page) {
+        throw new Error('Failed to re-enter /pages/layouts/index after classic WXS reload')
+      }
+      await dom.check('layout-shared:4', miniProgram, page)
       await page.callMethodWithOptions('applyAdminLayout', { routeOnly: true })
-      await page.waitFor(200)
-      await waitForLayoutSharedMarkers(miniProgram, {
-        wxs: updatedWxsMarker,
-      })
+      await dom.check('layout-shared:5', miniProgram, page)
     }
     finally {
       if (sharedMiniProgram) {

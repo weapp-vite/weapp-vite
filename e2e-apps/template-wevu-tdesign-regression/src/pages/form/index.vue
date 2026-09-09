@@ -50,6 +50,8 @@ const paceOptions = [
   { value: 'steady', label: '稳健' },
 ]
 
+const urgentSummary = computed(() => `${formState.urgent ? '加急已开启' : '加急未开启'} · ${paceOptions.find(item => item.value === formState.pace)?.label}`)
+
 const riskLevel = computed(() => {
   if (formState.urgent && formState.budget > 60) {
     return '高风险'
@@ -186,6 +188,7 @@ defineExpose({
             </t-radio-group>
           </FormRow>
           <view
+            id="form-urgent-row"
             class="urgent-row-toggle flex items-center justify-between rounded-[18rpx] bg-[#f8fafc] px-[18rpx] py-[16rpx]"
             @tap="toggleUrgent"
           >
@@ -195,6 +198,9 @@ defineExpose({
               </text>
               <text class="mt-[4rpx] block text-[20rpx] text-[#8a8aa5]">
                 整行可点击切换，开启后默认切到快速推进
+              </text>
+              <text id="form-urgent-state" class="mt-[4rpx] block text-[20rpx] text-[#5c5b7a]">
+                {{ urgentSummary }}
               </text>
             </view>
             <t-switch :value="formState.urgent" @tap.stop="stopUrgentTap" @change="handleUrgentChange" />

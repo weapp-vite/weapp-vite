@@ -92,11 +92,11 @@ defineComponentJson({
   <!-- 过滤组件 -->
   <view class="wr-class filter-wrap w-full h-[88rpx] flex justify-between relative [background:#fff]">
     <view class="filter-left-content h-full flex grow-2 [flex-flow:row_nowrap] justify-between [&_.filter-item]:flex-1 [&_.filter-item]:h-full [&_.filter-item]:flex [&_.filter-item]:items-center [&_.filter-item]:justify-center [&_.filter-item]:text-[26rpx] [&_.filter-item]:leading-[36rpx] [&_.filter-item]:font-normal [&_.filter-item]:text-[rgba(51,51,51,1)] [&_.filter-item_.filter-price]:flex [&_.filter-item_.filter-price]:flex-col [&_.filter-item_.filter-price]:ml-[6rpx] [&_.filter-item_.filter-price]:justify-between [&_.filter-item_.wr-filter]:ml-[8rpx] [&_.filter-active-item]:text-[#fa550f]">
-      <view :class="`filter-item ${overall === 1 ? 'filter-active-item' : ''}`" @tap="onOverallAction">
+      <view id="filter-overall" :class="`filter-item ${overall === 1 ? 'filter-active-item' : ''}`" @tap="onOverallAction">
         综合
       </view>
       <view class="filter-item" @tap="handlePriseSort">
-        <text :style="`color: ${sorts != '' ? color : ''}`">
+        <text id="filter-price-label" :style="`color: ${sorts != '' ? color : ''}`">
           价格
         </text>
         <view class="filter-price">

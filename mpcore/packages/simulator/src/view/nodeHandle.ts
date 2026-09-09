@@ -1,5 +1,6 @@
 import { resolveMiniProgramEventBinding } from './eventBinding'
 import { querySelectorAll } from './selectors'
+import { queryXPathElements } from './xpath'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
@@ -83,6 +84,7 @@ function createEventPayload(node: DomNodeLike, eventName: string, event: Headles
       dataset: event.target?.dataset ?? event.dataset ?? dataset,
       id: event.target?.id ?? event.id ?? nodeId,
     },
+    timeStamp: Date.now(),
     type: eventName,
   }
 }
@@ -154,15 +156,33 @@ export class HeadlessTestingNodeHandle {
     this.interactions?.assertActive?.()
   }
 
+  private query(selector: string) {
+    const nodes = querySelectorAll(this.node, selector)
+    const scope = this.node.attribs?.['data-sim-scope']
+    if (!scope || !this.interactions) {
+      return nodes
+    }
+    return nodes.filter((node) => {
+      const nodeScope = node.attribs?.['data-sim-scope']
+      return nodeScope === scope || (node.attribs?.['data-sim-component']
+        && (this.interactions!.ownerScopeId(nodeScope ?? null) ?? resolvePageScopeId(nodeScope)) === scope)
+    })
+  }
+
   async $(selector: string) {
     this.assertActive()
-    const match = querySelectorAll(this.node, selector)[0]
+    const match = this.query(selector)[0]
     return match ? new HeadlessTestingNodeHandle(match, this.interactions) : null
   }
 
   async $$(selector: string) {
     this.assertActive()
-    return querySelectorAll(this.node, selector).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
+    return this.query(selector).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
+  }
+
+  async getElementsByXpath(expression: string) {
+    this.assertActive()
+    return queryXPathElements(this.node, expression).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
   }
 
   async attr(name: string) {

@@ -106,6 +106,25 @@ describe('packageJson', () => {
     expect(logger.error).toHaveBeenCalled()
   })
 
+  it.each([true, false])('uses the Tailwind baseline when resolution is unavailable (skipNetwork=%s)', async (skipNetwork) => {
+    const resolveVersion = vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+    const pkg = createDefaultPackageJson()
+
+    await upsertDependencyVersion(pkg, 'devDependencies.weapp-tailwindcss', 'weapp-tailwindcss', { skipNetwork })
+
+    expect(pkg.devDependencies?.['weapp-tailwindcss']).toBe('^5.5.2')
+    expect(resolveVersion).toHaveBeenCalledTimes(skipNetwork ? 0 : 1)
+  })
+
+  it('keeps an existing Tailwind version when the registry is unavailable', async () => {
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+    const pkg = { devDependencies: { 'weapp-tailwindcss': '^5.0.4' } }
+
+    await upsertDependencyVersion(pkg, 'devDependencies.weapp-tailwindcss', 'weapp-tailwindcss')
+
+    expect(pkg.devDependencies['weapp-tailwindcss']).toBe('^5.0.4')
+  })
+
   it('exposes a reusable default package.json template', () => {
     const pkg = createDefaultPackageJson()
     expect(pkg.name).toBe('weapp-vite-app')

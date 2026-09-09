@@ -16,7 +16,7 @@ definePageJson({
       <view class="slot-flex-layout-case__label">
         single-per-slot
       </view>
-      <SlotFlexHost>
+      <SlotFlexHost id="slot-flex-single">
         <template #left>
           <view class="slot-flex-item slot-flex-item--single-left" data-case="single-left">
             L1
@@ -39,7 +39,7 @@ definePageJson({
       <view class="slot-flex-layout-case__label">
         middle-multi
       </view>
-      <SlotFlexHost>
+      <SlotFlexHost id="slot-flex-middle-multi">
         <template #left>
           <view class="slot-flex-item slot-flex-item--middle-multi-left" data-case="middle-multi-left">
             L1
@@ -65,7 +65,7 @@ definePageJson({
       <view class="slot-flex-layout-case__label">
         all-multi
       </view>
-      <SlotFlexHost>
+      <SlotFlexHost id="slot-flex-all-multi">
         <template #left>
           <view class="slot-flex-item slot-flex-item--all-multi-left-a" data-case="all-multi-left-a">
             L1

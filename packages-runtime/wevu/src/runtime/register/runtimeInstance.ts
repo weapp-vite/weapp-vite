@@ -13,6 +13,7 @@ import type {
 import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import {
+  WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEVU_EFFECT_SCOPE_KEY,
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
@@ -25,7 +26,7 @@ import {
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
-import { effectScope as createEffectScope, isRef } from '../../reactivity'
+import { effectScope as createEffectScope, isReactive, isRef } from '../../reactivity'
 import { observeSetDataCompletion } from '../app/setData/commitTracker'
 import { applySnapshotUpdate, isDeepEqualValue } from '../app/setData/snapshot'
 import {
@@ -34,6 +35,7 @@ import {
   runtimeCapabilityRegistry,
 } from '../capabilities'
 import { callHookList } from '../hooks'
+import { getMiniProgramRuntimeGlobalObject } from '../platform'
 import { runTeardownSteps } from '../teardown'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
@@ -43,6 +45,7 @@ import {
   safeMarkNoSetData,
 } from './runtimeInstance/setupContext'
 import { runRuntimeSetupPhase } from './runtimeInstance/setupPhase'
+import { restoreReactiveSetupSnapshot } from './runtimeInstance/setupSnapshot'
 import {
   attachNativeInstanceRef,
   attachRuntimeInstance,
@@ -52,6 +55,8 @@ import {
   resolveNativeSetData,
 } from './runtimeInstance/utils'
 import { registerWatches } from './watch'
+
+const initialReactiveSetupSnapshots = new WeakMap<object, Record<string, unknown>>()
 
 function cloneInitialSnapshotValue(value: unknown, cache = new WeakMap<object, unknown>()): unknown {
   if (!value || typeof value !== 'object') {
@@ -724,6 +729,15 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         runtimeProxy: runtimeProxy as Record<string, any>,
         setup,
       })
+      if (typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
+        const initialReactiveSetupSnapshot: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(runtimeWithDefaults.setupState ?? {})) {
+          if (isReactive(value)) {
+            initialReactiveSetupSnapshot[key] = cloneInitialSnapshotValue(value)
+          }
+        }
+        initialReactiveSetupSnapshots.set(runtimeWithDefaults, initialReactiveSetupSnapshot)
+      }
       if (!options?.deferSetData) {
         runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
       }
@@ -792,6 +806,10 @@ function preserveRuntimeFacadeIdentity<D extends object, C extends ComputedDefin
     }
   }
   attachRuntimeRef(previousRuntime.state as Record<string, any>, previousRuntime)
+  const nextInitialSetupSnapshot = initialReactiveSetupSnapshots.get(nextRuntime)
+  if (nextInitialSetupSnapshot) {
+    initialReactiveSetupSnapshots.set(previousRuntime, nextInitialSetupSnapshot)
+  }
   target.__wevu = previousRuntime
   Object.defineProperty(target, WEVU_PUBLIC_RUNTIME_KEY, {
     value: previousRuntime,
@@ -815,7 +833,7 @@ function createRuntimeStateSnapshot(
       continue
     }
     const setupBinding = setupState?.[key]
-    if (setupState && Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding)) {
+    if (setupState && Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding) && !isReactive(setupBinding)) {
       continue
     }
     if (preferredState && Object.prototype.hasOwnProperty.call(preferredState, key)) {
@@ -827,23 +845,9 @@ function createRuntimeStateSnapshot(
   return snapshot
 }
 
-function collectPlainSetupSnapshotKeys(
-  runtime: RuntimeInstance<any, any, any>,
-  nativeData: Record<string, any> | undefined,
-) {
-  const setupState = runtime.setupState as Record<string, any> | undefined
-  if (!setupState || !nativeData || typeof nativeData !== 'object') {
-    return []
-  }
-  return Object.keys(nativeData).filter((key) => {
-    const setupBinding = setupState[key]
-    return Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding)
-  })
-}
-
 function syncRuntimeStateFromNativeData(
   target: InternalRuntimeState,
-  options?: { includeSetupState?: boolean, nativeData?: Record<string, any> },
+  options?: { includeSetupState?: boolean, nativeData?: Record<string, any>, initialSetupState?: Record<string, unknown> },
 ) {
   const runtime = target.__wevu
   const runtimeState = runtime?.state as Record<string, any> | undefined
@@ -861,8 +865,11 @@ function syncRuntimeStateFromNativeData(
       try {
         const setupBinding = setupState?.[key]
         const runtimeValue = cloneInitialSnapshotValue(value)
-        if (!options?.includeSetupState && setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
-          continue
+        if (setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
+          // 普通 setup 值来自当前代码；仅 ref/reactive 绑定承接宿主状态。
+          if (!options?.includeSetupState || (!isRef(setupBinding) && !isReactive(setupBinding))) {
+            continue
+          }
         }
         if (
           !options?.includeSetupState
@@ -881,6 +888,10 @@ function syncRuntimeStateFromNativeData(
         }
         if (isRef(setupBinding)) {
           setupBinding.value = runtimeValue
+          continue
+        }
+        if (isReactive(setupBinding) && runtimeValue && typeof runtimeValue === 'object') {
+          restoreReactiveSetupSnapshot(setupBinding, runtimeValue, options?.initialSetupState?.[key])
           continue
         }
         runtimeState[key] = runtimeValue
@@ -1005,28 +1016,27 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any> },
 ) {
   const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
+  const initialSetupState = previousRuntime ? initialReactiveSetupSnapshots.get(previousRuntime) : undefined
   const previousRuntimeState = previousRuntime
     ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
     : undefined
-  const plainSetupSnapshotKeys = previousRuntime
-    ? collectPlainSetupSnapshotKeys(previousRuntime, (target as any).data)
-    : []
   teardownRuntimeInstance(target, { skipHooks: true })
   const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
     deferSetData: true,
     snapshotOmitKeys: options?.snapshotOmitKeys,
   })
-  if (previousRuntimeState) {
+  const stateSnapshot = previousRuntimeState ?? (options?.stateSnapshot
+    ? createRuntimeStateSnapshot(nextRuntime, options.stateSnapshot, options.stateSnapshot)
+    : undefined)
+  if (stateSnapshot) {
     const nativeData = (target as any).data
     if (nativeData && typeof nativeData === 'object') {
-      for (const key of plainSetupSnapshotKeys) {
-        delete nativeData[key]
-      }
-      Object.assign(nativeData, cloneInitialSnapshotValue(previousRuntimeState))
+      Object.assign(nativeData, cloneInitialSnapshotValue(stateSnapshot))
     }
     syncRuntimeStateFromNativeData(target, {
       includeSetupState: true,
-      nativeData: previousRuntimeState,
+      nativeData: stateSnapshot,
+      initialSetupState,
     })
   }
   if (!previousRuntime || previousRuntime === nextRuntime) {

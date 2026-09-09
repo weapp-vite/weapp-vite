@@ -1,11 +1,14 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  closeSharedMiniProgram,
   DIST_ROOT,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
 } from './github-issues.runtime.shared'
+import { runGithubDom } from './githubIssuesDom'
+import { COMPUTED_CLASSES, MAP_CLASSES, OBJECT_CLASSES, ROOT_CLASSES } from './githubIssuesDom/classes'
 
 async function readDistFile(relativePath: string) {
   return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
@@ -15,8 +18,11 @@ describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
   beforeAll(async () => {
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
 
-  it('issue #289: compiles object-literal class bindings and runtime probe', async () => {
+  it('issue #289: compiles object-literal class bindings and runtime probe', async (ctx) => {
     const wxml = await readDistFile('pages/issue-289/object-literal/index.wxml')
     const js = await readDistFile('pages/issue-289/object-literal/index.js')
 
@@ -26,9 +32,10 @@ describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
     expect(js).toContain('runE2E')
     expect(js).toContain('compactChanged')
     expect(js).toContain('showListRoundTripWorked')
+    await runGithubDom(ctx, '/pages/issue-289/object-literal/index', OBJECT_CLASSES)
   })
 
-  it('issue #289: compiles map-class dynamic class bindings and runtime probe', async () => {
+  it('issue #289: compiles map-class dynamic class bindings and runtime probe', async (ctx) => {
     const wxml = await readDistFile('pages/issue-289/map-class/index.wxml')
     const js = await readDistFile('pages/issue-289/map-class/index.js')
 
@@ -40,9 +47,10 @@ describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
     expect(js).toContain('issue289-map-toggle-expanded')
     expect(js).toContain('issue289-map-toggle-list')
     expect(js).toContain('calloutExpandedChanged')
+    await runGithubDom(ctx, '/pages/issue-289/map-class/index', MAP_CLASSES)
   })
 
-  it('issue #289: compiles root-class bindings and runtime probe', async () => {
+  it('issue #289: compiles root-class bindings and runtime probe', async (ctx) => {
     const wxml = await readDistFile('pages/issue-289/root-class/index.wxml')
     const js = await readDistFile('pages/issue-289/root-class/index.js')
 
@@ -51,9 +59,10 @@ describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
     expect(wxml).toContain('RootClassExample')
     expect(js).toContain('selectedIndexChanged')
     expect(js).toContain('showOptionsChanged')
+    await runGithubDom(ctx, '/pages/issue-289/root-class/index', ROOT_CLASSES)
   })
 
-  it('issue #289: compiles computed-class dynamic class bindings and runtime probe', async () => {
+  it('issue #289: compiles computed-class dynamic class bindings and runtime probe', async (ctx) => {
     const wxml = await readDistFile('pages/issue-289/computed-class/index.wxml')
     const js = await readDistFile('pages/issue-289/computed-class/index.js')
 
@@ -66,5 +75,6 @@ describe('e2e app: github-issues / issue-289', { concurrent: false }, () => {
     expect(js).toContain('issue289-computed-toggle-items')
     expect(js).toContain('sourceChanged')
     expect(js).toContain('showItemsChanged')
+    await runGithubDom(ctx, '/pages/issue-289/computed-class/index', COMPUTED_CLASSES)
   })
 })

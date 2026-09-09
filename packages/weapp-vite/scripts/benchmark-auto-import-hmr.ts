@@ -12,6 +12,7 @@ import vantComponents from '../src/auto-import-components/resolvers/json/vant.js
 import { resolveRepoRoot, resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { patchProjectConfigFile } from './utils/config-file'
+import { HMR_OUTPUT_POLL_INTERVAL_MS, measureFileMarkerUpdate } from './utils/hmrOutput'
 import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
@@ -46,7 +47,6 @@ const ORIGINAL_AUTO_IMPORT_BLOCK = [
 const CLI_PATH = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
 const DEV_TIMEOUT_MS = Number.parseInt(process.env.AUTO_IMPORT_HMR_TIMEOUT_MS ?? '90000', 10)
 const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
-const HMR_ACTIVITY_RE = /hmr emit dirty=\d+ resolved=\d+ emitAll=(true|false) pending=\d+|loadEntry src\/pages\/bench-hmr-auto-import\/index\.vue 耗时/
 const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
 
 if (!Number.isFinite(iterations) || iterations <= 0) {
@@ -76,6 +76,11 @@ async function main() {
   await writeFile(reportJsonPath, JSON.stringify({
     iterations,
     generatedAt: new Date().toISOString(),
+    updateMeasurement: {
+      completion: 'emitted-template-marker',
+      clock: 'performance.now',
+      pollIntervalMs: HMR_OUTPUT_POLL_INTERVAL_MS,
+    },
     results,
   }, null, 2))
   await writeFile(reportMdPath, renderMarkdown(results), 'utf8')
@@ -179,14 +184,24 @@ async function measureHmr(options: {
 
       const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`
       const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
-      const outputLengthBeforeUpdate = dev.getOutput().length
-      const updateStart = performance.now()
-      await writeFile(pagePath, updatedSource, 'utf8')
-      await dev.waitFor(
-        waitForNewOutputMatch(dev.getOutput, outputLengthBeforeUpdate, HMR_ACTIVITY_RE, DEV_TIMEOUT_MS),
-        `${mode} hmr marker`,
-      )
-      const updateMs = performance.now() - updateStart
+      const measurementAbort = new AbortController()
+      let updateMs: number
+      try {
+        updateMs = await dev.waitFor(
+          measureFileMarkerUpdate({
+            outputPath: path.join(project.tempDir, 'dist/pages/bench-hmr-auto-import/index.wxml'),
+            marker,
+            update: () => writeFile(pagePath, updatedSource, 'utf8'),
+            timeoutMs: DEV_TIMEOUT_MS,
+            signal: measurementAbort.signal,
+          }),
+          `${mode} emitted hmr marker`,
+        )
+      }
+      finally {
+        // dev 提前退出时同步停止文件轮询，不留下跨场景等待任务。
+        measurementAbort.abort()
+      }
       const updateMemory = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
 
       return {
@@ -404,23 +419,6 @@ function toVantTag(component: string) {
   return `van-${component}`
 }
 
-async function waitForNewOutputMatch(
-  getOutput: () => string,
-  startOffset: number,
-  matcher: RegExp,
-  timeoutMs: number,
-) {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    const nextOutput = getOutput().slice(startOffset)
-    if (matcher.test(nextOutput)) {
-      return nextOutput
-    }
-    await new Promise(resolve => setTimeout(resolve, 250))
-  }
-  throw new Error(`Timed out waiting for dev output to match ${matcher}`)
-}
-
 function renderBenchmarkVantResolver() {
   return [
     `const components = Object.freeze(${JSON.stringify(resolverComponents, null, 2)} as const)`,
@@ -478,6 +476,7 @@ function summarizeNumbers(values: number[]) {
   const total = values.reduce((sum, value) => sum + value, 0)
   const mid = Math.floor(sorted.length / 2)
   return {
+    samples: [...values],
     min: sorted[0] ?? 0,
     max: sorted.at(-1) ?? 0,
     mean: values.length ? total / values.length : 0,
@@ -543,6 +542,7 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
   lines.push('- `current`：开启当前自动导入实现后启动 dev 并执行相同模板改动。')
   lines.push('- `startup` 表示从启动 dev 到首个 benchmark 页面产物可见的耗时。')
   lines.push('- `update` 表示修改 benchmark 页面后，dist 模板产物出现新标记的耗时。')
+  lines.push(`- 更新计时使用单调时钟，产物每 ${HMR_OUTPUT_POLL_INTERVAL_MS} ms 检查一次；编译日志不作为完成证据。`)
   lines.push('- `heap` / `rss` 为触发 GC 后的 dev 进程内存均值，原始 samples 保存在 JSON 报告中。')
   lines.push('')
 

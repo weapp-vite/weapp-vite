@@ -37,26 +37,23 @@ watch(() => props.listId, (listId) => {
   independentID.value = listId
 })
 
-function onClickGoods(e: any) {
-  const index = e.currentTarget.dataset.index ?? e.detail?.index
+function onClickGoods(payload: Record<string, unknown>, index: number) {
   emit('click', {
-    ...e.detail,
+    ...payload,
     index,
   })
 }
 
-function onAddCart(e: any) {
-  const index = e.currentTarget.dataset.index ?? e.detail?.index
+function onAddCart(payload: Record<string, unknown>, index: number) {
   emit('addcart', {
-    ...e.detail,
+    ...payload,
     index,
   })
 }
 
-function onClickGoodsThumb(e: any) {
-  const index = e.currentTarget.dataset.index ?? e.detail?.index
+function onClickGoodsThumb(payload: Record<string, unknown>, index: number) {
   emit('thumb', {
-    ...e.detail,
+    ...payload,
     index,
   })
 }
@@ -83,14 +80,15 @@ defineComponentJson({
     <block v-for="(item, index) in goodsList" :key="index">
       <goods-card
         :id="`${independentID}-gd-${index}`"
+        :card-id="`${independentID}-gd-${index}`"
         :data="item"
         :currency="item.currency || '¥'"
         :thresholds="thresholds"
         class="goods-card-inside"
         :data-index="index"
-        @thumb="onClickGoodsThumb"
-        @click="onClickGoods"
-        @add-cart="onAddCart"
+        @thumb="onClickGoodsThumb($event, index)"
+        @click="onClickGoods($event, index)"
+        @add-cart="onAddCart($event, index)"
       />
     </block>
   </view>

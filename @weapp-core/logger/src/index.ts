@@ -14,7 +14,7 @@ export type LogLevel = LogType | 'silent'
 /**
  * @description 终端文本染色工具，基于 picocolors。
  */
-export const colors = picocolors
+export const colors: typeof picocolors = picocolors
 
 export interface LoggerConfig {
   /**

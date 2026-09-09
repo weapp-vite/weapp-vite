@@ -86,3 +86,9 @@ export function recordIssue911Unmounted() {
 export function readIssue911Trace() {
   return [...trace]
 }
+
+export function resetIssue911Trace() {
+  trace.length = 0
+  traceMode = undefined
+  wx.removeStorageSync(ISSUE_911_TRACE_STORAGE_KEY)
+}

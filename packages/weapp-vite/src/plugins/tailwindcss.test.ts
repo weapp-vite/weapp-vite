@@ -3,8 +3,11 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { compileVueStyleToWxss, readAndParseSfc } from 'wevu/compiler'
 import { createSidecarSourceSpecifier } from '../moduleGraph/protocol'
 import { createTailwindcssPlugin, resolveManagedTailwindcssOptions } from './tailwindcss'
+import { hasManagedTailwindcssEntries } from './tailwindcssMarker'
+import { buildWeappVueStyleRequest } from './vue/transform/styleRequest'
 
 const mocks = vi.hoisted(() => ({
   createCompiler: vi.fn(),
@@ -76,6 +79,15 @@ describe('managed Tailwind integration', () => {
     expect(createTailwindcssPlugin(createContext(undefined))).toEqual([])
   })
 
+  it('clears managed output ownership when configuration disables the integration', () => {
+    const ctx = createContext(true)
+    createTailwindcssPlugin(ctx)
+    expect(hasManagedTailwindcssEntries(ctx)).toBe(true)
+    ctx.configService.weappViteConfig.tailwindcss = false
+    expect(createTailwindcssPlugin(ctx)).toEqual([])
+    expect(hasManagedTailwindcssEntries(ctx)).toBe(false)
+  })
+
   it('auto-detects Tailwind v4 but stays dormant until a CSS import is found', () => {
     mocks.packageInfo = { version: '4.3.3' }
     expect(resolveManagedTailwindcssOptions(createContext(undefined))).toMatchObject({
@@ -113,7 +125,7 @@ describe('managed Tailwind integration', () => {
     const resolveId = getHookHandler(plugin.resolveId)
     const sidecar = createSidecarSourceSpecifier(path.join(root, 'src/app.vue'), entry, 'style')
 
-    expect(resolveId?.call({}, sidecar, undefined, {} as any)).toMatch(/managed-tailwindcss-entry:0\.css/)
+    expect(resolveId?.call({}, sidecar, undefined, {} as any)).toBe(sidecar)
   })
 
   it('does not auto-enable Tailwind v3 or when the package is missing', () => {
@@ -194,6 +206,7 @@ describe('managed Tailwind integration', () => {
         return {
           classSet: new Set(['gap-4.25']),
           css: '.gap-4_d25{gap:17rpx}',
+          rawCss: '.gap-4_d25{gap:17rpx}',
           dependencies: [entry],
           snapshot,
           target: 'weapp',
@@ -250,7 +263,8 @@ describe('managed Tailwind integration', () => {
     } as any)
     const sidecarEntry = createSidecarSourceSpecifier(path.join(root, 'src/app.ts'), entry, 'style')
     const virtualEntry = await getHookHandler(plugin.resolveId)?.call({} as any, sidecarEntry, undefined, {} as any)
-    const marker = await getHookHandler(plugin.load)?.call({} as any, virtualEntry)
+    const loaded = await getHookHandler(plugin.load)?.call({} as any, virtualEntry)
+    const marker = getHookHandler(plugin.transform)?.call({} as any, loaded, virtualEntry, {} as any)?.code
     const bundle = {
       'app.wxss': {
         type: 'asset',
@@ -316,9 +330,6 @@ describe('managed Tailwind integration', () => {
       'generate',
       'merge',
       'wxss',
-      'end',
-      'start',
-      'merge',
       'wxss',
       'wxml',
       'js',
@@ -328,18 +339,33 @@ describe('managed Tailwind integration', () => {
     expect(addWatchFile).toHaveBeenCalledWith(entry)
   })
 
-  it('only virtualizes managed style sidecars', () => {
+  it('keeps managed style sidecar request identity visible to user pre plugins', () => {
     const entry = '/project/src/app.css'
     const plugin = getPlugins({ cssEntries: [entry] })[0]
     const resolveId = getHookHandler(plugin.resolveId)
 
     expect(resolveId?.call({} as any, './app.css', '/project/src/app.vue', {} as any)).toBeNull()
+    const sidecar = createSidecarSourceSpecifier('/project/src/app.vue', entry, 'style')
     expect(resolveId?.call(
       {} as any,
-      createSidecarSourceSpecifier('/project/src/app.vue', entry, 'style'),
+      sidecar,
       undefined,
       {} as any,
-    )).toMatch(/^\0weapp-vite:managed-tailwindcss-entry:0\.css\?weapp-vite-sidecar-owner=/)
+    )).toBe(sidecar)
+  })
+
+  it('keeps dependency-only style requests out of every CSS generation hook', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-dependency-only-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'src/app.css')
+    await fs.mkdir(path.dirname(entry), { recursive: true })
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const request = createSidecarSourceSpecifier(path.join(root, 'src/app.ts'), entry, 'style', true)
+    expect(getHookHandler(plugin.resolveId)?.call({} as any, request, undefined, {} as any)).toBeNull()
+    expect(getHookHandler(plugin.load)?.call({} as any, request)).toBeNull()
+    expect(getHookHandler(plugin.transform)?.call({} as any, 'export default "dependency";', request, {} as any)).toBeNull()
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
 
   it('invalidates only changed files and removes generated entries when deleted', async () => {
@@ -354,6 +380,7 @@ describe('managed Tailwind integration', () => {
     const compiler = {
       generate: vi.fn(async () => ({
         css: '',
+        rawCss: '',
         dependencies: [entry],
         snapshot,
       })),
@@ -364,7 +391,7 @@ describe('managed Tailwind integration', () => {
       dispose: vi.fn(async () => {}),
     }
     mocks.createCompiler.mockReturnValue(compiler)
-    const plugin = getPlugins({ cssEntries: [entry] })[0]
+    const [plugin, outputPlugin] = getPlugins({ cssEntries: [entry] })
     const marker = getHookHandler(plugin.transform)?.call(
       {} as any,
       '@import "tailwindcss";',
@@ -380,6 +407,7 @@ describe('managed Tailwind integration', () => {
     } as unknown as OutputBundle
 
     await getHookHandler(plugin.generateBundle)?.call({ addWatchFile: vi.fn() } as any, {} as any, bundle, false)
+    await getHookHandler(outputPlugin.generateBundle)?.call({ addWatchFile: vi.fn() } as any, {} as any, bundle, false)
 
     await plugin.watchChange?.('/project/src/pages/index.wxml', { event: 'update' } as any)
     expect(compiler.invalidate).toHaveBeenCalledWith(['/project/src/pages/index.wxml'])
@@ -404,7 +432,7 @@ describe('managed Tailwind integration', () => {
     })
   })
 
-  it('replaces a Vue style module that inlines a managed CSS entry', async () => {
+  it('does not steal an inline Vue style with the same text as a managed CSS entry', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwindcss-'))
     temporaryRoots.push(root)
     const entry = path.join(root, 'src/app.css')
@@ -420,10 +448,53 @@ describe('managed Tailwind integration', () => {
       source,
       `${path.join(root, 'src/app.vue')}?weapp-vite-vue&type=style&index=0&lang.css`,
       {} as any,
-    )).toMatchObject({
-      code: expect.stringContaining('managed_tailwindcss_entry_0'),
-      map: null,
-    })
+    )).toBeNull()
+  })
+
+  it.each(['configured', 'auto'] as const)('keeps %s external SFC Tailwind entries owned before SFC style normalization', async (mode) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwindcss-'))
+    temporaryRoots.push(root)
+    const entry = path.join(root, 'src/app.css')
+    const filename = path.join(root, 'src/app.vue')
+    await fs.mkdir(path.dirname(entry), { recursive: true })
+    const source = '@import "tailwindcss";\n\npage {\n  background-color: #f6f7fb;\n}\n'
+    await fs.writeFile(entry, source)
+    await fs.writeFile(filename, '<style src="./app.css"></style>')
+    const parsed = await readAndParseSfc(filename, { resolveSrc: {} })
+    const compiled = await compileVueStyleToWxss(parsed.descriptor.styles[0]!, { id: 'probe', filename })
+    mocks.packageInfo = { version: '4.3.3' }
+    const plugin = getPlugins(mode === 'configured' ? { cssEntries: [entry] } : undefined, root)[0]!
+    const resolve = vi.fn(async () => ({ id: entry }))
+    const request = buildWeappVueStyleRequest(filename, parsed.descriptor.styles[0]!, 0, { hmrToken: 2 })
+    const resolved = await getHookHandler(plugin.resolveId)?.call({ resolve } as any, request, undefined, {} as any)
+
+    expect(compiled.code).not.toBe(source)
+    expect(resolve).toHaveBeenCalledWith('./app.css', filename.replaceAll('\\', '/'), { skipSelf: true })
+    expect(resolved).toBe(request)
+    const loaded = await getHookHandler(plugin.load)?.call({} as any, resolved as string)
+    expect(loaded).toBeNull()
+    const transformed = getHookHandler(plugin.transform)?.call({} as any, compiled.code, resolved as string, {} as any)
+    expect(transformed?.code).toContain('managed_tailwindcss_entry_0')
+    expect(transformed?.code).not.toContain('@import')
+  })
+
+  it('resolves managed SFC styles by block index and alias instead of matching their contents', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwindcss-'))
+    temporaryRoots.push(root)
+    const filename = path.join(root, 'src/app.vue')
+    const entry = path.join(root, 'src/styles/global.css')
+    await fs.mkdir(path.dirname(entry), { recursive: true })
+    await fs.writeFile(entry, '@import "tailwindcss";')
+    await fs.writeFile(filename, '<style>.local { color: red; }</style><style src="@/styles/global.css"></style>')
+    const plugin = getPlugins({ cssEntries: [entry] }, root)[0]!
+    const resolve = vi.fn(async () => ({ id: entry }))
+    const resolveId = getHookHandler(plugin.resolveId)!
+
+    expect(await resolveId.call({ resolve } as any, `${filename}?weapp-vite-vue&type=style&index=0&lang.css`, undefined, {} as any)).toBeNull()
+    expect(resolve).not.toHaveBeenCalled()
+    const request = `${filename}?weapp-vite-vue&type=style&index=1&lang.css`
+    expect(await resolveId.call({ resolve } as any, request, undefined, {} as any)).toBe(request)
+    expect(resolve).toHaveBeenCalledWith('@/styles/global.css', filename.replaceAll('\\', '/'), { skipSelf: true })
   })
 
   it('does not replace CSS outside the managed entry set', () => {

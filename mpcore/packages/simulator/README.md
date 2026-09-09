@@ -16,3 +16,7 @@
 - `close()` 会清理页面栈、组件 scope、observer、timer、事件和模块缓存，并使旧页面/节点 handle 失效
 
 编写页面和组件单测时优先使用上层 `@mpcore/test`；直接使用本包适合实现 provider、调试桥或更低层运行时断言。
+
+浏览器会话的 `renderCurrentPage().styles` 提供当前页面的 `cssText`、项目相对 `dependencies` 和 `appWxssEnabled`，Web demo 将该结果挂载到页面预览的 Shadow DOM。解析器读取 `app.wxss`、页面 `.wxss` 及递归本地 `@import`，保留导入位置和全局在前、页面在后的层叠顺序；页面 `.wxss` 内联的全局样式快照也会动态加载，并保留其后页面自有样式的覆盖优先级。文件修改后重新渲染会读取最新内容，包括只更新样式的场景，不重建页面或 App 实例。
+
+此入口只负责页面样式依赖和 CSS 兼容声明，不实现嵌套组件的完整样式隔离、类名前缀转换或 `rpx` 布局换算。Component 页面的 `page-isolated`、`page-strong-isolated`、`page-apply-shared`、`page-shared` 禁用隐式 `app.wxss`，页面仍可显式导入样式；最终页面 JSON 的 `styleIsolation` 优先于 JS 定义，JSON 未提供该值时才保留 JS 选项。普通 `Page` 注册不应用组件隔离选项，普通 `isolated` 也不等同于 `page-isolated`。缺失依赖、循环导入、非法 CSS 和不支持的导入会抛出明确错误。支持带媒体条件的本地导入；远程导入及 `layer` / `supports` 导入条件不受支持，也不会触发外部请求。

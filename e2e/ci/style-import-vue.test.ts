@@ -6,12 +6,14 @@ import { describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { readEmittedStylesheet } from '../utils/emittedStylesheet'
 import { replaceFileByRename } from '../utils/hmr-helpers'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/style-import-vue')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const WXSS_PATH = path.join(DIST_ROOT, 'pages/index/index.wxss')
+const KEEP_IMPORT_WXSS_PATH = path.join(DIST_ROOT, 'pages/index/keep-import.wxss')
 const PAGE_SOURCE_PATH = path.join(APP_ROOT, 'src/pages/index/index.vue')
 const HELLO_CSS_PATH = path.join(APP_ROOT, 'src/pages/index/hello.css')
 const SCSS_IMPORT_PATH = path.join(APP_ROOT, 'src/pages/index/scss-import.css')
@@ -44,6 +46,14 @@ async function waitForFileContains(filePath: string, markers: string[], timeoutM
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   throw new Error(`Timed out waiting for ${filePath} to contain expected markers.`)
+}
+
+async function assertKeptStyleImport(wxss: string) {
+  expect(wxss).toContain('@import \'./keep-import.wxss\';')
+  expect(wxss).not.toContain('@wv-keep-import')
+  const imported = await waitForFileContains(KEEP_IMPORT_WXSS_PATH, ['.keep-imported', '#0891b2'])
+  expect(imported).toContain('.keep-imported')
+  expect(await readEmittedStylesheet(WXSS_PATH)).toContain('.keep-imported')
 }
 
 function injectStyleMarker(source: string, selector: string, marker: string) {
@@ -89,8 +99,7 @@ describe('vue style @import resolution (e2e)', { concurrent: false }, () => {
     for (const marker of EXPECTED_MARKERS) {
       expect(wxss).toContain(marker)
     }
-    expect(wxss).toContain('@import \'./keep-import.css\';')
-    expect(wxss).not.toContain('@wv-keep-import')
+    await assertKeptStyleImport(wxss)
   })
 
   it('dev build inlines css/scss/src imports into wxss', async () => {
@@ -111,8 +120,7 @@ describe('vue style @import resolution (e2e)', { concurrent: false }, () => {
       for (const marker of EXPECTED_MARKERS) {
         expect(wxss).toContain(marker)
       }
-      expect(wxss).toContain('@import \'./keep-import.css\';')
-      expect(wxss).not.toContain('@wv-keep-import')
+      await assertKeptStyleImport(wxss)
     }
     finally {
       await devProcess.stop(2_000)
@@ -160,8 +168,7 @@ describe('vue style @import resolution (e2e)', { concurrent: false }, () => {
         'weapp page style keep-import hmr output',
       )
       expect(pageWxss).toContain(pageMarker)
-      expect(pageWxss).toContain('@import \'./keep-import.css\';')
-      expect(pageWxss).not.toContain('@wv-keep-import')
+      await assertKeptStyleImport(pageWxss)
 
       await replaceFileByRename(HELLO_CSS_PATH, updatedHelloCss)
       const helloWxss = await devProcess.waitFor(
@@ -172,8 +179,7 @@ describe('vue style @import resolution (e2e)', { concurrent: false }, () => {
         'weapp hello.css hmr output',
       )
       expect(helloWxss).toContain(helloMarker)
-      expect(helloWxss).toContain('@import \'./keep-import.css\';')
-      expect(helloWxss).not.toContain('@wv-keep-import')
+      await assertKeptStyleImport(helloWxss)
 
       await replaceFileByRename(SCSS_IMPORT_PATH, updatedScssImport)
       const scssWxss = await devProcess.waitFor(
@@ -184,8 +190,7 @@ describe('vue style @import resolution (e2e)', { concurrent: false }, () => {
         'weapp scss import hmr output',
       )
       expect(scssWxss).toContain(scssMarker)
-      expect(scssWxss).toContain('@import \'./keep-import.css\';')
-      expect(scssWxss).not.toContain('@wv-keep-import')
+      await assertKeptStyleImport(scssWxss)
 
       await replaceFileByRename(EXTERNAL_CSS_PATH, updatedExternalCss)
       const externalWxss = await devProcess.waitFor(
@@ -196,8 +201,7 @@ describe('vue style @import resolution (e2e)', { concurrent: false }, () => {
         'weapp external style src hmr output',
       )
       expect(externalWxss).toContain(externalMarker)
-      expect(externalWxss).toContain('@import \'./keep-import.css\';')
-      expect(externalWxss).not.toContain('@wv-keep-import')
+      await assertKeptStyleImport(externalWxss)
       expect(devProcess.getOutput()).not.toContain('Build failed')
     }
     finally {

@@ -36,13 +36,19 @@ describe('subpackage-shared-chunks app', () => {
 
   it('injects the valid shared component style into order subpackage outputs', async () => {
     const sharedStylePath = path.resolve(distDir, 'shared/styles/components.wxss')
+    const orderRoot = path.resolve(distDir, 'packages/order')
+    const independentSharedStylePath = path.resolve(orderRoot, 'weapp-shared/shared/styles/components.wxss')
     const orderComponentStylePath = path.resolve(distDir, 'packages/order/components/OrderMetrics/OrderMetrics.wxss')
     expect(await fs.pathExists(sharedStylePath)).toBe(true)
+    expect(await fs.pathExists(independentSharedStylePath)).toBe(true)
 
     const orderComponentStyle = await fs.readFile(orderComponentStylePath, 'utf8')
 
     expect(orderComponentStyle).toContain('@import \'../../styles/theme.wxss\';')
-    expect(orderComponentStyle).toContain('@import \'../../../../shared/styles/components.wxss\';')
+    const sharedStyleImport = '../../weapp-shared/shared/styles/components.wxss'
+    expect(orderComponentStyle).toContain(`@import '${sharedStyleImport}';`)
+    expect(path.resolve(path.dirname(orderComponentStylePath), sharedStyleImport)).toBe(independentSharedStylePath)
+    expect(await fs.readFile(independentSharedStylePath, 'utf8')).toBe(await fs.readFile(sharedStylePath, 'utf8'))
   })
 
   it('warns and skips the invalid shared style entry', () => {

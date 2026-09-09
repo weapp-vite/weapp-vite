@@ -38,8 +38,20 @@ const ENGINE_BUILD_ENDPOINT_MISSING_MESSAGE = '当前微信开发者工具未提
 const ENGINE_BUILD_CLI_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success|(?:^|\n)\s*✔\s*open(?:\n|$)/i
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
 
-function sleep(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
+function sleep(ms: number, signal?: AbortSignal) {
+  signal?.throwIfAborted()
+  return new Promise<void>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout>
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(signal?.reason)
+    }
+    timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 }
 
 function createEngineBuildLogFilename() {
@@ -107,19 +119,31 @@ function compactOutput(value: string | undefined) {
 }
 
 async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWechatIdeEngineBuildOptions = {}) {
-  const { cliPath } = await resolveCliPath()
+  options.signal?.throwIfAborted()
+  const { cliPath } = await resolveCliPath().catch((error: unknown) => {
+    options.signal?.throwIfAborted()
+    throw error
+  })
+  options.signal?.throwIfAborted()
   if (!cliPath) {
     throw createEngineBuildError('WECHAT_DEVTOOLS_CLI_NOT_FOUND', 'WECHAT_DEVTOOLS_CLI_NOT_FOUND')
   }
 
   const result = await execa(cliPath, ['engine', 'build', path.resolve(projectPath)], {
+    ...(options.signal ? { cancelSignal: options.signal } : {}),
+    killDescendants: true,
     reject: false,
     timeout: options.overallTimeoutMs ?? 120_000,
+  }).catch((error: unknown) => {
+    options.signal?.throwIfAborted()
+    throw error
   })
+  options.signal?.throwIfAborted()
   const stdout = typeof result.stdout === 'string' ? result.stdout : ''
   const stderr = typeof result.stderr === 'string' ? result.stderr : ''
   const output = [stdout, stderr].filter(Boolean).join('\n')
   await writeEngineBuildLog(options.logPath, output)
+  options.signal?.throwIfAborted()
 
   if ((result.exitCode ?? 1) === 0) {
     if (stdout) {
@@ -159,17 +183,21 @@ export async function runWechatIdeEngineBuildByHttp(
   projectPath: string,
   options: RunWechatIdeEngineBuildByHttpOptions = {},
 ) {
+  options.signal?.throwIfAborted()
   await startWechatIdeEngineBuildByHttp(projectPath, options)
 
   const startedAt = Date.now()
 
   while (true) {
+    options.signal?.throwIfAborted()
     if (Date.now() - startedAt > (options.overallTimeoutMs ?? 120_000)) {
       throw createEngineBuildError('WECHAT_DEVTOOLS_ENGINE_BUILD_TIMEOUT', 'WECHAT_DEVTOOLS_ENGINE_BUILD_TIMEOUT')
     }
 
     const result = await pollWechatIdeEngineBuildResultByHttp(options)
+    options.signal?.throwIfAborted()
     options.onProgress?.(result)
+    options.signal?.throwIfAborted()
 
     if (result.failed) {
       throw createEngineBuildError(
@@ -182,7 +210,7 @@ export async function runWechatIdeEngineBuildByHttp(
       return result
     }
 
-    await sleep(options.pollIntervalMs ?? 1_000)
+    await sleep(options.pollIntervalMs ?? 1_000, options.signal)
   }
 }
 
@@ -212,9 +240,11 @@ export async function runWechatIdeEngineBuild(
       options.logPath,
       logs.join('\n'),
     )
+    options.signal?.throwIfAborted()
     return result
   }
   catch (error) {
+    options.signal?.throwIfAborted()
     if (isEngineBuildEndpointMissingError(error)) {
       if (options.fallbackToCli === false) {
         throw createEngineBuildEndpointMissingError()

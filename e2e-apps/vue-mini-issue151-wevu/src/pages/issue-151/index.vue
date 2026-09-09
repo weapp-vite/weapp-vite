@@ -60,8 +60,11 @@ function _runE2E() {
 }
 
 function syncIssue151RuntimeState() {
+  const state = _runE2E()
+  tabBarReady.value = state.tabBarReady
+  tabBarHooksType.value = state.tabBarHooksType
   try {
-    wpi.setStorageSync(E2E_STATE_STORAGE_KEY, _runE2E())
+    wpi.setStorageSync(E2E_STATE_STORAGE_KEY, state)
   }
   catch {
     // e2e 探针不应影响页面运行。
@@ -92,6 +95,9 @@ onReady(scheduleIssue151RuntimeStateSync)
     >
       ready count: {{ readyCount }}
     </view>
+    <text id="issue151-hooks">{{ wevuHooksBucketType }}</text>
+    <text id="issue151-tabbar-ready">{{ tabBarReady }}</text>
+    <text id="issue151-tabbar-hooks">{{ tabBarHooksType }}</text>
   </view>
 </template>
 

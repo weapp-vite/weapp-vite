@@ -3,7 +3,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
 import { parse } from 'vue/compiler-sfc'
-import { inlineAutoRoutesImports, resolveAutoRoutesInlineSnapshot } from './autoRoutes'
+import { hasAutoRoutesMacroImport, inlineAutoRoutesImports, resolveAutoRoutesInlineSnapshot } from './autoRoutes'
 
 const vueConfigCache = new Map<string, {
   config?: Record<string, any>
@@ -118,11 +118,18 @@ export async function extractConfigFromVue(
     if (hasMacroHint) {
       const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
       try {
-        const autoRoutesInline = await resolveAutoRoutesInlineSnapshot()
-        const macroEvalPreamble = descriptor.script?.content
-          ? inlineAutoRoutesImports(descriptor.script.content, autoRoutesInline)
+        const preambleContent = descriptor.script?.content
+        // 普通 JSON 宏不依赖路由扫描，也不应触及其他编译上下文的支持文件。
+        const autoRoutesInline = hasAutoRoutesMacroImport(setupContent)
+          || (preambleContent !== undefined && hasAutoRoutesMacroImport(preambleContent))
+          ? await resolveAutoRoutesInlineSnapshot()
           : undefined
-        const macroEvalContent = inlineAutoRoutesImports(setupContent, autoRoutesInline)
+        const macroEvalPreamble = preambleContent && autoRoutesInline
+          ? inlineAutoRoutesImports(preambleContent, autoRoutesInline)
+          : preambleContent
+        const macroEvalContent = autoRoutesInline
+          ? inlineAutoRoutesImports(setupContent, autoRoutesInline)
+          : setupContent
         const extracted = await extractJsonMacroFromScriptSetup(
           macroEvalContent,
           vueFilePath,

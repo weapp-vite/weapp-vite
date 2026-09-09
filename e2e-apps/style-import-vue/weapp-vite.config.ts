@@ -8,5 +8,6 @@ export default defineConfig({
       runtime: 'classic',
     },
     srcRoot: 'src',
+    styles: [{ source: 'pages/index/keep-import.css', inject: false }],
   },
 })

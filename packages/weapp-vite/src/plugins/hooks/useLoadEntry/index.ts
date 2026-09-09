@@ -11,6 +11,7 @@ import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
+import { ENTRY_GRAPH_CHANGE_REASON, EntryChunkLifecycle } from './entryChunkLifecycle'
 import { createExtendedLibManager } from './extendedLib'
 import { createJsonEmitManager } from './jsonEmit'
 import { createEntryLoader } from './loadEntry'
@@ -438,6 +439,12 @@ export function useLoadEntry(
   const metadataEntryIds = new Set<string>()
   const rootInputIds = options?.hmr?.rootInputIds
   const chunkEmitStats = createChunkEmitStatsSummary()
+  const entryChunkLifecycle = new EntryChunkLifecycle((entryId) => {
+    if (!ctx.onStatefulHmrSourceChange) {
+      throw new Error('Cannot register a new mini-program entry outside a full build scan')
+    }
+    ctx.onStatefulHmrSourceChange(entryId, [ENTRY_GRAPH_CHANGE_REASON])
+  })
   const addLastEmittedChunkFileName = (entryId: string) => {
     lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
     if (rootInputIds?.has(entryId)) {
@@ -503,6 +510,7 @@ export function useLoadEntry(
             : 'component'
       return createLogicalEntryId(entryId, entryType)
     },
+    entryChunkLifecycle,
   )
   const applyAutoImports = createAutoImportAugmenter(
     ctx.autoImportService,
@@ -547,6 +555,7 @@ export function useLoadEntry(
     dirtyEntrySet,
     resolvedEntryMap,
     jsonEmitFilesMap: jsonEmitManager.map,
+    entryChunkLifecycle,
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
       dirtyEntrySet.add(entryId)
@@ -561,6 +570,7 @@ export function useLoadEntry(
       loadedEntrySet.delete(entryId)
     },
     async emitDirtyEntries(this: PluginContext) {
+      entryChunkLifecycle.beginBuild()
       if (!dirtyEntrySet.size) {
         options?.hmr?.setDidEmitAllEntries?.(false)
         options?.hmr?.setLastEmittedEntries?.(new Set())

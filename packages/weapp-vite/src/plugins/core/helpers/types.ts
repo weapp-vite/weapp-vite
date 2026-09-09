@@ -11,6 +11,7 @@ export interface CorePluginState {
   loadedEntrySet: LoadEntryApi['loadedEntrySet']
   markEntryDirty: LoadEntryApi['markEntryDirty']
   emitDirtyEntries: LoadEntryApi['emitDirtyEntries']
+  entryChunkLifecycle?: LoadEntryApi['entryChunkLifecycle']
   entriesMap: LoadEntryApi['entriesMap']
   jsonEmitFilesMap: LoadEntryApi['jsonEmitFilesMap']
   resolvedEntryMap: LoadEntryApi['resolvedEntryMap']
@@ -22,6 +23,7 @@ export interface CorePluginState {
     didEmitAllEntries: boolean
     hasBuiltOnce: boolean
     affectedSharedChunkIds?: Set<string>
+    styleSidecarFiles?: Set<string>
     lastHmrEntryIds?: Set<string>
     lastEmittedEntryIds?: Set<string>
     skipSharedChunkRefresh?: boolean

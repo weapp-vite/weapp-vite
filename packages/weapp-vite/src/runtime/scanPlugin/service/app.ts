@@ -247,6 +247,7 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
       buildScope: ctx.configService.weappViteConfig.buildScope,
       platform: ctx.configService.platform,
       routeRules: ctx.configService.weappViteConfig.routeRules,
+      subPackages: ctx.configService.weappViteConfig.subPackages,
     })
 
     if (isObject(config)) {

@@ -4,6 +4,8 @@ export type RequestGlobalsDemoStatus = 'idle' | 'running' | 'success' | 'error'
 export interface RequestGlobalsDemoState {
   pageStatus: string
   payload: string
+  responseClient: string
+  responseSource: string
   requestLog: string[]
   runCount: number
   status: RequestGlobalsDemoStatus
@@ -83,6 +85,8 @@ export function createInitialState(): RequestGlobalsDemoState {
   return {
     pageStatus: '待执行',
     payload: '',
+    responseClient: '',
+    responseSource: '',
     requestLog: [],
     runCount: 0,
     status: 'idle',
@@ -142,10 +146,14 @@ export function restoreMockRequest() {
   originalRequest = undefined
 }
 
-export function createSuccessState(payload: string): Pick<RequestGlobalsDemoState, 'pageStatus' | 'payload' | 'status'> {
+export function createSuccessState(payload: string): Pick<RequestGlobalsDemoState, 'pageStatus' | 'payload' | 'status' | 'responseClient' | 'responseSource'> {
+  const parsed = JSON.parse(payload) as { transport?: string | { client?: string, source?: string }, source?: string }
+  const response = typeof parsed.transport === 'object' ? parsed.transport : parsed
   return {
     pageStatus: '全部通过',
     payload,
+    responseClient: typeof parsed.transport === 'string' ? parsed.transport : parsed.transport?.client ?? '',
+    responseSource: response.source ?? '',
     status: 'success',
   }
 }
