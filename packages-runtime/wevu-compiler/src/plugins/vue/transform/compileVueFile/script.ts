@@ -1,6 +1,7 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { TemplateCompileResult } from '../../compiler/template'
@@ -34,6 +35,7 @@ export interface ScriptPhaseResult {
   bindingManifest?: WevuBindingManifestV1
   inlineExpressions?: TemplateCompileResult['inlineExpressions']
   /** @internal */
+  componentStyleOptions?: ComponentStyleOptions
   runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
@@ -421,6 +423,7 @@ export async function compileScriptPhase(
       bindingManifest,
       inlineExpressions: jsxTemplate?.inlineExpressions,
       runtimeCapabilities: transformed.runtimeCapabilities,
+      componentStyleOptions: transformed.componentStyleOptions,
       autoUsingComponentsMap,
       autoComponentMeta,
     }

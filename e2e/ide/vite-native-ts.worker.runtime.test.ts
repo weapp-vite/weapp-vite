@@ -3,6 +3,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -84,6 +85,15 @@ describe('e2e app: vite-native-ts worker runtime', { concurrent: false }, () => 
   })
 
   it('preloads worker subpackage and receives the first worker message without runtime errors', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'apps/vite-native-ts', [{
+      id: 'worker-ready',
+      route: ROUTE,
+      action: '冷启动并检查页面实际呈现的首条 worker 消息',
+      nodes: [
+        { selector: '.worker-status', text: 'worker-status: ready' },
+        { selector: '.worker-message', text: 'worker-message: hello' },
+      ],
+    }])
     const miniProgram = await getMiniProgram(ctx)
     const collector = attachRuntimeErrorCollector(miniProgram)
     const marker = collector.mark()
@@ -100,6 +110,7 @@ describe('e2e app: vite-native-ts worker runtime', { concurrent: false }, () => 
       const workerState = await waitForWorkerReady(page)
       expect(workerState.workerStatus).toBe('ready')
       expect(workerState.workerMessage).toBe('hello')
+      await dom.check('worker-ready', miniProgram, page)
       expect(collector.getSince(marker)).toEqual([])
     }
     finally {

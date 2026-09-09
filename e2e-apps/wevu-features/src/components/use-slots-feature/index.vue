@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, useSlots } from 'vue'
+import { useSlots } from 'vue'
+import { computed } from 'wevu'
 
 const props = defineProps<{
   title: string

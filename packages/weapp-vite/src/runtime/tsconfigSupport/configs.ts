@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { LegacyManagedTypeScriptConfig } from './types'
+import path from 'pathe'
 import { getPlatformAppTypesPackage } from '../../platform'
 import { resolveBaseDir } from '../autoImport/config/base'
 import { requireConfigService } from '../utils/requireConfigService'
@@ -151,6 +152,9 @@ export function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: Le
 
   const include = unique([
     ...createDefaultAppInclude(requireConfigService(ctx, '生成 app include 前必须初始化 configService。').srcRoot),
+    ...(configService.pluginRoot
+      ? [`${path.relative(resolveManagedDir(ctx), path.resolve(resolveBaseDir(configService), configService.pluginRoot))}/**/*`]
+      : []),
     ...(legacyConfig?.app?.include ?? []),
     ...(userConfig?.app?.include ?? []),
   ])

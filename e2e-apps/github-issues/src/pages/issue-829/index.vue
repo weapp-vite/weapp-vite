@@ -16,13 +16,19 @@ async function queryFn() {
 
 <template>
   <view id="issue-829-page" :data-query-resolve-count="queryResolveCount">
-    <Card title="nested">
+    <Card id="issue829-card" title="nested">
       <Query id="issue-829-nested-query" v-slot="{ label, data }" :query-fn="queryFn" label="Result">
-        <view class="issue829-nested-result">{{ label }}: {{ data }}</view>
+        <view class="issue829-nested-result">
+          <text class="issue829-result-label">{{ label }}</text>
+          <text v-for="(item, index) in data" :id="`issue829-nested-${index}`" :key="item" class="issue829-result-item">{{ item }}</text>
+        </view>
       </Query>
     </Card>
     <Query id="issue-829-direct-query" v-slot="{ label, data }" :query-fn="queryFn" label="Result">
-      <view class="issue829-direct-result">{{ label }}: {{ data }}</view>
+      <view class="issue829-direct-result">
+        <text class="issue829-result-label">{{ label }}</text>
+        <text v-for="(item, index) in data" :id="`issue829-direct-${index}`" :key="item" class="issue829-result-item">{{ item }}</text>
+      </view>
     </Query>
   </view>
 </template>

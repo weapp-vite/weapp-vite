@@ -51,6 +51,8 @@ const formDataUploadPayload = ref('')
 const rawFetchUploadStatus = ref('idle')
 const rawFetchUploadPayload = ref('')
 const formDataReadKind = ref('')
+const multipartResults = ref<Array<MultipartUploadFileResult & { mode: string }>>([])
+const rawResults = ref<Array<RawFetchUploadPayload & { caseName: string }>>([])
 
 queueMicrotask(() => {
   microtaskState.value = 'flushed'
@@ -316,6 +318,12 @@ async function uploadDownloadedFileAsFormData() {
     request: requestPayload.files.find(item => item.name === 'request-file'),
     rawFetch: rawFetchPayload,
   }
+  multipartResults.value = [
+    ...blobPayload.files.map(file => ({ ...file, mode: 'blob' })),
+    ...filePayload.files.map(file => ({ ...file, mode: 'file' })),
+    ...requestPayload.files.map(file => ({ ...file, mode: 'request' })),
+  ]
+  rawResults.value = rawFetchPayload
   rawFetchUploadPayload.value = JSON.stringify(rawFetchPayload)
   rawFetchUploadStatus.value = 'passed'
   formDataUploadPayload.value = JSON.stringify(payload)
@@ -397,24 +405,30 @@ function _runE2E() {
     data-e2e-issue="448"
   >
     <text class="issue448-title">issue-448 next web runtime globals</text>
-    <text class="issue448-line">encoded = {{ encoded }}</text>
-    <text class="issue448-line">decoded = {{ decoded }}</text>
+    <text id="issue448-encoded" class="issue448-line">encoded = {{ encoded }}</text>
+    <text id="issue448-decoded" class="issue448-line">decoded = {{ decoded }}</text>
     <text class="issue448-line">duration = {{ duration }}</text>
     <text class="issue448-line">random = {{ randomBytes }}</text>
-    <text class="issue448-line">event = {{ eventType }}</text>
-    <text class="issue448-line">custom = {{ customEventType }}</text>
-    <text class="issue448-line">url = {{ parsedUrlHref }}</text>
-    <text class="issue448-line">canParse = {{ canParseUrl }}</text>
-    <text class="issue448-line">params = {{ sortedParams }}</text>
-    <text class="issue448-line">cookies = {{ cookieCount }}</text>
-    <text class="issue448-line">json = {{ jsonResponseContentType }}</text>
-    <text class="issue448-line">error = {{ errorResponseStatus }}:{{ errorResponseType }}</text>
-    <text class="issue448-line">read = {{ formDataReadKind }}</text>
-    <text class="issue448-line">upload = {{ formDataUploadStatus }}</text>
+    <text id="issue448-event" class="issue448-line">event = {{ eventType }}</text>
+    <text id="issue448-custom" class="issue448-line">custom = {{ customEventType }}</text>
+    <text id="issue448-url" class="issue448-line">url = {{ parsedUrlHref }}</text>
+    <text id="issue448-canParse" class="issue448-line">canParse = {{ canParseUrl }}</text>
+    <text id="issue448-params" class="issue448-line">params = {{ sortedParams }}</text>
+    <text id="issue448-cookies" class="issue448-line">cookies = {{ cookieCount }}</text>
+    <text id="issue448-json" class="issue448-line">json = {{ jsonResponseContentType }}</text>
+    <text id="issue448-error" class="issue448-line">error = {{ errorResponseStatus }}:{{ errorResponseType }}</text>
+    <text id="issue448-read" class="issue448-line">read = {{ formDataReadKind }}</text>
+    <text id="issue448-upload" class="issue448-line">upload = {{ formDataUploadStatus }}</text>
     <text class="issue448-line">uploadPayload = {{ formDataUploadPayload }}</text>
-    <text class="issue448-line">rawFetch = {{ rawFetchUploadStatus }}</text>
+    <text id="issue448-rawFetch" class="issue448-line">rawFetch = {{ rawFetchUploadStatus }}</text>
     <text class="issue448-line">rawFetchPayload = {{ rawFetchUploadPayload }}</text>
-    <text class="issue448-line">microtask = {{ microtaskState }}</text>
+    <text id="issue448-microtask" class="issue448-line">microtask = {{ microtaskState }}</text>
+    <view v-for="result in multipartResults" :id="`issue448-multipart-${result.mode}`" :key="result.mode" class="issue448-upload-result">
+      {{ result.name }} | {{ result.filename }} | {{ result.contentType }} | {{ result.size }} | {{ result.sha256 }}
+    </view>
+    <view v-for="result in rawResults" :id="`issue448-raw-${result.caseName}`" :key="result.caseName" class="issue448-upload-result">
+      {{ result.caseName }} | {{ result.size }} | {{ result.sha256 }}
+    </view>
     <view
       class="issue448-upload-probe"
       :data-form-data-status="formDataUploadStatus"

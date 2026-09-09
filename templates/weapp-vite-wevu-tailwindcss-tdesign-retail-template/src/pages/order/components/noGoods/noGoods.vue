@@ -22,10 +22,10 @@ interface RawGoodsGroupItem {
 }
 
 interface SettleDetailData {
-  limitGoodsList?: RawGoodsGroupItem[]
-  abnormalDeliveryGoodsList?: RawGoodsGroupItem[]
-  inValidGoodsList?: RawGoodsGroupItem[]
-  outOfStockGoodsList?: RawGoodsGroupItem[]
+  limitGoodsList?: RawGoodsGroupItem[] | null
+  abnormalDeliveryGoodsList?: RawGoodsGroupItem[] | null
+  inValidGoodsList?: RawGoodsGroupItem[] | null
+  outOfStockGoodsList?: RawGoodsGroupItem[] | null
   storeGoodsList?: unknown[]
 }
 

@@ -5,6 +5,7 @@ const E2E_UTIL_TEST_GLOB = path.resolve(import.meta.dirname, './utils/**/*.test.
 
 export default defineConfig({
   test: {
+    taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
     include: [E2E_UTIL_TEST_GLOB],
     testTimeout: 60_000,
     globals: true,

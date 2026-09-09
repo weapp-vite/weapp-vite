@@ -34,6 +34,7 @@ function clampZoomPercent(value: string, fallback: number) {
 export function useDevicePreview(
   props: {
     markup: string
+    styleText?: string
     viewportHeight: number
     viewportWidth: number
   },
@@ -122,6 +123,7 @@ export function useDevicePreview(
 
   const { previewHost, previewStage, startResizeDrag: startShadowResizeDrag } = usePreviewShadow(
     toRef(props, 'markup'),
+    toRef(props, 'styleText'),
     previewScale,
     stageSize,
     toRef(props, 'viewportHeight'),

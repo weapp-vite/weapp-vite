@@ -3,6 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { enrichHmrFailure } from '../utils/hmr-failure-diagnostics'
 import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
@@ -158,7 +159,7 @@ describe('HMR layout shared template and wxs dependencies (dev watch)', { concur
     await fs.writeFile(ADMIN_LAYOUT_WXML, buildAdminLayoutWxml(), 'utf8')
 
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: createDevProcessEnv(),
+      env: { ...createDevProcessEnv(), WEAPP_VITE_HMR_PROFILE_JSON: '1' },
       stdio: 'inherit',
     })
 
@@ -191,6 +192,24 @@ describe('HMR layout shared template and wxs dependencies (dev watch)', { concur
         waitForFileContainsWithRetry(sharedWxsOutput, updatedWxsMarker, SHARED_WXS, updatedWxs),
         `${platform} updated layout shared wxs output`,
       )).toContain(updatedWxsMarker)
+    }
+    catch (error) {
+      throw await enrichHmrFailure(error, {
+        files: [
+          { label: 'template source', path: SHARED_IMPORT_TEMPLATE, marker: updatedTemplateMarker },
+          { label: 'template output', path: sharedImportOutput, marker: updatedTemplateMarker },
+          { label: 'include source', path: SHARED_INCLUDE_TEMPLATE, marker: updatedIncludeMarker },
+          { label: 'include output', path: sharedIncludeOutput, marker: updatedIncludeMarker },
+          { label: 'script module source', path: SHARED_WXS, marker: updatedWxsMarker },
+          { label: 'script module output', path: sharedWxsOutput, marker: updatedWxsMarker },
+          { label: 'default layout source', path: DEFAULT_LAYOUT_WXML },
+          { label: 'default layout output', path: defaultLayoutOutput },
+          { label: 'admin layout source', path: ADMIN_LAYOUT_WXML },
+          { label: 'admin layout output', path: adminLayoutOutput },
+        ],
+        profilePath: path.join(APP_ROOT, '.weapp-vite/hmr-profile.jsonl'),
+        devOutput: dev.getOutput(),
+      })
     }
     finally {
       await dev.stop(5_000)

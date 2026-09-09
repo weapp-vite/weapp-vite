@@ -84,6 +84,7 @@ export function registerRuntimeBindingExpression(
     exp,
     expAst,
     forStack: context.forStack.map(info => ({ ...info })),
+    conditions: context.bindingConditions?.slice(),
   }
   context.classStyleBindings.push(binding)
 

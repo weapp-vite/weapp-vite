@@ -1,7 +1,4 @@
 import type { McpServer } from '@modelcontextprotocol/server'
-import type { Buffer } from 'node:buffer'
-import type { ChildProcessWithoutNullStreams } from 'node:child_process'
-import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -12,7 +9,12 @@ import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
 import { closeWechatIdeProject } from '../../packages/weapp-ide-cli/src/cli/wechat-commands'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDevProcessDiagnostics } from '../utils/devProcessDiagnostics'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { waitForOpenedAutomator } from '../utils/opened-automator'
+import { launchPtyProcess } from '../utils/ptyProcess'
+import { CLI_HOTKEY_CHECKPOINTS, CLI_WORKFLOW_CHECKPOINTS } from './coreWorkflowDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const WEAPP_IDE_CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-ide-cli/bin/weapp.js')
@@ -26,8 +28,6 @@ const COUNT_BUTTON_WRAPPER_SELECTOR = '#count-button'
 const AUTOMATOR_LAUNCH_TIMEOUT = 60_000
 const AUTOMATOR_PORT = resolveProjectAutomatorPort(TEMPLATE_ROOT)
 const SCREENSHOT_PROTOCOL_TIMEOUT = 90_000
-const SCRIPT_BIN = '/usr/bin/script'
-const SHOULD_RUN_TTY_HOTKEY_SMOKE = process.platform === 'darwin' && process.stdin.isTTY && process.stdout.isTTY
 const NORMALIZE_LEADING_SLASH_RE = /^\/+/
 // eslint-disable-next-line no-control-regex, regexp/no-obscure-range -- 这里需要去掉终端 ANSI 控制序列，便于断言真实 CLI 输出。
 const STRIP_ANSI_RE = /\u001B\[[0-?]*[ -/]*[@-~]/g
@@ -249,20 +249,6 @@ async function waitForPredicate(
   throw new Error(`timeout waiting for ${label}`)
 }
 
-async function waitForChildExit(child: ChildProcessWithoutNullStreams, timeoutMs: number) {
-  return await new Promise<{ code: number | null, signal: NodeJS.Signals | null }>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL')
-      reject(new Error(`timeout waiting for child process ${child.pid ?? '<unknown>'} to exit`))
-    }, timeoutMs)
-
-    child.once('exit', (code, signal) => {
-      clearTimeout(timer)
-      resolve({ code, signal })
-    })
-  })
-}
-
 async function listDevScreenshotFiles() {
   try {
     const entries = await fs.readdir(DEV_SCREENSHOT_DIR)
@@ -296,65 +282,61 @@ async function waitForNewDevScreenshot(before: ReadonlySet<string>) {
   return latestNewFile
 }
 
-async function runDevHotkeyScreenshotSmoke(options: { open?: boolean } = {}) {
-  if (!SHOULD_RUN_TTY_HOTKEY_SMOKE) {
-    return
-  }
-
-  await fs.access(SCRIPT_BIN)
+async function runDevHotkeyScreenshotSmoke(options: {
+  beforeScreenshot: () => Promise<void>
+  afterScreenshot: () => Promise<void>
+}) {
   const beforeScreenshots = new Set(await listDevScreenshotFiles())
   const devArgs = [
     'dev',
-    ...(options.open ? ['-o'] : []),
+    '-o',
     '--non-interactive',
     '--login-retry',
     'never',
   ]
-  const child = spawn(SCRIPT_BIN, [
-    '-q',
-    '/dev/null',
-    'node',
+  const diagnostics = createDevProcessDiagnostics(TEMPLATE_ROOT)
+  const child = launchPtyProcess(process.execPath, [
     CLI_PATH,
     ...devArgs,
   ], {
     cwd: TEMPLATE_ROOT,
+    onData: data => diagnostics.write(data),
     env: {
       ...process.env,
+      // Vitest 的 NODE_ENV=test 会隐藏快捷键就绪提示，本场景需要验收完整 CLI 输出。
+      CONSOLA_LEVEL: '3',
       FORCE_COLOR: '0',
       NO_COLOR: '1',
     },
-    stdio: ['pipe', 'pipe', 'pipe'],
   })
-  let output = ''
-  const appendOutput = (chunk: Buffer | string) => {
-    output += chunk.toString()
-  }
-  child.stdout.on('data', appendOutput)
-  child.stderr.on('data', appendOutput)
 
   try {
-    await waitForPredicate(() => {
+    await child.waitForOutput((output) => {
       return normalizeTerminalOutput(output).includes('开发快捷键已就绪')
     }, 120_000, 'dev hotkey startup')
 
-    child.stdin.write('s')
-    await waitForPredicate(() => {
+    await options.beforeScreenshot()
+    child.write('s')
+    await child.waitForOutput((output) => {
       return normalizeTerminalOutput(output).includes('当前页面截图完成')
     }, 120_000, 'dev hotkey screenshot completion')
 
     const screenshotFile = await waitForNewDevScreenshot(beforeScreenshots)
     const stats = await fs.stat(screenshotFile)
     expect(stats.size).toBeGreaterThan(0)
+    await options.afterScreenshot()
   }
   catch (error) {
-    const normalizedOutput = normalizeTerminalOutput(output).split('\n').slice(-80).join('\n')
+    const normalizedOutput = normalizeTerminalOutput(child.output).split('\n').slice(-80).join('\n')
     throw new Error(`${error instanceof Error ? error.message : String(error)}\n\ncommand: node ${path.basename(CLI_PATH)} ${devArgs.join(' ')}\nrecent output:\n${normalizedOutput}`)
   }
   finally {
-    if (!child.killed) {
-      child.stdin.write('q')
+    try {
+      await child.close({ input: 'q' })
     }
-    await waitForChildExit(child, 20_000).catch(() => {})
+    finally {
+      diagnostics.flush()
+    }
     const afterScreenshots = await listDevScreenshotFiles().catch(() => [])
     await Promise.all(afterScreenshots
       .filter(file => !beforeScreenshots.has(file))
@@ -575,12 +557,13 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     await cleanupResidualIdeProcesses()
   }, 60_000)
 
-  it('opens with weapp-vite and weapp-ide-cli, screenshots, taps DOM, and exposes helpful diagnostics', async () => {
+  it('opens with weapp-vite and weapp-ide-cli, screenshots, taps DOM, and exposes helpful diagnostics', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', CLI_WORKFLOW_CHECKPOINTS)
     if (loginRequiredOutput) {
       const output = normalizeTerminalOutput(loginRequiredOutput)
       expect(output).toMatch(/登录状态失效|re-login|需要重新登录|Wechat DevTools login has expired/i)
       expect(output).toMatch(/非交互模式|non-interactive|请先登录|Please login/i)
-      return
+      throw new Error(`DevTools login blocks CLI DOM acceptance:\n${output}`)
     }
     if (protocolTimeoutOutput) {
       expect(preScreenshotDomReady).toBe(true)
@@ -588,7 +571,7 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
       expect(output).toMatch(/DEVTOOLS_PROTOCOL_TIMEOUT|DEVTOOLS_SCREENSHOT_TIMEOUT|协议调用 .* 超时|截图请求在 \d+ms 内未收到 DevTools 回包|Screenshot request did not receive a DevTools response|DevTools did not respond/i)
       expect(output).toMatch(/自动化会话已卡住|窗口不在目标项目|目标项目|automation session is stuck|target project/i)
       expect(output).toMatch(/重试一次|Retrying once|重建会话/i)
-      return
+      throw new Error(`DevTools screenshot protocol blocks CLI DOM acceptance:\n${output}`)
     }
     if (ideInfraOutput) {
       if (ideInfraStage === 'screenshot') {
@@ -596,7 +579,7 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
       }
       const output = normalizeTerminalOutput(ideInfraOutput)
       expect(output).toMatch(/DEVTOOLS_HTTP_PORT_ERROR|wait IDE port timeout|Failed to launch wechat web devTools|automation websocket|Failed connecting to ws:\/\/127\.0\.0\.1:\d+|connect EADDRNOTAVAIL 127\.0\.0\.1:\d+|Wait timed out after \d+ ms|SIGTERM|timedOut=true/i)
-      return
+      throw new Error(`DevTools infrastructure blocks CLI DOM acceptance:\n${output}`)
     }
 
     expect(weappViteOpenExitCode).toBe(0)
@@ -611,7 +594,7 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
         const message = error instanceof Error ? error.message : String(error)
         if (isRecoverableDevToolsLaunchError(error)) {
           expect(message).toMatch(/Timeout in warmup (?:current page|reLaunch)|Timed out waiting page root after warmup reLaunch|Timeout in read current page|WeChat DevTools simulator boot error detected|DEVTOOLS_PROTOCOL_TIMEOUT|DevTools did not respond/i)
-          return
+          throw new Error(`DevTools launch blocks CLI DOM acceptance: ${message}`)
         }
         throw error
       }
@@ -622,6 +605,7 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
       await waitForRenderedSelector(miniProgram, COUNT_BUTTON_SELECTOR)
       await waitForPageData(miniProgram, 'count', 0)
     })
+    await dom.check('initial', miniProgram, await miniProgram.currentPage())
 
     const tapResult = await runWeappIdeCli([
       'tap',
@@ -639,10 +623,11 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
       const output = formatCliFailure('weapp-ide-cli tap', tapResult)
       if (isIdeInfraOutput(output) || isCliTimeoutResult(tapResult)) {
         expect(normalizeTerminalOutput(output)).toMatch(/automation websocket|无法连接到当前项目的微信开发者工具自动化 websocket|tap 命令在 \d+ms 内未收到 DevTools 回包|timedOut=true|Command timed out after \d+ milliseconds/i)
-        return
+        throw new Error(`DevTools tap blocks CLI DOM acceptance:\n${output}`)
       }
       throw new Error(output)
     }
+    await dom.check('cli-tapped', miniProgram, await miniProgram.currentPage())
 
     const { manager, tools } = await createRuntimeTools()
     try {
@@ -676,12 +661,11 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
         innerSelector: COUNT_BUTTON_SELECTOR,
         selector: COUNT_BUTTON_WRAPPER_SELECTOR,
       })
+      await dom.check('mcp-tapped', miniProgram, await miniProgram.currentPage())
     }
     finally {
       await manager.close({ port: automatorPort, projectPath: TEMPLATE_ROOT }).catch(() => {})
     }
-
-    await runDevHotkeyScreenshotSmoke()
 
     await expectHelpfulCliFailure([
       'current-page',
@@ -698,11 +682,27 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     ])
   })
 
-  it('captures screenshots from the dev hotkey after dev -o opens the project', async () => {
+  it('captures screenshots from the dev hotkey after dev -o opens the project', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'templates/weapp-vite-wevu-tailwindcss-tdesign-template', CLI_HOTKEY_CHECKPOINTS)
     if (loginRequiredOutput || protocolTimeoutOutput || ideInfraOutput) {
-      return
+      throw new Error(`DevTools startup blocks hotkey DOM acceptance:\n${loginRequiredOutput || protocolTimeoutOutput || ideInfraOutput}`)
     }
 
-    await runDevHotkeyScreenshotSmoke({ open: true })
+    // dev -o 自身打开项目是本 case 的验收目标，必须关闭上一 case 的 bridge 会话。
+    await miniProgram?.close()
+    miniProgram = undefined
+    await closeSharedMiniProgram(TEMPLATE_ROOT)
+    await closeWechatIdeProject()
+    await runDevHotkeyScreenshotSmoke({
+      beforeScreenshot: async () => {
+        miniProgram = (await waitForOpenedAutomator(TEMPLATE_ROOT, { timeoutMs: 60_000 })).miniProgram
+        const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
+        await dom.check('dev-opened', miniProgram, page)
+      },
+      afterScreenshot: async () => {
+        const page = await waitForCurrentRoute(miniProgram, INDEX_ROUTE)
+        await dom.check('screenshot', miniProgram, page)
+      },
+    })
   }, 240_000)
 })

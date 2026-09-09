@@ -43,6 +43,7 @@ export function createModuleGraphService(): ModuleGraphService {
   let topologyRescan: TopologyRescanRequest | undefined
   const entryDependencies = new Map<string, Map<SidecarModuleKind, Set<string>>>()
   const pendingChanges = new Map<string, string>()
+  const usesUnbundledDevGraph = () => Boolean(devServer && !devServer.environments?.client?.bundledDev)
 
   const hasRegisteredEntryDependency = (file: string) => {
     if (entryDependencies.has(file)) {
@@ -144,7 +145,7 @@ export function createModuleGraphService(): ModuleGraphService {
         }
       }
     }
-    if (devServer) {
+    if (usesUnbundledDevGraph()) {
       collectFromDevGraph(file, affected)
     }
     else {
@@ -206,7 +207,7 @@ export function createModuleGraphService(): ModuleGraphService {
       if (hasRegisteredEntryDependency(file)) {
         return true
       }
-      if (devServer) {
+      if (devServer && usesUnbundledDevGraph()) {
         return collectDevStartNodes(devServer, file).size > 0
       }
       return Array.from(buildContexts.values())
@@ -215,7 +216,7 @@ export function createModuleGraphService(): ModuleGraphService {
     invalidate(rawFile) {
       const file = normalizeSourceId(rawFile)
       const affected = collectAffectedEntries(file)
-      if (devServer) {
+      if (devServer && usesUnbundledDevGraph()) {
         for (const module of collectDevStartNodes(devServer, file)) {
           devServer.moduleGraph.invalidateModule(module)
         }
@@ -277,7 +278,8 @@ export function createModuleGraphService(): ModuleGraphService {
       return await pluginContext.resolve(source, importer, options)
     },
     async syncDevGraph(context) {
-      if (!devServer || typeof context.getModuleIds !== 'function') {
+      // bundledDev 的模块图由 DevEngine 编译维护，不能在 buildEnd 再执行 unbundled transform。
+      if (!usesUnbundledDevGraph() || typeof context.getModuleIds !== 'function') {
         return
       }
       const logicalEntryIds = Array.from(context.getModuleIds()).filter(id => parseLogicalEntryId(id))

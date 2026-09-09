@@ -53,6 +53,7 @@ export {
   resolveClassStyleWxsLocation,
 } from './plugins/vue/compiler/template/classStyleRuntime'
 export type {
+  BindingCondition,
   ClassStyleBinding,
   ClassStyleRuntime,
   ForParseResult,
@@ -121,6 +122,7 @@ export type {
   WevuRuntimeBindingManifestV1,
   WevuRuntimeBindingRecordV1,
 } from './types/bindingManifest'
+export type { ComponentStyleOptions, ComponentStylePrimitive, StaticComponentStyleOption } from './types/componentStyleOptions'
 export type {
   CompilerDiagnostic,
   CompilerDiagnosticCode,
@@ -130,16 +132,16 @@ export type {
   SourceSpan,
 } from './types/diagnostics'
 export type { JsonConfig, JsonMergeContext, JsonMergeStage, JsonMergeStrategy } from './types/json'
+
 export type {
   CompilerAppShell,
   CompilerLayoutPropValue,
   CompilerPageLayout,
   CompilerPageLayoutPlan,
 } from './types/pageLayout'
-
 export type { MpPlatform } from './types/platform'
-export type { WevuDefaults } from './types/wevu'
 
+export type { WevuDefaults } from './types/wevu'
 export {
   collectVueTemplateTags,
   isAutoImportCandidateTag,
@@ -147,4 +149,5 @@ export {
   VUE_COMPONENT_TAG_RE,
 } from './utils/vueTemplateTags'
 export type { CollectVueTemplateTagsOptions } from './utils/vueTemplateTags'
+
 export type { AstEngineName } from '@weapp-vite/ast'

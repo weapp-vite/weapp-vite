@@ -76,8 +76,8 @@ export default defineComponent({
       sourceFile: '/project/src/pages/manifest/index.tsx',
     })
     expect(result.bindingManifest?.bindings).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'attribute', outputPath: 'title.value' }),
-      expect.objectContaining({ kind: 'text', outputPath: 'title.value' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'title' }),
+      expect.objectContaining({ kind: 'text', outputPath: 'title' }),
     ]))
     expect(result.script).toContain('__wevuBindingManifest')
   })
@@ -94,12 +94,12 @@ export default defineComponent({
 `
     const result = await compileJsxFile(source, '/project/src/pages/scopes/index.tsx')
     const binding = result.bindingManifest?.bindings.find((item) => {
-      return item.kind === 'text' && item.outputPath === 'rows.value'
+      return item.kind === 'text' && item.outputPath === 'rows'
     })
 
     expect(binding?.dependencies).toEqual([{
       root: 'rows',
-      path: 'rows.value',
+      path: 'rows',
       updateMode: 'exact-path',
     }])
     expect(binding?.scopes).toEqual([
@@ -130,12 +130,12 @@ export default defineComponent({
 `
     const result = await compileJsxFile(source, '/project/src/pages/nested-scopes/index.tsx')
     const binding = result.bindingManifest?.bindings.find((item) => {
-      return item.kind === 'text' && item.outputPath === 'items.value'
+      return item.kind === 'text' && item.outputPath === 'items'
     })
 
     expect(binding?.dependencies).toEqual([{
       root: 'items',
-      path: 'items.value',
+      path: 'items',
       updateMode: 'exact-path',
     }])
     expect(binding?.scopes).toEqual([
@@ -156,7 +156,7 @@ export default defineComponent({
 })
 `
     const result = await compileJsxFile(source, '/project/src/pages/setup-capture/index.tsx', { isPage: true })
-    expect(result.template).toContain('{{count.value}}')
+    expect(result.template).toContain('{{count}}')
     expect(result.script).toMatch(/return\s*\{\s*count\s*\}/)
     expect(result.script).not.toContain('createVNode')
   })

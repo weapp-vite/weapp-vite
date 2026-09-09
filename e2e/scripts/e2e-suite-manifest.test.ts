@@ -1,9 +1,37 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
+import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it.each([
+    'ide/app-lifecycle.test.ts',
+    'ide/template-retail-checkout.runtime.test.ts',
+    'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
+  ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
+    const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)
+    expect(headless?.env).toMatchObject({
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
+    })
+    expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
+    expect((await getSuiteTasks('ide-headless-full')).filter(task => task.label === label)).toHaveLength(1)
+  })
+
+  it('keeps ordinary full within WeChat scope and only three optional Baidu tasks outside exhaustive', () => {
+    const full = getIdeTasks()
+    const exhaustive = getIdeExhaustiveTasks()
+    const optionalBaidu = [
+      'ide/swan-runtime.optional.test.ts',
+      'ide/template-multi-platform.swan.optional.test.ts',
+      'ide/template-multi-platform-sfc.swan.optional.test.ts',
+    ]
+    expect(full.length).toBeGreaterThan(0)
+    expect(full.every(task => !task.outOfScopeReason && !optionalBaidu.includes(task.label))).toBe(true)
+    expect(full.every(task => exhaustive.some(candidate => candidate.label === task.label))).toBe(true)
+    expect(exhaustive.filter(task => task.outOfScopeReason).map(task => task.label).sort()).toEqual(optionalBaidu.sort())
+  })
+
   it('routes every IDE full package script through the sleep-inhibited runner', () => {
     const packageJson = JSON.parse(
       fs.readFileSync(path.resolve(import.meta.dirname, '../../package.json'), 'utf8'),

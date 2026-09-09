@@ -356,6 +356,15 @@ export async function emitCompiledEntryBundleAssets(options: {
 }) {
   const isAppVue = APP_VUE_LIKE_FILE_RE.test(options.filename)
   const hmrState = options.ctx.runtimeState?.build?.hmr
+  if (hmrState && options.isPage) {
+    hmrState.componentPageStyleOptions ??= new Map()
+    if (options.result.meta?.componentStyleOptions) {
+      hmrState.componentPageStyleOptions.set(options.relativeBase, options.result.meta.componentStyleOptions)
+    }
+    else {
+      hmrState.componentPageStyleOptions.delete(options.relativeBase)
+    }
+  }
   const shouldEmitComponentJson = !isAppVue && !options.isPage
   const shouldMergeJsonAsset = isAppVue
   const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
@@ -411,6 +420,7 @@ export async function emitCompiledEntryBundleAssets(options: {
         buildScope: options.configService.weappViteConfig?.buildScope,
         platform: options.configService.platform,
         routeRules: options.configService.weappViteConfig?.routeRules,
+        subPackages: options.configService.weappViteConfig?.subPackages,
       })
     : undefined
 

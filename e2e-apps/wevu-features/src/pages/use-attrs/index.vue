@@ -140,6 +140,7 @@ const _runE2E = runE2E
 
     <UseAttrsFeature
       v-if="featureMounted"
+      id="attrs-feature"
       title="组件内 useAttrs()"
       :stateClass="currentToneClass"
       :visible="controlState.visible"

@@ -11,6 +11,7 @@ import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../..
 
 import { createBindingManifest, markBindingManifestIncomplete } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
+import { collectConditionalBranches } from './template/conditions'
 import { warn } from './template/diagnostics'
 import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
@@ -183,6 +184,7 @@ export function compileVueTemplateToWxml(
       cssVars: options?.cssVars,
     }
 
+    collectConditionalBranches(ast.children)
     // 转换 AST 到 WXML
     let wxml = ast.children
       .map(child => transformNode(child, context))

@@ -1960,7 +1960,7 @@ describe('compileVueTemplateToWxml', () => {
     expect(headerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(explicitDefault?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expect(footerSlot?.template).toContain('<text>{{__wv_bind_0}}</text>')
-    expect(defaultScoped?.template).toContain('<block wx:if="{{__wv_bind_1}}"><text>{{__wv_bind_0}}</text></block>')
+    expect(defaultScoped?.template).toMatch(/<block wx:if="\{\{(__wv_bind_\d+)\}\}"><text>\{\{(?!\1\}\})__wv_bind_\d+\}\}<\/text><\/block>/)
     expect(listScoped?.template).toContain('<text>{{__wv_bind_0}}</text>')
     expectScopedSlotComputed(headerSlot?.script, 'func(headerText)', [
       'this.__wvOwnerProxy.func',

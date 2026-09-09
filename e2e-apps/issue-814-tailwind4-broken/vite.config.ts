@@ -9,7 +9,7 @@ export default defineConfig({
     srcRoot: 'src',
     tailwindcss: {
       rem2rpx: true,
-      // Keep arbitrary-value classes in JS unchanged to simulate issue #814.
+      // 负向对照：仅通过公开选项保留 JavaScript 中的任意值类名。
       jsPreserveClass: className => className.includes('[') && className.includes(']'),
       cssEntries: ['src/app.css'],
     },

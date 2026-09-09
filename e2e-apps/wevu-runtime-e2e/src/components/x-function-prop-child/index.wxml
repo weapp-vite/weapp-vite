@@ -1,4 +1,8 @@
 <view class="function-prop-child">
-  <view class="row">callback: {{callbackType}}</view>
-  <view class="row">handler: {{handlerType}}</view>
+  <view id="callback-type" class="row">callback: {{callbackType}}</view>
+  <view id="handler-type" class="row">handler: {{handlerType}}</view>
+  <view id="callback-result" class="row">callback result: {{callbackValue || '--'}}</view>
+  <view id="handler-result" class="row">handler result: {{handlerValue || '--'}}</view>
+  <view id="meta-title" class="row">meta title: {{metaTitle}}</view>
+  <view id="dynamic-label" class="row">dynamic label: {{dynamicLabel}}</view>
 </view>

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
+import { classifyVueSfcBlockChanges, resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { createModuleGraphService } from '../../../../moduleGraph'
 import { transformVueLikeFile } from './transformFile'
 
@@ -161,6 +161,29 @@ describe('transformVueLikeFile cache reuse', () => {
     getSourceFromVirtualIdMock.mockImplementation((id: string) => id)
     createCompileVueFileOptionsMock.mockReturnValue({})
     resolveVueSfcStyleIndependentSignatureMock.mockImplementation((source: string) => source.replace(/<style[\s\S]*?<\/style>/g, ''))
+  })
+
+  it('keeps physical SFC signatures separate from transformed code across template A to B to A', async () => {
+    const original = '<script setup>const count = 1</script><template><view>A {{ count }}</view></template>'
+    const updated = original.replace('A {{ count }}', 'B {{ count }}')
+    const options = createBaseOptions()
+    const hmr = options.ctx.runtimeState.build.hmr
+
+    for (const [rawSource, nextSource] of [[original, updated], [updated, original], [original, updated]]) {
+      const transformedSource = rawSource.replace('const count', 'const injected = true; const count')
+      hmr.vueEntrySfcSignatures.set(options.id, resolveVueSfcHmrSignatures(rawSource, options.id).blockSignatures)
+      readFileCachedMock.mockResolvedValue(nextSource)
+      options.code = transformedSource
+      await expect(transformVueLikeFile(options)).resolves.toMatchObject({ code: expect.any(String) })
+
+      expect(readFileCachedMock).not.toHaveBeenCalled()
+      expect(options.compilationCache.get(options.id).source).toBe(transformedSource)
+      expect(hmr.vueEntrySfcSignatures.get(options.id)).toEqual(resolveVueSfcHmrSignatures(rawSource, options.id).blockSignatures)
+      expect(classifyVueSfcBlockChanges(
+        hmr.vueEntrySfcSignatures.get(options.id),
+        resolveVueSfcHmrSignatures(nextSource, options.id).blockSignatures!,
+      )).toEqual(['template'])
+    }
   })
 
   it('reuses cached vue compilation when source and invalidation state are unchanged', async () => {

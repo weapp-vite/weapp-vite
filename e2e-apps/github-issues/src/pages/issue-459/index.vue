@@ -45,12 +45,12 @@ function _runE2E() {
 <template>
   <view class="issue459-page">
     <text class="issue459-title">issue-459 web-apis polyfill compatibility</text>
-    <text class="issue459-line">requestUrl = {{ requestUrl }}</text>
-    <text class="issue459-line">requestOwnBody = {{ requestHasOwnBody }}</text>
-    <text class="issue459-line">responseOwnBody = {{ responseHasOwnBody }}</text>
-    <text class="issue459-line">responseOwnBodyValue = {{ responseHasOwnBodyValue }}</text>
-    <text class="issue459-line">responseKeys = {{ responseKeys }}</text>
-    <text class="issue459-line">textCodec = {{ textCodecRoundTrip }}</text>
+    <text id="issue459-requestUrl" class="issue459-line">requestUrl = {{ requestUrl }}</text>
+    <text id="issue459-requestOwnBody" class="issue459-line">requestOwnBody = {{ requestHasOwnBody }}</text>
+    <text id="issue459-responseOwnBody" class="issue459-line">responseOwnBody = {{ responseHasOwnBody }}</text>
+    <text id="issue459-responseOwnBodyValue" class="issue459-line">responseOwnBodyValue = {{ responseHasOwnBodyValue }}</text>
+    <text id="issue459-responseKeys" class="issue459-line">responseKeys = {{ responseKeys.split(',').sort().join(',') }}</text>
+    <text id="issue459-textCodec" class="issue459-line">textCodec = {{ textCodecRoundTrip }}</text>
   </view>
 </template>
 

@@ -46,8 +46,36 @@ export function unwrapTsExpression(exp: Expression): Expression {
 
 export { getObjectPropertyByKey, resolveRenderableExpression, toStaticObjectKey }
 
-export function normalizeInterpolationExpression(exp: Expression) {
-  return normalizeWxmlExpression(printExpression(unwrapTsExpression(exp)))
+export function normalizeInterpolationExpression(exp: Expression, context?: JsxCompileContext) {
+  if (!context?.setupRefBindings?.size) {
+    return normalizeWxmlExpression(printExpression(unwrapTsExpression(exp)))
+  }
+  const expression = t.cloneNode(unwrapTsExpression(exp), true)
+  const file = t.file(t.program([t.expressionStatement(expression)]))
+  traverse(file, {
+    'MemberExpression|OptionalMemberExpression': {
+      enter(path) {
+        const member = path.node
+        if (!t.isMemberExpression(member) && !t.isOptionalMemberExpression(member)) {
+          return
+        }
+        const object = t.isExpression(member.object) ? unwrapTsExpression(member.object) : member.object
+        if (!t.isIdentifier(object) || !context.setupRefBindings?.has(object.name)
+          || context.scopeStack.includes(object.name) || path.scope.hasBinding(object.name)) {
+          return
+        }
+        if (member.loc?.filename && context.filename && member.loc.filename !== context.filename) {
+          return
+        }
+        const valueAccess = member.computed ? t.isStringLiteral(member.property, { value: 'value' }) : t.isIdentifier(member.property, { name: 'value' })
+        if (valueAccess) {
+          path.replaceWith(t.cloneNode(object))
+        }
+      },
+    },
+  })
+  const statement = file.program.body[0] as t.ExpressionStatement
+  return normalizeWxmlExpression(printExpression(statement.expression))
 }
 
 export function renderMustache(expression: string, context: Pick<JsxCompileContext, 'mustacheInterpolation'>) {

@@ -3,6 +3,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/issue-340-hoist')
@@ -260,7 +261,27 @@ describe('e2e app: issue-340-hoist runtime', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   })
 
-  it('reLaunches both subpackage pages with hoisted shared imports intact', async () => {
+  it('reLaunches both subpackage pages with hoisted shared imports intact', async (context) => {
+    const domAcceptance = createDomAcceptance(context, 'e2e-apps/issue-340-hoist', [
+      {
+        id: 'item',
+        route: '/subpackages/item/login-required/index',
+        action: '打开商品分包，检查标题和共享模块生成的文本',
+        nodes: [
+          { selector: '.issue340-title', text: 'issue-340 hoist item login required' },
+          { selector: '.issue340-message', text: 'item-login-required:issue-340-hoist:shared' },
+        ],
+      },
+      {
+        id: 'user',
+        route: '/subpackages/user/register/form',
+        action: '切换用户分包，检查标题和共享模块生成的文本',
+        nodes: [
+          { selector: '.issue340-title', text: 'issue-340 hoist user register form' },
+          { selector: '.issue340-message', text: 'user-register-form:issue-340-hoist:shared' },
+        ],
+      },
+    ])
     await ensureBuildPrepared()
 
     const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
@@ -283,6 +304,7 @@ describe('e2e app: issue-340-hoist runtime', { concurrent: false }, () => {
     const itemResult = await callCurrentRouteE2E(itemLaunch.miniProgram, itemRoute)
     expect(itemResult?.ok).toBe(true)
     expect(itemResult?.message).toBe(itemMessage)
+    await domAcceptance.check('item', itemLaunch.miniProgram, await itemLaunch.miniProgram.currentPage())
 
     const userRoute = '/subpackages/user/register/form'
     const userMessage = 'user-register-form:issue-340-hoist:shared'
@@ -295,5 +317,6 @@ describe('e2e app: issue-340-hoist runtime', { concurrent: false }, () => {
     const userResult = await callCurrentRouteE2E(userLaunch.miniProgram, userRoute)
     expect(userResult?.ok).toBe(true)
     expect(userResult?.message).toBe(userMessage)
+    await domAcceptance.check('user', userLaunch.miniProgram, await userLaunch.miniProgram.currentPage())
   })
 })

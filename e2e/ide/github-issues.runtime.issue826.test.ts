@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
@@ -32,6 +33,17 @@ describe('e2e app: github-issues / issue #826', { concurrent: false }, () => {
   })
 
   it('executes preserved single, shared and barrel modules across page relaunches', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'index',
+      route: '/pages/issue-826/index',
+      action: '首屏执行保留的 single、shared 和 barrel 模块',
+      nodes: [{ selector: '#issue826-page', text: INDEX_VALUE }],
+    }, {
+      id: 'second',
+      route: '/pages/issue-826/second',
+      action: 'reLaunch 后检查共享模块与 barrel 的执行结果',
+      nodes: [{ selector: '#issue826-second-page', text: SECOND_VALUE }],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const indexPage = await relaunchPage(
@@ -45,6 +57,7 @@ describe('e2e app: github-issues / issue #826', { concurrent: false }, () => {
         throw new Error('Failed to launch issue-826 index page')
       }
       expect(await indexPage.data('value', { timeout: 5_000 })).toBe(INDEX_VALUE)
+      await dom.check('index', await getSharedMiniProgram(ctx), indexPage)
 
       const secondPage = await relaunchPage(
         miniProgram,
@@ -57,6 +70,7 @@ describe('e2e app: github-issues / issue #826', { concurrent: false }, () => {
         throw new Error('Failed to launch issue-826 second page')
       }
       expect(await secondPage.data('value', { timeout: 5_000 })).toBe(SECOND_VALUE)
+      await dom.check('second', await getSharedMiniProgram(ctx), secondPage)
 
       const runtimeErrors = miniProgram?.__weappViteRuntimeLogMeta?.entries
         ?.filter((entry: { level?: string }) => entry.level === 'error' || entry.level === 'exception')

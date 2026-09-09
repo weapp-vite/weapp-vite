@@ -1,9 +1,12 @@
+import type { InlineConfig, Plugin } from 'vite'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
+import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 
 import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
+import { createWatcherServicePlugin } from '../watcherPlugin'
 import { createBuildService } from './service'
 
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
@@ -26,7 +29,6 @@ const disableProjectPrivateConfigHotReloadMock = vi.hoisted(() => vi.fn(async ()
 const syncProjectConfigToOutputMock = vi.hoisted(() => vi.fn(async () => {}))
 const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createSharedBuildConfigMock = vi.hoisted(() => vi.fn(() => ({ shared: true })))
-const resolveTouchAppWxssEnabledMock = vi.hoisted(() => vi.fn(() => true))
 const touchMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkWorkersOptionsMock = vi.hoisted(() => vi.fn())
 const devWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -55,6 +57,12 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigWarnings: [],
 })))
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
+const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
+  options: { build: {}, plugins: [] as Plugin[] },
+  getComponentPageStyleOptions: () => new Map(),
+  getEntryIds: () => new Set<string>(),
+  getDelegatedComponentEntryIds: () => new Set<string>(),
+})))
 const devBuildWatcherQueue = vi.hoisted(() => [] as Array<{
   watcher: any
   emitEvent: ReturnType<typeof vi.fn>
@@ -118,6 +126,15 @@ vi.mock('../statefulHmr/session', () => ({
   runStatefulHmrDev: runStatefulHmrDevMock,
 }))
 
+vi.mock('../statefulHmr/snapshotBuild', () => ({
+  buildStatefulHmrSnapshot: async (loadOptions: unknown, configure: (options: InlineConfig) => InlineConfig) => {
+    const snapshot = await createStatefulHmrSnapshotOptionsMock(loadOptions)
+    const options = configure(snapshot.options)
+    options.build = { ...options.build, watch: undefined, write: false }
+    return { ...snapshot, output: await buildMock(options) }
+  },
+}))
+
 vi.mock('../../moduleGraph/devProvider', () => ({
   createDevModuleGraphProvider: createDevModuleGraphProviderMock,
 }))
@@ -134,8 +151,9 @@ vi.mock('../sharedBuildConfig', () => ({
   createSharedBuildConfig: createSharedBuildConfigMock,
 }))
 
-vi.mock('./touchAppWxss', () => ({
-  resolveTouchAppWxssEnabled: resolveTouchAppWxssEnabledMock,
+vi.mock('./touchAppWxss', async importOriginal => ({
+  ...await importOriginal<typeof import('./touchAppWxss')>(),
+  touchExistingAppStyle: touchMock,
 }))
 
 vi.mock('./workers', () => ({
@@ -143,10 +161,6 @@ vi.mock('./workers', () => ({
   devWorkers: devWorkersMock,
   watchWorkers: watchWorkersMock,
   buildWorkers: buildWorkersMock,
-}))
-
-vi.mock('../../utils/file', () => ({
-  touch: touchMock,
 }))
 
 vi.mock('../../context/shared', () => ({
@@ -270,6 +284,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
     watcherService: {
       rollupWatcherMap,
       sidecarWatcherMap,
+      closeAll: vi.fn(async () => {}),
       setRollupWatcher: vi.fn((watcher: any, root: string = '/') => {
         rollupWatcherMap.set(root, watcher)
       }),
@@ -327,6 +342,12 @@ describe('runtime buildPlugin service', () => {
     disableProjectPrivateConfigHotReloadMock.mockReset()
     disableProjectPrivateConfigHotReloadMock.mockResolvedValue(true)
     runStatefulHmrDevMock.mockReset()
+    createStatefulHmrSnapshotOptionsMock.mockReset().mockImplementation(async () => ({
+      options: { build: {}, plugins: [] },
+      getComponentPageStyleOptions: () => new Map(),
+      getEntryIds: () => new Set<string>(),
+      getDelegatedComponentEntryIds: () => new Set<string>(),
+    }))
     resetEmittedOutputCachesMock.mockReset()
     isOutputRootInsideOutDirMock.mockImplementation((outDir: string, pluginOutputRoot: string) => {
       return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
@@ -373,6 +394,133 @@ describe('runtime buildPlugin service', () => {
     expect(() => createBuildService({ runtimeState } as any)).toThrow('构建服务需要先初始化 config、watcher、npm 和 scan 服务。')
   })
 
+  it('holds real classic controller resources across snapshots and failure until pending work finishes on close', async () => {
+    const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controller = createDevBuildWatcher()
+    devBuildWatcherQueue.push(controller as any)
+    const ctx = createMockContext()
+    const plugin = createWatcherServicePlugin(ctx)
+    const sidecarClose = vi.fn(async () => {})
+    let failure = false
+    let pending: Promise<void> | undefined
+    buildMock.mockImplementation(async () => {
+      await pending
+      plugin.configResolved?.({ command: 'build', build: {} } as any)
+      if (failure) {
+        await plugin.buildEnd?.(new Error('recoverable snapshot error'))
+      }
+      await plugin.closeBundle?.()
+      if (failure) {
+        throw new Error('recoverable snapshot error')
+      }
+      return { output: [] }
+    })
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as typeof controller.watcher
+    ctx.watcherService.sidecarWatcherMap.set('auto-import', { close: sidecarClose })
+    const change = () => moduleGraphProviderChange.handler!({ event: 'update', file: '/project/src/pages/index.ts' })
+    change()
+    await waitForMockCalls(buildMock, 2)
+    expect(sidecarClose).not.toHaveBeenCalled()
+    failure = true
+    change()
+    await waitForMockCalls(buildMock, 3)
+    await waitForMockCalls(loggerErrorMock, 1)
+    expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(watcher)
+    expect(sidecarClose).not.toHaveBeenCalled()
+    failure = false
+    let finish!: () => void
+    pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    change()
+    await waitForMockCalls(buildMock, 4)
+    let closed = false
+    const close = Promise.resolve(watcher.close()).then(() => {
+      closed = true
+    })
+    await flushAsyncTasks()
+    expect(closed).toBe(false)
+    expect(sidecarClose).not.toHaveBeenCalled()
+    finish()
+    await close
+    expect(sidecarClose).toHaveBeenCalledTimes(1)
+    expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+    expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
+  })
+
+  it.each(['snapshot', 'worker'] as const)('releases classic resources after %s startup failure even when the graph provider cannot close', async (kind) => {
+    const ctx = createMockContext()
+    const plugin = createWatcherServicePlugin(ctx)
+    const sidecarClose = vi.fn(async () => {})
+    ctx.watcherService.sidecarWatcherMap.set('auto-import', { close: sidecarClose })
+    const startupError = new Error(`${kind} startup failed`)
+    const closeError = new Error('graph close failed')
+    createDevModuleGraphProviderMock.mockResolvedValueOnce({ close: vi.fn(async () => {
+      throw closeError
+    }) })
+    buildMock.mockImplementation(async () => {
+      plugin.configResolved?.({ command: 'build', build: {} } as any)
+      if (kind === 'snapshot') {
+        await plugin.buildEnd?.(startupError)
+        throw startupError
+      }
+      await plugin.closeBundle?.()
+      return { output: [] }
+    })
+    if (kind === 'worker') {
+      checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: '/project/src/workers' })
+      devWorkersMock.mockRejectedValueOnce(startupError)
+    }
+    await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toMatchObject({
+      errors: [startupError, closeError],
+    })
+    expect(sidecarClose).toHaveBeenCalledTimes(1)
+    const laterClose = vi.fn(async () => {})
+    ctx.watcherService.sidecarWatcherMap.set('later-build', { close: laterClose })
+    plugin.configResolved?.({ command: 'build', build: {} } as any)
+    await plugin.closeBundle?.()
+    expect(laterClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('takes initial and restarted component assets and entry metadata from independent snapshot contexts', async () => {
+    const watcher = { close: vi.fn(async () => {}) }
+    const isolatedPlugin = { name: 'independent-snapshot-compiler' }
+    const snapshotEntry = '/project/src/components/leaf/index.vue'
+    createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
+      options: { build: {}, plugins: [isolatedPlugin] },
+      getComponentPageStyleOptions: () => new Map(),
+      getEntryIds: () => new Set([snapshotEntry]),
+      getDelegatedComponentEntryIds: () => new Set<string>(),
+    }).mockResolvedValueOnce({
+      options: { build: {}, plugins: [isolatedPlugin] },
+      getComponentPageStyleOptions: () => new Map(),
+      getEntryIds: () => new Set([snapshotEntry]),
+      getDelegatedComponentEntryIds: () => new Set<string>(),
+    })
+    buildMock.mockImplementation(async options => ({
+      output: [{
+        type: 'asset',
+        fileName: 'components/leaf/index.json',
+        source: JSON.stringify(options.plugins.includes(isolatedPlugin)
+          ? { component: true, options: { multipleSlots: true } }
+          : { options: { multipleSlots: true } }),
+      }],
+    }))
+    runStatefulHmrDevMock.mockResolvedValue(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/stale.ts', { id: '/project/src/stale.ts' })
+
+    await createBuildService(ctx).build({ skipNpm: true })
+    await runStatefulHmrDevMock.mock.calls[0]![2]()
+
+    for (const [, , , snapshots] of runStatefulHmrDevMock.mock.calls) {
+      expect(snapshots.entryIds).toEqual(new Set([snapshotEntry]))
+      expect(JSON.parse(snapshots.initial.output[0].source)).toEqual({ component: true, options: { multipleSlots: true } })
+    }
+    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
+  })
+
   it('seeds complete outputs and reloads independent plugin graphs for stateful dev', async () => {
     const firstWatcher = { close: vi.fn(async () => {}) }
     const secondWatcher = { close: vi.fn(async () => {}) }
@@ -384,6 +532,12 @@ describe('runtime buildPlugin service', () => {
     ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/index.ts', {
       id: '/project/src/pages/index.ts',
+    })
+    createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
+      options: { build: {}, plugins: [] },
+      getComponentPageStyleOptions: () => new Map(),
+      getEntryIds: () => new Set(['/project/src/pages/index.ts']),
+      getDelegatedComponentEntryIds: () => new Set<string>(),
     })
     const service = createBuildService(ctx)
 
@@ -518,6 +672,9 @@ describe('runtime buildPlugin service', () => {
     }))
 
     const output = await snapshots.rebuild(['/project/src/pages/index.css'])
+    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
+    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenNthCalledWith(1, ctx.configService.loadOptions)
+    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenNthCalledWith(2, ctx.configService.loadOptions)
     const refreshOptions = buildMock.mock.calls[1]![0]
     expect(refreshOptions).toEqual(expect.objectContaining({
       build: expect.objectContaining({
@@ -526,8 +683,13 @@ describe('runtime buildPlugin service', () => {
         write: false,
       }),
     }))
-    expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(2)
-    expect(output).toEqual([{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }])
+    expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(1)
+    expect(output).toEqual({
+      output: [{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }],
+      componentPageGlobalStyleRoutes: [],
+      entryIds: [],
+      delegatedComponentEntryIds: new Set(),
+    })
   })
 
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {
@@ -572,7 +734,7 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：stateful HMR 运行时兼容性检查失败）')
   })
 
-  it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {
+  it('runs dev app build with workers without a global refresh for local style updates', async () => {
     process.env.VITEST = 'false'
     delete process.env.NODE_ENV
 
@@ -581,7 +743,6 @@ describe('runtime buildPlugin service', () => {
       hasWorkersDir: true,
       workersDir: 'workers',
     })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     buildMock
       .mockResolvedValueOnce(watcher)
     const ctx = createMockContext()
@@ -596,7 +757,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('START')
     ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['style-sidecar:1']
     watcher.emit('END')
-    await waitForMockCalls(touchMock, 1)
+    await flushAsyncTasks()
 
     expect(process.env.NODE_ENV).toBe('development')
     expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
@@ -610,18 +771,19 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.npmBuilt).toBe(true)
     expect(devWorkersMock).toHaveBeenCalledWith(ctx.configService, ctx.watcherService, 'workers')
     expect(watchWorkersMock).toHaveBeenCalledTimes(1)
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
-    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+    expect(touchMock).not.toHaveBeenCalled()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
 
-  it('touches app wxss for Tailwind content hmr updates', async () => {
+  it.each([false, true])('keeps one Tailwind output refresh owner when managed=%s', async (managed) => {
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
+    if (managed) {
+      registerManagedTailwindcssEntries(ctx, ['app.css'])
+    }
     const service = createBuildService(ctx)
 
     const buildPromise = service.build({ skipNpm: true })
@@ -633,10 +795,34 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['tailwind-content:1']
     watcher.emit('START')
     watcher.emit('END')
-    await waitForMockCalls(touchMock, 1)
+    await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
-    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+    expect(touchMock).toHaveBeenCalledTimes(managed ? 0 : 1)
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-style-only:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await flushAsyncTasks()
+    expect(touchMock).toHaveBeenCalledTimes(managed ? 0 : 1)
+  })
+
+  it('reports a requested refresh failure instead of silently discarding it', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { touchAppWxss: true }
+    const service = createBuildService(ctx)
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    const failure = Object.assign(new Error('app style metadata denied'), { code: 'EACCES' })
+    touchMock.mockRejectedValueOnce(failure)
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(loggerErrorMock, 1)
+    expect(loggerErrorMock).toHaveBeenCalledWith(failure)
   })
 
   it('does not touch app wxss for shared css importer hmr updates in auto mode', async () => {
@@ -644,7 +830,6 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -659,7 +844,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 
@@ -668,7 +852,6 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -683,7 +866,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 
@@ -711,7 +893,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await waitForMockCalls(touchMock, 1)
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
   })
 
@@ -1940,7 +2121,6 @@ describe('runtime buildPlugin service', () => {
     await service.build({ skipNpm: true })
 
     expect(ctx.npmService.build).not.toHaveBeenCalled()
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 

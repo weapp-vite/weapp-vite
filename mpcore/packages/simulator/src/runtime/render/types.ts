@@ -2,6 +2,7 @@ import type { HeadlessComponentDefinition } from '../../host'
 import type { ArtifactSource } from '../../kernel'
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { TemplateRenderState } from '../../view/templateRuntime'
+import type { WxsModuleBindings } from '../../view/wxs'
 import type { HeadlessComponentInstance } from '../componentInstance'
 import type { HeadlessModuleLoader } from '../moduleLoader'
 
@@ -15,6 +16,7 @@ export interface DomNodeLike {
 }
 
 export interface RuntimeRenderScope {
+  wxs?: WxsModuleBindings
   alias?: string
   classList?: string[]
   data: Record<string, any>

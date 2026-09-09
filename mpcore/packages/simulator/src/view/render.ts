@@ -2,6 +2,7 @@ import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessPageInstance } from '../runtime'
 import path from 'node:path'
 import { parseDocument } from 'htmlparser2'
+import { interpolateTemplateText } from './templateText'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
@@ -45,7 +46,7 @@ function visitDom(node: DomNodeLike, visitor: (node: DomNodeLike) => void) {
 function interpolateDomTree(root: DomNodeLike, data: Record<string, any>) {
   visitDom(root, (node) => {
     if (typeof node.data === 'string') {
-      node.data = interpolateTemplate(node.data, data)
+      node.data = interpolateTemplateText(node.data, data)
     }
     if (node.attribs) {
       for (const [key, value] of Object.entries(node.attribs)) {

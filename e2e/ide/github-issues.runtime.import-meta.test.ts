@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -20,6 +21,19 @@ describe('github-issues runtime import.meta bindings', { concurrent: false }, ()
   })
 
   it('issue #431: renders supported native wxml import.meta bindings at runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'initial',
+      route: '/pages/issue-431/index',
+      action: '检查原生模板和脚本的环境变量、模块路径及资源属性替换',
+      nodes: [
+        { selector: '#issue431-env-label', text: 'issue-431 native wxml env replacement' },
+        { selector: '#issue431-image', attributes: { src: 'https://static.example.com/issue-431/logo.png' } },
+        { selector: '#issue431-double', text: '/pages/issue-431/index.wxml | /pages/issue-431' },
+        { selector: '#issue431-single', text: '/pages/issue-431/index.wxml | /pages/issue-431' },
+        { selector: '#issue431-script-url', text: '/pages/issue-431/index.js' },
+        { selector: '#issue431-script-dirname', text: '/pages/issue-431' },
+      ],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
 
     const page = await relaunchPage(
@@ -60,5 +74,6 @@ describe('github-issues runtime import.meta bindings', { concurrent: false }, ()
     expect(pageWxml).not.toContain('import.meta.env')
     expect(pageWxml).not.toContain('import.meta.url')
     expect(pageWxml).not.toContain('import.meta.dirname')
+    await dom.check('initial', await getSharedMiniProgram(ctx), page)
   })
 })

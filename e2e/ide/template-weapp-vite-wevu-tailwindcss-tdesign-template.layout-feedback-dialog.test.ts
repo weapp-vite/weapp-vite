@@ -3,7 +3,9 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
+import { dialogCheckpoint, feedbackCheckpoint, TDESIGN_FIXTURE } from './tdesignDom'
 import {
   createTemplateWevuTdesignRegressionLaunchOptions,
 } from './template-wevu-tdesign-regression.shared'
@@ -102,16 +104,23 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
     await closeSharedMiniProgram()
   })
 
-  it('closes page alert dialog after confirming', async () => {
+  it('closes page alert dialog after confirming', async (ctx) => {
+    const acceptance = createDomAcceptance(ctx, TDESIGN_FIXTURE, [
+      feedbackCheckpoint('initial', '重置后检查空日志与关闭状态'),
+      dialogCheckpoint('alert-open', 'Alert'),
+      feedbackCheckpoint('alert-confirmed', '确认后检查弹窗关闭和实际回调日志', '页面 Alert #1 已确认'),
+    ])
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {
       const page = await getSharedPage()
       await resetSharedPage(page)
+      await acceptance.check('initial', miniProgram, page)
       const marker = collector.mark()
 
       await callPageMethod(page, 'runPageAlertCloseE2E')
+      await acceptance.check('alert-open', miniProgram, page)
       await page.waitFor(160)
       expect(await readDialogHost(page)).toMatchObject({
         hasHost: true,
@@ -120,6 +129,7 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
       })
 
       await callPageMethod(page, 'runDialogHostConfirmE2E')
+      await acceptance.check('alert-confirmed', miniProgram, page)
       await page.waitFor(100)
       expect(await readDialogHost(page)).toMatchObject({
         hasHost: true,
@@ -135,16 +145,26 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
     }
   })
 
-  it('closes page confirm dialog after canceling and confirming', async () => {
+  it('closes page confirm dialog after canceling and confirming', async (ctx) => {
+    const acceptance = createDomAcceptance(ctx, TDESIGN_FIXTURE, [
+      feedbackCheckpoint('initial', '重置后检查空日志与关闭状态'),
+      dialogCheckpoint('cancel-open', 'Confirm'),
+      feedbackCheckpoint('canceled', '取消后检查弹窗消失和回调日志', '页面 Confirm #1 点击取消'),
+      feedbackCheckpoint('reset', '再次重置后检查空日志和关闭状态'),
+      dialogCheckpoint('confirm-open', 'Confirm'),
+      feedbackCheckpoint('confirmed', '确认后检查弹窗消失和回调日志', '页面 Confirm #1 点击确认'),
+    ])
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
 
     try {
       const page = await getSharedPage()
       await resetSharedPage(page)
+      await acceptance.check('initial', miniProgram, page)
       let marker = collector.mark()
 
       await callPageMethod(page, 'runPageConfirmOpenE2E')
+      await acceptance.check('cancel-open', miniProgram, page)
       await page.waitFor(160)
       expect(await readDialogHost(page)).toMatchObject({
         hasHost: true,
@@ -154,6 +174,7 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
       })
 
       await callPageMethod(page, 'runDialogHostCancelE2E')
+      await acceptance.check('canceled', miniProgram, page)
       await page.waitFor(100)
       expect(await readDialogHost(page)).toMatchObject({
         hasHost: true,
@@ -165,9 +186,11 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
       expect(collector.getSince(marker)).toEqual([])
 
       await resetSharedPage(page)
+      await acceptance.check('reset', miniProgram, page)
       marker = collector.mark()
 
       await callPageMethod(page, 'runPageConfirmOpenE2E')
+      await acceptance.check('confirm-open', miniProgram, page)
       await page.waitFor(160)
       expect(await readDialogHost(page)).toMatchObject({
         hasHost: true,
@@ -175,6 +198,7 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
       })
 
       await callPageMethod(page, 'runDialogHostConfirmE2E')
+      await acceptance.check('confirmed', miniProgram, page)
       await page.waitFor(100)
       expect(await readDialogHost(page)).toMatchObject({
         hasHost: true,
@@ -191,17 +215,28 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
     }
   })
 
-  it('can close dialog host via native confirm/cancel methods', async () => {
+  it('can close dialog host via native confirm/cancel methods', async (ctx) => {
+    const acceptance = createDomAcceptance(ctx, TDESIGN_FIXTURE, [
+      feedbackCheckpoint('initial', '检查原生宿主初始关闭状态'),
+      dialogCheckpoint('native-alert-open', 'Alert'),
+      feedbackCheckpoint('native-alert-confirmed', '原生确认后检查实际日志和关闭状态', '页面 Alert #1 已确认'),
+      dialogCheckpoint('native-confirm-open', 'Confirm', 2),
+      feedbackCheckpoint('native-confirm-canceled', '原生取消后检查实际日志和关闭状态', '页面 Confirm #2 点击取消'),
+    ])
+    const miniProgram = await getSharedMiniProgram()
     const page = await getSharedPage()
     await resetSharedPage(page)
+    await acceptance.check('initial', miniProgram, page)
 
     await callPageMethod(page, 'runPageAlertCloseE2E')
+    await acceptance.check('native-alert-open', miniProgram, page)
     await page.waitFor(160)
     expect(await readDialogHost(page)).toMatchObject({
       hasHost: true,
       visible: true,
     })
     await callPageMethod(page, 'runDialogHostConfirmE2E')
+    await acceptance.check('native-alert-confirmed', miniProgram, page)
     await page.waitFor(100)
     expect(await readDialogHost(page)).toMatchObject({
       hasHost: true,
@@ -209,12 +244,14 @@ describe('e2e app: template-wevu-tdesign-regression layout feedback dialog', { c
     })
 
     await callPageMethod(page, 'runPageConfirmOpenE2E')
+    await acceptance.check('native-confirm-open', miniProgram, page)
     await page.waitFor(160)
     expect(await readDialogHost(page)).toMatchObject({
       hasHost: true,
       visible: true,
     })
     await callPageMethod(page, 'runDialogHostCancelE2E')
+    await acceptance.check('native-confirm-canceled', miniProgram, page)
     await page.waitFor(100)
     expect(await readDialogHost(page)).toMatchObject({
       hasHost: true,

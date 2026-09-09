@@ -11,11 +11,12 @@ const aaa = ref('items-center')
 
 <template>
   <view class="flex gap-6">
-    <view>1</view>
+    <view class="gap-[24px]">1</view>
     <view>2</view>
     <view>3</view>
   </view>
-  <view :class="[`flex${bbb} gap-4.25`, aaa]">
+  <!-- eslint-disable-next-line vue/prefer-separate-static-class -- 负向对照必须保留与正常 fixture 相同的动态表达式。 -->
+  <view id="issue-814-dynamic" :class="[`flex${bbb} gap-[17px]`, aaa]">
     <view>1</view>
     <view>2</view>
     <view>3</view>

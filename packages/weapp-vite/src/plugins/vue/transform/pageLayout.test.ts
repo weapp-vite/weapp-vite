@@ -71,6 +71,32 @@ definePageMeta({
     expect(layoutName).toBe('admin-dashboard')
   })
 
+  it('shares discovered layout sources without sharing output paths across independent builds', async () => {
+    const projectRoot = await createTempProject()
+    const absoluteSrcRoot = path.join(projectRoot, 'src')
+    const layoutFile = path.join(absoluteSrcRoot, 'layouts/default.vue')
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
+    await fs.writeFile(layoutFile, '<template><slot /></template>')
+    const source = '<script setup>definePageMeta({ layout: "default" })</script>'
+    const filename = path.join(absoluteSrcRoot, 'packageB/pages/home/index.vue')
+    const mainConfig = {
+      absoluteSrcRoot,
+      weappViteConfig: {},
+      relativeOutputPath: (file: string) => path.relative(absoluteSrcRoot, file),
+    }
+    const childConfig = {
+      ...mainConfig,
+      relativeOutputPath: (file: string) => path.join('packageB/weapp-shared', path.relative(absoluteSrcRoot, file)),
+    }
+    const mainPlan = await resolvePageLayoutPlan(source, filename, mainConfig)
+    const childPlan = await resolvePageLayoutPlan(source, filename, childConfig)
+    const mainAgain = await resolvePageLayoutPlan(source, filename, mainConfig)
+    expect(mainPlan?.layouts[0]?.importPath).toBe('/layouts/default')
+    expect(childPlan?.layouts[0]?.importPath).toBe('/packageB/weapp-shared/layouts/default')
+    expect(childPlan?.layouts[0]?.file).toBe(layoutFile)
+    expect(mainAgain?.layouts[0]?.importPath).toBe('/layouts/default')
+  })
+
   it('extracts layout object with props from definePageMeta', () => {
     const layoutMeta = extractPageLayoutMeta(`
 <script setup lang="ts">

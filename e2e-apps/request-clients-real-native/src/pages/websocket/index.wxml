@@ -5,14 +5,21 @@
   </view>
 
   <view class="panel">
-    <text class="line">pageStatus = {{state.pageStatus}}</text>
+    <text id="websocket-page-status" class="line">pageStatus = {{state.pageStatus}}</text>
     <text id="websocket-status" class="line" data-e2e-status="{{state.status}}">status = {{state.status}}</text>
-    <text class="line">runCount = {{state.runCount}}</text>
-    <text class="line">httpStatus = {{state.httpStatus}}</text>
-    <text class="line">requestCount = {{state.requestCount}}</text>
-    <text class="line">requestPath = {{state.requestPath}}</text>
-    <text class="line">connectedReadyState = {{connectedReadyState}}</text>
-    <text class="line">finalReadyState = {{finalReadyState}}</text>
+    <text id="websocket-run-count" class="line">runCount = {{state.runCount}}</text>
+    <text id="websocket-http-status" class="line">httpStatus = {{state.httpStatus}}</text>
+    <text id="websocket-request-count" class="line">requestCount = {{state.requestCount}}</text>
+    <text id="websocket-request-path" class="line">requestPath = {{state.requestPath}}</text>
+    <text id="websocket-response-client" class="line">client = {{state.response.client}}</text>
+    <text id="websocket-response-transport" class="line">transport = {{state.response.transport}}</text>
+    <text id="websocket-response-method" class="line">method = {{state.response.method}}</text>
+    <text id="websocket-response-operationName" class="line">operationName = {{state.response.operationName}}</text>
+    <text id="websocket-response-event" class="line">event = {{state.response.event}}</text>
+    <text id="websocket-connected-ready-state" class="line">connectedReadyState = {{connectedReadyState}}</text>
+    <text id="websocket-echo-stage" class="line">echoStage = {{echoStage}}</text>
+    <text id="websocket-echo-run" class="line">echoRun = {{echoRun}}</text>
+    <text id="websocket-final-ready-state" class="line">finalReadyState = {{finalReadyState}}</text>
     <text class="line">randomPushCount = {{randomPushCount}}</text>
     <text class="line">latestRandomMessage = {{latestRandomMessage}}</text>
     <text class="line">latestRandomSentAt = {{latestRandomSentAt}}</text>

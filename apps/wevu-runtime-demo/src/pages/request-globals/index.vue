@@ -1,4 +1,17 @@
 <script setup lang="ts">
+import { onLoad, ref } from 'wevu'
+
+const globals = ref({ fetchType: '', protocol: '', webSocketType: '', xmlHttpRequestType: '' })
+onLoad(() => {
+  globals.value = {
+    // 此 fixture 验证 App 注入的真实全局 API。
+    fetchType: typeof fetch,
+    protocol: new URL('https://request-globals.invalid').protocol,
+    webSocketType: typeof WebSocket,
+    xmlHttpRequestType: typeof XMLHttpRequest,
+  }
+})
+
 const entries = [
   {
     desc: '使用 wevu/fetch + wevu/web-apis，验证全局 fetch 与宿主默认参数',
@@ -27,8 +40,15 @@ const entries = [
       </text>
     </view>
 
+    <view class="card">
+      <text id="globals-fetch">{{ globals.fetchType }}</text>
+      <text id="globals-url">{{ globals.protocol }}</text>
+      <text id="globals-websocket">{{ globals.webSocketType }}</text>
+      <text id="globals-xhr">{{ globals.xmlHttpRequestType }}</text>
+    </view>
     <navigator
       v-for="entry in entries"
+      :id="`entry-${entry.title}`"
       :key="entry.route"
       class="card"
       :url="entry.route"

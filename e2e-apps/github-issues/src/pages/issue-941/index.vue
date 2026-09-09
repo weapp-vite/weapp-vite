@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { ref } from 'wevu'
 import { createWeapi } from 'wevu/api'
+
+const resultSummary = ref<Array<{ name: string, sameIdentity: boolean, isPromise: boolean }>>([])
+const voidSummary = ref<Array<{ name: string, isUndefined: boolean, isPromise: boolean }>>([])
+const cacheOptionsSummary = ref('pending')
 
 const directResultMethods = [
   'checkIsPictureInPictureActive',
@@ -75,6 +80,9 @@ function _runE2E() {
       isPromise: isPromise(value),
     }
   })
+  resultSummary.value = resultMethods
+  voidSummary.value = voidMethods
+  cacheOptionsSummary.value = Object.keys(lastCacheManagerOptions ?? {}).sort().join(',')
   return {
     resultMethods,
     voidMethods,
@@ -88,5 +96,24 @@ defineExpose({
 </script>
 
 <template>
-  <view id="issue-941-page">issue-941</view>
+  <view id="issue-941-page">
+    <view id="issue941-title">issue-941 direct-return adapter</view>
+    <view
+      v-for="item in resultSummary"
+      :id="`issue941-${item.name}`"
+      :key="item.name"
+      class="issue941-result"
+    >
+      {{ item.name }}: identity {{ item.sameIdentity ? 'preserved' : 'changed' }}, promise {{ item.isPromise ? 'yes' : 'no' }}
+    </view>
+    <view
+      v-for="item in voidSummary"
+      :id="`issue941-${item.name}`"
+      :key="item.name"
+      class="issue941-void"
+    >
+      {{ item.name }}: undefined {{ item.isUndefined ? 'yes' : 'no' }}, promise {{ item.isPromise ? 'yes' : 'no' }}
+    </view>
+    <view id="issue941-cache-options">cache options: {{ cacheOptionsSummary }}</view>
+  </view>
 </template>

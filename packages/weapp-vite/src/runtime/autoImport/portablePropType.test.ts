@@ -66,7 +66,7 @@ describe('portable prop lexical bindings', () => {
     }
     const host = ts.createCompilerHost(options)
     const getSourceFile = host.getSourceFile.bind(host)
-    host.getSourceFile = (name, languageVersion, onError, shouldCreateNewSourceFile) => name === fileName
+    host.getSourceFile = (name, languageVersion, onError, shouldCreateNewSourceFile) => path.resolve(name) === fileName
       ? ts.createSourceFile(name, source, languageVersion)
       : getSourceFile(name, languageVersion, onError, shouldCreateNewSourceFile)
     const program = ts.createProgram([fileName], options, host)

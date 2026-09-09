@@ -137,6 +137,7 @@ export function createForKeyProjection(
       bindingSeed,
     ),
     forStack: outerForStack,
+    conditions: context.bindingConditions?.slice(),
   })
 
   const indexAccess = outerForStack

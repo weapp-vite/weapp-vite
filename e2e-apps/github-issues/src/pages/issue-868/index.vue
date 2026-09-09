@@ -53,6 +53,7 @@ defineExpose({
 
     <view
       v-for="item in values"
+      :id="`issue868-${item}`"
       :key="`${item}-key`"
       class="issue-868-primitive"
     >
