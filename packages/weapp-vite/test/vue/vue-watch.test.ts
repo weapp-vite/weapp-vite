@@ -96,7 +96,9 @@ describe('vue transform plugin: watch .vue files', () => {
 
     expect(watchedFiles).toEqual([])
     expect(emittedFiles.some(x => x?.fileName?.endsWith('.wxml'))).toBeTruthy()
-    expect(emittedFiles.some(x => x?.fileName?.endsWith('.json'))).toBeFalsy()
+    expect(emittedFiles.filter(x => x?.fileName?.endsWith('.json'))).toEqual([
+      expect.objectContaining({ fileName: 'pages/vue-events/index.json', source: '{}' }),
+    ])
   })
 
   it('does not duplicate virtual module resolved .vue files as watch inputs', async () => {

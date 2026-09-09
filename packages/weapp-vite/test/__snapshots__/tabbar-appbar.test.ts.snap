@@ -106,6 +106,8 @@ exports[`tabbar-appbar > dist > pages/index/index.wxml 1`] = `
 
 exports[`tabbar-appbar > dist > pages/index/index.wxss 1`] = `""`;
 
+exports[`tabbar-appbar > dist > pages/index/vue.json 1`] = `"{}"`;
+
 exports[`tabbar-appbar > dist > pages/index/vue.wxml 1`] = `"<view> 111 </view>"`;
 
 exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
@@ -114,6 +116,8 @@ exports[`tabbar-appbar > dist > pages/index/vue.wxss 1`] = `
 }
 "
 `;
+
+exports[`tabbar-appbar > dist > pages/index/vue-setup.json 1`] = `"{}"`;
 
 exports[`tabbar-appbar > dist > pages/index/vue-setup.wxml 1`] = `"<view> 222 </view>"`;
 
@@ -162,8 +166,10 @@ exports[`tabbar-appbar > dist 1`] = `
   "pages/index/index.json",
   "pages/index/index.wxml",
   "pages/index/index.wxss",
+  "pages/index/vue-setup.json",
   "pages/index/vue-setup.wxml",
   "pages/index/vue-setup.wxss",
+  "pages/index/vue.json",
   "pages/index/vue.wxml",
   "pages/index/vue.wxss",
   "sitemap.json",
