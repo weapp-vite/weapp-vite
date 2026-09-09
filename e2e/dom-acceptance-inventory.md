@@ -114,9 +114,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### app lifecycle compare (e2e) > compares wevu app lifecycle logs against native
 
-- Source: `e2e/ide/app-lifecycle.test.ts:231`
+- Source: `e2e/ide/app-lifecycle.test.ts:233`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps`; checkpoints: `['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: \`${variant}:initial\`, route: INDEX_ROUTE, action: \`冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态\`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' `; source: `e2e/ide/app-lifecycle.test.ts:232`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps`; checkpoints: `['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: \`${variant}:initial\`, route: INDEX_ROUTE, action: \`冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态\`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' `; source: `e2e/ide/app-lifecycle.test.ts:234`
 - Operations: `check(native:initial)`, `callMethod(refreshLifecycleSummary)`, `check(native:finalized)`, `check(wevu-ts:initial)`, `check(wevu-ts:finalized)`, `check(wevu-vue:initial)`, `check(wevu-vue:finalized)`
 
 ## ide/app-prelude-native.runtime.test.ts

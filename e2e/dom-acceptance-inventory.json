@@ -23,14 +23,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/app-lifecycle.test.ts:231",
+          "source": "e2e/ide/app-lifecycle.test.ts:233",
           "name": "app lifecycle compare (e2e) > compares wevu app lifecycle logs against native",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps",
               "checkpoints": "['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: `${variant}:initial`, route: INDEX_ROUTE, action: `冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' ",
-              "source": "e2e/ide/app-lifecycle.test.ts:232"
+              "source": "e2e/ide/app-lifecycle.test.ts:234"
             }
           ],
           "routes": [],
@@ -5895,7 +5895,7 @@
     },
     {
       "file": "e2e/ide/app-lifecycle.test.ts",
-      "sha256": "92c14591ee868889f5dd160c5f1765b52c354e681a44572515fe0d99bc505762"
+      "sha256": "71a4e31a341179ee4c3c1fef5aff43cca53d8af7778b4d0a621a9db6527b7b10"
     },
     {
       "file": "e2e/ide/app-prelude-native.runtime.test.ts",
