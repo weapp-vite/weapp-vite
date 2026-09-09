@@ -5,6 +5,7 @@ import path from 'pathe'
 import { expect, it } from 'vitest'
 import { EntryChunkLifecycle } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { createOutputFinalizerPlugin } from '../../plugins/outputFinalizer'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { StatefulHmrOutputPublication } from './outputPublication'
 import { createViteDevEngine } from './viteDevEngine'
 
@@ -20,6 +21,7 @@ it('preserves complete native output after a watched module re-emits a component
   await writeFile(added, 'export const addedValue = "added"')
   const hmr = Promise.withResolvers<void>()
   const deferredEntries: string[] = []
+  const resolvedEntries = new Map<string, string>()
   const lifecycle = new EntryChunkLifecycle(entry => deferredEntries.push(entry))
   const output: StatefulHmrOutputFile[][] = []
   const unpruned: string[][] = []
@@ -52,7 +54,7 @@ it('preserves complete native output after a watched module re-emits a component
       },
       buildEnd() { lifecycle.endBuild() },
       async load(id) {
-        if (id.replaceAll('\\', '/') === owner) {
+        if (normalizeFsResolvedId(id) === owner) {
           const source = await readFile(owner, 'utf8')
           const entries = [[component, 'components/example.js']]
           if (source.includes('after')) {
@@ -60,8 +62,14 @@ it('preserves complete native output after a watched module re-emits a component
           }
           for (const [entry, fileName] of entries) {
             if (lifecycle.prepare(entry!, true)) {
-              await this.load({ id: entry! })
-              this.emitFile({ type: 'chunk', id: entry!, fileName, preserveSignature: 'exports-only' })
+              const resolved = await this.resolve(entry!, id)
+              if (!resolved || resolved.external) {
+                throw new Error(`Component entry must resolve to an internal module: ${entry}`)
+              }
+              // 与生产 emitter 一致，保留 resolver 的精确模块 ID，避免 Windows 路径产生重复模块。
+              resolvedEntries.set(entry!, resolved.id)
+              await this.load({ id: resolved.id })
+              this.emitFile({ type: 'chunk', id: resolved.id, fileName, preserveSignature: 'exports-only' })
               context.runtimeState.build.hmr.lastEmittedChunkFileNames.add(fileName!)
             }
           }
@@ -109,7 +117,10 @@ it('preserves complete native output after a watched module re-emits a component
     await publication.rebuild(engine, 5000)
     expect(errors).toEqual([])
     expect(deferredEntries).toContain(added)
-    expect(engine.moduleGraph.getModuleInfo(added)?.isEntry).toBe(true)
+    const addedId = resolvedEntries.get(added)
+    expect(addedId).toBeDefined()
+    expect(engine.moduleGraph.getModuleIds().filter(id => normalizeFsResolvedId(id) === added)).toEqual([addedId])
+    expect(engine.moduleGraph.getModuleInfo(addedId!)?.isEntry).toBe(true)
     expect(unpruned.at(-1)).toContain('app.js')
     expect(output.at(-1)?.map(item => item.fileName)).toEqual(expect.arrayContaining(['app.js', 'components/example.js', 'components/added.js']))
   }
