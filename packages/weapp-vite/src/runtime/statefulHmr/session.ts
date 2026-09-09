@@ -4,7 +4,7 @@ import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
-import type { StatefulHmrOutputFile } from './outputWriter'
+import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
 import {
@@ -35,6 +35,7 @@ import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrPatchImportResolver, transformStatefulHmrPatchImports } from './patchModule'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
+import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
@@ -52,6 +53,7 @@ interface StatefulHmrSnapshots {
 }
 
 interface ActiveSnapshotBatch {
+  traceBatchId?: number
   isSuperseded: () => boolean
   outputTasks: Promise<void>[]
   snapshot: StatefulHmrSnapshot
@@ -162,6 +164,7 @@ class StatefulHmrSession {
   private readonly adapter: StatefulHmrViteAdapter
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
+  private readonly diagnostics: ReturnType<typeof createStatefulHmrSnapshotDiagnostics>
   private readonly transport: StatefulHmrTransport
   private outputChain: Promise<void> = Promise.resolve()
   private restartTimer?: ReturnType<typeof setTimeout>
@@ -189,6 +192,7 @@ class StatefulHmrSession {
   ) {
     // DevEngine 可能先交付失败输出、随后才等待首轮就绪；保留拒绝结果但提前订阅。
     void this.initialBundle.promise.catch(() => {})
+    this.diagnostics = createStatefulHmrSnapshotDiagnostics({ root: server.config.root, outDir: ctx.configService!.outDir })
     this.directoryUpdates = new StatefulHmrDirectoryUpdates(server.config.root)
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
     this.initialSnapshot = snapshots.initial
@@ -199,7 +203,7 @@ class StatefulHmrSession {
           if (!this.transport.isCurrentBuild(buildId)) {
             return
           }
-          await writeStatefulHmrOutput(this.ctx.configService!.outDir, [{
+          await this.writeOutput('delta', [{
             type: 'asset',
             fileName: WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
             source,
@@ -215,7 +219,9 @@ class StatefulHmrSession {
       waitForInitialBundle: () => this.waitForInitialBundle(),
     }, devWatchOptions)
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
-      execute: batch => this.executeSnapshotBatch(batch),
+      execute: batch => this.diagnostics
+        ? this.diagnostics.batch(batch, batchId => this.executeSnapshotBatch(batch, batchId))
+        : this.executeSnapshotBatch(batch),
       onError: error => this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', {
         error: error instanceof Error ? error : new Error(String(error)),
       }),
@@ -243,7 +249,7 @@ class StatefulHmrSession {
 
   async refreshControl(): Promise<void> {
     await this.enqueueOutput(async () => {
-      await writeStatefulHmrOutput(this.ctx.configService!.outDir, [{
+      await this.writeOutput('control', [{
         type: 'asset',
         fileName: WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE,
         source: createStatefulHmrControlSource(this.transport.createControl()),
@@ -253,6 +259,7 @@ class StatefulHmrSession {
 
   handleSourceUpdate(file: string, dirtyReasonSummary: string[] = []): void {
     const normalizedFile = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
+    this.diagnostics?.source(normalizedFile, dirtyReasonSummary)
     const normalizedOutDir = normalizeFsResolvedId(this.ctx.configService!.outDir).replace(/\/$/, '')
     if (normalizedFile === normalizedOutDir || normalizedFile.startsWith(`${normalizedOutDir}/`)) {
       return
@@ -297,6 +304,7 @@ class StatefulHmrSession {
     const snapshotBatch = this.activeSnapshotBatch
     const outputTask = this.enqueueOutput(async () => {
       if (snapshotBatch?.isSuperseded()) {
+        this.diagnostics?.discarded(snapshotBatch.traceBatchId, 'before-output')
         return
       }
       const snapshot = snapshotBatch?.snapshot ?? this.initialSnapshot
@@ -307,6 +315,7 @@ class StatefulHmrSession {
         { componentPageGlobalStyleRoutes: snapshot?.componentPageGlobalStyleRoutes ?? this.componentPageGlobalStyleRoutes },
       )
       if (snapshotBatch?.isSuperseded()) {
+        this.diagnostics?.discarded(snapshotBatch.traceBatchId, 'after-transform')
         return
       }
       const fullBuild = compatibleOutput.some(item => item.fileName === 'app.js')
@@ -323,14 +332,15 @@ class StatefulHmrSession {
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, 'void 0;\n')
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE, 'void 0;\n')
       }
-      await writeStatefulHmrOutput(
-        this.ctx.configService!.outDir,
+      await this.writeOutput(
+        fullBuild ? 'full' : 'additional',
         fullBuild
           ? compatibleOutput
           : selectStatefulHmrAdditionalOutput(compatibleOutput, snapshotOutput ?? this.snapshotAssets.values()),
         fullBuild && this.initialSnapshot
           ? { publicDir: this.server.config.publicDir, copyPublicDir: this.server.config.build.copyPublicDir }
           : undefined,
+        snapshotBatch?.traceBatchId,
       )
       if (buildId) {
         this.transport.commitFullBuild(buildId)
@@ -426,10 +436,18 @@ class StatefulHmrSession {
   }
 
   private requestFullBuild(files: Iterable<string> = []): void {
+    if (this.diagnostics) {
+      files = [...files]
+      this.diagnostics.request('full', files as string[])
+    }
     this.snapshotScheduler.request('full', files)
   }
 
   private requestSnapshotRefresh(files: Iterable<string> = []): void {
+    if (this.diagnostics) {
+      files = [...files]
+      this.diagnostics.request('refresh', files as string[])
+    }
     this.snapshotScheduler.request('refresh', files)
   }
 
@@ -454,11 +472,21 @@ class StatefulHmrSession {
     return outputTask
   }
 
+  private writeOutput(
+    kind: 'control' | 'delta' | 'full' | 'additional' | 'refresh',
+    output: StatefulHmrOutputFile[],
+    initialPublicAssets?: StatefulHmrInitialPublicAssets,
+    batchId?: number,
+  ): Promise<void> {
+    const write = () => writeStatefulHmrOutput(this.ctx.configService!.outDir, output, initialPublicAssets)
+    return this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
+  }
+
   private async executeSnapshotBatch(batch: {
     files: string[]
     isSuperseded: () => boolean
     mode: 'full' | 'refresh'
-  }): Promise<void> {
+  }, traceBatchId?: number): Promise<void> {
     const entryGraphRevision = this.entryGraphRevision
     // 完整构建只消费启动时捕获的事件；同一路径的新事件仍归后续批次所有。
     const sourceChanges = new Map(batch.files.map(file => [file, this.sourceDirtyReasons.get(file)]))
@@ -473,7 +501,9 @@ class StatefulHmrSession {
       }
     }
     const snapshot = await this.snapshots.rebuild(batch.files)
+    this.diagnostics?.snapshot(traceBatchId, snapshot.output, batch.isSuperseded())
     if (batch.isSuperseded()) {
+      this.diagnostics?.discarded(traceBatchId, 'after-build')
       return
     }
     const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
@@ -493,7 +523,7 @@ class StatefulHmrSession {
           this.delegatedComponentEntryIds.add(normalizeFsResolvedId(id))
         }
       }
-      const activeBatch: ActiveSnapshotBatch = { ...batch, snapshot, outputTasks: [] }
+      const activeBatch: ActiveSnapshotBatch = { ...batch, traceBatchId, snapshot, outputTasks: [] }
       this.activeSnapshotBatch = activeBatch
       try {
         await this.adapter.rebuild()
@@ -516,11 +546,13 @@ class StatefulHmrSession {
     // 资产快照不消费源分类，原生 patch 可能在快照写入完成后才抵达。
     await this.enqueueOutput(async () => {
       if (batch.isSuperseded()) {
+        this.diagnostics?.discarded(traceBatchId, 'before-output')
         return
       }
       const output = this.createSnapshotAssets(snapshot)
       const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
-      await writeStatefulHmrOutput(this.ctx.configService!.outDir, changedOutput)
+      this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changedOutput, batch.isSuperseded())
+      await this.writeOutput('refresh', changedOutput, undefined, traceBatchId)
       this.adoptSnapshot(snapshot, output)
     })
   }
