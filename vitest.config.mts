@@ -135,6 +135,7 @@ const projects = [
         'e2e/utils/automator.cli-bridge.test.ts',
         'e2e/utils/automator.test.ts',
         'e2e/utils/automatorWarmup.test.ts',
+        'e2e/utils/cleanupSteps.test.ts',
         'e2e/utils/dev-memory.test.ts',
         'e2e/utils/ide-devtools-cleanup.test.ts',
         'e2e/utils/opened-automator.test.ts',

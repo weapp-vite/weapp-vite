@@ -9,6 +9,7 @@ import {
   isDevtoolsSimulatorBootError,
   launchAutomator,
 } from '../utils/automator'
+import { runCleanupSteps } from '../utils/cleanupSteps'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
@@ -394,36 +395,48 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
   }, 240_000)
 
   afterAll(async () => {
-    await miniProgram?.disconnect?.()
-    miniProgram = null
-    await devProcess?.stop(5_000).catch(() => {})
-    devProcess = undefined
-    if (originalAppSource) {
-      await fs.writeFile(APP_VUE_PATH, originalAppSource, 'utf8').catch(() => {})
-    }
-    if (originalLayoutSource) {
-      await fs.writeFile(LAYOUT_VUE_PATH, originalLayoutSource, 'utf8').catch(() => {})
-    }
-    if (originalPageSource) {
-      await fs.writeFile(PAGE_VUE_PATH, originalPageSource, 'utf8').catch(() => {})
-    }
-    if (originalBootstrapSource) {
-      await fs.writeFile(BOOTSTRAP_TS_PATH, originalBootstrapSource, 'utf8').catch(() => {})
-    }
-    await cleanupResidualIdeProcesses()
-    if (previousAutomatorPostConnectRefresh == null) {
-      delete process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
-    }
-    else {
-      process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV] = previousAutomatorPostConnectRefresh
-    }
-    if (previousBridgePostConnectRefresh == null) {
-      delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
-    }
-    else {
-      process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = previousBridgePostConnectRefresh
-    }
-  })
+    await runCleanupSteps([
+      { label: 'disconnect automator', run: async () => {
+        const session = miniProgram
+        miniProgram = null
+        await session?.disconnect?.()
+      } },
+      { label: 'stop dev process', run: async () => {
+        const process = devProcess
+        devProcess = undefined
+        await process?.stop(5_000)
+      } },
+      ...[
+        [APP_VUE_PATH, originalAppSource],
+        [LAYOUT_VUE_PATH, originalLayoutSource],
+        [PAGE_VUE_PATH, originalPageSource],
+        [BOOTSTRAP_TS_PATH, originalBootstrapSource],
+      ].map(([file, source]) => ({
+        label: `restore ${path.relative(APP_ROOT, file!)}`,
+        run: async () => {
+          if (source) {
+            await fs.writeFile(file!, source, 'utf8')
+          }
+        },
+      })),
+      { label: 'stop residual IDE processes', run: () => cleanupResidualIdeProcesses() },
+      { label: 'restore environment', run: () => {
+        if (previousAutomatorPostConnectRefresh == null) {
+          delete process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV]
+        }
+        else {
+          process.env[AUTOMATOR_POST_CONNECT_REFRESH_ENV] = previousAutomatorPostConnectRefresh
+        }
+        if (previousBridgePostConnectRefresh == null) {
+          delete process.env[BRIDGE_POST_CONNECT_REFRESH_ENV]
+        }
+        else {
+          process.env[BRIDGE_POST_CONNECT_REFRESH_ENV] = previousBridgePostConnectRefresh
+        }
+      } },
+    ])
+    // dev stop 可等待 5s 终止与 6s 退出，再加 IDE 进程树/日志静默；默认 10s 无法覆盖正常清理。
+  }, 60_000)
 
   it('keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR', async (ctx) => {
     const appMarker = createHmrMarker('APP-VUE-ALIAS-APP', 'weapp')
