@@ -1153,23 +1153,23 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:444`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:450`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:445`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:451`
 - Routes: `/pages/component/index?source=e2e`, `pages/component/index`
 - Operations: `reLaunch(/pages/component/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:484`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:490`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:485`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:491`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:506`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:512`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:507`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:513`
 
 ## ide/subpackage-shared-strategy-complex.runtime.test.ts
 
