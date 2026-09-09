@@ -114,6 +114,26 @@ describe('request globals prelude initialization order', () => {
     expect(result.loads.filter(file => file === installer)).toHaveLength(1)
   })
 
+  it('accepts CommonJS function and var redeclarations while preserving dependency edges', () => {
+    const bundle: OutputBundle = {
+      [installer]: chunk(installer, `"use strict";
+        var fetch;
+        function fetch() { return 'ready'; }
+        require('./support.js');
+        exports.fetch = fetch;`),
+      [support]: chunk(support, ''),
+    }
+    expect([...collectRequestGlobalsInstallerDependencies(bundle, [installer])].sort()).toEqual([installer, support].sort())
+  })
+
+  it('keeps module syntax supported for ESM output chunks', () => {
+    const bundle: OutputBundle = {
+      [installer]: chunk(installer, `import './support.js'; export const marker = 'ready';`, [support]),
+      [support]: chunk(support, ''),
+    }
+    expect([...collectRequestGlobalsInstallerDependencies(bundle, [installer])].sort()).toEqual([installer, support].sort())
+  })
+
   it('collects metadata and emitted requires without treating strings or shadowed calls as edges', () => {
     const bundle: OutputBundle = {
       [installer]: chunk(installer, `require('./support.js');

@@ -1,5 +1,5 @@
 import type { OutputBundle } from 'rolldown'
-import { parseJsLike, traverse } from '../../../../../utils/babel'
+import { parse, traverse } from '../../../../../utils/babel'
 import { REQUEST_GLOBAL_REQUIRE_CALL_RE } from '../constants'
 import { getStaticStringLiteral, normalizeRelativeChunkImport } from '../rewrite'
 
@@ -21,7 +21,9 @@ export function collectRequestGlobalsInstallerDependencies(bundle: OutputBundle,
       pending.push(bundle[importee] ? importee : normalizeRelativeChunkImport(fileName, importee))
     }
     // 产物后处理新增的 require 不一定已同步到 chunk.imports。
-    traverse(parseJsLike(output.code) as any, {
+    // 这里只解析编译后的 JS；CommonJS 允许 var/function 同名，不能套用 TS module 的绑定规则。
+    const ast = parse(output.code, { sourceType: 'unambiguous', allowReturnOutsideFunction: true })
+    traverse(ast as any, {
       CallExpression(call: any) {
         if (call.node.callee?.type !== 'Identifier' || call.node.callee.name !== 'require' || call.scope.hasBinding('require')) {
           return
