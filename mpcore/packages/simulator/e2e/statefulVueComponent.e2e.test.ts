@@ -3,7 +3,7 @@ import sources from 'virtual:stateful-vue-component-fixture'
 import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 
-it('keeps parent and Vue child DOM state through the real bridge patch and restoration', async () => {
+it('keeps the latest parent and Vue child DOM state through consecutive bridge patches', async () => {
   const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(sources as Array<[string, string]>) })
   const preview = document.createElement('div')
   document.body.append(preview)
@@ -19,30 +19,36 @@ it('keeps parent and Vue child DOM state through the real bridge patch and resto
   try {
     const page = session.reLaunch('/pages/index/index')
     const child = page.selectComponent!('#vue-counter')
-    const check = async (parent: string, counter: string, result: string, input = 'held-input') => {
+    const check = async (parent: string, counter: string, result: string, marker: string, input = 'held-input') => {
       await page.flush()
       render()
       expect(preview.querySelector('.parent-count')?.textContent).toBe(parent)
       expect(preview.querySelector('.child-count')?.textContent).toBe(counter)
       expect(preview.querySelector('.child-result')?.textContent).toBe(result)
+      expect(preview.querySelector('.child-marker')?.textContent).toBe(marker)
       expect(preview.querySelector('.input')?.getAttribute('value')).toBe(input)
       expect(session.getCurrentPages()[0]).toBe(page)
       expect(page.selectComponent!('#vue-counter')).toBe(child)
     }
-    await check('0', '0', 'ready', '')
+    await check('0', '0', 'ready', 'STATEFUL-VUE-BASE', '')
     action('.input', { detail: { value: 'held-input' } })
     action('.parent-increment')
     action('.child-increment')
-    await check('1', '1', 'step:1')
-    action('.patch')
-    await check('1', '1', 'step:1')
     action('.child-increment')
-    await check('1', '3', 'step:2')
+    await check('1', '2', 'step:1', 'STATEFUL-VUE-BASE')
+    action('.patch')
+    await check('1', '2', 'step:1', 'STATEFUL-VUE-PATCHED')
+    action('.child-increment')
+    await check('1', '4', 'step:2', 'STATEFUL-VUE-PATCHED')
+    action('.repatch')
+    await check('1', '4', 'step:2', 'STATEFUL-VUE-PATCHED')
+    action('.child-increment')
+    await check('1', '7', 'step:3', 'STATEFUL-VUE-PATCHED')
     action('.restore')
-    await check('1', '3', 'step:2')
+    await check('1', '7', 'step:3', 'STATEFUL-VUE-BASE')
     action('.child-increment')
     action('.parent-increment')
-    await check('2', '4', 'step:1')
+    await check('2', '8', 'step:1', 'STATEFUL-VUE-BASE')
   }
   finally {
     session.close()

@@ -22,7 +22,8 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu')
           ]
         : []),
       ...(runtime === 'wevu' && (id === 'patched' || id === 'updated') ? [{ selector: '.sfc-template', text: 'SFC-MIXED-TEMPLATE' }] : []),
-      ...(id === 'initial' ? [{ selector: '.marker', text: `STATEFUL-${runtime.toUpperCase()}-BASE` }] : []),
+      // 原生 data 属于应保留的实例状态；Wevu 普通 setup 文本由新代码提供。
+      { selector: '.marker', text: `STATEFUL-${runtime.toUpperCase()}-${runtime === 'wevu' && (id === 'patched' || id === 'updated') ? 'PATCHED' : 'BASE'}` },
     ],
   }))
   if (runtime === 'native') {
@@ -69,6 +70,7 @@ export function statefulHmrCheckpoints(runtime: 'native' | 'component' | 'wevu')
         nodes: [
           { selector: '.count', text: String(count) },
           { selector: '.store-count', text: String(count) },
+          { selector: '.marker', text: styled ? 'STATEFUL-WEVU-PATCHED' : 'STATEFUL-WEVU-BASE' },
           { selector: '.input', attributes: { value: 'held-input' } },
           template ? { selector: '.sfc-template', text: template } : { selector: '.sfc-template', count: 0 },
           ...(styled ? [{ selector: '.page', styles: { 'background-color': 'rgb(219, 234, 254)' }, visible: true }] : []),

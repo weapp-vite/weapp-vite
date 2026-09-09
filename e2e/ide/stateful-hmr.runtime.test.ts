@@ -433,7 +433,13 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await replaceFileByRename(WEVU_SOURCE, styleSource)
     await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, 'count.value += 3'), 'mixed SFC script and style patch published')
     await waitForClientVersion(styleClientVersion + 1)
-    await dom.check('mixed-style', miniProgram, await miniProgram.currentPage())
+    try {
+      await dom.check('mixed-style', miniProgram, await miniProgram.currentPage())
+    }
+    catch (error) {
+      const state = await miniProgram.evaluate((key: string) => (globalThis as any)[key]?.getDebugSnapshot(true), WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
+      throw new Error(`Wevu mixed HMR rendered state mismatch; bridge=${JSON.stringify(state)}`, { cause: error })
+    }
     expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'wevu-instance', route: 'pages/wevu/index', source: 'e2e' })
     await triggerIncrement()
     await waitForPatchedBehavior(7, page)

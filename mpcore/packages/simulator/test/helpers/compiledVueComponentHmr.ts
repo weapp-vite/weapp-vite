@@ -92,7 +92,14 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
       throw new Error('Missing DevEngine initial output')
     }
     initialFiles = output.output.filter(item => item.type === 'chunk').map(item => [item.fileName, item.code])
-    for (const updated of [source.replace('count.value += 1', 'count.value += 2').replace('step:1', 'step:2'), source]) {
+    const patchedSource = source
+      .replace('count.value += 1', 'count.value += 2')
+      .replace('step:1', 'step:2')
+      .replace('STATEFUL-VUE-BASE', 'STATEFUL-VUE-PATCHED')
+    const repatchedSource = patchedSource
+      .replace('count.value += 2', 'count.value += 3')
+      .replace('step:2', 'step:3')
+    for (const updated of [patchedSource, repatchedSource, source]) {
       nextUpdate = Promise.withResolvers<StatefulHmrDevEngineUpdate>()
       let timer: ReturnType<typeof setTimeout> | undefined
       try {
@@ -120,12 +127,12 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
     await running
     await rm(root, { recursive: true, force: true })
   }
-  return { initialFiles, patched: patches[0]!, restored: patches[1]!, template: compiled.template }
+  return { initialFiles, patched: patches[0]!, repatched: patches[1]!, restored: patches[2]!, template: compiled.template }
 }
 
 const compiledFixtures = new Map<string, ReturnType<typeof collectVueComponentHmr>>()
 
-/** 缓存真实引擎生成的首包和两次原生 watcher 补丁，浏览器与 Node 执行完全相同的 client 协议。 */
+/** 缓存真实引擎生成的首包和连续更新、还原补丁，浏览器与 Node 执行完全相同的 client 协议。 */
 export function compileVueComponentHmr(repoRoot: string, source: string) {
   const key = `${repoRoot}:${source}`
   let compiled = compiledFixtures.get(key)

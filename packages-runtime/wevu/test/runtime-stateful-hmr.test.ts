@@ -119,7 +119,7 @@ describe('runtime: stateful HMR', () => {
     expect(unloaded).not.toHaveBeenCalled()
   })
 
-  it('keeps ref snapshots while letting plain setup values refresh from new code', async () => {
+  it.each([false, true])('keeps plain setup values rendered across consecutive updates with an existing runtime: %s', async (existingRuntime) => {
     const defineRuntime = (label: string) => defineComponent({
       setup() {
         const input = ref('')
@@ -129,26 +129,31 @@ describe('runtime: stateful HMR', () => {
     defineRuntime('before')
 
     const instance: any = {
-      data: {},
+      data: { input: 'held-input', label: 'before' },
       properties: {},
       setData(payload: Record<string, any>) {
         Object.assign(this.data, payload)
       },
     }
-    registeredDefinition!.lifetimes.attached.call(instance)
-    expect(instance.data).toMatchObject({ input: '', label: 'before' })
+    if (existingRuntime) {
+      registeredDefinition!.lifetimes.attached.call(instance)
+      instance.__wevu.setupState.input.value = 'held-input'
+      await nextTick()
+      await nextTick()
+    }
+    for (const label of ['after', 'after', 'before']) {
+      const snapshot = { ...instance.data }
+      applying = true
+      defineRuntime(label)
+      refresh!(instance, snapshot)
+      applying = false
+      await nextTick()
+      await nextTick()
 
-    instance.__wevu.setupState.input.value = 'held-input'
-    await nextTick()
-    await nextTick()
-    applying = true
-    defineRuntime('after')
-    refresh!(instance, { input: 'held-input', label: 'before' })
-    applying = false
-
-    expect(instance.__wevu.setupState.input.value).toBe('held-input')
-    expect(instance.__wevu.setupState.label).toBe('after')
-    expect(instance.data).toMatchObject({ input: 'held-input', label: 'after' })
+      expect(instance.__wevu.setupState.input.value).toBe('held-input')
+      expect(instance.__wevu.setupState.label).toBe(label)
+      expect(instance.data).toMatchObject({ input: 'held-input', label })
+    }
   })
 
   it.each([false, true])('restores explicit reactive snapshots with an existing runtime: %s', async (existingRuntime) => {

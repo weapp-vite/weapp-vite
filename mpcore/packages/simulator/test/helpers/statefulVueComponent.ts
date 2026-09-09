@@ -9,6 +9,8 @@ const componentSource = 'components/vue-counter/index.vue'
 
 export async function createStatefulVueComponentFiles(): Promise<Array<[string, string]>> {
   const source = readFileSync(path.join(repoRoot, 'e2e-apps/stateful-hmr/src', componentSource), 'utf8')
+    .replace('const count = ref(0)', 'const marker = \'STATEFUL-VUE-BASE\'\nconst count = ref(0)')
+    .replace('<view class="child-count">', '<view class="child-marker">{{ marker }}</view>\n    <view class="child-count">')
   const compiled = await compileVueComponentHmr(repoRoot, source)
   const sources = createStatefulNativeComponentFiles().map(([file, content]): [string, string] => [
     file.replaceAll('native-counter', 'vue-counter'),
@@ -22,6 +24,8 @@ export async function createStatefulVueComponentFiles(): Promise<Array<[string, 
   files.set('vue-counter-runtime.js', `module.exports = {
     patched() { ${compiled.patched.code}
     },
+    repatched() { ${compiled.repatched.code}
+    },
     restored() { ${compiled.restored.code}
     },
   };`)
@@ -33,6 +37,8 @@ export async function createStatefulVueComponentFiles(): Promise<Array<[string, 
     }
   });`)
   files.set('components/vue-counter/index.wxml', compiled.template ?? '')
+  files.set('pages/index/index.wxml', files.get('pages/index/index.wxml')!
+    .replace('<button class="restore"', '<button class="repatch" bindtap="repatchChild">repatch</button>\n      <button class="restore"'))
   const header = `
     require('../../hmr-runtime.js');
     const runtime = globalThis.__rolldown_runtime__;
@@ -59,6 +65,7 @@ export async function createStatefulVueComponentFiles(): Promise<Array<[string, 
       onInput(event) { this.setData({ input: event.detail.value }); },
       flush() { return runtime.loadExports('vue-shared-runtime.js').nextTick(); },
       patchChild() { update(component.patched, ${JSON.stringify(compiled.patched.changedIds)}); },
+      repatchChild() { update(component.repatched, ${JSON.stringify(compiled.repatched.changedIds)}); },
       restoreChild() { update(component.restored, ${JSON.stringify(compiled.restored.changedIds)}); }
     });
   `)

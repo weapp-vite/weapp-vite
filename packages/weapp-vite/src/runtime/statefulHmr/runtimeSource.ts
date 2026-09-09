@@ -140,33 +140,13 @@ function cloneInstanceData(value) {
   for (const [key, child] of Object.entries(value)) result[key] = cloneInstanceData(child);
   return result;
 }
-function countChangedDataKeys(data, initialData) {
-  let changed = 0;
-  for (const [key, value] of Object.entries(data)) {
-    if (!Object.prototype.hasOwnProperty.call(initialData, key)) {
-      changed++;
-      continue;
-    }
-    try {
-      if (JSON.stringify(value) !== JSON.stringify(initialData[key])) changed++;
-    } catch {
-      if (value !== initialData[key]) changed++;
-    }
-  }
-  return changed;
-}
 function rememberInstanceState(instance, moduleId) {
   if (!instance?.data || typeof instance.data !== 'object') return;
-  const data = cloneInstanceData(instance.data);
-  const definitionData = definitions.get(moduleId)?.data;
-  const initialData = definitionData && typeof definitionData === 'object' ? definitionData : {};
-  const changedKeys = countChangedDataKeys(data, initialData);
-  const previous = instanceSnapshots.get(instance);
-  if (!previous || changedKeys >= previous.changedKeys) {
-    const snapshot = { changedKeys, data, moduleId };
-    instanceSnapshots.set(instance, snapshot);
-    moduleSnapshots.set(moduleId, snapshot);
-  }
+  // 更新事务内保留进入事务时的状态，不用字段数量猜测宿主重建与用户操作。
+  if (runtime.applyingPatch && instanceSnapshots.has(instance)) return;
+  const snapshot = { data: cloneInstanceData(instance.data), moduleId };
+  instanceSnapshots.set(instance, snapshot);
+  moduleSnapshots.set(moduleId, snapshot);
 }
 function trackInstance(instance, moduleId) {
   initializeNativeInstanceDefaults(instance, moduleId, false);
@@ -446,8 +426,8 @@ globalThis[bridgeKey] = {
   },
   ready: true,
   beginUpdate() {
-    suppressLifecycles = true;
     rememberTrackedInstances();
+    suppressLifecycles = true;
     runtime.beginPatch();
   },
   endUpdate() {

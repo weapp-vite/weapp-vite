@@ -845,20 +845,6 @@ function createRuntimeStateSnapshot(
   return snapshot
 }
 
-function collectPlainSetupSnapshotKeys(
-  runtime: RuntimeInstance<any, any, any>,
-  nativeData: Record<string, any> | undefined,
-) {
-  const setupState = runtime.setupState as Record<string, any> | undefined
-  if (!setupState || !nativeData || typeof nativeData !== 'object') {
-    return []
-  }
-  return Object.keys(nativeData).filter((key) => {
-    const setupBinding = setupState[key]
-    return Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding) && !isReactive(setupBinding)
-  })
-}
-
 function syncRuntimeStateFromNativeData(
   target: InternalRuntimeState,
   options?: { includeSetupState?: boolean, nativeData?: Record<string, any>, initialSetupState?: Record<string, unknown> },
@@ -879,8 +865,11 @@ function syncRuntimeStateFromNativeData(
       try {
         const setupBinding = setupState?.[key]
         const runtimeValue = cloneInitialSnapshotValue(value)
-        if (!options?.includeSetupState && setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
-          continue
+        if (setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
+          // 普通 setup 值来自当前代码；仅 ref/reactive 绑定承接宿主状态。
+          if (!options?.includeSetupState || (!isRef(setupBinding) && !isReactive(setupBinding))) {
+            continue
+          }
         }
         if (
           !options?.includeSetupState
@@ -1031,9 +1020,6 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   const previousRuntimeState = previousRuntime
     ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
     : undefined
-  let plainSetupSnapshotKeys = previousRuntime
-    ? collectPlainSetupSnapshotKeys(previousRuntime, (target as any).data)
-    : []
   teardownRuntimeInstance(target, { skipHooks: true })
   const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
     deferSetData: true,
@@ -1042,15 +1028,9 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   const stateSnapshot = previousRuntimeState ?? (options?.stateSnapshot
     ? createRuntimeStateSnapshot(nextRuntime, options.stateSnapshot, options.stateSnapshot)
     : undefined)
-  if (!previousRuntime && stateSnapshot) {
-    plainSetupSnapshotKeys = collectPlainSetupSnapshotKeys(nextRuntime, (target as any).data)
-  }
   if (stateSnapshot) {
     const nativeData = (target as any).data
     if (nativeData && typeof nativeData === 'object') {
-      for (const key of plainSetupSnapshotKeys) {
-        delete nativeData[key]
-      }
       Object.assign(nativeData, cloneInitialSnapshotValue(stateSnapshot))
     }
     syncRuntimeStateFromNativeData(target, {

@@ -69,6 +69,31 @@ function createHost(): HostInstance {
 }
 
 describe('stateful HMR host lifecycle tracking', () => {
+  it.each(['new defaults', 'user reset'] as const)('captures current state when changed-key counts fall after %s', (reason) => {
+    const runtime = createRuntime()
+    const source = { data: { count: 0, input: '' }, lifetimes: { attached() {} } }
+    const refresh = vi.fn((instance: HostInstance, snapshot?: HostInstance['data']) => {
+      if (snapshot) {
+        instance.setData(snapshot)
+      }
+    })
+    const definition = runtime.bridge.trackWevuComponent(source, refresh)
+    const host = createHost()
+    definition.lifetimes!.attached!.call(host)
+    host.data = { count: 2, input: 'held' }
+    runtime.bridge.beginUpdate()
+    const updated = reason === 'new defaults' ? { ...source, data: { count: 0, input: 'held' } } : source
+    runtime.bridge.trackWevuComponent(updated, refresh)
+    runtime.finishUpdate()
+    host.data = { count: 4, input: reason === 'user reset' ? '' : 'held' }
+    const expected = { ...host.data }
+    runtime.bridge.beginUpdate()
+    runtime.bridge.trackWevuComponent(updated, refresh)
+    runtime.finishUpdate()
+    expect(refresh).toHaveBeenLastCalledWith(host, expected)
+    expect(host.data).toEqual(expected)
+  })
+
   it('initializes new page defaults when native properties mirror data without changing active pages', () => {
     const runtime = createRuntime()
     const firstLoad = vi.fn()
