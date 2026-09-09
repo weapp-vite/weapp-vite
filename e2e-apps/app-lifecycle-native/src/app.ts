@@ -7,6 +7,7 @@ App({
   readHostLifecycle,
   globalData: {
     __lifecycleLogs: [],
+    __wxAppShowOrders: [] as number[],
     __lifecycleOrder: 0,
     __lifecycleSeen: {},
     __lifecycleState: {
@@ -16,12 +17,15 @@ App({
   },
   onLaunch(options) {
     recordAppLifecycle(this, 'onLaunch', [options], { source: SOURCE })
+    wx.onAppShow(() => {
+      this.globalData.__wxAppShowOrders.push(this.globalData.__lifecycleOrder)
+    })
   },
   onShow(options) {
     recordAppLifecycle(this, 'onShow', [options], { source: SOURCE })
   },
-  onHide() {
-    recordAppLifecycle(this, 'onHide', [], { source: SOURCE })
+  onHide(...args: unknown[]) {
+    recordAppLifecycle(this, 'onHide', args, { source: SOURCE })
   },
   onError(error) {
     recordAppLifecycle(this, 'onError', [error], { source: SOURCE })

@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 92,
-    "wechatTaskCount": 89,
+    "taskCount": 93,
+    "wechatTaskCount": 90,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 230,
-    "casesWithPlan": 230,
+    "expandedCaseDeclarations": 233,
+    "casesWithPlan": 233,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -5007,6 +5007,77 @@
       ]
     },
     {
+      "task": "ide/wevu-query.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/wevu-query.runtime.test.ts:97",
+          "name": "@wevu/query mini-program runtime [${runtimeProvider}] > deduplicates list subscribers, keeps fresh data, then refreshes invalidated hidden data after back",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/wevu-features",
+              "checkpoints": "[ { id: 'list:fresh', route: LIST_ROUTE, action: '首次共享请求完成后检查两个订阅者', nodes: [ { selector: '#query-primary-result', text: 'dedup|revision:0|request:dedup-1|item:item-dedup-r0' }, { selector: '#query-secondary-result', text: 'dedup|revision:0",
+              "source": "e2e/ide/wevu-query.runtime.test.ts:98"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(createListRoute(server.baseUrl, 'dedup'))",
+            "check(list:fresh)",
+            "tap(<missing>)",
+            "check(detail:mutation)",
+            "check(list:refreshed)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-query.runtime.test.ts:154",
+          "name": "@wevu/query mini-program runtime [${runtimeProvider}] > keeps a slow old-key completion from replacing the active key result",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/wevu-features",
+              "checkpoints": "[ { id: 'race:fast', route: LIST_ROUTE, action: '切换到新 key 后检查较快响应', nodes: [ { selector: '#query-primary-result', text: 'fast|revision:1|request:fast-1|item:item-fast-r1' }, { selector: '#query-secondary-result', text: 'fast|revision:1|requ",
+              "source": "e2e/ide/wevu-query.runtime.test.ts:155"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(createListRoute(server.baseUrl, 'race-seed'))",
+            "tap(<missing>)",
+            "check(race:fast)",
+            "check(race:stable)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-query.runtime.test.ts:189",
+          "name": "@wevu/query mini-program runtime [${runtimeProvider}] > defers automatic queries while the app is hidden, then resumes one shared request on app show",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/wevu-features",
+              "checkpoints": "[ { id: 'app:resumed', route: LIST_ROUTE, action: '应用恢复前台后检查一次共享请求的界面结果', nodes: [ { selector: '#query-primary-result', text: 'background|revision:1|request:background-1|item:item-background-r1' }, { selector: '#query-secondary-result', tex",
+              "source": "e2e/ide/wevu-query.runtime.test.ts:190"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(createListRoute(server.baseUrl, 'background'))",
+            "check(app:resumed)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/wevu-router-hmr.runtime.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -6396,7 +6467,7 @@
     },
     {
       "file": "e2e/ide/wevu-features.runtime.shared.ts",
-      "sha256": "b4c5b5e695f6a613a1e9dc1d1e5559fd96853fb856565f9c0f39b83a72d7327d"
+      "sha256": "0aa0937c7e6480a2b1c7afa2fcff18b5215319c7b4b80d5c4cfafbfb14e81cd4"
     },
     {
       "file": "e2e/ide/wevu-features.runtime.subpath.test.ts",
@@ -6409,6 +6480,10 @@
     {
       "file": "e2e/ide/wevu-jsx-tsx.runtime.test.ts",
       "sha256": "0bfc440ddf5527a0c103ed7ba54b9657dcb09665edd0ca0431dd32fb6ee4af95"
+    },
+    {
+      "file": "e2e/ide/wevu-query.runtime.test.ts",
+      "sha256": "0fb610f29d87d60bf3eab2c0483df9f53249d7f7f7939e495a01a90028c045a0"
     },
     {
       "file": "e2e/ide/wevu-router-hmr.runtime.test.ts",
@@ -6548,7 +6623,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "fb7f525fd98e503c1a3345fb5409c45a027ea3858a2748747423dd65dbdcf56b"
+      "sha256": "929d56cadbcb4015e287b2081a722aa9b032898ab75c2d472d92637b1937907e"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -6576,11 +6651,11 @@
     },
     {
       "file": "e2e/utils/automator.headless.ts",
-      "sha256": "2b6ec9bd50eabe4e6473ffa29d87d21014f854ddfa64ac63f3ae828135a69f9b"
+      "sha256": "6b778f3ebb2fd30aa17fcb1506b4b9a641f858e4dff9559f3876eb39ed289224"
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "932cd474fb477bd1a9144d21ea9e30ff6ed26d75cfd1b1193d85a58413a46587"
+      "sha256": "4e4d95d247f7770e0bbdf3d02d9693bbcd48023fc7cdb433a4561c8df03dfe82"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -6689,6 +6764,14 @@
     {
       "file": "e2e/utils/ptyProcess.ts",
       "sha256": "113c9942d4f60c151a3c38330f9d8bb6a36500c4aa124f37a30e0f2cb184ccb3"
+    },
+    {
+      "file": "e2e/utils/queryFixtureServer.ts",
+      "sha256": "cb4fd6a57417127704e2640adb18c0e5f7147f182af1cfaf09a33389b7cfd639"
+    },
+    {
+      "file": "e2e/utils/queryRequestTransport.ts",
+      "sha256": "d33fa36e8ea5bf051739fac820692b476aeb64a24c004dd2c27825aa4fe99c41"
     },
     {
       "file": "e2e/utils/requestClientsRealDom.ts",

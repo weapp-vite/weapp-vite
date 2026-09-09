@@ -22,25 +22,25 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
     "./plugin": {
-      "types": "./dist/plugin.d.ts",
+      "types": "./dist/plugin.d.mts",
       "import": "./dist/plugin.mjs"
     },
     "./runtime": {
-      "types": "./dist/runtime/index.d.ts",
+      "types": "./dist/runtime/index.d.mts",
       "import": "./dist/runtime/index.mjs"
     },
     "./runtime/polyfill": {
-      "types": "./dist/runtime/index.d.ts",
+      "types": "./dist/runtime/index.d.mts",
       "import": "./dist/runtime/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist"
   ],
@@ -54,7 +54,15 @@
     "test": "vitest run",
     "test:coverage": "cross-env WEAPP_VITE_WEB_COVERAGE_STRICT=1 vitest run --coverage",
     "test:dev": "vitest",
+    "test:types": "pnpm build && tsd",
     "typecheck": "tsc --noEmit"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
   },
   "dependencies": {
     "@babel/parser": "catalog:",

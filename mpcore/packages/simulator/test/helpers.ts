@@ -1715,13 +1715,61 @@ export function createAppLifecycleFixture() {
     miniprogramRoot: 'dist',
   })
   writeJson(path.join(root, 'dist/app.json'), {
-    pages: ['pages/home/index'],
+    pages: ['pages/home/index', 'pages/detail/index'],
   })
   writeScript(path.join(root, 'dist/app.js'), `
+const lifecycle = {
+  appHides: [],
+  appShows: [],
+  hideFirst: [],
+  hideLate: [],
+  launchShows: [],
+  showFirst: [],
+  showLate: [],
+  timeline: [],
+}
+
+const lateShow = (options) => {
+  lifecycle.showLate.push(options)
+  lifecycle.timeline.push('wx:onAppShow:late:' + JSON.stringify(options))
+}
+const firstShow = (options) => {
+  lifecycle.showFirst.push(options)
+  lifecycle.timeline.push('wx:onAppShow:first:' + JSON.stringify(options))
+}
+const mutateShow = (options) => {
+  lifecycle.timeline.push('wx:onAppShow:mutate:' + JSON.stringify(options))
+  wx.offAppShow(mutateShow)
+  wx.offAppShow(firstShow)
+  wx.onAppShow(lateShow)
+}
+wx.onAppShow(mutateShow)
+wx.onAppShow(firstShow)
+wx.onAppShow(firstShow)
+
+const lateHide = (options) => {
+  lifecycle.hideLate.push(options)
+  lifecycle.timeline.push('wx:onAppHide:late:' + JSON.stringify(options))
+}
+const firstHide = (options) => {
+  lifecycle.hideFirst.push(options)
+  lifecycle.timeline.push('wx:onAppHide:first:' + JSON.stringify(options))
+}
+const mutateHide = (options) => {
+  lifecycle.timeline.push('wx:onAppHide:mutate:' + JSON.stringify(options))
+  wx.offAppHide(mutateHide)
+  wx.offAppHide(firstHide)
+  wx.onAppHide(lateHide)
+}
+wx.onAppHide(mutateHide)
+wx.onAppHide(firstHide)
+wx.onAppHide(firstHide)
+
 App({
   globalData: {
     enterOptions: null,
     launchOptions: null,
+    lifecycle,
     logs: [],
     ready: true,
   },
@@ -1731,14 +1779,32 @@ App({
   captureLaunchOptions() {
     this.globalData.launchOptions = wx.getLaunchOptionsSync()
   },
+  clearHideListeners() {
+    wx.offAppHide()
+  },
+  clearShowListeners() {
+    wx.offAppShow()
+  },
   push(message) {
     this.globalData.logs.push(message)
   },
   onLaunch(options) {
     this.push('onLaunch:' + JSON.stringify(options))
+    lifecycle.timeline.push('app:onLaunch:' + JSON.stringify(options))
+    wx.onAppShow(nextOptions => {
+      lifecycle.launchShows.push(nextOptions)
+      lifecycle.timeline.push('wx:onAppShow:launch:' + JSON.stringify(nextOptions))
+    })
   },
   onShow(options) {
     this.push('onShow:' + JSON.stringify(options))
+    lifecycle.appShows.push(options)
+    lifecycle.timeline.push('app:onShow:' + JSON.stringify(options))
+  },
+  onHide(options) {
+    this.push('onHide:' + JSON.stringify(options))
+    lifecycle.appHides.push(options)
+    lifecycle.timeline.push('app:onHide:' + JSON.stringify(options))
   },
   onPageNotFound(options) {
     this.push('onPageNotFound:' + JSON.stringify(options))
@@ -1750,9 +1816,20 @@ Page({
   data: {
     ok: true,
   },
+  onLoad() {
+    getApp().globalData.lifecycle.timeline.push('page:home:onLoad')
+  },
+})
+`)
+  writeScript(path.join(root, 'dist/pages/detail/index.js'), `
+Page({
+  onLoad() {
+    getApp().globalData.lifecycle.timeline.push('page:detail:onLoad')
+  },
 })
 `)
   writeText(path.join(root, 'dist/pages/home/index.wxml'), '<view id="launch-status">{{ok ? "页面已启动" : "页面未就绪"}}</view>\n')
+  writeText(path.join(root, 'dist/pages/detail/index.wxml'), '<view>detail</view>\n')
 
   return root
 }

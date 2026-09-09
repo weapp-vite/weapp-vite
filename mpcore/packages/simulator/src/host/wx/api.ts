@@ -2,6 +2,8 @@ import type {
   HeadlessWxAnimation,
   HeadlessWxAnimationStepOption,
   HeadlessWxAppBaseInfoResult,
+  HeadlessWxAppHideCallback,
+  HeadlessWxAppShowCallback,
   HeadlessWxCallbackOption,
   HeadlessWxCanvasContext,
   HeadlessWxCreateIntersectionObserverOption,
@@ -177,7 +179,11 @@ export interface HeadlessWx extends HeadlessUniEventBus {
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
   navigateTo: (option: HeadlessWxNavigateOption) => unknown
   nextTick: (callback?: () => void) => void
+  offAppHide: (callback?: HeadlessWxAppHideCallback) => void
+  offAppShow: (callback?: HeadlessWxAppShowCallback) => void
   offNetworkStatusChange: (callback?: HeadlessWxNetworkStatusChangeCallback) => void
+  onAppHide: (callback: HeadlessWxAppHideCallback) => void
+  onAppShow: (callback: HeadlessWxAppShowCallback) => void
   onNetworkStatusChange: (callback: HeadlessWxNetworkStatusChangeCallback) => void
   openDocument: (option: HeadlessWxOpenDocumentOption) => HeadlessWxOpenDocumentResult | undefined
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown

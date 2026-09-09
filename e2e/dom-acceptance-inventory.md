@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：92；微信：89；范围外：3。
-- 展开的 case 声明：230；已接入计划：230；缺计划：0。
+- 任务：93；微信：90；范围外：3。
+- 展开的 case 声明：233；已接入计划：233；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -92,6 +92,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/wevu-features.runtime.subpath.test.ts                                                 | devtools           |     1 |     1 |       0 | wechat       |
 | ide/wevu-jsx-tsx.hmr.runtime.test.ts                                                      | devtools           |     1 |     1 |       0 | wechat       |
 | ide/wevu-jsx-tsx.runtime.test.ts                                                          | devtools, headless |     3 |     3 |       0 | wechat       |
+| ide/wevu-query.runtime.test.ts                                                            | devtools, headless |     3 |     3 |       0 | wechat       |
 | ide/wevu-router-hmr.runtime.test.ts                                                       | devtools           |     1 |     1 |       0 | wechat       |
 | ide/wevu-runtime-demo.request-globals.weapp.test.ts                                       | devtools           |     2 |     2 |       0 | wechat       |
 | ide/wevu-runtime-demo.vue-query.weapp.test.ts                                             | devtools           |     1 |     1 |       0 | wechat       |
@@ -1765,6 +1766,29 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `apps/wevu-jsx-tsx-demo`; checkpoints: `JSX_SETUP_CHECKPOINTS`; source: `e2e/ide/wevu-jsx-tsx.runtime.test.ts:105`
 - Routes: `/pages/setup-render/index`, `/pages/sfc-script-jsx/index`, `/pages/sfc-script-setup-tsx/index`
 - Operations: `reLaunch(/pages/setup-render/index)`, `check(setup:initial)`, `callMethodWithOptions(increment)`, `check(setup:incremented)`, `reLaunch(/pages/sfc-script-jsx/index)`, `check(sfc-jsx:initial)`, `callMethodWithOptions(runE2E)`, `check(sfc-jsx:incremented)`, `reLaunch(/pages/sfc-script-setup-tsx/index)`, `check(sfc-setup:initial)`, `callMethodWithOptions(__weapp_vite_inline)`, `check(sfc-setup:updated)`
+
+## ide/wevu-query.runtime.test.ts
+
+### @wevu/query mini-program runtime [${runtimeProvider}] > deduplicates list subscribers, keeps fresh data, then refreshes invalidated hidden data after back
+
+- Source: `e2e/ide/wevu-query.runtime.test.ts:97`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'list:fresh', route: LIST_ROUTE, action: '首次共享请求完成后检查两个订阅者', nodes: [ { selector: '#query-primary-result', text: 'dedup\|revision:0\|request:dedup-1\|item:item-dedup-r0' }, { selector: '#query-secondary-result', text: 'dedup\|revision:0`; source: `e2e/ide/wevu-query.runtime.test.ts:98`
+- Operations: `reLaunch(createListRoute(server.baseUrl, 'dedup'))`, `check(list:fresh)`, `tap(<missing>)`, `check(detail:mutation)`, `check(list:refreshed)`
+
+### @wevu/query mini-program runtime [${runtimeProvider}] > keeps a slow old-key completion from replacing the active key result
+
+- Source: `e2e/ide/wevu-query.runtime.test.ts:154`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'race:fast', route: LIST_ROUTE, action: '切换到新 key 后检查较快响应', nodes: [ { selector: '#query-primary-result', text: 'fast\|revision:1\|request:fast-1\|item:item-fast-r1' }, { selector: '#query-secondary-result', text: 'fast\|revision:1\|requ`; source: `e2e/ide/wevu-query.runtime.test.ts:155`
+- Operations: `reLaunch(createListRoute(server.baseUrl, 'race-seed'))`, `tap(<missing>)`, `check(race:fast)`, `check(race:stable)`
+
+### @wevu/query mini-program runtime [${runtimeProvider}] > defers automatic queries while the app is hidden, then resumes one shared request on app show
+
+- Source: `e2e/ide/wevu-query.runtime.test.ts:189`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'app:resumed', route: LIST_ROUTE, action: '应用恢复前台后检查一次共享请求的界面结果', nodes: [ { selector: '#query-primary-result', text: 'background\|revision:1\|request:background-1\|item:item-background-r1' }, { selector: '#query-secondary-result', tex`; source: `e2e/ide/wevu-query.runtime.test.ts:190`
+- Operations: `reLaunch(createListRoute(server.baseUrl, 'background'))`, `check(app:resumed)`
 
 ## ide/wevu-router-hmr.runtime.test.ts
 

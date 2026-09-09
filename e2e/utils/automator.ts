@@ -1,3 +1,4 @@
+import type { HeadlessAutomatorLaunchOptions } from './automator.headless'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import net from 'node:net'
@@ -348,6 +349,7 @@ type AutomatorLaunchOptions = Parameters<typeof automator.launch>[0]
 export type AutomatorBridgeProjectMode = 'direct' | 'snapshot'
 
 interface LaunchAutomatorOptions extends AutomatorLaunchOptions {
+  configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
   /** HMR 验收直连构建器输出；snapshot 仅用于需要独立项目快照的验收。 */
   bridgeProjectMode?: AutomatorBridgeProjectMode
   disableRelaunchSessionRecovery?: boolean
@@ -2874,6 +2876,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const provider = resolveRuntimeProviderName()
   if (provider === 'headless') {
     return launchHeadlessAutomator({
+      configureSession: options.configureHeadlessSession,
       projectPath: options.projectPath!,
       onSessionCreated(session) {
         enhanceMiniProgramWithRuntimeLogs(session, resolveReportProjectPath(options.projectPath!))
@@ -2893,7 +2896,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
-  const { bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  const { configureHeadlessSession: _configureHeadlessSession, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
