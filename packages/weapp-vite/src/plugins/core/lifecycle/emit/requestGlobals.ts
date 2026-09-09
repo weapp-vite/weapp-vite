@@ -834,11 +834,23 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
       continue
     }
 
+    const hasPreservedAssetRequire = preservedInstallerChunks.has(installerChunkFileName)
+      || Object.values(bundle).some((output) => {
+        if (!output || output.type !== 'asset' || typeof output.fileName !== 'string') {
+          return false
+        }
+        const source = typeof output.source === 'string' ? output.source : output.source?.toString()
+        return Boolean(source && hasAssetRequireCallToFile(source, output.fileName, installerChunkFileName))
+      })
+    // prelude 仍需读取此模块时，保留同一份 CommonJS 实例，避免在 app 中重复执行初始化器。
+    if (hasPreservedAssetRequire) {
+      continue
+    }
+
     const moduleRef = `__wvRGA${inlinedIndex++}__`
     const globalModuleExpression = toRequestGlobalsAppRegisteredModuleExpression(installerChunkFileName)
     const installerChunk = installerOutput as OutputChunk
     const embeddedCode = rewriteEmbeddedRequirePaths(installerChunk.code, installerChunk.fileName, appChunk.fileName)
-    let hasPreservedAssetRequire = preservedInstallerChunks.has(installerChunkFileName)
     inlinedModules.push([
       `const ${moduleRef} = (() => {`,
       '  const module = { exports: {} }',
@@ -861,22 +873,7 @@ export function inlineRequestGlobalsAppRegisteredInstallerChunks(
       }
     }
 
-    for (const output of Object.values(bundle)) {
-      if (!output || output.type !== 'asset' || typeof output.fileName !== 'string') {
-        continue
-      }
-      const source = typeof output.source === 'string' ? output.source : output.source?.toString()
-      if (!source) {
-        continue
-      }
-      if (hasAssetRequireCallToFile(source, output.fileName, installerChunkFileName)) {
-        hasPreservedAssetRequire = true
-      }
-    }
-
-    if (!hasPreservedAssetRequire) {
-      delete bundle[installerChunkFileName]
-    }
+    delete bundle[installerChunkFileName]
   }
 
   if (inlinedModules.length === 0) {
