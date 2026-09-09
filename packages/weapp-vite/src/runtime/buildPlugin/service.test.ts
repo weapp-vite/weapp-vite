@@ -1,4 +1,4 @@
-import type { Plugin } from 'vite'
+import type { InlineConfig, Plugin } from 'vite'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
@@ -127,7 +127,12 @@ vi.mock('../statefulHmr/session', () => ({
 }))
 
 vi.mock('../statefulHmr/snapshotBuild', () => ({
-  createStatefulHmrSnapshotOptions: createStatefulHmrSnapshotOptionsMock,
+  buildStatefulHmrSnapshot: async (loadOptions: unknown, configure: (options: InlineConfig) => InlineConfig) => {
+    const snapshot = await createStatefulHmrSnapshotOptionsMock(loadOptions)
+    const options = configure(snapshot.options)
+    options.build = { ...options.build, watch: undefined, write: false }
+    return { ...snapshot, output: await buildMock(options) }
+  },
 }))
 
 vi.mock('../../moduleGraph/devProvider', () => ({

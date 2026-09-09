@@ -7,24 +7,25 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
-import { createStatefulHmrSnapshotOptions } from './snapshotBuild'
+import { syncProjectSupportFiles } from '../supportFiles'
+import { buildStatefulHmrSnapshot } from './snapshotBuild'
 
 const temporaryRoots: string[] = []
 
-async function createProject() {
+async function createProject(autoImport = false) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))
   temporaryRoots.push(root)
   const files = {
-    'package.json': JSON.stringify({ name: 'snapshot-component-regression', private: true }),
+    'package.json': JSON.stringify({ name: 'snapshot-component-regression', private: true, dependencies: { wevu: '*' } }),
     'project.config.json': JSON.stringify({ appid: 'wx1234567890abcd', compileType: 'miniprogram', miniprogramRoot: 'dist/', srcMiniprogramRoot: 'src/' }),
     'vite.config.ts': [
       `import { defineConfig } from ${JSON.stringify(path.resolve(import.meta.dirname, '../../config.ts'))}`,
-      'export default defineConfig({ weapp: { srcRoot: "src", react: { renderMode: "auto", compiler: false } } })',
+      `export default defineConfig({ weapp: { srcRoot: "src", react: { renderMode: "auto", compiler: false }, ${autoImport ? 'autoImportComponents: { globs: ["components/**/*"], output: true, typedComponents: true, htmlCustomData: true, vueComponents: true }' : ''} } })`,
     ].join('\n'),
     'src/app.ts': 'App({})',
     'src/app.json': JSON.stringify({ pages: ['pages/index/index'] }),
     'src/pages/index/index.ts': 'Page({})',
-    'src/pages/index/index.json': JSON.stringify({ usingComponents: { 'wevu-leaf': '/components/wevu-leaf/index' } }),
+    'src/pages/index/index.json': JSON.stringify(autoImport ? {} : { usingComponents: { 'wevu-leaf': '/components/wevu-leaf/index' } }),
     'src/pages/index/index.wxml': '<view><wevu-leaf /></view>',
     'src/pages/index/index.wxss': '.page { color: red; }',
     'src/components/wevu-leaf/index.vue': [
@@ -42,6 +43,7 @@ async function createProject() {
   }
   await fs.mkdir(path.join(root, 'node_modules'), { recursive: true })
   await fs.symlink(path.resolve(import.meta.dirname, '../../..'), path.join(root, 'node_modules/weapp-vite'), 'junction')
+  await fs.symlink(path.resolve(import.meta.dirname, '../../../../../packages-runtime/wevu'), path.join(root, 'node_modules/wevu'), 'junction')
   return root
 }
 
@@ -56,25 +58,75 @@ describe('stateful snapshot component metadata', () => {
     await Promise.all(temporaryRoots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
   })
 
+  it('leaves support files with their active owner across successful and failed snapshots', async () => {
+    const root = await createProject(true)
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const active = createCompilerContextInstance()
+    active.currentBuildTarget = 'app'
+    await active.configService.load(options)
+    await syncProjectSupportFiles(active)
+    const supportFiles = ['auto-import-components.json', 'typed-components.d.ts', 'components.d.ts', 'mini-program.html-data.json']
+    const before = new Map<string, string>()
+    for (const name of supportFiles) {
+      const filename = path.join(root, '.weapp-vite', name)
+      before.set(name, await fs.readFile(filename, 'utf8'))
+      await fs.utimes(filename, 1, 1)
+    }
+
+    for (const fail of [false, true]) {
+      if (fail) {
+        await expect(buildStatefulHmrSnapshot(options, config => ({
+          ...config,
+          plugins: [...(config.plugins ?? []), {
+            name: 'snapshot-test-failure',
+            generateBundle() {
+              throw new Error('intentional snapshot failure')
+            },
+          }],
+        }))).rejects.toThrow('intentional snapshot failure')
+      }
+      else {
+        const { output: result } = await buildStatefulHmrSnapshot(options)
+        const outputs = Array.isArray(result) ? result.flatMap(item => item.output) : 'output' in result ? result.output : []
+        expect(readComponentJson(outputs)).toEqual({ component: true, options: { multipleSlots: true } })
+        const pageTemplate = outputs.find(item => item.fileName === 'pages/index/index.wxml') as OutputAsset
+        expect(String(pageTemplate.source)).toContain('<wevu-leaf')
+        const pageJson = outputs.find(item => item.fileName === 'pages/index/index.json') as OutputAsset
+        expect(JSON.parse(String(pageJson.source))).toMatchObject({ usingComponents: { 'wevu-leaf': '/components/wevu-leaf/index' } })
+      }
+      for (const name of supportFiles) {
+        const filename = path.join(root, '.weapp-vite', name)
+        expect(await fs.readFile(filename, 'utf8'), name).toBe(before.get(name))
+        expect((await fs.stat(filename)).mtimeMs, `${name} was rewritten`).toBe(1000)
+      }
+    }
+
+    active.autoImportService.setSupportFileResolverComponents({ 'late-leaf': 'fixture-components/late-leaf' })
+    await active.autoImportService.awaitManifestWrites()
+    expect(await fs.readFile(path.join(root, '.weapp-vite/auto-import-components.json'), 'utf8')).toContain('late-leaf')
+    expect(await fs.readFile(path.join(root, '.weapp-vite/components.d.ts'), 'utf8')).toContain('LateLeaf')
+  })
+
   it('retains the component declaration across fresh snapshot builds after a page style edit', async () => {
     const root = await createProject()
     const options = { cwd: root, isDev: true, mode: 'development' }
     for (const color of ['red', 'blue']) {
       await fs.writeFile(path.join(root, 'src/pages/index/index.wxss'), `.page { color: ${color}; }`)
-      const snapshot = await createStatefulHmrSnapshotOptions(options)
-      snapshot.options.build = { ...snapshot.options.build, watch: undefined, write: false }
-      snapshot.options.plugins = [...(snapshot.options.plugins ?? []), {
-        name: 'snapshot-assets-only',
-        enforce: 'post',
-        generateBundle(_options, bundle) {
-          for (const [name, output] of Object.entries(bundle)) {
-            if (output.type === 'chunk') {
-              delete bundle[name]
+      const snapshot = await buildStatefulHmrSnapshot(options, config => ({
+        ...config,
+        plugins: [...(config.plugins ?? []), {
+          name: 'snapshot-assets-only',
+          enforce: 'post',
+          generateBundle(_options, bundle) {
+            for (const [name, output] of Object.entries(bundle)) {
+              if (output.type === 'chunk') {
+                delete bundle[name]
+              }
             }
-          }
-        },
-      }]
-      const result = await build(snapshot.options)
+          },
+        }],
+      }))
+      const result = snapshot.output
       expect(snapshot.getDelegatedComponentEntryIds()).toEqual([
         (await fs.realpath(path.join(root, 'src/components/wevu-leaf/index.vue'))).replaceAll('\\', '/'),
       ])

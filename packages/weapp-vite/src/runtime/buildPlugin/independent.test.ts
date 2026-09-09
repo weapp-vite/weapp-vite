@@ -111,6 +111,44 @@ describe('runtime buildPlugin independent builder', () => {
     getAutoImportConfigMock.mockReturnValue(undefined)
   })
 
+  it.each([false, true])('suppresses support writes from config loading through build completion (failure=%s)', async (fail) => {
+    const { builder, isolatedConfigService, runWithoutOutputWrites } = createBuilder()
+    let writesSuppressed = false
+    const stages: string[] = []
+    runWithoutOutputWrites.mockImplementation(async (task) => {
+      writesSuppressed = true
+      try {
+        return await task()
+      }
+      finally {
+        writesSuppressed = false
+      }
+    })
+    isolatedConfigService.load.mockImplementation(async () => {
+      await Promise.resolve()
+      expect(writesSuppressed).toBe(true)
+      stages.push('config')
+    })
+    buildMock.mockImplementationOnce(async () => {
+      await Promise.resolve()
+      expect(writesSuppressed).toBe(true)
+      stages.push('build')
+      if (fail) {
+        throw new Error('isolated build failed')
+      }
+      return { output: [] }
+    })
+    const result = builder.buildIndependentBundle('packageA', { subPackage: { root: 'packageA' } } as any)
+    if (fail) {
+      await expect(result).rejects.toThrow('isolated build failed')
+    }
+    else {
+      await result
+    }
+    expect(stages).toEqual(['config', 'build'])
+    expect(writesSuppressed).toBe(false)
+  })
+
   it('builds and stores independent output with subpackage chunk root', async () => {
     const output = { output: [{ fileName: 'pkg/common.js' }] } as any
     buildMock.mockResolvedValueOnce(output)

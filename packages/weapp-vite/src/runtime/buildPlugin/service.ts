@@ -42,7 +42,7 @@ import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { resolveComponentPageGlobalStyleRoutes } from '../statefulHmr/componentPageStyles'
 import { runStatefulHmrDev } from '../statefulHmr/session'
-import { createStatefulHmrSnapshotOptions } from '../statefulHmr/snapshotBuild'
+import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
 import { retainWatcherService } from '../watcherPlugin'
@@ -1290,16 +1290,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
       try {
-        const snapshot = await createStatefulHmrSnapshotOptions(configService.loadOptions)
-        const snapshotBuildOptions: InlineConfig = {
-          ...appendHmrMetricsPlugin(snapshot.options),
-          build: {
-            ...(snapshot.options.build ?? {}),
-            watch: undefined,
-            write: false,
-          },
-        }
-        const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
+        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin)
+        const initialSnapshot = toStatefulHmrOutput(snapshot.output)
         const initialGlobalStyleRoutes = resolveComponentPageGlobalStyleRoutes(
           initialSnapshot,
           snapshot.getComponentPageStyleOptions(),
@@ -1354,29 +1346,26 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               for (const file of files) {
                 invalidateFileCache(file)
               }
-              const snapshot = await createStatefulHmrSnapshotOptions(configService.loadOptions)
-              const snapshotOptions = appendHmrMetricsPlugin(snapshot.options)
-              snapshotOptions.build = {
-                ...(snapshotOptions.build ?? {}),
-                emptyOutDir: false,
-                watch: undefined,
-                write: false,
-              }
-              snapshotOptions.plugins = [
-                ...(snapshotOptions.plugins ?? []),
-                {
-                  name: 'weapp-vite:stateful-hmr-snapshot-assets',
-                  enforce: 'post',
-                  generateBundle(_options, bundle) {
-                    for (const [fileName, item] of Object.entries(bundle)) {
-                      if (item.type === 'chunk') {
-                        delete bundle[fileName]
+              const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
+                const snapshotOptions = appendHmrMetricsPlugin(options)
+                snapshotOptions.build = { ...(snapshotOptions.build ?? {}), emptyOutDir: false }
+                snapshotOptions.plugins = [
+                  ...(snapshotOptions.plugins ?? []),
+                  {
+                    name: 'weapp-vite:stateful-hmr-snapshot-assets',
+                    enforce: 'post',
+                    generateBundle(_options, bundle) {
+                      for (const [fileName, item] of Object.entries(bundle)) {
+                        if (item.type === 'chunk') {
+                          delete bundle[fileName]
+                        }
                       }
-                    }
+                    },
                   },
-                },
-              ]
-              const output = toStatefulHmrOutput(await build(snapshotOptions))
+                ]
+                return snapshotOptions
+              })
+              const output = toStatefulHmrOutput(snapshot.output)
               return {
                 output,
                 entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
