@@ -1,5 +1,29 @@
 # @weapp-core/constants
 
+## 0.2.2
+
+### Patch Changes
+
+- 让 `@wevu/compiler` 在同一次模板编译中生成并消费版本化 Binding Manifest，移除 `weapp-vite` 对生成模板和脚本的 binding 二次解析；完整编译 IR 现在包含逐 dependency 更新策略和显式作用域关系，覆盖 CSS 变量样式状态、自定义指令、组件 `v-model` 修饰符及内建 template 属性等编译器生成的 mustache，且不完整清单不会启用自动 `setData.pick`。组件脚本仅注入运行时所需的精简 manifest，开发态再附加源码位置；跨文件 JSX binding 也会保留各自的源码归属和正确重映射位置。同时让 Wevu 的 `setData` 诊断按 binding id、输出路径和源码位置归因，并继续保留现有 snapshot/diff 正确性 fallback。`ScopedSlotComponentAsset` 现在直接提供必需的 `script` 与 `bindingManifest`，并移除旧的 `classStyleBindings`、`inlineExpressions`、`templateRefs` 侧通道；编译器消费者应直接 emit 新的完整资源。
+
+  开发态 binding 源码位置保留原文件的 CRLF 源码偏移，不再使用编译中间态规范化后的换行重新计算所属源文件位置。
+
+- 补全 Wevu 异常卸载边界：template ref、setup scope 与生命周期回调抛错时仍完成后续资源清理，并防止 teardown 期间创建的子 scope 泄漏。修正 `onBeforeUnmount()` 的触发时机，在实际卸载清理前执行而非 setup 阶段立即执行，避免跨页面组件队列残留已卸载实例。卸载前钩子同步阶段创建的响应式资源归属当前实例；清理过程触发的其他同步订阅保留原有 scope，避免停止仍存活的组件资源。
+
+- 修复响应式 `setData` 在宿主提交失败或乱序完成后仍沿用未提交快照的问题，确保 Web 适配器可重试同值渲染；导出的 `nextTick` 继续只等待 JavaScript 与响应式调度队列，Web Options API `$nextTick` 会额外等待当前 Lit 提交。
+
+  原生实例 `$nextTick` 现在等待宿主提交与模板 ref 完成，ref 或原始回调失败会拒绝本轮等待但不阻止后续恢复；隐藏缓冲保留最早失败，过期 selector 回调不能覆盖新 ref。Web 实例在属性更新或 HMR 恢复后改为等待当前渲染，不再复用已经失败的旧提交。
+
+- 重构 Wevu 可选运行时能力的安装边界：编译产物会按模板元数据和应用选项显式安装所需能力，未使用 patch、模板 ref、内联事件、高频告警、作用域插槽或 layout 的小程序不再携带对应实现；公开 `wevu` 入口继续保留原有动态配置行为。
+
+  能力分析沿用配置初始化表达式所属的词法作用域，不再被调用位置的同名局部变量误导；提取后的作用域插槽组件也会依据自身 layout host 元数据安装 layout 能力。
+
+  按需 patch 与 diff 共用宿主提交跟踪，保证 setData 派发期间新增的 computed 变更不会丢失；清空模板 ref 绑定时会使旧异步查询失效，避免实例 `$nextTick` 读到已移除的引用。
+
+- 修复微信状态保持热更新直接修改全局样式时触发完整重载的问题。通过稳定的 app.wxss 导入同目录样式资产，让全局样式变化保留页面和 App 实例；原有样式导入及资源相对路径保持不变，classic 构建行为不受影响。
+
+- 兼容 tsdown 0.23.0 的构建配置，并同步相关开发工具包的发布说明。
+
 ## 0.2.1
 
 ### Patch Changes

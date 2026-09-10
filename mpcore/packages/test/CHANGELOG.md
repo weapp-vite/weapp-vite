@@ -1,5 +1,14 @@
 # @mpcore/test
 
+## 0.1.9
+
+### Patch Changes
+
+- 修复 Testing Library 屏幕查询得到组件内部节点后无法交互的问题，按组件声明作用域定位目标，支持嵌套组件并保持页面查询隔离。
+
+- Updated dependencies:
+  - @mpcore/simulator@0.5.0
+
 ## 0.1.8
 
 ### Patch Changes

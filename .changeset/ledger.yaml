@@ -20,6 +20,39 @@
   dir: mpcore/packages/simulator
   intents:
     - calm-runtimes-agree
+"@mpcore/simulator@0.5.0":
+  dir: mpcore/packages/simulator
+  intents:
+    - bound-render-scope-handlers
+    - light-runtimes-install
+    - mpcore-component-instance-apis
+    - preserve-browser-module-live-globals
+    - quiet-wxml-null-text
+    - rendered-component-hosts
+    - rendered-page-identity
+    - simulator-app-log-manager
+    - simulator-behavior-registration-validation
+    - simulator-cold-launch-options
+    - simulator-component-event-target
+    - simulator-component-page-attachment
+    - simulator-component-transition-observers
+    - simulator-css-selectors
+    - simulator-declared-query-scope
+    - simulator-evaluate-runtime
+    - simulator-instance-properties
+    - simulator-native-component-properties
+    - simulator-nested-npm-resolution
+    - simulator-page-method-stack
+    - simulator-page-render-scheduling
+    - simulator-page-wxss-imports
+    - simulator-plugin-protocol-path
+    - simulator-testing-navigation-errors
+    - simulator-untyped-null-properties
+    - wevu-query-and-app-lifecycle
+"@mpcore/test@0.1.9":
+  dir: mpcore/packages/test
+  intents:
+    - test-component-scope-interactions
 "@mpcore/vitest@0.1.3":
   dir: mpcore/packages/vitest
   intents:
@@ -41,6 +74,10 @@
   dir: "@weapp-core/api"
   intents:
     - typed-wpi-vitest-mocks
+"@weapp-core/api@0.3.1":
+  dir: "@weapp-core/api"
+  intents:
+    - fix-wx-sync-api-promise
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -50,10 +87,27 @@
   dir: "@weapp-core/constants"
   intents:
     - initial-navigation-timeout
+"@weapp-core/constants@0.2.2":
+  dir: "@weapp-core/constants"
+  intents:
+    - bright-bindings-own
+    - calm-scopes-finish
+    - host-commit-recovery
+    - light-runtimes-install
+    - stateful-global-style-updates
+    - tsdown-023-constants
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
     - calm-docs-domain
+"@weapp-core/init@6.0.18":
+  dir: "@weapp-core/init"
+  intents:
+    - tailwindcss-core-patch-upgrade
+"@weapp-core/logger@3.1.2":
+  dir: "@weapp-core/logger"
+  intents:
+    - keep-logger-colors-public-type
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -118,6 +172,10 @@
   intents:
     - catalog-auto-generated
     - dependency-upgrade-auto-generated
+"@weapp-vite/dashboard@7.1.0":
+  dir: packages/dashboard
+  intents:
+    - tailwindcss-core-patch-upgrade
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -138,6 +196,11 @@
   dir: packages-runtime/i18n
   intents:
     - first-party-i18n
+"@weapp-vite/i18n@0.2.2":
+  dir: packages-runtime/i18n
+  intents:
+    - constants-runtime-dependents
+    - light-runtimes-install
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -160,6 +223,17 @@
   dir: packages/miniprogram-automator
   intents:
     - clear-xpath-response
+"@weapp-vite/miniprogram-automator@1.2.17":
+  dir: packages/miniprogram-automator
+  intents:
+    - automator-connect-deadline
+    - automator-enable-console-runtime-domain
+    - automator-single-page-probe
+    - automator-xpath-response
+    - clean-query-realm
+    - fix-954-automator-token
+    - rendered-page-identity
+    - structured-automator-console-errors
 "@weapp-vite/qr@1.1.2":
   dir: packages/qr
   intents:
@@ -177,6 +251,11 @@
   dir: packages-runtime/react
   intents:
     - calm-runtimes-agree
+"@weapp-vite/react@0.2.5":
+  dir: packages-runtime/react
+  intents:
+    - constants-runtime-dependents
+    - light-runtimes-install
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
@@ -185,6 +264,7 @@
   dir: extensions/vscode
   intents:
     - calm-docs-domain
+    - tsdown-023-constants
 "@weapp-vite/web@1.4.10":
   dir: packages-runtime/web
   intents:
@@ -209,6 +289,18 @@
   dir: packages-runtime/web
   intents:
     - lazy-web-runtime-module-resolution
+"@weapp-vite/web@1.5.0":
+  dir: packages-runtime/web
+  intents:
+    - calm-cougars-see
+    - constants-runtime-dependents
+    - fix-955-native-props
+    - host-commit-recovery
+    - humble-bugs-travel
+    - light-runtimes-install
+    - red-seas-happen
+    - salty-crabs-teach
+    - wevu-query-and-app-lifecycle
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -222,6 +314,10 @@
   dir: packages-runtime/weapi
   intents:
     - typed-wpi-vitest-mocks
+"@wevu/api@0.3.1":
+  dir: packages-runtime/weapi
+  intents:
+    - fix-wx-sync-api-promise
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -256,6 +352,25 @@
   dir: packages-runtime/wevu-compiler
   intents:
     - catalog-auto-generated
+"@wevu/compiler@7.1.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - bright-bindings-own
+    - calm-async-derivations
+    - compiler-conditional-runtime-bindings
+    - compiler-explicit-component-options
+    - compiler-nested-key-projection
+    - i18n-behavior-runtime-reference
+    - jsx-setup-ref-template-paths
+    - light-runtimes-install
+    - preserve-wxss-nested-variable-fallbacks
+    - protect-compiler-source-cache-publication
+    - renderer-owned-jsx-types
+    - sfc-typescript-this-parameter
+"@wevu/query@0.0.0":
+  dir: packages-runtime/wevu-query
+  intents:
+    - wevu-query-and-app-lifecycle
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -265,6 +380,11 @@
   intents:
     - quiet-wrappers-isolate
     - tidy-tools-unmount
+"@wevu/test-utils@0.2.12":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - constants-runtime-dependents
+    - light-runtimes-install
 "@wevu/test-utils@0.2.2":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -279,6 +399,12 @@
   dir: packages-runtime/web-apis
   intents:
     - calm-runtime-gates
+"@wevu/web-apis@1.2.41":
+  dir: packages-runtime/web-apis
+  intents:
+    - calm-async-derivations
+    - constants-runtime-dependents
+    - light-runtimes-install
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -315,6 +441,92 @@ create-weapp-vite@2.8.12:
   dir: packages/create-weapp-vite
   intents:
     - calm-runtimes-agree
+create-weapp-vite@2.8.13:
+  dir: packages/create-weapp-vite
+  intents:
+    - accept-native-component-dependency-hmr
+    - align-multiplatform-wechat-npm-output
+    - bright-bindings-own
+    - calm-async-derivations
+    - calm-scopes-finish
+    - calm-stores-batch
+    - canonicalize-entry-source-identities
+    - classic-normalized-style-emission
+    - close-one-shot-snapshot-watchers
+    - complete-react-pages
+    - css-owner-output-phase
+    - dispose-transient-tailwind-compilers
+    - emit-native-layout-template-dependencies
+    - fix-955-native-props
+    - fix-linked-entry-ownership
+    - fix-request-globals-prelude-order
+    - fix-stateful-canonical-source-identity
+    - fix-stateful-patch-external-imports
+    - fix-vue-hmr-alias
+    - fix-windows-logical-entry-ownership
+    - fresh-pages-register
+    - fresh-sfc-source-signatures
+    - fresh-stateful-hmr-snapshots
+    - honest-hmr-output-failure
+    - host-commit-recovery
+    - i18n-behavior-runtime-reference
+    - ide-project-trust-initialization
+    - include-plugin-typescript-sources
+    - independent-shared-component-ownership
+    - independent-subpackage-manifest
+    - isolated-host-payload
+    - jsx-setup-ref-template-paths
+    - keep-vue-component-script-hmr-local
+    - light-runtimes-install
+    - migrate-historical-app-tailwind-config
+    - native-layout-properties
+    - native-page-config-output
+    - ordinary-json-macro-route-independence
+    - plugin-template-local-development-version
+    - preserve-component-state-on-atomic-save
+    - preserve-native-full-output-publication
+    - preserve-stateful-hmr-source-classification
+    - preserve-stateful-snapshot-assets
+    - preserve-style-sidecar-source-identity
+    - preserve-tailwind-pre-source
+    - preserve-transformed-style-owners
+    - preserve-vite-native-module-identity
+    - preserve-web-runtime-support-order
+    - preserve-wxss-nested-variable-fallbacks
+    - publish-layout-dependencies-atomically
+    - quiet-ide-console-owner
+    - quiet-layout-checkpoint
+    - quiet-local-style-updates
+    - quiet-snapshot-support-files
+    - register-entry-chunks-during-full-scans
+    - relative-project-root-resolution
+    - renderer-owned-jsx-types
+    - retail-checkout-nullable-lists
+    - retail-comment-filter-selection
+    - retail-goods-event-payload
+    - retain-classic-tailwind-controller
+    - sfc-typescript-this-parameter
+    - shared-template-owner-hmr
+    - stable-logical-entry-registration
+    - stateful-component-page-styles
+    - stateful-global-style-updates
+    - stateful-hmr-stopped-client
+    - stateful-initial-public-assets
+    - stateful-new-instance-defaults
+    - stateful-orphan-loader-bootstrap
+    - stateful-shared-module-updates
+    - stateful-unloaded-reexports
+    - steady-scopes-finish
+    - tailwind-output-ownership
+    - tailwind-pending-css-hmr
+    - tailwind-sfc-style-source
+    - tailwindcss-core-patch-upgrade
+    - tidy-forward-console-lifecycle
+    - validate-react-bridge-current-config
+    - vue-hmr-compile-context
+    - wevu-hmr-reactive-deletions
+    - wevu-hmr-replacement-state
+    - wevu-native-event-handler-variance
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -406,6 +618,13 @@ weapp-ide-cli@6.1.1:
   dir: packages/weapp-ide-cli
   intents:
     - catalog-auto-generated
+weapp-ide-cli@6.1.3:
+  dir: packages/weapp-ide-cli
+  intents:
+    - calm-console-startup
+    - ide-project-trust-initialization
+    - open-project-http-first
+    - wechat-http-engine-cancellation
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -496,6 +715,77 @@ weapp-vite@7.0.4:
   dir: packages/weapp-vite
   intents:
     - calm-runtimes-agree
+weapp-vite@7.1.0:
+  dir: packages/weapp-vite
+  intents:
+    - accept-native-component-dependency-hmr
+    - align-multiplatform-wechat-npm-output
+    - bright-bindings-own
+    - calm-async-derivations
+    - canonicalize-entry-source-identities
+    - classic-normalized-style-emission
+    - close-one-shot-snapshot-watchers
+    - complete-react-pages
+    - css-owner-output-phase
+    - dispose-transient-tailwind-compilers
+    - emit-native-layout-template-dependencies
+    - fix-linked-entry-ownership
+    - fix-request-globals-prelude-order
+    - fix-stateful-canonical-source-identity
+    - fix-stateful-patch-external-imports
+    - fix-vue-hmr-alias
+    - fix-windows-logical-entry-ownership
+    - fresh-pages-register
+    - fresh-sfc-source-signatures
+    - fresh-stateful-hmr-snapshots
+    - honest-hmr-output-failure
+    - i18n-behavior-runtime-reference
+    - ide-project-trust-initialization
+    - include-plugin-typescript-sources
+    - independent-shared-component-ownership
+    - independent-subpackage-manifest
+    - jsx-setup-ref-template-paths
+    - keep-vue-component-script-hmr-local
+    - light-runtimes-install
+    - migrate-historical-app-tailwind-config
+    - native-page-config-output
+    - ordinary-json-macro-route-independence
+    - preserve-component-state-on-atomic-save
+    - preserve-native-full-output-publication
+    - preserve-stateful-hmr-source-classification
+    - preserve-stateful-snapshot-assets
+    - preserve-style-sidecar-source-identity
+    - preserve-tailwind-pre-source
+    - preserve-transformed-style-owners
+    - preserve-vite-native-module-identity
+    - preserve-web-runtime-support-order
+    - preserve-wxss-nested-variable-fallbacks
+    - publish-layout-dependencies-atomically
+    - quiet-ide-console-owner
+    - quiet-layout-checkpoint
+    - quiet-local-style-updates
+    - quiet-snapshot-support-files
+    - register-entry-chunks-during-full-scans
+    - relative-project-root-resolution
+    - renderer-owned-jsx-types
+    - retain-classic-tailwind-controller
+    - shared-template-owner-hmr
+    - stable-logical-entry-registration
+    - stateful-component-page-styles
+    - stateful-global-style-updates
+    - stateful-hmr-stopped-client
+    - stateful-initial-public-assets
+    - stateful-new-instance-defaults
+    - stateful-orphan-loader-bootstrap
+    - stateful-shared-module-updates
+    - stateful-unloaded-reexports
+    - tailwind-output-ownership
+    - tailwind-pending-css-hmr
+    - tailwind-sfc-style-source
+    - tailwindcss-core-patch-upgrade
+    - tidy-forward-console-lifecycle
+    - validate-react-bridge-current-config
+    - vue-hmr-compile-context
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -545,3 +835,22 @@ wevu@7.0.4:
   dir: packages-runtime/wevu
   intents:
     - calm-runtimes-agree
+wevu@7.1.0:
+  dir: packages-runtime/wevu
+  intents:
+    - bright-bindings-own
+    - calm-async-derivations
+    - calm-scopes-finish
+    - calm-stores-batch
+    - fix-955-native-props
+    - fresh-stateful-hmr-snapshots
+    - host-commit-recovery
+    - isolated-host-payload
+    - light-runtimes-install
+    - preserve-wxss-nested-variable-fallbacks
+    - renderer-owned-jsx-types
+    - sfc-typescript-this-parameter
+    - steady-scopes-finish
+    - wevu-hmr-reactive-deletions
+    - wevu-hmr-replacement-state
+    - wevu-native-event-handler-variance
