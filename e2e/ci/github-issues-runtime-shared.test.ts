@@ -14,12 +14,12 @@ import {
 } from '../ide/github-issues.runtime.shared'
 
 describe('github issues runtime shared relaunch helper', () => {
-  it('delegates transient DevTools launch recovery to the shared automator launcher', () => {
+  it('waits for the first rendered page instead of relaunching during DevTools cold compilation', () => {
     expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
       projectPath: 'project-root',
       retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
-      warmupAllowRelaunch: true,
+      warmupAllowRelaunch: false,
     })
   })
 

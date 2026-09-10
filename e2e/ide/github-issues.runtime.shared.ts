@@ -1084,7 +1084,8 @@ export function createGithubIssuesLaunchAutomatorOptions(projectPath = APP_ROOT)
     projectPath,
     retryWarmupTimeout: true,
     skipRelaunchPageRootCheck: true,
-    warmupAllowRelaunch: true,
+    // 冷编译完成前切页会反复触发无效 webview；使用完整就绪预算等待首屏。
+    warmupAllowRelaunch: false,
   }
 }
 
