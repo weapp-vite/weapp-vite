@@ -173,6 +173,42 @@ describe('router navigation helpers', () => {
     expect(router.currentRoute.path).toBe('pages/login/index')
   })
 
+  it('executes blocking initial redirects through the host router', async () => {
+    const pages = [{ route: 'pages/home/index', options: {} }]
+    const redirectTo = vi.fn((options: any) => options.success?.({}))
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      initialNavigationMode: 'blocking',
+      routes: [
+        { name: 'home', path: '/pages/home/index' },
+        { name: 'login', path: '/pages/login/index' },
+      ],
+    })
+    router.beforeEach(to => to?.name === 'home' ? { name: 'login' } : undefined)
+
+    const runner = getInitialNavigationRunner()!
+    const result = await runner(pages[0], pages[0].options)
+
+    expect(result).toEqual(expect.objectContaining({ __wevuNavigationFailure: true }))
+    expect(redirectTo).toHaveBeenCalledWith(expect.objectContaining({ url: '/pages/login/index' }))
+    expect(router.currentRoute.path).toBe('pages/login/index')
+  })
+
   it('rejects initial navigation failures after an aborting guard completes', async () => {
     const pages = [{ route: 'pages/home/index', options: {} }]
     const instance = {
