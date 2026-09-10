@@ -285,6 +285,7 @@
   "dependencies": {
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-core/types": "workspace:*",
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
     "@wevu/web-apis": "workspace:*",

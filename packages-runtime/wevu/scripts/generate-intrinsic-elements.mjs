@@ -5,6 +5,7 @@ import path from 'pathe'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const packageRoot = path.resolve(__dirname, '..')
+const typesRoot = path.resolve(packageRoot, '../../@weapp-core/types')
 const CHECK_MODE = process.argv.includes('--check')
 
 async function pathExists(file) {
@@ -513,9 +514,12 @@ function renderElementFile(component, typePrefix, catalogNames) {
   if (usesQuotedProps && usesUnquotedProps) {
     lines.push('/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */')
   }
+  if (usesEventHandler) {
+    lines.push('/* eslint-disable import/no-duplicates -- 生成器按类型职责拆分导入。 */')
+  }
   lines.push('')
   if (usesEventHandler) {
-    lines.push('import type { WevuJsxEventHandler } from \'../../jsx-runtime\'')
+    lines.push(`import type { ${typePrefix}IntrinsicEventHandler } from '../base'`)
   }
   lines.push(`import type { ${baseTypeName} } from '../base'`, '', '/**')
   for (const docLink of component.docLinks) {
@@ -528,7 +532,7 @@ function renderElementFile(component, typePrefix, catalogNames) {
   else {
     lines.push(`export type ${typeName} = ${baseTypeName} & {`)
     for (const attr of attrs) {
-      lines.push(`  ${formatPropertyKey(attr.name)}?: ${renderType(attr.type)}`)
+      lines.push(`  ${formatPropertyKey(attr.name)}?: ${renderType(attr.type).replaceAll('WevuJsxEventHandler', `${typePrefix}IntrinsicEventHandler`)}`)
     }
     lines.push('}')
   }
@@ -547,9 +551,16 @@ function renderCatalog(catalog, platform) {
   const baseLines = [
     `${GENERATED_FILE_HEADER} 来源：${catalogNames.join('、')}。`,
     '',
-    'import type { WevuJsxHostAttributes } from \'../jsx-runtime\'',
-    '',
-    `export type ${baseTypeName} = WevuJsxHostAttributes`,
+    `export type ${platform.typePrefix}IntrinsicEventHandler<TReturn = unknown> = (...args: unknown[]) => TReturn`,
+    `export interface ${baseTypeName} {`,
+    '  id?: string | number',
+    '  class?: string | Record<string, unknown> | false | null | undefined | unknown[]',
+    '  className?: string | Record<string, unknown> | false | null | undefined | unknown[]',
+    '  style?: string | Record<string, string | number | undefined> | false | null | undefined | unknown[]',
+    '  hidden?: boolean',
+    '  key?: string | number',
+    '  [name: string]: unknown',
+    '}',
     '',
   ]
   output.set(`src/${outputDirectoryName}/base.ts`, baseLines.join('\n'))
@@ -563,7 +574,8 @@ function renderCatalog(catalog, platform) {
     '',
     ...elementFiles.map(file => `import type { ${file.typeName} } from './${outputDirectoryName}/elements/${file.fileName.replace(TS_EXT_RE, '')}'`),
     '',
-    `export type { ${baseTypeName} } from './${outputDirectoryName}/base'`,
+    `export type { ${baseTypeName}, ${platform.typePrefix}IntrinsicEventHandler } from './${outputDirectoryName}/base'`,
+    ...elementFiles.map(file => `export type { ${file.typeName} } from './${outputDirectoryName}/elements/${file.fileName.replace(TS_EXT_RE, '')}'`),
     '',
     `export interface ${platform.typePrefix}IntrinsicElements {`,
     ...elementFiles.map(file => `  ${formatPropertyKey(file.fileName.replace(TS_EXT_RE, ''))}: ${file.typeName}`),
@@ -595,7 +607,9 @@ async function collectFiles(directory) {
 async function checkOutputs(expectedOutput, outputDirectories) {
   const drift = []
   for (const [relativePath, expectedContent] of expectedOutput) {
-    const outputPath = path.resolve(packageRoot, relativePath)
+    const outputPath = relativePath.startsWith('../')
+      ? path.resolve(packageRoot, relativePath)
+      : path.resolve(typesRoot, relativePath)
     if (!await pathExists(outputPath)) {
       drift.push(`${relativePath} is missing`)
       continue
@@ -605,11 +619,11 @@ async function checkOutputs(expectedOutput, outputDirectories) {
       drift.push(`${relativePath} differs`)
     }
   }
-  const expectedPaths = new Set([...expectedOutput.keys()].map(relativePath => path.resolve(packageRoot, relativePath)))
+  const expectedPaths = new Set([...expectedOutput.keys()].map(relativePath => relativePath.startsWith('../') ? path.resolve(packageRoot, relativePath) : path.resolve(typesRoot, relativePath)))
   for (const directory of outputDirectories) {
     for (const filePath of await collectFiles(directory)) {
       if (!expectedPaths.has(filePath)) {
-        drift.push(`${path.relative(packageRoot, filePath)} is stale`)
+        drift.push(`${path.relative(typesRoot, filePath)} is stale`)
       }
     }
   }
@@ -624,7 +638,7 @@ async function writeOutputs(expectedOutput, outputDirectories) {
     await rm(directory, { recursive: true, force: true })
   }
   for (const [relativePath, content] of expectedOutput) {
-    await outputFile(path.resolve(packageRoot, relativePath), content)
+    await outputFile(relativePath.startsWith('../') ? path.resolve(packageRoot, relativePath) : path.resolve(typesRoot, relativePath), content)
   }
   console.log(`Generated ${expectedOutput.size} intrinsic declaration files.`)
 }
@@ -655,7 +669,7 @@ for (const platform of renderConfigs) {
   }
 }
 expectedOutput.set(COMPILER_EVENT_ALIASES_OUTPUT, renderCompilerEventAliases(rawCatalogs, preferredSourceEventNames))
-const outputDirectories = renderConfigs.map(platform => path.resolve(packageRoot, `src/${platform.id}IntrinsicElements`))
+const outputDirectories = renderConfigs.map(platform => path.resolve(typesRoot, `src/${platform.id}IntrinsicElements`))
 if (CHECK_MODE) {
   await checkOutputs(expectedOutput, outputDirectories)
 }
