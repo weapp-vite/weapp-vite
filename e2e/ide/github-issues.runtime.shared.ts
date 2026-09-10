@@ -1273,7 +1273,12 @@ export async function relaunchPage(
         catch (error) {
           process.stdout.write(`[github-issues:relaunch] ${routeMethod}-failed route=${route} phase=${phase} attempt=${attempt}/3 reason=${error instanceof Error ? error.message : String(error)}\n`)
           if (isRelaunchSessionUnstableError(error)) {
-            return null
+            // DevTools may briefly expose a stale webview handle while the
+            // simulator is creating the target page. Keep the same session
+            // alive and retry after the metadata settles; the caller can
+            // still restart the session after all attempts are exhausted.
+            await delay(500)
+            continue
           }
         }
 
