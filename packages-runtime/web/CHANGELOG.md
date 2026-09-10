@@ -1,5 +1,49 @@
 # @weapp-vite/web
 
+## 1.5.0
+
+### Minor Changes
+
+- 新增独立的 `@wevu/query` 服务端状态管理包，提供类型关联查询键、共享请求与缓存、失效刷新、作用域隔离、mutation、分页查询，以及 Wevu 响应式和页面生命周期接入。应用前后台与网络状态通过显式微信宿主适配器驱动，不内置持久化或自动重试策略。
+
+  为 simulator 增加应用显示/隐藏监听和显式测试控制，并支持在执行小程序入口前等待 `configureSession` 配置完成。查询回归通过仅限指定回环源与查询路径的测试传输访问真实 HTTP 服务，默认 request mock 和 strict mock 策略保持不变。
+
+  应用事件分发对齐真实微信开发者工具：保留同一监听器的重复注册，按事件快照处理派发期间的增删，取消监听时移除全部同引用注册；冷启动保持 App 显示钩子先执行，后续恢复与隐藏则先执行 wx 监听器。
+
+  自定义 `HeadlessWxDriver` 实现需要补齐 `onAppShow`、`offAppShow`、`onAppHide`、`offAppHide` 四个方法；内置 Node 与 browser driver 已同步迁移。
+
+  Web runtime 同步支持 `wx.onAppShow`、`wx.offAppShow`、`wx.onAppHide`、`wx.offAppHide`，保持相同的监听快照、重复注册与回调顺序。浏览器隐藏事件向 wx 监听器与 App 钩子传递同一份 `{ reason: 3 }`，表示无法区分微信退出来源的“其他”原因；同时修正公开类型入口，使其指向实际生成的 `.d.mts` 声明文件。
+
+### Patch Changes
+
+- 修复 Web scroll-view 更新无关属性或重新连接时重放旧滚动位置的问题，保持横纵轴的独立输入同步。
+
+- 同步更新对 `@weapp-core/constants` 的依赖版本，使国际化、React、Web 运行时与测试工具使用本轮修复所需的公共运行时常量。
+
+- 修复 Vue 类型优先的可选、可空和联合类型 props 在微信原生属性层提前被转换的问题。启用空值传输兼容时使用无主类型约束的原生描述符，保留默认值和显式原生属性覆盖，并正确尊重 `allowNullPropInput: false`。
+
+  Web 注册入口不再应用小程序宿主的空值传输降级，保留 DOM 布尔、数字、对象和数组属性的解码类型，避免组件交互和视觉表现回归。
+
+- 修复响应式 `setData` 在宿主提交失败或乱序完成后仍沿用未提交快照的问题，确保 Web 适配器可重试同值渲染；导出的 `nextTick` 继续只等待 JavaScript 与响应式调度队列，Web Options API `$nextTick` 会额外等待当前 Lit 提交。
+
+  原生实例 `$nextTick` 现在等待宿主提交与模板 ref 完成，ref 或原始回调失败会拒绝本轮等待但不阻止后续恢复；隐藏缓冲保留最早失败，过期 selector 回调不能覆盖新 ref。Web 实例在属性更新或 HMR 恢复后改为等待当前渲染，不再复用已经失败的旧提交。
+
+- 修复 Web 嵌套 scroll-view 内层滚动重复触发外层监听的问题，滚动事件仅由实际滚动的视口派发。
+
+- 重构 Wevu 可选运行时能力的安装边界：编译产物会按模板元数据和应用选项显式安装所需能力，未使用 patch、模板 ref、内联事件、高频告警、作用域插槽或 layout 的小程序不再携带对应实现；公开 `wevu` 入口继续保留原有动态配置行为。
+
+  能力分析沿用配置初始化表达式所属的词法作用域，不再被调用位置的同名局部变量误导；提取后的作用域插槽组件也会依据自身 layout host 元数据安装 layout 能力。
+
+  按需 patch 与 diff 共用宿主提交跟踪，保证 setData 派发期间新增的 computed 变更不会丢失；清空模板 ref 绑定时会使旧异步查询失效，避免实例 `$nextTick` 读到已移除的引用。
+
+- 修复 Web 原生 input 未应用 bindinput 处理函数同步字符串返回值的问题，支持空字符串且不改写其他控件、自定义事件或异步返回值。
+
+- 修复 Web 原生组件自定义事件大小写在编译和监听桥中丢失的问题，支持同一节点上的大小写不同事件并保留原生事件别名。编译模板的运行时依赖由插件自身解析，无需应用直接安装 Web 运行时。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+  - wevu@7.1.0
+
 ## 1.4.21
 
 ### Patch Changes

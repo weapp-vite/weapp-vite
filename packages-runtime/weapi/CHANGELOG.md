@@ -1,5 +1,14 @@
 # @wevu/api
 
+## 0.3.1
+
+### Patch Changes
+
+- 修复微信同步返回 API 被错误 Promise 化的问题，补齐无 `Sync` 后缀 API 的运行时与类型契约。
+
+- Updated dependencies:
+  - @weapp-core/api@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes
