@@ -68,7 +68,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate managed template support files
-        run: pnpm --filter weapp-vite-wevu-tailwindcss-tdesign-retail-template exec wv prepare
+        run: cd templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template && pnpm exec wv prepare
 
       - name: Run repo release CI
         env:
