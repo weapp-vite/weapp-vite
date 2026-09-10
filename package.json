@@ -297,7 +297,7 @@
     "lodash": "catalog:",
     "lodash-es": "^4.18.1",
     "magic-string": "catalog:",
-    "memfs": "^4.71.0",
+    "memfs": "^4.72.1",
     "merge": "catalog:",
     "micromatch": "^4.0.8",
     "minidev": "^2.2.5",

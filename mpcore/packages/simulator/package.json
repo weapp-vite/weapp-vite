@@ -50,8 +50,8 @@
   "dependencies": {
     "@babel/parser": "catalog:",
     "@weapp-core/constants": "workspace:*",
-    "css-select": "^6.0.0",
-    "css-what": "^7.0.0",
+    "css-select": "^7.0.0",
+    "css-what": "^8.0.0",
     "fontoxpath": "^3.34.0",
     "htmlparser2": "catalog:",
     "pathe": "catalog:",
