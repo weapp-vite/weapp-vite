@@ -93,6 +93,19 @@ describe('automator warmup readiness', () => {
     expect(page.$$).toHaveBeenCalledWith('page')
   })
 
+  it('retries an opaque DevTools rejection but still requires a rendered warmup page', async () => {
+    vi.useFakeTimers()
+    const page = { path: 'pages/example/index', $$: vi.fn(async () => [{ id: 'real-page' }]) }
+    const miniProgram = {
+      reLaunch: vi.fn().mockRejectedValueOnce(new Error('Uncaught [object Object]')).mockResolvedValue(page),
+    }
+    const warmup = warmupMiniProgramRoute(miniProgram, '/pages/example/index', 'fixture', { rootSelectors: ['.title'] })
+    await vi.runAllTimersAsync()
+    await expect(warmup).resolves.toBeUndefined()
+    expect(miniProgram.reLaunch).toHaveBeenCalledTimes(2)
+    expect(page.$$).toHaveBeenCalledWith('.title')
+  })
+
   it.each([true, false])('requires actual current-page rendering after a same-route stale handle (rendered=%s)', async (rendered) => {
     vi.useFakeTimers()
     const stalePage = { pageId: 1, path: 'pages/example/index', $$: vi.fn(async () => []) }

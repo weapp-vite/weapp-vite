@@ -247,6 +247,45 @@ describe('github issues runtime shared relaunch helper', () => {
     expect(miniProgram.reLaunch).toHaveBeenCalledTimes(1)
   })
 
+  it.each([
+    'Uncaught [object Object]',
+    'Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.',
+  ])('reacquires the rendered current page after metadata rejection: %s', async (message) => {
+    const targetPage = {
+      path: '/pages/index/index',
+      waitForRendered: vi.fn(async () => '<view id="ready" />'),
+    }
+    const miniProgram = {
+      currentPage: vi.fn().mockRejectedValueOnce(new Error(message)).mockResolvedValue(targetPage),
+      reLaunch: vi.fn().mockRejectedValue(new Error(message)),
+      evaluate: vi.fn(async () => targetPage.path),
+    }
+
+    const page = await relaunchPage(miniProgram, targetPage.path, undefined, 1_000, { forceRelaunch: true })
+
+    expect(page).toBe(targetPage)
+    expect(miniProgram.reLaunch).toHaveBeenCalledTimes(1)
+    expect(targetPage.waitForRendered).toHaveBeenCalled()
+    expect(miniProgram.currentPage).toHaveBeenCalledWith(expect.objectContaining({
+      appFunctionFallback: false,
+      pageStackFallback: false,
+      retries: 1,
+      timeout: expect.any(Number),
+    }))
+  })
+
+  it('does not accept the stale page returned by reLaunch when it is no longer current', async () => {
+    const stalePage = { path: '/pages/index/index' }
+    const miniProgram = {
+      currentPage: vi.fn(async () => ({ path: '/pages/other/index' })),
+      reLaunch: vi.fn(async () => stalePage),
+    }
+    await expect(relaunchPage(miniProgram, stalePage.path, undefined, 1, {
+      forceRelaunch: true,
+      readiness: 'route',
+    })).resolves.toBeNull()
+  })
+
   it('calls route page methods through the route-only page protocol with a scoped timeout', async () => {
     const targetPage = {
       path: '/pages/index/index',
@@ -276,6 +315,9 @@ describe('github issues runtime shared relaunch helper', () => {
     expect(miniProgram.currentPage).toHaveBeenCalledWith(
       {
         appFunctionFallback: false,
+        pageStackFallback: false,
+        retries: 1,
+        timeout: expect.any(Number),
       },
     )
   })

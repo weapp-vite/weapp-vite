@@ -94,12 +94,15 @@ describe('automator', () => {
     expect(isLikelyRelaunchRetryableError(error)).toBe(true)
   })
 
-  it('retries a generic DevTools reLaunch rejection before closing the session', async () => {
+  it.each([
+    'Uncaught [object Object]',
+    'Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.',
+  ])('retries a transient DevTools reLaunch rejection before closing the session: %s', async (message) => {
     const targetPage = {
       path: '/pages/index/index',
     }
     const rawReLaunch = vi.fn()
-      .mockRejectedValueOnce(new Error('Uncaught [object Object]'))
+      .mockRejectedValueOnce(new Error(message))
       .mockResolvedValueOnce(targetPage)
     const miniProgram = {
       close: vi.fn(),
@@ -116,6 +119,56 @@ describe('automator', () => {
     await expect(miniProgram.reLaunch('/pages/index/index')).resolves.toBe(targetPage)
     expect(rawReLaunch).toHaveBeenCalledTimes(2)
     expect(miniProgram.close).not.toHaveBeenCalled()
+  })
+
+  it('closes a failed simulator instead of retrying navigation on that session', async () => {
+    const failure = new Error('simulator launch failed')
+    const rawReLaunch = vi.fn().mockRejectedValue(failure)
+    const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(), close: vi.fn() }
+    enhanceMiniProgramRelaunch(miniProgram, { project: 'fixture', skipPageRootCheck: true, retryDelayMs: 0 })
+
+    await expect(miniProgram.reLaunch('/pages/index/index')).rejects.toBe(failure)
+    expect(rawReLaunch).toHaveBeenCalledTimes(1)
+    expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    expect(miniProgram.currentPage).not.toHaveBeenCalled()
+  })
+
+  it('preserves the original metadata error when bounded same-session retries are exhausted', async () => {
+    const failure = new Error('getPageMetaByWebviewId returned null')
+    const rawReLaunch = vi.fn().mockRejectedValue(failure)
+    const miniProgram = {
+      reLaunch: rawReLaunch,
+      currentPage: vi.fn().mockRejectedValue(failure),
+      close: vi.fn(),
+    }
+    enhanceMiniProgramRelaunch(miniProgram, { project: 'fixture', skipPageRootCheck: true, retryDelayMs: 0 })
+
+    await expect(miniProgram.reLaunch('/pages/index/index')).rejects.toBe(failure)
+    expect(rawReLaunch).toHaveBeenCalledTimes(2)
+    expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    expect(miniProgram.currentPage).toHaveBeenCalledWith({
+      appFunctionFallback: false,
+      pageStackFallback: false,
+      retries: 1,
+      timeout: 1_500,
+    })
+  })
+
+  it('rejects a matching route with no rendered root instead of accepting a stale handle', async () => {
+    vi.useFakeTimers()
+    try {
+      const page = { path: '/pages/index/index', $$: vi.fn(async () => []) }
+      const rawReLaunch = vi.fn(async () => page)
+      const miniProgram = { reLaunch: rawReLaunch, currentPage: vi.fn(async () => page), close: vi.fn() }
+      enhanceMiniProgramRelaunch(miniProgram, { project: 'fixture', rootSelectors: ['#ready'] })
+      const assertion = expect(miniProgram.reLaunch('/pages/index/index')).rejects.toThrow('Timed out waiting page root after reLaunch')
+      await vi.runAllTimersAsync()
+      await assertion
+      expect(miniProgram.close).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('treats a closed DevTools connection as a retryable relaunch error', () => {

@@ -110,6 +110,7 @@ const AUTOMATOR_BRIDGE_WRAPPER_ROOT = path.resolve(import.meta.dirname, '../../.
 let bridgeWrapperLaunchSequence = 0
 const AUTOMATOR_SKIP_WARMUP_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP'
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
+  /simulator launch failed/i,
   /simulator not found/i,
   /模拟器启动失败/,
   /WeChat DevTools simulator boot error detected in IDE log/i,
@@ -986,6 +987,11 @@ async function runWithDevtoolsLogMonitor<T>(
 function isGenericDevtoolsRelaunchError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message === 'Uncaught [object Object]'
+}
+
+export function isTransientDevtoolsPageMetadataError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return isGenericDevtoolsRelaunchError(error) || /getPageMetaByWebviewId/i.test(message)
 }
 
 export function isLikelyRelaunchRetryableError(error: unknown) {
@@ -2594,9 +2600,12 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         if (!options.skipPageRootCheck) {
           const pageRoot = await waitForRelaunchPageRoot(page, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, options.rootSelectors)
           if (!pageRoot) {
-            if (normalizeRouteForCompare(page?.path ?? '') === normalizeRouteForCompare(route)) {
-              process.stdout.write(`[warn] [runtime:relaunch-page-root-missing] route=${route} source=relaunch-page\n`)
-              return page
+            const currentPage = await waitForCurrentRouteReady(miniProgram, route, ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT, {
+              checkDevtoolsLog: options.checkDevtoolsLog,
+              rootSelectors: options.rootSelectors,
+            })
+            if (currentPage) {
+              return currentPage
             }
             throw new Error(`Timed out waiting page root after reLaunch: ${route}`)
           }
@@ -2611,14 +2620,21 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         if (options.disableSessionRecovery) {
           throw error
         }
-        if (isLikelySimulatorBootErrorMessage(error instanceof Error ? error.message : String(error))) {
+        if (!isTransientDevtoolsPageMetadataError(error) && isLikelySimulatorBootErrorMessage(error instanceof Error ? error.message : String(error))) {
           await closeUnstableRelaunchSession(miniProgram, options, route, attempt, error)
           throw error
         }
         try {
-          const currentPage = await miniProgram.currentPage({
-            appFunctionFallback: false,
-          })
+          const currentPage = await runWithTimeout(
+            () => miniProgram.currentPage({
+              appFunctionFallback: false,
+              pageStackFallback: false,
+              retries: 1,
+              timeout: ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT,
+            }),
+            ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT,
+            `read current page after reLaunch ${route}`,
+          )
           if (normalizeRouteForCompare(currentPage?.path ?? '') === normalizeRouteForCompare(route)) {
             if (options.skipPageRootCheck) {
               process.stdout.write(`[info] [runtime:relaunch-current-fallback] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
@@ -2631,7 +2647,6 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
               return currentPage ?? page
             }
             process.stdout.write(`[warn] [runtime:relaunch-current-root-missing] route=${route} attempt=${attempt} reason=${error instanceof Error ? error.message : String(error)}\n`)
-            return currentPage ?? page
           }
           else {
             process.stdout.write(`[info] [runtime:relaunch-current-page] route=${route} attempt=${attempt} current=${currentPage?.path ?? '<none>'}\n`)
@@ -2640,7 +2655,7 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
         catch {
           // currentPage 在 DevTools 路由切换瞬态可能继续超时，这里进入同会话重试或最终关闭。
         }
-        if (isGenericDevtoolsRelaunchError(error) && attempt < maxAttempts) {
+        if (isTransientDevtoolsPageMetadataError(error) && attempt < maxAttempts) {
           const retryDelayMs = options.retryDelayMs ?? DEFAULT_WARMUP_RELAUNCH_RETRY_DELAY
           process.stdout.write(`[warn] [runtime:relaunch-retry] route=${route} attempt=${attempt + 1}/${maxAttempts} delay=${retryDelayMs}ms reason=${error instanceof Error ? error.message : String(error)}\n`)
           await sleep(retryDelayMs)
