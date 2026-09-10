@@ -67,9 +67,6 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate managed template support files
-        run: cd templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template && pnpm exec wv prepare
-
       - name: Run repo release CI
         env:
           GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
