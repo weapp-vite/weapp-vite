@@ -5,13 +5,13 @@
   "srcMiniprogramRoot": "dist/",
   "setting": {
     "minifyWXML": true,
-    "es6": true,
+    "es6": false,
     "postcss": true,
     "compileWorklet": false,
     "minified": true,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
-    "enhance": true,
+    "enhance": false,
     "packNpmManually": true,
     "packNpmRelationList": [
       {

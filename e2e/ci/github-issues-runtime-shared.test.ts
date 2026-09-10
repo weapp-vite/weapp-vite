@@ -14,7 +14,7 @@ import {
 } from '../ide/github-issues.runtime.shared'
 
 describe('github issues runtime shared relaunch helper', () => {
-  it('waits for the first rendered page instead of relaunching during DevTools cold compilation', () => {
+  it('keeps compilation with Vite and waits for cold startup before same-session recovery', () => {
     expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
       projectPath: 'project-root',
       retryWarmupTimeout: true,
@@ -23,13 +23,14 @@ describe('github issues runtime shared relaunch helper', () => {
     })
   })
 
-  it('pins the WeChat simulator type before DevTools creates the project builder', async () => {
+  it('pins the simulator and disables duplicate JS compilation before DevTools creates the builder', async () => {
     const projectConfig = await fs.readJSON(path.resolve(
       import.meta.dirname,
       '../../e2e-apps/github-issues/project.config.json',
     )) as Record<string, unknown>
 
     expect(projectConfig.simulatorType).toBe('wechat')
+    expect(projectConfig.setting).toEqual(expect.objectContaining({ es6: false, enhance: false }))
   })
 
   it('removes build-only inputs before DevTools indexes the isolated project', async () => {
