@@ -55,7 +55,7 @@ export function ensureIssue911Guard() {
     }
     if (mode === 'redirect') {
       recordIssue911Trace(mode, 'redirect')
-      return `${ISSUE_911_ROUTE}?mode=redirect-target`
+      return '/pages/issue-911-result/index'
     }
   })
 }

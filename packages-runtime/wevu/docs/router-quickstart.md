@@ -45,6 +45,8 @@ createRouter({
 
 `initialNavigationTimeout` 只控制 blocking 模式，默认 `10_000ms`，超时后放行页面并输出诊断 marker。数据预加载建议由页面显示 loading 或 skeleton，不要用 blocking 代替。
 
+blocking 首屏守卫返回重定向目标时，会解析命名路由与 query，并通过宿主 `redirectTo` 进入普通页面，或通过 `switchTab` 进入 tabBar 页面；原始页面不会挂载。该行为只作用于 blocking 首屏导航，eager 模式仍先挂载原页面。
+
 如果你希望沿用 Vue Router 的树状写法，也可以声明 `children`（会在内部展平为可匹配记录）：
 
 ```ts

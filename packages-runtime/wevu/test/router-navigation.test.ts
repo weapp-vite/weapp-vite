@@ -173,6 +173,49 @@ describe('router navigation helpers', () => {
     expect(router.currentRoute.path).toBe('pages/login/index')
   })
 
+  it.each([
+    { target: { name: 'login', query: { next: 'home' } }, tabBar: false, url: '/pages/login/index?next=home' },
+    { target: '/pages/login/index?next=home', tabBar: false, url: '/pages/login/index?next=home' },
+    { target: { name: 'login' }, tabBar: true, url: '/pages/login/index' },
+  ])('executes blocking initial redirects through the host router: $url tabBar=$tabBar', async ({ target, tabBar, url }) => {
+    const pages = [{ route: 'pages/home/index', options: {} }]
+    const redirectTo = vi.fn((options: any) => options.success?.({}))
+    const switchTab = vi.fn((options: any) => options.success?.({}))
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab,
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      initialNavigationMode: 'blocking',
+      tabBarEntries: tabBar ? ['/pages/login/index'] : [],
+      routes: [
+        { name: 'home', path: '/pages/home/index' },
+        { name: 'login', path: '/pages/login/index' },
+      ],
+    })
+    router.beforeEach(to => to?.name === 'home' ? target : undefined)
+
+    const runner = getInitialNavigationRunner()!
+    const result = await runner(pages[0], pages[0].options)
+
+    expect(result).toEqual(expect.objectContaining({ __wevuNavigationFailure: true }))
+    expect(tabBar ? switchTab : redirectTo).toHaveBeenCalledWith(expect.objectContaining({ url }))
+    expect(tabBar ? redirectTo : switchTab).not.toHaveBeenCalled()
+    expect(router.currentRoute.path).toBe('pages/login/index')
+  })
+
   it('rejects initial navigation failures after an aborting guard completes', async () => {
     const pages = [{ route: 'pages/home/index', options: {} }]
     const instance = {

@@ -794,50 +794,50 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.default`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:82`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `callMethodWithOptions(_runE2E)`, `check(mounted)`
 
-### e2e app: github-issues / issue #911 > waits for an async guard before resolving a redirect and mounting the initial page
+### e2e app: github-issues / issue #911 > executes an async blocking redirect without mounting the initial page
 
 - Source: `e2e/ide/github-issues.runtime.issue911.test.ts:99`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.redirect`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:100`
 - Routes: `/pages/issue-911/index?mode=redirect`
-- Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=redirect)`, `check(mounted)`
+- Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=redirect)`, `check(result)`
 
 ### e2e app: github-issues / issue #911 > aborts after an async guard without mounting the target page
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:121`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:114`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.abort`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:122`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.abort`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:115`
 - Routes: `/pages/issue-911/index?mode=abort`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=abort)`, `check(blocked)`, `check(result)`
 
 ### e2e app: github-issues / issue #911 > does not run the issue guard for a subsequent non-target navigation
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:138`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:131`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.subsequent`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:139`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.subsequent`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:132`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `check(mounted)`, `check(other)`
 
 ### e2e app: github-issues / issue #911 > mounts after the default timeout when an initial guard never settles
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:158`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:151`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.never`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:159`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.never`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:152`
 - Routes: `/pages/issue-911/index?mode=never`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=never)`, `callMethodWithOptions(_runE2E)`, `check(mounted)`
 
 ### e2e app: github-issues / issue #911 > settles a rejected initial guard without leaving an unhandled promise gate
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:173`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:166`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.reject`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:174`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.reject`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:167`
 - Routes: `/pages/issue-911/index?mode=reject`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=reject)`, `check(blocked)`, `check(result)`
 
 ### e2e app: github-issues / issue #911 > cancels a late guard when the page is replaced quickly
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:188`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:181`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.late`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:189`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.late`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:182`
 - Routes: `/pages/issue-911/index?mode=late`, `/pages/issue-550/index`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=late)`, `reLaunch(/pages/issue-550/index)`, `check(replaced)`, `check(settled)`, `check(result)`
 

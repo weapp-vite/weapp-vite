@@ -1931,7 +1931,7 @@
         },
         {
           "source": "e2e/ide/github-issues.runtime.issue911.test.ts:99",
-          "name": "e2e app: github-issues / issue #911 > waits for an async guard before resolving a redirect and mounting the initial page",
+          "name": "e2e app: github-issues / issue #911 > executes an async blocking redirect without mounting the initial page",
           "plans": [
             {
               "registration": "createDomAcceptance",
@@ -1947,19 +1947,19 @@
             "callMethod(resetTrace)",
             "check(baseline)",
             "reLaunch(/pages/issue-911/index?mode=redirect)",
-            "check(mounted)"
+            "check(result)"
           ],
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:121",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:114",
           "name": "e2e app: github-issues / issue #911 > aborts after an async guard without mounting the target page",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.abort",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:122"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:115"
             }
           ],
           "routes": [
@@ -1975,14 +1975,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:138",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:131",
           "name": "e2e app: github-issues / issue #911 > does not run the issue guard for a subsequent non-target navigation",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.subsequent",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:139"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:132"
             }
           ],
           "routes": [],
@@ -1995,14 +1995,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:158",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:151",
           "name": "e2e app: github-issues / issue #911 > mounts after the default timeout when an initial guard never settles",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.never",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:159"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:152"
             }
           ],
           "routes": [
@@ -2018,14 +2018,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:173",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:166",
           "name": "e2e app: github-issues / issue #911 > settles a rejected initial guard without leaving an unhandled promise gate",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.reject",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:174"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:167"
             }
           ],
           "routes": [
@@ -2041,14 +2041,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:188",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:181",
           "name": "e2e app: github-issues / issue #911 > cancels a late guard when the page is replaced quickly",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.late",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:189"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:182"
             }
           ],
           "routes": [
@@ -6075,7 +6075,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue911.test.ts",
-      "sha256": "c69ecf73fe7aae291b860fddc0c5dd238ce2df5ad48ff197ebe3ce837f97e08c"
+      "sha256": "715025cde76ca7d2b980fbc6d75db6f3b13890c299ea003bc038281e5e2268af"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue930.test.ts",
@@ -6103,7 +6103,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "cd824055aa93c62877f6a566e117fc42a66369bdfe8e04c9576885ba62289e72"
+      "sha256": "875e1d1bac0f778196519ab2f26b3b92af375ae907ea8e017fd8d9a29a4cf7f6"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -6151,7 +6151,7 @@
     },
     {
       "file": "e2e/ide/githubIssuesDom/guards.ts",
-      "sha256": "f9d19efa77416ffb01ff06164913e958cfc16762cb14e137e14824e1ef2b0a21"
+      "sha256": "2dd066bb4c94f490fbc04faa894b84fea34392904dcbf1ab6e6db006cb6fb4ba"
     },
     {
       "file": "e2e/ide/githubIssuesDom/hostAndIdentity.ts",
@@ -6655,7 +6655,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "4e4d95d247f7770e0bbdf3d02d9693bbcd48023fc7cdb433a4561c8df03dfe82"
+      "sha256": "292f22e24477a1f85f9bc18307f3b08d9c112920c25a7f78600a6314967ca14e"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
