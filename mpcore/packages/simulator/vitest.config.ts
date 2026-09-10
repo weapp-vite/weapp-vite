@@ -18,8 +18,12 @@ export default defineProject({
       },
     ],
     globals: true,
+    fileParallelism: false,
+    maxWorkers: 1,
+    minWorkers: 1,
     testTimeout: 60_000,
     coverage: createProjectCoverage('mpcore/packages/simulator', {
+      enabled: false,
       clean: false,
       reporter: ['text', 'lcov'],
       exclude: [
