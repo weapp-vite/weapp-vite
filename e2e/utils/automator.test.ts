@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
-import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, resolveWarmupCurrentPageReadyTimeout, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
+import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
 import { isResidualDevProcessCommand } from './dev-process-cleanup'
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'apps/demo' }))
@@ -241,11 +241,6 @@ describe('automator', () => {
     expect(resolveLaunchRetryCount(2.8)).toBe(2)
     expect(resolveLaunchRetryCount(Number.POSITIVE_INFINITY)).toBe(resolveLaunchRetryCount(undefined))
     expect(resolveLaunchRetryCount(99)).toBe(resolveLaunchRetryCount(undefined))
-  })
-
-  it('uses the full readiness budget when cold startup cannot relaunch', () => {
-    expect(resolveWarmupCurrentPageReadyTimeout(false, 30_000)).toBe(30_000)
-    expect(resolveWarmupCurrentPageReadyTimeout(true, 30_000)).toBe(300)
   })
 
   it('keeps an exhausted polling budget from closing an otherwise responsive warmup session', () => {

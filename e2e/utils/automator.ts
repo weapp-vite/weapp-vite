@@ -182,16 +182,6 @@ function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
   return parsed
 }
 
-export function resolveWarmupCurrentPageReadyTimeout(
-  allowRelaunch: boolean | undefined,
-  relaunchReadyTimeout: number,
-) {
-  if (allowRelaunch === false) {
-    return relaunchReadyTimeout
-  }
-  return Math.min(QUICK_CURRENT_ROUTE_READY_TIMEOUT, relaunchReadyTimeout)
-}
-
 function resolveNonNegativeInt(value: number | undefined, fallback: number) {
   if (value == null || !Number.isFinite(value)) {
     return fallback
@@ -2141,10 +2131,8 @@ async function warmupMiniProgramRouteImpl(
   options: { onStartupProtocolError?: (error: unknown) => void, signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
 ) {
   options.signal?.throwIfAborted()
-  const currentPageReadyTimeout = resolveWarmupCurrentPageReadyTimeout(
-    options.allowRelaunch,
-    RELAUNCH_READY_TIMEOUT,
-  )
+  // 冷启动不能复用普通切页的 300ms 快速探测；先等待首屏，再尝试同会话导航恢复。
+  const currentPageReadyTimeout = RELAUNCH_READY_TIMEOUT
   if (options.allowRelaunch === false && options.allowAnyPage) {
     const bootedPage = await waitForAnyCurrentPageReady(miniProgram, currentPageReadyTimeout, {
       onStartupProtocolError: options.onStartupProtocolError,

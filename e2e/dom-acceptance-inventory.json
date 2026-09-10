@@ -6103,7 +6103,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "e4eb5b7ddffc8c53dc4daf478cf2a9197e8b1d8e6a00464fb5d67bf6318b8a15"
+      "sha256": "875e1d1bac0f778196519ab2f26b3b92af375ae907ea8e017fd8d9a29a4cf7f6"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -6655,7 +6655,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "8966a2f55b85e055ad591c1c56223cb1923e3c8f8ab81f5daf28c748886711ec"
+      "sha256": "292f22e24477a1f85f9bc18307f3b08d9c112920c25a7f78600a6314967ca14e"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",

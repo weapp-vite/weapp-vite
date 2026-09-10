@@ -19,7 +19,7 @@ describe('github issues runtime shared relaunch helper', () => {
       projectPath: 'project-root',
       retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
-      warmupAllowRelaunch: false,
+      warmupAllowRelaunch: true,
     })
   })
 
