@@ -31,6 +31,11 @@ describe('github issues runtime shared relaunch helper', () => {
 
     expect(projectConfig.simulatorType).toBe('wechat')
     expect(projectConfig.setting).toEqual(expect.objectContaining({ es6: false, enhance: false }))
+    const privateConfig = await fs.readJSON(path.resolve(
+      import.meta.dirname,
+      '../../e2e-apps/github-issues/project.private.config.json',
+    )) as Record<string, unknown>
+    expect(privateConfig.libVersion).toBe(projectConfig.libVersion)
   })
 
   it('removes build-only inputs before DevTools indexes the isolated project', async () => {

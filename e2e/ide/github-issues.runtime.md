@@ -21,6 +21,6 @@ macOS 长时间运行时使用 `caffeinate -dimsu --` 包装命令。启动前�
 
 最小隔离实验不依赖 wevu：使用真实 AppID 创建一个原生项目，`App({})`、`Page({ data: { message: 'native ready' } })` 和 `<view id="ready">{{message}}</view>`，将该页面加入 `app.json`，通过同一 automator 启动。上述环境中，开启 `es6/enhance` 时复现了相同启动失败；两项均关闭时，真实当前页与 `#ready` 文本验证通过。应结合当次 IDE 原始日志确认，不能把所有同名错误都归因于这一原因。
 
-`github-issues` 的 JS 由 Vite 编译，fixture 的 `project.config.json` 在打开 IDE 前固定 `es6: false`、`enhance: false`，避免再由宿主执行这两项转换。此设置仅用于该 Vite 产物 fixture，不应套用到仍依赖 IDE 编译的原生源码项目。
+`github-issues` 的 JS 由 Vite 编译，fixture 的 `project.config.json` 在打开 IDE 前固定 `es6: false`、`enhance: false`，避免再由宿主执行这两项转换。公共和私有配置使用相同的基础库 `3.17.3`；仍须核对报告中的实际版本，不能以配置值代替 runtime 证据。此设置仅用于该 Vite 产物 fixture，不应套用到仍依赖 IDE 编译的原生源码项目。
 
 warmup 使用完整冷启动等待预算，随后才尝试同会话导航恢复；每次探测重新获取当前页。仅有路由、页面 data 或旧 page handle 均不足以通过，必须拿到真实根节点。恢复预算耗尽时保留原始错误、IDE 日志和失败报告，不能通过过滤错误、降低断言或重复运行后只保留成功记录来完成验收。
