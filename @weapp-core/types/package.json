@@ -12,6 +12,14 @@
     "./tt": { "types": "./dist/ttIntrinsicElements.d.mts", "import": "./dist/ttIntrinsicElements.mjs" },
     "./miniprogram": { "types": "./dist/miniprogramIntrinsicElements.d.mts", "import": "./dist/miniprogramIntrinsicElements.mjs" }
   },
+  "typesVersions": {
+    "*": {
+      "weapp": ["dist/weappIntrinsicElements.d.mts"],
+      "alipay": ["dist/alipayIntrinsicElements.d.mts"],
+      "tt": ["dist/ttIntrinsicElements.d.mts"],
+      "miniprogram": ["dist/miniprogramIntrinsicElements.d.mts"]
+    }
+  },
   "files": ["dist"],
   "scripts": { "build": "tsdown", "typecheck": "tsc --noEmit", "test:types": "pnpm build && tsd --typings dist/index.d.mts --files \"test-d/**/*.test-d.ts\"", "lint": "eslint .", "lint:fix": "eslint . --fix" },
   "devDependencies": { "tsd": "^0.33.0", "tsdown": "0.23.0", "typescript": "catalog:" }
