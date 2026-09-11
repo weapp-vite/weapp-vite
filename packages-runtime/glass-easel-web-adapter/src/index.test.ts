@@ -63,4 +63,14 @@ describe('glass-easel web adapter PoC', () => {
     adapter.mountComponent('lifecycle-card', document.createElement('div'))
     expect(attached).toHaveBeenCalledOnce()
   })
+
+  it('runs detached lifecycle exactly once during unmount', () => {
+    const detached = vi.fn()
+    const adapter = createGlassEaselWebAdapter()
+    adapter.registerComponent({ name: 'detach-card', template: '<div />', lifetimes: { detached } })
+    const instance = adapter.mountComponent('detach-card', document.createElement('div'))
+    adapter.unmountComponent(instance)
+    adapter.unmountComponent(instance)
+    expect(detached).toHaveBeenCalledOnce()
+  })
 })
