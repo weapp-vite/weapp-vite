@@ -11,8 +11,12 @@ export function selectWorkspaceHmrProjects<T extends { id: string }>(projects: T
 }
 
 /** 严格验收必须执行至少一个项目，空清单不能被当作全绿。 */
-export function assertWorkspaceHmrSelection(projectCount: number, failOnError: boolean) {
-  if (failOnError && projectCount === 0) {
+export function assertWorkspaceHmrSelection(
+  projectCount: number,
+  failOnError: boolean,
+  options?: { allowEmpty?: boolean },
+) {
+  if (failOnError && projectCount === 0 && !options?.allowEmpty) {
     throw new Error('No workspace HMR projects selected; strict acceptance requires a non-empty run.')
   }
 }

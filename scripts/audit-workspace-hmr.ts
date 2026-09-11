@@ -296,7 +296,9 @@ async function main() {
   if (!projects.length) {
     process.stdout.write('[workspace-hmr] no projects selected; this report contains no acceptance results.\n')
   }
-  assertWorkspaceHmrSelection(projects.length, failOnError)
+  assertWorkspaceHmrSelection(projects.length, failOnError, {
+    allowEmpty: runMode === 'changed-project' && !projectFilter,
+  })
   if (failOnError && (failedProjects.length || thresholdEvaluation.issues.length)) {
     process.exitCode = 1
   }
