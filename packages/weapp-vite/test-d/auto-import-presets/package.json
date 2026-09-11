@@ -1,0 +1,16 @@
+{
+  "name": "auto-import-presets-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "baseUrl": "../..",
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "rootDir": "../..",
+      "target": "ES2023",
+      "strict": true,
+      "types": ["node"]
+    }
+  }
+}
