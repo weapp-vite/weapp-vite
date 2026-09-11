@@ -93,7 +93,19 @@
       "types": "./client.d.ts"
     },
     "./package.json": "./package.json",
-    "./*": "./*"
+    "./*": "./*",
+    "./auto-import-presets": {
+      "types": "./dist/auto-import-presets.d.mts",
+      "import": "./dist/auto-import-presets.mjs"
+    },
+    "./auto-import-presets/wevu": {
+      "types": "./dist/auto-import-presets/wevu.d.mts",
+      "import": "./dist/auto-import-presets/wevu.mjs"
+    },
+    "./auto-import-presets/wevu-router": {
+      "types": "./dist/auto-import-presets/wevu-router.d.mts",
+      "import": "./dist/auto-import-presets/wevu-router.mjs"
+    }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",

@@ -172,3 +172,20 @@ wv prepare
 - **为什么没自动注册？** 先检查组件 `json` 是否包含 `"component": true`，再确认路径是否命中了 `globs`。修改 `globs` 或新增组件后记得重启 `pnpm dev` 以刷新缓存。
 - **Resolver 报错怎么办？** 请确认对应 UI 库的 npm 包已安装，并与 resolver 支持的版本匹配。只想扫描本地组件时，可以临时移除 `resolvers`。
 - **如何禁用部分组件？** 结合 `include` / `exclude` 或自定义 resolver 即可实现选择性注册，详见 [自动导入组件配置](/config/auto-import-components.md#weapp-autoimportcomponents)。
+
+## Wevu 自动导入预设
+
+`weapp-vite` 提供了可直接用于 `unplugin-auto-import` 的 `wevu` 与 `wevu-router` 预设：
+
+```ts
+import AutoImport from 'unplugin-auto-import/vite'
+import wevu from 'weapp-vite/auto-import-presets/wevu'
+import wevuRouter from 'weapp-vite/auto-import-presets/wevu-router'
+
+AutoImport({
+  dts: 'src/auto-imports.d.ts',
+  imports: [wevu, wevuRouter],
+})
+```
+
+`wevu` 覆盖应用 API、宏、响应式 API、生命周期和宿主能力；路由 API 通过独立的 `wevu-router` 预设从 `wevu/router` 导入。
