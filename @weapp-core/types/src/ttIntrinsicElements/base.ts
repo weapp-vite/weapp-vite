@@ -1,6 +1,6 @@
 // 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.tt.json。
 
-export type TtIntrinsicEventHandler<TReturn = unknown> = { bivarianceHack: (...args: unknown[]) => TReturn }['bivarianceHack']
+export type TtIntrinsicEventHandler<TReturn = unknown> = { bivarianceHack: (...args: any[]) => TReturn }['bivarianceHack']
 export interface TtIntrinsicElementBaseAttributes {
   id?: string | number
   class?: string | Record<string, unknown> | false | null | undefined | unknown[]

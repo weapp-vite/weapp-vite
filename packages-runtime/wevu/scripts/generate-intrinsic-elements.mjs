@@ -551,7 +551,7 @@ function renderCatalog(catalog, platform) {
   const baseLines = [
     `${GENERATED_FILE_HEADER} 来源：${catalogNames.join('、')}。`,
     '',
-    `export type ${platform.typePrefix}IntrinsicEventHandler<TReturn = unknown> = { bivarianceHack: (...args: unknown[]) => TReturn }['bivarianceHack']`,
+    `export type ${platform.typePrefix}IntrinsicEventHandler<TReturn = unknown> = { bivarianceHack: (...args: any[]) => TReturn }['bivarianceHack']`,
     `export interface ${baseTypeName} {`,
     '  id?: string | number',
     '  class?: string | Record<string, unknown> | false | null | undefined | unknown[]',
