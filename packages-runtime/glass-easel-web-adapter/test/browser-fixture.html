@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { createGlassEaselWebAdapter } from '../src/index.ts'
+      const adapter = createGlassEaselWebAdapter()
+      adapter.registerComponent({ name: 'browser-card', template: '<div>{{count}}</div>' })
+      const instance = adapter.mountComponent('browser-card', document.querySelector('#app'), { count: 1 })
+      adapter.updateComponent(instance, { count: 2 })
+      document.body.dataset.snapshot = JSON.stringify(adapter.getSnapshot(instance))
+      document.body.dataset.ready = 'true'
+    </script>
+  </body>
+</html>
