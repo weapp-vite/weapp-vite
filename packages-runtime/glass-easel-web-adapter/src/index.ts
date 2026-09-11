@@ -16,13 +16,20 @@ export interface GlassEaselComponentDefinition {
 }
 
 export interface GlassEaselWebAdapterOptions { host?: GlassEaselWebHost, strict?: boolean }
+export interface GlassEaselWebSnapshot {
+  name: string
+  props: Record<string, unknown>
+  html: string
+  lifecycle: string[]
+  disposed: boolean
+}
 export interface GlassEaselWebAdapter {
   registerComponent: (definition: GlassEaselComponentDefinition) => void
   mountComponent: (name: string, container: Element, props?: Record<string, unknown>) => GlassEaselWebInstance
   updateComponent: (instance: unknown, props: Record<string, unknown>) => void
   triggerEvent: (instance: unknown, name: string, detail?: unknown) => void
   unmountComponent: (instance: unknown) => void
-  getSnapshot: (instance: unknown) => unknown
+  getSnapshot: (instance: unknown) => GlassEaselWebSnapshot
   dispose: () => void
 }
 
@@ -42,7 +49,7 @@ export function createGlassEaselComponentDefinition(definition: GlassEaselCompon
   return space.define().definition(params as any).registerComponent()
 }
 
-interface GlassEaselWebInstance {
+export interface GlassEaselWebInstance {
   root: HTMLElement
   definition: GlassEaselComponentDefinition
   props: Record<string, unknown>
@@ -142,7 +149,7 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       instance.root?.remove()
       instance.disposed = true
     },
-    getSnapshot(value) {
+    getSnapshot(value): GlassEaselWebSnapshot {
       const instance = value as GlassEaselWebInstance
       return { name: instance.definition.name, props: { ...instance.props }, html: instance.root.innerHTML, lifecycle: [...instance.lifecycle], disposed: instance.disposed }
     },

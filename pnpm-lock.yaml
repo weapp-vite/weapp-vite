@@ -2361,6 +2361,9 @@ importers:
         specifier: 1.2.0
         version: 1.2.0
     devDependencies:
+      tsd:
+        specifier: 0.33.0
+        version: 0.33.0
       tsdown:
         specifier: 0.23.0
         version: 0.23.0(@volar/typescript@2.4.28(typescript@6.0.3))(tsx@4.23.13)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.11(typescript@6.0.3))

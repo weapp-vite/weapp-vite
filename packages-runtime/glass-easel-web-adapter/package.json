@@ -20,7 +20,8 @@
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:types": "pnpm build && tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts"
   },
   "peerDependencies": {
     "glass-easel": "^1.2.0",
@@ -30,6 +31,7 @@
     "glass-easel-template-compiler": "1.2.0"
   },
   "devDependencies": {
+    "tsd": "0.33.0",
     "tsdown": "0.23.0",
     "typescript": "catalog:",
     "vitest": "~5.0.0"
