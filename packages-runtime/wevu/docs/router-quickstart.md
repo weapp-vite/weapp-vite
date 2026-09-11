@@ -32,9 +32,7 @@ createRouter({
 const router = useRouter()
 ```
 
-推荐在 `app.vue` 的 `<script setup>` 同步阶段调用一次 `createRouter()`。App 实例没有页面级 `this.router` 时，会回退到宿主全局路由方法（`wx` / `my` / `tt`）。不要放到 `onLaunch` 回调里：那时 setup 上下文已经结束。
-
-未传入 `tabBarEntries` 时，会读取宿主 `__wxConfig.tabBar.list`。`push` / `replace` 到这些路径会走 `switchTab`，避免 `redirectTo:fail can not redirectTo a tabbar page`。显式传入的 `tabBarEntries` 仍优先。
+在 `app.vue` 的 `<script setup>` 里调用一次 `createRouter()`，不要放进 `onLaunch`。App 没有页面级 `this.router` 时会用 `wx` / `my` / `tt`。未传 `tabBarEntries` 时读取宿主 tabBar，这些路径走 `switchTab`。
 
 ### 首屏导航模式
 

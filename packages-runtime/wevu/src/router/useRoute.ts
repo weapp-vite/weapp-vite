@@ -1,6 +1,6 @@
+import type { MiniProgramPageLike } from '../routerInternal/types'
 import type { MiniProgramPageLifetime } from '../runtime/types'
 import type { SetupContextRouter } from '../runtime/types/props'
-import type { MiniProgramPageLike } from '../routerInternal/types'
 import type { RouteStateSyncPayload } from './routeSync'
 import type { LocationQueryRaw, RouteLocationNormalizedLoaded } from './types'
 import { WEVU_NATIVE_INSTANCE_KEY } from '@weapp-core/constants'
