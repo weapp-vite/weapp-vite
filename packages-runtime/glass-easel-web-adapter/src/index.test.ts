@@ -39,4 +39,9 @@ describe('glass-easel web adapter PoC', () => {
     expect(container.textContent).toContain('c')
     expect(container.textContent).not.toContain('a')
   })
+
+  it('compiles slot templates through the official compiler', () => {
+    const definition = createGlassEaselComponentDefinition({ name: 'slot-card', template: '<div><slot /></div>' })
+    expect(definition).toBeDefined()
+  })
 })

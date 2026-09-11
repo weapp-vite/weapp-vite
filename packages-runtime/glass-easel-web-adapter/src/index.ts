@@ -49,6 +49,7 @@ interface GlassEaselWebInstance {
   disposed: boolean
   native?: any
   backendContext?: any
+  lifecycle: string[]
 }
 
 function render(template: string, props: Record<string, unknown>, host: GlassEaselWebHost): HTMLElement {
@@ -98,7 +99,10 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
         root = render(definition.template, props, options.host ?? {})
         container.append(root)
       }
-      const instance: GlassEaselWebInstance = { root, definition, props: { ...props }, disposed: false, native, backendContext }
+      const instance: GlassEaselWebInstance = { root, definition, props: { ...props }, disposed: false, native, backendContext, lifecycle: [] }
+      for (const name of ['created', 'attached', 'ready', 'detached']) {
+        instance.native?.addLifetimeListener?.(name, () => instance.lifecycle.push(name))
+      }
       instances.add(instance)
       return instance
     },
@@ -132,12 +136,15 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
         return
       }
       instance.native?.triggerLifetime?.('detached')
+      if (!instance.native) {
+        instance.lifecycle.push('detached')
+      }
       instance.root?.remove()
       instance.disposed = true
     },
     getSnapshot(value) {
       const instance = value as GlassEaselWebInstance
-      return { name: instance.definition.name, props: { ...instance.props }, html: instance.root.innerHTML, disposed: instance.disposed }
+      return { name: instance.definition.name, props: { ...instance.props }, html: instance.root.innerHTML, lifecycle: [...instance.lifecycle], disposed: instance.disposed }
     },
     dispose() {
       for (const instance of [...instances]) {
