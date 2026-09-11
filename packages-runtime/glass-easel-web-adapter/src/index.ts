@@ -136,6 +136,7 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       if (instance.native) {
         instance.native.triggerEvent(name, detail)
       }
+      options.host?.dispatchEvent?.(new CustomEvent(name, { detail }), instance)
     },
     unmountComponent(value) {
       const instance = value as GlassEaselWebInstance

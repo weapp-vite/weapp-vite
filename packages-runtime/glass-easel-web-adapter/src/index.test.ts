@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createGlassEaselComponentDefinition, createGlassEaselWebAdapter, getGlassEaselRuntimeInfo } from './index'
 
 describe('glass-easel web adapter PoC', () => {
@@ -43,5 +43,16 @@ describe('glass-easel web adapter PoC', () => {
   it('compiles slot templates through the official compiler', () => {
     const definition = createGlassEaselComponentDefinition({ name: 'slot-card', template: '<div><slot /></div>' })
     expect(definition).toBeDefined()
+  })
+
+  it('bridges triggered events to the host', () => {
+    const dispatchEvent = vi.fn()
+    const adapter = createGlassEaselWebAdapter({ host: { dispatchEvent } })
+    adapter.registerComponent({ name: 'event-card', template: '<div />' })
+    const instance = adapter.mountComponent('event-card', document.createElement('div'))
+    adapter.triggerEvent(instance, 'change', { value: 3 })
+    expect(dispatchEvent).toHaveBeenCalledOnce()
+    expect(dispatchEvent.mock.calls[0][0].type).toBe('change')
+    expect(dispatchEvent.mock.calls[0][0].detail).toEqual({ value: 3 })
   })
 })
