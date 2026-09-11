@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createGlassEaselWebAdapter } from './index'
+import { createGlassEaselComponentDefinition, createGlassEaselWebAdapter, getGlassEaselRuntimeInfo } from './index'
 
 describe('glass-easel web adapter PoC', () => {
+  it('exposes the official glass-easel runtime and compiler probe', () => {
+    expect(getGlassEaselRuntimeInfo()).toMatchObject({ hasTemplateCompiler: true })
+    expect(createGlassEaselComponentDefinition({ name: 'native-card', template: '<div>{{title}}</div>' })).toBeDefined()
+  })
+
   it('mounts interpolated component and reports lifecycle snapshot', () => {
     const adapter = createGlassEaselWebAdapter()
     const ready = vi.fn()
