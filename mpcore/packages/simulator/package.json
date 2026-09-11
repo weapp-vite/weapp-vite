@@ -5,6 +5,7 @@
   "description": "Headless mini-program runtime and testing kernel for the weapp-vite ecosystem",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -14,11 +15,15 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
+    "wechat",
     "mini-program",
+    "miniprogram",
     "runtime",
     "headless",
-    "testing"
+    "testing",
+    "vite"
   ],
   "sideEffects": false,
   "exports": {

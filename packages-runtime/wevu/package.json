@@ -15,15 +15,18 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
-    "mini-program",
     "wechat",
+    "mini-program",
+    "miniprogram",
     "vue3",
     "runtime",
     "reactivity",
     "setData",
     "pinia",
-    "state-management"
+    "state-management",
+    "vue"
   ],
   "sideEffects": [
     "./dist/api/vitest/setup.mjs",

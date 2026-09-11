@@ -15,12 +15,17 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "ast",
     "babel",
     "oxc",
-    "weapp-vite",
     "compiler",
-    "analysis"
+    "analysis",
+    "vite"
   ],
   "sideEffects": false,
   "exports": {

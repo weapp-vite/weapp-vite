@@ -5,7 +5,7 @@
   "description": "完全兼容微信 miniprogram-automator 的现代化替代实现",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
-  "homepage": "https://github.com/weapp-vite/weapp-vite",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -15,12 +15,15 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
     "wechat",
+    "mini-program",
     "miniprogram",
     "automator",
     "devtools",
-    "headless"
+    "headless",
+    "vite"
   ],
   "sideEffects": false,
   "exports": {

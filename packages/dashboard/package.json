@@ -5,6 +5,7 @@
   "description": "Optional analyze dashboard for weapp-vite",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -15,8 +16,13 @@
   },
   "keywords": [
     "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "analyze",
-    "dashboard"
+    "dashboard",
+    "vite"
   ],
   "weappViteDashboard": {
     "devRoot": ".",

@@ -15,13 +15,16 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "vite",
     "ts",
     "wxml",
     "wxss",
     "mp",
-    "miniprogram",
     "scss"
   ],
   "exports": {

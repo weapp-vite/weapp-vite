@@ -5,6 +5,7 @@
   "description": "Lightweight test utilities for Wevu Composition API logic",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -14,10 +15,16 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "wevu",
     "testing",
     "composition-api",
-    "vitest"
+    "vitest",
+    "api"
   ],
   "sideEffects": false,
   "exports": {

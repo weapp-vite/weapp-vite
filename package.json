@@ -228,7 +228,8 @@
     "docs:wechat:mirror": "node --import tsx ./scripts/wechat-docs-mirror/index.ts",
     "auto-import:components": "tsx scripts/update-auto-import-components.ts",
     "vite:patch": "tsx scripts/vite-patch.ts",
-    "commitlint": "commitlint --edit"
+    "commitlint": "commitlint --edit",
+    "check:npm-package-metadata": "node scripts/check-npm-package-metadata.mjs"
   },
   "devDependencies": {
     "@babel/core": "catalog:",

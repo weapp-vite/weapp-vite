@@ -5,6 +5,7 @@
   "description": "Shared WeChat DevTools runtime automation helpers for weapp-vite packages",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,6 +14,16 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite",
+    "runtime",
+    "devtools"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -44,7 +55,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "@weapp-vite/miniprogram-automator": "workspace:*"

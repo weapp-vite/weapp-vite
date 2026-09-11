@@ -2,9 +2,10 @@
   "name": "@weapp-vite/mcp",
   "type": "module",
   "version": "1.5.2",
-  "description": "mcp",
+  "description": "@weapp-vite/mcp tools and runtime components for modern WeChat and multi-platform mini-program development.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,7 +14,15 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite",
+    "runtime"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -44,7 +53,10 @@
     "lint:fix": "eslint . --fix",
     "start": "tsx src/index.ts"
   },
-  "publishConfig": {},
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "dependencies": {
     "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",

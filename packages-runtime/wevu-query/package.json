@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "description": "面向 Wevu 小程序的查询缓存、变更与分页状态管理",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,8 +14,12 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
-    "wevu",
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
     "miniprogram",
+    "wevu",
     "query",
     "cache",
     "mutation"

@@ -4,6 +4,7 @@
   "version": "0.2.5",
   "description": "React 19 runtime for weapp-vite mini programs",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -12,6 +13,16 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite",
+    "runtime",
+    "react"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -51,7 +62,8 @@
     "lint:fix": "eslint . --fix"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "peerDependencies": {
     "miniprogram-api-typings": "^5.0.0",

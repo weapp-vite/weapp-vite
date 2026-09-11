@@ -2,9 +2,10 @@
   "name": "vite-plugin-performance",
   "type": "module",
   "version": "2.0.1",
-  "description": "vite-plugin-performance",
+  "description": "vite-plugin-performance tools and runtime components for modern WeChat and multi-platform mini-program development.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,7 +14,15 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite",
+    "runtime"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -41,5 +50,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "publishConfig": {}
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }

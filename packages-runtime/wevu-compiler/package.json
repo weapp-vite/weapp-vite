@@ -15,9 +15,11 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
-    "mini-program",
     "wechat",
+    "mini-program",
+    "miniprogram",
     "wevu",
     "compiler",
     "vue3",
@@ -40,6 +42,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
