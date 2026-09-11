@@ -16,7 +16,7 @@ import {
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { normalizeEmitEventName } from '../../emit'
-import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
+import { getCurrentInstance, getCurrentSetupContext, setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
@@ -217,6 +217,8 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
   // 仅在同步 setup 执行期间暴露 current instance
   const instanceScope = effectScope(true)
+  const previousInstance = getCurrentInstance()
+  const previousSetupContext = getCurrentSetupContext()
   target[WEVU_EFFECT_SCOPE_KEY] = instanceScope
   setCurrentInstance(target)
   setCurrentSetupContext(context)
@@ -250,7 +252,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     }
   }
   finally {
-    setCurrentSetupContext(undefined)
-    setCurrentInstance(undefined)
+    setCurrentSetupContext(previousSetupContext)
+    setCurrentInstance(previousInstance)
   }
 }
