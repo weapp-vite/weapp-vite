@@ -43,6 +43,7 @@ defineAppJson({
   },
   style: 'v2',
   componentFramework: 'glass-easel',
+  glassEaselWebview: true,
   sitemapLocation: 'sitemap.json',
 })
 

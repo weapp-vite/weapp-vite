@@ -369,6 +369,14 @@ export interface HeadlessWxLaunchOptions {
   scene: number
 }
 
+export interface HeadlessWxAppHideOptions {
+  reason: 0 | 1 | 2 | 3
+}
+
+export type HeadlessWxAppHideCallback = (options: HeadlessWxAppHideOptions) => void
+
+export type HeadlessWxAppShowCallback = (options: HeadlessWxLaunchOptions) => void
+
 export interface HeadlessWxMenuButtonBoundingClientRectResult {
   bottom: number
   height: number

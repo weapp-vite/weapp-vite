@@ -320,6 +320,31 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
+  it('emits empty page json while preserving sidecar configuration', async () => {
+    await emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {} as any,
+      filename: '/project/src/pages/home/index.vue',
+      relativeBase: 'pages/home/index',
+      result: { template: '<view />', scopedSlotComponents: [] } as any,
+      isPage: true,
+      configService: { weappViteConfig: {} } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      outputExtensions: {},
+      platformAssetOptions: { platform: 'weapp', templateExtension: 'wxml' },
+    })
+
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/home/index',
+      expect.anything(),
+      expect.objectContaining({ defaultConfig: {}, mergeExistingAsset: true, kind: 'page' }),
+    )
+  })
+
   it('emits compiled component entry assets with default component json config', async () => {
     const result = await emitCompiledEntryBundleAssets({
       bundle: {},
@@ -1648,6 +1673,7 @@ describe('emitSharedVueEntryAssets', () => {
       'pages/index/index',
       { config: '{"component":true}' },
       {
+        defaultConfig: {},
         mergeExistingAsset: true,
         mergeStrategy: 'override',
         defaults: { navigationStyle: 'default' },
@@ -1821,6 +1847,7 @@ describe('emitSharedVueEntryAssets', () => {
       'pages/index/index',
       { config: '{"component":true}' },
       {
+        defaultConfig: {},
         mergeExistingAsset: true,
         mergeStrategy: 'override',
         defaults: { navigationStyle: 'default' },

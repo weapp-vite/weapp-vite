@@ -47,7 +47,7 @@ export interface RouteMeta {
 interface AppLifecycleHooks {
   onLaunch?: (this: AppRuntime, options: AppLaunchOptions) => void
   onShow?: (this: AppRuntime, options: AppLaunchOptions) => void
-  onHide?: (this: AppRuntime) => void
+  onHide?: (this: AppRuntime, options: AppHideOptions) => void
 }
 
 export type AppRuntime = Record<string, unknown> & Partial<AppLifecycleHooks> & {
@@ -60,6 +60,13 @@ export interface AppLaunchOptions {
   query: Record<string, string>
   referrerInfo: Record<string, unknown>
 }
+
+export interface AppHideOptions {
+  reason: 0 | 1 | 2 | 3
+}
+
+export type AppHideCallback = (options: AppHideOptions) => void
+export type AppShowCallback = (options: AppLaunchOptions) => void
 
 export interface RouteOptions extends MiniProgramAsyncOptions<MiniProgramBaseResult> {
   url: string

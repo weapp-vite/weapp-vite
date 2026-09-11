@@ -1,7 +1,7 @@
 {
   "name": "wevu",
   "type": "module",
-  "version": "7.0.4",
+  "version": "7.1.0",
   "description": "Vue 3 风格的小程序运行时，包含响应式、diff+setData 与轻量状态管理",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -15,15 +15,18 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
-    "mini-program",
     "wechat",
+    "mini-program",
+    "miniprogram",
     "vue3",
     "runtime",
     "reactivity",
     "setData",
     "pinia",
-    "state-management"
+    "state-management",
+    "vue"
   ],
   "sideEffects": [
     "./dist/api/vitest/setup.mjs",
@@ -285,6 +288,7 @@
   "dependencies": {
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-core/types": "workspace:*",
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
     "@wevu/web-apis": "workspace:*",

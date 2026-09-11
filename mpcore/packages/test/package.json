@@ -1,10 +1,11 @@
 {
   "name": "@mpcore/test",
   "type": "module",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Testing Library-style utilities for compiled WeChat mini-program artifacts",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -14,9 +15,12 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
-    "mpcore",
+    "weapp-vite",
     "weapp",
+    "wechat",
     "mini-program",
+    "miniprogram",
+    "mpcore",
     "testing",
     "vitest"
   ],

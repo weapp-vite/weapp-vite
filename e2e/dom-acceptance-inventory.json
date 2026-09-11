@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 92,
-    "wechatTaskCount": 89,
+    "taskCount": 93,
+    "wechatTaskCount": 90,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 230,
-    "casesWithPlan": 230,
+    "expandedCaseDeclarations": 233,
+    "casesWithPlan": 233,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -23,14 +23,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/app-lifecycle.test.ts:231",
+          "source": "e2e/ide/app-lifecycle.test.ts:233",
           "name": "app lifecycle compare (e2e) > compares wevu app lifecycle logs against native",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps",
               "checkpoints": "['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: `${variant}:initial`, route: INDEX_ROUTE, action: `冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' ",
-              "source": "e2e/ide/app-lifecycle.test.ts:232"
+              "source": "e2e/ide/app-lifecycle.test.ts:234"
             }
           ],
           "routes": [],
@@ -122,14 +122,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:441",
+          "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:443",
           "name": "app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/app-vue-hmr-alias",
               "checkpoints": "[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa",
-              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:446"
+              "source": "e2e/ide/app-vue-hmr-alias.runtime.test.ts:448"
             }
           ],
           "routes": [
@@ -1931,7 +1931,7 @@
         },
         {
           "source": "e2e/ide/github-issues.runtime.issue911.test.ts:99",
-          "name": "e2e app: github-issues / issue #911 > waits for an async guard before resolving a redirect and mounting the initial page",
+          "name": "e2e app: github-issues / issue #911 > executes an async blocking redirect without mounting the initial page",
           "plans": [
             {
               "registration": "createDomAcceptance",
@@ -1947,19 +1947,19 @@
             "callMethod(resetTrace)",
             "check(baseline)",
             "reLaunch(/pages/issue-911/index?mode=redirect)",
-            "check(mounted)"
+            "check(result)"
           ],
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:121",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:114",
           "name": "e2e app: github-issues / issue #911 > aborts after an async guard without mounting the target page",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.abort",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:122"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:115"
             }
           ],
           "routes": [
@@ -1975,14 +1975,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:138",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:131",
           "name": "e2e app: github-issues / issue #911 > does not run the issue guard for a subsequent non-target navigation",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.subsequent",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:139"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:132"
             }
           ],
           "routes": [],
@@ -1995,14 +1995,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:158",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:151",
           "name": "e2e app: github-issues / issue #911 > mounts after the default timeout when an initial guard never settles",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.never",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:159"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:152"
             }
           ],
           "routes": [
@@ -2018,14 +2018,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:173",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:166",
           "name": "e2e app: github-issues / issue #911 > settles a rejected initial guard without leaving an unhandled promise gate",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.reject",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:174"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:167"
             }
           ],
           "routes": [
@@ -2041,14 +2041,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:188",
+          "source": "e2e/ide/github-issues.runtime.issue911.test.ts:181",
           "name": "e2e app: github-issues / issue #911 > cancels a late guard when the page is replaced quickly",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "GUARD_PLANS.late",
-              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:189"
+              "source": "e2e/ide/github-issues.runtime.issue911.test.ts:182"
             }
           ],
           "routes": [
@@ -2333,14 +2333,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/issue-340-hoist.runtime.test.ts:264",
+          "source": "e2e/ide/issue-340-hoist.runtime.test.ts:265",
           "name": "e2e app: issue-340-hoist runtime > reLaunches both subpackage pages with hoisted shared imports intact",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/issue-340-hoist",
               "checkpoints": "[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ",
-              "source": "e2e/ide/issue-340-hoist.runtime.test.ts:265"
+              "source": "e2e/ide/issue-340-hoist.runtime.test.ts:266"
             }
           ],
           "routes": [
@@ -5007,6 +5007,77 @@
       ]
     },
     {
+      "task": "ide/wevu-query.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/wevu-query.runtime.test.ts:97",
+          "name": "@wevu/query mini-program runtime [${runtimeProvider}] > deduplicates list subscribers, keeps fresh data, then refreshes invalidated hidden data after back",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/wevu-features",
+              "checkpoints": "[ { id: 'list:fresh', route: LIST_ROUTE, action: '首次共享请求完成后检查两个订阅者', nodes: [ { selector: '#query-primary-result', text: 'dedup|revision:0|request:dedup-1|item:item-dedup-r0' }, { selector: '#query-secondary-result', text: 'dedup|revision:0",
+              "source": "e2e/ide/wevu-query.runtime.test.ts:98"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(createListRoute(server.baseUrl, 'dedup'))",
+            "check(list:fresh)",
+            "tap(<missing>)",
+            "check(detail:mutation)",
+            "check(list:refreshed)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-query.runtime.test.ts:154",
+          "name": "@wevu/query mini-program runtime [${runtimeProvider}] > keeps a slow old-key completion from replacing the active key result",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/wevu-features",
+              "checkpoints": "[ { id: 'race:fast', route: LIST_ROUTE, action: '切换到新 key 后检查较快响应', nodes: [ { selector: '#query-primary-result', text: 'fast|revision:1|request:fast-1|item:item-fast-r1' }, { selector: '#query-secondary-result', text: 'fast|revision:1|requ",
+              "source": "e2e/ide/wevu-query.runtime.test.ts:155"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(createListRoute(server.baseUrl, 'race-seed'))",
+            "tap(<missing>)",
+            "check(race:fast)",
+            "check(race:stable)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-query.runtime.test.ts:189",
+          "name": "@wevu/query mini-program runtime [${runtimeProvider}] > defers automatic queries while the app is hidden, then resumes one shared request on app show",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/wevu-features",
+              "checkpoints": "[ { id: 'app:resumed', route: LIST_ROUTE, action: '应用恢复前台后检查一次共享请求的界面结果', nodes: [ { selector: '#query-primary-result', text: 'background|revision:1|request:background-1|item:item-background-r1' }, { selector: '#query-secondary-result', tex",
+              "source": "e2e/ide/wevu-query.runtime.test.ts:190"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(createListRoute(server.baseUrl, 'background'))",
+            "check(app:resumed)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/wevu-router-hmr.runtime.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -5824,7 +5895,7 @@
     },
     {
       "file": "e2e/ide/app-lifecycle.test.ts",
-      "sha256": "92c14591ee868889f5dd160c5f1765b52c354e681a44572515fe0d99bc505762"
+      "sha256": "71a4e31a341179ee4c3c1fef5aff43cca53d8af7778b4d0a621a9db6527b7b10"
     },
     {
       "file": "e2e/ide/app-prelude-native.runtime.test.ts",
@@ -5832,7 +5903,7 @@
     },
     {
       "file": "e2e/ide/app-vue-hmr-alias.runtime.test.ts",
-      "sha256": "1ed8fb3b2f3ab9fe5e1324f0a38e2a3841db9505037e8a5080d9ff07b755181f"
+      "sha256": "7986a712f87c7f1596e1a59cddc50bce735e20d7ce958142a9c5fc6b04273516"
     },
     {
       "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
@@ -6004,7 +6075,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue911.test.ts",
-      "sha256": "c69ecf73fe7aae291b860fddc0c5dd238ce2df5ad48ff197ebe3ce837f97e08c"
+      "sha256": "715025cde76ca7d2b980fbc6d75db6f3b13890c299ea003bc038281e5e2268af"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue930.test.ts",
@@ -6032,7 +6103,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "cd824055aa93c62877f6a566e117fc42a66369bdfe8e04c9576885ba62289e72"
+      "sha256": "875e1d1bac0f778196519ab2f26b3b92af375ae907ea8e017fd8d9a29a4cf7f6"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -6080,7 +6151,7 @@
     },
     {
       "file": "e2e/ide/githubIssuesDom/guards.ts",
-      "sha256": "f9d19efa77416ffb01ff06164913e958cfc16762cb14e137e14824e1ef2b0a21"
+      "sha256": "2dd066bb4c94f490fbc04faa894b84fea34392904dcbf1ab6e6db006cb6fb4ba"
     },
     {
       "file": "e2e/ide/githubIssuesDom/hostAndIdentity.ts",
@@ -6132,7 +6203,7 @@
     },
     {
       "file": "e2e/ide/issue-340-hoist.runtime.test.ts",
-      "sha256": "28619c08fecf99003bb504eed35bef177d600f51ad16ad22fedd49148342e62a"
+      "sha256": "be11ae8a0779e4fdf9a915c4bff48e6cca7ac23bd0c327dbbb1191f1390a54b8"
     },
     {
       "file": "e2e/ide/layout-power-demo-message.runtime.test.ts",
@@ -6396,7 +6467,7 @@
     },
     {
       "file": "e2e/ide/wevu-features.runtime.shared.ts",
-      "sha256": "b4c5b5e695f6a613a1e9dc1d1e5559fd96853fb856565f9c0f39b83a72d7327d"
+      "sha256": "0aa0937c7e6480a2b1c7afa2fcff18b5215319c7b4b80d5c4cfafbfb14e81cd4"
     },
     {
       "file": "e2e/ide/wevu-features.runtime.subpath.test.ts",
@@ -6409,6 +6480,10 @@
     {
       "file": "e2e/ide/wevu-jsx-tsx.runtime.test.ts",
       "sha256": "0bfc440ddf5527a0c103ed7ba54b9657dcb09665edd0ca0431dd32fb6ee4af95"
+    },
+    {
+      "file": "e2e/ide/wevu-query.runtime.test.ts",
+      "sha256": "0fb610f29d87d60bf3eab2c0483df9f53249d7f7f7939e495a01a90028c045a0"
     },
     {
       "file": "e2e/ide/wevu-router-hmr.runtime.test.ts",
@@ -6548,7 +6623,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "fb7f525fd98e503c1a3345fb5409c45a027ea3858a2748747423dd65dbdcf56b"
+      "sha256": "929d56cadbcb4015e287b2081a722aa9b032898ab75c2d472d92637b1937907e"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -6576,11 +6651,11 @@
     },
     {
       "file": "e2e/utils/automator.headless.ts",
-      "sha256": "2b6ec9bd50eabe4e6473ffa29d87d21014f854ddfa64ac63f3ae828135a69f9b"
+      "sha256": "6b778f3ebb2fd30aa17fcb1506b4b9a641f858e4dff9559f3876eb39ed289224"
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "932cd474fb477bd1a9144d21ea9e30ff6ed26d75cfd1b1193d85a58413a46587"
+      "sha256": "292f22e24477a1f85f9bc18307f3b08d9c112920c25a7f78600a6314967ca14e"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -6668,7 +6743,7 @@
     },
     {
       "file": "e2e/utils/ide-devtools-logs.ts",
-      "sha256": "7782a514a0612932d6fa358c3183561bcd20823c87660b2fec889f3ba0cd12ee"
+      "sha256": "659fbf7a3cdf9e1e51fa5af851aedaa5e99fc7a3a645e3bd098c901ed8301381"
     },
     {
       "file": "e2e/utils/ideWarningReport.ts",
@@ -6689,6 +6764,14 @@
     {
       "file": "e2e/utils/ptyProcess.ts",
       "sha256": "113c9942d4f60c151a3c38330f9d8bb6a36500c4aa124f37a30e0f2cb184ccb3"
+    },
+    {
+      "file": "e2e/utils/queryFixtureServer.ts",
+      "sha256": "cb4fd6a57417127704e2640adb18c0e5f7147f182af1cfaf09a33389b7cfd639"
+    },
+    {
+      "file": "e2e/utils/queryRequestTransport.ts",
+      "sha256": "d33fa36e8ea5bf051739fac820692b476aeb64a24c004dd2c27825aa4fe99c41"
     },
     {
       "file": "e2e/utils/requestClientsRealDom.ts",
@@ -6724,7 +6807,7 @@
     },
     {
       "file": "e2e/utils/templateAcceptance/features.ts",
-      "sha256": "b17677dac13ffa9154cdbcdcba5ba124d07e8da282d7b5b1bc5d83af5922e350"
+      "sha256": "3a8de83c81e0eecd7582da269b9ef42a3ba7a3fb899b8ddd20d31b45d5a5b318"
     },
     {
       "file": "e2e/utils/templateAcceptance/format.ts",

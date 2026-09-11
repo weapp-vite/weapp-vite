@@ -1,11 +1,11 @@
 {
   "name": "@weapp-core/constants",
   "type": "module",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Shared runtime-safe constants for weapp-vite and related packages",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
-  "homepage": "https://github.com/weapp-vite/weapp-vite",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -16,10 +16,13 @@
   },
   "keywords": [
     "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
     "miniprogram",
     "constants",
     "runtime",
-    "weapp"
+    "vite"
   ],
   "sideEffects": false,
   "weapp-vite-dev": {
@@ -71,6 +74,7 @@
     },
     "main": "./dist/index.js",
     "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "types": "./dist/index.d.ts",
+    "registry": "https://registry.npmjs.org"
   }
 }

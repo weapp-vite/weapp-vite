@@ -26,6 +26,19 @@ describe('compileJsx template helpers', { concurrent: false }, () => {
     expect(result.template).not.toMatch(/(?:\d_\d|0[bxo]|\d+n\b)/i)
   })
 
+  it('falls back parenthesized member access to runtime bindings', async () => {
+    const { compileJsxTemplate } = await import('./template')
+    const result = compileJsxTemplate(
+      `export default { render() { return <view hidden={(following.data.value ?? []).length === 0}>草稿({(drafts.data.value ?? []).length})</view> } }`,
+      '/project/src/pages/issue-987/index.tsx',
+    )
+
+    expect(result.template).not.toMatch(/\)\.length/)
+    expect(result.template).toMatch(/hidden="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.template).toMatch(/草稿\(\{\{__wv_bind_\d+\}\}\)/)
+    expect(result.classStyleBindings?.filter(binding => binding.type === 'bind')).toHaveLength(2)
+  })
+
   it('normalizes camelCase JSX component props and listeners to kebab-case host names', async () => {
     // 动态导入用于隔离本文件后续对编译分析模块的 mock。
     const { compileJsxTemplate } = await import('./template')

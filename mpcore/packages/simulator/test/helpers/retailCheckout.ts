@@ -1,10 +1,31 @@
 import { RETAIL_CHECKOUT_GOODS } from '../../../../../e2e/utils/templateAcceptance/retailCheckout'
-import { genSettleDetail } from '../../../../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/model/order/orderConfirm'
 
-// 使用真实模板的结算响应，最小化宿主的异步数据、nullable 属性和嵌套组件渲染契约。
-// 完整 Vue 模板仍由 e2e/ide/template-retail-checkout.runtime.test.ts 双 provider 验收。
+/** 将测试商品转换为 simulator 结算 fixture 所需的商品结构。 */
+function toSettlementGoods(goods: (typeof RETAIL_CHECKOUT_GOODS)[number], quantity: number) {
+  return {
+    storeId: goods.storeId,
+    spuId: goods.spuId,
+    skuId: goods.skuId,
+    goodsName: goods.title,
+    quantity,
+    payPrice: goods.price,
+    settlePrice: goods.price,
+  }
+}
+
+/** 生成独立于模板源码的 simulator 结算 fixture。 */
 export function retailSettlement(quantity: number) {
-  return genSettleDetail({ goodsRequestList: RETAIL_CHECKOUT_GOODS.map(item => ({ ...item, quantity })) }).data
+  const skuDetailVos = RETAIL_CHECKOUT_GOODS.map(goods => toSettlementGoods(goods, quantity))
+  const totalPrice = skuDetailVos.reduce((total, goods) => total + goods.quantity * Number(goods.settlePrice), 0)
+
+  return {
+    settleType: 0,
+    totalGoodsCount: skuDetailVos.reduce((total, goods) => total + goods.quantity, 0),
+    totalPayAmount: `${totalPrice - 1100}`,
+    storeGoodsList: [{ storeId: '1000', skuDetailVos }],
+    inValidGoodsList: null,
+    outOfStockGoodsList: null,
+  }
 }
 
 export const retailCheckoutFiles: Array<[string, string]> = [

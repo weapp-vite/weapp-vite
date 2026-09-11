@@ -18,6 +18,19 @@ export const WEVU_FEATURES_TEMPLATE_DOM: TemplateDomRoute[] = [
       nodes: [renderedText('#native-interop-count', 'count: 2'), renderedText('.native-card__subtitle', 'count: 2', ['#native-dynamic-feature', '#native-card-feature'])],
     },
   ]),
+  templatePage('/pages/query-detail/index', [
+    renderedText('.query-detail__title', '@wevu/query mutation fixture'),
+    renderedText('#query-mutation-status', 'route-error'),
+    renderedText('#query-mutation-result', 'none'),
+    renderedText('#query-mutation-error', 'missing baseUrl'),
+  ]),
+  templatePage('/pages/query-list/index', [
+    renderedText('.query-list__title', '@wevu/query list fixture'),
+    renderedText('#query-list-status', 'route-error'),
+    renderedText('#query-primary-result', 'pending'),
+    renderedText('#query-secondary-result', 'pending'),
+    renderedText('#query-list-error', 'missing baseUrl'),
+  ]),
   templatePage('/pages/router-coverage/index', [
     renderedText('.router-coverage-page__title', 'wevu/router 页面跳转覆盖'),
     renderedText('#router-coverage-action', 'last action = idle'),

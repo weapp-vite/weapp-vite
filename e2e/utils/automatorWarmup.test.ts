@@ -11,6 +11,45 @@ describe('automator warmup readiness', () => {
     vi.clearAllMocks()
   })
 
+  it('lets a cold page finish before attempting a recovery navigation', async () => {
+    vi.useFakeTimers()
+    const startedAt = Date.now()
+    const page = { path: 'pages/example/index', $$: vi.fn(async () => [{ id: 'real-page' }]) }
+    const miniProgram = {
+      currentPage: vi.fn(async () => Date.now() - startedAt >= 5_000 ? page : undefined),
+      reLaunch: vi.fn(),
+    }
+    const warmup = warmupMiniProgramRoute(miniProgram, '/pages/example/index', 'fixture')
+
+    await vi.advanceTimersByTimeAsync(6_000)
+    await expect(warmup).resolves.toBeUndefined()
+    expect(miniProgram.reLaunch).not.toHaveBeenCalled()
+    expect(page.$$).toHaveBeenCalledWith('page')
+  })
+
+  it('recovers missing cold-start metadata through navigation in the same session after waiting', async () => {
+    vi.useFakeTimers()
+    const failure = new Error('Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.')
+    const page = { path: 'pages/example/index', $$: vi.fn(async () => [{ id: 'real-page' }]) }
+    const miniProgram = {
+      close: vi.fn(),
+      currentPage: vi.fn().mockRejectedValue(failure),
+      reLaunch: vi.fn(async () => page),
+    }
+    const warmup = warmupMiniProgramRoute(miniProgram, '/pages/example/index', 'fixture')
+
+    await vi.advanceTimersByTimeAsync(29_000)
+    expect(miniProgram.reLaunch).not.toHaveBeenCalled()
+    await vi.runAllTimersAsync()
+    await expect(warmup).resolves.toBeUndefined()
+    expect(miniProgram.reLaunch).toHaveBeenCalledExactlyOnceWith('/pages/example/index')
+    expect(page.$$).toHaveBeenCalledWith('page')
+    expect(miniProgram.close).not.toHaveBeenCalled()
+    expect(appendIdeReportEvent).toHaveBeenLastCalledWith(expect.objectContaining({
+      startupProtocol: expect.objectContaining({ state: 'recovered' }),
+    }))
+  })
+
   it.each([{ rootSelectors: [] }, { rootSelectors: ['.title'] }])('rejects a matching route without a rendered root (selectors=$rootSelectors)', async ({ rootSelectors }) => {
     vi.useFakeTimers()
     const page = {
@@ -91,6 +130,19 @@ describe('automator warmup readiness', () => {
     await vi.runAllTimersAsync()
     await expect(warmup).resolves.toBeUndefined()
     expect(page.$$).toHaveBeenCalledWith('page')
+  })
+
+  it('retries an opaque DevTools rejection but still requires a rendered warmup page', async () => {
+    vi.useFakeTimers()
+    const page = { path: 'pages/example/index', $$: vi.fn(async () => [{ id: 'real-page' }]) }
+    const miniProgram = {
+      reLaunch: vi.fn().mockRejectedValueOnce(new Error('Uncaught [object Object]')).mockResolvedValue(page),
+    }
+    const warmup = warmupMiniProgramRoute(miniProgram, '/pages/example/index', 'fixture', { rootSelectors: ['.title'] })
+    await vi.runAllTimersAsync()
+    await expect(warmup).resolves.toBeUndefined()
+    expect(miniProgram.reLaunch).toHaveBeenCalledTimes(2)
+    expect(page.$$).toHaveBeenCalledWith('.title')
   })
 
   it.each([true, false])('requires actual current-page rendering after a same-route stale handle (rendered=%s)', async (rendered) => {

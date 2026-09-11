@@ -17,7 +17,7 @@ const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
 const DEVTOOLS_SIMULATOR_NOT_FOUND_PATTERN = /\[SimulatorService\]\s+updateSimulatorCompileOptions:\s+simulator not found\s+(\S+)/i
 const DEVTOOLS_SIMULATOR_INIT_PATTERN = /\[SimulatorService\]\s+init simulator\s+(\S+)\s+with clientSid\b/i
 const DEVTOOLS_SIMULATOR_CONTEXT_PATTERN = /\[rt:[^,\]]+,win:([^\]]+)\]/i
-const DEVTOOLS_GENERIC_SIMULATOR_LAUNCH_ERROR_PATTERN = /\bsimulator launch catch error Error:\s*simulator launch failed\s*$/i
+const DEVTOOLS_GENERIC_SIMULATOR_LAUNCH_ERROR_PATTERN = /\bsimulator launch catch error(?: stack)? Error:\s*simulator launch failed\s*$/i
 const DEVTOOLS_SIMULATOR_LAUNCH_SUCCESS_PATTERN = /\bsimulator launch success\b/i
 
 export interface DevtoolsLogIssue {

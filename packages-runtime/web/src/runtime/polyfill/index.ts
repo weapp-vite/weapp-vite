@@ -46,6 +46,10 @@ import {
   getLaunchOptionsSync,
   navigateBack,
   navigateTo,
+  offAppHide,
+  offAppShow,
+  onAppHide,
+  onAppShow,
   redirectTo,
   reLaunch,
   switchTab,
@@ -68,6 +72,10 @@ export {
   initializePageRoutes,
   navigateBack,
   navigateTo,
+  offAppHide,
+  offAppShow,
+  onAppHide,
+  onAppShow,
   redirectTo,
   registerApp,
   registerComponent,
@@ -75,6 +83,8 @@ export {
   reLaunch,
   switchTab,
 } from './routeRuntime'
+
+export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './routeRuntime/options'
 
 export * from './runtimeDataApi'
 export * from './uiMediaApi'
@@ -178,6 +188,10 @@ Object.assign(miniProgramBridge, {
   reLaunch,
   getLaunchOptionsSync,
   getEnterOptionsSync,
+  offAppHide,
+  offAppShow,
+  onAppHide,
+  onAppShow,
   ...runtimeDataApi,
   setNavigationBarTitle,
   setNavigationBarColor,

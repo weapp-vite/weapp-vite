@@ -129,6 +129,7 @@ export async function emitSharedFallbackPageAssets(options: {
     outputExtensions,
     platformAssetOptions,
     jsonOptions: {
+      defaultConfig: {},
       mergeExistingAsset: true,
       mergeStrategy: jsonMergeStrategy,
       defaults: jsonDefaults,
@@ -366,7 +367,7 @@ export async function emitCompiledEntryBundleAssets(options: {
     }
   }
   const shouldEmitComponentJson = !isAppVue && !options.isPage
-  const shouldMergeJsonAsset = isAppVue
+  const shouldMergeJsonAsset = isAppVue || (options.isPage && !options.result.config)
   const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
   const dirtyReasonSummary = hmrState?.profile?.dirtyReasonSummary
   const isStyleAssetHmr = dirtyReasonSummary?.some(item =>
@@ -424,7 +425,7 @@ export async function emitCompiledEntryBundleAssets(options: {
       })
     : undefined
 
-  if (options.result.config || shouldEmitComponentJson) {
+  if (options.result.config || shouldEmitComponentJson || options.isPage) {
     emitSharedVueEntryJsonAsset({
       bundle: options.bundle,
       pluginCtx: options.pluginCtx,
@@ -433,7 +434,7 @@ export async function emitCompiledEntryBundleAssets(options: {
       outputExtensions: options.outputExtensions,
       platformAssetOptions: options.platformAssetOptions,
       jsonOptions: {
-        defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
+        defaultConfig: shouldEmitComponentJson ? { component: true } : options.isPage ? {} : undefined,
         mergeExistingAsset: shouldMergeJsonAsset,
         mergeStrategy: jsonConfig?.mergeStrategy,
         defaults: jsonConfig?.defaults?.[jsonKind],

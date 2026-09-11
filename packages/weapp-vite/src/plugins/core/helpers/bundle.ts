@@ -338,7 +338,7 @@ export function emitJsonAssets(this: any, state: CorePluginState) {
     if (
       jsonEmitFile.entry.json
       && isObject(jsonEmitFile.entry.json)
-      && !isEmptyObject(jsonEmitFile.entry.json)
+      && (jsonEmitFile.entry.type === 'page' || !isEmptyObject(jsonEmitFile.entry.json))
     ) {
       const source = jsonService.resolve(jsonEmitFile.entry)
       if (source && jsonEmitFile.fileName) {

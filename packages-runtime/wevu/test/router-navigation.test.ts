@@ -19,6 +19,7 @@ describe('router navigation helpers', () => {
     clearActiveRouter()
     delete (globalThis as any).getCurrentPages
     delete (globalThis as any).wx
+    delete (globalThis as any).__wxConfig
   })
 
   it('creates and detects navigation failure', () => {
@@ -170,6 +171,49 @@ describe('router navigation helpers', () => {
     await runner(pages[0], pages[0].options)
 
     expect(order).toEqual(['guard:pages/home/index', 'guard:pages/login/index'])
+    expect(router.currentRoute.path).toBe('pages/login/index')
+  })
+
+  it.each([
+    { target: { name: 'login', query: { next: 'home' } }, tabBar: false, url: '/pages/login/index?next=home' },
+    { target: '/pages/login/index?next=home', tabBar: false, url: '/pages/login/index?next=home' },
+    { target: { name: 'login' }, tabBar: true, url: '/pages/login/index' },
+  ])('executes blocking initial redirects through the host router: $url tabBar=$tabBar', async ({ target, tabBar, url }) => {
+    const pages = [{ route: 'pages/home/index', options: {} }]
+    const redirectTo = vi.fn((options: any) => options.success?.({}))
+    const switchTab = vi.fn((options: any) => options.success?.({}))
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab,
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = createRouter({
+      initialNavigationMode: 'blocking',
+      tabBarEntries: tabBar ? ['/pages/login/index'] : [],
+      routes: [
+        { name: 'home', path: '/pages/home/index' },
+        { name: 'login', path: '/pages/login/index' },
+      ],
+    })
+    router.beforeEach(to => to?.name === 'home' ? target : undefined)
+
+    const runner = getInitialNavigationRunner()!
+    const result = await runner(pages[0], pages[0].options)
+
+    expect(result).toEqual(expect.objectContaining({ __wevuNavigationFailure: true }))
+    expect(tabBar ? switchTab : redirectTo).toHaveBeenCalledWith(expect.objectContaining({ url }))
+    expect(tabBar ? redirectTo : switchTab).not.toHaveBeenCalled()
     expect(router.currentRoute.path).toBe('pages/login/index')
   })
 
@@ -3137,6 +3181,52 @@ describe('router navigation helpers', () => {
     expect(switchTab).toHaveBeenCalledWith(expect.objectContaining({
       url: '/pages/home/index',
     }))
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it('push auto-switches to tabBar pages from host app config when tabBarEntries is omitted', async () => {
+    const switchTab = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const navigateTo = vi.fn()
+    const redirectTo = vi.fn()
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: {
+        switchTab,
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).__wxConfig = {
+      tabBar: {
+        list: [
+          { pagePath: 'pages/index/index', text: '首页' },
+          { pagePath: '/pages/mine/index', text: '我的' },
+        ],
+      },
+    }
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/login/index',
+        options: {},
+      },
+    ])
+
+    const router = createRouter()
+    const result = await router.replace('/pages/index/index')
+
+    expect(result).toBeUndefined()
+    expect(switchTab).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/index/index',
+    }))
+    expect(redirectTo).not.toHaveBeenCalled()
     expect(navigateTo).not.toHaveBeenCalled()
   })
 

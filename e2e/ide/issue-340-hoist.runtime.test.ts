@@ -86,12 +86,13 @@ async function waitForRouteDom(
           }
           query
             .select('.issue340-page')
-            .fields({
+            // 查询选项须在宿主上下文创建，避免 DevTools 传输代理对象。
+            .fields(JSON.parse(JSON.stringify({
               dataset: true,
               id: true,
               rect: true,
               size: true,
-            })
+            })))
             .exec((results: any[]) => {
               clearTimeout(timer)
               const root = results?.[0] as Record<string, any> | null | undefined

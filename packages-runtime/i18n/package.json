@@ -1,9 +1,10 @@
 {
   "name": "@weapp-vite/i18n",
   "type": "module",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "First-party i18n runtime and compiler for native WeChat mini programs",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,10 +14,15 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
-    "i18n",
-    "miniprogram",
+    "weapp-vite",
     "weapp",
-    "wechat"
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "i18n",
+    "vite",
+    "runtime",
+    "compiler"
   ],
   "sideEffects": false,
   "exports": {
@@ -63,7 +69,8 @@
     "lint:fix": "eslint . --fix"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "peerDependencies": {
     "miniprogram-api-typings": "^5.0.0"

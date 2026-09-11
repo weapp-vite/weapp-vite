@@ -124,6 +124,7 @@ const IDE_WEVU_FEATURES_PATTERNS = [
   'ide/wevu-features.runtime.behavior.test.ts',
   'ide/wevu-features.runtime.router.test.ts',
   'ide/wevu-features.runtime.subpath.test.ts',
+  'ide/wevu-query.runtime.test.ts',
   'ide/wevu-router-hmr.runtime.test.ts',
 ]
 const IDE_TEMPLATES_PATTERNS = [
@@ -176,6 +177,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
+  'ide/wevu-query.runtime.test.ts',
   'ide/wevu-runtime.weapp.test.ts',
 ]
 const IDE_WEVU_JSX_PATTERNS = [
@@ -238,6 +240,7 @@ const IDE_HEADLESS_FULL_TESTS = [...new Set([
   path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
   path.resolve(ROOT, 'ide/shared-styles.runtime.test.ts'),
   path.resolve(ROOT, 'ide/wevu-jsx-tsx.runtime.test.ts'),
+  path.resolve(ROOT, 'ide/wevu-query.runtime.test.ts'),
 ])]
 
 // PR 只验证最能代表构建、运行时、路由和平台契约的短路径；完整清单由 nightly 执行。

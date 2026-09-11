@@ -2,9 +2,10 @@
   "name": "@weapp-core/shared",
   "type": "module",
   "version": "3.2.1",
-  "description": "@weapp-core/shared",
+  "description": "Shared runtime-safe utilities and platform contracts for the weapp-vite ecosystem.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,7 +14,15 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite",
+    "runtime"
+  ],
   "sideEffects": false,
   "weapp-vite-dev": {
     "exports": {
@@ -97,6 +106,8 @@
     },
     "main": "./dist/index.js",
     "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "types": "./dist/index.d.ts",
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }

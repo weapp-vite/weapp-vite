@@ -1,4 +1,11 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type {
+  HeadlessAppDefinition,
+  HeadlessHostRegistries,
+  HeadlessWxAppHideOptions,
+  HeadlessWxLaunchOptions,
+  HeadlessWxNetworkType,
+  HeadlessWxSavedFileInfo,
+} from '../host'
 import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
@@ -22,6 +29,7 @@ import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
+import { HeadlessAppLifecycle } from '../runtime/appLifecycle'
 import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
 import { detachComponentRelations } from '../runtime/componentInstance/relations'
 import { createPageInstance } from '../runtime/pageInstance'
@@ -197,6 +205,7 @@ export class BrowserHeadlessSession {
 
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
+  private readonly appLifecycle = new HeadlessAppLifecycle()
   private readonly moduleLoader
   private readonly onRender?: () => void
   private readonly registries: HeadlessHostRegistries
@@ -313,7 +322,11 @@ export class BrowserHeadlessSession {
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
         nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
+        offAppHide: callback => this.appLifecycle.offAppHide(callback),
+        offAppShow: callback => this.appLifecycle.offAppShow(callback),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
+        onAppHide: callback => this.appLifecycle.onAppHide(callback),
+        onAppShow: callback => this.appLifecycle.onAppShow(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         previewImage: option => this.wxState.previewImage(option),
@@ -369,6 +382,7 @@ export class BrowserHeadlessSession {
     this.canvasContexts.clear()
     this.renderRequestCallbacks.length = 0
     this.renderRequestPending = false
+    this.appLifecycle.close()
     this.wxState.close()
     this.moduleLoader.close()
     this.kernel.close()
@@ -1051,7 +1065,7 @@ export class BrowserHeadlessSession {
     this.appDefinition = this.moduleLoader.executeAppModule(appModulePath)
     this.appInstance = createAppInstance(this.appDefinition)
     this.appInstance.onLaunch?.(launchOptions)
-    this.appInstance.onShow?.(launchOptions)
+    this.appLifecycle.triggerAppShow(this.appInstance, launchOptions)
     return this.appInstance
   }
 
@@ -1244,6 +1258,26 @@ export class BrowserHeadlessSession {
     current.onPageScroll?.({
       scrollTop: current.__scrollTop__,
     })
+  }
+
+  triggerAppHide(options: HeadlessWxAppHideOptions) {
+    this.assertActive()
+    const app = this.appInstance ?? this.bootstrap()
+    this.appLifecycle.triggerAppHide(app, options)
+  }
+
+  triggerAppShow(options?: HeadlessWxLaunchOptions) {
+    this.assertActive()
+    if (!this.appInstance) {
+      this.bootstrap(options)
+      return
+    }
+
+    const nextOptions = options ?? cloneAppLaunchOptions(this.enterOptions)
+    if (options) {
+      this.enterOptions = cloneAppLaunchOptions(options)
+    }
+    this.appLifecycle.triggerAppShow(this.appInstance, nextOptions)
   }
 
   triggerPullDownRefresh() {

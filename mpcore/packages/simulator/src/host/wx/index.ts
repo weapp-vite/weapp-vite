@@ -102,7 +102,11 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     navigateBack: true,
     navigateTo: true,
     nextTick: true,
+    offAppHide: true,
+    offAppShow: true,
     offNetworkStatusChange: true,
+    onAppHide: true,
+    onAppShow: true,
     onNetworkStatusChange: true,
     pageScrollTo: true,
     previewImage: true,
@@ -266,7 +270,11 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
       driver.navigateTo(option)
     }, option),
     nextTick: callback => driver.nextTick(callback),
+    offAppHide: callback => driver.offAppHide(callback),
+    offAppShow: callback => driver.offAppShow(callback),
     offNetworkStatusChange: callback => driver.offNetworkStatusChange(callback),
+    onAppHide: callback => driver.onAppHide(callback),
+    onAppShow: callback => driver.onAppShow(callback),
     onNetworkStatusChange: callback => driver.onNetworkStatusChange(callback),
     openDocument: option => invokeWxApi(() => driver.openDocument(option), option),
     pageScrollTo: option => invokeWxApi(() => {

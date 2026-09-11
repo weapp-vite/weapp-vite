@@ -4,6 +4,7 @@
   "description": "Volar plugin for weapp-vite - Provides IntelliSense and type checking for WeChat mini-program config blocks",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,14 +14,17 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "volar",
     "vue",
-    "wechat",
-    "miniprogram",
-    "weapp",
     "intellisense",
     "typescript",
-    "json-schema"
+    "json-schema",
+    "vite"
   ],
   "sideEffects": false,
   "exports": {
@@ -50,7 +54,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "publishConfig": {},
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "dependencies": {
     "@weapp-core/schematics": "workspace:*"
   }

@@ -163,8 +163,10 @@ async function collectAppSnapshot(root: string, variant: string, dom: ReturnType
 
       const microtaskOrder = ['sync']
       if (typeof queueMicrotask === 'function') {
+        // DevTools 代理包装不接受全局对象作为接收者，使用独立调用验证原生调度能力。
+        const enqueueMicrotask = queueMicrotask
         await new Promise<void>((resolve) => {
-          queueMicrotask(() => {
+          enqueueMicrotask(() => {
             microtaskOrder.push('microtask')
             resolve()
           })

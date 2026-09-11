@@ -5,6 +5,7 @@
   "description": "Core entry package for the mpcore mini-program tooling ecosystem",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -14,22 +15,25 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
-    "mpcore",
+    "weapp-vite",
     "weapp",
+    "wechat",
     "mini-program",
+    "miniprogram",
+    "mpcore",
     "runtime",
     "tooling"
   ],
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "README.md",
     "dist"

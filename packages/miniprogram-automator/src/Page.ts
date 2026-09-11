@@ -386,12 +386,13 @@ export default class Page {
               }
               query
                 .selectAll(selector)
-                .fields({
+                // 宿主 JSON.parse 创建可跨 DevTools evaluate 上下文传输的查询选项。
+                .fields(JSON.parse(JSON.stringify({
                   dataset: true,
                   id: true,
                   rect: true,
                   size: true
-                }, function (nodes) {
+                })), function (nodes) {
                   finish(nodes);
                 })
                 .exec();
@@ -576,12 +577,13 @@ export default class Page {
               }
               query
                 .selectAll(selector)
-                .fields({
+                // 宿主 JSON.parse 创建可跨 DevTools evaluate 上下文传输的查询选项。
+                .fields(JSON.parse(JSON.stringify({
                   dataset: true,
                   id: true,
                   rect: true,
                   size: true
-                }, function (nodes) {
+                })), function (nodes) {
                   finish(nodes);
                 })
                 .exec();

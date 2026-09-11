@@ -61,7 +61,7 @@ describe('e2e app: auto-routes defineAppJson', { concurrent: false }, () => {
     const appJsonPath = path.join(DIST_ROOT, 'app.json')
     expect(await fs.pathExists(appJsonPath)).toBe(true)
 
-    const appJson = await fs.readJson(appJsonPath)
+    const appJson = await fs.readJson(appJsonPath) as { pages: string[], subPackages: Array<{ root: string, pages: string[] }> }
     expect(appJson.pages).toEqual([
       'pages/dashboard/index',
       'pages/detail/index',
@@ -83,6 +83,16 @@ describe('e2e app: auto-routes defineAppJson', { concurrent: false }, () => {
         ],
       },
     ])
+    const routes = [
+      ...appJson.pages,
+      ...appJson.subPackages.flatMap(pkg => pkg.pages.map(page => `${pkg.root}/${page}`)),
+    ]
+    for (const route of routes) {
+      for (const extension of ['js', 'wxml', 'json']) {
+        expect(await fs.pathExists(path.join(DIST_ROOT, `${route}.${extension}`)), `${route}.${extension}`).toBe(true)
+      }
+      expect(await fs.readJson(path.join(DIST_ROOT, `${route}.json`))).toEqual({})
+    }
     await expectNoDonutOutputs()
 
     const appJsPath = path.join(DIST_ROOT, 'app.js')

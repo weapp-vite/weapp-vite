@@ -6,6 +6,7 @@ export const WXS_EXTS = ['.wxs', '.wxs.ts', '.wxs.js']
 export const WXS_RESOLVE_EXTS = ['.wxs', '.wxs.ts', '.wxs.js', '.ts', '.js']
 
 export const ENTRY_ID = '\0@weapp-vite/web/entry'
+export const RUNTIME_ID = '/@weapp-vite/web/runtime'
 export const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
 export const RESOLVED_AUTO_ROUTES_ID = '\0@weapp-vite/web/auto-routes'
 export const TEMPLATE_QUERY = 'weapp-web-template'

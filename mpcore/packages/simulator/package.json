@@ -1,10 +1,11 @@
 {
   "name": "@mpcore/simulator",
   "type": "module",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "Headless mini-program runtime and testing kernel for the weapp-vite ecosystem",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -14,11 +15,15 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
+    "wechat",
     "mini-program",
+    "miniprogram",
     "runtime",
     "headless",
-    "testing"
+    "testing",
+    "vite"
   ],
   "sideEffects": false,
   "exports": {
@@ -43,6 +48,7 @@
     "test": "vitest run",
     "test:all": "pnpm test && pnpm test:types && pnpm test:e2e",
     "test:dev": "vitest",
+    "test:coverage": "vitest run --coverage.enabled=true",
     "test:e2e": "vitest run -c ./vitest.e2e.config.ts",
     "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit"
@@ -50,8 +56,8 @@
   "dependencies": {
     "@babel/parser": "catalog:",
     "@weapp-core/constants": "workspace:*",
-    "css-select": "^6.0.0",
-    "css-what": "^7.0.0",
+    "css-select": "^7.0.0",
+    "css-what": "^8.0.0",
     "fontoxpath": "^3.34.0",
     "htmlparser2": "catalog:",
     "pathe": "catalog:",

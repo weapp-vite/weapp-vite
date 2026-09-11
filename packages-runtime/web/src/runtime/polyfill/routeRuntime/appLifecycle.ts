@@ -1,4 +1,4 @@
-import type { AppLaunchOptions, AppRuntime, PageStackEntry } from './options'
+import type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppRuntime, AppShowCallback, PageStackEntry } from './options'
 import { cloneLaunchOptions, resolveFallbackLaunchOptions } from '../appState'
 import { isRecord } from './options'
 
@@ -14,14 +14,56 @@ function isDocumentHidden(target: VisibilityDocument) {
 
 export class AppLifecycleRuntime {
   #appInstance: AppRuntime | undefined
+  readonly #hideCallbacks: AppHideCallback[] = []
   #foreground = false
   #lastEnterOptions: AppLaunchOptions | undefined
   #launchOptions: AppLaunchOptions | undefined
   #launched = false
+  readonly #showCallbacks: AppShowCallback[] = []
   #visibilityDocument: VisibilityDocument | undefined
   #visibilityHandler: (() => void) | undefined
 
   constructor(private readonly resolveCurrentEntry: () => PageStackEntry | undefined) {}
+
+  offAppHide(callback?: AppHideCallback) {
+    if (!callback) {
+      this.#hideCallbacks.length = 0
+      return
+    }
+
+    let retainedCount = 0
+    for (const registeredCallback of this.#hideCallbacks) {
+      if (registeredCallback !== callback) {
+        this.#hideCallbacks[retainedCount] = registeredCallback
+        retainedCount += 1
+      }
+    }
+    this.#hideCallbacks.length = retainedCount
+  }
+
+  offAppShow(callback?: AppShowCallback) {
+    if (!callback) {
+      this.#showCallbacks.length = 0
+      return
+    }
+
+    let retainedCount = 0
+    for (const registeredCallback of this.#showCallbacks) {
+      if (registeredCallback !== callback) {
+        this.#showCallbacks[retainedCount] = registeredCallback
+        retainedCount += 1
+      }
+    }
+    this.#showCallbacks.length = retainedCount
+  }
+
+  onAppHide(callback: AppHideCallback) {
+    this.#hideCallbacks.push(callback)
+  }
+
+  onAppShow(callback: AppShowCallback) {
+    this.#showCallbacks.push(callback)
+  }
 
   register<T extends AppRuntime | undefined>(options: T): T {
     const resolved = (options ?? {}) as AppRuntime
@@ -57,13 +99,13 @@ export class AppLifecycleRuntime {
     if (!this.#appInstance || this.#launched) {
       return
     }
-    const options = resolveEntryOptions(entry)
-    this.#launchOptions = cloneLaunchOptions(options)
-    this.#lastEnterOptions = cloneLaunchOptions(options)
+    const payload = resolveEntryOptions(entry)
+    this.#launchOptions = cloneLaunchOptions(payload)
+    this.#lastEnterOptions = cloneLaunchOptions(payload)
     this.#foreground = true
     this.#launched = true
-    this.#appInstance.onLaunch?.(cloneLaunchOptions(options))
-    this.#appInstance.onShow?.(cloneLaunchOptions(options))
+    this.#appInstance.onLaunch?.(payload)
+    this.#triggerAppShow(payload, true)
   }
 
   get instance() {
@@ -83,6 +125,8 @@ export class AppLifecycleRuntime {
   }
 
   dispose() {
+    this.#hideCallbacks.length = 0
+    this.#showCallbacks.length = 0
     this.#unbindVisibility()
   }
 
@@ -94,8 +138,8 @@ export class AppLifecycleRuntime {
       if (!this.#foreground) {
         return
       }
-      this.#appInstance.onHide?.()
       this.#foreground = false
+      this.#triggerAppHide()
       return
     }
     if (this.#foreground) {
@@ -103,8 +147,31 @@ export class AppLifecycleRuntime {
     }
     const options = resolveEntryOptions(this.resolveCurrentEntry())
     this.#lastEnterOptions = cloneLaunchOptions(options)
-    this.#appInstance.onShow?.(cloneLaunchOptions(options))
     this.#foreground = true
+    this.#triggerAppShow(options, false)
+  }
+
+  #triggerAppHide() {
+    // 浏览器可见性事件无法区分微信退出方式，统一映射为“其他”。
+    const options: AppHideOptions = { reason: 3 }
+    const callbacks = [...this.#hideCallbacks]
+    for (const callback of callbacks) {
+      callback(options)
+    }
+    this.#appInstance?.onHide?.(options)
+  }
+
+  #triggerAppShow(options: AppLaunchOptions, isInitialShow: boolean) {
+    const callbacks = [...this.#showCallbacks]
+    if (isInitialShow) {
+      this.#appInstance?.onShow?.(options)
+    }
+    for (const callback of callbacks) {
+      callback(options)
+    }
+    if (!isInitialShow) {
+      this.#appInstance?.onShow?.(options)
+    }
   }
 
   #unbindVisibility() {
