@@ -2357,6 +2357,9 @@ importers:
       glass-easel-miniprogram-adapter:
         specifier: ^1.2.0
         version: 1.2.0(glass-easel@1.2.0)
+      glass-easel-template-compiler:
+        specifier: 1.2.0
+        version: 1.2.0
     devDependencies:
       tsdown:
         specifier: 0.23.0
@@ -12511,6 +12514,9 @@ packages:
     resolution: {integrity: sha512-EV3jN5EWirhknowQ0OiV4nM/Rf8jncwRzr225vcMpaB3UxdaOSOoB+TTeNJ8NNtDDO4eVlQArxNTxmsfeUt1lg==}
     peerDependencies:
       glass-easel: 1.2.0
+
+  glass-easel-template-compiler@1.2.0:
+    resolution: {integrity: sha512-q3qUytUui2ufzUypPXhs+NsARFd8w4jU5NhRPByTOyImGlB1lFPsYAJSDiJDAJSeUNepBDEgDScLMN04CooMwA==}
 
   glass-easel@1.2.0:
     resolution: {integrity: sha512-fu/pILzOqzfJSXMZLx46llSrAdg/9J0QLh88g7AGAw2KzpWawsToBBsjDyuxjTZZBE7JSRew+BQRbKRUpVFNiw==}
@@ -26939,6 +26945,8 @@ snapshots:
   glass-easel-miniprogram-adapter@1.2.0(glass-easel@1.2.0):
     dependencies:
       glass-easel: 1.2.0
+
+  glass-easel-template-compiler@1.2.0: {}
 
   glass-easel@1.2.0: {}
 

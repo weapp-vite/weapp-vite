@@ -1,3 +1,6 @@
+import * as glassEasel from 'glass-easel'
+import { wxml } from 'glass-easel-template-compiler'
+
 export interface GlassEaselWebHost {
   createElement?: (tagName: string) => HTMLElement
   dispatchEvent?: (event: Event, context: unknown) => void
@@ -33,6 +36,10 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
   const definitions = new Map<string, GlassEaselComponentDefinition>()
   const instances = new Set<GlassEaselWebInstance>()
   const host = options.host ?? {}
+  // eslint-disable-next-line ts/no-use-before-define
+  if (options.strict && !getGlassEaselRuntimeInfo().hasDomBackend) {
+    throw new Error('glass-easel Web backend is unavailable in this environment')
+  }
   return {
     registerComponent(definition) {
       if (!definition.name || !definition.template) {
@@ -75,5 +82,16 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       }
       definitions.clear()
     },
+  }
+}
+
+export interface GlassEaselRuntimeInfo { version: string, hasDomBackend: boolean, hasTemplateCompiler: boolean }
+
+/** 返回当前安装的 glass-easel 能力探针，供宿主决定是否启用实验后端。 */
+export function getGlassEaselRuntimeInfo(): GlassEaselRuntimeInfo {
+  return {
+    version: '1.2.0',
+    hasDomBackend: typeof glassEasel.CurrentWindowBackendContext === 'function',
+    hasTemplateCompiler: typeof wxml === 'function',
   }
 }
