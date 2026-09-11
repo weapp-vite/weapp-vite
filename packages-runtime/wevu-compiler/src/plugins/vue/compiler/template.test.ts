@@ -111,6 +111,36 @@ describe('compileVueTemplateToWxml', () => {
     expect(normalized).toContain(':4')
   })
 
+  it('does not emit parenthesized member access after nullish coalescing', () => {
+    const template = `
+<view v-if="(following.data.value ?? []).length === 0">empty</view>
+<text>草稿({{ (drafts.data.value ?? []).length }})</text>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/drafts/index.vue')
+    const normalized = code.replace(WHITESPACE_RE, '')
+
+    expect(code).not.toContain('??')
+    expect(normalized).not.toMatch(/\)\.length/)
+    expect(code).toMatch(IF_BIND_RE)
+    expect(code).toMatch(/\{\{__wv_bind_\d+\}\}/)
+  })
+
+  it('does not emit parenthesized member access for logical or ternary objects', () => {
+    const templates = [
+      '<view v-if="(following.data.value || []).length === 0">x</view>',
+      '<view v-if="(ok ? items : []).length === 0">x</view>',
+      '<view v-if="(a?.b ?? []).length === 0">x</view>',
+    ]
+
+    for (const template of templates) {
+      const { code } = compileVueTemplateToWxml(template, '/project/src/pages/drafts/index.vue')
+      const normalized = code.replace(WHITESPACE_RE, '')
+      expect(normalized).not.toMatch(/\)\.length/)
+      expect(code).toMatch(IF_BIND_RE)
+    }
+  })
+
   it('rewrites optional chaining in template expressions', () => {
     const template = `
 <view :title="routeMeta?.title || '首页'">{{ routeMeta?.group || '模块' }}</view>

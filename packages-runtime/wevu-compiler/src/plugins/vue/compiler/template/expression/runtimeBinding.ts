@@ -1,8 +1,22 @@
 import type { TransformContext } from '../types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { normalizeJsExpressionWithContext } from './js'
 import { parseBabelExpressionFile } from './parse'
 import { normalizeWxmlExpression } from './wxml'
+
+function isWxmlParenthesizedMemberObject(node: t.Expression): boolean {
+  return t.isLogicalExpression(node)
+    || t.isConditionalExpression(node)
+    || t.isAssignmentExpression(node)
+    || t.isSequenceExpression(node)
+    || t.isUnaryExpression(node)
+    || t.isAwaitExpression(node)
+    || t.isYieldExpression(node)
+    || t.isArrowFunctionExpression(node)
+    || t.isFunctionExpression(node)
+    || t.isClassExpression(node)
+}
 
 function buildForIndexAccess(context: TransformContext): string {
   if (!context.forStack.length) {
@@ -14,7 +28,7 @@ function buildForIndexAccess(context: TransformContext): string {
 }
 
 /**
- * 检测表达式是否包含小程序模板不稳定的调用语义。
+ * 检测表达式是否包含小程序模板不稳定或非法的语义。
  */
 export function shouldFallbackToRuntimeBinding(
   exp: string,
@@ -56,6 +70,18 @@ export function shouldFallbackToRuntimeBinding(
     BigIntLiteral(path) {
       shouldFallback = true
       path.stop()
+    },
+    MemberExpression(path) {
+      if (isWxmlParenthesizedMemberObject(path.node.object)) {
+        shouldFallback = true
+        path.stop()
+      }
+    },
+    OptionalMemberExpression(path) {
+      if (isWxmlParenthesizedMemberObject(path.node.object)) {
+        shouldFallback = true
+        path.stop()
+      }
     },
   })
   return shouldFallback
