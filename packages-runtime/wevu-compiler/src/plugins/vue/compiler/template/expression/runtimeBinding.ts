@@ -1,22 +1,11 @@
 import type { TransformContext } from '../types'
-import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { normalizeJsExpressionWithContext } from './js'
 import { parseBabelExpressionFile } from './parse'
 import { normalizeWxmlExpression } from './wxml'
 
-function isWxmlParenthesizedMemberObject(node: t.Expression): boolean {
-  return t.isLogicalExpression(node)
-    || t.isConditionalExpression(node)
-    || t.isAssignmentExpression(node)
-    || t.isSequenceExpression(node)
-    || t.isUnaryExpression(node)
-    || t.isAwaitExpression(node)
-    || t.isYieldExpression(node)
-    || t.isArrowFunctionExpression(node)
-    || t.isFunctionExpression(node)
-    || t.isClassExpression(node)
-}
+/** 微信 WXML 不能解析括号表达式后的成员或下标访问。 */
+const WXML_PARENTHESIZED_MEMBER_RE = /\)\s*(?:\.|\[)/
 
 function buildForIndexAccess(context: TransformContext): string {
   if (!context.forStack.length) {
@@ -25,6 +14,17 @@ function buildForIndexAccess(context: TransformContext): string {
   return context.forStack
     .map(info => `[${info.index ?? 'index'}]`)
     .join('')
+}
+
+/**
+ * 检测规范化后的 WXML 表达式是否包含非法的括号成员访问。
+ */
+export function hasWxmlParenthesizedMemberAccess(exp: string): boolean {
+  const trimmed = exp.trim()
+  if (!trimmed) {
+    return false
+  }
+  return WXML_PARENTHESIZED_MEMBER_RE.test(normalizeWxmlExpression(trimmed))
 }
 
 /**
@@ -37,6 +37,9 @@ export function shouldFallbackToRuntimeBinding(
   const trimmed = exp.trim()
   if (!trimmed) {
     return false
+  }
+  if (hasWxmlParenthesizedMemberAccess(trimmed)) {
+    return true
   }
   const normalized = normalizeWxmlExpression(trimmed)
   const parsed = parseBabelExpressionFile(normalized)
@@ -70,18 +73,6 @@ export function shouldFallbackToRuntimeBinding(
     BigIntLiteral(path) {
       shouldFallback = true
       path.stop()
-    },
-    MemberExpression(path) {
-      if (isWxmlParenthesizedMemberObject(path.node.object)) {
-        shouldFallback = true
-        path.stop()
-      }
-    },
-    OptionalMemberExpression(path) {
-      if (isWxmlParenthesizedMemberObject(path.node.object)) {
-        shouldFallback = true
-        path.stop()
-      }
     },
   })
   return shouldFallback

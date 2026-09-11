@@ -131,12 +131,15 @@ describe('compileVueTemplateToWxml', () => {
       '<view v-if="(following.data.value || []).length === 0">x</view>',
       '<view v-if="(ok ? items : []).length === 0">x</view>',
       '<view v-if="(a?.b ?? []).length === 0">x</view>',
+      '<view v-if="(a + b).length === 0">x</view>',
+      '<view v-if="(items).length === 0">x</view>',
     ]
 
     for (const template of templates) {
       const { code } = compileVueTemplateToWxml(template, '/project/src/pages/drafts/index.vue')
       const normalized = code.replace(WHITESPACE_RE, '')
-      expect(normalized).not.toMatch(/\)\.length/)
+      expect(normalized).not.toMatch(/\)\.(?:length|[A-Za-z_$])/)
+      expect(normalized).not.toMatch(/\)\[/)
       expect(code).toMatch(IF_BIND_RE)
     }
   })
