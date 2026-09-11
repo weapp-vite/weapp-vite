@@ -32,4 +32,8 @@ describe('workspace HMR project selection', () => {
     expect(() => assertWorkspaceHmrSelection(selected.length, false)).not.toThrow()
     expect(() => assertWorkspaceHmrSelection(projects.length, true)).not.toThrow()
   })
+
+  it('allows an empty selection when changed-project mode found no runnable changes', () => {
+    expect(() => assertWorkspaceHmrSelection(0, true, { allowEmpty: true })).not.toThrow()
+  })
 })
