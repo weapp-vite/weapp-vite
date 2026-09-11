@@ -39,5 +39,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "~5.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }
