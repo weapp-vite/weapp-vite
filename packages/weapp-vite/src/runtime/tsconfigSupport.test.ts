@@ -80,7 +80,8 @@ describe('tsconfig support', () => {
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
-    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'wevu/weapp/jsx-runtime']))
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
+    expect(app.compilerOptions.types).not.toContain('wevu/weapp/jsx-runtime')
     expect(app.compilerOptions.types).not.toContain('vite/client')
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])
     expect(app.compilerOptions.jsx).toBe('preserve')
@@ -114,7 +115,7 @@ describe('tsconfig support', () => {
 
     expect(app.compilerOptions.jsx).toBe('preserve')
     expect(app.compilerOptions.jsxImportSource).toBe(jsxImportSource)
-    expect(app.compilerOptions.types).toContain(`${jsxImportSource}/jsx-runtime`)
+    expect(app.compilerOptions.types).not.toContain(`${jsxImportSource}/jsx-runtime`)
     if (jsxImportSource === 'wevu') {
       expect(platformBridge).toBe('export {}\n')
     }
@@ -148,7 +149,7 @@ describe('tsconfig support', () => {
 
     expect(app.compilerOptions.jsx).toBe('preserve')
     expect(app.compilerOptions.jsxImportSource).toBe('wevu/miniprogram')
-    expect(app.compilerOptions.types).toContain('wevu/miniprogram/jsx-runtime')
+    expect(app.compilerOptions.types).not.toContain('wevu/miniprogram/jsx-runtime')
     expect(platformBridge).toContain('wevu/miniprogram/jsx-runtime')
   })
 
@@ -176,6 +177,30 @@ describe('tsconfig support', () => {
     expect(app.compilerOptions.jsxImportSource).toBe('react')
     expect(app.compilerOptions.types).not.toContain('react/jsx-runtime')
     expect(platformBridge).toBe('export {}\n')
+  })
+
+  it('keeps Wevu JSX types on jsxImportSource instead of compilerOptions.types', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      packageJson: {
+        dependencies: {
+          wevu: '^1.0.0',
+        },
+      },
+      weappViteConfig: {
+        typescript: {
+          app: {
+            compilerOptions: {
+              types: ['custom-env', 'wevu/weapp/jsx-runtime'],
+            },
+          },
+        },
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.compilerOptions.jsxImportSource).toBe('wevu/weapp')
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'custom-env']))
+    expect(app.compilerOptions.types).not.toContain('wevu/weapp/jsx-runtime')
   })
 
   it('does not inject a JSX type source without a wevu dependency', async () => {
