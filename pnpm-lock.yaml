@@ -651,6 +651,18 @@ importers:
 
   '@weapp-core/shared': {}
 
+  '@weapp-core/types':
+    devDependencies:
+      tsd:
+        specifier: ^0.33.0
+        version: 0.33.0
+      tsdown:
+        specifier: 0.23.0
+        version: 0.23.0(@volar/typescript@2.4.28(typescript@6.0.3))(tsx@4.23.13)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.11(typescript@6.0.3))
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   apps/alipay-antd-mini-demo:
     dependencies:
       antd-mini:
@@ -2450,6 +2462,9 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
+      '@weapp-core/types':
+        specifier: workspace:*
+        version: link:../../@weapp-core/types
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi

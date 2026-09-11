@@ -1,7 +1,8 @@
+import type { AlipayIntrinsicElements } from '@weapp-core/types/alipay'
 import type { JSX as WevuJSX, WevuJsxGlobalComponents } from 'wevu/jsx-runtime'
-import type { AlipayIntrinsicElements } from '../alipayIntrinsicElements'
 
-export type { AlipayIntrinsicElementBaseAttributes, AlipayIntrinsicElements } from '../alipayIntrinsicElements'
+export type { AlipayIntrinsicElementBaseAttributes, AlipayIntrinsicElements } from '@weapp-core/types/alipay'
+
 export type {
   WevuJsxChild,
   WevuJsxElement,
