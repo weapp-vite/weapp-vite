@@ -17,4 +17,14 @@ describe('glass-easel web adapter PoC', () => {
     adapter.unmountComponent(instance)
     expect(adapter.getSnapshot(instance)).toMatchObject({ disposed: true })
   })
+
+  it('updates props through the glass-easel component instance', () => {
+    const adapter = createGlassEaselWebAdapter()
+    adapter.registerComponent({ name: 'counter-card', template: '<div>{{count}}</div>' })
+    const container = document.createElement('div')
+    const instance = adapter.mountComponent('counter-card', container, { count: 1 })
+    adapter.updateComponent(instance, { count: 2 })
+    expect(adapter.getSnapshot(instance)).toMatchObject({ props: { count: 2 } })
+    expect(container.textContent).toContain('2')
+  })
 })

@@ -19,6 +19,8 @@ export interface GlassEaselWebAdapterOptions { host?: GlassEaselWebHost, strict?
 export interface GlassEaselWebAdapter {
   registerComponent: (definition: GlassEaselComponentDefinition) => void
   mountComponent: (name: string, container: Element, props?: Record<string, unknown>) => GlassEaselWebInstance
+  updateComponent: (instance: unknown, props: Record<string, unknown>) => void
+  triggerEvent: (instance: unknown, name: string, detail?: unknown) => void
   unmountComponent: (instance: unknown) => void
   getSnapshot: (instance: unknown) => unknown
   dispose: () => void
@@ -99,6 +101,30 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       const instance: GlassEaselWebInstance = { root, definition, props: { ...props }, disposed: false, native, backendContext }
       instances.add(instance)
       return instance
+    },
+    updateComponent(value, props) {
+      const instance = value as GlassEaselWebInstance
+      if (instance.disposed) {
+        throw new Error('cannot update a disposed glass-easel component')
+      }
+      instance.props = { ...instance.props, ...props }
+      if (instance.native) {
+        instance.native.setData(props)
+      }
+      else {
+        const replacement = render(instance.definition.template, instance.props, options.host ?? {})
+        instance.root.replaceWith(replacement)
+        instance.root = replacement
+      }
+    },
+    triggerEvent(value, name, detail) {
+      const instance = value as GlassEaselWebInstance
+      if (instance.disposed) {
+        throw new Error('cannot trigger an event on a disposed glass-easel component')
+      }
+      if (instance.native) {
+        instance.native.triggerEvent(name, detail)
+      }
     },
     unmountComponent(value) {
       const instance = value as GlassEaselWebInstance
