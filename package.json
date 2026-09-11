@@ -229,7 +229,8 @@
     "auto-import:components": "tsx scripts/update-auto-import-components.ts",
     "vite:patch": "tsx scripts/vite-patch.ts",
     "commitlint": "commitlint --edit",
-    "check:npm-package-metadata": "node scripts/check-npm-package-metadata.mjs"
+    "check:npm-package-metadata": "node scripts/check-npm-package-metadata.mjs",
+    "check:tailwind-catalog": "node scripts/check-tailwind-catalog.mjs"
   },
   "devDependencies": {
     "@babel/core": "catalog:",
