@@ -1,3 +1,4 @@
+import type { MiniProgramPageLike } from '../routerInternal/types'
 import type { MiniProgramPageLifetime } from '../runtime/types'
 import type { SetupContextRouter } from '../runtime/types/props'
 import type { RouteStateSyncPayload } from './routeSync'
@@ -107,18 +108,13 @@ function applyRouteState(
 }
 
 export function createRouteStateController(options: RouteStateControllerOptions = {}): RouteStateController {
-  const setupContext = getCurrentSetupContext()
-  if (!setupContext) {
-    throw new Error('useRoute() 必须在 setup() 的同步阶段调用')
-  }
-
-  const fallbackPage = setupContext.instance
-  const initialRouteControllerInstance = resolveRouteControllerInstance(fallbackPage)
+  const setupContext = getCurrentSetupContext<{ instance?: unknown }>()
+  const fallbackPage = setupContext?.instance && typeof setupContext.instance === 'object'
+    ? setupContext.instance as MiniProgramPageLike & Record<string, unknown>
+    : undefined
   const resolveRoute = options.resolveRoute
     ?? ((route: RouteLocationNormalizedLoaded) => getActiveRouter()?.resolve(route) ?? route)
   const currentRoute = resolveRoute(resolveCurrentRoute(undefined, fallbackPage))
-  const isPageController = isPageLikeInstance(initialRouteControllerInstance)
-    || getCurrentMiniProgramPages().includes(initialRouteControllerInstance)
   const routeState = reactive<RouteLocationNormalizedLoaded>({
     path: currentRoute.path,
     fullPath: currentRoute.fullPath,
@@ -142,6 +138,33 @@ export function createRouteStateController(options: RouteStateControllerOptions 
     applyRouteState(routeState, nextRoute)
   }
 
+  if (!fallbackPage) {
+    const unregisterRouteStateSync = registerRouteStateSyncHandler((payload) => {
+      if (payload?.route) {
+        syncRoute(undefined, payload.route, payload)
+        return
+      }
+      if (payload?.url) {
+        syncRoute(undefined, resolveRouteLocation(payload.url, routeState.path), payload)
+        return
+      }
+      if (payload?.page) {
+        syncRoute(undefined, resolvePageRoute(payload.page), payload)
+        return
+      }
+      syncRoute(undefined, undefined, payload)
+    })
+    void unregisterRouteStateSync
+    return {
+      route: readonly(routeState) as Readonly<RouteLocationNormalizedLoaded>,
+    }
+  }
+
+  const pageInstance = fallbackPage
+  const initialRouteControllerInstance = resolveRouteControllerInstance(pageInstance)
+  const isPageController = isPageLikeInstance(initialRouteControllerInstance)
+    || getCurrentMiniProgramPages().includes(initialRouteControllerInstance)
+
   onLoad((query: Parameters<NonNullable<MiniProgramPageLifetime['onLoad']>>[0]) => {
     syncRoute(query as unknown as LocationQueryRaw)
   })
@@ -155,7 +178,7 @@ export function createRouteStateController(options: RouteStateControllerOptions 
     syncRoute()
   })
   const unregisterRouteStateSync = registerRouteStateSyncHandler((payload) => {
-    if (!shouldSyncRouteStateForInstance(fallbackPage, isPageController, payload)) {
+    if (!shouldSyncRouteStateForInstance(pageInstance, isPageController, payload)) {
       return
     }
     if (payload?.route) {
