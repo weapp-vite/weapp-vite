@@ -27,15 +27,27 @@ export interface GlassEaselWebAdapter {
 /** 使用官方 ComponentSpace API 创建可复用的 glass-easel 组件定义。 */
 export function createGlassEaselComponentDefinition(definition: GlassEaselComponentDefinition): unknown {
   const space = glassEasel.getDefaultComponentSpace()
-  return space.define().definition({
-    template: wxml(definition.template),
-    properties: definition.properties as any,
-    methods: definition.methods as any,
-    lifetimes: definition.lifetimes,
-  }).registerComponent()
+  const params: Record<string, unknown> = { template: wxml(definition.template) }
+  if (definition.properties) {
+    params.properties = definition.properties
+  }
+  if (definition.methods) {
+    params.methods = definition.methods
+  }
+  if (definition.lifetimes) {
+    params.lifetimes = definition.lifetimes
+  }
+  return space.define().definition(params as any).registerComponent()
 }
 
-interface GlassEaselWebInstance { root: HTMLElement, definition: GlassEaselComponentDefinition, props: Record<string, unknown>, disposed: boolean }
+interface GlassEaselWebInstance {
+  root: HTMLElement
+  definition: GlassEaselComponentDefinition
+  props: Record<string, unknown>
+  disposed: boolean
+  native?: any
+  backendContext?: any
+}
 
 function render(template: string, props: Record<string, unknown>, host: GlassEaselWebHost): HTMLElement {
   const root = host.createElement?.('div') ?? document.createElement('div')
@@ -44,9 +56,8 @@ function render(template: string, props: Record<string, unknown>, host: GlassEas
 }
 
 export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions = {}): GlassEaselWebAdapter {
-  const definitions = new Map<string, GlassEaselComponentDefinition>()
+  const definitions = new Map<string, GlassEaselComponentDefinition & { native?: any }>()
   const instances = new Set<GlassEaselWebInstance>()
-  const host = options.host ?? {}
   // eslint-disable-next-line ts/no-use-before-define
   if (options.strict && !getGlassEaselRuntimeInfo().hasDomBackend) {
     throw new Error('glass-easel Web backend is unavailable in this environment')
@@ -59,19 +70,34 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       if (definitions.has(definition.name)) {
         throw new Error(`component already registered: ${definition.name}`)
       }
-      definitions.set(definition.name, definition)
+      definitions.set(definition.name, { ...definition, native: createGlassEaselComponentDefinition(definition) })
     },
     mountComponent(name, container, props = {}) {
       const definition = definitions.get(name)
       if (!definition) {
         throw new Error(`component is not registered: ${name}`)
       }
-      const instance: GlassEaselWebInstance = { root: render(definition.template, props, host), definition, props: { ...props }, disposed: false }
-      container.append(instance.root)
+      let root: HTMLElement
+      let native: any
+      let backendContext: any
+      // eslint-disable-next-line ts/no-use-before-define
+      if (definition.native && getGlassEaselRuntimeInfo().hasDomBackend) {
+        const placeholder = document.createElement('glass-easel-placeholder')
+        container.append(placeholder)
+        backendContext = new glassEasel.CurrentWindowBackendContext()
+        backendContext.onEvent(glassEasel.Event.triggerBackendEvent)
+        native = glassEasel.Component.createWithContext(name, definition.native, backendContext, (component: any) => {
+          component.setData(props)
+        })
+        glassEasel.Element.replaceDocumentElement(native, placeholder.parentNode, placeholder)
+        root = container.firstElementChild as HTMLElement
+      }
+      else {
+        root = render(definition.template, props, options.host ?? {})
+        container.append(root)
+      }
+      const instance: GlassEaselWebInstance = { root, definition, props: { ...props }, disposed: false, native, backendContext }
       instances.add(instance)
-      definition.lifetimes?.created?.call(instance)
-      definition.lifetimes?.attached?.call(instance)
-      definition.lifetimes?.ready?.call(instance)
       return instance
     },
     unmountComponent(value) {
@@ -79,8 +105,8 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       if (!instances.delete(instance) || instance.disposed) {
         return
       }
-      instance.definition.lifetimes?.detached?.call(instance)
-      instance.root.remove()
+      instance.native?.triggerLifetime?.('detached')
+      instance.root?.remove()
       instance.disposed = true
     },
     getSnapshot(value) {
