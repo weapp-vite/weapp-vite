@@ -3,6 +3,7 @@ import {
   getMiniProgramRuntimeGlobalKeys,
 } from '@weapp-core/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import packageJson from '../package.json'
 
 const runtimeKeys = getMiniProgramRuntimeGlobalKeys()
 const trackedKeys = [...runtimeKeys, 'getApp', 'getCurrentPages']
@@ -11,6 +12,10 @@ const originalDescriptors = new Map(
 )
 
 describe('polyfill entry installation contract', () => {
+  it('declares the polyfill output as side-effectful for production treeshaking', () => {
+    expect(packageJson.sideEffects).toContain('dist/runtime/polyfill/**')
+  })
+
   afterEach(() => {
     for (const key of trackedKeys) {
       const descriptor = originalDescriptors.get(key)
