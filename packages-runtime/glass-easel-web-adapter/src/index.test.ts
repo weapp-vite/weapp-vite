@@ -27,4 +27,16 @@ describe('glass-easel web adapter PoC', () => {
     expect(adapter.getSnapshot(instance)).toMatchObject({ props: { count: 2 } })
     expect(container.textContent).toContain('2')
   })
+
+  it('renders a glass-easel list and updates its data tree', () => {
+    const adapter = createGlassEaselWebAdapter()
+    adapter.registerComponent({ name: 'list-card', template: '<div wx:for="{{items}}" wx:key="*this">{{item}}</div>' })
+    const container = document.createElement('div')
+    const instance = adapter.mountComponent('list-card', container, { items: ['a', 'b'] })
+    expect(container.textContent).toContain('a')
+    expect(container.textContent).toContain('b')
+    adapter.updateComponent(instance, { items: ['c'] })
+    expect(container.textContent).toContain('c')
+    expect(container.textContent).not.toContain('a')
+  })
 })
