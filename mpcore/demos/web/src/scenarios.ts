@@ -53,6 +53,10 @@ const scenarioCatalog: Record<string, ScenarioMeta> = {
     name: 'Custom Tab Bar',
     description: '原生 custom-tab-bar 按 tab 页面挂载，覆盖实例状态、事件切换与页面所有权。',
   },
+  'launch-redirect': {
+    name: 'Launch Redirect',
+    description: 'App 启动钩子重定向后保留登录页，避免初始入口覆盖导航。',
+  },
 }
 
 const rawScenarioModules = import.meta.glob('./fixtures/**/*', {

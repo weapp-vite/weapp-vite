@@ -1,8 +1,10 @@
 import type { App as VueApp } from 'vue'
 import type { HeadlessWxAppHideOptions, HeadlessWxLaunchOptions } from '../src'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from 'vue'
+import { createApp, ref } from 'vue'
+import { useWorkbenchSession } from '../../../demos/web/src/composables/useWorkbenchSession'
 import SimulatorE2EApp from '../../../demos/web/src/e2e/SimulatorE2EApp.vue'
+import { builtInScenarios } from '../../../demos/web/src/scenarios'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { querySelectorAll } from '../src/view/selectors'
 import { componentNavigationFiles } from '../test/helpers/componentNavigation'
@@ -328,6 +330,43 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       model: 'headless-simulator',
       platform: 'devtools',
     })
+  })
+
+  it('keeps the page selected by App.onLaunch in the rendered browser preview', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('launch-redirect')
+    const state = await waitFor(
+      () => bridge.getState(),
+      next => next.currentScenarioId === 'launch-redirect'
+        && next.currentRoute === 'pages/login/index'
+        && next.previewMarkup.includes('id="launch-login"'),
+    )
+    expect(state.pageStack).toEqual(['pages/login/index'])
+    expect(state.previewMarkup).toContain('login: launch')
+    expect(parseJsonString<{ loads: string[], launchCalls: number }>(state.appData))
+      .toMatchObject({ loads: ['login'], launchCalls: 1 })
+    bridge.openRoute('pages/home/index')
+    const home = await waitFor(
+      () => bridge.getState(),
+      next => next.currentRoute === 'pages/home/index',
+    )
+    expect(home.previewMarkup).toContain('id="launch-home"')
+  })
+
+  it('selects the redirected launch page when loading a project directly', () => {
+    const state = useWorkbenchSession(ref({ height: 812, width: 375 }))
+    const scenario = builtInScenarios.find(item => item.id === 'launch-redirect')!
+    try {
+      state.loadSession(scenario.name, scenario.files, scenario.id)
+      expect(state.previewMarkup.value).toContain('id="launch-login"')
+      expect(state.selectedScope.value).toMatchObject({
+        scopeId: 'page:pages/login/index',
+        type: 'page',
+      })
+    }
+    finally {
+      state.session.value?.close()
+    }
   })
 
   it('loads a subpackage module through require.async in the browser demo', async () => {
