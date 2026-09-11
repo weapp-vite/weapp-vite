@@ -135,7 +135,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@babel/preset-env": "^8.0.2",
+    "@babel/preset-env": "^8.0.5",
     "@babel/preset-typescript": "^8.0.1",
     "@jridgewell/remapping": "^2.3.5",
     "@vercel/detect-agent": "^1.2.5",
