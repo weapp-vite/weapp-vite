@@ -25,7 +25,7 @@ export interface GlassEaselWebSnapshot {
 }
 export interface GlassEaselWebAdapter {
   registerComponent: (definition: GlassEaselComponentDefinition) => void
-  mountComponent: (name: string, container: Element, props?: Record<string, unknown>) => GlassEaselWebInstance
+  mountComponent: (name: string, container: Element, props?: Record<string, unknown>, slots?: Record<string, string>) => GlassEaselWebInstance
   updateComponent: (instance: unknown, props: Record<string, unknown>) => void
   triggerEvent: (instance: unknown, name: string, detail?: unknown) => void
   unmountComponent: (instance: unknown) => void
@@ -82,7 +82,7 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       }
       definitions.set(definition.name, { ...definition, native: createGlassEaselComponentDefinition(definition) })
     },
-    mountComponent(name, container, props = {}) {
+    mountComponent(name, container, props = {}, slots = {}) {
       const definition = definitions.get(name)
       if (!definition) {
         throw new Error(`component is not registered: ${name}`)
@@ -101,6 +101,8 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
         })
         glassEasel.Element.replaceDocumentElement(native, placeholder.parentNode as any, placeholder as any)
         root = container.firstElementChild as HTMLElement
+        // eslint-disable-next-line ts/no-use-before-define
+        projectSlots(root, slots)
       }
       else {
         root = render(definition.template, props, options.host ?? {})
@@ -160,6 +162,25 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
       }
       definitions.clear()
     },
+  }
+}
+
+/** 将受控 PoC slot 内容投影到官方 backend 生成的 DOM。复杂 slot 仍需由宿主组件树实现。 */
+function projectSlots(root: HTMLElement, slots: Record<string, string>): void {
+  let projected = false
+  for (const slot of Array.from(root.querySelectorAll('slot'))) {
+    const name = slot.getAttribute('name') || 'default'
+    const content = slots[name]
+    if (content === undefined) {
+      continue
+    }
+    const fragment = document.createRange().createContextualFragment(content)
+    slot.replaceWith(fragment)
+    projected = true
+  }
+  if (!projected && slots.default !== undefined) {
+    const target = root.firstElementChild ?? root
+    target.insertAdjacentHTML('beforeend', slots.default)
   }
 }
 

@@ -45,6 +45,15 @@ describe('glass-easel web adapter PoC', () => {
     expect(definition).toBeDefined()
   })
 
+  it('projects explicitly supplied slot content into the mounted DOM', () => {
+    const adapter = createGlassEaselWebAdapter()
+    adapter.registerComponent({ name: 'slot-host', template: '<section><slot /></section>' })
+    const container = document.createElement('div')
+    const instance = adapter.mountComponent('slot-host', container, {}, { default: '<b>child</b>' })
+    expect(container.querySelector('section')?.innerHTML).toContain('<b>child</b>')
+    expect(adapter.getSnapshot(instance).html).toContain('child')
+  })
+
   it('bridges triggered events to the host', () => {
     const dispatchEvent = vi.fn()
     const adapter = createGlassEaselWebAdapter({ host: { dispatchEvent } })
