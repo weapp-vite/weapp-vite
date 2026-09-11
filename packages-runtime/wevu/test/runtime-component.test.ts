@@ -811,5 +811,4 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     inst.__wevu.proxy.increment()
     expect(inst.__wevu.setupState.count.value).toBe(1)
   })
-
 })
