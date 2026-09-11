@@ -2361,15 +2361,24 @@ importers:
         specifier: 1.2.0
         version: 1.2.0
     devDependencies:
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
       tsd:
         specifier: 0.33.0
         version: 0.33.0
       tsdown:
         specifier: 0.23.0
         version: 0.23.0(@volar/typescript@2.4.28(typescript@6.0.3))(tsx@4.23.13)(typescript@6.0.3)(unrun@0.3.1(synckit@0.11.13))(vue-tsc@3.3.11(typescript@6.0.3))
+      tsx:
+        specifier: 4.23.13
+        version: 4.23.13
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.104.0)(sass@1.104.0)(terser@5.34.1)(tsx@4.23.13)(yaml@2.9.0)
       vitest:
         specifier: ~5.0.0
         version: 5.0.0(@types/node@26.5.1)(@vitest/browser-playwright@5.0.0)(@vitest/coverage-v8@5.0.0)(@vitest/ui@5.0.0)(happy-dom@20.14.3(bufferutil@4.1.0))(vite@8.3.0(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.104.0)(sass@1.104.0)(terser@5.34.1)(tsx@4.23.13)(yaml@2.9.0))

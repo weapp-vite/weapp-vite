@@ -20,6 +20,7 @@
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
+    "test:browser": "pnpm build && tsx test/browser.e2e.ts",
     "typecheck": "tsc --noEmit",
     "test:types": "pnpm build && tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts"
   },
@@ -31,9 +32,12 @@
     "glass-easel-template-compiler": "1.2.0"
   },
   "devDependencies": {
+    "playwright": "1.63.0",
     "tsd": "0.33.0",
     "tsdown": "0.23.0",
+    "tsx": "4.23.13",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "~5.0.0"
   }
 }
