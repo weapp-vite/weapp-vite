@@ -1,5 +1,5 @@
 {
-  "libVersion": "3.15.0",
+  "libVersion": "3.17.3",
   "projectname": "github-issues",
   "setting": {
     "urlCheck": false,
@@ -896,6 +896,13 @@
         {
           "name": "pages/issue-911-result/index",
           "pathName": "pages/issue-911-result/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-987/index",
+          "pathName": "pages/issue-987/index",
           "query": "",
           "scene": null,
           "launchMode": "default"

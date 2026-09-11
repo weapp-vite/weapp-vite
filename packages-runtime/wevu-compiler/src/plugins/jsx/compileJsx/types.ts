@@ -1,6 +1,6 @@
 import type { Expression, JSXElement, JSXFragment } from '@weapp-vite/ast/babelTypes'
 import type { WevuBindingManifestV1 } from '../../../types/bindingManifest'
-import type { InlineExpressionAsset, TemplateCompileOptions } from '../../vue/compiler/template/types'
+import type { ClassStyleBinding, ForParseResult, InlineExpressionAsset, TemplateCompileOptions } from '../../vue/compiler/template/types'
 
 export interface JsxModuleExport {
   expression: Expression | JSXElement | JSXFragment
@@ -29,6 +29,9 @@ export interface JsxCompileContext {
   warnings: string[]
   bindingManifest: WevuBindingManifestV1
   inlineExpressions: InlineExpressionAsset[]
+  classStyleBindings: ClassStyleBinding[]
+  forStack: ForParseResult[]
+  interpolationCache: WeakMap<Expression, string>
   inlineExpressionSeed: number
   scopeStack: string[]
   setupRefBindings?: Set<string>

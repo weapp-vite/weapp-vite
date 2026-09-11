@@ -168,13 +168,14 @@ const ROUTE_ELEMENT_SNAPSHOT_FUNCTION_DECLARATION = `function (route, query, sel
         }
         selectorQuery
           .selectAll(selector)
-          .fields({
+          // 宿主 JSON.parse 创建可跨 DevTools evaluate 上下文传输的查询选项。
+          .fields(JSON.parse(JSON.stringify({
             id: true,
             dataset: true,
             rect: true,
             size: true,
             computedStyle: Array.isArray(styleNames) ? styleNames : []
-          }, function (nodes) {
+          })), function (nodes) {
             finish(nodes);
           })
           .exec();

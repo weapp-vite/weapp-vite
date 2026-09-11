@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：92；微信：89；范围外：3。
-- 展开的 case 声明：230；已接入计划：230；缺计划：0。
+- 任务：93；微信：90；范围外：3。
+- 展开的 case 声明：233；已接入计划：233；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -92,6 +92,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/wevu-features.runtime.subpath.test.ts                                                 | devtools           |     1 |     1 |       0 | wechat       |
 | ide/wevu-jsx-tsx.hmr.runtime.test.ts                                                      | devtools           |     1 |     1 |       0 | wechat       |
 | ide/wevu-jsx-tsx.runtime.test.ts                                                          | devtools, headless |     3 |     3 |       0 | wechat       |
+| ide/wevu-query.runtime.test.ts                                                            | devtools, headless |     3 |     3 |       0 | wechat       |
 | ide/wevu-router-hmr.runtime.test.ts                                                       | devtools           |     1 |     1 |       0 | wechat       |
 | ide/wevu-runtime-demo.request-globals.weapp.test.ts                                       | devtools           |     2 |     2 |       0 | wechat       |
 | ide/wevu-runtime-demo.vue-query.weapp.test.ts                                             | devtools           |     1 |     1 |       0 | wechat       |
@@ -113,9 +114,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### app lifecycle compare (e2e) > compares wevu app lifecycle logs against native
 
-- Source: `e2e/ide/app-lifecycle.test.ts:231`
+- Source: `e2e/ide/app-lifecycle.test.ts:233`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps`; checkpoints: `['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: \`${variant}:initial\`, route: INDEX_ROUTE, action: \`冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态\`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' `; source: `e2e/ide/app-lifecycle.test.ts:232`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps`; checkpoints: `['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: \`${variant}:initial\`, route: INDEX_ROUTE, action: \`冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态\`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' `; source: `e2e/ide/app-lifecycle.test.ts:234`
 - Operations: `check(native:initial)`, `callMethod(refreshLifecycleSummary)`, `check(native:finalized)`, `check(wevu-ts:initial)`, `check(wevu-ts:finalized)`, `check(wevu-vue:initial)`, `check(wevu-vue:finalized)`
 
 ## ide/app-prelude-native.runtime.test.ts
@@ -145,9 +146,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR
 
-- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:441`
+- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:443`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:446`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:448`
 - Routes: ``
 - Operations: `check(initial)`, `check(app-update)`, `check(layout-update)`, `check(page-update)`, `check(dependency-update)`
 
@@ -793,50 +794,50 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.default`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:82`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `callMethodWithOptions(_runE2E)`, `check(mounted)`
 
-### e2e app: github-issues / issue #911 > waits for an async guard before resolving a redirect and mounting the initial page
+### e2e app: github-issues / issue #911 > executes an async blocking redirect without mounting the initial page
 
 - Source: `e2e/ide/github-issues.runtime.issue911.test.ts:99`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.redirect`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:100`
 - Routes: `/pages/issue-911/index?mode=redirect`
-- Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=redirect)`, `check(mounted)`
+- Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=redirect)`, `check(result)`
 
 ### e2e app: github-issues / issue #911 > aborts after an async guard without mounting the target page
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:121`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:114`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.abort`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:122`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.abort`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:115`
 - Routes: `/pages/issue-911/index?mode=abort`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=abort)`, `check(blocked)`, `check(result)`
 
 ### e2e app: github-issues / issue #911 > does not run the issue guard for a subsequent non-target navigation
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:138`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:131`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.subsequent`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:139`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.subsequent`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:132`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `check(mounted)`, `check(other)`
 
 ### e2e app: github-issues / issue #911 > mounts after the default timeout when an initial guard never settles
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:158`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:151`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.never`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:159`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.never`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:152`
 - Routes: `/pages/issue-911/index?mode=never`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=never)`, `callMethodWithOptions(_runE2E)`, `check(mounted)`
 
 ### e2e app: github-issues / issue #911 > settles a rejected initial guard without leaving an unhandled promise gate
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:173`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:166`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.reject`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:174`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.reject`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:167`
 - Routes: `/pages/issue-911/index?mode=reject`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=reject)`, `check(blocked)`, `check(result)`
 
 ### e2e app: github-issues / issue #911 > cancels a late guard when the page is replaced quickly
 
-- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:188`
+- Source: `e2e/ide/github-issues.runtime.issue911.test.ts:181`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.late`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:189`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `GUARD_PLANS.late`; source: `e2e/ide/github-issues.runtime.issue911.test.ts:182`
 - Routes: `/pages/issue-911/index?mode=late`, `/pages/issue-550/index`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=late)`, `reLaunch(/pages/issue-550/index)`, `check(replaced)`, `check(settled)`, `check(result)`
 
@@ -926,9 +927,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### e2e app: issue-340-hoist runtime > reLaunches both subpackage pages with hoisted shared imports intact
 
-- Source: `e2e/ide/issue-340-hoist.runtime.test.ts:264`
+- Source: `e2e/ide/issue-340-hoist.runtime.test.ts:265`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/issue-340-hoist`; checkpoints: `[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ`; source: `e2e/ide/issue-340-hoist.runtime.test.ts:265`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/issue-340-hoist`; checkpoints: `[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ`; source: `e2e/ide/issue-340-hoist.runtime.test.ts:266`
 - Routes: `/subpackages/item/login-required/index`, `/subpackages/user/register/form`
 - Operations: `check(item)`, `check(user)`
 
@@ -1765,6 +1766,29 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `apps/wevu-jsx-tsx-demo`; checkpoints: `JSX_SETUP_CHECKPOINTS`; source: `e2e/ide/wevu-jsx-tsx.runtime.test.ts:105`
 - Routes: `/pages/setup-render/index`, `/pages/sfc-script-jsx/index`, `/pages/sfc-script-setup-tsx/index`
 - Operations: `reLaunch(/pages/setup-render/index)`, `check(setup:initial)`, `callMethodWithOptions(increment)`, `check(setup:incremented)`, `reLaunch(/pages/sfc-script-jsx/index)`, `check(sfc-jsx:initial)`, `callMethodWithOptions(runE2E)`, `check(sfc-jsx:incremented)`, `reLaunch(/pages/sfc-script-setup-tsx/index)`, `check(sfc-setup:initial)`, `callMethodWithOptions(__weapp_vite_inline)`, `check(sfc-setup:updated)`
+
+## ide/wevu-query.runtime.test.ts
+
+### @wevu/query mini-program runtime [${runtimeProvider}] > deduplicates list subscribers, keeps fresh data, then refreshes invalidated hidden data after back
+
+- Source: `e2e/ide/wevu-query.runtime.test.ts:97`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'list:fresh', route: LIST_ROUTE, action: '首次共享请求完成后检查两个订阅者', nodes: [ { selector: '#query-primary-result', text: 'dedup\|revision:0\|request:dedup-1\|item:item-dedup-r0' }, { selector: '#query-secondary-result', text: 'dedup\|revision:0`; source: `e2e/ide/wevu-query.runtime.test.ts:98`
+- Operations: `reLaunch(createListRoute(server.baseUrl, 'dedup'))`, `check(list:fresh)`, `tap(<missing>)`, `check(detail:mutation)`, `check(list:refreshed)`
+
+### @wevu/query mini-program runtime [${runtimeProvider}] > keeps a slow old-key completion from replacing the active key result
+
+- Source: `e2e/ide/wevu-query.runtime.test.ts:154`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'race:fast', route: LIST_ROUTE, action: '切换到新 key 后检查较快响应', nodes: [ { selector: '#query-primary-result', text: 'fast\|revision:1\|request:fast-1\|item:item-fast-r1' }, { selector: '#query-secondary-result', text: 'fast\|revision:1\|requ`; source: `e2e/ide/wevu-query.runtime.test.ts:155`
+- Operations: `reLaunch(createListRoute(server.baseUrl, 'race-seed'))`, `tap(<missing>)`, `check(race:fast)`, `check(race:stable)`
+
+### @wevu/query mini-program runtime [${runtimeProvider}] > defers automatic queries while the app is hidden, then resumes one shared request on app show
+
+- Source: `e2e/ide/wevu-query.runtime.test.ts:189`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'app:resumed', route: LIST_ROUTE, action: '应用恢复前台后检查一次共享请求的界面结果', nodes: [ { selector: '#query-primary-result', text: 'background\|revision:1\|request:background-1\|item:item-background-r1' }, { selector: '#query-secondary-result', tex`; source: `e2e/ide/wevu-query.runtime.test.ts:190`
+- Operations: `reLaunch(createListRoute(server.baseUrl, 'background'))`, `check(app:resumed)`
 
 ## ide/wevu-router-hmr.runtime.test.ts
 

@@ -8,6 +8,16 @@
       "@weapp-core/api/vitest": [
         "../../@weapp-core/api/src/vitest/index.ts"
       ],
+      "@weapp-core/types": [
+        "../../@weapp-core/types/src/index.ts"
+      ],
+      "@weapp-core/types/*": [
+        "../../@weapp-core/types/src/*"
+      ],
+      "@weapp-core/types/weapp": ["../../@weapp-core/types/src/weappIntrinsicElements.ts"],
+      "@weapp-core/types/alipay": ["../../@weapp-core/types/src/alipayIntrinsicElements.ts"],
+      "@weapp-core/types/tt": ["../../@weapp-core/types/src/ttIntrinsicElements.ts"],
+      "@weapp-core/types/miniprogram": ["../../@weapp-core/types/src/miniprogramIntrinsicElements.ts"],
       "@wevu/api/vitest": [
         "../weapi/src/vitest.ts"
       ]

@@ -12,10 +12,14 @@
 - 提供测试节点句柄上的 `tap()`、`trigger()`、`input()`、`change()`、`blur()` 交互辅助方法
 - 提供测试页面/会话句柄上的 `waitForSelector()`、`waitForText()`、`waitForTextGone()`、`waitForData()`、`waitForCurrentPage()` 等轮询等待方法
 - 测试会话句柄提供与 `miniprogram-automator` 对齐的 `toolInfo()`，headless provider 返回稳定的 simulator 标识
+- 提供原生形状的 `wx.onAppShow/offAppShow/onAppHide/offAppHide`；Node/browser session 与测试句柄通过 `triggerAppShow(options?)`、`triggerAppHide({ reason })` 显式驱动应用前后台事件，普通页面导航不会伪造应用切换
+- 测试入口 `launch({ configureSession })` 会在执行 `app.js` 前等待配置完成，可安装测试宿主能力；配置失败会关闭会话，默认 request 仍受既有 mock / strict mock 策略约束，不自动开放真实网络
 - 通过共享 `RuntimeKernel` 管理 artifact、独立执行 realm、timer、diagnostics 与平台适配边界
 - `close()` 会清理页面栈、组件 scope、observer、timer、事件和模块缓存，并使旧页面/节点 handle 失效
 
 编写页面和组件单测时优先使用上层 `@mpcore/test`；直接使用本包适合实现 provider、调试桥或更低层运行时断言。
+
+应用首次启动只执行一次 `onLaunch`，并在首页加载前发送应用显示事件。后续 `triggerAppShow` 更新 enter options，不改写 launch options；隐藏原因显式限定为 `0 | 1 | 2 | 3`。关闭会话会清理应用事件监听，不合成额外的隐藏事件。这里定义的是可测试的 simulator 行为，不代表已验证真实微信 IDE 中 App hook 与 `wx` 监听器之间的相对调用顺序。
 
 浏览器会话的 `renderCurrentPage().styles` 提供当前页面的 `cssText`、项目相对 `dependencies` 和 `appWxssEnabled`，Web demo 将该结果挂载到页面预览的 Shadow DOM。解析器读取 `app.wxss`、页面 `.wxss` 及递归本地 `@import`，保留导入位置和全局在前、页面在后的层叠顺序；页面 `.wxss` 内联的全局样式快照也会动态加载，并保留其后页面自有样式的覆盖优先级。文件修改后重新渲染会读取最新内容，包括只更新样式的场景，不重建页面或 App 实例。
 

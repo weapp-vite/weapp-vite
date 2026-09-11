@@ -90,6 +90,7 @@ export default await defineEslintConfig({
         files: [
           'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/web-apis/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'e2e-apps/*/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
@@ -100,6 +101,7 @@ export default await defineEslintConfig({
       files: [
         'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+        'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
       ],
       ignores: [

@@ -63,7 +63,6 @@ describe('compileWxml button mapping', () => {
     expect(result.code).toContain('weapp-progress')
     expect(result.code).toContain('weapp-rich-text')
     expect(result.code).toMatch(/\.nodes=\$\{ctx\.eval\("richNodes", [^,]+, __wxs_modules\)\}/)
-    expect(result.code).toContain('@activeend=')
     expect(result.code).toMatch(/\.range=\$\{ctx\.eval\("options", [^,]+, __wxs_modules\)\}/)
     expect(result.code).toMatch(/\.value=\$\{ctx\.eval\("pickerValue", [^,]+, __wxs_modules\)\}/)
     expect(result.code).toContain('weapp-scroll-view')

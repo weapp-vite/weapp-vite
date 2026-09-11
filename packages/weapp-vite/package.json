@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite",
   "type": "module",
-  "version": "7.0.4",
+  "version": "7.1.0",
   "description": "weapp-vite 一个现代化的小程序打包工具",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -15,13 +15,16 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "vite",
     "ts",
     "wxml",
     "wxss",
     "mp",
-    "miniprogram",
     "scss"
   ],
   "exports": {
@@ -132,7 +135,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@babel/preset-env": "^8.0.2",
+    "@babel/preset-env": "^8.0.5",
     "@babel/preset-typescript": "^8.0.1",
     "@jridgewell/remapping": "^2.3.5",
     "@vercel/detect-agent": "^1.2.5",

@@ -12,9 +12,9 @@ const loggerMock = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/cli/automator-session', () => ({
-  acquireSharedMiniProgram: acquireSharedMiniProgramMock,
+  acquireConsoleMiniProgram: acquireSharedMiniProgramMock,
   closeSharedMiniProgram: closeSharedMiniProgramMock,
-  connectMiniProgram: connectMiniProgramMock,
+  connectConsoleMiniProgram: connectMiniProgramMock,
   releaseSharedMiniProgram: releaseSharedMiniProgramMock,
 }))
 

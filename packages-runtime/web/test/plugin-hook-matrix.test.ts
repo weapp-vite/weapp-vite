@@ -1,6 +1,8 @@
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import type { Plugin, ViteDevServer } from 'vite'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { createServer } from 'vite'
 import { describe, expect, it, vi } from 'vitest'
 import { weappWebPlugin } from '../src/plugin'
 import {
@@ -109,6 +111,30 @@ describe('weapp web plugin hook matrix', () => {
     expect(emitFile).not.toHaveBeenCalled()
   })
 
+  it('loads compiled templates when runtime packages are only plugin dependencies', async () => {
+    const { root } = await createPluginFixture()
+    let server: ViteDevServer | undefined
+    try {
+      const consumerAlias = join(root, 'consumer-runtime.js')
+      await writeFile(consumerAlias, 'export const consumer = true')
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        resolve: { alias: { '@weapp-vite/web': consumerAlias } },
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const result = await server.transformRequest('/src/pages/index/index.wxml?weapp-web-template')
+      expect(result?.code).toContain('export function render')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('resolves virtual, component, extensionless and SFC style module ids', async () => {
     const { root, srcRoot } = await createPluginFixture()
     const plugin = weappWebPlugin({ srcDir: 'src' })
@@ -122,6 +148,8 @@ describe('weapp web plugin hook matrix', () => {
     expect(await resolveId('/@weapp-vite/web/entry')).toBe(ENTRY_ID)
     expect(await resolveId('@weapp-vite/web/entry')).toBe(ENTRY_ID)
     expect(normalizePath(await resolveId('lit') as string)).toMatch(/\/lit\/index\.js$/)
+    expect(normalizePath(await resolveId('lit/async-directive.js') as string))
+      .toMatch(/\/lit\/async-directive\.js$/)
     expect(normalizePath(await resolveId('lit/directives/repeat.js') as string))
       .toMatch(/\/lit\/directives\/repeat\.js$/)
     expect(await resolveId(AUTO_ROUTES_ID)).toBe(RESOLVED_AUTO_ROUTES_ID)

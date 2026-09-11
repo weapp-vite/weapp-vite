@@ -1,10 +1,11 @@
 {
   "name": "@wevu/web-apis",
   "type": "module",
-  "version": "1.2.40",
+  "version": "1.2.41",
   "description": "Web API polyfills and global installers for mini-program runtimes",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -14,12 +15,16 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "web",
     "runtime",
     "fetch",
     "polyfill",
-    "miniprogram"
+    "api"
   ],
   "sideEffects": false,
   "exports": {

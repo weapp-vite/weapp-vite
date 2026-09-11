@@ -37,12 +37,12 @@ function other(id: string): DomCheckpoint {
 }
 
 const completeTrace = ['beforeEach:start', 'beforeEach:done', 'mounted']
-const redirectTrace = ['beforeEach:start', 'beforeEach:done', 'redirect', ...completeTrace]
+const redirectTrace = ['beforeEach:start', 'beforeEach:done', 'redirect']
 const baseline = report('baseline', 'none', [])
 
 export const GUARD_PLANS = {
   default: [baseline, mounted(completeTrace)],
-  redirect: [baseline, mounted(redirectTrace)],
+  redirect: [baseline, report('result', 'redirect', redirectTrace)],
   abort: [baseline, blocked('abort'), report('result', 'abort', ['beforeEach:start', 'beforeEach:done'])],
   subsequent: [baseline, mounted(completeTrace), other('other')],
   never: [baseline, mounted(['beforeEach:start', 'mounted'])],

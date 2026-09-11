@@ -230,8 +230,10 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
       Object.keys(result).forEach((key) => {
         const val = (result as any)[key]
         if (typeof val === 'function') {
-          ;(runtime.methods as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
-          ;(runtime.state as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
+          const bound = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
+          ;(runtime.methods as any)[key] = bound
+          ;(runtime.state as any)[key] = bound
+          ;(runtimeSetupState as any)[key] = bound
           methodsChanged = true
         }
         else {

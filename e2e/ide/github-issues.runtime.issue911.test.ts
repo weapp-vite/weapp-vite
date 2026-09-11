@@ -96,26 +96,19 @@ describe('e2e app: github-issues / issue #911', { concurrent: false }, () => {
     await dom.check('mounted', await getSharedMiniProgram(ctx), page)
   })
 
-  it('waits for an async guard before resolving a redirect and mounting the initial page', async (ctx) => {
+  it('executes an async blocking redirect without mounting the initial page', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', GUARD_PLANS.redirect)
     const miniProgram = await prepareGuardCase(ctx, dom)
     await clearIssue911Trace(miniProgram)
     await miniProgram.reLaunch(ISSUE_911_REDIRECT_ROUTE).catch(() => {})
-    const page = await waitForCurrentPagePath(miniProgram, ISSUE_911_ROUTE, 10_000)
+    const page = await waitForCurrentPagePath(miniProgram, GUARD_RESULT_ROUTE, 10_000)
     assert(page, 'Expected issue-911 redirect target page')
     await expect.poll(
       async () => (await readIssue911Trace(miniProgram))?.trace,
       { timeout: 10_000 },
-    ).toEqual([
-      'beforeEach:start',
-      'beforeEach:done',
-      'redirect',
-      'beforeEach:start',
-      'beforeEach:done',
-      'mounted',
-    ])
-    expect((await readIssue911Trace(miniProgram))?.mode).toBe('redirect-target')
-    await dom.check('mounted', miniProgram, page)
+    ).toEqual(['beforeEach:start', 'beforeEach:done', 'redirect'])
+    expect((await readIssue911Trace(miniProgram))?.mode).toBe('redirect')
+    await dom.check('result', miniProgram, page)
   })
 
   it('aborts after an async guard without mounting the target page', async (ctx) => {

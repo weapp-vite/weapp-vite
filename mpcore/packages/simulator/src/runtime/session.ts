@@ -1,4 +1,11 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type {
+  HeadlessAppDefinition,
+  HeadlessHostRegistries,
+  HeadlessWxAppHideOptions,
+  HeadlessWxLaunchOptions,
+  HeadlessWxNetworkType,
+  HeadlessWxSavedFileInfo,
+} from '../host'
 import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
@@ -31,6 +38,7 @@ import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
+import { HeadlessAppLifecycle } from './appLifecycle'
 import { runComponentLifecycle } from './componentInstance'
 import { detachComponentRelations } from './componentInstance/relations'
 import { createModuleLoader } from './moduleLoader'
@@ -190,6 +198,7 @@ export class HeadlessSession {
 
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
+  private readonly appLifecycle = new HeadlessAppLifecycle()
   private readonly moduleLoader
   private readonly eventListeners = new Map<string, Set<(...args: any[]) => void>>()
   private readonly registries: HeadlessHostRegistries
@@ -305,7 +314,11 @@ export class HeadlessSession {
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
         nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
+        offAppHide: callback => this.appLifecycle.offAppHide(callback),
+        offAppShow: callback => this.appLifecycle.offAppShow(callback),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
+        onAppHide: callback => this.appLifecycle.onAppHide(callback),
+        onAppShow: callback => this.appLifecycle.onAppShow(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         previewImage: option => this.wxState.previewImage(option),
@@ -363,6 +376,7 @@ export class HeadlessSession {
     this.canvasContexts.clear()
     this.renderRequestCallbacks.length = 0
     this.renderRequestPending = false
+    this.appLifecycle.close()
     this.wxState.close()
     this.moduleLoader.close()
     this.eventListeners.clear()
@@ -968,7 +982,7 @@ export class HeadlessSession {
     this.appInstance = createAppInstance(this.appDefinition)
     this.appInstance.onLaunch?.(launchOptions)
     this.syncRuntimeAppState()
-    this.appInstance.onShow?.(launchOptions)
+    this.appLifecycle.triggerAppShow(this.appInstance, launchOptions)
     return this.appInstance
   }
 
@@ -1143,6 +1157,26 @@ export class HeadlessSession {
     current.onPageScroll?.({
       scrollTop: current.__scrollTop__,
     })
+  }
+
+  triggerAppHide(options: HeadlessWxAppHideOptions) {
+    this.assertActive()
+    const app = this.appInstance ?? this.bootstrap()
+    this.appLifecycle.triggerAppHide(app, options)
+  }
+
+  triggerAppShow(options?: HeadlessWxLaunchOptions) {
+    this.assertActive()
+    if (!this.appInstance) {
+      this.bootstrap(options)
+      return
+    }
+
+    const nextOptions = options ?? cloneAppLaunchOptions(this.enterOptions)
+    if (options) {
+      this.enterOptions = cloneAppLaunchOptions(options)
+    }
+    this.appLifecycle.triggerAppShow(this.appInstance, nextOptions)
   }
 
   triggerPullDownRefresh() {

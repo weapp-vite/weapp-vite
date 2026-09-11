@@ -1,11 +1,11 @@
 {
   "name": "weapp-ide-cli",
   "type": "module",
-  "version": "6.1.2",
-  "description": "让微信开发者工具，用起来更加方便！",
+  "version": "6.1.3",
+  "description": "Command-line tools for automating WeChat DevTools and mini-program projects.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
-  "homepage": "https://github.com/sonofmagic/weapp-tailwindcss",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -15,16 +15,18 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
-    "weapp-cli",
     "wechat",
+    "mini-program",
+    "miniprogram",
+    "weapp-cli",
     "cli",
     "uni-app",
     "taro",
     "ide",
     "weapp-ide",
-    "mini",
-    "miniprogram"
+    "mini"
   ],
   "exports": {
     ".": {
@@ -72,7 +74,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org/",
+    "registry": "https://registry.npmjs.org",
     "exports": {
       ".": {
         "types": "./dist/index.d.ts",

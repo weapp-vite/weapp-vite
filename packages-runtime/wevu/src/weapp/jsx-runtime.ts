@@ -1,7 +1,8 @@
+import type { WeappIntrinsicElements } from '@weapp-core/types/weapp'
 import type { JSX as WevuJSX, WevuJsxGlobalComponents } from 'wevu/jsx-runtime'
-import type { WeappIntrinsicElements } from '../weappIntrinsicElements'
 
-export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicElements } from '../weappIntrinsicElements'
+export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicElements } from '@weapp-core/types/weapp'
+
 export type {
   WevuJsxChild,
   WevuJsxElement,

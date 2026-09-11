@@ -5,7 +5,7 @@ import type { NavigationBarMetrics } from '../navigationBar'
 import type { WebResourceHintsConfig, WebSeoConfig } from '../seo'
 import type { WebViewportConfig } from '../viewport'
 import type { WebRouteHistoryState, WebRouteTarget, WebRoutingConfig } from './routeRuntime/history'
-import type { AppRuntime, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, RegisterMeta, RouteOptions } from './routeRuntime/options'
+import type { AppHideCallback, AppRuntime, AppShowCallback, ComponentRawOptions, ComponentRecord, NavigateBackOptions, PageRawOptions, PageRecord, RegisterMeta, RouteOptions } from './routeRuntime/options'
 import { slugify } from '../../shared/slugify'
 import {
   configureTabBar,
@@ -246,6 +246,22 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
 
 export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?: RegisterMeta): T {
   return appLifecycle.register(options)
+}
+
+export function offAppHide(callback?: AppHideCallback) {
+  appLifecycle.offAppHide(callback)
+}
+
+export function offAppShow(callback?: AppShowCallback) {
+  appLifecycle.offAppShow(callback)
+}
+
+export function onAppHide(callback: AppHideCallback) {
+  appLifecycle.onAppHide(callback)
+}
+
+export function onAppShow(callback: AppShowCallback) {
+  appLifecycle.onAppShow(callback)
 }
 
 export function navigateTo(options: RouteOptions) {

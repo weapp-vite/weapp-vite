@@ -94,6 +94,7 @@ pnpm build:docs
 - [`@weapp-vite/mcp`](packages/mcp): MCP-related tooling
 - [`weapp-ide-cli`](packages/weapp-ide-cli): CLI helpers for WeChat DevTools workflows
 - [`rolldown-require`](packages/rolldown-require): helper for bundling and requiring files with Rolldown
+- [`@wevu/query`](packages-runtime/wevu-query): independent server-state management for Wevu, with query caching, mutations, and pagination; [usage guide](https://vite.weapp.dev/wevu/store#server-state-query)
 
 ## Documentation
 

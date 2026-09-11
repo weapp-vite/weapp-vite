@@ -915,7 +915,10 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
   })
 
-  it('retries launch when recent DevTools logs include simulator boot errors', async () => {
+  it.each([
+    '[ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
+    '[ERROR] simulator launch catch error Error: simulator launch failed',
+  ])('retries launch when recent DevTools logs include simulator boot errors: %s', async (line) => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
@@ -938,7 +941,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     scanRecentDevtoolsSimulatorBootIssuesMock
       .mockReturnValueOnce([{
         file: 'devtools.log',
-        line: '[ERROR] simulator launch catch error TypeError: Cannot read property \'subPackages\' of undefined',
+        line,
       }])
       .mockReturnValue([])
 
@@ -2556,12 +2559,12 @@ describe('automator launch resilience', { concurrent: false }, () => {
     runWechatIdeEngineBuildByHttpMock.mockClear()
     miniProgram.__rawCompile.mockClear()
 
-    await expect(launched.reLaunch('/pages/index/index')).resolves.toBe(page)
+    await expect(launched.reLaunch('/pages/index/index')).rejects.toThrow('Timed out waiting page root after reLaunch')
 
     expect(miniProgram.__rawReLaunch).toHaveBeenCalledTimes(1)
     expect(page.$).toHaveBeenCalled()
-    expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
-    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
+    expect(miniProgram.__rawCurrentPage).toHaveBeenCalled()
+    expect(miniProgram.__rawClose).toHaveBeenCalledTimes(1)
     expect(resetWechatIdeFileUtilsByHttpMock).not.toHaveBeenCalled()
     expect(runWechatIdeEngineBuildByHttpMock).not.toHaveBeenCalled()
     expect(miniProgram.__rawCompile).not.toHaveBeenCalled()

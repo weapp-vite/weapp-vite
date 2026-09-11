@@ -59,6 +59,21 @@ export default defineComponent({
     expect(result.script).not.toContain('createVNode')
   })
 
+  it('falls back parenthesized member access in compiled JSX templates', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+export default defineComponent({
+  render() {
+    return <view hidden={(following.data.value ?? []).length === 0}>草稿({(drafts.data.value ?? []).length})</view>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/issue-987/index.tsx', { isPage: true })
+    expect(result.template).not.toMatch(/\)\.length/)
+    expect(result.template).toMatch(/hidden="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.script).toContain('__wv_bind_0')
+  })
+
   it('returns the typed binding manifest from the direct JSX compiler', async () => {
     const source = `
 import { defineComponent, ref } from 'wevu'

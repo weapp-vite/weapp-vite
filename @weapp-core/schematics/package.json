@@ -2,9 +2,10 @@
   "name": "@weapp-core/schematics",
   "type": "module",
   "version": "6.2.2",
-  "description": "@weapp-core/schematics",
+  "description": "Project generation schematics for the weapp-vite mini-program toolchain.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,7 +14,14 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite"
+  ],
   "sideEffects": false,
   "weapp-vite-dev": {
     "exports": {
@@ -59,7 +67,9 @@
     },
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "types": "./dist/index.d.ts",
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "zod": "catalog:"

@@ -6,6 +6,7 @@ export type { WebTabBarConfig, WebTabBarItem } from './appShell/tabBar'
 export { ensureButtonDefined, setButtonFormConfig } from './button'
 export type { ButtonFormConfig } from './button'
 export { defineComponent } from './component'
+export { bindRuntimeEvent } from './eventBinding'
 export { getRuntimeExecutionMode, setRuntimeExecutionMode } from './execution'
 export {
   getRuntimeClipboard,
@@ -101,8 +102,12 @@ export {
   navigateTo,
   navigateToMiniProgram,
   nextTick,
+  offAppHide,
+  offAppShow,
   offNetworkStatusChange,
   offWindowResize,
+  onAppHide,
+  onAppShow,
   onNetworkStatusChange,
   onWindowResize,
   openAppAuthorizeSetting,
@@ -157,6 +162,7 @@ export {
   uploadFile,
   vibrateShort,
 } from './polyfill'
+export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './polyfill'
 export {
   disposeWebRouting,
   getWebRoutingConfig,

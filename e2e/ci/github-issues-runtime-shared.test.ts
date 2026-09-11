@@ -14,7 +14,7 @@ import {
 } from '../ide/github-issues.runtime.shared'
 
 describe('github issues runtime shared relaunch helper', () => {
-  it('delegates transient DevTools launch recovery to the shared automator launcher', () => {
+  it('keeps compilation with Vite and waits for cold startup before same-session recovery', () => {
     expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
       projectPath: 'project-root',
       retryWarmupTimeout: true,
@@ -23,13 +23,19 @@ describe('github issues runtime shared relaunch helper', () => {
     })
   })
 
-  it('pins the WeChat simulator type before DevTools creates the project builder', async () => {
+  it('pins the simulator and disables duplicate JS compilation before DevTools creates the builder', async () => {
     const projectConfig = await fs.readJSON(path.resolve(
       import.meta.dirname,
       '../../e2e-apps/github-issues/project.config.json',
     )) as Record<string, unknown>
 
     expect(projectConfig.simulatorType).toBe('wechat')
+    expect(projectConfig.setting).toEqual(expect.objectContaining({ es6: false, enhance: false }))
+    const privateConfig = await fs.readJSON(path.resolve(
+      import.meta.dirname,
+      '../../e2e-apps/github-issues/project.private.config.json',
+    )) as Record<string, unknown>
+    expect(privateConfig.libVersion).toBe(projectConfig.libVersion)
   })
 
   it('removes build-only inputs before DevTools indexes the isolated project', async () => {
@@ -247,6 +253,45 @@ describe('github issues runtime shared relaunch helper', () => {
     expect(miniProgram.reLaunch).toHaveBeenCalledTimes(1)
   })
 
+  it.each([
+    'Uncaught [object Object]',
+    'Cannot destructure property \'rawPath\' of \'t.getPageMetaByWebviewId(...)\' as it is null.',
+  ])('reacquires the rendered current page after metadata rejection: %s', async (message) => {
+    const targetPage = {
+      path: '/pages/index/index',
+      waitForRendered: vi.fn(async () => '<view id="ready" />'),
+    }
+    const miniProgram = {
+      currentPage: vi.fn().mockRejectedValueOnce(new Error(message)).mockResolvedValue(targetPage),
+      reLaunch: vi.fn().mockRejectedValue(new Error(message)),
+      evaluate: vi.fn(async () => targetPage.path),
+    }
+
+    const page = await relaunchPage(miniProgram, targetPage.path, undefined, 1_000, { forceRelaunch: true })
+
+    expect(page).toBe(targetPage)
+    expect(miniProgram.reLaunch).toHaveBeenCalledTimes(1)
+    expect(targetPage.waitForRendered).toHaveBeenCalled()
+    expect(miniProgram.currentPage).toHaveBeenCalledWith(expect.objectContaining({
+      appFunctionFallback: false,
+      pageStackFallback: false,
+      retries: 1,
+      timeout: expect.any(Number),
+    }))
+  })
+
+  it('does not accept the stale page returned by reLaunch when it is no longer current', async () => {
+    const stalePage = { path: '/pages/index/index' }
+    const miniProgram = {
+      currentPage: vi.fn(async () => ({ path: '/pages/other/index' })),
+      reLaunch: vi.fn(async () => stalePage),
+    }
+    await expect(relaunchPage(miniProgram, stalePage.path, undefined, 1, {
+      forceRelaunch: true,
+      readiness: 'route',
+    })).resolves.toBeNull()
+  })
+
   it('calls route page methods through the route-only page protocol with a scoped timeout', async () => {
     const targetPage = {
       path: '/pages/index/index',
@@ -276,6 +321,9 @@ describe('github issues runtime shared relaunch helper', () => {
     expect(miniProgram.currentPage).toHaveBeenCalledWith(
       {
         appFunctionFallback: false,
+        pageStackFallback: false,
+        retries: 1,
+        timeout: expect.any(Number),
       },
     )
   })

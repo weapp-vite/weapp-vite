@@ -7,6 +7,7 @@ import {
   isDevtoolsHttpPortError,
   isDevtoolsLoginRequiredError,
   isDevtoolsSimulatorBootError,
+  isTransientDevtoolsPageMetadataError,
   launchAutomator,
 } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -1049,11 +1050,15 @@ export async function waitForCurrentPagePath(miniProgram: RouteSession, expected
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
+      const queryTimeout = Math.min(CURRENT_PAGE_PROTOCOL_TIMEOUT, Math.max(1, timeoutMs - (Date.now() - start)))
       const page = await runWithTimeout(
         () => miniProgram.currentPage({
           appFunctionFallback: false,
+          pageStackFallback: false,
+          retries: 1,
+          timeout: queryTimeout,
         }),
-        Math.min(CURRENT_PAGE_PROTOCOL_TIMEOUT, Math.max(1, timeoutMs - (Date.now() - start))),
+        queryTimeout,
         'currentPage',
       )
       if (isExpectedRoutePage(page, expectedPath)) {
@@ -1079,6 +1084,7 @@ export function createGithubIssuesLaunchAutomatorOptions(projectPath = APP_ROOT)
     projectPath,
     retryWarmupTimeout: true,
     skipRelaunchPageRootCheck: true,
+    // 完整等待冷启动后仍无页面时，在同一会话内恢复首屏导航。
     warmupAllowRelaunch: true,
   }
 }
@@ -1267,12 +1273,16 @@ export async function relaunchPage(
               targetMiniProgram,
               `${phase}:after-${routeMethod}:${attempt}:confirmed`,
               Math.min(timeoutMs, 8_000),
-            ) ?? relaunchedPage
+            )
           }
         }
         catch (error) {
           process.stdout.write(`[github-issues:relaunch] ${routeMethod}-failed route=${route} phase=${phase} attempt=${attempt}/3 reason=${error instanceof Error ? error.message : String(error)}\n`)
-          if (isRelaunchSessionUnstableError(error)) {
+          if (isTransientDevtoolsPageMetadataError(error)) {
+            // 元数据暂态先重新查询当前页，避免重复导航再次触发首屏守卫。
+            await delay(500)
+          }
+          else if (isRelaunchSessionUnstableError(error)) {
             return null
           }
         }

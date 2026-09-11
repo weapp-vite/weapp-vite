@@ -140,6 +140,18 @@ describe('template expression globals', () => {
     expect(shouldFallbackToRuntimeBinding('content === \'text\'')).toBe(false)
   })
 
+  it('uses runtime bindings for parenthesized member access that WXML cannot parse', () => {
+    expect(shouldFallbackToRuntimeBinding('(following.data.value ?? []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(following.data.value || []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(ok ? items : []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(a?.b ?? []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(a + b).length')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(items).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(rows)[0]')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('item.icon ?? \'app\'')).toBe(false)
+    expect(shouldFallbackToRuntimeBinding('following.data.value.length === 0')).toBe(false)
+  })
+
   it('keeps BigInt operations in JS runtime bindings', () => {
     expect(shouldFallbackToRuntimeBinding('5n / 2n')).toBe(true)
     expect(shouldFallbackToRuntimeBinding('1_000_000_000_000_000_000_000n')).toBe(false)

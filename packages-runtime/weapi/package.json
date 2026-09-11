@@ -1,10 +1,11 @@
 {
   "name": "@wevu/api",
   "type": "module",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Compatibility entry for @weapp-core/api",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,7 +14,14 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "api"
+  ],
   "sideEffects": [
     "./dist/vitest/setup.mjs"
   ],
@@ -41,6 +49,9 @@
     "dist",
     "types"
   ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
@@ -73,6 +84,7 @@
     }
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }

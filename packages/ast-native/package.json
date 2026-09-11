@@ -5,7 +5,7 @@
   "description": "weapp-vite Rust/Oxc native AST analysis prototype",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
-  "homepage": "https://vite.weapp.dev/",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -15,11 +15,16 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "ast",
     "native",
     "oxc",
     "rust",
-    "weapp-vite"
+    "vite"
   ],
   "sideEffects": false,
   "exports": {
@@ -47,7 +52,7 @@
     "native:lint": "eslint package.json index.js index.d.ts native.vitest.config.ts test/**/*.test.ts"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.9.0",
+    "@napi-rs/cli": "^3.9.1",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "vitest": "5.0.0"

@@ -1,10 +1,11 @@
 {
   "name": "@weapp-core/logger",
   "type": "module",
-  "version": "3.1.1",
-  "description": "@weapp-core/logger",
+  "version": "3.1.2",
+  "description": "Structured logging utilities for the weapp-vite toolchain and mini-program runtimes.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,7 +14,15 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite",
+    "runtime"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -58,7 +67,9 @@
     },
     "main": "./dist/index.js",
     "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "types": "./dist/index.d.ts",
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "consola": "^3.4.2",

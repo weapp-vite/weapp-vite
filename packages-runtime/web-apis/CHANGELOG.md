@@ -1,5 +1,27 @@
 # @wevu/web-apis
 
+## 1.2.41
+
+### Patch Changes
+
+- 新增适用于静态 WXML 数据绑定的 `useAsyncDerivation()`，统一首次加载、保留旧值刷新、错误、竞态取消与作用域销毁状态，并让根入口导入稳定路由到独立响应式产物。
+
+  终态观察者抛错时仍然结算所有 refresh 等待者，并把 Promise 的 then 访问与接管隔离在响应式依赖收集之外；带有自定义 then 访问器的原生 Promise 同样遵循异步错误契约。
+
+  异步派生状态按每个 `status` 字面量独立建模，使条件分支和 `Extract` 等类型工具都能准确收窄状态对应的值。
+
+- 同步更新对 `@weapp-core/constants` 的依赖版本，使国际化、React、Web 运行时与测试工具使用本轮修复所需的公共运行时常量。
+
+- 重构 Wevu 可选运行时能力的安装边界：编译产物会按模板元数据和应用选项显式安装所需能力，未使用 patch、模板 ref、内联事件、高频告警、作用域插槽或 layout 的小程序不再携带对应实现；公开 `wevu` 入口继续保留原有动态配置行为。
+
+  能力分析沿用配置初始化表达式所属的词法作用域，不再被调用位置的同名局部变量误导；提取后的作用域插槽组件也会依据自身 layout host 元数据安装 layout 能力。
+
+  按需 patch 与 diff 共用宿主提交跟踪，保证 setData 派发期间新增的 computed 变更不会丢失；清空模板 ref 绑定时会使旧异步查询失效，避免实例 `$nextTick` 读到已移除的引用。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+  - @wevu/api@0.3.1
+
 ## 1.2.40
 
 ### Patch Changes

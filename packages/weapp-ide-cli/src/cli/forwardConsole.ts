@@ -1,7 +1,7 @@
 import type { AutomatorSessionOptions, MiniProgramEventMap, MiniProgramLike } from './automator-session'
 import { inspect } from 'node:util'
 import logger, { colors } from '../logger'
-import { acquireSharedMiniProgram, closeSharedMiniProgram, connectMiniProgram, releaseSharedMiniProgram } from './automator-session'
+import { acquireConsoleMiniProgram as acquireSharedMiniProgram, closeSharedMiniProgram, connectConsoleMiniProgram as connectMiniProgram, releaseSharedMiniProgram } from './automator-session'
 
 export type ForwardConsoleLogLevel = 'debug' | 'log' | 'info' | 'warn' | 'error'
 

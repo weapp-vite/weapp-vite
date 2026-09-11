@@ -1,3 +1,4 @@
+import type { HeadlessAutomatorLaunchOptions } from '../utils/automator.headless'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
@@ -407,7 +408,9 @@ export async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-export async function launchIsolatedMiniProgram() {
+export async function launchIsolatedMiniProgram(options: {
+  configureHeadlessSession?: HeadlessAutomatorLaunchOptions['configureSession']
+} = {}) {
   if (!sharedBuildPrepared) {
     await runBuild()
     sharedBuildPrepared = true
@@ -416,6 +419,7 @@ export async function launchIsolatedMiniProgram() {
     await closeSharedMiniProgram()
   }
   return await launchAutomator({
+    configureHeadlessSession: options.configureHeadlessSession,
     projectPath: APP_ROOT,
     skipRelaunchPageRootCheck: true,
     skipWarmup: true,
