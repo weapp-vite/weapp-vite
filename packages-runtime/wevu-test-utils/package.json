@@ -63,5 +63,11 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
   }
 }
