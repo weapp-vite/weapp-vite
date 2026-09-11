@@ -9,7 +9,7 @@ import {
   DEFAULT_NODE_INCLUDE,
   getManagedTypeScriptConfig,
   hasDependency,
-  isWevuJsxImportSource,
+  isWevuJsxRuntimeTypePackage,
   mergePaths,
   normalizeSrcRoot,
   rebaseManagedPaths,
@@ -55,10 +55,6 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
     'weapp-vite/client',
   ]
 
-  const jsxImportSource = resolveAppWevuJsxImportSource(ctx, legacyConfig)
-  if (isWevuJsxImportSource(jsxImportSource)) {
-    types.push(`${jsxImportSource}/jsx-runtime`)
-  }
   if (Array.isArray(legacyTypes) && legacyTypes.length > 0) {
     types.push(...legacyTypes)
   }
@@ -67,7 +63,7 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
     types.push(...userTypes)
   }
 
-  return unique(types)
+  return unique(types).filter(type => !isWevuJsxRuntimeTypePackage(type))
 }
 
 function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {

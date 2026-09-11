@@ -41,6 +41,8 @@ Weapp-vite 生成受管 TypeScript 配置时，会保持 `jsx: "preserve"`。只
 
 用户显式配置的 `weapp.typescript.app.compilerOptions.jsxImportSource` 优先级更高。需要三端可移植约束时，应明确覆盖为 `wevu/miniprogram`，它不会被自动当作未知平台的后备类型。
 
+不要把这些入口写进 `compilerOptions.types`。TypeScript 会把 `types` 当成类型包目录查找，`wevu/weapp/jsx-runtime` 这类子路径会报 `TS2688`（找不到类型定义文件）。受管 `tsconfig.app.json` 只设置 `jsxImportSource`，JSX 命名空间由 `${jsxImportSource}/jsx-runtime` 模块解析。
+
 ### 微信小程序
 
 ```json
