@@ -89,7 +89,7 @@ export function createGlassEaselWebAdapter(options: GlassEaselWebAdapterOptions 
         native = glassEasel.Component.createWithContext(name, definition.native, backendContext, (component: any) => {
           component.setData(props)
         })
-        glassEasel.Element.replaceDocumentElement(native, placeholder.parentNode, placeholder)
+        glassEasel.Element.replaceDocumentElement(native, placeholder.parentNode as any, placeholder as any)
         root = container.firstElementChild as HTMLElement
       }
       else {
