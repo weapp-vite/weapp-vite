@@ -4,6 +4,9 @@ import { normalizeJsExpressionWithContext } from './js'
 import { parseBabelExpressionFile } from './parse'
 import { normalizeWxmlExpression } from './wxml'
 
+/** 微信 WXML 不能解析括号表达式后的成员或下标访问。 */
+const WXML_PARENTHESIZED_MEMBER_RE = /\)\s*(?:\.|\[)/
+
 function buildForIndexAccess(context: TransformContext): string {
   if (!context.forStack.length) {
     return ''
@@ -14,7 +17,18 @@ function buildForIndexAccess(context: TransformContext): string {
 }
 
 /**
- * 检测表达式是否包含小程序模板不稳定的调用语义。
+ * 检测规范化后的 WXML 表达式是否包含非法的括号成员访问。
+ */
+export function hasWxmlParenthesizedMemberAccess(exp: string): boolean {
+  const trimmed = exp.trim()
+  if (!trimmed) {
+    return false
+  }
+  return WXML_PARENTHESIZED_MEMBER_RE.test(normalizeWxmlExpression(trimmed))
+}
+
+/**
+ * 检测表达式是否包含小程序模板不稳定或非法的语义。
  */
 export function shouldFallbackToRuntimeBinding(
   exp: string,
@@ -23,6 +37,9 @@ export function shouldFallbackToRuntimeBinding(
   const trimmed = exp.trim()
   if (!trimmed) {
     return false
+  }
+  if (hasWxmlParenthesizedMemberAccess(trimmed)) {
+    return true
   }
   const normalized = normalizeWxmlExpression(trimmed)
   const parsed = parseBabelExpressionFile(normalized)

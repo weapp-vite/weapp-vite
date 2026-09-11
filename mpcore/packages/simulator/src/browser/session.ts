@@ -1069,9 +1069,19 @@ export class BrowserHeadlessSession {
     return this.appInstance
   }
 
+  private bootstrapNavigation(launchOptions = createAppLaunchOptions('', {})): HeadlessPageInstance | null {
+    const isLaunching = !this.appInstance
+    this.bootstrap(launchOptions)
+    // 启动钩子已提交导航时，由该页面接管首次入口，不能再覆盖它。
+    return isLaunching ? this.currentPageInstance : null
+  }
+
   reLaunch(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     this.unloadAllPages()
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
@@ -1082,7 +1092,10 @@ export class BrowserHeadlessSession {
 
   navigateTo(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.pages.length >= PAGE_STACK_LIMIT) {
       throw new Error(`Cannot navigateTo() beyond a ${PAGE_STACK_LIMIT}-page stack in browser simulator runtime.`)
     }
@@ -1104,7 +1117,10 @@ export class BrowserHeadlessSession {
 
   redirectTo(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.isTabBarRoute(target.routeRecord.route)) {
       throw new Error(`wx.redirectTo() cannot open a tabBar page in browser simulator runtime: ${url}`)
     }
@@ -1123,7 +1139,10 @@ export class BrowserHeadlessSession {
   }
 
   navigateBack(delta = 1) {
-    this.bootstrap()
+    const launchedPage = this.bootstrapNavigation()
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.pages.length <= 1) {
       return this.currentPageInstance
     }
@@ -1158,7 +1177,10 @@ export class BrowserHeadlessSession {
     if (!this.isTabBarRoute(target.routeRecord.route)) {
       throw new Error(`wx.switchTab() can only open a tabBar page in browser simulator runtime: ${url}`)
     }
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return () => () => {}
+    }
 
     return () => this.commitSwitchTab(target)
   }
@@ -1523,7 +1545,7 @@ export class BrowserHeadlessSession {
   ) {
     const prefix = `page:${stripLeadingSlash(route)}`
     for (const [scopeId, instance] of this.componentCache.entries()) {
-      if (!scopeId.startsWith(prefix)) {
+      if (!scopeId.startsWith(prefix) || scopeId === customTabBarScopeId(route)) {
         continue
       }
       runComponentPageLifetime(instance, lifetimeName, payload)

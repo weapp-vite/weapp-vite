@@ -1366,6 +1366,29 @@ describe('runtime: vue compat helpers', () => {
     expectRouteOption(wxRedirectTo.mock.calls[0], '/pages/b/index')
   })
 
+  it('useNativeRouter/useNativePageRouter fallback to global route methods without setup context', () => {
+    const wxNavigateTo = vi.fn()
+    const wxRedirectTo = vi.fn()
+    const wxSwitchTab = vi.fn()
+    const wxReLaunch = vi.fn()
+    const wxNavigateBack = vi.fn()
+    ;(globalThis as any).wx = {
+      switchTab: wxSwitchTab,
+      reLaunch: wxReLaunch,
+      redirectTo: wxRedirectTo,
+      navigateTo: wxNavigateTo,
+      navigateBack: wxNavigateBack,
+    }
+
+    const router = useNativeRouter()
+    const pageRouter = useNativePageRouter()
+    router.navigateTo({ url: '/pages/a/index' })
+    pageRouter.redirectTo({ url: '/pages/b/index' })
+
+    expectRouteOption(wxNavigateTo.mock.calls[0], '/pages/a/index')
+    expectRouteOption(wxRedirectTo.mock.calls[0], '/pages/b/index')
+  })
+
   it('useNativeRouter/useNativePageRouter fallback to complementary instance accessor before global fallback', () => {
     const pageRouterOnly = {
       switchTab: vi.fn(),

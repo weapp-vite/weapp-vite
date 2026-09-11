@@ -1,8 +1,10 @@
 import type { App as VueApp } from 'vue'
 import type { HeadlessWxAppHideOptions, HeadlessWxLaunchOptions } from '../src'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from 'vue'
+import { createApp, ref } from 'vue'
+import { useWorkbenchSession } from '../../../demos/web/src/composables/useWorkbenchSession'
 import SimulatorE2EApp from '../../../demos/web/src/e2e/SimulatorE2EApp.vue'
+import { builtInScenarios } from '../../../demos/web/src/scenarios'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { querySelectorAll } from '../src/view/selectors'
 import { componentNavigationFiles } from '../test/helpers/componentNavigation'
@@ -328,6 +330,43 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       model: 'headless-simulator',
       platform: 'devtools',
     })
+  })
+
+  it('keeps the page selected by App.onLaunch in the rendered browser preview', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('launch-redirect')
+    const state = await waitFor(
+      () => bridge.getState(),
+      next => next.currentScenarioId === 'launch-redirect'
+        && next.currentRoute === 'pages/login/index'
+        && next.previewMarkup.includes('id="launch-login"'),
+    )
+    expect(state.pageStack).toEqual(['pages/login/index'])
+    expect(state.previewMarkup).toContain('login: launch')
+    expect(parseJsonString<{ loads: string[], launchCalls: number }>(state.appData))
+      .toMatchObject({ loads: ['login'], launchCalls: 1 })
+    bridge.openRoute('pages/home/index')
+    const home = await waitFor(
+      () => bridge.getState(),
+      next => next.currentRoute === 'pages/home/index',
+    )
+    expect(home.previewMarkup).toContain('id="launch-home"')
+  })
+
+  it('selects the redirected launch page when loading a project directly', () => {
+    const state = useWorkbenchSession(ref({ height: 812, width: 375 }))
+    const scenario = builtInScenarios.find(item => item.id === 'launch-redirect')!
+    try {
+      state.loadSession(scenario.name, scenario.files, scenario.id)
+      expect(state.previewMarkup.value).toContain('id="launch-login"')
+      expect(state.selectedScope.value).toMatchObject({
+        scopeId: 'page:pages/login/index',
+        type: 'page',
+      })
+    }
+    finally {
+      state.session.value?.close()
+    }
   })
 
   it('loads a subpackage module through require.async in the browser demo', async () => {
@@ -1934,6 +1973,113 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     expect(pageData.from).toBe('insights')
     expect(state.previewMarkup).toContain('Queue')
     expect(bridge.renderCurrentPage()).toBe(state.previewMarkup)
+  })
+
+  it('mounts and preserves native custom tabBar components through the web preview', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('custom-tab-bar')
+
+    const initialState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'custom-tab-bar'
+        && state.currentRoute === 'pages/home/index'
+        && state.previewMarkup.includes('custom-tab-marker:home:1:0'),
+      20_000,
+    )
+    const initialAppData = parseJsonString<{
+      attached: number[]
+      detached: number[]
+      nextTabId: number
+    }>(initialState.appData)
+    expect(initialAppData).toMatchObject({
+      attached: [1],
+      detached: [],
+      nextTabId: 1,
+    })
+
+    const homeScopeId = bridge.findComponentScopeIds('custom-tab-bar')[0]
+    expect(homeScopeId).toBe('page:pages/home/index/custom-tab-bar')
+    expect(bridge.readScopeSnapshot(homeScopeId!)).toMatchObject({
+      data: {
+        instanceId: 1,
+        owner: 'home',
+        taps: 0,
+      },
+      type: 'component',
+    })
+
+    const previewShadowRoot = Array.from(mountNode!.querySelectorAll('*'))
+      .map(element => element.shadowRoot)
+      .find((shadowRoot): shadowRoot is ShadowRoot => shadowRoot !== null)
+    const profileControl = previewShadowRoot?.querySelector<HTMLElement>('#custom-tab-profile')
+    expect(profileControl).toBeTruthy()
+    profileControl?.click()
+
+    const profileState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/profile/index'
+        && state.previewMarkup.includes('custom-tab-marker:profile:2:0'),
+      20_000,
+    )
+    expect(profileState.pageStack).toEqual(['pages/profile/index'])
+    expect(bridge.readScopeSnapshot('page:pages/profile/index/custom-tab-bar')).toMatchObject({
+      data: {
+        instanceId: 2,
+        owner: 'profile',
+        taps: 0,
+      },
+      type: 'component',
+    })
+
+    const homeControl = previewShadowRoot?.querySelector<HTMLElement>('#custom-tab-home')
+    expect(homeControl).toBeTruthy()
+    homeControl?.click()
+
+    const revisitedHomeState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/home/index'
+        && state.previewMarkup.includes('custom-tab-marker:home:1:1'),
+      20_000,
+    )
+    expect(revisitedHomeState.pageStack).toEqual(['pages/home/index'])
+    expect(bridge.findComponentScopeIds('custom-tab-bar').sort()).toEqual([
+      homeScopeId,
+      'page:pages/profile/index/custom-tab-bar',
+    ].sort())
+
+    bridge.runPageMethod('openDetail')
+    const detailState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/detail/index'
+        && !state.previewMarkup.includes('custom-tab-marker'),
+      20_000,
+    )
+    expect(detailState.pageStack).toEqual(['pages/home/index', 'pages/detail/index'])
+    expect(parseJsonString<{ detached: number[] }>(detailState.appData).detached).toEqual([])
+
+    bridge.navigateBack()
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/home/index'
+        && state.previewMarkup.includes('custom-tab-marker:home:1:1'),
+      20_000,
+    )
+
+    bridge.openRoute('pages/profile/index')
+    const relaunchedState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/profile/index'
+        && state.previewMarkup.includes('custom-tab-marker:profile:3:0'),
+      20_000,
+    )
+    const relaunchedAppData = parseJsonString<{
+      attached: number[]
+      detached: number[]
+      nextTabId: number
+    }>(relaunchedState.appData)
+    expect(relaunchedAppData.attached).toEqual([1, 2, 3])
+    expect(relaunchedAppData.detached).toHaveLength(2)
+    expect(relaunchedAppData.detached).toEqual(expect.arrayContaining([1, 2]))
   })
 
   it('tracks browser route stack transitions through runtime navigation', async () => {

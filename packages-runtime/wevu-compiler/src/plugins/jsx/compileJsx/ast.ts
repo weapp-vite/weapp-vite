@@ -14,6 +14,7 @@ import {
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../inlineDataset'
 import { generate, traverse } from '../../../utils/babel'
+import { shouldFallbackToRuntimeBinding } from '../../vue/compiler/template/expression/runtimeBinding'
 import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/wxml'
 
 const WXML_EXPRESSION_GENERATE_OPTIONS = {
@@ -47,35 +48,53 @@ export function unwrapTsExpression(exp: Expression): Expression {
 export { getObjectPropertyByKey, resolveRenderableExpression, toStaticObjectKey }
 
 export function normalizeInterpolationExpression(exp: Expression, context?: JsxCompileContext) {
-  if (!context?.setupRefBindings?.size) {
-    return normalizeWxmlExpression(printExpression(unwrapTsExpression(exp)))
+  const cached = context?.interpolationCache.get(exp)
+  if (cached != null) {
+    return cached
   }
-  const expression = t.cloneNode(unwrapTsExpression(exp), true)
-  const file = t.file(t.program([t.expressionStatement(expression)]))
-  traverse(file, {
-    'MemberExpression|OptionalMemberExpression': {
-      enter(path) {
-        const member = path.node
-        if (!t.isMemberExpression(member) && !t.isOptionalMemberExpression(member)) {
-          return
-        }
-        const object = t.isExpression(member.object) ? unwrapTsExpression(member.object) : member.object
-        if (!t.isIdentifier(object) || !context.setupRefBindings?.has(object.name)
-          || context.scopeStack.includes(object.name) || path.scope.hasBinding(object.name)) {
-          return
-        }
-        if (member.loc?.filename && context.filename && member.loc.filename !== context.filename) {
-          return
-        }
-        const valueAccess = member.computed ? t.isStringLiteral(member.property, { value: 'value' }) : t.isIdentifier(member.property, { name: 'value' })
-        if (valueAccess) {
-          path.replaceWith(t.cloneNode(object))
-        }
+  let source = printExpression(unwrapTsExpression(exp))
+  if (context?.setupRefBindings?.size) {
+    const expression = t.cloneNode(unwrapTsExpression(exp), true)
+    const file = t.file(t.program([t.expressionStatement(expression)]))
+    traverse(file, {
+      'MemberExpression|OptionalMemberExpression': {
+        enter(path) {
+          const member = path.node
+          if (!t.isMemberExpression(member) && !t.isOptionalMemberExpression(member)) {
+            return
+          }
+          const object = t.isExpression(member.object) ? unwrapTsExpression(member.object) : member.object
+          if (!t.isIdentifier(object) || !context.setupRefBindings?.has(object.name)
+            || context.scopeStack.includes(object.name) || path.scope.hasBinding(object.name)) {
+            return
+          }
+          if (member.loc?.filename && context.filename && member.loc.filename !== context.filename) {
+            return
+          }
+          const valueAccess = member.computed ? t.isStringLiteral(member.property, { value: 'value' }) : t.isIdentifier(member.property, { name: 'value' })
+          if (valueAccess) {
+            path.replaceWith(t.cloneNode(object))
+          }
+        },
       },
-    },
-  })
-  const statement = file.program.body[0] as t.ExpressionStatement
-  return normalizeWxmlExpression(printExpression(statement.expression))
+    })
+    const statement = file.program.body[0] as t.ExpressionStatement
+    source = printExpression(statement.expression)
+  }
+  let normalized = normalizeWxmlExpression(source)
+  if (context && shouldFallbackToRuntimeBinding(source)) {
+    const name = `__wv_bind_${context.classStyleBindings.filter(item => item.type === 'bind').length}`
+    context.classStyleBindings.push({
+      name,
+      type: 'bind',
+      exp: source,
+      forStack: context.forStack.map(info => ({ ...info })),
+    })
+    const indexAccess = context.forStack.map(info => `[${info.index ?? 'index'}]`).join('')
+    normalized = `${name}${indexAccess}`
+  }
+  context?.interpolationCache.set(exp, normalized)
+  return normalized
 }
 
 export function renderMustache(expression: string, context: Pick<JsxCompileContext, 'mustacheInterpolation'>) {

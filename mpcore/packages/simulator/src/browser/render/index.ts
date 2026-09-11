@@ -8,7 +8,7 @@ import { flushComponentAttachments, flushComponentReady, hasPendingComponentAtta
 import { syncComponentRelations } from '../../runtime/componentInstance/relations'
 import { isPageBeforeReady } from '../../runtime/pageLifecycle'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
-import { customTabBarHostScope, hasCustomTabBar } from '../../view/customTabBar'
+import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
 import { resolveLoopEntries } from '../../view/loopEntries'
 import { linkRenderedParents } from '../../view/renderedTree'
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
@@ -408,7 +408,9 @@ export function renderBrowserPageTree(
     [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!),
     (instance) => {
       runComponentLifecycle(instance, 'attached')
-      runComponentPageLifetime(instance, 'show')
+      if (instance !== context.componentCache.get(customTabBarScopeId(route))) {
+        runComponentPageLifetime(instance, 'show')
+      }
     },
   )
   // detached 仍能读取旧关系；真实宿主随后解除双方关系并调用 unlinked。

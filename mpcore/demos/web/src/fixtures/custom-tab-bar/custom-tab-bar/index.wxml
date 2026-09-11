@@ -1,0 +1,3 @@
+<view id="custom-tab-marker">custom-tab-marker:{{owner}}:{{instanceId}}:{{taps}}</view>
+<view id="custom-tab-home" data-route="/pages/home/index" bindtap="switchTab">Home</view>
+<view id="custom-tab-profile" data-route="/pages/profile/index" bindtap="switchTab">Profile</view>
