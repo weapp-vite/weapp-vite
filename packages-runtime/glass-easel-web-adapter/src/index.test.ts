@@ -55,4 +55,12 @@ describe('glass-easel web adapter PoC', () => {
     expect(dispatchEvent.mock.calls[0][0].type).toBe('change')
     expect(dispatchEvent.mock.calls[0][0].detail).toEqual({ value: 3 })
   })
+
+  it('runs the official attached lifecycle during mount', () => {
+    const attached = vi.fn()
+    const adapter = createGlassEaselWebAdapter()
+    adapter.registerComponent({ name: 'lifecycle-card', template: '<div />', lifetimes: { attached } })
+    adapter.mountComponent('lifecycle-card', document.createElement('div'))
+    expect(attached).toHaveBeenCalledOnce()
+  })
 })
