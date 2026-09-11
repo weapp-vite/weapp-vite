@@ -219,11 +219,17 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   const instanceScope = effectScope(true)
   const previousInstance = getCurrentInstance()
   const previousSetupContext = getCurrentSetupContext()
+  const restoreSetupContext = () => {
+    setCurrentSetupContext(previousSetupContext)
+    setCurrentInstance(previousInstance)
+  }
+  let setupResult: unknown
   target[WEVU_EFFECT_SCOPE_KEY] = instanceScope
   setCurrentInstance(target)
   setCurrentSetupContext(context)
   try {
     const result = instanceScope.run(() => runSetupFunction(setup, props, context))
+    setupResult = result
     let methodsChanged = false
     if (result && typeof result === 'object') {
       const runtimeSetupState = (runtime as any).setupState && typeof (runtime as any).setupState === 'object'
@@ -252,7 +258,13 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     }
   }
   finally {
-    setCurrentSetupContext(previousSetupContext)
-    setCurrentInstance(previousInstance)
+    // 编译器可能把 setup 包装成 async 函数（例如自动导入插件注入异步依赖）。
+    // 在 Promise 完成前保持该 setup 的上下文，避免后续同步注册 API 看到空实例。
+    if (setupResult && typeof (setupResult as PromiseLike<unknown>).then === 'function') {
+      Promise.resolve(setupResult).then(restoreSetupContext, restoreSetupContext)
+    }
+    else {
+      restoreSetupContext()
+    }
   }
 }
