@@ -1,0 +1,1 @@
+{ "name": "e2e-auto-import-wevu-presets", "version": "0.0.0", "private": true, "scripts": { "build": "wv build", "postinstall": "wv prepare" }, "devDependencies": { "unplugin-auto-import": "^21.1.0", "weapp-vite": "workspace:*", "wevu": "workspace:*" } }
