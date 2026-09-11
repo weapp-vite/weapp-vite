@@ -24,6 +24,17 @@ export interface GlassEaselWebAdapter {
   dispose: () => void
 }
 
+/** 使用官方 ComponentSpace API 创建可复用的 glass-easel 组件定义。 */
+export function createGlassEaselComponentDefinition(definition: GlassEaselComponentDefinition): unknown {
+  const space = glassEasel.getDefaultComponentSpace()
+  return space.define().definition({
+    template: wxml(definition.template),
+    properties: definition.properties as any,
+    methods: definition.methods as any,
+    lifetimes: definition.lifetimes,
+  }).registerComponent()
+}
+
 interface GlassEaselWebInstance { root: HTMLElement, definition: GlassEaselComponentDefinition, props: Record<string, unknown>, disposed: boolean }
 
 function render(template: string, props: Record<string, unknown>, host: GlassEaselWebHost): HTMLElement {
