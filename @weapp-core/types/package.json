@@ -6,21 +6,60 @@
   "license": "MIT",
   "sideEffects": false,
   "exports": {
-    ".": { "types": "./dist/index.d.mts", "import": "./dist/index.mjs" },
-    "./weapp": { "types": "./dist/weappIntrinsicElements.d.mts", "import": "./dist/weappIntrinsicElements.mjs" },
-    "./alipay": { "types": "./dist/alipayIntrinsicElements.d.mts", "import": "./dist/alipayIntrinsicElements.mjs" },
-    "./tt": { "types": "./dist/ttIntrinsicElements.d.mts", "import": "./dist/ttIntrinsicElements.mjs" },
-    "./miniprogram": { "types": "./dist/miniprogramIntrinsicElements.d.mts", "import": "./dist/miniprogramIntrinsicElements.mjs" }
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./weapp": {
+      "types": "./dist/weappIntrinsicElements.d.mts",
+      "import": "./dist/weappIntrinsicElements.mjs"
+    },
+    "./alipay": {
+      "types": "./dist/alipayIntrinsicElements.d.mts",
+      "import": "./dist/alipayIntrinsicElements.mjs"
+    },
+    "./tt": {
+      "types": "./dist/ttIntrinsicElements.d.mts",
+      "import": "./dist/ttIntrinsicElements.mjs"
+    },
+    "./miniprogram": {
+      "types": "./dist/miniprogramIntrinsicElements.d.mts",
+      "import": "./dist/miniprogramIntrinsicElements.mjs"
+    }
   },
   "typesVersions": {
     "*": {
-      "weapp": ["dist/weappIntrinsicElements.d.mts"],
-      "alipay": ["dist/alipayIntrinsicElements.d.mts"],
-      "tt": ["dist/ttIntrinsicElements.d.mts"],
-      "miniprogram": ["dist/miniprogramIntrinsicElements.d.mts"]
+      "weapp": [
+        "dist/weappIntrinsicElements.d.mts"
+      ],
+      "alipay": [
+        "dist/alipayIntrinsicElements.d.mts"
+      ],
+      "tt": [
+        "dist/ttIntrinsicElements.d.mts"
+      ],
+      "miniprogram": [
+        "dist/miniprogramIntrinsicElements.d.mts"
+      ]
     }
   },
-  "files": ["dist"],
-  "scripts": { "build": "tsdown", "typecheck": "tsc --noEmit", "test:types": "pnpm build && tsd --typings dist/index.d.mts --files \"test-d/**/*.test-d.ts\"", "lint": "eslint .", "lint:fix": "eslint . --fix" },
-  "devDependencies": { "tsd": "^0.33.0", "tsdown": "0.23.0", "typescript": "catalog:" }
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test:types": "pnpm build && tsd --typings dist/index.d.mts --files \"test-d/**/*.test-d.ts\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "tsd": "^0.33.0",
+    "tsdown": "0.23.0",
+    "typescript": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }
