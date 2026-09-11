@@ -18,6 +18,9 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     warnings: [],
     bindingManifest: createBindingManifest(options?.bindingManifestSourceFile ?? ''),
     inlineExpressions: [],
+    classStyleBindings: [],
+    forStack: [],
+    interpolationCache: new WeakMap(),
     inlineExpressionSeed: 0,
     scopeStack: [],
     bindingScopeStack: [],
@@ -74,6 +77,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
       warnings: context.warnings,
       bindingManifest: context.bindingManifest,
       inlineExpressions: context.inlineExpressions,
+      classStyleBindings: context.classStyleBindings,
       dynamicIslands: context.dynamicIslands,
     }
   }
@@ -87,6 +91,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
     warnings: context.warnings,
     bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
+    classStyleBindings: context.classStyleBindings,
     dynamicIslands: context.dynamicIslands,
   }
 }
@@ -138,6 +143,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
     warnings: context.warnings,
     bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
+    classStyleBindings: context.classStyleBindings,
     autoComponentContext,
     dynamicIslands: context.dynamicIslands,
     dependencies: context.moduleResolver.getDependencies(),

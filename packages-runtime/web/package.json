@@ -24,7 +24,9 @@
     "vite",
     "runtime"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "dist/runtime/polyfill/**"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",

@@ -37,7 +37,7 @@ import {
   resolveReactTemplateOutputPath,
   resolveWorkspaceHmrRuntime,
 } from './workspace-hmr/scenarios'
-import { assertWorkspaceHmrSelection, selectWorkspaceHmrProjects } from './workspace-hmr/selection'
+import { assertWorkspaceHmrSelection, resolveWorkspaceHmrSelection } from './workspace-hmr/selection'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
 import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
@@ -225,10 +225,16 @@ const WORKSPACE_HMR_BASELINE_PROJECT_ALIASES = new Map<string, string>([
 
 async function main() {
   await mkdir(reportRoot, { recursive: true })
-  await cleanupResidualDevProcesses()
-  await prepareReferencedWorkspaceTsconfigs()
+  const selection = await selectProjectsForRunMode(await discoverProjects())
+  const { projects, status: selectionStatus } = resolveWorkspaceHmrSelection(selection.projects, {
+    filter: projectFilter,
+    hasRelevantChanges: selection.hasRelevantChanges,
+  })
 
-  const projects = selectWorkspaceHmrProjects(await selectProjectsForRunMode(await discoverProjects()), projectFilter)
+  if (projects.length) {
+    await cleanupResidualDevProcesses()
+    await prepareReferencedWorkspaceTsconfigs()
+  }
 
   const results: ProjectResult[] = []
   for (const project of projects) {
@@ -261,7 +267,7 @@ async function main() {
     scope: workspaceHmrScope,
     selection: {
       filter: projectFilter,
-      status: projects.length ? 'selected' : 'empty',
+      status: selectionStatus,
       projectCount: projects.length,
     },
     baseline: baseline ? formatReportPath(baselinePath) : undefined,
@@ -279,8 +285,8 @@ async function main() {
   }
   await writeFile(reportJsonPath, `${JSON.stringify(sanitizeAcceptanceValue(report), null, 2)}\n`, 'utf8')
   await writeFile(thresholdMdPath, `${thresholdMarkdown}\n`, 'utf8')
-  await writeFile(reportMdPath, renderMarkdown(results, summary, thresholdMarkdown), 'utf8')
-  await writeGitHubStepSummary(results, summary, thresholdMarkdown)
+  await writeFile(reportMdPath, renderMarkdown(results, summary, thresholdMarkdown, selectionStatus), 'utf8')
+  await writeGitHubStepSummary(results, summary, thresholdMarkdown, selectionStatus)
 
   const failedProjects = results.filter(project => project.error || project.scenarios.some(scenario => scenario.error))
   process.stdout.write(`\n[workspace-hmr] report.json -> ${formatReportPath(reportJsonPath)}\n`)
@@ -296,7 +302,7 @@ async function main() {
   if (!projects.length) {
     process.stdout.write('[workspace-hmr] no projects selected; this report contains no acceptance results.\n')
   }
-  assertWorkspaceHmrSelection(projects.length, failOnError)
+  assertWorkspaceHmrSelection(projects.length, failOnError, selectionStatus)
   if (failOnError && (failedProjects.length || thresholdEvaluation.issues.length)) {
     process.exitCode = 1
   }
@@ -324,7 +330,7 @@ async function prepareReferencedWorkspaceTsconfigs() {
 
 async function selectProjectsForRunMode(projects: ProjectCase[]) {
   if (runMode === 'smoke') {
-    return selectSmokeProjects(projects, workspaceHmrScope)
+    return { projects: selectSmokeProjects(projects, workspaceHmrScope), hasRelevantChanges: true }
   }
   if (runMode === 'changed-project') {
     const changedFiles = await readChangedFiles()
@@ -332,17 +338,20 @@ async function selectProjectsForRunMode(projects: ProjectCase[]) {
     const selected = projects.filter(project => projectIds.has(project.id))
     if (selected.length) {
       process.stdout.write(`[workspace-hmr] changed projects: ${selected.map(project => project.id).join(', ')}\n`)
-      return selected
+      return { projects: selected, hasRelevantChanges: true }
     }
     if (shouldFallbackToSmokeForChangedFiles(changedFiles)) {
       const smokeProjects = selectSmokeProjects(projects, workspaceHmrScope)
       process.stdout.write(`[workspace-hmr] no changed runnable projects detected; falling back to ${workspaceHmrScope} smoke: ${smokeProjects.map(project => project.id).join(', ') || '<none>'}\n`)
-      return smokeProjects
+      return { projects: smokeProjects, hasRelevantChanges: true }
     }
-    process.stdout.write('[workspace-hmr] no workspace HMR relevant changes detected; skipping audit\n')
-    return []
+    const hasRelevantChanges = resolveChangedProjectIds(changedFiles, 'workspace').size > 0
+    if (!hasRelevantChanges && !projectFilter) {
+      process.stdout.write('[workspace-hmr] no workspace HMR relevant changes detected; skipping audit\n')
+    }
+    return { projects: [], hasRelevantChanges }
   }
-  return projects
+  return { projects, hasRelevantChanges: true }
 }
 
 export function shouldFallbackToSmokeForChangedFiles(changedFiles: string[]) {
@@ -1809,7 +1818,7 @@ function sharedChunkSuggestion(scenario: ScenarioResult) {
   return 'pending/emitted 偏高，检查 dirty reason、自动路由/layout 传播或是否发生全量入口刷新。'
 }
 
-async function writeGitHubStepSummary(results: ProjectResult[], summary: WorkspaceHmrReportSummary, thresholdMarkdown: string) {
+async function writeGitHubStepSummary(results: ProjectResult[], summary: WorkspaceHmrReportSummary, thresholdMarkdown: string, selectionStatus: string) {
   const summaryPath = process.env.GITHUB_STEP_SUMMARY
   if (!summaryPath) {
     return
@@ -1821,7 +1830,7 @@ async function writeGitHubStepSummary(results: ProjectResult[], summary: Workspa
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
-    `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
+    `- selection: ${selectionStatus}${results.length ? '' : ' (no acceptance results)'}`,
     `- projects: ${summary.projectCount}`,
     ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
     `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,
@@ -1853,7 +1862,7 @@ async function writeGitHubStepSummary(results: ProjectResult[], summary: Workspa
   await appendFile(summaryPath, `${lines.join('\n')}\n`, 'utf8')
 }
 
-function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSummary, thresholdMarkdown: string) {
+function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSummary, thresholdMarkdown: string, selectionStatus: string) {
   const findings = collectActionableFindings(results, summary)
   const slowScenarios = collectWorkspaceHmrTopSlowScenarios(results)
   const lines = [
@@ -1861,7 +1870,7 @@ function renderMarkdown(results: ProjectResult[], summary: WorkspaceHmrReportSum
     '',
     `- mode: ${runMode}`,
     `- scope: ${workspaceHmrScope}`,
-    `- selection: ${results.length ? 'selected' : 'empty (no acceptance results)'}`,
+    `- selection: ${selectionStatus}${results.length ? '' : ' (no acceptance results)'}`,
     `- generated projects: ${summary.projectCount}`,
     ...renderWorkspaceHmrExecution(summary, summary.scenarioCount),
     `- timing threshold samples: ${summary.measuredScenarioCount}/${summary.scenarioCount}`,

@@ -32,6 +32,8 @@ createRouter({
 const router = useRouter()
 ```
 
+在 `app.vue` 的 `<script setup>` 里调用一次 `createRouter()`，不要放进 `onLaunch`。App 没有页面级 `this.router` 时会用 `wx` / `my` / `tt`。未传 `tabBarEntries` 时读取宿主 tabBar，这些路径走 `switchTab`。
+
 ### 首屏导航模式
 
 `initialNavigationMode` 默认值为 `'eager'`。页面会先挂载并渲染，首屏守卫异步运行，不会因鉴权请求或其他慢操作造成白屏。若业务必须在页面挂载前完成鉴权、租户选择等判断，显式配置 `initialNavigationMode: 'blocking'`：
