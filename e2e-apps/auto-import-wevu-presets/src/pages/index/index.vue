@@ -1,10 +1,10 @@
 <script setup lang="ts">
 const count = ref(0)
-const route = useRoute()
-const router = useRouter()
 onMounted(() => {
   count.value = 1
 })
+const route = useRoute()
+const router = useRouter()
 function goNext() {
   router.navigateTo('/pages/next/index')
 }
