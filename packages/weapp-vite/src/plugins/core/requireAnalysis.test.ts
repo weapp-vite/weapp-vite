@@ -144,4 +144,14 @@ const nativeModule = import('../../subpackages/native/index.ts')
 
     expect(result?.code).toBe(`require.async("./subs/page/lib.js")`)
   })
+
+  it('rewrites require.async when the member access spans a line break', () => {
+    const marker = `__weapp_vite_require_async_target__${Buffer.from('subs/page/lib.js').toString('base64url')}`
+    const result = rewriteRequireAsyncChunkPaths(
+      `require.\n  async(\"${marker}\")`,
+      'app.js',
+    )
+
+    expect(result?.code).toBe(`require.\n  async(\"./subs/page/lib.js\")`)
+  })
 })
