@@ -1083,6 +1083,7 @@ function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
 export function createGithubIssuesLaunchAutomatorOptions(projectPath = APP_ROOT) {
   return {
     projectPath,
+    trustProject: true,
     retryWarmupTimeout: true,
     skipRelaunchPageRootCheck: true,
     // 完整等待冷启动后仍无页面时，在同一会话内恢复首屏导航。
