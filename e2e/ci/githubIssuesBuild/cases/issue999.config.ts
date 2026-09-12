@@ -6,7 +6,7 @@ export default defineConfig({
     outDir: 'dist-issue-999',
   },
   weapp: {
-    srcRoot: 'src',
+    srcRoot: 'src/issue-fixtures/issue-999',
     chunks: {
       dynamicImports: 'native',
     },

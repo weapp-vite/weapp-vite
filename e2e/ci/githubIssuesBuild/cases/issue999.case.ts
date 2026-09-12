@@ -21,12 +21,12 @@ export function registerGithubIssuesBuildCase(context: GithubIssuesBuildCaseCont
       skipNpm: true,
     })
 
-    const pagePath = path.join(issueDistRoot, 'pages/require-async/index.js')
+    const pagePath = path.join(issueDistRoot, 'page.js')
     const pageCode = await fs.readFile(pagePath, 'utf8')
     const normalizedPageCode = pageCode.replaceAll('`', '"')
-    for (const target of ['callback', 'promise', 'import-native']) {
-      expect(normalizedPageCode).toContain(`require.async("../../subpackages/require-async/${target}.js")`)
-      expect(await fs.pathExists(path.join(issueDistRoot, `subpackages/require-async/${target}.js`))).toBe(true)
+    for (const target of ['callback', 'promise', 'native']) {
+      expect(normalizedPageCode).toContain(`require.async("./subs/page/${target}.js")`)
+      expect(await fs.pathExists(path.join(issueDistRoot, `subs/page/${target}.js`))).toBe(true)
     }
     expect(pageCode).not.toContain('__weapp_vite_require_async_target__')
   })
