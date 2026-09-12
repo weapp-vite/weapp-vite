@@ -1076,6 +1076,7 @@ function isGithubIssuesLaunchInfraUnavailableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isDevtoolsHttpPortError(error)
     || isDevtoolsLoginRequiredError(error)
+    || /automator cli bridge canceled|bootstrap automator cli bridge/i.test(message)
     || message.includes('Timeout in read current page for route')
 }
 
