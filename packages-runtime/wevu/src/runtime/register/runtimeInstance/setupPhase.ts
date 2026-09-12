@@ -16,7 +16,7 @@ import {
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { normalizeEmitEventName } from '../../emit'
-import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
+import { getCurrentInstance, getCurrentSetupContext, setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
@@ -217,11 +217,19 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
   // 仅在同步 setup 执行期间暴露 current instance
   const instanceScope = effectScope(true)
+  const previousInstance = getCurrentInstance()
+  const previousSetupContext = getCurrentSetupContext()
+  const restoreSetupContext = () => {
+    setCurrentSetupContext(previousSetupContext)
+    setCurrentInstance(previousInstance)
+  }
+  let setupResult: unknown
   target[WEVU_EFFECT_SCOPE_KEY] = instanceScope
   setCurrentInstance(target)
   setCurrentSetupContext(context)
   try {
     const result = instanceScope.run(() => runSetupFunction(setup, props, context))
+    setupResult = result
     let methodsChanged = false
     if (result && typeof result === 'object') {
       const runtimeSetupState = (runtime as any).setupState && typeof (runtime as any).setupState === 'object'
@@ -250,7 +258,13 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     }
   }
   finally {
-    setCurrentSetupContext(undefined)
-    setCurrentInstance(undefined)
+    // 编译器可能把 setup 包装成 async 函数（例如自动导入插件注入异步依赖）。
+    // 在 Promise 完成前保持该 setup 的上下文，避免后续同步注册 API 看到空实例。
+    if (setupResult && typeof (setupResult as PromiseLike<unknown>).then === 'function') {
+      Promise.resolve(setupResult).then(restoreSetupContext, restoreSetupContext)
+    }
+    else {
+      restoreSetupContext()
+    }
   }
 }
