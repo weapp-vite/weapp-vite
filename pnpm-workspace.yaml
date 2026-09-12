@@ -50,7 +50,7 @@ catalog:
   '@vue/language-core': ^3.3.11
   '@wot-ui/ui': 2.3.2
   antd-mini: ^3.4.3
-  autoprefixer: ^10.5.6
+  autoprefixer: ^10.6.0
   axios: ^1.20.0
   bundle-require: ^5.1.0
   class-variance-authority: ^0.7.1
@@ -64,7 +64,7 @@ catalog:
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
   graphql-request: ^7.4.0
-  happy-dom: ^20.14.3
+  happy-dom: ^20.14.5
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
@@ -82,8 +82,8 @@ catalog:
   react: 19.3.0
   react-reconciler: 0.34.0
   rolldown: 1.2.8
-  sass: ^1.104.0
-  sass-embedded: ^1.104.0
+  sass: ^1.104.1
+  sass-embedded: ^1.104.1
   sharp: ^0.35.4
   stylelint: ^17.15.0
   socket.io-client: ^4.8.3
@@ -100,7 +100,7 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.42
   vue-tsc: ^3.3.11
-  weapp-tailwindcss: ^5.5.3
+  weapp-tailwindcss: ^5.5.4
   zod: ^4.6.2
 
 catalogs:
@@ -112,7 +112,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.1
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.5.3
+    weapp-tailwindcss: 5.5.4
 
 gitChecks: false
 

@@ -33,7 +33,7 @@ export const TEMPLATE_CATALOG = {
   'estree-walker': '^3.0.3',
   'gm-crypto': '^0.1.12',
   'graphql-request': '^7.4.0',
-  'happy-dom': '^20.14.3',
+  'happy-dom': '^20.14.5',
   'lru-cache': '^11.5.2',
   'magic-string': '^1.3.1',
   'miniprogram-api-typings': '^5.2.3',
@@ -42,7 +42,7 @@ export const TEMPLATE_CATALOG = {
   'pkg-types': '^2.3.3',
   'postcss-selector-parser': '^7.1.6',
   'react-reconciler': '0.34.0',
-  'sass-embedded': '^1.104.0',
+  'sass-embedded': '^1.104.1',
   'socket.io-client': '^4.8.3',
   'tailwind-merge': '^3.6.0',
   'tailwind-variants': '^3.3.1',
@@ -51,8 +51,8 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.113',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.11',
-  'weapp-tailwindcss': '^5.5.3',
-  autoprefixer: '^10.5.6',
+  'weapp-tailwindcss': '^5.5.4',
+  autoprefixer: '^10.6.0',
   axios: '^1.20.0',
   clsx: '^2.1.1',
   dayjs: '^1.11.23',
@@ -69,7 +69,7 @@ export const TEMPLATE_CATALOG = {
   postcss: '^8.5.28',
   react: '19.3.0',
   rolldown: '1.2.8',
-  sass: '^1.104.0',
+  sass: '^1.104.1',
   sharp: '^0.35.4',
   stylelint: '^17.15.0',
   tailwindcss: '^4.3.3',
@@ -86,7 +86,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.1'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.5.3'
+    'weapp-tailwindcss': '5.5.4'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',
