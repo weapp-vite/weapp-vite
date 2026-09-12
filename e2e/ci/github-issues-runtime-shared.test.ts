@@ -17,6 +17,7 @@ describe('github issues runtime shared relaunch helper', () => {
   it('keeps compilation with Vite and waits for cold startup before same-session recovery', () => {
     expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
       projectPath: 'project-root',
+      trustProject: true,
       retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
       warmupAllowRelaunch: true,
