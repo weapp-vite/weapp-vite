@@ -1,5 +1,27 @@
 # wevu
 
+## 7.1.1
+
+### Patch Changes
+
+- 修复 blocking 首屏导航守卫返回 redirect 时未执行宿主重定向、原始页面仍被挂载的问题。
+
+- 修复 setup 返回函数未写入 `setupState` 的问题，使 public proxy 与 `bindModel` 能读到同一份绑定。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- 新增 `@weapp-core/types` 公共类型包，统一导出微信、支付宝、抖音和聚合小程序的 intrinsic element 类型；`wevu` 保留原有兼容导出路径。
+
+- 修复 `wevu/router` 在 App setup 中创建实例失败，以及未传入 `tabBarEntries` 时把 tabBar 页走成 `redirectTo` 的问题。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+  - @weapp-core/shared@3.2.2
+  - @weapp-core/types@1.1.0
+  - @wevu/api@0.3.2
+  - @wevu/compiler@7.1.1
+  - @wevu/web-apis@1.2.42
+
 ## 7.1.0
 
 ### Minor Changes

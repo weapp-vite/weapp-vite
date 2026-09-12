@@ -1,5 +1,35 @@
 # weapp-vite
 
+## 7.1.1
+
+### Patch Changes
+
+- 修复受管 `.weapp-vite/tsconfig.app.json` 把 `wevu/weapp/jsx-runtime` 写入 `compilerOptions.types` 导致 TS2688 的问题。JSX 类型改由 `jsxImportSource` 解析。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- 移除 Tailwind CSS 3 catalog，统一脚手架与工作区依赖到 Tailwind CSS 4，并减少 catalog 同步产生的无关文件变更。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+  - @weapp-core/init@6.0.19
+  - @weapp-core/logger@3.1.3
+  - @weapp-core/schematics@6.2.3
+  - @weapp-core/shared@3.2.2
+  - @weapp-vite/ast@7.1.1
+  - @weapp-vite/eslint@0.2.4
+  - @weapp-vite/i18n@0.2.3
+  - @weapp-vite/mcp@1.5.3
+  - @weapp-vite/miniprogram-automator@1.2.18
+  - @weapp-vite/volar@2.1.7
+  - @weapp-vite/web@1.5.1
+  - @wevu/api@0.3.2
+  - @wevu/web-apis@1.2.42
+  - rolldown-require@2.0.29
+  - vite-plugin-performance@2.0.2
+  - weapp-ide-cli@6.1.4
+  - wevu@7.1.1
+
 ## 7.1.0
 
 ### Minor Changes

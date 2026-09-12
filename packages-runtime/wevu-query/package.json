@@ -1,7 +1,7 @@
 {
   "name": "@wevu/query",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "面向 Wevu 小程序的查询缓存、变更与分页状态管理",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",

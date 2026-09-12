@@ -1,5 +1,28 @@
 # create-weapp-vite
 
+## 2.8.14
+
+### Patch Changes
+
+- 修复 blocking 首屏导航守卫返回 redirect 时未执行宿主重定向、原始页面仍被挂载的问题。
+
+- 修复 setup 返回函数未写入 `setupState` 的问题，使 public proxy 与 `bindModel` 能读到同一份绑定。
+
+- 修复受管 `.weapp-vite/tsconfig.app.json` 把 `wevu/weapp/jsx-runtime` 写入 `compilerOptions.types` 导致 TS2688 的问题。JSX 类型改由 `jsxImportSource` 解析。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- 移除 Tailwind CSS 3 catalog，统一脚手架与工作区依赖到 Tailwind CSS 4，并减少 catalog 同步产生的无关文件变更。
+
+- 新增 `@weapp-core/types` 公共类型包，统一导出微信、支付宝、抖音和聚合小程序的 intrinsic element 类型；`wevu` 保留原有兼容导出路径。
+
+- 修复 `wevu/router` 在 App setup 中创建实例失败，以及未传入 `tabBarEntries` 时把 tabBar 页走成 `redirectTo` 的问题。
+
+- Updated dependencies:
+  - @weapp-core/init@6.0.19
+  - @weapp-core/logger@3.1.3
+  - @weapp-core/shared@3.2.2
+
 ## 2.8.13
 
 ### Patch Changes

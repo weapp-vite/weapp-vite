@@ -1,7 +1,7 @@
 {
   "name": "@mpcore/core",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Core entry package for the mpcore mini-program tooling ecosystem",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

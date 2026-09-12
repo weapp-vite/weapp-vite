@@ -1,3 +1,7 @@
+"@mpcore/core@0.0.1":
+  dir: mpcore/packages/core
+  intents:
+    - npm-package-metadata
 "@mpcore/simulator@0.3.3":
   dir: mpcore/packages/simulator
   intents:
@@ -49,6 +53,16 @@
     - simulator-testing-navigation-errors
     - simulator-untyped-null-properties
     - wevu-query-and-app-lifecycle
+"@mpcore/simulator@0.5.1":
+  dir: mpcore/packages/simulator
+  intents:
+    - ninety-loops-like
+    - npm-package-metadata
+    - shiny-islands-retire
+"@mpcore/test@0.1.10":
+  dir: mpcore/packages/test
+  intents:
+    - npm-package-metadata
 "@mpcore/test@0.1.9":
   dir: mpcore/packages/test
   intents:
@@ -62,10 +76,18 @@
   intents:
     - dependency-upgrade-auto-generated
     - vitest-five-matchers
+"@mpcore/vitest@0.2.2":
+  dir: mpcore/packages/vitest
+  intents:
+    - npm-package-metadata
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
     - dependency-upgrade-auto-generated
+"@mpcore/weapp-vite@0.1.23":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - npm-package-metadata
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -78,6 +100,10 @@
   dir: "@weapp-core/api"
   intents:
     - fix-wx-sync-api-promise
+"@weapp-core/api@0.3.2":
+  dir: "@weapp-core/api"
+  intents:
+    - npm-package-metadata
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -96,6 +122,10 @@
     - light-runtimes-install
     - stateful-global-style-updates
     - tsdown-023-constants
+"@weapp-core/constants@0.2.3":
+  dir: "@weapp-core/constants"
+  intents:
+    - npm-package-metadata
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -104,10 +134,18 @@
   dir: "@weapp-core/init"
   intents:
     - tailwindcss-core-patch-upgrade
+"@weapp-core/init@6.0.19":
+  dir: "@weapp-core/init"
+  intents:
+    - npm-package-metadata
 "@weapp-core/logger@3.1.2":
   dir: "@weapp-core/logger"
   intents:
     - keep-logger-colors-public-type
+"@weapp-core/logger@3.1.3":
+  dir: "@weapp-core/logger"
+  intents:
+    - npm-package-metadata
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -121,6 +159,10 @@
   dir: "@weapp-core/schematics"
   intents:
     - catalog-auto-generated
+"@weapp-core/schematics@6.2.3":
+  dir: "@weapp-core/schematics"
+  intents:
+    - npm-package-metadata
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -129,6 +171,15 @@
   dir: "@weapp-core/shared"
   intents:
     - calm-runtime-gates
+"@weapp-core/shared@3.2.2":
+  dir: "@weapp-core/shared"
+  intents:
+    - npm-package-metadata
+"@weapp-core/types@1.1.0":
+  dir: "@weapp-core/types"
+  intents:
+    - npm-package-metadata
+    - types-intrinsic-elements
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -153,6 +204,10 @@
   dir: packages/ast-native
   intents:
     - dependency-upgrade-auto-generated
+"@weapp-vite/ast-native@0.1.3":
+  dir: packages/ast-native
+  intents:
+    - npm-package-metadata
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -167,6 +222,10 @@
   dir: packages/ast
   intents:
     - sfc-block-hmr-core
+"@weapp-vite/ast@7.1.1":
+  dir: packages/ast
+  intents:
+    - npm-package-metadata
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -176,6 +235,14 @@
   dir: packages/dashboard
   intents:
     - tailwindcss-core-patch-upgrade
+"@weapp-vite/dashboard@7.1.1":
+  dir: packages/dashboard
+  intents:
+    - npm-package-metadata
+"@weapp-vite/devtools-runtime@0.4.19":
+  dir: packages/devtools-runtime
+  intents:
+    - npm-package-metadata
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -192,6 +259,10 @@
   dir: packages/eslint
   intents:
     - calm-runtime-gates
+"@weapp-vite/eslint@0.2.4":
+  dir: packages/eslint
+  intents:
+    - npm-package-metadata
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -201,6 +272,10 @@
   intents:
     - constants-runtime-dependents
     - light-runtimes-install
+"@weapp-vite/i18n@0.2.3":
+  dir: packages-runtime/i18n
+  intents:
+    - npm-package-metadata
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -209,6 +284,10 @@
   dir: packages/mcp
   intents:
     - catalog-auto-generated
+"@weapp-vite/mcp@1.5.3":
+  dir: packages/mcp
+  intents:
+    - npm-package-metadata
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -234,10 +313,18 @@
     - fix-954-automator-token
     - rendered-page-identity
     - structured-automator-console-errors
+"@weapp-vite/miniprogram-automator@1.2.18":
+  dir: packages/miniprogram-automator
+  intents:
+    - npm-package-metadata
 "@weapp-vite/qr@1.1.2":
   dir: packages/qr
   intents:
     - calm-docs-domain
+"@weapp-vite/qr@1.1.3":
+  dir: packages/qr
+  intents:
+    - npm-package-metadata
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -256,10 +343,18 @@
   intents:
     - constants-runtime-dependents
     - light-runtimes-install
+"@weapp-vite/react@0.2.6":
+  dir: packages-runtime/react
+  intents:
+    - npm-package-metadata
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
     - calm-docs-domain
+"@weapp-vite/volar@2.1.7":
+  dir: packages/volar
+  intents:
+    - npm-package-metadata
 "@weapp-vite/vscode@0.5.3":
   dir: extensions/vscode
   intents:
@@ -301,6 +396,11 @@
     - red-seas-happen
     - salty-crabs-teach
     - wevu-query-and-app-lifecycle
+"@weapp-vite/web@1.5.1":
+  dir: packages-runtime/web
+  intents:
+    - fix-web-polyfill-treeshake
+    - npm-package-metadata
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -318,6 +418,10 @@
   dir: packages-runtime/weapi
   intents:
     - fix-wx-sync-api-promise
+"@wevu/api@0.3.2":
+  dir: packages-runtime/weapi
+  intents:
+    - npm-package-metadata
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -367,10 +471,19 @@
     - protect-compiler-source-cache-publication
     - renderer-owned-jsx-types
     - sfc-typescript-this-parameter
+"@wevu/compiler@7.1.1":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - fix-wxml-paren-member
+    - npm-package-metadata
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
     - wevu-query-and-app-lifecycle
+"@wevu/query@0.0.1":
+  dir: packages-runtime/wevu-query
+  intents:
+    - npm-package-metadata
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -385,6 +498,10 @@
   intents:
     - constants-runtime-dependents
     - light-runtimes-install
+"@wevu/test-utils@0.2.13":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - npm-package-metadata
 "@wevu/test-utils@0.2.2":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -405,6 +522,10 @@
     - calm-async-derivations
     - constants-runtime-dependents
     - light-runtimes-install
+"@wevu/web-apis@1.2.42":
+  dir: packages-runtime/web-apis
+  intents:
+    - npm-package-metadata
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -527,6 +648,16 @@ create-weapp-vite@2.8.13:
     - wevu-hmr-reactive-deletions
     - wevu-hmr-replacement-state
     - wevu-native-event-handler-variance
+create-weapp-vite@2.8.14:
+  dir: packages/create-weapp-vite
+  intents:
+    - bright-routers-redirect
+    - fix-986-setup-state-functions
+    - fix-wevu-jsx-runtime-types
+    - npm-package-metadata
+    - tailwind4-catalog
+    - types-intrinsic-elements
+    - wevu-app-router-tabbar
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -606,6 +737,14 @@ rolldown-require@2.0.28:
   dir: packages/rolldown-require
   intents:
     - catalog-auto-generated
+rolldown-require@2.0.29:
+  dir: packages/rolldown-require
+  intents:
+    - npm-package-metadata
+vite-plugin-performance@2.0.2:
+  dir: packages/vite-plugin-performance
+  intents:
+    - npm-package-metadata
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -625,6 +764,10 @@ weapp-ide-cli@6.1.3:
     - ide-project-trust-initialization
     - open-project-http-first
     - wechat-http-engine-cancellation
+weapp-ide-cli@6.1.4:
+  dir: packages/weapp-ide-cli
+  intents:
+    - npm-package-metadata
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -786,6 +929,12 @@ weapp-vite@7.1.0:
     - tidy-forward-console-lifecycle
     - validate-react-bridge-current-config
     - vue-hmr-compile-context
+weapp-vite@7.1.1:
+  dir: packages/weapp-vite
+  intents:
+    - fix-wevu-jsx-runtime-types
+    - npm-package-metadata
+    - tailwind4-catalog
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -854,3 +1003,11 @@ wevu@7.1.0:
     - wevu-hmr-reactive-deletions
     - wevu-hmr-replacement-state
     - wevu-native-event-handler-variance
+wevu@7.1.1:
+  dir: packages-runtime/wevu
+  intents:
+    - bright-routers-redirect
+    - fix-986-setup-state-functions
+    - npm-package-metadata
+    - types-intrinsic-elements
+    - wevu-app-router-tabbar
