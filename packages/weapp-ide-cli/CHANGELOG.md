@@ -1,5 +1,17 @@
 # weapp-ide-cli
 
+## 6.1.4
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.3
+  - @weapp-core/shared@3.2.2
+  - @weapp-vite/devtools-runtime@0.4.19
+  - @weapp-vite/miniprogram-automator@1.2.18
+
 ## 6.1.3
 
 ### Patch Changes

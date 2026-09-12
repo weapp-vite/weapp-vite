@@ -1,5 +1,15 @@
 # @wevu/web-apis
 
+## 1.2.42
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+  - @wevu/api@0.3.2
+
 ## 1.2.41
 
 ### Patch Changes

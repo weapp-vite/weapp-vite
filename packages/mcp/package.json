@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/mcp",
   "type": "module",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "@weapp-vite/mcp tools and runtime components for modern WeChat and multi-platform mini-program development.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "ISC",

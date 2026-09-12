@@ -1,5 +1,19 @@
 # @wevu/compiler
 
+## 7.1.1
+
+### Patch Changes
+
+- 修复 wevu 把 `(a ?? []).length` 这类表达式编成非法 WXML `(expr).length` 的问题。Vue 模板和 JSX 现在都会把括号后的成员访问回退到 JS runtime binding。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+  - @weapp-core/shared@3.2.2
+  - @weapp-vite/ast@7.1.1
+  - rolldown-require@2.0.29
+
 ## 7.1.0
 
 ### Minor Changes

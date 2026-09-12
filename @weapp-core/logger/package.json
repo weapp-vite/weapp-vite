@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/logger",
   "type": "module",
-  "version": "3.1.2",
+  "version": "3.1.3",
   "description": "Structured logging utilities for the weapp-vite toolchain and mini-program runtimes.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

@@ -1,5 +1,19 @@
 # @weapp-vite/web
 
+## 1.5.1
+
+### Patch Changes
+
+- 修复 Web 运行时在生产构建 tree-shaking 后丢失 `wx`、`getApp` 和 `getCurrentPages` 全局安装的问题。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+  - @weapp-core/shared@3.2.2
+  - rolldown-require@2.0.29
+  - wevu@7.1.1
+
 ## 1.5.0
 
 ### Minor Changes
