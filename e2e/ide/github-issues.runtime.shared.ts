@@ -1092,6 +1092,16 @@ export function createGithubIssuesLaunchAutomatorOptions(projectPath = APP_ROOT)
 async function launchGithubIssuesMiniProgramOnce() {
   const miniProgram = await launchAutomator(createGithubIssuesLaunchAutomatorOptions())
   await delay(600)
+  try {
+    const info = await miniProgram.send('Tool.getInfo', {})
+    process.stdout.write(`[info] [github-issues-runtime] devtools=${info?.version ?? '<unknown>'} baseLibrary=${info?.SDKVersion ?? '<unknown>'}\n`)
+    if (info?.SDKVersion === '3.17.3') {
+      process.stdout.write('[warn] [github-issues-runtime] base library 3.17.3 is a known grey release and is unsupported for this fixture; expected 3.17.2\n')
+    }
+  }
+  catch {
+    process.stdout.write('[warn] [github-issues-runtime] unable to read DevTools/base library version\n')
+  }
   return miniProgram
 }
 

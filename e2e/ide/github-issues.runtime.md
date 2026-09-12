@@ -17,7 +17,9 @@ macOS 长时间运行时使用 `caffeinate -dimsu --` 包装命令。启动前�
 
 ## DevTools 冷启动排查
 
-在 macOS、DevTools `2.02.2608060`、基础库 `3.17.3` 上，曾观察到 Builder 在启动中因 `setting.es6/enhance` 变化反复销毁和重建，随后模拟器显示 `simulator launch failed`，当前页协议报 `getPageMetaByWebviewId(...)=null`。`Uncaught [object Object]` 只是协议包装，不能据此判断 router 出错或认定重试必然恢复。
+在 macOS、DevTools `2.02.2608060`、灰度基础库 `3.17.3` 上，曾观察到 Builder 在启动中因 `setting.es6/enhance` 变化反复销毁和重建，随后模拟器显示 `simulator launch failed`，当前页协议报 `getPageMetaByWebviewId(...)=null`。`Uncaught [object Object]` 只是协议包装，不能据此判断 router 出错或认定重试必然恢复。
+
+当前 fixture 固定使用已完成真实验收的基础库 `3.17.2`，公共配置和私有配置必须保持一致。启动时会记录实际 DevTools 与基础库版本；如果日志显示 `3.17.3` 或其他未验证版本，应先切换到 `3.17.2` 再诊断业务。升级 DevTools 后，必须重新运行原生最小隔离实验和完整严格 IDE suite，确认模拟器启动、当前页协议和 DOM acceptance 均通过后，才可更新固定版本。若本机没有 `3.17.2`，记录为基础设施限制，不放宽断言或重试预算。
 
 最小隔离实验不依赖 wevu：使用真实 AppID 创建一个原生项目，`App({})`、`Page({ data: { message: 'native ready' } })` 和 `<view id="ready">{{message}}</view>`，将该页面加入 `app.json`，通过同一 automator 启动。上述环境中，开启 `es6/enhance` 时复现了相同启动失败；两项均关闭时，真实当前页与 `#ready` 文本验证通过。应结合当次 IDE 原始日志确认，不能把所有同名错误都归因于这一原因。
 
