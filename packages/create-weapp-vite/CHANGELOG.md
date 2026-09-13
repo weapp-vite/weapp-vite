@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.8.15
+
+### Patch Changes
+
+- 修复启用压缩时跨分包 `require.async` 路径未还原的问题。
+
 ## 2.8.14
 
 ### Patch Changes
