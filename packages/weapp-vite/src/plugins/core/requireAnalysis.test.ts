@@ -134,4 +134,14 @@ const nativeModule = import('../../subpackages/native/index.ts')
 
     expect(result?.code).toBe(`require.async(  "./subs/page/lib.js" )`)
   })
+
+  it('rewrites minified backtick require.async markers from vendor chunks', () => {
+    const marker = `__weapp_vite_require_async_target__${Buffer.from('weapp-sqlite/runtime.js').toString('base64url')}`
+    const result = rewriteRequireAsyncChunkPaths(
+      `qp??(qp=require.async(\`${marker}\`).then(e=>e.default??e))`,
+      'weapp-vendors/wevu-runtime.js',
+    )
+
+    expect(result?.code).toBe('qp??(qp=require.async("../weapp-sqlite/runtime.js").then(e=>e.default??e))')
+  })
 })
