@@ -165,6 +165,8 @@
     "e2e:chunks:subpackage-complex:all": "pnpm run e2e:chunks:subpackage-complex:build:matrix && pnpm run e2e:chunks:subpackage-complex:ci && pnpm run e2e:chunks:subpackage-complex:ide",
     "e2e:lib-mode": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/ci/lib-mode.e2e.test.ts",
     "check:e2e-ide-shared-launch": "node --import tsx scripts/check-e2e-ide-shared-launch.ts",
+    "e2e:dom-acceptance:write": "node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write",
+    "e2e:dom-acceptance:check": "node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --check",
     "check:watch:file-name-conflict": "node scripts/check-watch-file-name-conflict.mjs",
     "check:create-weapp-vite-changeset": "tsx scripts/check-create-weapp-vite-changeset.ts",
     "check:publishable-workspace-changeset": "tsx scripts/check-publishable-workspace-changeset.ts",

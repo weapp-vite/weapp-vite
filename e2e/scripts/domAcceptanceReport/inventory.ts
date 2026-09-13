@@ -8,6 +8,8 @@ import { ACCEPTANCE_ROOT } from './helpers'
 import { analyzeCaseSource, readCaseInventory, readFactoryTitle } from './inventoryAnalyzer'
 import { collectInventorySources } from './inventorySources'
 
+const INVENTORY_WRITE_COMMAND = 'pnpm e2e:dom-acceptance:write'
+
 export function readTaskCases(root: string, label: string, templates?: string[]) {
   const file = `e2e/${label}`
   const cases = readCaseInventory(root, file, templates)
@@ -136,6 +138,30 @@ export async function formatDomAcceptanceInventory(markdown: string, root = ACCE
   return result.output ?? markdown
 }
 
+function describeInventoryDrift(saved: unknown, current: ReturnType<typeof createDomAcceptanceInventory>) {
+  if (!saved || typeof saved !== 'object') {
+    return 'saved JSON is missing or invalid'
+  }
+  const savedRecord = saved as { sources?: unknown, summary?: unknown }
+  const savedSources = Array.isArray(savedRecord.sources)
+    ? savedRecord.sources.filter((item): item is { file?: unknown, sha256?: unknown } => Boolean(item) && typeof item === 'object')
+    : []
+  const currentSources = new Map(current.sources.map(source => [source.file, source.sha256]))
+  const changed = savedSources
+    .filter(source => typeof source.file === 'string' && currentSources.get(source.file) !== source.sha256)
+    .map(source => source.file as string)
+  const added = current.sources.filter(source => !savedSources.some(savedSource => savedSource.file === source.file)).map(source => source.file)
+  const removed = savedSources.filter(source => typeof source.file === 'string' && !currentSources.has(source.file)).map(source => source.file as string)
+  const summaryChanged = JSON.stringify(savedRecord.summary) !== JSON.stringify(current.summary)
+  const details = [
+    changed.length ? `changed sources: ${changed.join(', ')}` : '',
+    added.length ? `added sources: ${added.join(', ')}` : '',
+    removed.length ? `removed sources: ${removed.join(', ')}` : '',
+    summaryChanged ? 'summary changed' : '',
+  ].filter(Boolean)
+  return details.length ? details.join('; ') : 'generated JSON differs'
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const inventory = createDomAcceptanceInventory()
   const markdownPath = path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.md')
@@ -150,10 +176,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     assertDomAcceptanceInventoryComplete(inventory)
     const saved: unknown = JSON.parse(fs.readFileSync(path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.json'), 'utf8'))
     if (JSON.stringify(saved) !== JSON.stringify(inventory)) {
-      throw new Error('DOM case inventory is stale; regenerate with --write after editing IDE cases or plans')
+      throw new Error(`DOM case inventory is stale (${describeInventoryDrift(saved, inventory)}); run ${INVENTORY_WRITE_COMMAND} and stage the generated files`)
     }
     if (fs.readFileSync(markdownPath, 'utf8') !== markdown) {
-      throw new Error('DOM case Markdown inventory is stale; regenerate with --write')
+      throw new Error(`DOM case Markdown inventory is stale; run ${INVENTORY_WRITE_COMMAND} and stage the generated files`)
     }
   }
   console.log(JSON.stringify(inventory.summary, null, 2))
