@@ -401,6 +401,10 @@
   intents:
     - fix-web-polyfill-treeshake
     - npm-package-metadata
+"@weapp-vite/web@1.5.2":
+  dir: packages-runtime/web
+  intents:
+    - fix-web-polyfill-side-effects
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -658,6 +662,10 @@ create-weapp-vite@2.8.14:
     - tailwind4-catalog
     - types-intrinsic-elements
     - wevu-app-router-tabbar
+create-weapp-vite@2.8.15:
+  dir: packages/create-weapp-vite
+  intents:
+    - fix-issue-999
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -935,6 +943,10 @@ weapp-vite@7.1.1:
     - fix-wevu-jsx-runtime-types
     - npm-package-metadata
     - tailwind4-catalog
+weapp-vite@7.1.2:
+  dir: packages/weapp-vite
+  intents:
+    - fix-issue-999
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:

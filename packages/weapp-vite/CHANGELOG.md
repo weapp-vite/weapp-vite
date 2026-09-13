@@ -1,5 +1,16 @@
 # weapp-vite
 
+## 7.1.2
+
+### Patch Changes
+
+- 修复启用压缩时跨分包 `require.async` 路径未还原的问题。
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.1.2
+  - @weapp-vite/web@1.5.2
+  - wevu@7.1.2
+
 ## 7.1.1
 
 ### Patch Changes
