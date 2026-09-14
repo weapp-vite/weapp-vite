@@ -190,7 +190,10 @@ export async function runDevCycle(options: DevCycleOptions) {
   captureStream(child.stderr, stderrChunks, log)
 
   let childSettled = false
-  void child.then(() => {
+  child.once('close', () => {
+    childSettled = true
+  })
+  child.once('error', () => {
     childSettled = true
   })
   const originalSource = await fs.readFile(sourceFile, 'utf8')
@@ -214,10 +217,10 @@ export async function runDevCycle(options: DevCycleOptions) {
     throw new Error(`${error instanceof Error ? error.message : String(error)}${detail ? `\n\n${detail}` : ''}`)
   }
   finally {
-    await fs.writeFile(sourceFile, originalSource, 'utf8')
     await terminateProcess(child)
     if (!await waitForChildClose(child)) {
       cleanupChildProcessHandles(child)
     }
+    await fs.writeFile(sourceFile, originalSource, 'utf8')
   }
 }
