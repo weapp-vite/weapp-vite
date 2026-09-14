@@ -175,6 +175,31 @@ describe('managed Tailwind integration', () => {
     } as any)).not.toThrow()
   })
 
+  it('keeps Lightning CSS when cssMinify is enabled', () => {
+    const plugin = getPlugins({ cssEntries: ['/project/src/app.css'] })[0]!
+    const config = { build: { cssMinify: true }, plugins: [plugin] } as any
+    getHookHandler(plugin.configResolved)?.call({} as any, config)
+    expect(config.build.cssMinify).toBe(true)
+  })
+
+  it('short-circuits managed style sidecars before CSS processing', () => {
+    const plugin = getPlugins(true)[0]!
+    const load = getHookHandler(plugin.load)
+    const sidecar = createSidecarSourceSpecifier('/project/src/app.ts', '/project/src/app.css', 'style')
+
+    expect(load?.call({}, sidecar, {} as any)).toMatchObject({ code: 'export default ""' })
+  })
+
+  it('keeps ownership for style sidecars carrying Vue query flags', () => {
+    const plugin = getPlugins({ cssEntries: ['/project/src/app.css'] })[0]!
+    const load = getHookHandler(plugin.load)
+    const sidecar = `${createSidecarSourceSpecifier('/project/src/app.vue', '/project/src/app.css', 'style')}&vue`
+    expect(load?.call({}, sidecar, {} as any)).toMatchObject({
+      code: 'export default ""',
+      meta: { weappViteStyleSources: ['/project/src/app.css'] },
+    })
+  })
+
   it('uses compiler APIs to transform one owned bundle', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwindcss-'))
     temporaryRoots.push(root)
