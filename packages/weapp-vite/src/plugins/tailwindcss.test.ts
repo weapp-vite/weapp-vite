@@ -190,6 +190,16 @@ describe('managed Tailwind integration', () => {
     expect(load?.call({}, sidecar, {} as any)).toMatchObject({ code: 'export default ""' })
   })
 
+  it('keeps ownership for style sidecars carrying Vue query flags', () => {
+    const plugin = getPlugins({ cssEntries: ['/project/src/app.css'] })[0]!
+    const load = getHookHandler(plugin.load)
+    const sidecar = `${createSidecarSourceSpecifier('/project/src/app.vue', '/project/src/app.css', 'style')}&vue`
+    expect(load?.call({}, sidecar, {} as any)).toMatchObject({
+      code: 'export default ""',
+      meta: { weappViteStyleSources: ['/project/src/app.css'] },
+    })
+  })
+
   it('uses compiler APIs to transform one owned bundle', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwindcss-'))
     temporaryRoots.push(root)
