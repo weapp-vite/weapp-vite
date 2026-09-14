@@ -57,6 +57,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/github-issues.runtime.issue911.test.ts',
   'ide/github-issues.runtime.issue941.test.ts',
+  'ide/github-issues.runtime.issue1011.test.ts',
   'ide/lifecycle-compare.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
   'ide/shared-styles.runtime.test.ts',
@@ -109,6 +110,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/github-issues.runtime.issue911.test.ts',
   'ide/github-issues.runtime.issue941.test.ts',
+  'ide/github-issues.runtime.issue1011.test.ts',
   'ide/github-issues.runtime.issue852.test.ts',
   'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
   'ide/github-issues.runtime.subpackage-item.test.ts',
@@ -213,6 +215,7 @@ const IDE_GATE_TESTS = [
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/app-lifecycle.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
+  'ide/github-issues.runtime.issue1011.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',

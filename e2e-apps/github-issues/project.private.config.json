@@ -57,6 +57,13 @@
           "launchMode": "default"
         },
         {
+          "name": "issue 1011 v-for destructuring semantics",
+          "pathName": "pages/issue-1011/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 911 initial router guard",
           "pathName": "pages/issue-911/index",
           "query": "",

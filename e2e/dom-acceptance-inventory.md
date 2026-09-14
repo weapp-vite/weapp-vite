@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：93；微信：90；范围外：3。
-- 展开的 case 声明：233；已接入计划：233；缺计划：0。
+- 任务：94；微信：91；范围外：3。
+- 展开的 case 声明：234；已接入计划：234；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -26,6 +26,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/forward-console-demo.runtime.test.ts                                                  | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    65 |    65 |       0 | wechat       |
 | ide/github-issues.runtime.component-instance-apis.test.ts                                 | devtools, headless |     1 |     1 |       0 | wechat       |
+| ide/github-issues.runtime.issue1011.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue448-formdata-upload.test.ts                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue547.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue558.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
@@ -674,6 +675,15 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'baseline', route: BASELINE_ROUTE, action: '离开上轮组件后显式清空事件，检查独立准备页', nodes: [{ selector: '#baseline-title', text: '准备组件关系验收' }] }, ...stages.map(stage => ({ id: stage.id, route: ROUTE, action: stage.action, nodes: [ { selector: '#rel`; source: `e2e/ide/github-issues.runtime.component-instance-apis.test.ts:31`
 - Operations: `act(baseline)`, `check(baseline)`, `act(initial)`, `act(stage.id)`, `callMethod(snapshot)`, `check(stage.id)`
+
+## ide/github-issues.runtime.issue1011.test.ts
+
+### e2e app: github-issues / issue #1011 > keeps destructuring semantics equal between rendered and event values
+
+- Source: `e2e/ide/github-issues.runtime.issue1011.test.ts:52`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_ROUTE, action: '检查默认值、对象 rest 排除与数组 rest 首屏结果', nodes: [ { selector: '#issue1011-value-missing', text: 'missing\|section-fallback\|A\|excluded\|excluded' }, { selector: '#issue1011-value-null', text: 'null\|null\|B\|`; source: `e2e/ide/github-issues.runtime.issue1011.test.ts:53`
+- Operations: `check(initial)`, `callMethodWithOptions(_snapshot)`, `check(captured)`
 
 ## ide/github-issues.runtime.issue448-formdata-upload.test.ts
 

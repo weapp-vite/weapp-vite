@@ -1,5 +1,6 @@
 import type { HeadlessWxVideoContext } from '../host'
 import { resolveMiniProgramEventBinding } from './eventBinding'
+import { collectNodeDataset } from './nodeDataset'
 import { resolveSelectorQueryScopeRoot } from './selectorQuery'
 import { querySelectorAll } from './selectors'
 
@@ -7,6 +8,7 @@ interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
@@ -29,27 +31,8 @@ export interface HeadlessVideoContextDriver {
   resolveScope: (scope?: Record<string, any>) => HeadlessVideoContextScopeResolution
 }
 
-const DATASET_NAME_RE = /-([a-z])/g
-
-function toDatasetKey(attributeName: string) {
-  return attributeName
-    .slice('data-'.length)
-    .replace(DATASET_NAME_RE, (_match, char: string) => char.toUpperCase())
-}
-
-function collectDataset(node: DomNodeLike) {
-  const dataset: Record<string, string> = {}
-  for (const [key, value] of Object.entries(node.attribs ?? {})) {
-    if (!key.startsWith('data-') || key.startsWith('data-sim-')) {
-      continue
-    }
-    dataset[toDatasetKey(key)] = value
-  }
-  return dataset
-}
-
 function createEventPayload(node: DomNodeLike, eventName: string, detail: Record<string, unknown>) {
-  const dataset = collectDataset(node)
+  const dataset = collectNodeDataset(node)
   const nodeId = node.attribs?.id ?? ''
   return {
     bubbles: false,
