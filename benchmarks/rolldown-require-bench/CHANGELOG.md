@@ -5,6 +5,13 @@
 ### Patch Changes
 
 - Updated dependencies:
+  - rolldown-require@2.0.29
+
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies:
   - rolldown-require@2.0.28
 
 ## 0.0.28

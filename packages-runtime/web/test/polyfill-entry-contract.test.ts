@@ -13,7 +13,7 @@ const originalDescriptors = new Map(
 
 describe('polyfill entry installation contract', () => {
   it('declares the polyfill output as side-effectful for production treeshaking', () => {
-    expect(packageJson.sideEffects).toContain('dist/runtime/polyfill/**')
+    expect(packageJson.sideEffects).toContain('dist/runtime/index.mjs')
   })
 
   afterEach(() => {

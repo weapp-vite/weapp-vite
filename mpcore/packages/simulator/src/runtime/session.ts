@@ -1502,7 +1502,7 @@ export class HeadlessSession {
   ) {
     const prefix = `page:${stripLeadingSlash(route)}`
     for (const [scopeId, instance] of this.componentCache.entries()) {
-      if (!scopeId.startsWith(prefix)) {
+      if (!scopeId.startsWith(prefix) || scopeId === customTabBarScopeId(route)) {
         continue
       }
       instance.__definition__?.pageLifetimes?.[lifetimeName]?.call(instance, payload)

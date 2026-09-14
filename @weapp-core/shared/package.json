@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/shared",
   "type": "module",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Shared runtime-safe utilities and platform contracts for the weapp-vite ecosystem.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

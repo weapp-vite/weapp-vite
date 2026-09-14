@@ -15,7 +15,11 @@ const REQUIRE_ANALYSIS_FILTER_RE = /\.[jt]s$/
 const URL_SUFFIX_RE = /[?#].*$/
 const REQUIRE_ASYNC_TARGET_MARKER_PREFIX = '__weapp_vite_require_async_target__'
 const REQUIRE_ASYNC_TARGET_MARKER_RE = new RegExp(
-  `\\brequire\\.async\\(\\s*(['"])${REQUIRE_ASYNC_TARGET_MARKER_PREFIX}([\\w-]+)\\1\\s*\\)`,
+  [
+    `\\brequire\\s*\\.\\s*async\\(\\s*([${String.fromCharCode(39, 34, 96)}])`,
+    REQUIRE_ASYNC_TARGET_MARKER_PREFIX,
+    '([\\w-]+)\\1\\s*\\)',
+  ].join(''),
   'g',
 )
 

@@ -4,7 +4,7 @@ import type { DomNodeLike, RuntimeRenderedPageTree, RuntimeRendererContext, Runt
 import path from 'node:path'
 import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
-import { customTabBarHostScope, hasCustomTabBar } from '../../view/customTabBar'
+import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
 import { resolveLoopEntries } from '../../view/loopEntries'
 import { linkRenderedParents } from '../../view/renderedTree'
 import { isTemplateDefinition, resolveTemplateCall, resolveTemplateData } from '../../view/templateRuntime'
@@ -429,7 +429,9 @@ export function renderRuntimePageTree(
 
   if (!isPageBeforeReady(page) && flushComponentReady(instances, (instance) => {
     runComponentLifecycle(instance, 'ready')
-    instance.__definition__?.pageLifetimes?.show?.call(instance)
+    if (instance !== context.componentCache.get(customTabBarScopeId(route))) {
+      instance.__definition__?.pageLifetimes?.show?.call(instance)
+    }
   })) {
     return renderRuntimePageTree(context, page)
   }

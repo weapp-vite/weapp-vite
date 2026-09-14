@@ -50,6 +50,8 @@ describe('custom tabbar browser DOM', () => {
       session.navigateBack()
       render()
       expect(preview.querySelector('#tab-counter')?.textContent).toBe('tab:1')
+      session.triggerResize({ size: { windowWidth: 375 } })
+      expect(session.getStorageSnapshot().customTabBarPageLifetimes ?? []).toEqual([])
     }
     finally {
       session.close()

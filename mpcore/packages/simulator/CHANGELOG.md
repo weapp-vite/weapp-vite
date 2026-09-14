@@ -1,5 +1,18 @@
 # @mpcore/simulator
 
+## 0.5.1
+
+### Patch Changes
+
+- 修复模拟器首次启动时 App 生命周期内的导航被初始页面覆盖的问题，并对齐 headless、浏览器和测试启动入口。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- 对齐真实微信运行时，自定义 tabBar 本身不触发页面 show、hide 和 resize 生命周期；保留主线已有的页面所有权、独立渲染和缓存实例机制。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+
 ## 0.5.0
 
 ### Minor Changes

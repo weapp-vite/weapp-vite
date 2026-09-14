@@ -1,5 +1,14 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.2.18
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.3
+
 ## 1.2.17
 
 ### Patch Changes

@@ -10,7 +10,11 @@ interface TutorialPreparationOptions {
 
 /** 分别准备被测 workspace 包与仓库验收容器的运行依赖。 */
 export async function prepareTutorialWorkspace(options: TutorialPreparationOptions, log: (message: string) => void) {
-  if (options.source === 'workspace' && process.env.TUTORIAL_E2E_SKIP_WORKSPACE_BUILD !== '1') {
+  if (options.source === 'workspace' && process.env.TUTORIAL_E2E_SKIP_WORKSPACE_BUILD === '1') {
+    return
+  }
+
+  if (options.source === 'workspace') {
     await runLoggedCommand({
       command: { args: ['build:pkgs:ci'], command: 'pnpm' },
       cwd: REPO_ROOT,

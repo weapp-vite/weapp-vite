@@ -49,6 +49,10 @@ const scenarioCatalog: Record<string, ScenarioMeta> = {
     name: 'Plugin Runtime',
     description: '验证 requirePlugin、本地插件公开组件和 plugin:// 页面导航。',
   },
+  'custom-tab-bar': {
+    name: 'Custom Tab Bar',
+    description: '原生 custom-tab-bar 按 tab 页面挂载，覆盖实例状态、事件切换与页面所有权。',
+  },
   'launch-redirect': {
     name: 'Launch Redirect',
     description: 'App 启动钩子重定向后保留登录页，避免初始入口覆盖导航。',

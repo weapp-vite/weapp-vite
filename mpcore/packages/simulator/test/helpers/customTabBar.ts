@@ -28,6 +28,11 @@ Component({
     },
     detached() { getApp().globalData.detached++ },
   },
+  pageLifetimes: {
+    show() { wx.setStorageSync('customTabBarPageLifetimes', ['show']) },
+    hide() { wx.setStorageSync('customTabBarPageLifetimes', ['hide']) },
+    resize() { wx.setStorageSync('customTabBarPageLifetimes', ['resize']) },
+  },
   methods: {
     increment() { this.setData({ count: this.data.count + 1 }) },
   },

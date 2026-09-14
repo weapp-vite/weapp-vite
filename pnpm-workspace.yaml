@@ -32,8 +32,8 @@ catalog:
   '@babel/types': ^8.0.5
   '@douyin-microapp/typings': ^1.3.1
   '@egoist/tailwindcss-icons': ^1.9.2
-  '@icebreakers/eslint-config': ^7.1.3
-  '@icebreakers/stylelint-config': ^5.0.9
+  '@icebreakers/eslint-config': ^8.0.0
+  '@icebreakers/stylelint-config': ^5.1.0
   '@iconify-json/mdi': ^1.2.3
   '@iconify/tailwind4': ^1.2.3
   '@mini-types/alipay': ^3.0.14
@@ -50,7 +50,7 @@ catalog:
   '@vue/language-core': ^3.3.11
   '@wot-ui/ui': 2.3.2
   antd-mini: ^3.4.3
-  autoprefixer: ^10.5.6
+  autoprefixer: ^10.6.0
   axios: ^1.20.0
   bundle-require: ^5.1.0
   class-variance-authority: ^0.7.1
@@ -64,7 +64,7 @@ catalog:
   fdir: ^6.5.0
   gm-crypto: ^0.1.12
   graphql-request: ^7.4.0
-  happy-dom: ^20.14.3
+  happy-dom: ^20.14.5
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
@@ -82,12 +82,12 @@ catalog:
   react: 19.3.0
   react-reconciler: 0.34.0
   rolldown: 1.2.8
-  sass: ^1.104.0
-  sass-embedded: ^1.104.0
+  sass: ^1.104.1
+  sass-embedded: ^1.104.1
   sharp: ^0.35.4
   stylelint: ^17.15.0
   socket.io-client: ^4.8.3
-  tailwind-merge: ^3.6.0
+  tailwind-merge: ^3.7.0
   tailwind-variants: ^3.3.1
   tailwindcss: ^4.3.3
   tdesign-miniprogram: ^1.16.1
@@ -100,8 +100,8 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.42
   vue-tsc: ^3.3.11
-  weapp-tailwindcss: ^5.5.3
-  zod: ^4.6.2
+  weapp-tailwindcss: ^5.5.5
+  zod: ^4.6.5
 
 catalogs:
   latest:
@@ -112,15 +112,13 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.1
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.5.3
+    weapp-tailwindcss: 5.5.5
 
 gitChecks: false
 
-confirmModulesPurge: false
 
 minimumReleaseAge: 0
 
-optimisticRepeatInstall: false
 
 overrides:
   rolldown: 'catalog:'

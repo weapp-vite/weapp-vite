@@ -6,7 +6,7 @@ import {
 
 } from './config'
 
-const PNPM_VERSION = '11'
+const PNPM_VERSION = '12'
 
 function pnpm(args: string[]): TutorialCommand {
   return {
@@ -57,7 +57,7 @@ export function createProjectCommand(
 export function installCommand(packageManager: TutorialPackageManager): TutorialCommand {
   switch (packageManager) {
     case 'pnpm':
-      return pnpm(['install', '--config.dangerouslyAllowAllBuilds=true'])
+      return pnpm(['install', '--ignore-scripts'])
     case 'npm':
       return { args: ['install'], command: 'npm' }
     case 'yarn':
@@ -65,6 +65,10 @@ export function installCommand(packageManager: TutorialPackageManager): Tutorial
     case 'bun':
       return { args: ['install'], command: 'bun' }
   }
+}
+
+export function prepareCommand(packageManager: TutorialPackageManager): TutorialCommand | undefined {
+  return packageManager === 'pnpm' ? pnpm(['exec', 'wv', 'prepare']) : undefined
 }
 
 export function packageScriptCommand(

@@ -17,6 +17,7 @@ describe('github issues runtime shared relaunch helper', () => {
   it('keeps compilation with Vite and waits for cold startup before same-session recovery', () => {
     expect(createGithubIssuesLaunchAutomatorOptions('project-root')).toEqual({
       projectPath: 'project-root',
+      trustProject: true,
       retryWarmupTimeout: true,
       skipRelaunchPageRootCheck: true,
       warmupAllowRelaunch: true,
@@ -35,6 +36,7 @@ describe('github issues runtime shared relaunch helper', () => {
       import.meta.dirname,
       '../../e2e-apps/github-issues/project.private.config.json',
     )) as Record<string, unknown>
+    expect(projectConfig.libVersion).toBe('3.17.2')
     expect(privateConfig.libVersion).toBe(projectConfig.libVersion)
   })
 

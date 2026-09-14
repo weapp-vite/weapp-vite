@@ -25,6 +25,24 @@ describe('custom tabbar sibling roots', () => {
   }
 
   for (const provider of ['node', 'browser'] as const) {
+    it(`keeps custom tabBar out of page lifetimes in ${provider}`, () => {
+      const session = provider === 'node'
+        ? createNodeSession()
+        : createBrowserHeadlessSession({ files: createBrowserVirtualFiles(customTabBarFiles) })
+      try {
+        session.reLaunch('/pages/a/index')
+        session.renderCurrentPage()
+        session.switchTab('/pages/b/index')
+        session.triggerResize({ size: { windowWidth: 375 } })
+        session.navigateTo('/pages/detail/index')
+        session.navigateBack()
+        expect(session.getStorageSnapshot().customTabBarPageLifetimes ?? []).toEqual([])
+      }
+      finally {
+        session.close()
+      }
+    })
+
     it(`owns a tabbar outside the page layout and retains it with its tab in ${provider}`, () => {
       const session = provider === 'node'
         ? createNodeSession()

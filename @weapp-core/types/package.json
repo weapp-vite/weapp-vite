@@ -1,7 +1,7 @@
 {
   "name": "@weapp-core/types",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Shared TypeScript intrinsic element types for WeChat and multi-platform mini-programs.",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",

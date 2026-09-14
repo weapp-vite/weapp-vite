@@ -47,12 +47,10 @@ describe('tutorial runtime preparation', () => {
     expect(process.stdout.write).toHaveBeenCalledWith('dist sync: rebuilt weapp-vite before downstream validation\n')
   })
 
-  it('prepares the harness independently of a skipped workspace build', async () => {
+  it('skips preparation when the workflow already built the workspace', async () => {
     vi.stubEnv('TUTORIAL_E2E_SKIP_WORKSPACE_BUILD', '1')
     await prepareTutorialWorkspace({ scenarios: ['multi-platform'], source: 'workspace' }, vi.fn())
-    expect(runLoggedCommand).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
-      label: 'tutorial runtime harness dependency build',
-    }))
+    expect(runLoggedCommand).not.toHaveBeenCalled()
   })
 
   it('propagates dependency build failure before any tutorial runs', async () => {

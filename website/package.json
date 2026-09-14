@@ -32,7 +32,7 @@
     "@vue/shared": "^3.5.42",
     "echarts": "catalog:",
     "element-plus": "^2.14.5",
-    "gridstack": "^13.2.0",
+    "gridstack": "^13.3.0",
     "theme-transition": "^2.1.1",
     "vue": "catalog:",
     "vue-echarts": "^8.3.0"
@@ -52,9 +52,9 @@
     "unplugin-vue-components": "^32.1.0",
     "vitepress": "2.0.0-alpha.18",
     "vitepress-plugin-group-icons": "^1.7.6",
-    "vitepress-plugin-llms": "1.13.5",
+    "vitepress-plugin-llms": "1.14.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*",
-    "wrangler": "^4.130.0"
+    "wrangler": "^4.131.1"
   }
 }

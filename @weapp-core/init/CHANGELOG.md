@@ -1,5 +1,15 @@
 # @weapp-core/init
 
+## 6.0.19
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.3
+  - @weapp-core/shared@3.2.2
+
 ## 6.0.18
 
 ### Patch Changes

@@ -258,6 +258,15 @@ export function getTaskSpawnOptions(task: SuiteTask): Options {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      ...(isDevtoolsVitestTask(task) && !process.env.WEAPP_VITE_E2E_TRUST_PROJECT && !process.env.WEAPP_VITE_E2E_TRUST_PROJECTS
+        ? {
+            WEAPP_VITE_E2E_TRUST_PROJECTS: [
+              path.resolve('e2e-apps'),
+              path.resolve('.tmp/e2e-projects'),
+              path.resolve('.tmp/e2e-ide-bridge-projects'),
+            ].join(path.delimiter),
+          }
+        : {}),
       [REPORT_MARKER_ENV]: '1',
       ...(shouldDefaultDevtoolsBridgeLaunch
         ? { [AUTOMATOR_LAUNCH_MODE_ENV]: AUTOMATOR_LAUNCH_MODE_BRIDGE }

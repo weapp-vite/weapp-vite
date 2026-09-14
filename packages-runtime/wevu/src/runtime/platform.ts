@@ -164,7 +164,9 @@ export function getCurrentMiniProgramTabBarPagePaths(): string[] {
     if (typeof pagePath !== 'string' || !pagePath) {
       continue
     }
-    paths.push(pagePath)
+    // 微信开发者工具可能把宿主配置中的页面路径输出为 `.html` 形式，
+    // 路由层使用的是不带扩展名的页面路径，读取边界统一归一化。
+    paths.push(pagePath.replace(/\.html$/, ''))
   }
   return paths
 }

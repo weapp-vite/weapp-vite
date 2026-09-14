@@ -6103,7 +6103,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "875e1d1bac0f778196519ab2f26b3b92af375ae907ea8e017fd8d9a29a4cf7f6"
+      "sha256": "f8bbdf96be67f0f16baa572d6f8f889a64930d2b262fcf31a0e3fd2757ad81a2"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -6587,7 +6587,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventory.ts",
-      "sha256": "fe237af79f78eb8ef1df12ba1896f6ce4c263e615fcf443db53ae8cfcb1806d5"
+      "sha256": "4ed89dd038d81e4579aa19d98fb1ef863be4d4dafe018befab4571c951423441"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventoryAnalyzer.ts",
@@ -6635,7 +6635,7 @@
     },
     {
       "file": "e2e/scripts/suiteRunner.ts",
-      "sha256": "fed4f917c51c61ac9e5fda23b9328cfdeb306a86b93390d105e418fff8a635cb"
+      "sha256": "9ef1bfbf2d5c976a3029a903c7776b24511a2d9ec59c066719524114a97a7407"
     },
     {
       "file": "e2e/template-e2e.utils.ts",

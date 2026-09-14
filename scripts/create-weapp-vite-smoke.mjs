@@ -32,7 +32,7 @@ const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS |
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
 const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
 const UPDATE_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_UPDATE_TIMEOUT_MS || 60 * 1000)
-const DEFAULT_PNPM_VERSION = process.env.CREATE_WEAPP_VITE_PNPM_VERSION?.trim() || '11'
+const DEFAULT_PNPM_VERSION = process.env.CREATE_WEAPP_VITE_PNPM_VERSION?.trim() || '12'
 const REPORT_FILE = process.env.CREATE_WEAPP_VITE_REPORT_FILE?.trim()
 const REPORT_META = {
   os: process.env.CREATE_WEAPP_VITE_REPORT_OS?.trim() || process.platform,
@@ -256,7 +256,7 @@ function createPnpmCommand(args, pnpmVersion = DEFAULT_PNPM_VERSION) {
 }
 
 function createPnpmInstallCommand(pnpmVersion = DEFAULT_PNPM_VERSION) {
-  return createPnpmCommand(['install', '--config.dangerouslyAllowAllBuilds=true'], pnpmVersion)
+  return createPnpmCommand(['install', '--ignore-scripts'], pnpmVersion)
 }
 
 const SCENARIOS = [

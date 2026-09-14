@@ -5,6 +5,21 @@
 ### Patch Changes
 
 - Updated dependencies:
+  - wevu@7.1.2
+
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/react@0.2.6
+  - wevu@7.1.1
+
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies:
   - @weapp-vite/react@0.2.5
   - wevu@7.1.0
 

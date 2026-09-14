@@ -26,6 +26,7 @@ import {
   createProjectCommand,
   installCommand,
   packageScriptCommand,
+  prepareCommand,
 } from './packageManager'
 import { prepareTutorialWorkspace } from './prepare'
 import {
@@ -276,9 +277,10 @@ async function executeTutorialRun(
   try {
     await fs.mkdir(scenarioRoot, { recursive: true })
     await recorder.step('create', async () => {
+      const createTarget = run.source === 'workspace' ? projectDir : projectName
       await runLoggedCommand({
-        command: createProjectCommand(run.source, run.packageManager, projectName, run.template),
-        cwd: scenarioRoot,
+        command: createProjectCommand(run.source, run.packageManager, createTarget, run.template),
+        cwd: run.source === 'workspace' ? REPO_ROOT : scenarioRoot,
         label: `${run.id} create`,
         log,
       })
@@ -298,6 +300,15 @@ async function executeTutorialRun(
         label: `${run.id} install`,
         log,
       })
+      const prepare = prepareCommand(run.packageManager)
+      if (prepare) {
+        await runLoggedCommand({
+          command: prepare,
+          cwd: projectDir,
+          label: `${run.id} prepare`,
+          log,
+        })
+      }
     })
 
     switch (run.scenario) {
