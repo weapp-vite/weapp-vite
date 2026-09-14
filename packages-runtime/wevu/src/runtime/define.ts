@@ -33,7 +33,7 @@ import { resolveNativeInitialData } from './define/initialComputed'
 import { resolveVueComponentOptions } from './define/options'
 import { applyOptionsApiProvide, resolveOptionsApiInjections } from './define/optionsApi'
 import { normalizeProps } from './define/props'
-import { applySetupResult } from './define/setupResult'
+import { applySetupResult, mergeSetupResultDescriptors } from './define/setupResult'
 import { runSetupFunction } from './register'
 
 const componentLifecycleDefinitions = new WeakMap<object, Record<string, any>>()
@@ -296,11 +296,10 @@ function createComponentDefinition(
       const setupResult = typeof setup === 'function'
         ? runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
         : undefined
-      const result = {
+      const result = mergeSetupResultDescriptors({
         ...injected,
         ...(cssModules ?? {}),
-        ...(setupResult ?? {}),
-      }
+      }, setupResult)
       if (ctx && Object.keys(result).length) {
         applySetupResult((ctx as any).runtime, (ctx as any).instance, result, {
           includeFunctionsInState: allowFunctionProps === true,

@@ -1,3 +1,4 @@
+import type { Scope } from '@weapp-vite/ast/babelTraverse'
 import type {
   InlineExpressionAsset,
   InlineExpressionIndexBindingAsset,
@@ -138,6 +139,91 @@ function buildCtxValueAccess(member: t.MemberExpression) {
   return t.memberExpression(t.cloneNode(member), t.identifier('value'))
 }
 
+function rewriteAssignmentPatternTarget(
+  target: t.PatternLike,
+  scope: Scope,
+  context: TransformContext,
+  locals: Set<string>,
+  markLocal?: (name: string) => void,
+): t.PatternLike {
+  if (t.isIdentifier(target)) {
+    const name = target.name
+    if (name === '$event' || INLINE_GLOBALS.has(name) || scope.getBinding(name)) {
+      return target
+    }
+    if (locals.has(name)) {
+      markLocal?.(name)
+      return createMemberAccess('scope', name)
+    }
+    const member = createMemberAccess('ctx', name)
+    return isScriptSetupRefLikeBinding(context, name) ? buildCtxValueAccess(member) : member
+  }
+  if (t.isAssignmentPattern(target)) {
+    target.left = rewriteAssignmentPatternTarget(
+      target.left,
+      scope,
+      context,
+      locals,
+      markLocal,
+    ) as t.AssignmentPattern['left']
+    return target
+  }
+  if (t.isRestElement(target)) {
+    target.argument = rewriteAssignmentPatternTarget(
+      target.argument,
+      scope,
+      context,
+      locals,
+      markLocal,
+    ) as t.RestElement['argument']
+    return target
+  }
+  if (t.isArrayPattern(target)) {
+    for (let index = 0; index < target.elements.length; index += 1) {
+      const element = target.elements[index]
+      if (element) {
+        target.elements[index] = rewriteAssignmentPatternTarget(element, scope, context, locals, markLocal)
+      }
+    }
+    return target
+  }
+  if (t.isObjectPattern(target)) {
+    for (const property of target.properties) {
+      if (t.isRestElement(property)) {
+        property.argument = rewriteAssignmentPatternTarget(
+          property.argument,
+          scope,
+          context,
+          locals,
+          markLocal,
+        ) as t.RestElement['argument']
+        continue
+      }
+      const value = property.value
+      if (!t.isPatternLike(value)) {
+        continue
+      }
+      property.value = rewriteAssignmentPatternTarget(value, scope, context, locals, markLocal)
+      if (
+        property.shorthand
+        && !(
+          t.isIdentifier(property.key)
+          && (
+            t.isIdentifier(property.value, { name: property.key.name })
+            || (
+              t.isAssignmentPattern(property.value)
+              && t.isIdentifier(property.value.left, { name: property.key.name })
+            )
+          )
+        )
+      ) {
+        property.shorthand = false
+      }
+    }
+  }
+  return target
+}
+
 function isValueMemberObject(node: t.MemberExpression, parent: t.Node | undefined) {
   return (
     t.isMemberExpression(parent)
@@ -154,10 +240,19 @@ function isCallTarget(node: t.MemberExpression, parent: t.Node | undefined) {
   )
 }
 
-function rewriteTopLevelRefLikeAccess(ast: t.File, context: TransformContext) {
+function rewriteTopLevelRefLikeAccess(
+  ast: t.File,
+  context: TransformContext,
+  locals: Set<string>,
+  markLocal?: (name: string) => void,
+) {
   traverse(ast, {
     AssignmentExpression(path) {
       const left = path.node.left
+      if (t.isObjectPattern(left) || t.isArrayPattern(left)) {
+        rewriteAssignmentPatternTarget(left, path.scope, context, locals, markLocal)
+        return
+      }
       if (t.isIdentifier(left) && isScriptSetupRefLikeBinding(context, left.name)) {
         path.node.left = buildCtxValueAccess(
           t.memberExpression(t.identifier('ctx'), t.identifier(left.name)),
@@ -233,7 +328,7 @@ export function registerInlineExpression(exp: string, context: TransformContext)
   }
 
   rewriteExpressionAst(ast, locals, { markLocal })
-  rewriteTopLevelRefLikeAccess(ast, context)
+  rewriteTopLevelRefLikeAccess(ast, context, locals, markLocal)
   const forAliases = collectForAliasMapping(context)
 
   const updatedStmt = ast.program.body[0]

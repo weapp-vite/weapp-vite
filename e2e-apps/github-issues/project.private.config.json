@@ -906,6 +906,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-1010/index",
+          "pathName": "pages/issue-1010/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
