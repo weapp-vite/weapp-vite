@@ -37,9 +37,9 @@ cd weapp-vite
 ## 2. 安装依赖并准备调试
 
 1. 建议先执行 `corepack enable`。
-2. 在仓库根目录使用 pnpm 11 安装依赖：
+2. 在仓库根目录使用 pnpm 12 安装依赖：
    ```sh
-   corepack pnpm@11 install
+   corepack pnpm@12 install
    ```
    仓库源码构建需要 Node.js `^22.18.0 || ^24.11.0 || >=26.0.0`。
 3. 仓库内的 `apps/` 目录准备了多个演示项目（`vite-native`、`vite-native-skyline` 等），可以任选一个作为调试入口。

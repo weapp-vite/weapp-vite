@@ -116,11 +116,9 @@ catalogs:
 
 gitChecks: false
 
-confirmModulesPurge: false
 
 minimumReleaseAge: 0
 
-optimisticRepeatInstall: false
 
 overrides:
   rolldown: 'catalog:'
