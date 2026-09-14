@@ -724,7 +724,7 @@ function resolvePnpmCommand({
   npmExecpath = process.env.npm_execpath,
   platform = process.platform,
 } = {}) {
-  if (typeof npmExecpath === 'string' && npmExecpath.length > 0) {
+  if (typeof npmExecpath === 'string' && npmExecpath.length > 0 && path.basename(npmExecpath) !== 'pnpm-native') {
     return {
       args: [npmExecpath],
       command: execPath,
