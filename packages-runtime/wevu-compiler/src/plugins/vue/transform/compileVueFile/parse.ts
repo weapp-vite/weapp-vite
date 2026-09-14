@@ -1,14 +1,17 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { parse } from 'vue/compiler-sfc'
 import type { JsonConfig } from '../../../../types/json'
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
 import * as t from '@weapp-vite/ast/babelTypes'
+import MagicString from 'magic-string'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
+import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { normalizeLineEndings } from '../../../../utils/text'
 import { preprocessScriptSetupSrc, preprocessScriptSrc, readAndParseSfc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
 import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
-import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../jsonMacros'
+import { extractJsonMacroFromScriptSetupWithSourceMap, mayContainJsonMacro } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
 
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -18,9 +21,24 @@ const TEMPLATE_BLOCK_RE = /<template\b[\s\S]*?<\/template>/g
 const TEMPLATE_IMPORT_META_RE = /\bimport\.meta\b/g
 const TEMPLATE_IMPORT_META_PLACEHOLDER = '__im_meta__'
 
+function createIdentitySourceMap(
+  source: string,
+  originalSource: string,
+  filename: string,
+) {
+  const sourceMap = new MagicString(source).generateMap({
+    hires: true,
+    includeContent: false,
+    source: filename,
+  }) as EncodedSourceMapLike
+  sourceMap.sourcesContent = [originalSource]
+  return sourceMap
+}
+
 export interface ParsedVueFile {
   descriptor: ReturnType<typeof parse>['descriptor']
   descriptorForCompile: ReturnType<typeof parse>['descriptor']
+  scriptPreprocessMap?: EncodedSourceMapLike | null
   templateResolvedId?: string
   meta: {
     hasScriptSetup: boolean
@@ -121,8 +139,8 @@ async function parseSfc(
   source: string,
   filename: string,
   ignoreEmpty: boolean,
+  preprocessedSource = preprocessTemplateImportMeta(source),
 ) {
-  const preprocessedSource = preprocessTemplateImportMeta(source)
   const parsed = await readAndParseSfc(filename, {
     source,
     preprocessedSource,
@@ -142,9 +160,25 @@ export async function parseVueFile(
   options?: CompileVueFileOptions,
 ): Promise<ParsedVueFile> {
   const normalizedInputSource = normalizeLineEndings(source)
+  let scriptPreprocessMap: EncodedSourceMapLike | null = null
+  if (options?.sourceMap !== false && normalizedInputSource !== source) {
+    scriptPreprocessMap = createIdentitySourceMap(normalizedInputSource, source, filename)
+  }
   const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(normalizedInputSource))
+  const parserSource = preprocessTemplateImportMeta(normalizedSource)
+  if (options?.sourceMap !== false && parserSource !== normalizedSource) {
+    scriptPreprocessMap = composeSourceMaps(
+      createIdentitySourceMap(parserSource, normalizedSource, filename),
+      scriptPreprocessMap,
+    )
+  }
   let descriptorForCompileSource = normalizedSource
-  const { descriptor, errors } = await parseSfc(normalizedSource, filename, normalizedSource === normalizedInputSource)
+  const { descriptor, errors } = await parseSfc(
+    normalizedSource,
+    filename,
+    normalizedSource === normalizedInputSource,
+    parserSource,
+  )
   restoreScriptSetupSrc(descriptor)
   restoreScriptSrc(descriptor)
 
@@ -185,7 +219,7 @@ export async function parseVueFile(
   const scriptSetup = resolvedDescriptor.scriptSetup
   if (scriptSetup?.content) {
     if (mayContainJsonMacro(scriptSetup.content)) {
-      const extracted = await extractJsonMacroFromScriptSetup(
+      const extracted = await extractJsonMacroFromScriptSetupWithSourceMap(
         scriptSetup.content,
         filename,
         scriptSetup.lang,
@@ -193,8 +227,16 @@ export async function parseVueFile(
           merge: (target, source) => mergeJson(target, source, 'macro'),
           preambleContent: resolvedDescriptor.script?.content,
         },
+        options?.sourceMap !== false && !scriptSetup.src
+          ? {
+              source: descriptorForCompileSource,
+              sourceFile: filename,
+              offset: scriptSetup.loc.start.offset,
+            }
+          : undefined,
       )
       if (extracted.stripped !== scriptSetup.content) {
+        scriptPreprocessMap = composeSourceMaps(extracted.map, scriptPreprocessMap)
         if (scriptSetup.src) {
           descriptorForCompile = {
             ...descriptorForCompile,
@@ -248,8 +290,16 @@ export async function parseVueFile(
       compileScriptSetup.content,
       filename,
       compileScriptSetup.lang,
+      options?.sourceMap !== false && !compileScriptSetup.src
+        ? {
+            source: descriptorForCompileSource,
+            sourceFile: filename,
+            offset: compileScriptSetup.loc.start.offset,
+          }
+        : undefined,
     )
     if (inlined.code !== compileScriptSetup.content) {
+      scriptPreprocessMap = composeSourceMaps(inlined.map, scriptPreprocessMap)
       if (compileScriptSetup.src) {
         descriptorForCompile = {
           ...descriptorForCompile,
@@ -296,6 +346,7 @@ export async function parseVueFile(
   return {
     descriptor: resolvedDescriptor,
     descriptorForCompile,
+    scriptPreprocessMap,
     templateResolvedId,
     meta,
     scriptSetupMacroConfig,
