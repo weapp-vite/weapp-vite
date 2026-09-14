@@ -136,7 +136,7 @@ function createPnpmInvocation() {
   }
 
   return {
-    command: 'pnpm',
+    command: process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
     args: [],
   }
 }
