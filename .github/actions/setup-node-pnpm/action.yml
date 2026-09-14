@@ -14,7 +14,7 @@ runs:
       shell: bash
       run: git config --system core.longpaths true
 
-    - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+    - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
       with:
         version: 12.4.1
 
