@@ -3230,6 +3230,26 @@ describe('router navigation helpers', () => {
     expect(navigateTo).not.toHaveBeenCalled()
   })
 
+  it('replace auto-switches when host tabBar paths use the .html suffix', async () => {
+    const switchTab = vi.fn((options: any) => options.success?.({}))
+    const redirectTo = vi.fn()
+    const instance = {
+      __wevu: {},
+      [WEVU_HOOKS_KEY]: {},
+      router: { switchTab, reLaunch: vi.fn(), redirectTo, navigateTo: vi.fn(), navigateBack: vi.fn() },
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).__wxConfig = { tabBar: { list: [{ pagePath: 'pages/index/index.html' }] } }
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [{ route: 'pages/login/index', options: {} }])
+
+    const router = createRouter()
+    await router.replace('/pages/index/index')
+
+    expect(switchTab).toHaveBeenCalledWith(expect.objectContaining({ url: '/pages/index/index' }))
+    expect(redirectTo).not.toHaveBeenCalled()
+  })
+
   it('returns aborted failure when tabBar navigation contains query', async () => {
     const instance = {
       __wevu: {},
