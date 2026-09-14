@@ -67,6 +67,10 @@ export function installCommand(packageManager: TutorialPackageManager): Tutorial
   }
 }
 
+export function prepareCommand(packageManager: TutorialPackageManager): TutorialCommand | undefined {
+  return packageManager === 'pnpm' ? pnpm(['exec', 'wv', 'prepare']) : undefined
+}
+
 export function packageScriptCommand(
   packageManager: TutorialPackageManager,
   script: string,
