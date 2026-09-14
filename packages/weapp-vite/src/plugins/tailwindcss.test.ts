@@ -175,14 +175,12 @@ describe('managed Tailwind integration', () => {
     } as any)).not.toThrow()
   })
 
-  it('uses esbuild CSS minification when managed entries coexist with cssMinify', () => {
+  it('short-circuits managed style sidecars before CSS processing', () => {
     const plugin = getPlugins(true)[0]!
-    const configResolved = getHookHandler(plugin.configResolved)
-    const config = { build: { cssMinify: true }, command: 'build' } as any
+    const load = getHookHandler(plugin.load)
+    const sidecar = createSidecarSourceSpecifier('/project/src/app.ts', '/project/src/app.css', 'style')
 
-    configResolved?.call({} as any, config)
-
-    expect(config.build.cssMinify).toBe('esbuild')
+    expect(load?.call({}, sidecar, {} as any)).toMatchObject({ code: 'export default ""' })
   })
 
   it('uses compiler APIs to transform one owned bundle', async () => {

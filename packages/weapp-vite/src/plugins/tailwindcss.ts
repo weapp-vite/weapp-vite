@@ -28,6 +28,7 @@ import { resolveVueStyleSource } from './tailwindcss/vueStyle'
 import {
   createManagedTailwindcssEntryMarker,
   createManagedTailwindcssOutputMarker,
+  isManagedTailwindcssEntry,
   normalizeManagedTailwindcssEntryPath,
   registerManagedTailwindcssEntries,
   stripManagedTailwindcssOutputMarkers,
@@ -585,8 +586,19 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return source
     },
     load(id) {
-      if (resolved.options.generator === false || parseSidecarSourceRequest(id)?.dependencyOnly || parseWeappVueStyleRequest(id)) {
+      if (resolved.options.generator === false || parseWeappVueStyleRequest(id)) {
         return null
+      }
+      const sidecar = parseSidecarSourceRequest(id)
+      if (sidecar?.dependencyOnly) {
+        return null
+      }
+      if (sidecar?.kind === 'style' && isManagedTailwindcssEntry(ctx, sidecar.sourceId)) {
+        return {
+          code: 'export default ""',
+          map: null,
+          meta: createStyleSourceMeta([sidecar.sourceId]),
+        }
       }
       const normalizedId = normalizeManagedTailwindcssEntryPath(requestSources.get(id) ?? id.split('?')[0]!)
       const index = entryIndex.get(normalizedId)
