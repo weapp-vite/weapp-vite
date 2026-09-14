@@ -26,6 +26,7 @@ import {
   createProjectCommand,
   installCommand,
   packageScriptCommand,
+  prepareCommand,
 } from './packageManager'
 import { prepareTutorialWorkspace } from './prepare'
 import {
@@ -299,6 +300,15 @@ async function executeTutorialRun(
         label: `${run.id} install`,
         log,
       })
+      const prepare = prepareCommand(run.packageManager)
+      if (prepare) {
+        await runLoggedCommand({
+          command: prepare,
+          cwd: projectDir,
+          label: `${run.id} prepare`,
+          log,
+        })
+      }
     })
 
     switch (run.scenario) {

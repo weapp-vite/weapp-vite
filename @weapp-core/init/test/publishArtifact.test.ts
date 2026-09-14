@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest'
 function execPnpmSync(args: string[], cwd: string) {
   const pnpmEntrypath = process.env.npm_execpath
   if (pnpmEntrypath) {
-    execFileSync(process.execPath, [pnpmEntrypath, ...args], {
+    const pnpmCommand = /\.(?:c|m)?js$/i.test(path.extname(pnpmEntrypath))
+      ? process.execPath
+      : pnpmEntrypath
+    const pnpmArgs = pnpmCommand === process.execPath ? [pnpmEntrypath, ...args] : args
+    execFileSync(pnpmCommand, pnpmArgs, {
       cwd,
       encoding: 'utf8',
       stdio: 'pipe',
