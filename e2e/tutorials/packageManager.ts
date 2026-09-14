@@ -6,7 +6,7 @@ import {
 
 } from './config'
 
-const PNPM_VERSION = '11'
+const PNPM_VERSION = '12'
 
 function pnpm(args: string[]): TutorialCommand {
   return {
