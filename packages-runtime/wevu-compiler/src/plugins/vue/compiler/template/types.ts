@@ -45,12 +45,23 @@ export interface InlineExpressionScopeResolverAsset {
 }
 
 /**
+ * 内联表达式生成函数的参数名。
+ */
+export interface InlineExpressionParameterNames {
+  context: string
+  scope: string
+  event: string
+}
+
+/**
  * 内联表达式资源描述。
  */
 export interface InlineExpressionAsset {
   id: string
   expression: string
   scopeKeys: string[]
+  /** @internal */
+  parameterNames: InlineExpressionParameterNames
   indexBindings?: InlineExpressionIndexBindingAsset[]
   scopeResolvers?: InlineExpressionScopeResolverAsset[]
 }

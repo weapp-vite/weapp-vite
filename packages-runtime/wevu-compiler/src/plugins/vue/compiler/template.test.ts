@@ -1046,17 +1046,17 @@ describe('compileVueTemplateToWxml', () => {
       expression: expect.stringContaining('path:"groups"'),
     }))
     const firstEntryResolver = firstResolvers.find(resolver => resolver.key === 'entry')?.expression ?? ''
-    expect(firstEntryResolver).toContain('ctx.groups')
-    expect(firstEntryResolver).toContain('scope.__wv_i0')
+    expect(firstEntryResolver).toContain('.groups')
+    expect(firstEntryResolver).toContain('.__wv_i0')
     expect(firstEntryResolver).toContain('.left')
-    expect(firstEntryResolver).toContain('scope.__wv_i1')
+    expect(firstEntryResolver).toContain('.__wv_i1')
 
     const secondEntryResolver = compiled.inlineExpressions?.[1]?.scopeResolvers
       ?.find(resolver => resolver.key === 'entry')
       ?.expression ?? ''
-    expect(secondEntryResolver).toContain('ctx.groups')
+    expect(secondEntryResolver).toContain('.groups')
     expect(secondEntryResolver).toContain('.right')
-    expect(secondEntryResolver).toContain('scope.__wv_i1')
+    expect(secondEntryResolver).toContain('.__wv_i1')
   })
 
   it('restores destructured child aliases under object-map parent loops', () => {
@@ -1078,10 +1078,10 @@ describe('compileVueTemplateToWxml', () => {
     const itemResolver = compiled.inlineExpressions?.[0]?.scopeResolvers
       ?.find(resolver => resolver.key === 'item')
       ?.expression ?? ''
-    expect(itemResolver).toContain('ctx.groupMap')
-    expect(itemResolver).toContain('scope.__wv_i0')
+    expect(itemResolver).toContain('.groupMap')
+    expect(itemResolver).toContain('.__wv_i0')
     expect(itemResolver).toContain('.column')
-    expect(itemResolver).toContain('scope.__wv_i1')
+    expect(itemResolver).toContain('.__wv_i1')
     expect(itemResolver).toContain('.item')
   })
 
@@ -1432,7 +1432,10 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-wd-run="1"')
     expect(code).toContain('data-wi-run="i0"')
     expect(code).not.toContain('bindrun="onPanelRun"')
-    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
+    const [inlineExpression] = inlineExpressions ?? []
+    expect(inlineExpression?.expression).toBe(
+      `${inlineExpression.parameterNames.context}.onPanelRun(${inlineExpression.parameterNames.event})`,
+    )
   })
 
   it('preserves component click as a custom event while native nodes map click to tap', () => {
@@ -1448,8 +1451,12 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('bindtap="__weapp_vite_inline"')
     expect(code).toContain('data-wd-click="1"')
     expect(code).toContain('data-wd-tap="1"')
-    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelClick($event)')
-    expect(inlineExpressions?.[1]?.expression).toContain('ctx.onPanelTap($event)')
+    expect(inlineExpressions?.[0]?.expression).toBe(
+      `${inlineExpressions?.[0]?.parameterNames.context}.onPanelClick(${inlineExpressions?.[0]?.parameterNames.event})`,
+    )
+    expect(inlineExpressions?.[1]?.expression).toBe(
+      `${inlineExpressions?.[1]?.parameterNames.context}.onPanelTap(${inlineExpressions?.[1]?.parameterNames.event})`,
+    )
   })
 
   it('marks component inline events to use detail payload semantics', () => {
@@ -1462,7 +1469,10 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('bindrun="__weapp_vite_inline"')
     expect(code).toContain('data-wd-run="1"')
     expect(code).toContain('data-wi-run="i0"')
-    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
+    const [inlineExpression] = inlineExpressions ?? []
+    expect(inlineExpression?.expression).toBe(
+      `${inlineExpression.parameterNames.context}.onPanelRun(${inlineExpression.parameterNames.event})`,
+    )
   })
 
   it('emits event-scoped inline attrs for multiple component listeners', () => {
@@ -1479,8 +1489,12 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-wd-run="1"')
     expect(code).toContain('data-wd-runevent="1"')
     expect(code).not.toContain('data-wv-inline-id="')
-    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
-    expect(inlineExpressions?.[1]?.expression).toContain('ctx.onPanelRunEvent($event)')
+    expect(inlineExpressions?.[0]?.expression).toBe(
+      `${inlineExpressions?.[0]?.parameterNames.context}.onPanelRun(${inlineExpressions?.[0]?.parameterNames.event})`,
+    )
+    expect(inlineExpressions?.[1]?.expression).toBe(
+      `${inlineExpressions?.[1]?.parameterNames.context}.onPanelRunEvent(${inlineExpressions?.[1]?.parameterNames.event})`,
+    )
   })
 
   it('uses colon event bindings for kebab-case component events', () => {
@@ -1574,7 +1588,11 @@ describe('compileVueTemplateToWxml', () => {
     expect(result.code).toContain(`__wvSlotProps="{{['confirm',['__wv_slot_function__','i0',[],[]]]}}"`)
     expect(result.code).not.toContain('=>')
     expect(result.inlineExpressions).toHaveLength(1)
-    expect(result.inlineExpressions?.[0]?.expression).toContain('ctx.toggleModal(\'confirm\')')
+    const [inlineExpression] = result.inlineExpressions ?? []
+    expect(inlineExpression?.expression).toContain(
+      `${inlineExpression.parameterNames.context}.toggleModal('confirm')`,
+    )
+    expect(inlineExpression?.expression).toContain(`...${inlineExpression.parameterNames.event}`)
   })
 
   it('keeps native slot outlet fallback for scoped named slot props', () => {
@@ -3312,8 +3330,12 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).toContain('data-wi-update-paneltitle="i0"')
     expect(code).toContain('data-wd-update-modelvalue="1"')
     expect(code).toContain('data-wi-update-modelvalue="i1"')
-    expect(inlineExpressions?.[0]?.expression).toContain('ctx.panelTitle=$event')
-    expect(inlineExpressions?.[1]?.expression).toContain('ctx.childModelValue=$event')
+    expect(inlineExpressions?.[0]?.expression).toBe(
+      `${inlineExpressions?.[0]?.parameterNames.context}.panelTitle=${inlineExpressions?.[0]?.parameterNames.event}`,
+    )
+    expect(inlineExpressions?.[1]?.expression).toBe(
+      `${inlineExpressions?.[1]?.parameterNames.context}.childModelValue=${inlineExpressions?.[1]?.parameterNames.event}`,
+    )
     expect(diagnostics).toEqual([])
   })
 

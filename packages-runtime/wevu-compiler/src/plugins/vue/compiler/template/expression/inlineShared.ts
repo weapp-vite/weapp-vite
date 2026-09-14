@@ -1,4 +1,4 @@
-import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import type { NodePath, Scope } from '@weapp-vite/ast/babelTraverse'
 import {
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
 } from '@weapp-core/constants'
@@ -48,10 +48,39 @@ export const INLINE_GLOBALS = new Set([
   'requirePlugin',
   'getApp',
   'getCurrentPages',
-  'ctx',
-  'scope',
   ...getMiniProgramRuntimeGlobalKeys(),
 ])
+
+export interface InlineExpressionParameterIdentifiers {
+  context: t.Identifier
+  scope: t.Identifier
+  event: t.Identifier
+}
+
+/**
+ * 按 Babel 命名规则生成不会与用户标识符重名的参数。
+ */
+export function createInlineExpressionParameterIdentifiers(
+  scope: Scope,
+  usedNames: ReadonlySet<string>,
+): InlineExpressionParameterIdentifiers {
+  const generatedNames = new Set<string>()
+
+  const createIdentifier = (name: string) => {
+    let identifier = scope.generateUidIdentifier(name)
+    while (usedNames.has(identifier.name) || generatedNames.has(identifier.name)) {
+      identifier = scope.generateUidIdentifier(name)
+    }
+    generatedNames.add(identifier.name)
+    return identifier
+  }
+
+  return {
+    context: createIdentifier('ctx'),
+    scope: createIdentifier('scope'),
+    event: createIdentifier('event'),
+  }
+}
 
 export function createMemberAccess(target: string, prop: string) {
   if (IDENTIFIER_RE.test(prop)) {

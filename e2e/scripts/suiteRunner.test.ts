@@ -555,6 +555,7 @@ describe('suiteRunner', () => {
     expect(ideHeadlessGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/lifecycle-compare.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue705.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1009.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-jsx-tsx.runtime.test.ts')
     expect(ideWevuJsxLabels).toEqual([
       'ide/wevu-jsx-tsx.runtime.test.ts',
@@ -625,6 +626,7 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.require-async.test.ts',
       'ide/github-issues.runtime.issue911.test.ts',
       'ide/github-issues.runtime.issue941.test.ts',
+      'ide/github-issues.runtime.issue1009.test.ts',
       'ide/github-issues.runtime.issue852.test.ts',
       'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
       'ide/github-issues.runtime.subpackage-item.test.ts',

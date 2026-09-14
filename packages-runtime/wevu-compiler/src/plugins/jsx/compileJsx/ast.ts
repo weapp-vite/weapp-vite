@@ -1,3 +1,4 @@
+import type { Scope } from '@weapp-vite/ast/babelTraverse'
 import type {
   Expression,
   JSXIdentifier,
@@ -14,6 +15,7 @@ import {
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../inlineDataset'
 import { generate, traverse } from '../../../utils/babel'
+import { createInlineExpressionParameterIdentifiers } from '../../vue/compiler/template/expression/inlineShared'
 import { shouldFallbackToRuntimeBinding } from '../../vue/compiler/template/expression/runtimeBinding'
 import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/wxml'
 
@@ -125,46 +127,63 @@ export function popScope(context: JsxCompileContext, count: number) {
   }
 }
 
-function collectExpressionScopeBindings(exp: Expression, context: JsxCompileContext): string[] {
+function analyzeInlineExpression(exp: Expression, context: JsxCompileContext) {
   const localSet = new Set(context.scopeStack)
-  if (!localSet.size) {
-    return []
-  }
-
   const used: string[] = []
   const usedSet = new Set<string>()
-  const file = t.file(t.program([t.expressionStatement(t.cloneNode(exp, true))]))
+  const identifierNames = new Set<string>()
+  const normalizedExpression = t.cloneNode(exp, true) as Expression
+  const file = t.file(t.program([t.expressionStatement(normalizedExpression)]))
+  let programScope: Scope | undefined
 
   traverse(file, {
+    Program(path) {
+      programScope = path.scope
+    },
     Identifier(path) {
-      if (!path.isReferencedIdentifier()) {
-        return
-      }
       const name = path.node.name
-      if (!localSet.has(name)) {
-        return
-      }
-      if (path.scope.hasBinding(name)) {
-        return
-      }
-      if (usedSet.has(name)) {
+      identifierNames.add(name)
+      if (
+        !localSet.has(name)
+        || !path.isReferencedIdentifier()
+        || path.scope.hasBinding(name)
+        || usedSet.has(name)
+      ) {
         return
       }
       usedSet.add(name)
       used.push(name)
     },
+    StringLiteral(path) {
+      path.node.extra = undefined
+    },
   })
+  if (!programScope) {
+    throw new Error('无法为 JSX 内联表达式创建程序作用域。')
+  }
 
-  return used
+  return {
+    parameterIdentifiers: createInlineExpressionParameterIdentifiers(
+      programScope,
+      identifierNames,
+    ),
+    normalizedExpression,
+    scopeKeys: used,
+  }
 }
 
 export function registerInlineExpression(exp: Expression, context: JsxCompileContext) {
-  const scopeKeys = collectExpressionScopeBindings(exp, context)
+  const { normalizedExpression, parameterIdentifiers, scopeKeys } = analyzeInlineExpression(exp, context)
   const id = createInlineExpressionId(context.inlineExpressionSeed++)
   context.inlineExpressions.push({
     id,
-    expression: printExpression(exp),
+    expression: generate(normalizedExpression, WXML_EXPRESSION_GENERATE_OPTIONS).code,
     scopeKeys,
+    parameterNames: {
+      context: parameterIdentifiers.context.name,
+      scope: parameterIdentifiers.scope.name,
+      event: parameterIdentifiers.event.name,
+    },
   })
   return {
     id,

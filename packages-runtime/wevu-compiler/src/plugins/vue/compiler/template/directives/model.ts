@@ -46,13 +46,6 @@ function camelize(value: string) {
   return value.replace(CAMELIZE_RE, (_, char: string) => char.toUpperCase())
 }
 
-function buildModelAssignmentExpression(rawExpValue: string) {
-  if (IDENTIFIER_RE.test(rawExpValue)) {
-    return `ctx.${rawExpValue} = $event`
-  }
-  return `${rawExpValue} = $event`
-}
-
 function isNativeModelElement(element: ElementNode | undefined) {
   if (!element || element.tag !== element.tag.toLowerCase()) {
     return false
@@ -146,7 +139,9 @@ function transformComponentModelDirective(
   const updateEvent = `update:${camelize(modelProp)}`
   const eventSuffix = normalizeEventDatasetSuffix(updateEvent)
   const bindAttr = context.platform.eventBindingAttr(updateEvent)
-  const updateExpression = buildModelAssignmentExpression(rawExpValue)
+  const updateExpression = IDENTIFIER_RE.test(rawExpValue)
+    ? `this.${rawExpValue} = $event`
+    : `${rawExpValue} = $event`
   const inlineExpression = registerInlineExpression(updateExpression, context)
   if (!inlineExpression) {
     warn(context, `v-model="${rawExpValue}" 需要是可赋值的成员表达式。`, node.loc, 'expression')
