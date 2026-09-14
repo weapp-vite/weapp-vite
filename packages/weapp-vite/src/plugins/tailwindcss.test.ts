@@ -175,6 +175,16 @@ describe('managed Tailwind integration', () => {
     } as any)).not.toThrow()
   })
 
+  it('uses esbuild CSS minification when managed entries coexist with cssMinify', () => {
+    const plugin = getPlugins(true)[0]!
+    const configResolved = getHookHandler(plugin.configResolved)
+    const config = { build: { cssMinify: true }, command: 'build' } as any
+
+    configResolved?.call({} as any, config)
+
+    expect(config.build.cssMinify).toBe('esbuild')
+  })
+
   it('uses compiler APIs to transform one owned bundle', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tailwindcss-'))
     temporaryRoots.push(root)
