@@ -55,7 +55,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
 
       - name: Setup Node.js environment
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
