@@ -154,6 +154,7 @@ for (const [index, packageInfo] of buildPlan.entries()) {
   let result = spawnSync(pnpmInvocation.command, buildArgs, {
     cwd: repoRoot,
     env: process.env,
+    shell: process.platform === 'win32',
     stdio: 'inherit',
   })
 
@@ -163,6 +164,7 @@ for (const [index, packageInfo] of buildPlan.entries()) {
     result = spawnSync(pnpmInvocation.command, buildArgs, {
       cwd: repoRoot,
       env: process.env,
+      shell: process.platform === 'win32',
       stdio: 'inherit',
     })
   }
