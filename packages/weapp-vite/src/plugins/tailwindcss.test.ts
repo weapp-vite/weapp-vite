@@ -379,6 +379,18 @@ describe('managed Tailwind integration', () => {
     )).toBe(sidecar)
   })
 
+  it('maps direct managed CSS requests with Vite queries to one entry', () => {
+    const entry = '/project/src/app.css'
+    const plugin = getPlugins({ cssEntries: [entry] })[0]!
+    const transform = getHookHandler(plugin.transform)
+    const result = transform?.call({} as any, '@import "tailwindcss";', `${entry}?vue&type=style&index=0`, {} as any)
+    expect(result).toMatchObject({
+      code: expect.stringContaining('managed_tailwindcss_entry_0'),
+      map: null,
+      meta: { weappViteStyleSources: [entry] },
+    })
+  })
+
   it('keeps dependency-only style requests out of every CSS generation hook', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'tailwind-dependency-only-'))
     temporaryRoots.push(root)
