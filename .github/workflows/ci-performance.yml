@@ -158,7 +158,7 @@ jobs:
           path: baseline
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.inputs['templates-baseline-ref'] || github.event.repository.default_branch }}
 
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@ff378ebe6b225b0680b81c1ad4498ae0d1d3a5e3 # v6.0.10
         with:
           version: 11.16.0
 
