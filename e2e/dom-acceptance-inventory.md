@@ -998,11 +998,11 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### plugin-demo runtime (ide) > loads host page, renders plugin public components, and opens plugin vue page without runtime errors
 
-- Source: `e2e/ide/plugin-demo.runtime.test.ts:298`
+- Source: `e2e/ide/plugin-demo.runtime.test.ts:280`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/plugin-demo`; checkpoints: `[ { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) }, { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) }, { id: 'plugin-page', route: '__plugin__/wxb3d842a4`; source: `e2e/ide/plugin-demo.runtime.test.ts:306`
-- Routes: `__plugin__/wxb3d842a4a7e3440d/pages/hello-page/index`, `/pages/index/index`, `plugin://hello-plugin/hello-page`
-- Operations: `reLaunch(/pages/index/index)`, `check(host)`, `tap(<missing>)`, `check(host-updated)`, `navigateTo(plugin://hello-plugin/hello-page)`, `check(plugin-page)`
+- Registration: `createDomAcceptance`; fixture: `apps/plugin-demo`; checkpoints: `[ { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) }, { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) }, ]`; source: `e2e/ide/plugin-demo.runtime.test.ts:286`
+- Routes: `/pages/index/index`, `plugin://hello-plugin/hello-page`
+- Operations: `reLaunch(/pages/index/index)`, `check(host)`, `tap(<missing>)`, `check(host-updated)`, `navigateTo(plugin://hello-plugin/hello-page)`
 
 ## ide/react-runtime-spike.runtime.test.ts
 
@@ -1138,39 +1138,39 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across style updates and JavaScript patches
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:308`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:320`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:309`
-- Routes: `/pages/native/index?source=e2e`, `pages/native/index`
-- Operations: `reLaunch(/pages/native/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(style-updated)`, `check(patched)`, `check(updated)`, `check(restored)`, `check(restored-updated)`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:321`
+- Routes: `pages/native/index`
+- Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(style-updated)`, `check(patched)`, `check(updated)`, `check(restored)`, `check(restored-updated)`
 
 ### stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:368`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:383`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:369`
-- Routes: `/pages/wevu/index?source=e2e`, `pages/wevu/index`
-- Operations: `reLaunch(/pages/wevu/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(template-b)`, `check(template-a)`, `check(patched)`, `check(updated)`, `check(mixed-style)`, `check(mixed-style-updated)`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:392`
+- Routes: `pages/wevu/index`
+- Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(template-b)`, `check(template-a)`, `check(patched)`, `check(updated)`, `check(mixed-style)`, `check(mixed-style-updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:450`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:483`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:451`
-- Routes: `/pages/component/index?source=e2e`, `pages/component/index`
-- Operations: `reLaunch(/pages/component/index?source=e2e)`, `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:484`
+- Routes: `pages/component/index`
+- Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:490`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:523`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:491`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:524`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:512`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:545`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:513`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:546`
 
 ## ide/subpackage-shared-strategy-complex.runtime.test.ts
 
@@ -1224,77 +1224,77 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-multi-platform-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-multi-platform-sfc-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-lib-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-tailwindcss-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-tailwindcss-tdesign-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-tailwindcss-vant-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-wevu-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-wevu-tailwindcss-tdesign-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ### all templates dev:open IDE integration > weapp-vite-wevu-tailwindcss-tdesign-retail-template renders after dev:open without runtime errors
 
 - Source: `e2e/ide/template-dev-open-all.runtime.test.ts:370`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:371`
+- Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
 ## ide/template-multi-platform-sfc.swan.optional.test.ts
@@ -1363,7 +1363,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 - Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:241`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:242`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:247`
 - Operations: `check(tailwind:initial)`, `tap(<missing>)`, `check(tailwind:dark)`, `check(tailwind:hmr-preserved)`, `check(tailwind:updated)`, `check(tailwind:updated-dark)`
 
 ## ide/template-weapp-vite-multi-platform-sfc-template.test.ts
@@ -1585,9 +1585,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack
 
-- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337`
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:340`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:342`
 - Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
 
 ## ide/vite-native-ts.worker.runtime.test.ts

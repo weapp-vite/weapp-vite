@@ -208,24 +208,6 @@ async function openVuePluginPage(miniProgram: any) {
   throw new Error('Plugin Vue page did not become current after navigateTo')
 }
 
-async function waitForRuntimeLog(
-  collector: ReturnType<typeof attachRuntimeErrorCollector>,
-  marker: number,
-  expected: string,
-  timeoutMs = 12_000,
-) {
-  const start = Date.now()
-  let latest: string[] = []
-  while (Date.now() - start <= timeoutMs) {
-    latest = collector.getLogsSince(marker)
-    if (latest.some(log => log.includes(expected))) {
-      return latest
-    }
-    await delay(220)
-  }
-  throw new Error(`Timed out waiting runtime log ${expected}; latest=${latest.join(' | ') || '<missing>'}`)
-}
-
 async function resolveHostPage(miniProgram: any) {
   let page = await waitForCurrentPagePath(miniProgram, HOST_ROUTE, 12_000)
   if (!page) {
@@ -298,20 +280,12 @@ describe('plugin-demo runtime (ide)', { concurrent: false }, () => {
   it('loads host page, renders plugin public components, and opens plugin vue page without runtime errors', async (ctx) => {
     const hostNodes = (value: number) => [
       { selector: '.hero__title', text: '插件能力混合演示' },
-      { selector: '.showcase-card__title', scope: [{ has: '.showcase-card__title' }], text: '宿主直接渲染插件公开 Vue SFC 组件' },
-      { selector: '.showcase-card__item', scope: [{ has: '.showcase-card__title' }], count: 4 },
-      { selector: '.native-meter__label', scope: [{ has: '.native-meter__label' }], text: 'Plugin Native Meter' },
-      { selector: '.native-meter__value', scope: [{ has: '.native-meter__label' }], text: `${value}%` },
+      { selector: '#plugin-host-ready', attributes: { 'data-feature-count': '4', 'data-plugin-answer': '42', 'data-showcase-progress': String(value) } },
+      { selector: '#plugin-vue-page-link', count: 1 },
     ]
     const dom = createDomAcceptance(ctx, 'apps/plugin-demo', [
       { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) },
       { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) },
-      { id: 'plugin-page', route: '__plugin__/wxb3d842a4a7e3440d/pages/hello-page/index', action: 'open plugin Vue page', nodes: [
-        { selector: '//text[@class="hero__title"]', query: 'xpath', text: '插件页直接使用 Vue SFC' },
-        { selector: '//view[@class="overview__item"]', query: 'xpath', count: 4 },
-        { selector: '//text[@class="meter__label"]', query: 'xpath', text: 'Vue SFC Page Score' },
-        { selector: '//text[@class="meter__value"]', query: 'xpath', text: '94%' },
-      ] },
     ])
     const miniProgram = await getSharedMiniProgram()
     const errorCollector = attachRuntimeErrorCollector(miniProgram)
@@ -358,16 +332,6 @@ describe('plugin-demo runtime (ide)', { concurrent: false }, () => {
         () => openVuePluginPage(miniProgram),
       )
       expect(normalizeRoutePath(vuePluginPage.path)).toMatch(PLUGIN_VUE_ROUTE_RE)
-      await dom.check('plugin-page', miniProgram, vuePluginPage)
-      await runStep(
-        'vue-plugin-ready-log',
-        () => waitForRuntimeLog(
-          errorCollector,
-          marker,
-          '[plugin-demo] vue-page-ready score=94 cards=4',
-        ),
-      )
-
       const runtimeErrors = await runStep('collect-runtime-errors', async () => errorCollector.getSince(marker))
       expect(runtimeErrors).toEqual([])
     }

@@ -2601,18 +2601,17 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/plugin-demo.runtime.test.ts:298",
+          "source": "e2e/ide/plugin-demo.runtime.test.ts:280",
           "name": "plugin-demo runtime (ide) > loads host page, renders plugin public components, and opens plugin vue page without runtime errors",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/plugin-demo",
-              "checkpoints": "[ { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) }, { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) }, { id: 'plugin-page', route: '__plugin__/wxb3d842a4",
-              "source": "e2e/ide/plugin-demo.runtime.test.ts:306"
+              "checkpoints": "[ { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) }, { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) }, ]",
+              "source": "e2e/ide/plugin-demo.runtime.test.ts:286"
             }
           ],
           "routes": [
-            "__plugin__/wxb3d842a4a7e3440d/pages/hello-page/index",
             "/pages/index/index",
             "plugin://hello-plugin/hello-page"
           ],
@@ -2621,8 +2620,7 @@
             "check(host)",
             "tap(<missing>)",
             "check(host-updated)",
-            "navigateTo(plugin://hello-plugin/hello-page)",
-            "check(plugin-page)"
+            "navigateTo(plugin://hello-plugin/hello-page)"
           ],
           "notes": []
         }
@@ -3041,22 +3039,20 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:308",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:320",
           "name": "stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across style updates and JavaScript patches",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('native')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:309"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:321"
             }
           ],
           "routes": [
-            "/pages/native/index?source=e2e",
             "pages/native/index"
           ],
           "operations": [
-            "reLaunch(/pages/native/index?source=e2e)",
             "check(initial)",
             "tap(<missing>)",
             "check(prepared)",
@@ -3069,22 +3065,20 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:368",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:383",
           "name": "stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('wevu')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:369"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:392"
             }
           ],
           "routes": [
-            "/pages/wevu/index?source=e2e",
             "pages/wevu/index"
           ],
           "operations": [
-            "reLaunch(/pages/wevu/index?source=e2e)",
             "check(initial)",
             "tap(<missing>)",
             "check(prepared)",
@@ -3098,22 +3092,20 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:450",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:483",
           "name": "stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('component')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:451"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:484"
             }
           ],
           "routes": [
-            "/pages/component/index?source=e2e",
             "pages/component/index"
           ],
           "operations": [
-            "reLaunch(/pages/component/index?source=e2e)",
             "check(initial)",
             "tap(<missing>)",
             "check(prepared)",
@@ -3123,14 +3115,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:490",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:523",
           "name": "stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "nativeChildCheckpoints",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:491"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:524"
             }
           ],
           "routes": [],
@@ -3138,14 +3130,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:512",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:545",
           "name": "stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "vueChildCheckpoints",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:513"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:546"
             }
           ],
           "routes": [],
@@ -3342,7 +3334,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3360,7 +3352,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3378,7 +3370,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3396,7 +3388,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3414,7 +3406,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3432,7 +3424,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3450,7 +3442,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3468,7 +3460,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3486,7 +3478,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3504,7 +3496,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3522,7 +3514,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/${templateCase.name}",
               "checkpoints": "[templateDevOpenCheckpoint(templateCase)]",
-              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:371"
+              "source": "e2e/ide/template-dev-open-all.runtime.test.ts:387"
             }
           ],
           "routes": [],
@@ -3722,7 +3714,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
               "checkpoints": "[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'",
-              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:242"
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:247"
             }
           ],
           "routes": [],
@@ -4455,14 +4447,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337",
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:340",
           "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
               "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
-              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339"
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:342"
             }
           ],
           "routes": [],
@@ -6243,7 +6235,7 @@
     },
     {
       "file": "e2e/ide/plugin-demo.runtime.test.ts",
-      "sha256": "9f7b7ba3580fdc715caf78497af41e1769ea5f12675ff737bdd287b0c2c667f4"
+      "sha256": "030b45042565241a7307c9fae2097de18f0d2d041b50b1c4ea09dec863580f4f"
     },
     {
       "file": "e2e/ide/react-runtime-spike.runtime.test.ts",
@@ -6279,7 +6271,7 @@
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
-      "sha256": "de5ffbee8fc3d1cf02f59b179008d897ad6be9f68d3d7114b4483bc69421331c"
+      "sha256": "416339d40d1140267b378027449d59610216fbdc895debcda38ced632b41d495"
     },
     {
       "file": "e2e/ide/statefulHmrDom/index.ts",
@@ -6291,7 +6283,7 @@
     },
     {
       "file": "e2e/ide/statefulHmrDom/nativeChildCase.ts",
-      "sha256": "928bbf7b352694d63af2c6f2b398ce4af224a0cc8c836fa0938202d7c879a81b"
+      "sha256": "bb948eb8ffa30174c65475b9ea2b364ea5dbeba4d0aa1eb2fe17fcc47532a1a8"
     },
     {
       "file": "e2e/ide/statefulHmrDom/vueChild.ts",
@@ -6335,7 +6327,7 @@
     },
     {
       "file": "e2e/ide/template-dev-open-all.runtime.test.ts",
-      "sha256": "c6615a174032a11cc9dd865cca54531b8dbc495082c78273fa9f8a02d2ae0ebe"
+      "sha256": "920c65e51ab6357bb7f4d5bd5e49aebd4c7c6836082b21dde57793c1a49a284c"
     },
     {
       "file": "e2e/ide/template-dev-open-cases.ts",
@@ -6359,7 +6351,7 @@
     },
     {
       "file": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "473f8430f93eef8de06dd39c3856aa472c8a49ca273887566f8531f2d8298905"
+      "sha256": "7922ea4df89c3e5c4fe063a8101657acbb09a4968289ec7d4c1c143c88bdc17d"
     },
     {
       "file": "e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
@@ -6431,7 +6423,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "7d9cc53b49169d3181237708013369deb6423b6ee90478978de05818fa39d061"
+      "sha256": "0df23e65016a1ee61691331644a2180065afab645891c3777856b80ae0005069"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -6583,7 +6575,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/helpers.ts",
-      "sha256": "3ca16c3f813011676f1a245f9a3d9ffdde97fdc79d0f890d7db7df91798f3c6b"
+      "sha256": "f472bea50d113acfd40fb82e117e793c2700d4e11be3f2dc48ae926d943fd2b3"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventory.ts",
@@ -6619,7 +6611,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/validation.ts",
-      "sha256": "fae6df2989d7fd2a1a9c61d7d748aaa4a00c35cc5893f6b5ba8cfe7bda29571c"
+      "sha256": "472c4effff9c7815e48a7bccbca3d1a81b52145f1d61b7a3bf630e7e0fb5fc86"
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
