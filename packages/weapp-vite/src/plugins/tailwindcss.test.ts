@@ -175,6 +175,13 @@ describe('managed Tailwind integration', () => {
     } as any)).not.toThrow()
   })
 
+  it('keeps Lightning CSS when cssMinify is enabled', () => {
+    const plugin = getPlugins({ cssEntries: ['/project/src/app.css'] })[0]!
+    const config = { build: { cssMinify: true }, plugins: [plugin] } as any
+    getHookHandler(plugin.configResolved)?.call({} as any, config)
+    expect(config.build.cssMinify).toBe(true)
+  })
+
   it('short-circuits managed style sidecars before CSS processing', () => {
     const plugin = getPlugins(true)[0]!
     const load = getHookHandler(plugin.load)

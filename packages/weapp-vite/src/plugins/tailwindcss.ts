@@ -519,12 +519,6 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     },
     configResolved(config) {
       resolvedConfig = config
-      // Tailwind v4 emits custom at-rules before the managed output phase. Lightning CSS
-      // reports them as unknown when the same entry is also consumed by a normal style
-      // import; use the CSS minifier that preserves unknown at-rules for this build.
-      if (resolved.cssEntries.length > 0 && config.build?.cssMinify === true) {
-        config.build.cssMinify = 'esbuild'
-      }
       // 开发语义的一次性快照没有 closeWatcher，资源寿命应由实际构建控制器决定。
       persistentWatch = config.command === 'serve' || Boolean(config.build?.watch)
     },
