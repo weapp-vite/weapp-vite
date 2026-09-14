@@ -86,7 +86,10 @@ export async function runLoggedCommand(options: RunCommandOptions): Promise<Comm
     timedOut = true
     void terminateProcess(child)
   }, timeoutMs)
-  const result = await child
+  const result = await new Promise<{ exitCode: number | null, signal: NodeJS.Signals | null }>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', (exitCode, signal) => resolve({ exitCode, signal }))
+  })
   clearTimeout(timeout)
 
   const stdout = stdoutChunks.join('')
