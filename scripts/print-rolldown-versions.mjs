@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 
 import { globSync } from 'tinyglobby'
-import { parse } from 'yaml'
+import { parseAllDocuments } from 'yaml'
 
 const DEFAULT_MODE = 'strict'
 const PUBLISH_ROOTS = ['packages', '@weapp-core', 'mpcore/packages']
@@ -324,7 +324,21 @@ function readLockfile(projectRoot) {
   if (!existsSync(lockfilePath)) {
     throw new Error(`pnpm lockfile not found: ${lockfilePath}`)
   }
-  return parse(readFileSync(lockfilePath, 'utf8'))
+  const documents = parseAllDocuments(readFileSync(lockfilePath, 'utf8'))
+  const parsed = documents
+    .map(document => document.toJS())
+    .filter(document => document && typeof document === 'object')
+  if (parsed.length === 0) {
+    throw new Error(`pnpm lockfile is empty: ${lockfilePath}`)
+  }
+  return parsed.reduce((lockfile, document) => ({
+    ...lockfile,
+    ...document,
+    importers: {
+      ...(lockfile.importers ?? {}),
+      ...(document.importers ?? {}),
+    },
+  }), {})
 }
 
 function readWorkspaceManifest(projectRoot) {
@@ -332,7 +346,12 @@ function readWorkspaceManifest(projectRoot) {
   if (!existsSync(workspacePath)) {
     throw new Error(`pnpm workspace manifest not found: ${workspacePath}`)
   }
-  return parse(readFileSync(workspacePath, 'utf8'))
+  const documents = parseAllDocuments(readFileSync(workspacePath, 'utf8'))
+  const document = documents.find(item => item.contents != null)
+  if (!document) {
+    throw new Error(`pnpm workspace manifest is empty: ${workspacePath}`)
+  }
+  return document.toJS()
 }
 
 function collectViteRolldownVersions(lockfile) {
