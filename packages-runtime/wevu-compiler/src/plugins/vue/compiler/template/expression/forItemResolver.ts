@@ -8,6 +8,7 @@ import { hasOwn } from '../../../../../utils/object'
 import {
   createMemberAccess,
   INLINE_GLOBALS,
+  isTemplateContextThis,
   replaceIdentifierWithExpression,
 } from './inlineShared'
 import { generateExpression, parseBabelExpressionFile } from './parse'
@@ -42,7 +43,9 @@ function rewriteForItemResolverExpression(
       path.skip()
     },
     ThisExpression(path) {
-      path.replaceWith(t.identifier('ctx'))
+      if (isTemplateContextThis(path)) {
+        path.replaceWith(t.identifier('ctx'))
+      }
     },
   })
   const statement = parsed.ast.program.body[0]

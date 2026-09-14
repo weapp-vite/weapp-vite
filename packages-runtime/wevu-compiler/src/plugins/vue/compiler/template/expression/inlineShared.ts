@@ -60,6 +60,46 @@ export function createMemberAccess(target: string, prop: string) {
   return t.memberExpression(t.identifier(target), t.stringLiteral(prop), true)
 }
 
+/**
+ * 判断 `this` 是否继承自模板表达式上下文。
+ *
+ * 普通函数与方法拥有动态 `this`；箭头函数继续向外查找。类字段初始化器与
+ * 静态块也拥有类实例或类本身的 `this`，而计算属性名仍在外层上下文求值。
+ */
+export function isTemplateContextThis(path: NodePath<t.ThisExpression>) {
+  let childPath: NodePath<t.Node> = path
+  let parentPath: NodePath<t.Node> | null = path.parentPath
+  while (parentPath) {
+    if (
+      (parentPath.isObjectMethod() || parentPath.isClassMethod())
+      && (childPath.key === 'key' || childPath.listKey === 'decorators')
+    ) {
+      childPath = parentPath
+      parentPath = parentPath.parentPath
+      continue
+    }
+    if (parentPath.isFunction() && !parentPath.isArrowFunctionExpression()) {
+      return false
+    }
+    if (
+      (
+        parentPath.isClassProperty()
+        || parentPath.isClassPrivateProperty()
+        || parentPath.isClassAccessorProperty()
+      )
+      && childPath.key === 'value'
+    ) {
+      return false
+    }
+    if (parentPath.isStaticBlock()) {
+      return false
+    }
+    childPath = parentPath
+    parentPath = parentPath.parentPath
+  }
+  return true
+}
+
 export function replaceIdentifierWithExpression(path: NodePath<t.Identifier>, replacement: t.Expression) {
   const parent = path.parentPath
   if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {

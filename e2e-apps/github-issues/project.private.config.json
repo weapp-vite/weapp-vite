@@ -906,6 +906,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "issue 1012 dynamic this ownership",
+          "pathName": "pages/issue-1012/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

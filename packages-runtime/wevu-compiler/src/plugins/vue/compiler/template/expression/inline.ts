@@ -13,6 +13,7 @@ import { buildForItemResolverExpression } from './forItemResolver'
 import {
   createMemberAccess,
   INLINE_GLOBALS,
+  isTemplateContextThis,
   replaceIdentifierWithExpression,
 } from './inlineShared'
 import { generateExpression, parseBabelExpressionFile } from './parse'
@@ -67,7 +68,9 @@ function rewriteExpressionAst(
       replaceIdentifierWithExpression(path, createMemberAccess('ctx', name) as t.Expression)
     },
     ThisExpression(path) {
-      path.replaceWith(t.identifier('ctx'))
+      if (isTemplateContextThis(path)) {
+        path.replaceWith(t.identifier('ctx'))
+      }
     },
   })
 }
