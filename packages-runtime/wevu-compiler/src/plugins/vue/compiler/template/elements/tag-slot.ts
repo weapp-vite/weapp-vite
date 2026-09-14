@@ -25,6 +25,8 @@ import { createBindingManifest, recordBindingExpression } from '../bindingManife
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { withBindingCondition } from '../conditions'
 import { warn } from '../diagnostics'
+import { transformBindDirective } from '../directives/bind'
+import { transformOnDirective } from '../directives/on'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 import { buildScopedSlotComponentScript } from '../scopedSlotScript'
@@ -514,7 +516,22 @@ function renderSlotFallbackWrapperAttrs(wrapper: ResolvedSlotFallbackWrapper, co
   return attrs
 }
 
+function reportNoArgumentSlotDirectiveDiagnostics(node: ElementNode, context: TransformContext) {
+  for (const prop of node.props) {
+    if (prop.type !== NodeTypes.DIRECTIVE || prop.arg) {
+      continue
+    }
+    if (prop.name === 'on') {
+      transformOnDirective(prop, context)
+    }
+    else if (prop.name === 'bind' && !(prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION && prop.exp.content.trim())) {
+      transformBindDirective(prop, context)
+    }
+  }
+}
+
 function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
+  reportNoArgumentSlotDirectiveDiagnostics(node, context)
   const slotNameInfo = resolveSlotNameFromSlotElement(node)
   const hasScopeBindings = node.props.some((prop) => {
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
@@ -688,6 +705,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     // eslint-disable-next-line ts/no-use-before-define
     return transformSlotElementPlain(node, context, transformNode)
   }
+  reportNoArgumentSlotDirectiveDiagnostics(node, context)
   const slotNameInfo = resolveSlotNameFromSlotElement(node)
   let slotPropsExp = collectSlotBindingExpression(node, context)
   recordSlotPropBindings(node, context)

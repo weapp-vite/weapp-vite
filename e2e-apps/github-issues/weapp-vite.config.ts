@@ -53,6 +53,7 @@ const githubIssuesAggregateTargets = {
     'github-issues.runtime.miniprogram-computed.test.ts',
     'github-issues.runtime.props.test.ts',
     'github-issues.runtime.slot-fallback.test.ts',
+    'github-issues.runtime.issue1014.test.ts',
   ],
 } as const
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
@@ -62,6 +63,7 @@ const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.en
 const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
+  'github-issues.runtime.issue1014.test.ts': ['pages/issue-1014/**'],
   'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [
     'pages/issue-338/**',

@@ -75,6 +75,12 @@ export function transformOnDirective(
 ): string | null {
   const { exp, arg } = node
   if (!arg) {
+    if (exp?.type === NodeTypes.SIMPLE_EXPRESSION && exp.content.trim()) {
+      warn(context, '小程序暂不支持对象形式 v-on，已忽略该对象监听；请改用显式事件绑定。', node.loc)
+    }
+    else {
+      warn(context, 'v-on 缺少对象监听表达式。', node.loc, 'template', 'WV2001')
+    }
     return null
   }
   const argValue = arg.type === NodeTypes.SIMPLE_EXPRESSION ? arg.content : ''
