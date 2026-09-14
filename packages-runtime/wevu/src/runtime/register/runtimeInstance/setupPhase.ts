@@ -220,6 +220,11 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   const previousInstance = getCurrentInstance()
   const previousSetupContext = getCurrentSetupContext()
   const restoreSetupContext = () => {
+    // 仅当全局上下文仍属于本次 setup 时恢复父级；嵌套或重入 setup
+    // 可能已经建立了新的上下文，不能被旧调用覆盖。
+    if (getCurrentInstance() !== target || getCurrentSetupContext() !== context) {
+      return
+    }
     setCurrentSetupContext(previousSetupContext)
     setCurrentInstance(previousInstance)
   }

@@ -2,12 +2,20 @@ import type { InternalRuntimeState } from '../types'
 import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
 import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
-// 仅供同步 setup() 调用期间使用的当前实例引用
-let __currentInstance: InternalRuntimeState | undefined
-let __currentSetupContext: any | undefined
+// 仅供同步 setup() 调用期间使用的当前实例引用。wevu 的根入口与
+// `wevu/router` 可能被打包成多个模块副本，必须通过宿主全局共享状态。
+interface CurrentSetupState {
+  instance?: InternalRuntimeState
+  context?: any
+}
+
+const currentSetupState: CurrentSetupState = (() => {
+  const host = globalThis as typeof globalThis & { __wevuCurrentSetupState__?: CurrentSetupState }
+  return host.__wevuCurrentSetupState__ ??= {}
+})()
 
 export function getCurrentInstance<T extends InternalRuntimeState = InternalRuntimeState>(): T | undefined {
-  return __currentInstance as T | undefined
+  return currentSetupState.instance as T | undefined
 }
 
 /**
@@ -15,11 +23,11 @@ export function getCurrentInstance<T extends InternalRuntimeState = InternalRunt
  * @internal
  */
 export function setCurrentInstance(inst: InternalRuntimeState | undefined) {
-  __currentInstance = inst
+  currentSetupState.instance = inst
 }
 
 export function getCurrentSetupContext<T = any>(): T | undefined {
-  return __currentSetupContext as T | undefined
+  return currentSetupState.context as T | undefined
 }
 
 /**
@@ -27,7 +35,7 @@ export function getCurrentSetupContext<T = any>(): T | undefined {
  * @internal
  */
 export function setCurrentSetupContext(ctx: any | undefined) {
-  __currentSetupContext = ctx
+  currentSetupState.context = ctx
 }
 
 export function assertInSetup(name: string): InternalRuntimeState {
