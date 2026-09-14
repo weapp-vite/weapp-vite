@@ -79,7 +79,7 @@ describe('tutorial e2e contracts', () => {
       command: 'npm',
     })
     expect(installCommand('pnpm')).toEqual({
-      args: ['pnpm@12', 'install', '--allow-build', '@parcel/watcher'],
+      args: ['pnpm@12', 'install', '--ignore-scripts'],
       command: 'corepack',
     })
   })
