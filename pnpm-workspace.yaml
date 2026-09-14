@@ -87,7 +87,7 @@ catalog:
   sharp: ^0.35.4
   stylelint: ^17.15.0
   socket.io-client: ^4.8.3
-  tailwind-merge: ^3.6.0
+  tailwind-merge: ^3.7.0
   tailwind-variants: ^3.3.1
   tailwindcss: ^4.3.3
   tdesign-miniprogram: ^1.16.1
@@ -100,8 +100,8 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.42
   vue-tsc: ^3.3.11
-  weapp-tailwindcss: ^5.5.4
-  zod: ^4.6.2
+  weapp-tailwindcss: ^5.5.5
+  zod: ^4.6.5
 
 catalogs:
   latest:
@@ -112,7 +112,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.1
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.5.4
+    weapp-tailwindcss: 5.5.5
 
 gitChecks: false
 

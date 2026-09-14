@@ -44,14 +44,14 @@ export const TEMPLATE_CATALOG = {
   'react-reconciler': '0.34.0',
   'sass-embedded': '^1.104.1',
   'socket.io-client': '^4.8.3',
-  'tailwind-merge': '^3.6.0',
+  'tailwind-merge': '^3.7.0',
   'tailwind-variants': '^3.3.1',
   'tdesign-miniprogram': '^1.16.1',
   'ts-morph': '^28.0.0',
   'uview-plus': '3.8.113',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.11',
-  'weapp-tailwindcss': '^5.5.4',
+  'weapp-tailwindcss': '^5.5.5',
   autoprefixer: '^10.6.0',
   axios: '^1.20.0',
   clsx: '^2.1.1',
@@ -78,7 +78,7 @@ export const TEMPLATE_CATALOG = {
   typescript: '^6.0.3',
   vite: '8.3.0',
   vue: '^3.5.42',
-  zod: '^4.6.2'
+  zod: '^4.6.5'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
@@ -86,7 +86,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.1'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.5.4'
+    'weapp-tailwindcss': '5.5.5'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',
