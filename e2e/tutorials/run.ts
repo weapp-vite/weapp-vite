@@ -276,9 +276,10 @@ async function executeTutorialRun(
   try {
     await fs.mkdir(scenarioRoot, { recursive: true })
     await recorder.step('create', async () => {
+      const createTarget = run.source === 'workspace' ? projectDir : projectName
       await runLoggedCommand({
-        command: createProjectCommand(run.source, run.packageManager, projectName, run.template),
-        cwd: scenarioRoot,
+        command: createProjectCommand(run.source, run.packageManager, createTarget, run.template),
+        cwd: run.source === 'workspace' ? REPO_ROOT : scenarioRoot,
         label: `${run.id} create`,
         log,
       })
