@@ -12,6 +12,7 @@ import {
 import { recordBindingExpression } from '../bindingManifest'
 import { resolveConditionalBranch } from '../conditions'
 import { warn } from '../diagnostics'
+import { omitUnsupportedDynamicDirectiveNames } from '../directives'
 import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
@@ -452,22 +453,25 @@ export function transformComponentWithSlots(
   const nonTemplateChildren: any[] = []
   const renderItems: SlotContentRenderItem[] = []
   for (const child of node.children) {
-    if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
-      const templateSlot = findSlotDirective(child as ElementNode)
+    const compatibleChild = child.type === NodeTypes.ELEMENT
+      ? omitUnsupportedDynamicDirectiveNames(child as ElementNode, context)
+      : child
+    if (compatibleChild.type === NodeTypes.ELEMENT && compatibleChild.tag === 'template') {
+      const templateSlot = findSlotDirective(compatibleChild as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
-        const templateSlotCondition = resolveTemplateSlotCondition(child as ElementNode, context)
+        const templateSlotCondition = resolveTemplateSlotCondition(compatibleChild as ElementNode, context)
         const declaration = buildSlotDeclaration(
           slotName,
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
-          (child as ElementNode).children,
+          (compatibleChild as ElementNode).children,
           context,
           {
             ...templateSlotCondition,
             location: templateSlot.loc,
             wrapper: mergeLocalSlotFallbackWrapperConfig(
               resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
-              resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
+              resolveLocalSlotFallbackWrapperConfig(compatibleChild as ElementNode, context),
             ),
           },
         )
@@ -476,9 +480,9 @@ export function transformComponentWithSlots(
         continue
       }
     }
-    nonTemplateChildren.push(child)
-    if (isRenderableSlotChild(child)) {
-      renderItems.push({ type: 'default-child', child })
+    nonTemplateChildren.push(compatibleChild)
+    if (isRenderableSlotChild(compatibleChild)) {
+      renderItems.push({ type: 'default-child', child: compatibleChild })
     }
   }
 
@@ -634,22 +638,25 @@ export function transformComponentWithSlotsFallback(
   const renderItems: SlotContentRenderItem[] = []
 
   for (const child of node.children) {
-    if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
-      const templateSlot = findSlotDirective(child as ElementNode)
+    const compatibleChild = child.type === NodeTypes.ELEMENT
+      ? omitUnsupportedDynamicDirectiveNames(child as ElementNode, context)
+      : child
+    if (compatibleChild.type === NodeTypes.ELEMENT && compatibleChild.tag === 'template') {
+      const templateSlot = findSlotDirective(compatibleChild as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
-        const templateSlotCondition = resolveTemplateSlotCondition(child as ElementNode, context)
+        const templateSlotCondition = resolveTemplateSlotCondition(compatibleChild as ElementNode, context)
         const declaration = buildSlotDeclaration(
           slotName,
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
-          (child as ElementNode).children,
+          (compatibleChild as ElementNode).children,
           context,
           {
             ...templateSlotCondition,
             location: templateSlot.loc,
             wrapper: mergeLocalSlotFallbackWrapperConfig(
               resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
-              resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
+              resolveLocalSlotFallbackWrapperConfig(compatibleChild as ElementNode, context),
             ),
           },
         )
@@ -658,9 +665,9 @@ export function transformComponentWithSlotsFallback(
         continue
       }
     }
-    nonTemplateChildren.push(child)
-    if (isRenderableSlotChild(child)) {
-      renderItems.push({ type: 'default-child', child })
+    nonTemplateChildren.push(compatibleChild)
+    if (isRenderableSlotChild(compatibleChild)) {
+      renderItems.push({ type: 'default-child', child: compatibleChild })
     }
   }
 

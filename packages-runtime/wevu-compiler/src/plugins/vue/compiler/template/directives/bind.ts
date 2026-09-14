@@ -167,6 +167,18 @@ function createFunctionPropRuntimeAttr(argValue: string, rawExpValue: string, co
   return `${argValue}="${renderMustache(bindingRef, context)}"`
 }
 
+export function rejectUnsupportedDynamicBindName(
+  node: DirectiveNode,
+  context: TransformContext,
+): boolean {
+  const { arg } = node
+  if (arg?.type !== NodeTypes.SIMPLE_EXPRESSION || arg.isStatic) {
+    return false
+  }
+  warn(context, '小程序模板暂不支持动态 v-bind 参数名，已忽略该绑定。', node.loc)
+  return true
+}
+
 export function transformBindDirective(
   node: DirectiveNode,
   context: TransformContext,
@@ -175,6 +187,9 @@ export function transformBindDirective(
 ): string | null {
   const { arg } = node
   if (!arg) {
+    return null
+  }
+  if (rejectUnsupportedDynamicBindName(node, context)) {
     return null
   }
   const argValue = arg.type === NodeTypes.SIMPLE_EXPRESSION ? arg.content : ''

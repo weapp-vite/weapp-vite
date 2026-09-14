@@ -25,6 +25,7 @@ import { createBindingManifest, recordBindingExpression } from '../bindingManife
 import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { withBindingCondition } from '../conditions'
 import { warn } from '../diagnostics'
+import { omitUnsupportedDynamicDirectiveNames } from '../directives'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 import { buildScopedSlotComponentScript } from '../scopedSlotScript'
@@ -515,18 +516,19 @@ function renderSlotFallbackWrapperAttrs(wrapper: ResolvedSlotFallbackWrapper, co
 }
 
 function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  const slotNameInfo = resolveSlotNameFromSlotElement(node)
-  const hasScopeBindings = node.props.some((prop) => {
+  const compatibleNode = omitUnsupportedDynamicDirectiveNames(node, context)
+  const slotNameInfo = resolveSlotNameFromSlotElement(compatibleNode)
+  const hasScopeBindings = compatibleNode.props.some((prop) => {
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
       return prop.arg?.type !== NodeTypes.SIMPLE_EXPRESSION || prop.arg.content !== 'name'
     }
     return false
   })
   if (hasScopeBindings) {
-    warn(context, '已禁用作用域插槽参数，插槽绑定将被忽略。', node.loc)
+    warn(context, '已禁用作用域插槽参数，插槽绑定将被忽略。', compatibleNode.loc)
   }
 
-  const fallbackContent = node.children
+  const fallbackContent = compatibleNode.children
     .map(child => transformNode(child, context))
     .join('')
 
