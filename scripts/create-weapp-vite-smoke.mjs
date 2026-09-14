@@ -256,7 +256,7 @@ function createPnpmCommand(args, pnpmVersion = DEFAULT_PNPM_VERSION) {
 }
 
 function createPnpmInstallCommand(pnpmVersion = DEFAULT_PNPM_VERSION) {
-  return createPnpmCommand(['install', '--config.dangerouslyAllowAllBuilds=true'], pnpmVersion)
+  return createPnpmCommand(['install', '--allow-build @parcel/watcher'], pnpmVersion)
 }
 
 const SCENARIOS = [
