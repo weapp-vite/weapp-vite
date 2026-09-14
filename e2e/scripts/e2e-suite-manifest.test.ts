@@ -70,6 +70,7 @@ describe('e2e suite manifest', () => {
     const labels = new Set(tasks.map(task => task.label))
 
     expect(aggregateTasks).toHaveLength(1)
+    expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS).toContain('ide/github-issues.runtime.issue1008.test.ts')
     expect(aggregateTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER === '1')).toBe(true)
     expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS.every(pattern => !labels.has(pattern))).toBe(true)
   })

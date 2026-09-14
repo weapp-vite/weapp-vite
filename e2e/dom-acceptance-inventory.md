@@ -7,7 +7,7 @@
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
 - 任务：93；微信：90；范围外：3。
-- 展开的 case 声明：233；已接入计划：233；缺计划：0。
+- 展开的 case 声明：234；已接入计划：234；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -24,7 +24,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/automator-concurrent-sessions.runtime.test.ts                                         | devtools           |     1 |     1 |       0 | wechat       |
 | ide/devtools-cli-workflow.runtime.test.ts                                                 | devtools           |     2 |     2 |       0 | wechat       |
 | ide/forward-console-demo.runtime.test.ts                                                  | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    65 |    65 |       0 | wechat       |
+| ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    66 |    66 |       0 | wechat       |
 | ide/github-issues.runtime.component-instance-apis.test.ts                                 | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue448-formdata-upload.test.ts                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue547.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
@@ -207,6 +207,13 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Operations: `check(initial)`, `tap(<missing>)`, `check(clicked)`, `check(patched)`
 
 ## ide/github-issues.runtime.aggregate.test.ts
+
+### e2e app: github-issues / issue #1008 > keeps shadowed template writes local while genuine setup ref writes remain live
+
+- Source: `e2e/ide/github-issues.runtime.issue1008.test.ts:85`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE_1008_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue1008.test.ts:86`
+- Operations: `tap(<missing>)`, `check(initial)`, `check(parameter)`, `check(block)`, `check(closure)`, `check(setup-ref)`
 
 ### e2e app: github-issues / issue-289 > issue #289: compiles object-literal class bindings and runtime probe
 
