@@ -39,10 +39,10 @@ export function setCurrentSetupContext(ctx: any | undefined) {
 }
 
 export function assertInSetup(name: string): InternalRuntimeState {
-  if (!__currentInstance) {
+  if (!currentSetupState.instance) {
     throw new Error(`${name}() 必须在 setup() 的同步阶段调用`)
   }
-  return __currentInstance
+  return currentSetupState.instance
 }
 
 function ensureHookBucket(target: InternalRuntimeState): Record<string, any> {
