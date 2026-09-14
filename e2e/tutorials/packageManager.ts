@@ -57,7 +57,7 @@ export function createProjectCommand(
 export function installCommand(packageManager: TutorialPackageManager): TutorialCommand {
   switch (packageManager) {
     case 'pnpm':
-      return pnpm(['install', '--allow-build @parcel/watcher'])
+      return pnpm(['install', '--allow-build', '@parcel/watcher'])
     case 'npm':
       return { args: ['install'], command: 'npm' }
     case 'yarn':

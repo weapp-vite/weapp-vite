@@ -27,7 +27,7 @@ describe('create-weapp-vite smoke helpers', () => {
   it('allows dependency build scripts during pnpm smoke installs', () => {
     expect(createPnpmInstallCommand()).toEqual({
       command: 'corepack',
-      args: ['pnpm@12', 'install', '--allow-build @parcel/watcher'],
+      args: ['pnpm@12', 'install', '--allow-build', '@parcel/watcher'],
     })
   })
 
