@@ -212,6 +212,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/body-blob.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',

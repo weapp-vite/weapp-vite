@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 93,
-    "wechatTaskCount": 90,
+    "taskCount": 94,
+    "wechatTaskCount": 91,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 234,
-    "casesWithPlan": 234,
+    "expandedCaseDeclarations": 235,
+    "casesWithPlan": 235,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -236,6 +236,41 @@
           "operations": [
             "check(base)",
             "check(native)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/body-blob.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/body-blob.runtime.test.ts:62",
+          "name": "issue #1030 Body/Blob runtime contracts > renders each contract result and consumes a real HTTP response exactly once",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/request-clients-real-native",
+              "checkpoints": "[ { id: 'initial', route, action: '契约页初始状态', nodes: [{ selector: '#body-blob-status', text: 'idle' }] }, { id: 'completed', route, action: '执行本地契约和真实 fetch 后检查逐项结果', nodes: [ { selector: '#body-blob-status', text: 'passed' }, ...ids.map(id ",
+              "source": "e2e/ide/body-blob.runtime.test.ts:63"
+            }
+          ],
+          "routes": [
+            "/pages/body-blob/index?baseUrl=${encodeURIComponent(server!.baseUrl)}"
+          ],
+          "operations": [
+            "reLaunch(/pages/body-blob/index?baseUrl=${encodeURIComponent(server!.baseUrl)})",
+            "check(initial)",
+            "callMethod(runE2E)",
+            "check(completed)",
+            "check(repeated)"
           ],
           "notes": []
         }
@@ -5940,6 +5975,14 @@
       "sha256": "94975b1e10e38eb97424a2150a51ff49512226ff271a161705955f01de338287"
     },
     {
+      "file": "e2e/ide/body-blob.runtime.test.ts",
+      "sha256": "01704b747ba8de3222db11cafe3a3f97964d0d454ec3fd454604e8a1e466e08d"
+    },
+    {
+      "file": "e2e/ide/bodyBlob/transport.ts",
+      "sha256": "a9302d2908389b6c9acf6b6ff79f6b9e5345cf917e3f247d97d476e01f0183a0"
+    },
+    {
       "file": "e2e/ide/chunk-modes.runtime.duplicate.test.ts",
       "sha256": "b76f38ee9dfe9d6c51fb7ad0d64333a7f4024cf9a164bfffa1cc9ca1e19c407a"
     },
@@ -6649,7 +6692,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "c1b91a48d60a70345f24e580db3d4eb55450cd1310d6d9dde5dc6e07f11b116b"
+      "sha256": "9a2d30ec13e1b5f02f3f2245f03c643a8d36318a1fe01f2471a21780701c40e2"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
