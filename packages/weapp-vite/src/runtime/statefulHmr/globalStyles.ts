@@ -1,5 +1,6 @@
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { changeFileExtension } from '../../utils/file'
@@ -18,6 +19,28 @@ function normalizeRoute(route: string): string {
 
 const globalStart = `/* ${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}:start */\n`
 const globalEnd = `\n/* ${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}:end */\n`
+const pageStyleRefreshMarkerPrefix = '.weapp-vite-stateful-hmr-style-'
+
+function pageStyleRefreshMarker(token: string) {
+  return `${pageStyleRefreshMarkerPrefix}${token} { --weapp-vite-stateful-hmr-style-token: ${token}; }\n`
+}
+
+function stripPageStyleRefreshMarker(source: string) {
+  const markerStart = source.lastIndexOf(pageStyleRefreshMarkerPrefix)
+  if (markerStart < 0 || !source.endsWith(' }\n')) {
+    return source
+  }
+  const markerEnd = source.indexOf(' {', markerStart)
+  if (markerEnd < 0) {
+    return source
+  }
+  const token = source.slice(markerStart + pageStyleRefreshMarkerPrefix.length, markerEnd)
+  return /^[a-f0-9]+$/.test(token) ? source.slice(0, markerStart).replace(/\n$/, '') : source
+}
+
+function styleRefreshToken(source: string | Uint8Array) {
+  return createHash('sha256').update(source).digest('hex').slice(0, 16)
+}
 
 function localStyleSource(source: string): string {
   if (!source.startsWith(globalStart)) {
@@ -38,6 +61,7 @@ export function createStatefulHmrGlobalStyleAssets(
     createIfMissing?: boolean
     componentPageGlobalStyleRoutes?: Iterable<string>
     previousComponentPageGlobalStyleRoutes?: Iterable<string>
+    refreshPageStyles?: boolean
   } = {},
 ): StatefulHmrOutputFile[] {
   const entryFile = changeFileExtension('app', styleExtension)
@@ -75,7 +99,7 @@ export function createStatefulHmrGlobalStyleAssets(
     if (asset && asset.type !== 'asset') {
       throw new Error(`Stateful HMR component page stylesheet conflicts with emitted chunk: ${fileName}`)
     }
-    const original = asset ? Buffer.from(asset.source).toString('utf8') : ''
+    const original = asset ? stripPageStyleRefreshMarker(Buffer.from(asset.source).toString('utf8')) : ''
     const localSource = localStyleSource(original)
     const source = routes.has(route) ? globalStart + rebase(styleFile, fileName) + globalEnd + localSource : localSource
     if (asset && original === source) {
@@ -92,6 +116,29 @@ export function createStatefulHmrGlobalStyleAssets(
     else {
       result.push(next)
     }
+  }
+  if (!options.refreshPageStyles) {
+    return result
+  }
+
+  const globalStyle = result.find(item => item.type === 'asset' && item.fileName === styleFile)
+  const token = styleRefreshToken(globalStyle?.type === 'asset' ? globalStyle.source : '')
+  const marker = pageStyleRefreshMarker(token)
+  for (const [index, item] of result.entries()) {
+    if (item.type !== 'asset' || path.extname(item.fileName) !== path.extname(styleFile)
+      || item.fileName === entryFile || item.fileName === styleFile) {
+      continue
+    }
+    const original = Buffer.from(item.source).toString('utf8')
+    const source = stripPageStyleRefreshMarker(original)
+    const nextSource = `${source}${source && !source.endsWith('\n') ? '\n' : ''}${marker}`
+    if (original === nextSource) {
+      continue
+    }
+    if (result === output) {
+      result = [...output]
+    }
+    result[index] = { ...item, source: nextSource }
   }
   return result
 }
