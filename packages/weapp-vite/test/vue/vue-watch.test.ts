@@ -2,7 +2,7 @@ import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService } from './moduleGraph'
+import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 vi.mock('wevu/compiler', async () => {
   const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
@@ -76,11 +76,7 @@ describe('vue transform plugin: watch .vue files', () => {
           },
         },
       },
-      runtimeState: {
-        scan: {
-          isDirty: false,
-        },
-      },
+      runtimeState: createTestRuntimeState(),
     } as any)
 
     const bundle: Record<string, any> = {}
@@ -133,11 +129,7 @@ describe('vue transform plugin: watch .vue files', () => {
         loadAppEntry: async () => ({ json: { pages: ['pages/vue-events/index'] } }),
         loadSubPackages: () => [],
       },
-      runtimeState: {
-        scan: {
-          isDirty: false,
-        },
-      },
+      runtimeState: createTestRuntimeState(),
     } as any)
 
     await callPluginHook(plugin.transform as any, {

@@ -50,6 +50,13 @@
           "launchMode": "default"
         },
         {
+          "name": "issue 1015 external CSS variable binding",
+          "pathName": "pages/issue-1015/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 941 wx sync api promise regression",
           "pathName": "pages/issue-941/index",
           "query": "",

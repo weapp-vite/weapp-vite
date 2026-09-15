@@ -6,15 +6,22 @@ import type {
 } from '@wevu/compiler'
 import {
   classifyVueSfcBlockChanges,
+  compileVueFile,
   resolveVueSfcHmrSignatures,
 } from '@wevu/compiler'
 import { expectType } from 'tsd'
 
 const signatures = resolveVueSfcHmrSignatures(
   '<template><view /></template>',
-  '/project/src/components/card.vue',
+  'src/components/card.vue',
 )
 expectType<VueSfcHmrSignatures>(signatures)
+void compileVueFile(
+  '<script setup>const color = "red"</script><template><view /></template><style>.root { color: v-bind(color); }</style>',
+  'src/components/card.vue',
+).then((compiled) => {
+  expectType<string[] | undefined>(compiled.meta?.cssVars)
+})
 
 const previous: VueSfcBlockSignatures = {
   config: 'config-before',

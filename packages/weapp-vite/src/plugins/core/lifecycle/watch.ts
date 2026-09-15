@@ -27,6 +27,7 @@ import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
+import { collectVueStyleScriptChanges } from './vueStyleDependency'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
 const tailwindContentExtensions = new Set(['.vue', '.wxml', '.axml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
@@ -282,11 +283,16 @@ async function processChangedFile(
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
   const affectedLayoutEntryIds = new Set<string>()
   const dirtyReasonStats = new Map<string, number>()
+  let styleScriptChanges: Set<string> | undefined
   const markEntryDirtyWithCause = (
     entryId: string,
     reason: 'direct' | 'dependency' | 'metadata',
     cause: string,
   ) => {
+    if (styleScriptChanges?.has(entryId)) {
+      reason = 'direct'
+      cause = 'entry-mixed-asset'
+    }
     state.markEntryDirty(entryId, reason)
     const isJsxTemplateDependency = reason === 'dependency' && /\.(?:jsx|tsx)$/.test(normalizedId)
     if (/\.(?:vue|jsx|tsx)$/.test(entryId) && (reason !== 'dependency' || isJsxTemplateDependency)) {
@@ -300,6 +306,12 @@ async function processChangedFile(
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
   const pathKind = resolveWatchPathKind(normalizedId)
+  if (pathKind.isStyle) {
+    styleScriptChanges = await collectVueStyleScriptChanges(ctx, normalizedId, configService)
+    for (const entryId of styleScriptChanges) {
+      importerGraphAffectedEntryIds.add(entryId)
+    }
+  }
   const isReactStaticTemplateUpdate = event === 'update'
     && isReactStaticTemplateSource(configService.weappViteConfig?.react, normalizedId)
   const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
@@ -397,6 +409,7 @@ async function processChangedFile(
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntrySfcSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryStyleBindings.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.delete(normalizedId)
