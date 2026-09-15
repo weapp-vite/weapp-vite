@@ -113,3 +113,19 @@ expectError<WeappInjectWebRuntimeGlobalsTarget>('URL')
 expectError<InstallWebRuntimeGlobalsOptions>({
   targets: ['URL'],
 })
+
+const bodyRequest = new RequestPolyfill('https://example.test', { method: 'POST', body: 'hello' })
+expectType<Promise<Uint8Array<ArrayBuffer>>>(bodyRequest.bytes())
+expectType<Promise<ArrayBuffer>>(bodyRequest.arrayBuffer())
+expectType<Promise<string>>(bodyRequest.text())
+expectType<Promise<any>>(bodyRequest.json())
+expectType<Promise<Blob | BlobPolyfill>>(bodyRequest.blob())
+expectType<Promise<Uint8Array<ArrayBuffer>>>(new ResponsePolyfill('hello').bytes())
+expectType<Promise<Uint8Array<ArrayBuffer>>>(new BlobPolyfill(['hello']).bytes())
+expectType<BlobPolyfill>(new BlobPolyfill(['hello']).slice(-2, undefined, 'text/plain'))
+expectType<BlobPolyfill>(new FilePolyfill(['hello'], 'hello.txt').slice())
+new HeadersPolyfill().forEach((value, key, parent) => {
+  expectType<string>(value)
+  expectType<string>(key)
+  expectType<HeadersPolyfill>(parent)
+}, {})

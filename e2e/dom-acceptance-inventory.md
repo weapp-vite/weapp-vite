@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：93；微信：90；范围外：3。
-- 展开的 case 声明：234；已接入计划：234；缺计划：0。
+- 任务：94；微信：91；范围外：3。
+- 展开的 case 声明：235；已接入计划：235；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -22,6 +22,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/auto-routes-define-app-json.runtime.test.ts                                           | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/automator-bridge-wrapper-hmr.runtime.test.ts                                          | devtools           |     1 |     1 |       0 | wechat       |
 | ide/automator-concurrent-sessions.runtime.test.ts                                         | devtools           |     1 |     1 |       0 | wechat       |
+| ide/body-blob.runtime.test.ts                                                             | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/devtools-cli-workflow.runtime.test.ts                                                 | devtools           |     2 |     2 |       0 | wechat       |
 | ide/forward-console-demo.runtime.test.ts                                                  | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    66 |    66 |       0 | wechat       |
@@ -180,6 +181,16 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/base + e2e-apps/app-lifecycle-native`; checkpoints: `[ { id: 'base', route: INDEX_ROUTE, action: '启动第一个项目并检查其实际界面', nodes: [ { selector: '#base-greeting', text: 'Hello' }, { selector: '#base-target', text: 'Target: index snapshot' }, ], }, { id: 'native', route: INDEX_ROUTE, action: '保留第一连接并启`; source: `e2e/ide/automator-concurrent-sessions.runtime.test.ts:152`
 - Operations: `check(base)`, `check(native)`
+
+## ide/body-blob.runtime.test.ts
+
+### issue #1030 Body/Blob runtime contracts > renders each contract result and consumes a real HTTP response exactly once
+
+- Source: `e2e/ide/body-blob.runtime.test.ts:62`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/request-clients-real-native`; checkpoints: `[ { id: 'initial', route, action: '契约页初始状态', nodes: [{ selector: '#body-blob-status', text: 'idle' }] }, { id: 'completed', route, action: '执行本地契约和真实 fetch 后检查逐项结果', nodes: [ { selector: '#body-blob-status', text: 'passed' }, ...ids.map(id `; source: `e2e/ide/body-blob.runtime.test.ts:63`
+- Routes: `/pages/body-blob/index?baseUrl=${encodeURIComponent(server!.baseUrl)}`
+- Operations: `reLaunch(/pages/body-blob/index?baseUrl=${encodeURIComponent(server!.baseUrl)})`, `check(initial)`, `callMethod(runE2E)`, `check(completed)`, `check(repeated)`
 
 ## ide/devtools-cli-workflow.runtime.test.ts
 
