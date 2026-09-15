@@ -152,6 +152,12 @@ export interface ForParseResult {
   index?: string
   key?: string
   itemAliases?: Record<string, string>
+  /** 需要在逻辑层完整执行的原始循环项模式。 */
+  itemPattern?: string
+  /** 当前循环项模式是否需要投影，避免模板层近似执行。 */
+  itemPatternRequiresProjection?: boolean
+  /** 无法等价降级的循环项模式诊断。 */
+  itemPatternError?: string
 }
 
 /**

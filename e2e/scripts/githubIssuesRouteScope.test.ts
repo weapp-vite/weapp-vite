@@ -54,7 +54,7 @@ describe('github-issues targeted fixture route scope', () => {
     expect(routes.include.some(route => route.startsWith('components/'))).toBe(false)
   })
 
-  it.each(['868', '941'])('limits issue %s to its page and the shared warmup route', async (issue) => {
+  it.each(['868', '941', '1011'])('limits issue %s to its page and the shared warmup route', async (issue) => {
     const config = await readFixtureConfig(`ide/github-issues.runtime.issue${issue}.test.ts`)
     expect(config.weapp.autoRoutes).toEqual({ include: ['pages/block-slot/**', `pages/issue-${issue}/**`] })
     expect(config.weapp.npm.enable).toBe(false)

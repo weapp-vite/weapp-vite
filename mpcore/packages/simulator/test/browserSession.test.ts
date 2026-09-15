@@ -2995,8 +2995,8 @@ Component({
 
     const page = session.getCurrentPages()[0]
     expect(page?.data.snapshot).toEqual({
-      currentTarget: expect.objectContaining({ wvI0: '0' }),
-      target: expect.objectContaining({ wvI0: '0' }),
+      currentTarget: expect.objectContaining({ wvI0: 0 }),
+      target: expect.objectContaining({ wvI0: 0 }),
     })
   })
 

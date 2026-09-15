@@ -179,24 +179,31 @@ function toMemberAccess(base: string, property: t.ObjectProperty['key'], compute
   }
   return base
 }
+interface PatternAliasResult {
+  aliases: Record<string, string>
+  error?: string
+  requiresProjection: boolean
+}
+
 function collectPatternAliases(
   node: t.LVal | t.PatternLike,
   base: string,
-  aliases: Record<string, string>,
+  result: PatternAliasResult,
 ) {
   if (t.isIdentifier(node)) {
-    aliases[node.name] = base
+    result.aliases[node.name] = base
     return
   }
 
   if (t.isAssignmentPattern(node)) {
-    collectPatternAliases(node.left as t.LVal, base, aliases)
+    result.requiresProjection = true
+    collectPatternAliases(node.left as t.LVal, base, result)
     return
   }
 
   if (t.isRestElement(node)) {
     if (t.isIdentifier(node.argument)) {
-      aliases[node.argument.name] = base
+      result.aliases[node.argument.name] = base
     }
     return
   }
@@ -207,10 +214,12 @@ function collectPatternAliases(
         return
       }
       if (t.isRestElement(element)) {
-        collectPatternAliases(element, `${base}.slice(${index})`, aliases)
+        // 小程序模板表达式不支持 slice；数组剩余元素必须在逻辑层执行。
+        result.requiresProjection = true
+        collectPatternAliases(element, base, result)
         return
       }
-      collectPatternAliases(element as t.LVal, `${base}[${index}]`, aliases)
+      collectPatternAliases(element as t.LVal, `${base}[${index}]`, result)
     })
     return
   }
@@ -221,32 +230,44 @@ function collectPatternAliases(
 
   node.properties.forEach((property) => {
     if (t.isRestElement(property)) {
-      if (t.isIdentifier(property.argument)) {
-        aliases[property.argument.name] = base
-      }
+      result.requiresProjection = true
+      collectPatternAliases(property, base, result)
       return
     }
     const nextBase = toMemberAccess(base, property.key, property.computed)
-    collectPatternAliases(property.value as t.LVal, nextBase, aliases)
+    collectPatternAliases(property.value as t.LVal, nextBase, result)
   })
 }
-function parseItemAliases(pattern: string): Record<string, string> {
+
+function parseItemAliases(pattern: string): PatternAliasResult {
+  const result: PatternAliasResult = {
+    aliases: {},
+    requiresProjection: false,
+  }
   try {
     const ast = parseJsLike(`(${pattern}) => {}`)
     const stmt = ast.program.body[0]
     if (!stmt || stmt.type !== 'ExpressionStatement') {
-      return {}
+      return { ...result, error: 'v-for 别名模式无法解析。' }
     }
     const exp = stmt.expression
     if (!t.isArrowFunctionExpression(exp) || exp.params.length !== 1) {
-      return {}
+      return { ...result, error: 'v-for 别名模式无法解析。' }
     }
-    const aliases: Record<string, string> = {}
-    collectPatternAliases(exp.params[0] as t.LVal, FOR_ITEM_ALIAS_PLACEHOLDER, aliases)
-    return aliases
+    const patternNode = exp.params[0]
+    if (t.isRestElement(patternNode)) {
+      return { ...result, error: 'v-for 不支持顶层剩余参数；请在数组或对象解构中使用剩余元素。' }
+    }
+    collectPatternAliases(patternNode as t.LVal, FOR_ITEM_ALIAS_PLACEHOLDER, result)
+    if (result.requiresProjection) {
+      result.aliases = Object.fromEntries(
+        Object.keys(result.aliases).map(name => [name, `${FOR_ITEM_ALIAS_PLACEHOLDER}.${name}`]),
+      )
+    }
+    return result
   }
   catch {
-    return {}
+    return { ...result, error: 'v-for 别名模式无法解析。' }
   }
 }
 export function parseForExpression(exp: string): ForParseResult {
@@ -257,8 +278,14 @@ export function parseForExpression(exp: string): ForParseResult {
 
   const source = stripOuterParentheses(split.source)
   const segments = splitTopLevelByComma(source)
-  if (!segments.length || segments.length > 3) {
+  if (!segments.length) {
     return { listExp: split.list }
+  }
+  if (segments.length > 3) {
+    return {
+      listExp: split.list,
+      itemPatternError: 'v-for 最多支持 item、key 与 index 三个别名；额外别名无法等价映射到小程序循环作用域。',
+    }
   }
 
   const result: ForParseResult = {
@@ -271,10 +298,17 @@ export function parseForExpression(exp: string): ForParseResult {
       result.item = rawItem
     }
     else {
-      const aliases = parseItemAliases(rawItem)
-      if (Object.keys(aliases).length) {
+      const parsed = parseItemAliases(rawItem)
+      if (parsed.error) {
+        result.itemPatternError = parsed.error
+      }
+      if (Object.keys(parsed.aliases).length) {
         result.item = FOR_ITEM_ALIAS_PLACEHOLDER
-        result.itemAliases = aliases
+        result.itemAliases = parsed.aliases
+        if (parsed.requiresProjection) {
+          result.itemPattern = rawItem
+          result.itemPatternRequiresProjection = true
+        }
       }
     }
   }
@@ -284,16 +318,23 @@ export function parseForExpression(exp: string): ForParseResult {
     if (rawIndex && isIdentifier(rawIndex)) {
       result.index = rawIndex
     }
+    else {
+      result.itemPatternError = 'v-for 第二个别名必须是标识符；解构形式无法等价映射到小程序循环索引。'
+    }
   }
   else if (segments.length === 3) {
     const rawKey = segments[1]?.trim()
     const rawIndex = segments[2]?.trim()
-    if (rawKey && isIdentifier(rawKey)) {
+    if (rawKey && isIdentifier(rawKey) && rawIndex && isIdentifier(rawIndex)) {
       result.key = rawKey
-    }
-    if (rawIndex && isIdentifier(rawIndex)) {
       result.index = rawIndex
     }
+    else {
+      result.itemPatternError = 'v-for 的 key 与 index 别名必须是标识符；解构形式无法等价映射到小程序循环作用域。'
+    }
+  }
+  if (result.itemPatternRequiresProjection && segments.length === 3) {
+    result.itemPatternError = 'v-for 需要逻辑层投影的解构暂不支持同时声明 key 与 index；无法保证不同列表类型上的等价语义。'
   }
 
   return result
