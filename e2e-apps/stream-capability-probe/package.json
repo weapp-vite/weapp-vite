@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "weapp-vite": "workspace:*"
+  },
+  "weappVite": {
+    "web": false
   }
 }
