@@ -131,6 +131,10 @@ export function createStatefulHmrGlobalStyleAssets(
     }
     const original = Buffer.from(item.source).toString('utf8')
     const source = stripPageStyleRefreshMarker(original)
+    // 已移除的全局样式页通过空资产清理旧文件，不能追加标记重新生成非空样式。
+    if (!source) {
+      continue
+    }
     const nextSource = `${source}${source && !source.endsWith('\n') ? '\n' : ''}${marker}`
     if (original === nextSource) {
       continue
