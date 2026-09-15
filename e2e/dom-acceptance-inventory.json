@@ -5,8 +5,8 @@
     "taskCount": 93,
     "wechatTaskCount": 90,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 233,
-    "casesWithPlan": 233,
+    "expandedCaseDeclarations": 234,
+    "casesWithPlan": 234,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -844,6 +844,23 @@
             "callMethod(_runE2E)",
             "check(updated)"
           ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1013.test.ts:33",
+          "name": "e2e app: github-issues / issue #1013 > omits unsupported dynamic names while static native and component controls still run",
+          "plans": [
+            {
+              "registration": "runGithubDom",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'initial', action: '检查动态名称已忽略且静态组件已渲染', nodes: [ { selector: '#issue-1013-dynamic', text: 'dynamic probe' }, { selector: '#issue-1013-dynamic-count', text: 'dynamic taps: 0' }, { selector: '#issue-1013-static-probe-count', text: 'sta",
+              "source": "e2e/ide/github-issues.runtime.issue1013.test.ts:43"
+            }
+          ],
+          "routes": [
+            "/pages/issue-1013/index"
+          ],
+          "operations": [],
           "notes": []
         },
         {
@@ -5959,7 +5976,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.aggregate.test.ts",
-      "sha256": "0be9d2fd09c0a97ba6cba3adebc986bddf41f5c01d3ce4673489ade22cc3080e"
+      "sha256": "61492d4c7202e5261e537cceada8f052237eb975ae1376921e680b0c4db46ebe"
     },
     {
       "file": "e2e/ide/github-issues.runtime.app-shell.test.ts",
@@ -5972,6 +5989,10 @@
     {
       "file": "e2e/ide/github-issues.runtime.import-meta.test.ts",
       "sha256": "87bf4d6ff17686b0b10dcdfd19d21292aa2a5de1f049ad209cbfee98c0cb2c09"
+    },
+    {
+      "file": "e2e/ide/github-issues.runtime.issue1013.test.ts",
+      "sha256": "dd214fe8af937331788f4b491b51c9fd0816fe45614c28e3f9a192c29781cb35"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue289.test.ts",
@@ -6623,7 +6644,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "929d56cadbcb4015e287b2081a722aa9b032898ab75c2d472d92637b1937907e"
+      "sha256": "f7c92639be25e63d5c5783413897636c7ad62624801568f767f7053ffbc498cd"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
