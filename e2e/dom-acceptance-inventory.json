@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 93,
-    "wechatTaskCount": 90,
+    "taskCount": 94,
+    "wechatTaskCount": 91,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 233,
-    "casesWithPlan": 233,
+    "expandedCaseDeclarations": 234,
+    "casesWithPlan": 234,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -1547,6 +1547,38 @@
             "act(stage.id)",
             "callMethod(snapshot)",
             "check(stage.id)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1009.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1009.test.ts:42",
+          "name": "e2e app: github-issues / issue #1009 > keeps compiler-owned handler parameters isolated from user bindings",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'initial', route: ISSUE_1009_ROUTE, action: '检查内联事件尚未执行的首屏', nodes: [ { selector: '#issue-1009-page', attributes: { 'data-e2e-issue': '1009' } }, { selector: '#issue1009-result-ctx', text: 'ctx: pending' }, { selector: '#issue1009-re",
+              "source": "e2e/ide/github-issues.runtime.issue1009.test.ts:43"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(initial)",
+            "tap(<missing>)",
+            "callMethod(_runE2E)",
+            "check(completed)"
           ],
           "notes": []
         }
@@ -5974,6 +6006,10 @@
       "sha256": "87bf4d6ff17686b0b10dcdfd19d21292aa2a5de1f049ad209cbfee98c0cb2c09"
     },
     {
+      "file": "e2e/ide/github-issues.runtime.issue1009.test.ts",
+      "sha256": "7aab6c9ec6c09f610bd8c13ae834dd63d96f906d40b2a5f86448a1f114bf56e9"
+    },
+    {
       "file": "e2e/ide/github-issues.runtime.issue289.test.ts",
       "sha256": "eebdc8af20fa9f95c145520fd26914788bebfc46208adb2362797ac711c34c53"
     },
@@ -6623,7 +6659,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "929d56cadbcb4015e287b2081a722aa9b032898ab75c2d472d92637b1937907e"
+      "sha256": "c0fa62eaaff1bd3dceafd6d3a0c7883dec989fa0dcb3108f0bab7e8b2fdaf6e8"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",

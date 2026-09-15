@@ -22,6 +22,13 @@
     "miniprogram": {
       "list": [
         {
+          "name": "issue 1009 inline expression identifier hygiene",
+          "pathName": "pages/issue-1009/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "component instance API trace baseline",
           "pathName": "pages/component-instance-apis-baseline/index",
           "query": "",

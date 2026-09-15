@@ -62,6 +62,7 @@ const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.en
 const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
+  'github-issues.runtime.issue1009.test.ts': ['pages/issue-1009/**'],
   'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [
     'pages/issue-338/**',

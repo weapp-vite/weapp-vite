@@ -1,9 +1,12 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
+import { runInNewContext } from 'node:vm'
+import * as t from '@weapp-vite/ast/babelTypes'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
 import { getWxmlDirectivePrefix } from '../../../platform'
+import { generate, parse, traverse } from '../../../utils/babel'
 
 async function createTempProject() {
   return await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-compile-vue-'))
@@ -12,6 +15,48 @@ async function createTempProject() {
 const DEFAULT_WXML_DIRECTIVE_PREFIX = getWxmlDirectivePrefix()
 const IF_BIND_RE = new RegExp(`${DEFAULT_WXML_DIRECTIVE_PREFIX}:if="\\{\\{__wv_bind_\\d+\\}\\}"`)
 const FOR_BIND_RE = new RegExp(`${DEFAULT_WXML_DIRECTIVE_PREFIX}:for="\\{\\{__wv_bind_\\d+\\}\\}"`)
+
+interface EvaluatedInlineEntry {
+  fn: (
+    context: Record<string, unknown>,
+    scope: Record<string, unknown>,
+    event: unknown,
+  ) => unknown
+}
+
+function evaluateInlineEntries(script: string, template: string) {
+  const ast = parse(script, { sourceType: 'module', plugins: ['typescript'] })
+  let inlineMap: t.ObjectExpression | undefined
+  traverse(ast, {
+    ObjectProperty(path) {
+      let key: string | undefined
+      if (t.isIdentifier(path.node.key)) {
+        key = path.node.key.name
+      }
+      else if (t.isStringLiteral(path.node.key)) {
+        key = path.node.key.value
+      }
+      if (key === '__weapp_vite_inline_map' && t.isObjectExpression(path.node.value)) {
+        inlineMap = path.node.value
+        path.stop()
+      }
+    },
+  })
+  if (!inlineMap) {
+    throw new Error('未找到 Vue 内联表达式映射。')
+  }
+
+  const code = generate(inlineMap, { compact: true }).code
+  const entries = runInNewContext(`(${code})`) as Record<string, EvaluatedInlineEntry>
+  const ids = [...template.matchAll(/\bdata-wi-[\w-]+="([^"]+)"/g)].map(match => match[1]!)
+  return ids.map((id) => {
+    const entry = entries[id]
+    if (!entry) {
+      throw new Error(`未找到 Vue 内联表达式 ${id}。`)
+    }
+    return entry
+  })
+}
 
 describe('compileVueFile - auto import tags', () => {
   it('collects PascalCase tags for autoImportTags', async () => {
@@ -229,9 +274,12 @@ const handle = (value: string) => value
       '/project/src/pages/index/index.vue',
     )
 
-    expect(result.script).toContain('__weapp_vite_inline_map')
-    expect(result.script).toContain('i0')
-    expect(result.script).toContain('ctx.handle')
+    expect(result.template).toContain('bindtap="__weapp_vite_inline"')
+    const handle = vi.fn((value: string) => value)
+    const entries = evaluateInlineEntries(result.script, result.template)
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.fn({ handle }, {}, { type: 'tap' })).toBe('ok')
+    expect(handle).toHaveBeenCalledWith('ok')
   })
 
   it('bridges script setup simple template handlers through inline map', async () => {
@@ -252,7 +300,12 @@ function toggleUrgent(event: unknown) {
     expect(result.template).toContain('data-wi-tap="i0"')
     expect(result.template).toContain('bindtap="__weapp_vite_inline"')
     expect(result.script).toContain('__weapp_vite_inline_map')
-    expect(result.script).toContain('ctx.toggleUrgent($event)')
+    const event = { type: 'tap' }
+    const toggleUrgent = vi.fn((receivedEvent: unknown) => receivedEvent)
+    const entries = evaluateInlineEntries(result.script, result.template)
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.fn({ toggleUrgent }, {}, event)).toBe(event)
+    expect(toggleUrgent).toHaveBeenCalledWith(event)
   })
 
   it('rewrites inline event assignments to script setup ref values', async () => {
@@ -282,14 +335,19 @@ function handle(value: number, state: { count: number }) {
     expect(result.template).toContain('bindtap="__weapp_vite_inline"')
     expect(result.template).toContain('bindlongpress="__weapp_vite_inline"')
     expect(result.template).toContain('bindtouchstart="__weapp_vite_inline"')
-    expect(result.script).toContain('ctx.count.value += 1')
-    expect(result.script).toContain('ctx.count.value++')
-    expect(result.script).toContain('ctx.count.value = ctx.count.value + 1')
-    expect(result.script).toContain('++ctx.count.value')
-    expect(result.script).toContain('ctx.count.value > 1 ? ctx.count.value = ctx.count.value - 1 : ctx.count.value = ctx.count.value + 1')
-    expect(result.script).toContain('ctx.handle(ctx.count.value, { count: ctx.count.value })')
-    expect(result.script).not.toContain('ctx.handle.value')
-    expect(result.script).not.toContain('ctx.count.value.value')
+    const count = { value: 0 }
+    const handle = vi.fn((value: number, state: { count: number }) => value + state.count)
+    const entries = evaluateInlineEntries(result.script, result.template)
+    expect(entries).toHaveLength(7)
+
+    const context = { count, handle }
+    for (const [index, expected] of [1, 2, 3, 4, 5, 4].entries()) {
+      entries[index]!.fn(context, {}, { type: 'event' })
+      expect(count.value).toBe(expected)
+    }
+    expect(entries[6]!.fn(context, {}, { type: 'animationend' })).toBe(8)
+    expect(handle).toHaveBeenCalledWith(4, { count: 4 })
+    expect(count.value).toBe(4)
   })
 
   it('does not rewrite non-top-level or non-ref inline event targets as ref values', async () => {
@@ -311,10 +369,17 @@ const nested = {
       '/project/src/pages/index/index.vue',
     )
 
-    expect(result.script).toContain('ctx.plain = ctx.plain + 1')
-    expect(result.script).toContain('ctx.nested.count = ctx.nested.count + 1')
-    expect(result.script).not.toContain('ctx.plain.value')
-    expect(result.script).not.toContain('ctx.nested.count.value')
+    const context = {
+      plain: 0,
+      nested: { count: 0 },
+    }
+    const entries = evaluateInlineEntries(result.script, result.template)
+    expect(entries).toHaveLength(2)
+
+    expect(entries[0]!.fn(context, {}, { type: 'tap' })).toBe(1)
+    expect(context.plain).toBe(1)
+    expect(entries[1]!.fn(context, {}, { type: 'longpress' })).toBe(1)
+    expect(context.nested.count).toBe(1)
   })
 
   it('applies htmlTagToWxml mapping in final compiled vue template output', async () => {

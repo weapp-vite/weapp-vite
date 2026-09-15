@@ -6,6 +6,7 @@ import { createCollectVisitors } from '../collect'
 import { rewriteDefaultExport } from './index'
 
 const WEVU_IS_PAGE_RE = /__wevu_isPage/g
+const PARAMETER_NAMES = { context: 'ctx', scope: 'scope', event: '$event' }
 
 function createState(ast: any): TransformState {
   const state: TransformState = {
@@ -146,6 +147,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             id: 'e0',
             expression: 'foo',
             scopeKeys: ['foo'],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
         warn,
@@ -173,6 +175,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             id: 'e1',
             expression: 'foo + 1',
             scopeKeys: ['foo'],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
         warn,
@@ -215,6 +218,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             id: 'e2',
             expression: 'bar',
             scopeKeys: ['bar'],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
       },
@@ -285,6 +289,7 @@ export default {
             id: 'e-spread-merge',
             expression: 'onChange($event)',
             scopeKeys: [],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
         warn,
