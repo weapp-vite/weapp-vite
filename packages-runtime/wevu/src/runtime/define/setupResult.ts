@@ -25,6 +25,44 @@ export function shouldExposeInSnapshot(value: unknown): boolean {
   return isPlainObject(value)
 }
 
+/**
+ * 合并编译后 setup 返回值，并保留可写顶层绑定的访问器。
+ */
+export function mergeSetupResultDescriptors(
+  target: Record<string, unknown>,
+  source: Record<string, unknown> | void,
+) {
+  if (!source) {
+    return target
+  }
+  for (const key of Object.keys(source)) {
+    const descriptor = Object.getOwnPropertyDescriptor(source, key)
+    if (typeof descriptor?.get === 'function' && typeof descriptor.set === 'function') {
+      Object.defineProperty(target, key, descriptor)
+    }
+    else {
+      target[key] = source[key]
+    }
+  }
+  return target
+}
+
+/**
+ * 将编译后 setup let 的访问器交给 setupState 持有。
+ */
+export function preserveSetupAccessor(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+  key: string,
+) {
+  const descriptor = Object.getOwnPropertyDescriptor(source, key)
+  if (typeof descriptor?.get !== 'function' || typeof descriptor.set !== 'function') {
+    return false
+  }
+  Object.defineProperty(target, key, descriptor)
+  return true
+}
+
 export function applySetupResult(
   runtime: any,
   target: any,
@@ -37,6 +75,7 @@ export function applySetupResult(
   const state = runtime?.state ?? Object.create(null)
   const setupState = runtime?.setupState ?? Object.create(null)
   const rawState = isReactive(state) ? toRaw(state) : state
+  const rawSetupState = (isReactive(setupState) ? toRaw(setupState) : setupState) as Record<string, unknown>
   let methodsChanged = false
   if (runtime && !runtime.methods) {
     try {
@@ -64,7 +103,8 @@ export function applySetupResult(
   }
   Object.keys(result).forEach((key) => {
     const val = (result as any)[key]
-    if (typeof val === 'function') {
+    const preservesAccessor = preserveSetupAccessor(rawSetupState, result, key)
+    if (typeof val === 'function' && !preservesAccessor) {
       const bound = (...args: any[]) => (val as any).apply(runtime?.proxy ?? runtime, args)
       ;(methods as any)[key] = bound
       ;(state as any)[key] = bound
@@ -91,7 +131,9 @@ export function applySetupResult(
           // 保持 state 的兼容写入已完成，这里只兜底非枚举定义。
         }
       }
-      ;(setupState as any)[key] = val
+      if (!preservesAccessor) {
+        ;(setupState as any)[key] = val
+      }
     }
   })
   if (runtime) {

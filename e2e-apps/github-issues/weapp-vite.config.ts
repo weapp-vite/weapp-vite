@@ -147,6 +147,9 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/css-nested-vars/**',
     'components/issue-930/**',
   ],
+  'github-issues.runtime.issue1010.test.ts': [
+    'pages/issue-1010/**',
+  ],
   'github-issues.runtime.issue852.test.ts': [
     'pages/issue-852/**',
   ],
