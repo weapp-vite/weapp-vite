@@ -52,6 +52,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
   'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue1015.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.require-async.test.ts',
@@ -93,6 +94,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.component-instance-apis.test.ts',
+  'ide/github-issues.runtime.issue1015.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   // wx.downloadFile 的域名校验依赖完整独立项目，不能复用聚合目标的裁剪构建。
   'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
@@ -213,6 +215,7 @@ const IDE_GATE_TESTS = [
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/app-lifecycle.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
+  'ide/github-issues.runtime.issue1015.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',

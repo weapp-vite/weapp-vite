@@ -1,0 +1,3 @@
+.issue1015-page {
+  color: v-bind(themeColor); /* stylelint-disable-line value-keyword-case -- CSS v-bind 变量名区分大小写。 */
+}

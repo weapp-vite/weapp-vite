@@ -38,6 +38,7 @@ export async function compileVueFile(
     meta: {
       ...parsed.meta,
       styleBlocks: parsed.descriptor.styles,
+      cssVars: parsed.descriptor.cssVars,
     },
   }
 

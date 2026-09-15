@@ -33,6 +33,7 @@ export const HMR_GUARD_TEST_GROUPS = {
   ]),
   derivedOutputSync: resolveCiTests([
     'external-linked-vue-component.hmr.test.ts',
+    'hmr-issue-1015-external-css-vars.test.ts',
     'style-import-vue.test.ts',
     'wevu-runtime.hmr.test.ts',
   ]),

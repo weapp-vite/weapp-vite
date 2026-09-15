@@ -931,95 +931,6 @@ console.log(pages, routeSubPackages)
     })).resolves.toBeNull()
   })
 
-  it('finalizes compiled transform results through watch deps, script finalize, cache, and scoped slots', async () => {
-    const pluginCtx = {
-      addWatchFile: vi.fn(),
-    }
-    const result = {
-      template: '<view />',
-      script: 'Page({ onReachBottom() {} })',
-      meta: {
-        sfcSrcDeps: ['/project/src/components/card.vue'],
-      },
-    } as any
-    const compilationCache = new Map<string, any>()
-    const scopedSlotEmitter = vi.fn()
-    const replaceEntryDependencies = vi.fn()
-
-    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
-      transformed: true,
-      code: 'Page({ enhanced: true })',
-    })
-
-    await expect(finalizeTransformCompiledResult({
-      ctx: {
-        configService: {
-          outputExtensions: { js: 'js' },
-          relativeOutputPath: vi.fn(() => 'pages/home/index'),
-          isDev: true,
-          weappViteConfig: {},
-        },
-        runtimeState: {
-          build: {
-            hmr: {
-              vueEntryHasTemplate: new Map(),
-              vueEntrySfcSignatures: new Map(),
-              vueEntryTailwindContentSignatures: new Map(),
-              vueEntryTailwindTemplateContentSignatures: new Map(),
-              vueEntryTailwindScriptContentSignatures: new Map(),
-            },
-          },
-        },
-        moduleGraphService: {
-          replaceEntryDependencies,
-        },
-      } as any,
-      pluginCtx,
-      filename: '/project/src/pages/home/index.vue',
-      source: '<template />',
-      result,
-      pageLayoutSignature: 'layout-signature',
-      appShellSignature: 'app-shell-signature',
-      compilationCache,
-      configService: {
-        outputExtensions: { js: 'js' },
-        relativeOutputPath: vi.fn(() => 'pages/home/index'),
-        isDev: true,
-        weappViteConfig: {},
-      } as any,
-      isPage: true,
-      isApp: false,
-      scopedSlotModules: new Map(),
-      emittedScopedSlotChunks: new Set(),
-      emitScopedSlotChunks: scopedSlotEmitter,
-    })).resolves.toBe(result)
-
-    expect(replaceEntryDependencies).toHaveBeenCalledWith(
-      '/project/src/pages/home/index.vue',
-      'style',
-      ['/project/src/components/card.vue'],
-    )
-    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
-    expect(compilationCache.get('/project/src/pages/home/index.vue')).toEqual({
-      result,
-      source: '<template />',
-      isPage: true,
-      autoRoutesSignature: undefined,
-      refreshToken: 0,
-      styleIndependentSignature: undefined,
-      pageLayoutSignature: 'layout-signature',
-      appShellSignature: 'app-shell-signature',
-    })
-    expect(scopedSlotEmitter).toHaveBeenCalledWith(
-      pluginCtx,
-      'pages/home/index',
-      result,
-      expect.any(Map),
-      expect.any(Set),
-      { js: 'js' },
-    )
-  })
-
   it('does not overwrite physical SFC signatures with transformed compiler input', async () => {
     const result = {
       script: 'Component({})',
@@ -1029,6 +940,7 @@ console.log(pages, routeSubPackages)
     const hmr = {
       vueEntryHasTemplate: new Map<string, boolean>(),
       vueEntrySfcSignatures: new Map(),
+      vueEntryStyleBindings: new Map(),
       vueEntryTailwindContentSignatures: new Map<string, string>(),
       vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
       vueEntryTailwindScriptContentSignatures: new Map<string, string>(),

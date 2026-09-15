@@ -45,6 +45,8 @@ export interface VueTransformResult {
     jsonMacroHash?: string
     defineOptionsHash?: string
     sfcSrcDeps?: string[]
+    /** 已解析样式中的 CSS 变量表达式快照。@internal */
+    cssVars?: string[]
     styleBlocks?: SFCStyleBlock[]
     /**
      * JSON-only HMR 重算所需的稳定编译输入。

@@ -1242,7 +1242,14 @@ describe('emitSharedVueEntryAssets', () => {
     const previousSource = '<template><view /></template><style>.page{color:red}</style>'
     const nextSource = '<template><view /></template><style>.page{color:blue}</style>'
     const cached = {
-      result: { script: 'Page({ cached: true })', style: '.page{color:red}' },
+      result: {
+        script: 'Page({ cached: true })',
+        style: '.page{color:red}',
+        meta: {
+          cssVars: [],
+          styleBlocks: [],
+        },
+      },
       source: previousSource,
       isPage: true,
       refreshToken: 1,

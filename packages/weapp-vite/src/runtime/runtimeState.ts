@@ -26,6 +26,11 @@ interface AutoRoutesCandidateState {
   jsonPath?: string
 }
 
+interface VueEntryStyleBindings {
+  sources: string[]
+  expressions?: string[]
+}
+
 interface LibEntryState {
   name: string
   input: string
@@ -137,6 +142,7 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       vueEntryHasTemplate: Map<string, boolean>
       vueEntrySfcSignatures: Map<string, VueSfcBlockSignatures>
+      vueEntryStyleBindings: Map<string, VueEntryStyleBindings>
       vueEntryTailwindContentSignatures: Map<string, string>
       vueEntryTailwindTemplateContentSignatures: Map<string, string>
       vueEntryTailwindScriptContentSignatures: Map<string, string>
@@ -378,6 +384,7 @@ export function createRuntimeState(): RuntimeState {
         entriesMap: new Map<string, Entry | undefined>(),
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntrySfcSignatures: new Map<string, VueSfcBlockSignatures>(),
+        vueEntryStyleBindings: new Map<string, VueEntryStyleBindings>(),
         vueEntryTailwindContentSignatures: new Map<string, string>(),
         vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),
