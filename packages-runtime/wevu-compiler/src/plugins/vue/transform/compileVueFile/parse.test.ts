@@ -19,6 +19,7 @@ vi.mock('vue/compiler-sfc', async (importOriginal) => {
 vi.mock('../jsonMacros', () => {
   return {
     extractJsonMacroFromScriptSetup: extractJsonMacroFromScriptSetupMock,
+    extractJsonMacroFromScriptSetupWithSourceMap: extractJsonMacroFromScriptSetupMock,
     mayContainJsonMacro: (content: string) => /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/.test(content),
   }
 })

@@ -273,6 +273,7 @@ export async function compileScriptPhase(
   precompiledScript?: CompiledScript,
   precomputedScriptPhaseInfo?: PrecomputedScriptPhaseInfo,
   originalSource?: string,
+  scriptPreprocessMap?: EncodedSourceMapLike | null,
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -282,7 +283,6 @@ export async function compileScriptPhase(
   )
 
   let scriptCode: string | undefined
-  let compiledScriptForMap: CompiledScript | undefined
   let scriptMap: EncodedSourceMapLike | null = null
   let propsAliases = options?.template?.propsAliases
   let propsDerivedKeys: string[] | undefined
@@ -292,7 +292,6 @@ export async function compileScriptPhase(
       id: generateScopedId(filename),
       isProd: false,
     })
-    compiledScriptForMap = scriptCompiled
     warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
       filename,
       scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
@@ -306,8 +305,11 @@ export async function compileScriptPhase(
     propsDerivedKeys = hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsDerivedKeys')
       ? precomputedScriptPhaseInfo.propsDerivedKeys
       : resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCode)
-    scriptMap = options?.sourceMap !== false && scriptCompiled.map && typeof scriptCompiled.map === 'object'
-      ? scriptCompiled.map
+    const compiledScriptMap = options?.sourceMap !== false && scriptCompiled.map && typeof scriptCompiled.map === 'object'
+      ? scriptCompiled.map as EncodedSourceMapLike
+      : null
+    scriptMap = compiledScriptMap
+      ? composeSourceMaps(compiledScriptMap, scriptPreprocessMap)
       : null
 
     if (
@@ -339,7 +341,7 @@ export async function compileScriptPhase(
           : undefined
       remapJsxBindingManifestLocations(
         jsxTemplate.bindingManifest,
-        compiledScriptForMap?.map,
+        scriptMap,
         externalScriptBlock?.content ?? originalSource,
         externalScriptBlock?.src,
       )

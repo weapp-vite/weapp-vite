@@ -164,6 +164,7 @@ export async function compileVueFile(
       cssModules: result.cssModules,
     },
     source,
+    parsed.scriptPreprocessMap,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
