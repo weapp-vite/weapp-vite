@@ -1,8 +1,11 @@
 import type { Plugin } from 'vite'
+import { realpath } from 'node:fs/promises'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { build } from 'vite'
+import { createLogicalEntryModuleCode, createSidecarModuleCode } from '../../src/moduleGraph/logicalEntry'
+import { parseLogicalEntryId, parseSidecarModuleId, resolveVirtualModuleId } from '../../src/moduleGraph/protocol'
 import { createVueResolverPlugin } from '../../src/plugins/vue/resolver'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
@@ -72,7 +75,8 @@ defineAppJson({ pages: ['pages/index/index'] })
   })
 
   it('keeps SFC blocks isolated through real Vite/Rolldown plugin scheduling', async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-sfc-routing-'))
+    // 对齐 Vite 的真实路径，避免 macOS 临时目录符号链接掩盖组件入口注册。
+    const root = await realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-sfc-routing-')))
     const srcRoot = path.join(root, 'src')
     const pageDir = path.join(srcRoot, 'pages', 'index')
     const componentDir = path.join(srcRoot, 'components')
@@ -126,8 +130,24 @@ defineAppJson({ pages: ['pages/index/index'] })
       const runBuild = async () => {
         styleInputs.clear()
         vueInputs.clear()
-        const vuePlugin = createVueTransformPlugin(createCtx(root))
-        const vueResolverPlugin = createVueResolverPlugin(createCtx(root))
+        const ctx = createCtx(root)
+        const vuePlugin = createVueTransformPlugin(ctx)
+        const vueResolverPlugin = createVueResolverPlugin(ctx)
+        const graphPlugin: Plugin = {
+          name: 'weapp-vite:test-logical-entry',
+          enforce: 'pre',
+          resolveId: id => resolveVirtualModuleId(id),
+          load(id) {
+            const entry = parseLogicalEntryId(id)
+            if (entry) {
+              return createLogicalEntryModuleCode(entry, ctx.moduleGraphService.getEntryDependencies(entry.sourceId))
+            }
+            const sidecar = parseSidecarModuleId(id)
+            if (sidecar) {
+              return createSidecarModuleCode(sidecar.ownerId, sidecar.sourceId, sidecar.kind)
+            }
+          },
+        }
         const sfcRoutingPlugin: Plugin = {
           name: 'weapp-vite:test-sfc-routing',
           resolveId: vuePlugin.resolveId,
@@ -167,7 +187,7 @@ defineAppJson({ pages: ['pages/index/index'] })
           configFile: false,
           root,
           logLevel: 'silent',
-          plugins: [styleLoadProbe, sfcResolverPlugin, sfcRoutingPlugin, downstreamJsProbe],
+          plugins: [graphPlugin, styleLoadProbe, sfcResolverPlugin, sfcRoutingPlugin, downstreamJsProbe],
           build: {
             write: false,
             minify: false,
