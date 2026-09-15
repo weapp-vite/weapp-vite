@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：94；微信：91；范围外：3。
-- 展开的 case 声明：235；已接入计划：235；缺计划：0。
+- 任务：95；微信：92；范围外：3。
+- 展开的 case 声明：243；已接入计划：243；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -58,6 +58,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/request-clients-real.runtime.test.ts                                                  | devtools           |     7 |     7 |       0 | wechat       |
 | ide/shared-styles.runtime.test.ts                                                         | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/stateful-hmr.runtime.test.ts                                                          | devtools           |     5 |     5 |       0 | wechat       |
+| ide/stream-capability.runtime.test.ts                                                     | devtools, headless |     8 |     8 |       0 | wechat       |
 | ide/subpackage-shared-strategy-complex.runtime.test.ts                                    | devtools, headless |     2 |     2 |       0 | wechat       |
 | ide/swan-runtime.optional.test.ts                                                         | swan               |     1 |     0 |       - | out-of-scope |
 | ide/tdesign-dialog-import.runtime.test.ts                                                 | devtools, headless |     2 |     2 |       0 | wechat       |
@@ -1189,6 +1190,72 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Source: `e2e/ide/stateful-hmr.runtime.test.ts:512`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:513`
+
+## ide/stream-capability.runtime.test.ts
+
+### native streaming capability probe > records native capabilities without Web Runtime injection
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:44`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '原生探针首屏', nodes: [{ selector: '#probe-status', text: 'idle' }] }, ]`; source: `e2e/ide/stream-capability.runtime.test.ts:45`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(probe)`
+
+### native streaming capability probe > observes controlled network stages: normal
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:55`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:`; source: `e2e/ide/stream-capability.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
+
+### native streaming capability probe > observes controlled network stages: empty
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:55`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:`; source: `e2e/ide/stream-capability.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
+
+### native streaming capability probe > observes controlled network stages: abort-before
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:55`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:`; source: `e2e/ide/stream-capability.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
+
+### native streaming capability probe > observes controlled network stages: abort-after
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:55`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:`; source: `e2e/ide/stream-capability.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
+
+### native streaming capability probe > observes controlled network stages: disconnect
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:55`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:`; source: `e2e/ide/stream-capability.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
+
+### native streaming capability probe > observes controlled network stages: off-all
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:55`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:`; source: `e2e/ide/stream-capability.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
+
+### native streaming capability probe > observes controlled network stages: repeat
+
+- Source: `e2e/ide/stream-capability.runtime.test.ts:55`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stream-capability-probe`; checkpoints: `[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:`; source: `e2e/ide/stream-capability.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
 
 ## ide/subpackage-shared-strategy-complex.runtime.test.ts
 
