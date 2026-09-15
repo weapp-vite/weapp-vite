@@ -171,7 +171,8 @@ describe('inline expression assignment patterns', () => {
 
   it('preserves computed-key, default and rest evaluation order', () => {
     const order: string[] = []
-    const next = {}
+    // 避开旧版 V8 在普通对象 rest 解构中重复读取已排除 getter 的行为。
+    const next = Object.create(null) as Record<string, unknown>
     Object.defineProperties(next, {
       target: {
         enumerable: true,
