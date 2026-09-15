@@ -12,6 +12,8 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/sr
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
 const PAGE_ROOT = path.join(APP_ROOT, 'src/pages/issue-1015')
 const EXTERNAL_CSS_PATH = path.join(PAGE_ROOT, 'index.css')
+const PAGE_SOURCE_PATH = path.join(PAGE_ROOT, 'index.vue')
+const ALTERNATE_CSS_PATH = path.join(PAGE_ROOT, 'hmr-alternate.css')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const PAGE_JS_PATH = path.join(DIST_ROOT, 'pages/issue-1015/index.js')
 const UPDATE_JS_PATH = path.join(DIST_ROOT, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE)
@@ -132,6 +134,9 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
   it.each(['classic', 'stateful-experimental'] as const)('updates external CSS variable registration in %s mode', async (runtime) => {
     await fs.remove(DIST_ROOT)
     const originalCss = await fs.readFile(EXTERNAL_CSS_PATH, 'utf8')
+    const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
+    expect(await fs.pathExists(ALTERNATE_CSS_PATH)).toBe(false)
+    await fs.writeFile(ALTERNATE_CSS_PATH, originalCss.replace('\n}', '\n  --issue-1015-hmr: source-switched;\n}'), 'utf8')
     const devEnv = createDevProcessEnv()
     devEnv.WEAPP_VITE_E2E_TARGET_FILE = RUNTIME_TARGET
     devEnv.WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME = runtime
@@ -164,16 +169,29 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
       expect(styleOnly.cssVarNames).toEqual(initial.cssVarNames)
       expect(styleOnly.buildId).toBe(initial.buildId)
 
+      await replaceFileByRename(
+        PAGE_SOURCE_PATH,
+        originalPageSource.replace('src="./index.css"', 'src="./hmr-alternate.css"'),
+      )
+      const switched = await devProcess.waitFor(
+        waitForCssVarOutput(output => (
+          output.pageWxss.includes('--issue-1015-hmr: source-switched')
+          && hasRegisteredCssVars(output)
+        ), stateful),
+        'issue-1015 switched external style source',
+      )
+      expect(switched.cssVarNames).toEqual(initial.cssVarNames)
+
       const changedCss = originalCss
         .replace('v-bind(themeColor)', 'v-bind(accentColor)')
         .replace('\n}', '\n  --issue-1015-hmr: changed;\n}')
-      await replaceFileByRename(EXTERNAL_CSS_PATH, changedCss)
+      await replaceFileByRename(ALTERNATE_CSS_PATH, changedCss)
       const changed = await devProcess.waitFor(
         waitForCssVarOutput(output => (
           output.pageWxss.includes('--issue-1015-hmr: changed')
           && hasRegisteredCssVars(output)
           && output.cssVarNames.every(cssVarName => !initial.cssVarNames.includes(cssVarName))
-        ), stateful, initial.buildId),
+        ), stateful, switched.buildId),
         'issue-1015 changed external CSS variable output',
       )
       expect(changed.cssVarNames).toHaveLength(1)
@@ -182,7 +200,7 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
       }
 
       const removedCss = '.issue1015-page {\n  color: black;\n  --issue-1015-hmr: removed;\n}\n'
-      await replaceFileByRename(EXTERNAL_CSS_PATH, removedCss)
+      await replaceFileByRename(ALTERNATE_CSS_PATH, removedCss)
       const removed = await devProcess.waitFor(
         waitForCssVarOutput(output => (
           output.pageWxss.includes('--issue-1015-hmr: removed')
@@ -197,7 +215,7 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
       }
 
       const readdedCss = originalCss.replace('\n}', '\n  --issue-1015-hmr: readded;\n}')
-      await replaceFileByRename(EXTERNAL_CSS_PATH, readdedCss)
+      await replaceFileByRename(ALTERNATE_CSS_PATH, readdedCss)
       const readded = await devProcess.waitFor(
         waitForCssVarOutput(output => (
           output.pageWxss.includes('--issue-1015-hmr: readded')
@@ -212,6 +230,8 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
     finally {
       await devProcess.stop(2_000)
       await fs.writeFile(EXTERNAL_CSS_PATH, originalCss, 'utf8')
+      await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
+      await fs.remove(ALTERNATE_CSS_PATH)
     }
   })
 })
