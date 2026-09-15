@@ -1,5 +1,12 @@
 # @wevu/api
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-core/api@0.3.3
+
 ## 0.3.2
 
 ### Patch Changes

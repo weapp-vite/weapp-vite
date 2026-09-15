@@ -1,5 +1,13 @@
 # @wevu/query
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies:
+  - @wevu/web-apis@1.3.0
+  - wevu@7.1.3
+
 ## 0.0.2
 
 ### Patch Changes

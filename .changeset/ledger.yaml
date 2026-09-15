@@ -104,6 +104,10 @@
   dir: "@weapp-core/api"
   intents:
     - npm-package-metadata
+"@weapp-core/api@0.3.3":
+  dir: "@weapp-core/api"
+  intents:
+    - fix-issue-1005-wpi-mock-types
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -480,6 +484,10 @@
   intents:
     - fix-wxml-paren-member
     - npm-package-metadata
+"@wevu/compiler@7.1.3":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - fix-issue-1008-inline-ref-shadow
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -530,6 +538,10 @@
   dir: packages-runtime/web-apis
   intents:
     - npm-package-metadata
+"@wevu/web-apis@1.3.0":
+  dir: packages-runtime/web-apis
+  intents:
+    - web-apis-body-blob-contracts
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -666,6 +678,14 @@ create-weapp-vite@2.8.15:
   dir: packages/create-weapp-vite
   intents:
     - fix-issue-999
+create-weapp-vite@2.8.16:
+  dir: packages/create-weapp-vite
+  intents:
+    - fix-issue-962-async-setup-context
+    - fix-issue-989-create-template
+    - issue-962-wevu-auto-import
+    - quiet-css-entries
+    - upgrade-pnpm-12
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -947,6 +967,13 @@ weapp-vite@7.1.2:
   dir: packages/weapp-vite
   intents:
     - fix-issue-999
+weapp-vite@7.1.3:
+  dir: packages/weapp-vite
+  intents:
+    - fix-issue-962-async-setup-context
+    - issue-962-wevu-auto-import
+    - quiet-css-entries
+    - upgrade-pnpm-12
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -1023,3 +1050,8 @@ wevu@7.1.1:
     - npm-package-metadata
     - types-intrinsic-elements
     - wevu-app-router-tabbar
+wevu@7.1.3:
+  dir: packages-runtime/wevu
+  intents:
+    - fix-issue-962-async-setup-context
+    - fix-issue-989-host-tabbar-path

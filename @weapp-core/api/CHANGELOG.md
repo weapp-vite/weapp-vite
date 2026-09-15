@@ -1,5 +1,11 @@
 # @weapp-core/api
 
+## 0.3.3
+
+### Patch Changes
+
+- 收紧 `wpiMock` 对同步与 Promise API 的 Vitest mock 方法类型约束。
+
 ## 0.3.2
 
 ### Patch Changes

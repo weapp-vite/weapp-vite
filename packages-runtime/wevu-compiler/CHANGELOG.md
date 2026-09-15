@@ -1,5 +1,14 @@
 # @wevu/compiler
 
+## 7.1.3
+
+### Patch Changes
+
+- 修复模板内联事件中同名参数或局部变量的写入被错误改写为修改组件 ref 的问题。
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.1.3
+
 ## 7.1.2
 
 ### Patch Changes

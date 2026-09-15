@@ -1,5 +1,18 @@
 # wevu
 
+## 7.1.3
+
+### Patch Changes
+
+- 修复异步 setup 执行结束后上下文泄漏导致后续组件生命周期注册失败的问题。
+
+- 修复宿主返回带 `.html` 后缀的 tabBar 页面路径未被路由识别的问题。
+
+- Updated dependencies:
+  - @wevu/api@0.3.3
+  - @wevu/compiler@7.1.3
+  - @wevu/web-apis@1.3.0
+
 ## 7.1.2
 
 ### Patch Changes

@@ -1,5 +1,24 @@
 # weapp-vite
 
+## 7.1.3
+
+### Patch Changes
+
+- 修复异步 setup 执行结束后上下文泄漏导致后续组件生命周期注册失败的问题。
+
+- 新增可用于 `unplugin-auto-import` 的 `wevu` 与 `wevu-router` 预设。
+
+- 修复 Tailwind CSS 入口与普通样式链路重复处理时的 CSS 压缩警告。
+
+- 升级仓库及脚手架默认使用的 pnpm 至 12.4.1，统一 Corepack、smoke 测试、CI 与开发文档中的安装版本要求。
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.1.3
+  - @weapp-vite/web@1.5.3
+  - @wevu/api@0.3.3
+  - @wevu/web-apis@1.3.0
+  - wevu@7.1.3
+
 ## 7.1.2
 
 ### Patch Changes
