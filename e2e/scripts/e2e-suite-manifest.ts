@@ -69,6 +69,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
+  'ide/github-issues.runtime.issue1008.test.ts',
   'ide/github-issues.runtime.app-shell.test.ts',
   'ide/github-issues.runtime.import-meta.test.ts',
   'ide/github-issues.runtime.issue289.test.ts',
