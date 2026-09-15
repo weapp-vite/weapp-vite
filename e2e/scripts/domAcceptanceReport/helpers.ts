@@ -95,6 +95,9 @@ export function sanitizeAcceptanceValue<T>(value: T): T {
 }
 
 export function evaluateAcceptanceCase(input: AcceptanceCaseInput): AcceptanceCaseReport {
+  if (input.state === 'skipped' && !input.acceptance) {
+    return { ...input, status: 'skipped', violations: [] }
+  }
   const violations: string[] = []
   try {
     assertDomAcceptanceComplete(input.acceptance)
@@ -129,16 +132,22 @@ export function evaluateAcceptanceCase(input: AcceptanceCaseInput): AcceptanceCa
   return { ...input, status, violations }
 }
 
+function isPlannedAcceptanceCase(input: AcceptanceCaseInput) {
+  // 跳过且未注册 DOM 计划的用例属于运行时范围外，不应制造虚假的 checkpoint 缺失。
+  return input.state !== 'skipped' || input.acceptance !== undefined
+}
+
 export function summarizeAcceptanceCases(cases: AcceptanceCaseReport[]): AcceptanceReport['summary'] {
+  const plannedCases = cases.filter(isPlannedAcceptanceCase)
   return {
-    plannedCount: cases.length,
+    plannedCount: plannedCases.length,
     executedCount: cases.filter(item => item.state === 'passed' || item.state === 'failed').length,
     passedCount: cases.filter(item => item.status === 'passed').length,
     failedCount: cases.filter(item => item.status === 'failed').length,
     blockedCount: cases.filter(item => item.status === 'blocked').length,
     skippedCount: cases.filter(item => item.status === 'skipped').length,
     notExecutedCount: cases.filter(item => item.status === 'not-executed').length,
-    plannedCheckpointCount: cases.reduce((count, item) => count + (item.acceptance?.checkpoints.length ?? 0), 0),
+    plannedCheckpointCount: plannedCases.reduce((count, item) => count + (item.acceptance?.checkpoints.length ?? 0), 0),
     capturedCheckpointCount: cases.reduce((count, item) => count + (item.acceptance?.evidence.length ?? 0), 0),
   }
 }
@@ -169,6 +178,12 @@ export function assertAcceptanceReportPassed(value: unknown, identity: Acceptanc
     throw new Error('DOM acceptance report has an invalid time window or duplicate case IDs')
   }
   for (const item of report.cases) {
+    if (!isPlannedAcceptanceCase(item)) {
+      continue
+    }
+    if (!Number.isFinite(item.startedAt) || !Number.isFinite(item.finishedAt) || !item.acceptance) {
+      throw new Error(`DOM acceptance incomplete: ${item.file} > ${item.name}`)
+    }
     if (evaluateAcceptanceCase(item).status !== 'passed' || item.status !== 'passed' || item.violations.length
       || item.acceptance?.provider !== report.provider || item.startedAt! < start || item.finishedAt! > end || item.startedAt! > item.finishedAt!) {
       throw new Error(`DOM acceptance incomplete: ${item.file} > ${item.name}`)

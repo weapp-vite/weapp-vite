@@ -1,5 +1,6 @@
 import type { createDomAcceptance } from '../../utils/domAcceptance'
 import { expect } from 'vitest'
+import { relaunchPage } from '../github-issues.runtime.shared'
 
 export async function verifyNativeChildHmr(options: {
   dom: ReturnType<typeof createDomAcceptance>
@@ -8,7 +9,13 @@ export async function verifyNativeChildHmr(options: {
   childSelector?: string
 }) {
   const { dom, miniProgram, patch, childSelector = '#native-counter' } = options
-  const page = await miniProgram.reLaunch('/pages/component/index?source=child-e2e')
+  const page = await relaunchPage(miniProgram, '/pages/component/index?source=child-e2e', undefined, 30_000, {
+    forceRelaunch: true,
+    readiness: 'route',
+  })
+  if (!page) {
+    throw new Error('Timed out waiting stateful HMR child route')
+  }
   const element = async (selector: string, child = false) => {
     const roots = child ? await page.$$(childSelector, { fallback: false }) : [page]
     expect(roots).toHaveLength(1)
