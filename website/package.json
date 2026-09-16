@@ -55,6 +55,6 @@
     "vitepress-plugin-llms": "1.14.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*",
-    "wrangler": "^4.131.1"
+    "wrangler": "^4.131.2"
   }
 }
