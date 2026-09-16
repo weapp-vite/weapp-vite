@@ -908,6 +908,13 @@
           "launchMode": "default"
         },
         {
+          "name": "issue 1008 lexical ref shadowing",
+          "pathName": "pages/issue-1008/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 1012 dynamic this ownership",
           "pathName": "pages/issue-1012/index",
           "query": "",

@@ -69,6 +69,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
+  'ide/github-issues.runtime.issue1008.test.ts',
   'ide/github-issues.runtime.app-shell.test.ts',
   'ide/github-issues.runtime.import-meta.test.ts',
   'ide/github-issues.runtime.issue289.test.ts',
@@ -212,6 +213,8 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/body-blob.runtime.test.ts',
+  'ide/stream-capability.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/github-issues.runtime.issue1012.test.ts',

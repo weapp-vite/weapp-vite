@@ -5,7 +5,8 @@
     "pages/axios/index",
     "pages/graphql-request/index",
     "pages/socket-io/index",
-    "pages/websocket/index"
+    "pages/websocket/index",
+    "pages/body-blob/index"
   ],
   "window": {
     "navigationBarTitleText": "request-clients-real-native",
