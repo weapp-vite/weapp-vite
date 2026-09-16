@@ -26,6 +26,8 @@ import { buildClassStyleWxsTag } from '../classStyleRuntime'
 import { withBindingCondition } from '../conditions'
 import { warn } from '../diagnostics'
 import { omitUnsupportedDynamicDirectiveNames } from '../directives'
+import { transformBindDirective } from '../directives/bind'
+import { transformOnDirective } from '../directives/on'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 import { buildScopedSlotComponentScript } from '../scopedSlotScript'
@@ -515,12 +517,30 @@ function renderSlotFallbackWrapperAttrs(wrapper: ResolvedSlotFallbackWrapper, co
   return attrs
 }
 
+function reportNoArgumentSlotDirectiveDiagnostics(node: ElementNode, context: TransformContext) {
+  for (const prop of node.props) {
+    if (prop.type !== NodeTypes.DIRECTIVE || prop.arg) {
+      continue
+    }
+    if (prop.name === 'on') {
+      transformOnDirective(prop, context)
+    }
+    else if (prop.name === 'bind' && !(prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION && prop.exp.content.trim())) {
+      transformBindDirective(prop, context)
+    }
+  }
+}
+
 function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   const compatibleNode = omitUnsupportedDynamicDirectiveNames(node, context)
+  reportNoArgumentSlotDirectiveDiagnostics(compatibleNode, context)
   const slotNameInfo = resolveSlotNameFromSlotElement(compatibleNode)
   const hasScopeBindings = compatibleNode.props.some((prop) => {
     if (prop.type === NodeTypes.DIRECTIVE && prop.name === 'bind') {
-      return prop.arg?.type !== NodeTypes.SIMPLE_EXPRESSION || prop.arg.content !== 'name'
+      if (!prop.arg) {
+        return prop.exp?.type === NodeTypes.SIMPLE_EXPRESSION && Boolean(prop.exp.content.trim())
+      }
+      return prop.arg.type !== NodeTypes.SIMPLE_EXPRESSION || prop.arg.content !== 'name'
     }
     return false
   })
@@ -690,6 +710,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     // eslint-disable-next-line ts/no-use-before-define
     return transformSlotElementPlain(node, context, transformNode)
   }
+  reportNoArgumentSlotDirectiveDiagnostics(node, context)
   const slotNameInfo = resolveSlotNameFromSlotElement(node)
   let slotPropsExp = collectSlotBindingExpression(node, context)
   recordSlotPropBindings(node, context)

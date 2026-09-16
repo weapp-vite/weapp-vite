@@ -22,6 +22,13 @@
     "miniprogram": {
       "list": [
         {
+          "name": "issue 1009 inline expression identifier hygiene",
+          "pathName": "pages/issue-1009/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "component instance API trace baseline",
           "pathName": "pages/component-instance-apis-baseline/index",
           "query": "",
@@ -50,8 +57,22 @@
           "launchMode": "default"
         },
         {
+          "name": "issue 1015 external CSS variable binding",
+          "pathName": "pages/issue-1015/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 941 wx sync api promise regression",
           "pathName": "pages/issue-941/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "issue 1011 v-for destructuring semantics",
+          "pathName": "pages/issue-1011/index",
           "query": "",
           "scene": null,
           "launchMode": "default"
@@ -908,6 +929,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/issue-1016/index",
+          "pathName": "pages/issue-1016/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 1008 lexical ref shadowing",
           "pathName": "pages/issue-1008/index",
           "query": "",
@@ -917,6 +945,27 @@
         {
           "name": "pages/issue-1013/index",
           "pathName": "pages/issue-1013/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-1010/index",
+          "pathName": "pages/issue-1010/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "issue 1012 dynamic this ownership",
+          "pathName": "pages/issue-1012/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-1014/index",
+          "pathName": "pages/issue-1014/index",
           "query": "",
           "scene": null,
           "launchMode": "default"

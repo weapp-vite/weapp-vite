@@ -1,6 +1,12 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { CompilerContext } from '../../../../context'
+import type { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { preloadTransformSfcStyleBlocks } from './shared'
+
+export interface SfcStyleRefreshState {
+  cssVars?: string[]
+  styleBlocks?: SFCStyleBlock[]
+}
 
 export function createSfcStyleBlocksSignature(styleBlocks: SFCStyleBlock[] | undefined) {
   if (!styleBlocks?.length) {
@@ -15,16 +21,18 @@ export function createSfcStyleBlocksSignature(styleBlocks: SFCStyleBlock[] | und
   })))
 }
 
-export async function loadStyleBlocksForStyleOnlyRefresh(options: {
+interface SfcStyleRefreshOptions {
   filename: string
   source: string
   styleBlocksCache: Map<string, SFCStyleBlock[]>
   force?: boolean
-  readAndParseSfc: typeof import('../../../utils/vueSfc').readAndParseSfc
-  createReadAndParseSfcOptions: typeof import('../../../utils/vueSfc').createReadAndParseSfcOptions
-  pluginCtx: any
+  readAndParseSfc: typeof readAndParseSfc
+  createReadAndParseSfcOptions: typeof createReadAndParseSfcOptions
+  pluginCtx: Parameters<typeof createReadAndParseSfcOptions>[0]
   configService: NonNullable<CompilerContext['configService']>
-}) {
+}
+
+export async function loadSfcStyleStateForStyleOnlyRefresh(options: SfcStyleRefreshOptions): Promise<SfcStyleRefreshState> {
   const {
     filename,
     source,
@@ -38,7 +46,8 @@ export async function loadStyleBlocksForStyleOnlyRefresh(options: {
   if (force) {
     styleBlocksCache.delete(filename)
   }
-  await preloadTransformSfcStyleBlocks({
+  let cssVars: string[] | undefined
+  const styleBlocks = await preloadTransformSfcStyleBlocks({
     filename,
     source,
     styleBlocksCache,
@@ -47,8 +56,16 @@ export async function loadStyleBlocksForStyleOnlyRefresh(options: {
         source,
         checkMtime: configService.isDev,
       }))
+      cssVars = parsed.descriptor.cssVars
       return parsed.descriptor.styles
     },
   })
-  return styleBlocksCache.get(filename)
+  return { cssVars, styleBlocks }
+}
+
+export async function loadStyleBlocksForStyleOnlyRefresh(
+  options: Parameters<typeof loadSfcStyleStateForStyleOnlyRefresh>[0],
+) {
+  const state = await loadSfcStyleStateForStyleOnlyRefresh(options)
+  return state.styleBlocks
 }

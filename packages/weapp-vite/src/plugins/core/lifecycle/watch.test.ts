@@ -123,6 +123,7 @@ function createState(overrides: Record<string, any> = {}) {
             profile: {},
             vueEntryHasTemplate: new Map(),
             vueEntrySfcSignatures: new Map(),
+            vueEntryStyleBindings: new Map(),
             vueEntryTailwindContentSignatures: new Map(),
             vueEntryTailwindTemplateContentSignatures: new Map(),
             vueEntryTailwindScriptContentSignatures: new Map(),

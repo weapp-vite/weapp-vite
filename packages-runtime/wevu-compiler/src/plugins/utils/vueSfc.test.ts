@@ -53,7 +53,7 @@ describe('vueSfc utils', () => {
     const codeById = new Map<string, string>([
       ['/project/src/pages/index/index.wxml', '<view>{{ msg }}</view>'],
       ['/project/src/pages/index/index.ts', 'export default { setup() {} }'],
-      ['/project/src/pages/index/index.css', '.page { color: red; }'],
+      ['/project/src/pages/index/index.css', '.page { color: v-bind(color); background: v-bind("surface.color"); }'],
     ])
 
     const resolved = await resolveSfcBlockSrc(descriptor, filename, {
@@ -72,7 +72,77 @@ describe('vueSfc utils', () => {
     expect(resolved.deps).toHaveLength(3)
     expect(resolved.descriptor.template?.content).toContain('{{ msg }}')
     expect(resolved.descriptor.script?.content).toContain('export default')
-    expect(resolved.descriptor.styles[0].content).toContain('color: red')
+    expect(resolved.descriptor.styles[0].content).toContain('v-bind(color)')
+    expect(resolved.descriptor.cssVars).toEqual(['color', 'surface.color'])
+  })
+
+  it('matches public compiler-sfc cssVars metadata across mixed inline and external styles', async () => {
+    const filename = '/project/src/pages/index/index.vue'
+    const inlineCss = `
+/* v-bind(inlineGhost) */
+.inline { color: v-bind("tone"); }
+`.trim()
+    const externalCss = `
+.external { color: v-bind(resolveShade(palette.primary, fallback)); }
+.duplicate { border-color: v-bind("tone"); }
+`.trim()
+    const source = `
+<template><view /></template>
+<style>${inlineCss}</style>
+<style src="./theme.css"></style>
+`.trim()
+    const equivalentInlineSource = `
+<template><view /></template>
+<style>${inlineCss}</style>
+<style>${externalCss}</style>
+`.trim()
+    const descriptor = parseSfc(source, { filename }).descriptor
+    const expected = parseSfc(equivalentInlineSource, { filename }).descriptor.cssVars
+
+    const resolved = await resolveSfcBlockSrc(descriptor, filename, {
+      async readFile() {
+        return externalCss
+      },
+    })
+
+    expect(resolved.descriptor.cssVars).toEqual(expected)
+    expect(resolved.descriptor.cssVars).toEqual([
+      'tone',
+      'resolveShade(palette.primary, fallback)',
+    ])
+  })
+
+  it('preserves external CSS containing close tags while rebuilding cssVars metadata', async () => {
+    const filename = '/project/src/pages/index/index.vue'
+    const externalCss = `
+.before { color: v-bind(before); }
+.literal-lower { content: "</style>"; }
+.sentinel-collision { content: "__WEVU_SFC_CSS_VARS_CLOSE_0__"; }
+.literal-upper { content: "</STYLE>"; color: v-bind("tone</STYLE>"); }
+.literal-upper-duplicate { border-color: v-bind("tone</STYLE>"); }
+/* </StYlE> v-bind(commentGhost) */
+.after { color: v-bind(resolveShade(palette.primary, fallback)); }
+`.trim()
+    const descriptor = parseSfc(`
+<template><view /></template>
+<style src="./theme.css"></style>
+`.trim(), { filename }).descriptor
+    let readCount = 0
+
+    const resolved = await resolveSfcBlockSrc(descriptor, filename, {
+      async readFile() {
+        readCount++
+        return externalCss
+      },
+    })
+
+    expect(readCount).toBe(1)
+    expect(resolved.descriptor.styles[0].content).toBe(externalCss)
+    expect(resolved.descriptor.cssVars).toEqual([
+      'before',
+      'tone</STYLE>',
+      'resolveShade(palette.primary, fallback)',
+    ])
   })
 
   it('throws when src block contains inline content or virtual module source', async () => {

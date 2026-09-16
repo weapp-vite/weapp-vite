@@ -3,17 +3,13 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService } from './moduleGraph'
+import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(root: string, weappViteConfig: Record<string, any> = {}) {
   const absoluteSrcRoot = path.join(root, 'src')
   return {
     moduleGraphService: createTestModuleGraphService(),
-    runtimeState: {
-      scan: {
-        isDirty: false,
-      },
-    },
+    runtimeState: createTestRuntimeState(),
     configService: {
       cwd: root,
       absoluteSrcRoot,

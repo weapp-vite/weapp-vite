@@ -400,8 +400,9 @@ class StatefulHmrSession {
         this.requestServerRestart()
       }
       else if (
-        (files.length > 0 && files.every(isStatefulHmrAssetFile))
-        || shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary)
+        !dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
+        && ((files.length > 0 && files.every(isStatefulHmrAssetFile))
+          || shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary))
       ) {
         if (!this.snapshotScheduler.isPending()) {
           this.requestSnapshotRefresh(files)

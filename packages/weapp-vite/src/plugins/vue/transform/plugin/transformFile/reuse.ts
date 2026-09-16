@@ -5,7 +5,7 @@ import { resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { refreshStyleOnlyVueTransformResult } from '../../styleOnly'
 import { finalizeTransformEntryCode, normalizeVueTransformResult } from '../shared'
-import { createSfcStyleBlocksSignature, loadStyleBlocksForStyleOnlyRefresh } from '../styleOnlyRefresh'
+import { createSfcStyleBlocksSignature, loadSfcStyleStateForStyleOnlyRefresh } from '../styleOnlyRefresh'
 
 export async function tryReuseVueCompilation(options: {
   ctx: CompilerContext
@@ -68,8 +68,11 @@ export async function tryReuseVueCompilation(options: {
     const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
     let cachedStyleBlocks = (cachedResult.meta?.styleBlocks as SFCStyleBlock[] | undefined) ?? styleBlocksCache.get(filename)
     let canReturnCachedCompilation = true
-    if (dirtyEntryId && canAttemptStyleOnlyReuse && filename.endsWith('.vue')) {
-      const refreshedStyleBlocks = await measureStage('loadStyleOnlySfcStyles', async () => await loadStyleBlocksForStyleOnlyRefresh({
+    if (filename.endsWith('.vue') && (
+      (dirtyEntryId && canAttemptStyleOnlyReuse)
+      || cachedStyleBlocks?.some(style => Boolean(style.src))
+    )) {
+      const refreshedStyleState = await measureStage('loadStyleOnlySfcStyles', async () => await loadSfcStyleStateForStyleOnlyRefresh({
         filename,
         source,
         styleBlocksCache,
@@ -79,7 +82,14 @@ export async function tryReuseVueCompilation(options: {
         pluginCtx,
         configService,
       }))
-      const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, refreshedStyleBlocks, resolveSfcStylePreprocessOptions(configService))
+      const refreshedStyleBlocks = refreshedStyleState.styleBlocks
+      const didRefreshStyle = await refreshStyleOnlyVueTransformResult(
+        cachedResult,
+        filename,
+        refreshedStyleBlocks,
+        refreshedStyleState.cssVars,
+        resolveSfcStylePreprocessOptions(configService),
+      )
       if (!didRefreshStyle) {
         cachedCompilation.styleIndependentSignature = undefined
         canReturnCachedCompilation = false
@@ -145,7 +155,7 @@ export async function tryReuseVueCompilation(options: {
   )
   if (canReuseStyleOnlyVueCompilation && cachedCompilation) {
     const cachedResult = normalizeVueTransformResult(cachedCompilation.result)
-    const styleBlocks = await measureStage('loadStyleOnlySfcStyles', async () => await loadStyleBlocksForStyleOnlyRefresh({
+    const styleState = await measureStage('loadStyleOnlySfcStyles', async () => await loadSfcStyleStateForStyleOnlyRefresh({
       filename,
       source,
       styleBlocksCache,
@@ -155,7 +165,14 @@ export async function tryReuseVueCompilation(options: {
       pluginCtx,
       configService,
     }))
-    const didRefreshStyle = await refreshStyleOnlyVueTransformResult(cachedResult, filename, styleBlocks, resolveSfcStylePreprocessOptions(configService))
+    const styleBlocks = styleState.styleBlocks
+    const didRefreshStyle = await refreshStyleOnlyVueTransformResult(
+      cachedResult,
+      filename,
+      styleBlocks,
+      styleState.cssVars,
+      resolveSfcStylePreprocessOptions(configService),
+    )
     if (!didRefreshStyle) {
       cachedCompilation.styleIndependentSignature = undefined
     }

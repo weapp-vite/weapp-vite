@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 95,
-    "wechatTaskCount": 92,
+    "taskCount": 100,
+    "wechatTaskCount": 97,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 244,
-    "casesWithPlan": 244,
+    "expandedCaseDeclarations": 250,
+    "casesWithPlan": 250,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -921,6 +921,23 @@
           "notes": []
         },
         {
+          "source": "e2e/ide/github-issues.runtime.issue1014.test.ts:24",
+          "name": "e2e app: github-issues / issue #1014 > reports unsupported object directives while explicit attributes and events keep working",
+          "plans": [
+            {
+              "registration": "runGithubDom",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "OBJECT_DIRECTIVE_CONTROLS",
+              "source": "e2e/ide/github-issues.runtime.issue1014.test.ts:39"
+            }
+          ],
+          "routes": [
+            "/pages/issue-1014/index"
+          ],
+          "operations": [],
+          "notes": []
+        },
+        {
           "source": "e2e/ide/github-issues.runtime.lifecycle.test.ts:317",
           "name": "e2e app: github-issues / lifecycle > issue #309: triggers onLoad without requiring onPullDownRefresh hook",
           "plans": [
@@ -1621,6 +1638,168 @@
             "act(stage.id)",
             "callMethod(snapshot)",
             "check(stage.id)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1009.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1009.test.ts:42",
+          "name": "e2e app: github-issues / issue #1009 > keeps compiler-owned handler parameters isolated from user bindings",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'initial', route: ISSUE_1009_ROUTE, action: '检查内联事件尚未执行的首屏', nodes: [ { selector: '#issue-1009-page', attributes: { 'data-e2e-issue': '1009' } }, { selector: '#issue1009-result-ctx', text: 'ctx: pending' }, { selector: '#issue1009-re",
+              "source": "e2e/ide/github-issues.runtime.issue1009.test.ts:43"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(initial)",
+            "tap(<missing>)",
+            "callMethod(_runE2E)",
+            "check(completed)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1010.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1010.test.ts:95",
+          "name": "e2e app: github-issues / issue #1010 > writes recursive destructuring targets without globals or shadow leaks",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[ { id: 'initial', route: ISSUE_ROUTE, action: '检查解构赋值前的组件状态', nodes: [{ selector: '#issue-1010-count', text: '1' }], }, ...STEPS.map(step => ({ id: step.id, route: ISSUE_ROUTE, action: `执行 ${step.id} 解构写入并检查渲染状态`, nodes: [{ selector: step.",
+              "source": "e2e/ide/github-issues.runtime.issue1010.test.ts:96"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(initial)",
+            "callMethod(_runE2E)",
+            "tap(<missing>)",
+            "check(reported)",
+            "check(object)",
+            "check(array)",
+            "check(local)",
+            "check(order)",
+            "check(direct)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1011.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1011.test.ts:52",
+          "name": "e2e app: github-issues / issue #1011 > keeps destructuring semantics equal between rendered and event values",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'initial', route: ISSUE_ROUTE, action: '检查默认值、对象 rest 排除与数组 rest 首屏结果', nodes: [ { selector: '#issue1011-value-missing', text: 'missing|section-fallback|A|excluded|excluded' }, { selector: '#issue1011-value-null', text: 'null|null|B|",
+              "source": "e2e/ide/github-issues.runtime.issue1011.test.ts:53"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(initial)",
+            "callMethodWithOptions(_snapshot)",
+            "check(captured)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1012.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1012.test.ts:34",
+          "name": "e2e app: github-issues / issue #1012 > keeps JavaScript this ownership across compiled template expressions",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'initial', route: ISSUE_ROUTE, action: '检查动态 this 场景执行前的首屏', nodes: [ { selector: '#issue1012-map-result', text: 'pending' }, { selector: '#issue1012-results', text: 'pending' }, ], }, { id: 'executed', route: ISSUE_ROUTE, action: '触",
+              "source": "e2e/ide/github-issues.runtime.issue1012.test.ts:35"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(initial)",
+            "tap(<missing>)",
+            "check(executed)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1015.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1015.test.ts:59",
+          "name": "e2e app: github-issues / issue #1015 > updates rendered styles backed by CSS v-bind from an external style block",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[ { id: 'initial', route: ISSUE_ROUTE, action: '检查外部 CSS 变量的首屏注入', nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': 'red' }, ...(provider === 'devtools' ? { styles: { color: 'rgb(255, 0, 0)' } } : {}), }, { selecto",
+              "source": "e2e/ide/github-issues.runtime.issue1015.test.ts:61"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(initial)",
+            "callMethod(_runE2E)",
+            "check(updated)"
           ],
           "notes": []
         }
@@ -6242,7 +6421,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.aggregate.test.ts",
-      "sha256": "05af45850f1fa0a31dfad592e379d5b7eb32a5486358662bc30274054c8d9a82"
+      "sha256": "13c697a2cd1a455fcf5d9da4ee7ef88d0610ffb91246cc8a688b69266cbcdd57"
     },
     {
       "file": "e2e/ide/github-issues.runtime.app-shell.test.ts",
@@ -6261,8 +6440,32 @@
       "sha256": "28b80e5be581f5b825ef1be7c998b1db14a8566581d8528d11697cf03a786e47"
     },
     {
+      "file": "e2e/ide/github-issues.runtime.issue1009.test.ts",
+      "sha256": "7aab6c9ec6c09f610bd8c13ae834dd63d96f906d40b2a5f86448a1f114bf56e9"
+    },
+    {
+      "file": "e2e/ide/github-issues.runtime.issue1010.test.ts",
+      "sha256": "6aba43f1cb2df94034638f474aab115e055e04b262c4367cd063e9979ee6bc8a"
+    },
+    {
+      "file": "e2e/ide/github-issues.runtime.issue1011.test.ts",
+      "sha256": "d7dacedd9dc11c244ec49ef22491829d1b316d2f1ad8b72f574be6408c55fdfa"
+    },
+    {
+      "file": "e2e/ide/github-issues.runtime.issue1012.test.ts",
+      "sha256": "c91ec602d9bc78f722f5a3d4e4930e840f4227f8d567c0ee1c88063579bb67ff"
+    },
+    {
       "file": "e2e/ide/github-issues.runtime.issue1013.test.ts",
       "sha256": "dd214fe8af937331788f4b491b51c9fd0816fe45614c28e3f9a192c29781cb35"
+    },
+    {
+      "file": "e2e/ide/github-issues.runtime.issue1014.test.ts",
+      "sha256": "332a6673e36403659dc83eb634177e239400e748e2d346b50c7569f17e552bc8"
+    },
+    {
+      "file": "e2e/ide/github-issues.runtime.issue1015.test.ts",
+      "sha256": "ee8d8d9e040e4d583d5fb7cf8a320eb1e45e882b71335fee59bcd302d07c95c2"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue289.test.ts",
@@ -6467,6 +6670,10 @@
     {
       "file": "e2e/ide/githubIssuesDom/nodes.ts",
       "sha256": "d020842bc4ad960b639bfffc2cde434c8c183028a510062292b33dab04ae4837"
+    },
+    {
+      "file": "e2e/ide/githubIssuesDom/objectDirectives.ts",
+      "sha256": "c87d8ad1c0638046cca6bc3537ea9e6ed09126236e97e62a9d5b967301ce9334"
     },
     {
       "file": "e2e/ide/githubIssuesDom/props.ts",
@@ -6926,11 +7133,11 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "c5a7045250e2bc8cc175789508a7888025141f8446eb5c12b348b93748fef36d"
+      "sha256": "0e18c0537e5d441a1de158fbe69a0c0fef20e704f3ecad8f6298952b5b0666bd"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
-      "sha256": "cab401c1ee957336cfd59a4241ff04c176e0ffe355923bae8b0fd5584f32b78a"
+      "sha256": "ec3ac5284a01ceeeb0e1c23464323ec4a593fac2e6ca055bbbf3a777ac03c8d3"
     },
     {
       "file": "e2e/scripts/suiteReport.ts",

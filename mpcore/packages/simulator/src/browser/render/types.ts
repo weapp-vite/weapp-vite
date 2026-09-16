@@ -11,6 +11,7 @@ export interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
@@ -21,7 +22,7 @@ export interface BrowserRenderScope {
   alias?: string
   classList?: string[]
   data: Record<string, any>
-  dataset?: Record<string, string>
+  dataset?: Record<string, unknown>
   eventBindings?: Map<string, { method: string, stopAfter: boolean }>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string

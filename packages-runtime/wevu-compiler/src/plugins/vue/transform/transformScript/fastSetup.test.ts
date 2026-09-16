@@ -2,6 +2,8 @@ import { WEVU_SLOT_OWNER_ID_PROP } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { transformScript } from './index'
 
+const PARAMETER_NAMES = { context: 'ctx', scope: 'scope', event: '$event' }
+
 const compiledScriptSetupSource = `import { defineComponent as _defineComponent } from 'vue'
 import { createSharedLabel } from '../../shared/tokens'
 
@@ -70,6 +72,7 @@ describe('transformScript fast compiled script setup path', () => {
           id: 'expr-0',
           expression: 'scriptMarker',
           scopeKeys: [],
+          parameterNames: PARAMETER_NAMES,
         },
       ],
     })
@@ -87,6 +90,7 @@ describe('transformScript fast compiled script setup path', () => {
           id: 'expr-0',
           expression: 'scriptMarker',
           scopeKeys: [],
+          parameterNames: PARAMETER_NAMES,
         },
       ],
     })

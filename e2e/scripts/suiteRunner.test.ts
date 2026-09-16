@@ -508,6 +508,7 @@ describe('suiteRunner', () => {
     expect(ideFullLabels).toContain('ide/devtools-cli-workflow.runtime.test.ts')
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideFullLabels).toContain('ide/template-dev-open-all.runtime.test.ts')
+    expect(ideFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
     expect(ideFullLabels).toContain('ide/stateful-hmr.runtime.test.ts')
     expect(ideFullLabels).not.toContain('ide/chunk-modes.runtime.duplicate.test.ts')
     expect(ideExhaustiveLabels).not.toContain('ide/runtimeErrors.test.ts')
@@ -555,6 +556,9 @@ describe('suiteRunner', () => {
     expect(ideHeadlessGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/lifecycle-compare.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue705.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1009.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1012.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-jsx-tsx.runtime.test.ts')
     expect(ideWevuJsxLabels).toEqual([
       'ide/wevu-jsx-tsx.runtime.test.ts',
@@ -611,12 +615,14 @@ describe('suiteRunner', () => {
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
       'ide/github-issues.runtime.component-instance-apis.test.ts',
+      'ide/github-issues.runtime.issue1015.test.ts',
       ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
       'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
       'ide/github-issues.runtime.issue547.test.ts',
       'ide/github-issues.runtime.issue558.test.ts',
       'ide/github-issues.runtime.issue615.test.ts',
       'ide/github-issues.runtime.issue621.test.ts',
+      'ide/github-issues.runtime.issue1010.test.ts',
       'ide/github-issues.runtime.issue779.test.ts',
       'ide/github-issues.runtime.issue826.test.ts',
       'ide/github-issues.runtime.issue642-bug7-default.test.ts',
@@ -625,6 +631,9 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.require-async.test.ts',
       'ide/github-issues.runtime.issue911.test.ts',
       'ide/github-issues.runtime.issue941.test.ts',
+      'ide/github-issues.runtime.issue1009.test.ts',
+      'ide/github-issues.runtime.issue1011.test.ts',
+      'ide/github-issues.runtime.issue1012.test.ts',
       'ide/github-issues.runtime.issue852.test.ts',
       'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
       'ide/github-issues.runtime.subpackage-item.test.ts',

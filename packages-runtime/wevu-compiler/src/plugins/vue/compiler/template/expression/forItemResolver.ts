@@ -1,34 +1,49 @@
+import type { Scope } from '@weapp-vite/ast/babelTraverse'
 import type {
   InlineExpressionIndexBindingAsset,
   TransformContext,
 } from '../types'
+import type { InlineExpressionParameterIdentifiers } from './inlineShared'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { hasOwn } from '../../../../../utils/object'
 import {
+  createInlineExpressionParameterIdentifiers,
   createMemberAccess,
   INLINE_GLOBALS,
+  isTemplateContextThis,
   replaceIdentifierWithExpression,
 } from './inlineShared'
 import { generateExpression, parseBabelExpressionFile } from './parse'
 
 const SIMPLE_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i
 
+interface ParsedResolverExpression {
+  ast: t.File
+  expression: t.Expression
+}
+
 function rewriteForItemResolverExpression(
-  rawExp: string,
+  expression: t.Expression,
   resolvedLocals: ReadonlyMap<string, t.Expression>,
   resolvedIndexes: ReadonlyMap<string, t.Expression>,
+  parameterIdentifiers: InlineExpressionParameterIdentifiers,
 ): t.Expression | null {
-  const parsed = parseBabelExpressionFile(rawExp)
-  if (!parsed) {
-    return null
-  }
-  traverse(parsed.ast, {
+  const ast = t.file(t.program([
+    t.expressionStatement(t.cloneNode(expression, true)),
+  ]))
+  traverse(ast, {
     Identifier(path) {
       if (!path.isReferencedIdentifier() || path.scope.hasBinding(path.node.name)) {
         return
       }
       const name = path.node.name
+      if (
+        name === parameterIdentifiers.context.name
+        || name === parameterIdentifiers.scope.name
+      ) {
+        return
+      }
       const localExpression = resolvedLocals.get(name) ?? resolvedIndexes.get(name)
       if (localExpression) {
         replaceIdentifierWithExpression(path, t.cloneNode(localExpression, true))
@@ -38,15 +53,32 @@ function rewriteForItemResolverExpression(
       if (INLINE_GLOBALS.has(name)) {
         return
       }
-      replaceIdentifierWithExpression(path, createMemberAccess('ctx', name) as t.Expression)
+      replaceIdentifierWithExpression(
+        path,
+        createMemberAccess(parameterIdentifiers.context.name, name) as t.Expression,
+      )
       path.skip()
     },
     ThisExpression(path) {
-      path.replaceWith(t.identifier('ctx'))
+      if (isTemplateContextThis(path)) {
+        path.replaceWith(t.cloneNode(parameterIdentifiers.context))
+      }
     },
   })
-  const statement = parsed.ast.program.body[0]
+  const statement = ast.program.body[0]
   return statement && t.isExpressionStatement(statement) ? statement.expression : null
+}
+
+function getParsedResolverExpression(
+  source: string,
+  cache: Map<string, ParsedResolverExpression | null>,
+) {
+  if (cache.has(source)) {
+    return cache.get(source) ?? null
+  }
+  const expression = parseBabelExpressionFile(source)
+  cache.set(source, expression)
+  return expression
 }
 
 function buildNestedForItemResolverExpression(
@@ -56,6 +88,39 @@ function buildNestedForItemResolverExpression(
   slotProps: Record<string, string>,
   indexBindings: InlineExpressionIndexBindingAsset[],
 ): string | null {
+  const expressionCache = new Map<string, ParsedResolverExpression | null>()
+  for (let level = 0; level <= targetLevel; level += 1) {
+    const forInfo = context.forStack[level]
+    const listExp = forInfo?.listExp?.trim() ?? ''
+    if (!listExp || !getParsedResolverExpression(listExp, expressionCache)) {
+      return null
+    }
+    for (const aliasExp of Object.values(forInfo.itemAliases ?? {})) {
+      getParsedResolverExpression(aliasExp, expressionCache)
+    }
+  }
+  const usedIdentifierNames = new Set<string>()
+  let programScope: Scope | undefined
+  for (const parsed of expressionCache.values()) {
+    if (!parsed) {
+      continue
+    }
+    traverse(parsed.ast, {
+      Program(path) {
+        programScope ??= path.scope
+      },
+      Identifier(path) {
+        usedIdentifierNames.add(path.node.name)
+      },
+    })
+  }
+  if (!programScope) {
+    return null
+  }
+  const parameterIdentifiers = createInlineExpressionParameterIdentifiers(
+    programScope,
+    usedIdentifierNames,
+  )
   const resolvedLocals = new Map<string, t.Expression>()
   const resolvedIndexes = new Map<string, t.Expression>()
 
@@ -63,7 +128,8 @@ function buildNestedForItemResolverExpression(
     const forInfo = context.forStack[level]
     const listExp = forInfo?.listExp?.trim() ?? ''
     const indexBinding = indexBindings[level]
-    if (!forInfo || !listExp || !indexBinding) {
+    const parsedList = getParsedResolverExpression(listExp, expressionCache)
+    if (!forInfo || !parsedList || !indexBinding) {
       return null
     }
     const root = SIMPLE_PATH_RE.test(listExp) ? listExp.split('.')[0] : ''
@@ -71,17 +137,34 @@ function buildNestedForItemResolverExpression(
       return null
     }
 
-    const listExpression = rewriteForItemResolverExpression(listExp, resolvedLocals, resolvedIndexes)
+    const listExpression = rewriteForItemResolverExpression(
+      parsedList.expression,
+      resolvedLocals,
+      resolvedIndexes,
+      parameterIdentifiers,
+    )
     if (!listExpression) {
       return null
     }
-    const indexExpression = createMemberAccess('scope', indexBinding.key) as t.Expression
+    const indexExpression = createMemberAccess(
+      parameterIdentifiers.scope.name,
+      indexBinding.key,
+    ) as t.Expression
     const itemExpression = t.memberExpression(listExpression, t.cloneNode(indexExpression), true)
     if (forInfo.item) {
       resolvedLocals.set(forInfo.item, itemExpression)
     }
     for (const [alias, aliasExp] of Object.entries(forInfo.itemAliases ?? {})) {
-      const resolvedAlias = rewriteForItemResolverExpression(aliasExp, resolvedLocals, resolvedIndexes)
+      const parsedAlias = getParsedResolverExpression(aliasExp, expressionCache)
+      if (!parsedAlias) {
+        continue
+      }
+      const resolvedAlias = rewriteForItemResolverExpression(
+        parsedAlias.expression,
+        resolvedLocals,
+        resolvedIndexes,
+        parameterIdentifiers,
+      )
       if (resolvedAlias) {
         resolvedLocals.set(alias, resolvedAlias)
       }
@@ -91,7 +174,10 @@ function buildNestedForItemResolverExpression(
     if (level === targetLevel && targetExpression) {
       return generateExpression(
         t.arrowFunctionExpression(
-          [t.identifier('ctx'), t.identifier('scope')],
+          [
+            t.cloneNode(parameterIdentifiers.context),
+            t.cloneNode(parameterIdentifiers.scope),
+          ],
           t.cloneNode(targetExpression, true),
         ),
       )

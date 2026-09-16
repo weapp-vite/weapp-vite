@@ -7,18 +7,40 @@ function hasCssModules(styleBlocks: SFCStyleBlock[] | undefined) {
   return styleBlocks?.some(styleBlock => Boolean(styleBlock.module)) === true
 }
 
+function hasSameStyleSources(previous: SFCStyleBlock[] | undefined, current: SFCStyleBlock[]) {
+  return !previous?.some((block, index) => block.src !== current[index]?.src)
+    && !current.some((block, index) => block.src !== previous?.[index]?.src)
+}
+
+export function hasSameCssVars(previous: string[] | undefined, current: string[] | undefined) {
+  if (!previous || !current || previous.length !== current.length) {
+    return false
+  }
+  return previous.every((expression, index) => expression === current[index])
+}
+
 export async function refreshStyleOnlyVueTransformResult(
   result: VueTransformResult,
   filename: string,
   styleBlocks: SFCStyleBlock[] | undefined,
+  cssVars: string[] | undefined,
   stylePreprocessOptions?: SfcStylePreprocessOptions,
 ) {
-  if (!styleBlocks || hasCssModules(styleBlocks)) {
+  if (
+    !styleBlocks
+    || hasCssModules(styleBlocks)
+    || !hasSameCssVars(result.meta?.cssVars, cssVars)
+    || !hasSameStyleSources(result.meta?.styleBlocks as SFCStyleBlock[] | undefined, styleBlocks)
+  ) {
     return false
   }
 
   if (!styleBlocks.length) {
     result.style = undefined
+    if (result.meta) {
+      result.meta.cssVars = cssVars
+      result.meta.styleBlocks = styleBlocks
+    }
     return true
   }
 
@@ -32,5 +54,9 @@ export async function refreshStyleOnlyVueTransformResult(
   })))).map(result => result.code.trim()).filter(Boolean).join('\n\n')
 
   result.style = style || undefined
+  if (result.meta) {
+    result.meta.cssVars = cssVars
+    result.meta.styleBlocks = styleBlocks
+  }
   return true
 }

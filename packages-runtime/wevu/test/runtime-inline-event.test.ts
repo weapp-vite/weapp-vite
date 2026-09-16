@@ -1,8 +1,10 @@
 import type { InlineExpressionMap } from '@/runtime/register/inline'
+import type { MethodDefinitions } from '@/runtime/types'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from '@/index'
 import { installInlineEvents } from '@/internal-runtime'
 import { ref } from '@/reactivity'
+import { mergeSetupResultDescriptors } from '@/runtime/define/setupResult'
 import { runInlineExpression } from '@/runtime/register/inline'
 
 const registeredComponents: Record<string, any>[] = []
@@ -574,6 +576,108 @@ describe('runtime: inline event handler', () => {
 
     expect(result).toBe(1)
     expect(inst.readCount()).toBe(1)
+  })
+
+  it('writes inline pattern and direct assignments back to setup lets', () => {
+    const inlineMap = {
+      __wv_inline_pattern: {
+        keys: [],
+        fn(ctx: { count: number, next: { count: number } }) {
+          ({ count: ctx.count } = ctx.next)
+          return ctx.next
+        },
+      },
+      __wv_inline_direct: {
+        keys: [],
+        fn(ctx: { directCount: number }) {
+          ctx.directCount = ctx.directCount + 1
+          return ctx.directCount
+        },
+      },
+    }
+    let readState = () => ({ count: -1, directCount: -1 })
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        __weapp_vite_inline_map: inlineMap,
+      } as unknown as MethodDefinitions,
+      setup() {
+        let count = 1
+        let directCount = 1
+        const next = { count: 2 }
+        readState = () => ({ count, directCount })
+        return {
+          get count() {
+            return count
+          },
+          set count(value) {
+            count = value
+          },
+          get directCount() {
+            return directCount
+          },
+          set directCount(value) {
+            directCount = value
+          },
+          next,
+        }
+      },
+    })
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+    const inst = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(opts.methods.__weapp_vite_inline.call(inst, {
+      type: 'tap',
+      currentTarget: {
+        dataset: {
+          wvInlineIdTap: '__wv_inline_pattern',
+        },
+      },
+    })).toEqual({ count: 2 })
+    expect(readState()).toEqual({ count: 2, directCount: 1 })
+
+    expect(opts.methods.__weapp_vite_inline.call(inst, {
+      type: 'longpress',
+      currentTarget: {
+        dataset: {
+          wvInlineIdLongpress: '__wv_inline_direct',
+        },
+      },
+    })).toBe(2)
+    expect(readState()).toEqual({ count: 2, directCount: 2 })
+
+    const runtime = Reflect.get(inst, '__wevu') as {
+      proxy: { count: number, directCount: number }
+    }
+    expect(runtime.proxy.count).toBe(2)
+    expect(runtime.proxy.directCount).toBe(2)
+  })
+
+  it('preserves an own prototype-named setup binding without changing the result prototype', () => {
+    const binding = { label: 'own setup binding' }
+    const setupResult: Record<string, unknown> = {}
+    Object.defineProperty(setupResult, '__proto__', {
+      enumerable: true,
+      value: binding,
+    })
+    const merged = mergeSetupResultDescriptors({}, setupResult)
+
+    expect(Object.getPrototypeOf(merged)).toBe(Object.prototype)
+    expect(Object.hasOwn(merged, '__proto__')).toBe(true)
+    expect(Reflect.get(merged, '__proto__')).toBe(binding)
+
+    const replacement = { label: 'updated setup binding' }
+    Reflect.set(merged, '__proto__', replacement)
+    expect(Reflect.get(merged, '__proto__')).toBe(replacement)
+    expect(Object.getPrototypeOf(merged)).toBe(Object.prototype)
   })
 
   it('executes inline map from options methods after mount', () => {
