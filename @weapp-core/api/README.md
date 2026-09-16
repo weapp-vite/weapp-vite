@@ -368,7 +368,7 @@ test('loads user data', async () => {
 })
 ```
 
-`mockImplementation()` 同时保留 Promise 风格与原始 callback options 类型；`mockResolvedValue()`、同步 API、事件 API 和内部辅助方法也沿用 `wpi` 的原始契约。setup 会在每个测试前只重置已经创建的 API mock，不调用全局 `vi.resetAllMocks()`。
+`mockImplementation()` 同时保留 Promise 风格与原始 callback options 类型；同步 API 仅支持 `mockReturnValue*`，Promise API 的 `mockResolvedValue*`、`mockRejectedValue*` 和 `mockReturnValue*` 均按其 Promise 返回契约约束。setup 会在每个测试前只重置已经创建的 API mock，不调用全局 `vi.resetAllMocks()`。
 
 需要独立实例时，可以直接使用 factory：
 

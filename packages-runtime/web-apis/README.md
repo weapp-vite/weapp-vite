@@ -146,3 +146,31 @@ pnpm --filter @wevu/web-apis typecheck
 
 - 新项目建议使用 `installWebRuntimeGlobals()`
 - `installRequestGlobals()` 仍保留为兼容别名，后续会逐步淡出文档主叙事
+
+## 11. Body 与 Blob 契约
+
+`RequestPolyfill` 和 `ResponsePolyfill` 提供 `bytes()`、`arrayBuffer()`、`text()`、`json()`、`blob()`。非 null body 只能消费一次；读取开始时 `bodyUsed` 就会变成 `true`，重复或并发读取会拒绝为 `TypeError`，读取后调用 `clone()` 也会抛错。需要多种读取方式时，请在消费前 clone：
+
+```ts
+import { ResponsePolyfill } from '@wevu/web-apis'
+
+const response = new ResponsePolyfill('{"ok":true}', {
+  headers: { 'content-type': 'application/json' },
+})
+const copy = response.clone()
+const payload = await response.json()
+const bytes = await copy.bytes()
+```
+
+null body 读取为空且保持未消费；空字符串和零长度二进制属于非 null body。JSON 解析失败或底层读取失败后，非 null body 仍保持已消费。`fetch(request)` 消费被继承的请求 body；`new RequestPolyfill(request)` 转移该 body，消费前 `request.clone()` 则保留两份独立的读取状态。
+
+| 能力              | 支持范围                                                                                                   |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| Body 读取与 clone | 缓冲 body 的单次消费、独立 clone、MIME 传递；ponyfill 的 `blob()` 不要求先安装全局 Blob                    |
+| Blob / File       | UTF-8 字节长度、BufferSource 构造快照、独立 `bytes()`、负索引及越界 `slice()`、MIME 规范化                 |
+| Headers.forEach   | 回调参数 `(value, key, headers)` 和可选 `thisArg`                                                          |
+| BlobLike 扩展输入 | 保留异步 `arrayBuffer()` 兼容；无有效 `size` 的自定义对象不保证同步 size/切片语义，也不保证其自身不可变    |
+| Streams           | 未支持；`Request.body` / `Response.body` 仍为 null，不能据此判断缓冲 body 是否为空；未提供 `Blob.stream()` |
+| formData()        | 未支持响应解析；FormData 请求上传继续支持 multipart 编码                                                   |
+
+这些是本包 ponyfill 的能力边界。安装器保留可用的宿主实现，宿主对象的方法完整性应按目标基础库确认。

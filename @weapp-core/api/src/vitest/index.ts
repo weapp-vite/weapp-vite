@@ -15,11 +15,26 @@ type Procedure = (...args: any[]) => any
 type ApiMockKey = string | symbol
 type MockImplementation<T extends Procedure> = (...args: Parameters<T>) => ReturnType<T>
 
+type MockValueMethods<TPublic extends Procedure, TMock> = ReturnType<TPublic> extends PromiseLike<unknown>
+  ? {
+      mockResolvedValue: (value: Awaited<ReturnType<TPublic>>) => TMock
+      mockResolvedValueOnce: (value: Awaited<ReturnType<TPublic>>) => TMock
+      mockRejectedValue: (error: unknown) => TMock
+      mockRejectedValueOnce: (error: unknown) => TMock
+      mockReturnValue: (value: ReturnType<TPublic>) => TMock
+      mockReturnValueOnce: (value: ReturnType<TPublic>) => TMock
+    }
+  : {
+      mockReturnValue: (value: ReturnType<TPublic>) => TMock
+      mockReturnValueOnce: (value: ReturnType<TPublic>) => TMock
+    }
+
 type ApiMockFunction<
   TPublic extends Procedure,
   TRaw extends Procedure = TPublic,
-> = Omit<Mock<TPublic>, 'mockImplementation' | 'mockImplementationOnce' | 'withImplementation'>
+> = Omit<Mock<TPublic>, 'mockImplementation' | 'mockImplementationOnce' | 'withImplementation' | 'mockReturnValue' | 'mockReturnValueOnce' | 'mockResolvedValue' | 'mockResolvedValueOnce' | 'mockRejectedValue' | 'mockRejectedValueOnce'>
   & TPublic
+  & MockValueMethods<TPublic, Mock<TPublic>>
   & {
     mockImplementation: {
       (implementation: MockImplementation<TRaw>): ApiMockFunction<TPublic, TRaw>
