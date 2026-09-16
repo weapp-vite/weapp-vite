@@ -314,9 +314,10 @@ describe('web API contract matrix', () => {
     expect(stringRequest.method).toBe('POST')
     expect(stringRequest.body).toBe(null)
     expect(stringRequest.bodyUsed).toBe(false)
+    const clonedRequest = stringRequest.clone()
     expect(await stringRequest.text()).toBe('hello')
     expect(stringRequest.bodyUsed).toBe(true)
-    const clonedRequest = stringRequest.clone()
+    expect(() => stringRequest.clone()).toThrow(TypeError)
     expect(clonedRequest.bodyUsed).toBe(false)
     expect(await clonedRequest.arrayBuffer()).toEqual(encodeTextFallback('hello'))
 
@@ -326,10 +327,11 @@ describe('web API contract matrix', () => {
     const blobLike = { arrayBuffer: async () => Uint8Array.from([4]).buffer, size: 1, type: 'x/test' }
     expect([...new Uint8Array(await new RequestPolyfill('blob', { body: blobLike }).arrayBuffer())]).toEqual([4])
     expect(await new RequestPolyfill('object', { body: { ok: true } }).text()).toBe('[object Object]')
-    expect(await new RequestPolyfill('form', { body: new FormDataPolyfill() }).text()).toBe('[object FormData]')
+    expect(await new RequestPolyfill('form', { body: new FormDataPolyfill() }).text()).toContain('----weapp-vite-formdata-')
     expect(await new RequestPolyfill('empty').text()).toBe('')
 
-    const copied = new RequestPolyfill(stringRequest, { signal: null })
+    expect(() => new RequestPolyfill(stringRequest)).toThrow(TypeError)
+    const copied = new RequestPolyfill('https://example.test', { body: 'hello', signal: null })
     expect(copied.url).toBe('https://example.test')
     expect(await copied.text()).toBe('hello')
     expect(new RequestPolyfill(new URLPolyfill('https://example.test/url')).url).toBe('https://example.test/url')
@@ -341,9 +343,11 @@ describe('web API contract matrix', () => {
     expect(response.ok).toBe(true)
     expect(response.body).toBe(null)
     expect(response.bodyUsed).toBe(false)
+    const clonedResponse = response.clone()
     expect(await response.text()).toBe('hello')
     expect(response.bodyUsed).toBe(true)
-    expect(await response.clone().text()).toBe('hello')
+    expect(() => response.clone()).toThrow(TypeError)
+    expect(await clonedResponse.text()).toBe('hello')
     expect(ResponsePolyfill.error()).toEqual(expect.objectContaining({ ok: false, status: 0, type: 'error' }))
     expect(await ResponsePolyfill.json({ ok: true }).json()).toEqual({ ok: true })
     expect(ResponsePolyfill.json({}, { headers: { 'content-type': 'x/custom' } }).headers.get('content-type')).toBe('x/custom')
@@ -351,12 +355,12 @@ describe('web API contract matrix', () => {
     await expect(response.formData()).rejects.toThrow('not supported')
     expect(await new ResponsePolyfill(Uint8Array.from([65])).blob()).toBeInstanceOf(Blob)
     setGlobal('Blob', undefined)
-    await expect(new ResponsePolyfill('x').blob()).rejects.toThrow('Blob is unavailable')
+    await expect((await new ResponsePolyfill('x').blob()).text()).resolves.toBe('x')
 
     const buffer = Uint8Array.from([66]).buffer
     const blobLike = { arrayBuffer: async () => Uint8Array.from([67]).buffer, size: 1, type: 'x/test' }
     const blob = new BlobPolyfill(['A', buffer, new Uint8Array([68]), blobLike, 5 as never], { type: 'mixed/test' })
-    expect(blob.size).toBe(4)
+    expect(blob.size).toBe(5)
     expect(blob.type).toBe('mixed/test')
     expect(await blob.text()).toBe('ABDC5')
     const file = new FilePolyfill(['file'], 'demo.txt', { type: 'text/plain' })

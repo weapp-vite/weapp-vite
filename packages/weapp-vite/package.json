@@ -93,7 +93,19 @@
       "types": "./client.d.ts"
     },
     "./package.json": "./package.json",
-    "./*": "./*"
+    "./*": "./*",
+    "./auto-import-presets": {
+      "types": "./dist/auto-import-presets.d.mts",
+      "import": "./dist/auto-import-presets.mjs"
+    },
+    "./auto-import-presets/wevu": {
+      "types": "./dist/auto-import-presets/wevu.d.mts",
+      "import": "./dist/auto-import-presets/wevu.mjs"
+    },
+    "./auto-import-presets/wevu-router": {
+      "types": "./dist/auto-import-presets/wevu-router.d.mts",
+      "import": "./dist/auto-import-presets/wevu-router.mjs"
+    }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
@@ -125,7 +137,7 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-routes-define-app-json && tsd --files \"**/*.test-d.ts\" && cd ../config-define-config && tsd --files \"**/*.test-d.ts\" && cd ../config-public-types && tsd --files \"**/*.test-d.ts\" && cd ../i18n-public-types && tsd --files \"**/*.test-d.ts\" && cd ../internal-src-types && tsd --files \"**/*.test-d.ts\" && cd ../resolvers-public-types && tsd --files \"**/*.test-d.ts\" && cd ../runtime-public-types && tsd --files \"**/*.test-d.ts\" && cd ../test-artifact-public-types && tsd --files \"**/*.test-d.ts\"",
+    "test:types": "cd test-d/auto-import-presets && tsd --files \"**/*.test-d.ts\" && cd ../auto-routes-define-app-json && tsd --files \"**/*.test-d.ts\" && cd ../config-define-config && tsd --files \"**/*.test-d.ts\" && cd ../config-public-types && tsd --files \"**/*.test-d.ts\" && cd ../i18n-public-types && tsd --files \"**/*.test-d.ts\" && cd ../internal-src-types && tsd --files \"**/*.test-d.ts\" && cd ../resolvers-public-types && tsd --files \"**/*.test-d.ts\" && cd ../runtime-public-types && tsd --files \"**/*.test-d.ts\" && cd ../test-artifact-public-types && tsd --files \"**/*.test-d.ts\"",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
