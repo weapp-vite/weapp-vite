@@ -2064,6 +2064,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  e2e-apps/stream-capability-probe:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   e2e-apps/style-import-vue:
     devDependencies:
       '@weapp-vite/dashboard':

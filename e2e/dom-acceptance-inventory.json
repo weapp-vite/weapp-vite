@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 94,
-    "wechatTaskCount": 91,
+    "taskCount": 95,
+    "wechatTaskCount": 92,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 235,
-    "casesWithPlan": 235,
+    "expandedCaseDeclarations": 243,
+    "casesWithPlan": 243,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -3212,6 +3212,207 @@
       ]
     },
     {
+      "task": "ide/stream-capability.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:44",
+          "name": "native streaming capability probe > records native capabilities without Web Runtime injection",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '原生探针首屏', nodes: [{ selector: '#probe-status', text: 'idle' }] }, ]",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:45"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(probe)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:55",
+          "name": "native streaming capability probe > observes controlled network stages: normal",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:56"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(start)",
+            "check(first-stage)",
+            "callMethod(abort)",
+            "check(terminal)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:55",
+          "name": "native streaming capability probe > observes controlled network stages: empty",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:56"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(start)",
+            "check(first-stage)",
+            "callMethod(abort)",
+            "check(terminal)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:55",
+          "name": "native streaming capability probe > observes controlled network stages: abort-before",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:56"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(start)",
+            "check(first-stage)",
+            "callMethod(abort)",
+            "check(terminal)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:55",
+          "name": "native streaming capability probe > observes controlled network stages: abort-after",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:56"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(start)",
+            "check(first-stage)",
+            "callMethod(abort)",
+            "check(terminal)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:55",
+          "name": "native streaming capability probe > observes controlled network stages: disconnect",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:56"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(start)",
+            "check(first-stage)",
+            "callMethod(abort)",
+            "check(terminal)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:55",
+          "name": "native streaming capability probe > observes controlled network stages: off-all",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:56"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(start)",
+            "check(first-stage)",
+            "callMethod(abort)",
+            "check(terminal)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/stream-capability.runtime.test.ts:55",
+          "name": "native streaming capability probe > observes controlled network stages: repeat",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/stream-capability-probe",
+              "checkpoints": "[ { id: 'initial', route, action: '请求开始前', nodes: [{ selector: '#probe-status', text: 'idle' }] }, { id: 'first-stage', route, action: '受控首阶段可见状态', nodes: [{ selector: '#probe-scenario', text: scenario }] }, { id: 'terminal', route, action:",
+              "source": "e2e/ide/stream-capability.runtime.test.ts:56"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "callMethod(start)",
+            "check(first-stage)",
+            "callMethod(abort)",
+            "check(terminal)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/subpackage-shared-strategy-complex.runtime.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -6367,6 +6568,18 @@
       "sha256": "137834fe04d2a1b268c22409580abb365b5b80bd310f2f73f353600e97a16073"
     },
     {
+      "file": "e2e/ide/stream-capability.runtime.test.ts",
+      "sha256": "01ff48516cec2de9ecf0ebbfabeda0771ca499629618b4264419a6c16b8a01f1"
+    },
+    {
+      "file": "e2e/ide/streamProbe/server.ts",
+      "sha256": "a792c42bf761e34d1b6aed2f299c102f681815ae9b98a3ae9434cbe8aac2236f"
+    },
+    {
+      "file": "e2e/ide/streamProbe/transport.ts",
+      "sha256": "4bb6f3246d80f614ff8795c5aaef9ff6792fbafcff221ad63a7fe5d48281778f"
+    },
+    {
       "file": "e2e/ide/subpackage-shared-strategy-complex.runtime.test.ts",
       "sha256": "4008fe05619d9190e68516d087a3c1ed29578631e3911de640f9b0d0d7c07585"
     },
@@ -6692,7 +6905,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "9a2d30ec13e1b5f02f3f2245f03c643a8d36318a1fe01f2471a21780701c40e2"
+      "sha256": "3cc4003d3fa4e6dbc46b007f224beb7f6045f648b794511c97288317ea11161d"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
