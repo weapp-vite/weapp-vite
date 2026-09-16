@@ -62,6 +62,13 @@
           "query": "baseUrl=http%3A%2F%2F127.0.0.1%3A60323",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "Body/Blob 契约",
+          "pathName": "pages/body-blob/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

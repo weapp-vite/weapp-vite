@@ -1,0 +1,8 @@
+<view id="body-blob-route">
+  <text id="body-blob-status">{{status}}</text>
+  <view wx:for="{{results}}" wx:key="id">
+    <text id="contract-{{item.id}}">{{item.status}}</text>
+    <text>{{item.error}}</text>
+  </view>
+  <button bindtap="runE2E">执行 Body/Blob 契约</button>
+</view>

@@ -18,13 +18,7 @@ function filterTempE2eAppFiles(files) {
 }
 
 export default {
-  'e2e/ide/**/*.{ts,tsx}': [
-    'node scripts/sync-dom-acceptance-inventory.mjs',
-  ],
-  'e2e/scripts/e2e-suite-manifest.ts': [
-    'node scripts/sync-dom-acceptance-inventory.mjs',
-  ],
-  'e2e/scripts/domAcceptanceReport/**/*.{ts,tsx}': [
+  '{e2e/ide/**/*.{ts,tsx},e2e/scripts/e2e-suite-manifest.ts,e2e/scripts/domAcceptanceReport/**/*.{ts,tsx}}': [
     'node scripts/sync-dom-acceptance-inventory.mjs',
   ],
   '**/project{,.private}.config.json': (files) => {
