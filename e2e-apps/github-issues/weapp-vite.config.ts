@@ -17,6 +17,7 @@ const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED ===
 const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
 const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
+const issue1015HmrRuntime = process.env.WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME
 const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.issue826.test.ts')
 const issue845I18nEnabled = process.env.WEAPP_GITHUB_ISSUE_845_I18N === 'true'
@@ -55,6 +56,7 @@ const githubIssuesAggregateTargets = {
     'github-issues.runtime.miniprogram-computed.test.ts',
     'github-issues.runtime.props.test.ts',
     'github-issues.runtime.slot-fallback.test.ts',
+    'github-issues.runtime.issue1014.test.ts',
   ],
 } as const
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
@@ -67,6 +69,8 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue1008.test.ts': [
     'pages/issue-1008/**',
   ],
+  'github-issues.runtime.issue1009.test.ts': ['pages/issue-1009/**'],
+  'github-issues.runtime.issue1014.test.ts': ['pages/issue-1014/**'],
   'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [
     'pages/issue-338/**',
@@ -152,6 +156,12 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/css-nested-vars/**',
     'components/issue-930/**',
   ],
+  'github-issues.runtime.issue1010.test.ts': [
+    'pages/issue-1010/**',
+  ],
+  'github-issues.runtime.issue1015.test.ts': [
+    'pages/issue-1015/**',
+  ],
   'github-issues.runtime.issue852.test.ts': [
     'pages/issue-852/**',
   ],
@@ -165,6 +175,12 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue1013.test.ts': [
     'pages/issue-1013/**',
     'components/issue-1013-child/**',
+  ],
+  'github-issues.runtime.issue1011.test.ts': [
+    'pages/issue-1011/**',
+  ],
+  'github-issues.runtime.issue1012.test.ts': [
+    'pages/issue-1012/**',
   ],
   'github-issues.runtime.issue826.test.ts': [
     'pages/issue-826/**',
@@ -699,6 +715,9 @@ export default defineConfig({
         }
       : {}),
     hmr: {
+      runtime: issue1015HmrRuntime === 'classic' || issue1015HmrRuntime === 'stateful-experimental'
+        ? issue1015HmrRuntime
+        : undefined,
       logLevel: 'verbose',
       profileJson: true,
     },

@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：95；微信：92；范围外：3。
-- 展开的 case 声明：244；已接入计划：244；缺计划：0。
+- 任务：100；微信：97；范围外：3。
+- 展开的 case 声明：250；已接入计划：250；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -25,8 +25,13 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/body-blob.runtime.test.ts                                                             | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/devtools-cli-workflow.runtime.test.ts                                                 | devtools           |     2 |     2 |       0 | wechat       |
 | ide/forward-console-demo.runtime.test.ts                                                  | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    67 |    67 |       0 | wechat       |
+| ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    68 |    68 |       0 | wechat       |
 | ide/github-issues.runtime.component-instance-apis.test.ts                                 | devtools, headless |     1 |     1 |       0 | wechat       |
+| ide/github-issues.runtime.issue1009.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
+| ide/github-issues.runtime.issue1010.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
+| ide/github-issues.runtime.issue1011.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
+| ide/github-issues.runtime.issue1012.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
+| ide/github-issues.runtime.issue1015.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue448-formdata-upload.test.ts                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue547.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue558.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
@@ -433,6 +438,13 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', action: '检查动态名称已忽略且静态组件已渲染', nodes: [ { selector: '#issue-1013-dynamic', text: 'dynamic probe' }, { selector: '#issue-1013-dynamic-count', text: 'dynamic taps: 0' }, { selector: '#issue-1013-static-probe-count', text: 'sta`; source: `e2e/ide/github-issues.runtime.issue1013.test.ts:43`
 - Routes: `/pages/issue-1013/index`
 
+### e2e app: github-issues / issue #1014 > reports unsupported object directives while explicit attributes and events keep working
+
+- Source: `e2e/ide/github-issues.runtime.issue1014.test.ts:24`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `OBJECT_DIRECTIVE_CONTROLS`; source: `e2e/ide/github-issues.runtime.issue1014.test.ts:39`
+- Routes: `/pages/issue-1014/index`
+
 ### e2e app: github-issues / lifecycle > issue #309: triggers onLoad without requiring onPullDownRefresh hook
 
 - Source: `e2e/ide/github-issues.runtime.lifecycle.test.ts:317`
@@ -700,6 +712,51 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'baseline', route: BASELINE_ROUTE, action: '离开上轮组件后显式清空事件，检查独立准备页', nodes: [{ selector: '#baseline-title', text: '准备组件关系验收' }] }, ...stages.map(stage => ({ id: stage.id, route: ROUTE, action: stage.action, nodes: [ { selector: '#rel`; source: `e2e/ide/github-issues.runtime.component-instance-apis.test.ts:31`
 - Operations: `act(baseline)`, `check(baseline)`, `act(initial)`, `act(stage.id)`, `callMethod(snapshot)`, `check(stage.id)`
+
+## ide/github-issues.runtime.issue1009.test.ts
+
+### e2e app: github-issues / issue #1009 > keeps compiler-owned handler parameters isolated from user bindings
+
+- Source: `e2e/ide/github-issues.runtime.issue1009.test.ts:42`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_1009_ROUTE, action: '检查内联事件尚未执行的首屏', nodes: [ { selector: '#issue-1009-page', attributes: { 'data-e2e-issue': '1009' } }, { selector: '#issue1009-result-ctx', text: 'ctx: pending' }, { selector: '#issue1009-re`; source: `e2e/ide/github-issues.runtime.issue1009.test.ts:43`
+- Operations: `check(initial)`, `tap(<missing>)`, `callMethod(_runE2E)`, `check(completed)`
+
+## ide/github-issues.runtime.issue1010.test.ts
+
+### e2e app: github-issues / issue #1010 > writes recursive destructuring targets without globals or shadow leaks
+
+- Source: `e2e/ide/github-issues.runtime.issue1010.test.ts:95`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'initial', route: ISSUE_ROUTE, action: '检查解构赋值前的组件状态', nodes: [{ selector: '#issue-1010-count', text: '1' }], }, ...STEPS.map(step => ({ id: step.id, route: ISSUE_ROUTE, action: \`执行 ${step.id} 解构写入并检查渲染状态\`, nodes: [{ selector: step.`; source: `e2e/ide/github-issues.runtime.issue1010.test.ts:96`
+- Operations: `check(initial)`, `callMethod(_runE2E)`, `tap(<missing>)`, `check(reported)`, `check(object)`, `check(array)`, `check(local)`, `check(order)`, `check(direct)`
+
+## ide/github-issues.runtime.issue1011.test.ts
+
+### e2e app: github-issues / issue #1011 > keeps destructuring semantics equal between rendered and event values
+
+- Source: `e2e/ide/github-issues.runtime.issue1011.test.ts:52`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_ROUTE, action: '检查默认值、对象 rest 排除与数组 rest 首屏结果', nodes: [ { selector: '#issue1011-value-missing', text: 'missing\|section-fallback\|A\|excluded\|excluded' }, { selector: '#issue1011-value-null', text: 'null\|null\|B\|`; source: `e2e/ide/github-issues.runtime.issue1011.test.ts:53`
+- Operations: `check(initial)`, `callMethodWithOptions(_snapshot)`, `check(captured)`
+
+## ide/github-issues.runtime.issue1012.test.ts
+
+### e2e app: github-issues / issue #1012 > keeps JavaScript this ownership across compiled template expressions
+
+- Source: `e2e/ide/github-issues.runtime.issue1012.test.ts:34`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_ROUTE, action: '检查动态 this 场景执行前的首屏', nodes: [ { selector: '#issue1012-map-result', text: 'pending' }, { selector: '#issue1012-results', text: 'pending' }, ], }, { id: 'executed', route: ISSUE_ROUTE, action: '触`; source: `e2e/ide/github-issues.runtime.issue1012.test.ts:35`
+- Operations: `check(initial)`, `tap(<missing>)`, `check(executed)`
+
+## ide/github-issues.runtime.issue1015.test.ts
+
+### e2e app: github-issues / issue #1015 > updates rendered styles backed by CSS v-bind from an external style block
+
+- Source: `e2e/ide/github-issues.runtime.issue1015.test.ts:59`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'initial', route: ISSUE_ROUTE, action: '检查外部 CSS 变量的首屏注入', nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': 'red' }, ...(provider === 'devtools' ? { styles: { color: 'rgb(255, 0, 0)' } } : {}), }, { selecto`; source: `e2e/ide/github-issues.runtime.issue1015.test.ts:61`
+- Operations: `check(initial)`, `callMethod(_runE2E)`, `check(updated)`
 
 ## ide/github-issues.runtime.issue448-formdata-upload.test.ts
 

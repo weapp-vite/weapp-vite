@@ -328,6 +328,9 @@ function renderNodeTree(
     if (renderedComponentRoot.attribs) {
       applyNodeBindings(clonedNode, scope)
       renderedComponentRoot.attribs = { ...clonedNode.attribs, ...renderedComponentRoot.attribs }
+      if (clonedNode.dataset || renderedComponentRoot.dataset) {
+        renderedComponentRoot.dataset = { ...clonedNode.dataset, ...renderedComponentRoot.dataset }
+      }
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
       renderedComponentRoot.attribs['data-sim-node'] = instancePath
       renderedComponentRoot.attribs['data-sim-scope'] = componentScopeId

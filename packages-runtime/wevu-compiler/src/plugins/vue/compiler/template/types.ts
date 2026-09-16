@@ -45,12 +45,23 @@ export interface InlineExpressionScopeResolverAsset {
 }
 
 /**
+ * 内联表达式生成函数的参数名。
+ */
+export interface InlineExpressionParameterNames {
+  context: string
+  scope: string
+  event: string
+}
+
+/**
  * 内联表达式资源描述。
  */
 export interface InlineExpressionAsset {
   id: string
   expression: string
   scopeKeys: string[]
+  /** @internal */
+  parameterNames: InlineExpressionParameterNames
   indexBindings?: InlineExpressionIndexBindingAsset[]
   scopeResolvers?: InlineExpressionScopeResolverAsset[]
 }
@@ -152,6 +163,12 @@ export interface ForParseResult {
   index?: string
   key?: string
   itemAliases?: Record<string, string>
+  /** 需要在逻辑层完整执行的原始循环项模式。 */
+  itemPattern?: string
+  /** 当前循环项模式是否需要投影，避免模板层近似执行。 */
+  itemPatternRequiresProjection?: boolean
+  /** 无法等价降级的循环项模式诊断。 */
+  itemPatternError?: string
 }
 
 /**

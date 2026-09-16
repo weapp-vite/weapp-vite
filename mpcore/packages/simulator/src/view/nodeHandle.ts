@@ -1,4 +1,5 @@
 import { resolveMiniProgramEventBinding } from './eventBinding'
+import { collectNodeDataset } from './nodeDataset'
 import { querySelectorAll } from './selectors'
 import { queryXPathElements } from './xpath'
 
@@ -6,27 +7,28 @@ interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
 }
 
-interface HeadlessTestingNodeEventInit {
+export interface HeadlessTestingNodeEventInit {
   currentTarget?: {
-    dataset?: Record<string, string>
+    dataset?: Record<string, unknown>
     id?: string
   }
-  dataset?: Record<string, string>
+  dataset?: Record<string, unknown>
   detail?: unknown
   id?: string
   mark?: Record<string, unknown>
   target?: {
-    dataset?: Record<string, string>
+    dataset?: Record<string, unknown>
     id?: string
   }
 }
 
-interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit {
+export interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit {
   detail?: {
     value?: string
     [key: string]: unknown
@@ -41,8 +43,6 @@ interface HeadlessTestingNodeInteractionHandlers {
   ownerScopeId: (scopeId: string | null) => string | null
 }
 
-const DATASET_NAME_RE = /-([a-z])/g
-
 function escapeText(text: string) {
   return text
     .replaceAll('&', '&amp;')
@@ -50,25 +50,8 @@ function escapeText(text: string) {
     .replaceAll('>', '&gt;')
 }
 
-function toDatasetKey(attributeName: string) {
-  return attributeName
-    .slice('data-'.length)
-    .replace(DATASET_NAME_RE, (_match, char: string) => char.toUpperCase())
-}
-
-function collectDataset(node: DomNodeLike) {
-  const dataset: Record<string, string> = {}
-  for (const [key, value] of Object.entries(node.attribs ?? {})) {
-    if (!key.startsWith('data-') || key.startsWith('data-sim-')) {
-      continue
-    }
-    dataset[toDatasetKey(key)] = value
-  }
-  return dataset
-}
-
 function createEventPayload(node: DomNodeLike, eventName: string, event: HeadlessTestingNodeEventInit) {
-  const dataset = collectDataset(node)
+  const dataset = collectNodeDataset(node)
   const nodeId = node.attribs?.id ?? ''
   return {
     bubbles: false,
@@ -192,7 +175,7 @@ export class HeadlessTestingNodeHandle {
 
   async dataset() {
     this.assertActive()
-    return collectDataset(this.node)
+    return collectNodeDataset(this.node)
   }
 
   async scope() {

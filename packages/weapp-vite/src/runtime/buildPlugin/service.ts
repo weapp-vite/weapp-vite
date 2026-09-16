@@ -18,6 +18,7 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
+import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
 import { hasManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
@@ -1515,6 +1516,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           || batchReason.event === 'delete',
         )
         await refreshSnapshotSources(ctx, batchReasons.flatMap(batchReason => batchReason.file ? [batchReason.file] : []))
+        const styleScriptChanges = new Set<string>()
+        for (const batchReason of batchReasons) {
+          if (!batchReason.file) {
+            continue
+          }
+          for (const entryId of await collectVueStyleScriptChanges(ctx, batchReason.file, configService)) {
+            styleScriptChanges.add(entryId)
+            graphAffectedEntries.add(entryId)
+          }
+        }
         if (!requiresFullRescan && graphAffectedEntries.size) {
           const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
           const dirtyReason = dirtyReasons.includes('direct')
@@ -1522,7 +1533,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
           for (const entryId of graphAffectedEntries) {
             if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
-              markSnapshotEntryDirty(entryId, reason, dirtyReason)
+              markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : dirtyReason)
             }
           }
           const summaryCounts = new Map<string, number>()
@@ -1535,6 +1546,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               graphAffectedEntriesByFile.get(normalizeFsResolvedId(batchReason.file)),
             ).replace(/:\d+$/, '')
             summaryCounts.set(summary, (summaryCounts.get(summary) ?? 0) + 1)
+          }
+          if (styleScriptChanges.size) {
+            summaryCounts.set('entry-mixed-asset', styleScriptChanges.size)
           }
           ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
             summaryCounts,

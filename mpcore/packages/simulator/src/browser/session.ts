@@ -134,7 +134,7 @@ function parseCompoundSelector(selector: string) {
 }
 
 function matchesComponentSelector(
-  scope: { alias: string, classList?: string[], dataset?: Record<string, string>, id?: string },
+  scope: { alias: string, classList?: string[], dataset?: Record<string, unknown>, id?: string },
   selector: string,
 ) {
   const parts = parseCompoundSelector(selector)
@@ -154,7 +154,9 @@ function matchesComponentSelector(
     if (dataAttrMatch) {
       const [, key, value] = dataAttrMatch
       const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
-      return scope.dataset?.[datasetKey] === value
+      return scope.dataset != null
+        && Object.hasOwn(scope.dataset, datasetKey)
+        && String(scope.dataset[datasetKey] ?? '') === value
     }
 
     return scope.alias === part
@@ -1001,14 +1003,14 @@ export class BrowserHeadlessSession {
     methodName: string,
     event: {
       currentTarget?: {
-        dataset?: Record<string, string>
+        dataset?: Record<string, unknown>
         id?: string
       }
-      dataset?: Record<string, string>
+      dataset?: Record<string, unknown>
       id?: string
       mark?: Record<string, unknown>
       target?: {
-        dataset?: Record<string, string>
+        dataset?: Record<string, unknown>
         id?: string
       }
     } = {},

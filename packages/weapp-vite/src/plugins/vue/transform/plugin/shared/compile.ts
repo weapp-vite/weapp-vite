@@ -199,7 +199,20 @@ export async function finalizeTransformCompiledResult(options: {
   }
 
   if (Array.isArray(result.meta?.sfcSrcDeps)) {
+    addNormalizedWatchFiles(pluginCtx, result.meta.sfcSrcDeps)
     ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', result.meta.sfcSrcDeps)
+  }
+  if (configService.isDev) {
+    const styleBindings = ctx.runtimeState.build.hmr.vueEntryStyleBindings
+    if (result.meta?.sfcSrcDeps?.length) {
+      styleBindings.set(filename, {
+        sources: result.meta.sfcSrcDeps,
+        expressions: result.meta.cssVars,
+      })
+    }
+    else {
+      styleBindings.delete(filename)
+    }
   }
   const jsxDependencies = result.meta?.jsxDependencies ?? []
   addNormalizedWatchFiles(pluginCtx, jsxDependencies)

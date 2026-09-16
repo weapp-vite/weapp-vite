@@ -1,6 +1,6 @@
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService } from './moduleGraph'
+import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(pages: string[] = []) {
   const cwd = '/root'
@@ -8,11 +8,7 @@ function createCtx(pages: string[] = []) {
   const appEntry = { json: { pages } }
   return {
     moduleGraphService: createTestModuleGraphService(),
-    runtimeState: {
-      scan: {
-        isDirty: false,
-      },
-    },
+    runtimeState: createTestRuntimeState(),
     configService: {
       cwd,
       absoluteSrcRoot,

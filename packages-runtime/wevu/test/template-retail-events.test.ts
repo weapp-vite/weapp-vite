@@ -29,14 +29,19 @@ function loadHandler(file: string, name: string, globals: Record<string, unknown
 
 function dispatchComponentEvent(file: string, handler: string, context: Record<string, unknown>, detail: unknown, index = 0) {
   const compiled = compileVueTemplateToWxml(readComponent(file).template!.content, file)
-  const entry = compiled.inlineExpressions?.find(item => item.expression.includes(`ctx.${handler}(`))
+  const entry = compiled.inlineExpressions?.find(
+    item => item.expression.includes(`${item.parameterNames.context}.${handler}(`),
+  )
   expect(entry, handler).toBeDefined()
   const dataset: Record<string, unknown> = { wvEventDetail: true, wvInlineId: entry!.id, index }
   entry!.scopeKeys.forEach((key, position) => {
     expect(key).toBe('index')
     dataset[`wvS${position}`] = index
   })
-  const fn = runInNewContext(`(ctx, scope, $event) => (${entry!.expression})`) as (ctx: unknown, scope: unknown, event: unknown) => unknown
+  const { parameterNames } = entry!
+  const fn = runInNewContext(
+    `(${parameterNames.context}, ${parameterNames.scope}, ${parameterNames.event}) => (${entry!.expression})`,
+  ) as (ctx: unknown, scope: unknown, event: unknown) => unknown
   return runInlineExpression(context, undefined, { detail, currentTarget: { dataset } }, {
     [entry!.id]: { keys: entry!.scopeKeys, fn },
   })

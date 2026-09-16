@@ -22,7 +22,8 @@ function buildInlineExpressionMapCode(inlineExpressions: InlineExpressionAsset[]
   }
   const entries = inlineExpressions.map((entry) => {
     const keys = JSON.stringify(entry.scopeKeys)
-    return `${JSON.stringify(entry.id)}:{keys:${keys},fn:(ctx,scope,$event)=>${entry.expression}}`
+    const { parameterNames } = entry
+    return `${JSON.stringify(entry.id)}:{keys:${keys},fn:(${parameterNames.context},${parameterNames.scope},${parameterNames.event})=>${entry.expression}}`
   })
   return `{${entries.join(',')}}`
 }

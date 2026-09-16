@@ -3,18 +3,14 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService } from './moduleGraph'
+import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(root: string, pages: string[] = []) {
   const absoluteSrcRoot = path.join(root, 'src')
   const appEntry = { json: { pages } }
   return {
     moduleGraphService: createTestModuleGraphService(),
-    runtimeState: {
-      scan: {
-        isDirty: false,
-      },
-    },
+    runtimeState: createTestRuntimeState(),
     configService: {
       cwd: root,
       absoluteSrcRoot,

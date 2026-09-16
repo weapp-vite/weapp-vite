@@ -35,7 +35,7 @@ describe('template expression globals', () => {
       scopeBindings: [],
       indexBindings: [],
     })
-    expect(context.inlineExpressions).toEqual([
+    expect(context.inlineExpressions).toMatchObject([
       {
         id: 'i0',
         expression: 'swan.getEnv()&&xhs.getStorageSync("demo")',
@@ -53,13 +53,12 @@ describe('template expression globals', () => {
       scopeBindings: [],
       indexBindings: [],
     })
-    expect(context.inlineExpressions).toEqual([
-      {
-        id: 'i0',
-        expression: '(()=>ctx.toggleModal(\'confirm\'))(...$event)',
-        scopeKeys: [],
-      },
-    ])
+    const [asset] = context.inlineExpressions
+    expect(asset).toMatchObject({
+      id: 'i0',
+      scopeKeys: [],
+    })
+    expect(asset.expression).toBe(`(()=>${asset.parameterNames.context}.toggleModal('confirm'))(...${asset.parameterNames.event})`)
   })
 
   it('does not preserve wechat-centric pseudo globals in inline expressions', () => {
@@ -71,13 +70,16 @@ describe('template expression globals', () => {
       scopeBindings: [],
       indexBindings: [],
     })
-    expect(context.inlineExpressions).toEqual([
-      {
-        id: 'i0',
-        expression: 'ctx.MiniProgramNative.foo+ctx.WechatMiniprogram.bar+ctx.count',
-        scopeKeys: [],
-      },
-    ])
+    const [asset] = context.inlineExpressions
+    expect(asset).toMatchObject({
+      id: 'i0',
+      scopeKeys: [],
+    })
+    expect(asset.expression).toBe(
+      `${asset.parameterNames.context}.MiniProgramNative.foo`
+      + `+${asset.parameterNames.context}.WechatMiniprogram.bar`
+      + `+${asset.parameterNames.context}.count`,
+    )
   })
 
   it('prefers props data over state data in template expressions', () => {

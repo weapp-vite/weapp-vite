@@ -185,8 +185,14 @@ export function transformBindDirective(
   forInfo?: ForParseResult,
   options?: { isComponent?: boolean },
 ): string | null {
-  const { arg } = node
+  const { arg, exp } = node
   if (!arg) {
+    if (exp?.type === NodeTypes.SIMPLE_EXPRESSION && exp.content.trim()) {
+      warn(context, '小程序暂不支持对象形式 v-bind，已忽略该对象绑定；请改用显式属性绑定。', node.loc)
+    }
+    else {
+      warn(context, 'v-bind 缺少对象绑定表达式。', node.loc, 'template', 'WV2001')
+    }
     return null
   }
   if (rejectUnsupportedDynamicBindName(node, context)) {

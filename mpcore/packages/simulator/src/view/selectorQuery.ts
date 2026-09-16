@@ -6,12 +6,14 @@ import type {
   HeadlessWxWindowInfoResult,
 } from '../host'
 import type { HeadlessPageInstance } from '../runtime'
+import { collectNodeDataset } from './nodeDataset'
 import { querySelectorAll } from './selectors'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
@@ -24,27 +26,9 @@ export interface HeadlessSelectorQueryResolverOptions {
   windowInfo: HeadlessWxWindowInfoResult
 }
 
-const DATASET_NAME_RE = /-([a-z])/g
 const LEADING_MARK_PREFIX_RE = /^mark[:\-]?/
 const MARK_NAME_RE = /[:\-]([a-z])/g
 const NUMERIC_LIKE_VALUE_RE = /-?\d+(?:\.\d+)?/
-
-function toDatasetKey(attributeName: string) {
-  return attributeName
-    .slice('data-'.length)
-    .replace(DATASET_NAME_RE, (_match, char: string) => char.toUpperCase())
-}
-
-function collectDataset(node: DomNodeLike) {
-  const dataset: Record<string, string> = {}
-  for (const [key, value] of Object.entries(node.attribs ?? {})) {
-    if (!key.startsWith('data-') || key.startsWith('data-sim-')) {
-      continue
-    }
-    dataset[toDatasetKey(key)] = value
-  }
-  return dataset
-}
 
 function toMarkKey(attributeName: string) {
   return attributeName
@@ -168,7 +152,7 @@ function resolvePropertyValue(node: DomNodeLike, propertyName: string) {
     return node.attribs?.class ?? ''
   }
   if (normalizedPropertyName === 'dataset') {
-    return collectDataset(node)
+    return collectNodeDataset(node)
   }
   return node.attribs?.[normalizedPropertyName]
 }
@@ -201,7 +185,7 @@ function resolveFieldsResult(
     result.id = node.attribs?.id ?? ''
   }
   if (fields.dataset) {
-    result.dataset = collectDataset(node)
+    result.dataset = collectNodeDataset(node)
   }
   if (fields.mark) {
     result.mark = collectMark(node)

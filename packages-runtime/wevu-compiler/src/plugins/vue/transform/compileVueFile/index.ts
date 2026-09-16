@@ -38,6 +38,7 @@ export async function compileVueFile(
     meta: {
       ...parsed.meta,
       styleBlocks: parsed.descriptor.styles,
+      cssVars: parsed.descriptor.cssVars,
     },
   }
 
@@ -164,6 +165,7 @@ export async function compileVueFile(
       cssModules: result.cssModules,
     },
     source,
+    parsed.scriptPreprocessMap,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap

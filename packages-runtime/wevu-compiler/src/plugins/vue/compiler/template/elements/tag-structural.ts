@@ -3,6 +3,7 @@ import type { ForParseResult, TransformContext, TransformNode } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { recordBindingExpression } from '../bindingManifest'
 import { resolveConditionalBranch, withBindingCondition } from '../conditions'
+import { warn } from '../diagnostics'
 import { transformBindDirective } from '../directives/bind'
 import { createForKeyProjection, resolveNativeForKeyValue } from '../directives/forKey'
 import { normalizeJsExpressionWithContext, normalizeWxmlExpressionWithContext } from '../expression'
@@ -10,6 +11,7 @@ import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes } from './attrs'
+import { registerForPatternProjection } from './forPatternProjection'
 import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, getBindDirectiveExpression, parseForExpression, withForScope, withScope } from './helpers'
 import { shouldTransformAsComponentWithSlots, transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
@@ -98,6 +100,10 @@ export function transformForElement(node: ElementNode, context: TransformContext
 
   const expValue = forDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? forDirective.exp.content : ''
   const forInfo = parseForExpression(expValue)
+  if (forInfo.itemPatternError) {
+    warn(context, forInfo.itemPatternError, forDirective.exp.loc, 'template', 'WV2001')
+    return ''
+  }
   if (forInfo.item === FOR_ITEM_ALIAS_PLACEHOLDER) {
     const generatedItem = `__wv_item_${context.forIndexSeed++}`
     forInfo.item = generatedItem
@@ -115,10 +121,10 @@ export function transformForElement(node: ElementNode, context: TransformContext
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
   const rawListExp = forInfo.listExp?.trim()
-  const listExp = forInfo.listExp
+  let listExp = forInfo.listExp
     ? resolveListExpression(forInfo.listExp, context, 'v-for 列表')
     : undefined
-  const listExpAst = forInfo.listExp
+  let listExpAst = forInfo.listExp
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
     : undefined
   // 投影计算遍历原始项，不能沿用模板中祖先项的投影包装访问。
@@ -128,6 +134,15 @@ export function transformForElement(node: ElementNode, context: TransformContext
         forStack: context.forStack.map(info => ({ ...info, itemAccess: undefined })),
       }, { hint: 'v-for 原始列表' })
     : listExpAst
+  if (forInfo.itemPatternRequiresProjection && listExp && listExpAst) {
+    const projected = registerForPatternProjection(forInfo, listExp, listExpAst, context)
+    if (!projected) {
+      warn(context, 'v-for 别名模式无法生成等价的逻辑层投影。', forDirective.exp.loc, 'template', 'WV2001')
+      return ''
+    }
+    listExp = projected.listExp
+    listExpAst = projected.listExpAst
+  }
   const scopedForInfo: ForParseResult = listExp
     ? { ...forInfo, listExp, rawListExp, listExpAst: listExpAst ?? undefined, rawListExpAst: rawListExpAst ?? undefined }
     : { ...forInfo, rawListExp, listExpAst: listExpAst ?? undefined, rawListExpAst: rawListExpAst ?? undefined }

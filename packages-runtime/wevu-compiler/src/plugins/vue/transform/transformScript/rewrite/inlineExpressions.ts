@@ -8,8 +8,13 @@ function buildInlineMapExpression(inlineExpressions: InlineExpressionAsset[]): t
   const entries = inlineExpressions.map((entry) => {
     const keysExpr = t.arrayExpression(entry.scopeKeys.map(key => t.stringLiteral(key)))
     const exprAst = parseBabelExpression(entry.expression) ?? t.identifier('undefined')
+    const { parameterNames } = entry
     const fnExpr = t.arrowFunctionExpression(
-      [t.identifier('ctx'), t.identifier('scope'), t.identifier('$event')],
+      [
+        t.identifier(parameterNames.context),
+        t.identifier(parameterNames.scope),
+        t.identifier(parameterNames.event),
+      ],
       exprAst,
     )
     const entryObjProps: t.ObjectProperty[] = [

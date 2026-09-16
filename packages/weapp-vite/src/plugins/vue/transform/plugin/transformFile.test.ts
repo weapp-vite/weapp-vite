@@ -8,6 +8,7 @@ const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
   script: 'Component({ refreshed: true })',
   meta: {
     styleBlocks: [],
+    cssVars: [],
   },
 })))
 const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
@@ -93,6 +94,7 @@ function createBaseOptions(overrides: Record<string, any> = {}) {
             dirtyVueEntryIds: new Set<string>(),
             vueEntryHasTemplate: new Map(),
             vueEntrySfcSignatures: new Map(),
+            vueEntryStyleBindings: new Map(),
             vueEntryTailwindContentSignatures: new Map(),
             vueEntryTailwindTemplateContentSignatures: new Map(),
             vueEntryTailwindScriptContentSignatures: new Map(),
@@ -143,6 +145,7 @@ describe('transformVueLikeFile cache reuse', () => {
       script: 'Component({ refreshed: true })',
       meta: {
         styleBlocks: [],
+        cssVars: [],
       },
     })
     compileJsxFileMock.mockResolvedValue({
@@ -229,6 +232,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -282,6 +286,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -329,6 +334,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -412,6 +418,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -459,6 +466,7 @@ describe('transformVueLikeFile cache reuse', () => {
       script: 'Component({ cached: true })',
       meta: {
         styleBlocks: [{ attrs: {}, content: '.card{color:red}' }],
+        cssVars: [],
       },
     }
     const nextStyleBlocks = [{ attrs: {}, content: '.card{color:blue}' }]
@@ -475,6 +483,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -499,6 +508,7 @@ describe('transformVueLikeFile cache reuse', () => {
       readAndParseSfc: vi.fn(async () => ({
         descriptor: {
           styles: nextStyleBlocks,
+          cssVars: [],
         },
       })),
     })
@@ -539,11 +549,13 @@ describe('transformVueLikeFile cache reuse', () => {
       style: '.external{color:red}',
       meta: {
         styleBlocks: previousStyleBlocks,
+        cssVars: [],
       },
     }
     const readAndParseSfc = vi.fn(async () => ({
       descriptor: {
         styles: nextStyleBlocks,
+        cssVars: [],
       },
     }))
     const options = createBaseOptions({
@@ -559,6 +571,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -602,6 +615,122 @@ describe('transformVueLikeFile cache reuse', () => {
     expect(dirtyVueEntryIds.size).toBe(0)
   })
 
+  it.each([
+    {
+      label: 'adds a variable',
+      previousCss: '.external{color:red}',
+      previousCssVars: [],
+      currentCss: '.external{color:v-bind(color)}',
+      currentCssVars: ['color'],
+    },
+    {
+      label: 'removes a variable',
+      previousCss: '.external{color:v-bind(color)}',
+      previousCssVars: ['color'],
+      currentCss: '.external{color:red}',
+      currentCssVars: [],
+    },
+    {
+      label: 'changes a variable expression',
+      previousCss: '.external{color:v-bind(color)}',
+      previousCssVars: ['color'],
+      currentCss: '.external{color:v-bind(surfaceColor)}',
+      currentCssVars: ['surfaceColor'],
+    },
+  ])('recompiles cached script and template when an external style $label', async ({
+    previousCss,
+    previousCssVars,
+    currentCss,
+    currentCssVars,
+  }) => {
+    const filename = '/project/src/components/card.vue'
+    const source = '<template><view /></template><style src="./external.css"></style>'
+    const dirtyVueEntryIds = new Set([filename])
+    const previousStyleBlocks = [{
+      attrs: { src: './external.css' },
+      content: previousCss,
+      lang: 'css',
+      src: './external.css',
+    }]
+    const currentStyleBlocks = [{
+      attrs: { src: './external.css' },
+      content: currentCss,
+      lang: 'css',
+      src: './external.css',
+    }]
+    const options = createBaseOptions({
+      code: source,
+      ctx: {
+        ...createBaseOptions().ctx,
+        runtimeState: {
+          scan: {
+            isDirty: false,
+          },
+          build: {
+            hmr: {
+              dirtyVueEntryIds,
+              vueEntryHasTemplate: new Map(),
+              vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
+              vueEntryTailwindContentSignatures: new Map(),
+              vueEntryTailwindTemplateContentSignatures: new Map(),
+              vueEntryTailwindScriptContentSignatures: new Map(),
+              profile: {
+                eventId: 'hmr-css-vars',
+                dirtyReasonSummary: ['css-importer:1'],
+              },
+            },
+          },
+        },
+      },
+      compilationCache: new Map([
+        [filename, {
+          result: {
+            template: '<view style="{{__wv_style_0}}" />',
+            script: 'Component({ cached: true })',
+            style: previousCss,
+            meta: {
+              cssVars: previousCssVars,
+              styleBlocks: previousStyleBlocks,
+            },
+          },
+          source,
+          isPage: false,
+          autoRoutesSignature: undefined,
+          refreshToken: 1,
+          styleIndependentSignature: resolveVueSfcStyleIndependentSignatureMock(source, filename),
+        }],
+      ]),
+      styleBlocksCache: new Map([
+        [filename, previousStyleBlocks],
+      ]),
+      readAndParseSfc: vi.fn(async () => ({
+        descriptor: {
+          cssVars: currentCssVars,
+          styles: currentStyleBlocks,
+        },
+      })),
+    })
+    compileVueFileMock.mockResolvedValueOnce({
+      template: currentCssVars.length ? '<view style="{{__wv_style_0}}" />' : '<view />',
+      script: 'Component({ refreshed: true })',
+      style: currentCss,
+      meta: {
+        cssVars: currentCssVars,
+        styleBlocks: currentStyleBlocks,
+      },
+    })
+
+    await expect(transformVueLikeFile(options)).resolves.toMatchObject({
+      code: expect.stringContaining('Component({ refreshed: true })'),
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(options.compilationCache.get(filename).result.script).toContain('refreshed: true')
+    expect(options.compilationCache.get(filename).result.meta?.cssVars).toEqual(currentCssVars)
+    expect(dirtyVueEntryIds.size).toBe(0)
+  })
+
   it('keeps style refresh tokens for css importer updates with unchanged style signatures', async () => {
     const source = '<template><view /></template><style>@import "./external.css";</style>'
     const dirtyVueEntryIds = new Set(['/project/src/components/card.vue'])
@@ -616,6 +745,7 @@ describe('transformVueLikeFile cache reuse', () => {
       style: '@import "./external.css";',
       meta: {
         styleBlocks,
+        cssVars: [],
       },
     }
     const options = createBaseOptions({
@@ -631,6 +761,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -658,6 +789,7 @@ describe('transformVueLikeFile cache reuse', () => {
       readAndParseSfc: vi.fn(async () => ({
         descriptor: {
           styles: styleBlocks,
+          cssVars: [],
         },
       })),
     })
@@ -693,6 +825,7 @@ describe('transformVueLikeFile cache reuse', () => {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
               vueEntrySfcSignatures: new Map(),
+              vueEntryStyleBindings: new Map(),
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),

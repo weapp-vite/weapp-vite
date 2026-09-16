@@ -71,7 +71,8 @@ export function createBuildEndHook(state: CorePluginState) {
     state.hmrState.styleSidecarFiles = styleSidecarFiles
     const affectedEntries = new Set<string>()
     const causes = new Map<string, number>()
-    let metadataOnly = pendingChanges.length > 0
+    // 已发出的脚本 chunk 属于本轮构建计划，不能再按源文件扩展名降级为仅资源更新。
+    let metadataOnly = pendingChanges.length > 0 && !state.hmrState.lastEmittedEntryIds?.size
 
     for (const change of pendingChanges) {
       const affected = state.ctx.moduleGraphService.collectAffectedEntries(change.file)
