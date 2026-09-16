@@ -50,6 +50,7 @@ const githubIssuesAggregateTargets = {
     'github-issues.runtime.issue706.test.ts',
     'github-issues.runtime.issue829.test.ts',
     'github-issues.runtime.issue930.test.ts',
+    'github-issues.runtime.issue1013.test.ts',
     'github-issues.runtime.lifecycle.test.ts',
     'github-issues.runtime.miniprogram-computed.test.ts',
     'github-issues.runtime.props.test.ts',
@@ -160,6 +161,10 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue941.test.ts': [
     'pages/issue-941/**',
+  ],
+  'github-issues.runtime.issue1013.test.ts': [
+    'pages/issue-1013/**',
+    'components/issue-1013-child/**',
   ],
   'github-issues.runtime.issue826.test.ts': [
     'pages/issue-826/**',

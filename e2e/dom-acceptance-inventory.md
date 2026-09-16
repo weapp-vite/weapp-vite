@@ -7,7 +7,7 @@
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
 - 任务：95；微信：92；范围外：3。
-- 展开的 case 声明：243；已接入计划：243；缺计划：0。
+- 展开的 case 声明：244；已接入计划：244；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -25,7 +25,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/body-blob.runtime.test.ts                                                             | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/devtools-cli-workflow.runtime.test.ts                                                 | devtools           |     2 |     2 |       0 | wechat       |
 | ide/forward-console-demo.runtime.test.ts                                                  | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    66 |    66 |       0 | wechat       |
+| ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    67 |    67 |       0 | wechat       |
 | ide/github-issues.runtime.component-instance-apis.test.ts                                 | devtools, headless |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue448-formdata-upload.test.ts                                | devtools           |     1 |     1 |       0 | wechat       |
 | ide/github-issues.runtime.issue547.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
@@ -425,6 +425,13 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `['initial', 'updated'].map(state => ({ id: state, route: ISSUE_ROUTE, action: state === 'initial' ? '检查首屏编译器拥有的绑定' : '更新成员表达式、model、template 和 CSS 变量后检查渲染', nodes: [ { selector: '#issue-930-member', text: \`member-${state}\` }, { selector: '#`; source: `e2e/ide/github-issues.runtime.issue930.test.ts:118`
 - Operations: `check(initial)`, `callMethod(_runE2E)`, `check(updated)`
+
+### e2e app: github-issues / issue #1013 > omits unsupported dynamic names while static native and component controls still run
+
+- Source: `e2e/ide/github-issues.runtime.issue1013.test.ts:33`
+- Plan: registered in source; runtime verification required
+- Registration: `runGithubDom`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', action: '检查动态名称已忽略且静态组件已渲染', nodes: [ { selector: '#issue-1013-dynamic', text: 'dynamic probe' }, { selector: '#issue-1013-dynamic-count', text: 'dynamic taps: 0' }, { selector: '#issue-1013-static-probe-count', text: 'sta`; source: `e2e/ide/github-issues.runtime.issue1013.test.ts:43`
+- Routes: `/pages/issue-1013/index`
 
 ### e2e app: github-issues / lifecycle > issue #309: triggers onLoad without requiring onPullDownRefresh hook
 
