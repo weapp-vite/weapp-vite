@@ -43,7 +43,7 @@ catalog:
   '@types/react-reconciler': 0.33.0
   '@types/semver': ^7.8.0
   '@vant/weapp': ^1.11.7
-  '@vitejs/plugin-vue': ^6.0.8
+  '@vitejs/plugin-vue': ^6.0.9
   '@vue/compiler-core': ^3.5.42
   '@vue/compiler-dom': ^3.5.42
   '@vue/babel-plugin-jsx': 3.0.0
@@ -72,7 +72,7 @@ catalog:
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
   obug: ^3.0.0
-  oxc-parser: ^0.149.0
+  oxc-parser: ^0.150.0
   oxc-walker: ^1.1.1
   pathe: ^2.0.3
   picocolors: ^1.1.1
