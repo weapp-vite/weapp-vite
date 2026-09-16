@@ -175,7 +175,10 @@ export interface HeadlessWxRequestSuccessResult {
   statusCode: number
 }
 
-export interface HeadlessWxRequestOption extends HeadlessWxCallbackOption<HeadlessWxRequestSuccessResult> {
+export interface HeadlessWxRequestOption extends Omit<HeadlessWxCallbackOption<HeadlessWxRequestSuccessResult>, 'complete'> {
+  complete?: (result?: HeadlessWxRequestSuccessResult | Error) => void
+  enableChunked?: boolean
+  responseType?: 'text' | 'arraybuffer'
   data?: unknown
   header?: Record<string, string>
   method?: string
@@ -184,6 +187,24 @@ export interface HeadlessWxRequestOption extends HeadlessWxCallbackOption<Headle
 
 export interface HeadlessWxRequestTask {
   abort: () => void
+}
+
+export interface HeadlessWxRequestHeadersResult {
+  cookies: string[]
+  header: Record<string, string>
+  statusCode: number
+}
+
+export interface HeadlessWxRequestChunkResult {
+  data: ArrayBuffer
+}
+
+export interface HeadlessWxNetworkRequestTask extends HeadlessWxRequestTask {
+  /** 自定义传输可仅实现 abort，使用监听前应检测能力。 */
+  onHeadersReceived?: (callback: (result: HeadlessWxRequestHeadersResult) => void) => void
+  offHeadersReceived?: (callback?: (result: HeadlessWxRequestHeadersResult) => void) => void
+  onChunkReceived?: (callback: (result: HeadlessWxRequestChunkResult) => void) => void
+  offChunkReceived?: (callback?: (result: HeadlessWxRequestChunkResult) => void) => void
 }
 
 export interface HeadlessWxDownloadFileSuccessResult {

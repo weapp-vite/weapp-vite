@@ -71,6 +71,7 @@ import type {
   HeadlessWxHideLoadingOption,
 
   HeadlessWxHideNavigationBarLoadingOption,
+  HeadlessWxNetworkRequestTask,
   HeadlessWxOpenDocumentOption,
   HeadlessWxOpenDocumentResult,
   HeadlessWxPreviewImageOption,
@@ -121,7 +122,7 @@ export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities {
   openDocument: (option: HeadlessWxOpenDocumentOption) => HeadlessWxOpenDocumentResult
   previewImage: (option: HeadlessWxPreviewImageOption) => HeadlessWxPreviewImageResult
   removeSavedFile: (option: HeadlessWxRemoveSavedFileOption) => { errMsg: string }
-  request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  request: (option: HeadlessWxRequestOption) => HeadlessWxNetworkRequestTask
   saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult
   saveImageToPhotosAlbum: (option: HeadlessWxSaveImageToPhotosAlbumOption) => HeadlessWxSaveImageToPhotosAlbumResult
   saveVideoToPhotosAlbum: (option: HeadlessWxSaveVideoToPhotosAlbumOption) => HeadlessWxSaveVideoToPhotosAlbumResult
@@ -196,7 +197,7 @@ export interface HeadlessWx extends HeadlessUniEventBus {
   removeStorage: (option: HeadlessWxRemoveStorageOption) => HeadlessWxStorageResult | undefined
   removeStorageSync: (key: string) => void
   rpx2px: (value: number) => number
-  request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  request: (option: HeadlessWxRequestOption) => HeadlessWxNetworkRequestTask
   saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult | undefined
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string } | undefined
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string } | undefined

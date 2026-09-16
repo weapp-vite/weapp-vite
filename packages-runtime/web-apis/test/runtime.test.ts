@@ -1310,6 +1310,21 @@ describe('request globals runtime', () => {
     expect(globalThis.performance.now()).toBe(456.75)
   })
 
+  it('keeps Blob and File constructor identity across repeated installation', async () => {
+    const { installWebRuntimeGlobals, BlobPolyfill, FilePolyfill } = await import('../src')
+    setGlobalValue('Blob', undefined)
+    setGlobalValue('File', undefined)
+    installWebRuntimeGlobals({ targets: ['fetch'] })
+    const blob = new globalThis.Blob(['hello'])
+    const file = new globalThis.File(['hello'], 'hello.txt')
+    installWebRuntimeGlobals({ targets: ['fetch'] })
+    expect(globalThis.Blob).toBe(BlobPolyfill)
+    expect(globalThis.File).toBe(FilePolyfill)
+    expect(blob).toBeInstanceOf(globalThis.Blob)
+    expect(file).toBeInstanceOf(globalThis.File)
+    expect(await blob.slice(-2).text()).toBe('lo')
+  })
+
   it('normalizes fetch inputs, headers and body types across request-like callers', async () => {
     const requestOptions: Array<Record<string, any>> = []
     wpiRequestMock.mockImplementation((options: Record<string, any>) => {
