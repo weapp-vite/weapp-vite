@@ -33,6 +33,7 @@ const issue642Bug7DefaultEnabled = e2eTargetFile.endsWith('github-issues.runtime
 const issue642Bug7PerformanceEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-performance.test.ts')
 const githubIssuesAggregateTargets = {
   'github-issues.runtime.aggregate.test.ts': [
+    'github-issues.runtime.issue1008.test.ts',
     'github-issues.runtime.app-shell.test.ts',
     'github-issues.runtime.issue289.test.ts',
     'github-issues.runtime.issue297-302.test.ts',
@@ -62,6 +63,9 @@ const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.en
 const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
+  'github-issues.runtime.issue1008.test.ts': [
+    'pages/issue-1008/**',
+  ],
   'github-issues.runtime.issue1009.test.ts': ['pages/issue-1009/**'],
   'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [

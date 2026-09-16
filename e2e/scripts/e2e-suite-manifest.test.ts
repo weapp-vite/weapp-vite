@@ -5,6 +5,8 @@ import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFu
 
 describe('e2e suite manifest', () => {
   it.each([
+    'ide/body-blob.runtime.test.ts',
+    'ide/stream-capability.runtime.test.ts',
     'ide/app-lifecycle.test.ts',
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
@@ -70,6 +72,7 @@ describe('e2e suite manifest', () => {
     const labels = new Set(tasks.map(task => task.label))
 
     expect(aggregateTasks).toHaveLength(1)
+    expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS).toContain('ide/github-issues.runtime.issue1008.test.ts')
     expect(aggregateTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER === '1')).toBe(true)
     expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS.every(pattern => !labels.has(pattern))).toBe(true)
   })

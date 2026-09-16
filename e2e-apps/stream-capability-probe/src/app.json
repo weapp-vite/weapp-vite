@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "流式能力探针"
+  },
+  "style": "v2",
+  "renderer": "webview"
+}

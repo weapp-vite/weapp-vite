@@ -1,0 +1,16 @@
+{
+  "name": "e2e-app-stream-capability-probe",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wv build",
+    "postinstall": "wv prepare"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
+  },
+  "weappVite": {
+    "web": false
+  }
+}

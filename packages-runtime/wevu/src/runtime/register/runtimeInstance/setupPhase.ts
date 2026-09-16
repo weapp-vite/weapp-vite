@@ -16,7 +16,7 @@ import {
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { normalizeEmitEventName } from '../../emit'
-import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
+import { getCurrentInstance, getCurrentSetupContext, setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
@@ -217,6 +217,17 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
   // 仅在同步 setup 执行期间暴露 current instance
   const instanceScope = effectScope(true)
+  const previousInstance = getCurrentInstance()
+  const previousSetupContext = getCurrentSetupContext()
+  const restoreSetupContext = () => {
+    // 仅当全局上下文仍属于本次 setup 时恢复父级；嵌套或重入 setup
+    // 可能已经建立了新的上下文，不能被旧调用覆盖。
+    if (getCurrentInstance() !== target || getCurrentSetupContext() !== context) {
+      return
+    }
+    setCurrentSetupContext(previousSetupContext)
+    setCurrentInstance(previousInstance)
+  }
   target[WEVU_EFFECT_SCOPE_KEY] = instanceScope
   setCurrentInstance(target)
   setCurrentSetupContext(context)
@@ -250,7 +261,8 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     }
   }
   finally {
-    setCurrentSetupContext(undefined)
-    setCurrentInstance(undefined)
+    // current instance/context 只属于本次同步 setup 调用；异步 continuation
+    // 不能继续占用全局上下文，否则会污染随后挂载的组件。
+    restoreSetupContext()
   }
 }

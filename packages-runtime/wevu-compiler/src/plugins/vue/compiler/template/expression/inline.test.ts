@@ -12,7 +12,7 @@ interface EvaluatedInlineEntry {
   fn: (
     context: Record<string, unknown>,
     scope: Record<string, unknown>,
-    event: Record<string, unknown>,
+    event?: Record<string, unknown>,
   ) => unknown
   scopeResolvers?: Array<(
     context: Record<string, unknown>,
@@ -157,5 +157,56 @@ describe('inline expression identifier hygiene', () => {
       '<view v-for="(group, groupIndex) in scope" :key="groupIndex"><view v-for="(item, itemIndex) in group.entries" :key="itemIndex" @tap="item.name" /></view>',
       { scope: [{ entries: [{ name: 'I' }] }] },
     )
+  })
+})
+
+function compileInlineHandler(expression: string) {
+  const result = compileVueTemplateToWxml(
+    `<view @tap="${expression}" />`,
+    '/project/src/pages/inline-scope.vue',
+    {
+      scriptSetupBindings: {
+        count: 'setup-ref',
+        rows: 'setup-const',
+      },
+    },
+  )
+
+  expect(result.diagnostics).toEqual([])
+  expect(result.inlineExpressions).toHaveLength(1)
+  const asset = result.inlineExpressions?.[0]
+  if (!asset) {
+    throw new Error('未生成内联表达式资源。')
+  }
+  return emitComponentEntry(asset).fn
+}
+
+describe('inline expression lexical setup binding writes', () => {
+  it('keeps a callback parameter write local when it shadows a setup ref', () => {
+    const handler = compileInlineHandler('rows.map(count => count++)')
+    const context = { count: { value: 1 }, rows: [2] }
+
+    expect(handler(context, {})).toEqual([2])
+    expect(context.count.value).toBe(1)
+  })
+
+  it('keeps parameter, block, and closure assignments and updates on their lexical bindings', () => {
+    const handler = compileInlineHandler(`[
+      ((count) => { count = 4; count += 2; return count++ })(1),
+      (() => { let count = 3; count = 5; count *= 2; return ++count })(),
+      ((count) => () => { count -= 1; return count-- })(4)(),
+    ]`)
+    const context = { count: { value: 1 } }
+
+    expect(handler(context, {})).toEqual([6, 11, 3])
+    expect(context.count.value).toBe(1)
+  })
+
+  it('preserves ordinary, compound, and update writes to the genuine setup ref', () => {
+    const handler = compileInlineHandler('(count = 2, count += 3, count++, ++count)')
+    const context = { count: { value: 1 } }
+
+    expect(handler(context, {})).toBe(7)
+    expect(context.count.value).toBe(7)
   })
 })

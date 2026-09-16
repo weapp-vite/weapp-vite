@@ -181,6 +181,9 @@ function rewriteTopLevelRefLikeAccess(
   traverse(ast, {
     AssignmentExpression(path) {
       const left = path.node.left
+      if (t.isIdentifier(left) && path.scope.getBinding(left.name)) {
+        return
+      }
       if (t.isIdentifier(left) && isScriptSetupRefLikeBinding(context, left.name)) {
         path.node.left = buildCtxValueAccess(
           t.memberExpression(t.cloneNode(contextIdentifier), t.identifier(left.name)),
@@ -195,6 +198,9 @@ function rewriteTopLevelRefLikeAccess(
     },
     UpdateExpression(path) {
       const arg = path.node.argument
+      if (t.isIdentifier(arg) && path.scope.getBinding(arg.name)) {
+        return
+      }
       if (t.isIdentifier(arg) && isScriptSetupRefLikeBinding(context, arg.name)) {
         path.node.argument = buildCtxValueAccess(
           t.memberExpression(t.cloneNode(contextIdentifier), t.identifier(arg.name)),
