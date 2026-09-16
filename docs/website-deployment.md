@@ -41,6 +41,8 @@ pnpm --filter website-weapp-vite deploy:dry-run
 
 发布前会检查首页、指南页、404、JS/CSS、sitemap、LLM 索引、SEO 报告及 `_headers`，再执行不需要凭据的 Wrangler dry-run。验证成功的 `website/dist` 会作为当前运行的 artifact 保存 7 天。构建、验证或上传失败时不会继续部署。
 
+正式发布使用 `pnpm --filter website-weapp-vite run deploy`。必须保留 `run`，否则 pnpm 会执行自身用于打包 workspace 的内置 `deploy` 命令，而不是网站的 Wrangler 脚本。
+
 ## 部署凭据
 
 在 GitHub 仓库 **Settings → Secrets and variables → Actions → Repository secrets** 配置：

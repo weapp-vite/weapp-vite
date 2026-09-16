@@ -89,7 +89,7 @@ jobs:
             echo '::error::Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets before deploying.'
             exit 1
           fi
-          pnpm --filter website-weapp-vite deploy
+          pnpm --filter website-weapp-vite run deploy
           {
             echo '### Website deployed'
             echo "Commit: $GITHUB_SHA"
