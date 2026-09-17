@@ -314,7 +314,10 @@ class StatefulHmrSession {
       const compatibleOutput = createStatefulHmrGlobalStyleAssets(
         await transformOutput(output),
         resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
-        { componentPageGlobalStyleRoutes: snapshot?.componentPageGlobalStyleRoutes ?? this.componentPageGlobalStyleRoutes },
+        {
+          componentPageGlobalStyleRoutes: snapshot?.componentPageGlobalStyleRoutes ?? this.componentPageGlobalStyleRoutes,
+          refreshPageStyles: true,
+        },
       )
       if (snapshotBatch?.isSuperseded()) {
         this.diagnostics?.discarded(snapshotBatch.traceBatchId, 'after-transform')
@@ -576,6 +579,7 @@ class StatefulHmrSession {
         createIfMissing: true,
         componentPageGlobalStyleRoutes: snapshot.componentPageGlobalStyleRoutes,
         previousComponentPageGlobalStyleRoutes: this.componentPageGlobalStyleRoutes,
+        refreshPageStyles: true,
       },
     )
   }

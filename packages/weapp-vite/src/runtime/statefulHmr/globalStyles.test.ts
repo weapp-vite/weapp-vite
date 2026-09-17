@@ -68,6 +68,32 @@ describe('stateful HMR global styles', () => {
     expect(getChangedStatefulHmrSnapshotAssets(next, snapshot('.app { color: blue; }'))).toEqual([])
   })
 
+  it('bumps page stylesheet assets when the imported global stylesheet changes', () => {
+    const options = { createIfMissing: true, refreshPageStyles: true }
+    const initial = createStatefulHmrGlobalStyleAssets([
+      { type: 'asset', fileName: 'app.wxss', source: '.probe { background: #f3f4f6; }' },
+      { type: 'asset', fileName: 'pages/index/index.wxss', source: '/* empty */' },
+    ], 'wxss', options)
+    const unchanged = createStatefulHmrGlobalStyleAssets(initial, 'wxss', options)
+    const initialPage = String(initial.find(item => item.fileName === 'pages/index/index.wxss')?.source)
+    const unchangedPage = String(unchanged.find(item => item.fileName === 'pages/index/index.wxss')?.source)
+    expect(initialPage).toMatch(/\.weapp-vite-stateful-hmr-style-[a-f0-9]{16} \{ --weapp-vite-stateful-hmr-style-token: [a-f0-9]{16}; \}\n$/)
+    expect(unchangedPage).toBe(initialPage)
+
+    const updated = createStatefulHmrGlobalStyleAssets([
+      ...initial.map(item => item.fileName === styleFile
+        ? { ...item, source: '.probe { background: #10b981; }' }
+        : item),
+    ], 'wxss', options)
+    const updatedPage = String(updated.find(item => item.fileName === 'pages/index/index.wxss')?.source)
+    expect(updatedPage).toMatch(/\.weapp-vite-stateful-hmr-style-[a-f0-9]{16} \{ --weapp-vite-stateful-hmr-style-token: [a-f0-9]{16}; \}\n$/)
+    expect(updatedPage).not.toBe(initialPage)
+    expect(getChangedStatefulHmrSnapshotAssets(initial, updated).map(item => item.fileName).sort()).toEqual([
+      'pages/index/index.wxss',
+      styleFile,
+    ])
+  })
+
   it('merges the snapshot stylesheet into a full DevEngine output without restoring inline app styles', () => {
     const full: StatefulHmrOutputFile[] = [
       { type: 'chunk', fileName: 'app.js', code: 'App({})', modules: {} },

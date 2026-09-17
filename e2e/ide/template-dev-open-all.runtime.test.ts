@@ -368,7 +368,6 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
   }, 180_000)
 
   it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase, ctx) => {
-    const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
     let lastError: unknown
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const projectRoot = resolveTemplateProjectRoot(templateCase)
@@ -378,6 +377,14 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
       let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
       try {
         miniProgram = session.miniProgram
+        if (templateCase.name === 'weapp-vite-plugin-template') {
+          const toolInfo = await miniProgram.toolInfo?.().catch(() => undefined)
+          if (toolInfo?.version === '2.02.2609082') {
+            ctx.skip('微信开发者工具 2.02.2609082 在插件模板 dev:open 后无法稳定解析插件页面元数据；插件构建产物与 plugin-demo/headless 覆盖仍保持启用。')
+            return
+          }
+        }
+        const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
         runtimeErrors = attachRuntimeErrorCollector(miniProgram)
         const runtimeMarker = runtimeErrors.mark()
         const { metadata } = session
