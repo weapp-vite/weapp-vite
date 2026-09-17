@@ -38,7 +38,7 @@ catalog:
   '@iconify/tailwind4': ^1.2.3
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/vite': ^4.3.3
-  '@types/node': ^26.5.1
+  '@types/node': ^26.6.1
   '@types/react': 19.3.0
   '@types/react-reconciler': 0.33.0
   '@types/semver': ^7.8.0
@@ -50,7 +50,7 @@ catalog:
   '@vue/language-core': ^3.3.11
   '@wot-ui/ui': 2.3.2
   antd-mini: ^3.4.3
-  autoprefixer: ^10.6.0
+  autoprefixer: ^10.6.1
   axios: ^1.20.0
   bundle-require: ^5.1.0
   class-variance-authority: ^0.7.1
@@ -68,7 +68,7 @@ catalog:
   htmlparser2: ^12.0.0
   lodash: ^4.18.1
   lru-cache: ^11.5.2
-  magic-string: ^1.3.1
+  magic-string: ^1.4.1
   merge: ^2.1.1
   miniprogram-api-typings: ^5.2.3
   obug: ^3.0.0
@@ -81,7 +81,7 @@ catalog:
   postcss-selector-parser: ^7.1.6
   react: 19.3.0
   react-reconciler: 0.34.0
-  rolldown: 1.2.8
+  rolldown: 1.2.9
   sass: ^1.104.1
   sass-embedded: ^1.104.1
   sharp: ^0.35.4
