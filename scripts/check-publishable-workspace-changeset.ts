@@ -24,6 +24,21 @@ const PACKAGE_JSON_PATTERNS = [
   'extensions/**/package.json',
 ]
 
+const PACKAGE_JSON_IGNORE = [
+  '**/node_modules/**',
+  '**/fixtures/**',
+]
+
+const NESTED_NON_PACKAGE_SEGMENTS = new Set([
+  'test',
+  'tests',
+  'test-d',
+  'e2e',
+  'coverage',
+  'docs',
+  'fixtures',
+])
+
 const NON_RELEASE_PREFIXES = [
   'test/',
   'tests/',
@@ -154,12 +169,32 @@ function collectLocalWorkspaceDependencyNames(
   return [...names].sort()
 }
 
+/**
+ * 判断 glob 到的 package.json 是 workspace 包清单，而不是包内测试或夹具清单。
+ * 允许包目录本身叫 `test`（例如 `mpcore/packages/test`）。
+ */
+export function isPublishableWorkspaceManifestPath(file: string) {
+  const normalized = file.replaceAll('\\', '/')
+  const segments = normalized.split('/').filter(Boolean)
+  if (segments.at(-1) !== 'package.json') {
+    return false
+  }
+
+  const dirSegments = segments.slice(0, -1)
+  if (dirSegments.length === 0) {
+    return false
+  }
+
+  const ancestorSegments = dirSegments.slice(0, -1)
+  return !ancestorSegments.some(segment => NESTED_NON_PACKAGE_SEGMENTS.has(segment))
+}
+
 export async function collectPublishableWorkspacePackages() {
-  const packageJsonFiles = await fg(PACKAGE_JSON_PATTERNS, {
+  const packageJsonFiles = (await fg(PACKAGE_JSON_PATTERNS, {
     dot: false,
     onlyFiles: true,
-    ignore: ['**/node_modules/**', '**/test/**', '**/tests/**'],
-  })
+    ignore: PACKAGE_JSON_IGNORE,
+  })).filter(isPublishableWorkspaceManifestPath)
 
   const manifests = await Promise.all(packageJsonFiles.map(async (file) => {
     const content = await fs.readFile(file, 'utf8')
