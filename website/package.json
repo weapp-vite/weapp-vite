@@ -28,8 +28,8 @@
     "postinstall": "node ../scripts/print-rolldown-versions-at-install-tail.mjs"
   },
   "dependencies": {
-    "@iconify/vue": "^5.0.1",
-    "@vue/shared": "^3.5.42",
+    "@iconify/vue": "^5.0.2",
+    "@vue/shared": "^3.5.43",
     "echarts": "catalog:",
     "element-plus": "^2.14.5",
     "gridstack": "^13.3.0",

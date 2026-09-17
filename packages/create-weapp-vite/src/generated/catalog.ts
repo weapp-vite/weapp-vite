@@ -9,8 +9,8 @@ export const TEMPLATE_CATALOG = {
   '@babel/types': '^8.0.5',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '^8.0.0',
-  '@icebreakers/stylelint-config': '^5.1.0',
+  '@icebreakers/eslint-config': '^8.0.1',
+  '@icebreakers/stylelint-config': '^5.1.1',
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
@@ -22,8 +22,8 @@ export const TEMPLATE_CATALOG = {
   '@vant/weapp': '^1.11.7',
   '@vitejs/plugin-vue': '^6.0.9',
   '@vue/babel-plugin-jsx': '3.0.0',
-  '@vue/compiler-core': '^3.5.42',
-  '@vue/compiler-dom': '^3.5.42',
+  '@vue/compiler-core': '^3.5.43',
+  '@vue/compiler-dom': '^3.5.43',
   '@vue/language-core': '^3.3.11',
   '@wot-ui/ui': '2.3.2',
   'antd-mini': '^3.4.3',
@@ -77,7 +77,7 @@ export const TEMPLATE_CATALOG = {
   tsx: '^4.23.13',
   typescript: '^6.0.3',
   vite: '8.3.0',
-  vue: '^3.5.42',
+  vue: '^3.5.43',
   zod: '^4.6.5'
 } as const
 
