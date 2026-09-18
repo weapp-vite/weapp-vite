@@ -4,7 +4,8 @@ import type { BrowserRenderedPageTree, BrowserRendererContext, BrowserRenderScop
 import { join } from 'pathe'
 import { attachComponentPage, isComponentPageAttaching } from '../../host/componentPageAttachment'
 import { runComponentLifecycle, runComponentPageLifetime } from '../../runtime/componentInstance'
-import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments } from '../../runtime/componentInstance/attachment'
+import { flushComponentAttachments, flushComponentReady, hasPendingComponentAttachments, isComponentAttached } from '../../runtime/componentInstance/attachment'
+import { flushDiscardedComponentReady, scheduleDiscardedComponentReady } from '../../runtime/componentInstance/discardedReady'
 import { syncComponentRelations } from '../../runtime/componentInstance/relations'
 import { isPageBeforeReady } from '../../runtime/pageLifecycle'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
@@ -268,29 +269,6 @@ function renderNodeTree(
     const ownerScopeId = scope.getScopeId().includes('/') ? scope.getScopeId() : undefined
     const { nextProperties, bindingExpressions } = resolveComponentProperties(clonedNode, scope, componentEntry.definition)
 
-    let componentInstance = context.componentCache.get(componentScopeId)
-    if (!componentInstance) {
-      componentInstance = createBrowserComponentInstance(
-        componentScopeId,
-        context,
-        clonedNode,
-        componentEntry,
-        nextProperties,
-        ownerScopeId,
-      )
-    }
-    else {
-      syncComponentProperties(
-        componentInstance,
-        componentInstance.__definition__ ?? componentEntry.definition,
-        nextProperties,
-        bindingExpressions,
-        context.changedPageKeys,
-      )
-    }
-
-    seenComponentScopes.add(componentScopeId)
-
     const genericComponents = resolveComponentGenerics(
       context,
       clonedNode,
@@ -306,6 +284,36 @@ function renderNodeTree(
       componentScopeId,
       templateRenderState,
     )
+
+    let componentInstance = context.componentCache.get(componentScopeId)
+    if (!componentInstance) {
+      componentInstance = createBrowserComponentInstance(
+        componentScopeId,
+        context,
+        clonedNode,
+        componentEntry,
+        nextProperties,
+        ownerScopeId,
+        (instance) => {
+          // 宿主先按默认数据创建子树，再调用父 created 并应用父级传入的 props。
+          const initialScope = createComponentScope(clonedNode, scope, componentScopeId, instance, genericComponents, slots)
+          context.componentScopes.set(componentScopeId, initialScope)
+          renderBrowserComponentTemplate(context, componentEntry, renderNodeTree, initialScope, componentScopeId, new Set())
+        },
+      )
+    }
+    else {
+      syncComponentProperties(
+        componentInstance,
+        componentInstance.__definition__ ?? componentEntry.definition,
+        nextProperties,
+        bindingExpressions,
+        context.changedPageKeys,
+      )
+    }
+
+    seenComponentScopes.add(componentScopeId)
+
     const componentScope = createComponentScope(
       clonedNode,
       scope,
@@ -418,8 +426,13 @@ export function renderBrowserPageTree(
   )
   // detached 仍能读取旧关系；真实宿主随后解除双方关系并调用 unlinked。
   const removed = [...context.componentCache].filter(([scopeId]) => scopeId.startsWith(`${pageScopeId}/`) && !seenComponentScopes.has(scopeId))
-  for (const [, instance] of removed) {
-    runComponentLifecycle(instance, 'detached')
+  for (const [scopeId, instance] of removed) {
+    if (isComponentAttached(instance)) {
+      runComponentLifecycle(instance, 'detached')
+    }
+    else {
+      scheduleDiscardedComponentReady(context.componentCache, scopeId, instance)
+    }
   }
   const instances = [...seenComponentScopes].map(scopeId => context.componentCache.get(scopeId)!)
   const relationsChanged = !pageAttaching && !hasPendingComponentAttachments(instances) && syncComponentRelations(context.componentCache, seenComponentScopes, pageScopeId)
@@ -430,6 +443,10 @@ export function renderBrowserPageTree(
 
   if (pageAttached || attached || relationsChanged) {
     return renderBrowserPageTree(context, page)
+  }
+
+  if (!isPageBeforeReady(page)) {
+    flushDiscardedComponentReady(context.componentCache, pageScopeId, instance => runComponentLifecycle(instance, 'ready'))
   }
 
   if (!isPageBeforeReady(page) && flushComponentReady(instances, instance => runComponentLifecycle(instance, 'ready'))) {

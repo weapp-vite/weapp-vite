@@ -75,6 +75,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   const activeTemplateRefs = Array.isArray(templateRefs) && templateRefs.length > 0
     ? templateRefs
     : undefined
+  const pendingAttachment = new WeakSet<InternalRuntimeState>()
   if (activeTemplateRefs) {
     requireRuntimeCapability('templateRefs', 'registerComponentDefinition(template refs)')
   }
@@ -200,6 +201,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     lifetimes: {
       ...userLifetimes,
       created: function created(this: InternalRuntimeState, ...args: any[]) {
+        pendingAttachment.add(this)
         applyExtraInstanceFields(this)
         attachWevuPropKeys(this)
         if (activeTemplateRefs) {
@@ -234,6 +236,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
       },
       attached: function attached(this: InternalRuntimeState, ...args: any[]) {
+        pendingAttachment.delete(this)
         applyExtraInstanceFields(this)
         attachWevuPropKeys(this)
         if (activeTemplateRefs && !runtimeCapabilityRegistry.templateRefs?.hasBindings(this)) {
@@ -265,6 +268,11 @@ export function registerComponentDefinition<D extends object, C extends Computed
         })
       },
       ready: function ready(this: InternalRuntimeState, ...args: any[]) {
+        // 微信可能向初始条件分支中已被替换、从未 attached 的实例发送 ready。
+        // 此时保留原生回调，不得将它当作已挂载实例的 wrapper 丢失而补挂载。
+        if (pendingAttachment.has(this)) {
+          return userLifetimes.ready?.apply(this, args)
+        }
         if (isPage && !(this as any)[WEVU_READY_CALLED_KEY]) {
           const initialNavigationPromise = ensureInitialNavigation(this as any, undefined, {
             start: true,
