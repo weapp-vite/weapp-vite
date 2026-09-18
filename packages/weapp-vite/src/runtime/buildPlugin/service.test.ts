@@ -103,7 +103,8 @@ vi.mock('chokidar', () => ({
   },
 }))
 
-vi.mock('./outputs', () => ({
+vi.mock('./outputs', async importOriginal => ({
+  ...await importOriginal<typeof import('./outputs')>(),
   cleanOutputs: cleanOutputsMock,
   isOutputRootInsideOutDir: isOutputRootInsideOutDirMock,
   resetEmittedOutputCaches: resetEmittedOutputCachesMock,
@@ -252,6 +253,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
   const ctx = {
     runtimeState,
     configService: {
+      inlineConfig: {},
       weappViteConfig: {},
       weappLibConfig: undefined,
       loadOptions: {
@@ -1144,7 +1146,7 @@ describe('runtime buildPlugin service', () => {
     }))
   })
 
-  it('routes known atomic creates through the module graph provider only once', async () => {
+  it.each([undefined, false])('routes atomic creates once and respects emptyOutDir=%s', async (emptyOutDir) => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const forceFullValues: Array<string | undefined> = []
@@ -1156,6 +1158,7 @@ describe('runtime buildPlugin service', () => {
         return { output: [] }
       })
     const ctx = createMockContext()
+    ctx.configService.inlineConfig.build = { emptyOutDir }
     const file = '/project/src/pages/logs/index.wxml'
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
       id: '/project/src/pages/logs/index.ts',
@@ -1177,7 +1180,7 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledWith(file, 'create')
     expect(forceFullValues).toEqual(['1'])
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      build: expect.objectContaining({ emptyOutDir: true }),
+      build: expect.objectContaining({ emptyOutDir: emptyOutDir !== false }),
     }))
   })
 
@@ -2122,6 +2125,32 @@ describe('runtime buildPlugin service', () => {
 
     expect(ctx.npmService.build).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
+  })
+
+  it.each([true, false])('preserves startup output and caches with emptyOutDir=false in dev=%s', async (isDev) => {
+    buildMock.mockResolvedValue(isDev ? createWatcher(['START', 'END']) : { output: [] })
+    const ctx = createMockContext()
+    ctx.configService.isDev = isDev
+    ctx.configService.inlineConfig = { build: { emptyOutDir: false } }
+    ctx.configService.weappViteConfig.cleanOutputsInDev = true
+    await createBuildService(ctx).build({ skipNpm: true })
+    expect(cleanOutputsMock).not.toHaveBeenCalled()
+    expect(resetEmittedOutputCachesMock).not.toHaveBeenCalled()
+  })
+
+  it('passes explicit output preservation into isolated plugin builds', async () => {
+    buildMock.mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    Object.assign(ctx.configService, {
+      isDev: false,
+      inlineConfig: { build: { emptyOutDir: false } },
+      absolutePluginRoot: '/project/plugin',
+      absolutePluginOutputRoot: '/project/dist-plugin',
+    })
+    await createBuildService(ctx).build({ skipNpm: true })
+    expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
+      inlineConfig: { build: { outDir: '/project/dist-plugin', emptyOutDir: false } },
+    }))
   })
 
   it('skips output cleanup in dev when cleanOutputsInDev is false', async () => {

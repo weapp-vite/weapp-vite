@@ -161,7 +161,7 @@ export interface WeappViteConfig {
   /**
    * 开发态是否在启动构建前清空输出目录。
    * 开发态默认 `true`，设置为 `false` 可跳过每次 dev 启动前的全量输出目录清理。
-   * 生产构建始终会清空输出目录。
+   * 生产构建默认清空输出目录；显式 `build.emptyOutDir: false` 对开发和生产均禁用全量清理。
    */
   cleanOutputsInDev?: boolean
   /**

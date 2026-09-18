@@ -50,7 +50,7 @@ import { retainWatcherService } from '../watcherPlugin'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
-import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
+import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
 import { refreshSnapshotSources } from './snapshotSources'
 import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
@@ -1576,7 +1576,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         markSnapshotEntriesFullDirty()
-        // 完整 snapshot 会清空 outDir，旧的已输出缓存不能阻止原字节资源恢复。
+        // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
         resetEmittedOutputCaches(ctx.runtimeState)
         process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
         try {
@@ -1585,7 +1585,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             ...snapshotBuildOptions,
             build: {
               ...(snapshotBuildOptions.build ?? {}),
-              emptyOutDir: true,
+              emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
             },
           })
           devBuildWatcher?.emitEvent({ code: 'END' })
@@ -1977,6 +1977,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         outDir: pluginOutputRoot,
       },
     }
+    const emptyOutDir = configService.inlineConfig.build?.emptyOutDir
+    if (typeof emptyOutDir === 'boolean') {
+      inlineConfig.build!.emptyOutDir = emptyOutDir
+    }
     const isolatedKey = `plugin-build:${configService.cwd}`
     const isolatedCtx = await createCompilerContext({
       key: isolatedKey,
@@ -2009,8 +2013,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
-    const shouldCleanOutputs = !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
-    if (shouldCleanOutputs) {
+    if (shouldCleanOutputs(configService, 'startup')) {
       await cleanOutputs(configService)
       resetEmittedOutputCaches(ctx.runtimeState)
     }
