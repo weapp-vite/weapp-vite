@@ -400,17 +400,17 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### e2e app: github-issues / issue #705 > keeps route state and hook origins synchronized across router and native tab navigation
 
-- Source: `e2e/ide/github-issues.runtime.issue705.test.ts:164`
+- Source: `e2e/ide/github-issues.runtime.issue705.test.ts:165`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE705_TABS`; source: `e2e/ide/github-issues.runtime.issue705.test.ts:165`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE705_TABS`; source: `e2e/ide/github-issues.runtime.issue705.test.ts:166`
 - Routes: `pages/issue-705-tab/index`
-- Operations: `check(initial)`, `check(pushed)`, `check(reloaded)`, `check(tab)`, `check(tab-pushed)`
+- Operations: `check(initial)`, `check(pushed)`, `check(reloaded)`, `check(tab)`, `check(routerTabPush)`, `check(routerTabReplace)`, `check(routerTabRedirect)`, `check(tab-pushed)`
 
 ### e2e app: github-issues / issue #705 > restores route state after every back path and allows pushing the same target again
 
-- Source: `e2e/ide/github-issues.runtime.issue705.test.ts:244`
+- Source: `e2e/ide/github-issues.runtime.issue705.test.ts:268`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE705_BACK`; source: `e2e/ide/github-issues.runtime.issue705.test.ts:245`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE705_BACK`; source: `e2e/ide/github-issues.runtime.issue705.test.ts:269`
 - Operations: `check(router:initial)`, `check(router:pushed)`, `callMethodWithOptions(_runE2E)`, `check(router:returned)`, `check(router:repushed)`, `check(native:initial)`, `check(native:pushed)`, `check(native:returned)`, `check(native:repushed)`, `check(system:initial)`, `check(system:pushed)`, `check(system:returned)`, `check(system:repushed)`
 
 ### e2e app: github-issues / issue #706 > uses the app-service Page protocol when the DevTools page-frame channel is unavailable

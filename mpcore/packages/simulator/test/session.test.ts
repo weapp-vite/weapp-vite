@@ -105,6 +105,39 @@ Page({
     })
   })
 
+  it('provides app tabBar config through the simulated host global', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    writeFixtureFile(path.join(projectPath, 'dist/pages/detail/index.js'), `
+Page({
+  data: { hostConfig: null },
+  onLoad() {
+    this.setData({ hostConfig: {
+      scene: globalThis.__wxConfig.scene,
+      tabBar: globalThis.__wxConfig.tabBar,
+    } })
+  },
+})
+`)
+    const session = createHeadlessSession({
+      projectPath,
+      globals: {
+        __wxConfig: { scene: 1001 },
+      },
+    })
+
+    const page = session.reLaunch('/pages/detail/index')
+    expect(page.data.hostConfig).toEqual({
+      scene: 1001,
+      tabBar: {
+        list: [
+          { pagePath: 'pages/home/index.html', text: 'Home' },
+          { pagePath: 'pages/profile/index.html', text: 'Profile' },
+        ],
+      },
+    })
+  })
+
   it('loads static ESM imports for app and page artifacts', () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

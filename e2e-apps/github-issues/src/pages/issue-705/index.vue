@@ -15,6 +15,7 @@ const backHookCalls: Array<{ phase: string, to?: string, from: string }> = []
 const BACK_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_back_result__'
 const PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_push_result__'
 const SWITCH_TAB_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_switch_tab_result__'
+const ROUTER_TAB_PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_router_tab_push_result__'
 let lastFailure: null | { cause: string, type: number } = null
 let ready = false
 
@@ -105,7 +106,7 @@ async function pushToTarget() {
   return createSnapshot()
 }
 
-async function _runE2E(action?: 'push' | 'switchTab') {
+async function _runE2E(action?: 'push' | 'routerTabPush' | 'routerTabReplace' | 'routerTabRedirect' | 'switchTab') {
   if (action === 'push') {
     return pushToTarget()
   }
@@ -123,6 +124,29 @@ async function _runE2E(action?: 'push' | 'switchTab') {
         },
         fail: reject,
       })
+    })
+  }
+
+  if (action === 'routerTabPush' || action === 'routerTabReplace' || action === 'routerTabRedirect') {
+    const removeRedirect = action === 'routerTabRedirect'
+      ? router.beforeEach(to => to.path === 'pages/issue-550/index' ? '/pages/issue-705-tab/index' : undefined)
+      : undefined
+    try {
+      if (action === 'routerTabReplace') {
+        await router.replace('/pages/issue-705-tab/index')
+      }
+      else {
+        await router.push(action === 'routerTabRedirect' ? '/pages/issue-550/index' : '/pages/issue-705-tab/index')
+      }
+    }
+    finally {
+      removeRedirect?.()
+    }
+    wx.setStorageSync(ROUTER_TAB_PUSH_RESULT_STORAGE_KEY, {
+      pageStack: getCurrentPages().map(page => page.route),
+      route: {
+        path: router.currentRoute.path,
+      },
     })
   }
 
