@@ -32,6 +32,54 @@ async function generate(plugins: Plugin[], marker: string, fileName = 'pages/pro
 }
 
 describe('Tailwind transformed source ownership', () => {
+  it('compiles nested managed imports before Vite while preserving source bases and invalidation', async () => {
+    const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-imports-')))
+    const entry = path.join(root, 'src/styles/tailwind.css')
+    const owner = path.join(root, 'src/app.css')
+    await mkdir(path.dirname(entry), { recursive: true })
+    await mkdir(path.join(root, 'node_modules'))
+    await symlink(tailwindDirectory, path.join(root, 'node_modules/tailwindcss'), 'junction')
+    await writeFile(entry, '@import "tailwindcss" source(none); @source "./candidates.html";')
+    const candidates = path.join(root, 'src/styles/candidates.html')
+    await writeFile(candidates, '<div class="p-[37px]"></div>')
+    await writeFile(path.join(root, 'src/styles/wrapper.css'), '@import "./tailwind.css";')
+    const ctx = {
+      configService: {
+        cwd: root,
+        absoluteSrcRoot: path.join(root, 'src'),
+        isDev: true,
+        platform: 'weapp',
+        outputExtensions: { wxml: 'wxml', wxss: 'wxss' },
+        weappViteConfig: { tailwindcss: { cssEntries: [entry] } },
+      },
+      runtimeState: createRuntimeState(),
+    } as unknown as CompilerContext
+    const manager = createTailwindcssPlugin(ctx)[0]!
+    const pluginContext = {
+      addWatchFile: vi.fn(),
+      resolve: vi.fn(async (request: string, importer: string) => ({ id: path.resolve(path.dirname(importer), request) })),
+    }
+    const source = '@import "./styles/wrapper.css"; .ordinary { color: red; }'
+    const transform = () => handler(manager.transform)!.call(pluginContext as any, source, owner, {} as any)
+    try {
+      const first = await transform()
+      expect(first).toMatchObject({ code: expect.stringMatching(/padding:\s*37px/), meta: { weappViteStyleSources: expect.arrayContaining([entry.replaceAll('\\', '/')]) } })
+      expect(first!.code).toContain('.ordinary')
+      expect(first!.code).not.toMatch(/@(?:theme|source|tailwind)\b/)
+      expect(await handler(manager.shouldTransformCachedModule)!.call(pluginContext as any, { id: owner } as any)).toBe(true)
+      await writeFile(candidates, '<div class="p-[41px]"></div>')
+      await manager.watchChange!.call(pluginContext as any, candidates, { event: 'update' })
+      expect((await transform())!.code).toMatch(/padding:\s*41px/)
+      expect(await handler(manager.transform)!.call(pluginContext as any, '.ordinary { color: blue; }', owner, {} as any)).toBeNull()
+      expect(await handler(manager.shouldTransformCachedModule)!.call(pluginContext as any, { id: owner } as any)).toBeUndefined()
+      expect((await transform())!.code).toMatch(/padding:\s*41px/)
+    }
+    finally {
+      await handler(manager.closeWatcher)!.call(pluginContext as any)
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('keeps two scoped SFC owners of the same external entry independent', async () => {
     const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'tailwind-scoped-')))
     const entry = path.join(root, 'src/shared.css')

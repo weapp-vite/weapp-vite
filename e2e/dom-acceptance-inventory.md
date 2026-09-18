@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：102；微信：99；范围外：3。
-- 展开的 case 声明：258；已接入计划：258；缺计划：0。
+- 任务：103；微信：100；范围外：3。
+- 展开的 case 声明：259；已接入计划：259；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -54,6 +54,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/index.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/issue-997-rebuild.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/issue-998-tailwind.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/layout-power-demo-message.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/layout-power-demo.runtime-vendor-hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/lifecycle-compare.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
@@ -1064,6 +1065,17 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-997`; checkpoints: `[ { id: 'initial', route: ROUTE, action: '重建前确认宿主页', nodes: [{ selector: '#issue-997-page', text: 'output preserved' }] }, { id: 'rebuilt', route: ROUTE, action: 'IDE 保持打开时重建后验证页面和点击', nodes: [{ selector: '#issue-997-page', text: 'output pr`; source: `e2e/ide/issue-997-rebuild.runtime.test.ts:34`
 - Routes: `/pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `tap(<missing>)`, `check(rebuilt)`
+
+
+## ide/issue-998-tailwind.runtime.test.ts
+
+### issue #998: managed imports and ordinary CSS HMR > keeps utility colors, local priority and click state across imported stylesheet updates
+
+- Source: `e2e/ide/issue-998-tailwind.runtime.test.ts:48`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-998`; checkpoints: `states.map(state => ({ id: state.id, route: ROUTE, action: \`检查 ${state.id} 阶段样式与交互状态\`, nodes: [ { selector: '#issue-998-utility', text: 'generated utility', ...(computedStyles ? { styles: { 'background-color': state.utility } } : {}) }, { s`; source: `e2e/ide/issue-998-tailwind.runtime.test.ts:56`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `tap(<missing>)`, `check(ordinary)`, `check(utility)`
 
 
 ## ide/layout-power-demo-message.runtime.test.ts

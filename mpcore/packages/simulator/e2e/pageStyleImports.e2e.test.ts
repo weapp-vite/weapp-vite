@@ -46,6 +46,35 @@ function mountPageStyleWorkbench(source: PageStyleSource = 'imported', overrides
   }
 }
 
+it('applies issue #998 minified ordinary CSS and utility updates without losing local priority or click state', async () => {
+  const preview = mountPageStyleWorkbench('imported', [
+    ['styles/palette.wxss', '.tone-initial{background-color:#fce7f3}.local-probe{background-color:#fce7f3}#count{color:red}'],
+  ])
+  try {
+    await nextTick()
+    const session = preview.workbench.session.value!
+    const page = session.getCurrentPages()[0]
+    const app = session.getApp()
+    expect(getComputedStyle(preview.element('#import-probe')).backgroundColor).toBe('rgb(252, 231, 243)')
+    expect(getComputedStyle(preview.element('#count')).color).toBe('rgb(255, 0, 0)')
+    preview.element('#increment').click()
+    await nextTick()
+    for (const [utility, ordinary] of [['#fce7f3', 'blue'], ['#dbeafe', 'blue']]) {
+      preview.workbench.run(() => session.files.set('styles/palette.wxss', `.tone-initial{background-color:${utility}}.local-probe{background-color:${utility}}#count{color:${ordinary}}`))
+      await nextTick()
+      expect(getComputedStyle(preview.element('#import-probe')).backgroundColor).toBe(utility === '#fce7f3' ? 'rgb(252, 231, 243)' : 'rgb(219, 234, 254)')
+      expect(getComputedStyle(preview.element('#local-probe')).backgroundColor).toBe('rgb(31, 41, 55)')
+      expect(getComputedStyle(preview.element('#count')).color).toBe('rgb(0, 0, 255)')
+      expect(preview.element('#count').textContent).toBe('count: 1')
+      expect(session.getCurrentPages()[0]).toBe(page)
+      expect(session.getApp()).toBe(app)
+    }
+  }
+  finally {
+    preview.close()
+  }
+})
+
 it('renders issue #779 compiled stylesheet text, class and actual color through the real preview', async () => {
   const preview = mountPageStyleWorkbench('imported', createIssue779StyleOutputFiles())
   try {
