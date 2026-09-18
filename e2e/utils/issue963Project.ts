@@ -13,7 +13,17 @@ export async function createIssue963Project(es6: boolean) {
   for (const name of ['src', 'plugin', 'shared', 'package.json', 'weapp-vite.config.ts', 'tsconfig.json', 'project.config.json', 'project.private.config.json']) {
     await cp(path.join(template, name), path.join(project, name), { recursive: true })
   }
-  await symlink(await realpath(path.join(template, 'node_modules')), path.join(project, 'node_modules'), 'junction')
+  await mkdir(path.join(project, 'node_modules'))
+  // 避免 Windows 上穿过整目录 junction 后再次解析 pnpm 的包链接。
+  const dependencies = {
+    'weapp-vite': path.join(ROOT, 'packages/weapp-vite'),
+    'wevu': path.join(ROOT, 'packages-runtime/wevu'),
+    'dayjs': path.join(template, 'node_modules/dayjs'),
+    'sass': path.join(template, 'node_modules/sass'),
+  }
+  for (const [name, target] of Object.entries(dependencies)) {
+    await symlink(await realpath(target), path.join(project, 'node_modules', name), 'junction')
+  }
   for (const name of ['project.config.json', 'project.private.config.json']) {
     const file = path.join(project, name)
     const config = JSON.parse(await readFile(file, 'utf8')) as {
