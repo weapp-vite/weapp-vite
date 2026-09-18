@@ -100,7 +100,7 @@ catalog:
   vite-plugin-inspect: ^12.0.2
   vue: ^3.5.43
   vue-tsc: ^3.3.11
-  weapp-tailwindcss: ^5.5.5
+  weapp-tailwindcss: ^5.5.6
   zod: ^4.6.5
 
 catalogs:
@@ -112,7 +112,7 @@ catalogs:
   tdesign-miniprogram-fixed:
     tdesign-miniprogram: 1.16.1
   weapp-tailwindcss-fixed:
-    weapp-tailwindcss: 5.5.5
+    weapp-tailwindcss: 5.5.6
 
 gitChecks: false
 
