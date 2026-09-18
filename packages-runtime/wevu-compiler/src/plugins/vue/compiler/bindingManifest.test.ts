@@ -11,6 +11,34 @@ import { createBindingManifest } from './template/bindingManifest'
 import { alipayPlatform, ttPlatform, wechatPlatform } from './template/platforms'
 
 describe('binding manifest', () => {
+  it('keeps nested slot-only owner data in generated setData picks', async () => {
+    const result = await compileVueFile(`<script setup>
+const selected = ['a']
+const unused = 'not rendered'
+</script><template><Provider><Cell><Leaf :value="selected" /></Cell></Provider></template>`, '/src/components/slot-owner.vue', {
+      autoSetDataPick: true,
+      template: {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: ['Provider', 'Cell', 'Leaf'],
+      },
+    })
+
+    const keys = resolveBindingManifestPickKeys(result.bindingManifest!, true)
+    expect(keys).toContain('selected')
+    expect(keys).not.toContain('unused')
+    expect(result.script).toMatch(/pick:\s*\[[^\]]*"selected"/)
+  })
+
+  it('disables automatic picks when slot owner dependencies are dynamic', () => {
+    const result = compileVueTemplateToWxml(
+      '<Provider><Cell :value="records[selected]" /></Provider>',
+      '/src/components/slot-owner.vue',
+      { scopedSlotsCompiler: 'augmented', wevuComponentTags: ['Provider', 'Cell'] },
+    )
+
+    expect(resolveBindingManifestPickKeys(result.bindingManifest, true)).toEqual([])
+  })
+
   it('collects stable Vue bindings with paths, modes and source locations', () => {
     const result = compileVueTemplateToWxml(
       '<view v-if="visible">{{ user.name }}{{ table[column] }}</view>',

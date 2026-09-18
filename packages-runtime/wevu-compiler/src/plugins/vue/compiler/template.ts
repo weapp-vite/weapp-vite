@@ -17,6 +17,7 @@ import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
 import { getMiniProgramTemplatePlatform } from './template/platforms'
+import { retainScopedSlotOwnerBindings } from './template/scopedSlotOwnerBindings'
 
 const HTML_VOID_TAGS = new Set([
   'area',
@@ -198,6 +199,8 @@ export function compileVueTemplateToWxml(
     if (context.formatWxml) {
       wxml = formatWxml(wxml)
     }
+
+    retainScopedSlotOwnerBindings(context.bindingManifest, context.scopedSlotComponents)
 
     const result: TemplateCompileResult = {
       code: wxml,
