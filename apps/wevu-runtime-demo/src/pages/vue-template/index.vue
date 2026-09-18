@@ -135,6 +135,7 @@ function refreshTime() {
         文本：v-text / v-html / Mustache
       </view>
       <view class="card">
+        <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -- 验证原生 text 的 v-text 编译。 -->
         <text v-text="'v-text 覆盖文本内容'" />
         <text>Mustache: {{ now }}</text>
       </view>
@@ -142,6 +143,7 @@ function refreshTime() {
         <text class="muted">
           v-html 小程序不支持，以下仅覆盖语法（编译会给出警告）
         </text>
+        <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -- 保留不支持语法的编译警告示例。 -->
         <view v-html="rawHtml" />
       </view>
     </view>

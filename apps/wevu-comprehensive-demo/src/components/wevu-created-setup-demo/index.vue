@@ -1,24 +1,34 @@
 <script lang="ts">
 import { defineComponent, ref } from 'wevu'
 
+type CreatedSetupInstance = WechatMiniprogram.Component.Instance<
+  { setDataCallCount?: number },
+  Record<never, never>,
+  { pushLog: (message: string) => void, getSetDataCallCount: () => number },
+  []
+>
+
 function formatTime() {
   const now = new Date()
   return now.toLocaleTimeString()
 }
 
 export default defineComponent({
+  setupLifecycle: 'created',
   behaviors: ['wx://component-export'],
   setup(_props, { instance, expose }) {
     const logs = ref<string[]>([])
     const setDataCallCount = ref(0)
     const lastSetDataKeys = ref<string[]>([])
+    let observedSetDataCount = 0
+    let observedSetDataKeys: string[] = []
 
     const rawSetData = (instance as any)?.setData
     if (typeof rawSetData === 'function') {
       ;(instance as any).setData = function wrappedSetData(payload: any, cb: any) {
-        setDataCallCount.value += 1
-        lastSetDataKeys.value = Object.keys(payload ?? {})
-        logs.value.push(`[${formatTime()}] setData#${setDataCallCount.value}: ${lastSetDataKeys.value.join(', ') || '(empty)'}`)
+        // 采样本身不能修改响应式状态，否则统计刷新会递归触发 setData。
+        observedSetDataCount += 1
+        observedSetDataKeys = Object.keys(payload ?? {})
         return rawSetData.call(this, payload, cb)
       }
     }
@@ -41,10 +51,19 @@ export default defineComponent({
       pushLog(`button: count -> ${count.value}`)
     }
 
+    function refreshStats() {
+      setDataCallCount.value = observedSetDataCount
+      lastSetDataKeys.value = observedSetDataKeys
+    }
+
+    function getSetDataCallCount() {
+      return observedSetDataCount
+    }
+
     expose({
       exposedFlag: true,
       a: 1,
-      getSetDataCallCount: () => setDataCallCount.value,
+      getSetDataCallCount,
       ping: () => 'pong(from expose)',
     })
 
@@ -55,6 +74,8 @@ export default defineComponent({
       count,
       increment,
       pushLog,
+      refreshStats,
+      getSetDataCallCount,
     }
   },
   export() {
@@ -66,14 +87,14 @@ export default defineComponent({
     }
   },
   lifetimes: {
-    created() {
-      this.pushLog?.(`lifetimes.created: setDataCallCount=${this.setDataCallCount}`)
+    created(this: CreatedSetupInstance) {
+      this.pushLog?.(`lifetimes.created: setDataCallCount=${this.getSetDataCallCount()}`)
     },
-    attached() {
-      this.pushLog?.(`lifetimes.attached: setDataCallCount=${this.setDataCallCount} (after flush)`)
+    attached(this: CreatedSetupInstance) {
+      this.pushLog?.(`lifetimes.attached: setDataCallCount=${this.getSetDataCallCount()} (after flush)`)
     },
-    ready() {
-      this.pushLog?.(`lifetimes.ready: setDataCallCount=${this.setDataCallCount}`)
+    ready(this: CreatedSetupInstance) {
+      this.pushLog?.(`lifetimes.ready: setDataCallCount=${this.getSetDataCallCount()}`)
     },
   },
 })
@@ -101,7 +122,7 @@ export default defineComponent({
       </view>
       <view class="stat">
         <text class="label">
-          setData 次数
+          setData 次数（刷新时的快照）
         </text>
         <text class="value">
           {{ setDataCallCount }}
@@ -110,6 +131,9 @@ export default defineComponent({
     </view>
 
     <view class="actions">
+      <button class="btn btn-info" @click="refreshStats">
+        刷新统计
+      </button>
       <button class="btn btn-primary" @click="increment">
         count +1
       </button>

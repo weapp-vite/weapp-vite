@@ -11,7 +11,9 @@ definePageJson(() => ({
 
 const show = ref(false)
 const options = ref([{ name: '微信', icon: 'wechat' }, { name: '复制链接', icon: 'link' }])
-function open() { show.value = true }
+function open() {
+  show.value = true
+}
 </script>
 
 <template>

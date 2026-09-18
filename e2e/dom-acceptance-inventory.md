@@ -6,116 +6,117 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：100；微信：97；范围外：3。
-- 展开的 case 声明：250；已接入计划：250；缺计划：0。
+- 任务：101；微信：98；范围外：3。
+- 展开的 case 声明：257；已接入计划：257；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
 
 ## 任务覆盖
 
-| Task                                                                                      | Providers          | Cases | Plans | Missing | Scope        |
-| ----------------------------------------------------------------------------------------- | ------------------ | ----: | ----: | ------: | ------------ |
-| ide/app-lifecycle.test.ts                                                                 | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/app-prelude-native.runtime.test.ts                                                    | devtools, headless |     3 |     3 |       0 | wechat       |
-| ide/app-vue-hmr-alias.runtime.test.ts                                                     | devtools           |     1 |     1 |       0 | wechat       |
-| ide/auto-routes-define-app-json.runtime.test.ts                                           | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/automator-bridge-wrapper-hmr.runtime.test.ts                                          | devtools           |     1 |     1 |       0 | wechat       |
-| ide/automator-concurrent-sessions.runtime.test.ts                                         | devtools           |     1 |     1 |       0 | wechat       |
-| ide/body-blob.runtime.test.ts                                                             | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/devtools-cli-workflow.runtime.test.ts                                                 | devtools           |     2 |     2 |       0 | wechat       |
-| ide/forward-console-demo.runtime.test.ts                                                  | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.aggregate.test.ts                                               | devtools           |    68 |    68 |       0 | wechat       |
-| ide/github-issues.runtime.component-instance-apis.test.ts                                 | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue1009.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue1010.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue1011.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue1012.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue1015.test.ts                                               | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue448-formdata-upload.test.ts                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue547.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue558.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue615.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue621.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue642-bug7-default.test.ts                                   | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue642-bug7-performance.test.ts                               | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue642-bug8.test.ts                                           | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue779.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue826.test.ts                                                | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue852.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue868.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.issue911.test.ts                                                | devtools           |     7 |     7 |       0 | wechat       |
-| ide/github-issues.runtime.issue941.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.require-async.test.ts                                           | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.slot-fallback-compiler-off.test.ts                              | devtools           |     1 |     1 |       0 | wechat       |
-| ide/github-issues.runtime.subpackage-item.test.ts                                         | devtools           |     2 |     2 |       0 | wechat       |
-| ide/github-issues.runtime.subpackage-user.test.ts                                         | devtools           |     2 |     2 |       0 | wechat       |
-| ide/hmr-auto-classic.runtime.test.ts                                                      | devtools           |     1 |     1 |       0 | wechat       |
-| ide/index.test.ts                                                                         | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/issue-340-hoist.runtime.test.ts                                                       | devtools           |     1 |     1 |       0 | wechat       |
-| ide/layout-power-demo-message.runtime.test.ts                                             | devtools           |     1 |     1 |       0 | wechat       |
-| ide/layout-power-demo.runtime-vendor-hmr.test.ts                                          | devtools           |     1 |     1 |       0 | wechat       |
-| ide/lifecycle-compare.test.ts                                                             | devtools, headless |     4 |     4 |       0 | wechat       |
-| ide/mcp-runtime-tools.runtime.test.ts                                                     | devtools           |     1 |     1 |       0 | wechat       |
-| ide/plugin-demo.runtime.test.ts                                                           | devtools           |     1 |     1 |       0 | wechat       |
-| ide/react-runtime-spike.runtime.test.ts                                                   | devtools, headless |     3 |     3 |       0 | wechat       |
-| ide/request-clients-real-native.runtime.test.ts                                           | devtools           |     6 |     6 |       0 | wechat       |
-| ide/request-clients-real.runtime.test.ts                                                  | devtools           |     7 |     7 |       0 | wechat       |
-| ide/shared-styles.runtime.test.ts                                                         | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/stateful-hmr.runtime.test.ts                                                          | devtools           |     5 |     5 |       0 | wechat       |
-| ide/stream-capability.runtime.test.ts                                                     | devtools, headless |     8 |     8 |       0 | wechat       |
-| ide/subpackage-shared-strategy-complex.runtime.test.ts                                    | devtools, headless |     2 |     2 |       0 | wechat       |
-| ide/swan-runtime.optional.test.ts                                                         | swan               |     1 |     0 |       - | out-of-scope |
-| ide/tdesign-dialog-import.runtime.test.ts                                                 | devtools, headless |     2 |     2 |       0 | wechat       |
-| ide/template-dev-open-all.runtime.test.ts                                                 | devtools           |    11 |    11 |       0 | wechat       |
-| ide/template-multi-platform-sfc.swan.optional.test.ts                                     | swan               |     1 |     0 |       - | out-of-scope |
-| ide/template-multi-platform.swan.optional.test.ts                                         | swan               |     1 |     0 |       - | out-of-scope |
-| ide/template-retail-checkout.runtime.test.ts                                              | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/template-tailwindcss-dev-open-multi.runtime.test.ts                                   | devtools           |     3 |     3 |       0 | wechat       |
-| ide/template-tailwindcss-tdesign-hmr.runtime.test.ts                                      | devtools           |     2 |     2 |       0 | wechat       |
-| ide/template-weapp-vite-multi-platform-sfc-template.test.ts                               | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-multi-platform-template.test.ts                                   | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts                              | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-tailwindcss-template.test.ts                                      | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-tailwindcss-vant-template.test.ts                                 | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-template.test.ts                                                  | devtools, headless |     2 |     2 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts | devtools           |     4 |     4 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts                  | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts     | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts                    | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts  | devtools           |     3 |     3 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts          | devtools           |     3 |     3 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts                         | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts                            | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts                             | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/template-weapp-vite-wevu-template.test.ts                                             | devtools, headless |     2 |     2 |       0 | wechat       |
-| ide/template-wevu-features-app.test.ts                                                    | devtools           |     1 |     1 |       0 | wechat       |
-| ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts                                 | devtools           |     1 |     1 |       0 | wechat       |
-| ide/vite-native-ts.worker.runtime.test.ts                                                 | devtools           |     1 |     1 |       0 | wechat       |
-| ide/vue-mini-issue151-wevu.runtime.test.ts                                                | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-composition-api.weapp.test.ts                                                    | devtools           |     2 |     2 |       0 | wechat       |
-| ide/wevu-features.runtime.behavior.test.ts                                                | devtools, headless |     9 |     9 |       0 | wechat       |
-| ide/wevu-features.runtime.router.test.ts                                                  | devtools, headless |     4 |     4 |       0 | wechat       |
-| ide/wevu-features.runtime.subpath.test.ts                                                 | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-jsx-tsx.hmr.runtime.test.ts                                                      | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-jsx-tsx.runtime.test.ts                                                          | devtools, headless |     3 |     3 |       0 | wechat       |
-| ide/wevu-query.runtime.test.ts                                                            | devtools, headless |     3 |     3 |       0 | wechat       |
-| ide/wevu-router-hmr.runtime.test.ts                                                       | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-runtime-demo.request-globals.weapp.test.ts                                       | devtools           |     2 |     2 |       0 | wechat       |
-| ide/wevu-runtime-demo.vue-query.weapp.test.ts                                             | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-runtime.class-computed.weapp.test.ts                                             | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-runtime.core-hmr.test.ts                                                         | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-runtime.function-props.weapp.test.ts                                             | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-runtime.inline-object-reactivity.weapp.test.ts                                   | devtools           |     2 |     2 |       0 | wechat       |
-| ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts                                   | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-runtime.shared-template-wxs.hmr.test.ts                                          | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-runtime.weapp.test.ts                                                            | devtools, headless |     6 |     6 |       0 | wechat       |
-| ide/wevu-subpackage-placement.runtime.test.ts                                             | devtools           |     1 |     1 |       0 | wechat       |
-| ide/wevu-vue-demo.script-setup.emit.runtime.test.ts                                       | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/wevu-watch.test.ts                                                                    | devtools           |     1 |     1 |       0 | wechat       |
-| ide/chunk-modes.runtime.duplicate.test.ts                                                 | devtools, headless |     2 |     2 |       0 | wechat       |
-| ide/chunk-modes.runtime.extras.test.ts                                                    | devtools, headless |     1 |     1 |       0 | wechat       |
-| ide/chunk-modes.runtime.hoist.test.ts                                                     | devtools, headless |     1 |     1 |       0 | wechat       |
+| Task | Providers | Cases | Plans | Missing | Scope |
+| --- | --- | ---: | ---: | ---: | --- |
+| ide/app-lifecycle.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/app-prelude-native.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/app-vue-hmr-alias.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/auto-routes-define-app-json.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/automator-bridge-wrapper-hmr.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/automator-concurrent-sessions.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/body-blob.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/devtools-cli-workflow.runtime.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/forward-console-demo.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.aggregate.test.ts | devtools | 68 | 68 | 0 | wechat |
+| ide/github-issues.runtime.component-instance-apis.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue1009.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue1010.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue1011.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue1012.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue1015.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue448-formdata-upload.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue547.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue558.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue615.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue621.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue642-bug7-default.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue642-bug7-performance.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue642-bug8.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue779.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue826.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue852.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue868.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue911.test.ts | devtools | 7 | 7 | 0 | wechat |
+| ide/github-issues.runtime.issue941.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.require-async.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.slot-fallback-compiler-off.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.subpackage-item.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/github-issues.runtime.subpackage-user.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/hmr-auto-classic.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/index.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/layout-power-demo-message.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/layout-power-demo.runtime-vendor-hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/lifecycle-compare.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
+| ide/mcp-runtime-tools.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/plugin-demo.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/react-runtime-spike.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/request-clients-real-native.runtime.test.ts | devtools | 6 | 6 | 0 | wechat |
+| ide/request-clients-real.runtime.test.ts | devtools | 7 | 7 | 0 | wechat |
+| ide/shared-styles.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/stateful-hmr.runtime.test.ts | devtools | 5 | 5 | 0 | wechat |
+| ide/stream-capability.runtime.test.ts | devtools, headless | 8 | 8 | 0 | wechat |
+| ide/subpackage-shared-strategy-complex.runtime.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
+| ide/swan-runtime.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
+| ide/tdesign-dialog-import.runtime.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
+| ide/template-dev-open-all.runtime.test.ts | devtools | 11 | 11 | 0 | wechat |
+| ide/template-multi-platform-sfc.swan.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
+| ide/template-multi-platform.swan.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
+| ide/template-retail-checkout.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-tailwindcss-dev-open-multi.runtime.test.ts | devtools | 3 | 3 | 0 | wechat |
+| ide/template-tailwindcss-tdesign-hmr.runtime.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/template-weapp-vite-multi-platform-sfc-template.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-multi-platform-template.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-tailwindcss-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-tailwindcss-vant-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-template.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts | devtools | 4 | 4 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts | devtools | 3 | 3 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts | devtools | 3 | 3 | 0 | wechat |
+| ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-weapp-vite-wevu-template.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
+| ide/template-wevu-features-app.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/vite-native-ts.worker.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/vue-mini-issue151-wevu.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-composition-api.weapp.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/wevu-comprehensive.runtime.test.ts | devtools, headless | 7 | 7 | 0 | wechat |
+| ide/wevu-features.runtime.behavior.test.ts | devtools, headless | 9 | 9 | 0 | wechat |
+| ide/wevu-features.runtime.router.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
+| ide/wevu-features.runtime.subpath.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-jsx-tsx.hmr.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-jsx-tsx.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/wevu-query.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/wevu-router-hmr.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime-demo.request-globals.weapp.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/wevu-runtime-demo.vue-query.weapp.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime.class-computed.weapp.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime.core-hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime.function-props.weapp.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime.inline-object-reactivity.weapp.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime.shared-template-wxs.hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime.weapp.test.ts | devtools, headless | 6 | 6 | 0 | wechat |
+| ide/wevu-subpackage-placement.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-vue-demo.script-setup.emit.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/wevu-watch.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/chunk-modes.runtime.duplicate.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
+| ide/chunk-modes.runtime.extras.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/chunk-modes.runtime.hoist.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 
 ## ide/app-lifecycle.test.ts
 
@@ -125,6 +126,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps`; checkpoints: `['native', 'wevu-ts', 'wevu-vue'].flatMap(variant => [ { id: \`${variant}:initial\`, route: INDEX_ROUTE, action: \`冷启动 e2e-apps/app-lifecycle-${variant} 并检查实际启动 hook 状态\`, nodes: [ { selector: '#app-lifecycle-route', text: variant === 'native' `; source: `e2e/ide/app-lifecycle.test.ts:234`
 - Operations: `check(native:initial)`, `callMethod(refreshLifecycleSummary)`, `check(native:finalized)`, `check(wevu-ts:initial)`, `check(wevu-ts:finalized)`, `check(wevu-vue:initial)`, `check(wevu-vue:finalized)`
+
 
 ## ide/app-prelude-native.runtime.test.ts
 
@@ -149,6 +151,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/app-prelude-native`; checkpoints: `[{ id: 'request-runtime', route: ROUTES[0]!.route, action: 'inspect the installed request API constructors on the first page', nodes: Object.entries(REQUEST_RUNTIME).map(([name, type]) => ({ selector: \`#runtime-${name}\`, text: \`${name}=${ty`; source: `e2e/ide/app-prelude-native.runtime.test.ts:94`
 - Operations: `check(request-runtime)`
 
+
 ## ide/app-vue-hmr-alias.runtime.test.ts
 
 ### app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR
@@ -158,6 +161,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:448`
 - Routes: ``
 - Operations: `check(initial)`, `check(app-update)`, `check(layout-update)`, `check(page-update)`, `check(dependency-update)`
+
 
 ## ide/auto-routes-define-app-json.runtime.test.ts
 
@@ -169,6 +173,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/home/index`
 - Operations: `reLaunch(/pages/home/index)`, `check(route-links)`
 
+
 ## ide/automator-bridge-wrapper-hmr.runtime.test.ts
 
 ### automator bridge wrapper snapshot hmr (ide) > renders four same-length template updates while retaining page and app identity
@@ -179,6 +184,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/hmr/index`
 - Operations: `reLaunch(/pages/hmr/index)`, `check(initial)`, `callMethod(increment)`, `check(retained:0)`, `check(retained:${index})`
 
+
 ## ide/automator-concurrent-sessions.runtime.test.ts
 
 ### automator concurrent sessions > assigns independent automator session metadata to each project
@@ -187,6 +193,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/base + e2e-apps/app-lifecycle-native`; checkpoints: `[ { id: 'base', route: INDEX_ROUTE, action: '启动第一个项目并检查其实际界面', nodes: [ { selector: '#base-greeting', text: 'Hello' }, { selector: '#base-target', text: 'Target: index snapshot' }, ], }, { id: 'native', route: INDEX_ROUTE, action: '保留第一连接并启`; source: `e2e/ide/automator-concurrent-sessions.runtime.test.ts:152`
 - Operations: `check(base)`, `check(native)`
+
 
 ## ide/body-blob.runtime.test.ts
 
@@ -197,6 +204,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/request-clients-real-native`; checkpoints: `[ { id: 'initial', route, action: '契约页初始状态', nodes: [{ selector: '#body-blob-status', text: 'idle' }] }, { id: 'completed', route, action: '执行本地契约和真实 fetch 后检查逐项结果', nodes: [ { selector: '#body-blob-status', text: 'passed' }, ...ids.map(id `; source: `e2e/ide/body-blob.runtime.test.ts:63`
 - Routes: `/pages/body-blob/index?baseUrl=${encodeURIComponent(server!.baseUrl)}`
 - Operations: `reLaunch(/pages/body-blob/index?baseUrl=${encodeURIComponent(server!.baseUrl)})`, `check(initial)`, `callMethod(runE2E)`, `check(completed)`, `check(repeated)`
+
 
 ## ide/devtools-cli-workflow.runtime.test.ts
 
@@ -214,6 +222,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `CLI_HOTKEY_CHECKPOINTS`; source: `e2e/ide/devtools-cli-workflow.runtime.test.ts:686`
 - Operations: `check(dev-opened)`, `check(screenshot)`
 
+
 ## ide/forward-console-demo.runtime.test.ts
 
 ### forward-console-demo in real WeChat DevTools > keeps forwarding console output after dev HMR updates the current page
@@ -222,6 +231,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `apps/forward-console-demo`; checkpoints: `[ { id: 'initial', route: INDEX_ROUTE, action: '检查日志演示首屏', nodes: [ { selector: '.title', text: 'Forward Console Lab' }, { selector: '.description', text: INITIAL_DESCRIPTION }, { selector: '.status-pill text', text: '0 events' }, { selecto`; source: `e2e/ide/forward-console-demo.runtime.test.ts:224`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(clicked)`, `check(patched)`
+
 
 ## ide/github-issues.runtime.aggregate.test.ts
 
@@ -704,6 +714,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).outlet`; source: `e2e/ide/github-issues.runtime.slot-fallback.test.ts:150`
 - Operations: `check(initial)`
 
+
 ## ide/github-issues.runtime.component-instance-apis.test.ts
 
 ### github issues: native component instance APIs > keeps native relation lifecycle order and component selector scopes across removal and restoration
@@ -712,6 +723,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'baseline', route: BASELINE_ROUTE, action: '离开上轮组件后显式清空事件，检查独立准备页', nodes: [{ selector: '#baseline-title', text: '准备组件关系验收' }] }, ...stages.map(stage => ({ id: stage.id, route: ROUTE, action: stage.action, nodes: [ { selector: '#rel`; source: `e2e/ide/github-issues.runtime.component-instance-apis.test.ts:31`
 - Operations: `act(baseline)`, `check(baseline)`, `act(initial)`, `act(stage.id)`, `callMethod(snapshot)`, `check(stage.id)`
+
 
 ## ide/github-issues.runtime.issue1009.test.ts
 
@@ -722,6 +734,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_1009_ROUTE, action: '检查内联事件尚未执行的首屏', nodes: [ { selector: '#issue-1009-page', attributes: { 'data-e2e-issue': '1009' } }, { selector: '#issue1009-result-ctx', text: 'ctx: pending' }, { selector: '#issue1009-re`; source: `e2e/ide/github-issues.runtime.issue1009.test.ts:43`
 - Operations: `check(initial)`, `tap(<missing>)`, `callMethod(_runE2E)`, `check(completed)`
 
+
 ## ide/github-issues.runtime.issue1010.test.ts
 
 ### e2e app: github-issues / issue #1010 > writes recursive destructuring targets without globals or shadow leaks
@@ -730,6 +743,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'initial', route: ISSUE_ROUTE, action: '检查解构赋值前的组件状态', nodes: [{ selector: '#issue-1010-count', text: '1' }], }, ...STEPS.map(step => ({ id: step.id, route: ISSUE_ROUTE, action: \`执行 ${step.id} 解构写入并检查渲染状态\`, nodes: [{ selector: step.`; source: `e2e/ide/github-issues.runtime.issue1010.test.ts:96`
 - Operations: `check(initial)`, `callMethod(_runE2E)`, `tap(<missing>)`, `check(reported)`, `check(object)`, `check(array)`, `check(local)`, `check(order)`, `check(direct)`
+
 
 ## ide/github-issues.runtime.issue1011.test.ts
 
@@ -740,6 +754,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_ROUTE, action: '检查默认值、对象 rest 排除与数组 rest 首屏结果', nodes: [ { selector: '#issue1011-value-missing', text: 'missing\|section-fallback\|A\|excluded\|excluded' }, { selector: '#issue1011-value-null', text: 'null\|null\|B\|`; source: `e2e/ide/github-issues.runtime.issue1011.test.ts:53`
 - Operations: `check(initial)`, `callMethodWithOptions(_snapshot)`, `check(captured)`
 
+
 ## ide/github-issues.runtime.issue1012.test.ts
 
 ### e2e app: github-issues / issue #1012 > keeps JavaScript this ownership across compiled template expressions
@@ -748,6 +763,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_ROUTE, action: '检查动态 this 场景执行前的首屏', nodes: [ { selector: '#issue1012-map-result', text: 'pending' }, { selector: '#issue1012-results', text: 'pending' }, ], }, { id: 'executed', route: ISSUE_ROUTE, action: '触`; source: `e2e/ide/github-issues.runtime.issue1012.test.ts:35`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(executed)`
+
 
 ## ide/github-issues.runtime.issue1015.test.ts
 
@@ -758,6 +774,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'initial', route: ISSUE_ROUTE, action: '检查外部 CSS 变量的首屏注入', nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': 'red' }, ...(provider === 'devtools' ? { styles: { color: 'rgb(255, 0, 0)' } } : {}), }, { selecto`; source: `e2e/ide/github-issues.runtime.issue1015.test.ts:61`
 - Operations: `check(initial)`, `callMethod(_runE2E)`, `check(updated)`
 
+
 ## ide/github-issues.runtime.issue448-formdata-upload.test.ts
 
 ### github-issues runtime issue #448 FormData upload > uploads wx.downloadFile data as Blob, File, and Request FormData bodies in real DevTools
@@ -766,6 +783,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `UPLOAD_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue448-formdata-upload.test.ts:95`
 - Operations: `check(initial)`, `check(checkpoint.id)`
+
 
 ## ide/github-issues.runtime.issue547.test.ts
 
@@ -777,6 +795,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/issue-547/index`
 - Operations: `check(initial)`
 
+
 ## ide/github-issues.runtime.issue558.test.ts
 
 ### e2e app: github-issues / issue #558 > renders owner-proxy bindings across augmented slot variants in DevTools
@@ -785,6 +804,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `AUGMENTED_SLOT_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue558.test.ts:80`
 - Operations: `callMethod(_runE2E)`, `check(checkpoint.id)`
+
 
 ## ide/github-issues.runtime.issue615.test.ts
 
@@ -796,6 +816,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/issue-615/index`
 - Operations: `check(initial)`
 
+
 ## ide/github-issues.runtime.issue621.test.ts
 
 ### e2e app: github-issues / issue #621 > keeps inline assignment events writable for setup refs in DevTools
@@ -805,6 +826,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `INLINE_ASSIGNMENT_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue621.test.ts:49`
 - Operations: `tap(<missing>)`, `check(step.id)`
 
+
 ## ide/github-issues.runtime.issue642-bug7-default.test.ts
 
 ### e2e app: github-issues / issue #642 bug-7 default mode > renders bug-7 scoped and default slots in normal mode without runtime loops
@@ -812,6 +834,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Source: `e2e/ide/github-issues.runtime.issue642-bug7-default.test.ts:20`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE642_BUG7`; source: `e2e/ide/github-issues.runtime.issue642-bug7-default.test.ts:21`
+
 
 ## ide/github-issues.runtime.issue642-bug7-performance.test.ts
 
@@ -821,6 +844,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE642_BUG7`; source: `e2e/ide/github-issues.runtime.issue642-bug7-performance.test.ts:21`
 
+
 ## ide/github-issues.runtime.issue642-bug8.test.ts
 
 ### e2e app: github-issues / issue #642 bug-8 > keeps scoped slot owner id when scoped slot component is nested through another component
@@ -829,6 +853,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `ISSUE642_BUG8`; source: `e2e/ide/github-issues.runtime.issue642-bug8.test.ts:92`
 - Operations: `check(initial)`
+
 
 ## ide/github-issues.runtime.issue779.test.ts
 
@@ -840,6 +865,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/issue-779/index`
 - Operations: `check(pre-transformed-style)`
 
+
 ## ide/github-issues.runtime.issue826.test.ts
 
 ### e2e app: github-issues / issue #826 > executes preserved single, shared and barrel modules across page relaunches
@@ -850,6 +876,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/issue-826/index`, `/pages/issue-826/second`
 - Operations: `check(index)`, `check(second)`
 
+
 ## ide/github-issues.runtime.issue852.test.ts
 
 ### e2e app: github-issues / issue #852 > renders numeric separator bindings in real WeChat DevTools
@@ -859,6 +886,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_ROUTE, action: '检查组件属性和不同进制数字分隔符表达式的实际文本', nodes: [ { selector: '#issue-852-count', scope: ['#issue-852-count-component'], text: 'Count: 1000000' }, { selector: '#issue852-decimal', text: 'decimal: 10000000000`; source: `e2e/ide/github-issues.runtime.issue852.test.ts:40`
 - Operations: `check(initial)`
 
+
 ## ide/github-issues.runtime.issue868.test.ts
 
 ### e2e app: github-issues / issue #868 > renders projected keys and restores source identity in real runtime
@@ -867,6 +895,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `IDENTITY_CHECKPOINTS`; source: `e2e/ide/github-issues.runtime.issue868.test.ts:39`
 - Operations: `check(initial)`, `callMethodWithOptions(_runE2E)`, `check(updated)`
+
 
 ## ide/github-issues.runtime.issue911.test.ts
 
@@ -924,6 +953,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/issue-911/index?mode=late`, `/pages/issue-550/index`
 - Operations: `callMethod(resetTrace)`, `check(baseline)`, `reLaunch(/pages/issue-911/index?mode=late)`, `reLaunch(/pages/issue-550/index)`, `check(replaced)`, `check(settled)`, `check(result)`
 
+
 ## ide/github-issues.runtime.issue941.test.ts
 
 ### e2e app: github-issues / issue #941 > keeps every wx direct-return API out of the Promise bridge
@@ -932,6 +962,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: ISSUE_941_ROUTE, action: '检查尚未执行 adapter 的首屏', nodes: [ { selector: '#issue941-title', text: 'issue-941 direct-return adapter' }, { selector: '#issue941-cache-options', text: 'cache options: pending' }, { selector: `; source: `e2e/ide/github-issues.runtime.issue941.test.ts:34`
 - Operations: `check(initial)`, `callMethodWithOptions(_runE2E)`, `check(executed)`
+
 
 ## ide/github-issues.runtime.require-async.test.ts
 
@@ -942,6 +973,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ ['initial', 'ready', 'none', 'none'], ['callback', 'loaded', 'callback', 'require-async:callback'], ['promise', 'loaded', 'promise', 'require-async:promise'], ['native', 'loaded', 'native', 'require-async:native-default:require-async:nati`; source: `e2e/ide/github-issues.runtime.require-async.test.ts:46`
 - Operations: `check(initial)`, `callMethodWithOptions(_runE2E)`, `check(callback)`, `check(promise)`, `check(native)`
 
+
 ## ide/github-issues.runtime.slot-fallback-compiler-off.test.ts
 
 ### e2e app: github-issues / slot fallback compiler off > renders plain slot fallback independently from scopedSlotsCompiler
@@ -950,6 +982,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `fallbackPlans(resolveRuntimeProviderName()).compilerOff`; source: `e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts:69`
 - Operations: `check(initial)`
+
 
 ## ide/github-issues.runtime.subpackage-item.test.ts
 
@@ -969,6 +1002,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/subpackages/item/login-required/index`
 - Operations: `check(initial)`
 
+
 ## ide/github-issues.runtime.subpackage-user.test.ts
 
 ### e2e app: github-issues / user subpackage > issue #317: loads duplicated shared chunks with localized runtime
@@ -987,6 +1021,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/subpackages/user/register/form`
 - Operations: `check(initial)`
 
+
 ## ide/hmr-auto-classic.runtime.test.ts
 
 ### automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state
@@ -997,6 +1032,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/native/index`, `/pages/native/index?source=classic-auto-e2e`
 - Operations: `reLaunch(/pages/native/index?source=classic-auto-e2e)`, `check(initial)`, `check(prepared)`, `check(reloaded)`, `check(updated)`
 
+
 ## ide/index.test.ts
 
 ### e2e baseline app > opens index page and keeps build output stable
@@ -1005,6 +1041,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/base`; checkpoints: `[ { id: 'initial', route: INDEX_ROUTE, action: '冷启动首页，检查实际结果和输入数据文本', nodes: [ { selector: '#base-greeting', text: 'Hello' }, { selector: '#base-status', text: 'Status: ready' }, { selector: '#base-detail', text: 'Detail: rendered' }, { sel`; source: `e2e/ide/index.test.ts:189`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(tapped)`
+
 
 ## ide/issue-340-hoist.runtime.test.ts
 
@@ -1016,6 +1053,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/subpackages/item/login-required/index`, `/subpackages/user/register/form`
 - Operations: `check(item)`, `check(user)`
 
+
 ## ide/layout-power-demo-message.runtime.test.ts
 
 ### layout-power-demo message feedback in real WeChat DevTools > keeps repeated message taps stable after layout switches
@@ -1025,6 +1063,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `LAYOUT_POWER_FIXTURE`; checkpoints: `[ layoutStateCheckpoint('initial', '启动后检查默认布局、页面内容和交互计数', 'default', 1), ...feedbackRoundCheckpoints('repeat', 5), ]`; source: `e2e/ide/layout-power-demo-message.runtime.test.ts:18`
 - Operations: `reLaunch(INDEX_ROUTE)`, `check(initial)`, `callMethod(runE2E)`
 
+
 ## ide/layout-power-demo.runtime-vendor-hmr.test.ts
 
 ### layout-power-demo runtime vendor HMR in real WeChat DevTools > keeps active runtime vendor chunks available after page script HMR
@@ -1033,6 +1072,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `LAYOUT_POWER_FIXTURE`; checkpoints: `[ layoutStateCheckpoint('initial', '启动后检查默认界面', 'default', 1), ...feedbackRoundCheckpoints('before-script', 1), layoutStateCheckpoint('script-preserved', '脚本更新完成后保持海报布局及五次交互状态', 'poster', 5), layoutStateCheckpoint('script-command', '热更新后原页面`; source: `e2e/ide/layout-power-demo.runtime-vendor-hmr.test.ts:56`
 - Operations: `reLaunch(INDEX_ROUTE)`, `check(initial)`, `callMethod(runE2E)`, `check(script-preserved)`, `check(script-command)`, `check(script-new-title)`, `check(new-page)`, `check(template-updated)`, `check(style-before)`, `check(style-updated)`
+
 
 ## ide/lifecycle-compare.test.ts
 
@@ -1068,6 +1108,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/blank/index`, `/pages/components/index`
 - Operations: `reLaunch(route)`, `reLaunch(/pages/blank/index)`, `switchTab(fallbackTab)`, `switchTab(/pages/components/index)`, `callMethod(resetNamedEventBindingStats)`, `check(named:0)`, `callMethod(triggerNamedComponentProbe)`, `check(named:${++operation})`, `callMethod(getNamedEventBindingStats)`
 
+
 ## ide/mcp-runtime-tools.runtime.test.ts
 
 ### MCP runtime tools in real WeChat DevTools > covers every MCP runtime tool against the real IDE runtime
@@ -1076,6 +1117,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `apps/mcp-demo`; checkpoints: `[ { id: 'initial', route: INDEX_ROUTE, action: 'MCP reLaunch 后验收初始交互状态', nodes: [ { selector: '#mcp-tap-counter', text: 'tapCounter = 0' }, { selector: '#mcp-page-state', text: 'mcpStatus = idle' }, { selector: INPUT_SELECTOR, attributes: {`; source: `e2e/ide/mcp-runtime-tools.runtime.test.ts:56`
 - Operations: `check(initial)`, `check(page-set)`, `check(page-method)`, `check(tapped)`, `check(input)`, `check(component-set)`, `check(component-method)`, `check(captured)`
+
 
 ## ide/plugin-demo.runtime.test.ts
 
@@ -1086,6 +1128,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `apps/plugin-demo`; checkpoints: `[ { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) }, { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) }, ]`; source: `e2e/ide/plugin-demo.runtime.test.ts:286`
 - Routes: `/pages/index/index`, `plugin://hello-plugin/hello-page`
 - Operations: `reLaunch(/pages/index/index)`, `check(host)`, `tap(<missing>)`, `check(host-updated)`, `navigateTo(plugin://hello-plugin/hello-page)`
+
 
 ## ide/react-runtime-spike.runtime.test.ts
 
@@ -1109,6 +1152,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `REACT_FIXTURE`; checkpoints: `[ interopCheckpoint(0, runtimeProvider), ...INTEROP_EDGES.map((_, index) => interopCheckpoint(index + 1, runtimeProvider)), ]`; source: `e2e/ide/react-runtime-spike.runtime.test.ts:219`
 - Operations: `reLaunch(INTEROP_ROUTE)`, `check(initial)`, `tap(<missing>)`, `check(edge.id)`, `callMethodWithOptions(_readInteropE2E)`
+
 
 ## ide/request-clients-real-native.runtime.test.ts
 
@@ -1154,6 +1198,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/request-clients-real-native`; checkpoints: `requestCheckpoints('websocket', true)`; source: `e2e/ide/request-clients-real-native.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(initial)`, `callMethod(runE2E)`, `check(completed)`
+
 
 ## ide/request-clients-real.runtime.test.ts
 
@@ -1207,6 +1252,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/request-clients-real`; checkpoints: `requestCheckpoints('websocket')`; source: `e2e/ide/request-clients-real.runtime.test.ts:435`
 - Operations: `reLaunch(route)`, `check(initial)`, `callMethod(runE2E)`, `check(completed)`
 
+
 ## ide/shared-styles.runtime.test.ts
 
 ### e2e app: main-package shared styles > loads main, normal subpackage and independent subpackage styles in one session
@@ -1216,6 +1262,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `test/fixture-projects/weapp-vite/subPackages-shared-styles`; checkpoints: `sharedStyleCheckpoints(provider)`; source: `e2e/ide/shared-styles.runtime.test.ts:60`
 - Routes: `/pages/index/index`, `/packageA/pages/foo/index`, `/packageB/pages/bar/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(main)`, `reLaunch(/packageA/pages/foo/index)`, `check(subpackage)`, `reLaunch(/packageB/pages/bar/index)`, `check(independent)`
+
 
 ## ide/stateful-hmr.runtime.test.ts
 
@@ -1254,6 +1301,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Source: `e2e/ide/stateful-hmr.runtime.test.ts:545`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:546`
+
 
 ## ide/stream-capability.runtime.test.ts
 
@@ -1321,6 +1369,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `callMethod(start)`, `check(first-stage)`, `callMethod(abort)`, `check(terminal)`
 
+
 ## ide/subpackage-shared-strategy-complex.runtime.test.ts
 
 ### e2e app: subpackage-shared-strategy-complex-a runtime > reLaunches all key routes and renders shared markers
@@ -1339,6 +1388,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Routes: `/pages/home/index`, `/subpackages/alpha/index`, `/subpackages/beta/index`, `/subpackages/gamma/index`
 - Operations: `reLaunch(/pages/home/index)`, `check(checkpoint.id)`, `reLaunch(/subpackages/alpha/index)`, `reLaunch(/subpackages/beta/index)`, `reLaunch(/subpackages/gamma/index)`
 
+
 ## ide/swan-runtime.optional.test.ts
 
 Optional Baidu host runtime is outside WeChat DOM acceptance
@@ -1348,6 +1398,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/swan-runtime.optional.test.ts:42`
 - Plan: MISSING
 - Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
 
 ## ide/tdesign-dialog-import.runtime.test.ts
 
@@ -1366,6 +1417,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/tdesign-dialog-import`; checkpoints: `dialogImportCheckpoints('index')`; source: `e2e/ide/tdesign-dialog-import.runtime.test.ts:366`
 - Routes: `/pages/dialog-index/index`
 - Operations: `reLaunch(/pages/dialog-index/index)`, `callMethod(_runE2E)`, `callMethod(_debugE2E)`, `check(initial)`, `callMethod(_resetE2E)`, `check(reset)`, `tap(<missing>)`, `check(open)`, `check(cancel)`, `callMethod(_openDialogE2E)`, `check(reopen)`, `check(confirm)`, `check(toast)`
+
 
 ## ide/template-dev-open-all.runtime.test.ts
 
@@ -1446,6 +1498,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-dev-open-all.runtime.test.ts:387`
 - Operations: `reLaunch(route)`, `check(opened)`
 
+
 ## ide/template-multi-platform-sfc.swan.optional.test.ts
 
 Optional Baidu host runtime is outside WeChat DOM acceptance
@@ -1455,6 +1508,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/template-multi-platform-sfc.swan.optional.test.ts:45`
 - Plan: MISSING
 - Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
+
 
 ## ide/template-multi-platform.swan.optional.test.ts
 
@@ -1466,6 +1520,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: MISSING
 - Missing createDomAcceptance plan; existing DOM/data assertions do not produce acceptance evidence
 
+
 ## ide/template-retail-checkout.runtime.test.ts
 
 ### retail checkout nullable settlement rendering > renders nullable settlement results and refreshes quantity and amount after reLaunch
@@ -1475,6 +1530,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template`; checkpoints: `[{ id: 'home-ready', route: '/pages/home/home', action: '从首页启动并确认首屏商品已经呈现，再进入结算分包', nodes: [{ selector: '.goods-card__title', scope: [{ has: '.goods-list-wrap' }, '#home-goods-list-gd-0'], text: '白色短袖连衣裙荷叶边裙摆宽松韩版休闲纯白清爽优雅连衣裙', }], }, ...scen`; source: `e2e/ide/template-retail-checkout.runtime.test.ts:63`
 - Routes: `/pages/home/home`, `${RETAIL_CHECKOUT_ROUTE}?type=cart`
 - Operations: `act(home-ready)`, `reLaunch(/pages/home/home)`, `check(home-ready)`, `act(scenario.id)`, `reLaunch(${RETAIL_CHECKOUT_ROUTE}?type=cart)`, `check(scenario.id)`
+
 
 ## ide/template-tailwindcss-dev-open-multi.runtime.test.ts
 
@@ -1499,6 +1555,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `templates/${templateCase.name}`; checkpoints: `[templateDevOpenCheckpoint(templateCase)]`; source: `e2e/ide/template-tailwindcss-dev-open-multi.runtime.test.ts:115`
 - Operations: `reLaunch(route)`, `check(opened)`
 
+
 ## ide/template-tailwindcss-tdesign-hmr.runtime.test.ts
 
 ### template TailwindCSS TDesign HMR in real WeChat DevTools > updates and restores native Page methods with external npm while retaining rendered interaction state
@@ -1515,6 +1572,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:247`
 - Operations: `check(tailwind:initial)`, `tap(<missing>)`, `check(tailwind:dark)`, `check(tailwind:hmr-preserved)`, `check(tailwind:updated)`, `check(tailwind:updated-dark)`
 
+
 ## ide/template-weapp-vite-multi-platform-sfc-template.test.ts
 
 ### template e2e: weapp-vite-multi-platform-sfc-template > renders and updates the WeChat SFC target
@@ -1522,6 +1580,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts:11`
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `multiPlatformTemplateDom(true)`; source: `e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts:12`
+
 
 ## ide/template-weapp-vite-multi-platform-template.test.ts
 
@@ -1531,6 +1590,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `multiPlatformTemplateDom(false)`; source: `e2e/ide/template-weapp-vite-multi-platform-template.test.ts:12`
 
+
 ## ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts
 
 ### template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pages from app config
@@ -1538,6 +1598,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts:8`
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `tailwindTemplateDom('tdesign')`; source: `e2e/ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts:9`
+
 
 ## ide/template-weapp-vite-tailwindcss-template.test.ts
 
@@ -1547,6 +1608,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `tailwindTemplateDom('tailwind')`; source: `e2e/ide/template-weapp-vite-tailwindcss-template.test.ts:9`
 
+
 ## ide/template-weapp-vite-tailwindcss-vant-template.test.ts
 
 ### template e2e: weapp-vite-tailwindcss-vant-template > renders all pages from app config
@@ -1554,6 +1616,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/template-weapp-vite-tailwindcss-vant-template.test.ts:8`
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `tailwindTemplateDom('vant')`; source: `e2e/ide/template-weapp-vite-tailwindcss-vant-template.test.ts:9`
+
 
 ## ide/template-weapp-vite-template.test.ts
 
@@ -1568,6 +1631,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/template-weapp-vite-template.test.ts:11`
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `NATIVE_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/native.ts`
+
 
 ## ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts
 
@@ -1603,6 +1667,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/home/home`
 - Operations: `switchTab(/pages/home/home)`, `reLaunch(/pages/home/home)`, `check(initial)`, `callMethodWithOptions(showLayoutDialogProbe)`, `check(dialog-open)`, `check(dialog-closed)`
 
+
 ## ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts
 
 ### template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity > keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail
@@ -1611,6 +1676,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template`; checkpoints: `routes.flatMap(route => route.steps)`; source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts:820`
 - Operations: `callMethod(step.method)`, `check(step.id)`
+
 
 ## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts
 
@@ -1621,6 +1687,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `TDESIGN_FIXTURE`; checkpoints: `classBindingCheckpoints`; source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts:41`
 - Operations: `check(initial)`, `callMethod(applyScenarioBase)`, `check(base)`, `callMethod(applyScenarioAllOn)`, `check(all-on)`, `callMethod(applyScenarioMixed)`, `check(mixed)`, `callMethod(applyScenarioErrorGhost)`, `check(error-ghost)`
 
+
 ## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts
 
 ### e2e app: template-wevu-tdesign-regression form > renders urgent controls and exposes initial urgent runtime state
@@ -1630,6 +1697,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `TDESIGN_FIXTURE`; checkpoints: `[ { id: 'initial', route: ROUTE, action: '打开表单并检查加急默认状态', nodes: [renderedText('form-urgent-state', '加急未开启 · 平衡'), { selector: '//*[@aria-role="switch"]', query: 'xpath', attributes: { 'aria-checked': 'false' } }] }, { id: 'urgent-on', rout`; source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts:93`
 - Routes: `/pages/form/index`
 - Operations: `switchTab(/pages/form/index)`, `check(initial)`, `check(urgent-on)`, `check(urgent-off)`, `check(switch-on)`
+
 
 ## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts
 
@@ -1653,6 +1721,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `TDESIGN_FIXTURE`; checkpoints: `[ feedbackCheckpoint('initial', '检查原生宿主初始关闭状态'), dialogCheckpoint('native-alert-open', 'Alert'), feedbackCheckpoint('native-alert-confirmed', '原生确认后检查实际日志和关闭状态', '页面 Alert #1 已确认'), dialogCheckpoint('native-confirm-open', 'Confirm', 2), fee`; source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts:219`
 - Operations: `callMethodWithOptions(inspectDialogHostJsonE2E)`, `callMethodWithOptions(resetLayoutFeedbackE2E)`, `check(initial)`, `callMethodWithOptions(runPageAlertCloseE2E)`, `check(native-alert-open)`, `callMethodWithOptions(runDialogHostConfirmE2E)`, `check(native-alert-confirmed)`, `callMethodWithOptions(runPageConfirmOpenE2E)`, `check(native-confirm-open)`, `callMethodWithOptions(runDialogHostCancelE2E)`, `check(native-confirm-canceled)`
+
 
 ## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts
 
@@ -1680,6 +1749,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/index/index`
 - Operations: `check(scoped-slot-items)`
 
+
 ## ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts
 
 ### template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders all pages from app config
@@ -1687,6 +1757,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts:8`
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `WEVU_TDESIGN_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/wevu.ts`
+
 
 ## ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts
 
@@ -1698,6 +1769,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/overview/index`, `/packageA/pages/workspace/index`, `/packageB/pages/settings/index`, `/pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(portal)`, `tap(<missing>)`, `check(target.id)`, `callMethodWithOptions(waitForNavigation)`, `check(${target.id}-return)`
 
+
 ## ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts
 
 ### e2e app: template-wevu-regression layouts runtime > switches between default/admin/none layouts at runtime
@@ -1707,6 +1779,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/template-wevu-regression`; checkpoints: `templateLayoutCheckpoints`; source: `e2e/ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts:291`
 - Routes: `/pages/layouts/index`
 - Operations: `reLaunch(/pages/layouts/index)`, `check(initial)`, `callMethod(applyAdminLayout)`, `check(admin)`, `callMethod(clearLayout)`, `check(none)`, `callMethod(applyDefaultLayout)`, `check(default)`
+
 
 ## ide/template-weapp-vite-wevu-template.test.ts
 
@@ -1722,6 +1795,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `TEMPLATE_ROOT`; checkpoints: `WEVU_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/wevu.ts`
 
+
 ## ide/template-wevu-features-app.test.ts
 
 ### template e2e: wevu-features-app > renders all pages from app config
@@ -1729,6 +1803,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/template-wevu-features-app.test.ts:8`
 - Plan: registered in source; runtime verification required
 - Registration: `runTemplateE2E`; fixture: `APP_ROOT`; checkpoints: `WEVU_FEATURES_TEMPLATE_DOM`; source: `e2e/utils/templateAcceptance/features.ts`
+
 
 ## ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts
 
@@ -1739,6 +1814,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:342`
 - Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
 
+
 ## ide/vite-native-ts.worker.runtime.test.ts
 
 ### e2e app: vite-native-ts worker runtime > preloads worker subpackage and receives the first worker message without runtime errors
@@ -1748,15 +1824,17 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `apps/vite-native-ts`; checkpoints: `[{ id: 'worker-ready', route: ROUTE, action: '冷启动并检查页面实际呈现的首条 worker 消息', nodes: [ { selector: '.worker-status', text: 'worker-status: ready' }, { selector: '.worker-message', text: 'worker-message: hello' }, ], }]`; source: `e2e/ide/vite-native-ts.worker.runtime.test.ts:88`
 - Operations: `check(worker-ready)`
 
+
 ## ide/vue-mini-issue151-wevu.runtime.test.ts
 
-### e2e app: vue-mini issue #151 / wevu > keeps onReady hooks isolated from PageInstance **onReady** in base lib 3.16.2
+### e2e app: vue-mini issue #151 / wevu > keeps onReady hooks isolated from PageInstance __onReady__ in base lib 3.16.2
 
 - Source: `e2e/ide/vue-mini-issue151-wevu.runtime.test.ts:85`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/vue-mini-issue151-wevu`; checkpoints: `[{ id: 'ready-hooks', route: ISSUE_151_ROUTE, action: 'switchTab to issue151 and await page/custom-tabbar onReady', nodes: [ { selector: '.issue151-title', text: 'vue-mini issue-151 onReady collision probe' }, { selector: '.issue151-probe',`; source: `e2e/ide/vue-mini-issue151-wevu.runtime.test.ts:86`
 - Routes: `/pages/issue-151/index`
 - Operations: `switchTab(/pages/issue-151/index)`, `check(ready-hooks)`
+
 
 ## ide/wevu-composition-api.weapp.test.ts
 
@@ -1775,6 +1853,59 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `[ { id: 'composition:initial', route, action: '检查组合式 API 初始绑定值', nodes: [ { selector: \`#api-ref${suffix}\`, text: vue ? 'composition api vue anchor' : 'composition api anchor' }, { selector: '#composition-reactive', text: 'reactive: 0 / 1' }`; source: `e2e/ide/wevu-composition-api.weapp.test.ts:44`
 - Routes: `/pages/composition-api-vue/index`
 - Operations: `reLaunch(/pages/composition-api-vue/index)`, `check(composition:initial)`, `callMethodWithOptions(runE2E)`, `check(composition:result)`
+
+
+## ide/wevu-comprehensive.runtime.test.ts
+
+### comprehensive demo public runtime contracts > updates Options API computed values through instance methods
+
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:32`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'updated', route, action: '更新姓名和数量', nodes: [{ selector: '.page-title', text: '计算属性' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:34`
+- Operations: `reLaunch(route)`, `callMethod(updateFirstName)`, `callMethod(increaseQuantity)`, `check(updated)`
+
+### comprehensive demo public runtime contracts > renders lifecycle log aliases and clears the list
+
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:50`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'added', route, action: '清空后添加一条日志', nodes: [{ selector: '.log-item', count: 1 }, { selector: '.log-index', text: '1.' }], }, { id: 'cleared', route, action: '清空日志', nodes: [{ selector: '.log-item', count: 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:52`
+- Operations: `reLaunch(route)`, `callMethod(clearLogs)`, `callMethod(addLog)`, `check(added)`, `check(cleared)`
+
+### comprehensive demo public runtime contracts > keeps created setup exports available after the initial mount
+
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:72`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'mounted', route, action: '读取 created 阶段 setup 与原生 export 合并结果', nodes: [{ selector: '.page-title', text: 'setup@created' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:74`
+- Operations: `reLaunch(route)`, `callMethod(readComponentExport)`, `check(mounted)`
+
+### comprehensive demo public runtime contracts > only offers explicit subpackage loading when the host provides it
+
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:92`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'capability', route, action: '按真实宿主能力显示分包加载入口', nodes: [{ selector: '.page-title', text: '分包场景（普通 / 独立）' }, { selector: '.load-subpackage', count: hasLoader ? 4 : 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:95`
+- Operations: `reLaunch(route)`, `check(capability)`, `callMethod(onLoadPackage)`
+
+### comprehensive demo public runtime contracts > reads the collapse event detail field
+
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
+
+### comprehensive demo public runtime contracts > reads the steps event detail field
+
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
+
+### comprehensive demo public runtime contracts > reads the side-bar event detail field
+
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
+
 
 ## ide/wevu-features.runtime.behavior.test.ts
 
@@ -1841,6 +1972,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `withBehaviorPage`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ checkpoint('initial', '首屏 CSS Modules、scoped 节点和红色背景', styleNodes(false)), checkpoint('updated', '更新 CSS 变量后保持布局并渲染蓝色背景', styleNodes(true)), ]`; source: `e2e/ide/wevu-features.runtime.behavior.test.ts:181`
 - Routes: `/pages/sfc-styles/index`
 
+
 ## ide/wevu-features.runtime.router.test.ts
 
 ### e2e app: wevu-features / router > resolves component this.router.navigateTo relative route using component base path
@@ -1871,6 +2003,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ routerCheckpoint('initial', DYNAMIC_ROUTE, '首屏展示未执行的 dynamic router 结果', dynamicNodes(false)), routerCheckpoint('completed', DYNAMIC_ROUTE, '动态路由增删和 guard 失败后渲染路径、计数及错误', dynamicNodes(true)), ]`; source: `e2e/ide/wevu-features.runtime.router.test.ts:148`
 - Operations: `reLaunch(DYNAMIC_ROUTE)`, `check(initial)`, `check(completed)`
 
+
 ## ide/wevu-features.runtime.subpath.test.ts
 
 ### e2e app: wevu-features / subpath > covers wevu subpath entries: router/store/api/fetch in one page scenario
@@ -1879,6 +2012,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'subpath:initial', route: SUBPATH_ROUTE, action: '检查子路径页面初始结果', nodes: [ { selector: '.subpath-entries-page__title', text: SUBPATH_READY_TEXT }, { selector: '#subpath-store-summary', text: 'store count/label = 0 / init' }, { selecto`; source: `e2e/ide/wevu-features.runtime.subpath.test.ts:20`
 - Operations: `check(subpath:initial)`, `check(subpath:result)`
+
 
 ## ide/wevu-jsx-tsx.hmr.runtime.test.ts
 
@@ -1889,6 +2023,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `apps/wevu-jsx-tsx-demo`; checkpoints: `[ { id: 'tsx:initial', route: ROUTE, action: '检查初始模板和动态岛计数', nodes: [ { selector: '.title', text: '纯 TSX（.tsx）' }, { selector: '#tsx-island-button', text: 'dynamic island: 0' }, ] }, { id: 'tsx:interacted', route: ROUTE, action: '动态岛交互后记录计数`; source: `e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts:122`
 - Routes: `/pages/tsx-basic/index`, `pages/tsx-basic/index`
 - Operations: `reLaunch(/pages/tsx-basic/index)`, `check(tsx:initial)`, `callMethodWithOptions(runE2E)`, `check(tsx:interacted)`, `check(tsx:shared-updated)`, `check(tsx:page-updated)`, `tap(<missing>)`, `check(tsx:handler-updated)`
+
 
 ## ide/wevu-jsx-tsx.runtime.test.ts
 
@@ -1916,6 +2051,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/setup-render/index`, `/pages/sfc-script-jsx/index`, `/pages/sfc-script-setup-tsx/index`
 - Operations: `reLaunch(/pages/setup-render/index)`, `check(setup:initial)`, `callMethodWithOptions(increment)`, `check(setup:incremented)`, `reLaunch(/pages/sfc-script-jsx/index)`, `check(sfc-jsx:initial)`, `callMethodWithOptions(runE2E)`, `check(sfc-jsx:incremented)`, `reLaunch(/pages/sfc-script-setup-tsx/index)`, `check(sfc-setup:initial)`, `callMethodWithOptions(__weapp_vite_inline)`, `check(sfc-setup:updated)`
 
+
 ## ide/wevu-query.runtime.test.ts
 
 ### @wevu/query mini-program runtime [${runtimeProvider}] > deduplicates list subscribers, keeps fresh data, then refreshes invalidated hidden data after back
@@ -1939,6 +2075,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'app:resumed', route: LIST_ROUTE, action: '应用恢复前台后检查一次共享请求的界面结果', nodes: [ { selector: '#query-primary-result', text: 'background\|revision:1\|request:background-1\|item:item-background-r1' }, { selector: '#query-secondary-result', tex`; source: `e2e/ide/wevu-query.runtime.test.ts:190`
 - Operations: `reLaunch(createListRoute(server.baseUrl, 'background'))`, `check(app:resumed)`
 
+
 ## ide/wevu-router-hmr.runtime.test.ts
 
 ### wevu/router HMR fixture runtime > keeps wevu/router resolved after saving a page in real DevTools HMR
@@ -1948,6 +2085,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-router-hmr`; checkpoints: `[ { id: 'router:initial', route: INDEX_ROUTE, action: '检查 router 页面标题与当前路由', nodes: [ { selector: '.title', text: BASE_MARKER }, { selector: '.route', text: INDEX_ROUTE }, ] }, { id: 'router:updated', route: INDEX_ROUTE, action: '保存后当前页面标题更`; source: `e2e/ide/wevu-router-hmr.runtime.test.ts:156`
 - Routes: `/pages/index/index`, `pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(router:initial)`, `check(router:updated)`
+
 
 ## ide/wevu-runtime-demo.request-globals.weapp.test.ts
 
@@ -1967,6 +2105,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/request-globals/fetch`, `/pages/request-globals/graphql-request`, `/pages/request-globals/axios`
 - Operations: `reLaunch(/pages/request-globals/fetch)`, `check(fetch-1)`, `tap(<missing>)`, `check(fetch-2)`, `reLaunch(/pages/request-globals/graphql-request)`, `check(graphql-request-1)`, `check(graphql-request-2)`, `reLaunch(/pages/request-globals/axios)`, `check(axios-1)`, `check(axios-2)`
 
+
 ## ide/wevu-runtime-demo.vue-query.weapp.test.ts
 
 ### wevu runtime demo vue-query (weapp e2e) > resolves pending query and keeps query state reactive across tab switch and key rotation
@@ -1976,6 +2115,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `apps/wevu-runtime-demo`; checkpoints: `VUE_QUERY_CHECKPOINTS`; source: `e2e/ide/wevu-runtime-demo.vue-query.weapp.test.ts:110`
 - Routes: `/pages/vue-query/index`
 - Operations: `reLaunch(/pages/vue-query/index)`, `check(initial)`, `tap(<missing>)`, `check(detail)`, `check(refreshed)`
+
 
 ## ide/wevu-runtime.class-computed.weapp.test.ts
 
@@ -1987,6 +2127,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/class-computed/index`
 - Operations: `reLaunch(/pages/class-computed/index)`, `check(initial)`, `callMethodWithOptions(runE2E)`, `check(updated)`
 
+
 ## ide/wevu-runtime.core-hmr.test.ts
 
 ### wevu runtime core hmr matrix (ide) > keeps DevTools runtime aligned with core page, sfc and layout hmr updates
@@ -1995,6 +2136,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `coreHmrPlan({ pageTemplateMarker, pageScriptMarker, pageStyleMarker, sfcTemplateMarker, sfcScriptMarker, sfcStyleMarker, layoutPageTemplateMarker, layoutPageScriptMarker, layoutPageStyleMarker, sharedStoreMarker, })`; source: `e2e/ide/wevu-runtime.core-hmr.test.ts:601`
 - Operations: `check(page:initial)`, `callMethodWithOptions(increment)`, `check(page:interacted)`, `check(page:template)`, `check(page:script)`, `check(page:style)`, `check(sfc:initial)`, `check(sfc:template)`, `check(sfc:script)`, `check(sfc:style)`, `check(layout:initial)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout:admin)`, `check(layout:template)`, `callMethodWithOptions(syncScriptMarker)`, `check(layout:script)`, `check(layout:script-admin)`, `check(layout:style)`, `check(store:initial)`, `check(store:updated)`, `check(store:shared)`
+
 
 ## ide/wevu-runtime.function-props.weapp.test.ts
 
@@ -2005,6 +2147,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `FUNCTION_PROPS_CHECKPOINTS`; source: `e2e/ide/wevu-runtime.function-props.weapp.test.ts:55`
 - Routes: `/pages/function-props-auto/index`, `/pages/function-props-disabled/index`, `/pages/function-props-dynamic/index`, `/pages/non-function-prop-bind/index`
 - Operations: `reLaunch(/pages/function-props-auto/index)`, `check(auto-initial)`, `callMethodWithOptions(runE2E)`, `check(auto-invoked)`, `reLaunch(/pages/function-props-disabled/index)`, `check(disabled-initial)`, `check(disabled-invoked)`, `reLaunch(/pages/function-props-dynamic/index)`, `check(dynamic-initial)`, `check(dynamic-invoked)`, `reLaunch(/pages/non-function-prop-bind/index)`, `check(value-initial)`, `check(value-invoked)`
+
 
 ## ide/wevu-runtime.inline-object-reactivity.weapp.test.ts
 
@@ -2024,6 +2167,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/wevu-inline-object-reactivity-repro/index`
 - Operations: `reLaunch(/pages/wevu-inline-object-reactivity-repro/index)`, `callMethodWithOptions(runE2E)`, `callMethod(runE2E)`, `check(initial)`, `check(increased)`, `check(minimum)`, `check(increased-again)`
 
+
 ## ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts
 
 ### wevu runtime layout shared template/wxs hmr (ide) > updates layout runtime output in DevTools after shared template/include/wxs edits
@@ -2034,6 +2178,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/layouts/index`
 - Operations: `reLaunch(/pages/layouts/index)`, `check(layout-shared:0)`, `check(layout-shared:1)`, `check(layout-shared:2)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout-shared:3)`, `check(CLASSIC_WXS_RELOAD_CHECKPOINT.id)`, `check(layout-shared:4)`, `check(layout-shared:5)`
 
+
 ## ide/wevu-runtime.shared-template-wxs.hmr.test.ts
 
 ### wevu runtime shared template/wxs hmr (ide) > updates runtime pages in DevTools after shared template/include/wxs edits
@@ -2043,6 +2188,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `checkpoints`; source: `e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts:235`
 - Routes: `/pages/hmr/index`, `/pages/hmr-sfc/index`
 - Operations: `reLaunch(/pages/hmr/index)`, `check(shared:0)`, `callMethodWithOptions(increment)`, `check(shared:1)`, `check(shared:2)`, `check(shared:3)`, `reLaunch(/pages/hmr-sfc/index)`, `check(shared:4)`, `check(shared:5)`, `check(CLASSIC_WXS_RELOAD_CHECKPOINT.id)`, `check(shared:6)`
+
 
 ## ide/wevu-runtime.weapp.test.ts
 
@@ -2094,6 +2240,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/reactivity/index`, `/pages/layouts/index`
 - Operations: `reLaunch(/pages/reactivity/index)`, `reLaunch(/pages/layouts/index)`, `check(layout:0:default)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout:1:admin)`, `callMethodWithOptions(clearLayout)`, `check(layout:2:none)`, `callMethodWithOptions(applyDefaultLayout)`, `check(layout:3:default)`
 
+
 ## ide/wevu-subpackage-placement.runtime.test.ts
 
 ### e2e app: wevu-subpackage-placement > reLaunches main, normal subpackage, and independent subpackage vue routes
@@ -2102,6 +2249,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-subpackage-placement`; checkpoints: `subpackagePlacementCheckpoints`; source: `e2e/ide/wevu-subpackage-placement.runtime.test.ts:77`
 - Operations: `reLaunch(route)`, `check(${routeCase.id}:initial)`, `callMethodWithOptions(runE2E)`, `check(${routeCase.id}:result)`
+
 
 ## ide/wevu-vue-demo.script-setup.emit.runtime.test.ts
 
@@ -2112,6 +2260,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `apps/wevu-vue-demo`; checkpoints: `EMIT_CHECKPOINTS`; source: `e2e/ide/wevu-vue-demo.script-setup.emit.runtime.test.ts:43`
 - Operations: `reLaunch(EMIT_ROUTE)`, `check(initial)`, `tap(<missing>)`, `check(reset)`, `check(testCase.id)`
 
+
 ## ide/wevu-watch.test.ts
 
 ### wevu watch controls (e2e) > supports pause/resume/stop via destructuring
@@ -2121,6 +2270,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/app-lifecycle-wevu-ts`; checkpoints: `[ { id: 'watch:initial', route: '/pages/index/index', action: '检查 watcher 初始界面', nodes: [ { selector: '#app-lifecycle-route', text: 'App lifecycle wevu' }, { selector: '#watch-result', text: 'watch results: 0' }, { selector: '.watch-result-`; source: `e2e/ide/wevu-watch.test.ts:62`
 - Routes: `/pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(watch:initial)`, `callMethodWithOptions(runWatchE2E)`, `check(watch:result)`
+
 
 ## ide/chunk-modes.runtime.duplicate.test.ts
 
@@ -2142,6 +2292,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Operations: `reLaunch(/pages/index/index)`, `check(/pages/index/index)`, `reLaunch(/packageA/pages/foo)`, `check(/packageA/pages/foo)`, `reLaunch(/packageB/pages/bar)`, `check(/packageB/pages/bar)`
 - Each chunk topology reLaunches every runtimeBaseRoutes page through withBaseRoutes
 
+
 ## ide/chunk-modes.runtime.extras.test.ts
 
 ### e2e app: chunk-modes runtime extras matrix > runs without runtime errors in devtools for path-root-shared
@@ -2153,6 +2304,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Operations: `reLaunch(/pages/index/index)`, `check(/pages/index/index)`, `reLaunch(/packageA/pages/foo)`, `check(/packageA/pages/foo)`, `reLaunch(/packageB/pages/bar)`, `check(/packageB/pages/bar)`
 - Each chunk topology reLaunches every runtimeBaseRoutes page through withBaseRoutes
 
+
 ## ide/chunk-modes.runtime.hoist.test.ts
 
 ### e2e app: chunk-modes runtime hoist matrix > runs without runtime errors in devtools for hoist-common-mixed-inline
@@ -2163,3 +2315,4 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/index/index`, `/packageA/pages/foo`, `/packageB/pages/bar`
 - Operations: `reLaunch(/pages/index/index)`, `check(/pages/index/index)`, `reLaunch(/packageA/pages/foo)`, `check(/packageA/pages/foo)`, `reLaunch(/packageB/pages/bar)`, `check(/packageB/pages/bar)`
 - Each chunk topology reLaunches every runtimeBaseRoutes page through withBaseRoutes
+

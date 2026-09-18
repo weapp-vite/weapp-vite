@@ -1,3 +1,4 @@
+import type { ActionContext, SubscriptionCallback } from 'wevu'
 import { computed, createStore, defineStore, ref } from 'wevu'
 
 // 全局 store manager（可选）：挂载插件用于演示 $onAction/$subscribe 扩展
@@ -15,12 +16,12 @@ storeManager.use(({ store }) => {
   ;(store as any).$lastMutation = lastMutation
   ;(store as any).$lastAction = lastAction
 
-  store.$subscribe((mutation) => {
+  store.$subscribe((mutation: Parameters<SubscriptionCallback>[0]) => {
     pluginLog.value.unshift(`mutation: ${mutation.type}`)
     lastMutation.value = mutation.type
   })
 
-  store.$onAction(({ name, after, onError }) => {
+  store.$onAction(({ name, after, onError }: ActionContext) => {
     pluginLog.value.unshift(`action: ${name}`)
     after(() => {
       lastAction.value = name

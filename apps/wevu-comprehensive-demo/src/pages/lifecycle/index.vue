@@ -1,8 +1,8 @@
 <script lang="ts">
-import { onHide, onReady, onShow } from 'wevu'
+import { defineComponent, onHide, onReady, onShow } from 'wevu'
 
-export default {
-  setup(_props, { instance }) {
+export default defineComponent({
+  setup() {
     // 使用 setup 注册生命周期钩子
     onShow(() => {
       console.log('[Lifecycle] onShow from setup')
@@ -51,7 +51,7 @@ export default {
   onUnload() {
     console.log('[Lifecycle] onUnload - 页面卸载')
   },
-}
+})
 </script>
 
 <template>
@@ -97,7 +97,7 @@ export default {
         </button>
       </view>
       <view class="logs-list">
-        <view v-for="logs" :key="index" class="log-item">
+        <view v-for="(item, index) in logs" :key="index" class="log-item">
           <text class="log-index">
             {{ index + 1 }}.
           </text>

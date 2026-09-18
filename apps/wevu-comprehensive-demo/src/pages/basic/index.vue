@@ -1,5 +1,7 @@
 <script lang="ts">
-export default {
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
   data() {
     return {
       // reactive 对象
@@ -48,7 +50,7 @@ export default {
       }
     },
   },
-}
+})
 </script>
 
 <template>

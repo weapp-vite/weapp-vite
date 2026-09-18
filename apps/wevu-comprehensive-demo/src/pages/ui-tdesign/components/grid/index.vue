@@ -18,7 +18,7 @@ definePageJson(() => ({
       <view class="section-title">
         各种用法
       </view>
-      <t-grid column="3">
+      <t-grid :column="3">
         <t-grid-item text="Grid 1" />
         <t-grid-item text="Grid 2" />
         <t-grid-item text="Grid 3" />

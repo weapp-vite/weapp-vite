@@ -560,6 +560,7 @@ describe('suiteRunner', () => {
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1012.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-jsx-tsx.runtime.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/wevu-comprehensive.runtime.test.ts')
     expect(ideWevuJsxLabels).toEqual([
       'ide/wevu-jsx-tsx.runtime.test.ts',
       'ide/wevu-jsx-tsx.hmr.runtime.test.ts',

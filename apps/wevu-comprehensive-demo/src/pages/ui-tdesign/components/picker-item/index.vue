@@ -11,13 +11,21 @@ definePageJson(() => ({
 
 const visible = ref(false)
 const value = ref(['A', '1'])
-const optionsA = ref(['A', 'B', 'C'])
-const optionsB = ref(['1', '2', '3'])
-function open() { visible.value = true }
-function onConfirm(event) {
-  const v = event?.detail?.value; if (Array.isArray(v)) { value.value = v } visible.value = false
+const optionsA = ref(['A', 'B', 'C'].map(value => ({ label: value, value })))
+const optionsB = ref(['1', '2', '3'].map(value => ({ label: value, value })))
+function open() {
+  visible.value = true
 }
-function onCancel() { visible.value = false }
+function onConfirm(event: WechatMiniprogram.CustomEvent<{ value: string[] }>) {
+  const v = event.detail.value
+  if (Array.isArray(v)) {
+    value.value = v
+  }
+  visible.value = false
+}
+function onCancel() {
+  visible.value = false
+}
 </script>
 
 <template>

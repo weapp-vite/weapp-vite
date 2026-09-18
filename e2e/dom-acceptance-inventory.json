@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 100,
-    "wechatTaskCount": 97,
+    "taskCount": 101,
+    "wechatTaskCount": 98,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 250,
-    "casesWithPlan": 250,
+    "expandedCaseDeclarations": 257,
+    "casesWithPlan": 257,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -5038,6 +5038,154 @@
       ]
     },
     {
+      "task": "ide/wevu-comprehensive.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:32",
+          "name": "comprehensive demo public runtime contracts > updates Options API computed values through instance methods",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-comprehensive-demo",
+              "checkpoints": "[{ id: 'updated', route, action: '更新姓名和数量', nodes: [{ selector: '.page-title', text: '计算属性' }], }]",
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:34"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "callMethod(updateFirstName)",
+            "callMethod(increaseQuantity)",
+            "check(updated)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:50",
+          "name": "comprehensive demo public runtime contracts > renders lifecycle log aliases and clears the list",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-comprehensive-demo",
+              "checkpoints": "[{ id: 'added', route, action: '清空后添加一条日志', nodes: [{ selector: '.log-item', count: 1 }, { selector: '.log-index', text: '1.' }], }, { id: 'cleared', route, action: '清空日志', nodes: [{ selector: '.log-item', count: 0 }], }]",
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:52"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "callMethod(clearLogs)",
+            "callMethod(addLog)",
+            "check(added)",
+            "check(cleared)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:72",
+          "name": "comprehensive demo public runtime contracts > keeps created setup exports available after the initial mount",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-comprehensive-demo",
+              "checkpoints": "[{ id: 'mounted', route, action: '读取 created 阶段 setup 与原生 export 合并结果', nodes: [{ selector: '.page-title', text: 'setup@created' }], }]",
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:74"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "callMethod(readComponentExport)",
+            "check(mounted)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:92",
+          "name": "comprehensive demo public runtime contracts > only offers explicit subpackage loading when the host provides it",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-comprehensive-demo",
+              "checkpoints": "[{ id: 'capability', route, action: '按真实宿主能力显示分包加载入口', nodes: [{ selector: '.page-title', text: '分包场景（普通 / 独立）' }, { selector: '.load-subpackage', count: hasLoader ? 4 : 0 }], }]",
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:95"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "check(capability)",
+            "callMethod(onLoadPackage)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:117",
+          "name": "comprehensive demo public runtime contracts > reads the collapse event detail field",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-comprehensive-demo",
+              "checkpoints": "[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: `t-${component}` }], }]",
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:119"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "callMethod(onChange)",
+            "check(changed)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:117",
+          "name": "comprehensive demo public runtime contracts > reads the steps event detail field",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-comprehensive-demo",
+              "checkpoints": "[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: `t-${component}` }], }]",
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:119"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "callMethod(onChange)",
+            "check(changed)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:117",
+          "name": "comprehensive demo public runtime contracts > reads the side-bar event detail field",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-comprehensive-demo",
+              "checkpoints": "[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: `t-${component}` }], }]",
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:119"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "callMethod(onChange)",
+            "check(changed)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/wevu-features.runtime.behavior.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -6960,6 +7108,10 @@
       "sha256": "85b133d3c1e3f8e4d9b9fa49429754320487e1acefc30dbbc31091aec718713f"
     },
     {
+      "file": "e2e/ide/wevu-comprehensive.runtime.test.ts",
+      "sha256": "eae9cebec1726d90d0e72177be3801ecc3c0d0dc90a64a7197fef057f8640473"
+    },
+    {
       "file": "e2e/ide/wevu-features.runtime.behavior.test.ts",
       "sha256": "c2bb7a29b278b209b5a5dc08756fccd4ad811c3043406dca0493a39cfacc6b80"
     },
@@ -7061,7 +7213,7 @@
     },
     {
       "file": "e2e/ide/wevuRuntimeDom/coreHmr.ts",
-      "sha256": "80748853bb9e016b05edad687afbb7c8c7facc19fbc5fe556a8f52f376313e11"
+      "sha256": "2b757ae987a832774f7e425ac458de6e22baf8cf6d30bd44ac2169b85f731f3e"
     },
     {
       "file": "e2e/ide/wevuRuntimeDom/functionProps.ts",
@@ -7125,7 +7277,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "0e18c0537e5d441a1de158fbe69a0c0fef20e704f3ecad8f6298952b5b0666bd"
+      "sha256": "6ae0283519d0e9c539d70366ed25f4db61aca68d7bf3d93dc104a371807a0a29"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
