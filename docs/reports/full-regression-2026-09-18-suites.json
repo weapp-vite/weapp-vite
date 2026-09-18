@@ -3818,6 +3818,12 @@
       "status": "passed",
       "tests": 1,
       "exitCode": 0
+    },
+    "inventoryFinal": {
+      "command": "pnpm vitest run -c e2e/vitest.e2e.internal.config.ts e2e/scripts/domAcceptanceReport/inventory.test.ts",
+      "status": "passed",
+      "tests": 16,
+      "exitCode": 0
     }
   },
   "delivery": {
@@ -3891,6 +3897,7 @@
     ],
     "pushed": false,
     "pullRequestCreated": false,
-    "overallAcceptance": "incomplete-real-ide"
+    "overallAcceptance": "incomplete-real-ide",
+    "commitCount": 15
   }
 }

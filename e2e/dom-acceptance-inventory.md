@@ -2315,4 +2315,3 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Routes: `/pages/index/index`, `/packageA/pages/foo`, `/packageB/pages/bar`
 - Operations: `reLaunch(/pages/index/index)`, `check(/pages/index/index)`, `reLaunch(/packageA/pages/foo)`, `check(/packageA/pages/foo)`, `reLaunch(/packageB/pages/bar)`, `check(/packageB/pages/bar)`
 - Each chunk topology reLaunches every runtimeBaseRoutes page through withBaseRoutes
-

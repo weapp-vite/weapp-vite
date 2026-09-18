@@ -7241,7 +7241,7 @@
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventory.ts",
-      "sha256": "4ed89dd038d81e4579aa19d98fb1ef863be4d4dafe018befab4571c951423441"
+      "sha256": "042d149bbb2e07408154aa0074d1248687987c893cb446ba583746820f299cdc"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/inventoryAnalyzer.ts",
