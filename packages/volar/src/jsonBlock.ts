@@ -90,14 +90,21 @@ function findExportDefaultExpression(
     true,
     scriptKind,
   )
+  // vue-tsc 使用编译器内部的精简节点，不保证存在语言服务节点方法。
+  const scanner = tsModule.createScanner(TS_SCRIPT_TARGET_LATEST, true, undefined, code)
+  const tokenStart = (position: number) => {
+    scanner.setTextPos(position)
+    scanner.scan()
+    return scanner.getTokenPos()
+  }
 
   for (const statement of sourceFile.statements) {
     if (tsModule.isExportAssignment(statement)) {
-      const expressionStart = statement.expression.getStart(sourceFile)
-      const expressionEnd = statement.expression.getEnd()
-      const leading = code.slice(0, statement.getStart(sourceFile))
+      const expressionStart = tokenStart(statement.expression.pos)
+      const expressionEnd = statement.expression.end
+      const leading = code.slice(0, tokenStart(statement.pos))
       const expression = code.slice(expressionStart, expressionEnd)
-      const trailing = code.slice(statement.getEnd())
+      const trailing = code.slice(statement.end)
 
       return {
         expression,
