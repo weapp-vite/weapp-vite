@@ -11,7 +11,9 @@ definePageJson(() => ({
 
 const visible = ref(false)
 const items = ref([{ label: '选项 A', value: 'a' }, { label: '选项 B', value: 'b' }])
-function open() { visible.value = true }
+function open() {
+  visible.value = true
+}
 </script>
 
 <template>

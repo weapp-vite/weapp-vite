@@ -6,18 +6,26 @@ const roots = ['apps', 'e2e-apps', 'templates', 'packages', 'packages-runtime', 
 const failures = []
 for (const root of roots) {
   const base = path.resolve(root)
-  if (!fs.existsSync(base)) continue
+  if (!fs.existsSync(base)) {
+    continue
+  }
   const stack = [base]
   while (stack.length) {
     const dir = stack.pop()
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.tmp') continue
+      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.tmp') {
+        continue
+      }
       const full = path.join(dir, entry.name)
-      if (entry.isDirectory()) stack.push(full)
+      if (entry.isDirectory()) {
+        stack.push(full)
+      }
       else if (entry.name === 'package.json') {
         const pkg = JSON.parse(fs.readFileSync(full, 'utf8'))
         const spec = [...Object.values(pkg.dependencies ?? {}), ...Object.values(pkg.devDependencies ?? {}), ...Object.values(pkg.peerDependencies ?? {})]
-        if (spec.some(value => typeof value === 'string' && (/tailwind3|tailwindcss.*(?:^|[~<>= ])3\./i.test(value)))) failures.push(path.relative(process.cwd(), full))
+        if (spec.some(value => typeof value === 'string' && (/tailwind3|tailwindcss.*[~<>= ]3\./i.test(value)))) {
+          failures.push(path.relative(process.cwd(), full))
+        }
       }
     }
   }
@@ -25,4 +33,7 @@ for (const root of roots) {
 if (failures.length) {
   console.error(`Tailwind CSS 3 references found:\n${failures.map(file => `- ${file}`).join('\n')}`)
   process.exitCode = 1
-} else console.log('✓ no Tailwind CSS 3 package references found')
+}
+else {
+  console.log('✓ no Tailwind CSS 3 package references found')
+}

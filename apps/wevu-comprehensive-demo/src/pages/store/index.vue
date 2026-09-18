@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { TodoFilter } from '../../stores/storeDemo'
-import { ref, storeToRefs } from 'wevu'
+import { defineComponent, ref, storeToRefs } from 'wevu'
 import {
 
   useCounterStore,
@@ -9,7 +9,7 @@ import {
   useUserStore,
 } from '../../stores/storeDemo'
 
-export default {
+export default defineComponent({
 
   setup() {
     // 使用 Setup Store
@@ -180,7 +180,7 @@ export default {
       userStore.$reset()
     },
   },
-}
+})
 </script>
 
 <template>
@@ -285,7 +285,7 @@ export default {
         </view>
       </view>
 
-      <view class="todo-row" wx:for="{{ visibleTodos }}" wx:key="id" wx:for-item="todo">
+      <view v-for="todo in visibleTodos" :key="todo.id" class="todo-row">
         <view class="todo-title {{ todo.done ? 'done' : '' }}">
           {{ todo.title }}
         </view>
@@ -324,7 +324,7 @@ export default {
         <view class="log-title">
           Mutation 记录（$subscribe）
         </view>
-        <view class="log-line" wx:for="{{ todoMutations }}" wx:key="index">
+        <view v-for="(item, index) in todoMutations" :key="index" class="log-line">
           {{ item }}
         </view>
       </view>
@@ -366,7 +366,7 @@ export default {
         <view class="log-title">
           插件注入的日志
         </view>
-        <view class="log-line" wx:for="{{ pluginLog }}" wx:key="index">
+        <view v-for="(item, index) in pluginLog" :key="index" class="log-line">
           {{ item }}
         </view>
       </view>

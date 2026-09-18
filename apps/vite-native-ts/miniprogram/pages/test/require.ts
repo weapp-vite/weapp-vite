@@ -1,3 +1,4 @@
+/* eslint-disable ts/no-require-imports -- 此示例用于验证原生 CommonJS require 的构建兼容性。 */
 require
   .async('./bbb.js')
   .then((mod) => {

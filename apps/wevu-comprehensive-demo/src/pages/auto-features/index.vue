@@ -1,5 +1,5 @@
 <script lang="ts">
-import { ref } from 'wevu'
+import { defineComponent, ref } from 'wevu'
 
 import { usePageScrollFeatures } from '../../hooks/pageFeatures'
 import * as pageFeatures from '../../hooks/pageFeatures'
@@ -9,7 +9,7 @@ const manualPageFeaturesLocal = {
   enableOnShareTimeline: false,
 }
 
-export default {
+export default defineComponent({
   // 演示：即使使用了 onShareTimeline，也允许用户显式禁用（编译器不会覆盖为 true）。
   // 这里故意组合三种写法：
   // - 从其他文件导出的对象（import）
@@ -79,7 +79,7 @@ export default {
       copyInspectPath,
     }
   },
-}
+})
 </script>
 
 <template>

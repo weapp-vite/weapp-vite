@@ -4,7 +4,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { parse as parseJson } from 'comment-json'
 import path from 'pathe'
 import { createAppTsconfig, createNodeTsconfig, createServerTsconfig, createSharedTsconfig, resolveAppWevuJsxImportSource } from './configs'
-import { getLegacyManagedTypeScriptConfig, isWevuJsxImportSource, resolveManagedDir, toJson } from './shared'
+import { getLegacyManagedTypeScriptConfig, hasDependency, isWevuJsxImportSource, resolveManagedDir, resolveWevuJsxImportSource, toJson } from './shared'
 
 export type { ManagedTsconfigFile } from './types'
 
@@ -14,7 +14,9 @@ export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): P
   const jsxImportSource = resolveAppWevuJsxImportSource(ctx, legacyConfig)
   const jsxPlatformBridgeSource = isWevuJsxImportSource(jsxImportSource) && jsxImportSource !== 'wevu'
     ? jsxImportSource
-    : undefined
+    : ctx.configService?.weappViteConfig.react && hasDependency(ctx.configService.packageJson, 'wevu')
+      ? resolveWevuJsxImportSource(ctx.configService.weappViteConfig.platform)
+      : undefined
   const sharedEmptyContent = jsxPlatformBridgeSource
     ? [
         `import type { JSX as WevuPlatformJSX } from '${jsxPlatformBridgeSource}/jsx-runtime'`,

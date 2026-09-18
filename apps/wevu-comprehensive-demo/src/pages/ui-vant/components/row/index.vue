@@ -19,18 +19,18 @@ definePageJson(() => ({
         <view class="section-title">
           各种用法
         </view>
-        <van-row gutter="8">
-          <van-col span="8">
+        <van-row :gutter="8">
+          <van-col :span="8">
             <view style="padding: 16rpx; text-align: center; background: #eef2ff; border-radius: 12rpx">
               van-col
             </view>
           </van-col>
-          <van-col span="8">
+          <van-col :span="8">
             <view style="padding: 16rpx; text-align: center; background: #eef2ff; border-radius: 12rpx">
               van-col
             </view>
           </van-col>
-          <van-col span="8">
+          <van-col :span="8">
             <view style="padding: 16rpx; text-align: center; background: #eef2ff; border-radius: 12rpx">
               van-col
             </view>

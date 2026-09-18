@@ -1,8 +1,8 @@
 <script lang="ts">
-import { onShow, ref } from 'wevu'
+import { defineComponent, onShow, ref } from 'wevu'
 
-export default {
-  setup(_props, { state, proxy }) {
+export default defineComponent({
+  setup() {
     const setupCount = ref(0)
     const message = ref('Setup 初始化')
 
@@ -35,7 +35,7 @@ export default {
       this.optionsCount += 1
     },
   },
-}
+})
 </script>
 
 <template>

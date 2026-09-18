@@ -1,4 +1,5 @@
-import express, { type ErrorRequestHandler, type RequestHandler } from 'express'
+import type { ErrorRequestHandler, RequestHandler } from 'express'
+import express from 'express'
 import { createApiRouter } from './routes.js'
 
 export function createHttpApp() {

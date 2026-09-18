@@ -1429,7 +1429,8 @@ function rewriteStableWevuRuntimeAccess(
 
   for (const [exportName, stableName] of WEVU_EXPORT_ALIASES) {
     const localName = aliases.get(exportName)
-    if (!localName) {
+    // 公开导出名已经稳定；额外包装会使全量与缺少 vendor 的增量产物不一致。
+    if (!localName || localName === exportName) {
       continue
     }
     if (usage.inlineMembers.has(localName) || usage.inlineMembers.has(stableName)) {
@@ -1482,6 +1483,8 @@ export function stabilizeWevuRuntimeChunkAccess(
     const aliases = resolveWevuExportAliasMap(wevuChunk)
     const usageByChunk = usageByRuntimeChunk.get(wevuChunk.fileName)
     const importedMembers = collectImportedWevuRuntimeMembers(usageByChunk)
+    const existingExports = collectExistingExportNames(wevuChunk.code)
+    const missingMembers = new Set([...importedMembers].filter(name => !existingExports.has(name)))
 
     appendWevuRuntimeExports(wevuChunk, aliases, importedMembers)
     appendSyntheticWevuHookExports(wevuChunk, importedMembers)
@@ -1489,7 +1492,7 @@ export function stabilizeWevuRuntimeChunkAccess(
       const chunk = usage.chunk
       rewriteStableWevuRuntimeAccess(chunk, wevuChunk.fileName, aliases, usage)
       if (baseChunk?.fileName) {
-        rewriteSyntheticWevuHookAccess(chunk, wevuChunk.fileName, baseChunk.fileName, importedMembers, usage)
+        rewriteSyntheticWevuHookAccess(chunk, wevuChunk.fileName, baseChunk.fileName, missingMembers, usage)
         if (chunk.code.includes(normalizeRelativeRequireSpecifier(chunk.fileName, baseChunk.fileName))) {
           const nextImports = new Set(Array.isArray(chunk.imports) ? chunk.imports : [])
           nextImports.add(baseChunk.fileName)

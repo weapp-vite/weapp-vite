@@ -1,4 +1,5 @@
-import { loadMoments, type Moment } from '../../utils/api'
+import type { Moment } from '../../utils/api'
+import { loadMoments } from '../../utils/api'
 
 Page({
   data: {

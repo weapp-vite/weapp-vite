@@ -1,7 +1,9 @@
 'use strict'
 
-const path = require('node:path')
 const nodeFs = require('node:fs')
+const path = require('node:path')
+const process = require('node:process')
+
 const nodeFsPromises = nodeFs.promises
 
 if (process.env.WEAPP_VITE_TEST_COPY_RACE_GUARD === '1') {

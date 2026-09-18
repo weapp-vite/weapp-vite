@@ -183,6 +183,7 @@ defineOptions<ScriptSetupMacroData, never, ScriptSetupMacroMethods, ScriptSetupM
 })
 
 defineOptions(() => ({
+  name: 'FactoryComponent',
   externalClasses: ['custom-class'],
   options: {
     addGlobalClass: true,
@@ -190,6 +191,7 @@ defineOptions(() => ({
 }))
 
 defineOptions({
+  name: 'NamedComponent',
   externalClasses: ['plain-class'],
   options: {
     multipleSlots: true,

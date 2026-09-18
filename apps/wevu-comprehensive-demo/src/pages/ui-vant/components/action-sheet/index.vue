@@ -11,7 +11,9 @@ definePageJson(() => ({
 
 const show = ref(false)
 const actions = ref([{ name: '选项 A' }, { name: '选项 B' }])
-function open() { show.value = true }
+function open() {
+  show.value = true
+}
 </script>
 
 <template>

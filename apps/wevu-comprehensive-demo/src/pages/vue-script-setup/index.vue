@@ -5,7 +5,6 @@ type Level = 'info' | 'warning' | 'danger'
 
 defineOptions({
   name: 'VueScriptSetupDemo',
-  inheritAttrs: false,
 })
 
 const props = withDefaults(defineProps<{

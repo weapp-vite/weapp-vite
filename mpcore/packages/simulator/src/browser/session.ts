@@ -32,6 +32,7 @@ import { createAppInstance } from '../runtime/appInstance'
 import { HeadlessAppLifecycle } from '../runtime/appLifecycle'
 import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
 import { detachComponentRelations } from '../runtime/componentInstance/relations'
+import { resolveNativeComponentSelection } from '../runtime/componentInstance/selection'
 import { createPageInstance } from '../runtime/pageInstance'
 import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
 import {
@@ -1416,8 +1417,8 @@ export class BrowserHeadlessSession {
     })
     pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
-    pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
-    pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
+    pageInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(this.selectComponent(selector))
+    pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector).map(resolveNativeComponentSelection)
     pageInstance.getTabBar = () => {
       if (this.currentPageInstance === pageInstance) {
         this.renderCurrentPage()

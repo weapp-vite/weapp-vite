@@ -15,6 +15,7 @@ import {
   runComponentLifecycle,
   runComponentObservers,
 } from '../componentInstance'
+import { resolveNativeComponentSelection } from '../componentInstance/selection'
 import { resolveMiniProgramComponent } from '../componentResolution'
 import { getRuntimeWxsLoader } from '../wxs'
 import {
@@ -303,6 +304,7 @@ export function createRuntimeComponentInstance(
   componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
+  beforeCreated?: (instance: HeadlessComponentInstance) => void,
 ) {
   const isWevuNativeDefinition = Object.keys(componentEntry.definition.methods ?? {}).some(key => key.startsWith('__weapp_vite_'))
     || Object.hasOwn(componentEntry.definition.properties ?? {}, '__wvSlotOwnerId')
@@ -321,12 +323,13 @@ export function createRuntimeComponentInstance(
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
   componentInstance.createSelectorQuery = () => context.moduleLoader.wx.createSelectorQuery().in(componentInstance)
-  componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
-  componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
+  componentInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(context.session.selectComponentWithin(componentScopeId, selector))
+  componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector).map(resolveNativeComponentSelection)
   componentInstance.selectOwnerComponent = () => ownerScopeId
     ? context.componentCache.get(ownerScopeId) ?? null
     : null
   context.componentCache.set(componentScopeId, componentInstance)
+  beforeCreated?.(componentInstance)
   runComponentLifecycle(componentInstance, 'created')
   componentInstance.__propertySnapshots = Object.fromEntries(
     Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),

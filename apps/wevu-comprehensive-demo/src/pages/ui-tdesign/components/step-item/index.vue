@@ -10,7 +10,9 @@ definePageJson(() => ({
 }))
 
 const current = ref(1)
-function onChange(event) { current.value = event.detail }
+function onChange(event: WechatMiniprogram.CustomEvent<{ current: number }>) {
+  current.value = event.detail.current
+}
 </script>
 
 <template>

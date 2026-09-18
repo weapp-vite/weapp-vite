@@ -1,5 +1,7 @@
 <script lang="ts">
-export default {
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
   data() {
     return {
       nativeWrappedCard: {
@@ -9,7 +11,7 @@ export default {
       },
     }
   },
-}
+})
 </script>
 
 <template>

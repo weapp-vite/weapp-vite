@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  E2E_RUNTIME_PROVIDER_ENV,
   assertRuntimeProviderImplemented,
   describeRuntimeProviderSelection,
+  E2E_RUNTIME_PROVIDER_ENV,
   resolveRuntimeProviderName,
 } from '../utils/runtimeProvider'
 

@@ -2,7 +2,7 @@
 const facts = [
   '当前页面没有声明 definePageMeta().layout。',
   '默认布局来自 vite.config.ts 中的 weapp.routeRules。',
-  '因此 routeRules 适合给一批页面提供统一的默认 layout。'
+  '因此 routeRules 适合给一批页面提供统一的默认 layout。',
 ]
 
 function backToLayouts() {

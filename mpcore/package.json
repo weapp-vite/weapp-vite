@@ -1,6 +1,6 @@
 {
   "name": "@mpcore/workspace",
-  "private": true,
   "type": "module",
+  "private": true,
   "description": "mpcore workspace root"
 }

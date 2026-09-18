@@ -1,5 +1,5 @@
 <script lang="ts">
-import { ref } from 'wevu'
+import { defineComponent, ref } from 'wevu'
 
 interface PackageInfo {
   title: string
@@ -10,9 +10,23 @@ interface PackageInfo {
   independent: boolean
 }
 
+interface SubpackageLoaderHost {
+  loadSubPackage?: (options: {
+    name: string
+    success: () => void
+    fail: (error: WechatMiniprogram.GeneralCallbackResult) => void
+  }) => unknown
+}
+
+const host = wx as typeof wx & SubpackageLoaderHost
+
 function loadSubPackage(root: string) {
   return new Promise<void>((resolve, reject) => {
-    wx.loadSubPackage({
+    if (typeof host.loadSubPackage !== 'function') {
+      reject(new Error('当前宿主不提供主动加载分包接口，请通过页面导航加载分包'))
+      return
+    }
+    host.loadSubPackage({
       name: root,
       success: () => resolve(),
       fail: error => reject(error),
@@ -20,8 +34,9 @@ function loadSubPackage(root: string) {
   })
 }
 
-export default {
+export default defineComponent({
   setup() {
+    const canLoadSubPackage = typeof host.loadSubPackage === 'function'
     const loadingRoot = ref<string | null>(null)
     const loadResult = ref('')
 
@@ -81,6 +96,7 @@ export default {
     }
 
     return {
+      canLoadSubPackage,
       packages,
       loadingRoot,
       loadResult,
@@ -88,7 +104,7 @@ export default {
       navigateTo,
     }
   },
-}
+})
 </script>
 
 <template>
@@ -102,6 +118,9 @@ export default {
       </view>
       <view class="tip">
         <text>本页演示多个普通分包与多个独立分包的配置与跳转；普通分包 A/B 复用同一 counter store（可来回切换观察同步）。</text>
+      </view>
+      <view v-if="!canLoadSubPackage" class="tip-inline">
+        <text>当前宿主通过页面导航自动加载分包，主页面同时配置了普通分包预下载。</text>
       </view>
       <view v-if="loadResult" class="tip-inline">
         <text>{{ loadResult }}</text>
@@ -129,7 +148,8 @@ export default {
         </view>
         <view class="pkg-actions">
           <button
-            class="btn btn-small btn-secondary"
+            v-if="canLoadSubPackage"
+            class="btn btn-small btn-secondary load-subpackage"
             :disabled="loadingRoot === item.root"
             @click="onLoadPackage(item.root)"
           >

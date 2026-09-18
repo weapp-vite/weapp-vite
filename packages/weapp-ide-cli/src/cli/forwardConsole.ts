@@ -27,6 +27,7 @@ const ENABLE_LOG_RETRY_DELAY_MS = 500
 const ENABLE_LOG_RETRY_TIMES = 5
 const ENABLE_LOG_TIMEOUT_MS = 3_000
 const FORWARD_CONSOLE_SESSION_TIMEOUT_MS = 3_000
+const FORWARD_CONSOLE_LAUNCH_TIMEOUT_MS = 30_000
 const ENABLE_LOG_REFRESH_INTERVAL_MS = 2000
 const AUXILIARY_FORWARD_CONSOLE_DELAY_MS = 2500
 const DUPLICATE_LOG_SUPPRESS_MS = 800
@@ -209,13 +210,19 @@ async function acquireForwardConsoleMiniProgram(options: ForwardConsoleOptions) 
     return options.miniProgram
   }
 
+  // 连接探针可以快速重试；启动 IDE 必须保留完整预算，避免留下未就绪的端口监听。
+  const openedOnly = options.openedOnly === true
+    || (options.preferOpenedSession !== false && Boolean(options.port || options.sessionId))
+  const timeout = openedOnly
+    ? Math.min(options.timeout ?? FORWARD_CONSOLE_SESSION_TIMEOUT_MS, FORWARD_CONSOLE_SESSION_TIMEOUT_MS)
+    : options.timeout ?? FORWARD_CONSOLE_LAUNCH_TIMEOUT_MS
   let lastError: unknown
   for (let attempt = 0; attempt <= ENABLE_LOG_RETRY_TIMES; attempt += 1) {
     let miniProgram: MiniProgramLike | undefined
     try {
       miniProgram = await acquireSharedMiniProgram({
         ...options,
-        timeout: Math.min(options.timeout ?? FORWARD_CONSOLE_SESSION_TIMEOUT_MS, FORWARD_CONSOLE_SESSION_TIMEOUT_MS),
+        timeout,
       })
       await enableMiniProgramConsoleLog(miniProgram, 0)
       return miniProgram

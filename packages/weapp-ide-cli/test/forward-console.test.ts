@@ -154,6 +154,28 @@ describe('forwardConsole', () => {
     vi.useRealTimers()
   })
 
+  it.each([
+    { preferOpenedSession: false, port: 9420, timeout: 60_000, expected: 60_000 },
+    { timeout: 45_000, expected: 45_000 },
+    { expected: 30_000 },
+    { openedOnly: true, timeout: 60_000, expected: 3_000 },
+    { openedOnly: true, timeout: 1_000, expected: 1_000 },
+  ])('preserves the launch budget and bounds opened-session probes: %j', async ({ expected, ...options }) => {
+    const miniProgram = createMiniProgramMock()
+    acquireSharedMiniProgramMock.mockImplementation(async ({ timeout }) => {
+      // 启动耗时超过连接探针预算时，仍应返回同一个可用会话。
+      if (expected > 3_000 && timeout <= 3_000) {
+        throw new Error('launch interrupted before App domain readiness')
+      }
+      return miniProgram
+    })
+    const { startForwardConsole } = await import('../src/cli/forwardConsole')
+    const session = await startForwardConsole({ projectPath: 'fixture-project', ...options })
+    expect(acquireSharedMiniProgramMock).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ timeout: expected }))
+    expect(closeSharedMiniProgramMock).not.toHaveBeenCalled()
+    await session.close()
+  })
+
   it('filters out disabled log levels', async () => {
     const miniProgram = createMiniProgramMock()
     acquireSharedMiniProgramMock.mockResolvedValue(miniProgram)

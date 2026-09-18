@@ -3,5 +3,5 @@ function add1(a: number, b: number) {
 }
 
 export function test4() {
-  return add1(1,2 )
+  return add1(1, 2)
 }

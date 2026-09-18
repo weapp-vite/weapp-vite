@@ -153,6 +153,7 @@ require("../../weapp-vendors/wevu-runtime.js").__wevuInstallScopedSlots();
 var __wevuOptions = {
 	setData: { pick: [
 		"__wvOwnerId",
+		"tabItems",
 		"vueSlots",
 		"__wvSlotOwnerId",
 		"__wvSlotScope"
@@ -186,13 +187,20 @@ var __wevuOptions = {
 	"__wevuBindingManifest": Object.freeze({
 		version: 1,
 		sourceFile: "src/pages/index/index.vue",
-		bindings: [{
-			id: "b0",
-			outputPath: "__wvOwnerId"
-		}, {
-			id: "b1",
-			outputPath: "__wvOwnerId"
-		}],
+		bindings: [
+			{
+				id: "b0",
+				outputPath: "__wvOwnerId"
+			},
+			{
+				id: "b1",
+				outputPath: "__wvOwnerId"
+			},
+			{
+				id: "b2",
+				outputPath: "tabItems"
+			}
+		],
 		features: { scopedSlots: true }
 	})
 };

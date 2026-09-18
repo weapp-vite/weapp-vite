@@ -2068,6 +2068,26 @@ describe('compileVueTemplateToWxml', () => {
     expect(scopedSlotComponents?.[1]?.template).toContain('<my-image />')
   })
 
+  it('retains owner fields used by augmented scoped slot templates', () => {
+    const { bindingManifest, scopedSlotComponents } = compileVueTemplateToWxml(
+      '<Provider><Cell :value="selectList" /></Provider>',
+      '/project/src/components/select-picker.vue',
+      {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: ['Provider', 'Cell'],
+      },
+    )
+
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.bindingManifest.bindings.some((binding) => {
+      return binding.outputPath === '__wvOwner.selectList'
+    })).toBe(true)
+    expect(bindingManifest.bindings.some((binding) => {
+      return binding.outputPath === 'selectList'
+        && binding.dependencies?.some(dependency => dependency.path === 'selectList')
+    })).toBe(true)
+  })
+
   it('augments nested wevu component default children when explicitly augmented', () => {
     const template = `
 <Provider>

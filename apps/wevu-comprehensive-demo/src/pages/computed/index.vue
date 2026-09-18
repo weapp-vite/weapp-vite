@@ -1,5 +1,7 @@
 <script lang="ts">
-export default {
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
   data() {
     return {
       firstName: '张',
@@ -56,7 +58,7 @@ export default {
       product.selected = !product.selected
     },
   },
-}
+})
 </script>
 
 <template>

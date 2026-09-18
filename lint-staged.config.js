@@ -37,7 +37,7 @@ export default {
   '!(apps)/**/*.{js,jsx,mjs,ts,tsx,mts,vue}': [
     'eslint --fix --max-warnings=0 --no-warn-ignored',
   ],
-  '!(apps)/**/*.{css,scss,vue}': (files) => {
+  '!(apps)/**/*.{css,scss,less,wxss,acss,ttss,qss,jxss,vue}': (files) => {
     const lintableFiles = filterTempE2eAppFiles(files)
 
     if (lintableFiles.length === 0) {

@@ -10,7 +10,9 @@ definePageJson(() => ({
 }))
 
 const tabsValue = ref('tab-1')
-function onTabsChange(event) { tabsValue.value = event.detail?.value ?? event.detail }
+function onTabsChange(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
+  tabsValue.value = event.detail.value
+}
 </script>
 
 <template>

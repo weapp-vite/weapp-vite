@@ -125,7 +125,7 @@ export function renderDomAcceptanceInventory(inventory: ReturnType<typeof create
       lines.push('')
     }
   }
-  return `${lines.join('\n')}\n`
+  return `${lines.join('\n').trimEnd()}\n`
 }
 
 export async function formatDomAcceptanceInventory(markdown: string, root = ACCEPTANCE_ROOT) {
