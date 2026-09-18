@@ -1,5 +1,58 @@
 # weapp-vite
 
+## 7.1.3
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- 修复 Vue SFC 外部样式中 CSS `v-bind()` 的变量注册、模板注入与外部文件热更新，使其与内联样式保持一致；切换 `style src` 后重新建立依赖基线，避免新样式文件的变量变化复用旧脚本。
+
+- 修复 Vue SFC 模板内联事件中对象与数组解构赋值未写回组件状态的问题，支持别名、默认值、剩余元素、局部遮蔽和顶层 ref 目标，并保留 setup let 访问器的闭包写入语义。合并 setup 返回值时保持自有数据属性语义，避免原型同名键改变结果对象的原型或丢失绑定。
+
+- 修复异步 setup 执行结束后上下文泄漏导致后续组件生命周期注册失败的问题。
+
+- 修复同时使用 React 与 Wevu 的项目中 JSX 类型来源冲突，保留 Wevu SFC 的平台元素类型支持。
+
+- 保留仅在增强插槽模板中使用的父组件数据依赖，避免自动 setData 裁剪导致插槽内组件首次挂载收到空值；动态依赖无法完整分析时保留完整快照。
+
+- 保留 Wevu 稳定公开组件工厂及已有生命周期导出调用的原始形式，修复全量与增量构建的额外别名包装不一致，避免纯模板 HMR 改写无关脚本并导致微信开发者工具整页重载和状态丢失。
+
+- 修复微信状态保持 HMR 更新 Tailwind 全局样式时页面计算样式未刷新的问题，确保页面 WXSS 随全局样式快照变化触发重新解析，同时不改变页面视觉语义。
+
+- 新增可用于 `unplugin-auto-import` 的 `wevu` 与 `wevu-router` 预设。
+
+- 修复 Tailwind CSS 入口与普通样式链路重复处理时的 CSS 压缩警告。
+
+- 升级仓库及脚手架默认使用的 pnpm 至 12.4.1，统一 Corepack、smoke 测试、CI 与开发文档中的安装版本要求。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.4
+  - @weapp-core/init@6.0.20
+  - @weapp-core/logger@3.1.4
+  - @weapp-core/schematics@6.2.4
+  - @weapp-core/shared@3.2.3
+  - @weapp-vite/ast@7.1.3
+  - @weapp-vite/eslint@0.2.5
+  - @weapp-vite/i18n@0.2.4
+  - @weapp-vite/mcp@1.5.4
+  - @weapp-vite/miniprogram-automator@1.2.19
+  - @weapp-vite/volar@2.1.8
+  - @weapp-vite/web@1.5.3
+  - @wevu/api@0.3.3
+  - @wevu/web-apis@1.3.0
+  - rolldown-require@2.0.30
+  - vite-plugin-performance@2.0.3
+  - weapp-ide-cli@6.1.5
+  - wevu@7.1.3
+
 ## 7.1.2
 
 ### Patch Changes

@@ -1,6 +1,6 @@
-# @weapp-core/types
+# @weapp-vite/glass-easel-web-adapter
 
-## 1.1.1
+## 0.1.1
 
 ### Patch Changes
 
@@ -13,12 +13,9 @@
 - 自动补充依赖升级发布记录。
   `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
 
-## 1.1.0
-
-### Minor Changes
-
-- 新增 `@weapp-core/types` 公共类型包，统一导出微信、支付宝、抖音和聚合小程序的 intrinsic element 类型；`wevu` 保留原有兼容导出路径。
-
-### Patch Changes
-
-- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @mpcore/vitest：devDependencies.vitest
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.vitest
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli、devDependencies.vitest
+  - @weapp-vite/eslint：devDependencies.vitest

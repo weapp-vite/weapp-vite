@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/glass-easel-web-adapter",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Experimental glass-easel component backend for weapp-vite Web runtime",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",

@@ -1,5 +1,26 @@
 # @wevu/web-apis
 
+## 1.3.0
+
+### Minor Changes
+
+- 补齐 Request/Response 的字节、JSON 与 Blob 读取接口，修正 Body 单次消费、Blob UTF-8 长度与二进制快照，新增 Blob 切片并完善 Headers 回调契约。非空 body 读取或发送后再次读取、克隆会报错，需要重复读取时请在消费前调用 clone。
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.4
+  - @wevu/api@0.3.3
+
 ## 1.2.42
 
 ### Patch Changes
