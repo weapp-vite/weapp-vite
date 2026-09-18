@@ -147,6 +147,7 @@ import {
   vibrateShort,
 } from '../src/runtime/polyfill'
 import { createTemplate } from '../src/runtime/template'
+import '../src/runtime'
 
 /* eslint-disable ts/no-use-before-define, antfu/consistent-chaining, new-cap, style/lines-between-class-members */
 

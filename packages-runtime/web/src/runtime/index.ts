@@ -1,6 +1,8 @@
 import { installWebHostGlobals } from './hostGlobals'
+import { installMiniProgramGlobals } from './polyfill'
 
 installWebHostGlobals()
+installMiniProgramGlobals()
 
 export type { WebTabBarConfig, WebTabBarItem } from './appShell/tabBar'
 export { ensureButtonDefined, setButtonFormConfig } from './button'
