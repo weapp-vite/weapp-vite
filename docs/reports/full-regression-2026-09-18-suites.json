@@ -1,0 +1,3896 @@
+{
+  "baseline": "291f9fc6d",
+  "scope": "macOS local; Web, headless, WeChat DevTools, multi-platform builds; no remote CI",
+  "suiteResults": [
+    {
+      "entry": "ci-final",
+      "suite": "e2e:ci-full",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": false,
+      "summary": {
+        "taskCount": 70,
+        "plannedCount": 70,
+        "executedCount": 70,
+        "failedCount": 0,
+        "passedCount": 70,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 0
+      },
+      "tasks": [
+        {
+          "label": "ci/app-prelude-native.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/auto-routes-define-app-json.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/automator-launch-resilience.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/chunk-modes-runtime-helper.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/chunk-modes.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/config-merge.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/dev-process-env.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/donut-multi-end-wevu-sfc.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/donut-multi-end.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/github-issues-runtime-shared.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/github-issues.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/githubIssuesBuild/markup.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/headless-automator-provider.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/ide-devtools-logs.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/init-native-fixtures.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-340-hoist.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-649-entry-combos.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-724-sfc-style-src.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-779-css-pre.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-814-tailwind-dynamic-class.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-862-output-watch.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-892-sass-assets.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-893-style-src.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-896-stateful-initial.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/layouts.runtime-switching.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/lib-mode.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/npm-build-race.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/object-literal-bind-prop.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/platform-build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/platform-matrix.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/plugin-demo.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/preload-analyze.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/preserve-modules.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/react-interop.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/request-clients-real.request-runtime.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/requestClientsRealDevPlugin.lifecycle.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/requestClientsRealDevPlugin.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/requestClientsRealServer.issue448.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/retail-template-console-warnings.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/runtime-provider.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/script-setup-macros-mapping.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/shared-styles.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/stateful-hmr-root-outdir.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/subpackage-shared-strategy-complex.e2e.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/tdesign-dialog-import.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-e2e.utils.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-multi-platform-sfc.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-multi-platform.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-tailwind-iconify.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-tailwind-v4-source.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-tdesign-feedback-layouts.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-weapp-vite-wevu-template.auto-import-dts.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-wevu-tdesign-retail-hmr-vendor.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-wevu-tdesign-shared-chunk-build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/web-runtime.package-output.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wechat-viewport-screenshot.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-features.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-jsx-tsx.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime-demo.request-globals.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime.function-props.integration.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime.inline-object-reactivity.integration.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime.platform-dependency-modes.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime.platforms.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime.template-compat.integration.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime.utils.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-subpackage-placement.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-test-utils.consumer.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-vue-demo.script-setup.emit.integration.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-vue-demo.script-setup.macros-mapping.integration.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-vue-demo.template-compat.build.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "hmr-final",
+      "suite": "hmr-guard:full",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": false,
+      "summary": {
+        "taskCount": 27,
+        "plannedCount": 27,
+        "executedCount": 27,
+        "failedCount": 0,
+        "passedCount": 27,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 0
+      },
+      "tasks": [
+        {
+          "label": "utils/hmr-helpers.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "utils/wevu-root-hmr-exports.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-app-shell.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-modify.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-html-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-layouts.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-rename.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-rapid.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-add.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-delete.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-app-config.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-package-scripts.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/skyline-hmr-fallback.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/issue-340-comment.hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-router-hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-layout-shared-template-wxs.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-shared-template-wxs.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-shared-runtime-deps.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-root-import-hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-jsx-tsx.hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/external-linked-vue-component.hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-issue-1015-external-css-vars.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/style-import-vue.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/wevu-runtime.hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/e2e-app-tailwind-memory-guard.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-complex-developer-flow.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/template-tailwind-hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "hmr-final",
+      "suite": "hmr-guard:auto-import-vue-sfc",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": false,
+      "summary": {
+        "taskCount": 3,
+        "plannedCount": 3,
+        "executedCount": 3,
+        "failedCount": 0,
+        "passedCount": 3,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 0
+      },
+      "tasks": [
+        {
+          "label": "utils/hmr-helpers.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "utils/wevu-root-hmr-exports.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/auto-import-vue-sfc.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "hmr-final",
+      "suite": "hmr-guard:shared-chunks-auto",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": false,
+      "summary": {
+        "taskCount": 3,
+        "plannedCount": 3,
+        "executedCount": 3,
+        "failedCount": 0,
+        "passedCount": 3,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 0
+      },
+      "tasks": [
+        {
+          "label": "utils/hmr-helpers.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "utils/wevu-root-hmr-exports.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/hmr-shared-chunks-auto.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "hmr-final",
+      "suite": "hmr-guard:auto-routes-hmr",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": false,
+      "summary": {
+        "taskCount": 3,
+        "plannedCount": 3,
+        "executedCount": 3,
+        "failedCount": 0,
+        "passedCount": 3,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 0
+      },
+      "tasks": [
+        {
+          "label": "utils/hmr-helpers.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "utils/wevu-root-hmr-exports.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ci/auto-routes-hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "headless-final",
+      "suite": "e2e:ide-headless-full",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": false,
+      "summary": {
+        "taskCount": 37,
+        "plannedCount": 37,
+        "executedCount": 37,
+        "failedCount": 0,
+        "passedCount": 37,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 37
+      },
+      "tasks": [
+        {
+          "label": "ide/index.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/app-lifecycle.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/auto-routes-define-app-json.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/lifecycle-compare.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-features.runtime.behavior.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/body-blob.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/stream-capability.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.component-instance-apis.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1010.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1011.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1012.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1015.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-retail-checkout.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/app-prelude-native.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/react-runtime-spike.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-features.runtime.router.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-multi-platform-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.duplicate.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.hoist.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.extras.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/subpackage-shared-strategy-complex.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/tdesign-dialog-import.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-vue-demo.script-setup.emit.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-comprehensive.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue705.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue826.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.require-async.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1009.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/shared-styles.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-jsx-tsx.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-query.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "web-final",
+      "suite": "e2e:web",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": false,
+      "summary": {
+        "taskCount": 1,
+        "plannedCount": 1,
+        "executedCount": 1,
+        "failedCount": 0,
+        "passedCount": 1,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 0
+      },
+      "tasks": [
+        {
+          "label": "web-runtime",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "dom-headless",
+      "suite": "e2e:ide-dom-headless",
+      "coverage": "complete",
+      "acceptance": "passed",
+      "strictDom": true,
+      "summary": {
+        "taskCount": 27,
+        "plannedCount": 27,
+        "executedCount": 27,
+        "failedCount": 0,
+        "passedCount": 27,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 0,
+        "artifactCount": 27
+      },
+      "tasks": [
+        {
+          "label": "ide/body-blob.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/stream-capability.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/app-lifecycle.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.component-instance-apis.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1010.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1011.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1012.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1015.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-retail-checkout.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/app-prelude-native.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/auto-routes-define-app-json.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/react-runtime-spike.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-features.runtime.behavior.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-features.runtime.router.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-multi-platform-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.duplicate.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.hoist.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.extras.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/subpackage-shared-strategy-complex.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/tdesign-dialog-import.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-vue-demo.script-setup.emit.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-comprehensive.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "entry": "exhaustive-strict",
+      "suite": "e2e:ide-full:exhaustive",
+      "coverage": "complete",
+      "acceptance": "failed",
+      "strictDom": true,
+      "summary": {
+        "taskCount": 101,
+        "plannedCount": 98,
+        "executedCount": 98,
+        "failedCount": 10,
+        "passedCount": 87,
+        "blockedCount": 1,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "outOfScopeCount": 3,
+        "artifactCount": 194
+      },
+      "tasks": [
+        {
+          "label": "ide/app-lifecycle.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/app-prelude-native.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/app-vue-hmr-alias.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/auto-routes-define-app-json.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/automator-bridge-wrapper-hmr.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/automator-concurrent-sessions.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/body-blob.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/devtools-cli-workflow.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/forward-console-demo.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.aggregate.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.component-instance-apis.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1009.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1010.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1011.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1012.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue1015.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue448-formdata-upload.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue547.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue558.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue615.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue621.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue642-bug7-default.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue642-bug7-performance.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue642-bug8.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue779.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue826.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue852.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue868.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue911.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.issue941.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.require-async.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.subpackage-item.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/github-issues.runtime.subpackage-user.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/hmr-auto-classic.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/index.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/issue-340-hoist.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/layout-power-demo-message.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/layout-power-demo.runtime-vendor-hmr.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/lifecycle-compare.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/mcp-runtime-tools.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/plugin-demo.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/react-runtime-spike.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/request-clients-real-native.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/request-clients-real.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/shared-styles.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/stateful-hmr.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/stream-capability.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/subpackage-shared-strategy-complex.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/swan-runtime.optional.test.ts",
+          "status": "out-of-scope",
+          "exitCode": 0,
+          "reason": "Optional Baidu host runtime is outside WeChat DOM acceptance"
+        },
+        {
+          "label": "ide/tdesign-dialog-import.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-dev-open-all.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "Template DOM acceptance invocations incomplete: expected weapp-vite-lib-template, weapp-vite-multi-platform-sfc-template, weapp-vite-multi-platform-template, weapp-vite-plugin-template, weapp-vite-tailwindcss-tdesign-template, weapp-vite-tailwindcss-template, weapp-vite-tailwindcss-vant-template, weapp-vite-template, weapp-vite-wevu-tailwindcss-tdesign-retail-template, weapp-vite-wevu-tailwindcss-tdesign-template, weapp-vite-wevu-template"
+        },
+        {
+          "label": "ide/template-multi-platform-sfc.swan.optional.test.ts",
+          "status": "out-of-scope",
+          "exitCode": 0,
+          "reason": "Optional Baidu host runtime is outside WeChat DOM acceptance"
+        },
+        {
+          "label": "ide/template-multi-platform.swan.optional.test.ts",
+          "status": "out-of-scope",
+          "exitCode": 0,
+          "reason": "Optional Baidu host runtime is outside WeChat DOM acceptance"
+        },
+        {
+          "label": "ide/template-retail-checkout.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-tailwindcss-dev-open-multi.runtime.test.ts",
+          "status": "blocked",
+          "exitCode": 1,
+          "reason": "Missing DOM acceptance reporter output; task cannot be accepted from its exit code"
+        },
+        {
+          "label": "ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-multi-platform-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-tailwindcss-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-tailwindcss-vant-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-weapp-vite-wevu-template.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-wevu-features-app.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/vite-native-ts.worker.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/vue-mini-issue151-wevu.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-composition-api.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-comprehensive.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-features.runtime.behavior.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-features.runtime.router.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-features.runtime.subpath.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-jsx-tsx.hmr.runtime.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/wevu-jsx-tsx.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-query.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-router-hmr.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime-demo.request-globals.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime-demo.vue-query.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime.class-computed.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime.core-hmr.test.ts",
+          "status": "failed",
+          "exitCode": 1,
+          "reason": "DOM acceptance did not finish all collected cases successfully"
+        },
+        {
+          "label": "ide/wevu-runtime.function-props.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime.inline-object-reactivity.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime.shared-template-wxs.hmr.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-runtime.weapp.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-subpackage-placement.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-vue-demo.script-setup.emit.runtime.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/wevu-watch.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.duplicate.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.extras.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        },
+        {
+          "label": "ide/chunk-modes.runtime.hoist.test.ts",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    }
+  ],
+  "uniqueTaskLabels": [
+    "ci/app-prelude-native.build.test.ts",
+    "ci/auto-import-vue-sfc.test.ts",
+    "ci/auto-routes-define-app-json.test.ts",
+    "ci/auto-routes-hmr.test.ts",
+    "ci/automator-launch-resilience.test.ts",
+    "ci/chunk-modes-runtime-helper.test.ts",
+    "ci/chunk-modes.e2e.test.ts",
+    "ci/config-merge.e2e.test.ts",
+    "ci/dev-process-env.test.ts",
+    "ci/donut-multi-end-wevu-sfc.build.test.ts",
+    "ci/donut-multi-end.build.test.ts",
+    "ci/e2e-app-tailwind-memory-guard.test.ts",
+    "ci/external-linked-vue-component.hmr.test.ts",
+    "ci/github-issues-runtime-shared.test.ts",
+    "ci/github-issues.build.test.ts",
+    "ci/githubIssuesBuild/markup.test.ts",
+    "ci/headless-automator-provider.test.ts",
+    "ci/hmr-add.test.ts",
+    "ci/hmr-app-config.test.ts",
+    "ci/hmr-app-shell.test.ts",
+    "ci/hmr-complex-developer-flow.test.ts",
+    "ci/hmr-delete.test.ts",
+    "ci/hmr-html-template.test.ts",
+    "ci/hmr-issue-1015-external-css-vars.test.ts",
+    "ci/hmr-layout-shared-template-wxs.test.ts",
+    "ci/hmr-layouts.test.ts",
+    "ci/hmr-modify.test.ts",
+    "ci/hmr-package-scripts.test.ts",
+    "ci/hmr-rapid.test.ts",
+    "ci/hmr-rename.test.ts",
+    "ci/hmr-shared-chunks-auto.test.ts",
+    "ci/hmr-shared-runtime-deps.test.ts",
+    "ci/hmr-shared-template-wxs.test.ts",
+    "ci/ide-devtools-logs.test.ts",
+    "ci/init-native-fixtures.build.test.ts",
+    "ci/issue-340-comment.hmr.test.ts",
+    "ci/issue-340-hoist.e2e.test.ts",
+    "ci/issue-649-entry-combos.build.test.ts",
+    "ci/issue-724-sfc-style-src.test.ts",
+    "ci/issue-779-css-pre.test.ts",
+    "ci/issue-814-tailwind-dynamic-class.e2e.test.ts",
+    "ci/issue-862-output-watch.test.ts",
+    "ci/issue-892-sass-assets.test.ts",
+    "ci/issue-893-style-src.test.ts",
+    "ci/issue-896-stateful-initial.test.ts",
+    "ci/layouts.runtime-switching.build.test.ts",
+    "ci/lib-mode.e2e.test.ts",
+    "ci/npm-build-race.e2e.test.ts",
+    "ci/object-literal-bind-prop.test.ts",
+    "ci/platform-build.test.ts",
+    "ci/platform-matrix.test.ts",
+    "ci/plugin-demo.build.test.ts",
+    "ci/preload-analyze.e2e.test.ts",
+    "ci/preserve-modules.build.test.ts",
+    "ci/react-interop.build.test.ts",
+    "ci/request-clients-real.request-runtime.build.test.ts",
+    "ci/requestClientsRealDevPlugin.lifecycle.test.ts",
+    "ci/requestClientsRealDevPlugin.test.ts",
+    "ci/requestClientsRealServer.issue448.test.ts",
+    "ci/retail-template-console-warnings.test.ts",
+    "ci/runtime-provider.test.ts",
+    "ci/script-setup-macros-mapping.build.test.ts",
+    "ci/shared-styles.build.test.ts",
+    "ci/skyline-hmr-fallback.test.ts",
+    "ci/stateful-hmr-root-outdir.test.ts",
+    "ci/style-import-vue.test.ts",
+    "ci/subpackage-shared-strategy-complex.e2e.test.ts",
+    "ci/tdesign-dialog-import.build.test.ts",
+    "ci/template-e2e.utils.test.ts",
+    "ci/template-multi-platform-sfc.build.test.ts",
+    "ci/template-multi-platform.build.test.ts",
+    "ci/template-tailwind-hmr.test.ts",
+    "ci/template-tailwind-iconify.build.test.ts",
+    "ci/template-tailwind-v4-source.build.test.ts",
+    "ci/template-tdesign-feedback-layouts.build.test.ts",
+    "ci/template-weapp-vite-wevu-template.auto-import-dts.test.ts",
+    "ci/template-wevu-tdesign-retail-hmr-vendor.test.ts",
+    "ci/template-wevu-tdesign-shared-chunk-build.test.ts",
+    "ci/web-runtime.package-output.test.ts",
+    "ci/wechat-viewport-screenshot.test.ts",
+    "ci/wevu-features.build.test.ts",
+    "ci/wevu-jsx-tsx.build.test.ts",
+    "ci/wevu-jsx-tsx.hmr.test.ts",
+    "ci/wevu-root-import-hmr.test.ts",
+    "ci/wevu-router-hmr.test.ts",
+    "ci/wevu-runtime-demo.request-globals.build.test.ts",
+    "ci/wevu-runtime.function-props.integration.test.ts",
+    "ci/wevu-runtime.hmr.test.ts",
+    "ci/wevu-runtime.inline-object-reactivity.integration.test.ts",
+    "ci/wevu-runtime.platform-dependency-modes.test.ts",
+    "ci/wevu-runtime.platforms.test.ts",
+    "ci/wevu-runtime.template-compat.integration.test.ts",
+    "ci/wevu-runtime.utils.test.ts",
+    "ci/wevu-subpackage-placement.build.test.ts",
+    "ci/wevu-test-utils.consumer.test.ts",
+    "ci/wevu-vue-demo.script-setup.emit.integration.test.ts",
+    "ci/wevu-vue-demo.script-setup.macros-mapping.integration.test.ts",
+    "ci/wevu-vue-demo.template-compat.build.test.ts",
+    "ide/app-lifecycle.test.ts",
+    "ide/app-prelude-native.runtime.test.ts",
+    "ide/app-vue-hmr-alias.runtime.test.ts",
+    "ide/auto-routes-define-app-json.runtime.test.ts",
+    "ide/automator-bridge-wrapper-hmr.runtime.test.ts",
+    "ide/automator-concurrent-sessions.runtime.test.ts",
+    "ide/body-blob.runtime.test.ts",
+    "ide/chunk-modes.runtime.duplicate.test.ts",
+    "ide/chunk-modes.runtime.extras.test.ts",
+    "ide/chunk-modes.runtime.hoist.test.ts",
+    "ide/devtools-cli-workflow.runtime.test.ts",
+    "ide/forward-console-demo.runtime.test.ts",
+    "ide/github-issues.runtime.aggregate.test.ts",
+    "ide/github-issues.runtime.component-instance-apis.test.ts",
+    "ide/github-issues.runtime.issue1009.test.ts",
+    "ide/github-issues.runtime.issue1010.test.ts",
+    "ide/github-issues.runtime.issue1011.test.ts",
+    "ide/github-issues.runtime.issue1012.test.ts",
+    "ide/github-issues.runtime.issue1015.test.ts",
+    "ide/github-issues.runtime.issue448-formdata-upload.test.ts",
+    "ide/github-issues.runtime.issue547.test.ts",
+    "ide/github-issues.runtime.issue558.test.ts",
+    "ide/github-issues.runtime.issue615.test.ts",
+    "ide/github-issues.runtime.issue621.test.ts",
+    "ide/github-issues.runtime.issue642-bug7-default.test.ts",
+    "ide/github-issues.runtime.issue642-bug7-performance.test.ts",
+    "ide/github-issues.runtime.issue642-bug8.test.ts",
+    "ide/github-issues.runtime.issue705.test.ts",
+    "ide/github-issues.runtime.issue779.test.ts",
+    "ide/github-issues.runtime.issue826.test.ts",
+    "ide/github-issues.runtime.issue852.test.ts",
+    "ide/github-issues.runtime.issue868.test.ts",
+    "ide/github-issues.runtime.issue911.test.ts",
+    "ide/github-issues.runtime.issue941.test.ts",
+    "ide/github-issues.runtime.require-async.test.ts",
+    "ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
+    "ide/github-issues.runtime.subpackage-item.test.ts",
+    "ide/github-issues.runtime.subpackage-user.test.ts",
+    "ide/hmr-auto-classic.runtime.test.ts",
+    "ide/index.test.ts",
+    "ide/issue-340-hoist.runtime.test.ts",
+    "ide/layout-power-demo-message.runtime.test.ts",
+    "ide/layout-power-demo.runtime-vendor-hmr.test.ts",
+    "ide/lifecycle-compare.test.ts",
+    "ide/mcp-runtime-tools.runtime.test.ts",
+    "ide/plugin-demo.runtime.test.ts",
+    "ide/react-runtime-spike.runtime.test.ts",
+    "ide/request-clients-real-native.runtime.test.ts",
+    "ide/request-clients-real.runtime.test.ts",
+    "ide/shared-styles.runtime.test.ts",
+    "ide/stateful-hmr.runtime.test.ts",
+    "ide/stream-capability.runtime.test.ts",
+    "ide/subpackage-shared-strategy-complex.runtime.test.ts",
+    "ide/swan-runtime.optional.test.ts",
+    "ide/tdesign-dialog-import.runtime.test.ts",
+    "ide/template-dev-open-all.runtime.test.ts",
+    "ide/template-multi-platform-sfc.swan.optional.test.ts",
+    "ide/template-multi-platform.swan.optional.test.ts",
+    "ide/template-retail-checkout.runtime.test.ts",
+    "ide/template-tailwindcss-dev-open-multi.runtime.test.ts",
+    "ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
+    "ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
+    "ide/template-weapp-vite-multi-platform-template.test.ts",
+    "ide/template-weapp-vite-tailwindcss-tdesign-template.test.ts",
+    "ide/template-weapp-vite-tailwindcss-template.test.ts",
+    "ide/template-weapp-vite-tailwindcss-vant-template.test.ts",
+    "ide/template-weapp-vite-template.test.ts",
+    "ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.feedback-runtime.test.ts",
+    "ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts",
+    "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.class-style-binding.test.ts",
+    "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.form.test.ts",
+    "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.layout-feedback-dialog.test.ts",
+    "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.runtime-errors.test.ts",
+    "ide/template-weapp-vite-wevu-tailwindcss-tdesign-template.test.ts",
+    "ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts",
+    "ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts",
+    "ide/template-weapp-vite-wevu-template.test.ts",
+    "ide/template-wevu-features-app.test.ts",
+    "ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
+    "ide/vite-native-ts.worker.runtime.test.ts",
+    "ide/vue-mini-issue151-wevu.runtime.test.ts",
+    "ide/wevu-composition-api.weapp.test.ts",
+    "ide/wevu-comprehensive.runtime.test.ts",
+    "ide/wevu-features.runtime.behavior.test.ts",
+    "ide/wevu-features.runtime.router.test.ts",
+    "ide/wevu-features.runtime.subpath.test.ts",
+    "ide/wevu-jsx-tsx.hmr.runtime.test.ts",
+    "ide/wevu-jsx-tsx.runtime.test.ts",
+    "ide/wevu-query.runtime.test.ts",
+    "ide/wevu-router-hmr.runtime.test.ts",
+    "ide/wevu-runtime-demo.request-globals.weapp.test.ts",
+    "ide/wevu-runtime-demo.vue-query.weapp.test.ts",
+    "ide/wevu-runtime.class-computed.weapp.test.ts",
+    "ide/wevu-runtime.core-hmr.test.ts",
+    "ide/wevu-runtime.function-props.weapp.test.ts",
+    "ide/wevu-runtime.inline-object-reactivity.weapp.test.ts",
+    "ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts",
+    "ide/wevu-runtime.shared-template-wxs.hmr.test.ts",
+    "ide/wevu-runtime.weapp.test.ts",
+    "ide/wevu-subpackage-placement.runtime.test.ts",
+    "ide/wevu-vue-demo.script-setup.emit.runtime.test.ts",
+    "ide/wevu-watch.test.ts",
+    "utils/hmr-helpers.test.ts",
+    "utils/wevu-root-hmr-exports.test.ts",
+    "web-runtime"
+  ],
+  "workspaceNightly": {
+    "summary": {
+      "projectCount": 75,
+      "failedProjectCount": 0,
+      "executedScenarioCount": 227,
+      "successfulScenarioCount": 227,
+      "failedScenarioCount": 0,
+      "notExecutedScenarioCount": 0,
+      "compilerProfileSampleCount": 54,
+      "scenarioCount": 227,
+      "measuredScenarioCount": 54,
+      "scenarioP50Ms": 151.93812499999967,
+      "scenarioP95Ms": 1839.783542000001,
+      "scenarioMaxMs": 2089.108707999996,
+      "failedProjects": []
+    },
+    "projects": [
+      {
+        "id": "apps/alipay-antd-mini-demo",
+        "platform": "alipay",
+        "startupMs": 2562.569166000001,
+        "scenarios": [
+          {
+            "id": "native-script",
+            "source": "apps/alipay-antd-mini-demo/src/pages/index/index.ts",
+            "output": "apps/alipay-antd-mini-demo/dist/pages/index/index.js",
+            "observedMs": 252.9306249999936
+          },
+          {
+            "id": "vue-template",
+            "source": "apps/alipay-antd-mini-demo/src/pages/wevu/index.vue",
+            "output": "apps/alipay-antd-mini-demo/dist/pages/wevu/index.axml",
+            "observedMs": 504.703290999998
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/alipay-antd-mini-demo/src/pages/wevu/index.vue",
+            "output": "apps/alipay-antd-mini-demo/dist/pages/wevu/index.js",
+            "observedMs": 504.1924999999974
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/alipay-antd-mini-demo/src/pages/wevu/index.vue",
+            "output": "apps/alipay-antd-mini-demo/dist/pages/wevu/index.acss",
+            "observedMs": 274.9257499999949
+          }
+        ]
+      },
+      {
+        "id": "apps/dashboard-ui-lab",
+        "platform": "weapp",
+        "startupMs": 2834.194040999995,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/dashboard-ui-lab/src/pages/index/index.wxml",
+            "output": "apps/dashboard-ui-lab/dist/pages/index/index.wxml",
+            "observedMs": 502.98908400000073
+          },
+          {
+            "id": "native-script",
+            "source": "apps/dashboard-ui-lab/src/pages/index/index.ts",
+            "output": "apps/dashboard-ui-lab/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 55.91829200000211
+          },
+          {
+            "id": "native-style",
+            "source": "apps/dashboard-ui-lab/src/pages/index/index.wxss",
+            "output": "apps/dashboard-ui-lab/dist/pages/index/index.wxss",
+            "observedMs": 457.3501660000038
+          },
+          {
+            "id": "vue-template",
+            "source": "apps/dashboard-ui-lab/src/pages/vue-sfc/index.vue",
+            "output": "apps/dashboard-ui-lab/dist/pages/vue-sfc/index.wxml",
+            "observedMs": 504.8121670000037
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/dashboard-ui-lab/src/pages/vue-sfc/index.vue",
+            "output": "apps/dashboard-ui-lab/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 73.21766700000444
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/dashboard-ui-lab/src/pages/vue-sfc/index.vue",
+            "output": "apps/dashboard-ui-lab/dist/pages/vue-sfc/index.wxss",
+            "observedMs": 480.14074999999866
+          }
+        ]
+      },
+      {
+        "id": "apps/douyin-native-demo",
+        "platform": "weapp",
+        "startupMs": 2299.6545419999966,
+        "scenarios": [
+          {
+            "id": "native-script",
+            "source": "apps/douyin-native-demo/src/pages/index/index.ts",
+            "output": "apps/douyin-native-demo/dist/pages/index/index.js",
+            "observedMs": 252.687665999998
+          },
+          {
+            "id": "vue-template",
+            "source": "apps/douyin-native-demo/src/pages/wevu/index.vue",
+            "output": "apps/douyin-native-demo/dist/pages/wevu/index.wxml",
+            "observedMs": 251.4517499999929
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/douyin-native-demo/src/pages/wevu/index.vue",
+            "output": "apps/douyin-native-demo/dist/pages/wevu/index.js",
+            "observedMs": 253.515625
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/douyin-native-demo/src/pages/wevu/index.vue",
+            "output": "apps/douyin-native-demo/dist/pages/wevu/index.wxss",
+            "observedMs": 348.19158299999253
+          }
+        ]
+      },
+      {
+        "id": "apps/forward-console-demo",
+        "platform": "weapp",
+        "startupMs": 2289.0757500000036,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/forward-console-demo/src/pages/index/index.wxml",
+            "output": "apps/forward-console-demo/dist/pages/index/index.wxml",
+            "observedMs": 252.07416699999885
+          },
+          {
+            "id": "native-script",
+            "source": "apps/forward-console-demo/src/pages/index/index.ts",
+            "output": "apps/forward-console-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 51.65670900000259
+          },
+          {
+            "id": "native-style",
+            "source": "apps/forward-console-demo/src/pages/index/index.scss",
+            "output": "apps/forward-console-demo/dist/pages/index/index.wxss",
+            "observedMs": 247.2524170000106
+          }
+        ]
+      },
+      {
+        "id": "apps/hmr-lab",
+        "platform": "weapp",
+        "startupMs": 2820.1331250000076,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/hmr-lab/src/pages/html/index.html",
+            "output": "apps/hmr-lab/dist/pages/html/index.wxml",
+            "observedMs": 504.7647089999955
+          },
+          {
+            "id": "native-script",
+            "source": "apps/hmr-lab/src/pages/html/index.ts",
+            "output": "apps/hmr-lab/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 61.670999999987544
+          },
+          {
+            "id": "native-style",
+            "source": "apps/hmr-lab/src/pages/html/index.wxss",
+            "output": "apps/hmr-lab/dist/pages/html/index.wxss",
+            "observedMs": 351.6929999999993
+          },
+          {
+            "id": "vue-template",
+            "source": "apps/hmr-lab/src/pages/sfc/index.vue",
+            "output": "apps/hmr-lab/dist/pages/sfc/index.wxml",
+            "observedMs": 504.26791599999706
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/hmr-lab/src/pages/sfc/index.vue",
+            "output": "apps/hmr-lab/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 70.20720799999253
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/hmr-lab/src/pages/sfc/index.vue",
+            "output": "apps/hmr-lab/dist/pages/sfc/index.wxss",
+            "observedMs": 352.2459999999992
+          }
+        ]
+      },
+      {
+        "id": "apps/layout-power-demo",
+        "platform": "weapp",
+        "startupMs": 2824.3825420000067,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/layout-power-demo/src/pages/index/index.wxml",
+            "output": "apps/layout-power-demo/dist/pages/index/index.wxml",
+            "observedMs": 504.92862500000047
+          },
+          {
+            "id": "native-script",
+            "source": "apps/layout-power-demo/src/pages/index/index.ts",
+            "output": "apps/layout-power-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 77.74741599999834
+          },
+          {
+            "id": "native-style",
+            "source": "apps/layout-power-demo/src/pages/index/index.wxss",
+            "output": "apps/layout-power-demo/dist/pages/index/index.wxss",
+            "observedMs": 443.1858329999959
+          }
+        ]
+      },
+      {
+        "id": "apps/mcp-demo",
+        "platform": "weapp",
+        "startupMs": 2288.9227079999982,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/mcp-demo/src/pages/index/index.wxml",
+            "output": "apps/mcp-demo/dist/pages/index/index.wxml",
+            "observedMs": 252.24837500001013
+          },
+          {
+            "id": "native-script",
+            "source": "apps/mcp-demo/src/pages/index/index.ts",
+            "output": "apps/mcp-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 57.76016599999275
+          },
+          {
+            "id": "native-style",
+            "source": "apps/mcp-demo/src/pages/index/index.scss",
+            "output": "apps/mcp-demo/dist/pages/index/index.wxss",
+            "observedMs": 245.46470799999952
+          }
+        ]
+      },
+      {
+        "id": "apps/multi-platform-demo",
+        "platform": "weapp",
+        "startupMs": 2294.2154169999994,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/multi-platform-demo/src/pages/index/index.wxml",
+            "output": "apps/multi-platform-demo/dist/weapp/dist/pages/index/index.wxml",
+            "observedMs": 252.23479200000293
+          },
+          {
+            "id": "native-script",
+            "source": "apps/multi-platform-demo/src/pages/index/index.ts",
+            "output": "apps/multi-platform-demo/dist/weapp/dist/pages/index/index.js",
+            "observedMs": 252.72695800001384
+          },
+          {
+            "id": "native-style",
+            "source": "apps/multi-platform-demo/src/pages/index/index.scss",
+            "output": "apps/multi-platform-demo/dist/weapp/dist/pages/index/index.wxss",
+            "observedMs": 218.50191700001596
+          }
+        ]
+      },
+      {
+        "id": "apps/multi-platform-wevu-tdesign-demo",
+        "platform": "weapp",
+        "startupMs": 3866.9309580000117,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "apps/multi-platform-wevu-tdesign-demo/src/pages/list/index.vue",
+            "output": "apps/multi-platform-wevu-tdesign-demo/dist/weapp/dist/pages/list/index.wxml",
+            "observedMs": 755.6059580000001
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/multi-platform-wevu-tdesign-demo/src/pages/list/index.vue",
+            "output": "apps/multi-platform-wevu-tdesign-demo/dist/weapp/dist/pages/list/index.js",
+            "observedMs": 758.1752080000006
+          }
+        ]
+      },
+      {
+        "id": "apps/plugin-demo",
+        "platform": "weapp",
+        "startupMs": 2280.8169579999812,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/plugin-demo/miniprogram/pages/index/index.wxml",
+            "output": "apps/plugin-demo/dist/pages/index/index.wxml",
+            "observedMs": 252.46162499999627
+          },
+          {
+            "id": "native-script",
+            "source": "apps/plugin-demo/miniprogram/pages/index/index.ts",
+            "output": "apps/plugin-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 54.8927079999994
+          },
+          {
+            "id": "native-style",
+            "source": "apps/plugin-demo/miniprogram/pages/index/index.wxss",
+            "output": "apps/plugin-demo/dist/pages/index/index.wxss",
+            "observedMs": 217.04991600001813
+          }
+        ]
+      },
+      {
+        "id": "apps/runtime-bench-native",
+        "platform": "weapp",
+        "startupMs": 2293.3419170000125,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/runtime-bench-native/src/pages/index/index.wxml",
+            "output": "apps/runtime-bench-native/dist/pages/index/index.wxml",
+            "observedMs": 251.3232920000155
+          },
+          {
+            "id": "native-script",
+            "source": "apps/runtime-bench-native/src/pages/index/index.ts",
+            "output": "apps/runtime-bench-native/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 60.274749999982305
+          },
+          {
+            "id": "native-style",
+            "source": "apps/runtime-bench-native/src/pages/index/index.scss",
+            "output": "apps/runtime-bench-native/dist/pages/index/index.wxss",
+            "observedMs": 272.9407080000092
+          }
+        ]
+      },
+      {
+        "id": "apps/runtime-bench-react",
+        "platform": "weapp",
+        "startupMs": 2311.8819580000127,
+        "scenarios": [
+          {
+            "id": "react-template",
+            "source": "apps/runtime-bench-react/src/pages/index/view.tsx",
+            "output": "apps/runtime-bench-react/dist/pages/index/index.js",
+            "observedMs": 866.0477919999976
+          },
+          {
+            "id": "native-script",
+            "source": "apps/runtime-bench-react/src/pages/index/index.ts",
+            "output": "apps/runtime-bench-react/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 56.741582999995444
+          }
+        ]
+      },
+      {
+        "id": "apps/runtime-bench-solid",
+        "platform": "weapp",
+        "startupMs": 2042.8437080000003,
+        "scenarios": [
+          {
+            "id": "native-script",
+            "source": "apps/runtime-bench-solid/src/pages/index/index.ts",
+            "output": "apps/runtime-bench-solid/dist/pages/index/index.js",
+            "observedMs": 253.49270900001284
+          }
+        ]
+      },
+      {
+        "id": "apps/runtime-bench-vue",
+        "platform": "weapp",
+        "startupMs": 2565.414083999989,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "apps/runtime-bench-vue/src/pages/update/index.vue",
+            "output": "apps/runtime-bench-vue/dist/pages/update/index.wxml",
+            "observedMs": 503.993833000015
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/runtime-bench-vue/src/pages/update/index.vue",
+            "output": "apps/runtime-bench-vue/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 78.46129099998507
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/runtime-bench-vue/src/pages/update/index.vue",
+            "output": "apps/runtime-bench-vue/dist/pages/update/index.wxss",
+            "observedMs": 322.601250000007
+          }
+        ]
+      },
+      {
+        "id": "apps/socket-io-chat",
+        "platform": "weapp",
+        "startupMs": 3567.03125,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/socket-io-chat/miniprogram/pages/chat/index.wxml",
+            "output": "apps/socket-io-chat/dist/pages/chat/index.wxml",
+            "observedMs": 756.7019999999902
+          },
+          {
+            "id": "native-script",
+            "source": "apps/socket-io-chat/miniprogram/pages/chat/index.ts",
+            "output": "apps/socket-io-chat/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 67.93400000000838
+          },
+          {
+            "id": "native-style",
+            "source": "apps/socket-io-chat/miniprogram/pages/chat/index.wxss",
+            "output": "apps/socket-io-chat/dist/pages/chat/index.wxss",
+            "observedMs": 712.2824169999803
+          }
+        ]
+      },
+      {
+        "id": "apps/subpackage-shared-chunks",
+        "platform": "weapp",
+        "startupMs": 2839.8638329999812,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/subpackage-shared-chunks/src/pages/index/index.wxml",
+            "output": "apps/subpackage-shared-chunks/dist/pages/index/index.wxml",
+            "observedMs": 503.70725000000675
+          },
+          {
+            "id": "native-script",
+            "source": "apps/subpackage-shared-chunks/src/pages/index/index.ts",
+            "output": "apps/subpackage-shared-chunks/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 57.97708400001284
+          },
+          {
+            "id": "native-style",
+            "source": "apps/subpackage-shared-chunks/src/pages/index/index.scss",
+            "output": "apps/subpackage-shared-chunks/dist/pages/index/index.wxss",
+            "observedMs": 402.15079200000037
+          }
+        ]
+      },
+      {
+        "id": "apps/tdesign-miniprogram-starter-retail",
+        "platform": "weapp",
+        "startupMs": 5865.316041999991,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/tdesign-miniprogram-starter-retail/pages/cart/components/cart-bar/index.wxml",
+            "output": "apps/tdesign-miniprogram-starter-retail/dist/pages/cart/components/cart-bar/index.wxml",
+            "observedMs": 1763.2237500000047
+          },
+          {
+            "id": "native-script",
+            "source": "apps/tdesign-miniprogram-starter-retail/pages/cart/components/cart-bar/index.js",
+            "output": "apps/tdesign-miniprogram-starter-retail/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 156.25245800000266
+          },
+          {
+            "id": "native-style",
+            "source": "apps/tdesign-miniprogram-starter-retail/pages/cart/components/cart-bar/index.wxss",
+            "output": "apps/tdesign-miniprogram-starter-retail/dist/pages/cart/components/cart-bar/index.wxss",
+            "observedMs": 1625.7858750000014
+          }
+        ]
+      },
+      {
+        "id": "apps/vite-native",
+        "platform": "weapp",
+        "startupMs": 5883.304082999995,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/vite-native/pages/index/index.wxml",
+            "output": "apps/vite-native/dist/pages/index/index.wxml",
+            "observedMs": 1259.8569160000188
+          },
+          {
+            "id": "native-script",
+            "source": "apps/vite-native/pages/index/index.ts",
+            "output": "apps/vite-native/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 85.34000000002561
+          },
+          {
+            "id": "native-style",
+            "source": "apps/vite-native/pages/index/index.css",
+            "output": "apps/vite-native/dist/pages/index/index.wxss",
+            "observedMs": 1219.5183750000433
+          }
+        ]
+      },
+      {
+        "id": "apps/vite-native-skyline",
+        "platform": "weapp",
+        "startupMs": 2537.3066249999683,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/vite-native-skyline/pages/index/index.wxml",
+            "output": "apps/vite-native-skyline/dist/pages/index/index.wxml",
+            "observedMs": 253.66545799997402
+          },
+          {
+            "id": "native-script",
+            "source": "apps/vite-native-skyline/pages/index/index.js",
+            "output": "apps/vite-native-skyline/dist/pages/index/index.js",
+            "observedMs": 252.28924999997253
+          },
+          {
+            "id": "native-style",
+            "source": "apps/vite-native-skyline/pages/index/index.wxss",
+            "output": "apps/vite-native-skyline/dist/pages/index/index.wxss",
+            "observedMs": 137.8479159999988
+          }
+        ]
+      },
+      {
+        "id": "apps/vite-native-ts",
+        "platform": "weapp",
+        "startupMs": 2580.52462500002,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/vite-native-ts/miniprogram/pages/index/index.wxml",
+            "output": "apps/vite-native-ts/dist/pages/index/index.wxml",
+            "observedMs": 504.4476250000298
+          },
+          {
+            "id": "native-script",
+            "source": "apps/vite-native-ts/miniprogram/pages/index/index.ts",
+            "output": "apps/vite-native-ts/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 72.28791600000113
+          },
+          {
+            "id": "native-style",
+            "source": "apps/vite-native-ts/miniprogram/pages/index/index.wxss",
+            "output": "apps/vite-native-ts/dist/pages/index/index.wxss",
+            "observedMs": 324.6392080000369
+          }
+        ]
+      },
+      {
+        "id": "apps/vite-native-ts-skyline",
+        "platform": "weapp",
+        "startupMs": 2535.242542000022,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/vite-native-ts-skyline/miniprogram/pages/index/index.wxml",
+            "output": "apps/vite-native-ts-skyline/dist/pages/index/index.wxml",
+            "observedMs": 253.11591700004647
+          },
+          {
+            "id": "native-script",
+            "source": "apps/vite-native-ts-skyline/miniprogram/pages/index/index.ts",
+            "output": "apps/vite-native-ts-skyline/dist/pages/index/index.js",
+            "observedMs": 252.50916700001108
+          },
+          {
+            "id": "native-style",
+            "source": "apps/vite-native-ts-skyline/miniprogram/pages/index/index.wxss",
+            "output": "apps/vite-native-ts-skyline/dist/pages/index/index.wxss",
+            "observedMs": 216.31874999997672
+          }
+        ]
+      },
+      {
+        "id": "apps/weapp-vite-web-demo",
+        "platform": "weapp",
+        "startupMs": 2337.072124999948,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/weapp-vite-web-demo/src/pages/index/index.wxml",
+            "output": "apps/weapp-vite-web-demo/dist/pages/index/index.wxml",
+            "observedMs": 504.53933399997186
+          },
+          {
+            "id": "native-script",
+            "source": "apps/weapp-vite-web-demo/src/pages/index/index.ts",
+            "output": "apps/weapp-vite-web-demo/dist/pages/index/index.js",
+            "observedMs": 502.30054100003326
+          },
+          {
+            "id": "native-style",
+            "source": "apps/weapp-vite-web-demo/src/pages/index/index.scss",
+            "output": "apps/weapp-vite-web-demo/dist/pages/index/index.wxss",
+            "observedMs": 410.2095829999889
+          }
+        ]
+      },
+      {
+        "id": "apps/weapp-wechat-zhihu",
+        "platform": "weapp",
+        "startupMs": 3114.05266700004,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/weapp-wechat-zhihu/pages/index/index.wxml",
+            "output": "apps/weapp-wechat-zhihu/dist/pages/index/index.wxml",
+            "observedMs": 505.1058750000084
+          },
+          {
+            "id": "native-script",
+            "source": "apps/weapp-wechat-zhihu/pages/index/index.ts",
+            "output": "apps/weapp-wechat-zhihu/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 60.39016599999741
+          },
+          {
+            "id": "native-style",
+            "source": "apps/weapp-wechat-zhihu/pages/index/index.scss",
+            "output": "apps/weapp-wechat-zhihu/dist/pages/index/index.wxss",
+            "observedMs": 381.0159160000039
+          }
+        ]
+      },
+      {
+        "id": "apps/wevu-bug",
+        "platform": "weapp",
+        "startupMs": 2555.525459000026,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "apps/wevu-bug/src/pages/typecheck-errors/index.vue",
+            "output": "apps/wevu-bug/dist/pages/typecheck-errors/index.wxml",
+            "observedMs": 505.02791699999943
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/wevu-bug/src/pages/typecheck-errors/index.vue",
+            "output": "apps/wevu-bug/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 65.57666599994991
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/wevu-bug/src/pages/typecheck-errors/index.vue",
+            "output": "apps/wevu-bug/dist/pages/typecheck-errors/index.wxss",
+            "observedMs": 324.46041599998716
+          }
+        ]
+      },
+      {
+        "id": "apps/wevu-comprehensive-demo",
+        "platform": "weapp",
+        "startupMs": 25762.729208000004,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "apps/wevu-comprehensive-demo/src/pages/ui-tdesign/components/fab/index.vue",
+            "output": "apps/wevu-comprehensive-demo/dist/pages/ui-tdesign/components/fab/index.wxml",
+            "observedMs": 10328.485417000018
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/wevu-comprehensive-demo/src/pages/ui-tdesign/components/fab/index.vue",
+            "output": "apps/wevu-comprehensive-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 598.1440419999999
+          }
+        ]
+      },
+      {
+        "id": "apps/wevu-jsx-tsx-demo",
+        "platform": "weapp",
+        "startupMs": 2812.1350000000093,
+        "scenarios": [
+          {
+            "id": "native-script",
+            "source": "apps/wevu-jsx-tsx-demo/src/pages/jsx-basic/index.jsx",
+            "output": "apps/wevu-jsx-tsx-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 60.73466700001154
+          },
+          {
+            "id": "vue-template",
+            "source": "apps/wevu-jsx-tsx-demo/src/pages/sfc-script-setup-tsx/index.vue",
+            "output": "apps/wevu-jsx-tsx-demo/dist/pages/sfc-script-setup-tsx/index.wxml",
+            "observedMs": 502.9875839999877
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/wevu-jsx-tsx-demo/src/pages/sfc-script-setup-tsx/index.vue",
+            "output": "apps/wevu-jsx-tsx-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 65.45641699997941
+          }
+        ]
+      },
+      {
+        "id": "apps/wevu-runtime-demo",
+        "platform": "weapp",
+        "startupMs": 6225.8592499999795,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "apps/wevu-runtime-demo/src/pages/bench/index.wxml",
+            "output": "apps/wevu-runtime-demo/dist/pages/bench/index.wxml",
+            "observedMs": 1762.5207080000546
+          },
+          {
+            "id": "native-script",
+            "source": "apps/wevu-runtime-demo/src/pages/bench/index.ts",
+            "output": "apps/wevu-runtime-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 90.89220899995416
+          },
+          {
+            "id": "native-style",
+            "source": "apps/wevu-runtime-demo/src/pages/bench/index.wxss",
+            "output": "apps/wevu-runtime-demo/dist/pages/bench/index.wxss",
+            "observedMs": 1591.5032080000383
+          },
+          {
+            "id": "vue-template",
+            "source": "apps/wevu-runtime-demo/src/pages/vue-render/index.vue",
+            "output": "apps/wevu-runtime-demo/dist/pages/vue-render/index.wxml",
+            "observedMs": 1761.4205420000362
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/wevu-runtime-demo/src/pages/vue-render/index.vue",
+            "output": "apps/wevu-runtime-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 96.39312499994412
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/wevu-runtime-demo/src/pages/vue-render/index.vue",
+            "output": "apps/wevu-runtime-demo/dist/pages/vue-render/index.wxss",
+            "observedMs": 1615.5186660000472
+          }
+        ]
+      },
+      {
+        "id": "apps/wevu-vue-demo",
+        "platform": "weapp",
+        "startupMs": 4454.939124999975,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "apps/wevu-vue-demo/src/pages/config-js/index.vue",
+            "output": "apps/wevu-vue-demo/dist/pages/config-js/index.wxml",
+            "observedMs": 1009.4077089999919
+          },
+          {
+            "id": "vue-script",
+            "source": "apps/wevu-vue-demo/src/pages/config-js/index.vue",
+            "output": "apps/wevu-vue-demo/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 81.14329199999338
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/wevu-vue-demo/src/pages/config-js/index.vue",
+            "output": "apps/wevu-vue-demo/dist/pages/config-js/index.wxss",
+            "observedMs": 802.9495420000167
+          }
+        ]
+      },
+      {
+        "id": "apps/wevu-vue-sfc-recording-demo",
+        "platform": "weapp",
+        "startupMs": 2796.238207999966,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "apps/wevu-vue-sfc-recording-demo/src/pages/index/index.vue",
+            "output": "apps/wevu-vue-sfc-recording-demo/dist/pages/index/index.wxml",
+            "observedMs": 504.77887500001816
+          },
+          {
+            "id": "vue-style",
+            "source": "apps/wevu-vue-sfc-recording-demo/src/pages/index/index.vue",
+            "output": "apps/wevu-vue-sfc-recording-demo/dist/pages/index/index.wxss",
+            "observedMs": 299.62341699999524
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/app-lifecycle-native",
+        "platform": "weapp",
+        "startupMs": 2289.835375000024,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/app-lifecycle-native/src/pages/index/index.wxml",
+            "output": "e2e-apps/app-lifecycle-native/dist/pages/index/index.wxml",
+            "observedMs": 251.77033299999312
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/app-lifecycle-native/src/pages/index/index.ts",
+            "output": "e2e-apps/app-lifecycle-native/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 48.42191700002877
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/app-lifecycle-native/src/pages/index/index.wxss",
+            "output": "e2e-apps/app-lifecycle-native/dist/pages/index/index.wxss",
+            "observedMs": 216.66445800004294
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/app-lifecycle-wevu-ts",
+        "platform": "weapp",
+        "startupMs": 2300.012584000011,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/app-lifecycle-wevu-ts/src/pages/index/index.wxml",
+            "output": "e2e-apps/app-lifecycle-wevu-ts/dist/pages/index/index.wxml",
+            "observedMs": 505.3658329999889
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/app-lifecycle-wevu-ts/src/pages/index/index.ts",
+            "output": "e2e-apps/app-lifecycle-wevu-ts/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 54.727375000016764
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/app-lifecycle-wevu-ts/src/pages/index/index.wxss",
+            "output": "e2e-apps/app-lifecycle-wevu-ts/dist/pages/index/index.wxss",
+            "observedMs": 299.1814160000067
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/app-lifecycle-wevu-vue",
+        "platform": "weapp",
+        "startupMs": 2293.3477079999866,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/app-lifecycle-wevu-vue/src/pages/index/index.wxml",
+            "output": "e2e-apps/app-lifecycle-wevu-vue/dist/pages/index/index.wxml",
+            "observedMs": 505.19745800003875
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/app-lifecycle-wevu-vue/src/pages/index/index.ts",
+            "output": "e2e-apps/app-lifecycle-wevu-vue/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 55.30683399992995
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/app-lifecycle-wevu-vue/src/pages/index/index.wxss",
+            "output": "e2e-apps/app-lifecycle-wevu-vue/dist/pages/index/index.wxss",
+            "observedMs": 262.4646659999853
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/app-prelude-native",
+        "platform": "weapp",
+        "startupMs": 2293.279625000083,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/app-prelude-native/src/pages/index/index.wxml",
+            "output": "e2e-apps/app-prelude-native/dist/pages/index/index.wxml",
+            "observedMs": 504.5928750000894
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/app-prelude-native/src/pages/index/index.ts",
+            "output": "e2e-apps/app-prelude-native/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 51.141875000088476
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/app-prelude-native/src/pages/index/index.wxss",
+            "output": "e2e-apps/app-prelude-native/dist/pages/index/index.wxss",
+            "observedMs": 301.06054099998437
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/app-vue-hmr-alias",
+        "platform": "weapp",
+        "startupMs": 2300.4088340000017,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/app-vue-hmr-alias/src/pages/index/index.vue",
+            "output": "e2e-apps/app-vue-hmr-alias/dist/pages/index/index.wxml",
+            "observedMs": 506.0199169999687
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/app-vue-hmr-alias/src/pages/index/index.vue",
+            "output": "e2e-apps/app-vue-hmr-alias/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 59.15408300003037
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/app-vue-hmr-alias/src/pages/index/index.vue",
+            "output": "e2e-apps/app-vue-hmr-alias/dist/pages/index/index.wxss",
+            "observedMs": 299.1129169999622
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/auto-import-vue-sfc",
+        "platform": "weapp",
+        "startupMs": 2299.7588750000577,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/auto-import-vue-sfc/src/pages/native/index.wxml",
+            "output": "e2e-apps/auto-import-vue-sfc/dist/pages/native/index.wxml",
+            "observedMs": 506.5567909999518
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/auto-import-vue-sfc/src/pages/native/index.ts",
+            "output": "e2e-apps/auto-import-vue-sfc/dist/pages/native/index.js",
+            "observedMs": 504.7257919999538
+          },
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/auto-import-vue-sfc/src/pages/index/index.vue",
+            "output": "e2e-apps/auto-import-vue-sfc/dist/pages/index/index.wxml",
+            "observedMs": 252.21308300003875
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/auto-routes-define-app-json",
+        "platform": "weapp",
+        "startupMs": 2553.2754170000553,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/auto-routes-define-app-json/src/pages/logs/index.vue",
+            "output": "e2e-apps/auto-routes-define-app-json/dist/pages/logs/index.wxml",
+            "observedMs": 505.12316600000486
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/base",
+        "platform": "weapp",
+        "startupMs": 2028.5870839999989,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/base/src/pages/index/index.wxml",
+            "output": "e2e-apps/base/dist/pages/index/index.wxml",
+            "observedMs": 253.42329200007953
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/base/src/pages/index/index.ts",
+            "output": "e2e-apps/base/dist/pages/index/index.js",
+            "observedMs": 251.3975409999257
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/base/src/pages/index/index.wxss",
+            "output": "e2e-apps/base/dist/pages/index/index.wxss",
+            "observedMs": 81.95229100005236
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/chunk-modes",
+        "platform": "weapp",
+        "startupMs": 2303.4369169999845,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/chunk-modes/src/pages/index/index.wxml",
+            "output": "e2e-apps/chunk-modes/dist/pages/index/index.wxml",
+            "observedMs": 252.73570799990557
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/chunk-modes/src/pages/index/index.ts",
+            "output": "e2e-apps/chunk-modes/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 49.382457999978215
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/donut-multi-end",
+        "platform": "weapp",
+        "startupMs": 3079.392416000017,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/donut-multi-end/src/pages/index/index.wxml",
+            "output": "e2e-apps/donut-multi-end/dist/pages/index/index.wxml",
+            "observedMs": 504.01116700004786
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/donut-multi-end/src/pages/index/index.ts",
+            "output": "e2e-apps/donut-multi-end/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 97.71170900005382
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/donut-multi-end/src/pages/index/index.wxss",
+            "output": "e2e-apps/donut-multi-end/dist/pages/index/index.wxss",
+            "observedMs": 489.28275000001304
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/donut-multi-end-wevu-sfc",
+        "platform": "weapp",
+        "startupMs": 3347.781791999936,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/donut-multi-end-wevu-sfc/src/pages/status/index.vue",
+            "output": "e2e-apps/donut-multi-end-wevu-sfc/dist/pages/status/index.wxml",
+            "observedMs": 758.8341670000227
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/donut-multi-end-wevu-sfc/src/pages/status/index.vue",
+            "output": "e2e-apps/donut-multi-end-wevu-sfc/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 99.07924999995157
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/donut-multi-end-wevu-sfc/src/pages/status/index.vue",
+            "output": "e2e-apps/donut-multi-end-wevu-sfc/dist/pages/status/index.wxss",
+            "observedMs": 598.266958000022
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/issue-340-hoist",
+        "platform": "weapp",
+        "startupMs": 2568.1306659999536,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/issue-340-hoist/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-340-hoist/dist/pages/index/index.wxml",
+            "observedMs": 504.8514579999028
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/issue-340-hoist/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-340-hoist/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 57.21983399998862
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/issue-340-hoist/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-340-hoist/dist/pages/index/index.wxss",
+            "observedMs": 299.0950000000885
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/issue-724-sfc-style-src",
+        "platform": "weapp",
+        "startupMs": 2296.9882920000236,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/issue-724-sfc-style-src/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-724-sfc-style-src/dist/pages/index/index.wxml",
+            "observedMs": 505.08024999999907
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/issue-724-sfc-style-src/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-724-sfc-style-src/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 59.7855419999687
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/issue-724-sfc-style-src/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-724-sfc-style-src/dist/pages/index/index.wxss",
+            "observedMs": 298.4776660000207
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/issue-814-tailwind4",
+        "platform": "weapp",
+        "startupMs": 2793.7559170000022,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/issue-814-tailwind4/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-814-tailwind4/dist/pages/index/index.wxml",
+            "observedMs": 505.09162500000093
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/issue-814-tailwind4/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-814-tailwind4/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 59.92050000000745
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/issue-814-tailwind4-broken",
+        "platform": "weapp",
+        "startupMs": 2802.662624999997,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/issue-814-tailwind4-broken/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-814-tailwind4-broken/dist/pages/index/index.wxml",
+            "observedMs": 504.8440839999821
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/issue-814-tailwind4-broken/src/pages/index/index.vue",
+            "output": "e2e-apps/issue-814-tailwind4-broken/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 64.5423750000773
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/lifecycle-compare",
+        "platform": "weapp",
+        "startupMs": 2827.566749999998,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/lifecycle-compare/src/pages/components/index.wxml",
+            "output": "e2e-apps/lifecycle-compare/dist/pages/components/index.wxml",
+            "observedMs": 504.8369580000872
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/lifecycle-compare/src/pages/components/index.ts",
+            "output": "e2e-apps/lifecycle-compare/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 78.5204580000136
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/lifecycle-compare/src/pages/components/index.wxss",
+            "output": "e2e-apps/lifecycle-compare/dist/pages/components/index.wxss",
+            "observedMs": 405.68774999992456
+          },
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/lifecycle-compare/src/pages/wevu-vue/index.vue",
+            "output": "e2e-apps/lifecycle-compare/dist/pages/wevu-vue/index.wxml",
+            "observedMs": 504.86812499992084
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/lifecycle-compare/src/pages/wevu-vue/index.vue",
+            "output": "e2e-apps/lifecycle-compare/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 97.3035829999717
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/lifecycle-compare/src/pages/wevu-vue/index.vue",
+            "output": "e2e-apps/lifecycle-compare/dist/pages/wevu-vue/index.wxss",
+            "observedMs": 403.4150420000078
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/object-literal-bind-prop",
+        "platform": "weapp",
+        "startupMs": 2304.121167000034,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/object-literal-bind-prop/src/pages/index/index.vue",
+            "output": "e2e-apps/object-literal-bind-prop/dist/pages/index/index.wxml",
+            "observedMs": 252.4275830000406
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/request-clients-real",
+        "platform": "weapp",
+        "startupMs": 4853.246708000079,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/request-clients-real/src/pages/axios/index.vue",
+            "output": "e2e-apps/request-clients-real/dist/pages/axios/index.wxml",
+            "observedMs": 1259.6920829999726
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/request-clients-real/src/pages/axios/index.vue",
+            "output": "e2e-apps/request-clients-real/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 90.87745899998117
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/request-clients-real/src/pages/axios/index.vue",
+            "output": "e2e-apps/request-clients-real/dist/pages/axios/index.wxss",
+            "observedMs": 1056.9725420000032
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/request-clients-real-native",
+        "platform": "weapp",
+        "startupMs": 3575.9391250000335,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/request-clients-real-native/src/pages/index/index.wxml",
+            "output": "e2e-apps/request-clients-real-native/dist/pages/index/index.wxml",
+            "observedMs": 755.0324999999721
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/request-clients-real-native/src/pages/index/index.ts",
+            "output": "e2e-apps/request-clients-real-native/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 59.908250000094995
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/request-clients-real-native/src/pages/index/index.wxss",
+            "output": "e2e-apps/request-clients-real-native/dist/pages/index/index.wxss",
+            "observedMs": 678.1295829999726
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/script-setup-macros-mapping",
+        "platform": "weapp",
+        "startupMs": 2568.641209000023,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/script-setup-macros-mapping/src/pages/index/index.vue",
+            "output": "e2e-apps/script-setup-macros-mapping/dist/pages/index/index.wxml",
+            "observedMs": 503.2224579999456
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/script-setup-macros-mapping/src/pages/index/index.vue",
+            "output": "e2e-apps/script-setup-macros-mapping/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 72.36383300006855
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/script-setup-macros-mapping/src/pages/index/index.vue",
+            "output": "e2e-apps/script-setup-macros-mapping/dist/pages/index/index.wxss",
+            "observedMs": 352.24270900001284
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/stateful-hmr",
+        "platform": "weapp",
+        "startupMs": 3320.563833000022,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/stateful-hmr/src/pages/component/index.wxml",
+            "output": "e2e-apps/stateful-hmr/dist/pages/component/index.wxml",
+            "observedMs": 755.8666669999948
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/stateful-hmr/src/pages/component/index.ts",
+            "output": "e2e-apps/stateful-hmr/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 45.24895799998194
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/stateful-hmr/src/pages/component/index.wxss",
+            "output": "e2e-apps/stateful-hmr/dist/pages/component/index.wxss",
+            "observedMs": 620.7737089999719
+          },
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/stateful-hmr/src/pages/wevu/index.vue",
+            "output": "e2e-apps/stateful-hmr/dist/pages/wevu/index.wxml",
+            "observedMs": 757.6189589999849
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/stateful-hmr/src/pages/wevu/index.vue",
+            "output": "e2e-apps/stateful-hmr/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 72.75708300003316
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/stateful-hmr/src/pages/wevu/index.vue",
+            "output": "e2e-apps/stateful-hmr/dist/pages/wevu/index.wxss",
+            "observedMs": 598.7117080000462
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/stateful-hmr-root-tailwind",
+        "platform": "weapp",
+        "startupMs": 2812.306291999994,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/stateful-hmr-root-tailwind/pages/index/index.wxml",
+            "output": "e2e-apps/stateful-hmr-root-tailwind/dist/pages/index/index.wxml",
+            "observedMs": 503.3325419999892
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/stateful-hmr-root-tailwind/pages/index/index.ts",
+            "output": "e2e-apps/stateful-hmr-root-tailwind/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 51.212249999982305
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/style-import-vue",
+        "platform": "weapp",
+        "startupMs": 2289.5334579999326,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/style-import-vue/src/pages/index/index.vue",
+            "output": "e2e-apps/style-import-vue/dist/pages/index/index.wxml",
+            "observedMs": 252.73374999989755
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/style-import-vue/src/pages/index/index.vue",
+            "output": "e2e-apps/style-import-vue/dist/pages/index/index.js",
+            "observedMs": 504.3668749999488
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/style-import-vue/src/pages/index/index.vue",
+            "output": "e2e-apps/style-import-vue/dist/pages/index/index.wxss",
+            "observedMs": 190.3217500000028
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/subpackage-shared-strategy-complex-a",
+        "platform": "weapp",
+        "startupMs": 2576.7943749999395,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/subpackage-shared-strategy-complex-a/src/pages/index/index.vue",
+            "output": "e2e-apps/subpackage-shared-strategy-complex-a/dist/pages/index/index.wxml",
+            "observedMs": 504.68316700006835
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/subpackage-shared-strategy-complex-a/src/pages/index/index.vue",
+            "output": "e2e-apps/subpackage-shared-strategy-complex-a/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 60.01391700003296
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/subpackage-shared-strategy-complex-b",
+        "platform": "weapp",
+        "startupMs": 2561.3029999999562,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/subpackage-shared-strategy-complex-b/src/pages/home/index.vue",
+            "output": "e2e-apps/subpackage-shared-strategy-complex-b/dist/pages/home/index.wxml",
+            "observedMs": 504.74533400009386
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/subpackage-shared-strategy-complex-b/src/pages/home/index.vue",
+            "output": "e2e-apps/subpackage-shared-strategy-complex-b/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 62.18550000002142
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/tdesign-dialog-import",
+        "platform": "weapp",
+        "startupMs": 2291.783832999994,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/tdesign-dialog-import/src/pages/index/index.wxml",
+            "output": "e2e-apps/tdesign-dialog-import/dist/pages/index/index.wxml",
+            "observedMs": 506.5686660000356
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/tdesign-dialog-import/src/pages/index/index.ts",
+            "output": "e2e-apps/tdesign-dialog-import/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 52.22266700002365
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/tdesign-dialog-import/src/pages/index/index.wxss",
+            "output": "e2e-apps/tdesign-dialog-import/dist/pages/index/index.wxss",
+            "observedMs": 274.3834999999963
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/template-wevu-regression",
+        "platform": "weapp",
+        "startupMs": 3358.9536659999285,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/template-wevu-regression/src/pages/overview/index.vue",
+            "output": "e2e-apps/template-wevu-regression/dist/pages/overview/index.wxml",
+            "observedMs": 753.3011669999687
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/template-wevu-regression/src/pages/overview/index.vue",
+            "output": "e2e-apps/template-wevu-regression/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 74.44612500001676
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/template-wevu-regression/src/pages/overview/index.vue",
+            "output": "e2e-apps/template-wevu-regression/dist/pages/overview/index.wxss",
+            "observedMs": 627.6807500000577
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/uview-plus-compat",
+        "platform": "weapp",
+        "startupMs": 12962.7570000001,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/uview-plus-compat/src/pages/bootstrap/index.vue",
+            "output": "e2e-apps/uview-plus-compat/dist/pages/bootstrap/index.wxml",
+            "observedMs": 2269.822374999989
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/uview-plus-compat/src/pages/bootstrap/index.vue",
+            "output": "e2e-apps/uview-plus-compat/dist/pages/bootstrap/index.js",
+            "observedMs": 2271.386167000048
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/uview-plus-compat/src/pages/bootstrap/index.vue",
+            "output": "e2e-apps/uview-plus-compat/dist/pages/bootstrap/index.wxss",
+            "observedMs": 2294.1117920000106
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/vue-mini-issue151-wevu",
+        "platform": "weapp",
+        "startupMs": 2553.318958000047,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/vue-mini-issue151-wevu/src/pages/issue-151/index.vue",
+            "output": "e2e-apps/vue-mini-issue151-wevu/dist/pages/issue-151/index.wxml",
+            "observedMs": 504.734375
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/vue-mini-issue151-wevu/src/pages/issue-151/index.vue",
+            "output": "e2e-apps/vue-mini-issue151-wevu/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 83.46241699997336
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/vue-mini-issue151-wevu/src/pages/issue-151/index.vue",
+            "output": "e2e-apps/vue-mini-issue151-wevu/dist/pages/issue-151/index.wxss",
+            "observedMs": 374.8666250000242
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/wevu-features",
+        "platform": "weapp",
+        "startupMs": 4213.104041000013,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/wevu-features/src/pages/router-stability/sub/target/index.vue",
+            "output": "e2e-apps/wevu-features/dist/pages/router-stability/sub/target/index.wxml",
+            "observedMs": 1009.0209170000162
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/wevu-features/src/pages/router-stability/sub/target/index.vue",
+            "output": "e2e-apps/wevu-features/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 74.30108400003519
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/wevu-features/src/pages/router-stability/sub/target/index.vue",
+            "output": "e2e-apps/wevu-features/dist/pages/router-stability/sub/target/index.wxss",
+            "observedMs": 879.690082999994
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/wevu-router-hmr",
+        "platform": "weapp",
+        "startupMs": 2287.3922909999965,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/wevu-router-hmr/src/pages/index/index.vue",
+            "output": "e2e-apps/wevu-router-hmr/dist/pages/index/index.wxml",
+            "observedMs": 505.51379100000486
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/wevu-router-hmr/src/pages/index/index.vue",
+            "output": "e2e-apps/wevu-router-hmr/dist/pages/index/index.js",
+            "observedMs": 250.94454200007021
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/wevu-router-hmr/src/pages/index/index.vue",
+            "output": "e2e-apps/wevu-router-hmr/dist/pages/index/index.wxss",
+            "observedMs": 273.75058300001547
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/wevu-runtime-e2e",
+        "platform": "weapp",
+        "startupMs": 3378.050209000008,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "e2e-apps/wevu-runtime-e2e/src/pages/composition-api/index.wxml",
+            "output": "e2e-apps/wevu-runtime-e2e/dist/pages/composition-api/index.wxml",
+            "observedMs": 1009.8111659999704
+          },
+          {
+            "id": "native-script",
+            "source": "e2e-apps/wevu-runtime-e2e/src/pages/composition-api/index.ts",
+            "output": "e2e-apps/wevu-runtime-e2e/dist/pages/composition-api/index.js",
+            "observedMs": 1262.2555410000496
+          },
+          {
+            "id": "native-style",
+            "source": "e2e-apps/wevu-runtime-e2e/src/pages/composition-api/index.wxss",
+            "output": "e2e-apps/wevu-runtime-e2e/dist/pages/composition-api/index.wxss",
+            "observedMs": 1289.6566250000615
+          },
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/wevu-runtime-e2e/src/pages/root-import-hmr/index.vue",
+            "output": "e2e-apps/wevu-runtime-e2e/dist/pages/root-import-hmr/index.wxml",
+            "observedMs": 1512.8833330000052
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/wevu-runtime-e2e/src/pages/root-import-hmr/index.vue",
+            "output": "e2e-apps/wevu-runtime-e2e/dist/pages/root-import-hmr/index.js",
+            "observedMs": 1765.7870000000112
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/wevu-runtime-e2e/src/pages/root-import-hmr/index.vue",
+            "output": "e2e-apps/wevu-runtime-e2e/dist/pages/root-import-hmr/index.wxss",
+            "observedMs": 1519.2904580000322
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/wevu-subpackage-placement",
+        "platform": "weapp",
+        "startupMs": 2829.4672079999,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/wevu-subpackage-placement/src/pages/index/index.vue",
+            "output": "e2e-apps/wevu-subpackage-placement/dist/pages/index/index.wxml",
+            "observedMs": 503.74700000009034
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/wevu-subpackage-placement/src/pages/index/index.vue",
+            "output": "e2e-apps/wevu-subpackage-placement/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 68.54545899992809
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/wevu-subpackage-placement/src/pages/index/index.vue",
+            "output": "e2e-apps/wevu-subpackage-placement/dist/pages/index/index.wxss",
+            "observedMs": 488.40220799995586
+          }
+        ]
+      },
+      {
+        "id": "e2e-apps/wot-ui-compat",
+        "platform": "weapp",
+        "startupMs": 12020.690041999915,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "e2e-apps/wot-ui-compat/src/pages/bootstrap/index.vue",
+            "output": "e2e-apps/wot-ui-compat/dist/pages/bootstrap/index.wxml",
+            "observedMs": 1762.6644589999923
+          },
+          {
+            "id": "vue-script",
+            "source": "e2e-apps/wot-ui-compat/src/pages/bootstrap/index.vue",
+            "output": "e2e-apps/wot-ui-compat/dist/pages/bootstrap/index.js",
+            "observedMs": 1512.7667920000385
+          },
+          {
+            "id": "vue-style",
+            "source": "e2e-apps/wot-ui-compat/src/pages/bootstrap/index.vue",
+            "output": "e2e-apps/wot-ui-compat/dist/pages/bootstrap/index.wxss",
+            "observedMs": 1706.6062500000698
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-lib-template",
+        "platform": "weapp",
+        "startupMs": 2825.339290999924,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "templates/weapp-vite-lib-template/src/pages/index/index.wxml",
+            "output": "templates/weapp-vite-lib-template/dist/pages/index/index.wxml",
+            "observedMs": 504.82816600007936
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-lib-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-lib-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 70.622583999997
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-lib-template/src/pages/index/index.scss",
+            "output": "templates/weapp-vite-lib-template/dist/pages/index/index.wxss",
+            "observedMs": 407.1351249999134
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-multi-platform-sfc-template",
+        "platform": "weapp",
+        "startupMs": 2550.4654169999994,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "templates/weapp-vite-multi-platform-sfc-template/src/pages/index/index.vue",
+            "output": "templates/weapp-vite-multi-platform-sfc-template/dist/weapp/dist/pages/index/index.wxml",
+            "observedMs": 254.17708299995866
+          },
+          {
+            "id": "vue-script",
+            "source": "templates/weapp-vite-multi-platform-sfc-template/src/pages/index/index.vue",
+            "output": "templates/weapp-vite-multi-platform-sfc-template/dist/weapp/dist/pages/index/index.js",
+            "observedMs": 504.373666999978
+          },
+          {
+            "id": "vue-style",
+            "source": "templates/weapp-vite-multi-platform-sfc-template/src/pages/index/index.vue",
+            "output": "templates/weapp-vite-multi-platform-sfc-template/dist/weapp/dist/pages/index/index.wxss",
+            "observedMs": 190.33216700004414
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-multi-platform-template",
+        "platform": "weapp",
+        "startupMs": 2290.513333999901,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "templates/weapp-vite-multi-platform-template/src/pages/index/index.wxml",
+            "output": "templates/weapp-vite-multi-platform-template/dist/weapp/dist/pages/index/index.wxml",
+            "observedMs": 253.8650839999318
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-multi-platform-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-multi-platform-template/dist/weapp/dist/pages/index/index.js",
+            "observedMs": 252.8034579999512
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-multi-platform-template/src/pages/index/index.scss",
+            "output": "templates/weapp-vite-multi-platform-template/dist/weapp/dist/pages/index/index.wxss",
+            "observedMs": 272.9099579999456
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-plugin-template",
+        "platform": "weapp",
+        "startupMs": 2280.3639170000097,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "templates/weapp-vite-plugin-template/src/pages/index/index.wxml",
+            "output": "templates/weapp-vite-plugin-template/dist/pages/index/index.wxml",
+            "observedMs": 253.0224589999998
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-plugin-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-plugin-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 56.45820800005458
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-plugin-template/src/pages/index/index.wxss",
+            "output": "templates/weapp-vite-plugin-template/dist/pages/index/index.wxss",
+            "observedMs": 218.91745900001843
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-react-template",
+        "platform": "weapp",
+        "startupMs": 2563.530374999973,
+        "scenarios": [
+          {
+            "id": "react-template",
+            "source": "templates/weapp-vite-react-template/src/pages/index/view.tsx",
+            "output": "templates/weapp-vite-react-template/dist/pages/index/index.wxml",
+            "observedMs": 1007.5167920000385
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-react-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-react-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 64.09229200007394
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-react-template/src/pages/index/index.wxss",
+            "output": "templates/weapp-vite-react-template/dist/pages/index/index.wxss",
+            "observedMs": 405.6195000000298
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-tailwindcss-tdesign-template",
+        "platform": "weapp",
+        "startupMs": 4078.593499999959,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "templates/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.wxml",
+            "output": "templates/weapp-vite-tailwindcss-tdesign-template/dist/pages/index/index.wxml",
+            "observedMs": 757.0616669999436
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-tailwindcss-tdesign-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 72.75220900005661
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-tailwindcss-tdesign-template/src/pages/index/index.scss",
+            "output": "templates/weapp-vite-tailwindcss-tdesign-template/dist/pages/index/index.wxss",
+            "observedMs": 624.7252089998219
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-tailwindcss-template",
+        "platform": "weapp",
+        "startupMs": 3832.2790829997975,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "templates/weapp-vite-tailwindcss-template/src/pages/index/index.wxml",
+            "output": "templates/weapp-vite-tailwindcss-template/dist/pages/index/index.wxml",
+            "observedMs": 756.9157499999274
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-tailwindcss-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-tailwindcss-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 73.69033300015144
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-tailwindcss-template/src/pages/index/index.scss",
+            "output": "templates/weapp-vite-tailwindcss-template/dist/pages/index/index.wxss",
+            "observedMs": 620.3695829999633
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-tailwindcss-vant-template",
+        "platform": "weapp",
+        "startupMs": 4072.5573330000043,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "templates/weapp-vite-tailwindcss-vant-template/src/pages/index/index.wxml",
+            "output": "templates/weapp-vite-tailwindcss-vant-template/dist/pages/index/index.wxml",
+            "observedMs": 755.8188749998808
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-tailwindcss-vant-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-tailwindcss-vant-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 70.6082920001354
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-tailwindcss-vant-template/src/pages/index/index.scss",
+            "output": "templates/weapp-vite-tailwindcss-vant-template/dist/pages/index/index.wxss",
+            "observedMs": 651.9642499999609
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-template",
+        "platform": "weapp",
+        "startupMs": 2553.8724169998895,
+        "scenarios": [
+          {
+            "id": "native-template",
+            "source": "templates/weapp-vite-template/src/pages/index/index.wxml",
+            "output": "templates/weapp-vite-template/dist/pages/index/index.wxml",
+            "observedMs": 503.89670799998567
+          },
+          {
+            "id": "native-script",
+            "source": "templates/weapp-vite-template/src/pages/index/index.ts",
+            "output": "templates/weapp-vite-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 75.71362500009127
+          },
+          {
+            "id": "native-style",
+            "source": "templates/weapp-vite-template/src/pages/index/index.scss",
+            "output": "templates/weapp-vite-template/dist/pages/index/index.wxss",
+            "observedMs": 352.42291600001045
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template",
+        "platform": "weapp",
+        "startupMs": 13353.919500000076,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/index.vue",
+            "output": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/pages/category/index.wxml",
+            "observedMs": 3021.5690410002135
+          },
+          {
+            "id": "vue-script",
+            "source": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/src/pages/category/index.vue",
+            "output": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 163.06045800005086
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+        "platform": "weapp",
+        "startupMs": 4066.4817079999484,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "templates/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue",
+            "output": "templates/weapp-vite-wevu-tailwindcss-tdesign-template/dist/pages/index/index.wxml",
+            "observedMs": 757.5344160001259
+          },
+          {
+            "id": "vue-script",
+            "source": "templates/weapp-vite-wevu-tailwindcss-tdesign-template/src/pages/index/index.vue",
+            "output": "templates/weapp-vite-wevu-tailwindcss-tdesign-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 62.84812500001863
+          }
+        ]
+      },
+      {
+        "id": "templates/weapp-vite-wevu-template",
+        "platform": "weapp",
+        "startupMs": 2555.564500000095,
+        "scenarios": [
+          {
+            "id": "vue-template",
+            "source": "templates/weapp-vite-wevu-template/src/pages/layouts/index.vue",
+            "output": "templates/weapp-vite-wevu-template/dist/pages/layouts/index.wxml",
+            "observedMs": 505.7905830000527
+          },
+          {
+            "id": "vue-script",
+            "source": "templates/weapp-vite-wevu-template/src/pages/layouts/index.vue",
+            "output": "templates/weapp-vite-wevu-template/dist/__weapp_vite_hmr/update.js",
+            "observedMs": 80.82854100014083
+          },
+          {
+            "id": "vue-style",
+            "source": "templates/weapp-vite-wevu-template/src/pages/layouts/index.vue",
+            "output": "templates/weapp-vite-wevu-template/dist/pages/layouts/index.wxss",
+            "observedMs": 351.75579200009815
+          }
+        ]
+      }
+    ]
+  },
+  "followUpVerification": {
+    "wevuLifecycle": {
+      "command": "pnpm --filter wevu test",
+      "status": "passed",
+      "files": 93,
+      "tests": 1115
+    },
+    "simulatorLifecycle": {
+      "command": "pnpm --filter @mpcore/simulator test",
+      "status": "passed",
+      "files": 73,
+      "tests": 1451
+    },
+    "simulatorBrowser": {
+      "command": "pnpm --filter @mpcore/simulator test:e2e",
+      "status": "passed",
+      "files": 42,
+      "tests": 90,
+      "node": "26.5.0"
+    },
+    "headlessAfterLifecycle": {
+      "command": "pnpm e2e:ide:headless:full",
+      "status": "passed",
+      "tasks": 37,
+      "node": "26.5.0",
+      "exitCode": 0,
+      "distRebuilt": true
+    },
+    "domHeadlessAfterLifecycle": {
+      "command": "node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless",
+      "status": "passed",
+      "tasks": 27,
+      "node": "26.5.0",
+      "exitCode": 0,
+      "distRebuilt": true
+    },
+    "nativeNoticeBar": {
+      "command": "UVIEW_PLUS_COMPONENT_FILTER=up-notice-bar pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/uview-plus-compat.runtime.test.ts",
+      "status": "passed",
+      "tests": 1,
+      "runtimeErrors": 0
+    },
+    "scopedSlotCompiler": {
+      "command": "pnpm --filter @wevu/compiler exec vitest run src/plugins/vue/compiler/template.test.ts src/plugins/vue/compiler/bindingManifest.test.ts",
+      "status": "passed",
+      "files": 2,
+      "tests": 220
+    },
+    "eslint": {
+      "command": "pnpm exec eslint .",
+      "status": "passed",
+      "errors": 0,
+      "warnings": 259,
+      "node": "26.5.0"
+    },
+    "componentVisualFull": {
+      "command": "pnpm e2e:ide:component-libraries:visual:full",
+      "node": "26.5.0",
+      "status": "blocked",
+      "exitCode": 1,
+      "attempts": 2,
+      "firstAttempt": {
+        "uviewCompletedScenarios": 120,
+        "plannedUviewScenarios": 137,
+        "wotNotExecuted": 99,
+        "reason": "simulator boot timeout during session rotation"
+      },
+      "afterComputerUseRecovery": {
+        "testsNotExecutedAfterBeforeAllFailure": 1,
+        "reason": "simulator launch catch error timeout"
+      },
+      "baselineThresholdChanged": false
+    },
+    "coverageFinal": {
+      "command": "pnpm test:coverage",
+      "node": "26.5.0",
+      "status": "passed",
+      "exitCode": 0,
+      "filesPassed": 1107,
+      "filesSkipped": 12,
+      "testsPassed": 10420,
+      "testsSkipped": 18,
+      "coverage": {
+        "statements": 61.55,
+        "branches": 54.72,
+        "functions": 62.77,
+        "lines": 66.45
+      }
+    },
+    "pdfVisual": {
+      "command": "UVIEW_PLUS_COMPONENT_FILTER=up-pdf-reader WEAPP_VITE_COMPONENT_LIBRARY_MODE=visual-full pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/uview-plus-compat.runtime.test.ts",
+      "node": "26.5.0",
+      "status": "passed",
+      "tests": 1,
+      "baselineChanged": false
+    },
+    "coreHmrFinal": {
+      "command": "pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/wevu-runtime.core-hmr.test.ts",
+      "node": "26.5.0",
+      "status": "failed",
+      "passedCheckpoints": [
+        "page:initial",
+        "page:interacted",
+        "page:template",
+        "page:script",
+        "page:style",
+        "sfc:initial"
+      ],
+      "failure": "SFC template marker updated in output but runtime DOM and storage retained HMR-SFC"
+    },
+    "ideUiRecovery": {
+      "app": "WeChat DevTools 2.02.2609162 Nightly",
+      "project": "apps/layout-power-demo",
+      "route": "pages/index/index",
+      "action": "Recompile button",
+      "result": "Page rendered after manual compilation; automatic dev-open acceptance remains incomplete"
+    },
+    "touchedTypecheck": {
+      "command": "pnpm --filter @wevu/compiler --filter wevu --filter @mpcore/simulator --filter weapp-ide-cli --filter @weapp-vite/volar --filter weapp-vite -r typecheck",
+      "node": "26.5.0",
+      "status": "passed",
+      "packages": 6,
+      "exitCode": 0
+    },
+    "simulatorTypeContractsFinal": {
+      "command": "pnpm --filter @mpcore/simulator test:types",
+      "node": "26.5.0",
+      "status": "passed",
+      "exitCode": 0,
+      "rebuild": true
+    },
+    "stylesFinal": {
+      "command": "pnpm exec stylelint --allow-empty-input <changed-style-files>",
+      "status": "passed",
+      "files": 89
+    },
+    "wotOwnerHeadlessFinal": {
+      "node": "26.5.0",
+      "status": "passed",
+      "tests": 1,
+      "exitCode": 0
+    }
+  },
+  "delivery": {
+    "branch": "codex/full-regression",
+    "commits": [
+      {
+        "group": "wevu-types",
+        "commit": "3e5a6d1ee31816ac6f69414f796f367232098aa6",
+        "message": "fix(wevu): 修复组件与选项式 store 的类型上下文"
+      },
+      {
+        "group": "managed-react-types",
+        "commit": "2f845e22562335e3a7524c24d5fd12f12ee3eada",
+        "message": "fix(weapp-vite): 对齐 React 与 Wevu 混合项目 JSX 类型"
+      },
+      {
+        "group": "volar-types",
+        "commit": "a6dc58c67205fe68781bff813d6224263b2eeef5",
+        "message": "fix(volar): 兼容 vue-tsc 精简 AST 的配置块映射"
+      },
+      {
+        "group": "simulator-runtime",
+        "commit": "267ba02ef03163dcc3ee2afc65b45730ef49badc",
+        "message": "fix(simulator): 对齐原生组件导出与模板导入解析"
+      },
+      {
+        "group": "initial-branch-lifecycle",
+        "commit": "c423ba04961baa7058e53edf787424b95c4be134",
+        "message": "fix(runtime): 对齐未挂载初始条件分支的 ready 生命周期"
+      },
+      {
+        "group": "playground-browser",
+        "commit": "fd89e5bab7beedd57ed78c4cda8e5943e6b5a888",
+        "message": "fix(playground): 补齐浏览器编译器导出与干净构建支持"
+      },
+      {
+        "group": "runtime-hmr",
+        "commit": "0ffa402e1c33a3e96980e0db34d87acc5ae83012",
+        "message": "fix(weapp-vite): 保持模板 HMR 的公开 runtime 引用稳定"
+      },
+      {
+        "group": "cli-startup",
+        "commit": "b60d6c6b517586725b45448952ce2b9c65e17acc",
+        "message": "fix(weapp-ide-cli): 保留日志桥启动会话的超时预算"
+      },
+      {
+        "group": "demos",
+        "commit": "a2a95700ffb04205a7774d21f58c1dc55036c051",
+        "message": "fix(demos): 修复综合示例并覆盖真实与 headless runtime"
+      },
+      {
+        "group": "scoped-slot-owner",
+        "commit": "ac294f1bcefaa10686d9d09a492d0b5bc760ada0",
+        "message": "fix(compiler): 保留增强插槽依赖的父组件数据快照"
+      },
+      {
+        "group": "classic-shared-state",
+        "commit": "bc35a384e8a19030b86edddc4aa1af43e7684b77",
+        "message": "test(hmr): 按原生行为保留未变更共享模块状态"
+      },
+      {
+        "group": "visual-baselines",
+        "commit": "499ca74991f1c22b48d7a2169e8c08fb7d41450c",
+        "message": "test(visual): 对齐已生效 scoped 样式的按钮基线"
+      },
+      {
+        "group": "lint-and-maintenance",
+        "commit": "b21124d5ece4a94dc69fef99c3bd1ce5b52d9cd4",
+        "message": "chore(lint): 修正全仓检查与样式校验范围"
+      }
+    ],
+    "pushed": false,
+    "pullRequestCreated": false,
+    "overallAcceptance": "incomplete-real-ide"
+  }
+}
