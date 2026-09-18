@@ -75,6 +75,7 @@ async function createFixture() {
     runtimeState,
     moduleGraphService: createModuleGraphService(),
     configService: {
+      inlineConfig: {},
       cwd: root,
       absoluteSrcRoot: root,
       outDir: absolute('dist'),

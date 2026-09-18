@@ -9,6 +9,7 @@ describe('e2e suite manifest', () => {
     'ide/stream-capability.runtime.test.ts',
     'ide/app-lifecycle.test.ts',
     'ide/github-issues.runtime.issue1015.test.ts',
+    'ide/issue-997-rebuild.runtime.test.ts',
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
