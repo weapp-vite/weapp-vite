@@ -20,7 +20,7 @@ packages:
 
 versioning:
   fixed:
-    - [ '@weapp-vite/ast', weapp-vite, '@weapp-vite/dashboard', wevu, '@wevu/compiler' ]
+    - ['@weapp-vite/ast', weapp-vite, '@weapp-vite/dashboard', wevu, '@wevu/compiler']
   changelog:
     storage: repository
 
@@ -116,9 +116,7 @@ catalogs:
 
 gitChecks: false
 
-
 minimumReleaseAge: 0
-
 
 overrides:
   rolldown: 'catalog:'

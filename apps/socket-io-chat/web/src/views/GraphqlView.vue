@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { ConversationInsight } from '../api/types'
 import { onMounted, ref } from 'vue'
 import { loadConversationInsightWithGraphqlRequest } from '../api/graphqlRequest'
-import type { ConversationInsight } from '../api/types'
 
 const insight = ref<ConversationInsight>()
 const loading = ref(true)

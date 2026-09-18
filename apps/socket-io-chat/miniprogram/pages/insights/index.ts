@@ -1,4 +1,5 @@
-import { loadConversationInsight, type ConversationInsight } from '../../utils/api'
+import type { ConversationInsight } from '../../utils/api'
+import { loadConversationInsight } from '../../utils/api'
 
 const emptyInsight: ConversationInsight = {
   summary: {

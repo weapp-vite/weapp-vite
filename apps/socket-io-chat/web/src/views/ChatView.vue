@@ -177,7 +177,7 @@ function formatTime(value: number) {
 .chat-message__bubble {
   position: relative;
   color: #111;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .chat-message__bubble::before {

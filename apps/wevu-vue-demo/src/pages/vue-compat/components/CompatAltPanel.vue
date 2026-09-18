@@ -24,13 +24,12 @@ function run() {
     at: new Date().toISOString(),
     title: props.title,
   }
-  // eslint-disable-next-line no-console
+
   console.log('[CompatAltPanel] emit run payload', payload)
   emit('run', payload)
 }
 
 function runWithEvent(event: RunEventPayload) {
-  // eslint-disable-next-line no-console
   console.log('[CompatAltPanel] emit runevent payload', event)
   emit('runevent', event)
 }

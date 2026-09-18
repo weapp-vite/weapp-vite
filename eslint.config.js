@@ -11,9 +11,18 @@ export default await defineEslintConfig({
   options: {
     miniProgram: true,
     vue: true,
+    // 禁用外部格式化器，遵循仓库仅使用 ESLint/Stylelint 的约定。
+    formatters: false,
     // tailwindcss: true,
     ignores: [
       '**/fixtures/**',
+      // 独立样式由 Stylelint 校验，生成的路由声明由构建器维护。
+      '**/*.{css,scss,less,wxss,acss,ttss,qss,jxss}',
+      '**/typed-router.d.ts',
+      'test/fixture-projects/**',
+      // 保留第三方 SDK 和官方对照示例的原始代码。
+      'apps/vite-native/utils/cos-wx-sdk-v5.js',
+      'apps/tdesign-miniprogram-starter-retail/**',
       'website/guide/npm.md',
       'website/guide/wxs.md',
       'website/guide/json-intelli-sense.md',
@@ -67,7 +76,12 @@ export default await defineEslintConfig({
         'vue/no-useless-template-attributes': 'off',
       },
     }, {
-      files: ['packages/dashboard/**/*.{js,ts,mjs,cjs,vue}'],
+      files: [
+        'packages/dashboard/**/*.{js,ts,mjs,cjs,vue}',
+        'apps/socket-io-chat/web/**/*.{js,ts,vue}',
+        'website/**/*.{js,ts,vue}',
+        'packages/weapp-vite/example/**/*.{js,ts,tsx,vue}',
+      ],
       rules: {
         'wevu/no-risky-api': 'off',
         'wevu/no-unsupported-api': 'off',

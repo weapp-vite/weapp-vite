@@ -65,6 +65,7 @@ watch(
   />
   <pre
     v-else
-    :class="`${codeFrameClass} min-h-0 h-full rounded-none px-3.5 py-3 text-[11px] leading-7 text-(--sim-text) whitespace-pre-wrap`"
+    class="min-h-0 h-full rounded-none px-3.5 py-3 text-[11px] leading-7 text-(--sim-text) whitespace-pre-wrap"
+    :class="codeFrameClass"
   >{{ fallbackCode }}</pre>
 </template>

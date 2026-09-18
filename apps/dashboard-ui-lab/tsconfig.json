@@ -1,18 +1,18 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "strict": true,
-    "types": [
-      "miniprogram-api-typings"
-    ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "types": [
+      "miniprogram-api-typings"
+    ],
+    "strict": true
   },
   "include": [
     "src/**/*.ts",

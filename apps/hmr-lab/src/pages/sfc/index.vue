@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import { createSharedLabel } from '../../shared/tokens'
+
+const scriptMarker = 'SFC_SCRIPT_MARKER'
+const scriptState = 'SFC_SCRIPT_STATE_MARKER'
+const shared = createSharedLabel('sfc-page')
+</script>
+
 <template>
   <view class="sfc-page">
     <view class="sfc-page__title">SFC_TEMPLATE_MARKER</view>
@@ -6,14 +14,6 @@
     <view class="sfc-page__shared">{{ shared }}</view>
   </view>
 </template>
-
-<script setup lang="ts">
-import { createSharedLabel } from '../../shared/tokens'
-
-const scriptMarker = 'SFC_SCRIPT_MARKER'
-const scriptState = SFC_SCRIPT_STATE_MARKER
-const shared = createSharedLabel('sfc-page')
-</script>
 
 <style lang="scss">
 /* stylelint-disable-next-line at-rule-no-unknown, scss/load-partial-extension */

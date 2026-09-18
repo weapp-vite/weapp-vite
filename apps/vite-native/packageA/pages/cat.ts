@@ -53,7 +53,7 @@ Page({
     dayjsNow: dayjs().format('YYYY-MM-DD HH:mm:ss'),
     // Cos
   },
-  onLoad(query) {
+  onLoad(_query) {
     getPackageName()
     globalStore.bind(this, '$data')
   },

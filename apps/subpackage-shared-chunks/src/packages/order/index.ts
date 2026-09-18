@@ -1,7 +1,10 @@
-const action = require('@/action/test2')
-import { isDevTools } from '@/config'
-import { test1 } from '@/action/test1'
+/* eslint-disable ts/no-require-imports -- 此示例用于验证原生 CommonJS require 的构建兼容性。 */
 import { AES } from 'crypto-es'
+import { test1 } from '@/action/test1'
+import { isDevTools } from '@/config'
+
+// eslint-disable-next-line perfectionist/sort-imports -- 保留 require 在 ESM 导入之后，避免与 import/first 的修复互相覆盖。
+const action = require('@/action/test2')
 
 Page({
   data: {

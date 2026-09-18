@@ -43,8 +43,8 @@ function handleConfirm(payload: { label: string }) {
 
 .title {
   margin-bottom: 20rpx;
-  color: #fe2c55;
   font-size: 38rpx;
   font-weight: 600;
+  color: #fe2c55;
 }
 </style>

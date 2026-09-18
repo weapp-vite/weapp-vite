@@ -9,8 +9,8 @@
 .message-list {
   box-sizing: border-box;
   flex: 1;
-  min-height: 0;
   height: 0;
+  min-height: 0;
   background: #ededed;
 }
 
@@ -133,7 +133,6 @@
   line-height: 1.42;
   color: #111;
   overflow-wrap: anywhere;
-  word-break: break-word;
   background: #f5f5f5;
   border-radius: 8rpx;
 }

@@ -7,6 +7,6 @@ function a() {
 }
 
 export {
+  a,
   Cos,
-  a
 }

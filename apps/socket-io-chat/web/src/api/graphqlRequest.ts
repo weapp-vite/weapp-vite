@@ -1,6 +1,6 @@
-import { GraphQLClient, gql } from 'graphql-request'
-import { apiBase } from './base'
 import type { ConversationInsight } from './types'
+import { gql, GraphQLClient } from 'graphql-request'
+import { apiBase } from './base'
 
 const graphqlClient = new GraphQLClient(`${apiBase}/graphql`)
 
