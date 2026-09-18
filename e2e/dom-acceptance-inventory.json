@@ -2609,6 +2609,39 @@
       ]
     },
     {
+      "task": "ide/issue-969-launch.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/issue-969-launch.runtime.test.ts:30",
+          "name": "issue #969: native cold launch navigation > loads the host entry before redirecting and keeps later navigation usable",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-969",
+              "checkpoints": "[ { id: 'cold', route: '/pages/login/index', action: '冷启动重定向最终进入登录页', nodes: [{ selector: '#issue-969-login', text: 'login' }] }, { id: 'later', route: '/pages/home/index', action: '后续普通导航能回到首页', nodes: [{ selector: '#issue-969-home', text:",
+              "source": "e2e/ide/issue-969-launch.runtime.test.ts:31"
+            }
+          ],
+          "routes": [
+            "/pages/login/index",
+            "/pages/home/index"
+          ],
+          "operations": [
+            "check(cold)",
+            "reLaunch(/pages/home/index)",
+            "check(later)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/issue-997-rebuild.runtime.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -6911,6 +6944,10 @@
     {
       "file": "e2e/ide/issue-340-hoist.runtime.test.ts",
       "sha256": "be11ae8a0779e4fdf9a915c4bff48e6cca7ac23bd0c327dbbb1191f1390a54b8"
+    },
+    {
+      "file": "e2e/ide/issue-969-launch.runtime.test.ts",
+      "sha256": "c3bb836cbedc126054c8db2b84f4efc99cc95628822e3953e0c3dad18853ea9b"
     },
     {
       "file": "e2e/ide/issue-997-rebuild.runtime.test.ts",

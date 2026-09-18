@@ -53,6 +53,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/hmr-auto-classic.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/index.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/issue-969-launch.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/issue-997-rebuild.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-998-tailwind.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/layout-power-demo-message.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -1054,6 +1055,17 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/issue-340-hoist`; checkpoints: `[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ`; source: `e2e/ide/issue-340-hoist.runtime.test.ts:266`
 - Routes: `/subpackages/item/login-required/index`, `/subpackages/user/register/form`
 - Operations: `check(item)`, `check(user)`
+
+
+## ide/issue-969-launch.runtime.test.ts
+
+### issue #969: native cold launch navigation > loads the host entry before redirecting and keeps later navigation usable
+
+- Source: `e2e/ide/issue-969-launch.runtime.test.ts:30`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-969`; checkpoints: `[ { id: 'cold', route: '/pages/login/index', action: '冷启动重定向最终进入登录页', nodes: [{ selector: '#issue-969-login', text: 'login' }] }, { id: 'later', route: '/pages/home/index', action: '后续普通导航能回到首页', nodes: [{ selector: '#issue-969-home', text:`; source: `e2e/ide/issue-969-launch.runtime.test.ts:31`
+- Routes: `/pages/login/index`, `/pages/home/index`
+- Operations: `check(cold)`, `reLaunch(/pages/home/index)`, `check(later)`
 
 
 ## ide/issue-997-rebuild.runtime.test.ts
