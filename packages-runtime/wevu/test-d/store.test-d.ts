@@ -25,6 +25,12 @@ const useOptionsStore = defineStore('options', {
   },
   actions: {
     inc() {
+      this.$patch((state) => {
+        expectType<number>(state.count)
+      })
+      expectType<number>(this.$state.count)
+      expectType<void>(this.$reset())
+      expectError(this.$patch({ count: 'invalid' }))
       this.count += 1
       return this.count
     },

@@ -161,6 +161,8 @@ export type ScriptSetupDefineOptions<
   M extends MethodDefinitions = MethodDefinitions,
   P extends ScriptSetupNativePropertyOption = ScriptSetupNativePropertyOption,
 > = Omit<RemoveIndexSignature<DefineComponentOptions<ComponentPropsOptions, D, C, M>>, 'props' | 'options' | 'data' | 'methods'> & {
+  /** 组件静态名称，供编译器匹配组件配置。 */
+  name?: string
   /**
    * props 必须通过 defineProps() 声明。
    */

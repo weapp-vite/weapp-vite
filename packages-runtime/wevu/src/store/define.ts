@@ -1,7 +1,7 @@
 import type {
   ActionSubscriber,
   DefineStoreOptions,
-  StoreGetters,
+  OptionsStore,
   StoreManager,
   StoreSubscribeOptions,
   SubscriptionCallback,
@@ -12,16 +12,6 @@ import { createSetupStyleStore } from './define/setupStyle'
 import { createStore } from './manager'
 
 type SetupDefinition<T> = () => T
-
-type ActionResult<A> = Awaited<ReturnType<Extract<A[keyof A], (...args: any[]) => any>>>
-type OptionsStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>> = S & StoreGetters<G> & A & {
-  $id: string
-  $state: S
-  $patch: (patch: Partial<S> | ((state: S) => void)) => void
-  $reset: () => void
-  $subscribe: (cb: SubscriptionCallback<S>, opts?: StoreSubscribeOptions) => () => void
-  $onAction: (cb: ActionSubscriber<OptionsStore<S, G, A>, ActionResult<A>>) => () => void
-}
 
 /**
  * @description 定义一个 setup 风格的 store
