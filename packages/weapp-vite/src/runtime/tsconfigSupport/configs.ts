@@ -32,7 +32,8 @@ export function resolveAppWevuJsxImportSource(
   legacyConfig?: LegacyManagedTypeScriptConfig,
 ) {
   const configService = requireConfigService(ctx, '解析 app JSX 类型入口前必须初始化 configService。')
-  if (!hasDependency(configService.packageJson, 'wevu')) {
+  const reactEnabled = Boolean(configService.weappViteConfig.react)
+  if (!reactEnabled && !hasDependency(configService.packageJson, 'wevu')) {
     return undefined
   }
   const configuredJsxImportSource = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.jsxImportSource
@@ -41,7 +42,7 @@ export function resolveAppWevuJsxImportSource(
     ? configuredJsxImportSource.trim()
     : typeof legacyJsxImportSource === 'string' && legacyJsxImportSource.trim()
       ? legacyJsxImportSource.trim()
-      : resolveWevuJsxImportSource(configService.weappViteConfig.platform)
+      : reactEnabled ? 'react' : resolveWevuJsxImportSource(configService.weappViteConfig.platform)
 }
 
 function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
