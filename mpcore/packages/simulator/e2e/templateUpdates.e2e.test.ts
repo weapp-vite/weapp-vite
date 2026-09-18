@@ -27,6 +27,7 @@ it('renders template A to B to A and later file updates while preserving the int
       render()
       expect(preview.querySelector('#title')?.textContent).toBe(title)
       expect(preview.querySelector('#count')?.textContent).toBe('count: 1')
+      expect(session.getCurrentPages().map(current => current.route)).toEqual(['pages/index/index'])
       expect(session.getCurrentPages()[0]).toBe(page)
       expect(session.getApp()).toBe(app)
     }

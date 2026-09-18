@@ -34,7 +34,8 @@ export function createImportedTemplateState<T extends TemplateNodeLike>(
         return
       }
       if (child.name === 'import' && child.attribs?.src) {
-        const imported = loadImport(owner, child.attribs.src)
+        const source = child.attribs.src
+        const imported = loadImport(owner, source.endsWith('.wxml') ? source : `${source}.wxml`)
         const importedDocument = collect(imported.root, imported.filePath)
         for (const [name, definition] of importedDocument.exports) {
           state.definitions.set(name, definition)

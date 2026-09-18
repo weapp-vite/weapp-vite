@@ -45,6 +45,7 @@ describe.each(['node', 'browser'] as const)('%s template file updates', (provide
         const document = render()
         expect(text(document, '#title')).toBe(title)
         expect(text(document, '#count')).toBe('count: 1')
+        expect(session.getCurrentPages().map(current => current.route)).toEqual(['pages/index/index'])
         expect(session.getCurrentPages()[0]).toBe(page)
         expect(session.getApp()).toBe(app)
       }

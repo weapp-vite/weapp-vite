@@ -15,6 +15,7 @@ import {
   runComponentLifecycle,
   runComponentObservers,
 } from '../componentInstance'
+import { resolveNativeComponentSelection } from '../componentInstance/selection'
 import { resolveMiniProgramComponent } from '../componentResolution'
 import { getRuntimeWxsLoader } from '../wxs'
 import {
@@ -321,8 +322,8 @@ export function createRuntimeComponentInstance(
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
   componentInstance.createSelectorQuery = () => context.moduleLoader.wx.createSelectorQuery().in(componentInstance)
-  componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
-  componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
+  componentInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(context.session.selectComponentWithin(componentScopeId, selector))
+  componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector).map(resolveNativeComponentSelection)
   componentInstance.selectOwnerComponent = () => ownerScopeId
     ? context.componentCache.get(ownerScopeId) ?? null
     : null

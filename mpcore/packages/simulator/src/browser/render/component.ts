@@ -13,6 +13,7 @@ import {
   runComponentLifecycle,
   runComponentObservers,
 } from '../../runtime/componentInstance'
+import { resolveNativeComponentSelection } from '../../runtime/componentInstance/selection'
 import { resolveMiniProgramComponent } from '../../runtime/componentResolution'
 import { collectMiniProgramEventBindings } from '../../view/eventBinding'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
@@ -320,8 +321,8 @@ export function createBrowserComponentInstance(
   componentInstance.createIntersectionObserver = (options?: Record<string, any>) => context.session.createIntersectionObserver(componentInstance, options)
   componentInstance.createMediaQueryObserver = () => context.session.createMediaQueryObserver(componentInstance)
   componentInstance.createSelectorQuery = () => context.moduleLoader.wx.createSelectorQuery().in(componentInstance)
-  componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
-  componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
+  componentInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(context.session.selectComponentWithin(componentScopeId, selector))
+  componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector).map(resolveNativeComponentSelection)
   componentInstance.selectOwnerComponent = () => ownerScopeId
     ? context.componentCache.get(ownerScopeId) ?? null
     : null
