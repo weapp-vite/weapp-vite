@@ -25,8 +25,12 @@ describe('plugin testing protocol paths', () => {
       const host = await session.reLaunch('/pages/index/index')
       expect(host.path).toBe('pages/index/index')
       expect(await (await host.$('#host-title'))?.text()).toBe('Plugin host')
+      expect(await (await host.$('#plugin-answer'))?.text()).toBe('plugin.answer = 42')
       const [hostMeter] = await host.getElementsByXpath('//*[@id="meter-value"]')
       expect(await hostMeter?.text()).toBe('78%')
+      await (await host.$('#host-increment'))!.tap()
+      const [updatedHostMeter] = await host.getElementsByXpath('//*[@id="meter-value"]')
+      expect(await updatedHostMeter?.text()).toBe('84%')
 
       const page = await session.navigateTo('plugin://hello/hello-page?source=host')
       expect(page.path).toBe('__plugin__/wxpluginprovider/pages/hello/index')
@@ -57,6 +61,8 @@ describe('plugin testing protocol paths', () => {
       expect(runtime.getCurrentPages().at(-1)?.route).toBe('plugin-private://wxpluginprovider/pages/hello/index')
       expect((await session.navigateBack())?.path).toBe('pages/index/index')
       expect((await session.currentPage())?.pageId).toBe(host.pageId)
+      const [retainedHostMeter] = await host.getElementsByXpath('//*[@id="meter-value"]')
+      expect(await retainedHostMeter?.text()).toBe('84%')
     }
     finally {
       await session.close()

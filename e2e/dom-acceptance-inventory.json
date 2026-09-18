@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 103,
-    "wechatTaskCount": 100,
+    "taskCount": 105,
+    "wechatTaskCount": 102,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 259,
-    "casesWithPlan": 259,
+    "expandedCaseDeclarations": 264,
+    "casesWithPlan": 264,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -2606,6 +2606,106 @@
           "operations": [
             "check(item)",
             "check(user)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/issue-963-plugin-es6.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:72",
+          "name": "issue #963 plugin template with IDE ES6: disabled > loads plugin exports, renders public components and retains host interaction",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-plugin-template",
+              "checkpoints": "[78, 84].map(value => ({ id: `host:${value}`, route: ROUTE, action: value === 78 ? '读取插件公开 API 与组件 DOM' : '点击后读取插件原生组件更新', nodes: [ { selector: '#plugin-answer', text: 'plugin.answer = 42' }, { selector: '//*[@class=\"showcase-card__title\"]'",
+              "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:73"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(host:78)",
+            "tap(<missing>)",
+            "check(host:84)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:93",
+          "name": "issue #963 plugin template with IDE ES6: disabled > navigates from the host to the public plugin Vue page",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-plugin-template",
+              "checkpoints": "[{ id: 'plugin-page', route: pluginPage.path, action: '打开已校验 provider 与目标路径的插件 Vue 页面', nodes: [{ selector: '//*[@class=\"hero__title\"]', query: 'xpath', text: '插件页直接使用 Vue SFC' }], }]",
+              "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:101"
+            }
+          ],
+          "routes": [
+            "/pages/index/index",
+            "plugin://hello-plugin/hello-page"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "navigateTo(plugin://hello-plugin/hello-page)",
+            "check(plugin-page)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:72",
+          "name": "issue #963 plugin template with IDE ES6: enabled > loads plugin exports, renders public components and retains host interaction",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-plugin-template",
+              "checkpoints": "[78, 84].map(value => ({ id: `host:${value}`, route: ROUTE, action: value === 78 ? '读取插件公开 API 与组件 DOM' : '点击后读取插件原生组件更新', nodes: [ { selector: '#plugin-answer', text: 'plugin.answer = 42' }, { selector: '//*[@class=\"showcase-card__title\"]'",
+              "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:73"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(host:78)",
+            "tap(<missing>)",
+            "check(host:84)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:93",
+          "name": "issue #963 plugin template with IDE ES6: enabled > navigates from the host to the public plugin Vue page",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-plugin-template",
+              "checkpoints": "[{ id: 'plugin-page', route: pluginPage.path, action: '打开已校验 provider 与目标路径的插件 Vue 页面', nodes: [{ selector: '//*[@class=\"hero__title\"]', query: 'xpath', text: '插件页直接使用 Vue SFC' }], }]",
+              "source": "e2e/ide/issue-963-plugin-es6.runtime.test.ts:101"
+            }
+          ],
+          "routes": [
+            "/pages/index/index",
+            "plugin://hello-plugin/hello-page"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "navigateTo(plugin://hello-plugin/hello-page)",
+            "check(plugin-page)"
           ],
           "notes": []
         }
@@ -6949,6 +7049,10 @@
       "sha256": "be11ae8a0779e4fdf9a915c4bff48e6cca7ac23bd0c327dbbb1191f1390a54b8"
     },
     {
+      "file": "e2e/ide/issue-963-plugin-es6.runtime.test.ts",
+      "sha256": "cf7259d65e70ce2d0f17aa82e1224a15e42b2c34d7b483bf5c60c397b3ec57c7"
+    },
+    {
       "file": "e2e/ide/issue-969-launch.runtime.test.ts",
       "sha256": "c3bb836cbedc126054c8db2b84f4efc99cc95628822e3953e0c3dad18853ea9b"
     },
@@ -7394,7 +7498,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "b639b9eaab47321478e4f8b1addf2750a4a2a739851603bea28c0a7c98f0957d"
+      "sha256": "077a7cc83f85350232285223acdd935ff9d07614f9b956eeef36c80a7a424d2d"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -7519,6 +7623,10 @@
     {
       "file": "e2e/utils/ideWarningReport.ts",
       "sha256": "899f660355538202c4de6f4080b859fc8e03d02b32f476629079998d54289c7f"
+    },
+    {
+      "file": "e2e/utils/issue963Project.ts",
+      "sha256": "4a923557938d3fdab8eca609bf5fbd78ac2be92afc6ab717e4ac1bea2149cb53"
     },
     {
       "file": "e2e/utils/issue997Build.ts",

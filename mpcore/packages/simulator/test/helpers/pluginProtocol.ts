@@ -4,9 +4,14 @@ export function pluginProtocolFiles(pluginRoot = 'plugin'): Array<[string, strin
     ['app.json', JSON.stringify({ pages: ['pages/index/index'], plugins: { hello: { provider: 'wxpluginprovider', version: 'dev' } } })],
     ['app.js', 'App({})'],
     ['pages/index/index.json', JSON.stringify({ usingComponents: { 'plugin-meter': 'plugin://hello/meter' } })],
-    ['pages/index/index.js', 'Page({ data: { score: 78 } })'],
-    ['pages/index/index.wxml', '<view><text id="host-title">Plugin host</text><plugin-meter value="{{score}}"/></view>'],
-    [`${pluginRoot}/plugin.json`, JSON.stringify({ pages: { 'hello-page': 'pages/hello/index' }, publicComponents: { meter: 'components/meter/index' } })],
+    ['pages/index/index.js', `const plugin = requirePlugin('hello')
+Page({
+  data: { score: 78, answer: plugin.answer },
+  increment() { this.setData({ score: this.data.score + 6 }) },
+})`],
+    ['pages/index/index.wxml', '<view><text id="host-title">Plugin host</text><text id="plugin-answer">plugin.answer = {{answer}}</text><plugin-meter value="{{score}}"/><button id="host-increment" bindtap="increment">Increase plugin score</button></view>'],
+    [`${pluginRoot}/plugin.json`, JSON.stringify({ main: 'index.js', pages: { 'hello-page': 'pages/hello/index' }, publicComponents: { meter: 'components/meter/index' } })],
+    [`${pluginRoot}/index.js`, 'exports.answer = 42'],
     [`${pluginRoot}/components/meter/index.json`, JSON.stringify({ component: true })],
     [`${pluginRoot}/components/meter/index.js`, 'Component({ properties: { value: Number } })'],
     [`${pluginRoot}/components/meter/index.wxml`, '<view><text id="meter-label">Plugin score</text><text id="meter-value">{{value}}%</text></view>'],
