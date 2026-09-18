@@ -774,14 +774,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue705.test.ts:164",
+          "source": "e2e/ide/github-issues.runtime.issue705.test.ts:165",
           "name": "e2e app: github-issues / issue #705 > keeps route state and hook origins synchronized across router and native tab navigation",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "ISSUE705_TABS",
-              "source": "e2e/ide/github-issues.runtime.issue705.test.ts:165"
+              "source": "e2e/ide/github-issues.runtime.issue705.test.ts:166"
             }
           ],
           "routes": [
@@ -792,19 +792,22 @@
             "check(pushed)",
             "check(reloaded)",
             "check(tab)",
+            "check(routerTabPush)",
+            "check(routerTabReplace)",
+            "check(routerTabRedirect)",
             "check(tab-pushed)"
           ],
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue705.test.ts:244",
+          "source": "e2e/ide/github-issues.runtime.issue705.test.ts:268",
           "name": "e2e app: github-issues / issue #705 > restores route state after every back path and allows pushing the same target again",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "ISSUE705_BACK",
-              "source": "e2e/ide/github-issues.runtime.issue705.test.ts:245"
+              "source": "e2e/ide/github-issues.runtime.issue705.test.ts:269"
             }
           ],
           "routes": [],
@@ -6783,7 +6786,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue705.test.ts",
-      "sha256": "9da66e4f64bcf8e620e1d3e6b1d6a81e8fcd7ccaf5e28ef333447830d2d5ee39"
+      "sha256": "b0ae2acf26f34d243fabd798fcd82fc0726091b6f3291840b67b714d9149807c"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue706.test.ts",
@@ -6907,7 +6910,7 @@
     },
     {
       "file": "e2e/ide/githubIssuesDom/navigation.ts",
-      "sha256": "4628b70084561b956d965b4e5ed0c8b6a7564193e82c417e811d913c3d7d32f9"
+      "sha256": "cee1cfd722f0a1cdc05966cb08b128ab3f3b9408208bf725df6a53993ad43a15"
     },
     {
       "file": "e2e/ide/githubIssuesDom/nodes.ts",

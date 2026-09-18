@@ -27,6 +27,7 @@ import { invokePreparedNavigationApi } from '../host/wx/navigation'
 import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
 import { loadProject } from '../project'
+import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
@@ -360,7 +361,10 @@ export class HeadlessSession {
       }, this.startupNavigation),
       {
         artifactSource: this.project.artifactSource,
-        globals: options.globals,
+        globals: {
+          ...options.globals,
+          __wxConfig: createMiniProgramHostConfig(this.project.appConfig, options.globals?.__wxConfig),
+        },
         kernel: this.kernel,
         miniprogramRootPath: this.project.miniprogramRootPath,
         onConsole: entry => this.emit('console', entry),

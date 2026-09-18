@@ -17,6 +17,7 @@ const PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_push_result__'
 const BACK_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_back_result__'
 const SWITCH_TAB_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_switch_tab_result__'
 const TAB_PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_tab_push_result__'
+const ROUTER_TAB_PUSH_RESULT_STORAGE_KEY = '__weapp_vite_issue_705_router_tab_push_result__'
 const STORAGE_TIMEOUT = 8_000
 const ISSUE_PAGE_PATH = '/pages/issue-705/index'
 const TAB_PAGE_PATH = '/pages/issue-705-tab/index'
@@ -81,7 +82,7 @@ function expectNavigationResult(result: any, from: string) {
 async function callIssue705PageMethod(
   miniProgram: any,
   route: string,
-  action?: 'push' | 'switchTab',
+  action?: 'push' | 'routerTabPush' | 'routerTabReplace' | 'routerTabRedirect' | 'switchTab',
   timeoutMs = 5_000,
 ) {
   return await callRoutePageMethodWithOptions<Record<string, any>>(
@@ -228,6 +229,29 @@ describe('e2e app: github-issues / issue #705', { concurrent: false }, () => {
       const tabSnapshot = await waitForIssue705TabReady(miniProgram)
       expect(tabSnapshot.route.path).toBe('pages/issue-705-tab/index')
       await dom.check('tab', miniProgram, tabPage)
+
+      for (const action of ['routerTabPush', 'routerTabReplace', 'routerTabRedirect'] as const) {
+        const routerTabPage = await relaunchPage(
+          miniProgram,
+          ISSUE_PAGE_PATH,
+          undefined,
+          30_000,
+          { readiness: isIssue705PageReady },
+        )
+        assert(routerTabPage, 'Expected issue-705 page before router tab navigation')
+        await removeStorage(miniProgram, ROUTER_TAB_PUSH_RESULT_STORAGE_KEY)
+        await callIssue705PageMethod(miniProgram, ISSUE_PAGE_PATH, action, 12_000).catch(() => undefined)
+        const routerTabResult = await waitForStorage(miniProgram, ROUTER_TAB_PUSH_RESULT_STORAGE_KEY)
+        expect(routerTabResult).toEqual({
+          pageStack: ['pages/issue-705-tab/index'],
+          route: {
+            path: 'pages/issue-705-tab/index',
+          },
+        })
+        const routerTabTarget = await waitForCurrentPagePath(miniProgram, TAB_PAGE_PATH, STORAGE_TIMEOUT)
+        assert(routerTabTarget, 'Expected tab target after router push')
+        await dom.check(action, miniProgram, routerTabTarget)
+      }
 
       await callIssue705PageMethod(miniProgram, TAB_PAGE_PATH, 'push', 12_000).catch(() => undefined)
       const tabPushResult = await waitForStorage(miniProgram, TAB_PUSH_RESULT_STORAGE_KEY)

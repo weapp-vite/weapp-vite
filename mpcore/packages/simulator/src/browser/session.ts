@@ -27,6 +27,7 @@ import { cloneAppLaunchOptions, createAppLaunchOptions } from '../host/appLaunch
 import { invokePreparedNavigationApi } from '../host/wx/navigation'
 import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
+import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { createAppInstance } from '../runtime/appInstance'
@@ -367,7 +368,10 @@ export class BrowserHeadlessSession {
         updateShareMenu: option => this.wxState.updateShareMenu(option),
       }, this.startupNavigation),
       {
-        globals: options.globals,
+        globals: {
+          ...options.globals,
+          __wxConfig: createMiniProgramHostConfig(this.project.appConfig, options.globals?.__wxConfig),
+        },
         kernel: this.kernel,
         miniprogramRootPath: this.project.miniprogramRootPath,
         plugins: this.project.plugins,

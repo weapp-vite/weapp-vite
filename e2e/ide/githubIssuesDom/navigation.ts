@@ -25,6 +25,15 @@ export const ISSUE705_TABS: DomCheckpoint[] = [
     text('.issue705-tab-title', 'issue-705 native switchTab target'),
     text('.issue705-tab-route', 'route: pages/issue-705-tab/index'),
   ] },
+  ...['routerTabPush', 'routerTabReplace', 'routerTabRedirect'].map(id => ({
+    id,
+    action: `${id} 根据宿主配置进入 tab 页面`,
+    route: '/pages/issue-705-tab/index',
+    nodes: [
+      text('.issue705-tab-title', 'issue-705 native switchTab target'),
+      text('.issue705-tab-route', 'route: pages/issue-705-tab/index'),
+    ],
+  })),
   target('tab-pushed', '从 tab 页面再次 push 同一目标页面'),
 ]
 
