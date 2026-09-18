@@ -468,8 +468,8 @@ describe('managed Tailwind integration', () => {
     const plugin = getPlugins({ cssEntries: [entry] }, root)[0]
     const transform = getHookHandler(plugin.transform)
 
-    expect(transform?.call(
-      {} as any,
+    expect(await transform?.call(
+      { resolve: vi.fn(async () => null) } as any,
       source,
       `${path.join(root, 'src/app.vue')}?weapp-vite-vue&type=style&index=0&lang.css`,
       {} as any,

@@ -1,0 +1,11 @@
+{
+  "name": "issue-998-style-import",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "wevu": "workspace:*",
+    "weapp-vite": "workspace:*",
+    "tailwindcss": "catalog:tailwind4",
+    "weapp-tailwindcss": "catalog:"
+  }
+}

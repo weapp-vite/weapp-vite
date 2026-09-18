@@ -98,6 +98,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-997-rebuild.runtime.test.ts',
+  'ide/issue-998-tailwind.runtime.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/github-issues.runtime.issue1015.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
@@ -224,6 +225,7 @@ const IDE_GATE_TESTS = [
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/issue-997-rebuild.runtime.test.ts',
+  'ide/issue-998-tailwind.runtime.test.ts',
   'ide/body-blob.runtime.test.ts',
   'ide/stream-capability.runtime.test.ts',
   'ide/app-lifecycle.test.ts',

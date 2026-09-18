@@ -5,6 +5,7 @@ import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFu
 
 describe('e2e suite manifest', () => {
   it.each([
+    'ide/issue-998-tailwind.runtime.test.ts',
     'ide/body-blob.runtime.test.ts',
     'ide/stream-capability.runtime.test.ts',
     'ide/app-lifecycle.test.ts',

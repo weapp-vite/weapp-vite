@@ -24,6 +24,7 @@ import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
+import { findManagedStyleImports } from './tailwindcss/imports'
 import { resolveVueStyleSource } from './tailwindcss/vueStyle'
 import {
   createManagedTailwindcssEntryMarker,
@@ -207,6 +208,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   const contextualSlots = new Set<number>()
   const dirtySlots = new Set<number>()
   const transformedSources = new Map<number, string>()
+  const importedSources = new Map<string, { rootId: string, snapshot: CompilerSnapshot, entries: number[] }>()
   const previousEntrySources = new Map<string, string>()
   const resolvedEntryIndexes = new Set<number>()
   const loadedEntryIndexes = new Set<number>()
@@ -387,8 +389,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
           classSet: [],
           target: resolved.generatorTarget,
         })]
-    const snapshot = compiler.mergeSnapshots(snapshots)
-    const seenEntries = new Set<number>()
+    const snapshot = compiler.mergeSnapshots([...snapshots, ...Array.from(importedSources.values(), source => source.snapshot)])
+    const seenEntries = new Set(Array.from(importedSources.values()).flatMap(source => source.entries))
     const styleExtension = ctx.configService.outputExtensions.wxss
     const templateExtension = ctx.configService.outputExtensions.wxml
     const scriptSourceMap = Boolean(resolvedConfig?.build.sourcemap)
@@ -489,6 +491,73 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
         throw transformed.error
       }
       applyOutputChunkTransform(output as OutputChunk, transformed.code, transformed.map as any)
+    }
+  }
+
+  function importedSourceKey(id: string) {
+    const style = parseWeappVueStyleRequest(id)
+    return style ? `${style.filename}?style=${style.index}` : id.split('?')[0]!
+  }
+
+  async function transformImportedSource(this: any, code: string, id: string) {
+    const style = parseWeappVueStyleRequest(id)
+    const filename = requestSources.get(id) ?? style?.filename ?? normalizeFsResolvedId(id.split('?')[0]!, { stripLeadingNullByte: true })
+    // 此 pre hook 只接管 CSS；原始预处理器语法必须留给 Vite，SFC 样式已在 load 阶段编译。
+    if (!style && !/\.(?:css|pcss|postcss)$/.test(filename)) {
+      return null
+    }
+    const query = new URLSearchParams(id.split('?')[1] ?? '')
+    if (query.has('raw') || query.has('url')) {
+      return null
+    }
+    const imports = await findManagedStyleImports(code, filename, {
+      resolve: this.resolve.bind(this),
+      isManaged: file => isManagedTailwindcssEntry(ctx, file),
+    })
+    const key = importedSourceKey(id)
+    if (!imports.managed) {
+      const previous = importedSources.get(key)
+      if (previous) {
+        await (await getCompiler()).remove(previous.rootId)
+        importedSources.delete(key)
+      }
+      return null
+    }
+    const compiler = await getCompiler()
+    const rootId = `${MANAGED_PLUGIN_NAME}:import:${key}`
+    const configuredSource = createTailwindV4SourceOptions(resolved, filename)
+    const generated = await compiler.generate({
+      id: rootId,
+      target: resolved.generatorTarget,
+      scanSources: true,
+      sourceOptions: {
+        ...configuredSource,
+        cssEntries: [],
+        cssSources: [...(configuredSource.cssSources ?? []), { css: code, file: filename, base: path.dirname(filename), dependencies: [...imports.dependencies] }],
+      },
+      bareArbitraryValues: resolved.options.arbitraryValues?.bareArbitraryValues,
+      styleOptions: typeof resolved.options.generator === 'object' ? resolved.options.generator.styleOptions : undefined,
+    })
+    importedSources.set(key, {
+      rootId,
+      snapshot: generated.snapshot,
+      entries: [...imports.dependencies].flatMap((file) => {
+        const index = parseManagedEntryIndex(file, entryIndex)
+        return index === undefined ? [] : [index]
+      }),
+    })
+    const dependencies = new Set([...imports.dependencies, ...generated.dependencies])
+    for (const dependency of dependencies) {
+      this.addWatchFile(dependency)
+    }
+    const transformed = await compiler.transformCss(generated.rawCss, generated.snapshot, {
+      isMainChunk: filename === path.resolve(ctx.configService.absoluteSrcRoot, 'app.vue'),
+    })
+    // 导入链由同一个编译器保留源文件基准目录，生成结果再进入 Vite 的 CSS 压缩阶段。
+    return {
+      code: await stripResidualTailwindSourceDirectives(transformed.css),
+      map: null,
+      meta: createStyleSourceMeta(dependencies),
     }
   }
 
@@ -616,7 +685,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       const sourceId = requestSources.get(id) ?? id
       const entry = parseManagedEntryIndex(sourceId, entryIndex) ?? resolveAutoEntryIndex(sourceId, code)
       if (entry === undefined) {
-        return null
+        return code.includes('@import') || importedSources.has(importedSourceKey(id))
+          ? transformImportedSource.call(this, code, id)
+          : null
       }
       const index = getSourceSlot(id, entry)
       dirtySlots.delete(index)
@@ -637,6 +708,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
     },
     shouldTransformCachedModule({ id }) {
+      if (importedSources.has(importedSourceKey(id))) {
+        return true
+      }
       const sourceId = requestSources.get(id) ?? id
       const index = parseManagedEntryIndex(sourceId, entryIndex)
       if (index !== undefined && dirtySlots.has(getSourceSlot(id, index))) {
