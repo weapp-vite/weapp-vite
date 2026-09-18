@@ -91,6 +91,14 @@ describe('wevu runtime hmr (dev watch)', { concurrent: false }, () => {
       )
       await dev.waitFor(waitForFileContains(distTemplatePath, 'HMR'), `${platform} initial hmr template`)
 
+      await dev.waitForInitialBuild()
+      const scriptsBefore = new Map<string, string>()
+      for (const file of await fs.readdir(DIST_ROOT, { recursive: true })) {
+        if (file.endsWith('.js')) {
+          scriptsBefore.set(file, await fs.readFile(path.join(DIST_ROOT, file), 'utf8'))
+        }
+      }
+
       await rewriteTemplateSourceForWatch(HMR_SOURCE_TEMPLATE_PATH, updatedSource)
 
       const nextTemplate = await dev.waitFor(
@@ -102,6 +110,9 @@ describe('wevu runtime hmr (dev watch)', { concurrent: false }, () => {
         `${platform} updated hmr marker`,
       )
       expect(nextTemplate).toContain(marker)
+      for (const [file, source] of scriptsBefore) {
+        expect(await fs.readFile(path.join(DIST_ROOT, file), 'utf8'), file).toBe(source)
+      }
     }
     finally {
       await dev.stop(5_000)
