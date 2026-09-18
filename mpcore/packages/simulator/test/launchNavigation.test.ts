@@ -46,11 +46,11 @@ describe.each(['headless', 'browser'] as const)('%s launch navigation ownership'
     expect(page?.route).toBe('pages/login/index')
     expect(page?.data.from).toBe('launch')
     expect(session.getCurrentPages().map(item => item.route)).toEqual(['pages/login/index'])
-    expect(session.getApp()?.globalData).toMatchObject({ loads: ['login'], launchCalls: 1 })
+    expect(session.getApp()?.globalData).toMatchObject({ loads: ['home', 'login'], launchCalls: 1 })
     expect(session.renderCurrentPage().wxml).toContain('id="launch-login"')
     session.reLaunch('/pages/home/index')
     expect(session.getCurrentPages().map(item => item.route)).toEqual(['pages/home/index'])
-    expect(session.getApp()?.globalData).toMatchObject({ loads: ['login', 'home'], launchCalls: 1 })
+    expect(session.getApp()?.globalData).toMatchObject({ loads: ['home', 'login', 'home'], launchCalls: 1 })
     session.close()
   })
 
@@ -62,7 +62,7 @@ describe.each(['headless', 'browser'] as const)('%s launch navigation ownership'
     })`)
     const page = session.reLaunch('/pages/home/index')
     expect(page.data.from).toBe('show')
-    expect(session.getApp()?.globalData.loads).toEqual(['login', 'login'])
+    expect(session.getApp()?.globalData.loads).toEqual(['home', 'login', 'login'])
     expect(session.getCurrentPages()).toEqual([page])
     session.close()
   })
@@ -80,7 +80,7 @@ describe.each(['headless', 'browser'] as const)('%s launch navigation ownership'
     session.close()
   })
 
-  it('keeps the initial target when launch navigation fails before commit', () => {
+  it('keeps the initial target when launch navigation fails before commit', async () => {
     const session = createSession(`App({
       globalData: { loads: [], failed: false },
       onLaunch() {
@@ -88,7 +88,7 @@ describe.each(['headless', 'browser'] as const)('%s launch navigation ownership'
       },
     })`)
     expect(session.reLaunch('/pages/home/index').route).toBe('pages/home/index')
-    expect(session.getApp()?.globalData).toMatchObject({ failed: true, loads: ['home'] })
+    await expect.poll(() => session.getApp()?.globalData).toMatchObject({ failed: true, loads: ['home'] })
     session.close()
   })
 })

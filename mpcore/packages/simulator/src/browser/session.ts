@@ -25,6 +25,7 @@ import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
 import { cloneAppLaunchOptions, createAppLaunchOptions } from '../host/appLaunchOptions'
 import { invokePreparedNavigationApi } from '../host/wx/navigation'
+import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
@@ -235,6 +236,7 @@ export class BrowserHeadlessSession {
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
   private readonly kernel = new RuntimeKernel()
+  private readonly startupNavigation = new StartupNavigationQueue(this.kernel.scheduler)
   private readonly wxState
   private pullDownRefreshState: HeadlessPullDownRefreshState = {
     active: false,
@@ -281,7 +283,7 @@ export class BrowserHeadlessSession {
       this.registries,
       () => this.pages.slice(),
       () => this.getApp(),
-      {
+      bindStartupNavigation({
         chooseImage: option => this.wxState.chooseImage(option ?? {}),
         chooseMessageFile: option => this.wxState.chooseMessageFile(option ?? {}),
         chooseMedia: option => this.wxState.chooseMedia(option ?? {}),
@@ -363,7 +365,7 @@ export class BrowserHeadlessSession {
         removeTabBarBadge: option => this.removeTabBarBadge(option.index),
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
-      },
+      }, this.startupNavigation),
       {
         globals: options.globals,
         kernel: this.kernel,
@@ -1073,10 +1075,18 @@ export class BrowserHeadlessSession {
   }
 
   private bootstrapNavigation(launchOptions = createAppLaunchOptions('', {})): HeadlessPageInstance | null {
-    const isLaunching = !this.appInstance
-    this.bootstrap(launchOptions)
-    // 启动钩子已提交导航时，由该页面接管首次入口，不能再覆盖它。
-    return isLaunching ? this.currentPageInstance : null
+    if (this.appInstance) {
+      return null
+    }
+    this.startupNavigation.capture(() => {
+      this.bootstrap(launchOptions)
+    })
+    if (launchOptions.path) {
+      const query = new URLSearchParams(launchOptions.query).toString()
+      this.reLaunch(`/${launchOptions.path}${query ? `?${query}` : ''}`)
+    }
+    this.startupNavigation.flush()
+    return this.currentPageInstance
   }
 
   reLaunch(url: string) {

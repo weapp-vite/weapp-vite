@@ -344,7 +344,7 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     expect(state.pageStack).toEqual(['pages/login/index'])
     expect(state.previewMarkup).toContain('login: launch')
     expect(parseJsonString<{ loads: string[], launchCalls: number }>(state.appData))
-      .toMatchObject({ loads: ['login'], launchCalls: 1 })
+      .toMatchObject({ loads: ['home', 'login'], launchCalls: 1 })
     bridge.openRoute('pages/home/index')
     const home = await waitFor(
       () => bridge.getState(),

@@ -24,6 +24,7 @@ import path from 'node:path'
 import { createHostRegistries } from '../host'
 import { cloneAppLaunchOptions, createAppLaunchOptions } from '../host/appLaunchOptions'
 import { invokePreparedNavigationApi } from '../host/wx/navigation'
+import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
@@ -198,6 +199,7 @@ function resolveNavigationPath(targetPath: string, baseRoute?: string) {
 export class HeadlessSession {
   readonly project: HeadlessProjectDescriptor
   private readonly kernel = new RuntimeKernel()
+  private readonly startupNavigation = new StartupNavigationQueue(this.kernel.scheduler)
 
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
@@ -273,7 +275,7 @@ export class HeadlessSession {
       this.registries,
       () => this.pages.slice(),
       () => this.getApp(),
-      {
+      bindStartupNavigation({
         chooseImage: option => this.wxState.chooseImage(option ?? {}),
         chooseMessageFile: option => this.wxState.chooseMessageFile(option ?? {}),
         chooseMedia: option => this.wxState.chooseMedia(option ?? {}),
@@ -355,7 +357,7 @@ export class HeadlessSession {
         removeTabBarBadge: option => this.removeTabBarBadge(option.index),
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
-      },
+      }, this.startupNavigation),
       {
         artifactSource: this.project.artifactSource,
         globals: options.globals,
@@ -1006,10 +1008,18 @@ export class HeadlessSession {
   }
 
   private bootstrapNavigation(launchOptions = createAppLaunchOptions('', {})): HeadlessPageInstance | null {
-    const isLaunching = !this.appInstance
-    this.bootstrap(launchOptions)
-    // 启动钩子已提交导航时，由该页面接管首次入口，不能再覆盖它。
-    return isLaunching ? this.currentPageInstance : null
+    if (this.appInstance) {
+      return null
+    }
+    this.startupNavigation.capture(() => {
+      this.bootstrap(launchOptions)
+    })
+    if (launchOptions.path) {
+      const query = new URLSearchParams(launchOptions.query).toString()
+      this.reLaunch(`/${launchOptions.path}${query ? `?${query}` : ''}`)
+    }
+    this.startupNavigation.flush()
+    return this.currentPageInstance
   }
 
   reLaunch(url: string) {

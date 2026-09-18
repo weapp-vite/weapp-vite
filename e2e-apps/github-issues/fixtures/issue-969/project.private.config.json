@@ -1,0 +1,23 @@
+{
+  "libVersion": "3.17.3",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "home",
+          "pathName": "pages/home/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "login",
+          "pathName": "pages/login/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

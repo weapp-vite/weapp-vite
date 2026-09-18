@@ -7,6 +7,7 @@ import type {
 } from './core'
 import { createHeadlessUniEventBus } from './eventBus'
 import { createHeadlessLogManager } from './logManager'
+import { runNavigationApi } from './startupNavigation'
 
 export * from './api'
 export * from './core'
@@ -263,12 +264,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     hideLoading: option => invokeWxApi(() => driver.hideLoading(), option),
     hideToast: () => driver.hideToast(),
     downloadFile: option => driver.downloadFile(option),
-    navigateBack: option => invokeWxApi(() => {
-      driver.navigateBack(option)
-    }, option),
-    navigateTo: option => invokeWxApi(() => {
-      driver.navigateTo(option)
-    }, option),
+    navigateBack: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.navigateBack(deferred)
+    }, deferred)),
+    navigateTo: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.navigateTo(deferred!)
+    }, deferred)),
     nextTick: callback => driver.nextTick(callback),
     offAppHide: callback => driver.offAppHide(callback),
     offAppShow: callback => driver.offAppShow(callback),
@@ -281,12 +282,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
       driver.pageScrollTo(option)
     }, option),
     previewImage: option => invokeWxApi(() => driver.previewImage(option), option),
-    reLaunch: option => invokeWxApi(() => {
-      driver.reLaunch(option)
-    }, option),
-    redirectTo: option => invokeWxApi(() => {
-      driver.redirectTo(option)
-    }, option),
+    reLaunch: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.reLaunch(deferred!)
+    }, deferred)),
+    redirectTo: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.redirectTo(deferred!)
+    }, deferred)),
     removeSavedFile: option => invokeWxApi(() => driver.removeSavedFile(option), option),
     saveImageToPhotosAlbum: option => invokeWxApi(() => driver.saveImageToPhotosAlbum(option), option),
     saveVideoToPhotosAlbum: option => invokeWxApi(() => driver.saveVideoToPhotosAlbum(option), option),
@@ -322,7 +323,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
     startPullDownRefresh: option => invokeWxApi(() => driver.startPullDownRefresh(), option),
     stopPullDownRefresh: () => driver.stopPullDownRefresh(),
-    switchTab: option => driver.switchTab(option),
+    switchTab: option => runNavigationApi(driver, option, deferred => driver.switchTab(deferred!)),
     uploadFile: option => driver.uploadFile(option),
     removeTabBarBadge: option => invokeWxApi(() => driver.removeTabBarBadge(option), option),
     setTabBarBadge: option => invokeWxApi(() => driver.setTabBarBadge(option), option),
