@@ -502,7 +502,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   async function transformImportedSource(this: any, code: string, id: string) {
     const style = parseWeappVueStyleRequest(id)
     const filename = requestSources.get(id) ?? style?.filename ?? normalizeFsResolvedId(id.split('?')[0]!, { stripLeadingNullByte: true })
-    if (!style && !/\.(?:css|pcss|postcss|sss|scss|sass|less|styl|stylus)$/.test(filename)) {
+    // 此 pre hook 只接管 CSS；原始预处理器语法必须留给 Vite，SFC 样式已在 load 阶段编译。
+    if (!style && !/\.(?:css|pcss|postcss)$/.test(filename)) {
       return null
     }
     const query = new URLSearchParams(id.split('?')[1] ?? '')
