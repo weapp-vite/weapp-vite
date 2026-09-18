@@ -41,10 +41,10 @@ export function coreHmrPlan(markers: CoreHmrMarkers): DomCheckpoint[] {
     checkpoint('page:initial', 'hmr', hmr('HMR', 'hmr', 0)),
     checkpoint('page:interacted', 'hmr', hmr('HMR', 'hmr')),
     checkpoint('page:template', 'hmr', hmr(markers.pageTemplateMarker, 'hmr')),
-    // classic 脚本更新交由 IDE 重建 AppService；模板更新保留交互，脚本刷新恢复 store 初始值。
-    checkpoint('page:script', 'hmr', hmr(markers.pageTemplateMarker, markers.pageScriptMarker, 0)),
+    // 微信重载变更的页面脚本，但未变更的共享模块仍被缓存；新页面继续读取共享 store 的交互值。
+    checkpoint('page:script', 'hmr', hmr(markers.pageTemplateMarker, markers.pageScriptMarker)),
     checkpoint('page:style', 'hmr', [
-      ...hmr(markers.pageTemplateMarker, markers.pageScriptMarker, 0),
+      ...hmr(markers.pageTemplateMarker, markers.pageScriptMarker),
       { selector: '.page', styles: { 'background-color': 'rgb(220, 252, 231)' }, visible: true },
     ]),
     checkpoint('sfc:initial', 'hmr-sfc', sfc('HMR-SFC', 'HMR-SFC-SCRIPT')),
