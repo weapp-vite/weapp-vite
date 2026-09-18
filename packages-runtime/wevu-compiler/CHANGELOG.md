@@ -1,5 +1,44 @@
 # @wevu/compiler
 
+## 7.1.3
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- 修复动态 `v-bind` 与 `v-on` 参数被误编译为字面属性名和事件名的问题，无法支持的动态名称现在会保留准确源码位置并输出明确诊断。
+
+- 修复 Vue SFC 外部样式中 CSS `v-bind()` 的变量注册、模板注入与外部文件热更新，使其与内联样式保持一致；切换 `style src` 后重新建立依赖基线，避免新样式文件的变量变化复用旧脚本。
+
+- 修复模板内联事件中同名参数或局部变量的写入被错误改写为修改组件 ref 的问题。
+
+- 修复内联事件生成参数被用户回调参数或组件同名绑定捕获的问题，确保循环作用域恢复与事件表达式保持原有语义。解构赋值、模板 this 与循环解析器共享防捕获的生成参数，避免组合使用这些能力时发生错误写回或未定义变量异常。
+
+- 修复 Vue SFC 模板内联事件中对象与数组解构赋值未写回组件状态的问题，支持别名、默认值、剩余元素、局部遮蔽和顶层 ref 目标，并保留 setup let 访问器的闭包写入语义。合并 setup 返回值时保持自有数据属性语义，避免原型同名键改变结果对象的原型或丢失绑定。
+
+- 修复 `v-for` 解构默认值与对象剩余属性的降级语义，并让模拟器事件与 selector dataset 保留整段绑定表达式的值类型，确保模板插值、事件参数和真实运行时一致，同时对无法等价转换的模式输出源码定位诊断。数字循环在应用默认值前保留原有数值项，避免将正常循环项错误替换为默认值。
+
+- 修复 Vue 模板内联表达式跨过普通函数、对象方法和类边界改写动态 `this` 的问题，保留 `map` 的 `thisArg` 以及 `call`、`apply`、`bind` 的原生语义。
+
+- 为不支持的对象形式 `v-bind` 和 `v-on` 输出带源码位置的编译诊断，避免属性与事件被静默丢弃。
+
+- 修复换行符、`defineOptions` 与 JSON 宏预处理后的脚本源码映射，使后续声明准确指向原始 Vue SFC 并保留原始内容。
+
+- 保留仅在增强插槽模板中使用的父组件数据依赖，避免自动 setData 裁剪导致插槽内组件首次挂载收到空值；动态依赖无法完整分析时保留完整快照。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.4
+  - @weapp-core/shared@3.2.3
+  - @weapp-vite/ast@7.1.3
+  - rolldown-require@2.0.30
+
 ## 7.1.2
 
 ### Patch Changes

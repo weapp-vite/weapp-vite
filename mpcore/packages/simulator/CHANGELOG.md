@@ -1,5 +1,31 @@
 # @mpcore/simulator
 
+## 0.6.0
+
+### Minor Changes
+
+- 为请求 mock 补充分块、响应头监听和取消契约，支持显式配置分块及连接失败，保持默认无网络访问。enableChunked 模式按真实微信 DevTools 观测通过分块回调交付数据，成功回调的 data 为空字符串；补齐 RequestTask 监听与解绑类型。
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- 修复 `v-for` 解构默认值与对象剩余属性的降级语义，并让模拟器事件与 selector dataset 保留整段绑定表达式的值类型，确保模板插值、事件参数和真实运行时一致，同时对无法等价转换的模式输出源码定位诊断。数字循环在应用默认值前保留原有数值项，避免将正常循环项错误替换为默认值。
+
+- 修复原生组件选择器未应用 wx://component-export 导出行为的问题，并支持模板 import 省略 .wxml 后缀，使 headless 与浏览器模拟器对齐微信开发者工具的行为。
+
+- 修复微信向未挂载的初始条件分支发送 ready 时误触发 Vue 补挂载的问题，并补齐模拟器对初始分支创建、替换和 ready 顺序的兼容。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.4
+
 ## 0.5.1
 
 ### Patch Changes

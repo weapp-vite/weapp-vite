@@ -2,6 +2,12 @@
   dir: mpcore/packages/core
   intents:
     - npm-package-metadata
+"@mpcore/core@0.0.2":
+  dir: mpcore/packages/core
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@mpcore/simulator@0.3.3":
   dir: mpcore/packages/simulator
   intents:
@@ -59,10 +65,26 @@
     - ninety-loops-like
     - npm-package-metadata
     - shiny-islands-retire
+"@mpcore/simulator@0.6.0":
+  dir: mpcore/packages/simulator
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-issue-1011-v-for-patterns
+    - fix-simulator-native-component-selection
+    - fix-unattached-ready
+    - simulator-chunked-request-probe
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
     - npm-package-metadata
+"@mpcore/test@0.1.11":
+  dir: mpcore/packages/test
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@mpcore/test@0.1.9":
   dir: mpcore/packages/test
   intents:
@@ -80,6 +102,12 @@
   dir: mpcore/packages/vitest
   intents:
     - npm-package-metadata
+"@mpcore/vitest@0.2.3":
+  dir: mpcore/packages/vitest
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -88,6 +116,12 @@
   dir: mpcore/packages/weapp-vite
   intents:
     - npm-package-metadata
+"@mpcore/weapp-vite@0.1.25":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -104,6 +138,13 @@
   dir: "@weapp-core/api"
   intents:
     - npm-package-metadata
+"@weapp-core/api@0.3.3":
+  dir: "@weapp-core/api"
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-issue-1005-wpi-mock-types
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -126,6 +167,12 @@
   dir: "@weapp-core/constants"
   intents:
     - npm-package-metadata
+"@weapp-core/constants@0.2.4":
+  dir: "@weapp-core/constants"
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -138,6 +185,12 @@
   dir: "@weapp-core/init"
   intents:
     - npm-package-metadata
+"@weapp-core/init@6.0.20":
+  dir: "@weapp-core/init"
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-core/logger@3.1.2":
   dir: "@weapp-core/logger"
   intents:
@@ -146,6 +199,12 @@
   dir: "@weapp-core/logger"
   intents:
     - npm-package-metadata
+"@weapp-core/logger@3.1.4":
+  dir: "@weapp-core/logger"
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -163,6 +222,12 @@
   dir: "@weapp-core/schematics"
   intents:
     - npm-package-metadata
+"@weapp-core/schematics@6.2.4":
+  dir: "@weapp-core/schematics"
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -175,11 +240,23 @@
   dir: "@weapp-core/shared"
   intents:
     - npm-package-metadata
+"@weapp-core/shared@3.2.3":
+  dir: "@weapp-core/shared"
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-core/types@1.1.0":
   dir: "@weapp-core/types"
   intents:
     - npm-package-metadata
     - types-intrinsic-elements
+"@weapp-core/types@1.1.1":
+  dir: "@weapp-core/types"
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -208,6 +285,12 @@
   dir: packages/ast-native
   intents:
     - npm-package-metadata
+"@weapp-vite/ast-native@0.1.4":
+  dir: packages/ast-native
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -226,6 +309,12 @@
   dir: packages/ast
   intents:
     - npm-package-metadata
+"@weapp-vite/ast@7.1.3":
+  dir: packages/ast
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -239,10 +328,22 @@
   dir: packages/dashboard
   intents:
     - npm-package-metadata
+"@weapp-vite/dashboard@7.1.3":
+  dir: packages/dashboard
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/devtools-runtime@0.4.19":
   dir: packages/devtools-runtime
   intents:
     - npm-package-metadata
+"@weapp-vite/devtools-runtime@0.4.20":
+  dir: packages/devtools-runtime
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -263,6 +364,19 @@
   dir: packages/eslint
   intents:
     - npm-package-metadata
+"@weapp-vite/eslint@0.2.5":
+  dir: packages/eslint
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+"@weapp-vite/glass-easel-web-adapter@0.1.1":
+  dir: packages-runtime/glass-easel-web-adapter
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - dependency-upgrade-auto-generated
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -276,6 +390,12 @@
   dir: packages-runtime/i18n
   intents:
     - npm-package-metadata
+"@weapp-vite/i18n@0.2.4":
+  dir: packages-runtime/i18n
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -288,6 +408,12 @@
   dir: packages/mcp
   intents:
     - npm-package-metadata
+"@weapp-vite/mcp@1.5.4":
+  dir: packages/mcp
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -317,6 +443,12 @@
   dir: packages/miniprogram-automator
   intents:
     - npm-package-metadata
+"@weapp-vite/miniprogram-automator@1.2.19":
+  dir: packages/miniprogram-automator
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/qr@1.1.2":
   dir: packages/qr
   intents:
@@ -325,6 +457,12 @@
   dir: packages/qr
   intents:
     - npm-package-metadata
+"@weapp-vite/qr@1.1.4":
+  dir: packages/qr
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -347,6 +485,12 @@
   dir: packages-runtime/react
   intents:
     - npm-package-metadata
+"@weapp-vite/react@0.2.7":
+  dir: packages-runtime/react
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
@@ -355,6 +499,13 @@
   dir: packages/volar
   intents:
     - npm-package-metadata
+"@weapp-vite/volar@2.1.8":
+  dir: packages/volar
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-volar-compiler-node-mapping
 "@weapp-vite/vscode@0.5.3":
   dir: extensions/vscode
   intents:
@@ -405,6 +556,12 @@
   dir: packages-runtime/web
   intents:
     - fix-web-polyfill-side-effects
+"@weapp-vite/web@1.5.3":
+  dir: packages-runtime/web
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -426,6 +583,12 @@
   dir: packages-runtime/weapi
   intents:
     - npm-package-metadata
+"@wevu/api@0.3.3":
+  dir: packages-runtime/weapi
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -480,6 +643,22 @@
   intents:
     - fix-wxml-paren-member
     - npm-package-metadata
+"@wevu/compiler@7.1.3":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-dynamic-directive-names
+    - fix-external-css-vars
+    - fix-issue-1008-inline-ref-shadow
+    - fix-issue-1009-inline-expression-hygiene
+    - fix-issue-1010-assignment-patterns
+    - fix-issue-1011-v-for-patterns
+    - fix-issue-1012-dynamic-this
+    - fix-issue-1014-object-directive-diagnostics
+    - fix-issue-1016-sourcemap
+    - fix-scoped-slot-owner-picks
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -488,6 +667,12 @@
   dir: packages-runtime/wevu-query
   intents:
     - npm-package-metadata
+"@wevu/query@0.0.3":
+  dir: packages-runtime/wevu-query
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -506,6 +691,12 @@
   dir: packages-runtime/wevu-test-utils
   intents:
     - npm-package-metadata
+"@wevu/test-utils@0.2.15":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 "@wevu/test-utils@0.2.2":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -530,6 +721,13 @@
   dir: packages-runtime/web-apis
   intents:
     - npm-package-metadata
+"@wevu/web-apis@1.3.0":
+  dir: packages-runtime/web-apis
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - web-apis-body-blob-contracts
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -666,6 +864,25 @@ create-weapp-vite@2.8.15:
   dir: packages/create-weapp-vite
   intents:
     - fix-issue-999
+create-weapp-vite@2.8.16:
+  dir: packages/create-weapp-vite
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-component-options-type-context
+    - fix-external-css-vars
+    - fix-issue-1010-assignment-patterns
+    - fix-issue-962-async-setup-context
+    - fix-issue-989-create-template
+    - fix-react-sfc-managed-types
+    - fix-scoped-slot-owner-picks
+    - fix-stable-public-runtime-hmr
+    - fix-stateful-hmr-tailwind-style-refresh
+    - fix-unattached-ready
+    - issue-962-wevu-auto-import
+    - quiet-css-entries
+    - upgrade-pnpm-12
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -749,10 +966,22 @@ rolldown-require@2.0.29:
   dir: packages/rolldown-require
   intents:
     - npm-package-metadata
+rolldown-require@2.0.30:
+  dir: packages/rolldown-require
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 vite-plugin-performance@2.0.2:
   dir: packages/vite-plugin-performance
   intents:
     - npm-package-metadata
+vite-plugin-performance@2.0.3:
+  dir: packages/vite-plugin-performance
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -776,6 +1005,13 @@ weapp-ide-cli@6.1.4:
   dir: packages/weapp-ide-cli
   intents:
     - npm-package-metadata
+weapp-ide-cli@6.1.5:
+  dir: packages/weapp-ide-cli
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-forward-console-launch-budget
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -947,6 +1183,22 @@ weapp-vite@7.1.2:
   dir: packages/weapp-vite
   intents:
     - fix-issue-999
+weapp-vite@7.1.3:
+  dir: packages/weapp-vite
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-external-css-vars
+    - fix-issue-1010-assignment-patterns
+    - fix-issue-962-async-setup-context
+    - fix-react-sfc-managed-types
+    - fix-scoped-slot-owner-picks
+    - fix-stable-public-runtime-hmr
+    - fix-stateful-hmr-tailwind-style-refresh
+    - issue-962-wevu-auto-import
+    - quiet-css-entries
+    - upgrade-pnpm-12
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -1023,3 +1275,15 @@ wevu@7.1.1:
     - npm-package-metadata
     - types-intrinsic-elements
     - wevu-app-router-tabbar
+wevu@7.1.3:
+  dir: packages-runtime/wevu
+  intents:
+    - catalog-upgrade-20260917-230931
+    - catalog-upgrade-20260917-231126
+    - dependency-upgrade-20260917-133126
+    - fix-component-options-type-context
+    - fix-issue-1010-assignment-patterns
+    - fix-issue-962-async-setup-context
+    - fix-issue-989-host-tabbar-path
+    - fix-scoped-slot-owner-picks
+    - fix-unattached-ready

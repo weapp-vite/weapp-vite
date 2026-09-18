@@ -1,5 +1,49 @@
 # create-weapp-vite
 
+## 2.8.16
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- 修复组件 Options API 与选项式 Store 中 this 的类型上下文，保留 setup 响应式绑定的解包类型，并补齐组件名称宏配置类型。
+
+- 修复 Vue SFC 外部样式中 CSS `v-bind()` 的变量注册、模板注入与外部文件热更新，使其与内联样式保持一致；切换 `style src` 后重新建立依赖基线，避免新样式文件的变量变化复用旧脚本。
+
+- 修复 Vue SFC 模板内联事件中对象与数组解构赋值未写回组件状态的问题，支持别名、默认值、剩余元素、局部遮蔽和顶层 ref 目标，并保留 setup let 访问器的闭包写入语义。合并 setup 返回值时保持自有数据属性语义，避免原型同名键改变结果对象的原型或丢失绑定。
+
+- 修复异步 setup 执行结束后上下文泄漏导致后续组件生命周期注册失败的问题。
+
+- 同步发布 `wevu` 的宿主 tabBar 路径归一化修复。
+
+- 修复同时使用 React 与 Wevu 的项目中 JSX 类型来源冲突，保留 Wevu SFC 的平台元素类型支持。
+
+- 保留仅在增强插槽模板中使用的父组件数据依赖，避免自动 setData 裁剪导致插槽内组件首次挂载收到空值；动态依赖无法完整分析时保留完整快照。
+
+- 保留 Wevu 稳定公开组件工厂及已有生命周期导出调用的原始形式，修复全量与增量构建的额外别名包装不一致，避免纯模板 HMR 改写无关脚本并导致微信开发者工具整页重载和状态丢失。
+
+- 修复微信状态保持 HMR 更新 Tailwind 全局样式时页面计算样式未刷新的问题，确保页面 WXSS 随全局样式快照变化触发重新解析，同时不改变页面视觉语义。
+
+- 修复微信向未挂载的初始条件分支发送 ready 时误触发 Vue 补挂载的问题，并补齐模拟器对初始分支创建、替换和 ready 顺序的兼容。
+
+- 新增可用于 `unplugin-auto-import` 的 `wevu` 与 `wevu-router` 预设。
+
+- 修复 Tailwind CSS 入口与普通样式链路重复处理时的 CSS 压缩警告。
+
+- 升级仓库及脚手架默认使用的 pnpm 至 12.4.1，统一 Corepack、smoke 测试、CI 与开发文档中的安装版本要求。
+
+- Updated dependencies:
+  - @weapp-core/init@6.0.20
+  - @weapp-core/logger@3.1.4
+  - @weapp-core/shared@3.2.3
+
 ## 2.8.15
 
 ### Patch Changes
