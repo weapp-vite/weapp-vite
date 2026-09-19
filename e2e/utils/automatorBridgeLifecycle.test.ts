@@ -42,7 +42,7 @@ describe('automator bridge wrapper lifecycle', () => {
     const wrapper = prepareAutomatorBridgeWrapperProject(project, { appConfigPath: path.join(distRoot, 'app.json') }, 'snapshot')!
 
     try {
-      expect(watch).toHaveBeenCalledWith(fs.realpathSync.native(distRoot), expect.any(Function))
+      expect(watch).toHaveBeenCalledExactlyOnceWith(fs.realpathSync.native(distRoot), { recursive: true }, expect.any(Function))
       for (const [watchedPath] of watch.mock.calls) {
         expect(watchedPath).toBe(fs.realpathSync.native(watchedPath))
       }

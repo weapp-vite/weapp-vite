@@ -205,7 +205,8 @@ describe('issue #1015 external CSS variables HMR', { concurrent: false }, () => 
         waitForCssVarOutput(output => (
           output.pageWxss.includes('--issue-1015-hmr: removed')
           && output.cssVarNames.length === 0
-          && !/style="\{\{__wv_style_\d+\}\}"/.test(output.pageWxml)
+          // stateful 保留稳定绑定槽；classic 则应移除无变量的模板绑定。
+          && /style="\{\{__wv_style_\d+\}\}"/.test(output.pageWxml) === stateful
           && [...initial.cssVarNames, ...changed.cssVarNames].every(cssVarName => !output.registeredCssVarNames.has(cssVarName))
         ), stateful, changed.buildId),
         'issue-1015 removed external CSS variable output',

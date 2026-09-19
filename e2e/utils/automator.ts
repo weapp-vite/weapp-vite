@@ -1230,21 +1230,19 @@ function startBridgeWrapperDistSync(
 ) {
   const preserveRoots = options.preserveRoots ?? []
   const pendingPaths = new Set<string>()
-  const watchers = new Map<string, fs.FSWatcher>()
+  let watcher: fs.FSWatcher | undefined
   let timer: NodeJS.Timeout | undefined
   let reconcileTimer: NodeJS.Timeout | undefined
   let closed = false
-  let watchDirectoryTree: (directoryPath: string) => void = () => {}
+  let watchDirectory: () => void = () => {}
 
   const closeWatchers = () => {
     if (timer) {
       clearTimeout(timer)
       timer = undefined
     }
-    for (const watcher of watchers.values()) {
-      watcher.close()
-    }
-    watchers.clear()
+    watcher?.close()
+    watcher = undefined
     pendingPaths.clear()
   }
 
@@ -1265,7 +1263,7 @@ function startBridgeWrapperDistSync(
       closeWatchers()
       return
     }
-    watchDirectoryTree(distRoot)
+    watchDirectory()
     copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot, { preserveRoots })
   }
 
@@ -1302,55 +1300,36 @@ function startBridgeWrapperDistSync(
     timer = setTimeout(flush, 80)
   }
 
-  const watchDirectory = (directoryPath: string) => {
-    if (closed || watchers.has(directoryPath) || !fs.existsSync(directoryPath)) {
+  watchDirectory = () => {
+    const directoryPath = distRoot
+    if (closed || watcher || !fs.existsSync(directoryPath)) {
       return
     }
 
-    const watcher = watchResolvedDirectory(directoryPath, (_eventType, fileName) => {
+    const nextWatcher = watchResolvedDirectory(directoryPath, (_eventType, fileName) => {
       if (!fileName) {
         syncSnapshot()
         return
       }
 
       const changedPath = path.join(directoryPath, fileName.toString())
-      if (fs.existsSync(changedPath)) {
-        const stat = safeStat(changedPath)
-        if (stat?.isDirectory()) {
-          watchDirectoryTree(changedPath)
-        }
-      }
       schedule(changedPath)
-    })
-    if (!watcher) {
+    }, { recursive: true })
+    if (!nextWatcher) {
       return
     }
-    watcher.on('error', () => {
-      watchers.delete(directoryPath)
+    nextWatcher.on('error', () => {
+      if (watcher === nextWatcher) {
+        watcher = undefined
+      }
       syncSnapshot()
     })
-    watcher.unref()
-    watchers.set(directoryPath, watcher)
+    nextWatcher.unref()
+    watcher = nextWatcher
   }
 
-  watchDirectoryTree = (directoryPath: string) => {
-    if (!fs.existsSync(directoryPath)) {
-      return
-    }
-
-    watchDirectory(directoryPath)
-    const entries = safeReadDirectory(directoryPath)
-    if (!entries) {
-      return
-    }
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        watchDirectoryTree(path.join(directoryPath, entry.name))
-      }
-    }
-  }
-
-  watchDirectoryTree(distRoot)
+  // Node 20+ 支持递归监听；单个根 watcher 覆盖新增子目录，避免逐目录注册和关闭的成本。
+  watchDirectory()
   reconcileTimer = setInterval(syncSnapshot, 2_000)
   reconcileTimer.unref()
 

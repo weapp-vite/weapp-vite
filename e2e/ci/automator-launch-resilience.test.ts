@@ -82,10 +82,12 @@ interface MockMiniProgramRuntime {
   on: ReturnType<typeof vi.fn>
   removeListener: ReturnType<typeof vi.fn>
   close: ReturnType<typeof vi.fn>
+  disconnect: ReturnType<typeof vi.fn>
   currentPage: ReturnType<typeof vi.fn>
   reLaunch: ReturnType<typeof vi.fn>
   __rawCompile: ReturnType<typeof vi.fn>
   __rawClose: ReturnType<typeof vi.fn>
+  __rawDisconnect: ReturnType<typeof vi.fn>
   __rawCurrentPage: ReturnType<typeof vi.fn>
   __rawReLaunch: ReturnType<typeof vi.fn>
 }
@@ -105,6 +107,7 @@ function createMockMiniProgram(options?: { currentPage?: MockPage, reLaunchError
   const page = createMockPage()
   const rawCompile = vi.fn(async () => {})
   const rawClose = vi.fn(async () => {})
+  const rawDisconnect = vi.fn(() => {})
   const rawCurrentPage = vi.fn(async () => options?.currentPage ?? page)
   const rawReLaunch = options?.reLaunchError
     ? vi.fn(async () => {
@@ -118,10 +121,12 @@ function createMockMiniProgram(options?: { currentPage?: MockPage, reLaunchError
     on: vi.fn(),
     removeListener: vi.fn(),
     close: rawClose,
+    disconnect: rawDisconnect,
     currentPage: rawCurrentPage,
     reLaunch: rawReLaunch,
     __rawCompile: rawCompile,
     __rawClose: rawClose,
+    __rawDisconnect: rawDisconnect,
     __rawCurrentPage: rawCurrentPage,
     __rawReLaunch: rawReLaunch,
   }
@@ -1997,14 +2002,15 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await waitForJsonContains(path.join(wrapperProjectPath!, 'app.json'), {
       pages: ['pages/index/index', 'pages/hmr/index'],
     })
+    // 文件事件可能合并；覆盖 bridge 的 2 秒周期校准。
     await vi.waitFor(() => {
       expect(fs.readFileSync(path.join(wrapperProjectPath!, 'pages/hmr/index.wxml'), 'utf8')).toContain('nested hmr synced')
-    })
+    }, { timeout: 3_000 })
 
     fs.rmSync(nestedDistFile, { force: true })
     await vi.waitFor(() => {
       expect(fs.existsSync(path.join(wrapperProjectPath!, 'pages/hmr/index.wxml'))).toBe(false)
-    })
+    }, { timeout: 3_000 })
 
     fs.rmSync(path.join(sandboxRoot, 'dist'), { recursive: true, force: true })
     fs.mkdirSync(path.join(sandboxRoot, 'dist/pages/rebuilt'), { recursive: true })
@@ -2022,8 +2028,9 @@ describe('automator launch resilience', { concurrent: false }, () => {
     })
     await vi.waitFor(() => {
       expect(fs.readFileSync(path.join(wrapperProjectPath!, 'pages/rebuilt/index.wxml'), 'utf8')).toContain('rebuilt dist hmr synced')
-    })
-    await launchedMiniProgram.disconnect?.()
+    }, { timeout: 3_000 })
+    await launchedMiniProgram.disconnect()
+    expect(connectedMiniProgram.__rawDisconnect).toHaveBeenCalledOnce()
 
     const sourceAppJsonPath = path.join(sandboxRoot, 'dist/app.json')
     const staleWrapperContent = fs.readFileSync(wrapperAppJsonPath, 'utf8')
@@ -2053,7 +2060,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(readJson(path.join(reconnectedWrapperProjectPath!, 'app.json'))).toMatchObject({
       pages: ['pages/changed/index'],
     })
-    await reconnectedMiniProgram.disconnect?.()
+    await reconnectedMiniProgram.disconnect()
+    expect(reconnectedMiniProgram.__rawDisconnect).toHaveBeenCalledOnce()
   })
 
   it('can disable cli bridge wrapper project for focused launch debugging', async () => {

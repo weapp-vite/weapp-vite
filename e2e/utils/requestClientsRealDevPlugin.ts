@@ -111,6 +111,7 @@ async function startDevRuntime(options: RequestClientsRealDevPluginOptions): Pro
   let projectPrivateConfigSnapshot: Awaited<ReturnType<typeof patchProjectPrivateConfig>> | undefined
   let generatedBaseUrlModuleSnapshot: Awaited<ReturnType<typeof patchGeneratedBaseUrlModule>> | undefined
   let stopping: Promise<void> | undefined
+  let hasDevServer = false
   const removeCleanupListeners: Array<() => void> = []
 
   function restoreSnapshotsSync() {
@@ -145,6 +146,8 @@ async function startDevRuntime(options: RequestClientsRealDevPluginOptions): Pro
   }
 
   function handleSignal() {
+    // 其他信号监听器可能立即关闭 runner 或退出；已完成的写入必须同步恢复。
+    restoreSnapshotsSync()
     // 配置文件还在写入时也必须先等待初始化结束，再恢复原始内容。
     const setup = requestClientsRealDevRuntimeStateMap.get(options.projectRoot)?.setup
     void Promise.resolve(setup).catch(() => {}).then(cleanup).finally(() => process.exit(0))
@@ -165,7 +168,18 @@ async function startDevRuntime(options: RequestClientsRealDevPluginOptions): Pro
     generatedBaseUrlModuleSnapshot = await patchGeneratedBaseUrlModule(options.projectRoot, devServerHandle.baseUrl)
     return {
       baseUrl: devServerHandle.baseUrl,
-      plugin: { name: 'request-clients-real-dev-plugin' },
+      plugin: {
+        name: 'request-clients-real-dev-plugin',
+        configureServer() {
+          hasDevServer = true
+        },
+        // 小程序快照也会关闭 bundle，只有 Web 服务的关闭才能释放进程级资源。
+        closeBundle() {
+          if (hasDevServer) {
+            return cleanup()
+          }
+        },
+      },
       stop: cleanup,
     }
   }
