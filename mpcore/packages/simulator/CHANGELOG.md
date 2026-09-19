@@ -1,5 +1,27 @@
 # @mpcore/simulator
 
+## 0.6.1
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.6，同步工作区默认依赖、固定版本回归环境及脚手架模板映射，使新建项目与仓库验证使用一致的 Tailwind 集成版本。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - weapp-vite：dependencies.@babel/preset-env
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 修复模拟器冷启动时的导航调度，使 App 首次入口页面先完成真实宿主生命周期，再执行 `onLaunch` 中排队的重定向，并保持回调顺序与后续导航一致。
+
+- 修复模拟器未向小程序脚本提供 app.json 宿主 tabBar 配置的问题，使未显式传入 tabBarEntries 的 wevu 路由可以识别 tabBar 页面。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.5
+
 ## 0.6.0
 
 ### Minor Changes
