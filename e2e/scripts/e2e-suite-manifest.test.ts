@@ -12,6 +12,12 @@ describe('e2e suite manifest', () => {
     expect((await getSuiteTasks('ide-headless-full')).some(task => task.label === label)).toBe(false)
   })
 
+  it('keeps the native issue #977 file-publication diagnostic in IDE coverage', async () => {
+    const label = 'ide/issue-977-native-style-diagnostic.runtime.test.ts'
+    expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
+    expect((await getSuiteTasks('ide-dom-headless')).some(task => task.label === label)).toBe(false)
+  })
+
   it.each([
     'ide/issue-963-plugin-es6.runtime.test.ts',
     'ide/issue-998-tailwind.runtime.test.ts',

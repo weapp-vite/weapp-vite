@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 106,
-    "wechatTaskCount": 103,
+    "taskCount": 107,
+    "wechatTaskCount": 104,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 266,
-    "casesWithPlan": 266,
+    "expandedCaseDeclarations": 274,
+    "casesWithPlan": 274,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -2810,6 +2810,125 @@
       ]
     },
     {
+      "task": "ide/issue-977-native-style-diagnostic.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83",
+          "name": "issue #977 native style publication: Page round 1 > applies seven consecutive checkpoints while preserving native state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "backgrounds.map((background, index) => ({ id: `stage:${index}`, route: ROUTE, action: `原生样式阶段 ${index}：背景、局部优先级及点击状态`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba",
+              "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "tap(<missing>)",
+            "check(stage:${index})"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83",
+          "name": "issue #977 native style publication: Page round 2 > applies seven consecutive checkpoints while preserving native state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "backgrounds.map((background, index) => ({ id: `stage:${index}`, route: ROUTE, action: `原生样式阶段 ${index}：背景、局部优先级及点击状态`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba",
+              "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "tap(<missing>)",
+            "check(stage:${index})"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83",
+          "name": "issue #977 native style publication: Page round 3 > applies seven consecutive checkpoints while preserving native state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "backgrounds.map((background, index) => ({ id: `stage:${index}`, route: ROUTE, action: `原生样式阶段 ${index}：背景、局部优先级及点击状态`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba",
+              "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "tap(<missing>)",
+            "check(stage:${index})"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83",
+          "name": "issue #977 native style publication: Component round 1 > applies seven consecutive checkpoints while preserving native state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "backgrounds.map((background, index) => ({ id: `stage:${index}`, route: ROUTE, action: `原生样式阶段 ${index}：背景、局部优先级及点击状态`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba",
+              "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "tap(<missing>)",
+            "check(stage:${index})"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83",
+          "name": "issue #977 native style publication: Component round 2 > applies seven consecutive checkpoints while preserving native state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "backgrounds.map((background, index) => ({ id: `stage:${index}`, route: ROUTE, action: `原生样式阶段 ${index}：背景、局部优先级及点击状态`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba",
+              "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "tap(<missing>)",
+            "check(stage:${index})"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83",
+          "name": "issue #977 native style publication: Component round 3 > applies seven consecutive checkpoints while preserving native state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "backgrounds.map((background, index) => ({ id: `stage:${index}`, route: ROUTE, action: `原生样式阶段 ${index}：背景、局部优先级及点击状态`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba",
+              "source": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "tap(<missing>)",
+            "check(stage:${index})"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/issue-997-rebuild.runtime.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -5171,14 +5290,56 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:340",
-          "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack",
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:351",
+          "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools round 1 > serializes consecutive arbitrary background updates without reloading the page stack",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
               "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
-              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:342"
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:353"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(background:0)",
+            "callMethodWithOptions(handleCountTap)",
+            "check(background:1)",
+            "check(background:${updateIndex + 2})",
+            "check(local-style-priority)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:351",
+          "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools round 2 > serializes consecutive arbitrary background updates without reloading the page stack",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:353"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(background:0)",
+            "callMethodWithOptions(handleCountTap)",
+            "check(background:1)",
+            "check(background:${updateIndex + 2})",
+            "check(local-style-priority)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:351",
+          "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools round 3 > serializes consecutive arbitrary background updates without reloading the page stack",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
+              "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:353"
             }
           ],
           "routes": [],
@@ -7126,6 +7287,10 @@
       "sha256": "c3bb836cbedc126054c8db2b84f4efc99cc95628822e3953e0c3dad18853ea9b"
     },
     {
+      "file": "e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts",
+      "sha256": "0e9065db08f64cf5009610312ab423933ceda6f7109780c057861236c74d44f4"
+    },
+    {
       "file": "e2e/ide/issue-997-rebuild.runtime.test.ts",
       "sha256": "17b8fedc359f6803bfec9054acc3b2d8b890636ae3ad7972210efbf7ccdd8db5"
     },
@@ -7371,7 +7536,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "0df23e65016a1ee61691331644a2180065afab645891c3777856b80ae0005069"
+      "sha256": "baf095eeeb6c5fdbfb85937b0b0b97865a32bc9e27b8e701533391e09eb3d598"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -7567,7 +7732,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "b0b802f5d55cd6ac767452eb528b28df9e3174f473deb898b86688ecda6c43df"
+      "sha256": "19a50e10045b9998458093ba4c987f3623007d5f81b7ac962127800b99ff27a1"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
