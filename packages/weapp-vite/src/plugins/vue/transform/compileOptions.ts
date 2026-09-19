@@ -226,7 +226,7 @@ function buildCompileVueFileOptions(
   const sourceMap = isVueTransformSourceMapEnabled(configService)
   const stabilizeCssVarsRuntime = configService.isDev && resolveHmrRuntime({
     platform: configService.platform,
-    configured: configService.weappViteConfig.hmr?.runtime,
+    configured: configService.weappViteConfig?.hmr?.runtime,
     compileHotReLoad: configService.projectPrivateConfig?.setting?.compileHotReLoad,
   }) === 'stateful-experimental'
   async function resolvePotentialVueSfcEntryId(candidate: string | undefined) {

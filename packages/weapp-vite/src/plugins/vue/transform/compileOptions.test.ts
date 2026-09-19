@@ -1180,6 +1180,28 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(options.stabilizeCssVarsRuntime).toBe(expected)
   })
 
+  it('uses the default HMR runtime when the weapp config is omitted', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        isDev: true,
+        outputExtensions: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.stabilizeCssVarsRuntime).toBe(false)
+  })
+
   it('reuses cached compile options for the same vue entry', () => {
     createUsingComponentPathResolverMock.mockClear()
     createSfcResolveSrcOptionsMock.mockClear()
