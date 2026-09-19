@@ -14,8 +14,13 @@ it('renders plugin page content and updates while preserving its protocol path a
     const host = session.reLaunch('/pages/index/index')
     render()
     expect(preview.querySelector('#host-title')?.textContent).toBe('Plugin host')
+    expect(preview.querySelector('#plugin-answer')?.textContent).toBe('plugin.answer = 42')
     expect(preview.querySelector('#meter-value')?.textContent).toBe('78%')
     expect(resolveTestingPagePath(host.route)).toBe('pages/index/index')
+    const hostButton = preview.querySelector('#host-increment')!
+    session.callScopeMethod(hostButton.getAttribute('data-sim-scope')!, hostButton.getAttribute('data-sim-tap')!, {})
+    render()
+    expect(preview.querySelector('#meter-value')?.textContent).toBe('84%')
 
     const page = session.navigateTo('plugin://hello/hello-page?source=host')
     render()
@@ -38,7 +43,7 @@ it('renders plugin page content and updates while preserving its protocol path a
     expect(session.getCurrentPages().at(-1)).toBe(host)
     expect(preview.querySelector('#host-title')?.textContent).toBe('Plugin host')
     expect(preview.querySelector('#plugin-title')).toBeNull()
-    expect(preview.querySelector('#meter-value')?.textContent).toBe('78%')
+    expect(preview.querySelector('#meter-value')?.textContent).toBe('84%')
   }
   finally {
     session.close()

@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：103；微信：100；范围外：3。
-- 展开的 case 声明：259；已接入计划：259；缺计划：0。
+- 任务：105；微信：102；范围外：3。
+- 展开的 case 声明：264；已接入计划：264；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -53,6 +53,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/hmr-auto-classic.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/index.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/issue-963-plugin-es6.runtime.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/issue-969-launch.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/issue-997-rebuild.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-998-tailwind.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
@@ -1055,6 +1056,41 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/issue-340-hoist`; checkpoints: `[ { id: 'item', route: '/subpackages/item/login-required/index', action: '打开商品分包，检查标题和共享模块生成的文本', nodes: [ { selector: '.issue340-title', text: 'issue-340 hoist item login required' }, { selector: '.issue340-message', text: 'item-login-requ`; source: `e2e/ide/issue-340-hoist.runtime.test.ts:266`
 - Routes: `/subpackages/item/login-required/index`, `/subpackages/user/register/form`
 - Operations: `check(item)`, `check(user)`
+
+
+## ide/issue-963-plugin-es6.runtime.test.ts
+
+### issue #963 plugin template with IDE ES6: disabled > loads plugin exports, renders public components and retains host interaction
+
+- Source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:72`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-plugin-template`; checkpoints: `[78, 84].map(value => ({ id: \`host:${value}\`, route: ROUTE, action: value === 78 ? '读取插件公开 API 与组件 DOM' : '点击后读取插件原生组件更新', nodes: [ { selector: '#plugin-answer', text: 'plugin.answer = 42' }, { selector: '//*[@class="showcase-card__title"]'`; source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:73`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(host:78)`, `tap(<missing>)`, `check(host:84)`
+
+### issue #963 plugin template with IDE ES6: disabled > navigates from the host to the public plugin Vue page
+
+- Source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:93`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-plugin-template`; checkpoints: `[{ id: 'plugin-page', route: pluginPage.path, action: '打开已校验 provider 与目标路径的插件 Vue 页面', nodes: [{ selector: '//*[@class="hero__title"]', query: 'xpath', text: '插件页直接使用 Vue SFC' }], }]`; source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:101`
+- Routes: `/pages/index/index`, `plugin://hello-plugin/hello-page`
+- Operations: `reLaunch(/pages/index/index)`, `navigateTo(plugin://hello-plugin/hello-page)`, `check(plugin-page)`
+
+### issue #963 plugin template with IDE ES6: enabled > loads plugin exports, renders public components and retains host interaction
+
+- Source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:72`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-plugin-template`; checkpoints: `[78, 84].map(value => ({ id: \`host:${value}\`, route: ROUTE, action: value === 78 ? '读取插件公开 API 与组件 DOM' : '点击后读取插件原生组件更新', nodes: [ { selector: '#plugin-answer', text: 'plugin.answer = 42' }, { selector: '//*[@class="showcase-card__title"]'`; source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:73`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(host:78)`, `tap(<missing>)`, `check(host:84)`
+
+### issue #963 plugin template with IDE ES6: enabled > navigates from the host to the public plugin Vue page
+
+- Source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:93`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-plugin-template`; checkpoints: `[{ id: 'plugin-page', route: pluginPage.path, action: '打开已校验 provider 与目标路径的插件 Vue 页面', nodes: [{ selector: '//*[@class="hero__title"]', query: 'xpath', text: '插件页直接使用 Vue SFC' }], }]`; source: `e2e/ide/issue-963-plugin-es6.runtime.test.ts:101`
+- Routes: `/pages/index/index`, `plugin://hello-plugin/hello-page`
+- Operations: `reLaunch(/pages/index/index)`, `navigateTo(plugin://hello-plugin/hello-page)`, `check(plugin-page)`
 
 
 ## ide/issue-969-launch.runtime.test.ts
