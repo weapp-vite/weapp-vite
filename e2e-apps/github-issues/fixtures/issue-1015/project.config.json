@@ -1,0 +1,13 @@
+{
+  "appid": "wxb3d842a4a7e3440d",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "dist/",
+  "libVersion": "3.17.3",
+  "setting": {
+    "es6": false,
+    "enhance": false,
+    "minified": false,
+    "urlCheck": false,
+    "compileHotReLoad": true
+  }
+}

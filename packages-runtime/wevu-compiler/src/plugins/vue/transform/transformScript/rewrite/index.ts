@@ -11,6 +11,7 @@ import { analyzeComponentStyleOptions } from '../componentStyleOptions'
 import { getObjectPropertyByKey } from '../utils'
 import { injectBindingManifestContract } from './bindingManifest'
 import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './classStyle'
+import { injectStableCssVarsRuntime } from './cssVarsRuntime'
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
 import { injectInlineExpressions } from './inlineExpressions'
@@ -359,6 +360,10 @@ export function rewriteDefaultExport(
 
   if (componentOptionsObject && options?.cssModules && Object.keys(options.cssModules).length) {
     transformed = injectCssModules(componentOptionsObject, options.cssModules) || transformed
+  }
+
+  if (componentOptionsObject && options?.stabilizeCssVarsRuntime) {
+    transformed = injectStableCssVarsRuntime(ast.program, componentOptionsObject, exportPath.scope) || transformed
   }
 
   if (componentOptionsObject) {

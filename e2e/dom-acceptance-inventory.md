@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：105；微信：102；范围外：3。
-- 展开的 case 声明：264；已接入计划：264；缺计划：0。
+- 任务：106；微信：103；范围外：3。
+- 展开的 case 声明：266；已接入计划：266；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -52,6 +52,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/github-issues.runtime.subpackage-user.test.ts | devtools | 2 | 2 | 0 | wechat |
 | ide/hmr-auto-classic.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/index.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/issue-1015-css-hmr.runtime.test.ts | devtools | 2 | 2 | 0 | wechat |
 | ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/issue-963-plugin-es6.runtime.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/issue-969-launch.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -1045,6 +1046,25 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/base`; checkpoints: `[ { id: 'initial', route: INDEX_ROUTE, action: '冷启动首页，检查实际结果和输入数据文本', nodes: [ { selector: '#base-greeting', text: 'Hello' }, { selector: '#base-status', text: 'Status: ready' }, { selector: '#base-detail', text: 'Detail: rendered' }, { sel`; source: `e2e/ide/index.test.ts:189`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(tapped)`
+
+
+## ide/issue-1015-css-hmr.runtime.test.ts
+
+### issue #1015 external CSS HMR: classic > renders all seven updates including removing and restoring every CSS variable
+
+- Source: `e2e/ide/issue-1015-css-hmr.runtime.test.ts:57`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1015`; checkpoints: `checkpoints.map(checkpoint => ({ id: checkpoint.id, route: ROUTE, action: \`检查 ${checkpoint.id} 外部 CSS 变量更新\`, nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': checkpoint.id === 'reactive' ? 'blue' : 'red' }, styles:`; source: `e2e/ide/issue-1015-css-hmr.runtime.test.ts:68`
+- Routes: `/pages/issue-1015/index`
+- Operations: `reLaunch(/pages/issue-1015/index)`, `check(initial)`, `check(style-only)`, `check(source-switch)`, `check(replace-variable)`, `check(remove-variable)`, `check(restore-variable)`, `callMethod(_runE2E)`, `check(reactive)`
+
+### issue #1015 external CSS HMR: stateful-experimental > renders all seven updates including removing and restoring every CSS variable
+
+- Source: `e2e/ide/issue-1015-css-hmr.runtime.test.ts:57`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1015`; checkpoints: `checkpoints.map(checkpoint => ({ id: checkpoint.id, route: ROUTE, action: \`检查 ${checkpoint.id} 外部 CSS 变量更新\`, nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': checkpoint.id === 'reactive' ? 'blue' : 'red' }, styles:`; source: `e2e/ide/issue-1015-css-hmr.runtime.test.ts:68`
+- Routes: `/pages/issue-1015/index`
+- Operations: `reLaunch(/pages/issue-1015/index)`, `check(initial)`, `check(style-only)`, `check(source-switch)`, `check(replace-variable)`, `check(remove-variable)`, `check(restore-variable)`, `callMethod(_runE2E)`, `check(reactive)`
 
 
 ## ide/issue-340-hoist.runtime.test.ts

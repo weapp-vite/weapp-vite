@@ -130,6 +130,12 @@ export interface CompileVueFileOptions {
    */
   autoSetDataPick?: boolean
   /**
+   * 在开发期保持 CSS 变量运行时依赖与导出形状稳定。
+   *
+   * @internal
+   */
+  stabilizeCssVarsRuntime?: boolean
+  /**
    * 绑定清单中记录的源码文件名；默认使用当前编译文件名。
    */
   bindingManifestSourceFile?: string

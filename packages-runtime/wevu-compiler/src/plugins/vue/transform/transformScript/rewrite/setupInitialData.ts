@@ -17,7 +17,7 @@ function unwrapExpression(node: Expression): Expression {
   return node
 }
 
-function resolveSetupFunction(componentOptionsObject: ObjectExpression): SetupFunctionNode | null {
+export function resolveSetupFunction(componentOptionsObject: ObjectExpression): SetupFunctionNode | null {
   for (const prop of componentOptionsObject.properties) {
     if (t.isObjectMethod(prop) && !prop.computed && isStaticObjectKeyMatch(prop.key, 'setup')) {
       return prop

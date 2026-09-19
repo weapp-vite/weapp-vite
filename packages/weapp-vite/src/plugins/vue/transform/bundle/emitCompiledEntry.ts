@@ -16,8 +16,10 @@ function shouldReplaceAppScriptBundleEntry(options: {
   filename: string
   isDev: boolean
   hasDevHmrEvent: boolean
+  isBundledDev?: boolean
 }) {
-  if (!isAppVueFile(options.filename) || !options.isDev || !options.hasDevHmrEvent) {
+  // DevEngine 独占可执行入口；编译器脚本替换会丢失注册桥、模块图和 HMR 上下文。
+  if (options.isBundledDev || !isAppVueFile(options.filename) || !options.isDev || !options.hasDevHmrEvent) {
     return false
   }
   return true
@@ -103,6 +105,7 @@ export async function emitResolvedCompiledVueEntryAssets(options: {
     filename,
     isDev: configService.isDev,
     hasDevHmrEvent: hmrState?.profile?.event !== undefined,
+    isBundledDev: state.isBundledDev,
   })
 
   if (isAppVueFile(filename) && hasAppShellTemplate(result)) {

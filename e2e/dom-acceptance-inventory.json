@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 105,
-    "wechatTaskCount": 102,
+    "taskCount": 106,
+    "wechatTaskCount": 103,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 264,
-    "casesWithPlan": 264,
+    "expandedCaseDeclarations": 266,
+    "casesWithPlan": 266,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -2574,6 +2574,71 @@
             "check(initial)",
             "tap(<missing>)",
             "check(tapped)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/issue-1015-css-hmr.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/issue-1015-css-hmr.runtime.test.ts:57",
+          "name": "issue #1015 external CSS HMR: classic > renders all seven updates including removing and restoring every CSS variable",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-1015",
+              "checkpoints": "checkpoints.map(checkpoint => ({ id: checkpoint.id, route: ROUTE, action: `检查 ${checkpoint.id} 外部 CSS 变量更新`, nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': checkpoint.id === 'reactive' ? 'blue' : 'red' }, styles:",
+              "source": "e2e/ide/issue-1015-css-hmr.runtime.test.ts:68"
+            }
+          ],
+          "routes": [
+            "/pages/issue-1015/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/issue-1015/index)",
+            "check(initial)",
+            "check(style-only)",
+            "check(source-switch)",
+            "check(replace-variable)",
+            "check(remove-variable)",
+            "check(restore-variable)",
+            "callMethod(_runE2E)",
+            "check(reactive)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-1015-css-hmr.runtime.test.ts:57",
+          "name": "issue #1015 external CSS HMR: stateful-experimental > renders all seven updates including removing and restoring every CSS variable",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-1015",
+              "checkpoints": "checkpoints.map(checkpoint => ({ id: checkpoint.id, route: ROUTE, action: `检查 ${checkpoint.id} 外部 CSS 变量更新`, nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': checkpoint.id === 'reactive' ? 'blue' : 'red' }, styles:",
+              "source": "e2e/ide/issue-1015-css-hmr.runtime.test.ts:68"
+            }
+          ],
+          "routes": [
+            "/pages/issue-1015/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/issue-1015/index)",
+            "check(initial)",
+            "check(style-only)",
+            "check(source-switch)",
+            "check(replace-variable)",
+            "check(remove-variable)",
+            "check(restore-variable)",
+            "callMethod(_runE2E)",
+            "check(reactive)"
           ],
           "notes": []
         }
@@ -7045,6 +7110,10 @@
       "sha256": "a70f76359813c0fe5c13e77b2c430622cf26aeb4f04d218bd81367738ba690b9"
     },
     {
+      "file": "e2e/ide/issue-1015-css-hmr.runtime.test.ts",
+      "sha256": "02bccea02bfa4c3c7dbe968ebd5eedb9c3c3fc379325f07a149c6a47059c8245"
+    },
+    {
       "file": "e2e/ide/issue-340-hoist.runtime.test.ts",
       "sha256": "be11ae8a0779e4fdf9a915c4bff48e6cca7ac23bd0c327dbbb1191f1390a54b8"
     },
@@ -7498,7 +7567,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "077a7cc83f85350232285223acdd935ff9d07614f9b956eeef36c80a7a424d2d"
+      "sha256": "b0b802f5d55cd6ac767452eb528b28df9e3174f473deb898b86688ecda6c43df"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -7623,6 +7692,10 @@
     {
       "file": "e2e/utils/ideWarningReport.ts",
       "sha256": "899f660355538202c4de6f4080b859fc8e03d02b32f476629079998d54289c7f"
+    },
+    {
+      "file": "e2e/utils/issue1015Project.ts",
+      "sha256": "4c017ed49a883bb7e83613fec50f73cced0446a148c5b3f47f50ffd47c1b2859"
     },
     {
       "file": "e2e/utils/issue963Project.ts",
