@@ -52,7 +52,7 @@
     "native:lint": "eslint package.json index.js index.d.ts native.vitest.config.ts test/**/*.test.ts"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^3.10.3",
+    "@napi-rs/cli": "^3.10.4",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "vitest": "5.0.1"
