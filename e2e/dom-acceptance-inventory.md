@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：106；微信：103；范围外：3。
-- 展开的 case 声明：266；已接入计划：266；缺计划：0。
+- 任务：107；微信：104；范围外：3。
+- 展开的 case 声明：274；已接入计划：274；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -56,6 +56,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/issue-963-plugin-es6.runtime.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/issue-969-launch.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/issue-977-native-style-diagnostic.runtime.test.ts | devtools | 6 | 6 | 0 | wechat |
 | ide/issue-997-rebuild.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-998-tailwind.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/layout-power-demo-message.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -95,7 +96,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/template-weapp-vite-wevu-template.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
 | ide/template-wevu-features-app.test.ts | devtools | 1 | 1 | 0 | wechat |
-| ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts | devtools | 3 | 3 | 0 | wechat |
 | ide/vite-native-ts.worker.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/vue-mini-issue151-wevu.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/wevu-composition-api.weapp.test.ts | devtools | 2 | 2 | 0 | wechat |
@@ -1124,6 +1125,51 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Operations: `check(cold)`, `reLaunch(/pages/home/index)`, `check(later)`
 
 
+## ide/issue-977-native-style-diagnostic.runtime.test.ts
+
+### issue #977 native style publication: Page round 1 > applies seven consecutive checkpoints while preserving native state
+
+- Source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `backgrounds.map((background, index) => ({ id: \`stage:${index}\`, route: ROUTE, action: \`原生样式阶段 ${index}：背景、局部优先级及点击状态\`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba`; source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84`
+- Operations: `tap(<missing>)`, `check(stage:${index})`
+
+### issue #977 native style publication: Page round 2 > applies seven consecutive checkpoints while preserving native state
+
+- Source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `backgrounds.map((background, index) => ({ id: \`stage:${index}\`, route: ROUTE, action: \`原生样式阶段 ${index}：背景、局部优先级及点击状态\`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba`; source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84`
+- Operations: `tap(<missing>)`, `check(stage:${index})`
+
+### issue #977 native style publication: Page round 3 > applies seven consecutive checkpoints while preserving native state
+
+- Source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `backgrounds.map((background, index) => ({ id: \`stage:${index}\`, route: ROUTE, action: \`原生样式阶段 ${index}：背景、局部优先级及点击状态\`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba`; source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84`
+- Operations: `tap(<missing>)`, `check(stage:${index})`
+
+### issue #977 native style publication: Component round 1 > applies seven consecutive checkpoints while preserving native state
+
+- Source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `backgrounds.map((background, index) => ({ id: \`stage:${index}\`, route: ROUTE, action: \`原生样式阶段 ${index}：背景、局部优先级及点击状态\`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba`; source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84`
+- Operations: `tap(<missing>)`, `check(stage:${index})`
+
+### issue #977 native style publication: Component round 2 > applies seven consecutive checkpoints while preserving native state
+
+- Source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `backgrounds.map((background, index) => ({ id: \`stage:${index}\`, route: ROUTE, action: \`原生样式阶段 ${index}：背景、局部优先级及点击状态\`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba`; source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84`
+- Operations: `tap(<missing>)`, `check(stage:${index})`
+
+### issue #977 native style publication: Component round 3 > applies seven consecutive checkpoints while preserving native state
+
+- Source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:83`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `backgrounds.map((background, index) => ({ id: \`stage:${index}\`, route: ROUTE, action: \`原生样式阶段 ${index}：背景、局部优先级及点击状态\`, nodes: [ { selector: '#native-style-probe', attributes: { 'data-stage': String(index) }, styles: { 'background-color': ba`; source: `e2e/ide/issue-977-native-style-diagnostic.runtime.test.ts:84`
+- Operations: `tap(<missing>)`, `check(stage:${index})`
+
+
 ## ide/issue-997-rebuild.runtime.test.ts
 
 ### issue #997: rebuild while the host remains open > keeps generated files available and renders an interactive page after rebuilding
@@ -1899,11 +1945,25 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ## ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts
 
-### template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack
+### template wevu TailwindCSS TDesign HMR in real WeChat DevTools round 1 > serializes consecutive arbitrary background updates without reloading the page stack
 
-- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:340`
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:351`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:342`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:353`
+- Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
+
+### template wevu TailwindCSS TDesign HMR in real WeChat DevTools round 2 > serializes consecutive arbitrary background updates without reloading the page stack
+
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:351`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:353`
+- Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
+
+### template wevu TailwindCSS TDesign HMR in real WeChat DevTools round 3 > serializes consecutive arbitrary background updates without reloading the page stack
+
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:351`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:353`
 - Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
 
 
