@@ -78,6 +78,7 @@ export async function compileVueFile(
     : undefined
 
   const styleCompiled = await compileStylePhase(parsed.descriptor, filename, result, options?.style)
+  const hasCssVarsRuntime = parsed.descriptor.cssVars.length > 0 || options?.stabilizeCssVarsRuntime === true
 
   const scopedId = parsed.descriptor.styles.some(style => style.scoped)
     ? `data-v-${sfcId}`
@@ -93,7 +94,7 @@ export async function compileVueFile(
         scopedSlotsRequireProps: true,
         scopeId: scopedId,
         slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
-        cssVars: parsed.descriptor.cssVars.length > 0,
+        cssVars: hasCssVarsRuntime,
       }
     : {
         ...options?.template,
@@ -104,7 +105,7 @@ export async function compileVueFile(
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
         scopeId: scopedId,
         slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
-        cssVars: parsed.descriptor.cssVars.length > 0,
+        cssVars: hasCssVarsRuntime,
       }
 
   const templateOptions = componentSourceInfo.wevuComponentTags.size

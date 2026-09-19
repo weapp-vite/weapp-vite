@@ -32,6 +32,7 @@ function hasMetadataInjectionOptions(source: string, options: TransformScriptOpt
     || options?.bindingManifest
     || options?.pageLayout
     || options?.scopedSlotHostProperties
+    || options?.stabilizeCssVarsRuntime
     || /\b(?:useSlots|options|extends|mixins|definitionFilter|behaviors)\b|\\/.test(source),
   )
 }

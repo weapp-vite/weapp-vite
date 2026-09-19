@@ -37,6 +37,24 @@ function collectRegisteredCssVarNames(script: string | undefined) {
   return names
 }
 
+function collectRuntimeImportContract(script: string | undefined) {
+  const imports: string[] = []
+  traverse(parse(script ?? '', { sourceType: 'module' }), {
+    ImportDeclaration(path) {
+      for (const specifier of path.node.specifiers) {
+        if (!t.isImportSpecifier(specifier)) {
+          continue
+        }
+        const imported = t.isIdentifier(specifier.imported)
+          ? specifier.imported.name
+          : specifier.imported.value
+        imports.push(`${path.node.source.value}:${imported}`)
+      }
+    },
+  })
+  return imports.sort()
+}
+
 function expectCssVarContract(result: VueTransformResult) {
   const cssVarNames = collectCssVarNames(result.style)
   expect(cssVarNames).toHaveLength(result.meta?.cssVars?.length ?? 0)
@@ -199,5 +217,49 @@ const borderColor = 'black'
     expect(readded.meta?.cssVars).toEqual(['color'])
     expect(readded.meta?.sfcSrcDeps).toEqual(initial.meta?.sfcSrcDeps)
     expect(readCount).toBe(4)
+  })
+
+  it('keeps stateful development CSS variable runtime imports stable when variables disappear and return', async () => {
+    const filename = path.resolve('src/pages/style/stable.vue')
+    const styleFilename = path.join(path.dirname(filename), 'stable.css')
+    const source = `
+<script setup>
+import { ref } from 'wevu'
+const color = ref('red')
+</script>
+<template><view class="box" /></template>
+<style src="./stable.css"></style>
+`.trim()
+    let css = '.box { color: v-bind(color); }'
+    const options = {
+      stabilizeCssVarsRuntime: true,
+      sfcSrc: {
+        resolveId: async () => styleFilename,
+        readFile: async () => css,
+      },
+    }
+
+    const results: VueTransformResult[] = []
+    for (const content of [
+      '.box { color: v-bind(color); }',
+      '.box { color: black; }',
+      '.box { color: v-bind(color); }',
+    ]) {
+      css = content
+      results.push(await compileVueFile(source, filename, options))
+    }
+
+    const [initial, removed, restored] = results
+    expect(initial.meta?.cssVars).toEqual(['color'])
+    expect(removed.meta?.cssVars).toEqual([])
+    expect(restored.meta?.cssVars).toEqual(['color'])
+    for (const result of results) {
+      expect(result.template).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
+      expect(result.script).toContain('useCssVars')
+      expect(result.script).toContain('unref')
+      expectCssVarContract(result)
+    }
+    expect(collectRuntimeImportContract(removed.script)).toEqual(collectRuntimeImportContract(initial.script))
+    expect(collectRuntimeImportContract(restored.script)).toEqual(collectRuntimeImportContract(initial.script))
   })
 })

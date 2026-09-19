@@ -91,6 +91,32 @@ describe('rewriteDefaultExport', () => {
     expect(code).toContain('__wevu_isPage: false')
   })
 
+  it.each([
+    'export default {}',
+    'export default { setup() { return { value: 1 } } }',
+    'export default { setup: () => ({ value: 1 }) }',
+  ])('injects a stable empty CSS variable runtime into %s', (source) => {
+    const { transformed, code } = runRewrite(source, {
+      stabilizeCssVarsRuntime: true,
+    })
+
+    expect(transformed).toBe(true)
+    expect(code).toContain('virtual:weapp-vite/runtime')
+    expect(code).toContain('from "vue"')
+    expect(code).toMatch(/useCssVars\w*\(\(\) => \{[\s\S]*unref\w*\(undefined\)[\s\S]*return \{\}/)
+    expect(code.match(/\bsetup\b/g)).toHaveLength(1)
+  })
+
+  it('keeps the injected unref runtime import separate from Vue type imports', () => {
+    const { code } = runRewrite(`
+import type { Ref } from 'vue'
+export default {}
+    `.trim(), { stabilizeCssVarsRuntime: true })
+
+    expect(code).toMatch(/import type \{ Ref \} from ['"]vue['"]/)
+    expect(code).toMatch(/import \{ unref as \w+ \} from "vue"/)
+  })
+
   it('preserves component default export after creating wevu component', () => {
     const { transformed, code } = runRewrite('export default { setup() {} }')
 

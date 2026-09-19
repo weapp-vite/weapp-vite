@@ -409,6 +409,7 @@ export async function compileScriptPhase(
       propsAliases,
       propsDerivedKeys,
       cssModules: precomputedScriptPhaseInfo?.cssModules,
+      stabilizeCssVarsRuntime: options?.stabilizeCssVarsRuntime,
       relaxStructuredTypeOnlyProps,
       scopedSlotHostProperties: !isAppFile
         && options?.isPage !== true

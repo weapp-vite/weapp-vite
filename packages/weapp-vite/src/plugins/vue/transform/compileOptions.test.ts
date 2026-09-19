@@ -1146,6 +1146,62 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(isWevuMinifyEnabledMock).toHaveBeenCalledWith({}, true)
   })
 
+  it.each([
+    ['stateful-experimental', true, false, true],
+    ['classic', true, true, false],
+    ['auto', true, true, true],
+    ['stateful-experimental', false, true, false],
+  ] as const)('stabilizes CSS variable runtime for %s in dev=%s with host hot reload=%s', (
+    runtime,
+    isDev,
+    compileHotReLoad,
+    expected,
+  ) => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        isDev,
+        outputExtensions: {},
+        projectPrivateConfig: { setting: { compileHotReLoad } },
+        weappViteConfig: { hmr: { runtime } },
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.stabilizeCssVarsRuntime).toBe(expected)
+  })
+
+  it('uses the default HMR runtime when the weapp config is omitted', () => {
+    const options = createCompileVueFileOptions(
+      {} as any,
+      {} as any,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      {
+        platform: 'weapp',
+        isDev: true,
+        outputExtensions: {},
+        relativeOutputPath: () => undefined,
+      } as any,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+
+    expect(options.stabilizeCssVarsRuntime).toBe(false)
+  })
+
   it('reuses cached compile options for the same vue entry', () => {
     createUsingComponentPathResolverMock.mockClear()
     createSfcResolveSrcOptionsMock.mockClear()
@@ -1190,6 +1246,46 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(second).toBe(first)
     expect(createUsingComponentPathResolverMock).toHaveBeenCalledTimes(1)
     expect(createSfcResolveSrcOptionsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('rebinds hook-scoped compile options for every dev transform', () => {
+    createSfcResolveSrcOptionsMock.mockClear()
+
+    const state = {
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+      compileOptionsCache: new Map(),
+    }
+    const pluginCtx = {}
+    const configService = {
+      platform: 'weapp',
+      isDev: true,
+      outputExtensions: {},
+      weappViteConfig: {},
+      relativeOutputPath: () => undefined,
+    } as any
+
+    const first = createCompileVueFileOptions(
+      {} as any,
+      pluginCtx,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      configService,
+      state,
+    )
+    const second = createCompileVueFileOptions(
+      {} as any,
+      pluginCtx,
+      '/project/src/components/card.vue',
+      false,
+      false,
+      configService,
+      state,
+    )
+
+    expect(second).not.toBe(first)
+    expect(createSfcResolveSrcOptionsMock).toHaveBeenCalledTimes(2)
   })
 
   it('passes shared component metadata cache to compile options', () => {

@@ -19,6 +19,7 @@ it('compiles the standalone runtime with unprepared application tsconfig referen
       extends: './.weapp-vite/tsconfig.shared.json',
     }))
     await writeFile(path.join(runtimeRoot, 'internal-runtime.ts'), `
+      export const createApp = (value: string) => 'app:' + value;
       export const createWevuComponent = (value: string) => 'component:' + value;
       export const installInlineEvents = (value: string) => 'events:' + value;
     `)
@@ -27,12 +28,14 @@ it('compiles the standalone runtime with unprepared application tsconfig referen
 
     const { code } = await compileVueSharedRuntime(root)
     const module = { exports: {} as {
+      createApp: (value: string) => string
       createWevuComponent: (value: string) => string
       installInlineEvents: (value: string) => string
       ref: (value: number) => { value: number }
       nextTick: () => Promise<string>
     } }
     runInNewContext(code, { module, exports: module.exports })
+    expect(module.exports.createApp('bootstrap')).toBe('app:bootstrap')
     expect(module.exports.createWevuComponent('counter')).toBe('component:counter')
     expect(module.exports.installInlineEvents('tap')).toBe('events:tap')
     expect(module.exports.ref(42)).toEqual({ value: 42 })

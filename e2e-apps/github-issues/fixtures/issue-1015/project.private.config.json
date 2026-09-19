@@ -1,0 +1,11 @@
+{
+  "libVersion": "3.17.3",
+  "setting": { "compileHotReLoad": true, "urlCheck": false },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "issue-1015", "pathName": "pages/issue-1015/index", "query": "", "launchMode": "default" }
+      ]
+    }
+  }
+}

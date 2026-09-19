@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
+import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
 import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
@@ -26,11 +27,14 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
-      if (id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture') {
+      if (id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture') {
         return `\0${id}`
       }
     },
     async load(id) {
+      if (id === '\0virtual:stateful-app-bootstrap-fixture') {
+        return `export default ${JSON.stringify(await createStatefulAppBootstrapFiles())}`
+      }
       if (id === '\0virtual:stateful-native-component-fixture') {
         return `export default ${JSON.stringify(createStatefulNativeComponentFiles())}`
       }

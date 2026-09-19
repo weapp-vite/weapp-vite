@@ -28,7 +28,7 @@ export async function compileVueSharedRuntime(repoRoot: string) {
       load(id) {
         if (id === 'virtual:vue-shared-runtime') {
           return [
-            `export { createWevuComponent, installInlineEvents } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-runtime.ts'))};`,
+            `export { createApp, createWevuComponent, installInlineEvents } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-runtime.ts'))};`,
             `export { ref } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/internal-reactivity.ts'))};`,
             `export { nextTick } from ${JSON.stringify(path.join(repoRoot, 'packages-runtime/wevu/src/scheduler.ts'))};`,
           ].join('\n')

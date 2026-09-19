@@ -126,6 +126,12 @@ export interface TransformScriptOptions {
    * 当前 SFC 的 CSS Modules 映射。
    */
   cssModules?: Record<string, Record<string, string>>
+  /**
+   * 注入空 CSS 变量注册，保持开发期运行时模块图稳定。
+   *
+   * @internal
+   */
+  stabilizeCssVarsRuntime?: boolean
 }
 
 export interface TransformState {

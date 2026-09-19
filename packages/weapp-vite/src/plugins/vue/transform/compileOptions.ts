@@ -9,6 +9,7 @@ import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../moduleGraph/traversal'
+import { resolveHmrRuntime } from '../../../runtime/hmrRuntime'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -223,6 +224,11 @@ function buildCompileVueFileOptions(
   const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
   const sourceMap = isVueTransformSourceMapEnabled(configService)
+  const stabilizeCssVarsRuntime = configService.isDev && resolveHmrRuntime({
+    platform: configService.platform,
+    configured: configService.weappViteConfig?.hmr?.runtime,
+    compileHotReLoad: configService.projectPrivateConfig?.setting?.compileHotReLoad,
+  }) === 'stateful-experimental'
   async function resolvePotentialVueSfcEntryId(candidate: string | undefined) {
     const trimmed = candidate?.trim()
     if (!trimmed) {
@@ -325,6 +331,7 @@ function buildCompileVueFileOptions(
     isApp,
     skipComponentTransform: delegatesComponentRegistration,
     autoSetDataPick: isAutoSetDataPickEnabledWithPreset(configService.weappViteConfig),
+    stabilizeCssVarsRuntime,
     bindingManifestSourceFile: resolveBindingManifestSourceFile(vuePath, configService),
     runtimeBindingManifest: configService.isDev ? 'diagnostic' : 'compact',
     pageLayout,
@@ -444,8 +451,9 @@ export function createCompileVueFileOptions(
     appShellSignature,
   )
   const cached = state.compileOptionsCache?.get(cacheKey)
-  // 解析回调持有当前 hook 的 resolve/emitFile，不能跨 HMR transform 复用旧上下文。
-  if (cached && compileOptionsOwners.get(cached) === pluginCtx) {
+  // dev hook context 的外壳可能被复用，但内部 plugin driver 会在每轮重建后释放。
+  // 其中的 resolve/emitFile 回调必须绑定当前 transform，不能跨 HMR 缓存。
+  if (!configService.isDev && cached && compileOptionsOwners.get(cached) === pluginCtx) {
     return cached
   }
 

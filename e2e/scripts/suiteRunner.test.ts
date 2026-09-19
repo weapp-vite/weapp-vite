@@ -618,6 +618,7 @@ describe('suiteRunner', () => {
       'ide/issue-963-plugin-es6.runtime.test.ts',
       'ide/issue-997-rebuild.runtime.test.ts',
       'ide/issue-998-tailwind.runtime.test.ts',
+      'ide/issue-1015-css-hmr.runtime.test.ts',
       'ide/github-issues.runtime.component-instance-apis.test.ts',
       'ide/github-issues.runtime.issue1015.test.ts',
       ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,

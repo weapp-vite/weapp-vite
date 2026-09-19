@@ -28,6 +28,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
   IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
 ] as const
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
+  ['ide/issue-1015-css-hmr.runtime.test.ts', '900000'],
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
   ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
@@ -100,6 +101,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
+  'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/github-issues.runtime.issue1015.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
@@ -166,6 +168,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-wevu-features-app.test.ts',
 ]
 const IDE_HMR_PATTERNS = [
+  'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
