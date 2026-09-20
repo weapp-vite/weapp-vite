@@ -1,8 +1,10 @@
 import type { PluginContext } from 'rolldown'
 import fs from 'node:fs/promises'
+import path from 'node:path'
 import postcss from 'postcss'
 import valueParser from 'postcss-value-parser'
 import { normalizeManagedTailwindcssEntryPath } from '../tailwindcssMarker'
+import { getCssRealPath, parseRequest } from '../utils/parse'
 
 /** 只判断样式导入链的所有权；解析、条件包装与转换仍由 Tailwind 编译器负责。 */
 export async function findManagedStyleImports(
@@ -29,7 +31,8 @@ export async function findManagedStyleImports(
       if (!resolved || resolved.external) {
         continue
       }
-      const file = normalizeManagedTailwindcssEntryPath(resolved.id)
+      const sourcePath = getCssRealPath(parseRequest(resolved.id))
+      const file = normalizeManagedTailwindcssEntryPath(path.resolve(path.dirname(importer), sourcePath))
       if (dependencies.has(file)) {
         continue
       }

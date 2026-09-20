@@ -83,7 +83,7 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
 
     originalNativeSource = await fs.readFile(NATIVE_SOURCE, 'utf8')
     originalPrivateConfig = await fs.readFile(PRIVATE_CONFIG, 'utf8')

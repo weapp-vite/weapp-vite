@@ -133,6 +133,7 @@ export async function runStatefulHmrDev(
       port: 0,
       watch: {
         ...(buildOptions.server?.watch ?? {}),
+        ...Object.fromEntries(Object.entries(pollingWatchOptions).filter(([, value]) => value !== undefined)),
         ignored: createViteWatchIgnored(
           buildOptions.root ?? configService.cwd,
           configService.outDir,

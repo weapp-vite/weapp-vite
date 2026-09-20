@@ -4,6 +4,12 @@ import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { prepareAutomatorBridgeWrapperProject, resolveAutomatorBridgeProjectMode, waitForBridgeWrapperWarmupAsset } from './automator'
 
+vi.mock('node:fs', async (importOriginal) => {
+  const original = await importOriginal<typeof import('node:fs')>()
+  // 隔离应用层 spy；Linux 的递归 fs.watch 会调用原生模块自己的逐文件 watch。
+  return { ...original, default: { ...original.default } }
+})
+
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'fixture' }))
 
 describe('automator bridge wrapper lifecycle', () => {
@@ -42,7 +48,7 @@ describe('automator bridge wrapper lifecycle', () => {
     const wrapper = prepareAutomatorBridgeWrapperProject(project, { appConfigPath: path.join(distRoot, 'app.json') }, 'snapshot')!
 
     try {
-      expect(watch).toHaveBeenCalledWith(fs.realpathSync.native(distRoot), expect.any(Function))
+      expect(watch).toHaveBeenCalledExactlyOnceWith(fs.realpathSync.native(distRoot), { recursive: true }, expect.any(Function))
       for (const [watchedPath] of watch.mock.calls) {
         expect(watchedPath).toBe(fs.realpathSync.native(watchedPath))
       }

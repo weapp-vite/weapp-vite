@@ -39,6 +39,7 @@ describe('dev module graph provider', () => {
       configService: {
         cwd: '/project',
         outDir: '/project/dist',
+        inlineConfig: { build: { watch: { chokidar: { usePolling: true, interval: 75 } } } },
       },
       moduleGraphService: {
         bindDevServer,
@@ -59,6 +60,7 @@ describe('dev module graph provider', () => {
 
     const config = createServerMock.mock.calls[0]![0]
     expect(config.server).toMatchObject({ hmr: true, middlewareMode: true })
+    expect(config.server.watch).toMatchObject({ usePolling: true, interval: 75 })
     const ignored = config.server.watch.ignored as Array<(id: string) => boolean>
     expect(ignored[0]).toBe(userIgnored)
     expect(ignored[1]!('/project/dist/miniprogram_npm/@vant/weapp/field/index.json')).toBe(true)

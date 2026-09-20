@@ -1652,16 +1652,16 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### template TailwindCSS TDesign HMR in real WeChat DevTools > updates and restores native Page methods with external npm while retaining rendered interaction state
 
-- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:214`
+- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:218`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `tdesignNativeScriptCheckpoints`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:215`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `tdesignNativeScriptCheckpoints`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:219`
 - Operations: `check(native-script:initial)`, `tap(<missing>)`, `check(native-script:dark)`, `check(native-script:patched-state)`, `check(native-script:patched-tap)`, `check(native-script:restored-state)`, `check(native-script:restored-tap)`
 
 ### template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR
 
-- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:241`
+- Source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:245`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:247`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-tailwindcss-tdesign-template`; checkpoints: `[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'`; source: `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:246`
 - Operations: `check(tailwind:initial)`, `tap(<missing>)`, `check(tailwind:dark)`, `check(tailwind:hmr-preserved)`, `check(tailwind:updated)`, `check(tailwind:updated-dark)`
 
 
@@ -1901,9 +1901,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack
 
-- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:340`
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:342`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339`
 - Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
 
 

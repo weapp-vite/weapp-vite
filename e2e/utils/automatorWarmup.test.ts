@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { evaluateExpectedErrors } from '../scripts/domAcceptanceReport/expectedErrors'
 import { warmupMiniProgramRoute } from './automator'
 import { appendIdeReportEvent } from './ideWarningReport'
+import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'fixture' }))
 
@@ -119,6 +121,52 @@ describe('automator warmup readiness', () => {
     await assertion
     expect(miniProgram.close).toHaveBeenCalledOnce()
     expect(appendIdeReportEvent).toHaveBeenLastCalledWith(expect.objectContaining({ level: 'error', startupProtocol: expect.objectContaining({ state: 'unresolved' }) }))
+  })
+
+  it.each([true, false])('retains startup evidence until launch retries finish (recovered=%s)', async (recovered) => {
+    vi.useFakeTimers()
+    const route = '/pages/example/index'
+    const diagnostics = createStartupProtocolDiagnostics('fixture', route)
+    const failedSession = {
+      close: vi.fn(async () => {}),
+      currentPage: vi.fn(async () => await new Promise(() => {})),
+    }
+    const options = { allowRelaunch: false, startupDiagnostics: diagnostics }
+    const firstAttempt = warmupMiniProgramRoute(failedSession, route, 'fixture', options)
+    const firstAssertion = expect(firstAttempt).rejects.toThrow('Timeout in read current page')
+    await vi.advanceTimersByTimeAsync(2_000)
+    await firstAssertion
+    expect(failedSession.close).toHaveBeenCalledOnce()
+    expect(vi.mocked(appendIdeReportEvent).mock.calls.map(([event]) => event.startupProtocol?.state)).toEqual(['retrying'])
+
+    const page = { path: 'pages/example/index', $$: vi.fn(async () => [{ id: 'real-page' }]) }
+    const nextSession = recovered ? { currentPage: vi.fn(async () => page) } : failedSession
+    const nextAttempt = warmupMiniProgramRoute(nextSession, route, 'fixture', options)
+    const nextAssertion = recovered
+      ? expect(nextAttempt).resolves.toBeUndefined()
+      : expect(nextAttempt).rejects.toThrow('Timeout in read current page')
+    await vi.advanceTimersByTimeAsync(2_000)
+    await nextAssertion
+    diagnostics.finish(false)
+
+    const events = vi.mocked(appendIdeReportEvent).mock.calls.map(([event]) => event)
+    expect(events.map(event => event.startupProtocol?.state)).toEqual(recovered
+      ? ['retrying', 'recovered']
+      : ['retrying', 'retrying', 'unresolved'])
+    expect(new Set(events.map(event => event.startupProtocol?.id)).size).toBe(1)
+    const failures = evaluateExpectedErrors([], events.map(event => ({
+      observedAt: new Date().toISOString(),
+      caseId: null,
+      phase: 'outside-case' as const,
+      event: { ...event },
+    })))
+    expect(failures).toHaveLength(recovered ? 0 : 1)
+    if (recovered) {
+      expect(page.$$).toHaveBeenCalledWith('page')
+    }
+    else {
+      expect(failures[0]).toContain('did not recover (2 failed attempts)')
+    }
   })
 
   it('completes after the relaunched page exposes its rendered root', async () => {

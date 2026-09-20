@@ -165,7 +165,7 @@ const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
   /SummerCompiler\._getPackageFiles/i,
   /miniprogram-builder\/modules\/corecompiler\/summerCompiler/i,
 ] as const
-const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile', 'all'] as const
+const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile'] as const
 const DEVTOOLS_ISLOGIN_JSON_PATTERN = /"login"\s*:\s*(true|false)/i
 const DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
 
@@ -1230,21 +1230,19 @@ function startBridgeWrapperDistSync(
 ) {
   const preserveRoots = options.preserveRoots ?? []
   const pendingPaths = new Set<string>()
-  const watchers = new Map<string, fs.FSWatcher>()
+  let watcher: fs.FSWatcher | undefined
   let timer: NodeJS.Timeout | undefined
   let reconcileTimer: NodeJS.Timeout | undefined
   let closed = false
-  let watchDirectoryTree: (directoryPath: string) => void = () => {}
+  let watchDirectory: () => void = () => {}
 
   const closeWatchers = () => {
     if (timer) {
       clearTimeout(timer)
       timer = undefined
     }
-    for (const watcher of watchers.values()) {
-      watcher.close()
-    }
-    watchers.clear()
+    watcher?.close()
+    watcher = undefined
     pendingPaths.clear()
   }
 
@@ -1265,7 +1263,7 @@ function startBridgeWrapperDistSync(
       closeWatchers()
       return
     }
-    watchDirectoryTree(distRoot)
+    watchDirectory()
     copyBridgeWrapperDistSnapshot(distRoot, wrapperRoot, { preserveRoots })
   }
 
@@ -1302,55 +1300,36 @@ function startBridgeWrapperDistSync(
     timer = setTimeout(flush, 80)
   }
 
-  const watchDirectory = (directoryPath: string) => {
-    if (closed || watchers.has(directoryPath) || !fs.existsSync(directoryPath)) {
+  watchDirectory = () => {
+    const directoryPath = distRoot
+    if (closed || watcher || !fs.existsSync(directoryPath)) {
       return
     }
 
-    const watcher = watchResolvedDirectory(directoryPath, (_eventType, fileName) => {
+    const nextWatcher = watchResolvedDirectory(directoryPath, (_eventType, fileName) => {
       if (!fileName) {
         syncSnapshot()
         return
       }
 
       const changedPath = path.join(directoryPath, fileName.toString())
-      if (fs.existsSync(changedPath)) {
-        const stat = safeStat(changedPath)
-        if (stat?.isDirectory()) {
-          watchDirectoryTree(changedPath)
-        }
-      }
       schedule(changedPath)
-    })
-    if (!watcher) {
+    }, { recursive: true })
+    if (!nextWatcher) {
       return
     }
-    watcher.on('error', () => {
-      watchers.delete(directoryPath)
+    nextWatcher.on('error', () => {
+      if (watcher === nextWatcher) {
+        watcher = undefined
+      }
       syncSnapshot()
     })
-    watcher.unref()
-    watchers.set(directoryPath, watcher)
+    nextWatcher.unref()
+    watcher = nextWatcher
   }
 
-  watchDirectoryTree = (directoryPath: string) => {
-    if (!fs.existsSync(directoryPath)) {
-      return
-    }
-
-    watchDirectory(directoryPath)
-    const entries = safeReadDirectory(directoryPath)
-    if (!entries) {
-      return
-    }
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        watchDirectoryTree(path.join(directoryPath, entry.name))
-      }
-    }
-  }
-
-  watchDirectoryTree(distRoot)
+  // Node 20+ 支持递归监听；单个根 watcher 覆盖新增子目录，避免逐目录注册和关闭的成本。
+  watchDirectory()
   reconcileTimer = setInterval(syncSnapshot, 2_000)
   reconcileTimer.unref()
 
@@ -2285,15 +2264,18 @@ export async function warmupMiniProgramRoute(
   miniProgram: any,
   route: string,
   project: string,
-  options: { signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
+  options: { signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[], startupDiagnostics?: ReturnType<typeof createStartupProtocolDiagnostics> } = {},
 ) {
-  const diagnostics = createStartupProtocolDiagnostics(project, route)
+  const diagnostics = options.startupDiagnostics ?? createStartupProtocolDiagnostics(project, route)
   let ready = false
   try {
     ready = await warmupMiniProgramRouteImpl(miniProgram, route, project, { ...options, onStartupProtocolError: diagnostics.record })
   }
   finally {
-    diagnostics.finish(ready)
+    // 外层启动器拥有跨会话重试预算；只有它耗尽预算后才能判定未恢复。
+    if (ready || !options.startupDiagnostics) {
+      diagnostics.finish(ready)
+    }
   }
 }
 
@@ -2726,7 +2708,7 @@ function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, cliPid: number
   return miniProgram
 }
 
-async function launchAutomatorViaCliBridge(
+export async function launchAutomatorViaCliBridge(
   options: AutomatorCliBridgePayload,
   project: string,
   lifecycle: AutomatorLaunchLifecycle,
@@ -2803,11 +2785,16 @@ async function launchAutomatorViaCliBridge(
       lifecycle.throwIfAborted()
       lastConnectError = error
       const message = error instanceof Error ? error.message : String(error)
-      if (!DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
+      const handshakeTimedOut = error instanceof Error
+        && 'code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+        && 'method' in error && error.method === 'Tool.getInfo'
+      if (!handshakeTimedOut
+        && !DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
         && !BRIDGE_CONNECT_TIMEOUT_PATTERN.test(message)
         && !BRIDGE_CONNECT_FAILURE_PATTERN.test(message)) {
         throw error
       }
+      process.stdout.write(`[warn] [runtime:launch-bridge-step] connect-retry project=${project} reason=${message}\n`)
       await lifecycle.pause(400)
     }
   }
@@ -2907,6 +2894,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchRetries = resolveLaunchRetryCount(maxLaunchRetries)
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const completedRecoverySteps = new Set<string>()
+  const startupDiagnostics = new Map<string, ReturnType<typeof createStartupProtocolDiagnostics>>()
   let forceProjectRefreshAfterRetry = false
   return (async () => {
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
@@ -3025,8 +3013,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
             const shouldWarmup = !shouldSkipAutomatorWarmup(skipWarmup)
             if (resolvedWarmupRoute && shouldWarmup) {
+              let diagnostics = startupDiagnostics.get(resolvedWarmupRoute)
+              if (!diagnostics) {
+                diagnostics = createStartupProtocolDiagnostics(project, resolvedWarmupRoute)
+                startupDiagnostics.set(resolvedWarmupRoute, diagnostics)
+              }
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
               await lifecycle.step(() => warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
+                startupDiagnostics: diagnostics,
                 signal: lifecycle.signal,
                 allowAnyPage: warmupAnyPage,
                 allowRelaunch: warmupAllowRelaunch !== false,
@@ -3118,7 +3112,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
     }
 
     throw new Error('[runtime:launch] exhausted launch retries')
-  })()
+  })().finally(() => {
+    for (const diagnostics of startupDiagnostics.values()) {
+      diagnostics.finish(false)
+    }
+  })
 }
 
 export async function assertDevtoolsLoggedIn(projectPath: string) {

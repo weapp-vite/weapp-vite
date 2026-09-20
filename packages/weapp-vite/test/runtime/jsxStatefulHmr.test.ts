@@ -86,7 +86,8 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     await fs.writeJSON(path.join(cwd, 'package.json'), { name: 'jsx-stateful-probe', type: 'module' })
     await fs.writeJSON(path.join(cwd, 'project.config.json'), { appid: 'wx123', miniprogramRoot: 'dist/' })
     await fs.writeJSON(path.join(cwd, 'project.private.config.json'), { setting: { compileHotReLoad: true } })
-    await fs.writeFile(path.join(cwd, 'vite.config.ts'), 'export default {weapp:{srcRoot:"src",hmr:{runtime:"stateful-experimental"}}}')
+    // 内容轮询确保等长修改可观察，测试仍验证真实引擎补丁及构建状态身份。
+    await fs.writeFile(path.join(cwd, 'vite.config.ts'), 'export default {build:{watch:{chokidar:{usePolling:true,interval:50}}},weapp:{srcRoot:"src",hmr:{runtime:"stateful-experimental"}}}')
     await fs.writeJSON(path.join(cwd, 'src/app.json'), { pages: ['pages/index'] })
     await fs.writeFile(path.join(cwd, 'src/app.ts'), 'App({})')
     await fs.writeFile(source, page)

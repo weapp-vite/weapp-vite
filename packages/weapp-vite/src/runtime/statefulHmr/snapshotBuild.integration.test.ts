@@ -58,6 +58,27 @@ describe('stateful snapshot component metadata', () => {
     await Promise.all(temporaryRoots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
   })
 
+  it('retains native page style metadata after asset-only snapshots discard script chunks', async () => {
+    const root = await createProject()
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-assets-only',
+        enforce: 'post',
+        generateBundle(_options, bundle) {
+          for (const [file, item] of Object.entries(bundle)) {
+            if (item.type === 'chunk') {
+              delete bundle[file]
+            }
+          }
+        },
+      }],
+    }))
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    expect(outputs.some(item => item.type === 'chunk')).toBe(false)
+    expect(snapshot.getGlobalStyleRoutes()).toEqual(['pages/index/index'])
+  })
+
   it('leaves support files with their active owner across successful and failed snapshots', async () => {
     const root = await createProject(true)
     const options = { cwd: root, isDev: true, mode: 'development' }

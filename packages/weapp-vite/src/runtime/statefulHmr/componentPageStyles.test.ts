@@ -13,6 +13,27 @@ function jsonAsset(route: string, config: unknown): StatefulHmrOutputFile {
 }
 
 describe('Component page global style dependencies', () => {
+  it('includes native Page routes whose layout slots inherit app styles', () => {
+    expect(resolveComponentPageGlobalStyleRoutes([
+      jsonAsset('app', { pages: ['pages/home/index'] }),
+      jsonAsset('pages/home/index', { usingComponents: { layout: '/components/layout/index' } }),
+      { type: 'chunk', fileName: 'pages/home/index.js', code: 'Page({ data: { mode: "dark" } })', modules: {} },
+    ], new Map())).toEqual(['pages/home/index'])
+  })
+
+  it('keeps native Page inheritance while excluding independent, Component and shadowed registrations', () => {
+    const routes = ['component', 'shadowed', 'isolated', 'ordinary']
+    expect(resolveComponentPageGlobalStyleRoutes([
+      jsonAsset('app', { pages: routes, subPackages: [{ root: 'independent', independent: true, pages: ['index'] }] }),
+      jsonAsset('isolated', { styleIsolation: 'page-isolated' }),
+      { type: 'chunk', fileName: 'component.js', code: 'Component({})', modules: {} },
+      { type: 'chunk', fileName: 'shadowed.js', code: 'function Page() {} Page({})', modules: {} },
+      { type: 'chunk', fileName: 'isolated.js', code: 'Page({})', modules: {} },
+      { type: 'chunk', fileName: 'ordinary.js', code: 'Page({})', modules: {} },
+      { type: 'chunk', fileName: 'independent/index.js', code: 'Page({})', modules: {} },
+    ], new Map())).toEqual(['isolated', 'ordinary'])
+  })
+
   it.each(['subPackages', 'subpackages'])('keeps %s independent pages outside main-app style inheritance', (key) => {
     expect(resolveComponentPageGlobalStyleRoutes([
       jsonAsset('app', { [key]: [{ root: 'independent/', independent: true }, { root: 'shared' }] }),
@@ -21,6 +42,20 @@ describe('Component page global style dependencies', () => {
       ['independent-other/pages/index', applyShared],
       ['shared/pages/index', applyShared],
     ]))).toEqual(['independent-other/pages/index', 'shared/pages/index'])
+  })
+
+  it.each(['subPackages', 'subpackages'])('includes ordinary native pages from %s with normalized routes', (key) => {
+    expect(resolveComponentPageGlobalStyleRoutes([
+      jsonAsset('app', { [key]: [{ root: 'feature/', pages: ['pages\\home\\index'] }] }),
+      { type: 'chunk', fileName: 'feature/pages/home/index.js', code: 'Page({})', modules: {} },
+    ], new Map())).toEqual(['feature/pages/home/index'])
+  })
+
+  it('keeps normalized Component metadata authoritative when emitted helpers reference Page', () => {
+    expect(resolveComponentPageGlobalStyleRoutes([
+      jsonAsset('app', { pages: ['pages/home/index'] }),
+      { type: 'chunk', fileName: 'pages/home/index.js', code: 'function createPage(options) { Page(options) } Component({})', modules: {} },
+    ], new Map([['pages\\home\\index', { ...applyShared, styleIsolation: { kind: 'known', value: 'page-isolated' } }]]))).toEqual([])
   })
 
   it.each(['isolated', 'shared', 'page-isolated', 'page-apply-shared', 'page-shared', '', null, false])(
