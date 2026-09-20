@@ -194,8 +194,8 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div class="min-h-96 min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) xl:min-h-0">
-      <div v-show="sourceContent && artifactContent" ref="editorElement" class="h-full min-h-96" />
+    <div class="relative min-h-96 min-w-0 overflow-hidden rounded-md border border-(--dashboard-border) bg-(--dashboard-panel-muted) xl:min-h-0">
+      <div v-show="sourceContent && artifactContent" ref="editorElement" class="absolute inset-0" />
       <AppEmptyState v-if="!sourceContent || !artifactContent" class="m-3 h-[calc(100%-1.5rem)]">
         {{ loadError || '暂无可对比文件。' }}
       </AppEmptyState>

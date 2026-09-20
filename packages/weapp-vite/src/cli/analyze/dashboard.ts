@@ -1,5 +1,6 @@
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
+import type { DashboardArtifactFiles } from './dashboardDevframe/artifacts'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import process from 'node:process'
@@ -223,7 +224,7 @@ async function waitForServerExit(server: ViteDevServer) {
 }
 
 export interface AnalyzeDashboardHandle {
-  update: (result: AnalyzeSubpackagesResult, previousResult?: AnalyzeSubpackagesResult | null) => Promise<void>
+  update: (result: AnalyzeSubpackagesResult, artifacts: DashboardArtifactFiles, previousResult?: AnalyzeSubpackagesResult | null) => Promise<void>
   emitRuntimeEvents: (events: DashboardRuntimeEventInput[]) => void
   waitForExit: () => Promise<void>
   close: () => Promise<void>
@@ -232,8 +233,8 @@ export interface AnalyzeDashboardHandle {
 
 export async function startAnalyzeDashboard(
   result: AnalyzeSubpackagesResult,
-  options?: {
-    artifactRoot?: string
+  options: {
+    artifacts: DashboardArtifactFiles
     watch?: boolean
     cwd?: string
     packageManagerAgent?: PackageManagerAgent
@@ -250,7 +251,7 @@ export async function startAnalyzeDashboard(
   }
   const { root, configFile } = resolved
 
-  const state = { current: result, previous: options?.previousResult ?? null }
+  const state = { current: result, previous: options.previousResult ?? null, artifacts: options.artifacts }
   const runtimeEvents = {
     current: [
       createDashboardRuntimeEvent({
@@ -269,7 +270,6 @@ export async function startAnalyzeDashboard(
     getAnalyzeSnapshot: () => state,
     getRuntimeEvents: () => runtimeEvents.current,
     roots: {
-      artifactRoot: options?.artifactRoot ?? (options?.cwd ? path.resolve(options.cwd, 'dist') : undefined),
       pluginRoot: options?.pluginRoot,
       projectRoot: options?.cwd,
       srcRoot: options?.srcRoot ?? (options?.cwd ? path.resolve(options.cwd, 'src') : undefined),
@@ -315,7 +315,12 @@ export async function startAnalyzeDashboard(
   const authCode = refreshTempAuthCode()
   const authenticatedUrls = urls.map(url => buildOtpAuthUrl(url, authCode))
 
-  const waitPromise = waitForServerExit(server)
+  let closed = false
+  const waitPromise = waitForServerExit(server).then(() => {
+    closed = true
+    state.artifacts = new Map()
+    devframe.dispose()
+  })
 
   const emitRuntimeEvents = (events: DashboardRuntimeEventInput[]) => {
     if (events.length === 0) {
@@ -329,9 +334,13 @@ export async function startAnalyzeDashboard(
   }
 
   const handle: AnalyzeDashboardHandle = {
-    async update(nextResult, previousResult) {
+    async update(nextResult, artifacts, previousResult) {
+      if (closed) {
+        return
+      }
       state.previous = previousResult ?? state.current
       state.current = nextResult
+      state.artifacts = artifacts
       emitRuntimeEvents([
         {
           kind: 'build',
@@ -346,6 +355,7 @@ export async function startAnalyzeDashboard(
     emitRuntimeEvents,
     waitForExit: () => waitPromise,
     close: async () => {
+      closed = true
       await server.close()
     },
     urls: authenticatedUrls,

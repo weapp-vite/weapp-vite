@@ -6,6 +6,7 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startAnalyzeDashboard } from '../../packages/weapp-vite/src/cli/analyze/dashboard'
+import { createDashboardArtifactSnapshot } from '../../packages/weapp-vite/src/cli/analyze/dashboardDevframe/artifacts'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
@@ -71,6 +72,12 @@ function createAnalyzeResult(size: number): AnalyzeSubpackagesResult {
   }
 }
 
+function createArtifactFiles(marker: string) {
+  const snapshot = createDashboardArtifactSnapshot()
+  snapshot.capture('app.js', `App({ ${marker}: true })\n`)
+  return snapshot.files
+}
+
 async function installWebSocketTracking(page: Page) {
   await page.addInitScript(() => {
     const dashboardWindow = window as DashboardWindow
@@ -118,10 +125,10 @@ describe('Dashboard Devframe browser regression', () => {
     await fs.mkdir(srcRoot, { recursive: true })
     await fs.mkdir(artifactRoot, { recursive: true })
     await fs.writeFile(path.resolve(srcRoot, 'app.ts'), 'export const source = true\n', 'utf8')
-    await fs.writeFile(path.resolve(artifactRoot, 'app.js'), 'App({})\n', 'utf8')
+    await fs.writeFile(path.resolve(artifactRoot, 'app.js'), 'App({ staleDiskMarker: true })\n', 'utf8')
 
     dashboard = await startAnalyzeDashboard(createAnalyzeResult(128), {
-      artifactRoot,
+      artifacts: createArtifactFiles('initialSnapshotMarker'),
       cwd: temporaryRoot,
       silentStartupLog: true,
       srcRoot,
@@ -161,7 +168,7 @@ describe('Dashboard Devframe browser regression', () => {
     expect(new URL(activePage.url()).hash).toBe('')
 
     await expect.poll(() => activePage.getByText('128 B').first().isVisible()).toBe(true)
-    await activeDashboard.update(createAnalyzeResult(256), createAnalyzeResult(128))
+    await activeDashboard.update(createAnalyzeResult(256), createArtifactFiles('updatedSnapshotMarker'), createAnalyzeResult(128))
     await expect.poll(
       () => activePage.getByText('256 B').first().isVisible(),
       { timeout: 30_000 },
@@ -195,6 +202,25 @@ describe('Dashboard Devframe browser regression', () => {
       { timeout: 30_000 },
     ).toBe(true)
     await expect.poll(() => activePage.getByText('源码行数').isVisible()).toBe(true)
+    const diffEditor = activePage.locator('.monaco-diff-editor')
+    await diffEditor.waitFor({ state: 'visible' })
+    await expect.poll(() => diffEditor.textContent()).toContain('updatedSnapshotMarker')
+    expect(await diffEditor.textContent()).not.toContain('staleDiskMarker')
+
+    for (const viewport of [{ width: 1440, height: 1000 }, { width: 800, height: 900 }]) {
+      await activePage.setViewportSize(viewport)
+      // 桌面网格与窄屏自然高度切换后，代码阅读区域不能退化成零高或单行薄片。
+      await expect.poll(
+        async () => (await diffEditor.boundingBox())?.height ?? 0,
+        { message: `Editor remains usable at ${viewport.width}x${viewport.height}` },
+      ).toBeGreaterThan(100)
+      await expect.poll(() => diffEditor.textContent()).toContain('updatedSnapshotMarker')
+    }
+
+    // 路径和分析字节数均不变，只有 revision 的产物内容改变，面板也必须重新读取。
+    await activeDashboard.update(createAnalyzeResult(256), createArtifactFiles('samePathNextRevisionMarker'), createAnalyzeResult(256))
+    await expect.poll(() => diffEditor.textContent()).toContain('samePathNextRevisionMarker')
+    expect(await diffEditor.textContent()).not.toContain('updatedSnapshotMarker')
   })
 
   it('rejects an unauthenticated UI and a foreign WebSocket Origin', async () => {

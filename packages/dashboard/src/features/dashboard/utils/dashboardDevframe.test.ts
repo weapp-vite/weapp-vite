@@ -2,6 +2,7 @@ import type { DevframeConnectionStatus, DevframeRpcClient } from 'devframe/clien
 import type { Mock } from 'vitest'
 import type { AnalyzeSubpackagesResult, DashboardRuntimeEvent } from '../types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { watch } from 'vue'
 
 const connectDevframeMock = vi.hoisted(() => vi.fn())
 const consumeOtpFromUrlMock = vi.hoisted(() => vi.fn())
@@ -226,6 +227,7 @@ describe('dashboard Devframe client', () => {
     const transport = await loadDashboardTransport()
     await transport.connectDashboardDevframe()
     expect(transport.dashboardAnalyzeSnapshot.value).toEqual({ current: initial, previous: older })
+    expect(transport.dashboardAnalyzeRevision.value).toBe(0)
     expect(consumeOtpFromUrlMock).toHaveBeenCalledTimes(1)
     const previousPageCallsBeforeUpdate = control.call.mock.calls.filter(([method, input]) => (
       method === 'get-analyze-page' && input?.target === 'previous'
@@ -235,6 +237,7 @@ describe('dashboard Devframe client', () => {
     control.emitDashboardState()
     await vi.waitFor(() => {
       expect(transport.dashboardAnalyzeSnapshot.value).toEqual({ current: next, previous: initial })
+      expect(transport.dashboardAnalyzeRevision.value).toBe(1)
     })
     expect(transport.dashboardRuntimeEvents.value).toEqual([
       expect.objectContaining({ id: 'next' }),
@@ -279,6 +282,12 @@ describe('dashboard Devframe client', () => {
       .mockResolvedValueOnce(second.client)
 
     const transport = await loadDashboardTransport()
+    const hydratedRevisions: Array<number | null> = []
+    const stopRevisionWatch = watch(
+      transport.dashboardAnalyzeRevision,
+      revision => hydratedRevisions.push(revision),
+      { flush: 'sync' },
+    )
     await transport.connectDashboardDevframe()
     first.emitStatus('disconnected')
     expect(transport.dashboardConnectionStatus.value).toBe('disconnected')
@@ -289,6 +298,8 @@ describe('dashboard Devframe client', () => {
       expect(transport.dashboardAnalyzeSnapshot.value?.current.packages[0]?.id).toBe('second')
       expect(transport.dashboardConnectionStatus.value).toBe('connected')
     })
+    expect(hydratedRevisions).toEqual([0, 0])
+    stopRevisionWatch()
   })
 
   it('reconnects after a post-connect pagination failure', async () => {
@@ -463,7 +474,7 @@ describe('dashboard Devframe client', () => {
     connectDevframeMock.mockResolvedValue(control.client)
 
     const transport = await loadDashboardTransport()
-    await expect(transport.readDashboardFileContent('source', 'src/app.ts')).resolves.toEqual({
+    await expect(transport.readDashboardFileContent('source', 'src/app.ts', 0)).resolves.toEqual({
       kind: 'source',
       path: 'src/app.ts',
       language: 'typescript',
@@ -473,6 +484,66 @@ describe('dashboard Devframe client', () => {
     expect(control.call).toHaveBeenCalledWith('read-dashboard-file', {
       kind: 'source',
       path: 'src/app.ts',
+      revision: 0,
     })
+  })
+
+  it('rejects a file response after the displayed analysis revision changes', async () => {
+    const initial = createResult('initial')
+    const control = createFakeClient(initial)
+    connectDevframeMock.mockResolvedValue(control.client)
+    const response = {
+      kind: 'source' as const,
+      path: 'src/app.ts',
+      language: 'typescript',
+      size: 20,
+      content: 'export const app = 1',
+    }
+    const deferred = Promise.withResolvers<typeof response>()
+
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    control.call.mockImplementationOnce(async () => await deferred.promise)
+    const pendingRead = transport.readDashboardFileContent('source', 'src/app.ts', 0)
+    await vi.waitFor(() => {
+      expect(control.call).toHaveBeenCalledWith('read-dashboard-file', {
+        kind: 'source',
+        path: 'src/app.ts',
+        revision: 0,
+      })
+    })
+
+    control.setSnapshot(createResult('next'), initial, 1)
+    control.emitDashboardState()
+    await vi.waitFor(() => {
+      expect(transport.dashboardAnalyzeRevision.value).toBe(1)
+    })
+    deferred.resolve(response)
+
+    await expect(pendingRead).rejects.toThrow('Analyze revision 已变化')
+  })
+
+  it('rejects a file response when its Devframe session disconnects', async () => {
+    vi.useFakeTimers()
+    const control = createFakeClient(createResult('source'))
+    connectDevframeMock.mockResolvedValue(control.client)
+    const response = {
+      kind: 'source' as const,
+      path: 'src/app.ts',
+      language: 'typescript',
+      size: 20,
+      content: 'export const app = 1',
+    }
+    const deferred = Promise.withResolvers<typeof response>()
+
+    const transport = await loadDashboardTransport()
+    await transport.connectDashboardDevframe()
+    control.call.mockImplementationOnce(async () => await deferred.promise)
+    const pendingRead = transport.readDashboardFileContent('source', 'src/app.ts', 0)
+    await vi.advanceTimersByTimeAsync(0)
+    control.emitStatus('disconnected')
+    deferred.resolve(response)
+
+    await expect(pendingRead).rejects.toThrow('文件读取期间连接已变化')
   })
 })

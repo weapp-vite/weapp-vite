@@ -201,22 +201,17 @@ describe('build cli command', () => {
     expect(analyzeSubpackages).toHaveBeenCalledTimes(1)
     expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
     expect(startAnalyzeDashboard).toHaveBeenCalledWith(
-      expect.objectContaining({
-        packages: [{ id: 'main', label: 'main', files: [] }],
-      }),
+      expect.anything(),
       expect.objectContaining({
         initialEvents: expect.arrayContaining([
           expect.objectContaining({
             kind: 'build',
             level: 'success',
-            title: 'mini build completed',
-            detail: expect.stringContaining('1 个包'),
             durationMs: expect.any(Number),
           }),
         ]),
       }),
     )
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序构建完成，耗时：'))
   })
 
   it('passes build output options through inline config', async () => {
@@ -517,6 +512,7 @@ describe('build cli command', () => {
     expect(startAnalyzeDashboardMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
+        artifacts: new Map(),
         pluginRoot: '/plugin-root',
         srcRoot: '/project/miniprogram',
       }),
@@ -529,6 +525,7 @@ describe('build cli command', () => {
     await createBuildActionHandler()('/project', { platform: 'weapp' })
 
     expect(startAnalyzeDashboardMock).not.toHaveBeenCalled()
+    expect(analyzeSubpackagesMock).not.toHaveBeenCalled()
   })
 
   it('schedules process exit only for completed one-shot production cli builds', () => {

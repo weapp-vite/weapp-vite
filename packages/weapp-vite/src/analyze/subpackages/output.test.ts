@@ -89,4 +89,41 @@ describe('analyze subpackages output', () => {
     expect(asset.source).toBe('plugin/components/card.wxss')
     expect(asset.sourceType).toBe('plugin')
   })
+
+  it('captures finalized independent chunks and assets after reporting them', () => {
+    const packages = new Map()
+    const modules = new Map()
+    const assetSource = new Uint8Array([123, 125])
+    const captured: Array<[string, string | Uint8Array]> = []
+
+    processOutput({
+      output: [
+        {
+          type: 'chunk',
+          fileName: 'packageA/pages/index.js',
+          code: 'Page({})',
+          isEntry: true,
+          imports: [],
+          dynamicImports: [],
+          modules: {},
+        },
+        {
+          type: 'asset',
+          fileName: 'packageA/pages/index.json',
+          source: assetSource,
+        },
+      ],
+    } as unknown as RolldownOutput, 'independent', createMockContext(), {
+      subPackageRoots: new Set(['packageA']),
+      independentRoots: new Set(['packageA']),
+    }, packages, modules, (fileName, source) => {
+      expect(packages.get('packageA').files.has(fileName)).toBe(true)
+      captured.push([fileName, source])
+    })
+
+    expect(captured).toEqual([
+      ['packageA/pages/index.js', 'Page({})'],
+      ['packageA/pages/index.json', assetSource],
+    ])
+  })
 })

@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { initDevframe } from 'devframe/initiate'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createAnalyzeDashboardDevframe,
   createDashboardFileReader,
@@ -13,6 +13,7 @@ import {
   MAX_DASHBOARD_FILE_CONTENT_BYTES,
   readDashboardFileContent,
 } from './dashboardDevframe'
+import { createDashboardArtifactSnapshot, MAX_DASHBOARD_ARTIFACT_CONTENT_BYTES } from './dashboardDevframe/artifacts'
 
 const temporaryRoots: string[] = []
 
@@ -76,6 +77,7 @@ describe('dashboard Devframe protocol', () => {
     const snapshot = {
       current,
       previous: null as AnalyzeSubpackagesResult | null,
+      artifacts: new Map(),
     }
     const runtimeEvents: unknown[] = [{ id: 'initial' }]
     const controller = createAnalyzeDashboardDevframe({
@@ -151,6 +153,126 @@ describe('dashboard Devframe protocol', () => {
     }
   })
 
+  it('serves revision-owned artifacts without disk files and rejects obsolete in-flight reads', async () => {
+    const project = await createTemporaryProject()
+    const result = createAnalyzeResult([{
+      file: 'analysis-only.js',
+      type: 'chunk',
+      from: 'main',
+      source: 'app.ts',
+      sourceType: 'src',
+    }])
+    const initialArtifacts = createDashboardArtifactSnapshot()
+    initialArtifacts.capture('analysis-only.js', 'initial analysis bytes')
+    const snapshot = { current: result, previous: null, artifacts: initialArtifacts.files }
+    const controller = createAnalyzeDashboardDevframe({
+      getAnalyzeSnapshot: () => snapshot,
+      getRuntimeEvents: () => [],
+      roots: { srcRoot: path.join(project.projectRoot, 'src') },
+    })
+    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false })
+    let releaseRead: (() => void) | undefined
+    try {
+      await instance.ready
+      const dashboard = (await instance.context).scope('weapp-vite')
+      await expect(dashboard.rpc.call('read-dashboard-file', {
+        kind: 'artifact',
+        path: 'analysis-only.js',
+        revision: 0,
+      })).resolves.toMatchObject({ content: 'initial analysis bytes' })
+
+      const originalOpen = fs.open
+      const readGate = new Promise<void>((resolve) => {
+        releaseRead = resolve
+      })
+      let markReadStarted!: () => void
+      const readStarted = new Promise<void>((resolve) => {
+        markReadStarted = resolve
+      })
+      vi.spyOn(fs, 'open').mockImplementationOnce(async (...args) => {
+        markReadStarted()
+        await readGate
+        return await originalOpen(...args)
+      })
+      const pendingRead = dashboard.rpc.call('read-dashboard-file', {
+        kind: 'source',
+        path: 'app.ts',
+        revision: 0,
+      })
+      const rejectedRead = expect(pendingRead).rejects.toThrow('Analyze revision')
+      await readStarted
+      const nextArtifacts = createDashboardArtifactSnapshot()
+      nextArtifacts.capture('analysis-only.js', 'updated analysis bytes')
+      snapshot.artifacts = nextArtifacts.files
+      controller.notifyAnalyzeUpdate()
+      releaseRead()
+      await rejectedRead
+
+      await expect(dashboard.rpc.call('read-dashboard-file', {
+        kind: 'artifact',
+        path: 'analysis-only.js',
+        revision: 0,
+      })).rejects.toThrow('Analyze revision')
+      await expect(dashboard.rpc.call('read-dashboard-file', {
+        kind: 'artifact',
+        path: 'analysis-only.js',
+        revision: 1,
+      })).resolves.toMatchObject({ content: 'updated analysis bytes' })
+      await fs.writeFile(path.join(project.artifactRoot, 'analysis-only.js'), 'stale disk bytes')
+      snapshot.artifacts = new Map()
+      controller.notifyAnalyzeUpdate()
+      await expect(dashboard.rpc.call('read-dashboard-file', {
+        kind: 'artifact',
+        path: 'analysis-only.js',
+        revision: 2,
+      })).rejects.toThrow('分析快照中没有此产物内容')
+      controller.dispose()
+      await expect(dashboard.rpc.call('read-dashboard-file', {
+        kind: 'source',
+        path: 'app.ts',
+        revision: 2,
+      })).rejects.toThrow('Analyze revision')
+    }
+    finally {
+      releaseRead?.()
+      vi.restoreAllMocks()
+      controller.dispose()
+      await instance.close()
+    }
+  })
+
+  it('enforces artifact byte limits and freezes binary contents without expanding the allowlist', async () => {
+    const artifacts = createDashboardArtifactSnapshot()
+    const bytes = Buffer.from('快照', 'utf8')
+    artifacts.capture('independent/asset.txt', bytes)
+    bytes.fill(0)
+    const files: PackageFileEntry[] = [{ file: 'independent/asset.txt', type: 'asset', from: 'independent' }]
+    const limitContent = 'x'.repeat(MAX_DASHBOARD_FILE_CONTENT_BYTES)
+    const count = MAX_DASHBOARD_ARTIFACT_CONTENT_BYTES / MAX_DASHBOARD_FILE_CONTENT_BYTES
+    for (let index = 0; index <= count; index++) {
+      const file = `chunks/${index}.js`
+      artifacts.capture(file, limitContent)
+      files.push({ file, type: 'chunk', from: 'main' })
+    }
+    artifacts.capture('oversized.js', `${limitContent}x`)
+    files.push({ file: 'oversized.js', type: 'chunk', from: 'main' })
+    artifacts.capture('not-in-report.js', 'hidden')
+    const reader = createDashboardFileReader({}, createAnalyzeResult(files), artifacts.files)
+    await expect(reader.read({ kind: 'artifact', path: 'independent/asset.txt' })).resolves.toMatchObject({
+      content: '快照',
+      size: 6,
+    })
+    await expect(reader.read({ kind: 'artifact', path: 'chunks/0.js' })).resolves.toMatchObject({
+      content: limitContent,
+      size: MAX_DASHBOARD_FILE_CONTENT_BYTES,
+    })
+    await expect(reader.read({ kind: 'artifact', path: `chunks/${count}.js` })).rejects.toThrow('快照容量上限')
+    await expect(reader.read({ kind: 'artifact', path: 'oversized.js' })).rejects.toThrow('文件超过')
+    await expect(reader.read({ kind: 'artifact', path: 'not-in-report.js' })).rejects.toThrow('合法的 kind 和相对路径')
+    reader.dispose()
+    await expect(reader.read({ kind: 'artifact', path: 'chunks/0.js' })).rejects.toThrow('会话已关闭')
+  })
+
   it('reads only source and artifact paths present in the analyze result', async () => {
     const project = await createTemporaryProject()
     const result = createAnalyzeResult([
@@ -178,18 +300,19 @@ describe('dashboard Devframe protocol', () => {
       },
     ])
     const roots = {
-      artifactRoot: project.artifactRoot,
       projectRoot: project.projectRoot,
       srcRoot: path.join(project.projectRoot, 'src'),
     }
+    const artifacts = createDashboardArtifactSnapshot()
+    artifacts.capture('pages/index/index.js', 'Page({ snapshot: true })\n')
 
-    await expect(readDashboardFileContent({ kind: 'source', path: 'src/pages/index.ts' }, roots, result)).resolves.toMatchObject({
+    await expect(readDashboardFileContent({ kind: 'source', path: 'src/pages/index.ts' }, roots, result, new Map())).resolves.toMatchObject({
       kind: 'source',
       language: 'typescript',
       path: 'src/pages/index.ts',
       content: 'export const page = true\n',
     })
-    await expect(readDashboardFileContent({ kind: 'source', path: 'app.ts' }, roots, result)).resolves.toMatchObject({
+    await expect(readDashboardFileContent({ kind: 'source', path: 'app.ts' }, roots, result, new Map())).resolves.toMatchObject({
       kind: 'source',
       language: 'typescript',
       path: 'app.ts',
@@ -198,7 +321,7 @@ describe('dashboard Devframe protocol', () => {
     await expect(readDashboardFileContent({
       kind: 'source',
       path: '../../packages-runtime/wevu/dist/src.mjs',
-    }, roots, result)).resolves.toMatchObject({
+    }, roots, result, new Map())).resolves.toMatchObject({
       kind: 'source',
       language: 'javascript',
       path: '../../packages-runtime/wevu/dist/src.mjs',
@@ -207,16 +330,16 @@ describe('dashboard Devframe protocol', () => {
     await expect(readDashboardFileContent({
       kind: 'artifact',
       path: 'pages/index/index.js',
-    }, roots, result)).resolves.toMatchObject({
+    }, roots, result, artifacts.files)).resolves.toMatchObject({
       kind: 'artifact',
       language: 'javascript',
       path: 'pages/index/index.js',
-      content: 'Page({})\n',
+      content: 'Page({ snapshot: true })\n',
     })
     await expect(readDashboardFileContent({
       kind: 'source',
       path: '../secret.txt',
-    }, roots, result)).rejects.toThrow('必须传入合法的 kind 和相对路径。')
+    }, roots, result, new Map())).rejects.toThrow('必须传入合法的 kind 和相对路径。')
   })
   it('resolves source files from a configured non-default srcRoot', async () => {
     const project = await createTemporaryProject()
@@ -244,7 +367,7 @@ describe('dashboard Devframe protocol', () => {
     }, {
       projectRoot: project.projectRoot,
       srcRoot: customSrcRoot,
-    }, result)).resolves.toMatchObject({
+    }, result, new Map())).resolves.toMatchObject({
       path: 'app.ts',
       content: 'export const customApp = true\n',
     })
@@ -273,7 +396,7 @@ describe('dashboard Devframe protocol', () => {
       pluginRoot,
       projectRoot: project.projectRoot,
       srcRoot: path.join(project.projectRoot, 'src'),
-    }, result)).resolves.toMatchObject({
+    }, result, new Map())).resolves.toMatchObject({
       path: 'plugin-root/components/plugin.ts',
       content: 'export const plugin = true\n',
     })
@@ -308,7 +431,7 @@ describe('dashboard Devframe protocol', () => {
     }, {
       projectRoot: project.projectRoot,
       srcRoot: path.join(project.projectRoot, 'src'),
-    }, result)).rejects.toThrow('必须传入合法的 kind 和相对路径。')
+    }, result, new Map())).rejects.toThrow('必须传入合法的 kind 和相对路径。')
   })
 
   it('rejects an src-prefixed path when both source encodings exist', async () => {
@@ -336,11 +459,10 @@ describe('dashboard Devframe protocol', () => {
       path: 'src/app.ts',
     }, {
       srcRoot: path.join(project.projectRoot, 'src'),
-    }, result)).rejects.toThrow('源码路径存在多个候选文件，已拒绝读取。')
+    }, result, new Map())).rejects.toThrow('源码路径存在多个候选文件，已拒绝读取。')
   })
 
   it('caches the allowlist until the analyze revision changes', async () => {
-    const project = await createTemporaryProject()
     const result = createAnalyzeResult([
       {
         file: 'pages/index/index.js',
@@ -348,9 +470,9 @@ describe('dashboard Devframe protocol', () => {
         from: 'main',
       },
     ])
-    const reader = createDashboardFileReader({
-      artifactRoot: project.artifactRoot,
-    }, result)
+    const artifacts = createDashboardArtifactSnapshot()
+    artifacts.capture('pages/index/index.js', 'Page({})\n')
+    const reader = createDashboardFileReader({}, result, artifacts.files)
 
     await expect(reader.read({
       kind: 'artifact',
@@ -362,7 +484,7 @@ describe('dashboard Devframe protocol', () => {
       path: 'pages/index/index.js',
     })).resolves.toMatchObject({ content: 'Page({})\n' })
 
-    reader.update(result)
+    reader.update(result, new Map())
     await expect(reader.read({
       kind: 'artifact',
       path: 'pages/index/index.js',
@@ -400,7 +522,7 @@ describe('dashboard Devframe protocol', () => {
     }, {
       projectRoot: project.projectRoot,
       srcRoot: path.resolve(project.projectRoot, 'src'),
-    }, result)).rejects.toThrow('文件路径包含不允许的符号链接。')
+    }, result, new Map())).rejects.toThrow('文件路径包含不允许的符号链接。')
   })
 
   it('rejects allowlisted files that exceed the content limit', async () => {
@@ -427,6 +549,6 @@ describe('dashboard Devframe protocol', () => {
       path: 'src/oversized.ts',
     }, {
       srcRoot: path.join(project.projectRoot, 'src'),
-    }, result)).rejects.toThrow(`文件超过 ${MAX_DASHBOARD_FILE_CONTENT_BYTES} 字节`)
+    }, result, new Map())).rejects.toThrow(`文件超过 ${MAX_DASHBOARD_FILE_CONTENT_BYTES} 字节`)
   })
 })

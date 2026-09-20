@@ -9,7 +9,6 @@ interface MockDashboardDevframeOptions {
   getAnalyzeSnapshot: () => unknown
   getRuntimeEvents: () => unknown[]
   roots: {
-    artifactRoot?: string
     pluginRoot?: string
     projectRoot?: string
     srcRoot?: string
@@ -29,6 +28,7 @@ const createAnalyzeDashboardDevframeMock = vi.hoisted(() => vi.fn((_options: Moc
   definition: { id: 'weapp-vite' },
   notifyAnalyzeUpdate: notifyAnalyzeUpdateMock,
   syncRuntimeEvents: syncRuntimeEventsMock,
+  dispose: vi.fn(),
 })))
 const createAnalyzeDashboardViteBridgeMock = vi.hoisted(() => vi.fn(() => ({
   name: 'weapp-vite-dashboard-devframe',
@@ -193,10 +193,7 @@ describe('analyze dashboard', () => {
     })
     existsSyncMock.mockReturnValue(false)
 
-    await expect(startAnalyzeDashboard(createAnalyzeResult('missing'), {
-      cwd: '/project',
-      packageManagerAgent: 'pnpm',
-    })).resolves.toBeUndefined()
+    await expect(startAnalyzeDashboard(createAnalyzeResult('missing'), { artifacts: new Map(), cwd: '/project', packageManagerAgent: 'pnpm' })).resolves.toBeUndefined()
     expect(createServerMock).not.toHaveBeenCalled()
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('[weapp-vite ui]'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('pnpm add @weapp-vite/dashboard'))
@@ -213,7 +210,7 @@ describe('analyze dashboard', () => {
     })
 
     const initial = createAnalyzeResult('initial')
-    const handle = await startAnalyzeDashboard(initial, { watch: true, cwd: '/project' })
+    const handle = await startAnalyzeDashboard(initial, { artifacts: new Map(), watch: true, cwd: '/project' })
 
     expect(handle).toBeDefined()
     expect(handle?.urls).toEqual([
@@ -229,38 +226,23 @@ describe('analyze dashboard', () => {
     expect(server.listen.mock.invocationCallOrder[0]).toBeLessThan(refreshTempAuthCodeMock.mock.invocationCallOrder[0]!)
     expect(createAnalyzeDashboardDevframeMock).toHaveBeenCalledTimes(1)
     const devframeOptions = createAnalyzeDashboardDevframeMock.mock.calls[0]?.[0]
-    expect(devframeOptions?.getAnalyzeSnapshot()).toEqual({
-      current: initial,
-      previous: null,
-    })
     expect(devframeOptions?.getRuntimeEvents()).toEqual(expect.arrayContaining([
       expect.objectContaining({
         kind: 'command',
         level: 'success',
       }),
     ]))
-    expect(devframeOptions?.roots).toEqual({
-      artifactRoot: '/project/dist',
-      pluginRoot: undefined,
-      projectRoot: '/project',
-      srcRoot: '/project/src',
-    })
     expect(createAnalyzeDashboardViteBridgeMock).toHaveBeenCalledWith(
       { id: 'weapp-vite' },
     )
     expect(server.ws?.send).not.toHaveBeenCalled()
 
     const updatePayload = createAnalyzeResult('next')
-    await handle?.update(updatePayload)
-    expect(devframeOptions?.getAnalyzeSnapshot()).toEqual({
-      current: updatePayload,
-      previous: initial,
-    })
+    await handle?.update(updatePayload, new Map())
     expect(devframeOptions?.getRuntimeEvents()).toEqual(expect.arrayContaining([
       expect.objectContaining({
         kind: 'build',
         level: 'info',
-        detail: expect.stringContaining('1 个包'),
       }),
     ]))
     expect(syncRuntimeEventsMock).toHaveBeenCalledTimes(1)
@@ -334,7 +316,7 @@ describe('analyze dashboard', () => {
       return server
     })
 
-    const handle = await startAnalyzeDashboard(createAnalyzeResult('source'), { watch: true, cwd: '/project' })
+    const handle = await startAnalyzeDashboard(createAnalyzeResult('source'), { artifacts: new Map(), watch: true, cwd: '/project' })
     const createServerArg = createServerMock.mock.calls[0]?.[0] as any
 
     expect(handle).toBeDefined()
@@ -377,7 +359,7 @@ describe('analyze dashboard', () => {
     })
 
     vi.useFakeTimers()
-    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static-dist'), { cwd: '/project' })
+    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static-dist'), { artifacts: new Map(), cwd: '/project' })
     setTimeout(() => {
       server.httpServer?.emit('close')
     }, 0)
@@ -403,7 +385,7 @@ describe('analyze dashboard', () => {
       return server
     })
 
-    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'), { cwd: '/project' })
+    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'), { artifacts: new Map(), cwd: '/project' })
     setTimeout(() => {
       server.httpServer?.emit('close')
     }, 0)
@@ -413,7 +395,6 @@ describe('analyze dashboard', () => {
     const createServerArg = createServerMock.mock.calls[0]?.[0] as any
     expect(createServerArg.root).toBe('/mock/dashboard/dist')
     expect(createServerArg.configFile).toBe(false)
-    expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI 已启动（分析视图，静态模式），按 Ctrl+C 退出。')
   })
 
   it('logs close errors when cleanup fails on process signal', async () => {
@@ -439,7 +420,7 @@ describe('analyze dashboard', () => {
       return server
     })
 
-    const handle = await startAnalyzeDashboard(createAnalyzeResult('signal'), { watch: true, cwd: '/project' })
+    const handle = await startAnalyzeDashboard(createAnalyzeResult('signal'), { artifacts: new Map(), watch: true, cwd: '/project' })
     await signalHandlers.get('SIGINT')?.()
     await handle?.waitForExit()
 

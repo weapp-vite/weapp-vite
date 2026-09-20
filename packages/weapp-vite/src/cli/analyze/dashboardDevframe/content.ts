@@ -1,5 +1,6 @@
 import type { FileHandle } from 'node:fs/promises'
 import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { DashboardArtifactFiles } from './artifacts'
 import type {
   DashboardContentAllowlist,
   DashboardContentRoots,
@@ -10,12 +11,12 @@ import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import process from 'node:process'
 import path from 'pathe'
+import { MAX_DASHBOARD_FILE_CONTENT_BYTES } from './artifacts'
 import {
   createDashboardContentAllowlist,
-  resolveDashboardContentCandidates,
+  resolveDashboardArtifactPath,
+  resolveDashboardSourceContentPaths,
 } from './paths'
-
-export const MAX_DASHBOARD_FILE_CONTENT_BYTES = 2 * 1024 * 1024
 
 export interface DashboardFileContent {
   content: string
@@ -32,7 +33,8 @@ interface DashboardFileRequest {
 
 export interface DashboardFileReader {
   read: (input: unknown) => Promise<DashboardFileContent>
-  update: (result: AnalyzeSubpackagesResult) => void
+  update: (result: AnalyzeSubpackagesResult, artifacts: DashboardArtifactFiles) => void
+  dispose: () => void
 }
 
 function isPathWithin(rootPath: string, targetPath: string) {
@@ -169,9 +171,30 @@ async function readAllowedDashboardFile(
   input: unknown,
   roots: DashboardContentRoots,
   allowlist: DashboardContentAllowlist,
+  artifacts: DashboardArtifactFiles,
 ): Promise<DashboardFileContent> {
   const request = normalizeDashboardFileRequest(input)
-  const resolvedCandidates = resolveDashboardContentCandidates(request.kind, request.path, roots, allowlist)
+  if (request.kind === 'artifact') {
+    const filePath = resolveDashboardArtifactPath(request.path, allowlist.artifactPaths)
+    if (!filePath) {
+      throw new Error('必须传入合法的 kind 和相对路径。')
+    }
+    const file = artifacts.get(filePath)
+    if (!file) {
+      throw new Error('分析快照中没有此产物内容。')
+    }
+    if (file.error || file.content === undefined) {
+      throw new Error(file.error ?? '分析快照中没有此产物内容。')
+    }
+    return {
+      kind: request.kind,
+      path: filePath,
+      language: resolveDashboardFileLanguage(filePath),
+      size: file.size,
+      content: file.content,
+    }
+  }
+  const resolvedCandidates = resolveDashboardSourceContentPaths(roots, request.path, allowlist.sourcePaths)
   if (resolvedCandidates.length === 0) {
     throw new Error('必须传入合法的 kind 和相对路径。')
   }
@@ -226,12 +249,27 @@ async function readAllowedDashboardFile(
 export function createDashboardFileReader(
   roots: DashboardContentRoots,
   result: AnalyzeSubpackagesResult,
+  artifacts: DashboardArtifactFiles,
 ): DashboardFileReader {
   let allowlist = createDashboardContentAllowlist(result)
+  let currentArtifacts = artifacts
+  let disposed = false
   return {
-    read: async input => await readAllowedDashboardFile(input, roots, allowlist),
-    update(nextResult) {
+    read: async (input) => {
+      if (disposed) {
+        throw new Error('Dashboard 文件读取会话已关闭。')
+      }
+      return await readAllowedDashboardFile(input, roots, allowlist, currentArtifacts)
+    },
+    update(nextResult, nextArtifacts) {
       allowlist = createDashboardContentAllowlist(nextResult)
+      currentArtifacts = nextArtifacts
+    },
+    dispose() {
+      disposed = true
+      currentArtifacts = new Map()
+      allowlist.artifactPaths.clear()
+      allowlist.sourcePaths.clear()
     },
   }
 }
@@ -240,8 +278,9 @@ export async function readDashboardFileContent(
   input: unknown,
   roots: DashboardContentRoots,
   result: AnalyzeSubpackagesResult,
+  artifacts: DashboardArtifactFiles,
 ) {
-  return await createDashboardFileReader(roots, result).read(input)
+  return await createDashboardFileReader(roots, result, artifacts).read(input)
 }
 
 export type {

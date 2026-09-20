@@ -145,6 +145,7 @@ export function processOutput(
   classifierContext: PackageClassifierContext,
   packages: Map<string, PackageAccumulator>,
   modules: Map<string, ModuleAccumulator>,
+  onArtifact?: (fileName: string, content: string | Uint8Array) => void,
 ) {
   if (!output) {
     return
@@ -153,9 +154,11 @@ export function processOutput(
   for (const item of output.output ?? []) {
     if (item.type === 'chunk') {
       processChunk(item, origin, ctx, classifierContext, packages, modules)
+      onArtifact?.(item.fileName, item.code)
     }
     else if (item.type === 'asset') {
       processAsset(item, origin, ctx, classifierContext, packages, modules)
+      onArtifact?.(item.fileName, item.source)
     }
   }
 }

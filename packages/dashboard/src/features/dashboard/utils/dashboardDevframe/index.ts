@@ -13,9 +13,10 @@ import type {
   DashboardDevframeState,
   DashboardFileContent,
   DashboardFileKind,
+  DashboardFileRequest,
 } from './payload'
 import { connectDevframe, consumeOtpFromUrl } from 'devframe/client'
-import { shallowRef } from 'vue'
+import { shallowRef, triggerRef } from 'vue'
 import { normalizeRuntimeEvents } from '../runtimeEvents'
 import { readDashboardAnalyzeSnapshot } from './payload'
 
@@ -48,11 +49,13 @@ declare module 'devframe' {
   interface DevframeRpcServerFunctions {
     'weapp-vite:get-dashboard-state': () => DashboardDevframeState
     'weapp-vite:get-analyze-page': (input: DashboardAnalyzePageRequest) => DashboardAnalyzePage
-    'weapp-vite:read-dashboard-file': (input: { kind: DashboardFileKind, path: string }) => Promise<DashboardFileContent>
+    'weapp-vite:read-dashboard-file': (input: DashboardFileRequest) => Promise<DashboardFileContent>
   }
 }
 
 export const dashboardAnalyzeSnapshot = shallowRef<DashboardAnalyzeSnapshot | null>(null)
+/** 当前已完成水合并显示的 Analyze revision；连接会话切换后会重新触发同值。 */
+export const dashboardAnalyzeRevision = shallowRef<number | null>(null)
 export const dashboardConnectionError = shallowRef<Error | null>(null)
 export const dashboardConnectionStatus = shallowRef<DevframeConnectionStatus>('connecting')
 export const dashboardRuntimeEvents = shallowRef<DashboardRuntimeEvent[]>([])
@@ -180,7 +183,12 @@ async function hydrateDashboardState(
         continue
       }
       session.revision = state.revision
+      const previousRevision = dashboardAnalyzeRevision.value
       dashboardAnalyzeSnapshot.value = snapshot
+      dashboardAnalyzeRevision.value = state.revision
+      if (previousRevision === state.revision) {
+        triggerRef(dashboardAnalyzeRevision)
+      }
     } while (session.pendingState)
   })()
 
@@ -297,16 +305,31 @@ export async function connectDashboardDevframe() {
 
 reconnectDashboard = connectDashboardDevframe
 
-export async function readDashboardFileContent(kind: DashboardFileKind, filePath: string) {
+export async function readDashboardFileContent(
+  kind: DashboardFileKind,
+  filePath: string,
+  revision: number,
+) {
   await connectDashboardDevframe()
   const session = activeSession
   if (!session || session.disposed || session.client.status !== 'connected') {
     throw new Error('Devframe Dashboard 当前未连接。')
   }
-  return await session.dashboard.rpc.call('read-dashboard-file', {
+  if (session.revision !== revision || dashboardAnalyzeRevision.value !== revision) {
+    throw new Error('Analyze revision 已变化，请刷新当前 Dashboard 状态。')
+  }
+  const content = await session.dashboard.rpc.call('read-dashboard-file', {
     kind,
     path: filePath,
+    revision,
   })
+  if (activeSession !== session || session.disposed || session.client.status !== 'connected') {
+    throw new Error('Devframe Dashboard 文件读取期间连接已变化。')
+  }
+  if (session.revision !== revision || dashboardAnalyzeRevision.value !== revision) {
+    throw new Error('Analyze revision 已变化，请刷新当前 Dashboard 状态。')
+  }
+  return content
 }
 
 export type {
@@ -314,4 +337,5 @@ export type {
   DashboardAnalyzeSnapshot,
   DashboardFileContent,
   DashboardFileKind,
+  DashboardFileRequest,
 }

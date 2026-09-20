@@ -4,7 +4,6 @@ import path from 'pathe'
 export type DashboardFileKind = 'artifact' | 'source'
 
 export interface DashboardContentRoots {
-  artifactRoot?: string
   pluginRoot?: string
   projectRoot?: string
   srcRoot?: string
@@ -126,7 +125,7 @@ function resolveDashboardContentPath(
   }
 }
 
-function resolveDashboardSourceContentPaths(
+export function resolveDashboardSourceContentPaths(
   roots: DashboardContentRoots,
   requestPath: string,
   allowedPaths: Map<string, Set<DashboardSourceRootKind>>,
@@ -175,17 +174,16 @@ function resolveDashboardSourceContentPaths(
   return [...new Map(candidates.map(candidate => [candidate.absolutePath, candidate])).values()]
 }
 
-export function resolveDashboardContentCandidates(
-  kind: DashboardFileKind,
-  requestPath: string,
-  roots: DashboardContentRoots,
-  allowlist: DashboardContentAllowlist,
-) {
-  if (kind === 'source') {
-    return resolveDashboardSourceContentPaths(roots, requestPath, allowlist.sourcePaths)
+export function resolveDashboardArtifactPath(requestPath: string, allowedPaths: Set<string>) {
+  const normalizedPath = normalizeDashboardRelativePath(stripDashboardFileQuery(requestPath))
+  if (
+    !normalizedPath
+    || normalizedPath.includes('\0')
+    || path.isAbsolute(normalizedPath)
+    || path.posix.normalize(normalizedPath).startsWith('..')
+    || !allowedPaths.has(normalizedPath)
+  ) {
+    return undefined
   }
-  const resolved = resolveDashboardContentPath(roots.artifactRoot, requestPath, {
-    allowedPaths: allowlist.artifactPaths,
-  })
-  return resolved ? [resolved] : []
+  return normalizedPath
 }

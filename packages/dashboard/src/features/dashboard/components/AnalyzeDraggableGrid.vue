@@ -86,7 +86,7 @@ watch(
     <article
       v-for="item in orderedItems"
       :key="item.id"
-      class="relative min-h-0 min-w-0 max-w-full rounded-lg border border-dashed border-transparent pt-2 transition"
+      class="relative grid min-h-0 min-w-0 max-w-full rounded-lg border border-dashed border-transparent pt-2 transition"
       :class="[item.className, draggingId === item.id ? 'border-(--dashboard-accent) opacity-70' : '']"
       @dragover.prevent
       @drop="handleDrop(item)"

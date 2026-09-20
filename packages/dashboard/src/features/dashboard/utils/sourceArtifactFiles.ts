@@ -53,8 +53,8 @@ function stripFileQuery(filePath: string) {
   return queryIndex === -1 ? filePath : filePath.slice(0, queryIndex)
 }
 
-export async function fetchDashboardFileContent(kind: DashboardFileKind, filePath: string) {
-  const payload = await readDashboardFileContent(kind, filePath)
+export async function fetchDashboardFileContent(kind: DashboardFileKind, filePath: string, revision: number) {
+  const payload = await readDashboardFileContent(kind, filePath, revision)
   return {
     ...payload,
     language: normalizeLanguage(payload.language, payload.path),

@@ -33,6 +33,12 @@ export interface DashboardFileContent {
 
 export type DashboardFileKind = 'artifact' | 'source'
 
+export interface DashboardFileRequest {
+  kind: DashboardFileKind
+  path: string
+  revision: number
+}
+
 export interface DashboardAnalyzePageRequest {
   index: number
   revision: number

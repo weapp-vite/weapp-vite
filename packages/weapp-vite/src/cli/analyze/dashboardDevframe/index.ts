@@ -1,5 +1,6 @@
 import type { DevframeDefinition } from 'devframe'
 import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { DashboardArtifactFiles } from './artifacts'
 import type {
   DashboardContentRoots,
   DashboardFileContent,
@@ -8,9 +9,9 @@ import type {
 import { createHash } from 'node:crypto'
 import { defineDevframe, defineRpcFunction } from 'devframe'
 import { VERSION } from '../../../constants'
+import { MAX_DASHBOARD_FILE_CONTENT_BYTES } from './artifacts'
 import {
   createDashboardFileReader,
-  MAX_DASHBOARD_FILE_CONTENT_BYTES,
   readDashboardFileContent,
 } from './content'
 
@@ -36,6 +37,7 @@ const rejectDashboardSharedStatePatch = defineRpcFunction({
 export interface DashboardAnalyzeSnapshot {
   current: AnalyzeSubpackagesResult
   previous: AnalyzeSubpackagesResult | null
+  artifacts: DashboardArtifactFiles
 }
 
 export interface DashboardAnalyzePayloadDescriptor {
@@ -90,6 +92,7 @@ export interface AnalyzeDashboardDevframeController {
   definition: DevframeDefinition
   notifyAnalyzeUpdate: () => void
   syncRuntimeEvents: () => void
+  dispose: () => void
 }
 
 declare module 'devframe' {
@@ -100,7 +103,7 @@ declare module 'devframe' {
   interface DevframeRpcServerFunctions {
     'weapp-vite:get-dashboard-state': () => DashboardDevframeState
     'weapp-vite:get-analyze-page': (input: DashboardAnalyzePageRequest) => DashboardAnalyzePage
-    'weapp-vite:read-dashboard-file': (input: { kind: DashboardFileKind, path: string }) => Promise<DashboardFileContent>
+    'weapp-vite:read-dashboard-file': (input: { kind: DashboardFileKind, path: string, revision: number }) => Promise<DashboardFileContent>
   }
 }
 
@@ -202,9 +205,11 @@ export function createAnalyzeDashboardDevframe(
   options: CreateDashboardDevframeOptions,
 ): AnalyzeDashboardDevframeController {
   let revision = 0
+  let disposed = false
   let serializedSnapshot = serializeDashboardAnalyzeSnapshot(options.getAnalyzeSnapshot())
   let broadcastDashboardState: (() => Promise<void>) | undefined
-  const fileReader = createDashboardFileReader(options.roots, options.getAnalyzeSnapshot().current)
+  const initialSnapshot = options.getAnalyzeSnapshot()
+  const fileReader = createDashboardFileReader(options.roots, initialSnapshot.current, initialSnapshot.artifacts)
 
   const getDashboardState = defineRpcFunction({
     name: 'get-dashboard-state',
@@ -222,7 +227,22 @@ export function createAnalyzeDashboardDevframe(
     name: 'read-dashboard-file',
     type: 'query',
     jsonSerializable: true,
-    handler: async (input: unknown) => await fileReader.read(input),
+    handler: async (input: unknown) => {
+      if (!input || typeof input !== 'object' || !('revision' in input)
+        || typeof input.revision !== 'number'
+        || !Number.isSafeInteger(input.revision) || input.revision < 0) {
+        throw new Error('必须传入合法的文件读取 revision。')
+      }
+      const requestedRevision = input.revision
+      if (disposed || requestedRevision !== revision) {
+        throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)
+      }
+      const content = await fileReader.read(input)
+      if (disposed || requestedRevision !== revision) {
+        throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)
+      }
+      return content
+    },
   })
 
   const definition = defineDevframe({
@@ -254,14 +274,22 @@ export function createAnalyzeDashboardDevframe(
   return {
     definition,
     notifyAnalyzeUpdate() {
+      if (disposed) {
+        return
+      }
       revision += 1
       const snapshot = options.getAnalyzeSnapshot()
       serializedSnapshot = serializeDashboardAnalyzeSnapshot(snapshot, serializedSnapshot)
-      fileReader.update(snapshot.current)
+      fileReader.update(snapshot.current, snapshot.artifacts)
       void broadcastDashboardState?.()
     },
     syncRuntimeEvents() {
       void broadcastDashboardState?.()
+    },
+    dispose() {
+      disposed = true
+      fileReader.dispose()
+      broadcastDashboardState = undefined
     },
   }
 }

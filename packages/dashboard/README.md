@@ -56,7 +56,8 @@ Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe 1.0 bridge 连接 CLI
 - Analyze 数据通过带 revision、SHA-256 描述符和固定页上限的只读 RPC 分页获取
 - revision 与最近运行事件通过服务端单向通知同步；WebSocket 断开后会重连并重新查询权威状态
 - Dashboard 不创建可由客户端回写的业务 shared state，并拒绝通用 shared-state set/patch
-- 源码与产物内容通过按 revision 缓存的 allowlist RPC 读取，拒绝符号链接、读取竞态和超过 2 MiB 的文件
+- 源码读取保留当前报告 allowlist、符号链接和读取竞态防护；产物文本来自当前分析 revision 的只读快照，不回退到实时 `dist`
+- 单文件上限为 2 MiB，当前 revision 的产物保留预算按原始字节计为 32 MiB；超限明确报错，不读取其他 revision 或磁盘上的替代内容
 - Devframe 显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
 - 页面不再依赖 HTML 全局变量、业务 SSE 或 Vite HMR 作为业务数据通道
 - bridge 保持 `mcp: false`，不加载可选的 `@devframes/agentic`；仓库现有 MCP 服务不经由这个 bridge 提供
@@ -67,9 +68,9 @@ Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe 1.0 bridge 连接 CLI
 
 当前页面仍是单项目构建工作台，不是跨设备调试器。`runtimeEvents` 记录的是 CLI/build/HMR/diagnostic 事件，不是被调试应用的 console 或 network 流；前后端也尚未建立 target identity、能力协商和多会话生命周期协议。
 
-当前还有一个已在 `dashboard-ui-lab dev:ui` 观察到的产物一致性限制：`analyzeSubpackages` 以 `write: false` 生成分析结果，而文件读取使用实际开发构建的 `outDir`。两次构建的 chunk 划分可能不同，导致报告中的文件（例如 `weapp-vendors/common.js`）并未落在该目录，源码对比因此显示“文件不存在”。这不是 Devframe 1.0 升级引入的变化；它属于分析快照与产物内容的 ownership 缺口，不能通过放宽 allowlist、隐藏错误或手工写回 bundle 修补。
+源码对比使用与当前报告同一次生成过程采集的产物文本。完整分析从 `analyzeSubpackages` 的 `write: false` 构建输出捕获 chunk/asset；开发模式 fallback 则在扫描 `dist` 生成报告时保存本次读到的同一份字节，并丢弃失败分析的部分捕获。静态 `analyze`、`build --ui`、`dev --ui` 和 fallback 都随报告提交对应快照，不会为界面补写 bundle。
 
-接入新 target 前，应先让每个分析 revision 持有与其报告一致的产物内容，并区分分析构建与实际运行构建的身份；源码对比必须读取对应快照，而不是按同名文件猜测当前 `dist`。在完成这条一致性链路前，不把当前页面宣称为完整的运行时 DevTools。
+文件请求携带当前显示的 revision，报告更新会拒绝旧请求与过期异步响应；即使文件路径未变，对比面板也会重新读取。产物只保留当前报告对应的快照，不写入历史 JSON，也不证明目标设备正在运行的构建版本；源码仍读取工作区当前文件，不承诺历史源码快照。这条一致性链路不替代下述 target identity 和运行时 adapter。
 
 | 目标 | 当前可复用部分 | 尚缺的边界 |
 | --- | --- | --- |

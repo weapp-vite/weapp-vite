@@ -29,7 +29,16 @@ export type {
   SubPackageDescriptor,
 } from './types'
 
-export async function analyzeSubpackages(ctx: CompilerContext): Promise<AnalyzeSubpackagesResult> {
+/** 分包分析的可选产物消费配置。 */
+export interface AnalyzeSubpackagesOptions {
+  /** 在报告登记每个最终产物后同步接收其内容；省略时分析不会额外保留产物字节。 */
+  onArtifact?: (fileName: string, content: string | Uint8Array) => void
+}
+
+export async function analyzeSubpackages(
+  ctx: CompilerContext,
+  options?: AnalyzeSubpackagesOptions,
+): Promise<AnalyzeSubpackagesResult> {
   const { configService, scanService, buildService } = ctx
 
   if (!configService || !scanService || !buildService) {
@@ -76,13 +85,29 @@ export async function analyzeSubpackages(ctx: CompilerContext): Promise<AnalyzeS
   const componentJsonConfigs: AnalyzeComponentJsonConfig[] = []
 
   for (const output of mainOutputs) {
-    processOutput(output as RolldownOutput, 'main', ctx, classifierContext, packages, modules)
+    processOutput(
+      output as RolldownOutput,
+      'main',
+      ctx,
+      classifierContext,
+      packages,
+      modules,
+      options?.onArtifact,
+    )
     componentJsonConfigs.push(...collectAnalyzeComponentJsonConfigs(output as RolldownOutput))
   }
 
   for (const root of independentRoots) {
     const output = buildService.getIndependentOutput(root)
-    processOutput(output, 'independent', ctx, classifierContext, packages, modules)
+    processOutput(
+      output,
+      'independent',
+      ctx,
+      classifierContext,
+      packages,
+      modules,
+      options?.onArtifact,
+    )
     componentJsonConfigs.push(...collectAnalyzeComponentJsonConfigs(output))
   }
 
