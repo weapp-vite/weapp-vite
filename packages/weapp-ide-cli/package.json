@@ -1,7 +1,7 @@
 {
   "name": "weapp-ide-cli",
   "type": "module",
-  "version": "6.1.5",
+  "version": "6.1.6",
   "description": "Command-line tools for automating WeChat DevTools and mini-program projects.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

@@ -1,5 +1,28 @@
 # weapp-ide-cli
 
+## 6.1.6
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.6，同步工作区默认依赖、固定版本回归环境及脚手架模板映射，使新建项目与仓库验证使用一致的 Tailwind 集成版本。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - weapp-vite：dependencies.@babel/preset-env
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 检测微信开发者工具服务端口时，在同等有效的实例配置中优先使用最近写入的配置，避免多版本安装残留的旧端口导致 IDE 命令连接失败。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.5
+  - @weapp-core/shared@3.2.4
+  - @weapp-vite/devtools-runtime@0.4.21
+  - @weapp-vite/miniprogram-automator@1.2.20
+
 ## 6.1.5
 
 ### Patch Changes

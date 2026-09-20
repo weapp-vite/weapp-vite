@@ -8,6 +8,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@mpcore/core@0.0.3":
+  dir: mpcore/packages/core
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@mpcore/simulator@0.3.3":
   dir: mpcore/packages/simulator
   intents:
@@ -75,6 +81,14 @@
     - fix-simulator-native-component-selection
     - fix-unattached-ready
     - simulator-chunked-request-probe
+"@mpcore/simulator@0.6.1":
+  dir: mpcore/packages/simulator
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
+    - issue-969-startup-navigation
+    - issue-989-simulator-host-tabbar
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
@@ -85,6 +99,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@mpcore/test@0.1.12":
+  dir: mpcore/packages/test
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@mpcore/test@0.1.9":
   dir: mpcore/packages/test
   intents:
@@ -108,6 +128,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@mpcore/vitest@0.2.4":
+  dir: mpcore/packages/vitest
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -122,6 +148,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@mpcore/weapp-vite@0.1.26":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -145,6 +177,12 @@
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
     - fix-issue-1005-wpi-mock-types
+"@weapp-core/api@0.3.4":
+  dir: "@weapp-core/api"
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -173,6 +211,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-core/constants@0.2.5":
+  dir: "@weapp-core/constants"
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -191,6 +235,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-core/init@6.0.21":
+  dir: "@weapp-core/init"
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-core/logger@3.1.2":
   dir: "@weapp-core/logger"
   intents:
@@ -205,6 +255,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-core/logger@3.1.5":
+  dir: "@weapp-core/logger"
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -228,6 +284,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-core/schematics@6.2.5":
+  dir: "@weapp-core/schematics"
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -246,6 +308,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-core/shared@3.2.4":
+  dir: "@weapp-core/shared"
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-core/types@1.1.0":
   dir: "@weapp-core/types"
   intents:
@@ -257,6 +325,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-core/types@1.1.2":
+  dir: "@weapp-core/types"
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -291,6 +365,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/ast-native@0.1.5":
+  dir: packages/ast-native
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -315,6 +395,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/ast@7.1.4":
+  dir: packages/ast
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -334,6 +420,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/dashboard@7.1.4":
+  dir: packages/dashboard
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/devtools-runtime@0.4.19":
   dir: packages/devtools-runtime
   intents:
@@ -344,6 +436,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/devtools-runtime@0.4.21":
+  dir: packages/devtools-runtime
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -370,6 +468,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/eslint@0.2.6":
+  dir: packages/eslint
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/glass-easel-web-adapter@0.1.1":
   dir: packages-runtime/glass-easel-web-adapter
   intents:
@@ -377,6 +481,12 @@
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
     - dependency-upgrade-auto-generated
+"@weapp-vite/glass-easel-web-adapter@0.1.2":
+  dir: packages-runtime/glass-easel-web-adapter
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -396,6 +506,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/i18n@0.2.5":
+  dir: packages-runtime/i18n
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -414,6 +530,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/mcp@1.5.5":
+  dir: packages/mcp
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -449,6 +571,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/miniprogram-automator@1.2.20":
+  dir: packages/miniprogram-automator
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/qr@1.1.2":
   dir: packages/qr
   intents:
@@ -463,6 +591,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/qr@1.1.5":
+  dir: packages/qr
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -491,6 +625,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/react@0.2.8":
+  dir: packages-runtime/react
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
@@ -506,6 +646,12 @@
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
     - fix-volar-compiler-node-mapping
+"@weapp-vite/volar@2.1.9":
+  dir: packages/volar
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@weapp-vite/vscode@0.5.3":
   dir: extensions/vscode
   intents:
@@ -562,6 +708,13 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@weapp-vite/web@1.5.4":
+  dir: packages-runtime/web
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
+    - tidy-web-runtime-globals
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -589,6 +742,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@wevu/api@0.3.4":
+  dir: packages-runtime/weapi
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -659,6 +818,13 @@
     - fix-issue-1014-object-directive-diagnostics
     - fix-issue-1016-sourcemap
     - fix-scoped-slot-owner-picks
+"@wevu/compiler@7.1.4":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
+    - quiet-app-hmr-owner
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -673,6 +839,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@wevu/query@0.0.4":
+  dir: packages-runtime/wevu-query
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -697,6 +869,12 @@
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+"@wevu/test-utils@0.2.16":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 "@wevu/test-utils@0.2.2":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -728,6 +906,12 @@
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
     - web-apis-body-blob-contracts
+"@wevu/web-apis@1.3.1":
+  dir: packages-runtime/web-apis
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -883,6 +1067,18 @@ create-weapp-vite@2.8.16:
     - issue-962-wevu-auto-import
     - quiet-css-entries
     - upgrade-pnpm-12
+create-weapp-vite@2.8.17:
+  dir: packages/create-weapp-vite
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
+    - fix-managed-tailwind-imports
+    - honest-build-output-cleanup
+    - native-page-slot-style-hmr
+    - native-style-import-resolution
+    - quiet-app-hmr-owner
+    - watch-polling-virtual-chunks
 create-weapp-vite@2.8.2:
   dir: packages/create-weapp-vite
   intents:
@@ -972,6 +1168,12 @@ rolldown-require@2.0.30:
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+rolldown-require@2.0.31:
+  dir: packages/rolldown-require
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 vite-plugin-performance@2.0.2:
   dir: packages/vite-plugin-performance
   intents:
@@ -982,6 +1184,12 @@ vite-plugin-performance@2.0.3:
     - catalog-upgrade-20260917-230931
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
+vite-plugin-performance@2.0.4:
+  dir: packages/vite-plugin-performance
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -1012,6 +1220,13 @@ weapp-ide-cli@6.1.5:
     - catalog-upgrade-20260917-231126
     - dependency-upgrade-20260917-133126
     - fix-forward-console-launch-budget
+weapp-ide-cli@6.1.6:
+  dir: packages/weapp-ide-cli
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
+    - fresh-devtools-service-port
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -1199,6 +1414,18 @@ weapp-vite@7.1.3:
     - issue-962-wevu-auto-import
     - quiet-css-entries
     - upgrade-pnpm-12
+weapp-vite@7.1.4:
+  dir: packages/weapp-vite
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
+    - fix-managed-tailwind-imports
+    - honest-build-output-cleanup
+    - native-page-slot-style-hmr
+    - native-style-import-resolution
+    - quiet-app-hmr-owner
+    - watch-polling-virtual-chunks
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -1287,3 +1514,10 @@ wevu@7.1.3:
     - fix-issue-989-host-tabbar-path
     - fix-scoped-slot-owner-picks
     - fix-unattached-ready
+wevu@7.1.4:
+  dir: packages-runtime/wevu
+  intents:
+    - catalog-upgrade-20260918-174609
+    - catalog-upgrade-20260919-192714
+    - dependency-upgrade-20260919-192714
+    - quiet-app-hmr-owner
