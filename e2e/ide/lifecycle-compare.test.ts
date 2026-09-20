@@ -402,7 +402,7 @@ async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) 
   }
   if (!sharedBuildPrepared) {
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     await runBuild()
     sharedBuildPrepared = true
   }

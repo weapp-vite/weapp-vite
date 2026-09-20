@@ -217,7 +217,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     delete process.env[POST_CONNECT_REFRESH_ENV]
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
     originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
     originalVueChildSource = (await fs.readFile(VUE_CHILD_SOURCE, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')

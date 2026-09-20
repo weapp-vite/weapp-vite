@@ -443,7 +443,7 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
 
   beforeAll(async () => {
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('all', { cwd: TEMPLATE_ROOT })
+    await cleanDevtoolsCache('compile', { cwd: TEMPLATE_ROOT })
     await fs.rm(SCREENSHOT_OUTPUT, { force: true })
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,

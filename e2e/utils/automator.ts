@@ -165,7 +165,7 @@ const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
   /SummerCompiler\._getPackageFiles/i,
   /miniprogram-builder\/modules\/corecompiler\/summerCompiler/i,
 ] as const
-const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile', 'all'] as const
+const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile'] as const
 const DEVTOOLS_ISLOGIN_JSON_PATTERN = /"login"\s*:\s*(true|false)/i
 const DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
 

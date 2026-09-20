@@ -1282,7 +1282,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(miniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
   })
 
-  it('escalates warmup recovery from compile cache to all cache in one launch sequence', async () => {
+  it('preserves authentication caches across repeated warmup recovery in one launch sequence', async () => {
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '3'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
@@ -1330,16 +1330,13 @@ describe('automator launch resilience', { concurrent: false }, () => {
       reject: false,
       timeout: 20_000,
     }))
-    expect(execaMock).toHaveBeenNthCalledWith(2, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'all'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).toHaveBeenCalledTimes(1)
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(2)
     expect(thirdMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(thirdMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('keeps one project reopen retry after compile and all cache recovery are exhausted', async () => {
+  it('keeps project reopen retries after compile cache recovery without clearing authentication', async () => {
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '4'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
@@ -1394,10 +1391,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       reject: false,
       timeout: 20_000,
     }))
-    expect(execaMock).toHaveBeenNthCalledWith(2, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'all'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).toHaveBeenCalledTimes(1)
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(3)
     expect(fourthMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(fourthMiniProgram.__rawReLaunch).not.toHaveBeenCalled()

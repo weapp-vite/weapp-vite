@@ -295,7 +295,7 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
       expect(options.scenarios).toHaveLength(options.expectedCount)
       await cleanupResidualIdeProcesses()
       if (runtimeProvider === 'devtools') {
-        await cleanDevtoolsCache('all', { cwd: appRoot })
+        await cleanDevtoolsCache('compile', { cwd: appRoot })
         await cleanupResidualIdeProcesses()
         await cleanupWechatScreenshotArtifacts('setup')
       }

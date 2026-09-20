@@ -58,7 +58,7 @@ async function ensureBuilt(jsFormat: TestJsFormat) {
     return
   }
 
-  await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+  await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
   await rm(DIST_ROOT, { recursive: true, force: true })
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
