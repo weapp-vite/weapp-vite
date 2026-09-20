@@ -2264,15 +2264,18 @@ export async function warmupMiniProgramRoute(
   miniProgram: any,
   route: string,
   project: string,
-  options: { signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[] } = {},
+  options: { signal?: AbortSignal, allowAnyPage?: boolean, allowRelaunch?: boolean, checkDevtoolsLog?: (label: string) => void, rootSelectors?: string[], startupDiagnostics?: ReturnType<typeof createStartupProtocolDiagnostics> } = {},
 ) {
-  const diagnostics = createStartupProtocolDiagnostics(project, route)
+  const diagnostics = options.startupDiagnostics ?? createStartupProtocolDiagnostics(project, route)
   let ready = false
   try {
     ready = await warmupMiniProgramRouteImpl(miniProgram, route, project, { ...options, onStartupProtocolError: diagnostics.record })
   }
   finally {
-    diagnostics.finish(ready)
+    // 外层启动器拥有跨会话重试预算；只有它耗尽预算后才能判定未恢复。
+    if (ready || !options.startupDiagnostics) {
+      diagnostics.finish(ready)
+    }
   }
 }
 
@@ -2886,6 +2889,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchRetries = resolveLaunchRetryCount(maxLaunchRetries)
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const completedRecoverySteps = new Set<string>()
+  const startupDiagnostics = new Map<string, ReturnType<typeof createStartupProtocolDiagnostics>>()
   let forceProjectRefreshAfterRetry = false
   return (async () => {
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
@@ -3004,8 +3008,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             }
             const shouldWarmup = !shouldSkipAutomatorWarmup(skipWarmup)
             if (resolvedWarmupRoute && shouldWarmup) {
+              let diagnostics = startupDiagnostics.get(resolvedWarmupRoute)
+              if (!diagnostics) {
+                diagnostics = createStartupProtocolDiagnostics(project, resolvedWarmupRoute)
+                startupDiagnostics.set(resolvedWarmupRoute, diagnostics)
+              }
               process.stdout.write(`[info] [runtime:launch-step] warmup-start route=${resolvedWarmupRoute} project=${project}\n`)
               await lifecycle.step(() => warmupMiniProgramRoute(withRuntimeLogs, resolvedWarmupRoute, project, {
+                startupDiagnostics: diagnostics,
                 signal: lifecycle.signal,
                 allowAnyPage: warmupAnyPage,
                 allowRelaunch: warmupAllowRelaunch !== false,
@@ -3097,7 +3107,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
     }
 
     throw new Error('[runtime:launch] exhausted launch retries')
-  })()
+  })().finally(() => {
+    for (const diagnostics of startupDiagnostics.values()) {
+      diagnostics.finish(false)
+    }
+  })
 }
 
 export async function assertDevtoolsLoggedIn(projectPath: string) {
