@@ -15,9 +15,9 @@ import { normalizeWatchPath } from '../../src/utils/path'
 import { callPluginHook } from '../pluginHook'
 import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
-const compileVueFileMock = vi.fn<
+const compileVueFileMock = vi.hoisted(() => vi.fn<
   (source: string, filename: string, options?: any) => Promise<any>
->()
+>())
 const readAndParseSfcMock = vi.fn()
 const injectPageFeaturesMock = vi.fn<
   (pluginCtx: any, code: string, filename: string, options: any) => Promise<{ transformed: boolean, code: string }>

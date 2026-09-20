@@ -1,5 +1,5 @@
 /* eslint-disable e18e/ban-dependencies -- 通过真实 CLI 验证页面宏与自动路由的消费链路。 */
-import { cp, mkdir, mkdtemp, symlink } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, realpath, symlink } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
@@ -15,7 +15,11 @@ export async function createIssue1029Project() {
   await mkdir(parent, { recursive: true })
   const project = await mkdtemp(path.join(parent, 'issue-1029-'))
   await cp(path.join(ROOT, 'e2e-apps/github-issues/fixtures/issue-1029'), project, { recursive: true })
-  await symlink(path.join(ROOT, 'e2e-apps/github-issues/node_modules'), path.join(project, 'node_modules'), 'junction')
+  await mkdir(path.join(project, 'node_modules'))
+  // 避免 Windows 穿过整目录 junction 后再次解析 pnpm 的包链接。
+  for (const [name, relative] of [['weapp-vite', 'packages/weapp-vite'], ['wevu', 'packages-runtime/wevu']] as const) {
+    await symlink(await realpath(path.join(ROOT, relative)), path.join(project, 'node_modules', name), 'junction')
+  }
   return project
 }
 
