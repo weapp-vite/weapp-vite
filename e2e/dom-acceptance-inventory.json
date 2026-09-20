@@ -7151,7 +7151,7 @@
     },
     {
       "file": "e2e/ide/layoutPowerDom/session.ts",
-      "sha256": "293116526508b12983e6983034e5fd35d0f2b0d6b4e3b9594e1fb319688c5a55"
+      "sha256": "4f3836e8b0357526d8ad3f4b995a05b1bc5f03ffacae732a777758c116bdc5c8"
     },
     {
       "file": "e2e/ide/lifecycle-compare.test.ts",
