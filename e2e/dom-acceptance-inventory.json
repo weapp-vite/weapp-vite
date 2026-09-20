@@ -7599,7 +7599,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "292f22e24477a1f85f9bc18307f3b08d9c112920c25a7f78600a6314967ca14e"
+      "sha256": "113ae85a028912b342c251a2a17b9e4132ae2a7d3584230e8d31fe8388aefeda"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -7799,7 +7799,7 @@
     },
     {
       "file": "e2e/utils/watchResolvedDirectory.ts",
-      "sha256": "6e536366735395c61a22ca11ee9a56fd3fd29210bf25adc567b3b40f8513ab64"
+      "sha256": "14ae9dedbc18d5b3ba7d0f59da43d407e5edb38d2a54e129278bc6822172b680"
     },
     {
       "file": "e2e/utils/wevu-jsx-tsx.ts",

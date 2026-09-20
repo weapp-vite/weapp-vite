@@ -126,6 +126,8 @@ function normalizeWechatDevtoolsSecuritySettings(value: unknown) {
 function shouldPreferServicePortCandidate(
   current: DetectedWechatDevtoolsServicePortSettings,
   next: DetectedWechatDevtoolsServicePortSettings,
+  currentUpdatedAt: number,
+  nextUpdatedAt: number,
 ) {
   if (current.enabled === undefined && current.port === undefined) {
     return true
@@ -139,7 +141,9 @@ function shouldPreferServicePortCandidate(
     return true
   }
 
-  return false
+  return next.enabled === current.enabled
+    && (next.port !== undefined) === (current.port !== undefined)
+    && nextUpdatedAt > currentUpdatedAt
 }
 
 function createResolvedWechatDevtoolsContext(
@@ -242,7 +246,7 @@ async function detectWechatDevtoolsSecuritySettings(localDataDir: string) {
     const current = await readJsonObject(filePath)
     const security = normalizeWechatDevtoolsSecuritySettings(current.security)
     if (security) {
-      return security
+      return { ...security, updatedAt: (await fs.stat(filePath)).mtimeMs }
     }
   }
 
@@ -288,6 +292,7 @@ async function scanWechatDevtoolsServicePort(
   const instanceDirs = await resolveWechatDevtoolsInstanceDirs(context.baseDir)
   let detectedSecurityCount = 0
   let detectedServicePort: DetectedWechatDevtoolsServicePortSettings = {}
+  let detectedUpdatedAt = -Infinity
 
   for (const instanceDir of instanceDirs) {
     const localDataDir = path.join(instanceDir, 'WeappLocalData')
@@ -302,8 +307,10 @@ async function scanWechatDevtoolsServicePort(
       enabled: security.enableServicePort,
       port: security.port,
     }
-    if (shouldPreferServicePortCandidate(detectedServicePort, candidate)) {
+    // 多版本安装会保留旧实例；同等有效的配置以最近写入者为准，不能依赖目录排序。
+    if (shouldPreferServicePortCandidate(detectedServicePort, candidate, detectedUpdatedAt, security.updatedAt)) {
       detectedServicePort = candidate
+      detectedUpdatedAt = security.updatedAt
     }
   }
 

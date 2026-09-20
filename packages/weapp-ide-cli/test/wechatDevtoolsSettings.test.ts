@@ -230,6 +230,38 @@ describe('detectWechatDevtoolsServicePort', () => {
     await Promise.all(tempDirs.splice(0).map(async tempDir => fs.rm(tempDir, { recursive: true, force: true })))
   })
 
+  it.each(['darwin', 'win32'] as const)('prefers recent enabled settings over an obsolete instance on %s', async (platform) => {
+    const homeDir = await createTempHomeDir()
+    tempDirs.push(homeDir)
+    const localAppDataDir = path.join(homeDir, 'AppData', 'Local')
+    const baseDir = platform === 'darwin'
+      ? path.join(homeDir, 'Library', 'Application Support', '微信开发者工具')
+      : path.join(localAppDataDir, '微信开发者工具', 'User Data')
+    for (const [instance, port, updatedAt] of [
+      ['instance-a', 21001, 1000],
+      ['instance-b', 21002, 2000],
+    ] as const) {
+      const localDataDir = path.join(baseDir, instance, 'WeappLocalData')
+      await fs.mkdir(localDataDir, { recursive: true })
+      const file = path.join(localDataDir, 'localstorage_b72da75d79277d2f5f9c30c9177be57e.json')
+      await fs.writeFile(file, JSON.stringify({ security: { enableServicePort: true, port } }))
+      await fs.utimes(file, updatedAt, updatedAt)
+    }
+
+    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform })).toMatchObject({
+      touchedInstanceCount: 2,
+      detectedSecurityCount: 2,
+      servicePort: 21002,
+      servicePortEnabled: true,
+    })
+    const firstInstanceSettings = path.join(baseDir, 'instance-a', 'WeappLocalData', 'localstorage_b72da75d79277d2f5f9c30c9177be57e.json')
+    await fs.utimes(firstInstanceSettings, 3000, 3000)
+    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform })).toMatchObject({
+      servicePort: 21001,
+      servicePortEnabled: true,
+    })
+  })
+
   it('prefers an enabled service-port instance when multiple instances exist', async () => {
     const homeDir = await createTempHomeDir()
     tempDirs.push(homeDir)
