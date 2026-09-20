@@ -41,6 +41,8 @@ describe('main-package shared styles build e2e', { concurrent: false }, () => {
         })
         expect(result.exitCode, result.stderr || result.stdout).toBe(0)
 
+        expect(await fs.readJSON(path.join(outDir, 'packageB/pages/bar/index.json'))).toEqual({})
+
         const mainPageStyle = await fs.readFile(
           path.join(outDir, `pages/index/index.${styleExt}`),
           'utf8',

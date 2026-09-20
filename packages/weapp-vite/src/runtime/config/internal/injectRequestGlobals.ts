@@ -382,9 +382,7 @@ export function createRequestGlobalsPassiveBindingsCode(
   targets: WeappInjectRequestGlobalsTarget[],
   explicitBindingTargets?: string[],
 ) {
-  const bindingTargets = explicitBindingTargets?.length
-    ? explicitBindingTargets
-    : resolveRequestGlobalsBindingTargets(targets)
+  const bindingTargets = explicitBindingTargets ?? resolveRequestGlobalsBindingTargets(targets)
   if (bindingTargets.length === 0) {
     return ''
   }

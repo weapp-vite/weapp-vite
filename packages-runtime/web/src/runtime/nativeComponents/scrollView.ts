@@ -47,12 +47,15 @@ export class WeappScrollView extends BaseElement {
 
   connectedCallback() {
     ensureNativeComponentStyle(resolveContainingShadowRoot(this))
+    const initializePosition = !this.#viewport
     this.#ensureStructure()
-    this.#syncAttributes()
+    this.#syncAttributes(undefined, initializePosition)
   }
 
-  attributeChangedCallback() {
-    this.#syncAttributes()
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+    if (oldValue !== newValue) {
+      this.#syncAttributes(name)
+    }
   }
 
   #ensureStructure() {
@@ -69,32 +72,46 @@ export class WeappScrollView extends BaseElement {
     viewport.className = 'viewport'
     const slot = document.createElement('slot')
     viewport.append(slot)
-    viewport.addEventListener('scroll', () => {
+    viewport.addEventListener('scroll', (event) => {
+      if (event.target !== viewport) {
+        return
+      }
       const detail = createScrollEventDetail(viewport, {
         scrollLeft: this.#lastScrollLeft,
         scrollTop: this.#lastScrollTop,
       })
       this.#lastScrollLeft = viewport.scrollLeft
       this.#lastScrollTop = viewport.scrollTop
-      dispatchMiniProgramEvent(this, 'scroll', detail)
+      dispatchMiniProgramEvent(this, 'scroll', detail, {
+        bubbles: false,
+        composed: false,
+      })
     })
     root.append(style, viewport)
     this.#viewport = viewport
   }
 
-  #syncAttributes() {
+  #syncAttributes(changedName?: string, initializePosition = false) {
     if (!this.#viewport) {
       return
     }
-    this.#viewport.style.overflowX = readBooleanAttribute(this, 'scroll-x') ? 'auto' : 'hidden'
-    this.#viewport.style.overflowY = readBooleanAttribute(this, 'scroll-y') ? 'auto' : 'hidden'
-    const scrollTop = Number(this.getAttribute('scroll-top'))
-    const scrollLeft = Number(this.getAttribute('scroll-left'))
-    if (Number.isFinite(scrollTop)) {
-      this.#viewport.scrollTop = scrollTop
+    if (!changedName || changedName === 'scroll-x') {
+      this.#viewport.style.overflowX = readBooleanAttribute(this, 'scroll-x') ? 'auto' : 'hidden'
     }
-    if (Number.isFinite(scrollLeft)) {
-      this.#viewport.scrollLeft = scrollLeft
+    if (!changedName || changedName === 'scroll-y') {
+      this.#viewport.style.overflowY = readBooleanAttribute(this, 'scroll-y') ? 'auto' : 'hidden'
+    }
+    if (initializePosition || changedName === 'scroll-top') {
+      const scrollTop = Number(this.getAttribute('scroll-top'))
+      if (Number.isFinite(scrollTop)) {
+        this.#viewport.scrollTop = scrollTop
+      }
+    }
+    if (initializePosition || changedName === 'scroll-left') {
+      const scrollLeft = Number(this.getAttribute('scroll-left'))
+      if (Number.isFinite(scrollLeft)) {
+        this.#viewport.scrollLeft = scrollLeft
+      }
     }
   }
 }

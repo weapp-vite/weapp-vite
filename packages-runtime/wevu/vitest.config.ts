@@ -6,6 +6,9 @@ const packageDir = import.meta.dirname
 
 export default defineProject({
   cacheDir: path.resolve(packageDir, './.vite'),
+  oxc: {
+    tsconfig: false,
+  },
   test: {
     alias: [
       {

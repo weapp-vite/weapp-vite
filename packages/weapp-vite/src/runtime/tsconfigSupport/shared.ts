@@ -41,6 +41,8 @@ export function hasDependency(packageJson: Record<string, any> | undefined, name
   )
 }
 
+export { isWevuJsxImportSource, isWevuJsxRuntimeTypePackage, resolveWevuJsxImportSource } from './jsxSources'
+
 export function unique(values: string[]) {
   return [...new Set(values)]
 }

@@ -1,5 +1,7 @@
+import type { AsyncDerivation } from '@/index'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, ref } from '@/index'
+import { computed, defineComponent, ref, useAsyncDerivation } from '@/index'
+import { toPlain } from '@/runtime/diff'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -41,7 +43,7 @@ describe('runtime: setup returned ref triggers setData', () => {
     await Promise.resolve()
 
     expect(setData.mock.calls.length).toBeGreaterThan(beforeCalls)
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ active: false }), expect.any(Function))
   })
 
   it('updates setup refs that overlap compiler-seeded data keys', async () => {
@@ -81,8 +83,8 @@ describe('runtime: setup returned ref triggers setData', () => {
     inst.markPassed()
     await Promise.resolve()
 
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ interactionCount: 1 }))
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ scenarioState: 'pass' }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ interactionCount: 1 }), expect.any(Function))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ scenarioState: 'pass' }), expect.any(Function))
   })
 
   it('patch 模式下 setup computed 返回对象时，回到初始引用仍会触发更新', async () => {
@@ -175,5 +177,77 @@ describe('runtime: setup returned ref triggers setData', () => {
       (payload.query?.loading === false && payload.query?.status === 'ready')
       || (payload['query.loading'] === false && payload['query.status'] === 'ready')
     ))).toBe(true)
+  })
+
+  it('projects only async derivation data fields through the existing setData serializer', async () => {
+    interface User {
+      id: number
+      name: string
+    }
+
+    let resolveUsers!: (users: User[]) => void
+    const request = new Promise<User[]>((resolve) => {
+      resolveUsers = resolve
+    })
+    let rejectRefresh!: (error: unknown) => void
+    const refreshRequest = new Promise<User[]>((_resolve, reject) => {
+      rejectRefresh = reject
+    })
+    let requestCount = 0
+    let users!: AsyncDerivation<User[]>
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        users = useAsyncDerivation(() => {
+          requestCount += 1
+          return requestCount === 1 ? request : refreshRequest
+        }, { immediate: false })
+        return { users }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn<(payload: Record<string, unknown>) => void>()
+    const inst = { setData }
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+    setData.mockClear()
+
+    const settled = users.refresh()
+    expect(Object.keys(users)).toEqual(['status', 'value', 'error'])
+    expect(Object.getOwnPropertyDescriptor(users, 'refresh')?.enumerable).toBe(false)
+    expect(Object.getOwnPropertyDescriptor(users, 'dispose')?.enumerable).toBe(false)
+    expect(toPlain(users)).toEqual({ status: 'initial-pending' })
+
+    resolveUsers([{ id: 1, name: 'Ada' }])
+    await settled
+    await Promise.resolve()
+
+    expect(toPlain(users)).toEqual({
+      status: 'ready',
+      value: [{ id: 1, name: 'Ada' }],
+    })
+    const payloads = setData.mock.calls.map(([payload]) => payload)
+    expect(payloads.some((payload) => {
+      const projectedUsers = payload.users as { status?: unknown } | undefined
+      return payload['users.status'] === 'ready' || projectedUsers?.status === 'ready'
+    })).toBe(true)
+    expect(payloads.some((payload) => {
+      const projectedUsers = payload.users as { value?: unknown } | undefined
+      return Array.isArray(payload['users.value']) || Array.isArray(projectedUsers?.value)
+    })).toBe(true)
+
+    const failed = users.refresh()
+    rejectRefresh(new Error('refresh failed'))
+    await failed
+    await Promise.resolve()
+    expect(toPlain(users)).toEqual({
+      status: 'error',
+      value: [{ id: 1, name: 'Ada' }],
+      error: {
+        name: 'Error',
+        message: 'refresh failed',
+      },
+    })
   })
 })

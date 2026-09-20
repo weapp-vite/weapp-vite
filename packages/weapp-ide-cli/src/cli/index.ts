@@ -1,6 +1,6 @@
 export * from './automator'
 export * from './automator-argv'
-export * from './automator-session'
+export { acquireSharedMiniProgram, type AutomatorSessionOptions, closeSharedMiniProgram, connectMiniProgram, getSharedMiniProgramSessionCount, type MiniProgramElement, type MiniProgramEventMap, type MiniProgramLike, type MiniProgramPage, releaseSharedMiniProgram, withMiniProgram } from './automator-session'
 export * from './command-catalog'
 export * from './commands'
 export { parseCompareArgs, printCompareHelp } from './compare'

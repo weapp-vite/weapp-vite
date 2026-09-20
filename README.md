@@ -112,6 +112,7 @@ pnpm build:docs
 - [`@weapp-vite/mcp`](packages/mcp)：MCP 相关工具
 - [`weapp-ide-cli`](packages/weapp-ide-cli)：微信开发者工具工作流辅助 CLI
 - [`rolldown-require`](packages/rolldown-require)：基于 Rolldown 的文件打包与 require 辅助工具
+- [`@wevu/query`](packages-runtime/wevu-query)：独立的 Wevu 服务端状态包，提供查询缓存、mutation 与分页；[使用指南](https://vite.weapp.dev/wevu/store#server-state-query)
 
 ## 文档
 

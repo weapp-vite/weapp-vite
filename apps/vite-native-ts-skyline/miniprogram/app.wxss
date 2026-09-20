@@ -1,3 +1,1 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* 全局 Tailwind 样式由 app.ts 的 CSS import 生成。 */

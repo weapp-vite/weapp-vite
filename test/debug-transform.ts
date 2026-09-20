@@ -1,5 +1,5 @@
-import { baseParse as parse } from '@vue/compiler-core'
-import { NodeTypes } from '@vue/compiler-core'
+/* eslint-disable no-console -- 手动编译诊断脚本需要输出转换结果。 */
+import { NodeTypes, baseParse as parse } from '@vue/compiler-core'
 
 const template = '<view v-if="visible">Show me</view>'
 
@@ -34,8 +34,8 @@ console.log('directive.exp:', directive?.exp)
 
 // 现在尝试生成输出
 const ifDirective = element.props.find(
-  (prop) => prop.type === NodeTypes.DIRECTIVE &&
-  (prop.name === 'if' || prop.name === 'else-if' || prop.name === 'else')
+  prop => prop.type === NodeTypes.DIRECTIVE
+    && (prop.name === 'if' || prop.name === 'else-if' || prop.name === 'else'),
 )
 console.log('ifDirective:', ifDirective)
 

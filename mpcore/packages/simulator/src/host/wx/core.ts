@@ -363,11 +363,19 @@ export interface HeadlessWxLaunchOptions {
   path: string
   query: Record<string, string>
   referrerInfo: {
-    appId: string
-    extraData: Record<string, never>
+    appId?: string
+    extraData?: Record<string, never>
   }
   scene: number
 }
+
+export interface HeadlessWxAppHideOptions {
+  reason: 0 | 1 | 2 | 3
+}
+
+export type HeadlessWxAppHideCallback = (options: HeadlessWxAppHideOptions) => void
+
+export type HeadlessWxAppShowCallback = (options: HeadlessWxLaunchOptions) => void
 
 export interface HeadlessWxMenuButtonBoundingClientRectResult {
   bottom: number

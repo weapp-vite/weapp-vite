@@ -126,6 +126,21 @@ await page.waitFor(500)
 
 > 降级元素上的不支持操作会**立即抛出带替代建议的错误**，不会再像旧版那样挂起 30s 才超时。
 
+### 4.6 结构化错误日志
+
+`enableLog(timeout, { structured: true })` 先通过 `App.CDPEnable` 注册事件通道，再启用 Runtime，保留 CDP 原始日志参数，并读取 Error 的非枚举 `name`、`message`、`stack` 数据属性，避免 SDK 将错误序列化为 `{}`。普通对象仍是原始 RemoteObject；不会执行 getter 或远程函数。默认不传选项时继续使用 SDK 日志格式。
+
+```ts
+miniProgram.addListener('console', (entry) => {
+  console.log(entry)
+})
+await miniProgram.enableLog(3_000, { structured: true })
+await miniProgram.reLaunch('/pages/index/index')
+await miniProgram.flushConsole()
+```
+
+先用 `addListener` 被动注册，再显式等待 `enableLog`，可以记录初始化期间的日志。`flushConsole()` 等待调用时已收到的错误属性检查完成；每次查询最多等待 1 秒，失败会在原参数上保留 `inspectionError`。断开连接时尚未完成的日志也会携带该诊断发布。只有宿主明确返回 CDP 命令不支持时才回退 SDK 格式；其他初始化错误仍然抛出。重复调用 `enableLog` 会刷新 Runtime 订阅，并保留已选择的格式。
+
 ## 5. 主要导出
 
 | 导出                      | 说明                                     |

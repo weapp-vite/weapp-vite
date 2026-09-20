@@ -274,6 +274,7 @@ definePageJson({
           <view class="btn-wrap">
             <view
               v-for="(item, index) in receipts"
+              :id="item.id === 0 ? 'receipt-none' : 'receipt-electronic'"
               :key="index"
               :data-item="item"
               :class="`btn ${receiptIndex === index ? 'active-btn' : ''}`"

@@ -1,0 +1,34 @@
+.vars-root {
+  --line: 28px;
+  --first: #05df72;
+  --last: #00bbfd;
+}
+
+.vars-block {
+  display: block;
+  width: 280px;
+  padding: 0;
+  margin: 0;
+  font-size: 20px;
+}
+
+.vars-nested {
+  line-height: var(--leading, var(--line));
+  border-radius: var(--radius, var(--radius-large, var(--radius-final, 8px)));
+}
+
+.vars-flat {
+  line-height: 28px;
+}
+
+.vars-gradient {
+  height: 50px;
+  background-image: linear-gradient(to right, var(--start, var(--first)), var(--end, var(--last)));
+}
+
+.override {
+  --leading: 40px;
+  --radius-final: 12px;
+  --start: #ef4444;
+  --end: #3b82f6;
+}

@@ -13,15 +13,22 @@ function createReport(options: {
   commit: string
   offset?: number
 }) {
-  const createTiers = (platformOffset: number, gzip: boolean) => runtimeSizeTiers.map((tier, index) => ({
-    id: tier.id,
-    label: tier.label,
-    dev: { bytes: 1024 * (index + 1) + platformOffset + (options.offset ?? 0) },
-    production: {
-      bytes: 512 * (index + 1) + platformOffset + (options.offset ?? 0),
-      ...(gzip ? { gzipBytes: 256 * (index + 1) + platformOffset + (options.offset ?? 0) } : {}),
-    },
-  }))
+  const createTiers = (targetId: string, platformOffset: number, gzip: boolean) => runtimeSizeTiers.map((tier, index) => {
+    const entry = `wevu-runtime-size-${targetId}-${tier.id}-production.mjs`
+    return {
+      id: tier.id,
+      label: tier.label,
+      dev: { bytes: 1024 * (index + 1) + platformOffset + (options.offset ?? 0) },
+      production: {
+        bytes: 512 * (index + 1) + platformOffset + (options.offset ?? 0),
+        ...(gzip ? { gzipBytes: 256 * (index + 1) + platformOffset + (options.offset ?? 0) } : {}),
+        retainedModules: {
+          entry,
+          modules: [{ path: entry, bytesInOutput: 1, imports: [] }],
+        },
+      },
+    }
+  })
   return {
     version: 2 as const,
     generatedAt: '2026-07-30T00:00:00.000Z',
@@ -30,12 +37,12 @@ function createReport(options: {
       {
         id: 'weapp' as const,
         label: '微信小程序',
-        tiers: createTiers(0, false),
+        tiers: createTiers('weapp', 0, false),
       },
       {
         id: 'web' as const,
         label: 'Web',
-        tiers: createTiers(1024, true),
+        tiers: createTiers('web', 1024, true),
       },
     ],
   }
@@ -94,6 +101,7 @@ describe('runtime size targets', () => {
     const production = createRuntimeSizeBuildOptions({ root: '/repo', target, tier, mode: 'production' })
 
     expect(dev.conditions).toEqual(['development'])
+    expect(dev.metafile).toBe(true)
     expect(dev.minify).toBe(false)
     expect(dev.define?.['import.meta.env.DEV']).toBe('true')
     expect(dev.sourcemap).toBe(false)
@@ -135,13 +143,20 @@ describe('runtime size targets', () => {
 })
 
 describe('collectRuntimeSizeReport', () => {
-  it('records exact bytes and gzip only for web production', async () => {
+  it('records exact bytes, production retained modules, and web gzip', async () => {
     const bundle = vi.fn(async ({ target, tier, mode }: { target: { id: string }, tier: { id: string }, mode: string }) => {
       const tierIndex = runtimeSizeTiers.findIndex(candidate => candidate.id === tier.id)
       const length = (target.id === 'weapp' ? 1024 : 4096)
         + tierIndex * 512
         + (mode === 'development' ? 256 : 0)
-      return new Uint8Array(length)
+      const entry = `wevu-runtime-size-${target.id}-${tier.id}-${mode}.mjs`
+      return {
+        contents: new Uint8Array(length),
+        retainedModules: {
+          entry,
+          modules: [{ path: entry, bytesInOutput: 1, imports: [] }],
+        },
+      }
     })
 
     const report = await collectRuntimeSizeReport({
@@ -151,16 +166,25 @@ describe('collectRuntimeSizeReport', () => {
       bundle,
     })
 
+    expect(report.version).toBe(2)
     expect(bundle).toHaveBeenCalledTimes(runtimeSizeTargets.length * runtimeSizeTiers.length * 2)
     expect(report.targets).toHaveLength(2)
     expect(report.targets[0]).toMatchObject({
       id: 'weapp',
       tiers: expect.arrayContaining([
-        expect.objectContaining({ id: 'reactivity-core', dev: { bytes: 1280 }, production: { bytes: 1024 } }),
-        expect.objectContaining({ id: 'full-provider', dev: { bytes: 3328 }, production: { bytes: 3072 } }),
+        expect.objectContaining({ id: 'reactivity-core', dev: { bytes: 1280 }, production: expect.objectContaining({ bytes: 1024 }) }),
+        expect.objectContaining({ id: 'full-provider', dev: { bytes: 3328 }, production: expect.objectContaining({ bytes: 3072 }) }),
       ]),
     })
     expect(report.targets[0]!.tiers.every(tier => tier.production.gzipBytes === undefined)).toBe(true)
+    expect(report.targets[0]!.tiers[0]!.production.retainedModules).toEqual({
+      entry: 'wevu-runtime-size-weapp-reactivity-core-production.mjs',
+      modules: [{
+        path: 'wevu-runtime-size-weapp-reactivity-core-production.mjs',
+        bytesInOutput: 1,
+        imports: [],
+      }],
+    })
     expect(report.targets[1]!.tiers.every(tier => (
       tier.production.gzipBytes !== undefined
       && tier.production.gzipBytes > 0
@@ -180,6 +204,7 @@ describe('runtime size report rendering', () => {
     expect(markdown).toContain('| 响应式核心 | 2.00 KiB (+1.00 KiB, +100.00%) | 1.50 KiB (+1.00 KiB, +200.00%) | 不适用 |')
     expect(markdown).toContain('| 完整 Provider | 7.00 KiB (+1.00 KiB, +16.67%) | 4.50 KiB (+1.00 KiB, +28.57%) | 3.25 KiB (+1.00 KiB, +44.44%) |')
     expect(markdown).toContain('具名导入模拟正常 tree-shaking')
+    expect(markdown).not.toContain('retainedModules')
     expect(formatBytes(-1024)).toBe('-1.00 KiB')
   })
 

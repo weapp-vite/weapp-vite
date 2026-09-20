@@ -24,16 +24,6 @@ exports[`build style > dist > app.json 1`] = `
 }"
 `;
 
-exports[`build style > dist > app.wxss 1`] = `
-".shared-scss {
-  color: honeydew;
-}
-
-.app {
-  color: red;
-}"
-`;
-
 exports[`build style > dist > assets/background.svg 1`] = `
 "<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 2">
   <path fill="#f00" d="M0 0h2v2H0z"/>
@@ -59,12 +49,6 @@ exports[`build style > dist > components/Navbar/Navbar.json 1`] = `
 exports[`build style > dist > components/Navbar/Navbar.wxml 1`] = `
 "<view>Navbar</view>
 "
-`;
-
-exports[`build style > dist > components/Navbar/Navbar.wxss 1`] = `
-".navbar {
-  color: red;
-}"
 `;
 
 exports[`build style > dist > pages/index/background.svg 1`] = `
@@ -96,23 +80,6 @@ exports[`build style > dist > pages/index/index.wxml 1`] = `
   <view>Hello World From Weapp-vite!</view>
 </view>
 "
-`;
-
-exports[`build style > dist > pages/index/index.wxss 1`] = `
-".shared-css {
-  color: beige;
-}
-
-.page {
-  color: red;
-  background-image: url("../../assets/background.svg");
-}
-
-.page .title {
-  color: red;
-  -webkit-background-clip: text;
-  background-clip: text;
-}"
 `;
 
 exports[`build style > dist > sitemap.json 1`] = `

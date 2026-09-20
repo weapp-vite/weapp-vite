@@ -10,6 +10,7 @@ import type {
   RouteLocationNormalizedLoaded,
   RouteLocationRedirectedFrom,
   RouteParamsMode,
+  RouteRecordInput,
   RouteRecordMatched,
   RouteRecordRaw,
   RouterNavigation,
@@ -59,10 +60,9 @@ expectType<RouteLocationNormalizedLoaded>(resolvedWithMeta)
 
 const route = useRoute()
 expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
-const paramsMode: RouteParamsMode = 'strict'
-expectType<'loose' | 'strict'>(paramsMode)
+expectType<'loose' | 'strict'>({} as RouteParamsMode)
 const initialNavigationMode: InitialNavigationMode = 'eager'
-expectType<'eager' | 'blocking'>(initialNavigationMode)
+expectType<'eager' | 'blocking'>({} as InitialNavigationMode)
 
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
@@ -98,7 +98,7 @@ expectType<AddRoute>(navigation.addRoute)
 expectType<Readonly<UseRouterOptions>>(navigation.options)
 expectType<number | undefined>(navigation.options.initialNavigationTimeout)
 expectType<'eager' | 'blocking' | undefined>(navigation.options.initialNavigationMode)
-expectType<readonly RouteRecordRaw[] | undefined>(navigation.options.routes)
+expectType<readonly RouteRecordInput[] | undefined>(navigation.options.routes)
 expectType<void>(navigation.install())
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())

@@ -1,7 +1,8 @@
 import type * as t from '@weapp-vite/ast/babelTypes'
 import type { ComponentPropMap } from '../componentProps'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, getVisitorKeys, parse, traverse } from '../../utils/babel'
-import { mapConstructorName } from '../utils/constructorType'
+import type { PortablePropTypeContext } from './portablePropType'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, parse, traverse } from '../../utils/babel'
+import { collectPortablePropTypeContext, formatPortableComponentPropType } from './portablePropType'
 
 function getNodeText(node: t.Node) {
   return generate(node, { comments: false, concise: true }).code.trim()
@@ -32,56 +33,34 @@ function unwrapTypeAnnotation(
   return undefined
 }
 
-function containsImportType(node: t.Node): boolean {
-  let has = false
-  const VISITOR_KEYS = getVisitorKeys()
-  const visit = (current: any) => {
-    if (has) {
-      return
-    }
-    if (!current) {
-      return
-    }
-    if (Array.isArray(current)) {
-      for (const item of current) {
-        visit(item)
-        if (has) {
-          return
-        }
-      }
-      return
-    }
-    if (typeof current.type !== 'string') {
-      return
-    }
-    if (current.type === 'TSImportType') {
-      has = true
-      return
-    }
-    const keys = (VISITOR_KEYS as Record<string, string[]>)[current.type]
-    if (!keys) {
-      return
-    }
-    for (const key of keys) {
-      visit(current[key])
-      if (has) {
-        return
-      }
-    }
-  }
-  visit(node)
-  return has
-}
-
 function mapConstructorType(node: t.TSType | undefined): string | undefined {
   if (!node) {
     return undefined
   }
   if (node.type === 'TSTypeReference') {
-    if (node.typeName.type === 'Identifier') {
-      return mapConstructorName(node.typeName.name)
+    const name = node.typeName.type === 'Identifier'
+      ? node.typeName.name
+      : getNodeText(node.typeName)
+    const normalized = name.endsWith('Constructor')
+      ? name.slice(0, -'Constructor'.length)
+      : name
+    switch (normalized) {
+      case 'String':
+        return 'string'
+      case 'Number':
+        return 'number'
+      case 'Boolean':
+        return 'boolean'
+      case 'Object':
+        return 'object'
+      case 'Array':
+        return 'unknown[]'
+      case 'Null':
+      case 'null':
+        return 'unknown'
+      default:
+        return 'unknown'
     }
-    return mapConstructorName(getNodeText(node.typeName))
   }
   if (node.type === 'TSUnionType') {
     const items = node.types
@@ -89,13 +68,13 @@ function mapConstructorType(node: t.TSType | undefined): string | undefined {
       .filter((value): value is string => Boolean(value))
     return items.length ? [...new Set(items)].join(' | ') : undefined
   }
-  if (node.type === 'TSNullKeyword') {
-    return 'any'
-  }
-  return mapConstructorName(getNodeText(node))
+  return 'unknown'
 }
 
-function resolveTypeFromConfigLiteral(configType: t.TSType | undefined): string | undefined {
+function resolveTypeFromConfigLiteral(
+  configType: t.TSType | undefined,
+  context: PortablePropTypeContext,
+): string | undefined {
   if (!configType || configType.type !== 'TSTypeLiteral') {
     return undefined
   }
@@ -109,8 +88,8 @@ function resolveTypeFromConfigLiteral(configType: t.TSType | undefined): string 
     }
     const key = getPropertyName(member.key)
     const type = unwrapTypeAnnotation(member.typeAnnotation)
-    if (key === 'value' && type && !containsImportType(type)) {
-      valueType = getNodeText(type)
+    if (key === 'value' && type) {
+      valueType = formatPortableComponentPropType(type, context)
     }
     else if (key === 'type') {
       constructorType = mapConstructorType(type)
@@ -133,7 +112,10 @@ function isPropsConfigLiteral(configType: t.TSTypeLiteral): boolean {
   return false
 }
 
-function extractFromPropertiesTypeLiteral(node: t.TSTypeLiteral): ComponentPropMap {
+function extractFromPropertiesTypeLiteral(
+  node: t.TSTypeLiteral,
+  context: PortablePropTypeContext,
+): ComponentPropMap {
   const map: ComponentPropMap = new Map()
 
   for (const member of node.members) {
@@ -144,14 +126,20 @@ function extractFromPropertiesTypeLiteral(node: t.TSTypeLiteral): ComponentPropM
     if (!propName) {
       continue
     }
-    const type = resolveTypeFromConfigLiteral(unwrapTypeAnnotation(member.typeAnnotation)) ?? 'any'
+    const type = resolveTypeFromConfigLiteral(
+      unwrapTypeAnnotation(member.typeAnnotation),
+      context,
+    ) ?? 'unknown'
     map.set(propName, type)
   }
 
   return map
 }
 
-function extractFromPropsInterfaceMembers(node: t.TSInterfaceDeclaration): ComponentPropMap {
+function extractFromPropsInterfaceMembers(
+  node: t.TSInterfaceDeclaration,
+  context: PortablePropTypeContext,
+): ComponentPropMap {
   const map: ComponentPropMap = new Map()
 
   for (const member of node.body.body) {
@@ -171,7 +159,7 @@ function extractFromPropsInterfaceMembers(node: t.TSInterfaceDeclaration): Compo
       continue
     }
 
-    const type = resolveTypeFromConfigLiteral(typeNode) ?? 'any'
+    const type = resolveTypeFromConfigLiteral(typeNode, context) ?? 'unknown'
     map.set(propName, type)
   }
 
@@ -185,6 +173,8 @@ export function extractComponentPropsFromDts(code: string): ComponentPropMap {
     ...BABEL_TS_MODULE_PARSER_OPTIONS,
     errorRecovery: true,
   })
+
+  const context = collectPortablePropTypeContext(ast)
 
   traverse(ast, {
     TSInterfaceDeclaration(path) {
@@ -203,13 +193,13 @@ export function extractComponentPropsFromDts(code: string): ComponentPropMap {
         }
         const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
         if (typeNode?.type === 'TSTypeLiteral') {
-          props = extractFromPropertiesTypeLiteral(typeNode)
+          props = extractFromPropertiesTypeLiteral(typeNode, context)
           path.stop()
           return
         }
       }
 
-      const extracted = extractFromPropsInterfaceMembers(path.node)
+      const extracted = extractFromPropsInterfaceMembers(path.node, context)
       if (extracted.size > 0) {
         props = extracted
         path.stop()
@@ -230,7 +220,7 @@ export function extractComponentPropsFromDts(code: string): ComponentPropMap {
         }
         const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
         if (typeNode?.type === 'TSTypeLiteral') {
-          props = extractFromPropertiesTypeLiteral(typeNode)
+          props = extractFromPropertiesTypeLiteral(typeNode, context)
           path.stop()
           return
         }
@@ -248,17 +238,7 @@ export function extractInlinePropsTypeFromCode(code: string): ComponentPropMap {
     errorRecovery: true,
   })
 
-  const typeAliases = new Map<string, t.TSType>()
-  const interfaces = new Map<string, t.TSInterfaceDeclaration>()
-
-  traverse(ast, {
-    TSTypeAliasDeclaration(path) {
-      typeAliases.set(path.node.id.name, path.node.typeAnnotation)
-    },
-    TSInterfaceDeclaration(path) {
-      interfaces.set(path.node.id.name, path.node)
-    },
-  })
+  const context = collectPortablePropTypeContext(ast)
 
   const pushTypeLiteralMembers = (node: t.TSTypeLiteral) => {
     for (const member of node.members) {
@@ -270,7 +250,7 @@ export function extractInlinePropsTypeFromCode(code: string): ComponentPropMap {
         continue
       }
       const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
-      props.set(propName, typeNode ? getNodeText(typeNode) : 'any')
+      props.set(propName, typeNode ? formatPortableComponentPropType(typeNode, context) : 'unknown')
     }
   }
 
@@ -284,7 +264,7 @@ export function extractInlinePropsTypeFromCode(code: string): ComponentPropMap {
         continue
       }
       const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
-      props.set(propName, typeNode ? getNodeText(typeNode) : 'any')
+      props.set(propName, typeNode ? formatPortableComponentPropType(typeNode, context) : 'unknown')
     }
   }
 
@@ -309,13 +289,13 @@ export function extractInlinePropsTypeFromCode(code: string): ComponentPropMap {
         return
       }
       if (typeParameter.type === 'TSTypeReference' && typeParameter.typeName.type === 'Identifier') {
-        const alias = typeAliases.get(typeParameter.typeName.name)
+        const alias = context.typeAliases.get(typeParameter.typeName.name)?.typeAnnotation
         if (alias?.type === 'TSTypeLiteral') {
           pushTypeLiteralMembers(alias)
           path.stop()
           return
         }
-        const iface = interfaces.get(typeParameter.typeName.name)
+        const iface = context.interfaces.get(typeParameter.typeName.name)
         if (iface) {
           pushInterfaceMembers(iface)
           path.stop()

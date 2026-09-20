@@ -223,8 +223,16 @@ onLoad((query) => {
       <text id="socket-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="socket-request-count" class="line">requestCount = {{ state.requestCount }}</text>
       <text id="socket-request-path" class="line">requestPath = {{ state.requestPath }}</text>
+      <text id="socket-response-client" class="line">client = {{ state.response.client }}</text>
+      <text id="socket-response-transport" class="line">transport = {{ state.response.transport }}</text>
+      <text id="socket-response-method" class="line">method = {{ state.response.method }}</text>
+      <text id="socket-response-operationName" class="line">operationName = {{ state.response.operationName }}</text>
+      <text id="socket-response-event" class="line">event = {{ state.response.event }}</text>
       <text id="socket-default-transport" class="line">defaultTransport = {{ defaultTransportName }}</text>
       <text id="socket-websocket-transport" class="line">websocketOnlyTransport = {{ websocketOnlyTransportName }}</text>
+      <text id="socket-default-supported" class="line">defaultTransportSupported = {{ state.socketChecks.defaultTransportSupported }}</text>
+      <text id="socket-random-received" class="line">serverRandomReceived = {{ state.socketChecks.serverRandomReceived }}</text>
+      <text id="socket-websocket-connected" class="line">websocketOnlyConnected = {{ state.socketChecks.websocketOnlyConnected }}</text>
       <text class="line">randomPushCount = {{ randomPushCount }}</text>
       <text class="line">latestRandomMessageReady = {{ latestRandomMessage ? 'yes' : 'no' }}</text>
       <text class="line">latestRandomSentAt = {{ latestRandomSentAt }}</text>

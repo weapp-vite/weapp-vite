@@ -1,10 +1,12 @@
 import { afterAll, beforeAll, describe, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { runIssue642Bug7RuntimeCase } from './github-issues.runtime.issue642-bug7.shared'
 import {
   closeSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
 } from './github-issues.runtime.shared'
+import { ISSUE642_BUG7 } from './githubIssuesDom/scopedSlots'
 
 describe('e2e app: github-issues / issue #642 bug-7 default mode', { concurrent: false }, () => {
   beforeAll(async () => {
@@ -16,6 +18,7 @@ describe('e2e app: github-issues / issue #642 bug-7 default mode', { concurrent:
   })
 
   it('renders bug-7 scoped and default slots in normal mode without runtime loops', async (ctx) => {
-    await runIssue642Bug7RuntimeCase(ctx)
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE642_BUG7)
+    await runIssue642Bug7RuntimeCase(ctx, dom)
   })
 })

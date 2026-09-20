@@ -86,7 +86,7 @@ export default defineConfig({
 ## `weapp.hmr.touchAppWxss` {#weapp-hmr-touchappwxss}
 - **类型**：`boolean | 'auto'`
 - **默认值**：`'auto'`
-- **适用场景**：开发态构建结束后，额外触碰 `app.wxss`，触发微信开发者工具的热重载。
+- **适用场景**：需要兼容全局样式刷新时，在开发态增量构建结束后额外更新已有 `app.wxss` 的时间戳。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -101,13 +101,15 @@ export default defineConfig({
 ```
 
 行为说明：
-- `true`：总是启用。
-- `false`：关闭。
-- `auto`：检测到 Tailwind CSS 集成（包括 `weapp.tailwindcss` 内置集成）时启用。
+- `true`：每次增量构建结束后刷新已存在的全局样式。微信开发者工具可能因此重载 AppService 并重置页面状态。
+- `false`：关闭额外刷新；Tailwind 内容扫描、样式编译与正常产物更新仍会执行。
+- `auto`：只为非内置 Tailwind 集成中已确认的内容失效补充全局刷新。内置 `weapp.tailwindcss` 由 compiler 与 Vite/Rolldown 原生输出负责更新，不再重复触碰全局样式。普通页面、组件或 layout 的局部样式更新不会触发该行为；祖先目录中可以解析到 Tailwind 依赖也不会启用它。
+
+该选项不会创建缺失的 `app.wxss`，也不会改写构建器生成的内容；除文件不存在以外的刷新错误会输出到开发日志。
 
 适用建议：
-- 如果你在开发者工具里经常遇到样式更新不稳定、必须手动刷新，优先检查这一项。
-- 若项目未使用 Tailwind CSS 且样式热更新已经稳定，可保持默认或显式关闭。
+- 一般保持默认值，让局部样式更新保留页面交互状态。
+- 只有确认需要每轮全局重载的旧集成才显式开启 `true`。
 
 ## `weapp.hmr.logLevel` {#weapp-hmr-loglevel}
 

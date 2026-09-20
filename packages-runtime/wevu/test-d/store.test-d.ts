@@ -1,6 +1,6 @@
-import type { Ref } from '@/index'
+import type { Ref } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { defineStore, storeToRefs } from '@/index'
+import { defineStore, storeToRefs } from 'wevu'
 
 const useOptionsStore = defineStore('options', {
   state: () => ({ count: 0, nested: { counter: 1 } }),
@@ -25,6 +25,12 @@ const useOptionsStore = defineStore('options', {
   },
   actions: {
     inc() {
+      this.$patch((state) => {
+        expectType<number>(state.count)
+      })
+      expectType<number>(this.$state.count)
+      expectType<void>(this.$reset())
+      expectError(this.$patch({ count: 'invalid' }))
       this.count += 1
       return this.count
     },
@@ -49,7 +55,8 @@ expectType<() => void>(unsub)
 const unsubAction = optionsStore.$onAction(() => () => {})
 expectType<() => void>(unsubAction)
 expectError(optionsStore.notExists)
-expectType<void>((optionsStore.$state = { count: 3, nested: { counter: 1 } }))
+optionsStore.$state = { count: 3, nested: { counter: 1 } }
+expectError(optionsStore.$state = { count: 'invalid', nested: { counter: 1 } })
 
 const optionsRefs = storeToRefs(optionsStore)
 expectType<Ref<number>>(optionsRefs.count)
@@ -94,3 +101,19 @@ const stopSub = optionsStore.$subscribe((mutation, state) => {
   expectType<{ count: number, nested: { counter: number } }>(state)
 })
 expectType<() => void>(stopSub)
+
+const useAsyncStore = defineStore('async-actions', {
+  state: () => ({ count: 0 }),
+  actions: {
+    async increment() {
+      return ++this.count
+    },
+  },
+})
+useAsyncStore().$onAction(({ store, after }) => {
+  expectType<number>(store.$state.count)
+  expectType<void>(store.$patch({ count: 1 }))
+  after((result) => {
+    expectType<number>(result)
+  })
+})

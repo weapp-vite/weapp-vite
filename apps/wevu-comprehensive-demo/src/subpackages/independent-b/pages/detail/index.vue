@@ -1,7 +1,8 @@
 <script lang="ts">
+import { defineComponent } from 'wevu'
 import { useIndependentBCounter } from '../../state'
 
-export default {
+export default defineComponent({
   setup() {
     const counter = useIndependentBCounter()
     const { count, label, increment } = counter
@@ -22,7 +23,7 @@ export default {
       goToScenarioPage,
     }
   },
-}
+})
 </script>
 
 <template>

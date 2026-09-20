@@ -37,7 +37,7 @@ export default defineComponent({
     increaseIslandCount(this: { islandCount: number }) {
       this.islandCount += 1
     },
-    handleCardChange(this: { lastCardEvent: string }, event: WechatMiniprogram.CustomEvent<string>) {
+    handleCardChange(this: { lastCardEvent: string }, event: { detail: string }) {
       this.lastCardEvent = event.detail
     },
     runE2E(this: any) {
@@ -83,6 +83,11 @@ export default defineComponent({
           onChange={this.handleCardChange}
         />
         <view className="desc">以下条目来自 TS 类型数组渲染：</view>
+        <view id="tsx-card-event">
+          card event:
+          {' '}
+          {this.lastCardEvent}
+        </view>
         <view className="card">
           这里展示了 TSX 页面里直接写类型与 JSX 的组合能力。
         </view>

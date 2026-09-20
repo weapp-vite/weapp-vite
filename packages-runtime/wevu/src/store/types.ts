@@ -23,19 +23,19 @@ export interface StoreSubscribeOptions {
 /**
  * @description Action 订阅回调上下文
  */
-export interface ActionContext<TStore = any> {
+export interface ActionContext<TStore = any, TResult = any> {
   name: string
   store: TStore
   args: any[]
-  after: (cb: (result: any) => void) => void
+  after: (cb: (result: TResult) => void) => void
   onError: (cb: (error: any) => void) => void
 }
 
 /**
  * @description Action 订阅回调类型
  */
-export interface ActionSubscriber<TStore = any> {
-  (context: ActionContext<TStore>): void
+export interface ActionSubscriber<TStore = any, TResult = any> {
+  (context: ActionContext<TStore, TResult>): void
 }
 
 /**
@@ -60,6 +60,18 @@ export type StoreGetters<G extends GetterTree<any>> = {
   [K in keyof G]: G[K] extends (...args: any[]) => infer R ? R : never
 }
 
+type ActionResult<A> = Awaited<ReturnType<Extract<A[keyof A], (...args: any[]) => any>>>
+
+/** 选项式 Store 的完整实例，供外部调用及 action/getter 的 this 共享。 */
+export type OptionsStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>> = S & StoreGetters<G> & A & {
+  $id: string
+  $state: S
+  $patch: (patch: Partial<S> | ((state: S) => void)) => void
+  $reset: () => void
+  $subscribe: (cb: SubscriptionCallback<S>, opts?: StoreSubscribeOptions) => () => void
+  $onAction: (cb: ActionSubscriber<OptionsStore<S, G, A>, ActionResult<A>>) => () => void
+}
+
 /**
  * @description defineStore(options) 的配置类型
  */
@@ -69,6 +81,6 @@ export interface DefineStoreOptions<
   A extends Record<string, any>,
 > {
   state: () => S
-  getters?: G & Record<string, (state: S) => any> & ThisType<S & StoreGetters<G> & A>
-  actions?: A & ThisType<S & StoreGetters<G> & A>
+  getters?: G & Record<string, (state: S) => any> & ThisType<OptionsStore<S, G, A>>
+  actions?: A & ThisType<OptionsStore<S, G, A>>
 }

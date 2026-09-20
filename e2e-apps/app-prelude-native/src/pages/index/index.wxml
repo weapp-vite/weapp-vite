@@ -7,3 +7,4 @@
 >
   {{item}}
 </view>
+<view wx:for="{{requestRuntime}}" wx:key="index" id="runtime-{{index}}">{{index}}={{item}}</view>

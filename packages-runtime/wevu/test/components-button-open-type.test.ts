@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 interface ComponentAttr {
   name: string
+  jsxName?: string
   enum?: Array<{ value: string }>
 }
 
@@ -12,7 +13,7 @@ interface ComponentMeta {
   attrs?: ComponentAttr[]
 }
 
-const componentsPath = path.resolve(import.meta.dirname, '../components.json')
+const componentsPath = path.resolve(import.meta.dirname, '../components.weapp.json')
 const intrinsicPath = path.resolve(import.meta.dirname, '../src/weappIntrinsicElements/elements/button.ts')
 
 async function readComponents(): Promise<ComponentMeta[]> {
@@ -54,20 +55,20 @@ describe('button open-type metadata', () => {
     ])
   })
 
-  it('exposes open-type handlers in components.json', async () => {
+  it('exposes source event metadata in components.weapp.json', async () => {
     const components = await readComponents()
     const button = getButtonComponent(components)
-    const attrNames = new Set(button.attrs?.map(attr => attr.name))
-    const expected = [
-      'bindchooseavatar',
-      'bindagreeprivacyauthorization',
-      'bindgetrealtimephonenumber',
-      'bindlaunchapp',
-      'createliveactivity',
-    ]
+    const attrsByHostName = new Map(button.attrs?.map(attr => [attr.name, attr]))
+    const expected = {
+      bindchooseavatar: 'onChooseAvatar',
+      bindagreeprivacyauthorization: 'onAgreePrivacyAuthorization',
+      bindgetrealtimephonenumber: 'onGetRealtimePhoneNumber',
+      bindlaunchapp: 'onLaunchApp',
+      createliveactivity: 'onCreateLiveActivity',
+    }
 
-    for (const name of expected) {
-      expect(attrNames.has(name)).toBe(true)
+    for (const [hostName, sourceName] of Object.entries(expected)) {
+      expect(attrsByHostName.get(hostName)?.jsxName).toBe(sourceName)
     }
   })
 
@@ -80,11 +81,11 @@ describe('button open-type metadata', () => {
       'agreePrivacyAuthorization',
     ]
     const handlers = [
-      'bindchooseavatar',
-      'bindagreeprivacyauthorization',
-      'bindgetrealtimephonenumber',
-      'bindlaunchapp',
-      'createliveactivity',
+      'onChooseAvatar',
+      'onAgreePrivacyAuthorization',
+      'onGetRealtimePhoneNumber',
+      'onLaunchApp',
+      'onCreateLiveActivity',
     ]
 
     for (const value of values) {

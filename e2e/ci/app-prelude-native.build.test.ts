@@ -1,6 +1,8 @@
 import {
   APP_PRELUDE_CHUNK_MARKER,
   APP_PRELUDE_GUARD_KEY,
+  APP_PRELUDE_REQUIRE_MARKER,
+  REQUEST_GLOBAL_BUNDLE_MARKER,
   REQUEST_GLOBAL_PRELUDE_GUARD_KEY,
   REQUEST_GLOBAL_PRELUDE_MARKER,
 } from '@weapp-core/constants'
@@ -218,20 +220,26 @@ describe('e2e app: app-prelude-native (build)', { concurrent: false }, () => {
     expect(mainPageJs.indexOf(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)).toBeLessThan(mainPageJs.indexOf(`/* ${APP_PRELUDE_CHUNK_MARKER} */`))
   })
 
-  it('emits request globals installer into app.prelude.js when mode is require', async () => {
+  it('shares one external request globals installer between app and prelude when mode is require', async () => {
     await runBuildWithRequestGlobalsPrelude('require')
 
     const appJs = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     const rootPreludeJs = await fs.readFile(path.join(DIST_ROOT, 'app.prelude.js'), 'utf8')
-    const requestGlobalsModuleKey = '__weappViteRequestGlobalsModule:weapp-vendors/request-globals-web-apis-shared.js'
+    const installerFileName = 'weapp-vendors/request-globals-web-apis-shared.js'
+    const installerJs = await fs.readFile(path.join(DIST_ROOT, installerFileName), 'utf8')
+    const installerRequire = `require("./${installerFileName}")`
 
     expect(appJs).toContain('require("./app.prelude.js")')
     expect(appJs).not.toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
-    expect(appJs).toContain(requestGlobalsModuleKey)
+    expect(appJs).toContain(installerRequire)
+    expect(appJs).not.toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
+    expect(installerJs).toContain(REQUEST_GLOBAL_BUNDLE_MARKER)
+    expect(installerJs).not.toContain(APP_PRELUDE_REQUIRE_MARKER)
+    expect(installerJs).not.toContain(APP_PRELUDE_CHUNK_MARKER)
     expect(appJs).toContain('installWebRuntimeGlobals')
     expect(rootPreludeJs).toContain(`/* ${REQUEST_GLOBAL_PRELUDE_MARKER} */`)
     expect(rootPreludeJs).toContain(`/* ${APP_PRELUDE_CHUNK_MARKER} */`)
-    expect(rootPreludeJs).toContain('require("./weapp-vendors/request-globals-web-apis-shared.js")')
+    expect(rootPreludeJs).toContain(installerRequire)
     expect(rootPreludeJs).toContain(JSON.stringify(REQUEST_GLOBAL_PRELUDE_GUARD_KEY))
     expect(rootPreludeJs).toContain('"fetch","Headers","Request","Response"')
     expect(rootPreludeJs).not.toContain('"XMLHttpRequest"')

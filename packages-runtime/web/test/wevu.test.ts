@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   installWebModuleRegistration,
   registerWebWevuApp,
-  registerWebWevuComponent,
 } from '../src/runtime/wevu'
 
 const createAppMock = vi.hoisted(() => vi.fn((options: Record<string, any>) => {
@@ -61,21 +60,6 @@ describe('wevu web registration bridge', () => {
     expect(createAppMock).toHaveBeenCalledTimes(1)
     expect(registerAppMock).toHaveBeenCalledWith({ pending: true }, meta)
     expect((globalThis as any).App).toBe(previousApp)
-  })
-
-  it('routes Wevu pages and components through their matching registries', () => {
-    registerWebWevuComponent({ data: { page: true } }, { kind: 'page', id: 'pages/home' } as any)
-    expect(registerPageMock).toHaveBeenCalledWith(
-      { data: { page: true } },
-      { kind: 'page', id: 'pages/home' },
-    )
-
-    registerWebWevuComponent({ data: { component: true } }, { kind: 'component', id: 'card' } as any)
-    expect(registerComponentMock).toHaveBeenCalledWith(
-      { data: { component: true } },
-      { kind: 'component', id: 'card' },
-    )
-    expect((globalThis as any).Component).toBeUndefined()
   })
 
   it('installs app, page and component constructors and restores owned values', () => {

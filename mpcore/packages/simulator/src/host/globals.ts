@@ -1,3 +1,6 @@
+import { validateConstructedBehaviors } from './behavior'
+import { registerComponentPageAttachment } from './componentPageAttachment'
+
 export interface HeadlessAppDefinition extends Record<string, any> {}
 
 export interface HeadlessPageDefinition extends Record<string, any> {}
@@ -52,12 +55,10 @@ export function normalizeComponentPageDefinition(definition: HeadlessComponentDe
   const resize = pageLifetimes.resize ?? methods.onResize ?? rest.onResize
   const routeDone = pageLifetimes.routeDone ?? methods.onRouteDone ?? rest.onRouteDone
 
-  return {
+  const pageDefinition = {
     ...rest,
     ...methods,
     onLoad(this: Record<string, any>, ...args: any[]) {
-      callDefinitionMethod(this, created, [])
-      callDefinitionMethod(this, attached, [])
       return callDefinitionMethod(this, load, args)
     },
     onShow(this: Record<string, any>, ...args: any[]) {
@@ -79,6 +80,11 @@ export function normalizeComponentPageDefinition(definition: HeadlessComponentDe
       return callDefinitionMethod(this, routeDone, args)
     },
   }
+  registerComponentPageAttachment(pageDefinition, function () {
+    callDefinitionMethod(this, created, [])
+    callDefinitionMethod(this, attached, [])
+  })
+  return pageDefinition
 }
 
 export function createHostRegistries(): HeadlessHostRegistries {
@@ -111,6 +117,7 @@ export function registerPageDefinition(registries: HeadlessHostRegistries, defin
 }
 
 export function registerComponentDefinition(registries: HeadlessHostRegistries, definition: HeadlessComponentDefinition) {
+  validateConstructedBehaviors(definition)
   if (registries.currentLoadContext?.kind === 'page') {
     if (registries.currentLoadContext.componentDefinitions) {
       registries.currentLoadContext.componentDefinitions.push(definition)

@@ -1,6 +1,8 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   callRoutePageMethod,
   closeSharedMiniProgram,
@@ -12,9 +14,12 @@ import {
   releaseSharedMiniProgram,
   verifyRouteRenderedWithRecovery,
 } from './github-issues.runtime.shared'
+import { propsCheckpoints } from './githubIssuesDom/props'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const ISSUE_600_ROUTE = '/pages/issue-600/index'
+const ISSUE_955_ROUTE = '/pages/issue-955/index'
+const ISSUE_955_TYPE_WARNING_RE = /type-uncompatible|property ["'](?:content|src)["'][^\n]*(?:expected|got|get) /i
 
 function createIssue600Readiness(expectedSummary: string) {
   return async (_page: any, miniProgram: any) => Boolean(await miniProgram.evaluate((summary: string) => {
@@ -53,6 +58,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
   }, 30_000)
 
   it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue322)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-322/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-322/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -78,6 +84,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         emailError: '',
       })
       expect(runtimeErrors.getSince(marker)).toEqual([])
+      await dom.check('initial', activeMiniProgram, issuePage)
       await callRoutePageMethod(activeMiniProgram, '/pages/issue-322/index', 'setEmailError')
       await issuePage.waitFor(260)
       expect(runtimeErrors.getSince(marker)).toEqual([])
@@ -87,6 +94,9 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         hasEmailError: true,
         emailError: 'invalid email',
       })
+      await dom.check('error', activeMiniProgram, issuePage)
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-322/index', 'clearEmailError')
+      await dom.check('cleared', activeMiniProgram, issuePage)
     }
     finally {
       runtimeErrors.dispose()
@@ -95,6 +105,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
   })
 
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue300)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')
     const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.wxml')
@@ -125,6 +136,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         boolText: 'true',
         str: 'Hello',
       })
+      await dom.check('initial', activeMiniProgram, issuePage)
       const toggledRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-300/index', '_runE2E', 'toggleBool')
       expect(toggledRuntime).toMatchObject({
         ok: true,
@@ -132,6 +144,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         boolText: 'false',
         str: 'Hello',
       })
+      await dom.check('toggled', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -139,6 +152,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
   })
 
   it('issue #328: keeps setup ref string props out of null/default fallback on first paint', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue328)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-328/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-328/index.js')
     expect(await fs.readFile(issuePageWxmlPath, 'utf-8')).toContain('issue-328 setup ref prop first paint')
@@ -156,18 +170,121 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         ok: true,
         value1: '111',
       })
+      await dom.check('initial', activeMiniProgram, issuePage)
       const toggledRuntime = await callRoutePageMethod(activeMiniProgram, '/pages/issue-328/index', '_runE2E', 'advance')
       expect(toggledRuntime).toMatchObject({
         ok: true,
         value1: '222',
       })
+      await dom.check('updated', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
 
+  it('issue #955: preserves union values and nullable defaults without native prop coercion', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue955)
+    const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-955/index.wxml')
+    const pageJsPath = path.join(DIST_ROOT, 'pages/issue-955/index.js')
+    const pageJsonPath = path.join(DIST_ROOT, 'pages/issue-955/index.json')
+    const probeJsPath = path.join(DIST_ROOT, 'components/issue-955/NativePropsProbe/index.js')
+    expect(await fs.readFile(pageWxmlPath, 'utf-8')).toContain('issue-955 native nullable and union props')
+    expect(await fs.readFile(pageJsPath, 'utf-8')).toContain('_runE2E')
+    expect(await fs.readFile(pageJsonPath, 'utf-8')).toContain('native-props-probe')
+    expect(await fs.readFile(probeJsPath, 'utf-8')).toContain('snapshot')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const runtimeErrors = attachRuntimeErrorCollector(miniProgram)
+    try {
+      const marker = runtimeErrors.mark()
+      const issuePage = await relaunchPage(miniProgram, ISSUE_955_ROUTE, undefined, 45_000, { readiness: 'route' })
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-955 page')
+      }
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      // 首屏就绪由组件作用域内的六项 DOM 断言确认，页面查询不能穿透原生组件边界。
+      await dom.check('initial', activeMiniProgram, issuePage)
+      const initial = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E')
+      expect(initial).toEqual({
+        ready: true,
+        parent: {
+          content: 'string:SALE',
+          src: 'undefined',
+        },
+        child: {
+          content: 'string:SALE',
+          src: 'null',
+          nullable: 'null',
+          initialSummary: 'string:SALE|null',
+        },
+      })
+      const numberValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'number')
+      expect(numberValue).toMatchObject({
+        parent: {
+          content: 'number:42',
+          src: 'string:number.png',
+        },
+        child: {
+          content: 'number:42',
+          src: 'string:number.png',
+          nullable: 'string:number-label',
+        },
+      })
+      await dom.check('number', activeMiniProgram, issuePage)
+
+      const nullValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'null')
+      expect(nullValue).toMatchObject({
+        parent: {
+          content: 'null',
+          src: 'null',
+        },
+        child: {
+          content: 'null',
+          src: 'null',
+          nullable: 'null',
+        },
+      })
+      await dom.check('null', activeMiniProgram, issuePage)
+
+      const undefinedValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'undefined')
+      expect(undefinedValue).toMatchObject({
+        parent: {
+          content: 'undefined',
+          src: 'undefined',
+        },
+        child: {
+          content: 'null',
+          src: 'null',
+          nullable: 'null',
+        },
+      })
+      await dom.check('undefined', activeMiniProgram, issuePage)
+
+      const stringValue = await callRoutePageMethod(activeMiniProgram, ISSUE_955_ROUTE, '_runE2E', 'string')
+      expect(stringValue).toMatchObject({
+        parent: {
+          content: 'string:PROMO',
+          src: 'string:string.png',
+        },
+        child: {
+          content: 'string:PROMO',
+          src: 'string:string.png',
+          nullable: 'string:string-label',
+        },
+      })
+      expect(stringValue.child.initialSummary).toBe('string:SALE|null')
+      await dom.check('string', activeMiniProgram, issuePage)
+      expect(runtimeErrors.getLogsSince(marker).filter(log => ISSUE_955_TYPE_WARNING_RE.test(log))).toEqual([])
+    }
+    finally {
+      runtimeErrors.dispose()
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #597: keeps v-if and v-else named slot branches intact in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue597)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-597/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-597/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -187,6 +304,9 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         ok: true,
         issue: 597,
       })
+      await dom.check('initial', activeMiniProgram, issuePage)
+      await callRoutePageMethod(activeMiniProgram, '/pages/issue-597/index', '_runE2E', 'toggle')
+      await dom.check('else', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -194,6 +314,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
   })
 
   it('issue #613: compares forwarded slot outlets with view and native block wrappers in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue613)
     const pageWxmlPath = path.join(DIST_ROOT, 'pages/issue-613/index.wxml')
     const appJsonPath = path.join(DIST_ROOT, 'app.json')
     const viewForwarderWxmlPath = path.join(DIST_ROOT, 'components/issue-613/Issue613ViewForwarder/index.wxml')
@@ -243,6 +364,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         ok: true,
         issue: 613,
       })
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -250,6 +372,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
   })
 
   it('issue #599: renders props named data in computed style bindings', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue599)
     const componentWxmlPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.wxml')
     const componentJsPath = path.join(DIST_ROOT, 'components/issue-599/DataPropProbe/index.js')
     expect(await fs.readFile(componentWxmlPath, 'utf-8')).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
@@ -272,6 +395,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
           size: 32,
         },
       })
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -279,6 +403,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
   })
 
   it('issue #600: renders renamed defineProps destructure aliases in template and computed bindings', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', propsCheckpoints(resolveRuntimeProviderName()).issue600)
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-600/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-600/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -304,7 +429,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         throw new Error('Failed to launch issue-600 alias page')
       }
       const activeAliasMiniProgram = await getSharedMiniProgram(ctx)
-      await verifyRouteRenderedWithRecovery(
+      const aliasRendered = await verifyRouteRenderedWithRecovery(
         activeAliasMiniProgram,
         aliasRoute,
         page => waitForIssue600RenderedPage(page, {
@@ -315,6 +440,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
           readiness: createIssue600Readiness(aliasSummary),
         },
       )
+      await dom.check('alias', aliasRendered.miniProgram, aliasRendered.page)
 
       const defaultMiniProgram = await getSharedMiniProgram(ctx)
       const defaultSummary = 'issue-600-default|issue-600-setup|alias-fallback|setup-ready'
@@ -326,7 +452,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
         throw new Error('Failed to launch issue-600 default page')
       }
       const activeDefaultMiniProgram = await getSharedMiniProgram(ctx)
-      await verifyRouteRenderedWithRecovery(
+      const defaultRendered = await verifyRouteRenderedWithRecovery(
         activeDefaultMiniProgram,
         ISSUE_600_ROUTE,
         page => waitForIssue600RenderedPage(page, {
@@ -337,6 +463,7 @@ describe('e2e app: github-issues / props', { concurrent: false }, () => {
           readiness: createIssue600Readiness(defaultSummary),
         },
       )
+      await dom.check('default', defaultRendered.miniProgram, defaultRendered.page)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

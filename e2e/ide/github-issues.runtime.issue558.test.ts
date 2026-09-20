@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   delay,
@@ -12,6 +13,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { AUGMENTED_SLOT_CHECKPOINTS } from './githubIssuesDom/augmentedSlots'
 
 const ISSUE_558_AUGMENTED_ENV = 'WEAPP_GITHUB_ISSUE_558_AUGMENTED'
 
@@ -75,6 +77,7 @@ describe('e2e app: github-issues / issue #558', { concurrent: false }, () => {
   })
 
   it('renders owner-proxy bindings across augmented slot variants in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', AUGMENTED_SLOT_CHECKPOINTS)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-558/index', undefined, 20_000, {
@@ -93,6 +96,10 @@ describe('e2e app: github-issues / issue #558', { concurrent: false }, () => {
       expect(runtime?.cases).toEqual(ISSUE_558_EXPECTED_RENDERED_CASES)
       expect(runtime?.ok).toBe(true)
       expect(renderedWxml).toContain('<issue-558-render-probe')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      for (const checkpoint of AUGMENTED_SLOT_CHECKPOINTS) {
+        await dom.check(checkpoint.id, activeMiniProgram, issuePage)
+      }
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

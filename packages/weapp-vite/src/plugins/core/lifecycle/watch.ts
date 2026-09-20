@@ -9,7 +9,6 @@ import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
-import { resolveTouchAppWxssEnabled } from '../../../runtime/buildPlugin/touchAppWxss'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
@@ -17,6 +16,7 @@ import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../util
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { isReactStaticTemplateSource } from '../../react'
+import { isManagedTailwindcssEntry } from '../../tailwindcssMarker'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
@@ -27,10 +27,11 @@ import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
+import { collectVueStyleScriptChanges } from './vueStyleDependency'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
 const tailwindContentExtensions = new Set(['.vue', '.wxml', '.axml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
-const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|weapp-tailwindcss|tailwindcss\/vite/
+const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|@tailwind\s+(?:base|components|utilities)\b|weapp-tailwindcss|tailwindcss\/vite/
 
 interface WatchPathKind {
   configSuffix?: string
@@ -111,16 +112,6 @@ function isAutoRoutesPagesRelatedChange(state: CorePluginState, normalizedId: st
 function isConfigFileDependencyChange(state: CorePluginState, normalizedId: string) {
   return state.ctx.configService.configFileDependencies
     .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-}
-
-function shouldRefreshAppStyleForTailwindContent(state: CorePluginState) {
-  const configService = state.ctx.configService
-  return resolveTouchAppWxssEnabled({
-    option: configService.weappViteConfig?.hmr?.touchAppWxss,
-    platform: configService.platform,
-    packageJson: configService.packageJson ?? {},
-    cwd: configService.cwd,
-  })
 }
 
 async function isTailwindAppStyleSource(stylePath: string) {
@@ -292,11 +283,16 @@ async function processChangedFile(
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
   const affectedLayoutEntryIds = new Set<string>()
   const dirtyReasonStats = new Map<string, number>()
+  let styleScriptChanges: Set<string> | undefined
   const markEntryDirtyWithCause = (
     entryId: string,
     reason: 'direct' | 'dependency' | 'metadata',
     cause: string,
   ) => {
+    if (styleScriptChanges?.has(entryId)) {
+      reason = 'direct'
+      cause = 'entry-mixed-asset'
+    }
     state.markEntryDirty(entryId, reason)
     const isJsxTemplateDependency = reason === 'dependency' && /\.(?:jsx|tsx)$/.test(normalizedId)
     if (/\.(?:vue|jsx|tsx)$/.test(entryId) && (reason !== 'dependency' || isJsxTemplateDependency)) {
@@ -310,6 +306,12 @@ async function processChangedFile(
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
   const pathKind = resolveWatchPathKind(normalizedId)
+  if (pathKind.isStyle) {
+    styleScriptChanges = await collectVueStyleScriptChanges(ctx, normalizedId, configService)
+    for (const entryId of styleScriptChanges) {
+      importerGraphAffectedEntryIds.add(entryId)
+    }
+  }
   const isReactStaticTemplateUpdate = event === 'update'
     && isReactStaticTemplateSource(configService.weappViteConfig?.react, normalizedId)
   const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
@@ -380,9 +382,6 @@ async function processChangedFile(
     if (vueEntryUpdateInspector && !await vueEntryUpdateInspector.isTailwindContentUpdate()) {
       return false
     }
-    if (!shouldRefreshAppStyleForTailwindContent(state)) {
-      return false
-    }
     const appEntryId = scanService.appEntry?.path
       ? normalizeFsResolvedId(scanService.appEntry.path)
       : undefined
@@ -393,7 +392,7 @@ async function processChangedFile(
     if (!styleEntry.path) {
       return false
     }
-    if (!await isTailwindAppStyleSource(styleEntry.path)) {
+    if (!isManagedTailwindcssEntry(ctx, styleEntry.path) && !await isTailwindAppStyleSource(styleEntry.path)) {
       return false
     }
     if (
@@ -410,6 +409,7 @@ async function processChangedFile(
   if (isDeletedMissingSelf) {
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntrySfcSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryStyleBindings.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.delete(normalizedId)
@@ -592,6 +592,8 @@ async function processChangedFile(
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isLocalAssetOnlyUpdate() : false)
     const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isStyleOnlyUpdate() : false)
+    const changedVueBlocks = event === 'update' ? await vueEntryUpdateInspector?.getChangedBlocks() : undefined
+    const isMixedAssetVueEntryUpdate = changedVueBlocks?.includes('script') && changedVueBlocks.length > 1
     const directDirtyReason = sidecarDirtyCause
       ? 'metadata'
       : (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct'
@@ -604,7 +606,9 @@ async function processChangedFile(
             ? 'entry-direct'
             : isLocalAssetOnlyVueEntryUpdate
               ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
-              : 'entry-direct')
+              : isMixedAssetVueEntryUpdate
+                ? changedVueBlocks?.includes('config') ? 'entry-mixed-config' : 'entry-mixed-asset'
+                : 'entry-direct')
     markChangedEntryDirty(
       directDirtyReason,
       directDirtyCause,

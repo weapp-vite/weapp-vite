@@ -1,13 +1,18 @@
 import type { Declaration, Rule } from 'postcss'
+import type { TestContext } from 'vitest'
+import type { TemplateDomRoute } from './utils/templateAcceptance'
 import { access, readFile, rm } from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import postcss from 'postcss'
-import prettier from 'prettier'
 import { expect } from 'vitest'
 import { extractConfigFromVue } from '../packages/weapp-vite/src/utils/file'
 import { launchAutomator } from './utils/automator'
 import { runWeappViteBuildWithLogCapture } from './utils/buildLog'
+import { createDomAcceptance } from './utils/domAcceptance'
+import { resolveRuntimeProviderName } from './utils/runtimeProvider'
+import { assertTemplateRouteCoverage, resolveTemplateDomPlan, tapTemplateNode } from './utils/templateAcceptance'
+import { canonicalWxml, canonicalWxss } from './utils/templateAcceptance/format'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_JSON_PATH = 'src/app.json'
@@ -30,10 +35,6 @@ const VITE_MARKER_COMMENT_RE = /^\$vite\$:\d+$/
 const TEMPLATE_RELAUNCH_RETRYABLE_RE = /Timeout in raw reLaunch|Timeout in warmup reLaunch|Timeout in read current page|Timed out waiting (?:page root|route .*?) after (?:warmup )?reLaunch|DEVTOOLS_PROTOCOL_TIMEOUT|WeChat DevTools simulator boot error detected|Connection closed|WebSocket is not open|socket hang up|Target closed|not connected/i
 const TEMPLATE_RELAUNCH_FATAL_BOOT_RE = /WeChat DevTools simulator boot error detected/i
 const SCOPED_SLOT_ID_RE = /\bscoped-slot-[a-z0-9]+-default-\d+\b/g
-const TEMPLATE_PAGE_RENDERED_TIMEOUT = 12_000
-const TEMPLATE_PAGE_RENDERED_POLL_DELAY = 300
-const TEMPLATE_RUNTIME_SELECTOR_LIMIT = 8
-const STABLE_SELECTOR_TOKEN_RE = /^-?[_a-z][\w-]*$/i
 
 async function pathExists(filePath: string) {
   try {
@@ -58,6 +59,8 @@ function debugTemplateE2E(templateName: string, phase: string, detail?: string) 
 }
 
 export interface TemplateE2EOptions {
+  context: TestContext
+  acceptance: TemplateDomRoute[]
   buildPlatform?: string
   distRoot?: string
   ideProjectRoot?: string
@@ -70,18 +73,7 @@ export interface TemplateE2EOptions {
 }
 
 export async function formatWxml(wxml: string) {
-  return await prettier.format(wxml, {
-    parser: 'html',
-    tabWidth: 2,
-    useTabs: false,
-    semi: false,
-    singleQuote: true,
-    endOfLine: 'lf',
-    trailingComma: 'none',
-    printWidth: 100,
-    bracketSameLine: true,
-    htmlWhitespaceSensitivity: 'ignore',
-  })
+  return canonicalWxml(wxml)
 }
 
 function normalizeButtonCompatAttrs(wxml: string) {
@@ -388,16 +380,7 @@ function normalizeWxssForSnapshot(wxss: string) {
 }
 
 export async function formatWxss(wxss: string) {
-  return await prettier.format(normalizeWxssForSnapshot(wxss), {
-    parser: 'css',
-    tabWidth: 2,
-    useTabs: false,
-    semi: false,
-    singleQuote: true,
-    endOfLine: 'lf',
-    trailingComma: 'none',
-    printWidth: 120,
-  })
+  return canonicalWxss(normalizeWxssForSnapshot(wxss))
 }
 
 function normalizeSegment(value: string) {
@@ -410,108 +393,6 @@ function pushUnique(list: string[], seen: Set<string>, value: string) {
   }
   seen.add(value)
   list.push(value)
-}
-
-function sleep(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
-}
-
-function pushStableRuntimeSelector(selectors: string[], seen: Set<string>, selector: string) {
-  if (!selector || seen.has(selector)) {
-    return
-  }
-  seen.add(selector)
-  selectors.push(selector)
-}
-
-function extractRuntimeSelectorsFromWxml(wxml: string) {
-  const selectors: string[] = []
-  const seen = new Set<string>()
-
-  for (const match of wxml.matchAll(/\sid="([^"]+)"/g)) {
-    const id = match[1]?.trim()
-    if (id && STABLE_SELECTOR_TOKEN_RE.test(id)) {
-      pushStableRuntimeSelector(selectors, seen, `#${id}`)
-    }
-  }
-
-  for (const match of wxml.matchAll(/\sclass="([^"]+)"/g)) {
-    const classValue = match[1] ?? ''
-    for (const token of classValue.split(/\s+/)) {
-      const normalized = token.trim()
-      if (STABLE_SELECTOR_TOKEN_RE.test(normalized)) {
-        pushStableRuntimeSelector(selectors, seen, `.${normalized}`)
-      }
-      if (selectors.length >= TEMPLATE_RUNTIME_SELECTOR_LIMIT) {
-        return selectors
-      }
-    }
-  }
-
-  return selectors
-}
-
-async function waitForRuntimeRendered(page: any, selectors: string[], templateName: string, route: string) {
-  const startedAt = Date.now()
-  const candidates = selectors.length > 0 ? selectors : ['view']
-  let latest: unknown = null
-  let lastError: unknown
-
-  while (Date.now() - startedAt <= TEMPLATE_PAGE_RENDERED_TIMEOUT) {
-    try {
-      if (typeof page.renderedSelectorNodes === 'function') {
-        const nodesBySelector = await page.renderedSelectorNodes(candidates, {
-          timeout: Math.min(2_500, Math.max(1, TEMPLATE_PAGE_RENDERED_TIMEOUT - (Date.now() - startedAt))),
-        })
-        latest = {
-          nodesBySelector,
-          source: 'App.callFunction.batch',
-        }
-        for (const selector of candidates) {
-          const nodes = nodesBySelector?.[selector]
-          if (Array.isArray(nodes) && nodes.some(node => Number(node?.width ?? 0) > 0 && Number(node?.height ?? 0) > 0)) {
-            return
-          }
-        }
-      }
-
-      if (typeof page?.$$ === 'function') {
-        for (const selector of candidates.slice(0, 3)) {
-          try {
-            const elements = await page.$$(selector, {
-              timeout: Math.min(300, Math.max(1, TEMPLATE_PAGE_RENDERED_TIMEOUT - (Date.now() - startedAt))),
-            })
-            latest = {
-              count: Array.isArray(elements) ? elements.length : 0,
-              selector,
-              source: 'Page.getElements',
-            }
-            if (Array.isArray(elements) && elements.length > 0) {
-              return
-            }
-          }
-          catch (error) {
-            lastError = error
-          }
-        }
-      }
-
-      if (typeof page.renderedSelectorNodes !== 'function' && typeof page.waitForRendered === 'function') {
-        await page.waitForRendered({
-          selector: candidates[0],
-          timeout: Math.min(2_000, Math.max(1, TEMPLATE_PAGE_RENDERED_TIMEOUT - (Date.now() - startedAt))),
-        })
-        return
-      }
-    }
-    catch (error) {
-      lastError = error
-    }
-    await sleep(TEMPLATE_PAGE_RENDERED_POLL_DELAY)
-  }
-
-  const reason = lastError instanceof Error ? lastError.message : String(lastError ?? 'condition not met')
-  throw new Error(`[${templateName}] Timed out waiting runtime rendered nodes: route=${route} selectors=${candidates.join(',')} reason=${reason} latest=${JSON.stringify(latest).slice(0, 500)}`)
 }
 
 async function isCurrentRouteReady(miniProgram: any, route: string) {
@@ -669,6 +550,8 @@ async function runBuild(templateRoot: string, jsFormat?: 'cjs' | 'esm', platform
 
 export async function runTemplateE2E(options: TemplateE2EOptions) {
   const {
+    acceptance: suppliedAcceptance,
+    context,
     buildPlatform = 'weapp',
     distRoot = 'dist',
     ideProjectRoot = '.',
@@ -679,12 +562,19 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
     templateRoot,
     warmupRoute,
   } = options
+  const acceptance = resolveTemplateDomPlan(suppliedAcceptance, resolveRuntimeProviderName())
+  const dom = createDomAcceptance(
+    context,
+    path.relative(path.resolve(import.meta.dirname, '..'), templateRoot),
+    acceptance.flatMap(item => item.steps),
+  )
   debugTemplateE2E(templateName, 'start')
   await runBuild(templateRoot, jsFormat, buildPlatform)
   debugTemplateE2E(templateName, 'build-done')
   const config = await loadAppConfig(templateRoot, distRoot)
   debugTemplateE2E(templateName, 'config-loaded')
   const pages = resolvePages(config)
+  assertTemplateRouteCoverage(pages, acceptance)
   debugTemplateE2E(templateName, 'pages-resolved', `count=${pages.length}`)
 
   if (pages.length === 0) {
@@ -700,14 +590,12 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   expect(await formatWxss(appWxss)).toMatchSnapshot(`${templateName}::app.wxss`)
   debugTemplateE2E(templateName, 'app-wxss-snapshot-done')
 
-  const runtimeSelectorMap = new Map<string, string[]>()
   for (const pagePath of pages) {
     const pageWxmlPath = path.join(templateRoot, distRoot, `${pagePath}.wxml`)
     if (!(await pathExists(pageWxmlPath))) {
       throw new Error(`[${templateName}] Missing page WXML in dist output: ${pagePath}`)
     }
     const pageWxml = normalizeWxmlForSnapshot(await readFile(pageWxmlPath, 'utf-8'))
-    runtimeSelectorMap.set(pagePath, extractRuntimeSelectorsFromWxml(pageWxml))
     expect(pageWxml).not.toMatch(UNSUPPORTED_VUE_EVENT_SHORTHAND_RE)
     expect(await formatWxml(pageWxml)).toMatchSnapshot(`${templateName}::${pagePath}`)
     debugTemplateE2E(templateName, 'dist-page-snapshot-done', pagePath)
@@ -746,7 +634,8 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   try {
     debugTemplateE2E(templateName, 'automator-launched')
     let canReuseWarmupPage = true
-    for (const pagePath of pages) {
+    for (const routePlan of acceptance) {
+      const pagePath = normalizeSegment(routePlan.route)
       const route = `/${pagePath}`
       debugTemplateE2E(templateName, 'page-relaunch', route)
       let page = canReuseWarmupPage && normalizeSegment(route) === normalizeSegment(launchWarmupRoute)
@@ -797,8 +686,16 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
           throw new Error(`[${templateName}] Failed to launch expected route: ${route}`)
         }
       }
-      await waitForRuntimeRendered(page, runtimeSelectorMap.get(pagePath) ?? [], templateName, route)
-      debugTemplateE2E(templateName, 'page-runtime-ready', route)
+      for (const step of routePlan.steps) {
+        if (step.tap) {
+          await tapTemplateNode(page, step.tap)
+        }
+        if (step.method) {
+          await page.callMethod(step.method)
+        }
+        await dom.check(step.id, miniProgram, page)
+      }
+      debugTemplateE2E(templateName, 'page-dom-accepted', route)
       await runtimeAssert?.(page, pagePath)
     }
   }

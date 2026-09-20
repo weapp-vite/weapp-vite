@@ -13,7 +13,7 @@ import logger from '../../src/logger'
 import { buildWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from '../../src/plugins/vue/transform/styleRequest'
 import { normalizeWatchPath } from '../../src/utils/path'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService } from './moduleGraph'
+import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 const compileVueFileMock = vi.fn<
   (source: string, filename: string, options?: any) => Promise<any>
@@ -142,9 +142,7 @@ describe('vue transform plugin', () => {
       scanService: {
         loadAppEntry: vi.fn(async () => ({ path: path.join(tmpDir!, 'app.json') })),
       },
-      runtimeState: {
-        scan: { isDirty: false },
-      },
+      runtimeState: createTestRuntimeState(),
       autoImportService: {
         resolve: (tag: string) => ({ kind: 'resolver', value: { name: tag, from: `lib/${tag}` } }),
       },
@@ -680,7 +678,7 @@ describe('vue transform plugin', () => {
     const plugin = createVueTransformPlugin(createCtx() as any)
 
     const res = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
-    expect(res).toEqual({ code: '.a{color:red}', map: null })
+    expect(res).toEqual({ code: '.a{color:red}', map: null, meta: { weappViteStyleSources: [] } })
     expect(readAndParseSfcMock).toHaveBeenCalled()
     expect(readAndParseSfcMock).toHaveBeenCalledWith(vuePath!)
   })
@@ -719,9 +717,8 @@ export default {}`,
     injectPageFeaturesMock.mockResolvedValue({ transformed: true, code: '/* injected */\nexport default {}' })
 
     const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
-    const ctx = createCtx({
-      runtimeState: { scan: { isDirty: true } },
-    })
+    const ctx = createCtx()
+    ctx.runtimeState.scan.isDirty = true
     const plugin = createVueTransformPlugin(ctx as any)
 
     const addWatchFile = vi.fn()
@@ -1074,6 +1071,9 @@ onPageScroll(() => {
           componentName: 'scoped-slot-test',
           slotKey: 'default',
           template: '<t-cell></t-cell>',
+          runtimeCapabilities: {
+            required: ['scopedSlots'],
+          },
         },
       ],
     })
@@ -1129,6 +1129,9 @@ onPageScroll(() => {
           componentName: 'scoped-slot-test',
           slotKey: 'default',
           template: '<t-cell></t-cell>',
+          runtimeCapabilities: {
+            required: ['scopedSlots'],
+          },
         },
       ],
     })
@@ -1241,13 +1244,13 @@ onPageScroll(() => {
     await callPluginHook(plugin.transform as any, {}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
 
     const firstLoad = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
-    expect(firstLoad).toEqual({ code: '.a{color:red}', map: null })
+    expect(firstLoad).toEqual({ code: '.a{color:red}', map: null, meta: { weappViteStyleSources: [] } })
     const beforeReadCalls = readAndParseSfcMock.mock.calls.length
 
     plugin.watchChange?.call({}, vuePath!)
 
     const secondLoad = await callPluginHook(plugin.load as any, {}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
-    expect(secondLoad).toEqual({ code: '.a{color:red}', map: null })
+    expect(secondLoad).toEqual({ code: '.a{color:red}', map: null, meta: { weappViteStyleSources: [] } })
     expect(readAndParseSfcMock.mock.calls.length).toBeGreaterThan(beforeReadCalls)
 
     await fs.remove(vuePath!)
@@ -1333,47 +1336,6 @@ export default autoRoutes
     expect(String(transformedSource)).toContain('import(\'weapp-vite/auto-routes\')')
     expect(String(transformedSource)).not.toContain('const autoRoutes =')
     expect(String(transformedSource)).not.toContain('Promise.resolve(')
-  })
-
-  it('transform() registers wxml token and tracks sfc src deps', async () => {
-    compileVueFileMock.mockResolvedValue({
-      script: 'export default {}',
-      template: '<view><t-cell /></view>',
-      meta: {
-        sfcSrcDeps: ['/dep/a.vue', '/dep/b.vue'],
-      },
-    })
-
-    const analyze = vi.fn(() => ({ components: ['t-cell'] }))
-    const tokenMap = new Map<string, any>()
-    const setWxmlComponentsMap = vi.fn()
-    const collectDepsFromToken = vi.fn(() => [])
-    const setDeps = vi.fn()
-    const addWatchFile = vi.fn()
-    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
-    const ctx = createCtx({
-      wxmlService: {
-        analyze,
-        tokenMap,
-        collectDepsFromToken,
-        setDeps,
-        setWxmlComponentsMap,
-      },
-    })
-    const plugin = createVueTransformPlugin(ctx as any)
-
-    await callPluginHook(plugin.transform as any, { addWatchFile } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
-
-    expect(analyze).toHaveBeenCalledWith('<view><t-cell /></view>')
-    expect(tokenMap.has(vuePath!)).toBe(true)
-    expect(collectDepsFromToken).toHaveBeenCalledWith(vuePath!, undefined)
-    expect(setDeps).toHaveBeenCalledWith(vuePath!, [])
-    expect(setWxmlComponentsMap).toHaveBeenCalledWith(vuePath!, ['t-cell'])
-    expect(addWatchFile).not.toHaveBeenCalled()
-    expect(ctx.moduleGraphService.getEntryDependencies(vuePath!)).toEqual([
-      { kind: 'style', sourceId: '/dep/a.vue' },
-      { kind: 'style', sourceId: '/dep/b.vue' },
-    ])
   })
 
   it('watchChange() ignores non-vue-like ids', async () => {

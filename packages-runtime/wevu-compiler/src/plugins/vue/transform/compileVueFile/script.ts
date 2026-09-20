@@ -1,14 +1,15 @@
-import type { InvalidOriginalMapping, OriginalMapping } from '@jridgewell/trace-mapping'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { TemplateCompileResult } from '../../compiler/template'
 import type { ComponentSourceInfo } from './componentSources'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
-import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
@@ -19,6 +20,7 @@ import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { generateScopedId } from '../scopedId'
 import { transformScript } from '../script'
+import { remapJsxBindingManifestLocations } from './bindingManifestLocations'
 import { applyCompilerTemplateWrappers } from './pageLayout'
 import { warnReservedScriptSetupProps } from './reservedProps'
 
@@ -32,6 +34,9 @@ export interface ScriptPhaseResult {
   diagnostics?: CompilerDiagnostic[]
   bindingManifest?: WevuBindingManifestV1
   inlineExpressions?: TemplateCompileResult['inlineExpressions']
+  /** @internal */
+  componentStyleOptions?: ComponentStyleOptions
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
 }
@@ -256,79 +261,6 @@ export function resolveEffectivePropsDerivedKeys(
   return keys.size ? [...keys] : undefined
 }
 
-function createSourceLineStarts(source: string) {
-  const lineStarts = [0]
-  for (const match of source.matchAll(/\r\n?|\n/g)) {
-    lineStarts.push(match.index + match[0].length)
-  }
-  return lineStarts
-}
-
-function clearBindingManifestLocations(manifest: WevuBindingManifestV1) {
-  for (const binding of manifest.bindings) {
-    binding.sourceLocation = undefined
-  }
-}
-
-export function remapJsxBindingManifestLocations(
-  manifest: WevuBindingManifestV1,
-  sourceMap: unknown,
-  source: string | undefined,
-  sourceFile?: string,
-) {
-  if (sourceFile) {
-    manifest.sourceFile = sourceFile
-  }
-  if (!source || !sourceMap) {
-    clearBindingManifestLocations(manifest)
-    return
-  }
-  let traceMap: TraceMap
-  try {
-    // compiler-sfc 的 RawSourceMap 与 trace-mapping 输入结构一致，但两者版本字段类型声明不同。
-    const traceMapInput = sourceMap as unknown as ConstructorParameters<typeof TraceMap>[0]
-    traceMap = new TraceMap(traceMapInput)
-  }
-  catch {
-    clearBindingManifestLocations(manifest)
-    return
-  }
-  const lineStarts = createSourceLineStarts(source)
-  const remap = (line: number, column: number) => {
-    let original: InvalidOriginalMapping | OriginalMapping
-    try {
-      original = originalPositionFor(traceMap, {
-        line,
-        column: Math.max(0, column - 1),
-      })
-    }
-    catch {
-      return undefined
-    }
-    if (original.source == null || original.line == null || original.column == null) {
-      return undefined
-    }
-    return {
-      offset: (lineStarts[original.line - 1] ?? 0) + original.column,
-      line: original.line,
-      column: original.column + 1,
-    }
-  }
-  for (const binding of manifest.bindings) {
-    const location = binding.sourceLocation
-    if (!location) {
-      continue
-    }
-    const start = remap(location.start.line, location.start.column)
-    const end = remap(location.end.line, location.end.column)
-    if (!start || !end) {
-      binding.sourceLocation = undefined
-      continue
-    }
-    binding.sourceLocation = { start, end }
-  }
-}
-
 export async function compileScriptPhase(
   descriptor: Pick<SFCDescriptor, 'scriptSetup' | 'template' | 'script'>,
   descriptorForCompile: SfcDescriptor,
@@ -341,6 +273,7 @@ export async function compileScriptPhase(
   precompiledScript?: CompiledScript,
   precomputedScriptPhaseInfo?: PrecomputedScriptPhaseInfo,
   originalSource?: string,
+  scriptPreprocessMap?: EncodedSourceMapLike | null,
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -350,7 +283,6 @@ export async function compileScriptPhase(
   )
 
   let scriptCode: string | undefined
-  let compiledScriptForMap: CompiledScript | undefined
   let scriptMap: EncodedSourceMapLike | null = null
   let propsAliases = options?.template?.propsAliases
   let propsDerivedKeys: string[] | undefined
@@ -360,7 +292,6 @@ export async function compileScriptPhase(
       id: generateScopedId(filename),
       isProd: false,
     })
-    compiledScriptForMap = scriptCompiled
     warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
       filename,
       scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
@@ -374,8 +305,11 @@ export async function compileScriptPhase(
     propsDerivedKeys = hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsDerivedKeys')
       ? precomputedScriptPhaseInfo.propsDerivedKeys
       : resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCode)
-    scriptMap = options?.sourceMap !== false && scriptCompiled.map && typeof scriptCompiled.map === 'object'
-      ? scriptCompiled.map
+    const compiledScriptMap = options?.sourceMap !== false && scriptCompiled.map && typeof scriptCompiled.map === 'object'
+      ? scriptCompiled.map as EncodedSourceMapLike
+      : null
+    scriptMap = compiledScriptMap
+      ? composeSourceMaps(compiledScriptMap, scriptPreprocessMap)
       : null
 
     if (
@@ -407,7 +341,7 @@ export async function compileScriptPhase(
           : undefined
       remapJsxBindingManifestLocations(
         jsxTemplate.bindingManifest,
-        compiledScriptForMap?.map,
+        scriptMap,
         externalScriptBlock?.content ?? originalSource,
         externalScriptBlock?.src,
       )
@@ -442,6 +376,12 @@ export async function compileScriptPhase(
     const bindingManifest = jsxTemplate?.template
       ? jsxTemplate.bindingManifest
       : templateCompiled?.bindingManifest
+    const effectiveInlineExpressions = jsxTemplate?.template
+      ? jsxTemplate.inlineExpressions
+      : templateCompiled?.inlineExpressions
+    const runtimeCapabilities = bindingManifest
+      ? createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
+      : templateCompiled?.runtimeCapabilities
     const transformed = transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
@@ -459,15 +399,17 @@ export async function compileScriptPhase(
       classStyleBindings: templateCompiled?.classStyleBindings,
       templateRefs: templateCompiled?.templateRefs,
       layoutHosts: templateCompiled?.layoutHosts,
-      inlineExpressions: templateCompiled?.inlineExpressions,
+      inlineExpressions: effectiveInlineExpressions,
       bindingManifest: isAppFile ? undefined : bindingManifest,
       autoSetDataPick: !isAppFile && options?.autoSetDataPick,
       runtimeBindingManifest: options?.runtimeBindingManifest,
       pageLayout: isAppFile ? undefined : options?.pageLayout,
+      runtimeCapabilities,
       functionPropPaths: templateCompiled?.functionPropPaths,
       propsAliases,
       propsDerivedKeys,
       cssModules: precomputedScriptPhaseInfo?.cssModules,
+      stabilizeCssVarsRuntime: options?.stabilizeCssVarsRuntime,
       relaxStructuredTypeOnlyProps,
       scopedSlotHostProperties: !isAppFile
         && options?.isPage !== true
@@ -483,6 +425,8 @@ export async function compileScriptPhase(
       diagnostics: jsxDiagnostics,
       bindingManifest,
       inlineExpressions: jsxTemplate?.inlineExpressions,
+      runtimeCapabilities: transformed.runtimeCapabilities,
+      componentStyleOptions: transformed.componentStyleOptions,
       autoUsingComponentsMap,
       autoComponentMeta,
     }

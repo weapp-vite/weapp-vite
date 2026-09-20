@@ -226,8 +226,8 @@ page {
 
 .comments-wrap {
   padding: 32rpx;
-  margin-top: 20rpx;
   padding-bottom: 40rpx;
+  margin-top: 20rpx;
   background-color: #fff;
 }
 
@@ -244,10 +244,10 @@ page {
 
 .comments-title-label,
 .comments-title-count {
+  min-height: 48rpx;
   font-size: 32rpx;
   font-weight: 500;
   line-height: 48rpx;
-  min-height: 48rpx;
   color: #333;
 }
 
@@ -268,9 +268,9 @@ page {
   display: flex;
   flex-direction: row;
   align-items: center;
-  margin-top: 32rpx;
   height: auto;
   min-height: 64rpx;
+  margin-top: 32rpx;
 }
 
 .comment-item-avatar {
@@ -286,14 +286,14 @@ page {
 }
 
 .comment-head-right {
-  margin-left: 24rpx;
   min-width: 0;
+  margin-left: 24rpx;
 }
 
 .comment-username {
+  min-height: 36rpx;
   font-size: 26rpx;
   line-height: 36rpx;
-  min-height: 36rpx;
   color: #333;
 }
 
@@ -304,14 +304,14 @@ page {
 }
 
 .comment-item-content {
+  min-height: 40rpx;
   margin-top: 20rpx;
+  overflow: visible;
   font-size: 28rpx;
   line-height: 40rpx;
-  min-height: 40rpx;
   color: #333;
+  overflow-wrap: anywhere;
   white-space: normal;
-  word-break: break-word;
-  overflow: visible;
 }
 
 .desc-content {
@@ -343,8 +343,8 @@ page {
 }
 
 .detail-panel {
-  margin: 0 24rpx 24rpx;
   padding: 28rpx;
+  margin: 0 24rpx 24rpx;
   background: #f8f8f8;
   border-radius: 8rpx;
 }
@@ -416,10 +416,10 @@ page {
 
 .feature-item__desc,
 .service-card__desc {
+  min-height: 36rpx;
   margin-top: 8rpx;
   font-size: 24rpx;
   line-height: 36rpx;
-  min-height: 36rpx;
   color: #888;
 }
 
@@ -688,8 +688,8 @@ page {
 
 .product--iteration-14 {
   .service-card__desc {
-    -webkit-line-clamp: 1;
     overflow: hidden;
+    -webkit-line-clamp: 1;
   }
 }
 
@@ -701,8 +701,8 @@ page {
 
 .product--iteration-16 {
   .detail-panel {
-    margin-left: 18rpx;
     margin-right: 18rpx;
+    margin-left: 18rpx;
   }
 }
 

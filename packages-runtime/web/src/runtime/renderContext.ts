@@ -1,6 +1,7 @@
 import type { ComponentPublicInstance } from './component'
 import type { TemplateScope } from './template'
 import { getRuntimeExecutionMode, warnRuntimeExecutionOnce } from './execution'
+import { invokeMiniProgramEventHandler } from './inputHandlerResult'
 import { emitRuntimeWarning } from './warning'
 
 export interface RenderContext {
@@ -148,7 +149,7 @@ function createEventHandler(
       },
       originalEvent: nativeEvent,
     }
-    handler.call(instance, syntheticEvent)
+    invokeMiniProgramEventHandler(handler, instance, syntheticEvent, nativeEvent)
   }
 }
 

@@ -1,3 +1,4 @@
+import './tailwind.css'
 // app.ts
 App({
   globalData: {},

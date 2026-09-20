@@ -1,14 +1,15 @@
 <script lang="ts">
+import type { BenchMetrics, SetDataCounter } from '../../utils/bench'
 import { defineComponent, onLoad, onReady } from 'wevu'
 import {
+
   createBenchCards,
   createEmptyMetrics,
   DETAIL_CARD_COUNT,
   now,
   patchSetData,
+
   summarizeBenchCards,
-  type BenchMetrics,
-  type SetDataCounter,
 } from '../../utils/bench'
 
 const setDataCounter: SetDataCounter = {

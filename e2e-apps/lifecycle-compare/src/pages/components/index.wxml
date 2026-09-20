@@ -1,6 +1,9 @@
 <view id="lifecycle-components-page" class="page" data-e2e-page="components">
   <view class="title">Components Page</view>
   <view class="panel">
+    <view id="page-hook-{{item}}" class="hook-status" wx:for="{{__lifecycleExpected}}" wx:key="*this">{{item}}: {{__lifecycleSeen[item] ? 'observed' : 'pending'}}</view>
+  </view>
+  <view class="panel">
     <view class="panel-title">E2E Result</view>
     <view class="panel-row">Hooks: {{__lifecycleSummary.seen}}/{{__lifecycleSummary.total}}</view>
     <view class="panel-row">Skipped: {{__lifecycleSummary.skipped}}</view>
@@ -39,43 +42,43 @@
   </view>
   <view class="panel">
     <view class="panel-title">Event Binding Verify</view>
-    <view class="panel-row">view.bindtap: {{__eventBindingStats.view.bindtap}}</view>
-    <view class="panel-row">view.bind:tap: {{__eventBindingStats.view.bindColonTap}}</view>
-    <view class="panel-row">view.both(bindtap): {{__eventBindingStats.view.bothBindtap}}</view>
-    <view class="panel-row">view.both(bind:tap): {{__eventBindingStats.view.bothBindColonTap}}</view>
-    <view class="panel-row">view.bothReverse(bindtap): {{__eventBindingStats.view.bothReverseBindtap}}</view>
-    <view class="panel-row">view.bothReverse(bind:tap): {{__eventBindingStats.view.bothReverseBindColonTap}}</view>
-    <view class="panel-row">native.bindprobe: {{__eventBindingStats.nativeComponent.bindprobe}}</view>
-    <view class="panel-row">native.bind:probe: {{__eventBindingStats.nativeComponent.bindColonProbe}}</view>
-    <view class="panel-row">native.both(bindprobe): {{__eventBindingStats.nativeComponent.bothBindprobe}}</view>
-    <view class="panel-row">native.both(bind:probe): {{__eventBindingStats.nativeComponent.bothBindColonProbe}}</view>
-    <view class="panel-row">native.bothReverse(bindprobe): {{__eventBindingStats.nativeComponent.bothReverseBindprobe}}</view>
-    <view class="panel-row">native.bothReverse(bind:probe): {{__eventBindingStats.nativeComponent.bothReverseBindColonProbe}}</view>
-    <view class="panel-row">wevu.bindprobe: {{__eventBindingStats.wevuSfcComponent.bindprobe}}</view>
-    <view class="panel-row">wevu.bind:probe: {{__eventBindingStats.wevuSfcComponent.bindColonProbe}}</view>
-    <view class="panel-row">wevu.both(bindprobe): {{__eventBindingStats.wevuSfcComponent.bothBindprobe}}</view>
-    <view class="panel-row">wevu.both(bind:probe): {{__eventBindingStats.wevuSfcComponent.bothBindColonProbe}}</view>
-    <view class="panel-row">wevu.bothReverse(bindprobe): {{__eventBindingStats.wevuSfcComponent.bothReverseBindprobe}}</view>
-    <view class="panel-row">wevu.bothReverse(bind:probe): {{__eventBindingStats.wevuSfcComponent.bothReverseBindColonProbe}}</view>
+    <view id="binding-view-bindtap" class="panel-row">view.bindtap: {{__eventBindingStats.view.bindtap}}</view>
+    <view id="binding-view-bindColonTap" class="panel-row">view.bind:tap: {{__eventBindingStats.view.bindColonTap}}</view>
+    <view id="binding-view-bothBindtap" class="panel-row">view.both(bindtap): {{__eventBindingStats.view.bothBindtap}}</view>
+    <view id="binding-view-bothBindColonTap" class="panel-row">view.both(bind:tap): {{__eventBindingStats.view.bothBindColonTap}}</view>
+    <view id="binding-view-bothReverseBindtap" class="panel-row">view.bothReverse(bindtap): {{__eventBindingStats.view.bothReverseBindtap}}</view>
+    <view id="binding-view-bothReverseBindColonTap" class="panel-row">view.bothReverse(bind:tap): {{__eventBindingStats.view.bothReverseBindColonTap}}</view>
+    <view id="binding-nativeComponent-bindprobe" class="panel-row">native.bindprobe: {{__eventBindingStats.nativeComponent.bindprobe}}</view>
+    <view id="binding-nativeComponent-bindColonProbe" class="panel-row">native.bind:probe: {{__eventBindingStats.nativeComponent.bindColonProbe}}</view>
+    <view id="binding-nativeComponent-bothBindprobe" class="panel-row">native.both(bindprobe): {{__eventBindingStats.nativeComponent.bothBindprobe}}</view>
+    <view id="binding-nativeComponent-bothBindColonProbe" class="panel-row">native.both(bind:probe): {{__eventBindingStats.nativeComponent.bothBindColonProbe}}</view>
+    <view id="binding-nativeComponent-bothReverseBindprobe" class="panel-row">native.bothReverse(bindprobe): {{__eventBindingStats.nativeComponent.bothReverseBindprobe}}</view>
+    <view id="binding-nativeComponent-bothReverseBindColonProbe" class="panel-row">native.bothReverse(bind:probe): {{__eventBindingStats.nativeComponent.bothReverseBindColonProbe}}</view>
+    <view id="binding-wevuSfcComponent-bindprobe" class="panel-row">wevu.bindprobe: {{__eventBindingStats.wevuSfcComponent.bindprobe}}</view>
+    <view id="binding-wevuSfcComponent-bindColonProbe" class="panel-row">wevu.bind:probe: {{__eventBindingStats.wevuSfcComponent.bindColonProbe}}</view>
+    <view id="binding-wevuSfcComponent-bothBindprobe" class="panel-row">wevu.both(bindprobe): {{__eventBindingStats.wevuSfcComponent.bothBindprobe}}</view>
+    <view id="binding-wevuSfcComponent-bothBindColonProbe" class="panel-row">wevu.both(bind:probe): {{__eventBindingStats.wevuSfcComponent.bothBindColonProbe}}</view>
+    <view id="binding-wevuSfcComponent-bothReverseBindprobe" class="panel-row">wevu.bothReverse(bindprobe): {{__eventBindingStats.wevuSfcComponent.bothReverseBindprobe}}</view>
+    <view id="binding-wevuSfcComponent-bothReverseBindColonProbe" class="panel-row">wevu.bothReverse(bind:probe): {{__eventBindingStats.wevuSfcComponent.bothReverseBindColonProbe}}</view>
   </view>
   <view class="panel">
     <view class="panel-title">triggerEvent Name Verify</view>
-    <view class="panel-row">native hyphen bind: {{__namedEventBindingStats.hyphen.nativeComponent.bind}}</view>
-    <view class="panel-row">native hyphen bind:xxx: {{__namedEventBindingStats.hyphen.nativeComponent.bindColon}}</view>
-    <view class="panel-row">native hyphen both bind: {{__namedEventBindingStats.hyphen.nativeComponent.bothBind}}</view>
-    <view class="panel-row">native hyphen both bind:xxx: {{__namedEventBindingStats.hyphen.nativeComponent.bothBindColon}}</view>
-    <view class="panel-row">wevu hyphen bind: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bind}}</view>
-    <view class="panel-row">wevu hyphen bind:xxx: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bindColon}}</view>
-    <view class="panel-row">wevu hyphen both bind: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bothBind}}</view>
-    <view class="panel-row">wevu hyphen both bind:xxx: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bothBindColon}}</view>
-    <view class="panel-row">native underscore bind: {{__namedEventBindingStats.underscore.nativeComponent.bind}}</view>
-    <view class="panel-row">native underscore bind:xxx: {{__namedEventBindingStats.underscore.nativeComponent.bindColon}}</view>
-    <view class="panel-row">native underscore both bind: {{__namedEventBindingStats.underscore.nativeComponent.bothBind}}</view>
-    <view class="panel-row">native underscore both bind:xxx: {{__namedEventBindingStats.underscore.nativeComponent.bothBindColon}}</view>
-    <view class="panel-row">wevu underscore bind: {{__namedEventBindingStats.underscore.wevuSfcComponent.bind}}</view>
-    <view class="panel-row">wevu underscore bind:xxx: {{__namedEventBindingStats.underscore.wevuSfcComponent.bindColon}}</view>
-    <view class="panel-row">wevu underscore both bind: {{__namedEventBindingStats.underscore.wevuSfcComponent.bothBind}}</view>
-    <view class="panel-row">wevu underscore both bind:xxx: {{__namedEventBindingStats.underscore.wevuSfcComponent.bothBindColon}}</view>
+    <view id="named-hyphen-nativeComponent-bind" class="panel-row">native hyphen bind: {{__namedEventBindingStats.hyphen.nativeComponent.bind}}</view>
+    <view id="named-hyphen-nativeComponent-bindColon" class="panel-row">native hyphen bind:xxx: {{__namedEventBindingStats.hyphen.nativeComponent.bindColon}}</view>
+    <view id="named-hyphen-nativeComponent-bothBind" class="panel-row">native hyphen both bind: {{__namedEventBindingStats.hyphen.nativeComponent.bothBind}}</view>
+    <view id="named-hyphen-nativeComponent-bothBindColon" class="panel-row">native hyphen both bind:xxx: {{__namedEventBindingStats.hyphen.nativeComponent.bothBindColon}}</view>
+    <view id="named-hyphen-wevuSfcComponent-bind" class="panel-row">wevu hyphen bind: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bind}}</view>
+    <view id="named-hyphen-wevuSfcComponent-bindColon" class="panel-row">wevu hyphen bind:xxx: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bindColon}}</view>
+    <view id="named-hyphen-wevuSfcComponent-bothBind" class="panel-row">wevu hyphen both bind: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bothBind}}</view>
+    <view id="named-hyphen-wevuSfcComponent-bothBindColon" class="panel-row">wevu hyphen both bind:xxx: {{__namedEventBindingStats.hyphen.wevuSfcComponent.bothBindColon}}</view>
+    <view id="named-underscore-nativeComponent-bind" class="panel-row">native underscore bind: {{__namedEventBindingStats.underscore.nativeComponent.bind}}</view>
+    <view id="named-underscore-nativeComponent-bindColon" class="panel-row">native underscore bind:xxx: {{__namedEventBindingStats.underscore.nativeComponent.bindColon}}</view>
+    <view id="named-underscore-nativeComponent-bothBind" class="panel-row">native underscore both bind: {{__namedEventBindingStats.underscore.nativeComponent.bothBind}}</view>
+    <view id="named-underscore-nativeComponent-bothBindColon" class="panel-row">native underscore both bind:xxx: {{__namedEventBindingStats.underscore.nativeComponent.bothBindColon}}</view>
+    <view id="named-underscore-wevuSfcComponent-bind" class="panel-row">wevu underscore bind: {{__namedEventBindingStats.underscore.wevuSfcComponent.bind}}</view>
+    <view id="named-underscore-wevuSfcComponent-bindColon" class="panel-row">wevu underscore bind:xxx: {{__namedEventBindingStats.underscore.wevuSfcComponent.bindColon}}</view>
+    <view id="named-underscore-wevuSfcComponent-bothBind" class="panel-row">wevu underscore both bind: {{__namedEventBindingStats.underscore.wevuSfcComponent.bothBind}}</view>
+    <view id="named-underscore-wevuSfcComponent-bothBindColon" class="panel-row">wevu underscore both bind:xxx: {{__namedEventBindingStats.underscore.wevuSfcComponent.bothBindColon}}</view>
   </view>
   <view class="row">
     <view class="label">Native View Event Alias</view>

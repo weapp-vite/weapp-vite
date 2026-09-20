@@ -1,28 +1,18 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
+import type { WevuJsxEventHandler } from '../../jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/input.html
  */
-export type MiniProgramIntrinsicElementInput = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementInput = WeappIntrinsicElementBaseAttributes & {
   'adjust-position'?: boolean
   'always-embed'?: boolean
   'auto-focus'?: boolean
-  'bind:keyboardcompositionend'?: MiniProgramIntrinsicEventHandler<unknown>
-  'bind:keyboardcompositionstart'?: MiniProgramIntrinsicEventHandler<unknown>
-  'bind:keyboardcompositionupdate'?: MiniProgramIntrinsicEventHandler<unknown>
-  'bind:selectionchange'?: MiniProgramIntrinsicEventHandler<unknown>
-  bindblur?: MiniProgramIntrinsicEventHandler<unknown>
-  bindchange?: MiniProgramIntrinsicEventHandler<unknown>
-  bindconfirm?: MiniProgramIntrinsicEventHandler<unknown>
-  bindfocus?: MiniProgramIntrinsicEventHandler<unknown>
-  bindinput?: MiniProgramIntrinsicEventHandler<unknown>
-  bindkeyboardheightchange?: MiniProgramIntrinsicEventHandler<unknown>
-  bindnicknamereview?: MiniProgramIntrinsicEventHandler<unknown>
   'confirm-hold'?: boolean
-  'confirm-type'?: 'send' | 'search' | 'next' | 'go' | 'done'
+  'confirm-type'?: 'done' | 'go' | 'next' | 'search' | 'send'
   cursor?: number
   'cursor-color'?: string
   'cursor-spacing'?: number
@@ -30,6 +20,17 @@ export type MiniProgramIntrinsicElementInput = MiniProgramIntrinsicElementBaseAt
   focus?: boolean
   'hold-keyboard'?: boolean
   maxlength?: number
+  onBlur?: WevuJsxEventHandler
+  onChange?: WevuJsxEventHandler
+  onConfirm?: WevuJsxEventHandler
+  onFocus?: WevuJsxEventHandler
+  onInput?: WevuJsxEventHandler
+  onKeyboardHeightChange?: WevuJsxEventHandler
+  onKeyboardcompositionend?: WevuJsxEventHandler
+  onKeyboardcompositionstart?: WevuJsxEventHandler
+  onKeyboardcompositionupdate?: WevuJsxEventHandler
+  onNicknameReview?: WevuJsxEventHandler
+  onSelectionchange?: WevuJsxEventHandler
   password?: boolean
   placeholder?: string
   'placeholder-class'?: string
@@ -42,9 +43,6 @@ export type MiniProgramIntrinsicElementInput = MiniProgramIntrinsicElementBaseAt
   'safe-password-time-stamp'?: number
   'selection-end'?: number
   'selection-start'?: number
-  type?: 'text' | 'number' | 'idcard' | 'digit' | 'safe-password' | 'nickname'
+  type?: 'digit' | 'idcard' | 'nickname' | 'number' | 'safe-password' | 'text'
   value?: string
-  'worklet:onkeyboardheightchange'?: MiniProgramIntrinsicEventHandler<unknown>
 }
-
-export type WeappIntrinsicElementInput = MiniProgramIntrinsicElementInput

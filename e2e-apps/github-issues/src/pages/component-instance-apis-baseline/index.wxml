@@ -1,0 +1,4 @@
+<view id="component-instance-apis-baseline-page">
+  <text id="baseline-title">准备组件关系验收</text>
+  <button id="clear-trace" bindtap="clearTrace">清空上轮事件</button>
+</view>

@@ -1,0 +1,8 @@
+<view id="stream-probe-root">
+  <view id="probe-scenario">{{scenario}}</view>
+  <view id="probe-status">{{status}}</view>
+  <view id="probe-length">{{bytes.length}}</view>
+  <view id="probe-terminal">{{terminal}}</view>
+  <view id="probe-capabilities">{{capabilitiesText}}</view>
+  <view wx:for="{{events}}" wx:key="index">{{index}}: {{item}}</view>
+</view>

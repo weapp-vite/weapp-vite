@@ -1,4 +1,4 @@
-import type { InferNativeProps, InferNativePropType, NativePropType, NativeTypedProperty, NativeTypeHint } from '@/index'
+import type { InferNativeProps, InferNativePropType, NativePropType, NativeTypedProperty, NativeTypeHint } from 'wevu'
 import { expectType } from 'tsd'
 
 type Tone = 'neutral' | 'success' | 'danger'

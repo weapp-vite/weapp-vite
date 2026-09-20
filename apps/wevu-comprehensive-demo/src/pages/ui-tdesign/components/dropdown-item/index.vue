@@ -10,7 +10,7 @@ definePageJson(() => ({
 }))
 
 const value = ref('a')
-const options = ref([{ title: 'A', value: 'a' }, { title: 'B', value: 'b' }])
+const options = ref([{ label: 'A', value: 'a', disabled: false }, { label: 'B', value: 'b', disabled: false }])
 </script>
 
 <template>

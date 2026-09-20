@@ -21,14 +21,16 @@ function _runE2E() {
       issue-615 scoped slot v-for owner list
     </view>
 
-    <Tabbar>
+    <Tabbar id="issue615-tabbar">
       <template #default="slotProps">
         <TabbarItem
           v-for="item in list"
+          :id="`issue615-item-${item.label}`"
           :key="item.label"
           :data-issue615-slot-ready="slotProps ? 'ready' : 'missing'"
         >
           <text
+            :id="item.label"
             class="issue615-label"
             :data-issue615-label="item.label"
           >

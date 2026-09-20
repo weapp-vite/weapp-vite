@@ -1,6 +1,6 @@
 import { createVueTransformPlugin } from '../../src/plugins/vue/transform'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService } from './moduleGraph'
+import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 function createCtx(pages: string[] = []) {
   const cwd = '/root'
@@ -8,11 +8,7 @@ function createCtx(pages: string[] = []) {
   const appEntry = { json: { pages } }
   return {
     moduleGraphService: createTestModuleGraphService(),
-    runtimeState: {
-      scan: {
-        isDirty: false,
-      },
-    },
+    runtimeState: createTestRuntimeState(),
     configService: {
       cwd,
       absoluteSrcRoot,
@@ -131,7 +127,7 @@ describe('vue transform emits default component json', () => {
     })
   })
 
-  it('does not emit default component json for declared pages', async () => {
+  it('emits empty page json without component flags for declared pages', async () => {
     const plugin = createVueTransformPlugin(createCtx(['pages/home/index']))
 
     await callPluginHook(plugin.transform as any, {}, `<template><view>page</view></template><script>export default Component({})</script>`, '/root/src/pages/home/index.vue')
@@ -148,6 +144,7 @@ describe('vue transform emits default component json', () => {
     )
 
     const jsonAsset = emitted.find(item => item.fileName === 'pages/home/index.json')
-    expect(jsonAsset).toBeUndefined()
+    expect(jsonAsset).toBeDefined()
+    expect(JSON.parse(jsonAsset!.source)).toEqual({})
   })
 })

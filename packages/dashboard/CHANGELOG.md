@@ -1,5 +1,34 @@
 # @weapp-vite/dashboard
 
+## 7.1.3
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+## 7.1.2
+
+## 7.1.1
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+## 7.1.0
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.2，同步默认依赖与固定版本回归环境，纳入 CSS 导入解析、跨平台扫描路径及删除文件候选失效修复。保留现有 Core 编译器集成和单一 Tailwind CSS 生成入口。
+
+  同步脚手架模板 catalog 与初始化依赖解析的离线回退版本；注册表不可用时继续保留已有项目声明的版本。
+
 ## 7.0.4
 
 ## 7.0.3

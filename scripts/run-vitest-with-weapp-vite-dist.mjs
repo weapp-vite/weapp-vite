@@ -51,7 +51,10 @@ async function ensureWeappViteDist() {
 
   const pnpmEntrypath = process.env.npm_execpath
   if (pnpmEntrypath) {
-    const code = await runCommand(process.execPath, [pnpmEntrypath, '--filter', 'weapp-vite', 'build'])
+    const useNode = /\.(?:c|m)?js$/i.test(path.extname(pnpmEntrypath))
+    const pnpmCommand = useNode ? process.execPath : pnpmEntrypath
+    const pnpmArgs = useNode ? [pnpmEntrypath, '--filter', 'weapp-vite', 'build'] : ['--filter', 'weapp-vite', 'build']
+    const code = await runCommand(pnpmCommand, pnpmArgs)
     if (code !== 0) {
       process.exit(code)
     }

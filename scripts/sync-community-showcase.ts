@@ -130,6 +130,7 @@ const LEADING_DESCRIPTOR_RE = /^(一款|一个|一套|免费的?|开源的?)/
 const TRAILING_SENTENCE_RE = /[，。！？].*$/
 const NON_TITLE_HEADING_RE = /^(?:截图|二维码|功能(?:介绍)?|介绍|说明|演示|预览|效果|页面展示)$/
 const QRCODE_URL_RE = /qrcode|qr|weappcode|二维码/i
+const IMAGE_EXTENSIONS = ['.png', '.jpeg', '.jpg', '.webp', '.gif', '.svg']
 const SCREENSHOT_HEADING_RE = /(?:^|\n)(?:#+\s*截图\b|截图\s*$)/m
 const NON_META_LINE_RE = /^(?:个人|公司|组织|链接|github)\s*[:：]/i
 const SHOWCASE_ADDED_RE = /已添加到\s+https?:\/\//
@@ -418,7 +419,7 @@ export function parseShowcaseComment(comment: GithubIssueComment): ParsedComment
   const body = normalizeBody(comment.body)
   const lines = body
     .split('\n')
-    .map(line => line.trim())
+    .map(line => line.trim().replace(MARKDOWN_LIST_PREFIX_RE, ''))
     .filter(Boolean)
 
   const { github, link } = extractLinks(body)
@@ -572,6 +573,7 @@ export async function downloadImage(url: string, destinationWithoutExt: string, 
       'User-Agent': 'weapp-vite-showcase-sync',
     },
     maxRedirects: 5,
+    timeout: 15_000,
   })
   const ext = resolveFileExtension(url, response.headers['content-type'])
   const filePath = `${destinationWithoutExt}${ext}`
@@ -581,6 +583,20 @@ export async function downloadImage(url: string, destinationWithoutExt: string, 
     filePath,
     dimensions: getImageDimensions(buffer),
   }
+}
+
+/**
+ * @description 查找上一次同步留下的同名素材，避免远端暂时不可达时丢失本地资源。
+ */
+async function findExistingImage(fileWithoutExt: string): Promise<string | undefined> {
+  for (const extension of IMAGE_EXTENSIONS) {
+    const filePath = `${fileWithoutExt}${extension}`
+    if (await fs.pathExists(filePath)) {
+      return filePath
+    }
+  }
+
+  return undefined
 }
 
 async function fetchGithubJson<T>(url: string): Promise<T> {
@@ -724,7 +740,7 @@ export async function materializeShowcaseEntries(parsedEntries: ParsedCommentEnt
   for (const parsedEntry of parsedEntries) {
     const entryDir = path.join(outputDir, parsedEntry.slug)
     if (!dryRun) {
-      await fs.emptyDir(entryDir)
+      await fs.ensureDir(entryDir)
     }
 
     const downloadedAssets: DownloadedAssetCandidate[] = []
@@ -742,7 +758,23 @@ export async function materializeShowcaseEntries(parsedEntries: ParsedCommentEnt
         baseName = screenshotCount === 1 ? 'cover' : `screenshot-${screenshotCount - 1}`
       }
       const fileWithoutExt = path.join(entryDir, baseName)
-      const downloadResult = await downloadImage(image.url, fileWithoutExt, dryRun)
+      let downloadResult
+      try {
+        downloadResult = await downloadImage(image.url, fileWithoutExt, dryRun)
+      }
+      catch (error) {
+        const existingFilePath = await findExistingImage(fileWithoutExt)
+        if (!existingFilePath) {
+          throw error
+        }
+
+        console.warn(`[sync-community-showcase] failed to download ${image.url}; using existing ${existingFilePath}`)
+        const existingBuffer = await fs.readFile(existingFilePath)
+        downloadResult = {
+          filePath: existingFilePath,
+          dimensions: getImageDimensions(Buffer.from(existingBuffer)),
+        }
+      }
       const relativePath = path.relative(path.resolve(outputDir, '..'), downloadResult.filePath)
 
       downloadedAssets.push({

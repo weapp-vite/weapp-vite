@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import net from 'node:net'
 import os from 'node:os'
@@ -5,6 +6,8 @@ import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutomatorViaHttp, extendProjectConfig, resolveBootstrapCliArgs, resolveCliSpawnOptions, waitForSocketReady } from './automator.cli-bridge'
+
+const opaqueToken = 'a'.repeat(32)
 
 function createMockChild(spawnfile = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli') {
   const stdout = new PassThrough()
@@ -65,6 +68,89 @@ describe('waitForSocketReady', () => {
     while (closers.length > 0) {
       const close = closers.pop()
       await close?.()
+    }
+  })
+
+  it('destroys a pending socket when the bootstrap deadline expires', async () => {
+    vi.useFakeTimers()
+    const socket = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn> }
+    socket.destroy = vi.fn()
+    const connect = vi.spyOn(net, 'createConnection').mockReturnValue(socket as unknown as net.Socket)
+    try {
+      const task = waitForSocketReady({ port: 43210, timeoutMs: 50 })
+      const assertion = expect(task).rejects.toThrow('Timed out waiting for automator socket')
+      await vi.advanceTimersByTimeAsync(50)
+      await assertion
+      expect(socket.destroy).toHaveBeenCalledOnce()
+      expect(socket.listenerCount('connect')).toBe(0)
+    }
+    finally {
+      connect.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports socket timeout even when the timer fires before the next monotonic deadline reading', async () => {
+    vi.useFakeTimers()
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0)
+    const socket = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn> }
+    socket.destroy = vi.fn()
+    const connect = vi.spyOn(net, 'createConnection').mockReturnValue(socket as unknown as net.Socket)
+    try {
+      const task = waitForSocketReady({ port: 43210, timeoutMs: 50 })
+      const assertion = expect(task).rejects.toThrow('Timed out waiting for automator socket')
+      await vi.advanceTimersByTimeAsync(50)
+      await assertion
+      expect(socket.destroy).toHaveBeenCalledOnce()
+    }
+    finally {
+      connect.mockRestore()
+      now.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('aborts the actual HTTP fallback within the original socket deadline', async () => {
+    vi.useFakeTimers()
+    const { child, stdout } = createMockChild()
+    const connect = vi.spyOn(net, 'createConnection').mockImplementation(() => {
+      const socket = new EventEmitter() as EventEmitter & { destroy: ReturnType<typeof vi.fn> }
+      socket.destroy = vi.fn()
+      queueMicrotask(() => socket.emit('error', new Error('ECONNREFUSED')))
+      return socket as unknown as net.Socket
+    })
+    let fetchSignal: AbortSignal | undefined
+    const fetchMock = vi.fn((_url: unknown, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      fetchSignal = init?.signal ?? undefined
+      fetchSignal?.addEventListener('abort', () => reject(fetchSignal?.reason), { once: true })
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      const task = waitForSocketReady({
+        child: child as any,
+        port: 43210,
+        timeoutMs: 50,
+        onSuccessfulCliExit: (servicePort, signal) => enableAutomatorViaHttp({
+          autoPort: 43210,
+          projectPath: 'fixture',
+          servicePort,
+          signal,
+        }),
+      })
+      const assertion = expect(task).rejects.toThrow('Timed out waiting for automator socket')
+      await Promise.resolve()
+      stdout.write('listening on http://127.0.0.1:9420')
+      child.emit('exit', 0, null)
+      // 让首次 TCP 失败后的下一次轮询在原预算内看到 CLI 退出。
+      await vi.advanceTimersByTimeAsync(50)
+      await assertion
+      expect(fetchSignal?.aborted).toBe(true)
+      expect(fetchMock).toHaveBeenCalledOnce()
+    }
+    finally {
+      connect.mockRestore()
+      vi.unstubAllGlobals()
+      vi.useRealTimers()
     }
   })
 
@@ -140,7 +226,7 @@ describe('waitForSocketReady', () => {
       servicePort: 9420,
     })
     expect(onSuccessfulCliExit).toHaveBeenCalledOnce()
-    expect(onSuccessfulCliExit).toHaveBeenCalledWith(9420)
+    expect(onSuccessfulCliExit).toHaveBeenCalledWith(9420, expect.any(AbortSignal))
   })
 
   it('does not fail fast on an early successful cli exit without a fatal error signature', async () => {
@@ -254,7 +340,7 @@ describe('enableAutomatorViaHttp', () => {
     })).resolves.toBe(45678)
   })
 
-  it('rejects an unknown successful response shape', async () => {
+  it('uses the requested port for a DevTools opaque token response', async () => {
     const server = net.createServer((socket) => {
       socket.once('data', () => {
         socket.end([
@@ -262,7 +348,7 @@ describe('enableAutomatorViaHttp', () => {
           'Content-Type: application/json',
           'Connection: close',
           '',
-          JSON.stringify({ status: 'ok' }),
+          JSON.stringify(opaqueToken),
         ].join('\r\n'))
       })
     })
@@ -279,7 +365,60 @@ describe('enableAutomatorViaHttp', () => {
       autoPort: 45678,
       projectPath: '/repo/demo app',
       servicePort,
-    })).rejects.toThrow('unsupported response')
+    })).resolves.toBe(45678)
+  })
+
+  it.each([
+    {
+      body: opaqueToken,
+      expectedMessage: 'WeChat DevTools HTTP automator fallback failed with status 500',
+      status: '500 Internal Server Error',
+    },
+    {
+      body: opaqueToken,
+      expectedMessage: 'WeChat DevTools HTTP automator fallback returned invalid JSON',
+      status: '200 OK',
+    },
+    {
+      body: JSON.stringify({ autoPort: opaqueToken }),
+      expectedMessage: 'WeChat DevTools HTTP automator fallback returned invalid autoPort',
+      status: '200 OK',
+    },
+    {
+      body: JSON.stringify({ token: opaqueToken }),
+      expectedMessage: 'WeChat DevTools HTTP automator fallback returned unsupported response',
+      status: '200 OK',
+    },
+  ])('preserves response errors without disclosing their bodies', async ({ body, expectedMessage, status }) => {
+    const server = net.createServer((socket) => {
+      socket.once('data', () => {
+        socket.end([
+          `HTTP/1.1 ${status}`,
+          'Content-Type: application/json',
+          'Connection: close',
+          '',
+          body,
+        ].join('\r\n'))
+      })
+    })
+    servers.push(server)
+    const servicePort = await new Promise<number>((resolve, reject) => {
+      server.once('error', reject)
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address()
+        resolve(typeof address === 'object' && address ? address.port : 0)
+      })
+    })
+
+    const error = await enableAutomatorViaHttp({
+      autoPort: 45678,
+      projectPath: '/repo/demo app',
+      servicePort,
+    }).catch(error => error) as Error & { cause?: unknown }
+
+    expect(error.message).toBe(expectedMessage)
+    expect(String(error)).not.toContain(opaqueToken)
+    expect(error.cause).toBeUndefined()
   })
 })
 

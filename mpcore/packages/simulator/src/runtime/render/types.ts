@@ -2,6 +2,7 @@ import type { HeadlessComponentDefinition } from '../../host'
 import type { ArtifactSource } from '../../kernel'
 import type { HeadlessProjectDescriptor } from '../../project'
 import type { TemplateRenderState } from '../../view/templateRuntime'
+import type { WxsModuleBindings } from '../../view/wxs'
 import type { HeadlessComponentInstance } from '../componentInstance'
 import type { HeadlessModuleLoader } from '../moduleLoader'
 
@@ -9,16 +10,18 @@ export interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
 }
 
 export interface RuntimeRenderScope {
+  wxs?: WxsModuleBindings
   alias?: string
   classList?: string[]
   data: Record<string, any>
-  dataset?: Record<string, string>
+  dataset?: Record<string, unknown>
   eventBindings?: Map<string, { method: string, stopAfter: boolean }>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string

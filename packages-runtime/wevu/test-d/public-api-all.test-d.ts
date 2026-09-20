@@ -1,6 +1,10 @@
 import type {
   AllowedComponentProps,
   AppConfig,
+  AsyncDerivation,
+  AsyncDerivationContext,
+  AsyncDerivationState,
+  AsyncDerivationStatus,
   ComponentCustomProps,
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -31,15 +35,9 @@ import type {
   MiniProgramComponentPropertyOption,
   MiniProgramComponentRawOptions,
   MiniProgramComponentShortProperty,
-  MiniProgramCSSProperties,
-  MiniProgramDatasetAttributes,
-  MiniProgramHtmlAliasIntrinsicElements,
   MiniProgramInstance,
   MiniProgramIntersectionObserver,
   MiniProgramIntersectionObserverOptions,
-  MiniProgramIntrinsicElementBaseAttributes,
-  MiniProgramIntrinsicElements,
-  MiniProgramIntrinsicEventHandler,
   MiniProgramLaunchOptions,
   MiniProgramMemoryWarningResult,
   MiniProgramNavigateToOption,
@@ -93,20 +91,28 @@ import type {
   SetupFunction,
   ShallowUnwrapRef,
   TriggerEventOptions,
+  UseAsyncDerivationOptions,
   UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
-  WeappCSSProperties,
-  WeappDatasetAttributes,
-  WeappHtmlAliasIntrinsicElements,
-  WeappIntrinsicElementBaseAttributes,
-  WevuComponentConstructor,
   WevuPlugin,
   WevuTypedRouterRouteMap,
 } from 'wevu'
 import type * as wevu from 'wevu'
+import type { AlipayIntrinsicElementBaseAttributes, AlipayIntrinsicElements } from 'wevu/alipay/jsx-runtime'
 import type { MiniProgramRequestMethod, WxRequestMethod } from 'wevu/fetch'
-import { expectType } from 'tsd'
+import type {
+  JSX as WevuJSX,
+  WevuJsxChild,
+  WevuJsxElement,
+  WevuJsxEventHandler,
+  WevuJsxGlobalComponents,
+  WevuJsxHostAttributes,
+} from 'wevu/jsx-runtime'
+import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicElements } from 'wevu/miniprogram/jsx-runtime'
+import type { TtIntrinsicElementBaseAttributes, TtIntrinsicElements } from 'wevu/tt/jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicElements } from 'wevu/weapp/jsx-runtime'
+import { expectAssignable, expectType } from 'tsd'
 
 type CompilerEntry = typeof import('wevu/compiler')
 type WevuJsxRuntime = typeof import('wevu/jsx-runtime')
@@ -224,6 +230,7 @@ type RuntimeApiName
     | 'triggerRef'
     | 'unref'
     | 'useAttrs'
+    | 'useAsyncDerivation'
     | 'useAsyncPullDownRefresh'
     | 'useBindModel'
     | 'useBoundingClientRect'
@@ -263,7 +270,6 @@ type MissingMacroApi = Exclude<ScriptSetupMacroApiName, keyof typeof wevu>
 
 expectType<never>({} as MissingRuntimeApi)
 expectType<never>({} as MissingMacroApi)
-expectType<WevuComponentConstructor<any, any, any, any, any> | null>(null)
 declare const compilerEntry: CompilerEntry
 expectType<CompilerEntry>(compilerEntry)
 
@@ -278,8 +284,6 @@ expectType<WevuApiEntry>(apiEntry)
 
 declare const fetchEntry: WevuFetchEntry
 expectType<WevuFetchEntry>(fetchEntry)
-expectType<MiniProgramRequestMethod>('GET')
-expectType<MiniProgramRequestMethod>('POST')
 expectType<MiniProgramRequestMethod>({} as WxRequestMethod)
 
 declare const routerEntry: WevuRouterEntry
@@ -297,6 +301,10 @@ interface PublicApiNativePropsOptions extends NativePropsOptions {
 type _TypeCoverage = [
   AllowedComponentProps,
   AppConfig,
+  AsyncDerivation<unknown>,
+  AsyncDerivationContext,
+  AsyncDerivationState<unknown>,
+  AsyncDerivationStatus,
   ComponentCustomProps,
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -327,15 +335,9 @@ type _TypeCoverage = [
   MiniProgramComponentShortProperty,
   MiniProgramComponentOptions,
   MiniProgramComponentRawOptions,
-  MiniProgramCSSProperties,
-  MiniProgramDatasetAttributes,
-  MiniProgramHtmlAliasIntrinsicElements,
   MiniProgramIntersectionObserver,
   MiniProgramIntersectionObserverOptions,
   MiniProgramInstance,
-  MiniProgramIntrinsicElementBaseAttributes,
-  MiniProgramIntrinsicElements,
-  MiniProgramIntrinsicEventHandler<unknown>,
   MiniProgramLaunchOptions,
   MiniProgramMemoryWarningResult,
   MiniProgramNodesRef,
@@ -390,16 +392,31 @@ type _TypeCoverage = [
   ShallowUnwrapRef<any>,
   TriggerEventOptions,
   UseAsyncPullDownRefreshOptions,
+  UseAsyncDerivationOptions,
   VNode,
   VNodeProps,
+  AlipayIntrinsicElementBaseAttributes,
+  AlipayIntrinsicElements,
+  MiniProgramIntrinsicElementBaseAttributes,
+  MiniProgramIntrinsicElements,
+  TtIntrinsicElementBaseAttributes,
+  TtIntrinsicElements,
   WeappIntrinsicElementBaseAttributes,
-  WeappCSSProperties,
-  WeappDatasetAttributes,
-  WeappHtmlAliasIntrinsicElements,
   WeappIntrinsicElements,
+  WevuJSX.Element,
+  WevuJsxChild,
+  WevuJsxElement,
+  WevuJsxEventHandler,
+  WevuJsxGlobalComponents,
+  WevuJsxHostAttributes,
   WevuTypedRouterRouteMap,
   WevuPlugin,
 ]
 
 declare const typeCoverage: _TypeCoverage
 expectType<_TypeCoverage>(typeCoverage)
+
+declare const setDataDebugInfo: SetDataDebugInfo
+expectType<number | undefined>(setDataDebugInfo.revision)
+expectType<number | undefined>(setDataDebugInfo.committedRevision)
+expectAssignable<SetDataDebugInfo['reason']>('commitFailure')

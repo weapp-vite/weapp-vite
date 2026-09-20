@@ -577,6 +577,42 @@ describe('serve cli command', () => {
     })
   })
 
+  it.each([false, true])('keeps the automator open owner exclusive when console connection fails=%s', async (connectionFails) => {
+    const action = createServeActionHandler()
+    if (connectionFails) {
+      maybeStartForwardConsoleMock.mockRejectedValueOnce(new Error('automator log connection failed'))
+    }
+    else {
+      maybeStartForwardConsoleMock.mockResolvedValueOnce(true)
+    }
+
+    await action('/project', {
+      platform: 'weapp',
+      open: true,
+      ideOpenStrategy: 'automator',
+    })
+
+    expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', expect.objectContaining({
+      openStrategy: 'automator',
+      prepareAutomatorSession: true,
+      useAutomatorOpen: true,
+    }))
+    expect(maybeStartForwardConsoleMock).toHaveBeenCalledTimes(1)
+    expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
+      openedOnly: true,
+      preferOpenedSession: true,
+      platform: 'weapp',
+      mpDistRoot: '/project/dist',
+      cwd: '/project',
+      weappViteConfig: { analyze: { history: false } },
+    })
+    expect(openIdeMock.mock.invocationCallOrder[0]).toBeLessThan(maybeStartForwardConsoleMock.mock.invocationCallOrder[0])
+    if (connectionFails) {
+      expect(loggerWarnMock).toHaveBeenCalledWith('[forwardConsole] 后台启动失败：automator log connection failed')
+    }
+  })
+
   it('keeps dev hotkeys session alive until serve shutdown signal arrives', async () => {
     const action = createServeActionHandler()
 
@@ -594,6 +630,8 @@ describe('serve cli command', () => {
     expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
     expect(closeActiveForwardConsoleMock).toHaveBeenCalledTimes(1)
     expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(maybeStartForwardConsoleMock).not.toHaveBeenCalled()
   })
 
   it('uses process cwd when serve root argument is omitted', async () => {

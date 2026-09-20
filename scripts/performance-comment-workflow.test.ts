@@ -6,6 +6,18 @@ import { parse } from 'yaml'
 const root = path.resolve(import.meta.dirname, '..')
 
 describe('performance reporting workflows', () => {
+  it('uploads failed template diagnostics and independently gates missing or failed reports', async () => {
+    const workflow = parse(await readFile(path.join(root, '.github/workflows/ci-performance.yml'), 'utf8'))
+    const steps = workflow.jobs['templates-performance'].steps as Array<{ name?: string, if?: string, run?: string, with?: Record<string, string> }>
+    const upload = steps.find(step => step.name === 'Upload templates performance report artifact')!
+    const gate = steps.find(step => step.name === 'Verify templates performance report completeness')!
+    expect(upload.if).toBe('always()')
+    expect(upload.with?.['if-no-files-found']).toBe('error')
+    expect(gate.if).toBe('always()')
+    expect(gate.run).toBe('pnpm exec tsx scripts/check-templates-performance-report.ts')
+    expect(steps.indexOf(upload)).toBeLessThan(steps.indexOf(gate))
+  })
+
   it('runs PR template benchmarks on all supported runners', async () => {
     const workflow = parse(await readFile(path.join(root, '.github/workflows/ci-performance.yml'), 'utf8'))
     const matrixExpression = workflow.jobs['templates-performance'].strategy.matrix.os

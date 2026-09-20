@@ -26,7 +26,9 @@ import {
   createProjectCommand,
   installCommand,
   packageScriptCommand,
+  prepareCommand,
 } from './packageManager'
+import { prepareTutorialWorkspace } from './prepare'
 import {
 
   TutorialRunRecorder,
@@ -275,9 +277,10 @@ async function executeTutorialRun(
   try {
     await fs.mkdir(scenarioRoot, { recursive: true })
     await recorder.step('create', async () => {
+      const createTarget = run.source === 'workspace' ? projectDir : projectName
       await runLoggedCommand({
-        command: createProjectCommand(run.source, run.packageManager, projectName, run.template),
-        cwd: scenarioRoot,
+        command: createProjectCommand(run.source, run.packageManager, createTarget, run.template),
+        cwd: run.source === 'workspace' ? REPO_ROOT : scenarioRoot,
         label: `${run.id} create`,
         log,
       })
@@ -297,6 +300,15 @@ async function executeTutorialRun(
         label: `${run.id} install`,
         log,
       })
+      const prepare = prepareCommand(run.packageManager)
+      if (prepare) {
+        await runLoggedCommand({
+          command: prepare,
+          cwd: projectDir,
+          label: `${run.id} prepare`,
+          log,
+        })
+      }
     })
 
     switch (run.scenario) {
@@ -339,26 +351,12 @@ async function executeTutorialRun(
   }
 }
 
-async function prepareWorkspace(options: TutorialCliOptions, log: (message: string) => void) {
-  if (options.source !== 'workspace' || process.env.TUTORIAL_E2E_SKIP_WORKSPACE_BUILD === '1') {
-    return
-  }
-  await runLoggedCommand({
-    command: { args: ['build:pkgs:ci'], command: 'pnpm' },
-    cwd: REPO_ROOT,
-    label: 'tutorial workspace package build',
-    log,
-    timeoutMs: 30 * 60 * 1000,
-  })
-  process.stdout.write('dist sync: rebuilt weapp-vite before downstream validation\n')
-}
-
 export async function runTutorialE2E(options: TutorialCliOptions) {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tutorial-e2e-'))
   await fs.mkdir(options.reportDir, { recursive: true })
   const setupLog: string[] = []
   try {
-    await prepareWorkspace(options, (message) => {
+    await prepareTutorialWorkspace(options, (message) => {
       setupLog.push(message)
       process.stdout.write(message)
     })

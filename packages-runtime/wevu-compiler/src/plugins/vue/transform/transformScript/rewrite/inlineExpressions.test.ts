@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { generate } from '../../../../../utils/babel'
 import { injectInlineExpressions } from './inlineExpressions'
 
+const PARAMETER_NAMES = { context: 'ctx', scope: 'scope', event: '$event' }
+
 describe('injectInlineExpressions', () => {
   it('returns false when inline expression list is empty', () => {
     expect(injectInlineExpressions(t.objectExpression([]), [])).toBe(false)
@@ -15,6 +17,7 @@ describe('injectInlineExpressions', () => {
         id: 'e0',
         expression: 'foo + 1',
         scopeKeys: ['foo'],
+        parameterNames: PARAMETER_NAMES,
       },
     ])
 
@@ -35,6 +38,7 @@ describe('injectInlineExpressions', () => {
         id: 'e1',
         expression: 'bar',
         scopeKeys: ['bar'],
+        parameterNames: PARAMETER_NAMES,
       },
     ])).toBe(false)
   })
@@ -53,6 +57,7 @@ describe('injectInlineExpressions', () => {
         id: 'e_spread',
         expression: 'onChange($event)',
         scopeKeys: [],
+        parameterNames: PARAMETER_NAMES,
       },
     ])).toBe(true)
 
@@ -84,6 +89,7 @@ describe('injectInlineExpressions', () => {
         id: 'e2',
         expression: 'baz',
         scopeKeys: ['baz'],
+        parameterNames: PARAMETER_NAMES,
       },
     ])).toBe(true)
 
@@ -110,6 +116,7 @@ describe('injectInlineExpressions', () => {
         id: 'e3',
         expression: 'qux',
         scopeKeys: ['qux'],
+        parameterNames: PARAMETER_NAMES,
       },
     ])).toBe(false)
   })
@@ -121,6 +128,7 @@ describe('injectInlineExpressions', () => {
         id: 'e4',
         expression: '(',
         scopeKeys: ['a', 'b'],
+        parameterNames: PARAMETER_NAMES,
         indexBindings: [
           { key: 'i', binding: 'index' },
         ],
@@ -144,6 +152,7 @@ describe('injectInlineExpressions', () => {
         id: 'e5',
         expression: 'ctx.select(scope.label, scope.entry)',
         scopeKeys: ['label', 'entry'],
+        parameterNames: PARAMETER_NAMES,
         scopeResolvers: [
           { key: 'entry', expression: '({ type: \'for-item\', path: \'entries\', indexKey: \'__wv_i0\' })' },
         ],

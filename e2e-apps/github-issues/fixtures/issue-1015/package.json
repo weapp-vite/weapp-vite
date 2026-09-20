@@ -1,0 +1,9 @@
+{
+  "name": "issue-1015-external-css-hmr",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}

@@ -18,6 +18,8 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
+import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
+import { hasManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
@@ -30,7 +32,6 @@ import {
   watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
-import { touch } from '../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
@@ -40,14 +41,18 @@ import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
+import { resolveComponentPageGlobalStyleRoutes } from '../statefulHmr/componentPageStyles'
 import { runStatefulHmrDev } from '../statefulHmr/session'
+import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
+import { retainWatcherService } from '../watcherPlugin'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
-import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
-import { resolveTouchAppWxssEnabled } from './touchAppWxss'
+import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
+import { refreshSnapshotSources } from './snapshotSources'
+import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
 export interface BuildOptions {
@@ -196,28 +201,11 @@ function toStatefulHmrOutput(output: RolldownOutput | RolldownOutput[] | Rolldow
 
 function collectStatefulHmrEntryIds(
   initialEntryIds: Iterable<string>,
-  snapshot: StatefulHmrOutputFile[],
-  cwd: string,
-  srcRoot: string,
 ): Set<string> {
-  const entryIds = new Set(Array.from(initialEntryIds, id => normalizeFsResolvedId(id)))
-  const normalizedSrcRoot = normalizeFsResolvedId(srcRoot).replace(/\/$/, '')
-  for (const item of snapshot) {
-    if (item.type !== 'chunk') {
-      continue
-    }
-    for (const moduleId of Object.keys(item.modules ?? {})) {
-      const sourceId = moduleId.split('?')[0]
-      const normalizedId = normalizeFsResolvedId(path.isAbsolute(sourceId) ? sourceId : path.resolve(cwd, sourceId))
-      if (
-        normalizedId.startsWith(`${normalizedSrcRoot}/`)
-        && /\.(?:[cm]?[jt]sx?|vue)$/.test(normalizedId)
-      ) {
-        entryIds.add(normalizedId)
-      }
-    }
-  }
-  return entryIds
+  // Only resolved logical entries are safe stateful-HMR patch boundaries.
+  // Modules discovered inside emitted chunks are dependencies and must not be
+  // promoted to entries, otherwise dependency changes bypass full rebuilds.
+  return new Set(Array.from(initialEntryIds, id => normalizeFsResolvedId(id)))
 }
 
 function resolveSnapshotSidecarDirtySummary(
@@ -1183,6 +1171,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     sidecarRoot: string
     waitForPendingSnapshotBuilds: () => Promise<unknown>
     markClosed: () => void
+    releaseResources?: () => Promise<void>
   }) {
     const { watcher, watcherRoot, sidecarRoot, waitForPendingSnapshotBuilds, markClosed } = options
     const originalClose = watcher.close.bind(watcher)
@@ -1199,7 +1188,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             await Promise.resolve(sidecarWatcher.close()).catch(() => {})
           }
           watcherService.rollupWatcherMap.delete(watcherRoot)
-          await originalClose()
+          try {
+            await originalClose()
+          }
+          finally {
+            await options.releaseResources?.()
+          }
         })()
       }
       return closePromise
@@ -1208,18 +1202,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
   const requestedConfigRestartBuilds = new Set<BuildTarget>()
-  let autoTouchResolved = false
-  let autoTouchChecked = false
-
-  function hasAutoTouchAppWxssReason() {
-    const dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? []
-    return dirtyReasonSummary.some((reason) => {
-      return reason.startsWith('tailwind-content:')
-        || reason.startsWith('style-sidecar:')
-        || reason.startsWith('entry-style-only:')
-    })
-  }
-
   const {
     buildIndependentBundle,
     getIndependentOutput,
@@ -1227,26 +1209,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   } = createIndependentBuilder(configService, buildState)
 
   function shouldTouchAppWxss() {
-    const option = configService.weappViteConfig.hmr?.touchAppWxss ?? 'auto'
-    if (option === true) {
-      return true
-    }
-    if (option === false) {
-      return false
-    }
-    if (!hasAutoTouchAppWxssReason()) {
-      return false
-    }
-    if (!autoTouchChecked) {
-      autoTouchChecked = true
-      autoTouchResolved = resolveTouchAppWxssEnabled({
-        option,
-        platform: configService.platform,
-        packageJson: configService.packageJson,
-        cwd: configService.cwd,
-      })
-    }
-    return autoTouchResolved
+    return resolveTouchAppWxssEnabled({
+      option: configService.weappViteConfig.hmr?.touchAppWxss,
+      platform: configService.platform,
+      dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
+      managedTailwindcss: hasManagedTailwindcssEntries(ctx),
+    })
   }
 
   function isDevOutputFile(filePath: string) {
@@ -1323,20 +1291,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
       try {
-        const snapshotBuildOptions: InlineConfig = {
-          ...buildOptions,
-          build: {
-            ...(buildOptions.build ?? {}),
-            watch: undefined,
-            write: false,
-          },
-        }
-        const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
-        const initialEntryIds = collectStatefulHmrEntryIds(
-          ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin)
+        const initialSnapshot = toStatefulHmrOutput(snapshot.output)
+        const initialGlobalStyleRoutes = resolveComponentPageGlobalStyleRoutes(
           initialSnapshot,
-          configService.cwd,
-          configService.absoluteSrcRoot,
+          snapshot.getComponentPageStyleOptions(),
+        )
+        const initialEntryIds = collectStatefulHmrEntryIds(
+          snapshot.getEntryIds(),
         )
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
@@ -1379,38 +1341,38 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.success('微信状态保持 HMR 构建已完成完整重载。')
           }, {
             entryIds: initialEntryIds,
-            initial: initialSnapshot,
+            delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
+            initial: { output: initialSnapshot, componentPageGlobalStyleRoutes: initialGlobalStyleRoutes },
             rebuild: async (files) => {
               for (const file of files) {
                 invalidateFileCache(file)
               }
-              resetRuntimeStateForFreshBuild(ctx.runtimeState)
-              resetEmittedOutputCaches(ctx.runtimeState)
-              await configService.load(configService.loadOptions)
-              await scanService.loadAppEntry()
-              scanService.loadSubPackages()
-              const snapshotOptions = createDevBuildOptions()
-              snapshotOptions.build = {
-                ...(snapshotOptions.build ?? {}),
-                emptyOutDir: false,
-                watch: undefined,
-                write: false,
-              }
-              snapshotOptions.plugins = [
-                ...(snapshotOptions.plugins ?? []),
-                {
-                  name: 'weapp-vite:stateful-hmr-snapshot-assets',
-                  enforce: 'post',
-                  generateBundle(_options, bundle) {
-                    for (const [fileName, item] of Object.entries(bundle)) {
-                      if (item.type === 'chunk') {
-                        delete bundle[fileName]
+              const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
+                const snapshotOptions = appendHmrMetricsPlugin(options)
+                snapshotOptions.build = { ...(snapshotOptions.build ?? {}), emptyOutDir: false }
+                snapshotOptions.plugins = [
+                  ...(snapshotOptions.plugins ?? []),
+                  {
+                    name: 'weapp-vite:stateful-hmr-snapshot-assets',
+                    enforce: 'post',
+                    generateBundle(_options, bundle) {
+                      for (const [fileName, item] of Object.entries(bundle)) {
+                        if (item.type === 'chunk') {
+                          delete bundle[fileName]
+                        }
                       }
-                    }
+                    },
                   },
-                },
-              ]
-              return toStatefulHmrOutput(await build(snapshotOptions))
+                ]
+                return snapshotOptions
+              })
+              const output = toStatefulHmrOutput(snapshot.output)
+              return {
+                output,
+                entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
+                delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
+                componentPageGlobalStyleRoutes: resolveComponentPageGlobalStyleRoutes(output, snapshot.getComponentPageStyleOptions()),
+              }
             },
           }),
           workerPromise,
@@ -1449,6 +1411,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
+    let failedSnapshotReasons: SnapshotBuildReason[] = []
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     const devBuildWatcher = target === 'app' ? createDevBuildWatcher() : undefined
 
@@ -1510,10 +1473,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (devWatcherClosed) {
           return
         }
-        if (reason?.event || reason?.file) {
-          if (reason.file) {
-            invalidateFileCache(reason.file)
+        if (failedSnapshotReasons.length) {
+          batchReasons = [...failedSnapshotReasons, ...batchReasons]
+          failedSnapshotReasons = []
+          // 上次写入可能未完成，重放时不能依赖已生成阶段的输出去重缓存。
+          resetEmittedOutputCaches(ctx.runtimeState)
+        }
+        // 当前串行构建独占 graph pending；后续事件继续留在本地批次队列。
+        for (const batchReason of batchReasons) {
+          if (batchReason.file) {
+            ctx.moduleGraphService.recordChangedFile(batchReason.file, batchReason.event ?? 'update')
           }
+        }
+        if (reason?.event || reason?.file) {
           ctx.runtimeState.build.hmr.profile = {
             ...ctx.runtimeState.build.hmr.profile,
             eventId: createHmrProfileEventId(),
@@ -1543,6 +1515,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
+        await refreshSnapshotSources(ctx, batchReasons.flatMap(batchReason => batchReason.file ? [batchReason.file] : []))
+        const styleScriptChanges = new Set<string>()
+        for (const batchReason of batchReasons) {
+          if (!batchReason.file) {
+            continue
+          }
+          for (const entryId of await collectVueStyleScriptChanges(ctx, batchReason.file, configService)) {
+            styleScriptChanges.add(entryId)
+            graphAffectedEntries.add(entryId)
+          }
+        }
         if (!requiresFullRescan && graphAffectedEntries.size) {
           const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
           const dirtyReason = dirtyReasons.includes('direct')
@@ -1550,7 +1533,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
           for (const entryId of graphAffectedEntries) {
             if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
-              markSnapshotEntryDirty(entryId, reason, dirtyReason)
+              markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : dirtyReason)
             }
           }
           const summaryCounts = new Map<string, number>()
@@ -1563,6 +1546,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               graphAffectedEntriesByFile.get(normalizeFsResolvedId(batchReason.file)),
             ).replace(/:\d+$/, '')
             summaryCounts.set(summary, (summaryCounts.get(summary) ?? 0) + 1)
+          }
+          if (styleScriptChanges.size) {
+            summaryCounts.set('entry-mixed-asset', styleScriptChanges.size)
           }
           ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
             summaryCounts,
@@ -1590,6 +1576,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         markSnapshotEntriesFullDirty()
+        // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
+        resetEmittedOutputCaches(ctx.runtimeState)
         process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
         try {
           devBuildWatcher?.emitEvent({ code: 'START' })
@@ -1597,7 +1585,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             ...snapshotBuildOptions,
             build: {
               ...(snapshotBuildOptions.build ?? {}),
-              emptyOutDir: true,
+              emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
             },
           })
           devBuildWatcher?.emitEvent({ code: 'END' })
@@ -1616,7 +1604,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
         }
       })
-      snapshotBuildChain = currentSnapshotBuild.catch(() => undefined)
+      snapshotBuildChain = currentSnapshotBuild.catch(() => {
+        failedSnapshotReasons.push(...batchReasons)
+        return undefined
+      })
       return currentSnapshotBuild
     }
 
@@ -1637,9 +1628,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
       if (devWatcherClosed) {
         return
-      }
-      if (reason.file) {
-        ctx.moduleGraphService?.recordChangedFile(reason.file, reason.event ?? 'update')
       }
       if (pendingSnapshotBatch) {
         pendingSnapshotBatch.reasons.push(reason)
@@ -1684,6 +1672,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })
       : undefined
 
+    // classic 的多轮一次性构建共用控制器资源，必须保留到正在执行的快照结束后再释放。
+    const releaseWatcherResources = devBuildWatcher ? retainWatcherService(watcherService) : undefined
     const watcherPromise = target === 'app'
       ? (async () => {
           devBuildWatcher!.emitEvent({ code: 'START' })
@@ -1698,7 +1688,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               error: error instanceof Error ? error : new Error(String(error)),
               result: undefined as never,
             })
-            await moduleGraphProvider?.close()
             throw error
           }
         })()
@@ -1706,7 +1695,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const workerPromise = target === 'app' && hasWorkersDir && workersDir
       ? devWorkers(configService, watcherService, workersDir)
       : Promise.resolve()
-    const [watcher] = await Promise.all([watcherPromise, workerPromise])
+    const startup = await Promise.allSettled([watcherPromise, workerPromise])
+    const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    if (startupErrors.length > 0) {
+      // 等初次构建与 worker 启动都结束再回收；一个关闭失败不能遗留控制器租约。
+      const cleanup = await Promise.allSettled([
+        async () => await moduleGraphProvider?.close(),
+        async () => await devBuildWatcher?.watcher.close(),
+        async () => await releaseWatcherResources?.(),
+      ].map(async close => await close()))
+      const errors = [...startupErrors, ...cleanup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])]
+      throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher startup failed')
+    }
+    const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
     const isTestEnv = process.env.VITEST === 'true'
       || process.env.NODE_ENV === 'test'
 
@@ -1776,7 +1777,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.success(formatHmrLogLine(durationMs))
             shouldLogSlowHmrTip()
             if (appWxssPath && shouldTouchAppWxss()) {
-              void touch(appWxssPath).catch(() => {})
+              await touchExistingAppStyle(appWxssPath)
             }
           }
           else {
@@ -1786,6 +1787,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           resolveWatcher(e)
         })().catch((error) => {
           resetHmrProfile()
+          logger.error(error)
           rejectWatcher(error)
         })
       }
@@ -1860,8 +1862,15 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         markClosed: () => {
           devWatcherClosed = true
         },
+        releaseResources: releaseWatcherResources,
       })
-      await waitForSidecarWatcherReady(snapshotWatcher)
+      try {
+        await waitForSidecarWatcherReady(snapshotWatcher)
+      }
+      catch (error) {
+        await watcher.close()
+        throw error
+      }
     }
     watcherService.setRollupWatcher(watcher, watcherRoot)
     return watcher
@@ -1968,6 +1977,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         outDir: pluginOutputRoot,
       },
     }
+    const emptyOutDir = configService.inlineConfig.build?.emptyOutDir
+    if (typeof emptyOutDir === 'boolean') {
+      inlineConfig.build!.emptyOutDir = emptyOutDir
+    }
     const isolatedKey = `plugin-build:${configService.cwd}`
     const isolatedCtx = await createCompilerContext({
       key: isolatedKey,
@@ -2000,8 +2013,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
-    const shouldCleanOutputs = !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
-    if (shouldCleanOutputs) {
+    if (shouldCleanOutputs(configService, 'startup')) {
       await cleanOutputs(configService)
       resetEmittedOutputCaches(ctx.runtimeState)
     }

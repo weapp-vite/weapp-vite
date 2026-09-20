@@ -153,6 +153,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
       buildScope: configService.weappViteConfig.buildScope,
       platform: configService.platform,
       routeRules: configService.weappViteConfig.routeRules,
+      subPackages: configService.weappViteConfig.subPackages,
     })
     entries.push(...analyzeAppJson(appJson))
   }

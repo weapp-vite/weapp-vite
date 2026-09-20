@@ -1,6 +1,6 @@
 import type { ReactiveEffect } from './core'
 import type { Ref } from './ref'
-import { effect, track, trigger } from './core'
+import { createComputedEffect, track, trigger } from './core'
 import { markAsRef } from './ref'
 
 export type ComputedGetter<T> = () => T
@@ -58,7 +58,7 @@ export function computed<T>(
     },
   }
   markAsRef(obj)
-  runner = effect(getter, {
+  runner = createComputedEffect(getter, {
     lazy: true,
     scheduler: () => {
       if (!dirty) {

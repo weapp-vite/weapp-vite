@@ -35,7 +35,7 @@ describe('template expression globals', () => {
       scopeBindings: [],
       indexBindings: [],
     })
-    expect(context.inlineExpressions).toEqual([
+    expect(context.inlineExpressions).toMatchObject([
       {
         id: 'i0',
         expression: 'swan.getEnv()&&xhs.getStorageSync("demo")',
@@ -53,13 +53,12 @@ describe('template expression globals', () => {
       scopeBindings: [],
       indexBindings: [],
     })
-    expect(context.inlineExpressions).toEqual([
-      {
-        id: 'i0',
-        expression: '(()=>ctx.toggleModal(\'confirm\'))(...$event)',
-        scopeKeys: [],
-      },
-    ])
+    const [asset] = context.inlineExpressions
+    expect(asset).toMatchObject({
+      id: 'i0',
+      scopeKeys: [],
+    })
+    expect(asset.expression).toBe(`(()=>${asset.parameterNames.context}.toggleModal('confirm'))(...${asset.parameterNames.event})`)
   })
 
   it('does not preserve wechat-centric pseudo globals in inline expressions', () => {
@@ -71,13 +70,16 @@ describe('template expression globals', () => {
       scopeBindings: [],
       indexBindings: [],
     })
-    expect(context.inlineExpressions).toEqual([
-      {
-        id: 'i0',
-        expression: 'ctx.MiniProgramNative.foo+ctx.WechatMiniprogram.bar+ctx.count',
-        scopeKeys: [],
-      },
-    ])
+    const [asset] = context.inlineExpressions
+    expect(asset).toMatchObject({
+      id: 'i0',
+      scopeKeys: [],
+    })
+    expect(asset.expression).toBe(
+      `${asset.parameterNames.context}.MiniProgramNative.foo`
+      + `+${asset.parameterNames.context}.WechatMiniprogram.bar`
+      + `+${asset.parameterNames.context}.count`,
+    )
   })
 
   it('prefers props data over state data in template expressions', () => {
@@ -138,6 +140,18 @@ describe('template expression globals', () => {
   it('uses runtime bindings for operators unsupported by WXML', () => {
     expect(shouldFallbackToRuntimeBinding('typeof content === \'object\'')).toBe(true)
     expect(shouldFallbackToRuntimeBinding('content === \'text\'')).toBe(false)
+  })
+
+  it('uses runtime bindings for parenthesized member access that WXML cannot parse', () => {
+    expect(shouldFallbackToRuntimeBinding('(following.data.value ?? []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(following.data.value || []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(ok ? items : []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(a?.b ?? []).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(a + b).length')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(items).length === 0')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('(rows)[0]')).toBe(true)
+    expect(shouldFallbackToRuntimeBinding('item.icon ?? \'app\'')).toBe(false)
+    expect(shouldFallbackToRuntimeBinding('following.data.value.length === 0')).toBe(false)
   })
 
   it('keeps BigInt operations in JS runtime bindings', () => {

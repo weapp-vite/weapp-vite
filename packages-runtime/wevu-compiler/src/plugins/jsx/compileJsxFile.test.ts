@@ -59,6 +59,21 @@ export default defineComponent({
     expect(result.script).not.toContain('createVNode')
   })
 
+  it('falls back parenthesized member access in compiled JSX templates', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+export default defineComponent({
+  render() {
+    return <view hidden={(following.data.value ?? []).length === 0}>草稿({(drafts.data.value ?? []).length})</view>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/issue-987/index.tsx', { isPage: true })
+    expect(result.template).not.toMatch(/\)\.length/)
+    expect(result.template).toMatch(/hidden="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.script).toContain('__wv_bind_0')
+  })
+
   it('returns the typed binding manifest from the direct JSX compiler', async () => {
     const source = `
 import { defineComponent, ref } from 'wevu'
@@ -76,8 +91,8 @@ export default defineComponent({
       sourceFile: '/project/src/pages/manifest/index.tsx',
     })
     expect(result.bindingManifest?.bindings).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'attribute', outputPath: 'title.value' }),
-      expect.objectContaining({ kind: 'text', outputPath: 'title.value' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'title' }),
+      expect.objectContaining({ kind: 'text', outputPath: 'title' }),
     ]))
     expect(result.script).toContain('__wevuBindingManifest')
   })
@@ -94,12 +109,12 @@ export default defineComponent({
 `
     const result = await compileJsxFile(source, '/project/src/pages/scopes/index.tsx')
     const binding = result.bindingManifest?.bindings.find((item) => {
-      return item.kind === 'text' && item.outputPath === 'rows.value'
+      return item.kind === 'text' && item.outputPath === 'rows'
     })
 
     expect(binding?.dependencies).toEqual([{
       root: 'rows',
-      path: 'rows.value',
+      path: 'rows',
       updateMode: 'exact-path',
     }])
     expect(binding?.scopes).toEqual([
@@ -130,12 +145,12 @@ export default defineComponent({
 `
     const result = await compileJsxFile(source, '/project/src/pages/nested-scopes/index.tsx')
     const binding = result.bindingManifest?.bindings.find((item) => {
-      return item.kind === 'text' && item.outputPath === 'items.value'
+      return item.kind === 'text' && item.outputPath === 'items'
     })
 
     expect(binding?.dependencies).toEqual([{
       root: 'items',
-      path: 'items.value',
+      path: 'items',
       updateMode: 'exact-path',
     }])
     expect(binding?.scopes).toEqual([
@@ -156,7 +171,7 @@ export default defineComponent({
 })
 `
     const result = await compileJsxFile(source, '/project/src/pages/setup-capture/index.tsx', { isPage: true })
-    expect(result.template).toContain('{{count.value}}')
+    expect(result.template).toContain('{{count}}')
     expect(result.script).toMatch(/return\s*\{\s*count\s*\}/)
     expect(result.script).not.toContain('createVNode')
   })
@@ -178,6 +193,41 @@ export default defineComponent({
     expect(result.template).toContain('<view>sss</view>')
     expect(result.template).toContain('<view class="panel"><text>{{\'标题\'}}</text></view>')
     expect(result.meta?.jsxDependencies).toEqual([shared])
+  })
+
+  it('keeps cross-file JSX binding ownership on the node that supplied the expression', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wevu-jsx-binding-owner-'))
+    const shared = path.join(root, 'shared.tsx')
+    const entry = path.join(root, 'page.tsx')
+    await writeFile(shared, [
+      'export const sharedView = <text>{sharedState.label}</text>',
+      'export const createPanel = value => <view>{value}</view>',
+    ].join('\n'))
+    const source = `
+      import { sharedView, createPanel } from './shared'
+      import { defineComponent } from 'wevu'
+      export default defineComponent({
+        data() { return { localTitle: 'local', sharedState: { label: 'shared' } } },
+        render() { return <view>{sharedView}{createPanel(this.localTitle)}</view> },
+      })
+    `
+    await writeFile(entry, source)
+
+    const result = await compileJsxFile(source, entry, {
+      bindingManifestSourceFile: 'src/pages/page.tsx',
+      runtimeBindingManifest: 'diagnostic',
+    })
+    const sharedBinding = result.bindingManifest?.bindings.find(binding => binding.sourceRoots.includes('sharedState'))
+    const localBinding = result.bindingManifest?.bindings.find(binding => binding.sourceRoots.includes('localTitle'))
+
+    expect(sharedBinding).toMatchObject({
+      sourceFile: 'src/pages/shared.tsx',
+      sourceLocation: {
+        start: expect.objectContaining({ line: 1 }),
+      },
+    })
+    expect(localBinding?.sourceFile).toBeUndefined()
+    expect(result.script).toContain('src/pages/shared.tsx')
   })
 
   it('resolves JSX fragments through re-export modules', async () => {
@@ -411,6 +461,122 @@ export default defineComponent({
 
     expect(result.template).toContain(`${forAttr}="{{list}}"`)
     expect(result.template).toContain(`${keyAttr}="index"`)
+  })
+
+  it.each([
+    [
+      'weapp',
+      'onGetRealtimePhoneNumber={this.handleRealtimePhone}',
+      ['bindgetphonenumber="handlePhone"', 'bindgetrealtimephonenumber="handleRealtimePhone"'],
+    ],
+    ['tt', '', ['bindgetphonenumber="handlePhone"']],
+    ['alipay', '', ['onGetPhoneNumber="handlePhone"']],
+  ] as const)('uses the %s catalog event aliases for native JSX attributes', async (platform, extraAttribute, expectedAttrs) => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  render() {
+    return <button onGetPhoneNumber={this.handlePhone} ${extraAttribute} />
+  },
+})
+`
+    const result = await compileJsxFile(source, `/project/src/pages/${platform}/events.tsx`, {
+      template: {
+        platform: getMiniProgramTemplatePlatform(platform),
+      },
+    })
+
+    for (const expectedAttr of expectedAttrs) {
+      expect(result.template).toContain(expectedAttr)
+    }
+  })
+
+  it('preserves exact WeChat host event attribute spellings', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  render() {
+    return <view>
+      <video onFullScreenChange={this.handleFullScreen} />
+      <map onCalloutTap={this.handleCallout} />
+      <page-container onBeforeEnter={this.handleBeforeEnter} />
+      <button onCreateLiveActivity={this.handleCreateLiveActivity} />
+    </view>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/weapp/exact-events.tsx', {
+      template: {
+        platform: getMiniProgramTemplatePlatform('weapp'),
+      },
+    })
+
+    expect(result.template).toContain('bindfullscreenchange="handleFullScreen"')
+    expect(result.template).toContain('bindcallouttap="handleCallout"')
+    expect(result.template).toContain('bind:beforeenter="handleBeforeEnter"')
+    expect(result.template).toContain('createliveactivity="handleCreateLiveActivity"')
+  })
+
+  it.each([
+    [
+      'weapp',
+      ['bindtouchstart', 'bindtouchmove', 'bindtouchend', 'bindtouchcancel', 'bindlongpress'],
+    ],
+    [
+      'tt',
+      ['bindtouchstart', 'bindtouchmove', 'bindtouchend', 'bindtouchcancel', 'bindlongpress'],
+    ],
+    [
+      'alipay',
+      ['onTouchStart', 'onTouchMove', 'onTouchEnd', 'onTouchCancel', 'onLongTap'],
+    ],
+  ] as const)('maps shared %s host events to executable attributes', async (platform, expectedAttrs) => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  render() {
+    return <text
+      onTouchStart={this.handleTouchStart}
+      onTouchMove={this.handleTouchMove}
+      onTouchEnd={this.handleTouchEnd}
+      onTouchCancel={this.handleTouchCancel}
+      onLongPress={this.handleLongPress}
+    />
+  },
+})
+`
+    const result = await compileJsxFile(source, `/project/src/pages/${platform}/shared-events.tsx`, {
+      template: {
+        platform: getMiniProgramTemplatePlatform(platform),
+      },
+    })
+
+    for (const expectedAttr of expectedAttrs) {
+      expect(result.template).toContain(`${expectedAttr}=`)
+    }
+  })
+
+  it('keeps non-aliased native JSX event casing significant', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
+  render() {
+    return <swiper onAnimationfinish={this.handleNative} onAnimationFinish={this.handleCamel} />
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/weapp/animation.tsx', {
+      template: {
+        platform: getMiniProgramTemplatePlatform('weapp'),
+      },
+    })
+
+    expect(result.template).toContain('bindanimationfinish="handleNative"')
+    expect(result.template).toContain('bind:animation-finish="handleCamel"')
   })
 
   it('extracts json macro config from tsx source', async () => {

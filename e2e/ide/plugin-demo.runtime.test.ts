@@ -3,6 +3,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
@@ -207,24 +208,6 @@ async function openVuePluginPage(miniProgram: any) {
   throw new Error('Plugin Vue page did not become current after navigateTo')
 }
 
-async function waitForRuntimeLog(
-  collector: ReturnType<typeof attachRuntimeErrorCollector>,
-  marker: number,
-  expected: string,
-  timeoutMs = 12_000,
-) {
-  const start = Date.now()
-  let latest: string[] = []
-  while (Date.now() - start <= timeoutMs) {
-    latest = collector.getLogsSince(marker)
-    if (latest.some(log => log.includes(expected))) {
-      return latest
-    }
-    await delay(220)
-  }
-  throw new Error(`Timed out waiting runtime log ${expected}; latest=${latest.join(' | ') || '<missing>'}`)
-}
-
 async function resolveHostPage(miniProgram: any) {
   let page = await waitForCurrentPagePath(miniProgram, HOST_ROUTE, 12_000)
   if (!page) {
@@ -294,7 +277,16 @@ describe('plugin-demo runtime (ide)', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   })
 
-  it('loads host page, renders plugin public components, and opens plugin vue page without runtime errors', async () => {
+  it('loads host page, renders plugin public components, and opens plugin vue page without runtime errors', async (ctx) => {
+    const hostNodes = (value: number) => [
+      { selector: '.hero__title', text: '插件能力混合演示' },
+      { selector: '#plugin-host-ready', attributes: { 'data-feature-count': '4', 'data-plugin-answer': '42', 'data-showcase-progress': String(value) } },
+      { selector: '#plugin-vue-page-link', count: 1 },
+    ]
+    const dom = createDomAcceptance(ctx, 'apps/plugin-demo', [
+      { id: 'host', route: HOST_ROUTE, action: 'launch plugin host', nodes: hostNodes(78) },
+      { id: 'host-updated', route: HOST_ROUTE, action: 'tap host progress button', nodes: hostNodes(84) },
+    ])
     const miniProgram = await getSharedMiniProgram()
     const errorCollector = attachRuntimeErrorCollector(miniProgram)
     const marker = errorCollector.mark()
@@ -314,13 +306,18 @@ describe('plugin-demo runtime (ide)', { concurrent: false }, () => {
       if (!page) {
         throw new Error('Failed to launch /pages/index/index')
       }
+      await dom.check('host', miniProgram, page)
 
       await runStep('host-link-dom', () => page.waitForRendered({
         selector: '#plugin-vue-page-link',
         timeout: 12_000,
       }))
 
-      await runStep('host-boost-showcase', () => page.callMethod('boostShowcase'))
+      await runStep('host-boost-showcase', async () => {
+        const buttons = await page.$$('.panel__button', { fallback: false })
+        expect(buttons).toHaveLength(1)
+        await buttons[0].tap()
+      })
       await runStep('host-progress-dom', () => page.waitForRendered({
         selector: '#plugin-host-ready',
         dataset: {
@@ -328,21 +325,13 @@ describe('plugin-demo runtime (ide)', { concurrent: false }, () => {
         },
         timeout: 12_000,
       }))
+      await dom.check('host-updated', miniProgram, page)
 
       const vuePluginPage = await runStep(
         'host-open-vue-plugin',
         () => openVuePluginPage(miniProgram),
       )
       expect(normalizeRoutePath(vuePluginPage.path)).toMatch(PLUGIN_VUE_ROUTE_RE)
-      await runStep(
-        'vue-plugin-ready-log',
-        () => waitForRuntimeLog(
-          errorCollector,
-          marker,
-          '[plugin-demo] vue-page-ready score=94 cards=4',
-        ),
-      )
-
       const runtimeErrors = await runStep('collect-runtime-errors', async () => errorCollector.getSince(marker))
       expect(runtimeErrors).toEqual([])
     }

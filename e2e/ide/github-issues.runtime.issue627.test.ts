@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callCurrentPageMethod,
   closeSharedMiniProgram,
@@ -11,6 +12,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { RESERVED_PROPS_CHECKPOINTS } from './githubIssuesDom/hostAndIdentity'
 
 describe('e2e app: github-issues / issue #627', { concurrent: false }, () => {
   let miniProgram: any = null
@@ -31,6 +33,7 @@ describe('e2e app: github-issues / issue #627', { concurrent: false }, () => {
   }
 
   it('checks which host attributes are available as native and Vue SFC component props in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', RESERVED_PROPS_CHECKPOINTS)
     const pageJsPath = path.join(DIST_ROOT, 'pages/issue-627-native/index.js')
     const componentJsPath = path.join(DIST_ROOT, 'components/issue-627/native-props-probe/index.js')
     const sfcComponentJsPath = path.join(DIST_ROOT, 'components/issue-627/ReservedPropsProbe/index.js')
@@ -62,6 +65,9 @@ describe('e2e app: github-issues / issue #627', { concurrent: false }, () => {
     }
     miniProgram = await getSharedMiniProgram(ctx)
     const snapshot = await callCurrentPageMethod(miniProgram, '_runE2E')
+
+    await issuePage.callMethod('refreshMatrix')
+    await dom.check('initial', miniProgram, issuePage)
 
     expect(snapshot).toMatchObject({
       native: {

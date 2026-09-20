@@ -10,12 +10,14 @@ import {
   onThemeChange,
   onUnhandledRejection,
 } from 'wevu'
+import { readHostLifecycle } from '../../shared/appLifecycle'
 import { APP_HOOKS, finalizeAppLifecycle, recordAppLifecycle } from './shared/lifecycle'
 
 const SOURCE = 'app.wevu.ts'
 
 interface LifecycleApp {
   globalData?: AppLifecycleData
+  readHostLifecycle?: typeof readHostLifecycle
   finalizeLifecycleLogs?: () => void
 }
 
@@ -25,6 +27,7 @@ createApp({
     if (!app) {
       return {}
     }
+    app.readHostLifecycle = readHostLifecycle
     app.finalizeLifecycleLogs = () => finalizeAppLifecycle(app, APP_HOOKS, { source: SOURCE })
 
     onLaunch((options) => {

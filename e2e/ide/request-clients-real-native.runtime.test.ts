@@ -5,6 +5,7 @@ import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
   waitForRequestClientsRealRouteDom,
@@ -15,6 +16,7 @@ import {
   REQUEST_CLIENTS_REAL_SOCKET_DEFAULTS,
 } from '../utils/requestClientsRealHostTraceRuntime'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
+import { globalsCheckpoints, requestCheckpoints } from './requestClientsDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/request-clients-real-native')
@@ -265,10 +267,14 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers app-level request globals probe from a native app entry', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real-native', globalsCheckpoints(true))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
-      const { miniProgram } = await reLaunchPage(ctx, '/pages/index/index')
+      const { miniProgram, page } = await reLaunchPage(ctx, '/pages/index/index')
+      await dom.check('initial', miniProgram, page)
+      await page.callMethod('runE2E')
+      await dom.check('refreshed', miniProgram, page)
 
       const appProbe = await miniProgram.evaluate(() => {
         return getApp<{ globalData?: { requestGlobalsProbe?: Record<string, unknown> } }>()?.globalData?.requestGlobalsProbe ?? null
@@ -283,13 +289,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers fetch against a local real server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real-native', requestCheckpoints('fetch', true))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/fetch/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/fetch/index')
+      await dom.check('completed', miniProgram, page)
       const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
@@ -300,13 +309,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers axios against a local real server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real-native', requestCheckpoints('axios', true))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/axios/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/axios/index')
+      await dom.check('completed', miniProgram, page)
       const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
@@ -317,13 +329,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers graphql-request against a local real server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real-native', requestCheckpoints('graphql-request', true))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/graphql-request/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/graphql-request/index')
+      await dom.check('completed', miniProgram, page)
       const snapshot = await page.data('state')
       const currentTrace = await readHostTrace(miniProgram)
       const newRequestCalls = currentTrace.requestCalls.slice(baselineTrace.requestCalls.length)
@@ -334,13 +349,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers socket.io-client against a local real realtime server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real-native', requestCheckpoints('socket-io', true))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/socket-io/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/socket-io/index')
+      await dom.check('completed', miniProgram, page)
       const pageData = await waitForPageData(page, 'socket.io', data => (
         data.websocketOnlyTransportName === 'websocket'
         && ['polling', 'websocket'].includes(data.defaultTransportName)
@@ -366,13 +384,16 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('covers native WebSocket against a local real realtime server', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/request-clients-real-native', requestCheckpoints('websocket', true))
       if (sharedInfraUnavailableMessage) {
         ctx.skip(sharedInfraUnavailableMessage)
       }
       const { baselineTrace, miniProgram, page } = await openTracedPage(ctx, withBaseUrl('/pages/websocket/index'))
+      await dom.check('initial', miniProgram, page)
 
       await page.callMethod('runE2E')
       await waitForRequestClientsRealSuccessDom(page, '/pages/websocket/index')
+      await dom.check('completed', miniProgram, page)
       const pageData = await waitForPageData(page, 'native WebSocket', data => (
         data.connectedReadyState === 1
         && data.randomPushCount > 0

@@ -18,6 +18,7 @@ import type {
   HeadlessWxGetSavedFileInfoSuccessResult,
   HeadlessWxGetSavedFileListSuccessResult,
   HeadlessWxMkdirOption,
+  HeadlessWxNetworkRequestTask,
   HeadlessWxNetworkStatusChangeCallback,
   HeadlessWxNetworkStatusChangeResult,
   HeadlessWxNetworkType,
@@ -51,6 +52,8 @@ import type {
   HeadlessWxWriteFileOption,
 } from '../host'
 import type { RuntimeScheduler } from '../kernel'
+import { createChunkedMockRequest } from './request/mock'
+import { createRequestTask } from './request/task'
 
 export interface HeadlessWxLoadingSnapshot {
   mask: boolean
@@ -117,6 +120,10 @@ export interface HeadlessWxModalLogEntry {
 }
 
 export interface HeadlessWxRequestMockDefinition {
+  /** enableChunked 请求的显式分块，每个 delay 相对于前一个阶段。 */
+  chunks?: Array<{ data: ArrayBuffer, delay?: number }>
+  /** 分块发送完成后触发的模拟错误。 */
+  error?: string
   delay?: number
   header?: Record<string, string>
   method?: string
@@ -1970,9 +1977,10 @@ export function createHeadlessWxState(
     removeStorageSync(key: string) {
       storage.delete(key)
     },
-    request(option: HeadlessWxRequestOption): HeadlessWxRequestTask {
+    request(option: HeadlessWxRequestOption): HeadlessWxNetworkRequestTask {
       const matchedMock = requestMocks.find(mock => matchesRequestMock(mock, option))
       if (!matchedMock) {
+        const request = createRequestTask(option)
         const logEntry: HeadlessWxRequestLogEntry = {
           data: cloneValue(option.data),
           header: { ...(option.header ?? {}) },
@@ -1985,9 +1993,8 @@ export function createHeadlessWxState(
         if (options.strictMocks) {
           throw error
         }
-        option.fail?.(error)
-        option.complete?.()
-        return createNoopTask()
+        request.fail(error)
+        return request.task
       }
 
       const response = resolveRequestResponse(matchedMock, option)
@@ -2003,21 +2010,26 @@ export function createHeadlessWxState(
         ? Math.max(0, Math.trunc(matchedMock.delay ?? 0))
         : 0
 
-      if (delay <= 0) {
-        requestLogs.push(requestLogEntry)
-        option.success?.(response)
-        option.complete?.(response)
-        return createNoopTask()
+      if (option.enableChunked) {
+        return createChunkedMockRequest(option, matchedMock, response, scheduler, () => {
+          requestLogs.push({ ...requestLogEntry, response: { ...response, data: '' } })
+        })
       }
 
-      return runDelayedTask(delay, () => {
+      const request = createRequestTask(option)
+      if (delay <= 0) {
         requestLogs.push(requestLogEntry)
-        option.success?.(response)
-        option.complete?.(response)
+        request.succeed(response)
+        return request.task
+      }
+
+      const delayed = runDelayedTask(delay, () => {
+        requestLogs.push(requestLogEntry)
+        request.succeed(response)
       }, (error) => {
-        option.fail?.(error)
-        option.complete?.()
+        request.fail(error)
       }, 'request:fail abort')
+      return { ...request.task, abort: delayed.abort }
     },
     removeSavedFile(option: HeadlessWxRemoveSavedFileOption) {
       return removeSavedFile(option.filePath)

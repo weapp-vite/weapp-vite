@@ -1,5 +1,7 @@
 <script lang="ts">
-export default {
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
   data() {
     return {
       exportKeys: '',
@@ -30,7 +32,7 @@ export default {
       ].join(', ')
     },
   },
-}
+})
 </script>
 
 <template>
@@ -44,7 +46,7 @@ export default {
         说明
       </view>
       <text class="tip-text">
-        这个页面演示 wevu 默认行为：setup 在 lifetimes.created 执行；created 阶段产生的 setData 会被缓冲，直到 attached/onLoad 才 flush。
+        这个页面显式配置 setupLifecycle: 'created'：setup 在 lifetimes.created 执行；created 阶段产生的 setData 会被缓冲，直到 attached/onLoad 才 flush。
       </text>
     </view>
 

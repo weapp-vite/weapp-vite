@@ -1,3 +1,8 @@
+import type { Options } from 'css-select'
+import type { Selector } from 'css-what'
+import { selectAll } from 'css-select'
+import { AttributeAction, parse, SelectorType } from 'css-what'
+
 interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
@@ -7,88 +12,55 @@ interface DomNodeLike {
   type?: string
 }
 
-const WHITESPACE_RE = /\s+/
-const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
-const COMPOUND_SELECTOR_PART_RE = /#[\w-]+|\.[\w-]+|\[data-[^=\]]+="[^"]*"\]|[A-Za-z][\w-]*/g
-
-function getClassList(node: DomNodeLike) {
-  return String(node.attribs?.class ?? '')
-    .split(WHITESPACE_RE)
-    .map(item => item.trim())
-    .filter(Boolean)
+const adapter: NonNullable<Options<DomNodeLike, DomNodeLike>['adapter']> = {
+  isTag: (node): node is DomNodeLike => node.type === 'tag',
+  getAttributeValue: (node, name) => node.attribs?.[name],
+  getChildren: node => node.children ?? [],
+  getName: node => node.name ?? '',
+  getParent: node => node.parent ?? null,
+  getSiblings: node => node.parent?.children ?? [node],
+  getText: node => node.type === 'text' ? node.data ?? '' : (node.children ?? []).map(child => adapter.getText(child)).join(''),
+  hasAttrib: (node, name) => Object.hasOwn(node.attribs ?? {}, name),
+  removeSubsets: (nodes) => {
+    const unique = new Set(nodes)
+    return [...unique].filter((node) => {
+      for (let parent = node.parent; parent; parent = parent.parent) {
+        if (unique.has(parent)) {
+          return false
+        }
+      }
+      return true
+    })
+  },
 }
 
-function matchesSimpleSelector(node: DomNodeLike, selector: string) {
-  if (node.type !== 'tag') {
-    return false
-  }
-
-  if (selector === 'page') {
-    return node.name === 'page'
-  }
-  if (selector === '*') {
-    return true
-  }
-  if (selector.startsWith('#')) {
-    return node.attribs?.id === selector.slice(1)
-  }
-  if (selector.startsWith('.')) {
-    return getClassList(node).includes(selector.slice(1))
-  }
-  const dataAttrMatch = selector.match(DATA_ATTR_SELECTOR_RE)
-  if (dataAttrMatch) {
-    const [, key, value] = dataAttrMatch
-    return node.attribs?.[`data-${key}`] === value
-  }
-  return node.name === selector
-}
-
-function parseCompoundSelector(selector: string) {
-  const parts = selector.match(COMPOUND_SELECTOR_PART_RE) ?? []
-  return parts.join('') === selector ? parts : []
-}
-
-function matchesSelectorToken(node: DomNodeLike, selector: string) {
-  if (selector === '*') {
-    return node.type === 'tag'
-  }
-  const simpleSelectors = parseCompoundSelector(selector)
-  if (simpleSelectors.length === 0) {
-    return false
-  }
-  return simpleSelectors.every(simpleSelector => matchesSimpleSelector(node, simpleSelector))
-}
-
-function collectDescendants(node: DomNodeLike, into: DomNodeLike[]) {
-  for (const child of node.children ?? []) {
-    into.push(child)
-    collectDescendants(child, into)
-  }
+function resolveComponentTags(selectors: Selector[][]): Selector[][] {
+  return selectors.map(group => group.map((token): Selector => {
+    if (token.type === SelectorType.Pseudo && Array.isArray(token.data)) {
+      return { ...token, data: resolveComponentTags(token.data) }
+    }
+    if (token.type !== SelectorType.Tag || token.namespace !== null || token.name === 'page') {
+      return token
+    }
+    const component: Selector = {
+      type: SelectorType.Attribute,
+      name: 'data-sim-component',
+      action: token.name === 'component' ? AttributeAction.Exists : AttributeAction.Equals,
+      value: token.name === 'component' ? '' : token.name,
+      ignoreCase: false,
+      namespace: null,
+    }
+    return token.name === 'component'
+      ? component
+      : { type: SelectorType.Pseudo, name: 'is', data: [[token], [component]] }
+  }))
 }
 
 export function querySelectorAll(root: DomNodeLike, selector: string): DomNodeLike[] {
-  const parts = selector.trim().split(WHITESPACE_RE).filter(Boolean)
-  if (parts.length === 0) {
-    return []
-  }
-
-  let current: DomNodeLike[] = [root]
-  for (const part of parts) {
-    const next: DomNodeLike[] = []
-    for (const node of current) {
-      const candidates: DomNodeLike[] = []
-      if (part === 'page' && node.type === 'tag' && node.name === 'page') {
-        candidates.push(node)
-      }
-      collectDescendants(node, candidates)
-      for (const candidate of candidates) {
-        if (matchesSelectorToken(candidate, part)) {
-          next.push(candidate)
-        }
-      }
-    }
-    current = next
-  }
-
-  return current
+  const parsed = parse(selector)
+  const query = resolveComponentTags(parsed)
+  // page 是自动化协议的可查询根节点，普通组件查询仍只搜索后代。
+  const includesPageRoot = root.type === 'tag' && root.name === 'page'
+    && parsed.some(group => group.some(token => token.type === SelectorType.Tag && token.name === 'page'))
+  return selectAll(query, includesPageRoot ? [root] : root, { adapter, cacheResults: false })
 }

@@ -1,17 +1,11 @@
-import path from 'node:path'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
-const __dirname = import.meta.dirname
-
 export default defineConfig({
-  plugins: [
-    WeappTailwindcss({
-      cssEntries: [path.resolve(__dirname, 'app.wxss')],
-      rem2rpx: true,
-    }),
-  ],
   weapp: {
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['tailwind.css'],
+    },
     hmr: {
       logLevel: 'verbose',
       profileJson: true,

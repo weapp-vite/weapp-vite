@@ -1,5 +1,113 @@
 # @wevu/compiler
 
+## 7.1.3
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- 修复动态 `v-bind` 与 `v-on` 参数被误编译为字面属性名和事件名的问题，无法支持的动态名称现在会保留准确源码位置并输出明确诊断。
+
+- 修复 Vue SFC 外部样式中 CSS `v-bind()` 的变量注册、模板注入与外部文件热更新，使其与内联样式保持一致；切换 `style src` 后重新建立依赖基线，避免新样式文件的变量变化复用旧脚本。
+
+- 修复模板内联事件中同名参数或局部变量的写入被错误改写为修改组件 ref 的问题。
+
+- 修复内联事件生成参数被用户回调参数或组件同名绑定捕获的问题，确保循环作用域恢复与事件表达式保持原有语义。解构赋值、模板 this 与循环解析器共享防捕获的生成参数，避免组合使用这些能力时发生错误写回或未定义变量异常。
+
+- 修复 Vue SFC 模板内联事件中对象与数组解构赋值未写回组件状态的问题，支持别名、默认值、剩余元素、局部遮蔽和顶层 ref 目标，并保留 setup let 访问器的闭包写入语义。合并 setup 返回值时保持自有数据属性语义，避免原型同名键改变结果对象的原型或丢失绑定。
+
+- 修复 `v-for` 解构默认值与对象剩余属性的降级语义，并让模拟器事件与 selector dataset 保留整段绑定表达式的值类型，确保模板插值、事件参数和真实运行时一致，同时对无法等价转换的模式输出源码定位诊断。数字循环在应用默认值前保留原有数值项，避免将正常循环项错误替换为默认值。
+
+- 修复 Vue 模板内联表达式跨过普通函数、对象方法和类边界改写动态 `this` 的问题，保留 `map` 的 `thisArg` 以及 `call`、`apply`、`bind` 的原生语义。
+
+- 为不支持的对象形式 `v-bind` 和 `v-on` 输出带源码位置的编译诊断，避免属性与事件被静默丢弃。
+
+- 修复换行符、`defineOptions` 与 JSON 宏预处理后的脚本源码映射，使后续声明准确指向原始 Vue SFC 并保留原始内容。
+
+- 保留仅在增强插槽模板中使用的父组件数据依赖，避免自动 setData 裁剪导致插槽内组件首次挂载收到空值；动态依赖无法完整分析时保留完整快照。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.4
+  - @weapp-core/shared@3.2.3
+  - @weapp-vite/ast@7.1.3
+  - rolldown-require@2.0.30
+
+## 7.1.2
+
+### Patch Changes
+
+- Updated dependencies:
+  - @weapp-vite/ast@7.1.2
+
+## 7.1.1
+
+### Patch Changes
+
+- 修复 wevu 把 `(a ?? []).length` 这类表达式编成非法 WXML `(expr).length` 的问题。Vue 模板和 JSX 现在都会把括号后的成员访问回退到 JS runtime binding。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+  - @weapp-core/shared@3.2.2
+  - @weapp-vite/ast@7.1.1
+  - rolldown-require@2.0.29
+
+## 7.1.0
+
+### Minor Changes
+
+- 让 `@wevu/compiler` 在同一次模板编译中生成并消费版本化 Binding Manifest，移除 `weapp-vite` 对生成模板和脚本的 binding 二次解析；完整编译 IR 现在包含逐 dependency 更新策略和显式作用域关系，覆盖 CSS 变量样式状态、自定义指令、组件 `v-model` 修饰符及内建 template 属性等编译器生成的 mustache，且不完整清单不会启用自动 `setData.pick`。组件脚本仅注入运行时所需的精简 manifest，开发态再附加源码位置；跨文件 JSX binding 也会保留各自的源码归属和正确重映射位置。同时让 Wevu 的 `setData` 诊断按 binding id、输出路径和源码位置归因，并继续保留现有 snapshot/diff 正确性 fallback。`ScopedSlotComponentAsset` 现在直接提供必需的 `script` 与 `bindingManifest`，并移除旧的 `classStyleBindings`、`inlineExpressions`、`templateRefs` 侧通道；编译器消费者应直接 emit 新的完整资源。
+
+  开发态 binding 源码位置保留原文件的 CRLF 源码偏移，不再使用编译中间态规范化后的换行重新计算所属源文件位置。
+
+### Patch Changes
+
+- 新增适用于静态 WXML 数据绑定的 `useAsyncDerivation()`，统一首次加载、保留旧值刷新、错误、竞态取消与作用域销毁状态，并让根入口导入稳定路由到独立响应式产物。
+
+  终态观察者抛错时仍然结算所有 refresh 等待者，并把 Promise 的 then 访问与接管隔离在响应式依赖收集之外；带有自定义 then 访问器的原生 Promise 同样遵循异步错误契约。
+
+  异步派生状态按每个 `status` 字面量独立建模，使条件分支和 `Extract` 等类型工具都能准确收窄状态对应的值。
+
+- 修复条件分支内的运行时模板表达式提前求值问题，避免未显示的节点和插槽访问空值或触发函数调用。普通节点和具名插槽模板统一保持 v-if、v-else-if、v-else 的短路顺序，并正确处理循环键投影与作用域插槽的实例边界。
+
+- 修复 Vue SFC 中显式 `defineOptions` 被全局组件默认值覆盖的问题，保留组件样式隔离与全局类选项的覆盖顺序，并输出可静态确认的组件样式选项供构建流程判断页面样式依赖。
+
+- 修复多层 `v-for` 中复杂 key 投影与普通循环交错时的数据源访问错误。购物车等嵌套列表现在能正确读取原始业务数据，支持数组、对象及解构别名，并在列表填充、替换和清空后正确更新。
+
+- 修复 Vue SFC 的 `defineOptions` 静态求值将 `i18n.behavior` 或命名空间成员错误序列化为构建占位对象的问题，保留真实运行时行为引用，避免微信开发者工具拒绝组件注册。
+
+- 修复 JSX/TSX setup render 闭包中的 ref 在小程序数据解包后仍按 `value` 字段读取，导致计数、属性和循环内容为空的问题。模板与绑定清单统一使用解包后的路径，同时保留普通对象字段、循环局部变量及 JavaScript 事件闭包语义。
+
+- 重构 Wevu 可选运行时能力的安装边界：编译产物会按模板元数据和应用选项显式安装所需能力，未使用 patch、模板 ref、内联事件、高频告警、作用域插槽或 layout 的小程序不再携带对应实现；公开 `wevu` 入口继续保留原有动态配置行为。
+
+  能力分析沿用配置初始化表达式所属的词法作用域，不再被调用位置的同名局部变量误导；提取后的作用域插槽组件也会依据自身 layout host 元数据安装 layout 能力。
+
+  按需 patch 与 diff 共用宿主提交跟踪，保证 setData 派发期间新增的 computed 变更不会丢失；清空模板 ref 绑定时会使旧异步查询失效，避免实例 `$nextTick` 读到已移除的引用。
+
+- 保留微信样式中的嵌套 CSS 变量回退与动态覆盖，修复 Tailwind 行高、渐变及 Wot 主题变量被错误替换为默认值的问题。
+
+- 修复编译器并发读取文件时旧请求可能覆盖最新缓存内容的问题。文件签名与读取内容配对保存，缓存失效后尚未完成的旧读取不再重新填充缓存，避免快速编辑和恢复时复用过期源码。Vue SFC 描述符按实际解析源码与选项复用，修复同时间戳等长替换、显式源码和并发读取时新源码与旧描述符不一致的问题。
+
+- 将 Wevu 的 JSX 原生元素类型改由微信、支付宝、抖音及三端公共子路径分别持有。中性入口不再默认暴露微信原生标签，旧的根入口平台类型、HTML 别名、原始宿主事件名和宽泛属性签名已移除；项目配置会按目标平台选择对应的类型入口，运行时渲染结果不变。
+
+  自动导入的普通与泛型 Vue SFC 保留源文件必填属性、事件参数和 JSX 宿主属性，便携类型提取正确识别泛型、mapped 与 infer 的局部作用域；同时补齐 picker 数组类型、抖音 picker 的模式与日期时间属性，并同步 HTML 提示元数据及 TSX 类型回归覆盖。
+
+  完整执行发布入口的 TypeScript 与 TSX 类型回归，补齐只读返回值、空 setup 组件实例、宿主查询类型导出及 Store action 订阅上下文的类型契约；自动导入声明通过真实 SFC/TSX 消费者验证，不再依赖生成器内部 helper 文本。
+
+- 修复 TypeScript SFC 中显式 this 参数在类型擦除后残留为非法 JavaScript 的问题。生命周期回调、普通函数和对象或类方法现在会正确移除仅用于类型检查的 this 参数，保留函数体中的实际 this 访问。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+  - @weapp-vite/ast@7.1.0
+
 ## 7.0.4
 
 ### Patch Changes

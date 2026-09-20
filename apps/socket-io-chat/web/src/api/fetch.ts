@@ -1,5 +1,5 @@
-import { apiBase } from './base'
 import type { Moment } from './types'
+import { apiBase } from './base'
 
 export async function loadMomentsWithFetch() {
   const response = await fetch(`${apiBase}/api/moments`)

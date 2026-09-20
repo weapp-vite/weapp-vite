@@ -118,7 +118,8 @@ export default defineConfig({
 说明：
 
 - `dev` 模式默认会先清空输出目录，避免旧产物干扰
-- `build` 模式始终清空输出目录，不受此字段影响
+- `build` 模式默认清空输出目录，不受此字段影响
+- 显式设置 `build.emptyOutDir: false` 时，开发和生产均跳过全量清理，主包、独立插件输出和完整重建遵循同一约束；旧文件也会保留，删除源码后需自行清理不再需要的产物
 - 大项目若频繁冷启动，可按需关闭开发态清理换取速度
 
 ## `weapp.buildScope` {#weapp-buildscope}

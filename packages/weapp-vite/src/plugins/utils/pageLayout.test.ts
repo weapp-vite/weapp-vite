@@ -80,4 +80,68 @@ describe('page layout helpers', () => {
       'alipay',
     )
   })
+
+  it('resolves independent layout output references back to the discovered source', async () => {
+    const externalComponentEntryMap = new Map<string, string>()
+    await registerResolvedPageLayoutDependencies({
+      runtimeState: { build: { hmr: { externalComponentEntryMap } } },
+      moduleGraphService: { replaceEntryDependencies: vi.fn() },
+      configService: { platform: 'weapp' },
+    } as any, '/project/src/packageB/pages/home/index.vue', [{
+      kind: 'vue',
+      file: '/project/src/layouts/admin.vue',
+      importPath: '/packageB/weapp-shared/layouts/admin',
+    }] as any)
+    expect(externalComponentEntryMap.get('packageB/weapp-shared/layouts/admin')).toBe('/project/src/layouts/admin.vue')
+  })
+
+  it.each([false, true])('publishes layout mappings only after transitive template resolution (failure: %s)', async (failScan) => {
+    const oldSource = '/project/src/layouts/old/index'
+    const newSource = '/project/src/layouts/default/index'
+    const outputKey = 'layouts/default/index'
+    const externalComponentEntryMap = new Map([[outputKey, oldSource]])
+    const replaceEntryDependencies = vi.fn()
+    const sharedTemplate = '/project/src/shared/layout.wxml'
+    const failure = new Error('template scan failed')
+    const scan = vi.fn(async () => {
+      expect(externalComponentEntryMap.get(outputKey)).toBe(oldSource)
+      expect(replaceEntryDependencies).not.toHaveBeenCalled()
+      if (failScan) {
+        throw failure
+      }
+    })
+    const registration = registerResolvedPageLayoutDependencies({
+      runtimeState: { build: { hmr: { externalComponentEntryMap } } },
+      moduleGraphService: { replaceEntryDependencies },
+      configService: { platform: 'weapp' },
+      wxmlService: {
+        scan,
+        depsMap: new Map([[`${newSource}.wxml`, new Set([sharedTemplate])]]),
+      },
+    } as any, '/project/src/pages/index.vue', [{
+      kind: 'native',
+      file: newSource,
+      importPath: `/${outputKey}`,
+    }] as any)
+    if (failScan) {
+      await expect(registration).rejects.toThrow(failure)
+      expect(externalComponentEntryMap.get(outputKey)).toBe(oldSource)
+      expect(replaceEntryDependencies).not.toHaveBeenCalled()
+    }
+    else {
+      await registration
+      expect(externalComponentEntryMap.get(outputKey)).toBe(newSource)
+      expect(replaceEntryDependencies).toHaveBeenCalledExactlyOnceWith(
+        '/project/src/pages/index.vue',
+        'layout',
+        new Set([
+          `${newSource}.json`,
+          `${newSource}.wxml`,
+          `${newSource}.wxss`,
+          `${newSource}.ts`,
+          sharedTemplate,
+        ]),
+      )
+    }
+  })
 })

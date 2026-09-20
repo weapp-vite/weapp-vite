@@ -1,34 +1,112 @@
-// 本文件由 components.json 自动生成，请勿直接编辑。
+// 本文件由 components.weapp.json 自动生成，请勿直接编辑。
 /* eslint-disable style/comma-dangle, style/quote-props, style/quotes */
 
 export const WEAPP_BUILTIN_HTML_TAGS_MEDIA_CAPTURE_LIVE = [
   {
     "name": "camera",
-    "description": "系统相机。该组件是[原生组件](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html)，使用时请注意相关限制。",
+    "description": "系统相机。扫码二维码功能，需升级微信客户端至6.7.3。需要[用户授权](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/authorize.html) `scope.camera`。\n[2.10.0](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html)起 initdone 事件返回 maxZoom，最大变焦范围，相关接口 [CameraContext.setZoom](https://developers.weixin.qq.com/miniprogram/dev/api/media/camera/CameraContext.setZoom.html)。",
     "attributes": [
       {
         "name": "binderror",
-        "description": "Type: function => any\n用户不允许使用摄像头时触发"
+        "description": "Type: function => any"
+      },
+      {
+        "name": "bindinitdone",
+        "description": "Type: function => any"
       },
       {
         "name": "bindscancode",
-        "description": "Type: function => any\n在成功识别到一维码时触发，仅在 mode=\"scanCode\" 时生效\nSince: 2.1.0"
+        "description": "Type: function => any"
       },
       {
         "name": "bindstop",
-        "description": "Type: function => any\n摄像头在非正常终止时触发，如退出后台等情况"
+        "description": "Type: function => any"
       },
       {
         "name": "device-position",
-        "description": "Type: string\n前置或后置，值为front, back\nDefault: back"
+        "description": "Type: string\nDefault: back",
+        "values": [
+          {
+            "name": "front",
+            "description": "前置"
+          },
+          {
+            "name": "back",
+            "description": "后置"
+          }
+        ]
       },
       {
         "name": "flash",
-        "description": "Type: string\n闪光灯，值为auto, on, off\nDefault: auto"
+        "description": "Type: string\nDefault: auto",
+        "values": [
+          {
+            "name": "auto",
+            "description": "自动"
+          },
+          {
+            "name": "on",
+            "description": "打开"
+          },
+          {
+            "name": "off",
+            "description": "关闭"
+          },
+          {
+            "name": "torch",
+            "description": "常亮"
+          }
+        ]
+      },
+      {
+        "name": "frame-size",
+        "description": "Type: string\nDefault: medium",
+        "values": [
+          {
+            "name": "small",
+            "description": "小尺寸帧数据"
+          },
+          {
+            "name": "medium",
+            "description": "中尺寸帧数据"
+          },
+          {
+            "name": "large",
+            "description": "大尺寸帧数据"
+          }
+        ]
       },
       {
         "name": "mode",
-        "description": "Type: string\n有效值为 normal, scanCode\nDefault: normal\nSince: 2.1.0"
+        "description": "Type: string\nDefault: normal",
+        "values": [
+          {
+            "name": "normal",
+            "description": "相机模式"
+          },
+          {
+            "name": "scanCode",
+            "description": "扫码模式"
+          }
+        ]
+      },
+      {
+        "name": "resolution",
+        "description": "Type: string\nDefault: medium",
+        "values": [
+          {
+            "name": "low",
+            "description": "低"
+          },
+          {
+            "name": "medium",
+            "description": "中"
+          },
+          {
+            "name": "high",
+            "description": "高"
+          }
+        ]
       }
     ],
     "references": [
@@ -40,39 +118,43 @@ export const WEAPP_BUILTIN_HTML_TAGS_MEDIA_CAPTURE_LIVE = [
   },
   {
     "name": "canvas",
-    "description": "画布。该组件是[原生组件](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html)，使用时请注意相关限制。",
+    "description": "画布。2.9.0 起支持一套新 Canvas 2D 接口（需指定 type 属性），同时支持[同层渲染](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html#%E5%8E%9F%E7%94%9F%E7%BB%84%E4%BB%B6%E5%90%8C%E5%B1%82%E6%B8%B2%E6%9F%93)，原有接口不再维护。旧版本可参考 [旧版画布迁移指南](https://developers.weixin.qq.com/miniprogram/dev/framework/ability/canvas-legacy-migration.html) 进行迁移。",
     "attributes": [
       {
         "name": "binderror",
-        "description": "Type: function => any\n当发生错误时触发 error 事件，detail = {errMsg: 'something wrong'}"
+        "description": "Type: function => any\n当发生错误时触发 error 事件，detail = {errMsg}\nSince: 1.0.0"
       },
       {
         "name": "bindlongtap",
-        "description": "Type: function => any\n手指长按 500ms 之后触发，触发了长按事件后进行移动不会触发屏幕的滚动"
+        "description": "Type: function => any\n手指长按 500ms 之后触发，触发了长按事件后进行移动不会触发屏幕的滚动\nSince: 1.0.0"
       },
       {
         "name": "bindtouchcancel",
-        "description": "Type: function => any\n手指触摸动作被打断，如来电提醒，弹窗"
+        "description": "Type: function => any\n手指触摸动作被打断，如来电提醒，弹窗\nSince: 1.0.0"
       },
       {
         "name": "bindtouchend",
-        "description": "Type: function => any\n手指触摸动作结束"
+        "description": "Type: function => any\n手指触摸动作结束\nSince: 1.0.0"
       },
       {
         "name": "bindtouchmove",
-        "description": "Type: function => any\n手指触摸后移动"
+        "description": "Type: function => any\n手指触摸后移动\nSince: 1.0.0"
       },
       {
         "name": "bindtouchstart",
-        "description": "Type: function => any\n手指触摸动作开始"
+        "description": "Type: function => any\n手指触摸动作开始\nSince: 1.0.0"
       },
       {
         "name": "canvas-id",
-        "description": "Type: string\ncanvas 组件的唯一标识符"
+        "description": "Type: string\ncanvas 组件的唯一标识符，若指定了 type 则无需再指定该属性\nSince: 1.0.0"
       },
       {
         "name": "disable-scroll",
-        "description": "Type: boolean\n当在 canvas 中移动时且有绑定手势事件时，禁止屏幕滚动以及下拉刷新\nDefault: false"
+        "description": "Type: boolean\n当在 canvas 中移动时且有绑定手势事件时，禁止屏幕滚动以及下拉刷新\nDefault: false\nSince: 1.0.0"
+      },
+      {
+        "name": "type",
+        "description": "Type: string\n指定 canvas 类型，支持 2d (2.9.0) 和 webgl (2.7.0)\nSince: 2.7.0"
       }
     ],
     "references": [
@@ -84,55 +166,175 @@ export const WEAPP_BUILTIN_HTML_TAGS_MEDIA_CAPTURE_LIVE = [
   },
   {
     "name": "live-player",
-    "description": "实时音视频播放。该组件是[原生组件](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html)，使用时请注意相关限制。\n\n暂只针对国内主体如下类目的小程序开放，需要先通过类目审核，再在小程序管理后台，“设置”-“接口设置”中自助开通该组件权限。\n\n{社交 => \"直播\"; 教育 => \"在线教育\"; 医疗 => \"互联网医院，公立医院\"; 政务民生 => \"所有二级类目\"; 金融 =\\> \"基金、信托、保险、银行、证券/期货、非金融机构自营小额贷款、征信业务、消费金融\"}",
+    "description": "实时音视频播放（v2.9.1 起支持[同层渲染](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html#%E5%8E%9F%E7%94%9F%E7%BB%84%E4%BB%B6%E5%90%8C%E5%B1%82%E6%B8%B2%E6%9F%93)）。",
     "attributes": [
       {
+        "name": "auto-pause-if-navigate",
+        "description": "Type: boolean\nDefault: true\nSince: 2.5.0"
+      },
+      {
+        "name": "auto-pause-if-open-native",
+        "description": "Type: boolean\nDefault: true\nSince: 2.5.0"
+      },
+      {
         "name": "autoplay",
-        "description": "Type: boolean\n自动播放\nDefault: false"
+        "description": "Type: boolean\nDefault: false\nSince: 1.7.0"
       },
       {
         "name": "background-mute",
-        "description": "Type: boolean\n进入后台时是否静音（已废弃，默认退台静音）\nDefault: false"
+        "description": "Type: boolean\nDefault: false\nSince: 1.7.0"
+      },
+      {
+        "name": "bindaudiovolumenotify",
+        "description": "Type: function => any\nSince: 2.10.0"
+      },
+      {
+        "name": "bindcastinginterrupt",
+        "description": "Type: function => any\nSince: 2.32.0"
+      },
+      {
+        "name": "bindcastingstatechange",
+        "description": "Type: function => any\nSince: 2.32.0"
+      },
+      {
+        "name": "bindcastinguserselect",
+        "description": "Type: function => any\nSince: 2.32.0"
+      },
+      {
+        "name": "bindenterpictureinpicture",
+        "description": "Type: function => any\nSince: 2.11.0"
       },
       {
         "name": "bindfullscreenchange",
-        "description": "Type: function => any\n全屏变化事件，detail = {direction, fullScreen}"
+        "description": "Type: function => any\nSince: 1.7.0"
+      },
+      {
+        "name": "bindleavepictureinpicture",
+        "description": "Type: function => any\nSince: 2.11.0"
       },
       {
         "name": "bindnetstatus",
-        "description": "Type: function => any\n网络状态通知，detail = {info}\ninfo: {videoBitrate => \"当前视频编/码器输出的比特率，单位 kbps\"; audioBitrate => \"当前音频编/码器输出的比特率，单位 kbps\"; videoFPS => \"当前视频帧率\"; videoGOP => \"当前视频 GOP,也就是每两个关键帧(I帧)间隔时长，单位 s\"; netSpeed => \"当前的发送/接收速度\"; netJitter => \"网络抖动情况，抖动越大，网络越不稳定\"; videoWidth => \"视频画面的宽度\"; videoHeight => \"视频画面的高度\"}\nSince: 1.9.0"
+        "description": "Type: function => any\nSince: 1.9.0"
       },
       {
         "name": "bindstatechange",
-        "description": "Type: function => any\n播放状态变化事件，detail = {code}\ncode: {2001 => \"已经连接服务器\"; 2002 => \"已经连接服务器,开始拉流\"; 2003 => \"网络接收到首个视频数据包(IDR)\"; 2004 => \"视频播放开始\"; 2005 => \"视频播放进度\"; 2006 => \"视频播放结束\"; 2007 => \"视频播放Loading\"; 2008 => \"解码器启动\"; 2009 => \"视频分辨率改变\"; -2301 => \"网络断连，且经多次重连抢救无效，更多重试请自行重启播放\"; -2302 => \"获取加速拉流地址失败\"; 2101 => \"当前视频帧解码失败\"; 2102 => \"当前音频帧解码失败\"; 2103 => \"网络断连, 已启动自动重连\"; 2104 => \"网络来包不稳：可能是下行带宽不足，或由于主播端出流不均匀\"; 2105 => \"当前视频播放出现卡顿\"; 2106 => \"硬解启动失败，采用软解\"; 2107 => \"当前视频帧不连续，可能丢帧\"; 2108 => \"当前流硬解第一个I帧失败，SDK自动切软解\"; 3001 => \"RTMP -DNS解析失败\"; 3002 => \"RTMP服务器连接失败\"; 3003 => \"RTMP服务器握手失败\"; 3005 => \"RTMP 读/写失败\"}"
+        "description": "Type: function => any\nSince: 1.7.0"
+      },
+      {
+        "name": "enable-auto-rotation",
+        "description": "Type: boolean\nDefault: false\nSince: 2.11.0"
+      },
+      {
+        "name": "enable-casting",
+        "description": "Type: boolean\nDefault: false\nSince: 2.32.0"
       },
       {
         "name": "max-cache",
-        "description": "Type: number\n最大缓冲区，单位s\nDefault: 3"
+        "description": "Type: number\nDefault: 3\nSince: 1.7.0"
       },
       {
         "name": "min-cache",
-        "description": "Type: number\n最小缓冲区，单位s\nDefault: 1"
+        "description": "Type: number\nDefault: 1\nSince: 1.7.0"
       },
       {
         "name": "mode",
-        "description": "Type: string\nlive（直播），RTC（实时通话）\nDefault: live"
+        "description": "Type: string\nDefault: live\nSince: 1.7.0",
+        "values": [
+          {
+            "name": "live",
+            "description": "直播"
+          },
+          {
+            "name": "RTC",
+            "description": "实时通话，该模式时延更低"
+          }
+        ]
       },
       {
         "name": "muted",
-        "description": "Type: boolean\n是否静音\nDefault: false"
+        "description": "Type: boolean\nDefault: false\nSince: 1.7.0"
       },
       {
         "name": "object-fit",
-        "description": "Type: string\n填充模式，可选值有 contain，fillCrop\nDefault: contain"
+        "description": "Type: string\nDefault: contain\nSince: 1.7.0",
+        "values": [
+          {
+            "name": "contain",
+            "description": "图像长边填满屏幕，短边区域会被填充⿊⾊"
+          },
+          {
+            "name": "fillCrop",
+            "description": "图像铺满屏幕，超出显示区域的部分将被截掉"
+          }
+        ]
       },
       {
         "name": "orientation",
-        "description": "Type: string\n画面方向，可选值有 vertical，horizontal\nDefault: vertical"
+        "description": "Type: string\nDefault: vertical\nSince: 1.7.0",
+        "values": [
+          {
+            "name": "vertical",
+            "description": "竖直"
+          },
+          {
+            "name": "horizontal",
+            "description": "水平"
+          }
+        ]
+      },
+      {
+        "name": "picture-in-picture-init-position",
+        "description": "Type: string\nSince: 3.3.0"
+      },
+      {
+        "name": "picture-in-picture-mode",
+        "description": "Type: string | any[]\nSince: 2.10.3",
+        "values": [
+          {
+            "name": "[]",
+            "description": "取消小窗"
+          },
+          {
+            "name": "push",
+            "description": "路由 push 时触发小窗"
+          },
+          {
+            "name": "pop",
+            "description": "路由 pop 时触发小窗"
+          }
+        ]
+      },
+      {
+        "name": "referrer-policy",
+        "description": "Type: string\nDefault: no-referrer\nSince: 2.13.0",
+        "values": [
+          {
+            "name": "origin",
+            "description": "发送完整的referrer"
+          },
+          {
+            "name": "no-referrer",
+            "description": "不发送"
+          }
+        ]
+      },
+      {
+        "name": "sound-mode",
+        "description": "Type: string\nDefault: speaker\nSince: 1.9.90",
+        "values": [
+          {
+            "name": "speaker",
+            "description": "扬声器"
+          },
+          {
+            "name": "ear",
+            "description": "听筒"
+          }
+        ]
       },
       {
         "name": "src",
-        "description": "Type: string\n音视频地址。目前仅支持 flv, rtmp 格式"
+        "description": "Type: string\nSince: 1.7.0"
       }
     ],
     "references": [
@@ -144,87 +346,367 @@ export const WEAPP_BUILTIN_HTML_TAGS_MEDIA_CAPTURE_LIVE = [
   },
   {
     "name": "live-pusher",
-    "description": "实时音视频录制。该组件是[原生组件](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html)，使用时请注意相关限制。\n\n暂只针对国内主体如下类目的小程序开放，需要先通过类目审核，再在小程序管理后台，“设置”-“接口设置”中自助开通该组件权限。\n\n{社交 => \"直播\"; 教育 => \"在线教育\"; 医疗 => \"互联网医院，公立医院\"; 政务民生 => \"所有二级类目\"; 金融 =\\> \"基金、信托、保险、银行、证券/期货、非金融机构自营小额贷款、征信业务、消费金融\"}",
+    "description": "实时音视频录制（v2.9.1 起支持[同层渲染](https://developers.weixin.qq.com/miniprogram/dev/component/native-component.html#%E5%8E%9F%E7%94%9F%E7%BB%84%E4%BB%B6%E5%90%8C%E5%B1%82%E6%B8%B2%E6%9F%93)）。需要[用户授权](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/authorize.html) `scope.camera`、`scope.record`。",
     "attributes": [
       {
         "name": "aspect",
-        "description": "Type: string\n宽高比，可选值有 3:4, 9:16\nDefault: 9:16"
+        "description": "Type: string\nDefault: 9:16"
+      },
+      {
+        "name": "audio-quality",
+        "description": "Type: string\nDefault: high"
+      },
+      {
+        "name": "audio-reverb-type",
+        "description": "Type: number\nDefault: 0",
+        "values": [
+          {
+            "name": "0",
+            "description": "关闭"
+          },
+          {
+            "name": "1",
+            "description": "KTV"
+          },
+          {
+            "name": "2",
+            "description": "小房间"
+          },
+          {
+            "name": "3",
+            "description": "大会堂"
+          },
+          {
+            "name": "4",
+            "description": "低沉"
+          },
+          {
+            "name": "5",
+            "description": "洪亮"
+          },
+          {
+            "name": "6",
+            "description": "金属声"
+          },
+          {
+            "name": "7",
+            "description": "磁性"
+          }
+        ]
+      },
+      {
+        "name": "audio-volume-type",
+        "description": "Type: string\nDefault: auto",
+        "values": [
+          {
+            "name": "auto",
+            "description": "自动"
+          },
+          {
+            "name": "media",
+            "description": "媒体音量"
+          },
+          {
+            "name": "voicecall",
+            "description": "通话音量"
+          }
+        ]
       },
       {
         "name": "auto-focus",
-        "description": "Type: boolean\n自动聚集\nDefault: true"
+        "description": "Type: boolean\nDefault: true"
       },
       {
         "name": "autopush",
-        "description": "Type: boolean\n自动推流\nDefault: false"
+        "description": "Type: boolean\nDefault: false"
       },
       {
         "name": "background-mute",
-        "description": "Type: boolean\n进入后台时是否静音\nDefault: false"
+        "description": "Type: boolean\nDefault: false"
       },
       {
         "name": "beauty",
-        "description": "Type: number\n美颜\nDefault: 0"
+        "description": "Type: number\nDefault: 0"
+      },
+      {
+        "name": "beauty-style",
+        "description": "Type: string\nDefault: smooth",
+        "values": [
+          {
+            "name": "smooth",
+            "description": "光滑美颜"
+          },
+          {
+            "name": "nature",
+            "description": "自然美颜"
+          }
+        ]
+      },
+      {
+        "name": "bindaudiovolumenotify",
+        "description": "Type: function => any"
+      },
+      {
+        "name": "bindbgmcomplete",
+        "description": "Type: function => any"
+      },
+      {
+        "name": "bindbgmprogress",
+        "description": "Type: function => any"
+      },
+      {
+        "name": "bindbgmstart",
+        "description": "Type: function => any"
+      },
+      {
+        "name": "bindenterpictureinpicture",
+        "description": "Type: function => any"
       },
       {
         "name": "binderror",
-        "description": "Type: function => any\n渲染错误事件，detail = {errMsg, errCode}\nerrCode: {10001 => \"用户禁止使用摄像头\"; 10002 => \"用户禁止使用录音\"}\nSince: 1.7.4"
+        "description": "Type: function => any"
+      },
+      {
+        "name": "bindleavepictureinpicture",
+        "description": "Type: function => any"
       },
       {
         "name": "bindnetstatus",
-        "description": "Type: function => any\n网络状态通知，detail = {info}\ninfo: {videoBitrate => \"当前视频编/码器输出的比特率，单位 kbps\"; audioBitrate => \"当前音频编/码器输出的比特率，单位 kbps\"; videoFPS => \"当前视频帧率\"; videoGOP => \"当前视频 GOP,也就是每两个关键帧(I帧)间隔时长，单位 s\"; netSpeed => \"当前的发送/接收速度\"; netJitter => \"网络抖动情况，抖动越大，网络越不稳定\"; videoWidth => \"视频画面的宽度\"; videoHeight => \"视频画面的高度\"}\nSince: 1.9.0"
+        "description": "Type: function => any"
       },
       {
         "name": "bindstatechange",
-        "description": "Type: function => any\n状态变化事件，detail = {code}\ncode: {1001 => \"已经连接推流服务器\"; 1002 => \"已经与服务器握手完毕,开始推流\"; 1003 => \"打开摄像头成功\"; 1004 => \"录屏启动成功\"; 1005 => \"推流动态调整分辨率\"; 1006 => \"推流动态调整码率\"; 1007 => \"首帧画面采集完成\"; 1008 => \"编码器启动\"; -1301 => \"打开摄像头失败\"; -1302 => \"打开麦克风失败\"; -1303 => \"视频编码失败\"; -1304 => \"音频编码失败\"; -1305 => \"不支持的视频分辨率\"; -1306 => \"不支持的音频采样率\"; -1307 => \"网络断连，且经多次重连抢救无效，更多重试请自行重启推流\"; -1308 => \"开始录屏失败，可能是被用户拒绝\"; -1309 => \"录屏失败，不支持的Android系统版本，需要5.0以上的系统\"; -1310 => \"录屏被其他应用打断了\"; -1311 => \"Android Mic打开成功，但是录不到音频数据\"; -1312 => \"录屏动态切横竖屏失败\"; 1101 => \"网络状况不佳：上行带宽太小，上传数据受阻\"; 1102 => \"网络断连, 已启动自动重连\"; 1103 => \"硬编码启动失败,采用软编码\"; 1104 => \"视频编码失败\"; 1105 => \"新美颜软编码启动失败，采用老的软编码\"; 1106 => \"新美颜软编码启动失败，采用老的软编码\"; 3001 => \"RTMP -DNS解析失败\"; 3002 => \"RTMP服务器连接失败\"; 3003 => \"RTMP服务器握手失败\"; 3004 => \"RTMP服务器主动断开，请检查推流地址的合法性或防盗链有效期\"; 3005 => \"RTMP 读/写失败\"}"
+        "description": "Type: function => any"
+      },
+      {
+        "name": "custom-effect",
+        "description": "Type: boolean\nDefault: false"
       },
       {
         "name": "device-position",
-        "description": "Type: string\n前置或后置，值为front, back\nDefault: front\nSince: 2.3.0"
+        "description": "Type: string\nDefault: front"
+      },
+      {
+        "name": "enable-agc",
+        "description": "Type: boolean\nDefault: false"
+      },
+      {
+        "name": "enable-ans",
+        "description": "Type: boolean\nDefault: false"
       },
       {
         "name": "enable-camera",
-        "description": "Type: boolean\n开启摄像头\nDefault: true"
+        "description": "Type: boolean\nDefault: true"
+      },
+      {
+        "name": "enable-mic",
+        "description": "Type: boolean\nDefault: true"
+      },
+      {
+        "name": "enableVideoCustomRender",
+        "description": "Type: boolean\nDefault: false"
+      },
+      {
+        "name": "eye-bigness",
+        "description": "Type: number\nDefault: 0"
+      },
+      {
+        "name": "face-thinness",
+        "description": "Type: number\nDefault: 0"
+      },
+      {
+        "name": "filter",
+        "description": "Type: string\nDefault: standard",
+        "values": [
+          {
+            "name": "standard",
+            "description": "标准"
+          },
+          {
+            "name": "pink",
+            "description": "粉嫩"
+          },
+          {
+            "name": "nostalgia",
+            "description": "怀旧"
+          },
+          {
+            "name": "blues",
+            "description": "蓝调"
+          },
+          {
+            "name": "romantic",
+            "description": "浪漫"
+          },
+          {
+            "name": "cool",
+            "description": "清凉"
+          },
+          {
+            "name": "fresher",
+            "description": "清新"
+          },
+          {
+            "name": "solor",
+            "description": "日系"
+          },
+          {
+            "name": "aestheticism",
+            "description": "唯美"
+          },
+          {
+            "name": "whitening",
+            "description": "美白"
+          },
+          {
+            "name": "cerisered",
+            "description": "樱红"
+          }
+        ]
+      },
+      {
+        "name": "fps",
+        "description": "Type: number\nDefault: 15"
+      },
+      {
+        "name": "local-mirror",
+        "description": "Type: string\nDefault: auto",
+        "values": [
+          {
+            "name": "auto",
+            "description": "前置摄像头镜像，后置摄像头不镜像"
+          },
+          {
+            "name": "enable",
+            "description": "前后置摄像头均镜像"
+          },
+          {
+            "name": "disable",
+            "description": "前后置摄像头均不镜像"
+          }
+        ]
       },
       {
         "name": "max-bitrate",
-        "description": "Type: number\n最大码率\nDefault: 1000"
+        "description": "Type: number\nDefault: 1000"
       },
       {
         "name": "min-bitrate",
-        "description": "Type: number\n最小码率\nDefault: 200"
+        "description": "Type: number\nDefault: 200"
+      },
+      {
+        "name": "mirror",
+        "description": "Type: boolean\nDefault: false"
       },
       {
         "name": "mode",
-        "description": "Type: string\nSD（标清）, HD（高清）, FHD（超清）, RTC（实时通话）\nDefault: RTC"
+        "description": "Type: string\nDefault: RTC",
+        "values": [
+          {
+            "name": "QVGA",
+            "description": "Quarter VGA"
+          },
+          {
+            "name": "HVGA",
+            "description": "Half-size VGA"
+          },
+          {
+            "name": "SD",
+            "description": "标清"
+          },
+          {
+            "name": "HD",
+            "description": "高清"
+          },
+          {
+            "name": "FHD",
+            "description": "超清"
+          },
+          {
+            "name": "RTC",
+            "description": "实时通话"
+          }
+        ]
       },
       {
         "name": "muted",
-        "description": "Type: boolean\n是否静音\nDefault: false"
+        "description": "Type: boolean\nDefault: false"
       },
       {
         "name": "orientation",
-        "description": "Type: string\nvertical，horizontal\nDefault: vertical"
+        "description": "Type: string\nDefault: vertical",
+        "values": [
+          {
+            "name": "vertical",
+            "description": "竖直"
+          },
+          {
+            "name": "horizontal",
+            "description": "水平"
+          }
+        ]
+      },
+      {
+        "name": "picture-in-picture-mode",
+        "description": "Type: string | any[]",
+        "values": [
+          {
+            "name": "[]",
+            "description": "取消小窗"
+          },
+          {
+            "name": "push",
+            "description": "路由 push 时触发小窗"
+          },
+          {
+            "name": "pop",
+            "description": "路由 pop 时触发小窗"
+          }
+        ]
+      },
+      {
+        "name": "remote-mirror",
+        "description": "Type: boolean\nDefault: false"
+      },
+      {
+        "name": "skin-smoothness",
+        "description": "Type: number\nDefault: 0"
+      },
+      {
+        "name": "skin-whiteness",
+        "description": "Type: number\nDefault: 0"
       },
       {
         "name": "url",
-        "description": "Type: string\n推流地址。目前仅支持 flv, rtmp 格式"
+        "description": "Type: string"
+      },
+      {
+        "name": "video-height",
+        "description": "Type: number\nDefault: 640"
+      },
+      {
+        "name": "video-width",
+        "description": "Type: number\nDefault: 360"
+      },
+      {
+        "name": "voice-changer-type",
+        "description": "Type: number\nDefault: 0"
       },
       {
         "name": "waiting-image",
-        "description": "Type: string\n进入后台时推流的等待画面"
+        "description": "Type: string"
       },
       {
         "name": "waiting-image-hash",
-        "description": "Type: string\n等待画面资源的MD5值"
+        "description": "Type: string"
       },
       {
         "name": "whiteness",
-        "description": "Type: number\n美白\nDefault: 0"
+        "description": "Type: number\nDefault: 0"
       },
       {
         "name": "zoom",
-        "description": "Type: boolean\n调整焦距\nDefault: false\nSince: 2.1.0"
+        "description": "Type: boolean\nDefault: false"
       }
     ],
     "references": [
@@ -236,15 +718,15 @@ export const WEAPP_BUILTIN_HTML_TAGS_MEDIA_CAPTURE_LIVE = [
   },
   {
     "name": "voip-room",
-    "description": "多人音视频对话。\n暂只针对国内主体[如下类目](https://developers.weixin.qq.com/miniprogram/dev/component/voip-room.html)的小程序开放，需要先通过类目审核，再在小程序管理后台，「开发」-「接口设置」中自助开通该组件权限。",
+    "description": "多人音视频对话。需[用户授权](https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/authorize.html) `scope.camera`、`scope.record`。",
     "attributes": [
       {
         "name": "binderror",
-        "description": "Type: eventhandle\n创建对话窗口失败时触发"
+        "description": "Type: function => any\nSince: 2.11.0"
       },
       {
         "name": "device-position",
-        "description": "Type: string\n仅在 mode 为 camera 时有效，前置或后置，值为`front`,`back`\nDefault: front",
+        "description": "Type: string\nDefault: front\nSince: 2.11.0",
         "values": [
           {
             "name": "front",
@@ -258,11 +740,39 @@ export const WEAPP_BUILTIN_HTML_TAGS_MEDIA_CAPTURE_LIVE = [
       },
       {
         "name": "mode",
-        "description": "Type: string\n对话窗口类型，自身传入 camera，其它用户传入 video\nDefault: camera"
+        "description": "Type: string\nDefault: camera\nSince: 2.11.0",
+        "values": [
+          {
+            "name": "camera",
+            "description": "自身传入 camera"
+          },
+          {
+            "name": "video",
+            "description": "其他用户传入 video"
+          }
+        ]
+      },
+      {
+        "name": "object-fit",
+        "description": "Type: string\nDefault: fill\nSince: 2.29.0",
+        "values": [
+          {
+            "name": "fill",
+            "description": "填充"
+          },
+          {
+            "name": "contain",
+            "description": "包含"
+          },
+          {
+            "name": "cover",
+            "description": "覆盖，安卓暂未支持，iOS 生效"
+          }
+        ]
       },
       {
         "name": "openid",
-        "description": "Type: string\n进入房间用户的 openid"
+        "description": "Type: string\nSince: 2.11.0"
       }
     ],
     "references": [

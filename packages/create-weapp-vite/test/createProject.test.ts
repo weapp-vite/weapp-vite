@@ -276,9 +276,14 @@ describe('createProject', () => {
     expect(agents).toContain('plugins.*.provider')
 
     const appJson = await readJsonAs<{
-      plugins?: Record<string, { provider?: string }>
+      plugins?: Record<string, { provider?: string, version?: string }>
     }>(path.join(root, 'src/app.json'))
-    expect(appJson.plugins?.['hello-plugin']?.provider).toBe('wxb3d842a4a7e3440d')
+    const projectConfig = await readJsonAs<{ appid: string, compileType: string }>(path.join(root, 'project.config.json'))
+    expect(projectConfig).toMatchObject({ compileType: 'plugin', setting: { es6: false } })
+    expect(appJson.plugins?.['hello-plugin']).toMatchObject({
+      provider: projectConfig.appid,
+      version: 'dev',
+    })
   })
 
   it('preserves existing .gitignore when templates ship gitignore', async () => {
@@ -597,17 +602,17 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
   })
 
-  it('keeps tailwind templates pinned to the named tailwind3 catalog when creating projects', async () => {
-    const root = await createTmpRoot('tailwind3-template')
+  it('keeps tailwind templates pinned to the named tailwind4 catalog when creating projects', async () => {
+    const root = await createTmpRoot('tailwind4-template')
     const templatePackagePath = await getTemplatePackagePath(TemplateName.tailwindcss)
     const originalReadJSON = fs.readJSON.bind(fs)
 
     vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {
       if (value === templatePackagePath) {
         return {
-          name: 'tailwind3-template',
+          name: 'tailwind4-template',
           devDependencies: {
-            'tailwindcss': 'catalog:tailwind3',
+            'tailwindcss': 'catalog:tailwind4',
             'weapp-vite': 'workspace:*',
           },
         }
@@ -619,7 +624,7 @@ describe('createProject', () => {
     await createProject(root, TemplateName.tailwindcss)
 
     const pkgJson = await readPackageJson(path.join(root, 'package.json'))
-    expect(pkgJson.devDependencies['tailwindcss']).toBe(TEMPLATE_NAMED_CATALOG.tailwind3.tailwindcss)
+    expect(pkgJson.devDependencies['tailwindcss']).toBe(TEMPLATE_NAMED_CATALOG.tailwind4.tailwindcss)
   })
 
   it('creates wevu template with layout scaffold files', async () => {

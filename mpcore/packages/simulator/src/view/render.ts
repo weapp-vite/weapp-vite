@@ -2,11 +2,14 @@ import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessPageInstance } from '../runtime'
 import path from 'node:path'
 import { parseDocument } from 'htmlparser2'
+import { isDatasetAttribute, toDatasetKey } from './nodeDataset'
+import { interpolateTemplateText } from './templateText'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
@@ -15,24 +18,36 @@ interface DomNodeLike {
 const LEADING_SLASH_RE = /^\/+/
 const TEMPLATE_INTERPOLATION_RE = /\{\{([^{}]+)\}\}/g
 
-function resolveValueByPath(source: Record<string, any>, expression: string) {
+function resolveRawValueByPath(source: Record<string, unknown>, expression: string) {
   const normalized = expression.trim()
   if (!normalized) {
-    return ''
+    return undefined
   }
   const segments = normalized.split('.').filter(Boolean)
-  let current: any = source
+  let current: unknown = source
   for (const segment of segments) {
-    current = current?.[segment]
+    if (current == null || (typeof current !== 'object' && typeof current !== 'function')) {
+      return undefined
+    }
+    current = Reflect.get(current, segment)
   }
-  return current ?? ''
+  return current
 }
 
-function interpolateTemplate(input: string, data: Record<string, any>) {
+function resolveValueByPath(source: Record<string, unknown>, expression: string) {
+  return resolveRawValueByPath(source, expression) ?? ''
+}
+
+function interpolateTemplate(input: string, data: Record<string, unknown>) {
   return input.replace(TEMPLATE_INTERPOLATION_RE, (_match, expression: string) => {
     const value = resolveValueByPath(data, expression)
     return typeof value === 'string' ? value : String(value)
   })
+}
+
+function isMustacheOnly(value: string) {
+  const trimmed = value.trim()
+  return trimmed.startsWith('{{') && trimmed.endsWith('}}') && !trimmed.includes('{{', 2)
 }
 
 function visitDom(node: DomNodeLike, visitor: (node: DomNodeLike) => void) {
@@ -42,15 +57,24 @@ function visitDom(node: DomNodeLike, visitor: (node: DomNodeLike) => void) {
   }
 }
 
-function interpolateDomTree(root: DomNodeLike, data: Record<string, any>) {
+function interpolateDomTree(root: DomNodeLike, data: Record<string, unknown>) {
   visitDom(root, (node) => {
     if (typeof node.data === 'string') {
-      node.data = interpolateTemplate(node.data, data)
+      node.data = interpolateTemplateText(node.data, data)
     }
     if (node.attribs) {
+      let dataset: Record<string, unknown> | undefined
       for (const [key, value] of Object.entries(node.attribs)) {
-        node.attribs[key] = interpolateTemplate(value, data)
+        const resolvedValue = isMustacheOnly(value)
+          ? resolveRawValueByPath(data, value.trim().slice(2, -2))
+          : interpolateTemplate(value, data)
+        node.attribs[key] = String(resolvedValue ?? '')
+        if (isDatasetAttribute(key)) {
+          dataset ??= {}
+          dataset[toDatasetKey(key)] = resolvedValue
+        }
       }
+      node.dataset = dataset
     }
   })
 }

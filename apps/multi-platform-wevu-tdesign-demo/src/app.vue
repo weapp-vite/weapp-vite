@@ -81,13 +81,4 @@ onLaunch(() => {
 })
 </script>
 
-<style>
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-page {
-  font-family: 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background-color: #f6f7fb;
-}
-</style>
+<style src="./app.css"></style>

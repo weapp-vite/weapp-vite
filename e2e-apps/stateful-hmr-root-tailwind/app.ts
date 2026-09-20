@@ -1,3 +1,3 @@
-import './app.css'
+import './tailwind.css'
 
 App({})

@@ -4,11 +4,8 @@ import type { CompilerContext } from '../../../../../context'
 import type { EncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import type { ResolvedAppShell } from '../../appShell'
 import MagicString from 'magic-string'
-import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { resolveAstEngine } from '../../../../../ast'
 import logger from '../../../../../logger'
-import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
-import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../../../../utils/sourcemap'
 import { collectOnPageScrollPerformanceWarnings } from '../../../../performance/onPageScrollDiagnostics'
 import { addNormalizedWatchFiles } from '../../../../utils/watchFiles'
@@ -202,7 +199,20 @@ export async function finalizeTransformCompiledResult(options: {
   }
 
   if (Array.isArray(result.meta?.sfcSrcDeps)) {
+    addNormalizedWatchFiles(pluginCtx, result.meta.sfcSrcDeps)
     ctx.moduleGraphService.replaceEntryDependencies(filename, 'style', result.meta.sfcSrcDeps)
+  }
+  if (configService.isDev) {
+    const styleBindings = ctx.runtimeState.build.hmr.vueEntryStyleBindings
+    if (result.meta?.sfcSrcDeps?.length) {
+      styleBindings.set(filename, {
+        sources: result.meta.sfcSrcDeps,
+        expressions: result.meta.cssVars,
+      })
+    }
+    else {
+      styleBindings.delete(filename)
+    }
   }
   const jsxDependencies = result.meta?.jsxDependencies ?? []
   addNormalizedWatchFiles(pluginCtx, jsxDependencies)
@@ -227,14 +237,6 @@ export async function finalizeTransformCompiledResult(options: {
     pageLayoutSignature,
     appShellSignature,
   })
-  if (configService.isDev && filename.endsWith('.vue')) {
-    const normalizedFilename = normalizeFsResolvedId(filename)
-    const hmr = ctx.runtimeState?.build?.hmr
-    const signatures = resolveVueSfcHmrSignatures(source, filename)
-    if (hmr) {
-      storeVueSfcHmrSignatures(hmr, normalizedFilename, signatures)
-    }
-  }
 
   const relativeBase = resolveVueOutputBase(configService, filename)
   if (relativeBase) {

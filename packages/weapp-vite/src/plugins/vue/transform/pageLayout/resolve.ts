@@ -14,7 +14,7 @@ const PATH_SEGMENT_RE = /[\\/]/
 const TRAILING_INDEX_RE = /\/index$/
 const LEADING_SLASHES_RE = /^\/+/
 const ROUTE_RULE_GLOB_TOKEN_RE = /[*?[\]{}()!+@]/g
-const resolvedLayoutsCache = new Map<string, Promise<ResolvedPageLayout[]>>()
+const layoutFilesCache = new Map<string, Promise<Map<string, DiscoveredLayoutFile>>>()
 const PAGE_META_HINT = 'definePageMeta'
 const SET_PAGE_LAYOUT_HINT = 'setPageLayout'
 
@@ -201,49 +201,38 @@ async function resolveAllLayouts(
   configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>,
 ) {
   const cacheKey = normalizeComparablePath(configService.absoluteSrcRoot)
-  const cached = resolvedLayoutsCache.get(cacheKey)
-  if (cached) {
-    return await cached
+  let task = layoutFilesCache.get(cacheKey)
+  if (!task) {
+    task = collectLayoutFiles(path.join(configService.absoluteSrcRoot, 'layouts'))
+    layoutFilesCache.set(cacheKey, task)
   }
-
-  const task = (async () => {
-    const layoutsRoot = path.join(configService.absoluteSrcRoot, 'layouts')
-    const layoutFiles = await collectLayoutFiles(layoutsRoot)
-    const resolvedLayouts: ResolvedPageLayout[] = []
-
-    for (const layoutFile of layoutFiles.values()) {
-      const importPath = usingComponentFromResolvedFile(layoutFile.file, configService)
-      if (!importPath) {
-        continue
-      }
-      resolvedLayouts.push({
-        ...layoutFile,
-        importPath,
-      })
-    }
-
-    return resolvedLayouts
-  })()
-
-  resolvedLayoutsCache.set(cacheKey, task)
-
+  let layoutFiles: Map<string, DiscoveredLayoutFile>
   try {
-    return await task
+    layoutFiles = await task
   }
   catch (error) {
-    resolvedLayoutsCache.delete(cacheKey)
+    layoutFilesCache.delete(cacheKey)
     throw error
   }
+  // 源文件发现可共享，输出引用依赖当前主包或独立分包的配置，不能跨构建缓存。
+  const resolvedLayouts: ResolvedPageLayout[] = []
+  for (const layoutFile of layoutFiles.values()) {
+    const importPath = usingComponentFromResolvedFile(layoutFile.file, configService)
+    if (importPath) {
+      resolvedLayouts.push({ ...layoutFile, importPath })
+    }
+  }
+  return resolvedLayouts
 }
 
 export function invalidateResolvedPageLayoutsCache(absoluteSrcRoot?: string) {
   invalidatePageLayoutSourceAnalysisCache()
   if (!absoluteSrcRoot) {
-    resolvedLayoutsCache.clear()
+    layoutFilesCache.clear()
     return
   }
 
-  resolvedLayoutsCache.delete(normalizeComparablePath(absoluteSrcRoot))
+  layoutFilesCache.delete(normalizeComparablePath(absoluteSrcRoot))
 }
 
 export async function resolvePageLayoutPlan(

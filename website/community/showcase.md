@@ -15,7 +15,7 @@ keywords:
 
 # 优秀案例展示
 
-> 当前共收录 6 个案例。案例数据与素材由 `scripts/sync-community-showcase.ts` 根据 GitHub issue 自动同步，展示交互由 `CommunityShowcase.vue` 统一渲染。
+> 当前共收录 7 个案例。案例数据与素材由 `scripts/sync-community-showcase.ts` 根据 GitHub issue 自动同步，展示交互由 `CommunityShowcase.vue` 统一渲染。
 
 <CommunityShowcase />
 
@@ -42,3 +42,7 @@ keywords:
 ## 续费管理小程序： 续费鸭
 
 <CommunityShowcase entry-slug="ialtone" />
+
+## 心动的AI
+
+<CommunityShowcase entry-slug="ai" />

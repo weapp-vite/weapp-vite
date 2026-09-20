@@ -65,15 +65,37 @@ function resolveEventPrefix(modifiers: DirectiveNode['modifiers']) {
   return 'bind'
 }
 
+export function rejectUnsupportedDynamicOnName(
+  node: DirectiveNode,
+  context: TransformContext,
+): boolean {
+  const { arg } = node
+  if (arg?.type !== NodeTypes.SIMPLE_EXPRESSION || arg.isStatic) {
+    return false
+  }
+  warn(context, '小程序模板暂不支持动态 v-on 参数名，已忽略该事件绑定。', node.loc)
+  return true
+}
+
 export function transformOnDirective(
   node: DirectiveNode,
   context: TransformContext,
   options?: {
     isComponent?: boolean
+    tagName?: string
   },
 ): string | null {
   const { exp, arg } = node
   if (!arg) {
+    if (exp?.type === NodeTypes.SIMPLE_EXPRESSION && exp.content.trim()) {
+      warn(context, '小程序暂不支持对象形式 v-on，已忽略该对象监听；请改用显式事件绑定。', node.loc)
+    }
+    else {
+      warn(context, 'v-on 缺少对象监听表达式。', node.loc, 'template', 'WV2001')
+    }
+    return null
+  }
+  if (rejectUnsupportedDynamicOnName(node, context)) {
     return null
   }
   const argValue = arg.type === NodeTypes.SIMPLE_EXPRESSION ? arg.content : ''
@@ -94,7 +116,10 @@ export function transformOnDirective(
     : context.platform.mapEventName(argValue)
   const eventSuffix = normalizeEventDatasetSuffix(mappedEvent)
   const eventPrefix = resolveEventPrefix(node.modifiers)
-  const bindAttr = context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
+  const bindAttr = eventPrefix === 'bind' && options?.isComponent !== true
+    ? context.platform.eventBindingAlias?.(argValue, options?.tagName)
+    ?? context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
+    : context.platform.eventBindingAttr(`${eventPrefix}:${mappedEvent}`)
   const detailAttr = useDetailPayload ? `data-${INLINE_EVENT_DETAIL_KEY}-${eventSuffix}="1"` : ''
   if (context.rewriteScopedSlot) {
     if (inlineExpression) {

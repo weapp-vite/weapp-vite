@@ -9,7 +9,7 @@
 
   <view class="panel">
     <text class="panel__title">宿主拿到的插件信息</text>
-    <text class="panel__line">plugin.answer = {{ pluginAnswer }}</text>
+    <text id="plugin-answer" class="panel__line">plugin.answer = {{ pluginAnswer }}</text>
     <text class="panel__line">{{ hostMessage }}</text>
     <text class="panel__line">{{ pluginMessage }}</text>
     <text class="panel__line">{{ pluginSummary }}</text>

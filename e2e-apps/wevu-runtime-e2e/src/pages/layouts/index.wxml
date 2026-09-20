@@ -3,8 +3,8 @@
   <view class="hero">
     <view class="hero__eyebrow">LAYOUTS-PAGE-TEMPLATE-BASE</view>
     <view class="hero__title">Layouts HMR Playground</view>
-    <view class="hero__desc">current: {{currentLayout}}</view>
-    <view class="hero__desc">script: {{scriptMarker}}</view>
+    <view id="layout-current" class="hero__desc">current: {{currentLayout}}</view>
+    <view id="layout-script" class="hero__desc">script: {{scriptMarker}}</view>
   </view>
 
   <view wx:for="{{cards}}" wx:key="title" class="card">

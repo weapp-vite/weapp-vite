@@ -1,7 +1,8 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../context'
+import type { EntryChunkLifecycle } from './entryChunkLifecycle'
 import { performance } from 'node:perf_hooks'
-import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFileName'
 
 export interface ChunkEmitStats {
@@ -25,6 +26,7 @@ export function createChunkEmitter(
   trackEmittedChunkFileName?: (fileName: string) => void,
   trackChunkEmitStats?: (stats: ChunkEmitStats) => void,
   resolveEntryChunkId: (entryId: string, resolvedId: ResolvedId) => string = (_entryId, resolvedId) => resolvedId.id,
+  lifecycle?: EntryChunkLifecycle,
 ) {
   return function emitEntriesChunks(this: PluginContext, resolvedIds: (ResolvedId | null)[]) {
     return resolvedIds.map(async (resolvedId): ChunkEmitTask => {
@@ -39,51 +41,62 @@ export function createChunkEmitter(
         return stats
       }
 
-      const normalizedId = normalizeFsResolvedId(resolvedId.id)
+      const normalizedId = normalizeSourceId(resolvedId.id)
       const entryChunkId = resolveEntryChunkId(normalizedId, resolvedId)
-      const shouldPreload = !loadedEntrySet.has(normalizedId)
-      if (!shouldPreload) {
-        stats.skippedLoadedCount += 1
-      }
-      loadedEntrySet.add(normalizedId)
-
-      const start = shouldPreload ? performance.now() : 0
       const shouldEmitChunk = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
-      if (shouldPreload) {
-        const loadStartedAt = performance.now()
-        if (!shouldEmitChunk && preloadAssetOnlyEntry) {
-          await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
+      if (lifecycle && !lifecycle.prepare(normalizedId, shouldEmitChunk, () => this.getModuleInfo?.(entryChunkId)?.isEntry === true)) {
+        stats.skippedLoadedCount += 1
+        return stats
+      }
+      try {
+        const shouldPreload = !loadedEntrySet.has(normalizedId)
+        if (!shouldPreload) {
+          stats.skippedLoadedCount += 1
         }
-        else {
-          await this.load({ id: entryChunkId })
+        loadedEntrySet.add(normalizedId)
+
+        const start = shouldPreload ? performance.now() : 0
+        if (shouldPreload) {
+          const loadStartedAt = performance.now()
+          if (!shouldEmitChunk && preloadAssetOnlyEntry) {
+            await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
+          }
+          else {
+            await this.load({ id: entryChunkId })
+          }
+          stats.loadCount += 1
+          stats.loadMs += performance.now() - loadStartedAt
         }
-        stats.loadCount += 1
-        stats.loadMs += performance.now() - loadStartedAt
-      }
 
-      const fileName = resolveRelativeOutputFileNameWithExtension(configService, resolvedId.id, '.js')
+        const fileName = resolveRelativeOutputFileNameWithExtension(configService, resolvedId.id, '.js')
 
-      if (shouldEmitChunk) {
-        const emitFileStartedAt = performance.now()
-        this.emitFile({
-          type: 'chunk',
-          id: entryChunkId,
-          fileName,
-          // @ts-ignore
-          preserveSignature: 'exports-only',
-        })
-        trackEmittedChunkId?.(normalizedId)
-        trackEmittedChunkFileName?.(fileName)
-        stats.chunkEmitCount += 1
-        stats.emitFileMs += performance.now() - emitFileStartedAt
-      }
-      trackEmittedEntryId?.(normalizedId)
+        if (shouldEmitChunk) {
+          const emitFileStartedAt = performance.now()
+          this.emitFile({
+            type: 'chunk',
+            id: entryChunkId,
+            fileName,
+            // @ts-ignore
+            preserveSignature: 'exports-only',
+          })
+          trackEmittedChunkId?.(normalizedId)
+          trackEmittedChunkFileName?.(fileName)
+          stats.chunkEmitCount += 1
+          stats.emitFileMs += performance.now() - emitFileStartedAt
+        }
+        trackEmittedEntryId?.(normalizedId)
 
-      if (shouldPreload) {
-        debug?.(`load ${fileName} 耗时 ${(performance.now() - start).toFixed(2)}ms`)
+        if (shouldPreload) {
+          debug?.(`load ${fileName} 耗时 ${(performance.now() - start).toFixed(2)}ms`)
+        }
+        trackChunkEmitStats?.(stats)
+        return stats
       }
-      trackChunkEmitStats?.(stats)
-      return stats
+      catch (error) {
+        lifecycle?.rollback(normalizedId)
+        loadedEntrySet.delete(normalizedId)
+        throw error
+      }
     })
   }
 }

@@ -8,6 +8,8 @@ import path from 'pathe'
 import { getMiniProgramTemplatePlatform } from 'wevu/compiler'
 import logger from '../../../logger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { normalizeSourceId } from '../../../moduleGraph/traversal'
+import { resolveHmrRuntime } from '../../../runtime/hmrRuntime'
 import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { toPosixPath } from '../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -23,6 +25,8 @@ import { isAutoSetDataPickEnabledWithPreset, isWevuMinifyEnabled, resolveWevuDef
 export type CompileVueFileResolvedOptions = CompileVueFileOptions
 
 export type SfcStylePreprocessOptions = NonNullable<NonNullable<CompileVueFileOptions['style']>['preprocessOptions']>
+
+const compileOptionsOwners = new WeakMap<CompileVueFileResolvedOptions, object>()
 
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
@@ -160,8 +164,10 @@ function buildCompileVueFileOptions(
       const resolved = await resolveUsingComponentPath(importSource, importerFilename, info)
       if (typeof resolved !== 'string' && resolved?.from && resolved.resolvedId) {
         const outputKey = removeExtensionDeep(resolved.from).replace(/^\/+/, '')
-        const isNewEntry = externalComponentEntryMap.get(outputKey) !== resolved.resolvedId
-        externalComponentEntryMap.set(outputKey, resolved.resolvedId)
+        const sourceId = normalizeSourceId(resolved.resolvedId)
+        const previousSourceId = externalComponentEntryMap.get(outputKey)
+        const isNewEntry = !previousSourceId || normalizeSourceId(previousSourceId) !== sourceId
+        externalComponentEntryMap.set(outputKey, sourceId)
         if (isNewEntry && state.emitResolvedComponentEntries !== false && typeof pluginCtx.emitFile === 'function') {
           pluginCtx.emitFile({
             type: 'chunk',
@@ -218,6 +224,11 @@ function buildCompileVueFileOptions(
   const wevuMinify = isWevuMinifyEnabled(configService.weappViteConfig, configService.isDev)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
   const sourceMap = isVueTransformSourceMapEnabled(configService)
+  const stabilizeCssVarsRuntime = configService.isDev && resolveHmrRuntime({
+    platform: configService.platform,
+    configured: configService.weappViteConfig?.hmr?.runtime,
+    compileHotReLoad: configService.projectPrivateConfig?.setting?.compileHotReLoad,
+  }) === 'stateful-experimental'
   async function resolvePotentialVueSfcEntryId(candidate: string | undefined) {
     const trimmed = candidate?.trim()
     if (!trimmed) {
@@ -320,6 +331,7 @@ function buildCompileVueFileOptions(
     isApp,
     skipComponentTransform: delegatesComponentRegistration,
     autoSetDataPick: isAutoSetDataPickEnabledWithPreset(configService.weappViteConfig),
+    stabilizeCssVarsRuntime,
     bindingManifestSourceFile: resolveBindingManifestSourceFile(vuePath, configService),
     runtimeBindingManifest: configService.isDev ? 'diagnostic' : 'compact',
     pageLayout,
@@ -439,7 +451,9 @@ export function createCompileVueFileOptions(
     appShellSignature,
   )
   const cached = state.compileOptionsCache?.get(cacheKey)
-  if (cached) {
+  // dev hook context 的外壳可能被复用，但内部 plugin driver 会在每轮重建后释放。
+  // 其中的 resolve/emitFile 回调必须绑定当前 transform，不能跨 HMR 缓存。
+  if (!configService.isDev && cached && compileOptionsOwners.get(cached) === pluginCtx) {
     return cached
   }
 
@@ -455,6 +469,7 @@ export function createCompileVueFileOptions(
     pageLayout,
     appShell,
   )
+  compileOptionsOwners.set(created, pluginCtx)
   state.compileOptionsCache?.set(cacheKey, created)
   return created
 }

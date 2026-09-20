@@ -1,4 +1,5 @@
 import type { Ref } from '../reactivity'
+import type { LayoutHostBinding } from './capabilities'
 import {
   WEVU_LAYOUT_BRIDGE_PAGE_KEYS,
   WEVU_NATIVE_INSTANCE_KEY,
@@ -15,12 +16,7 @@ type LayoutHostMap = Record<string, unknown>
 export type LayoutBridgeInstance<T = LayoutBridgeContext> = T & {
   selectComponent?: LayoutBridgeComponentResolver
 }
-export interface LayoutHostBinding {
-  key: string
-  refName?: string
-  selector: string
-  kind?: 'component'
-}
+export type { LayoutHostBinding } from './capabilities'
 interface LayoutHostResolveOptions<T = any> {
   context?: T
   fallbackContext?: T
@@ -255,7 +251,7 @@ function resolveHostEntry(entry: unknown) {
   return entry
 }
 
-function findLayoutHostBinding(bindings: LayoutHostBinding[], key: string) {
+function findLayoutHostBinding(bindings: readonly LayoutHostBinding[], key: string) {
   return bindings.find(binding => binding.key === key)
 }
 
@@ -292,7 +288,7 @@ function resolveDeclaredLayoutHostFromRefs(
   return refValue ?? null
 }
 
-function createDeclaredLayoutHostBridge(bindings: LayoutHostBinding[], context: LayoutBridgeContext) {
+function createDeclaredLayoutHostBridge(bindings: readonly LayoutHostBinding[], context: LayoutBridgeContext) {
   const nativeContext = resolveNativeLayoutContext(context)
   const bridgeBase = nativeContext && typeof nativeContext === 'object'
     ? Object.create(nativeContext)
@@ -460,7 +456,7 @@ export function useLayoutBridge(
  * 使用编译期注入的宿主绑定信息，直接从当前 layout 运行时实例解析子组件宿主并注册 bridge。
  */
 export function registerRuntimeLayoutHosts(
-  bindings: LayoutHostBinding[],
+  bindings: readonly LayoutHostBinding[],
   context?: LayoutBridgeContext,
 ) {
   if (!bindings.length) {
@@ -479,7 +475,7 @@ export function registerRuntimeLayoutHosts(
  * 移除运行时自动注册的 layout 宿主 bridge。
  */
 export function unregisterRuntimeLayoutHosts(
-  bindings: LayoutHostBinding[],
+  bindings: readonly LayoutHostBinding[],
   context?: LayoutBridgeContext,
 ) {
   if (!bindings.length) {

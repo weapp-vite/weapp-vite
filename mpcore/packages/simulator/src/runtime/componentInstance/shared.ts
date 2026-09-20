@@ -33,7 +33,8 @@ export function hasComponentPropertyValueChanged(
   nextValue: unknown,
   bindingAffected: boolean,
 ) {
-  const identityChanged = !Object.is(currentValue, nextValue)
+  // 未被父级本轮更新触达的绑定与上次输入比较，避免覆盖组件自己的 setData。
+  const identityChanged = !Object.is(bindingAffected ? currentValue : previousSnapshot, nextValue)
   if (!identityChanged && !bindingAffected) {
     return false
   }

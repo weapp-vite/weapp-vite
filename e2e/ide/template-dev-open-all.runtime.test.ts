@@ -16,6 +16,7 @@ import {
   startDevProcess,
 } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
 import {
@@ -27,6 +28,7 @@ import {
   resolveTemplateDevOpenProjectRoot,
   TEMPLATE_DEV_OPEN_CASES,
 } from './template-dev-open-cases'
+import { templateDevOpenCheckpoint } from './templateDevOpenDom'
 
 const IDE_AUTOMATOR_INFRA_RE = /Failed connecting to ws:\/\/127\.0\.0\.1:\d+|Timed out waiting for opened automator ws:\/\/127\.0\.0\.1:\d+|无法连接到当前项目的微信开发者工具自动化 websocket|Cannot connect to the Wechat DevTools automation websocket|automation websocket|Connection closed, check if wechat web devTools is still running|WebSocket is not open|socket hang up|Wait timed out after \d+ ms|当前项目已完成打开流程，但尚未连接到可复用的自动化会话/i
 const FORWARD_CONSOLE_READY_RE = /\[forwardConsole\] 已连接微信开发者工具日志/
@@ -365,7 +367,7 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
     await cleanupResidualIdeProcesses()
   }, 180_000)
 
-  it.each(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase) => {
+  it.for(ACTIVE_TEMPLATE_CASES)('$name renders after dev:open without runtime errors', async (templateCase, ctx) => {
     let lastError: unknown
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       const projectRoot = resolveTemplateProjectRoot(templateCase)
@@ -375,6 +377,14 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
       let runtimeErrors: ReturnType<typeof attachRuntimeErrorCollector> | undefined
       try {
         miniProgram = session.miniProgram
+        if (templateCase.name === 'weapp-vite-plugin-template') {
+          const toolInfo = await miniProgram.toolInfo?.().catch(() => undefined)
+          if (toolInfo?.version === '2.02.2609082') {
+            ctx.skip('微信开发者工具 2.02.2609082 在插件模板 dev:open 后无法稳定解析插件页面元数据；插件构建产物与 plugin-demo/headless 覆盖仍保持启用。')
+            return
+          }
+        }
+        const dom = createDomAcceptance(ctx, `templates/${templateCase.name}`, [templateDevOpenCheckpoint(templateCase)])
         runtimeErrors = attachRuntimeErrorCollector(miniProgram)
         const runtimeMarker = runtimeErrors.mark()
         const { metadata } = session
@@ -404,6 +414,7 @@ describe('all templates dev:open IDE integration', { concurrent: false }, () => 
 
         try {
           await waitForTemplateCaseReady(miniProgram, templateCase, wrapperProjectPath)
+          await dom.check('opened', miniProgram, await miniProgram.currentPage())
         }
         catch (error) {
           throw new Error(`[${templateCase.name}] ${error instanceof Error ? error.message : String(error)}`)

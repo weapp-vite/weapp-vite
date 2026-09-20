@@ -171,6 +171,8 @@ export default defineComponent({
       }
 
       const result = buildResult('reactivity', checks, {
+        count: state.count,
+        doubled: computedValue.value,
         watchValues,
         watchEffectValues,
         shallowTriggered,

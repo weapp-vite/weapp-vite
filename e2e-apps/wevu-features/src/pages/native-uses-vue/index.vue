@@ -67,10 +67,18 @@ const _runE2E = runE2E
     </view>
 
     <NativeUsesVue
+      id="native-static-feature"
       title="原生组件引入 Vue 组件（static）"
       subtitle="native -> vue static chain"
       badge="static"
       note="这段文本由原生组件传递给 Vue 组件。"
+    />
+    <NativeUsesVue
+      id="native-dynamic-feature"
+      title="原生组件响应式更新 Vue 组件"
+      :subtitle="`count: ${count}`"
+      :badge="currentMode"
+      :note="`mode: ${currentMode}, count: ${count}`"
     />
   </view>
 </template>

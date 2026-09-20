@@ -1,4 +1,8 @@
 {
   "component": true,
-  "navigationBarTitleText": "Native Component Stateful HMR"
+  "navigationBarTitleText": "Native Component Stateful HMR",
+  "usingComponents": {
+    "native-counter": "../../components/native-counter/index",
+    "vue-counter": "../../components/vue-counter/index"
+  }
 }

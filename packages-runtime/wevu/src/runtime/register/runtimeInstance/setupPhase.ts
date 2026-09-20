@@ -15,8 +15,9 @@ import {
 } from '@weapp-core/constants'
 import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
+import { preserveSetupAccessor } from '../../define/setupResult'
 import { normalizeEmitEventName } from '../../emit'
-import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
+import { getCurrentInstance, getCurrentSetupContext, setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { runSetupFunction } from '../setup'
 import {
@@ -217,6 +218,17 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
 
   // 仅在同步 setup 执行期间暴露 current instance
   const instanceScope = effectScope(true)
+  const previousInstance = getCurrentInstance()
+  const previousSetupContext = getCurrentSetupContext()
+  const restoreSetupContext = () => {
+    // 仅当全局上下文仍属于本次 setup 时恢复父级；嵌套或重入 setup
+    // 可能已经建立了新的上下文，不能被旧调用覆盖。
+    if (getCurrentInstance() !== target || getCurrentSetupContext() !== context) {
+      return
+    }
+    setCurrentSetupContext(previousSetupContext)
+    setCurrentInstance(previousInstance)
+  }
   target[WEVU_EFFECT_SCOPE_KEY] = instanceScope
   setCurrentInstance(target)
   setCurrentSetupContext(context)
@@ -224,14 +236,18 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     const result = instanceScope.run(() => runSetupFunction(setup, props, context))
     let methodsChanged = false
     if (result && typeof result === 'object') {
+      const setupResult = result as Record<string, unknown>
       const runtimeSetupState = (runtime as any).setupState && typeof (runtime as any).setupState === 'object'
         ? (isReactive((runtime as any).setupState) ? toRaw((runtime as any).setupState) : (runtime as any).setupState)
         : Object.create(null)
-      Object.keys(result).forEach((key) => {
-        const val = (result as any)[key]
-        if (typeof val === 'function') {
-          ;(runtime.methods as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
-          ;(runtime.state as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
+      Object.keys(setupResult).forEach((key) => {
+        const val = setupResult[key]
+        const preservesAccessor = preserveSetupAccessor(runtimeSetupState, setupResult, key)
+        if (typeof val === 'function' && !preservesAccessor) {
+          const bound = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
+          ;(runtime.methods as any)[key] = bound
+          ;(runtime.state as any)[key] = bound
+          ;(runtimeSetupState as any)[key] = bound
           methodsChanged = true
         }
         else {
@@ -239,7 +255,9 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
             ;(runtime as any).__wevu_trackSetupReactiveKey?.(key)
           }
           ;(runtime.state as any)[key] = val
-          ;(runtimeSetupState as any)[key] = val
+          if (!preservesAccessor) {
+            ;(runtimeSetupState as any)[key] = val
+          }
         }
       })
     }
@@ -247,13 +265,9 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
       ;(runtime as any).__wevu_touchSetupMethodsVersion?.()
     }
   }
-  catch (error) {
-    instanceScope.stop()
-    target[WEVU_EFFECT_SCOPE_KEY] = undefined
-    throw error
-  }
   finally {
-    setCurrentSetupContext(undefined)
-    setCurrentInstance(undefined)
+    // current instance/context 只属于本次同步 setup 调用；异步 continuation
+    // 不能继续占用全局上下文，否则会污染随后挂载的组件。
+    restoreSetupContext()
   }
 }

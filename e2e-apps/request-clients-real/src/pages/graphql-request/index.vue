@@ -90,6 +90,11 @@ onLoad((query) => {
       <text id="graphql-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="graphql-request-count" class="line">requestCount = {{ state.requestCount }}</text>
       <text id="graphql-request-path" class="line">requestPath = {{ state.requestPath }}</text>
+      <text id="graphql-response-client" class="line">client = {{ state.response.client }}</text>
+      <text id="graphql-response-transport" class="line">transport = {{ state.response.transport }}</text>
+      <text id="graphql-response-method" class="line">method = {{ state.response.method }}</text>
+      <text id="graphql-response-operationName" class="line">operationName = {{ state.response.operationName }}</text>
+      <text id="graphql-response-event" class="line">event = {{ state.response.event }}</text>
       <button class="action" @tap="runCase">
         重新执行 GraphQL 校验
       </button>

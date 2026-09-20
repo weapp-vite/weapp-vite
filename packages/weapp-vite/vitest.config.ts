@@ -103,9 +103,12 @@ export default defineProject({
       groupOrder: 100,
     },
     dir: packageDir,
-    include: projectTestIncludes,
     exclude: projectTestExcludes,
     alias: [
+      {
+        find: /^@weapp-core\/constants$/,
+        replacement: path.resolve(packageDir, '../..', '@weapp-core/constants/src/index.ts'),
+      },
       {
         find: '@/',
         replacement: `${path.resolve(packageDir, './src')}/`,
@@ -125,10 +128,6 @@ export default defineProject({
       {
         find: /^wevu\/compiler$/,
         replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu-compiler/src/index.ts'),
-      },
-      {
-        find: /^wevu\/jsx-runtime$/,
-        replacement: path.resolve(packageDir, '../..', 'packages-runtime/wevu/src/jsx-runtime.ts'),
       },
       {
         find: /^wevu\/store$/,

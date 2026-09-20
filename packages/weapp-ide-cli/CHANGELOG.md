@@ -1,5 +1,55 @@
 # weapp-ide-cli
 
+## 6.1.5
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- 修复开发态日志桥将微信开发者工具启动超时截断为连接探针超时的问题，保留调用方的启动预算，避免启动中断后重试导致自动化端口冲突。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.4
+  - @weapp-core/shared@3.2.3
+  - @weapp-vite/devtools-runtime@0.4.20
+  - @weapp-vite/miniprogram-automator@1.2.19
+
+## 6.1.4
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.3
+  - @weapp-core/shared@3.2.2
+  - @weapp-vite/devtools-runtime@0.4.19
+  - @weapp-vite/miniprogram-automator@1.2.18
+
+## 6.1.3
+
+### Patch Changes
+
+- 修复后台控制台桥接在 DevTools 尚未就绪时反复输出终局连接错误的问题。连接探针保留调试诊断，启动失败仍正常上报，交互命令的错误提示保持完整。
+
+- 修复首次打开微信开发者工具项目前预建不完整信任记录的问题。仅更新 IDE 已完成导入的项目缓存，保留项目能力配置，避免缺失 `attr.setting` 导致编译失败和自动化连接超时。
+
+- 修复微信开发者工具已登录时 `open` 被误判为登录失效的问题：已知项目路径时优先通过 HTTP `/open` 打开，HTTP 服务不可用时回退官方 CLI。
+
+- 为开发者工具 HTTP 命令和 engine build 增加可选 AbortSignal，取消时停止请求、轮询等待和 CLI 回退，取消或超时终止 CLI 时同步清理其子进程树，等待正在执行的请求或子进程结束后返回，并保留原始取消原因以便调用方准确处理超时与重试。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.2
+  - @weapp-vite/devtools-runtime@0.4.18
+  - @weapp-vite/miniprogram-automator@1.2.17
+
 ## 6.1.2
 
 ### Patch Changes

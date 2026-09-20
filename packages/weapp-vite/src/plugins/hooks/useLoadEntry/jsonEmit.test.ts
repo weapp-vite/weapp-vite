@@ -175,4 +175,31 @@ describe('createJsonEmitManager', () => {
       rules: [{ action: 'allow', page: '*' }],
     })
   })
+
+  it('emits the same independent package decision used by the bundle scanner', () => {
+    const manager = createJsonEmitManager({
+      platform: 'weapp',
+      weappViteConfig: {
+        subPackages: {
+          packageA: { independent: true },
+          packageB: { independent: true },
+        },
+      },
+    } as any)
+    const source = {
+      pages: ['pages/index/index'],
+      subPackages: [
+        { root: 'packageA', pages: ['pages/settings/index'] },
+        { root: 'packageB', pages: ['pages/workspace/index'], independent: false },
+      ],
+    }
+
+    manager.register({ type: 'app', fileName: 'app.json', json: source })
+
+    expect(manager.map.get('app.json')?.entry.json.subPackages).toEqual([
+      { root: 'packageA', pages: ['pages/settings/index'], independent: true },
+      { root: 'packageB', pages: ['pages/workspace/index'], independent: false },
+    ])
+    expect(source.subPackages[0]).not.toHaveProperty('independent')
+  })
 })

@@ -1,4 +1,5 @@
 import {
+  WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_ON_BEFORE_UPDATE_HOOK,
   WEVU_ON_UPDATED_HOOK,
 } from '@weapp-core/constants'
@@ -116,6 +117,7 @@ export default defineComponent({
   },
   setup(_props, ctx) {
     const hookLogs = ref<string[]>([])
+    const beforeUnmountCallbacks = computed(() => hookLogs.value.filter(name => name === 'onBeforeUnmount').length)
     const setupInstance = getCurrentInstance()
     const setupContext = getCurrentSetupContext<any>()
     const attrs = useAttrs()
@@ -394,6 +396,8 @@ export default defineComponent({
       callHookList(target, 'onDeactivated', [])
       callHookList(target, WEVU_ON_BEFORE_UPDATE_HOOK, [])
       callHookList(target, WEVU_ON_UPDATED_HOOK, [])
+      // API 矩阵显式模拟派发；真正卸载时序由独立生命周期用例覆盖。
+      callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK, [])
       callHookList(target, 'onErrorCaptured', [new Error('api-matrix-error')])
       callHookList(target, 'onError', [new Error('api-matrix-error')])
 
@@ -504,6 +508,12 @@ export default defineComponent({
 
     return {
       runE2E,
+      reactiveState,
+      derived,
+      custom,
+      modelRef,
+      storeCount: apiStoreRefs.value,
+      beforeUnmountCallbacks,
     }
   },
 })

@@ -66,7 +66,8 @@ export function resolveWxmlEmitTargets(options: {
 
   const isAllowedTarget = (id: string, fileName: string) => {
     if (subPackageMeta) {
-      return fileName.startsWith(subPackageMeta.subPackage.root)
+      const root = normalizeWatchPath(subPackageMeta.subPackage.root).replace(/\/+$/, '')
+      return fileName === root || fileName.startsWith(`${root}/`)
     }
     if (buildTarget === 'plugin') {
       const pluginRoot = configService.absolutePluginRoot

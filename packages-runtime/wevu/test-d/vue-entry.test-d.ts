@@ -1,12 +1,13 @@
-import type { ComponentOptionsMixin, ComponentProvideOptions, ComponentPublicInstance, DefineComponent, PublicProps } from 'vue'
-import type { ExtractDefaultPropTypes, ExtractPropTypes } from 'wevu'
-import { expectError, expectType } from 'tsd'
+import type { ComponentProvideOptions } from 'vue'
+import type { ComponentOptionsMixin, ComponentPublicInstance, DefineComponent, ExtractDefaultPropTypes, ExtractPropTypes, PublicProps } from 'wevu'
+import { expectAssignable, expectError, expectType } from 'tsd'
 
-interface PropsOptions {
-  msg: { type: StringConstructor, default: 'hi' }
-  count: { type: NumberConstructor, required: true }
-  flag: BooleanConstructor
-}
+const _propsOptions = {
+  msg: { type: String, default: 'hi' },
+  count: { type: Number, required: true },
+  flag: Boolean,
+} as const
+type PropsOptions = typeof _propsOptions
 
 type Props = ExtractPropTypes<PropsOptions>
 type Defaults = ExtractDefaultPropTypes<PropsOptions>
@@ -40,7 +41,7 @@ type ExposedDemo = DefineComponent<
       open: () => void
     }
   },
-  HTMLElementTagNameMap['view']
+  HTMLElement
 >
 
 declare const instance: InstanceType<Demo>
@@ -50,18 +51,22 @@ declare const publicInstance: ComponentPublicInstance
 expectType<string | undefined>(instance.$props.msg)
 expectType<number>(instance.$props.count)
 expectType<boolean | undefined>(instance.$props.flag)
-expectType<Record<string, any>>(instance.$slots)
-expectType<(event: string, detail?: any, options?: any) => void>(instance.$emit)
+expectAssignable<Record<string, any>>(instance.$slots)
+expectType<void>(instance.$emit('change', { count: 1 }, 'extra'))
 expectError(instance.$props.nonexistent)
 
 expectType<Record<string, any>>(publicInstance.$props)
 expectType<Record<string, any>>(publicInstance.$slots)
-expectType<(event: string, detail?: any, options?: any) => void>(publicInstance.$emit)
+expectType<void>(publicInstance.$emit('change', { count: 1 }, 'extra'))
 
 expectType<() => void>(exposedInstance.open)
 expectError(exposedInstance.close)
 expectType<() => void>(exposedInstance.$refs.panel.open)
-expectType<HTMLElementTagNameMap['view']>(exposedInstance.$el)
+expectType<HTMLElement>(exposedInstance.$el)
 
-expectType<Props>({} as Props)
-expectType<Defaults>({} as Defaults)
+declare const props: Props
+declare const defaults: Defaults
+expectType<string>(props.msg)
+expectType<number>(props.count)
+expectType<string>(defaults.msg)
+expectError(defaults.count)

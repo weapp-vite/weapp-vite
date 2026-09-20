@@ -1,6 +1,6 @@
-import type { ModelBindingPayload, WatchStopHandle } from '@/index'
+import type { ModelBindingPayload, WatchStopHandle } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { createApp } from '@/index'
+import { createApp } from 'wevu'
 
 const app = createApp({
   data: () => ({

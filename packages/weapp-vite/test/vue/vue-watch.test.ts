@@ -2,7 +2,7 @@ import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { callPluginHook } from '../pluginHook'
-import { createTestModuleGraphService } from './moduleGraph'
+import { createTestModuleGraphService, createTestRuntimeState } from './moduleGraph'
 
 vi.mock('wevu/compiler', async () => {
   const actual = await vi.importActual<typeof import('wevu/compiler')>('wevu/compiler')
@@ -76,11 +76,7 @@ describe('vue transform plugin: watch .vue files', () => {
           },
         },
       },
-      runtimeState: {
-        scan: {
-          isDirty: false,
-        },
-      },
+      runtimeState: createTestRuntimeState(),
     } as any)
 
     const bundle: Record<string, any> = {}
@@ -96,7 +92,9 @@ describe('vue transform plugin: watch .vue files', () => {
 
     expect(watchedFiles).toEqual([])
     expect(emittedFiles.some(x => x?.fileName?.endsWith('.wxml'))).toBeTruthy()
-    expect(emittedFiles.some(x => x?.fileName?.endsWith('.json'))).toBeFalsy()
+    expect(emittedFiles.filter(x => x?.fileName?.endsWith('.json'))).toEqual([
+      expect.objectContaining({ fileName: 'pages/vue-events/index.json', source: '{}' }),
+    ])
   })
 
   it('does not duplicate virtual module resolved .vue files as watch inputs', async () => {
@@ -131,11 +129,7 @@ describe('vue transform plugin: watch .vue files', () => {
         loadAppEntry: async () => ({ json: { pages: ['pages/vue-events/index'] } }),
         loadSubPackages: () => [],
       },
-      runtimeState: {
-        scan: {
-          isDirty: false,
-        },
-      },
+      runtimeState: createTestRuntimeState(),
     } as any)
 
     await callPluginHook(plugin.transform as any, {

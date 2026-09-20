@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckout'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../apps/tdesign-miniprogram-starter-retail')
@@ -33,19 +34,7 @@ const ROUTE_QUERY_OVERRIDES = new Map<string, string>([
   ['pages/order/invoice/index', 'orderNo=132381532610540875'],
 ])
 
-const ORDER_CONFIRM_GOODS_REQUEST_LIST = JSON.stringify([
-  {
-    quantity: 1,
-    storeId: 1000,
-    uid: 'u1000',
-    saasId: 's1000',
-    spuId: 'spu1000',
-    goodsName: '测试商品',
-    skuId: 'sku1000',
-    storeName: '测试门店',
-    roomId: 'r1000',
-  },
-])
+const ORDER_CONFIRM_GOODS_REQUEST_LIST = JSON.stringify(RETAIL_CHECKOUT_GOODS)
 
 function normalizeSegment(value: string) {
   return value.replace(/^\/+/, '').replace(/\/+$/, '')

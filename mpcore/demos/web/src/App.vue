@@ -37,6 +37,7 @@ const workbench = useWorkbench()
           <DevicePreview
             :route="workbench.currentRoute.value"
             :markup="workbench.previewMarkup.value"
+            :style-text="workbench.previewStyles.value"
             :viewport-height="workbench.viewportSize.value.height"
             :viewport-width="workbench.viewportSize.value.width"
             @back="workbench.run(() => workbench.session.value?.navigateBack())"

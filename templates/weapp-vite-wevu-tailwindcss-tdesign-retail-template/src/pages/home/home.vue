@@ -179,8 +179,8 @@ async function loadGoodsList(fresh = false) {
   }
 }
 
-function goodListClickHandle(e: any) {
-  const index = Number(e?.detail?.index)
+function goodListClickHandle(payload: { index?: number }) {
+  const index = Number(payload?.index)
   if (!Number.isFinite(index) || index < 0) {
     return
   }

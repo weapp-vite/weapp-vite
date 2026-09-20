@@ -19,12 +19,12 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<{
-  id?: string
+  cardId?: string
   data?: GoodsCardData | null
   currency?: string
   thresholds?: number[]
 }>(), {
-  id: '',
+  cardId: '',
   data: () => ({ id: '' }),
   currency: '¥',
   thresholds: () => [],
@@ -42,7 +42,7 @@ const isValidityLinePrice = computed(() => {
   const current = goods.value
   return !(current.originPrice && current.price && current.originPrice < current.price)
 })
-const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}`)
+const independentID = ref(props.cardId || `goods-card-${~~(Math.random() * 10 ** 8)}`)
 const { currency } = toRefs(props)
 const intersectionObserver = useElementIntersectionObserver({
   enabled: () => !!independentID.value && !!props.thresholds?.length,
@@ -65,12 +65,10 @@ function clickThumbHandle() {
   })
 }
 
-function addCartHandle(e: any) {
-  const { id } = e.currentTarget
-  const { id: cardID } = e.currentTarget.dataset
+function addCartHandle() {
+  const cardID = independentID.value
   emit('add-cart', {
-    ...e.detail,
-    id,
+    id: `${cardID}-cart`,
     cardID,
     goods: goods.value,
   })
@@ -94,7 +92,7 @@ function intersectionObserverCB() {
 }
 
 watch(
-  () => props.id,
+  () => props.cardId,
   (id) => {
     genIndependentID(id || '')
   },
@@ -168,16 +166,14 @@ defineComponentJson({
             :price="goods.originPrice"
             type="delthrough"
           />
-          <t-icon
+          <view
             :id="`${independentID}-cart`"
             class="goods-card__add-cart order-3 m-[auto_0_0_auto] absolute bottom-0 right-0"
-            prefix="wr"
-            name="cartAdd"
             :data-id="independentID"
-            size="48rpx"
-            color="#FA550F"
             @tap.stop="addCartHandle"
-          />
+          >
+            <t-icon prefix="wr" name="cartAdd" size="48rpx" color="#FA550F" />
+          </view>
         </view>
       </view>
     </view>

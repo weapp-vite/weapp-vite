@@ -31,13 +31,13 @@
   align-items: center;
   min-height: 56rpx;
   padding: 8rpx 12rpx;
-  border-top: 1rpx solid #e2e8f0;
   font-size: 22rpx;
   color: #0f172a;
+  border-top: 1rpx solid #e2e8f0;
 }
 
 .issue627-native-row-head {
-  border-top: 0;
   font-weight: 700;
   background: #e2e8f0;
+  border-top: 0;
 }

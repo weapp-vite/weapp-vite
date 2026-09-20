@@ -242,18 +242,25 @@ describe('createVueTransformPlugin lifecycle', () => {
     }))
   })
 
-  it('delegates generateBundle output emission', async () => {
+  it.each([
+    ['build', false, false],
+    ['build', true, false],
+    ['serve', false, false],
+    ['serve', true, true],
+  ] as const)('delegates output ownership for %s with bundled dev %s', async (command, bundledDev, expected) => {
     const { createVueTransformPlugin } = await import('./index')
     const plugin = createVueTransformPlugin({
       configService: { cwd: '/project' },
     } as any)
 
+    await plugin.configResolved!.call({} as any, { command, experimental: { bundledDev } } as any)
     await plugin.generateBundle!.call({ bundleCtx: true } as any, {}, { 'app.js': {} } as any)
 
     expect(emitVueBundleAssetsMock).toHaveBeenCalledTimes(1)
     expect(emitVueBundleAssetsMock).toHaveBeenCalledWith({ 'app.js': {} }, expect.objectContaining({
       pluginCtx: { bundleCtx: true },
       ctx: expect.any(Object),
+      isBundledDev: expected,
     }))
   })
 

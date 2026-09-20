@@ -1,4 +1,5 @@
 import type { Expression } from '@weapp-vite/ast/babelTypes'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -20,6 +21,11 @@ export interface ScopedSlotComponentAsset {
   bindingManifest: WevuBindingManifestV1
   componentGenerics?: Record<string, true>
   classStyleWxs?: boolean
+  inlineExpressions?: InlineExpressionAsset[]
+  templateRefs?: TemplateRefBinding[]
+  layoutHosts?: LayoutHostBinding[]
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
 }
 
 /**
@@ -39,12 +45,23 @@ export interface InlineExpressionScopeResolverAsset {
 }
 
 /**
+ * 内联表达式生成函数的参数名。
+ */
+export interface InlineExpressionParameterNames {
+  context: string
+  scope: string
+  event: string
+}
+
+/**
  * 内联表达式资源描述。
  */
 export interface InlineExpressionAsset {
   id: string
   expression: string
   scopeKeys: string[]
+  /** @internal */
+  parameterNames: InlineExpressionParameterNames
   indexBindings?: InlineExpressionIndexBindingAsset[]
   scopeResolvers?: InlineExpressionScopeResolverAsset[]
 }
@@ -65,6 +82,8 @@ export interface TemplateCompileResult {
   templateRefs?: TemplateRefBinding[]
   layoutHosts?: LayoutHostBinding[]
   inlineExpressions?: InlineExpressionAsset[]
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   functionPropPaths?: string[]
   hasSlotOutlet?: boolean
 }
@@ -107,6 +126,7 @@ export interface TransformContext {
   mustacheInterpolation: MustacheInterpolationMode
   formatWxml: boolean
   classStyleBindings: ClassStyleBinding[]
+  bindingConditions?: BindingCondition[]
   classStyleWxs: boolean
   classStyleWxsExtension?: string
   classStyleWxsSrc?: string
@@ -134,6 +154,8 @@ export interface ForParseResult {
   listExp?: string
   rawListExp?: string
   listExpAst?: Expression
+  /** 保留祖先循环原始项访问，供 key 投影计算遍历使用。 */
+  rawListExpAst?: Expression
   projectedListExp?: string
   projectedListExpAst?: Expression
   item?: string
@@ -141,6 +163,12 @@ export interface ForParseResult {
   index?: string
   key?: string
   itemAliases?: Record<string, string>
+  /** 需要在逻辑层完整执行的原始循环项模式。 */
+  itemPattern?: string
+  /** 当前循环项模式是否需要投影，避免模板层近似执行。 */
+  itemPatternRequiresProjection?: boolean
+  /** 无法等价降级的循环项模式诊断。 */
+  itemPatternError?: string
 }
 
 /**
@@ -297,6 +325,17 @@ export type ObjectLiteralBindMode = 'runtime' | 'inline'
 export type MustacheInterpolationMode = 'compact' | 'spaced'
 
 /**
+ * 运行时绑定的条件分支及其循环作用域。
+ */
+export interface BindingCondition {
+  expAst: Expression
+  /** 键投影遍历原始项时使用的条件。 */
+  rawExpAst?: Expression
+  /** 条件必须在对应循环深度进入下一层列表之前求值。 */
+  forDepth: number
+}
+
+/**
  * class/style 绑定信息。
  */
 export interface ClassStyleBinding {
@@ -306,6 +345,7 @@ export interface ClassStyleBinding {
   expAst?: Expression
   errorFallback?: string
   forStack: ForParseResult[]
+  conditions?: BindingCondition[]
 }
 
 /**

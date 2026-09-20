@@ -1,7 +1,7 @@
 <script lang="ts">
-import { computed, ref } from 'wevu'
+import { computed, defineComponent, ref } from 'wevu'
 
-export default {
+export default defineComponent({
   setup() {
     const slotName = ref<'header' | 'footer'>('header')
     const counter = ref(0)
@@ -33,7 +33,7 @@ export default {
       ],
     }
   },
-}
+})
 </script>
 
 <template>

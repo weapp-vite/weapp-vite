@@ -31,6 +31,7 @@ import {
   createRequestGlobalsPreludeCode,
   resolveRequestGlobalsInstallerImport,
 } from './requestGlobals'
+import { collectRequestGlobalsInstallerDependencies } from './requestGlobals/chunkGraph'
 
 interface ResolvedAppPreludeOptions {
   enabled: boolean
@@ -250,6 +251,9 @@ export function injectAppPreludeCode(
   if (!options.enabled) {
     return preservedRequestGlobalsInstallerChunks
   }
+  const installerDependencies = requestGlobalsPreludeOptions.enabled
+    ? collectRequestGlobalsInstallerDependencies(bundle, requestGlobalsPreludeOptions.installerChunks.keys())
+    : new Set<string>()
   const entryChunkFileNames = options.mode === 'entry' ? collectAppPreludeEntryChunkFileNames(state) : undefined
   if (options.mode === 'require' && (appPreludeCode || requestGlobalsPreludeOptions.enabled)) {
     preservedRequestGlobalsInstallerChunks = emitAppPreludeRequireAssets(bundle, appPreludeCode, state, requestGlobalsPreludeOptions, emitFile)
@@ -259,6 +263,9 @@ export function injectAppPreludeCode(
       continue
     }
     const chunk = output as OutputChunk
+    if (installerDependencies.has(toPosixPath(chunk.fileName))) {
+      continue
+    }
     if (chunk.code.includes(APP_PRELUDE_CHUNK_MARKER) || chunk.code.includes(APP_PRELUDE_REQUIRE_MARKER)) {
       continue
     }

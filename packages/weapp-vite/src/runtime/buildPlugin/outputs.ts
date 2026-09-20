@@ -57,6 +57,16 @@ export function resetEmittedOutputCaches(
   runtimeState.wxml.emittedCode.clear()
 }
 
+export function shouldCleanOutputs(
+  configService: NonNullable<MutableCompilerContext['configService']>,
+  phase: 'startup' | 'rebuild',
+) {
+  if (configService.inlineConfig.build?.emptyOutDir === false) {
+    return false
+  }
+  return phase === 'rebuild' || !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
+}
+
 export async function cleanOutputs(
   configService: NonNullable<MutableCompilerContext['configService']>,
 ) {

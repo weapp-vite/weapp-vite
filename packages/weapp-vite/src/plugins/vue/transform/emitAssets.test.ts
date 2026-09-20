@@ -63,6 +63,26 @@ describe('emitAssets', () => {
     ])
   })
 
+  it('keeps existing page sidecar options when emitting a default empty config', () => {
+    const emitter = createEmitter()
+    const bundle = {
+      'pages/home/index.json': {
+        type: 'asset',
+        source: JSON.stringify({ navigationBarTitleText: '首页', usingComponents: { card: '/components/card/index' } }),
+      },
+    }
+    emitSfcJsonAsset(emitter.ctx, bundle, 'pages/home/index', {}, {
+      defaultConfig: {},
+      mergeExistingAsset: true,
+      kind: 'page',
+    })
+    expect(JSON.parse(bundle['pages/home/index.json'].source)).toEqual({
+      navigationBarTitleText: '首页',
+      usingComponents: { card: '/components/card/index' },
+    })
+    expect(emitter.emitFile).not.toHaveBeenCalled()
+  })
+
   it('finalizes merged json config after combining the existing asset', () => {
     const emitter = createEmitter()
     const bundle: Record<string, any> = {

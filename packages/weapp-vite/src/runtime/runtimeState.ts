@@ -2,7 +2,7 @@ import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
 import type { ResolvedId, RolldownOutput } from 'rolldown'
-import type { VueSfcBlockSignatures } from 'wevu/compiler'
+import type { ComponentStyleOptions, VueSfcBlockSignatures } from 'wevu/compiler'
 import type { GlassEaselDiagnostic } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
@@ -24,6 +24,11 @@ interface AutoRoutesCandidateState {
   hasScript: boolean
   hasTemplate: boolean
   jsonPath?: string
+}
+
+interface VueEntryStyleBindings {
+  sources: string[]
+  expressions?: string[]
 }
 
 interface LibEntryState {
@@ -128,6 +133,7 @@ export interface RuntimeState {
       wevuInternalRuntimeFileNames?: Map<string, string>
     }
     hmr: {
+      componentPageStyleOptions: Map<string, ComponentStyleOptions>
       loadedEntrySet: Set<string>
       dirtyEntrySet: Set<string>
       dirtyEntryReasons: Map<string, 'direct' | 'dependency' | 'metadata'>
@@ -136,6 +142,7 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       vueEntryHasTemplate: Map<string, boolean>
       vueEntrySfcSignatures: Map<string, VueSfcBlockSignatures>
+      vueEntryStyleBindings: Map<string, VueEntryStyleBindings>
       vueEntryTailwindContentSignatures: Map<string, string>
       vueEntryTailwindTemplateContentSignatures: Map<string, string>
       vueEntryTailwindScriptContentSignatures: Map<string, string>
@@ -368,6 +375,7 @@ export function createRuntimeState(): RuntimeState {
         wevuInternalRuntimeFileNames: new Map<string, string>(),
       },
       hmr: {
+        componentPageStyleOptions: new Map<string, ComponentStyleOptions>(),
         loadedEntrySet: new Set<string>(),
         dirtyEntrySet: new Set<string>(),
         dirtyEntryReasons: new Map<string, 'direct' | 'dependency' | 'metadata'>(),
@@ -376,6 +384,7 @@ export function createRuntimeState(): RuntimeState {
         entriesMap: new Map<string, Entry | undefined>(),
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntrySfcSignatures: new Map<string, VueSfcBlockSignatures>(),
+        vueEntryStyleBindings: new Map<string, VueEntryStyleBindings>(),
         vueEntryTailwindContentSignatures: new Map<string, string>(),
         vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),

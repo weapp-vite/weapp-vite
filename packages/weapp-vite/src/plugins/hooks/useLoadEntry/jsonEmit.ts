@@ -34,6 +34,7 @@ export function createJsonEmitManager(
             buildScope: weappViteConfig.buildScope,
             platform: configService.platform,
             routeRules: weappViteConfig.routeRules,
+            subPackages: weappViteConfig.subPackages,
           }),
         }
       : entry

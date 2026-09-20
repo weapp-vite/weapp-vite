@@ -94,6 +94,7 @@ onReady(scheduleRouterSubReadyStateSync)
     </view>
 
     <RouterOriginProbe
+      id="router-origin-probe"
       ref="routerOriginProbe"
       title="component router origin probe"
     />

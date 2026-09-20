@@ -18,18 +18,18 @@ definePageJson(() => ({
       <view class="section-title">
         各种用法
       </view>
-      <t-row gutter="8">
-        <t-col span="4">
+      <t-row :gutter="8">
+        <t-col :span="4">
           <view style="padding: 16rpx; text-align: center; background: #eef2ff; border-radius: 12rpx">
             t-col
           </view>
         </t-col>
-        <t-col span="4">
+        <t-col :span="4">
           <view style="padding: 16rpx; text-align: center; background: #eef2ff; border-radius: 12rpx">
             t-col
           </view>
         </t-col>
-        <t-col span="4">
+        <t-col :span="4">
           <view style="padding: 16rpx; text-align: center; background: #eef2ff; border-radius: 12rpx">
             t-col
           </view>

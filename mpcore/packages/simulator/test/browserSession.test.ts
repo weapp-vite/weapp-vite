@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFiles,
@@ -361,7 +361,7 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('index')
   })
 
-  it('exposes the active page stack before initial page lifecycles run', () => {
+  it('exposes the active page stack before initial page lifecycles run', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -392,7 +392,7 @@ Page({
     const session = createBrowserHeadlessSession({ files })
 
     const page = session.reLaunch('/pages/index/index')
-
+    await vi.waitFor(() => expect(page.data.lifecycleStacks).toHaveLength(3))
     expect(page.data.lifecycleStacks).toEqual([
       { name: 'load', routes: ['pages/index/index'] },
       { name: 'show', routes: ['pages/index/index'] },
@@ -400,7 +400,7 @@ Page({
     ])
   })
 
-  it('runs Component() pages in browser simulator runtime', () => {
+  it('runs Component() pages in browser simulator runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/next/index'] })],
       ['app.js', 'App({})'],
@@ -454,6 +454,7 @@ Component({
 
     const session = createBrowserHeadlessSession({ files })
     const page = session.reLaunch('/pages/index/index?from=browser')
+    await vi.waitFor(() => expect(page.data.lifecycleLog).toContain('ready'))
     session.triggerRouteDone({ from: 'browser' })
     session.triggerResize({ size: { windowWidth: 412 } })
     page.openNext()
@@ -2016,6 +2017,173 @@ Page({
     ])
   })
 
+  it('aligns browser app transitions with native wx subscriptions and stable option snapshots', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({
+        pages: ['pages/index/index', 'pages/detail/index'],
+      })],
+      ['app.js', `
+const lifecycle = {
+  appHides: [],
+  appLaunches: [],
+  appShows: [],
+  hideEvents: [],
+  launchShows: [],
+  showEvents: [],
+  timeline: []
+}
+const showListener = (options) => {
+  lifecycle.showEvents.push(options)
+  lifecycle.timeline.push('wx:onAppShow:' + JSON.stringify(options))
+}
+const hideListener = (options) => {
+  lifecycle.hideEvents.push(options)
+  lifecycle.timeline.push('wx:onAppHide:' + JSON.stringify(options))
+}
+wx.onAppShow(showListener)
+wx.onAppShow(showListener)
+wx.onAppHide(hideListener)
+wx.onAppHide(hideListener)
+App({
+  globalData: { lifecycle },
+  onLaunch(options) {
+    lifecycle.appLaunches.push(options)
+    lifecycle.timeline.push('app:onLaunch:' + JSON.stringify(options))
+    wx.onAppShow(options => lifecycle.launchShows.push(options))
+  },
+  onShow(options) {
+    lifecycle.appShows.push(options)
+    lifecycle.timeline.push('app:onShow:' + JSON.stringify(options))
+  },
+  onHide(options) {
+    lifecycle.appHides.push(options)
+    lifecycle.timeline.push('app:onHide:' + JSON.stringify(options))
+  },
+  removeListeners() {
+    wx.offAppShow(showListener)
+    wx.offAppHide(hideListener)
+  },
+  clearListeners() {
+    wx.offAppShow()
+    wx.offAppHide()
+  }
+})
+`],
+      ['pages/index/index.js', `
+Page({
+  onLoad() {
+    getApp().globalData.lifecycle.timeline.push('page:index:onLoad')
+    this.setData({
+      appShowSupported: wx.canIUse('onAppShow'),
+      appHideSupported: wx.canIUse('onAppHide')
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>index</view>'],
+      ['pages/detail/index.js', 'Page({})'],
+      ['pages/detail/index.wxml', '<view>detail</view>'],
+    ])
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index?from=entry')
+    const app = session.getApp()!
+    const lifecycle = app.globalData.lifecycle
+    const launchOptions = session.getLaunchOptions()
+    const pageLoadIndex = lifecycle.timeline.indexOf('page:index:onLoad')
+
+    expect(page.data.appShowSupported).toBe(true)
+    expect(page.data.appHideSupported).toBe(true)
+    expect(lifecycle.appLaunches).toEqual([launchOptions])
+    expect(lifecycle.showEvents).toEqual([launchOptions, launchOptions])
+    expect(lifecycle.launchShows).toEqual([launchOptions])
+    const launchOptionsJson = JSON.stringify(launchOptions)
+    expect(lifecycle.timeline.slice(0, pageLoadIndex)).toEqual([
+      `app:onLaunch:${launchOptionsJson}`,
+      `app:onShow:${launchOptionsJson}`,
+      `wx:onAppShow:${launchOptionsJson}`,
+      `wx:onAppShow:${launchOptionsJson}`,
+    ])
+
+    const hideOptions = { reason: 1 as const }
+    const showOptions = {
+      path: 'pages/detail/index',
+      query: { from: 'resume' },
+      referrerInfo: {
+        appId: 'wx-browser-resumer',
+        extraData: {},
+      },
+      scene: 1044,
+    }
+    const warmTimelineStart = lifecycle.timeline.length
+    session.triggerAppHide(hideOptions)
+    session.triggerAppShow(showOptions)
+
+    expect(lifecycle.appHides.at(-1)).toBe(hideOptions)
+    expect(lifecycle.hideEvents).toHaveLength(2)
+    expect(lifecycle.hideEvents.at(-2)).toBe(hideOptions)
+    expect(lifecycle.hideEvents.at(-1)).toBe(hideOptions)
+    expect(lifecycle.appShows.at(-1)).toBe(showOptions)
+    expect(lifecycle.showEvents).toHaveLength(4)
+    expect(lifecycle.showEvents.at(-2)).toBe(showOptions)
+    expect(lifecycle.showEvents.at(-1)).toBe(showOptions)
+    expect(lifecycle.launchShows.at(-1)).toBe(showOptions)
+    expect(lifecycle.timeline.slice(warmTimelineStart)).toEqual([
+      `wx:onAppHide:${JSON.stringify(hideOptions)}`,
+      `wx:onAppHide:${JSON.stringify(hideOptions)}`,
+      `app:onHide:${JSON.stringify(hideOptions)}`,
+      `wx:onAppShow:${JSON.stringify(showOptions)}`,
+      `wx:onAppShow:${JSON.stringify(showOptions)}`,
+      `app:onShow:${JSON.stringify(showOptions)}`,
+    ])
+    expect(session.getLaunchOptions()).toEqual(launchOptions)
+    expect(session.getEnterOptions()).toEqual(showOptions)
+
+    session.navigateTo('/pages/detail/index?from=navigation')
+    expect(lifecycle.appLaunches).toHaveLength(1)
+    expect(lifecycle.appShows).toHaveLength(2)
+    expect(lifecycle.showEvents).toHaveLength(4)
+    expect(lifecycle.appHides).toHaveLength(1)
+    expect(lifecycle.hideEvents).toHaveLength(2)
+
+    const removedHideOptions = { reason: 0 as const }
+    const removedTimelineStart = lifecycle.timeline.length
+    app.removeListeners()
+    session.triggerAppHide(removedHideOptions)
+    session.triggerAppShow()
+    expect(lifecycle.timeline.slice(removedTimelineStart)).toEqual([
+      `app:onHide:${JSON.stringify(removedHideOptions)}`,
+      `app:onShow:${JSON.stringify(showOptions)}`,
+    ])
+    expect(lifecycle.appHides).toHaveLength(2)
+    expect(lifecycle.appHides.at(-1)).toBe(removedHideOptions)
+    expect(lifecycle.hideEvents).toHaveLength(2)
+    expect(lifecycle.appShows).toHaveLength(3)
+    expect(lifecycle.appShows.at(-1)).toEqual(showOptions)
+    expect(lifecycle.showEvents).toHaveLength(4)
+    expect(lifecycle.launchShows).toHaveLength(3)
+
+    const clearHideOptions = { reason: 3 as const }
+    const clearTimelineStart = lifecycle.timeline.length
+    app.clearListeners()
+    session.triggerAppHide(clearHideOptions)
+    session.triggerAppShow()
+    expect(lifecycle.timeline.slice(clearTimelineStart)).toEqual([
+      `app:onHide:${JSON.stringify(clearHideOptions)}`,
+      `app:onShow:${JSON.stringify(showOptions)}`,
+    ])
+    expect(lifecycle.appHides).toHaveLength(3)
+    expect(lifecycle.appHides.at(-1)).toBe(clearHideOptions)
+    expect(lifecycle.hideEvents).toHaveLength(2)
+    expect(lifecycle.appShows).toHaveLength(4)
+    expect(lifecycle.appShows.at(-1)).toEqual(showOptions)
+    expect(lifecycle.showEvents).toHaveLength(4)
+    expect(lifecycle.launchShows).toHaveLength(3)
+
+    session.close()
+    expect(lifecycle.appHides).toHaveLength(3)
+    expect(() => session.triggerAppShow()).toThrowError()
+  })
+
   it('supports deterministic location, getNetworkType and network status change listeners in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
@@ -2827,8 +2995,8 @@ Component({
 
     const page = session.getCurrentPages()[0]
     expect(page?.data.snapshot).toEqual({
-      currentTarget: expect.objectContaining({ wvI0: '0' }),
-      target: expect.objectContaining({ wvI0: '0' }),
+      currentTarget: expect.objectContaining({ wvI0: 0 }),
+      target: expect.objectContaining({ wvI0: 0 }),
     })
   })
 
@@ -2978,7 +3146,7 @@ Component({
     const page = session.reLaunch('/pages/lab/index')
     let rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('"value":"stable"')
-    expect(rendered.wxml).not.toContain('"oldValue"')
+    expect(rendered.wxml).toContain('"oldValue":""')
 
     page.flip()
     rendered = session.renderCurrentPage()
@@ -4185,26 +4353,26 @@ Component({
     }
   },
   data: {
-    readyState: 'cold'
+    readyState: 'cold',
+    lifecycleTrace: ''
   },
   lifetimes: {
     created() {
-      this.setData({ readyState: 'created' })
+      this.setData({ readyState: 'created', lifecycleTrace: 'created' })
     },
     ready() {
-      this.setData({ readyState: 'ready' })
+      this.setData({ readyState: 'ready', lifecycleTrace: this.data.lifecycleTrace + ':ready' })
     }
   }
 })
 `],
-      ['components/mini-badge/index.wxml', '<view>{{label}}</view><view>{{readyState}}</view>'],
+      ['components/mini-badge/index.wxml', '<view>{{label}}</view><view>{{readyState}}</view><view>{{lifecycleTrace}}</view>'],
     ])
 
     const session = createBrowserHeadlessSession({ files })
     session.reLaunch('/pages/lab/index')
     let rendered = session.renderCurrentPage()
-    expect(rendered.wxml).toContain('created')
-    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('created:ready')
     expect(rendered.wxml).toContain('ready')
 
     const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
@@ -4326,7 +4494,7 @@ Component({
     const page = session.getCurrentPages()[0]
     expect(page?.data.snapshot).toContain('"bubbles":true')
     expect(page?.data.snapshot).toContain('"composed":true')
-    expect(page?.data.snapshot).toContain('"id":"pulse-node"')
+    expect(page?.data.snapshot).toContain('"id":"status-card"')
   })
 
   it('supports selectOwnerComponent from nested component instances', () => {
@@ -4397,7 +4565,7 @@ Component({
     expect(rendered.wxml).toContain('"status":"stable"')
   })
 
-  it('maps data attributes into event target dataset', () => {
+  it('uses component host datasets instead of inheriting a previous native interaction dataset', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
       ['app.js', 'App({})'],
@@ -4418,7 +4586,7 @@ Page({
   }
 })
 `],
-      ['pages/lab/index.wxml', '<status-card bind:pulse="handlePulse" />'],
+      ['pages/lab/index.wxml', '<status-card data-phase="host" data-card-type="secondary" bind:pulse="handlePulse" />'],
       ['components/status-card/index.json', '{}'],
       ['components/status-card/index.js', `
 Component({
@@ -4449,8 +4617,7 @@ Component({
       id: 'pulse-node',
     })
     const page = session.getCurrentPages()[0]
-    expect(page?.data.snapshot).toContain('"phase":"pulse"')
-    expect(page?.data.snapshot).toContain('"cardType":"primary"')
+    expect(JSON.parse(page!.data.snapshot)).toEqual({ phase: 'host', cardType: 'secondary' })
   })
 
   it('renders wx:if / wx:elif / wx:else branches and wx:for lists', () => {

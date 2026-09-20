@@ -108,6 +108,7 @@ export function genSettleDetail(params: SettleDetailParams = {}) {
 
   // 获取购物车传递的商品数据
   resp.data.storeGoodsList[0].skuDetailVos = list
+  resp.data.totalGoodsCount = list.reduce((count, goods) => count + Number(goods.quantity), 0)
 
   // 判断是否携带优惠券数据
   const discountPrice: Array<{ type?: number, value?: number }> = []

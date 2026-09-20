@@ -1,0 +1,21 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  },
+  "setting": {
+    "compileHotReLoad": true,
+    "urlCheck": false,
+    "es6": false
+  },
+  "libVersion": "3.17.3"
+}

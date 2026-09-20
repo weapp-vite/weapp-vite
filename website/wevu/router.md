@@ -71,6 +71,8 @@ const router = createRouter({
 
 blocking 适合必须先完成的鉴权、租户选择或合规检查。默认超时为 `10_000ms`，超时后自动放行页面并输出稳定诊断 marker。普通网络数据预加载应在页面内使用 loading 或 skeleton 状态完成，不建议用 blocking 延迟首屏。
 
+blocking 首屏守卫返回重定向目标时，会解析命名路由与 query，并通过宿主 `redirectTo` 进入普通页面，或通过 `switchTab` 进入 tabBar 页面；原始页面不会挂载。该行为只作用于 blocking 首屏导航，eager 模式仍先挂载原页面。
+
 ## 3. 在 App 中注册
 
 推荐在应用入口或 App 级 `setup()` 中创建一次 router：

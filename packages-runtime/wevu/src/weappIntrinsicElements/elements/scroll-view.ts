@@ -1,28 +1,14 @@
-// 此文件由 generate-weapp-intrinsic-elements 基于 components.json 自动生成，请勿直接修改。
+// 此文件由 scripts/generate-intrinsic-elements.mjs 自动生成，请勿直接修改。 来源：components.weapp.json。
 /* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */
 
-import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicEventHandler } from '../base'
+import type { WevuJsxEventHandler } from '../../jsx-runtime'
+import type { WeappIntrinsicElementBaseAttributes } from '../base'
 
 /**
  * @see https://developers.weixin.qq.com/miniprogram/dev/component/scroll-view.html
  */
-export type MiniProgramIntrinsicElementScrollView = MiniProgramIntrinsicElementBaseAttributes & {
+export type WeappIntrinsicElementScrollView = WeappIntrinsicElementBaseAttributes & {
   'associative-container'?: 'draggable-sheet' | 'nested-scroll-view' | 'pop-gesture'
-  'bind:refresherstatuschange'?: MiniProgramIntrinsicEventHandler<unknown>
-  'bind:refresherwillrefresh'?: MiniProgramIntrinsicEventHandler<unknown>
-  'bind:scroll'?: MiniProgramIntrinsicEventHandler<unknown>
-  'bind:scrollend'?: MiniProgramIntrinsicEventHandler<unknown>
-  'bind:scrollstart'?: MiniProgramIntrinsicEventHandler<unknown>
-  binddragend?: MiniProgramIntrinsicEventHandler<unknown>
-  binddragging?: MiniProgramIntrinsicEventHandler<unknown>
-  binddragstart?: MiniProgramIntrinsicEventHandler<unknown>
-  bindrefresherabort?: MiniProgramIntrinsicEventHandler<unknown>
-  bindrefresherpulling?: MiniProgramIntrinsicEventHandler<unknown>
-  bindrefresherrefresh?: MiniProgramIntrinsicEventHandler<unknown>
-  bindrefresherrestore?: MiniProgramIntrinsicEventHandler<unknown>
-  bindscroll?: MiniProgramIntrinsicEventHandler<unknown>
-  bindscrolltolower?: MiniProgramIntrinsicEventHandler<unknown>
-  bindscrolltoupper?: MiniProgramIntrinsicEventHandler<unknown>
   bounces?: boolean
   'cache-extent'?: number
   clip?: boolean
@@ -33,6 +19,20 @@ export type MiniProgramIntrinsicElementScrollView = MiniProgramIntrinsicElementB
   'fast-deceleration'?: boolean
   'lower-threshold'?: number | string
   'min-drag-distance'?: number
+  onDragend?: WevuJsxEventHandler
+  onDragging?: WevuJsxEventHandler
+  onDragstart?: WevuJsxEventHandler
+  onRefresherabort?: WevuJsxEventHandler
+  onRefresherpulling?: WevuJsxEventHandler
+  onRefresherrefresh?: WevuJsxEventHandler
+  onRefresherrestore?: WevuJsxEventHandler
+  onRefresherstatuschange?: WevuJsxEventHandler
+  onRefresherwillrefresh?: WevuJsxEventHandler
+  onScroll?: WevuJsxEventHandler
+  onScrollToLower?: WevuJsxEventHandler
+  onScrollToUpper?: WevuJsxEventHandler
+  onScrollend?: WevuJsxEventHandler
+  onScrollstart?: WevuJsxEventHandler
   padding?: unknown[]
   'paging-enabled'?: boolean
   'refresher-background'?: string
@@ -50,7 +50,7 @@ export type MiniProgramIntrinsicElementScrollView = MiniProgramIntrinsicElementB
   reverse?: boolean
   'scroll-anchoring'?: boolean
   'scroll-into-view'?: string
-  'scroll-into-view-alignment'?: 'start' | 'center' | 'end' | 'nearest'
+  'scroll-into-view-alignment'?: 'center' | 'end' | 'nearest' | 'start'
   'scroll-into-view-offset'?: number
   'scroll-into-view-within-extent'?: boolean
   'scroll-left'?: number | string
@@ -59,13 +59,7 @@ export type MiniProgramIntrinsicElementScrollView = MiniProgramIntrinsicElementB
   'scroll-x'?: boolean
   'scroll-y'?: boolean
   'show-scrollbar'?: boolean
-  type?: 'list' | 'custom' | 'nested'
+  type?: 'custom' | 'list' | 'nested'
   'upper-threshold'?: number | string
   'using-sticky'?: boolean
-  'worklet:adjust-deceleration-velocity'?: MiniProgramIntrinsicEventHandler<unknown>
-  'worklet:onscrollend'?: MiniProgramIntrinsicEventHandler<unknown>
-  'worklet:onscrollstart'?: MiniProgramIntrinsicEventHandler<unknown>
-  'worklet:onscrollupdate'?: MiniProgramIntrinsicEventHandler<unknown>
 }
-
-export type WeappIntrinsicElementScrollView = MiniProgramIntrinsicElementScrollView

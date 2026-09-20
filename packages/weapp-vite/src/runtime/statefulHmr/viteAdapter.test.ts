@@ -1,3 +1,4 @@
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { isSafeJavaScriptPatch } from './session'
@@ -29,10 +30,14 @@ describe('stateful HMR Vite adapter', () => {
     })).toBe(true)
   })
 
-  it('owns one stateful DevEngine and maps polling options to its watcher', async () => {
+  it.each([
+    { name: 'Vite root', cwd: undefined },
+    { name: 'explicit engine cwd', cwd: path.resolve('engine-root') },
+  ])('owns one stateful DevEngine and maps polling options to its watcher ($name)', async ({ cwd }) => {
     let registeredClientId = ''
     let legacyListenCalls = 0
     let devOptions: any
+    let devInput: any
     const engine = {
       ensureCurrentBuildFinish: async () => {},
       ensureLatestBuildOutput: async () => {},
@@ -59,13 +64,14 @@ describe('stateful HMR Vite adapter', () => {
         waitForInitialBundle: async () => {},
       },
       { compareContentsForPolling: true, pollInterval: 120, usePolling: true },
-      (async (_input: unknown, _output: unknown, options: unknown) => {
+      (async (input: unknown, _output: unknown, options: unknown) => {
+        devInput = input
         devOptions = options
         return engine
       }) as any,
     )
     const bundledDev = {
-      getRolldownOptions: async () => ({}),
+      getRolldownOptions: async () => ({ cwd }),
       listen: async () => {
         legacyListenCalls += 1
       },
@@ -83,6 +89,7 @@ describe('stateful HMR Vite adapter', () => {
     adapter.install()
     await bundledDev.listen()
 
+    expect(devInput.cwd).toBe(cwd ?? '/project')
     expect(registeredClientId).toBe('weapp-vite-stateful-hmr')
     expect(legacyListenCalls).toBe(0)
     expect(bundledDev._devEngine).toBe(engine)
@@ -120,6 +127,41 @@ describe('stateful HMR Vite adapter', () => {
     expect(options.experimental.devMode.skipCommonRuntimeInjection).toBe(true)
     expect(options.experimental.devMode.implement.match(/class DevRuntime/g)).toHaveLength(1)
     expect(options.experimental.devMode.implement).toContain('class WeappViteDevRuntime')
+  })
+
+  it('passes resolved Vite string aliases to the Rolldown DevEngine', async () => {
+    const bundledDev = {
+      _devEngine: {},
+      getRolldownOptions: async () => ({ resolve: { alias: { existing: '/existing' } } }),
+      storeOutputFiles: () => {},
+    }
+    const adapter = new StatefulHmrViteAdapter(
+      {
+        root: '/project',
+        resolve: {
+          alias: [
+            { find: '@', replacement: '/project/src' },
+            { find: /^virtual:/, replacement: '/project/virtual' },
+          ],
+        },
+        build: { rolldownOptions: {} },
+      } as any,
+      { environments: { client: { bundledDev } } } as any,
+      {
+        onError: () => {},
+        onOutput: () => {},
+        onPatch: () => true,
+        waitForInitialBundle: async () => {},
+      },
+    )
+
+    adapter.install()
+    const options = await bundledDev.getRolldownOptions() as any
+
+    expect(options.resolve.alias).toEqual({
+      'existing': '/existing',
+      '@': '/project/src',
+    })
   })
 
   it('only validates the common runtime on the initial full output', () => {
@@ -162,8 +204,12 @@ describe('stateful HMR Vite adapter', () => {
         waitForInitialBundle: async () => {},
       },
     )
+    Reflect.set(adapter as object, 'initialBuildTimeout', 20)
     Reflect.set(adapter as object, 'bundledDev', {
       _devEngine: {
+        ensureCurrentBuildFinish: async () => {
+          calls.push('current-finished')
+        },
         ensureLatestBuildOutput: async () => {
           calls.push('latest-output')
         },
@@ -173,11 +219,11 @@ describe('stateful HMR Vite adapter', () => {
       },
     })
 
-    await adapter.rebuild(async () => {
+    await expect(adapter.rebuild(async () => {
       calls.push('prepare')
-    })
+    })).rejects.toThrow('完整输出')
 
-    expect(calls).toEqual(['prepare', 'trigger-full', 'latest-output'])
+    expect(calls).toEqual(['current-finished', 'prepare', 'trigger-full', 'latest-output'])
   })
 
   it('routes DevEngine no-op updates through the stateful fallback', async () => {

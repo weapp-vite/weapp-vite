@@ -1,5 +1,6 @@
 import process from 'node:process'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   getSharedMiniProgram,
@@ -8,6 +9,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { INLINE_ASSIGNMENT_CHECKPOINTS, INLINE_ASSIGNMENT_STEPS } from './githubIssuesDom/reactivity'
 
 const ISSUE_621_AUGMENTED_ENV = 'WEAPP_GITHUB_ISSUE_621_AUGMENTED'
 
@@ -32,26 +34,6 @@ async function waitForIssue621Runtime(miniProgram: any, timeoutMs = 15_000) {
   throw new Error(`Timed out waiting for issue-621 runtime readiness. Latest runtime: ${JSON.stringify(latest)}`)
 }
 
-async function callInlineTap(miniProgram: any, inlineId: string) {
-  await miniProgram.evaluate((targetInlineId: string) => {
-    const pages = getCurrentPages()
-    const page = pages[pages.length - 1] as any
-    return page?.__weapp_vite_inline?.({
-      type: 'tap',
-      currentTarget: {
-        dataset: {
-          wiTap: targetInlineId,
-        },
-      },
-      target: {
-        dataset: {
-          wiTap: targetInlineId,
-        },
-      },
-    })
-  }, inlineId)
-}
-
 describe('e2e app: github-issues / issue #621', { concurrent: false }, () => {
   beforeAll(async () => {
     process.env[ISSUE_621_AUGMENTED_ENV] = 'true'
@@ -64,6 +46,7 @@ describe('e2e app: github-issues / issue #621', { concurrent: false }, () => {
   })
 
   it('keeps inline assignment events writable for setup refs in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', INLINE_ASSIGNMENT_CHECKPOINTS)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(
@@ -93,34 +76,17 @@ describe('e2e app: github-issues / issue #621', { concurrent: false }, () => {
         ok: true,
       })
 
-      await callInlineTap(miniProgram, 'i0')
-      const afterCountRuntime = await readIssue621Runtime(miniProgram)
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      for (const step of INLINE_ASSIGNMENT_STEPS) {
+        if (step.tap) {
+          const controls = await issuePage.$$(`.issue621-button-${step.tap}`, { fallback: false, timeout: 5_000 })
+          expect(controls).toHaveLength(1)
+          await controls[0].tap()
+        }
+        await dom.check(step.id, activeMiniProgram, issuePage)
+      }
 
-      expect(afterCountRuntime).toMatchObject({
-        count: 1,
-        explicitCount: 0,
-        ok: true,
-      })
-
-      await callInlineTap(miniProgram, 'i1')
-      const afterExplicitRuntime = await readIssue621Runtime(miniProgram)
-
-      expect(afterExplicitRuntime).toMatchObject({
-        count: 1,
-        explicitCount: 1,
-        ok: true,
-      })
-
-      await callInlineTap(miniProgram, 'i2')
-      await callInlineTap(miniProgram, 'i3')
-      await callInlineTap(miniProgram, 'i4')
-      await callInlineTap(miniProgram, 'i4')
-      await callInlineTap(miniProgram, 'i5')
-      await callInlineTap(miniProgram, 'i6')
-      await callInlineTap(miniProgram, 'i7')
-      await callInlineTap(miniProgram, 'i8')
-
-      const finalRuntime = await readIssue621Runtime(miniProgram)
+      const finalRuntime = await readIssue621Runtime(activeMiniProgram)
 
       expect(finalRuntime).toMatchObject({
         count: 1,

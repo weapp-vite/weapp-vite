@@ -1,6 +1,9 @@
 <view class="page">
   <view class="title">Runtime</view>
   <view id="runtime-ref" class="ref-target">template-ref</view>
+  <view id="runtime-form">form: {{form.title}}</view>
+  <view id="runtime-injected">injected: {{localInjected}} {{globalInjected}}</view>
+  <view id="runtime-scroll">scroll: {{scrollDebugLogs.length > 0 ? 'observed' : 'idle'}}</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
   <x-child id="child" title="{{childTitle}}" count="{{childCount}}" extra="yes">
     <view slot="header">header slot</view>

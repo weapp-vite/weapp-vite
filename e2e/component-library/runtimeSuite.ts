@@ -71,6 +71,7 @@ export interface ComponentLibraryRuntimeSuiteOptions {
   screenshotSettleMs?: number
   screenshotSettleOverrides?: Readonly<Record<string, number>>
   scenarios: readonly ComponentScenarioLike[]
+  assertScenario?: (context: { miniProgram: any, page: any, scenario: ComponentScenarioLike }) => Promise<void>
   suiteName: string
   testTimeout?: number
   updateBaselinesEnv: string
@@ -400,6 +401,7 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
               attemptFailures.push(`${scenario.component}: expected=${scenario.expectedState}, result=${JSON.stringify(result)}`)
             }
             await page.waitFor(resolveScenarioScreenshotSettleMs(scenario.component))
+            await options.assertScenario?.({ miniProgram, page, scenario })
             settledAt = Date.now()
             if (runtimeProvider === 'devtools' && shouldCaptureComponentLibraryScreenshot(runtimeMode)) {
               await captureWechatScreenshot(miniProgram, scenario.component)

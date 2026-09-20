@@ -1,5 +1,6 @@
 <view class="native-uses-vue">
   <native-card
+    id="native-card-feature"
     title="{{title}}"
     subtitle="{{subtitle}}"
     badge="{{badge}}"

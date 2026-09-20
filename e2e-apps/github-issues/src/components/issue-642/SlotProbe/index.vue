@@ -460,6 +460,8 @@ defineExpose({
 
 <template>
   <view class="issue642-slot-probe">
+    <text class="issue642-props-first">p0: {{ props.p0?.value }}</text>
+    <text class="issue642-props-last">p419: {{ props.p419?.value }}</text>
     <view class="issue642-slot-probe__header">
       <slot name="header">
         <text

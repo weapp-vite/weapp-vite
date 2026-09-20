@@ -1,12 +1,32 @@
 import type { DirectiveNode, ElementNode } from '@vue/compiler-core'
 import type { ForParseResult, TransformContext } from '../types'
-
+import { NodeTypes } from '@vue/compiler-core'
 import { warn } from '../diagnostics'
-import { transformBindDirective } from './bind'
+import { rejectUnsupportedDynamicBindName, transformBindDirective } from './bind'
 import { transformCustomDirective } from './custom'
 import { transformModelDirective } from './model'
-import { transformOnDirective } from './on'
+import { rejectUnsupportedDynamicOnName, transformOnDirective } from './on'
 import { transformShowDirective } from './show'
+
+export function omitUnsupportedDynamicDirectiveNames(
+  node: ElementNode,
+  context: TransformContext,
+): ElementNode {
+  let compatibleProps: ElementNode['props'] | undefined
+  for (let index = 0; index < node.props.length; index++) {
+    const prop = node.props[index]!
+    const rejected = prop.type === NodeTypes.DIRECTIVE && (
+      (prop.name === 'bind' && rejectUnsupportedDynamicBindName(prop, context))
+      || (prop.name === 'on' && rejectUnsupportedDynamicOnName(prop, context))
+    )
+    if (rejected) {
+      compatibleProps ??= node.props.slice(0, index)
+      continue
+    }
+    compatibleProps?.push(prop)
+  }
+  return compatibleProps ? { ...node, props: compatibleProps } : node
+}
 
 export function transformDirective(
   node: DirectiveNode,
@@ -24,7 +44,10 @@ export function transformDirective(
   }
 
   if (name === 'on') {
-    return transformOnDirective(node, context, options)
+    return transformOnDirective(node, context, {
+      ...options,
+      tagName: elementNode?.tag,
+    })
   }
 
   if (name === 'model') {

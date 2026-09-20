@@ -1,5 +1,5 @@
 import { expectType } from 'tsd'
-import { defineComponent } from '@/index'
+import { defineComponent } from 'wevu'
 
 const _WithTypeProps = defineComponent({
   __typeProps: {} as { label: string, count?: number },

@@ -38,24 +38,26 @@ keywords:
 - 想在 Wevu 项目中静态拦截不支持或高风险的 Vue、Pinia、Vue Router API：用 `@weapp-vite/eslint`
 - 想用 Vitest 测试真实小程序编译产物：用 `@mpcore/test`、`@mpcore/vitest` 与 `@mpcore/weapp-vite`
 - 想低成本测试不依赖模板的 Wevu Composition API：用 `@wevu/test-utils`
+- 想跨页面共享服务端数据、协调请求并在变更后刷新列表：用 `@wevu/query`
 
 ## 包能力矩阵
 
-| 包名                      | 定位                                     | 适用场景                                           | 文档入口                                                                   |
-| ------------------------- | ---------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------- |
-| `create-weapp-vite`       | 官方脚手架                               | 快速创建模板项目、统一模板版本、可选安装 AI skills | [/packages/create-weapp-vite](/packages/create-weapp-vite)                 |
-| `weapp-ide-cli`           | 微信开发者工具 CLI 增强封装              | 本地自动化、CI 预览/上传、截图与截图对比           | [/packages/weapp-ide-cli](/packages/weapp-ide-cli)                         |
-| `rolldown-require`        | 以 Rolldown 为核心的 bundle+require 工具 | 加载 TS/MJS/CJS 配置文件                           | [/packages/rolldown-require/index.zh](/packages/rolldown-require/index.zh) |
-| `vite-plugin-performance` | Vite 插件 Hook 耗时分析                  | 定位构建慢点、插件调优                             | [/packages/vite-plugin-performance](/packages/vite-plugin-performance)     |
-| `@wevu/compiler`          | Wevu 编译能力底座                        | 复用 SFC/模板编译管线                              | [/packages/wevu-compiler](/packages/wevu-compiler)                         |
-| `@weapp-vite/i18n`        | 原生微信小程序 i18n 运行时与编译器       | Native Page/Component、WXS 模板翻译与 locale 切换  | [/packages/i18n](/packages/i18n)                                           |
-| `@weapp-core/api`         | 框架无关的跨平台小程序 API 代理          | Promise/回调统一调用、显式宿主注入                 | [/packages/weapi/](/packages/weapi/)                                       |
-| `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                        | [/packages/web](/packages/web)                                             |
-| `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放                      | [/packages/mcp](/packages/mcp)                                             |
-| `@weapp-vite/eslint`      | Wevu 兼容性 ESLint 规则                  | 静态拦截不支持与高风险的 Vue 生态 API              | [/packages/eslint](/packages/eslint)                                       |
-| `@weapp-vite/volar`       | Volar 语言插件                           | `<json>` 配置块补全与校验                          | [/packages/volar](/packages/volar)                                         |
-| `@mpcore/test`            | 小程序逻辑树测试工具                     | 页面/组件单测、宿主 mock、交互与诊断               | [/packages/mpcore-test](/packages/mpcore-test)                             |
-| `@wevu/test-utils`        | Wevu 逻辑与 Vue SFC 测试工具             | Composition API、SFC、响应式状态、生命周期与事件   | [/packages/wevu-test-utils](/packages/wevu-test-utils)                     |
+| 包名                      | 定位                                     | 适用场景                                             | 文档入口                                                                   |
+| ------------------------- | ---------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| `create-weapp-vite`       | 官方脚手架                               | 快速创建模板项目、统一模板版本、可选安装 AI skills   | [/packages/create-weapp-vite](/packages/create-weapp-vite)                 |
+| `weapp-ide-cli`           | 微信开发者工具 CLI 增强封装              | 本地自动化、CI 预览/上传、截图与截图对比             | [/packages/weapp-ide-cli](/packages/weapp-ide-cli)                         |
+| `rolldown-require`        | 以 Rolldown 为核心的 bundle+require 工具 | 加载 TS/MJS/CJS 配置文件                             | [/packages/rolldown-require/index.zh](/packages/rolldown-require/index.zh) |
+| `vite-plugin-performance` | Vite 插件 Hook 耗时分析                  | 定位构建慢点、插件调优                               | [/packages/vite-plugin-performance](/packages/vite-plugin-performance)     |
+| `@wevu/compiler`          | Wevu 编译能力底座                        | 复用 SFC/模板编译管线                                | [/packages/wevu-compiler](/packages/wevu-compiler)                         |
+| `@weapp-vite/i18n`        | 原生微信小程序 i18n 运行时与编译器       | Native Page/Component、WXS 模板翻译与 locale 切换    | [/packages/i18n](/packages/i18n)                                           |
+| `@weapp-core/api`         | 框架无关的跨平台小程序 API 代理          | Promise/回调统一调用、显式宿主注入                   | [/packages/weapi/](/packages/weapi/)                                       |
+| `@weapp-vite/web`         | Web 端实验运行时与插件                   | 浏览器侧验证小程序语法/页面                          | [/packages/web](/packages/web)                                             |
+| `@weapp-vite/mcp`         | MCP 服务实现                             | AI 代码助手接入与仓库能力开放                        | [/packages/mcp](/packages/mcp)                                             |
+| `@weapp-vite/eslint`      | Wevu 兼容性 ESLint 规则                  | 静态拦截不支持与高风险的 Vue 生态 API                | [/packages/eslint](/packages/eslint)                                       |
+| `@weapp-vite/volar`       | Volar 语言插件                           | `<json>` 配置块补全与校验                            | [/packages/volar](/packages/volar)                                         |
+| `@mpcore/test`            | 小程序逻辑树测试工具                     | 页面/组件单测、宿主 mock、交互与诊断                 | [/packages/mpcore-test](/packages/mpcore-test)                             |
+| `@wevu/test-utils`        | Wevu 逻辑与 Vue SFC 测试工具             | Composition API、SFC、响应式状态、生命周期与事件     | [/packages/wevu-test-utils](/packages/wevu-test-utils)                     |
+| `@wevu/query`             | Wevu 服务端状态与查询缓存                | 同键请求共享、跨页失效刷新、mutation、分页与账号隔离 | [服务端状态查询](/wevu/store#server-state-query)                           |
 
 ## 已有独立文档模块
 

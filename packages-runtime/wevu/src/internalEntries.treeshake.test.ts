@@ -8,6 +8,7 @@ const openBundles: Array<{ close: () => Promise<void> }> = []
 async function bundleVirtualEntry(source: string) {
   const bundle = await rolldown({
     input: virtualEntryId,
+    external: ['@weapp-core/shared/platforms', '@wevu/web-apis/abort'],
     plugins: [
       {
         name: 'virtual-entry',
@@ -40,19 +41,22 @@ afterEach(async () => {
 describe('wevu internal entry tree-shaking', () => {
   it('keeps reactivity-only imports away from component runtime', async () => {
     const code = await bundleVirtualEntry(`
-import { nextTick, ref } from './internal-reactivity.ts'
+import { nextTick, ref, useAsyncDerivation } from './internal-reactivity.ts'
 
 const count = ref(1)
+const users = useAsyncDerivation(() => Promise.resolve('ready'), { immediate: false })
 nextTick(() => {
-  console.log(count.value)
+  console.log(count.value, users.status)
 })
     `.trim())
 
     expect(code).toContain('ref(')
+    expect(code).toContain('initial-pending')
     expect(code).not.toContain('createWevuComponent')
     expect(code).not.toContain('Component(')
     expect(code).not.toContain('WEVU_RUNTIME_APP_KEY')
     expect(code).not.toContain('WEVU_TEMPLATE_REFS_KEY')
+    expect(code).not.toContain('setData commit failed')
   })
 
   it('keeps template helper imports away from component runtime', async () => {

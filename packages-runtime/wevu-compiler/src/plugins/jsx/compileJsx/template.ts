@@ -18,6 +18,9 @@ export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCom
     warnings: [],
     bindingManifest: createBindingManifest(options?.bindingManifestSourceFile ?? ''),
     inlineExpressions: [],
+    classStyleBindings: [],
+    forStack: [],
+    interpolationCache: new WeakMap(),
     inlineExpressionSeed: 0,
     scopeStack: [],
     bindingScopeStack: [],
@@ -52,7 +55,10 @@ function collectImportedBindings(ast: File, context: JsxCompileContext) {
 }
 
 export function compileJsxTemplate(source: string, filename: string, options?: CompileVueFileOptions) {
-  const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
+  const ast = babelParse(source, {
+    ...BABEL_TS_MODULE_PARSER_OPTIONS,
+    sourceFilename: filename,
+  }) as File
   const context = createJsxCompileContext(options)
   context.filename = filename
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
@@ -71,6 +77,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
       warnings: context.warnings,
       bindingManifest: context.bindingManifest,
       inlineExpressions: context.inlineExpressions,
+      classStyleBindings: context.classStyleBindings,
       dynamicIslands: context.dynamicIslands,
     }
   }
@@ -84,6 +91,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
     warnings: context.warnings,
     bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
+    classStyleBindings: context.classStyleBindings,
     dynamicIslands: context.dynamicIslands,
   }
 }
@@ -100,7 +108,10 @@ export function collectJsxAutoComponents(source: string, filename: string, optio
  * 单次解析同时编译模板和收集自动组件上下文，避免重复 babelParse 和 traverse。
  */
 export function compileJsxTemplateAndCollectComponents(source: string, filename: string, options?: CompileVueFileOptions) {
-  const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
+  const ast = babelParse(source, {
+    ...BABEL_TS_MODULE_PARSER_OPTIONS,
+    sourceFilename: filename,
+  }) as File
   const context = createJsxCompileContext(options)
   context.filename = filename
   context.bindingManifest.sourceFile = options?.bindingManifestSourceFile ?? filename
@@ -132,6 +143,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
     warnings: context.warnings,
     bindingManifest: context.bindingManifest,
     inlineExpressions: context.inlineExpressions,
+    classStyleBindings: context.classStyleBindings,
     autoComponentContext,
     dynamicIslands: context.dynamicIslands,
     dependencies: context.moduleResolver.getDependencies(),

@@ -243,7 +243,7 @@ export interface SetDataBindingDiagnostic {
 
 export interface SetDataDebugInfo {
   mode: 'patch' | 'diff'
-  reason: 'patch' | 'diff' | 'needsFullSnapshot' | 'maxPatchKeys' | 'maxPayloadBytes' | 'loopWarning'
+  reason: 'patch' | 'diff' | 'needsFullSnapshot' | 'maxPatchKeys' | 'maxPayloadBytes' | 'loopWarning' | 'commitFailure'
   pendingPatchKeys: number
   payloadKeys: number
   estimatedBytes?: number
@@ -258,4 +258,6 @@ export interface SetDataDebugInfo {
    * 根据实际 payload 或待处理路径解析出的相关编译期绑定。
    */
   bindings?: SetDataBindingDiagnostic[]
+  revision?: number
+  committedRevision?: number
 }

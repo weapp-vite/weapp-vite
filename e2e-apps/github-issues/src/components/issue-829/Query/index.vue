@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onAttached, ref } from 'wevu'
+import { onReady, ref } from 'wevu'
 
 const props = defineProps<{
   label?: string
@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const data = ref<string[]>()
 
-onAttached(async () => {
+onReady(async () => {
   data.value = await props.queryFn?.()
 })
 </script>

@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite'
-import { writeFileSync } from 'node:fs'
+import { realpathSync, writeFileSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -29,19 +29,20 @@ export interface RequestClientsRealDevPluginOptions {
 export interface RequestClientsRealDevSetupResult {
   baseUrl: string
   plugin: Plugin
+  stop: () => Promise<void>
 }
 
 interface RequestClientsRealDevRuntimeState {
-  cleanupRegistered: boolean
-  cleanupRunning: boolean
-  devServerHandle: Awaited<ReturnType<typeof startRequestClientsRealServer>> | null
-  generatedBaseUrlModuleSnapshot: { filePath: string, original: string } | null
-  initialized: boolean
-  initializing: Promise<void> | null
-  projectPrivateConfigSnapshot: { configPath: string, original: string } | null
+  serverPort: number | undefined
+  setup: Promise<RequestClientsRealDevSetupResult>
 }
 
-const requestClientsRealDevRuntimeStateMap = new Map<string, RequestClientsRealDevRuntimeState>()
+// Vite runner 为每次配置加载创建模块实例；服务归进程所有，不能放在模块缓存内。
+const runtimeStateKey = Symbol.for('weapp-vite.e2e.request-clients-real-dev-runtime')
+const runtimeGlobal = globalThis as typeof globalThis & {
+  [runtimeStateKey]?: Map<string, RequestClientsRealDevRuntimeState>
+}
+const requestClientsRealDevRuntimeStateMap = runtimeGlobal[runtimeStateKey] ??= new Map()
 
 /**
  * @description 为测试页 query 合并本地真实服务地址。
@@ -105,100 +106,94 @@ async function patchGeneratedBaseUrlModule(projectRoot: string, baseUrl: string)
   }
 }
 
+async function startDevRuntime(options: RequestClientsRealDevPluginOptions): Promise<RequestClientsRealDevSetupResult> {
+  let devServerHandle: Awaited<ReturnType<typeof startRequestClientsRealServer>> | undefined
+  let projectPrivateConfigSnapshot: Awaited<ReturnType<typeof patchProjectPrivateConfig>> | undefined
+  let generatedBaseUrlModuleSnapshot: Awaited<ReturnType<typeof patchGeneratedBaseUrlModule>> | undefined
+  let stopping: Promise<void> | undefined
+  const removeCleanupListeners: Array<() => void> = []
+
+  function restoreSnapshotsSync() {
+    if (projectPrivateConfigSnapshot) {
+      writeFileSync(projectPrivateConfigSnapshot.configPath, projectPrivateConfigSnapshot.original, 'utf8')
+      projectPrivateConfigSnapshot = undefined
+    }
+    if (generatedBaseUrlModuleSnapshot) {
+      writeFileSync(generatedBaseUrlModuleSnapshot.filePath, generatedBaseUrlModuleSnapshot.original, 'utf8')
+      generatedBaseUrlModuleSnapshot = undefined
+    }
+  }
+
+  function cleanup() {
+    stopping ??= Promise.resolve().then(async () => {
+      try {
+        restoreSnapshotsSync()
+      }
+      finally {
+        try {
+          await devServerHandle?.stop()
+        }
+        finally {
+          requestClientsRealDevRuntimeStateMap.delete(options.projectRoot)
+          for (const removeListener of removeCleanupListeners) {
+            removeListener()
+          }
+        }
+      }
+    })
+    return stopping
+  }
+
+  function handleSignal() {
+    // 配置文件还在写入时也必须先等待初始化结束，再恢复原始内容。
+    const setup = requestClientsRealDevRuntimeStateMap.get(options.projectRoot)?.setup
+    void Promise.resolve(setup).catch(() => {}).then(cleanup).finally(() => process.exit(0))
+  }
+
+  process.once('SIGINT', handleSignal)
+  process.once('SIGTERM', handleSignal)
+  process.once('exit', restoreSnapshotsSync)
+  removeCleanupListeners.push(
+    () => { process.removeListener('SIGINT', handleSignal) },
+    () => { process.removeListener('SIGTERM', handleSignal) },
+    () => { process.removeListener('exit', restoreSnapshotsSync) },
+  )
+
+  try {
+    devServerHandle = await startRequestClientsRealServer({ port: options.serverPort })
+    projectPrivateConfigSnapshot = await patchProjectPrivateConfig(options.projectRoot, devServerHandle.baseUrl)
+    generatedBaseUrlModuleSnapshot = await patchGeneratedBaseUrlModule(options.projectRoot, devServerHandle.baseUrl)
+    return {
+      baseUrl: devServerHandle.baseUrl,
+      plugin: { name: 'request-clients-real-dev-plugin' },
+      stop: cleanup,
+    }
+  }
+  catch (error) {
+    await cleanup()
+    throw error
+  }
+}
+
 /**
- * @description 在 dev 启动时拉起真实请求服务，并自动改写项目启动 query。
+ * @description 在 dev 启动时复用进程内的真实请求服务，并自动改写项目启动 query。
  */
 export async function requestClientsRealDevPlugin(
   options: RequestClientsRealDevPluginOptions,
 ): Promise<RequestClientsRealDevSetupResult> {
-  const state = requestClientsRealDevRuntimeStateMap.get(options.projectRoot) ?? {
-    cleanupRegistered: false,
-    cleanupRunning: false,
-    devServerHandle: null,
-    generatedBaseUrlModuleSnapshot: null,
-    initialized: false,
-    initializing: null,
-    projectPrivateConfigSnapshot: null,
-  }
-  requestClientsRealDevRuntimeStateMap.set(options.projectRoot, state)
-
-  function restoreSnapshotsSync() {
-    if (state.projectPrivateConfigSnapshot) {
-      writeFileSync(state.projectPrivateConfigSnapshot.configPath, state.projectPrivateConfigSnapshot.original, 'utf8')
-      state.projectPrivateConfigSnapshot = null
+  const projectRoot = realpathSync(options.projectRoot)
+  const existing = requestClientsRealDevRuntimeStateMap.get(projectRoot)
+  if (existing) {
+    if (existing.serverPort !== options.serverPort) {
+      throw new Error('同一请求客户端测试项目不能同时使用不同的服务端口。')
     }
-    if (state.generatedBaseUrlModuleSnapshot) {
-      writeFileSync(state.generatedBaseUrlModuleSnapshot.filePath, state.generatedBaseUrlModuleSnapshot.original, 'utf8')
-      state.generatedBaseUrlModuleSnapshot = null
-    }
+    return existing.setup
   }
 
-  async function cleanup() {
-    if (state.cleanupRunning) {
-      return
-    }
-    state.cleanupRunning = true
-    restoreSnapshotsSync()
-
-    if (!state.devServerHandle) {
-      return
-    }
-
-    const handle = state.devServerHandle
-    state.devServerHandle = null
-    await handle.stop()
+  const state = {
+    serverPort: options.serverPort,
+    setup: startDevRuntime({ ...options, projectRoot }),
   }
-
-  function cleanupSync() {
-    state.cleanupRunning = true
-    restoreSnapshotsSync()
-  }
-
-  function registerCleanup() {
-    if (state.cleanupRegistered) {
-      return
-    }
-    state.cleanupRegistered = true
-
-    const asyncSignals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM']
-    for (const signal of asyncSignals) {
-      process.once(signal, () => {
-        void cleanup().finally(() => {
-          process.exit(0)
-        })
-      })
-    }
-
-    process.once('exit', () => {
-      cleanupSync()
-    })
-  }
-
-  async function setup() {
-    if (state.initialized) {
-      return
-    }
-    registerCleanup()
-
-    state.devServerHandle = await startRequestClientsRealServer({
-      port: options.serverPort,
-    })
-    state.projectPrivateConfigSnapshot = await patchProjectPrivateConfig(options.projectRoot, state.devServerHandle.baseUrl)
-    state.generatedBaseUrlModuleSnapshot = await patchGeneratedBaseUrlModule(options.projectRoot, state.devServerHandle.baseUrl)
-    state.initialized = true
-  }
-
-  if (!state.initialized) {
-    state.initializing ??= setup().finally(() => {
-      state.initializing = null
-    })
-    await state.initializing
-  }
-
-  return {
-    baseUrl: state.devServerHandle?.baseUrl ?? '',
-    plugin: {
-      name: 'request-clients-real-dev-plugin',
-    },
-  }
+  requestClientsRealDevRuntimeStateMap.set(projectRoot, state)
+  return state.setup
 }

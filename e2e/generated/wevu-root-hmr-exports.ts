@@ -123,6 +123,7 @@ export const WEVU_ROOT_HMR_EXPORTS = Object.freeze([
   'unregisterPageLayoutBridge',
   'unregisterRuntimeLayoutHosts',
   'use',
+  'useAsyncDerivation',
   'useAsyncPullDownRefresh',
   'useAttrs',
   'useBindModel',

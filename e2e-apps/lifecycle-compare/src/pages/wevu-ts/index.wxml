@@ -1,5 +1,8 @@
 <view id="lifecycle-wevu-ts-page" class="page" data-e2e-page="wevu-ts">
   <view class="title">WeVu TS Page</view>
+  <view class="panel">
+    <view id="page-hook-{{item}}" class="hook-status" wx:for="{{__lifecycleExpected}}" wx:key="*this">{{item}}: {{__lifecycleSeen[item] ? 'observed' : 'pending'}}</view>
+  </view>
   <view class="state">Last: {{__lifecycleState.lastHook}} ({{__lifecycleState.tick}})</view>
   <view class="panel">
     <view class="panel-title">E2E Result</view>

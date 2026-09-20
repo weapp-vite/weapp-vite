@@ -27,6 +27,7 @@ export interface MiniProgramPlatform {
   keyAttr: (value: string) => string
 
   mapEventName: (eventName: string) => string
+  eventBindingAlias?: (eventName: string, tagName?: string) => string | undefined
   eventBindingAttr: (eventName: string) => string
 }
 

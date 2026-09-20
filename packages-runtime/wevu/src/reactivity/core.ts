@@ -11,6 +11,7 @@ export interface ReactiveEffect<T = any> {
   active: boolean
   _running: boolean
   _fn: () => T
+  _computed?: boolean
   onStop?: () => void
 }
 
@@ -18,21 +19,95 @@ const targetMap = new WeakMap<object, Map<PropertyKey, Dep>>()
 
 let activeEffect: ReactiveEffect | null = null
 const effectStack: ReactiveEffect[] = []
+let shouldTrack = true
+let activeEffectScope: EffectScopeImpl | undefined
 
 let batchDepth = 0
+let isFlushingBatch = false
 const batchedEffects = new Set<ReactiveEffect>()
+const batchedCallbacks = new Set<() => void>()
+
+function runScheduledEffect(ef: ReactiveEffect) {
+  if (!ef.active) {
+    return
+  }
+  if (ef.scheduler) {
+    const previousScope = activeEffectScope
+    activeEffectScope = (ef as ScopedReactiveEffect)._scope
+    try {
+      ef.scheduler()
+    }
+    finally {
+      activeEffectScope = previousScope
+    }
+    return
+  }
+  ef()
+}
+
+/** 在当前批次的同步副作用全部完成后执行包内通知。 */
+export function queueBatchCallback(callback: () => void) {
+  if (batchDepth > 0 || isFlushingBatch) {
+    batchedCallbacks.add(callback)
+    return
+  }
+  batchedCallbacks.delete(callback)
+  callback()
+}
 
 export function startBatch() {
   batchDepth++
 }
 
+function takeBatchedEffect(effects: Set<ReactiveEffect>): ReactiveEffect | undefined {
+  const next = effects.values().next()
+  if (next.done) {
+    return undefined
+  }
+  effects.delete(next.value)
+  return next.value
+}
+
 function flushBatchedEffects() {
-  while (batchedEffects.size) {
-    const effects = [...batchedEffects]
-    batchedEffects.clear()
-    for (const ef of effects) {
-      ef()
+  let firstError: unknown
+  let hasError = false
+  isFlushingBatch = true
+  try {
+    while (batchedEffects.size) {
+      const effect = takeBatchedEffect(batchedEffects)
+      if (!effect) {
+        continue
+      }
+      try {
+        runScheduledEffect(effect)
+      }
+      catch (error) {
+        if (!hasError) {
+          firstError = error
+          hasError = true
+        }
+      }
     }
+  }
+  finally {
+    isFlushingBatch = false
+  }
+  // 通知属于已完成批次之后的操作，保留订阅回调内同步变更的重入保护。
+  while (batchedCallbacks.size) {
+    const callback = batchedCallbacks.values().next().value!
+    batchedCallbacks.delete(callback)
+    try {
+      callback()
+    }
+    catch (error) {
+      if (!hasError) {
+        firstError = error
+        hasError = true
+      }
+    }
+  }
+  if (hasError) {
+    throw firstError
   }
 }
 
@@ -41,7 +116,7 @@ export function endBatch() {
     return
   }
   batchDepth--
-  if (batchDepth === 0) {
+  if (batchDepth === 0 && !isFlushingBatch) {
     flushBatchedEffects()
   }
 }
@@ -81,8 +156,6 @@ export interface EffectScope {
   stop: () => void
 }
 
-let activeEffectScope: EffectScopeImpl | undefined
-
 class EffectScopeImpl implements EffectScope {
   active = true
   effects: ReactiveEffect[] = []
@@ -92,6 +165,10 @@ class EffectScopeImpl implements EffectScope {
 
   constructor(private detached = false) {
     if (!detached && activeEffectScope) {
+      if (!activeEffectScope.active) {
+        this.active = false
+        return
+      }
       this.parent = activeEffectScope
       ;(activeEffectScope.scopes ||= []).push(this)
     }
@@ -117,6 +194,9 @@ class EffectScopeImpl implements EffectScope {
       return
     }
     this.active = false
+    const prev = activeEffectScope
+    // eslint-disable-next-line ts/no-this-alias -- teardown 期间需要把新建 scope 绑定到当前停止中的 scope
+    activeEffectScope = this
 
     let firstError: unknown
     let hasError = false
@@ -128,52 +208,60 @@ class EffectScopeImpl implements EffectScope {
       hasError = true
     }
 
-    const effects = this.effects.splice(0)
-    for (const effect of effects) {
-      try {
-        stop(effect)
-      }
-      catch (error) {
-        recordError(error)
-      }
-    }
-
-    const cleanups = this.cleanups.splice(0)
-    for (const cleanup of cleanups) {
-      try {
-        cleanup()
-      }
-      catch (error) {
-        recordError(error)
-      }
-    }
-
-    const scopes = this.scopes
-    this.scopes = undefined
-    if (scopes) {
-      for (const scope of scopes) {
+    try {
+      const effects = this.effects.splice(0)
+      for (const effect of effects) {
         try {
-          scope.stop()
+          stop(effect)
         }
         catch (error) {
           recordError(error)
         }
       }
-      scopes.length = 0
-    }
 
-    if (this.parent?.scopes) {
-      const index = this.parent.scopes.indexOf(this)
-      if (index >= 0) {
-        this.parent.scopes.splice(index, 1)
+      const cleanups = this.cleanups.splice(0)
+      for (const cleanup of cleanups) {
+        try {
+          cleanup()
+        }
+        catch (error) {
+          recordError(error)
+        }
+      }
+
+      const scopes = this.scopes
+      this.scopes = undefined
+      if (scopes) {
+        for (const scope of scopes) {
+          try {
+            scope.stop()
+          }
+          catch (error) {
+            recordError(error)
+          }
+        }
+        scopes.length = 0
       }
     }
-    this.parent = undefined
+    finally {
+      if (this.parent?.scopes) {
+        const index = this.parent.scopes.indexOf(this)
+        if (index >= 0) {
+          this.parent.scopes.splice(index, 1)
+        }
+      }
+      this.parent = undefined
+      activeEffectScope = prev
+    }
 
     if (hasError) {
       throw firstError
     }
   }
+}
+
+interface ScopedReactiveEffect<T = any> extends ReactiveEffect<T> {
+  _scope: EffectScopeImpl | undefined
 }
 
 export function effectScope(detached = false): EffectScope {
@@ -190,10 +278,30 @@ export function onScopeDispose(fn: () => void): void {
   }
 }
 
-function recordEffectScope(effect: ReactiveEffect) {
-  if (activeEffectScope?.active) {
-    activeEffectScope.effects.push(effect)
+/**
+ * 在不把读取记录到当前副作用的情况下执行函数。
+ * 函数内部主动运行的新副作用仍会正常收集自己的依赖。
+ */
+export function runWithoutTracking<T>(fn: () => T): T {
+  const previousShouldTrack = shouldTrack
+  shouldTrack = false
+  try {
+    return fn()
   }
+  finally {
+    shouldTrack = previousShouldTrack
+  }
+}
+
+function recordEffectScope(effect: ReactiveEffect) {
+  if (!activeEffectScope) {
+    return
+  }
+  if (activeEffectScope.active) {
+    activeEffectScope.effects.push(effect)
+    return
+  }
+  stop(effect)
 }
 
 export interface EffectOptions {
@@ -211,7 +319,11 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       return fn()
     }
     cleanupEffect(effect)
+    const previousScope = activeEffectScope
+    activeEffectScope = effect._scope
+    const previousShouldTrack = shouldTrack
     try {
+      shouldTrack = true
       effect._running = true
       effectStack.push(effect)
       activeEffect = effect
@@ -221,8 +333,10 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
       effectStack.pop()
       activeEffect = effectStack[effectStack.length - 1] ?? null
       effect._running = false
+      activeEffectScope = previousScope
+      shouldTrack = previousShouldTrack
     }
-  } as ReactiveEffect<T>
+  } as ScopedReactiveEffect<T>
 
   effect.deps = []
   effect.scheduler = options.scheduler
@@ -230,21 +344,38 @@ export function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}
   effect.active = true
   effect._running = false
   effect._fn = fn
+  effect._scope = activeEffectScope
 
   return effect
 }
 
-export function effect<T = any>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
-  const _effect = createReactiveEffect(fn, options)
-  recordEffectScope(_effect)
+function createEffect<T>(
+  fn: () => T,
+  options: EffectOptions,
+  computed: boolean,
+): ReactiveEffect<T> {
+  const runner = createReactiveEffect(fn, options)
+  runner._computed = computed
+  recordEffectScope(runner)
   if (!options.lazy) {
-    _effect()
+    runner()
   }
-  return _effect
+  return runner
+}
+
+export function effect<T = any>(fn: () => T, options: EffectOptions = {}): ReactiveEffect<T> {
+  return createEffect(fn, options, false)
+}
+
+export function createComputedEffect<T>(
+  fn: () => T,
+  options: EffectOptions = {},
+): ReactiveEffect<T> {
+  return createEffect(fn, options, true)
 }
 
 export function track(target: object, key: PropertyKey) {
-  if (!activeEffect) {
+  if (!shouldTrack || !activeEffect) {
     return
   }
   let depsMap = targetMap.get(target)
@@ -264,15 +395,19 @@ export function track(target: object, key: PropertyKey) {
 }
 
 function scheduleEffect(ef: ReactiveEffect) {
-  if (ef.scheduler) {
-    ef.scheduler()
+  if (ef._running) {
     return
   }
-  if (batchDepth > 0) {
+  // 计算属性只同步失效缓存，普通消费者仍由批处理队列合并。
+  if (ef._computed) {
+    runScheduledEffect(ef)
+    return
+  }
+  if (batchDepth > 0 || isFlushingBatch) {
     batchedEffects.add(ef)
     return
   }
-  ef()
+  runScheduledEffect(ef)
 }
 
 export function trigger(target: object, key: PropertyKey) {
@@ -294,7 +429,7 @@ export function trigger(target: object, key: PropertyKey) {
 }
 
 export function trackEffects(dep: Dep) {
-  if (!activeEffect) {
+  if (!shouldTrack || !activeEffect) {
     return
   }
   if (!dep.has(activeEffect)) {

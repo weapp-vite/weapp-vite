@@ -10,6 +10,7 @@ import type {
   TriggerEventOptions,
 } from './types'
 import type { ClassAttributeElement } from './virtualHost'
+import { WEVU_HOST_COMMIT_PROMISE_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
@@ -88,6 +89,9 @@ export function createComponentElementClass({
     #virtualHostClassTokens = new Set<string>()
     #virtualHostPartTokens = new Set<string>()
     #virtualHostRootElement: ClassAttributeElement | undefined
+    #needsSetDataRecovery = false
+    #hostCommitPromise: Promise<void> | undefined
+    #hostCommitUpdate: Promise<boolean> | undefined
     readonly data!: DataRecord
     readonly properties!: DataRecord
 
@@ -138,13 +142,39 @@ export function createComponentElementClass({
       runtimeState.lifetimes.created?.call(this.#publicInstance)
     }
 
+    get [WEVU_HOST_COMMIT_PROMISE_KEY]() {
+      // 回调异常属于当前提交；后续属性更新或 HMR 必须等待自己的 Lit 提交。
+      if (!supportsLit) {
+        return undefined
+      }
+      // 动态 Lit 基类不会在静态声明中暴露 updateComplete。
+      const litElement = this as unknown as { updateComplete: Promise<boolean> }
+      const update = litElement.updateComplete
+      return this.#hostCommitUpdate === update ? this.#hostCommitPromise : update
+    }
+
     setData(patch: DataRecord, callback?: () => void) {
       const changed = this.#applyDataPatch(patch)
-      if (supportsLit && changed) {
-        const updateComplete = (this as unknown as { updateComplete: Promise<boolean> }).updateComplete
-        return updateComplete.then(() => {
-          callback?.()
-        })
+      if (supportsLit && (changed || this.#needsSetDataRecovery)) {
+        if (!changed) {
+          this.requestUpdate()
+        }
+        // 动态 Lit 基类不会在静态声明中暴露 updateComplete。
+        const litElement = this as unknown as { updateComplete: Promise<boolean> }
+        const update = litElement.updateComplete
+        const commitPromise = update.then(
+          () => {
+            this.#needsSetDataRecovery = false
+            callback?.()
+          },
+          (cause) => {
+            this.#needsSetDataRecovery = true
+            throw cause
+          },
+        )
+        this.#hostCommitPromise = commitPromise
+        this.#hostCommitUpdate = update
+        return commitPromise
       }
       callback?.()
     }
@@ -294,7 +324,7 @@ export function createComponentElementClass({
       for (const [path, value] of Object.entries(patch)) {
         const segments = parseDataPath(path)
         const topKey = segments[0]
-        if (!topKey || Object.is(resolveDataPath(this.#state, segments), value)) {
+        if (!topKey || topKey === '$slots' || Object.is(resolveDataPath(this.#state, segments), value)) {
           continue
         }
         if (hasOwn(this.#properties, topKey) && !hasOwn(previousProperties, topKey)) {

@@ -4,7 +4,7 @@ import { LRUCache } from 'lru-cache'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { getReadFileCheckMtime } from '../../utils/cachePolicy'
 import { normalizeLineEndings } from '../../utils/text'
-import { mtimeCache, readFile as readFileCached } from './cache'
+import { readFile as readFileCached } from './cache'
 import { resolveSfcBlockSrc } from './vueSfcBlockSrc'
 
 /**
@@ -36,8 +36,8 @@ export interface ReadAndParseSfcOptions {
 const sfcParseCache = new LRUCache<
   string,
   {
-    signature?: string
-    source: string
+    normalizedSource: string
+    ignoreEmpty: boolean
     descriptor: SFCDescriptor
     errors: SFCParseResult['errors']
   }
@@ -133,20 +133,12 @@ export async function readAndParseSfc(
   const checkMtime = options?.checkMtime ?? true
   const source = normalizeLineEndings(options?.source ?? await readFileCached(filename, { checkMtime }))
   const normalizedSource = options?.preprocessedSource ?? preprocessScriptSrc(preprocessScriptSetupSrc(source))
-
-  const signature = checkMtime
-    ? (() => {
-        const cached = mtimeCache.get(filename)
-        if (!cached) {
-          return undefined
-        }
-        return `${cached.mtimeMs}:${cached.size}`
-      })()
-    : undefined
+  const ignoreEmpty = options?.ignoreEmpty ?? normalizedSource === source
 
   const cached = sfcParseCache.get(filename)
   if (cached) {
-    const hit = signature ? cached.signature === signature : cached.source === source
+    // 描述符只属于本次解析输入；文件签名观察与并发读取不能替代源码和解析选项。
+    const hit = cached.normalizedSource === normalizedSource && cached.ignoreEmpty === ignoreEmpty
     if (hit) {
       if (options?.resolveSrc) {
         const resolved = await resolveSfcBlockSrc(cached.descriptor, filename, options.resolveSrc)
@@ -166,13 +158,13 @@ export async function readAndParseSfc(
 
   const parsed = parseSfc(normalizedSource, {
     filename,
-    ignoreEmpty: options?.ignoreEmpty ?? normalizedSource === source,
+    ignoreEmpty,
   })
   restoreScriptSetupSrc(parsed.descriptor)
   restoreScriptSrc(parsed.descriptor)
   sfcParseCache.set(filename, {
-    signature,
-    source,
+    normalizedSource,
+    ignoreEmpty,
     descriptor: parsed.descriptor,
     errors: parsed.errors,
   })

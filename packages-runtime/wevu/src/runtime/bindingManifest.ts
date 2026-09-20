@@ -57,6 +57,8 @@ function isBindingRecord(value: unknown): value is WevuRuntimeBindingRecordV1 {
     && binding.id.length > 0
     && typeof binding.outputPath === 'string'
     && binding.outputPath.length > 0
+    && (binding.sourceFile === undefined
+      || (typeof binding.sourceFile === 'string' && binding.sourceFile.length > 0))
     && (binding.updateMode === undefined
       || (typeof binding.updateMode === 'string' && BINDING_UPDATE_MODES[binding.updateMode] === true))
     && (binding.sourceRoots === undefined || isStringArray(binding.sourceRoots))
@@ -167,7 +169,7 @@ export function resolveBindingDiagnostics(
       id: binding.id,
       outputPath: binding.outputPath,
       updateMode,
-      sourceFile: manifest.sourceFile,
+      sourceFile: binding.sourceFile ?? manifest.sourceFile,
     }
     if (binding.sourceLocation) {
       diagnostic.sourceLocation = binding.sourceLocation

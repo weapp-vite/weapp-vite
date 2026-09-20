@@ -44,6 +44,8 @@ export interface WevuBindingRecordV1 {
   id: string
   kind: WevuBindingKind
   outputPath: string
+  /** 仅在绑定源码归属不同于清单默认文件时记录。 */
+  sourceFile?: string
   sourceRoots: string[]
   sourcePaths?: string[]
   dependencies: WevuBindingDependencyV1[]

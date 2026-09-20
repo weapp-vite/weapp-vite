@@ -71,6 +71,9 @@ const tabBarList = issue793BuildScopeEnabled
 defineAppJson({
   pages: routes.pages,
   subPackages: appSubPackages,
+  ...(routes.pages.includes('pages/issue-955/index')
+    ? { style: 'v2', componentFramework: 'glass-easel' }
+    : {}),
   subpackages: appSubPackages,
   ...(issue793BuildScopeEnabled
     ? {

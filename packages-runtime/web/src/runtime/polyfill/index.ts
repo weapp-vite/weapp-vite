@@ -46,6 +46,10 @@ import {
   getLaunchOptionsSync,
   navigateBack,
   navigateTo,
+  offAppHide,
+  offAppShow,
+  onAppHide,
+  onAppShow,
   redirectTo,
   reLaunch,
   switchTab,
@@ -68,6 +72,10 @@ export {
   initializePageRoutes,
   navigateBack,
   navigateTo,
+  offAppHide,
+  offAppShow,
+  onAppHide,
+  onAppShow,
   redirectTo,
   registerApp,
   registerComponent,
@@ -75,6 +83,8 @@ export {
   reLaunch,
   switchTab,
 } from './routeRuntime'
+
+export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './routeRuntime/options'
 
 export * from './runtimeDataApi'
 export * from './uiMediaApi'
@@ -169,49 +179,56 @@ export function reportAnalytics(eventName: string, data?: Record<string, unknown
   reportAnalyticsBridge(eventName, data)
 }
 
-const miniProgramBridge = (globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined) ?? {}
-Object.assign(miniProgramBridge, {
-  navigateTo,
-  navigateBack,
-  redirectTo,
-  switchTab,
-  reLaunch,
-  getLaunchOptionsSync,
-  getEnterOptionsSync,
-  ...runtimeDataApi,
-  setNavigationBarTitle,
-  setNavigationBarColor,
-  setBackgroundColor,
-  setBackgroundTextStyle,
-  showNavigationBarLoading,
-  hideNavigationBarLoading,
-  ...uiMediaApi,
-  ...deviceAuthSystemApi,
-  ...eventBusApi,
-  loadFontFace,
-  getLocale,
-  createAnimation,
-  createRewardedVideoAd,
-  createInterstitialAd,
-  getExtConfigSync,
-  getExtConfig,
-  getUpdateManager,
-  getLogManager,
-  reportAnalytics,
-  canIUse,
-  cloud: cloudBridge,
-})
-const miniProgramEnv = (miniProgramBridge.env as Record<string, unknown> | undefined) ?? {}
-if (typeof miniProgramEnv.USER_DATA_PATH !== 'string' || !miniProgramEnv.USER_DATA_PATH.trim()) {
-  miniProgramEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
-}
-miniProgramBridge.env = miniProgramEnv
-for (const runtimeGlobalKey of MINI_PROGRAM_GLOBAL_KEYS) {
-  globalTarget[runtimeGlobalKey] = miniProgramBridge
-}
-if (typeof globalTarget.getApp !== 'function') {
-  globalTarget.getApp = getAppInstance
-}
-if (typeof globalTarget.getCurrentPages !== 'function') {
-  globalTarget.getCurrentPages = getCurrentPagesInternal
+/** 由公开运行时入口显式安装，确保拆分发布后的子模块不被摇树优化移除。 */
+export function installMiniProgramGlobals(): void {
+  const miniProgramBridge = (globalTarget[DEFAULT_MINI_PROGRAM_GLOBAL_KEY] as Record<string, unknown> | undefined) ?? {}
+  Object.assign(miniProgramBridge, {
+    navigateTo,
+    navigateBack,
+    redirectTo,
+    switchTab,
+    reLaunch,
+    getLaunchOptionsSync,
+    getEnterOptionsSync,
+    offAppHide,
+    offAppShow,
+    onAppHide,
+    onAppShow,
+    ...runtimeDataApi,
+    setNavigationBarTitle,
+    setNavigationBarColor,
+    setBackgroundColor,
+    setBackgroundTextStyle,
+    showNavigationBarLoading,
+    hideNavigationBarLoading,
+    ...uiMediaApi,
+    ...deviceAuthSystemApi,
+    ...eventBusApi,
+    loadFontFace,
+    getLocale,
+    createAnimation,
+    createRewardedVideoAd,
+    createInterstitialAd,
+    getExtConfigSync,
+    getExtConfig,
+    getUpdateManager,
+    getLogManager,
+    reportAnalytics,
+    canIUse,
+    cloud: cloudBridge,
+  })
+  const miniProgramEnv = (miniProgramBridge.env as Record<string, unknown> | undefined) ?? {}
+  if (typeof miniProgramEnv.USER_DATA_PATH !== 'string' || !miniProgramEnv.USER_DATA_PATH.trim()) {
+    miniProgramEnv.USER_DATA_PATH = WEB_USER_DATA_PATH
+  }
+  miniProgramBridge.env = miniProgramEnv
+  for (const runtimeGlobalKey of MINI_PROGRAM_GLOBAL_KEYS) {
+    globalTarget[runtimeGlobalKey] = miniProgramBridge
+  }
+  if (typeof globalTarget.getApp !== 'function') {
+    globalTarget.getApp = getAppInstance
+  }
+  if (typeof globalTarget.getCurrentPages !== 'function') {
+    globalTarget.getCurrentPages = getCurrentPagesInternal
+  }
 }

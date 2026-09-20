@@ -1,4 +1,4 @@
-import type { CompilerContext } from '../context'
+import type { CompilerContext, MutableCompilerContext } from '../context'
 import fs from 'node:fs'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 
@@ -7,7 +7,7 @@ const MANAGED_TAILWINDCSS_ENTRY_MARKER_SUFFIX = '__{--weapp-vite-managed-tailwin
 const MANAGED_TAILWINDCSS_OUTPUT_MARKER_PREFIX = '/*! weapp-vite managed-tailwindcss-output:'
 const MANAGED_TAILWINDCSS_OUTPUT_MARKER_RE = /\/\*! weapp-vite managed-tailwindcss-output:\d+ \*\/\s*/g
 
-const managedTailwindcssEntries = new WeakMap<CompilerContext, Set<string>>()
+const managedTailwindcssEntries = new WeakMap<MutableCompilerContext, Set<string>>()
 
 export function normalizeManagedTailwindcssEntryPath(id: string) {
   const normalized = normalizeFsResolvedId(id)
@@ -21,6 +21,10 @@ export function normalizeManagedTailwindcssEntryPath(id: string) {
 
 export function registerManagedTailwindcssEntries(ctx: CompilerContext, entries: string[]) {
   managedTailwindcssEntries.set(ctx, new Set(entries.map(normalizeManagedTailwindcssEntryPath)))
+}
+
+export function hasManagedTailwindcssEntries(ctx: MutableCompilerContext) {
+  return (managedTailwindcssEntries.get(ctx)?.size ?? 0) > 0
 }
 
 export function isManagedTailwindcssEntry(ctx: CompilerContext, id: string) {

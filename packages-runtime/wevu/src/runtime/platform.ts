@@ -138,9 +138,37 @@ export function getCurrentMiniProgramGlobalRouter(): MiniProgramGlobalRouter | u
     if (typeof handler !== 'function') {
       return undefined
     }
-    routerMethods[methodName] = (...args: any[]) => handler.apply(miniProgramGlobal, args)
+    routerMethods[methodName] = (...args: unknown[]) => handler.apply(miniProgramGlobal, args)
   }
   return routerMethods as MiniProgramGlobalRouter
+}
+
+/**
+ * @description 读取宿主 app 配置中的 tabBar 页面路径（未带前导 `/`）。
+ */
+export function getCurrentMiniProgramTabBarPagePaths(): string[] {
+  const hostConfig = getCurrentMiniProgramHostConfig()
+  const tabBar = hostConfig?.tabBar
+  if (!tabBar || typeof tabBar !== 'object') {
+    return []
+  }
+  if (!('list' in tabBar) || !Array.isArray(tabBar.list)) {
+    return []
+  }
+  const paths: string[] = []
+  for (const item of tabBar.list) {
+    if (!item || typeof item !== 'object' || !('pagePath' in item)) {
+      continue
+    }
+    const pagePath = item.pagePath
+    if (typeof pagePath !== 'string' || !pagePath) {
+      continue
+    }
+    // 微信开发者工具可能把宿主配置中的页面路径输出为 `.html` 形式，
+    // 路由层使用的是不带扩展名的页面路径，读取边界统一归一化。
+    paths.push(pagePath.replace(/\.html$/, ''))
+  }
+  return paths
 }
 
 export function getScopedSlotHostGlobalObject(): MiniProgramGlobal | undefined {

@@ -48,14 +48,14 @@ async function loadWithNativeImport() {
 Page({
   data: {
     status: 'ready',
+    mode: 'none',
+    marker: 'none',
   },
   async _runE2E(mode: 'callback' | 'native' | 'promise') {
-    if (mode === 'callback') {
-      return await loadWithCallback()
-    }
-    if (mode === 'native') {
-      return await loadWithNativeImport()
-    }
-    return await loadWithPromise()
+    const result = mode === 'callback'
+      ? await loadWithCallback()
+      : mode === 'native' ? await loadWithNativeImport() : await loadWithPromise()
+    this.setData({ status: result.ok ? 'loaded' : 'failed', mode: result.mode, marker: result.marker })
+    return result
   },
 })

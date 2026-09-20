@@ -1,9 +1,6 @@
-import type {
-  MiniProgramComponentAllProperty,
-  MiniProgramComponentInstance,
-} from '@/index'
+import type { MiniProgramComponentAllProperty, MiniProgramComponentInstance } from 'wevu'
 import { expectType } from 'tsd'
-import { defineEmits, defineModel, defineOptions, defineProps, withDefaults } from '@/index'
+import { defineEmits, defineModel, defineOptions, defineProps, withDefaults } from 'wevu'
 
 const propsByArray = defineProps(['foo', 'bar'])
 expectType<any>(propsByArray.foo)
@@ -186,6 +183,7 @@ defineOptions<ScriptSetupMacroData, never, ScriptSetupMacroMethods, ScriptSetupM
 })
 
 defineOptions(() => ({
+  name: 'FactoryComponent',
   externalClasses: ['custom-class'],
   options: {
     addGlobalClass: true,
@@ -193,6 +191,7 @@ defineOptions(() => ({
 }))
 
 defineOptions({
+  name: 'NamedComponent',
   externalClasses: ['plain-class'],
   options: {
     multipleSlots: true,
@@ -201,6 +200,6 @@ defineOptions({
 
 defineOptions(async () => ({
   options: {
-    styleIsolation: 'shared',
+    styleIsolation: 'shared' as const,
   },
 }))

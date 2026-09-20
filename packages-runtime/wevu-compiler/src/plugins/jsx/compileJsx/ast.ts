@@ -1,3 +1,4 @@
+import type { Scope } from '@weapp-vite/ast/babelTraverse'
 import type {
   Expression,
   JSXIdentifier,
@@ -14,6 +15,8 @@ import {
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../inlineDataset'
 import { generate, traverse } from '../../../utils/babel'
+import { createInlineExpressionParameterIdentifiers } from '../../vue/compiler/template/expression/inlineShared'
+import { shouldFallbackToRuntimeBinding } from '../../vue/compiler/template/expression/runtimeBinding'
 import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/wxml'
 
 const WXML_EXPRESSION_GENERATE_OPTIONS = {
@@ -46,8 +49,54 @@ export function unwrapTsExpression(exp: Expression): Expression {
 
 export { getObjectPropertyByKey, resolveRenderableExpression, toStaticObjectKey }
 
-export function normalizeInterpolationExpression(exp: Expression) {
-  return normalizeWxmlExpression(printExpression(unwrapTsExpression(exp)))
+export function normalizeInterpolationExpression(exp: Expression, context?: JsxCompileContext) {
+  const cached = context?.interpolationCache.get(exp)
+  if (cached != null) {
+    return cached
+  }
+  let source = printExpression(unwrapTsExpression(exp))
+  if (context?.setupRefBindings?.size) {
+    const expression = t.cloneNode(unwrapTsExpression(exp), true)
+    const file = t.file(t.program([t.expressionStatement(expression)]))
+    traverse(file, {
+      'MemberExpression|OptionalMemberExpression': {
+        enter(path) {
+          const member = path.node
+          if (!t.isMemberExpression(member) && !t.isOptionalMemberExpression(member)) {
+            return
+          }
+          const object = t.isExpression(member.object) ? unwrapTsExpression(member.object) : member.object
+          if (!t.isIdentifier(object) || !context.setupRefBindings?.has(object.name)
+            || context.scopeStack.includes(object.name) || path.scope.hasBinding(object.name)) {
+            return
+          }
+          if (member.loc?.filename && context.filename && member.loc.filename !== context.filename) {
+            return
+          }
+          const valueAccess = member.computed ? t.isStringLiteral(member.property, { value: 'value' }) : t.isIdentifier(member.property, { name: 'value' })
+          if (valueAccess) {
+            path.replaceWith(t.cloneNode(object))
+          }
+        },
+      },
+    })
+    const statement = file.program.body[0] as t.ExpressionStatement
+    source = printExpression(statement.expression)
+  }
+  let normalized = normalizeWxmlExpression(source)
+  if (context && shouldFallbackToRuntimeBinding(source)) {
+    const name = `__wv_bind_${context.classStyleBindings.filter(item => item.type === 'bind').length}`
+    context.classStyleBindings.push({
+      name,
+      type: 'bind',
+      exp: source,
+      forStack: context.forStack.map(info => ({ ...info })),
+    })
+    const indexAccess = context.forStack.map(info => `[${info.index ?? 'index'}]`).join('')
+    normalized = `${name}${indexAccess}`
+  }
+  context?.interpolationCache.set(exp, normalized)
+  return normalized
 }
 
 export function renderMustache(expression: string, context: Pick<JsxCompileContext, 'mustacheInterpolation'>) {
@@ -78,46 +127,63 @@ export function popScope(context: JsxCompileContext, count: number) {
   }
 }
 
-function collectExpressionScopeBindings(exp: Expression, context: JsxCompileContext): string[] {
+function analyzeInlineExpression(exp: Expression, context: JsxCompileContext) {
   const localSet = new Set(context.scopeStack)
-  if (!localSet.size) {
-    return []
-  }
-
   const used: string[] = []
   const usedSet = new Set<string>()
-  const file = t.file(t.program([t.expressionStatement(t.cloneNode(exp, true))]))
+  const identifierNames = new Set<string>()
+  const normalizedExpression = t.cloneNode(exp, true) as Expression
+  const file = t.file(t.program([t.expressionStatement(normalizedExpression)]))
+  let programScope: Scope | undefined
 
   traverse(file, {
+    Program(path) {
+      programScope = path.scope
+    },
     Identifier(path) {
-      if (!path.isReferencedIdentifier()) {
-        return
-      }
       const name = path.node.name
-      if (!localSet.has(name)) {
-        return
-      }
-      if (path.scope.hasBinding(name)) {
-        return
-      }
-      if (usedSet.has(name)) {
+      identifierNames.add(name)
+      if (
+        !localSet.has(name)
+        || !path.isReferencedIdentifier()
+        || path.scope.hasBinding(name)
+        || usedSet.has(name)
+      ) {
         return
       }
       usedSet.add(name)
       used.push(name)
     },
+    StringLiteral(path) {
+      path.node.extra = undefined
+    },
   })
+  if (!programScope) {
+    throw new Error('无法为 JSX 内联表达式创建程序作用域。')
+  }
 
-  return used
+  return {
+    parameterIdentifiers: createInlineExpressionParameterIdentifiers(
+      programScope,
+      identifierNames,
+    ),
+    normalizedExpression,
+    scopeKeys: used,
+  }
 }
 
 export function registerInlineExpression(exp: Expression, context: JsxCompileContext) {
-  const scopeKeys = collectExpressionScopeBindings(exp, context)
+  const { normalizedExpression, parameterIdentifiers, scopeKeys } = analyzeInlineExpression(exp, context)
   const id = createInlineExpressionId(context.inlineExpressionSeed++)
   context.inlineExpressions.push({
     id,
-    expression: printExpression(exp),
+    expression: generate(normalizedExpression, WXML_EXPRESSION_GENERATE_OPTIONS).code,
     scopeKeys,
+    parameterNames: {
+      context: parameterIdentifiers.context.name,
+      scope: parameterIdentifiers.scope.name,
+      event: parameterIdentifiers.event.name,
+    },
   })
   return {
     id,

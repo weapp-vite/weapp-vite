@@ -66,7 +66,6 @@ defineAppJson({
         'subpackages/normal-b',
       ],
       network: 'all',
-      timeout: 2000,
     },
   },
   style: 'v2',

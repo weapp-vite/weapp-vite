@@ -5,6 +5,7 @@ import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
@@ -123,6 +124,7 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
 
     try {
       miniProgram = await launchAutomator({
+        bridgeProjectMode: 'direct',
         projectPath: APP_ROOT,
         skipRelaunchPageRootCheck: true,
         skipWarmup: true,
@@ -150,6 +152,17 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
   })
 
   it('keeps wevu/router resolved after saving a page in real DevTools HMR', async (ctx) => {
+    const marker = createHmrMarker('WEVU-ROUTER-IDE-HMR', 'weapp')
+    const dom = createDomAcceptance(ctx, 'e2e-apps/wevu-router-hmr', [
+      { id: 'router:initial', route: INDEX_ROUTE, action: '检查 router 页面标题与当前路由', nodes: [
+        { selector: '.title', text: BASE_MARKER },
+        { selector: '.route', text: INDEX_ROUTE },
+      ] },
+      { id: 'router:updated', route: INDEX_ROUTE, action: '保存后当前页面标题更新、router 路由保留', nodes: [
+        { selector: '.title', text: marker },
+        { selector: '.route', text: INDEX_ROUTE },
+      ] },
+    ])
     if (sharedInfraUnavailableMessage) {
       ctx.skip(sharedInfraUnavailableMessage)
     }
@@ -157,14 +170,14 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
       throw new Error('wevu/router HMR IDE runtime setup did not create DevTools session.')
     }
 
-    const marker = createHmrMarker('WEVU-ROUTER-IDE-HMR', 'weapp')
     const updatedPageSource = replaceMarker(originalPageSource, marker)
 
     const collector = attachRuntimeErrorCollector(miniProgram)
     try {
       const beforeHmr = collector.mark()
       try {
-        await relaunchAndWaitForMarker(miniProgram, BASE_MARKER)
+        const page = await relaunchAndWaitForMarker(miniProgram, BASE_MARKER)
+        await dom.check('router:initial', miniProgram, page)
       }
       catch (error) {
         if (isDevtoolsRouteInfraError(error)) {
@@ -180,7 +193,11 @@ describe('wevu/router HMR fixture runtime', { concurrent: false }, () => {
       await devProcess.waitFor(waitForFileContains(PAGE_JS_PATH, 'weapp-vendors/wevu-router.js'), 'page keeps router vendor after HMR')
 
       try {
-        await relaunchAndWaitForMarker(miniProgram, marker)
+        const page = await miniProgram.currentPage()
+        if (!page) {
+          throw new Error('Router HMR lost the active page')
+        }
+        await dom.check('router:updated', miniProgram, page)
       }
       catch (error) {
         if (isDevtoolsRouteInfraError(error)) {

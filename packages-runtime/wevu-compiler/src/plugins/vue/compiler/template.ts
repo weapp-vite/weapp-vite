@@ -7,14 +7,17 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../runtimeCapabilities'
 
-import { createBindingManifest } from './template/bindingManifest'
+import { createBindingManifest, markBindingManifestIncomplete } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
+import { collectConditionalBranches } from './template/conditions'
 import { warn } from './template/diagnostics'
 import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
 import { getMiniProgramTemplatePlatform } from './template/platforms'
+import { retainScopedSlotOwnerBindings } from './template/scopedSlotOwnerBindings'
 
 const HTML_VOID_TAGS = new Set([
   'area',
@@ -182,6 +185,7 @@ export function compileVueTemplateToWxml(
       cssVars: options?.cssVars,
     }
 
+    collectConditionalBranches(ast.children)
     // 转换 AST 到 WXML
     let wxml = ast.children
       .map(child => transformNode(child, context))
@@ -195,6 +199,8 @@ export function compileVueTemplateToWxml(
     if (context.formatWxml) {
       wxml = formatWxml(wxml)
     }
+
+    retainScopedSlotOwnerBindings(context.bindingManifest, context.scopedSlotComponents)
 
     const result: TemplateCompileResult = {
       code: wxml,
@@ -233,12 +239,16 @@ export function compileVueTemplateToWxml(
     if (context.hasSlotOutlet) {
       result.hasSlotOutlet = true
     }
+    result.runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(
+      context.bindingManifest,
+    )
 
     return result
   }
   catch (error) {
     warn({ diagnostics, filename }, `模板编译失败：${error}`, undefined, 'template', 'WV2002')
     const bindingManifest = createBindingManifest(filename)
+    markBindingManifestIncomplete(bindingManifest)
     bindingManifest.bindings.push({
       id: 'b0',
       kind: 'text',

@@ -1,8 +1,6 @@
-import process from 'node:process'
 // import consola from 'consola'
 // import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 // import { ViteImageOptimizer } from 'vite-plugin-image-optimizer'
 // import Inspect from 'vite-plugin-inspect'
 
@@ -33,21 +31,6 @@ export default defineConfig({
   // mode: '',
   // mode: 'x',
   // mode: 'xx',
-  plugins: process.env.__TEST__
-    ? []
-    : [
-        WeappTailwindcss({
-          rem2rpx: true,
-          cssSelectorReplacement: {
-            root: ['page', '.tw-page'],
-          },
-        }),
-      // Inspect({
-      //   build: true,
-      //   // outputDir: '.vite-inspect',
-      // }),
-      // ViteImageOptimizer(),
-      ],
   // logLevel: 'info',
   envDir: 'envDir',
   css: {
@@ -59,6 +42,13 @@ export default defineConfig({
     },
   },
   weapp: {
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['tailwind.css'],
+      cssSelectorReplacement: {
+        root: ['page', '.tw-page'],
+      },
+    },
     hmr: {
       logLevel: 'verbose',
       profileJson: true,

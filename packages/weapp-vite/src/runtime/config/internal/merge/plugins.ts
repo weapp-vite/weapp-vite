@@ -34,6 +34,7 @@ export function arrangePlugins(
   const tsconfigPlugins: PluginOption[] = []
   const others: PluginOption[] = []
   const finalizers: PluginOption[] = []
+  const sourceCompilers: PluginOption[] = []
 
   for (const entry of internal) {
     if (!entry) {
@@ -41,6 +42,11 @@ export function arrangePlugins(
     }
     if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)) {
       finalizers.push(entry)
+      continue
+    }
+    if (isNamedPlugin(entry, 'weapp-vite:tailwindcss')) {
+      // 保持 enforce:pre，但排在用户 pre 插件之后、Vite CSS 之前消费内存源码。
+      sourceCompilers.push(entry)
       continue
     }
     others.push(entry)
@@ -63,5 +69,5 @@ export function arrangePlugins(
     others.push(entry)
   }
 
-  config.plugins = [...others, ...tsconfigPlugins, ...finalizers]
+  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...finalizers]
 }

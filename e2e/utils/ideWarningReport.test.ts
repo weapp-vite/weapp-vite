@@ -4,13 +4,20 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  appendIdeReportEvent,
   clearRuntimeWarningLog,
+  ensureIdeWarningReportEnv,
+  initializeIdeWarningReportRun,
+  resolveIdeWarningReportPathsFromEnv,
   resolveReportProjectPath,
   writeIdeWarningReport,
 } from './ideWarningReport'
 
+const tempReportRoots = new Set<string>()
+
 function createTempReportPaths() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ide-warning-report-'))
+  tempReportRoots.add(tempRoot)
   const reportDir = path.join(tempRoot, 'report')
   return {
     tempRoot,
@@ -28,6 +35,80 @@ describe('ideWarningReport', () => {
   afterEach(() => {
     delete process.env.WEAPP_VITE_E2E_REPORT_MARKERS
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+    for (const tempRoot of tempReportRoots) {
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+    }
+    tempReportRoots.clear()
+  })
+
+  it.each([undefined, 'partial-run'])('does not read another run metadata with incomplete report environment (%s)', (slug) => {
+    const { paths } = createTempReportPaths()
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG', slug)
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR', undefined)
+    vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', undefined)
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE', undefined)
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_JSON_FILE', undefined)
+    const read = vi.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify(paths))
+    const append = vi.spyOn(fs, 'appendFileSync').mockImplementation(() => {})
+
+    expect(resolveIdeWarningReportPathsFromEnv()).toBeNull()
+    appendIdeReportEvent({ source: 'runtime', kind: 'message', project: 'apps/demo', level: 'error', text: 'unit error' })
+
+    expect(read).not.toHaveBeenCalled()
+    expect(append).not.toHaveBeenCalled()
+  })
+
+  it('writes only to the report explicitly assigned to this run', () => {
+    const { tempRoot, paths } = createTempReportPaths()
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG', paths.reportSlug)
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR', paths.reportDir)
+    vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', paths.eventLogPath)
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE', paths.reportMarkdownPath)
+    vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_JSON_FILE', paths.reportJsonPath)
+    const event: IdeReportEvent = { source: 'runtime', kind: 'message', project: 'apps/demo', level: 'error', text: 'isolated unit error' }
+
+    try {
+      expect(ensureIdeWarningReportEnv()).toEqual(paths)
+      appendIdeReportEvent(event)
+      const stored = JSON.parse(fs.readFileSync(paths.eventLogPath, 'utf8')) as IdeReportEvent
+      expect(stored).toEqual({ ...event, recordedAt: expect.any(String) })
+      expect(Number.isFinite(Date.parse(stored.recordedAt!))).toBe(true)
+      expect(fs.readdirSync(tempRoot)).toEqual(['events.jsonl'])
+    }
+    finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('uses the OS temporary directory and keeps same-second invocation evidence separate', () => {
+    vi.spyOn(fs, 'writeFileSync').mockReturnValue(undefined)
+    vi.spyOn(fs, 'mkdirSync').mockReturnValue(undefined)
+    const now = new Date('2026-09-01T00:00:00.000Z')
+    const first = initializeIdeWarningReportRun(now)
+    const second = initializeIdeWarningReportRun(now)
+    expect(path.dirname(first.eventLogPath)).toBe(os.tmpdir())
+    expect(first.eventLogPath).not.toBe(second.eventLogPath)
+    expect(first.reportDir).not.toBe(second.reportDir)
+  })
+
+  it('initializes report paths without publishing a shared last-run file', () => {
+    for (const name of [
+      'WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG',
+      'WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR',
+      'WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE',
+      'WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE',
+      'WEAPP_VITE_E2E_IDE_WARNING_REPORT_JSON_FILE',
+    ]) {
+      vi.stubEnv(name, undefined)
+    }
+    const write = vi.spyOn(fs, 'writeFileSync').mockReturnValue(undefined)
+    vi.spyOn(fs, 'mkdirSync').mockReturnValue(undefined)
+
+    const paths = ensureIdeWarningReportEnv()
+
+    expect(resolveIdeWarningReportPathsFromEnv()).toEqual(paths)
+    expect(write.mock.calls).toEqual([[paths.eventLogPath, '', 'utf8']])
   })
 
   it('resolves project paths relative to repository root', () => {

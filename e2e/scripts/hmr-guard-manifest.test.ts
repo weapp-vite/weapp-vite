@@ -102,6 +102,7 @@ describe('hmr-guard manifest', () => {
     const labels = tasks.map(task => task.label)
 
     expect(labels).toEqual([
+      'ide/issue-1015-css-hmr.runtime.test.ts',
       'ide/stateful-hmr.runtime.test.ts',
       'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
       'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',

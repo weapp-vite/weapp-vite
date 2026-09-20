@@ -55,7 +55,7 @@ export function ensureIssue911Guard() {
     }
     if (mode === 'redirect') {
       recordIssue911Trace(mode, 'redirect')
-      return `${ISSUE_911_ROUTE}?mode=redirect-target`
+      return '/pages/issue-911-result/index'
     }
   })
 }
@@ -85,4 +85,10 @@ export function recordIssue911Unmounted() {
 
 export function readIssue911Trace() {
   return [...trace]
+}
+
+export function resetIssue911Trace() {
+  trace.length = 0
+  traceMode = undefined
+  wx.removeStorageSync(ISSUE_911_TRACE_STORAGE_KEY)
 }

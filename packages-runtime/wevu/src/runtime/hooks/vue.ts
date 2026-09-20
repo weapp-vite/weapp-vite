@@ -1,5 +1,6 @@
 import type { InternalRuntimeState } from '../types'
 import {
+  WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_ON_BEFORE_UPDATE_HOOK,
   WEVU_ON_UPDATED_HOOK,
 } from '@weapp-core/constants'
@@ -26,13 +27,10 @@ export function onUpdated(handler: () => void) {
 }
 
 /**
- * Vue 3 对齐：卸载前触发。
- * 小程序无 before-unload 生命周期，setup 时同步执行以保持语义。
+ * Vue 3 对齐：在卸载清理前触发，保持实例上下文和暴露方法可用。
  */
 export function onBeforeUnmount(handler: () => void) {
-  assertInSetup('onBeforeUnmount')
-  // 在 setup 期间立即执行，等价于“已进入挂载流程”
-  handler()
+  pushHook(assertInSetup('onBeforeUnmount'), WEVU_ON_BEFORE_UNMOUNT_HOOK, handler)
 }
 
 /**

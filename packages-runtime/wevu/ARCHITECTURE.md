@@ -212,30 +212,31 @@ export function queueJob(job: Job) {
 ```typescript
 // 文件：packages-runtime/wevu/src/runtime/app.ts
 
-function job() {
+function job(): void {
   if (!mounted) {
     return
   }
 
-  // 1. 收集当前快照
+  // 1. 收集当前逻辑快照
   const snapshot = collectSnapshot()
 
-  // 2. 与上一次快照 diff
-  const diff = diffSnapshots(latestSnapshot, snapshot)
-  latestSnapshot = snapshot
-
-  // 3. 如果没有变化，直接返回
+  // 2. 只以已派发快照作为并发准备基线
+  const diff = diffSnapshots(commitTracker.state.dispatchedSnapshot, snapshot)
   if (!Object.keys(diff).length) {
     return
   }
 
-  // 4. 调用小程序 setData
-  if (typeof currentAdapter.setData === 'function') {
-    const result = currentAdapter.setData(diff)
-    if (result && typeof result.then === 'function') {
-      result.catch(() => {})
-    }
-  }
+  // 3. 中央提交跟踪器负责 revision、宿主完成信号与失败恢复
+  commitTracker.dispatch({
+    mode: 'diff',
+    kind: 'delta',
+    reason: 'diff',
+    snapshot,
+    payload: diff,
+    pendingPatchKeys: 0,
+  })
+
+  // job 始终返回 void；宿主 Promise/回调不进入 nextTick。
 }
 
 // 📅 创建 effect，使用调度器
@@ -488,14 +489,13 @@ export default {
 │       - 收集当前所有 state 和 computed 的值                   │
 │       - 转换为普通对象 (toPlain)                             │
 │                                                               │
-│    b) diffSnapshots(latestSnapshot, snapshot)               │
-│       - 深度对比新旧快照                                     │
-│       - 生成最小变更集                                       │
+│    b) diffSnapshots(dispatchedSnapshot, snapshot)           │
+│       - 以已派发快照为基线生成最小变更集                     │
 │       - 例如: { count: 3 }                                   │
 │                                                               │
-│    c) adapter.setData(diff)                                  │
-│       - 调用小程序 setData                                   │
-│       - 传递最小变更集                                       │
+│    c) commitTracker.dispatch(snapshot, payload)              │
+│       - 登记 revision 后调用小程序 setData                    │
+│       - 宿主确认成功才推进 committedSnapshot                  │
 └─────────────────────────────────────────────────────────────┘
                          ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -654,15 +654,17 @@ console.log(count.value) // 1 ← 已更新！
 - ⏳ **小程序 setData 未执行**：视图还没更新
 - 📅 **微任务后 setData**：在下一个微任务才调用 setData
 
-**如果需要在 setData 后执行代码：**
+`nextTick` 可用于等待本轮响应式任务完成并确认 `setData` 已经派发：
 
 ```typescript
 import { nextTick } from 'wevu'
 
 count.value++
-await nextTick() // 等待 setData 完成
-console.log('视图已更新')
+await nextTick() // JavaScript/响应式队列已排空，宿主回调仍可能等待中
+console.log(count.value) // 读取最新响应式状态
 ```
+
+`nextTick` 不承诺小程序视图已经提交，也不等待 `setData` 回调或适配器 Promise。
 
 ### Q2: 为什么 watch 的回调没有立即执行？
 
@@ -696,31 +698,19 @@ watch(count, (newValue, oldValue) => {
 
 ### Q3: setData 失败了怎么办？
 
-```typescript
-function job() {
-  const diff = diffSnapshots(latestSnapshot, snapshot)
+宿主提交由内部 revision 跟踪器统一归一化。同步抛错、Promise 拒绝和内部原生回调失败都会冻结可信提交快照，并让下一次响应式更新发送完整快照；错误不会通过 `nextTick` 传播。
 
-  if (typeof currentAdapter.setData === 'function') {
-    const result = currentAdapter.setData(diff)
-    if (result && typeof result.then === 'function') {
-      result.catch(() => {}) // ← 捕获错误，避免中断
-    }
-  }
-}
-```
-
-**答案**：wevu 自动捕获 setData 错误，不会中断后续代码。
-
-**如何监听 setData 错误：**
+可以通过组件/页面的 `onError`、`onErrorCaptured` 监听规范化错误，也可以在 `setData.debug` 中观察 `reason: 'commitFailure'` 的诊断信息。错误只上报一次，运行时不会自动重试或重新派发：
 
 ```typescript
-const runtime = app.mount({
-  setData(payload) {
-    return this.setData(payload).catch((error) => {
-      console.error('setData error:', error)
-      // 可以在这里处理错误，比如上报到监控系统
-    })
-  }
+const app = createApp({
+  setData: {
+    debug(info) {
+      if (info.reason === 'commitFailure') {
+        console.warn(info.message, info.revision, info.committedRevision)
+      }
+    },
+  },
 })
 ```
 

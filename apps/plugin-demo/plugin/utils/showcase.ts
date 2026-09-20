@@ -74,7 +74,7 @@ export function getFeatureKindLabel(kind: PluginFeatureKind) {
   const labelMap: Record<PluginFeatureKind, string> = {
     'vue-sfc': 'Vue SFC',
     'native-ts': 'Native TS',
-    scss: 'SCSS',
+    'scss': 'SCSS',
   }
   return labelMap[kind]
 }

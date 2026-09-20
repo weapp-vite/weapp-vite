@@ -12,6 +12,24 @@ vi.mock('../../../../plugins', () => ({
 }))
 
 describe('runtime config merge plugins', () => {
+  it('runs the Tailwind source compiler after user pre plugins without moving the final output owner', () => {
+    const compiler = { name: 'weapp-vite:tailwindcss', enforce: 'pre' }
+    vitePluginWeappMock.mockReturnValueOnce([
+      { name: 'weapp-vite:context' },
+      compiler,
+      { name: 'weapp-vite:output-finalizer' },
+    ])
+    const userPre = { name: 'user-pre', enforce: 'pre' }
+    const config: any = { plugins: [userPre] }
+    arrangePlugins(config, {} as any, undefined)
+    expect(config.plugins).toEqual([
+      { name: 'weapp-vite:context' },
+      userPre,
+      compiler,
+      { name: 'weapp-vite:output-finalizer' },
+    ])
+  })
+
   it('normalizes nested plugin options into a flat array', () => {
     expect(normalizePluginOptions([
       { name: 'a' },

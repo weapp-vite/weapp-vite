@@ -6,6 +6,7 @@ import { useDevicePreview } from './devicePreview/useDevicePreview'
 
 const props = defineProps<{
   markup: string
+  styleText?: string
   route: string
   viewportHeight: number
   viewportWidth: number
@@ -18,9 +19,10 @@ const emit = defineEmits<{
   updateViewport: [payload: { height: number, width: number }]
 }>()
 
-const preview = reactive(useDevicePreview(props, emit))
-const previewHost = preview.previewHost
-const previewStage = preview.previewStage
+const previewState = useDevicePreview(props, emit)
+const preview = reactive(previewState)
+// 模板 ref 必须保留原始 Ref，不能读取 reactive 代理后得到已解包的 null。
+const { previewHost, previewStage } = previewState
 </script>
 
 <template>

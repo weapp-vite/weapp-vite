@@ -1,4 +1,5 @@
 import type { ResolvedConfig, ViteDevServer } from 'vite'
+import vue from '@vitejs/plugin-vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createVueOxcTsconfigGuard } from './vueOxcTsconfigGuard'
 
@@ -17,6 +18,20 @@ function createVuePlugin() {
 }
 
 describe('createVueOxcTsconfigGuard', () => {
+  it('accepts the real Vue plugin API and preserves its resolved options', () => {
+    const vuePlugin = vue({ include: /\.vue$/ })
+    const guard = createVueOxcTsconfigGuard(vuePlugin)
+    const config = { plugins: [vuePlugin, guard] } as unknown as ResolvedConfig
+    const include = vuePlugin.api!.options.include
+    ;(guard.configResolved as (config: ResolvedConfig) => void)(config)
+    ;(guard.buildStart as () => void)()
+    expect(vuePlugin.api!.options.include).toBe(include)
+    expect(vuePlugin.api!.options.devServer?.config.oxc).toMatchObject({ tsconfig: false })
+    ;(guard.buildEnd as () => void)()
+    expect(vuePlugin.api!.options.include).toBe(include)
+    expect(vuePlugin.api!.options.devServer).toBeUndefined()
+  })
+
   it('discovers the Vite Vue plugin and disables Oxc tsconfig lookup during builds', () => {
     const { devServer, plugin: vuePlugin } = createVuePlugin()
     const guard = createVueOxcTsconfigGuard()

@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   disconnectSharedMiniProgram,
   DIST_ROOT,
@@ -10,6 +12,8 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { fallbackPlans } from './githubIssuesDom/fallbacks'
+import { checkScopedFlexRow } from './githubIssuesDom/flexLayout'
 
 function countToken(wxml: string, token: string) {
   return wxml.split(token).length - 1
@@ -29,6 +33,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
   })
 
   it('issue #520: renders slots passed to resolver-imported wevu components', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', fallbackPlans(resolveRuntimeProviderName()).issue520)
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/pages/issue-520/index'
     try {
@@ -48,6 +53,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
       expect(pageWxml).toContain('data-issue520-slot="default"')
       expect(pageWxml).toContain('issue-520 resolver slot header')
       expect(pageWxml).toContain('issue-520 resolver slot default')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -55,6 +61,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
   })
 
   it('issue #521: keeps scoped slot flex children on the same row in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', fallbackPlans(resolveRuntimeProviderName()).issue521)
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/pages/issue-521/index'
     try {
@@ -73,6 +80,10 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
       expect(itemWxml).toContain('{{label}}: {{displayValue}}')
       expect(hostWxss).toMatch(/display:\s*flex/)
       expect(hostWxss).toMatch(/flex-flow:\s*row nowrap/)
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
+      if (resolveRuntimeProviderName() === 'devtools') {
+        await checkScopedFlexRow(ctx, issuePage)
+      }
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -80,6 +91,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
   })
 
   it('issue #528: renders slot fallback only when parent slot content is absent', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', fallbackPlans(resolveRuntimeProviderName()).issue528)
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/pages/issue-528/index'
     try {
@@ -103,6 +115,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
       expect(cardScript).toContain('issue-528 fallback default')
       expect(countToken(pageWxml, 'issue-528 provided header')).toBe(1)
       expect(countToken(pageWxml, 'issue-528 provided default')).toBe(1)
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -110,6 +123,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
   })
 
   it('issue #530: renders default slot fallback with short slot presence metadata', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', fallbackPlans(resolveRuntimeProviderName()).issue530)
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/pages/issue-530/index'
     try {
@@ -125,6 +139,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
       expect(countToken(componentWxml, 'issue-530 fallback default')).toBe(1)
       expect(countToken(componentWxml, 'issue-530 scoped fallback default')).toBe(1)
       expect(scopedSlotWxml).toContain('issue-530 provided default: {{__wvSlotPropsData.label}}')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -132,6 +147,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
   })
 
   it('scoped slot outlet fallback: renders native named slot projection in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', fallbackPlans(resolveRuntimeProviderName()).outlet)
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/pages/scoped-slot-outlet-fallback/index'
     try {
@@ -154,6 +170,7 @@ describe('e2e app: github-issues / slot fallback', { concurrent: false }, () => 
       expect(countToken(pageWxml, 'data-scoped-slot-outlet-fallback="footer"')).toBe(1)
       expect(componentWxml).toContain('<slot name="main" />')
       expect(componentWxml).toContain('<slot name="footer" />')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

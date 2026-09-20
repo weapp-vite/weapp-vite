@@ -1,5 +1,7 @@
 <script lang="ts">
-export default {
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
   data() {
     return {
       message: '这是父组件的数据',
@@ -19,7 +21,7 @@ export default {
       this.inlineTarget = event?.currentTarget?.id ?? ''
     },
   },
-}
+})
 </script>
 
 <template>

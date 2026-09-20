@@ -1,11 +1,12 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { PreviewTapInvocation } from './constants'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { PREVIEW_SHADOW_CSS } from './constants'
+import { PREVIEW_PAGE_CSS, PREVIEW_SHADOW_CSS } from './constants'
 import { resolveTapChain } from './previewEvents'
 
 export function usePreviewShadow(
   markup: Ref<string>,
+  styleText: Ref<string | undefined>,
   previewScale: ComputedRef<number>,
   stageSize: Ref<{ height: number, width: number }>,
   viewportHeight: Ref<number>,
@@ -44,9 +45,13 @@ export function usePreviewShadow(
     }
 
     previewShadowRoot.innerHTML = `
-      <style>${PREVIEW_SHADOW_CSS}</style>
+      <style>${styleText.value === undefined ? PREVIEW_SHADOW_CSS : PREVIEW_PAGE_CSS}</style>
       <div class="sim-shadow-screen">${nextMarkup}</div>
     `
+    const pageStyle = document.createElement('style')
+    pageStyle.dataset.simPageStyles = ''
+    pageStyle.textContent = styleText.value ?? ''
+    previewShadowRoot.append(pageStyle)
   }
 
   function handleResizeDragMove(event: PointerEvent) {
@@ -112,7 +117,7 @@ export function usePreviewShadow(
     }
   })
 
-  watch(markup, (nextMarkup) => {
+  watch([markup, styleText], ([nextMarkup]) => {
     renderPreviewMarkup(nextMarkup)
   }, {
     immediate: true,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onLoad, ref } from 'wevu'
+import { waitForRequestClientsRealWebSocketProbe } from '../../../../../e2e/utils/requestClientsRealWebSocketProbe'
 import {
   createErrorState,
   createRequestCaseState,
@@ -15,22 +16,11 @@ const state = ref(createRequestCaseState())
 const websocketUrl = ref('')
 const connectedReadyState = ref(-1)
 const finalReadyState = ref(-1)
+const echoStage = ref('')
+const echoRun = ref(0)
 const latestRandomMessage = ref('')
 const latestRandomSentAt = ref('')
 const randomPushCount = ref(0)
-
-interface NativeWebSocketPayload {
-  body?: Record<string, unknown>
-  client: string
-  event?: string
-  message?: string
-  path: string
-  requestCount: number
-  sentAt?: string
-  stage: string
-  transport?: string
-  url?: string
-}
 
 async function runCase() {
   if (!baseUrl.value) {
@@ -39,6 +29,10 @@ async function runCase() {
   }
 
   state.value = createRunningState(state.value)
+  connectedReadyState.value = -1
+  finalReadyState.value = -1
+  echoStage.value = ''
+  echoRun.value = 0
 
   try {
     websocketUrl.value = `${baseUrl.value.replace(HTTP_PROTOCOL_RE, 'ws')}/ws`
@@ -46,77 +40,16 @@ async function runCase() {
     latestRandomSentAt.value = ''
     randomPushCount.value = 0
 
-    const payload = await new Promise<{ echoPayload: NativeWebSocketPayload, tickPayload: NativeWebSocketPayload }>((resolve, reject) => {
-      const socket = new WebSocket(websocketUrl.value)
-      let echoPayload: NativeWebSocketPayload | null = null
-      let settled = false
-      let welcomeReceived = false
-
-      const cleanup = () => {
-        socket.onopen = null
-        socket.onmessage = null
-        socket.onerror = null
-        socket.onclose = null
-      }
-
-      const finalize = (handler: () => void) => {
-        if (settled) {
-          return
-        }
-        settled = true
-        cleanup()
-        handler()
-      }
-
-      socket.onopen = () => {
-        connectedReadyState.value = socket.readyState
-        socket.send(JSON.stringify({
-          client: 'native-websocket',
-          run: state.value.runCount,
-        }))
-      }
-
-      socket.onmessage = (event) => {
-        const data = typeof event.data === 'string' ? event.data : ''
-        const parsed = JSON.parse(data) as NativeWebSocketPayload
-        if (!welcomeReceived) {
-          welcomeReceived = true
-          return
-        }
-
-        if (parsed.stage === 'echo') {
-          echoPayload = parsed
-          return
-        }
-
-        if (parsed.stage !== 'tick') {
-          return
-        }
-
-        finalReadyState.value = socket.readyState
-        latestRandomMessage.value = parsed.message ?? ''
-        latestRandomSentAt.value = parsed.sentAt ?? ''
-        randomPushCount.value = parsed.requestCount
-        finalize(() => {
-          socket.close()
-          resolve({
-            echoPayload: echoPayload ?? parsed,
-            tickPayload: parsed,
-          })
-        })
-      }
-
-      socket.onerror = (error) => {
-        finalize(() => {
-          socket.close()
-          reject(error)
-        })
-      }
-
-      socket.onclose = () => {
-        finalReadyState.value = socket.readyState
-      }
-    })
+    // eslint-disable-next-line mini-program/no-implicit-runtime-polyfill -- fixture 已启用 appPrelude.webRuntime，此处验证注入后的 WebSocket。
+    const socket = new WebSocket(websocketUrl.value)
+    const payload = await waitForRequestClientsRealWebSocketProbe(socket, state.value.runCount)
+    connectedReadyState.value = payload.connectedReadyState
+    finalReadyState.value = payload.finalReadyState
+    echoStage.value = payload.echoPayload.stage
+    echoRun.value = Number(payload.echoPayload.body?.run)
+    latestRandomMessage.value = payload.tickPayload.message ?? ''
+    latestRandomSentAt.value = payload.tickPayload.sentAt ?? ''
+    randomPushCount.value = payload.tickPayload.requestCount
 
     if (payload.echoPayload.client !== 'native-websocket' || payload.echoPayload.transport !== 'websocket') {
       throw new Error(`unexpected websocket payload: ${JSON.stringify(payload)}`)
@@ -176,7 +109,14 @@ onLoad((query) => {
       <text id="websocket-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="websocket-request-count" class="line">requestCount = {{ state.requestCount }}</text>
       <text id="websocket-request-path" class="line">requestPath = {{ state.requestPath }}</text>
+      <text id="websocket-response-client" class="line">client = {{ state.response.client }}</text>
+      <text id="websocket-response-transport" class="line">transport = {{ state.response.transport }}</text>
+      <text id="websocket-response-method" class="line">method = {{ state.response.method }}</text>
+      <text id="websocket-response-operationName" class="line">operationName = {{ state.response.operationName }}</text>
+      <text id="websocket-response-event" class="line">event = {{ state.response.event }}</text>
       <text id="websocket-connected-ready-state" class="line">connectedReadyState = {{ connectedReadyState }}</text>
+      <text id="websocket-echo-stage" class="line">echoStage = {{ echoStage }}</text>
+      <text id="websocket-echo-run" class="line">echoRun = {{ echoRun }}</text>
       <text id="websocket-final-ready-state" class="line">finalReadyState = {{ finalReadyState }}</text>
       <text class="line">randomPushCount = {{ randomPushCount }}</text>
       <text class="line">latestRandomMessageReady = {{ latestRandomMessage ? 'yes' : 'no' }}</text>

@@ -1,0 +1,3 @@
+<view class="child-count">{{count}}</view>
+<view class="child-result">{{result}}</view>
+<button class="child-increment" bindtap="increment">increment child</button>

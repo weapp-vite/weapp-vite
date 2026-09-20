@@ -52,9 +52,9 @@ const _runE2E = runE2E
     <view id="scope-page-provider" class="provide-inject-scope-page__line">
       page provide = page-provide-value
     </view>
-    <ProvideInjectScopeMiddle />
-    <ProvideInjectSlotProvider>
-      <ProvideInjectSlotLeaf />
+    <ProvideInjectScopeMiddle id="scope-middle" />
+    <ProvideInjectSlotProvider id="scope-slot-provider-component">
+      <ProvideInjectSlotLeaf id="scope-slot-leaf" />
     </ProvideInjectSlotProvider>
   </view>
 </template>

@@ -1,4 +1,5 @@
-import { loadContactProfile, type ContactProfile } from '../../utils/api'
+import type { ContactProfile } from '../../utils/api'
+import { loadContactProfile } from '../../utils/api'
 
 const emptyProfile: ContactProfile = {
   id: '',

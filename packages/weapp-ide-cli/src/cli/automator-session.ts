@@ -61,22 +61,26 @@ async function launchFreshAutomator(options: AutomatorSessionOptions) {
   }) as MiniProgramLike
 }
 
-function normalizeMiniProgramConnectionError(error: unknown) {
+function normalizeMiniProgramConnectionError(error: unknown, background = false) {
+  // 后台日志桥接由外层管理重试；连接探针保留 debug 诊断，最终失败由启动入口报告。
+  const diagnostics = background
+    ? { error: (message: string) => logger.debug(message), warn: (message: string) => logger.debug(message) }
+    : logger
   if (isAutomatorLoginError(error)) {
-    logger.error(i18nText(
+    diagnostics.error(i18nText(
       '检测到微信开发者工具登录状态失效，请先登录后重试。',
       'Wechat DevTools login has expired. Please login and retry.',
     ))
-    logger.warn(formatAutomatorLoginError(error))
+    diagnostics.warn(formatAutomatorLoginError(error))
     return new Error('DEVTOOLS_LOGIN_REQUIRED')
   }
 
   if (isDevtoolsHttpPortError(error)) {
-    logger.error(i18nText(
+    diagnostics.error(i18nText(
       '无法连接到微信开发者工具，请确保已开启 HTTP 服务端口。',
       'Cannot connect to Wechat DevTools. Please ensure HTTP service port is enabled.',
     ))
-    logger.warn(i18nText(
+    diagnostics.warn(i18nText(
       '请在微信开发者工具中：设置 -> 安全设置 -> 开启服务端口',
       'Please enable service port in Wechat DevTools: Settings -> Security -> Service Port',
     ))
@@ -84,11 +88,11 @@ function normalizeMiniProgramConnectionError(error: unknown) {
   }
 
   if (isDevtoolsExtensionContextInvalidatedError(error)) {
-    logger.error(i18nText(
+    diagnostics.error(i18nText(
       '微信开发者工具自动化上下文尚未就绪，通常是刚启动或正在重载。',
       'Wechat DevTools automation context is not ready yet, usually because the IDE has just started or is still reloading.',
     ))
-    logger.warn(i18nText(
+    diagnostics.warn(i18nText(
       '请稍后重试；若持续失败，关闭多余的开发者工具窗口后重试。',
       'Please retry shortly. If it keeps failing, close extra DevTools windows and try again.',
     ))
@@ -96,11 +100,11 @@ function normalizeMiniProgramConnectionError(error: unknown) {
   }
 
   if (isAutomatorWsConnectError(error) || isAutomatorPortInUseError(error)) {
-    logger.error(i18nText(
+    diagnostics.error(i18nText(
       '无法连接到当前项目的微信开发者工具自动化 websocket。',
       'Cannot connect to the Wechat DevTools automation websocket for the current project.',
     ))
-    logger.warn(i18nText(
+    diagnostics.warn(i18nText(
       '请确认当前打开的是目标项目；若之前跑过其他 e2e / screenshot 任务，关闭多余的微信开发者工具窗口，或结束残留的 `wechatwebdevtools cli auto --project ...` 进程后重试。',
       'Please confirm the current DevTools window is the target project. If you recently ran other e2e / screenshot tasks, close extra windows or stop stale `wechatwebdevtools cli auto --project ...` processes and retry.',
     ))
@@ -109,11 +113,11 @@ function normalizeMiniProgramConnectionError(error: unknown) {
 
   if (isAutomatorProtocolTimeoutError(error)) {
     const method = getAutomatorProtocolTimeoutMethod(error) ?? 'unknown'
-    logger.error(i18nText(
+    diagnostics.error(i18nText(
       `微信开发者工具在协议调用 ${method} 上超时，未按预期返回结果。`,
       `Wechat DevTools timed out while executing protocol method ${method} and did not return a result.`,
     ))
-    logger.warn(i18nText(
+    diagnostics.warn(i18nText(
       '这通常表示当前 DevTools 自动化会话已卡住、窗口不在目标项目、或当前 DevTools 版本对该协议调用无响应。请重开目标项目窗口后重试；若仍复现，优先记录当前 DevTools 版本与协议方法名继续排查。',
       'This usually means the current DevTools automation session is stuck, the window is not on the target project, or the current DevTools version is not responding to that protocol method. Reopen the target project window and retry. If it still reproduces, record the current DevTools version and protocol method name for follow-up debugging.',
     ))
@@ -126,7 +130,7 @@ function normalizeMiniProgramConnectionError(error: unknown) {
 /**
  * @description 建立 automator 会话，并统一处理常见连接错误提示。
  */
-export async function connectMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
+async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOptions, background: boolean): Promise<MiniProgramLike> {
   const result = await runRetryableCommand<AutomatorConnectionResult, 'retry' | 'cancel' | 'timeout'>({
     createCancelError: result => createWechatIdeLoginRequiredExitError(
       unwrapAutomatorConnectionError(result),
@@ -142,7 +146,7 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
         }
         catch (error) {
           if (!isAutomatorLoginError(error)) {
-            throw normalizeMiniProgramConnectionError(error)
+            throw normalizeMiniProgramConnectionError(error, background)
           }
           return {
             error,
@@ -158,7 +162,7 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
         } as const
       }
       catch (error) {
-        const normalizedOpenSessionError = normalizeMiniProgramConnectionError(error)
+        const normalizedOpenSessionError = normalizeMiniProgramConnectionError(error, background)
         const requiresOpenedSession = options.openedOnly
           || ((options.preferOpenedSession as boolean | undefined) !== false && Boolean(options.port || options.sessionId))
         if (requiresOpenedSession) {
@@ -176,7 +180,7 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
         }
         catch (launchError) {
           if (!isAutomatorLoginError(launchError)) {
-            throw normalizeMiniProgramConnectionError(launchError)
+            throw normalizeMiniProgramConnectionError(launchError, background)
           }
           return {
             error: launchError,
@@ -202,6 +206,24 @@ export async function connectMiniProgram(options: AutomatorSessionOptions): Prom
   }
 
   return result.value
+}
+
+/** 建立交互式会话，并报告最终连接错误。 */
+export async function connectMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
+  return await connectMiniProgramWithDiagnostics(options, false)
+}
+
+/** 后台日志桥接的连接探针，不在每次可恢复失败时输出终局错误。 */
+export async function connectConsoleMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
+  return await connectMiniProgramWithDiagnostics(options, true)
+}
+
+/** 为后台日志桥接保留共享会话所有权和诊断级别。 */
+export async function acquireConsoleMiniProgram(options: AutomatorSessionOptions): Promise<MiniProgramLike> {
+  return await acquireRuntimeSharedMiniProgram({
+    connectMiniProgram: connectConsoleMiniProgram,
+    normalizeConnectionError: error => normalizeMiniProgramConnectionError(error, true),
+  }, options)
 }
 
 const runtimeHooks = {

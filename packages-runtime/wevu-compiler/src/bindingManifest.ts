@@ -15,6 +15,7 @@ export function createRuntimeBindingManifest(
   const bindings = manifest.bindings.map((binding): WevuRuntimeBindingRecordV1 => ({
     id: binding.id,
     outputPath: binding.outputPath,
+    ...(mode === 'diagnostic' && binding.sourceFile ? { sourceFile: binding.sourceFile } : {}),
     ...(binding.updateMode === 'exact-path' ? {} : { updateMode: binding.updateMode }),
     ...(binding.updateMode === 'snapshot-fallback' && binding.sourceRoots.length
       ? { sourceRoots: binding.sourceRoots }

@@ -1,6 +1,6 @@
 <view class="issue466-computed-probe">
-  <text class="issue466-computed-probe-line">sum = {{sum}}</text>
-  <text class="issue466-computed-probe-line">summary = {{summary}}</text>
+  <text id="computed-sum" class="issue466-computed-probe-line">sum = {{sum}}</text>
+  <text id="computed-summary" class="issue466-computed-probe-line">summary = {{summary}}</text>
   <text class="issue466-computed-probe-line">watchCount = {{watchCount}}</text>
-  <text class="issue466-computed-probe-line">lastWatch = {{lastWatch || 'none'}}</text>
+  <text id="computed-watch" class="issue466-computed-probe-line">lastWatch = {{lastWatch || 'none'}}</text>
 </view>

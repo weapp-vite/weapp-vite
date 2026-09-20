@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'wevu'
 import type { PluginFeatureCard } from '../../utils/showcase'
+import { computed } from 'wevu'
 
 const props = defineProps<{
   entries?: PluginFeatureCard[]

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'wevu'
-import NativeUsesVue from '../../../native/native-uses-vue/index'
 import VueCard from '../../../components/vue-card/index.vue'
+import NativeUsesVue from '../../../native/native-uses-vue/index'
 
 definePageJson({
   navigationBarTitleText: '组件互操作',

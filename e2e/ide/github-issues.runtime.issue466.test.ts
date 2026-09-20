@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   callRoutePageMethod,
   callRoutePageMethodWithOptions,
@@ -9,6 +11,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { allDialogSteps, dialogCheckpoints, MAIN_DIALOG_STEPS, NATIVE_DIALOG_STEPS, runDialogSteps } from './githubIssuesDom/dialogs'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const ISSUE466_FLOW_CALL_OPTIONS = {
@@ -176,6 +179,7 @@ describe('github-issues runtime issue-466', { concurrent: false }, () => {
   }, 30_000)
 
   it('issue #466: keeps main-package tdesign Dialog.confirm callable through a user-facing page flow', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', dialogCheckpoints('/pages/issue-466/index', '#issue466-main-dialog', MAIN_DIALOG_STEPS, resolveRuntimeProviderName()))
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/pages/issue-466/index'
     let collector: ReturnType<typeof attachRuntimeErrorCollector> | null = null
@@ -200,11 +204,11 @@ describe('github-issues runtime issue-466', { concurrent: false }, () => {
       await waitForIssue466MainRuntime(activeMiniProgram, route, page)
 
       const marker = collector.mark()
-      const flow = await callRoutePageMethodWithOptions<Record<string, any>>(
-        activeMiniProgram,
-        route,
-        '_runMainDialogFlowE2E',
-        ISSUE466_FLOW_CALL_OPTIONS,
+      const flow = await runDialogSteps(
+        page,
+        MAIN_DIALOG_STEPS,
+        method => callRoutePageMethodWithOptions(activeMiniProgram, route, method, ISSUE466_FLOW_CALL_OPTIONS),
+        async (id) => { await dom.check(id, activeMiniProgram, page) },
       )
       expect(collector.getSince(marker)).toEqual([])
 
@@ -278,6 +282,8 @@ describe('github-issues runtime issue-466', { concurrent: false }, () => {
   })
 
   it('issue #466: keeps imported tdesign Dialog methods callable in DevTools runtime', async (ctx) => {
+    const steps = allDialogSteps()
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', dialogCheckpoints('/subpackages/issue-466/index', '#issue466-dialog', steps, resolveRuntimeProviderName()))
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/subpackages/issue-466/index'
     let collector: ReturnType<typeof attachRuntimeErrorCollector> | null = null
@@ -299,11 +305,11 @@ describe('github-issues runtime issue-466', { concurrent: false }, () => {
       await waitForIssue466Runtime(activeMiniProgram, route, page)
 
       const marker = collector.mark()
-      const flow = await callRoutePageMethodWithOptions<Record<string, any>>(
-        activeMiniProgram,
-        route,
-        '_runAllDialogMethodsE2E',
-        ISSUE466_FLOW_CALL_OPTIONS,
+      const flow = await runDialogSteps(
+        page,
+        steps,
+        method => callRoutePageMethodWithOptions(activeMiniProgram, route, method, ISSUE466_FLOW_CALL_OPTIONS),
+        async (id) => { await dom.check(id, activeMiniProgram, page) },
       )
       expect(collector.getSince(marker)).toEqual([])
 
@@ -445,6 +451,7 @@ describe('github-issues runtime issue-466', { concurrent: false }, () => {
   })
 
   it('issue #466: keeps native aliased tdesign Dialog.confirm callable in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', dialogCheckpoints('/subpackages/issue-466/native/index', '#issue466-native-dialog', NATIVE_DIALOG_STEPS, resolveRuntimeProviderName()))
     const miniProgram = await getSharedMiniProgram(ctx)
     const route = '/subpackages/issue-466/native/index'
     let collector: ReturnType<typeof attachRuntimeErrorCollector> | null = null
@@ -466,11 +473,11 @@ describe('github-issues runtime issue-466', { concurrent: false }, () => {
       await waitForIssue466NativeRuntime(activeMiniProgram, route, page)
 
       const marker = collector.mark()
-      const flow = await callRoutePageMethodWithOptions<Record<string, any>>(
-        activeMiniProgram,
-        route,
-        '_runNativeDialogFlowE2E',
-        ISSUE466_FLOW_CALL_OPTIONS,
+      const flow = await runDialogSteps(
+        page,
+        NATIVE_DIALOG_STEPS,
+        method => callRoutePageMethodWithOptions(activeMiniProgram, route, method, ISSUE466_FLOW_CALL_OPTIONS),
+        async (id) => { await dom.check(id, activeMiniProgram, page) },
       )
       expect(collector.getSince(marker)).toEqual([])
 

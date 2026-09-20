@@ -147,8 +147,8 @@ function handleAddCart() {
   })
 }
 
-async function gotoGoodsDetail(e: any) {
-  const index = Number(e?.detail?.index)
+async function gotoGoodsDetail(payload: { index?: number }) {
+  const index = Number(payload?.index)
   if (!Number.isFinite(index)) {
     return
   }

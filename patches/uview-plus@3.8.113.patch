@@ -309,3 +309,14 @@ index bf38484..d69eb01 100644
  	--up-tag-close-bg-color: #4b5563;
  }
 +/* #endif */
+diff --git a/components/u-barcode/u-barcode.vue b/components/u-barcode/u-barcode.vue
+index 25b3839..ea55552 100644
+--- a/components/u-barcode/u-barcode.vue
++++ b/components/u-barcode/u-barcode.vue
+@@ -361,5 +361,5 @@ export default {
+     async getCanvasRef(refName) {
+-      await nextTick()
++      await this.$nextTick()
+       const canvas = this.$refs[refName]
+       if (!canvas) {
+         throw new Error(`Canvas ref not found: ${refName}`)

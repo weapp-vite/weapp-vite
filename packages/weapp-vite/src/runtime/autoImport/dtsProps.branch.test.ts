@@ -29,6 +29,9 @@ describe('extractComponentPropsFromDts branch guards', () => {
     } | undefined
 
     traverseMock.mockImplementation((_ast, visitors: Record<string, (path: any) => void>) => {
+      if (!('ClassDeclaration' in visitors)) {
+        return
+      }
       const firstInterfaceStop = vi.fn()
       const classStop = vi.fn()
       const secondInterfaceStop = vi.fn()
@@ -103,6 +106,9 @@ describe('extractComponentPropsFromDts branch guards', () => {
 
   it('skips unsupported members in properties literal extraction', async () => {
     traverseMock.mockImplementation((_ast, visitors: Record<string, (path: any) => void>) => {
+      if (!('ClassDeclaration' in visitors)) {
+        return
+      }
       const stop = vi.fn()
       visitors.TSInterfaceDeclaration({
         node: {
@@ -171,6 +177,9 @@ describe('extractComponentPropsFromDts branch guards', () => {
 
   it('skips non-config interface members and keeps valid props config entries', async () => {
     traverseMock.mockImplementation((_ast, visitors: Record<string, (path: any) => void>) => {
+      if (!('ClassDeclaration' in visitors)) {
+        return
+      }
       const stop = vi.fn()
       visitors.TSInterfaceDeclaration({
         node: {

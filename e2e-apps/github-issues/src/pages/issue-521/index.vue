@@ -24,9 +24,9 @@ defineExpose({
       issue-521 scoped slot flex layout
     </view>
 
-    <ScopedFlexHost v-slot="io">
-      <FlexItem label="A" :value="io.xyz" />
-      <FlexItem label="B" :value="io.xyz" />
+    <ScopedFlexHost id="issue521-host" v-slot="io">
+      <FlexItem id="issue521-a" label="A" :value="io.xyz" />
+      <FlexItem id="issue521-b" label="B" :value="io.xyz" />
     </ScopedFlexHost>
   </view>
 </template>

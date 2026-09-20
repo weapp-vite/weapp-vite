@@ -103,6 +103,7 @@ export default defineComponent({
     void nextTick().then(runE2E)
 
     return {
+      initialName: setupStoreInitialName,
       runE2E,
     }
   },

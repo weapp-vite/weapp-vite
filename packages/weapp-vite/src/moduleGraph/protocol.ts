@@ -36,6 +36,7 @@ export interface SidecarSourceRequest {
   kind: SidecarModuleKind
   ownerId: string
   sourceId: string
+  dependencyOnly?: true
 }
 
 const VIRTUAL_MODULE_SUFFIX = ':module.js'
@@ -145,9 +146,10 @@ export function parseSidecarModuleId(id: string): SidecarModuleRequest | undefin
   }
 }
 
-export function createSidecarSourceSpecifier(ownerId: string, sourceId: string, kind: SidecarModuleKind) {
-  const queryPrefix = kind === 'style' ? '?' : '?raw&'
-  const suffix = kind === 'style' ? SIDECAR_SOURCE_STYLE_SUFFIX : SIDECAR_SOURCE_JS_SUFFIX
+export function createSidecarSourceSpecifier(ownerId: string, sourceId: string, kind: SidecarModuleKind, dependencyOnly = false) {
+  const emitsStyle = kind === 'style' && !dependencyOnly
+  const queryPrefix = emitsStyle ? '?' : '?raw&'
+  const suffix = emitsStyle ? SIDECAR_SOURCE_STYLE_SUFFIX : SIDECAR_SOURCE_JS_SUFFIX
   return `${normalizeProtocolPath(sourceId)}${queryPrefix}${WEAPP_VITE_SIDECAR_OWNER_QUERY_MARKER}=${encodePath(ownerId)}&${WEAPP_VITE_SIDECAR_QUERY_MARKER}=${kind}${suffix}`
 }
 
@@ -166,9 +168,11 @@ export function parseSidecarSourceRequest(id: string): SidecarSourceRequest | un
     return
   }
   const isStyle = kind === 'style'
-  const hasExpectedLang = query.has(isStyle ? 'lang.css' : 'lang.js')
-  const hasUnexpectedLang = query.has(isStyle ? 'lang.js' : 'lang.css')
-  const hasExpectedRawMode = query.has('raw') !== isStyle
+  const dependencyOnly = isStyle && query.has('raw')
+  const emitsStyle = isStyle && !dependencyOnly
+  const hasExpectedLang = query.has(emitsStyle ? 'lang.css' : 'lang.js')
+  const hasUnexpectedLang = query.has(emitsStyle ? 'lang.js' : 'lang.css')
+  const hasExpectedRawMode = query.has('raw') !== emitsStyle
   if (!hasExpectedLang || hasUnexpectedLang || !hasExpectedRawMode) {
     return
   }
@@ -176,6 +180,7 @@ export function parseSidecarSourceRequest(id: string): SidecarSourceRequest | un
     kind: kind as SidecarModuleKind,
     ownerId: normalizeProtocolPath(ownerId),
     sourceId: normalizeProtocolPath(id.slice(0, queryIndex)),
+    ...(dependencyOnly ? { dependencyOnly: true as const } : {}),
   }
 }
 

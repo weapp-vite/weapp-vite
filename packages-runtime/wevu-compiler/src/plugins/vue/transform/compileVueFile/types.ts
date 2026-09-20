@@ -1,6 +1,8 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { AstEngineName } from '../../../../ast/types'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
+import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
 import type { CompilerAppShell, CompilerPageLayoutPlan } from '../../../../types/pageLayout'
@@ -34,11 +36,17 @@ export interface VueTransformResult {
   componentGenerics?: TemplateCompileResult['componentGenerics']
   classStyleWxs?: boolean
   meta?: {
+    /** @internal */
+    componentStyleOptions?: ComponentStyleOptions
+    /** @internal */
+    runtimeCapabilities?: WevuRuntimeCapabilityMetadata
     hasScriptSetup?: boolean
     hasSetupOption?: boolean
     jsonMacroHash?: string
     defineOptionsHash?: string
     sfcSrcDeps?: string[]
+    /** 已解析样式中的 CSS 变量表达式快照。@internal */
+    cssVars?: string[]
     styleBlocks?: SFCStyleBlock[]
     /**
      * JSON-only HMR 重算所需的稳定编译输入。
@@ -121,6 +129,12 @@ export interface CompileVueFileOptions {
    * 是否根据绑定清单自动合并 setData.pick。
    */
   autoSetDataPick?: boolean
+  /**
+   * 在开发期保持 CSS 变量运行时依赖与导出形状稳定。
+   *
+   * @internal
+   */
+  stabilizeCssVarsRuntime?: boolean
   /**
    * 绑定清单中记录的源码文件名；默认使用当前编译文件名。
    */

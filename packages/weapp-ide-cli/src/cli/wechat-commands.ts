@@ -1,7 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import { withMiniProgram } from './automator-session'
-import { resetWechatIdeFileUtilsByHttp } from './http'
+import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from './http'
 import { runWechatCliCommand } from './run-wechat-cli'
 
 export interface LoginWechatIdeOptions {
@@ -172,6 +172,16 @@ export async function openWechatIde(options: OpenWechatIdeOptions = {}) {
   }
   if (options.trustProject) {
     argv.push('--trust-project')
+  }
+
+  if (options.projectPath) {
+    try {
+      await openWechatIdeProjectByHttp(options.projectPath)
+      return
+    }
+    catch {
+      // HTTP 服务不可用时回退官方 CLI，以兼容开发者工具冷启动和旧版本。
+    }
   }
 
   await runWechatCliCommand(argv)

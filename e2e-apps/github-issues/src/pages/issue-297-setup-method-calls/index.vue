@@ -221,11 +221,14 @@ function _runE2E() {
       >
         <view
           v-for="item in getRows()"
+          :id="`issue297m-${item.id}`"
           :key="item.id"
           class="issue297m-loop-row"
           :data-label="sayCase('row', item.id, suffix)"
           :data-loop="sayCase('loop', item.label, suffix)"
-        />
+        >
+          {{ sayCase('loop', item.label, suffix) }}
+        </view>
       </view>
       <view
         v-else
@@ -241,7 +244,7 @@ function _runE2E() {
       <text class="issue297m-card-title">
         Case D · 成员调用 / 模板字符串 / 三元表达式
       </text>
-      <text class="issue297m-result">
+      <text id="issue297m-ternary-result" class="issue297m-result">
         {{ shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed' }}
       </text>
       <view
@@ -251,6 +254,9 @@ function _runE2E() {
         :data-ternary="shouldShowCase() ? sayCase('ternary', activeRowId, 'dasd') : 'closed'"
         :data-wrap="helpers.wrap(sayCase('wrap', activeRowId, suffix))"
       />
+      <text id="issue297m-member-result" class="issue297m-result">{{ helpers.upper(sayCase('member', activeRowLabel, suffix)) }}</text>
+      <text id="issue297m-template-result" class="issue297m-result">{{ `${helpers.prefix()}-${getCase()}` }}</text>
+      <text id="issue297m-wrap-result" class="issue297m-result">{{ helpers.wrap(sayCase('wrap', activeRowId, suffix)) }}</text>
     </view>
 
     <view class="issue297m-card">
@@ -258,6 +264,7 @@ function _runE2E() {
         Case E · 可选调用 + 空值兜底
       </text>
       <view class="issue297m-probe" :data-optional="getOptionalInvoker()?.(activeRowId) ?? 'none'" />
+      <text id="issue297m-optional-result" class="issue297m-result">{{ getOptionalInvoker()?.(activeRowId) ?? 'none' }}</text>
     </view>
   </view>
 </template>

@@ -85,6 +85,26 @@ it('parseShowcaseComment uses markdown heading as title and keeps hashes out of 
   assert.equal(entry?.description, '一款帮助用户建立稳定作息习惯的小程序，通过提醒、打卡和反馈机制减少熬夜。')
 })
 
+it('parseShowcaseComment normalizes list metadata before inferring title and description', () => {
+  const entry = parseShowcaseComment({
+    id: 5535428839,
+    html_url: 'https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-5535428839',
+    created_at: '2026-09-04T03:56:10Z',
+    user: {
+      login: 'xavierVue',
+    },
+    body: `* 公司/组织/个人：长沙为你心动科技有限公司
+* 链接：https://wnxd.cc/
+* 介绍：心动的AI，微信里的 AI 恋爱助理与 AI 红娘。
+
+![选择助理](https://cdn.crush.cafe/shot/f2d5d5719a13.png)`,
+  })
+
+  assert.ok(entry)
+  assert.equal(entry?.title, '心动的AI')
+  assert.equal(entry?.description, '心动的AI，微信里的 AI 恋爱助理与 AI 红娘。')
+})
+
 it('parseShowcaseComment ignores section headings like screenshot when inferring title', () => {
   const entry = parseShowcaseComment({
     id: 2451697149,

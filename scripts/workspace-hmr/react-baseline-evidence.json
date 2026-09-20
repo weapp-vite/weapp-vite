@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "subjectSha": "add5d6c7f31e74e9fa2290e43891548f2a00eccc",
+  "project": "templates/weapp-vite-react-template",
+  "scenario": "react-template",
+  "platform": "weapp",
+  "runtime": "stateful",
+  "delivery": "server-restart",
+  "source": "templates/weapp-vite-react-template/src/pages/index/view.tsx",
+  "output": "templates/weapp-vite-react-template/dist/pages/index/index.wxml",
+  "fixtureHashAlgorithm": "SHA-256 of UTF-8 JSON with sorted keys and compact separators of the ordered fixtureFiles list",
+  "fixtureSha256": "6bd058235cb9cc28d6aefa737172e6d688d15abe82a8df539f0c4d9fa9a2ac48",
+  "fixtureFiles": [
+    {
+      "path": "templates/weapp-vite-react-template/.gitignore",
+      "sha256": "61f5f160f4a934be617f262f51982377f9f1d0a9d5a1376429a1804280a2e477"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/CHANGELOG.md",
+      "sha256": "d5e67b10c9108631b4c67344a48daa3e9d28107a29c7c4ca1167b88d745c0f6b"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/eslint.config.js",
+      "sha256": "9716675bc72db97516185d0f956be0524ddc55e8c9afade54391b28a9493fc80"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/package.json",
+      "sha256": "fbedf96b6584cf7ba1e851d97d4277bccd723bc6027c8775ef9f8089de90d82b"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/project.config.json",
+      "sha256": "efc25d4b986369bf30d70aadcf769fcc8c7eab6c6a5c88553e919ed47cb15c2f"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/project.private.config.json",
+      "sha256": "c1caa2a2df2efba81a3ebf775cca27d0f6ff58027e28c86e57e3ed2371ad9dad"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/app.json",
+      "sha256": "a5af35c95ec9abf3bb88592a4e0922bf9f1b628d70e0d2bd6be2048d9a529ff4"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/app.ts",
+      "sha256": "d814a0466bd6df377180ec1f110be48b59761ea41cbc5aba0b27dea0034e0043"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/components/native-leaf/index.json",
+      "sha256": "3cac147888c7f1804ca5c8fd5aeca071cc29e1a776c6c7c6d52d823c4f568ef3"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/components/native-leaf/index.ts",
+      "sha256": "9516ede781d930e01d38dfed6292564c0072877702d2abd152981765b686b1aa"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/components/native-leaf/index.wxml",
+      "sha256": "b48b083812c747c1f9eeeba4c256c67f7520f52496f51842e4294775aeca04d7"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/components/native-leaf/index.wxss",
+      "sha256": "f5b2b1cc439ede7be54ce1e54f35c29f39e535aeb9f71fd9fb25b2e1fce20535"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/components/wevu-leaf/index.vue",
+      "sha256": "8abe267538f0d230800bc195af1d75b79350da7881c0481c7f95fb5145af6b8b"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/pages/index/index.json",
+      "sha256": "78118382e41c1dfd4a81476986221857457574a6a3ba93ddd8aaf7b7551dfb53"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/pages/index/index.ts",
+      "sha256": "8a822d74b5efa1e3c20113e3ea00485bf6cb9bf8c0f10228c7ac48b96b90c08f"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/pages/index/index.wxss",
+      "sha256": "3beb6e78f8f1cdbb403c785dbea0208045b03269670fc114974b8186988974c5"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/src/pages/index/view.tsx",
+      "sha256": "004069253f7c4e5d334626823368a43d3376919a6f6f00e0b3ee547c68fb9941"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/stylelint.config.js",
+      "sha256": "d69db883ec3c2824c32748285f00d85800b3cd2f9f948c57180c8ab0e00ef53c"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/tsconfig.json",
+      "sha256": "941e8ed8c990ef57e512720aabfc507fd65e94723b6e50caaad8ad3187b24307"
+    },
+    {
+      "path": "templates/weapp-vite-react-template/weapp-vite.config.ts",
+      "sha256": "ad95593269d0ccca5a06b43889b656ed41047e8138683d812fd70a76aa4d364e"
+    }
+  ],
+  "harnessFilesSha256": "b72ed86c03e2ffea886e2353c1f3fea0ab1927a3d2879abffb62c1e7a6bedf35",
+  "harnessEntrySha256": "ebbe2000b948e802892ac6a3cee77136300f3acd4345bab0c16abb73a0cd0f0a",
+  "physicalEvidence": "Complete before/after output copies; build stamps and control files included without normalization",
+  "samples": [
+    {
+      "sample": "run1",
+      "observedMs": 1004.5822080000016,
+      "physicalImpactFiles": 14,
+      "changedPaths": [
+        "__weapp_vite_hmr/control.js",
+        "app.js",
+        "common.js",
+        "components/native-leaf/index.js",
+        "components/wevu-leaf/index.js",
+        "pages/index/index.js",
+        "pages/index/index.wxml",
+        "rolldown-runtime.js",
+        "weapp-vendors/api-apiCatalog.js",
+        "weapp-vendors/request-globals-web-apis-shared.js",
+        "weapp-vendors/shared-platforms.js",
+        "weapp-vendors/wevu-reactivity.js",
+        "weapp-vendors/wevu-router.js",
+        "weapp-vendors/wevu-runtime.js"
+      ],
+      "reportSha256": "e29cd8024f01734b5f8bfa8f437e757f2141584ece63d52bbd646c881149ed2c"
+    },
+    {
+      "sample": "run2",
+      "observedMs": 1005.931208,
+      "physicalImpactFiles": 14,
+      "changedPaths": [
+        "__weapp_vite_hmr/control.js",
+        "app.js",
+        "common.js",
+        "components/native-leaf/index.js",
+        "components/wevu-leaf/index.js",
+        "pages/index/index.js",
+        "pages/index/index.wxml",
+        "rolldown-runtime.js",
+        "weapp-vendors/api-apiCatalog.js",
+        "weapp-vendors/request-globals-web-apis-shared.js",
+        "weapp-vendors/shared-platforms.js",
+        "weapp-vendors/wevu-reactivity.js",
+        "weapp-vendors/wevu-router.js",
+        "weapp-vendors/wevu-runtime.js"
+      ],
+      "reportSha256": "4a41e984bc925b01b52657ce935fa4ece891ce785ee7def03012b845c2769f1e"
+    }
+  ]
+}

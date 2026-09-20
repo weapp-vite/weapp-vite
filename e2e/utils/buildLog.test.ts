@@ -6,6 +6,7 @@ describe('buildLog', () => {
     const env = sanitizeBuildCommandEnv({
       FOO: 'bar',
       NODE_ENV: 'test',
+      TEST: 'true',
       PNPM_PACKAGE_NAME: 'weapp-vite-monorepo',
       PNPM_SCRIPT_SRC_DIR: '/repo',
       VITEST: 'true',

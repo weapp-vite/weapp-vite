@@ -3,6 +3,8 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { subpackagePlacementCheckpoints, subpackagePlacementRoutes } from './subpackagePlacementDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
@@ -10,23 +12,6 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
 function normalizeRoute(value: string) {
   return String(value || '').replace(/^\/+/, '').replace(/\/+$/g, '')
-}
-
-async function waitForRenderedPage(page: any, route: string, timeoutMs = 15_000) {
-  const start = Date.now()
-  let latest: unknown
-  while (Date.now() - start <= timeoutMs) {
-    if (typeof page?.renderedNodes === 'function') {
-      latest = await page.renderedNodes('.page', {
-        timeout: 5_000,
-      })
-      if (Array.isArray(latest) && latest.length > 0) {
-        return latest
-      }
-    }
-    await page.waitFor(220)
-  }
-  throw new Error(`Timed out waiting rendered page for ${route}; latest=${JSON.stringify(latest)}`)
 }
 
 async function buildFixture() {
@@ -88,33 +73,10 @@ describe('e2e app: wevu-subpackage-placement', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   })
 
-  it('reLaunches main, normal subpackage, and independent subpackage vue routes', async () => {
+  it('reLaunches main, normal subpackage, and independent subpackage vue routes', async (context) => {
+    const dom = createDomAcceptance(context, 'e2e-apps/wevu-subpackage-placement', subpackagePlacementCheckpoints)
     const miniProgram = await getSharedMiniProgram()
-
-    const routeCases = [
-      {
-        route: '/pages/index/index',
-        expected: { count: 1, double: 2 },
-      },
-      {
-        route: '/subpackages/normal-wevu/pages/entry/index',
-        expected: { count: 1, double: 2 },
-      },
-      {
-        route: '/subpackages/normal-wevu/pages/detail/index',
-        expected: { count: 1, double: 2, from: 'direct' },
-      },
-      {
-        route: '/subpackages/independent-wevu/pages/entry/index',
-        expected: { count: 11, double: 22 },
-      },
-      {
-        route: '/subpackages/independent-wevu/pages/detail/index',
-        expected: { count: 11, double: 22, from: 'direct' },
-      },
-    ]
-
-    for (const [index, routeCase] of routeCases.entries()) {
+    for (const [index, routeCase] of subpackagePlacementRoutes.entries()) {
       const page = await openRoute(miniProgram, routeCase.route, {
         preferCurrent: index === 0,
       })
@@ -122,8 +84,9 @@ describe('e2e app: wevu-subpackage-placement', { concurrent: false }, () => {
         throw new Error(`Failed to launch route: ${routeCase.route}`)
       }
 
-      await waitForRenderedPage(page, routeCase.route)
+      await dom.check(`${routeCase.id}:initial`, miniProgram, page)
       await expect(page.callMethodWithOptions('runE2E', { routeOnly: true })).resolves.toMatchObject(routeCase.expected)
+      await dom.check(`${routeCase.id}:result`, miniProgram, page)
     }
   })
 })

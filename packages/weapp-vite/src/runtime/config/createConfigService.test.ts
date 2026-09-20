@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import process from 'node:process'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
@@ -186,6 +187,34 @@ describe('createConfigService', () => {
     })
   })
 
+  it.each([
+    ['omitted', undefined],
+    ['empty', ''],
+    ['current directory', '.'],
+    ['relative project', 'fixtures/../fixtures/demo'],
+    ['absolute project', path.join(process.cwd(), 'fixtures/demo')],
+  ])('resolves the %s root before loading config and resolving packages', async (_, cwd) => {
+    const expectedRoot = path.join(process.cwd(), cwd && cwd !== '.' ? 'fixtures/demo' : '')
+    loadConfigImplMock.mockImplementationOnce(async (input) => {
+      const config = { weapp: {} }
+      loadConfigFactoryOptionsMock.value.injectBuiltinAliases(config)
+      return createBaseOptions({ cwd: input.cwd, loadOptions: input, config })
+    })
+    const service = createConfigService(createCtx())
+    const input = { cwd, configFile: 'config/vite.config.ts' }
+
+    await service.load(input)
+
+    expect(loadConfigImplMock).toHaveBeenCalledWith(expect.objectContaining({
+      cwd: expectedRoot,
+      configFile: 'config/vite.config.ts',
+    }))
+    expect(resolveBuiltinPackageAliasesMock).toHaveBeenLastCalledWith(expect.objectContaining({ cwd: expectedRoot }))
+    expect(service.cwd).toBe(expectedRoot)
+    expect(service.loadOptions?.cwd).toBe(expectedRoot)
+    expect(input.cwd).toBe(cwd)
+  })
+
   it('loads config, updates package manager and emits define env map', async () => {
     const service = createConfigService(createCtx())
     const loaded = await service.load({
@@ -298,6 +327,22 @@ describe('createConfigService', () => {
     expect(service.absolutePluginOutputRoot).toBe('/project/dist/plugin-dist')
     expect(service.relativeAbsoluteSrcRoot('/project/src/plugin/pages/home/index.ts')).toBe('plugin/pages/home/index.ts')
     expect(service.relativeOutputPath('/project/src/plugin/pages/home/index.ts')).toBe('plugin-dist/pages/home/index.ts')
+  })
+
+  it('isolates shared source outputs without changing independent package source paths', () => {
+    const main = createConfigService(createCtx())
+    const independent = createConfigService(createCtx({ currentSubPackageRoot: 'packageB' }))
+    for (const extension of ['js', 'json', 'wxml', 'wxss']) {
+      const shared = `/project/src/components/Card/index.${extension}`
+      const local = `/project/src/packageB/components/Card/index.${extension}`
+      expect(main.relativeOutputPath(shared)).toBe(`components/Card/index.${extension}`)
+      expect(independent.relativeOutputPath(shared)).toBe(`packageB/weapp-shared/components/Card/index.${extension}`)
+      expect(independent.relativeOutputPath(local)).toBe(`packageB/components/Card/index.${extension}`)
+      expect(independent.relativeAbsoluteSrcRoot(shared)).toBe(`components/Card/index.${extension}`)
+    }
+    expect(independent.relativeOutputPath('/project/src/layouts/admin.vue')).toBe('packageB/weapp-shared/layouts/admin.vue')
+    expect(independent.relativeOutputPath('/project/src/packageBExtra/card.vue')).toBe('packageB/weapp-shared/packageBExtra/card.vue')
+    expect(independent.relativeOutputPath('/project/node_modules/ui/card.vue')).toBe(`packageB/weapp-shared/${main.relativeOutputPath('/project/node_modules/ui/card.vue')}`)
   })
 
   it('applies lib output mapping and handles plugin output fallback to source base', () => {

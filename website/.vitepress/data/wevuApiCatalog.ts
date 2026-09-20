@@ -166,6 +166,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
   api('defineAppSetup()', '/wevu/api/core#defineappsetup', 'Script Setup 宏', 'macro', 'wevu-extension'),
   ...['ref', 'customRef', 'reactive', 'shallowRef', 'shallowReactive', 'readonly', 'shallowReadonly', 'computed', 'watch', 'watchEffect', 'watchPostEffect', 'watchSyncEffect', 'effectScope', 'getCurrentScope', 'onScopeDispose', 'toRef', 'toRefs', 'unref', 'toValue', 'triggerRef', 'toRaw', 'markRaw', 'isRef', 'isReactive', 'isShallowRef', 'isShallowReactive', 'isRaw', 'isReadonly', 'isProxy', 'nextTick']
     .map(name => reactivity(name)),
+  reactivity('useAsyncDerivation', 'wevu-extension'),
   ...['effect', 'stop', 'batch', 'startBatch', 'endBatch', 'traverse']
     .map(name => reactivity(name, 'wevu-extension')),
   ...[

@@ -62,6 +62,9 @@ export default defineComponent({
     }
 
     return {
+      count: setupStore.count,
+      increment: () => setupStore.inc(1),
+      scriptName: hmrScriptName,
       runE2E,
     }
   },

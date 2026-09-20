@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { add as add0 } from 'lodash'
 import { add as add1 } from 'lodash-es'
 import ActionSheet, { ActionSheetTheme } from 'tdesign-miniprogram/action-sheet/index'
@@ -6,7 +7,6 @@ import { getOnlySubShared } from '@/only-sub-shared'
 import globalStore from '@/stores/index'
 import { formatTime } from '@/utils/util'
 import { getPackageName } from '../utils'
-import dayjs from 'dayjs'
 
 console.log(getOnlySubShared)
 const firstGrid = [
@@ -52,7 +52,7 @@ Page({
     dayjsTomorrow: dayjs().add(1, 'day').format('YYYY-MM-DD HH:mm:ss'),
     // Cos
   },
-  onLoad(query) {
+  onLoad(_query) {
     getPackageName()
     globalStore.bind(this, '$data')
   },

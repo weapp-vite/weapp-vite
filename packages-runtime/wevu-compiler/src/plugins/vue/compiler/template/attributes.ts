@@ -172,6 +172,7 @@ function createClassStyleBinding(
     exp,
     expAst,
     forStack: cloneForStack(context),
+    conditions: context.bindingConditions?.slice(),
   }
   if (errorFallback !== undefined) {
     binding.errorFallback = errorFallback

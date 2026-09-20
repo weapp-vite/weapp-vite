@@ -58,7 +58,7 @@ definePageJson({
 <template>
   <view class="invoice-detail [&_.invoice-detail-box]:bg-white [&_.invoice-detail-box]:p-[24rpx_32rpx] [&_.invoice-detail-box]:mt-[24rpx]">
     <view class="invoice-detail-box">
-      <view class="invoice-detail-title text-[14px] font-semibold">
+      <view id="invoice-details-title" class="invoice-detail-title text-[14px] font-semibold">
         发票详情
       </view>
       <view class="invoice-detail-box-row flex mt-[44rpx]">
@@ -103,7 +103,7 @@ definePageJson({
       </view>
     </view>
     <view class="invoice-detail-box">
-      <view class="invoice-detail-title text-[14px] font-semibold">
+      <view id="invoice-recipient-title" class="invoice-detail-title text-[14px] font-semibold">
         收票人信息
       </view>
       <view class="invoice-detail-box-row flex mt-[44rpx]">

@@ -18,3 +18,8 @@ expectType<ReturnType<typeof project.renderComponent>>(project.renderComponent('
   properties: { value: 1 },
   slots: { default: '<text>counter</text>' },
 }))
+
+declare const result: Awaited<ReturnType<typeof project.renderComponent>>
+const nested = result.screen.within(result.screen.getByTestId('counter'))
+expectType<Promise<void>>(result.user.tap(nested.getByRole('button')))
+expectType<Promise<void>>(result.user.input(nested.getByRole('textbox'), 'edited'))

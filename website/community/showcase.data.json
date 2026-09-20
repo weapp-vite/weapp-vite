@@ -161,5 +161,31 @@
         "relativePath": "cases/ialtone/screenshot-3.png"
       }
     ]
+  },
+  {
+    "id": 5535428839,
+    "slug": "ai",
+    "title": "心动的AI",
+    "description": "心动的AI，微信里的 AI 恋爱助理与 AI 红娘——一个帮你把话想清楚，一个帮你找到该说话的人。助理拆解表达与判断，落到可执行的下一步；红娘在实名之后每日推荐，并说明为什么是这个人。",
+    "sourceCommentUrl": "https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-5535428839",
+    "createdAt": "2026-09-04T03:56:10Z",
+    "author": "xavierVue",
+    "assets": [
+      {
+        "kind": "cover",
+        "originalUrl": "https://cdn.crush.cafe/shot/f2d5d5719a13.png",
+        "relativePath": "cases/ai/cover.png"
+      },
+      {
+        "kind": "qrcode",
+        "originalUrl": "https://wnxd.cc/qrcode.jpg",
+        "relativePath": "cases/ai/qrcode-1.jpeg"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://cdn.crush.cafe/shot/542ee4e24cf7.png",
+        "relativePath": "cases/ai/screenshot-1.png"
+      }
+    ]
   }
 ]

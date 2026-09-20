@@ -1,27 +1,19 @@
 /** @jsxImportSource wevu */
 import type { Ref } from 'wevu'
 import type { WevuJsxElement } from 'wevu/jsx-runtime'
-import { expectAssignable, expectNotAssignable, expectType } from 'tsd'
+import { expectAssignable, expectError, expectNotAssignable, expectType } from 'tsd'
+import { ref } from 'wevu'
 
-export const shared = <><view>shared</view></>
-export function createPanel(title: string, onTap: () => void) {
-  return (
-    <view class="panel">
-      <text>{title}</text>
-      <button onTap={onTap}>tap</button>
-    </view>
-  )
-}
-export function createReactiveBlock(count: Ref<number>) {
-  return <text>{count.value}</text>
+function Panel(props: { count: Ref<number>, title: string }) {
+  return props.title
 }
 
-export const nativeButton = <button id="submit" size="mini" onTap={() => {}}>submit</button>
-export const nativeInput = <input value="hello" onInput={() => {}} />
+const count = ref(1)
+export const panel = <Panel count={count} title="neutral" />
 
-expectAssignable<WevuJsxElement>(shared)
-expectType<WevuJsxElement>(createPanel('title', () => {}))
-expectType<WevuJsxElement>(createReactiveBlock({ value: 1 } as Ref<number>))
-expectType<WevuJsxElement>(nativeButton)
-expectType<WevuJsxElement>(nativeInput)
+expectAssignable<WevuJsxElement>(panel)
+expectType<WevuJsxElement>(panel)
+expectError(<Panel count={count} />)
+expectError(<view />)
+expectError(<arbitrary-native-tag />)
 expectNotAssignable<WevuJsxElement>(Symbol('invalid'))

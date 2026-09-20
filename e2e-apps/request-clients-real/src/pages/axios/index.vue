@@ -77,6 +77,11 @@ onLoad((query) => {
       <text id="axios-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="axios-request-count" class="line">requestCount = {{ state.requestCount }}</text>
       <text id="axios-request-path" class="line">requestPath = {{ state.requestPath }}</text>
+      <text id="axios-response-client" class="line">client = {{ state.response.client }}</text>
+      <text id="axios-response-transport" class="line">transport = {{ state.response.transport }}</text>
+      <text id="axios-response-method" class="line">method = {{ state.response.method }}</text>
+      <text id="axios-response-operationName" class="line">operationName = {{ state.response.operationName }}</text>
+      <text id="axios-response-event" class="line">event = {{ state.response.event }}</text>
       <button class="action" @tap="runCase">
         重新执行 axios 校验
       </button>

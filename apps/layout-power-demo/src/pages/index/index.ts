@@ -108,6 +108,7 @@ Page({
     e2eRuntimeVendorMarker,
     layoutOptions: createLayoutOptions('default'),
     lastFeedbackLayout: '',
+    lastFeedbackResult: null as LayoutFeedbackResult | null,
   },
   onLoad() {
     setPageLayout('default', {
@@ -154,6 +155,7 @@ Page({
       : createMissingFeedbackResult(layout, 'message')
     this.setData({
       lastFeedbackLayout: result.layout,
+      lastFeedbackResult: result,
     })
     return result
   },
@@ -163,6 +165,7 @@ Page({
     const result = host?.toast() ?? createMissingFeedbackResult(layout, 'toast')
     this.setData({
       lastFeedbackLayout: result.layout,
+      lastFeedbackResult: result,
     })
     return result
   },

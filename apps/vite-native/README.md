@@ -3,7 +3,8 @@
 分包的 entry 必须放在
 
 ```json
-"packOptions": {
+{
+  "packOptions": {
     "ignore": [],
     "include": [
       {
@@ -16,4 +17,5 @@
       }
     ]
   }
+}
 ```

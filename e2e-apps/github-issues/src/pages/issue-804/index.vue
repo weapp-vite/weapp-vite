@@ -12,9 +12,9 @@ definePageMeta({
 
 <template>
   <view id="issue804-page" class="issue804-page">
-    <text>web runtime custom component</text>
-    <Pressable>
-      <text>ready</text>
+    <text id="issue804-title">web runtime custom component</text>
+    <Pressable id="issue804-pressable">
+      <text id="issue804-ready">ready</text>
     </Pressable>
   </view>
 </template>

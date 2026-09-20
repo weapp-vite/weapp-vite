@@ -458,7 +458,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
 
     expect(inst.__wevu.setupState.ready.value).toBe(true)
     expect(inst.data.ready).toBe(true)
-    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ ready: true }))
+    expect(setData).toHaveBeenCalledWith(expect.objectContaining({ ready: true }), expect.any(Function))
   })
 
   it('keeps created lifecycle native data updates when deferred setData is enabled', async () => {
@@ -503,7 +503,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(setData).toHaveBeenCalledWith(expect.objectContaining({
       count: 1,
       logs: ['created'],
-    }))
+    }), expect.any(Function))
     expect(inst.data.logs).toEqual(['created'])
   })
 
@@ -784,5 +784,31 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     opts.methods.fire.call(inst.__wevu.proxy)
 
     expect(triggerEvent).toHaveBeenCalledWith('change', { source: 'runtime-instance-fallback' })
+  })
+
+  it('writes setup-returned functions into setupState for proxy and bindModel', () => {
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        const count = { value: 0 }
+        function increment() {
+          count.value += 1
+        }
+        return {
+          count,
+          increment,
+        }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = { setData() {} }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(typeof inst.__wevu.setupState.increment).toBe('function')
+    expect(inst.__wevu.proxy.increment).toBe(inst.__wevu.setupState.increment)
+    inst.__wevu.proxy.increment()
+    expect(inst.__wevu.setupState.count.value).toBe(1)
   })
 })

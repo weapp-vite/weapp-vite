@@ -1,9 +1,12 @@
-import type { ComputedDefinitions, MethodDefinitions } from './core'
+import type { ShallowUnwrapRef } from '../../vue-types'
+import type { ComponentPublicInstance, ComputedDefinitions, MethodDefinitions } from './core'
 import type { MiniProgramAppOptions, MiniProgramComponentOptions, MiniProgramPageLifetimes } from './miniprogram'
-import type { ComponentPropsOptions, SetupContext, SetupFunction } from './props'
+import type { ComponentPropsOptions, InferProps, SetupContext, SetupFunction } from './props'
 import type { SetDataSnapshotOptions } from './setData'
 
 export type DataOption<D extends object> = D | (() => D)
+
+type SetupThis<S> = [Exclude<S, void>] extends [never] ? Record<never, never> : ShallowUnwrapRef<Exclude<S, void>>
 
 export interface DefineComponentOptions<
   P extends ComponentPropsOptions = ComponentPropsOptions,
@@ -29,9 +32,9 @@ export interface DefineComponentOptions<
    */
   props?: P
   /**
-   * 允许将运行时传入的 `undefined` props 兼容为 `null` 输入，避免小程序对已声明类型 props 报告 `null` 类型告警。
+   * 兼容 Vue props 的 `undefined -> null` 传输，对可选、可空或联合类型使用无主类型约束的原生属性，避免提前转换。
    *
-   * 适合迁移 Vue 组件或需要兼容 `undefined -> null` 传参链路的场景；默认关闭，避免影响原生 `properties` 的严格类型语义。
+   * 默认关闭；显式原生 `properties` 始终原样传递，必填且不可空的单一类型仍保持原生类型约束。
    */
   allowNullPropInput?: boolean
   /**
@@ -61,7 +64,7 @@ export interface DefineComponentOptions<
   /**
    * 组件 computed（会参与快照 diff）。
    */
-  computed?: C
+  computed?: C & ThisType<ComponentPublicInstance<D, C, M, InferProps<P>> & SetupThis<S>>
 
   /**
    * setData 快照控制选项（用于优化性能与 payload）。
@@ -71,7 +74,7 @@ export interface DefineComponentOptions<
   /**
    * 组件 methods（会绑定到 public instance 上）。
    */
-  methods?: M
+  methods?: M & ThisType<ComponentPublicInstance<D, C, M, InferProps<P>> & SetupThis<S>>
 
   /**
    * 透传/扩展字段：允许携带其他小程序原生 Component 选项或自定义字段。

@@ -46,10 +46,10 @@ function assertBytes(value, label) {
   return value
 }
 
-function validateReport(value, label) {
+function validateReport(value, label, artifactVersion) {
   const report = assertObject(value, label)
-  if (report.version !== 2) {
-    throw new Error(`${label}.version must be 2.`)
+  if (report.version !== artifactVersion) {
+    throw new Error(`${label}.version must match artifact.version (${artifactVersion}).`)
   }
   assertCommit(report.commit, `${label}.commit`)
   if (!Array.isArray(report.targets) || report.targets.length !== TARGETS.length) {
@@ -87,7 +87,7 @@ function validateReport(value, label) {
 
 export function validateArtifact(value, expected) {
   const artifact = assertObject(value, 'artifact')
-  if (artifact.version !== 2 || artifact.kind !== 'wevu-runtime-size-pr-report') {
+  if (![2, 3].includes(artifact.version) || artifact.kind !== 'wevu-runtime-size-pr-report') {
     throw new Error('Unsupported runtime size artifact.')
   }
   if (artifact.repository !== expected.repository) {
@@ -103,8 +103,8 @@ export function validateArtifact(value, expected) {
   assertCommit(artifact.baseSha, 'artifact.baseSha')
   return {
     ...artifact,
-    current: validateReport(artifact.current, 'artifact.current'),
-    baseline: validateReport(artifact.baseline, 'artifact.baseline'),
+    current: validateReport(artifact.current, 'artifact.current', artifact.version),
+    baseline: validateReport(artifact.baseline, 'artifact.baseline', artifact.version),
   }
 }
 

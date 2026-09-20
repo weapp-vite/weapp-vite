@@ -4,7 +4,7 @@ Vue 3 风格的小程序运行时，复用同款响应式与调度器，通过�
 
 ## 特性
 
-- `ref`/`reactive`/`computed`/`watch` 与 `nextTick` 同源于 Vue 3 的响应式核心
+- `ref`/`reactive`/`computed`/`watch` 与 `nextTick` 同源于 Vue 3 的响应式核心，并提供面向静态 WXML 的 `useAsyncDerivation`
 - `defineComponent` + `setup` 生命周期钩子（onShow/onPageScroll/onShareAppMessage 等）自动注册微信小程序 `Component`（在微信中可用于页面/组件）
 - 快照 diff + 去重调度，最小化 `setData` 体积，支持 `bindModel` / `useBindModel` 的双向绑定语法
 - 插件、`app.config.globalProperties` 及小程序原生选项可自由组合
@@ -53,7 +53,7 @@ defineComponent({
     const local = ref(0)
 
     onMounted(() => {
-      nextTick(() => console.log('page ready'))
+      nextTick(() => console.log('reactive queue flushed'))
     })
     onPageScroll((e) => {
       console.log('scrollTop', e?.scrollTop)
@@ -70,6 +70,22 @@ defineComponent({
 - 当全局存在 `Component` 构造器时自动注册；否则可拿到 `component.__wevu_runtime` 手动挂载适配器。
 - 分享/朋友圈/收藏是否触发由微信官方机制决定（例如右上角菜单/`open-type="share"`；朋友圈通常需配合 `wx.showShareMenu()` 开启菜单项）。
 - 组件场景使用 `defineComponent`，SFC 构建产物可调用 `createWevuComponent`。
+
+## 异步派生状态
+
+`useAsyncDerivation()` 把异步结果表示为静态模板可读取的 `status/value/error`，默认立即加载：
+
+```ts
+import { useAsyncDerivation } from 'wevu'
+
+const users = useAsyncDerivation(({ signal }) => fetchUsers({ signal }))
+```
+
+- `initial-pending` 表示首次加载，`refreshing` 保留最近一次成功值。
+- 首次失败的 `value` 为 `undefined`；刷新失败保留旧值。加载错误进入 `status/error`，`refresh()` 本身正常完成。
+- 连续刷新只允许最新任务提交，新刷新会通过 `signal` 取消旧任务；旧任务不响应取消也不会阻塞等待。
+- 返回值自动跟随当前 effect scope 清理，也可幂等调用 `dispose()`。模板数据只包含可枚举的 `status/value/error`，继续经过现有序列化链路。
+- 加载函数不会自动追踪响应式依赖；它不是 Promise 版 `computed()`，依赖变化后需要显式 `refresh()`。
 
 ## 状态管理
 
@@ -148,8 +164,8 @@ const onActiveChange = bindModel.model<boolean>('isActive').onChange
 
 ## 调度与适配
 
-- 更新被批量加入微任务队列，`nextTick` 与 Vue 3 行为一致。
-- 对状态做快照 diff，只把变更路径传给 `setData`，避免大对象全量下发。
+- 更新被批量加入微任务队列；`nextTick` 只等待当前 JavaScript/响应式任务队列排空，不等待小程序 `setData` 回调或视图提交。
+- 对状态做快照 diff，只把变更路径传给 `setData`；宿主提交失败时，下一次响应式更新会发送完整恢复快照。
 - 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`getCurrentScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，`setup()` 同步阶段内创建的副作用会自动归属到实例级 scope，便于避免泄漏。
 
 ## 开发产物与源码调试

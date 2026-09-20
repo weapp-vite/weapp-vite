@@ -14,7 +14,7 @@ import {
   setupApiMock,
   wpiMock,
 } from '@weapp-core/api/vitest'
-import { expectType } from 'tsd'
+import { expectError, expectType } from 'tsd'
 
 expectType<ApiMock>(apiMock)
 expectType<ApiMock>(wpiMock)
@@ -32,7 +32,17 @@ wpiMock.request.mockImplementation(async (options) => {
   return {} as WeapiMiniProgramRequestSuccessResult
 })
 wpiMock.request.mockResolvedValue({} as WeapiMiniProgramRequestSuccessResult)
+wpiMock.request.mockResolvedValueOnce({} as WeapiMiniProgramRequestSuccessResult)
+expectError(wpiMock.request.mockReturnValue({} as WeapiMiniProgramRequestSuccessResult))
+expectError(wpiMock.request.mockReturnValueOnce({} as WeapiMiniProgramRequestSuccessResult))
+wpiMock.request.mockRejectedValue(new Error('request failed'))
+wpiMock.request.mockRejectedValueOnce(new Error('request failed'))
 wpiMock.getSystemInfoSync.mockReturnValue({} as WeapiMiniProgramSystemInfo)
+wpiMock.getSystemInfoSync.mockReturnValueOnce({} as WeapiMiniProgramSystemInfo)
+expectError(wpiMock.getSystemInfoSync.mockResolvedValue({} as WeapiMiniProgramSystemInfo))
+expectError(wpiMock.getSystemInfoSync.mockResolvedValueOnce({} as WeapiMiniProgramSystemInfo))
+expectError(wpiMock.getSystemInfoSync.mockRejectedValue(new Error('sync API')))
+expectError(wpiMock.getSystemInfoSync.mockRejectedValueOnce(new Error('sync API')))
 wpiMock.onMemoryWarning.mockImplementation((callback) => {
   callback({ level: 10 })
 })

@@ -9,7 +9,7 @@ import { compileWxml } from '../compiler/wxml'
 import { transformWxsToEsm } from '../compiler/wxs'
 import { createWxssPostcssPlugin, transformWxssToCss } from '../css/wxss'
 import { createWebAssetMiddleware, emitWebAssets } from './assets'
-import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WEB_COMPONENT_PREFIX, WEB_COMPONENT_QUERY, WXS_EXTS } from './constants'
+import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, RUNTIME_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WEB_COMPONENT_PREFIX, WEB_COMPONENT_QUERY, WXS_EXTS } from './constants'
 import { collectExternalComponentOptimizeDeps } from './dependencyScan'
 import { generateAutoRoutesModule, generateEntryModule } from './entry'
 import { wrapPageTemplate } from './layout'
@@ -86,6 +86,7 @@ interface WeappWebVitePlugin {
 
 const WEB_RUNTIME_MODULE_IDS = [
   'lit',
+  'lit/async-directive.js',
   'lit/directives/repeat.js',
 ] as const
 
@@ -265,6 +266,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       for (const id of WEB_RUNTIME_MODULE_IDS) {
         webRuntimeModules.set(id, requireFromWebRuntime.resolve(id))
       }
+      webRuntimeModules.set(RUNTIME_ID, resolveRuntimePolyfillPath())
       resolveMiniProgramModuleId = createMiniProgramPackageResolver(requireFromProject.resolve)
       srcRoot = resolve(root, options.srcDir ?? 'src')
       stylePreprocessOptions = resolveStylePreprocessOptions(config.css?.preprocessorOptions, root)

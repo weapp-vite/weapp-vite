@@ -46,7 +46,8 @@ export class StatefulHmrSnapshotScheduler {
   }
 
   isPending(): boolean {
-    return Boolean(this.timer || this.runningPromise || this.pendingMode)
+    // 失败后保留的批次处于暂停状态，后续变更仍可主动请求重试。
+    return Boolean(this.timer || this.runningPromise)
   }
 
   async close(): Promise<void> {
@@ -84,14 +85,24 @@ export class StatefulHmrSnapshotScheduler {
     this.pendingMode = undefined
 
     const isSuperseded = () => this.closed || this.revision !== batchRevision
+    let failed = false
     this.runningPromise = this.execute({
       files: batchFiles,
       isSuperseded,
       mode: batchMode,
     })
-      .catch(error => this.onError?.(error))
+      .catch((error) => {
+        failed = true
+        try {
+          this.onError?.(error)
+        }
+        catch {
+          // 诊断回调失败不能破坏批次保留与队列回收，也不能形成未处理的拒绝。
+        }
+      })
       .finally(() => {
-        if (!this.closed && isSuperseded()) {
+        const superseded = isSuperseded()
+        if (!this.closed && (failed || superseded)) {
           for (const file of batchFiles) {
             this.pendingFiles.add(file)
           }
@@ -100,7 +111,8 @@ export class StatefulHmrSnapshotScheduler {
             : 'refresh'
         }
         this.runningPromise = undefined
-        if (this.pendingMode) {
+        // 普通失败等待下一次请求，已有新请求则合并重试，避免永久错误形成忙循环。
+        if (this.pendingMode && (!failed || superseded)) {
           this.schedule()
         }
       })

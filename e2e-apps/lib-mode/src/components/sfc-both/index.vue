@@ -1,7 +1,3 @@
-<template>
-  <view class="root">{{ label }}</view>
-</template>
-
 <script>
 export default {
   name: 'SfcBoth',
@@ -11,6 +7,10 @@ export default {
 <script setup>
 const label = 'script+setup'
 </script>
+
+<template>
+  <view class="root">{{ label }}</view>
+</template>
 
 <style>
 .root {

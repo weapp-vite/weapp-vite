@@ -6,6 +6,7 @@ import { createCollectVisitors } from '../collect'
 import { rewriteDefaultExport } from './index'
 
 const WEVU_IS_PAGE_RE = /__wevu_isPage/g
+const PARAMETER_NAMES = { context: 'ctx', scope: 'scope', event: '$event' }
 
 function createState(ast: any): TransformState {
   const state: TransformState = {
@@ -90,6 +91,32 @@ describe('rewriteDefaultExport', () => {
     expect(code).toContain('__wevu_isPage: false')
   })
 
+  it.each([
+    'export default {}',
+    'export default { setup() { return { value: 1 } } }',
+    'export default { setup: () => ({ value: 1 }) }',
+  ])('injects a stable empty CSS variable runtime into %s', (source) => {
+    const { transformed, code } = runRewrite(source, {
+      stabilizeCssVarsRuntime: true,
+    })
+
+    expect(transformed).toBe(true)
+    expect(code).toContain('virtual:weapp-vite/runtime')
+    expect(code).toContain('from "vue"')
+    expect(code).toMatch(/useCssVars\w*\(\(\) => \{[\s\S]*unref\w*\(undefined\)[\s\S]*return \{\}/)
+    expect(code.match(/\bsetup\b/g)).toHaveLength(1)
+  })
+
+  it('keeps the injected unref runtime import separate from Vue type imports', () => {
+    const { code } = runRewrite(`
+import type { Ref } from 'vue'
+export default {}
+    `.trim(), { stabilizeCssVarsRuntime: true })
+
+    expect(code).toMatch(/import type \{ Ref \} from ['"]vue['"]/)
+    expect(code).toMatch(/import \{ unref as \w+ \} from "vue"/)
+  })
+
   it('preserves component default export after creating wevu component', () => {
     const { transformed, code } = runRewrite('export default { setup() {} }')
 
@@ -146,6 +173,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             id: 'e0',
             expression: 'foo',
             scopeKeys: ['foo'],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
         warn,
@@ -173,6 +201,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             id: 'e1',
             expression: 'foo + 1',
             scopeKeys: ['foo'],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
         warn,
@@ -215,6 +244,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             id: 'e2',
             expression: 'bar',
             scopeKeys: ['bar'],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
       },
@@ -285,6 +315,7 @@ export default {
             id: 'e-spread-merge',
             expression: 'onChange($event)',
             scopeKeys: [],
+            parameterNames: PARAMETER_NAMES,
           },
         ],
         warn,

@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import AxiosView from './views/AxiosView.vue'
 import ChatView from './views/ChatView.vue'
 import FetchView from './views/FetchView.vue'

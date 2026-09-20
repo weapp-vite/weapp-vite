@@ -55,7 +55,7 @@ function openDemo(path: string) {
       </view>
       <text class="intro__text">
         这个示例 app 已接入 `src/layouts` 目录约定。页面内容会被包裹进布局组件，并通过布局中的
-        `<slot></slot>` 渲染。
+        `<slot />` 渲染。
       </text>
       <view class="intro__codes">
         <text class="intro__code">

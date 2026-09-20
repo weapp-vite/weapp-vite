@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { reactive, ref } from 'wevu'
+import { useCounterStore } from '../../shared/store'
 
 definePageJson({
   component: true,
@@ -9,9 +10,16 @@ definePageJson({
 const marker = 'STATEFUL-WEVU-BASE'
 const count = ref(0)
 const input = ref('')
+const store = useCounterStore()
+const storeCount = store.count
+const details = reactive<{ removed?: string, added?: string }>({
+  removed: 'initial',
+})
 
 function increment() {
   count.value += 1
+  store.increment(1)
+  delete details.removed
 }
 
 defineExpose({ increment })
@@ -24,6 +32,15 @@ defineExpose({ increment })
     </view>
     <view class="count">
       {{ count }}
+    </view>
+    <view class="store-count">
+      {{ storeCount }}
+    </view>
+    <view v-if="details.removed" class="removed-field">
+      {{ details.removed }}
+    </view>
+    <view v-if="details.added" class="added-field">
+      {{ details.added }}
     </view>
     <input v-model="input" class="input">
     <button class="increment" @tap="increment">

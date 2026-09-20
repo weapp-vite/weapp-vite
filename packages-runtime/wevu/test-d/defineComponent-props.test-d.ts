@@ -1,6 +1,6 @@
-import type { InferProps, PropType } from '@/index'
+import type { InferProps, PropType } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { defineComponent } from '@/index'
+import { defineComponent } from 'wevu'
 
 interface Book {
   title: string

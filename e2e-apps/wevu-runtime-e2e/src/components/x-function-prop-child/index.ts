@@ -20,6 +20,8 @@ Component({
   data: {
     callbackType: 'unset',
     handlerType: 'unset',
+    callbackValue: '',
+    handlerValue: '',
   },
   methods: {
     invokeCallback(this: any, payload = 'callback') {

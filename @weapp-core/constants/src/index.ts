@@ -54,6 +54,7 @@ export const WEAPP_VITE_STATEFUL_HMR_DIRECTORY = '__weapp_vite_hmr'
 export const WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/control.js`
 export const WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/preload.js`
 export const WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE = `${WEAPP_VITE_STATEFUL_HMR_DIRECTORY}/update.js`
+export const WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME = 'weapp-vite-global'
 export const WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY = '__WEAPP_VITE_STATEFUL_HMR_CONTROL__'
 export const WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY = '__WEAPP_VITE_STATEFUL_HMR_CLIENT__'
 export const WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY = '__WEAPP_VITE_STATEFUL_HMR_BRIDGE__'
@@ -95,6 +96,7 @@ export const WEVU_SLOT_SCOPE_ATTR = WEVU_SLOT_SCOPE_KEY
 export const WEVU_SLOT_NAMES_ATTR = 'vue-slots'
 export const WEVU_SCOPED_SLOT_OWNER_STORE_KEY = '__wevuScopedSlotOwnerStore'
 export const WEVU_SCOPED_SLOT_OWNER_SEED_KEY = '__wevuScopedSlotOwnerSeed'
+export const WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY = '__wevuScopedSlotOwnerRequired'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME = 'weapp-slot-wrapper'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE = 'weapp_vite_internal/slot-wrapper/index'
 export const WEVU_SLOT_FALLBACK_VIRTUAL_HOST_GLOBAL_PATH = `/${WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE}`
@@ -124,6 +126,7 @@ export const WEVU_NATIVE_INSTANCE_KEY = '__wevuNativeInstance'
 export const WEVU_RUNTIME_KEY = '__wevuRuntime'
 export const WEVU_RUNTIME_OWNER_ID_KEY = '__wevuRuntimeOwnerId'
 export const WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD = '__weapp_vite_resolvePublicInstance'
+export const WEVU_HOST_COMMIT_PROMISE_KEY = '__wevuHostCommitPromise'
 export const WEVU_TEMPLATE_REFS_KEY = '__wevuTemplateRefs'
 export const WEVU_LAYOUT_HOSTS_KEY = '__wevuLayoutHosts'
 export const WEVU_FUNCTION_PROP_PATHS_KEY = '__wevuFunctionPropPaths'
@@ -139,6 +142,7 @@ export const WEVU_ROUTE_DONE_CALLED_KEY = '__wevuRouteDoneCalled'
 export const WEVU_ROUTE_DONE_IN_TICK_KEY = '__wevuRouteDoneInTick'
 export const WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER = '__wevu_initial_navigation_timeout__'
 export const WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY = '__wevuPageScrollHookDepth'
+export const WEVU_ON_BEFORE_UNMOUNT_HOOK = '__wevuOnBeforeUnmount'
 export const WEVU_ON_BEFORE_UPDATE_HOOK = '__wevuOnBeforeUpdate'
 export const WEVU_ON_UPDATED_HOOK = '__wevuOnUpdated'
 export const WEVU_HOOKS_KEY = '__wevuHooks'
@@ -212,6 +216,8 @@ export interface WevuBindingSourceSpanV1 {
 export interface WevuRuntimeBindingRecordV1 {
   id: string
   outputPath: string
+  /** 仅在绑定源码归属不同于清单默认文件时记录。 */
+  sourceFile?: string
   updateMode?: WevuBindingUpdateMode
   sourceRoots?: string[]
   sourceLocation?: WevuBindingSourceSpanV1

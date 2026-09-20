@@ -2,14 +2,16 @@ import type { File as BabelFile, ObjectExpression, Program } from '@weapp-vite/a
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../../wevu/pageFeatures'
 import type { TransformScriptOptions, TransformState } from '../utils'
-import { WEVU_CSS_MODULES_KEY, WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_IS_PAGE_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
+import { WEVU_CSS_MODULES_KEY, WEVU_FUNCTION_PROP_PATHS_KEY, WEVU_IS_PAGE_KEY, WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY, WEVU_SLOT_NAMES_PROP, WEVU_SLOT_OWNER_ID_PROP, WEVU_SLOT_SCOPE_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
 import { resolveComponentExpression, resolveComponentOptionsObject } from '../../scriptComponent'
+import { analyzeComponentStyleOptions } from '../componentStyleOptions'
 import { getObjectPropertyByKey } from '../utils'
 import { injectBindingManifestContract } from './bindingManifest'
 import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './classStyle'
+import { injectStableCssVarsRuntime } from './cssVarsRuntime'
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
 import { injectInlineExpressions } from './inlineExpressions'
@@ -118,6 +120,16 @@ function injectScopedSlotHostProperties(componentOptionsObject: ObjectExpression
     changed = true
   }
   return changed
+}
+
+function injectScopedSlotOwnerRequirement(componentOptionsObject: ObjectExpression) {
+  if (hasStaticProperty(componentOptionsObject, WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY)) {
+    return false
+  }
+  componentOptionsObject.properties.push(
+    t.objectProperty(t.identifier(WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY), t.booleanLiteral(true)),
+  )
+  return true
 }
 
 function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
@@ -320,10 +332,14 @@ export function rewriteDefaultExport(
 
   if (componentOptionsObject && parsedWevuDefaults) {
     transformed = applyWevuDefaultsToComponentOptions({
-      componentExpr: componentOptionsObject,
+      componentExpr: componentExpr!,
       parsedWevuDefaults,
       options,
     }) || transformed
+  }
+
+  if (componentExpr && !options?.isApp && !options?.skipComponentTransform) {
+    state.componentStyleOptions = analyzeComponentStyleOptions(componentExpr, exportPath.scope)
   }
 
   if (componentOptionsObject) {
@@ -334,12 +350,20 @@ export function rewriteDefaultExport(
     transformed = relaxStructuredTypeOnlyProps(componentOptionsObject) || transformed
   }
 
+  if (componentOptionsObject && options?.runtimeCapabilities?.required.includes('scopedSlots')) {
+    transformed = injectScopedSlotOwnerRequirement(componentOptionsObject) || transformed
+  }
+
   if (componentOptionsObject && options?.scopedSlotHostProperties) {
     transformed = injectScopedSlotHostProperties(componentOptionsObject) || transformed
   }
 
   if (componentOptionsObject && options?.cssModules && Object.keys(options.cssModules).length) {
     transformed = injectCssModules(componentOptionsObject, options.cssModules) || transformed
+  }
+
+  if (componentOptionsObject && options?.stabilizeCssVarsRuntime) {
+    transformed = injectStableCssVarsRuntime(ast.program, componentOptionsObject, exportPath.scope) || transformed
   }
 
   if (componentOptionsObject) {

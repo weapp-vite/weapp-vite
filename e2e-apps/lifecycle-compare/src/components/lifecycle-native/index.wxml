@@ -1,4 +1,8 @@
 <view class="component">
   <text>Native Component</text>
   <text class="state">{{__lifecycleState.lastHook}}</text>
+  <text class="component-attached">attached: {{__lifecycleSeen.attached ? 'observed' : 'pending'}}</text>
+  <text class="component-ready">ready: {{__lifecycleSeen.ready ? 'observed' : 'pending'}}</text>
+  <text class="component-show">show: {{__lifecycleSeen['pageLifetimes.show'] ? 'observed' : 'pending'}}</text>
+  <text class="component-hide">hide: {{__lifecycleSeen['pageLifetimes.hide'] ? 'observed' : 'pending'}}</text>
 </view>

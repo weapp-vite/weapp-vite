@@ -92,6 +92,7 @@ describe('wevu API catalog', () => {
     for (const macro of ['defineProps()', 'withDefaults()', 'defineEmits()', 'defineSlots()', 'defineExpose()', 'defineModel()', 'defineOptions()', 'definePageMeta()', 'defineAppSetup()', 'defineAppJson()', 'definePageJson()', 'defineComponentJson()', 'defineSitemapJson()', 'defineThemeJson()']) {
       expect(names, `missing macro ${macro}`).toContain(macro)
     }
+    expect(names).toContain('useAsyncDerivation()')
     for (const option of ['props', 'emits', 'data', 'setup', 'computed', 'methods', 'watch', 'properties', 'lifetimes', 'pageLifetimes', 'features', 'setData', 'setupLifecycle']) {
       expect(names, `missing option ${option}`).toContain(option)
     }

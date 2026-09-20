@@ -16,6 +16,7 @@ import {
   cloneRouteMeta,
   cloneRouteParams,
   createNamedRouteLookup,
+  createNativeRouteUrl,
   createRouterOptionsSnapshot,
   mergeMatchedRouteMeta,
   normalizeRouteRecordMatched,
@@ -29,16 +30,18 @@ import {
   stringifyQuery,
   warnDuplicateRouteEntries,
 } from '../routerInternal/shared'
-import { getMiniProgramGlobalObject } from '../runtime/platform'
+import { getCurrentMiniProgramTabBarPagePaths, getMiniProgramGlobalObject } from '../runtime/platform'
 import { resolveBackNavigationTarget, runBackNavigationGuards } from './backNavigation'
 import { DEFAULT_INITIAL_NAVIGATION_TIMEOUT, registerInitialNavigationRunner } from './initialNavigation'
 import { setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
+import { createNavigationFailure, executeNavigationMethod } from './navigationCore'
 import { createNavigationResultController } from './navigationResult'
 import { navigateWithTarget } from './navigationTarget'
 import { resolveRouteLocation } from './resolve'
 import { createRouteRegistry } from './routeRegistry'
 import { installRouteStateSyncOnNativeRouter, notifyRouteStateSync } from './routeSync'
+import { NavigationFailureType } from './types'
 import { createRouteStateController, useNativeRouter } from './useRoute'
 
 /**
@@ -66,7 +69,8 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   const routeEntries = resolveRouteOptionEntries(options)
   warnDuplicateRouteEntries(routeEntries)
   const namedRouteLookup = createNamedRouteLookup(routeEntries)
-  const normalizedTabBarEntries = (options.tabBarEntries ?? [])
+  const tabBarEntrySource = options.tabBarEntries ?? getCurrentMiniProgramTabBarPagePaths()
+  const normalizedTabBarEntries = tabBarEntrySource
     .map(path => resolvePath(path, ''))
     .filter(Boolean)
   const tabBarPathSet = new Set(normalizedTabBarEntries)
@@ -266,6 +270,25 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
       })
       if (!isActive()) {
         return undefined
+      }
+      if (initialNavigationMode === 'blocking' && result.to && result.to.fullPath !== target.fullPath) {
+        const redirectedTarget = result.to
+        const isTabBarTarget = tabBarPathSet.has(redirectedTarget.path)
+        const method = isTabBarTarget ? nativeRouter.switchTab : nativeRouter.redirectTo
+        const nativeResult = await executeNavigationMethod(
+          method as (options: Record<string, any>) => unknown,
+          { url: createNativeRouteUrl(redirectedTarget, routeResolveCodec.stringifyQuery) },
+          redirectedTarget,
+          from,
+        )
+        if (nativeResult) {
+          return nativeResult
+        }
+        notifyRouteStateSync({
+          route: redirectedTarget,
+          source: 'router',
+        })
+        return createNavigationFailure(NavigationFailureType.cancelled, redirectedTarget, from)
       }
       return navigationResultController.settleNavigationResult(result)
     })

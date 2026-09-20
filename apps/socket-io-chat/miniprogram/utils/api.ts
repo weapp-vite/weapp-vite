@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { GraphQLClient, gql } from 'graphql-request'
+import { gql, GraphQLClient } from 'graphql-request'
 
 export interface ContactProfile {
   id: string

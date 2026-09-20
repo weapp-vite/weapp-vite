@@ -11,7 +11,7 @@ provide(SHADOW_PROVIDE_SCOPE_KEY, 'component-shadow-value')
 
 <template>
   <view class="provide-inject-scope-level">
-    <ProvideInjectScopeLevel02 />
+    <ProvideInjectScopeLevel02 id="scope-level-02" />
   </view>
 </template>
 

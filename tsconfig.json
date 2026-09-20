@@ -254,6 +254,9 @@
       "path": "./packages-runtime/wevu-compiler"
     },
     {
+      "path": "./packages-runtime/wevu-query"
+    },
+    {
       "path": "./packages-runtime/wevu/test-d"
     },
     {

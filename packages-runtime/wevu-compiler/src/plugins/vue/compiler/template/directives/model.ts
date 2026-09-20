@@ -12,6 +12,7 @@ import {
   normalizeEventDatasetSuffix,
 } from '../../../../../inlineDataset'
 import { normalizeComponentHostName } from '../../../../../utils/text'
+import { recordBindingExpression } from '../bindingManifest'
 import { warn } from '../diagnostics'
 import { getBindDirectiveExpression } from '../elements/helpers'
 import {
@@ -43,13 +44,6 @@ const NATIVE_MODEL_TAGS = new Set(['input', 'textarea', 'select', 'switch', 'che
 
 function camelize(value: string) {
   return value.replace(CAMELIZE_RE, (_, char: string) => char.toUpperCase())
-}
-
-function buildModelAssignmentExpression(rawExpValue: string) {
-  if (IDENTIFIER_RE.test(rawExpValue)) {
-    return `ctx.${rawExpValue} = $event`
-  }
-  return `${rawExpValue} = $event`
 }
 
 function isNativeModelElement(element: ElementNode | undefined) {
@@ -145,7 +139,9 @@ function transformComponentModelDirective(
   const updateEvent = `update:${camelize(modelProp)}`
   const eventSuffix = normalizeEventDatasetSuffix(updateEvent)
   const bindAttr = context.platform.eventBindingAttr(updateEvent)
-  const updateExpression = buildModelAssignmentExpression(rawExpValue)
+  const updateExpression = IDENTIFIER_RE.test(rawExpValue)
+    ? `this.${rawExpValue} = $event`
+    : `${rawExpValue} = $event`
   const inlineExpression = registerInlineExpression(updateExpression, context)
   if (!inlineExpression) {
     warn(context, `v-model="${rawExpValue}" 需要是可赋值的成员表达式。`, node.loc, 'expression')
@@ -175,6 +171,14 @@ function transformComponentModelDirective(
         { hint: 'v-model modifiers' },
       )
     : null
+  if (modifiersRef) {
+    recordBindingExpression(context, {
+      kind: 'component-prop',
+      expression: `{${modifierProperties}}`,
+      outputPath: modifiersRef.split('[')[0],
+      sourceLocation: node.loc,
+    })
+  }
   const modifierAttr = modifiersRef
     ? `${modifiersProp}="${renderMustache(modifiersRef, context)}"`
     : null

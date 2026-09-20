@@ -90,6 +90,9 @@ defineExpose({
     <text class="issue705-tab-title">
       issue-705 native switchTab target
     </text>
+    <view class="issue705-tab-route">
+      route: {{ routePath }}
+    </view>
   </view>
 </template>
 

@@ -43,7 +43,7 @@ Page({
     if (!id) {
       return
     }
-    const steps = (this.data.steps as StepItem[]).map(step => {
+    const steps = (this.data.steps as StepItem[]).map((step) => {
       if (step.id !== id) {
         return step
       }
