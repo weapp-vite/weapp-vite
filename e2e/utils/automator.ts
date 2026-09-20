@@ -2708,7 +2708,7 @@ function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, cliPid: number
   return miniProgram
 }
 
-async function launchAutomatorViaCliBridge(
+export async function launchAutomatorViaCliBridge(
   options: AutomatorCliBridgePayload,
   project: string,
   lifecycle: AutomatorLaunchLifecycle,
@@ -2785,11 +2785,16 @@ async function launchAutomatorViaCliBridge(
       lifecycle.throwIfAborted()
       lastConnectError = error
       const message = error instanceof Error ? error.message : String(error)
-      if (!DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
+      const handshakeTimedOut = error instanceof Error
+        && 'code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
+        && 'method' in error && error.method === 'Tool.getInfo'
+      if (!handshakeTimedOut
+        && !DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
         && !BRIDGE_CONNECT_TIMEOUT_PATTERN.test(message)
         && !BRIDGE_CONNECT_FAILURE_PATTERN.test(message)) {
         throw error
       }
+      process.stdout.write(`[warn] [runtime:launch-bridge-step] connect-retry project=${project} reason=${message}\n`)
       await lifecycle.pause(400)
     }
   }
