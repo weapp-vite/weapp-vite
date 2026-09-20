@@ -1,4 +1,7 @@
+import type { StaticRouteValue } from 'wevu/compiler'
 import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
+import type { NamedAutoRoute } from '../types'
+import { WEVU_ROUTER_MODULE_ID } from '@weapp-core/constants'
 
 const INDENT = '    '
 const TS_STRING_PLACEHOLDER = '${' + 'string}'
@@ -36,10 +39,56 @@ function formatSubPackagesTuple(subPackages: AutoRoutesSubPackage[], baseIndent 
   return lines.join('\n')
 }
 
-export function createTypedRouterDefinition(routes: AutoRoutes) {
+function formatStaticRouteType(value: StaticRouteValue, baseIndent: string): string {
+  if (value === null) {
+    return 'null'
+  }
+  if (typeof value === 'string') {
+    return 'string'
+  }
+  if (typeof value === 'number') {
+    return 'number'
+  }
+  if (typeof value === 'boolean') {
+    return 'boolean'
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return 'unknown[]'
+    }
+    const memberTypes = [...new Set(value.map(item => formatStaticRouteType(item, baseIndent)))]
+    return `Array<${memberTypes.join(' | ')}>`
+  }
+
+  const entries = Object.entries(value)
+  if (entries.length === 0) {
+    return '{}'
+  }
+  const propertyIndent = `${baseIndent}${INDENT}`
+  const lines = entries.map(([key, propertyValue]) => {
+    return `${propertyIndent}${JSON.stringify(key)}: ${formatStaticRouteType(propertyValue, propertyIndent)};`
+  })
+  return `{\n${lines.join('\n')}\n${baseIndent}}`
+}
+
+function formatNamedRouteMapEntries(routes: NamedAutoRoute[]) {
+  const routeIndent = `${INDENT}${INDENT}`
+  const fieldIndent = `${routeIndent}${INDENT}`
+  return routes.map((route) => {
+    return [
+      `${routeIndent}${JSON.stringify(route.name)}: {`,
+      `${fieldIndent}path: ${JSON.stringify(route.path)};`,
+      `${fieldIndent}meta: ${formatStaticRouteType(route.meta, fieldIndent)};`,
+      `${routeIndent}};`,
+    ].join('\n')
+  })
+}
+
+export function createTypedRouterDefinition(routes: AutoRoutes, namedRoutes: NamedAutoRoute[] = []) {
   const pagesType = formatTuple(routes.pages, INDENT)
   const entriesType = formatTuple(routes.entries, INDENT)
   const subPackagesType = formatSubPackagesTuple(routes.subPackages, INDENT)
+  const namedRouteMapEntries = formatNamedRouteMapEntries(namedRoutes)
 
   return [
     '/* eslint-disable */',
@@ -47,7 +96,7 @@ export function createTypedRouterDefinition(routes: AutoRoutes) {
     '// oxlint-disable',
     '// ------',
     '// 由 weapp-vite 自动生成，请勿编辑。',
-    'import \'wevu/router\';',
+    `import '${WEVU_ROUTER_MODULE_ID}';`,
     '',
     'declare module \'weapp-vite/auto-routes\' {',
     `    export type AutoRoutesPages = ${pagesType};`,
@@ -83,9 +132,12 @@ export function createTypedRouterDefinition(routes: AutoRoutes) {
     '    export default routes;',
     '}',
     '',
-    'declare module \'wevu/router\' {',
+    `declare module '${WEVU_ROUTER_MODULE_ID}' {`,
     '    interface WevuTypedRouterRouteMap {',
     '        entries: import(\'weapp-vite/auto-routes\').AutoRoutesEntries[number];',
+    '    }',
+    '    interface WevuNamedRouteMap {',
+    ...namedRouteMapEntries,
     '    }',
     '}',
     '',

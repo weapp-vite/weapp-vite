@@ -59,6 +59,12 @@ export const WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY = '__WEAPP_VITE_STATEFUL_HMR_CO
 export const WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY = '__WEAPP_VITE_STATEFUL_HMR_CLIENT__'
 export const WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY = '__WEAPP_VITE_STATEFUL_HMR_BRIDGE__'
 
+export const WEVU_ROUTER_MODULE_ID = 'wevu/router'
+export const WEVU_DEFINE_PAGE_MACRO = 'definePage'
+export const WEVU_AUTO_ROUTES_MODULE_ID = 'wevu/router/auto-routes'
+export const WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID = 'virtual:wevu-auto-routes'
+export const WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID = '\0wevu:auto-routes'
+
 export const WEVU_BINDING_MANIFEST_KEY = '__wevuBindingManifest'
 export const WEVU_PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
 export const WEVU_WEB_APIS_NETWORK_DEFAULTS_KEY = '__wevuWebApisNetworkDefaults'

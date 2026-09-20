@@ -214,20 +214,62 @@ describe('weapp web plugin hook matrix', () => {
     await expect(load.call(context, 'unknown:module')).resolves.toBeNull()
   })
 
-  it('rescans every supported HMR file class and ignores unrelated files', async () => {
-    const { pageDir, root } = await createPluginFixture()
-    const plugin = weappWebPlugin({ srcDir: 'src' })
-    const warn = vi.fn()
-    await plugin.configResolved?.call({ warn }, { root, command: 'serve' } as any)
-    for (const file of [
-      'index.json',
-      'index.wxml',
-      'logic.wxs',
-      'index.wxss',
-      'index.js',
-      'ignored.txt',
-    ]) {
-      await plugin.handleHotUpdate?.call({ warn }, { file: join(pageDir, file) })
+  it('keeps the last complete SFC snapshot during a rescan and recovers after a failed refresh', async () => {
+    const { pageDir, root } = await createSfcResolverFixture('<view>version-one</view>')
+    await writeFile(join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/index/index'] }))
+    const pagePath = join(pageDir, 'index.vue')
+    const templateId = `${pagePath}?weapp-web-sfc-template`
+    let releaseScan!: () => void
+    let reportStarted!: () => void
+    const blocked = new Promise<void>((resolve) => {
+      releaseScan = resolve
+    })
+    const started = new Promise<void>((resolve) => {
+      reportStarted = resolve
+    })
+    let blockNext = false
+    let failConfig = false
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      async __resolveAppConfig() {
+        if (blockNext) {
+          blockNext = false
+          reportStarted()
+          await blocked
+        }
+        if (failConfig) {
+          throw new Error('configuration unavailable')
+        }
+        return { pages: ['pages/index/index'] }
+      },
+    })
+    try {
+      await plugin.configResolved!.call({}, { root, command: 'serve' })
+      blockNext = true
+      await writeFile(pagePath, '<template><view>version-two</view></template>')
+      const refresh = plugin.handleHotUpdate!.call({}, { file: pagePath })
+      try {
+        await started
+        await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-one')
+      }
+      finally {
+        releaseScan()
+        await refresh
+      }
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+
+      failConfig = true
+      await plugin.handleHotUpdate!.call({}, { file: join(root, '.weapp-vite/typed-router.d.ts') })
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+      await expect(plugin.handleHotUpdate!.call({}, { file: pagePath })).rejects.toThrow('configuration unavailable')
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+      failConfig = false
+      await writeFile(pagePath, '<template><view>version-three</view></template>')
+      await plugin.handleHotUpdate!.call({}, { file: pagePath })
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-three')
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
     }
   })
 

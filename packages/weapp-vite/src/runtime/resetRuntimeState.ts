@@ -9,18 +9,7 @@ export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void
   runtimeState.glassEasel.warnedDiagnostics.clear()
   runtimeState.glassEasel.silent = false
 
-  const autoRoutes = runtimeState.autoRoutes
-  autoRoutes.routes = fresh.autoRoutes.routes
-  autoRoutes.serialized = fresh.autoRoutes.serialized
-  autoRoutes.moduleCode = fresh.autoRoutes.moduleCode
-  autoRoutes.typedDefinition = fresh.autoRoutes.typedDefinition
-  autoRoutes.watchFiles.clear()
-  autoRoutes.watchDirs.clear()
-  autoRoutes.dirty = fresh.autoRoutes.dirty
-  autoRoutes.initialized = fresh.autoRoutes.initialized
-  autoRoutes.candidates.clear()
-  autoRoutes.needsFullRescan = fresh.autoRoutes.needsFullRescan
-  autoRoutes.loadingAppConfig = fresh.autoRoutes.loadingAppConfig
+  Object.assign(runtimeState.autoRoutes, fresh.autoRoutes)
 
   const autoImport = runtimeState.autoImport
   autoImport.registry.clear()

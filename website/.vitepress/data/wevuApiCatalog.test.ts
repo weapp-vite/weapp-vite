@@ -237,6 +237,7 @@ describe('wevu API catalog', () => {
   it('covers the complete public Router surface', () => {
     const routerNames = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu/router').map(item => item.name))
     const expectedNames = [
+      'definePage()',
       'createRouter()',
       '<RouterLink>',
       '<router-link>',
@@ -270,6 +271,18 @@ describe('wevu API catalog', () => {
       'router.beforeResolve()',
       'router.afterEach()',
       'router.onError()',
+      'WevuNamedRouteMap',
+      'WevuBroadRouteMap',
+      'WevuNamedRouteDefinition',
+      'WevuRouteName',
+      'WevuNamedRoutePath',
+      'WevuNamedRouteMeta',
+      'WevuAutoRoute',
+      'RouteLocationNamedRaw',
+      'RouteLocationNormalizedByName',
+      'RouterResolve',
+      'StaticPageDeclaration',
+      'StaticRouteValue',
       'RouterNavigation',
       'UseRouterOptions',
       'AddRoute',

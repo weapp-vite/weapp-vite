@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：106；微信：103；范围外：3。
-- 展开的 case 声明：266；已接入计划：266；缺计划：0。
+- 任务：107；微信：104；范围外：3。
+- 展开的 case 声明：270；已接入计划：270；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -53,6 +53,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/hmr-auto-classic.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/index.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-1015-css-hmr.runtime.test.ts | devtools | 2 | 2 | 0 | wechat |
+| ide/issue-1029-auto-routes.runtime.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/issue-963-plugin-es6.runtime.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/issue-969-launch.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -1065,6 +1066,37 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1015`; checkpoints: `checkpoints.map(checkpoint => ({ id: checkpoint.id, route: ROUTE, action: \`检查 ${checkpoint.id} 外部 CSS 变量更新\`, nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': checkpoint.id === 'reactive' ? 'blue' : 'red' }, styles:`; source: `e2e/ide/issue-1015-css-hmr.runtime.test.ts:68`
 - Routes: `/pages/issue-1015/index`
 - Operations: `reLaunch(/pages/issue-1015/index)`, `check(initial)`, `check(style-only)`, `check(source-switch)`, `check(replace-variable)`, `check(remove-variable)`, `check(restore-variable)`, `callMethod(_runE2E)`, `check(reactive)`
+
+
+## ide/issue-1029-auto-routes.runtime.test.ts
+
+### issue #1029: static named routes and runtime metadata > finishes the initial guard before mounting and does not name unannotated pages
+
+- Source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:61`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1029`; checkpoints: `[{ id: 'initial', route: ISSUE_1029_HOME, action: '检查首屏异步守卫与声明元信息', nodes: [{ selector: '#route-title', text: '首页' }], }]`; source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:62`
+- Operations: `check(initial)`, `callMethod(_runE2E)`
+
+### issue #1029: static named routes and runtime metadata > navigates by an unchanged name after the page moves and preserves meta through back navigation
+
+- Source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:87`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1029`; checkpoints: `[ { id: 'profile', route: MOVED_PROFILE, action: '通过稳定名称跳转到移动后的分包页面', nodes: [{ selector: '#route-title', text: '个人资料' }] }, { id: 'back', route: ISSUE_1029_HOME, action: '返回主页并恢复关联元信息', nodes: [{ selector: '#route-title', text: '首页' }] }, `; source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:88`
+- Operations: `reLaunch(ISSUE_1029_HOME)`, `callMethod(_runE2E)`, `callMethodWithOptions(_runE2E)`, `check(profile)`, `check(back)`
+
+### issue #1029: static named routes and runtime metadata > retains the current route on abort and applies named guard redirects
+
+- Source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:111`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1029`; checkpoints: `[ { id: 'abort', route: ISSUE_1029_HOME, action: '中止命名导航不改变当前页面', nodes: [{ selector: '#route-title', text: '首页' }] }, { id: 'redirect', route: ISSUE_1029_HOME, action: '守卫重定向使用同一名称映射', nodes: [{ selector: '#route-title', text: '首页' }] }, ]`; source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:112`
+- Operations: `reLaunch(ISSUE_1029_HOME)`, `callMethod(_runE2E)`, `callMethodWithOptions(_runE2E)`, `check(abort)`, `check(redirect)`
+
+### issue #1029: static named routes and runtime metadata > keeps path navigation to a page without definePage unnamed
+
+- Source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:130`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1029`; checkpoints: `[{ id: 'legacy', route: ISSUE_1029_LEGACY, action: '未声明页面仍可按路径访问且没有伪造名称', nodes: [{ selector: '#legacy-title', text: 'Unannotated page' }], }]`; source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:131`
+- Operations: `reLaunch(ISSUE_1029_HOME)`, `callMethod(_runE2E)`, `callMethodWithOptions(_runE2E)`, `check(legacy)`
 
 
 ## ide/issue-340-hoist.runtime.test.ts

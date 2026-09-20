@@ -1,3 +1,4 @@
+import type { WevuNamedRouteMap } from '../router'
 import type { RouteResolveCodec } from '../routerInternal/shared'
 import type { NavigationRunResult } from './navigationResult'
 import type { RouteStateSyncPayload } from './routeSync'
@@ -47,7 +48,11 @@ import { createRouteStateController, useNativeRouter } from './useRoute'
 /**
  * @description 创建高阶路由导航器（对齐 Vue Router 的 createRouter 心智）
  */
-export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
+export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
+  optionsInput: UseRouterOptions<NoInfer<TRouteMap>> = {},
+): RouterNavigation<TRouteMap> {
+  // 路由表泛型只约束公开类型；运行时继续使用同一套名称无关的导航引擎。
+  const options = optionsInput as unknown as UseRouterOptions
   const nativeRouter = useNativeRouter()
   installRouteStateSyncOnNativeRouter(getMiniProgramGlobalObject())
   const beforeEachGuards = new Set<NavigationGuard>()
@@ -180,9 +185,8 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   })
   route = routeController.route
 
-  function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
-    return resolveWithCodec(to, route.path)
-  }
+  const resolve = (to: RouteLocationRaw): RouteLocationNormalizedLoaded =>
+    resolveWithCodec(to, route.path)
 
   const navigationResultController = createNavigationResultController({
     afterEachHooks,
@@ -363,5 +367,6 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
 
   setActiveRouter(router)
   registerInitialNavigationRunner(router, runInitialNavigation, initialNavigationTimeout, initialNavigationMode)
-  return router
+  const typedRouter = router as unknown as RouterNavigation<TRouteMap>
+  return typedRouter
 }

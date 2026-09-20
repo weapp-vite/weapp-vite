@@ -56,6 +56,28 @@
 
 在 `setup()` 同步阶段读取只读的当前路由状态，并随页面生命周期和导航完成事件更新。
 
+### `definePage()` {#definepage}
+
+<!-- api-reference-details -->
+
+**类型签名：** `definePage(declaration: StaticPageDeclaration): void`
+
+**运行时说明：** 这是从 `wevu/router` 显式导入的编译宏，不是运行时注册函数。只允许在已识别页面中顶层调用一次，以静态 `name` 和可选 JSON 对象 `meta` 生成命名路由；省略元信息时生成 `{}`。名称必须全局唯一，路径由现有页面发现决定；导入别名受支持，非法表达式会在构建时报告源位置。调用会被编译擦除，未经编译直接执行会抛错。
+
+**Vue Router 差异：** 宏不接受 `path`、动态表达式或路由 DSL，也不自动设置页面标题；`definePageJson` 和 `definePageMeta` 保留各自职责。
+
+**示例：** 见 [本组示例](/wevu/api/router#example-router-entry)。
+
+### `wevu/router/auto-routes` {#auto-routes}
+
+**类型签名：** `routes: WevuAutoRoutes`；`WevuAutoRoutes` 从此子入口以 `import type` 导入。
+
+**运行时说明：** 启用 `weapp.autoRoutes` 后，该子入口具名导出纯数据 `routes`，没有默认导出，也不会提前加载页面。使用 `createRouter({ routes })` 安装记录；在 weapp-vite 之外加载实体模块会抛错，不会静默返回空表。原有 `weapp-vite/auto-routes` 的 `pages/entries/subPackages` 不变。
+
+**Vue Router 差异：** 该入口适用于 weapp-vite 的小程序和 Web 构建目标，不是通用 Vue Router 插件。
+
+**示例：** 见 [本组示例](/wevu/api/router#example-router-entry)。
+
 <span id="router-examples"></span>
 
 ### 本组示例 {#example-router-entry}
@@ -74,3 +96,23 @@ const router = useRouter()
 const route = useRoute()
 console.log(router.currentRoute, route.fullPath)
 ```
+
+自动路由的页面声明和 App 初始化分别写在对应源文件中：
+
+```vue
+<script setup lang="ts">
+import { definePage } from 'wevu/router'
+
+definePage({ name: 'home', meta: { title: '首页', requiresAuth: false } })
+</script>
+```
+
+```ts
+import { createRouter } from 'wevu/router'
+import { routes } from 'wevu/router/auto-routes'
+
+const router = createRouter({ routes })
+await router.push({ name: 'home' })
+```
+
+运行 `weapp-vite prepare` 后，将 `.weapp-vite/typed-router.d.ts` 纳入 TypeScript 项目。名称关联、元信息拓宽和动态兼容模式见 [命名路由类型](/wevu/api/router-types#type-wevunamedroutemap)。

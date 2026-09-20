@@ -1,7 +1,11 @@
-import type { SFCDescriptor, SFCParseResult } from 'vue/compiler-sfc'
+import type { AttributeNode, ElementNode, ParserOptions } from '@vue/compiler-core'
+import type { SFCDescriptor, SFCParseOptions, SFCParseResult, SFCScriptBlock, TemplateCompiler } from 'vue/compiler-sfc'
 import type { ResolveSfcBlockSrcOptions } from './vueSfcBlockSrc'
+import { NodeTypes } from '@vue/compiler-core'
+import * as compilerDom from '@vue/compiler-dom'
 import { LRUCache } from 'lru-cache'
-import { parse as parseSfc } from 'vue/compiler-sfc'
+import MagicString from 'magic-string'
+import { parse as parseCompilerSfc } from 'vue/compiler-sfc'
 import { getReadFileCheckMtime } from '../../utils/cachePolicy'
 import { normalizeLineEndings } from '../../utils/text'
 import { readFile as readFileCached } from './cache'
@@ -16,7 +20,7 @@ export interface ReadAndParseSfcOptions {
    */
   source?: string
   /**
-   * 已完成 `<script src>` 预处理的源码。
+   * 已完成其他 parser 预处理的源码。
    */
   preprocessedSource?: string
   /**
@@ -36,7 +40,7 @@ export interface ReadAndParseSfcOptions {
 const sfcParseCache = new LRUCache<
   string,
   {
-    normalizedSource: string
+    parserSource: string
     ignoreEmpty: boolean
     descriptor: SFCDescriptor
     errors: SFCParseResult['errors']
@@ -47,77 +51,151 @@ const sfcParseCache = new LRUCache<
 
 const SCRIPT_SETUP_SRC_ATTR = 'data-weapp-vite-src'
 const SCRIPT_SRC_ATTR = 'data-weapp-vite-script-src'
-const SCRIPT_SETUP_TAG_RE = /<script\b([^>]*)>/gi
-const SETUP_WORD_RE = /\bsetup\b/i
-const SRC_WORD_RE = /\bsrc\b/i
-const SRC_ATTR_RE = /\bsrc(\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))/i
+const INTERNAL_SCRIPT_SRC_ATTR = '\0wevu-script-src'
+// compiler-sfc 会在 createBlock 前按 AST children 判空；该哨兵只影响判空，不改变源码和 loc。
+const EXTERNAL_SCRIPT_CONTENT_SENTINEL = '\0wevu-external-script'
+
+interface SfcScriptSrcAttribute {
+  attribute: AttributeNode
+  node: ElementNode
+  setup: boolean
+}
+
+function parseSfcAst(
+  source: string,
+  options: ParserOptions,
+  onScriptSrc: (owned: SfcScriptSrcAttribute) => void,
+) {
+  const ast = compilerDom.parse(source, options)
+  for (const child of ast.children) {
+    if (child.type !== NodeTypes.ELEMENT || child.tag !== 'script') {
+      continue
+    }
+    let src: AttributeNode | undefined
+    let setup = false
+    for (const attribute of child.props) {
+      if (attribute.type !== NodeTypes.ATTRIBUTE) {
+        continue
+      }
+      if (attribute.name === 'src') {
+        src = attribute
+      }
+      else if (attribute.name === 'setup') {
+        setup = true
+      }
+    }
+    if (src) {
+      onScriptSrc({ attribute: src, node: child, setup })
+    }
+  }
+  return ast
+}
+
+function collectSfcScriptSrcAttributes(source: string) {
+  const attributes: SfcScriptSrcAttribute[] = []
+  try {
+    parseSfcAst(source, {
+      parseMode: 'sfc',
+      onError() {},
+    }, owned => attributes.push(owned))
+  }
+  catch {
+    // 兼容旧预处理 API：不完整源码保持原样，正式解析仍负责报告错误。
+  }
+  return attributes
+}
+
+const sfcSrcCompiler: TemplateCompiler = {
+  compile: compilerDom.compile,
+  parse(source, options) {
+    return parseSfcAst(source, options, ({ attribute, node }) => {
+      attribute.name = INTERNAL_SCRIPT_SRC_ATTR
+      const isEmpty = node.children.every(child =>
+        child.type === NodeTypes.TEXT && child.content.trim() === '',
+      )
+      if (isEmpty) {
+        node.children.push({
+          type: NodeTypes.TEXT,
+          content: EXTERNAL_SCRIPT_CONTENT_SENTINEL,
+          loc: node.innerLoc ?? node.loc,
+        })
+      }
+    })
+  },
+}
+
+function restoreScriptBlockSrc(block: SFCScriptBlock | null, marker: string) {
+  if (!block || !(marker in block.attrs)) {
+    return
+  }
+  const raw = block.attrs[marker]!
+  delete block.attrs[marker]
+  block.attrs.src = raw
+  block.src = typeof raw === 'string' ? raw : undefined
+}
+
+/**
+ * 解析 SFC，并在 Vue 完成块归属与校验后恢复外部脚本来源。
+ */
+export function parseVueSfc(
+  source: string,
+  options: Omit<SFCParseOptions, 'compiler'> = {},
+) {
+  const parsed = parseCompilerSfc(source, {
+    ...options,
+    compiler: sfcSrcCompiler,
+  })
+  restoreScriptBlockSrc(parsed.descriptor.script, INTERNAL_SCRIPT_SRC_ATTR)
+  restoreScriptBlockSrc(parsed.descriptor.scriptSetup, INTERNAL_SCRIPT_SRC_ATTR)
+  return parsed
+}
+
+function preprocessScriptSource(source: string, setup: boolean) {
+  if (!source.includes('<script') || !source.includes('src')) {
+    return source
+  }
+  let transformed: MagicString | undefined
+  const marker = setup ? SCRIPT_SETUP_SRC_ATTR : SCRIPT_SRC_ATTR
+  for (const owned of collectSfcScriptSrcAttributes(source)) {
+    if (owned.setup !== setup) {
+      continue
+    }
+    transformed ??= new MagicString(source)
+    transformed.overwrite(
+      owned.attribute.nameLoc.start.offset,
+      owned.attribute.nameLoc.end.offset,
+      marker,
+    )
+  }
+  return transformed?.toString() ?? source
+}
 
 /**
  * 预处理 `<script setup src>`，避免编译器丢失 src。
  */
 export function preprocessScriptSetupSrc(source: string) {
-  if (!source.includes('<script') || !source.includes('setup') || !source.includes('src')) {
-    return source
-  }
-  return source.replace(SCRIPT_SETUP_TAG_RE, (full, attrs) => {
-    if (!SETUP_WORD_RE.test(attrs) || !SRC_WORD_RE.test(attrs)) {
-      return full
-    }
-    const nextAttrs = attrs.replace(
-      SRC_ATTR_RE,
-      `${SCRIPT_SETUP_SRC_ATTR}$1`,
-    )
-    return `<script${nextAttrs}>`
-  })
+  return preprocessScriptSource(source, true)
 }
 
 /**
  * 预处理普通 `<script src>`，避免编译器丢失 src。
  */
 export function preprocessScriptSrc(source: string) {
-  if (!source.includes('<script') || !source.includes('src')) {
-    return source
-  }
-  return source.replace(SCRIPT_SETUP_TAG_RE, (full, attrs) => {
-    if (SETUP_WORD_RE.test(attrs) || !SRC_WORD_RE.test(attrs)) {
-      return full
-    }
-    const nextAttrs = attrs.replace(
-      SRC_ATTR_RE,
-      `${SCRIPT_SRC_ATTR}$1`,
-    )
-    return `<script${nextAttrs}>`
-  })
+  return preprocessScriptSource(source, false)
 }
 
 /**
  * 将预处理的 `<script setup src>` 恢复为真实 src。
  */
 export function restoreScriptSetupSrc(descriptor: SFCDescriptor) {
-  const scriptSetup = descriptor.scriptSetup
-  if (!scriptSetup?.attrs || !(SCRIPT_SETUP_SRC_ATTR in scriptSetup.attrs)) {
-    return
-  }
-  const raw = scriptSetup.attrs[SCRIPT_SETUP_SRC_ATTR]
-  if (typeof raw === 'string') {
-    scriptSetup.src = raw
-  }
-  delete scriptSetup.attrs[SCRIPT_SETUP_SRC_ATTR]
+  restoreScriptBlockSrc(descriptor.scriptSetup, SCRIPT_SETUP_SRC_ATTR)
 }
 
 /**
  * 将预处理的 `<script src>` 恢复为真实 src。
  */
 export function restoreScriptSrc(descriptor: SFCDescriptor) {
-  const script = descriptor.script
-  if (!script?.attrs || !(SCRIPT_SRC_ATTR in script.attrs)) {
-    return
-  }
-  const raw = script.attrs[SCRIPT_SRC_ATTR]
-  if (typeof raw === 'string') {
-    script.src = raw
-  }
-  delete script.attrs[SCRIPT_SRC_ATTR]
+  restoreScriptBlockSrc(descriptor.script, SCRIPT_SRC_ATTR)
 }
 
 export { resolveSfcBlockSrc }
@@ -132,13 +210,13 @@ export async function readAndParseSfc(
 ): Promise<{ source: string, descriptor: SFCDescriptor, errors: SFCParseResult['errors'] }> {
   const checkMtime = options?.checkMtime ?? true
   const source = normalizeLineEndings(options?.source ?? await readFileCached(filename, { checkMtime }))
-  const normalizedSource = options?.preprocessedSource ?? preprocessScriptSrc(preprocessScriptSetupSrc(source))
-  const ignoreEmpty = options?.ignoreEmpty ?? normalizedSource === source
+  const parserSource = options?.preprocessedSource ?? source
+  const ignoreEmpty = options?.ignoreEmpty ?? true
 
   const cached = sfcParseCache.get(filename)
   if (cached) {
     // 描述符只属于本次解析输入；文件签名观察与并发读取不能替代源码和解析选项。
-    const hit = cached.normalizedSource === normalizedSource && cached.ignoreEmpty === ignoreEmpty
+    const hit = cached.parserSource === parserSource && cached.ignoreEmpty === ignoreEmpty
     if (hit) {
       if (options?.resolveSrc) {
         const resolved = await resolveSfcBlockSrc(cached.descriptor, filename, options.resolveSrc)
@@ -156,14 +234,12 @@ export async function readAndParseSfc(
     }
   }
 
-  const parsed = parseSfc(normalizedSource, {
+  const parsed = parseVueSfc(parserSource, {
     filename,
     ignoreEmpty,
   })
-  restoreScriptSetupSrc(parsed.descriptor)
-  restoreScriptSrc(parsed.descriptor)
   sfcParseCache.set(filename, {
-    normalizedSource,
+    parserSource,
     ignoreEmpty,
     descriptor: parsed.descriptor,
     errors: parsed.errors,

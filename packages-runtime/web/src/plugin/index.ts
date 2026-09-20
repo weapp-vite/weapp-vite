@@ -178,9 +178,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   let resolveWebAutoImportTag: ResolveWebAutoImportTag | undefined
   const webRuntimeModules = new Map<string, string>()
   let stylePreprocessOptions: WebStylePreprocessOptions | undefined
-  const componentImportIdMap = new Map<string, string>()
+  let componentImportIdMap = new Map<string, string>()
 
-  const state = createEmptyScanState()
+  let state = createEmptyScanState()
+  let scanQueue: Promise<void> = Promise.resolve()
   const wxssOptions = options.wxss
   const runtimeProvider = options.__runtimeProvider
   const hmrAcceptCode = runtimeProvider
@@ -232,23 +233,32 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     }
   }
 
-  const scan = async (context: WebPluginContext) => {
-    await scanProject({
-      srcRoot,
-      warn: context.warn?.bind(context),
-      state,
-      resolveId: resolveWebModuleId,
-      resolveAutoImportTag: resolveWebAutoImportTag,
-      resolveAppConfig: options.__resolveAppConfig,
-      uniApp: options.__uniApp,
-      stylePreprocessOptions,
-    })
-    componentImportIdMap.clear()
-    for (const component of state.scanResult.components) {
-      if (component.importId) {
-        componentImportIdMap.set(component.importId, component.script)
+  const scan = (context: WebPluginContext) => {
+    const result = scanQueue.then(async () => {
+      const nextState = createEmptyScanState()
+      await scanProject({
+        srcRoot,
+        warn: context.warn?.bind(context),
+        state: nextState,
+        resolveId: resolveWebModuleId,
+        resolveAutoImportTag: resolveWebAutoImportTag,
+        resolveAppConfig: options.__resolveAppConfig,
+        uniApp: options.__uniApp,
+        stylePreprocessOptions,
+      })
+      const nextComponentImportIdMap = new Map<string, string>()
+      for (const component of nextState.scanResult.components) {
+        if (component.importId) {
+          nextComponentImportIdMap.set(component.importId, component.script)
+        }
       }
-    }
+      // 虚拟模块始终读取最后一次完整快照，不暴露扫描过程中的空映射。
+      state = nextState
+      componentImportIdMap = nextComponentImportIdMap
+    })
+    // 调用方仍接收原始错误；队尾只负责允许下一次文件变更恢复扫描。
+    scanQueue = result.catch(() => {})
+    return result
   }
 
   return {
@@ -444,6 +454,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     },
     async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
       const clean = cleanUrl(ctx.file)
+      const normalized = normalizePath(clean)
+      if (!isInsideDir(clean, srcRoot) && !state.moduleMeta.has(normalized) && !state.templatePathSet.has(normalized)) {
+        return
+      }
       if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
         await scan(this)
       }

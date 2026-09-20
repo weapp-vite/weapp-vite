@@ -162,13 +162,21 @@ export async function resolveSfcBlockSrc(
   descriptor: SFCDescriptor,
   filename: string,
   options?: ResolveSfcBlockSrcOptions,
-): Promise<{ descriptor: SFCDescriptor, deps: string[], templateResolvedId?: string }> {
+): Promise<{
+  descriptor: SFCDescriptor
+  deps: string[]
+  scriptResolvedId?: string
+  scriptSetupResolvedId?: string
+  templateResolvedId?: string
+}> {
   if (!options) {
     return { descriptor, deps: [] }
   }
 
   const deps = new Set<string>()
   let templateResolvedId: string | undefined
+  let scriptResolvedId: string | undefined
+  let scriptSetupResolvedId: string | undefined
   let hasResolvedStyleSrc = false
   const nextDescriptor: SFCDescriptor = {
     ...descriptor,
@@ -190,6 +198,12 @@ export async function resolveSfcBlockSrc(
     const resolvedId = await resolveBlockSrcPath(block.src, filename, options)
     if (kind === 'template') {
       templateResolvedId = resolvedId
+    }
+    else if (kind === 'script') {
+      scriptResolvedId = resolvedId
+    }
+    else if (kind === 'script setup') {
+      scriptSetupResolvedId = resolvedId
     }
     const content = await readBlockContent(resolvedId, filename, options)
     if (kind === 'style') {
@@ -218,5 +232,11 @@ export async function resolveSfcBlockSrc(
     nextDescriptor.cssVars = resolveDescriptorCssVars(nextDescriptor.styles, filename)
   }
 
-  return { descriptor: nextDescriptor, deps: [...deps], templateResolvedId }
+  return {
+    descriptor: nextDescriptor,
+    deps: [...deps],
+    scriptResolvedId,
+    scriptSetupResolvedId,
+    templateResolvedId,
+  }
 }

@@ -8,6 +8,7 @@ import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackag
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
 import type { LocalAutoImportMatch } from './autoImport/types'
+import type { NamedAutoRoute } from './autoRoutesPlugin/types'
 import type { LoadConfigResult, PackageInfo } from './config/types'
 import type { SidecarWatcher, WatcherInstance } from './watcher/types'
 import process from 'node:process'
@@ -99,9 +100,18 @@ export interface RuntimeState {
   }
   autoRoutes: {
     routes: AutoRoutes
+    namedRoutes: NamedAutoRoute[]
     serialized: string
     moduleCode: string
+    namedModuleCode: string
+    signature: string
+    topologyKey: string
     typedDefinition: string
+    pageDeclarationDependencies: Map<string, Set<string>>
+    pageDeclarationFingerprints: Map<string, string>
+    usesOpaquePageDeclarationResolver: boolean
+    pageSourceFiles: Set<string>
+    namedRouteSourceFiles: Set<string>
     watchFiles: Set<string>
     watchDirs: Set<string>
     dirty: boolean
@@ -342,9 +352,18 @@ export function createRuntimeState(): RuntimeState {
     },
     autoRoutes: {
       routes: emptyAutoRoutesSnapshot,
+      namedRoutes: [],
       serialized: emptyAutoRoutesArtifacts.serialized,
       moduleCode: emptyAutoRoutesArtifacts.moduleCode,
+      namedModuleCode: emptyAutoRoutesArtifacts.namedModuleCode,
+      signature: emptyAutoRoutesArtifacts.signature,
+      topologyKey: '',
       typedDefinition: '',
+      pageDeclarationDependencies: new Map<string, Set<string>>(),
+      pageDeclarationFingerprints: new Map<string, string>(),
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: new Set<string>(),
+      namedRouteSourceFiles: new Set<string>(),
       watchFiles: new Set<string>(),
       watchDirs: new Set<string>(),
       dirty: true,

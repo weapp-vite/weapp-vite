@@ -158,11 +158,13 @@ export function createModuleGraphService(): ModuleGraphService {
     if (!devServer?.transformRequest) {
       return
     }
-    const queue = [id]
+    // 依赖的 URL 不等于模块 id；保留节点才能继续展开传递依赖。
+    const queue: Array<string | DevModuleNode> = [id]
     const visited = new Set<string>()
     for (let index = 0; index < queue.length; index += 1) {
-      const request = queue[index]!
-      if (visited.has(request)) {
+      const target = queue[index]!
+      const request = typeof target === 'string' ? target : target.url ?? target.id
+      if (!request || visited.has(request)) {
         continue
       }
       visited.add(request)
@@ -173,11 +175,13 @@ export function createModuleGraphService(): ModuleGraphService {
         debug?.(`dev graph 预热跳过无法展开的 external 终点 ${request}: ${String(error)}`)
         continue
       }
-      const module = devServer.moduleGraph.getModuleById(request)
+      const module = typeof target === 'string'
+        ? devServer.moduleGraph.getModuleById(request)
+        : target
       for (const dependency of module?.importedModules ?? []) {
         const dependencyRequest = dependency.url ?? dependency.id
         if (dependencyRequest && !visited.has(dependencyRequest)) {
-          queue.push(dependencyRequest)
+          queue.push(dependency)
         }
       }
     }

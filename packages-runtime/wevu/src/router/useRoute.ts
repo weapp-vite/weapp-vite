@@ -1,3 +1,4 @@
+import type { WevuNamedRouteMap } from '../router'
 import type { MiniProgramPageLike } from '../routerInternal/types'
 import type { MiniProgramPageLifetime } from '../runtime/types'
 import type { SetupContextRouter } from '../runtime/types/props'
@@ -16,8 +17,10 @@ import { getActiveRouter } from './instance'
 import { resolveRouteLocation } from './resolve'
 import { registerRouteStateSyncHandler } from './routeSync'
 
-export interface UseRouteOptions {
-  resolveRoute?: (route: RouteLocationNormalizedLoaded) => RouteLocationNormalizedLoaded
+export interface UseRouteOptions<TRouteMap extends object = WevuNamedRouteMap> {
+  resolveRoute?: (
+    route: RouteLocationNormalizedLoaded<TRouteMap>,
+  ) => RouteLocationNormalizedLoaded<TRouteMap>
 }
 
 interface RouteStateControllerOptions extends UseRouteOptions {
@@ -204,8 +207,13 @@ export function createRouteStateController(options: RouteStateControllerOptions 
   }
 }
 
-export function useRoute(options: UseRouteOptions = {}): Readonly<RouteLocationNormalizedLoaded> {
-  return createRouteStateController(options).route
+export function useRoute<TRouteMap extends object = WevuNamedRouteMap>(
+  options: UseRouteOptions<NoInfer<TRouteMap>> = {},
+): Readonly<RouteLocationNormalizedLoaded<TRouteMap>> {
+  // 路由表泛型只收窄公开快照；状态同步仍复用同一个运行时控制器。
+  const runtimeOptions = options as unknown as UseRouteOptions
+  const route = createRouteStateController(runtimeOptions).route
+  return route as unknown as Readonly<RouteLocationNormalizedLoaded<TRouteMap>>
 }
 
 /**

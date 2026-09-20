@@ -1,7 +1,10 @@
 import type { MutableCompilerContext } from '../../context'
+import type { AutoRoutesPersistentCache } from './service/shared'
+import { setImmediate } from 'node:timers/promises'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
 import { createAutoRoutesService } from './service'
+import { createAutoRoutesSourceFingerprint } from './service/shared'
 
 const outputFileMock = vi.hoisted(() => vi.fn())
 const outputJsonMock = vi.hoisted(() => vi.fn())
@@ -21,19 +24,29 @@ const requireConfigServiceMock = vi.hoisted(() => vi.fn((ctx: MutableCompilerCon
 const collectCandidatesMock = vi.hoisted(() => vi.fn(async () => new Map()))
 const cloneCandidateMock = vi.hoisted(() => vi.fn((candidate: Record<string, any>) => ({ ...candidate })))
 const createTypedRouterDefinitionMock = vi.hoisted(() => vi.fn(() => 'type TypedRouter = []'))
+const createAutoRoutesTopologyKeyMock = vi.hoisted(() => vi.fn(() => 'topology'))
 const scanRoutesMock = vi.hoisted(() => vi.fn(async () => ({
   snapshot: {
     pages: [],
     entries: [],
     subPackages: [],
   },
+  namedRoutes: [],
   serialized: JSON.stringify({
     pages: [],
     entries: [],
     subPackages: [],
   }, null, 2),
   moduleCode: 'export default []',
+  namedModuleCode: 'export const routes = []',
+  signature: 'routes-signature',
   typedDefinition: 'type TypedRouter = []',
+  topologyKey: 'topology',
+  pageSourceFiles: new Set<string>(),
+  namedRouteSourceFiles: new Set<string>(),
+  pageDeclarationDependencies: new Map<string, Set<string>>(),
+  pageDeclarationFingerprints: new Map<string, string>(),
+  usesOpaquePageDeclarationResolver: false,
   watchFiles: new Set<string>(),
   watchDirs: new Set<string>(),
 })))
@@ -95,6 +108,7 @@ vi.mock('./candidates', () => ({
 
 vi.mock('./routes', () => ({
   createTypedRouterDefinition: createTypedRouterDefinitionMock,
+  createAutoRoutesTopologyKey: createAutoRoutesTopologyKeyMock,
   scanRoutes: scanRoutesMock,
   updateRoutesReference: updateRoutesReferenceMock,
   cloneRoutes: cloneRoutesMock,
@@ -141,7 +155,7 @@ describe('createAutoRoutesService branch coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     pathExistsMock.mockResolvedValue(false)
-    readFileMock.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('declaration-source')
     readJsonMock.mockResolvedValue(undefined)
     removeMock.mockResolvedValue(undefined)
     outputFileMock.mockResolvedValue(undefined)
@@ -244,42 +258,6 @@ describe('createAutoRoutesService branch coverage', () => {
     expect(outputFileMock).not.toHaveBeenCalled()
   })
 
-  it('marks dirty and exposes serialized signature', () => {
-    const ctx = createContext({
-      autoRoutes: {
-        enabled: true,
-        persistentCache: true,
-      },
-    })
-    const service = createAutoRoutesService(ctx)
-
-    ctx.runtimeState.autoRoutes.dirty = false
-    ctx.runtimeState.autoRoutes.needsFullRescan = false
-
-    expect(service.getSignature()).toBe(ctx.runtimeState.autoRoutes.serialized)
-    service.markDirty()
-
-    expect(ctx.runtimeState.autoRoutes.dirty).toBe(true)
-    expect(ctx.runtimeState.autoRoutes.needsFullRescan).toBe(true)
-  })
-
-  it('returns early for unchanged route files without full rescan request', async () => {
-    updateCandidateFromFileMock.mockResolvedValueOnce(false)
-    const ctx = createContext({
-      autoRoutes: {
-        enabled: true,
-        persistentCache: true,
-      },
-    })
-    ctx.runtimeState.autoRoutes.needsFullRescan = false
-    const service = createAutoRoutesService(ctx)
-
-    await expect(service.handleFileChange('/project/src/pages/index/index.ts')).resolves.toBe(false)
-
-    expect(updateCandidateFromFileMock).toHaveBeenCalledTimes(1)
-    expect(scanRoutesMock).not.toHaveBeenCalled()
-  })
-
   it('reports route topology changes when file change updates candidates', async () => {
     const ctx = createContext({
       autoRoutes: {
@@ -295,22 +273,33 @@ describe('createAutoRoutesService branch coverage', () => {
     expect(scanRoutesMock).toHaveBeenCalledTimes(1)
   })
 
-  it('restores routes from persistent cache when watched files are unchanged', async () => {
+  it('restores ordinary routes from persistent cache with a plugin resolver registered', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 1,
+      version: 3,
       snapshot: {
         pages: ['pages/index/index'],
         entries: ['pages/index/index'],
         subPackages: [],
       },
+      namedRoutes: [],
       serialized: JSON.stringify({
         pages: ['pages/index/index'],
         entries: ['pages/index/index'],
         subPackages: [],
       }, null, 2),
       moduleCode: 'export default ["pages/index/index"]',
+      namedModuleCode: 'export const routes = []',
+      signature: 'cached-signature',
       typedDefinition: 'type TypedRouter = ["pages/index/index"]',
+      topologyKey: 'topology',
+      pageDeclarationDependencies: {},
+      pageDeclarationFingerprints: {
+        '/project/src/pages/index/index.ts': createAutoRoutesSourceFingerprint('declaration-source'),
+      },
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: ['/project/src/pages/index/index.ts'],
+      namedRouteSourceFiles: [],
       watchFiles: ['/project/src/pages/index/index.ts'],
       watchDirs: ['/project/src/pages/index'],
       fileMtims: {
@@ -325,6 +314,7 @@ describe('createAutoRoutesService branch coverage', () => {
       },
     })
     const service = createAutoRoutesService(ctx)
+    service.setPageDeclarationSourceResolver(async () => undefined)
 
     await service.ensureFresh()
 
@@ -336,25 +326,47 @@ describe('createAutoRoutesService branch coverage', () => {
       subPackages: [],
     })
     expect([...service.getWatchFiles()]).toEqual(['/project/src/pages/index/index.ts'])
+    expect(service.getModuleCode()).not.toBe('export default ["pages/index/index"]')
+    expect(service.getNamedModuleCode()).not.toBe('export const routes = []')
+    expect(outputFileMock).toHaveBeenCalledWith(
+      '/project/.weapp-vite/typed-router.d.ts',
+      'type TypedRouter = []',
+      'utf8',
+    )
   })
 
   it('checks persistent cache mtimes concurrently during restore', async () => {
     const firstStat = createDeferred<{ mtimeMs: number }>()
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 1,
+      version: 3,
       snapshot: {
         pages: ['pages/index/index', 'pages/about/index'],
         entries: ['pages/index/index', 'pages/about/index'],
         subPackages: [],
       },
+      namedRoutes: [],
       serialized: JSON.stringify({
         pages: ['pages/index/index', 'pages/about/index'],
         entries: ['pages/index/index', 'pages/about/index'],
         subPackages: [],
       }, null, 2),
       moduleCode: 'export default ["pages/index/index","pages/about/index"]',
+      namedModuleCode: 'export const routes = []',
+      signature: 'cached-signature',
       typedDefinition: 'type TypedRouter = ["pages/index/index", "pages/about/index"]',
+      topologyKey: 'topology',
+      pageDeclarationDependencies: {},
+      pageDeclarationFingerprints: {
+        '/project/src/pages/index/index.ts': createAutoRoutesSourceFingerprint('declaration-source'),
+        '/project/src/pages/about/index.ts': createAutoRoutesSourceFingerprint('declaration-source'),
+      },
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: [
+        '/project/src/pages/index/index.ts',
+        '/project/src/pages/about/index.ts',
+      ],
+      namedRouteSourceFiles: [],
       watchFiles: [
         '/project/src/pages/index/index.ts',
         '/project/src/pages/about/index.ts',
@@ -393,6 +405,51 @@ describe('createAutoRoutesService branch coverage', () => {
     expect(service.getSnapshot().pages).toEqual(['pages/index/index', 'pages/about/index'])
   })
 
+  it('rejects a cold cache restore when a mutation arrives during validation', async () => {
+    const pendingStat = createDeferred<{ mtimeMs: number }>()
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
+    readJsonMock.mockResolvedValue({
+      version: 3,
+      snapshot: {
+        pages: ['pages/cached/index'],
+        entries: ['pages/cached/index'],
+        subPackages: [],
+      },
+      namedRoutes: [],
+      topologyKey: 'topology',
+      pageDeclarationDependencies: {},
+      pageDeclarationFingerprints: {
+        '/project/src/pages/index/index.ts': createAutoRoutesSourceFingerprint('declaration-source'),
+      },
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: ['/project/src/pages/index/index.ts'],
+      namedRouteSourceFiles: [],
+      watchFiles: ['/project/src/pages/index/index.ts'],
+      watchDirs: ['/project/src/pages/index'],
+      fileMtims: {
+        '/project/src/pages/index/index.ts': 1,
+      },
+    })
+    statMock.mockReturnValue(pendingStat.promise)
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+    const refresh = service.ensureFresh()
+
+    await expect.poll(() => statMock.mock.calls.length).toBe(1)
+    service.markDirty()
+    pendingStat.resolve({ mtimeMs: 1 })
+    await refresh
+
+    expect(scanRoutesMock).toHaveBeenCalledTimes(1)
+    expect(service.getSnapshot().pages).toEqual([])
+    expect(service.isInitialized()).toBe(true)
+  })
+
   it('uses custom persistent cache path when configured as string', async () => {
     const ctx = createContext({
       autoRoutes: {
@@ -416,19 +473,19 @@ describe('createAutoRoutesService branch coverage', () => {
   it('does not rewrite persistent cache when payload is already current', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 1,
+      version: 3,
       snapshot: {
         pages: [],
         entries: [],
         subPackages: [],
       },
-      serialized: JSON.stringify({
-        pages: [],
-        entries: [],
-        subPackages: [],
-      }, null, 2),
-      moduleCode: 'export default []',
-      typedDefinition: 'type TypedRouter = []',
+      namedRoutes: [],
+      topologyKey: 'topology',
+      pageDeclarationDependencies: {},
+      pageDeclarationFingerprints: {},
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: [],
+      namedRouteSourceFiles: [],
       watchFiles: [],
       watchDirs: [],
       fileMtims: {},
@@ -454,13 +511,22 @@ describe('createAutoRoutesService branch coverage', () => {
         entries: ['pages/index/index', 'pages/about/index'],
         subPackages: [],
       },
+      namedRoutes: [],
       serialized: JSON.stringify({
         pages: ['pages/index/index', 'pages/about/index'],
         entries: ['pages/index/index', 'pages/about/index'],
         subPackages: [],
       }, null, 2),
       moduleCode: 'export default ["pages/index/index","pages/about/index"]',
+      namedModuleCode: 'export const routes = []',
+      signature: 'routes-signature',
       typedDefinition: 'type TypedRouter = ["pages/index/index", "pages/about/index"]',
+      topologyKey: 'topology',
+      pageSourceFiles: new Set<string>(),
+      namedRouteSourceFiles: new Set<string>(),
+      pageDeclarationDependencies: new Map<string, Set<string>>(),
+      pageDeclarationFingerprints: new Map<string, string>(),
+      usesOpaquePageDeclarationResolver: false,
       watchFiles: new Set([
         '/project/src/pages/index/index.ts',
         '/project/src/pages/about/index.ts',
@@ -510,13 +576,22 @@ describe('createAutoRoutesService branch coverage', () => {
         entries: ['pages/index/index'],
         subPackages: [],
       },
+      namedRoutes: [],
       serialized: JSON.stringify({
         pages: ['pages/index/index'],
         entries: ['pages/index/index'],
         subPackages: [],
       }, null, 2),
       moduleCode: 'export default ["pages/index/index"]',
+      namedModuleCode: 'export const routes = []',
+      signature: 'routes-signature',
       typedDefinition: 'type TypedRouter = ["pages/index/index"]',
+      topologyKey: 'topology',
+      pageSourceFiles: new Set<string>(),
+      namedRouteSourceFiles: new Set<string>(),
+      pageDeclarationDependencies: new Map<string, Set<string>>(),
+      pageDeclarationFingerprints: new Map<string, string>(),
+      usesOpaquePageDeclarationResolver: false,
       watchFiles: new Set(['/project/src/pages/index/index.ts']),
       watchDirs: new Set(['/project/src/pages/index']),
     })
@@ -538,15 +613,26 @@ describe('createAutoRoutesService branch coverage', () => {
   it('falls back to a full scan when persistent cache mtimes do not match', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 1,
+      version: 3,
       snapshot: {
         pages: ['stale/page'],
         entries: ['stale/page'],
         subPackages: [],
       },
+      namedRoutes: [],
       serialized: '{"pages":["stale/page"],"entries":["stale/page"],"subPackages":[]}',
       moduleCode: 'export default ["stale/page"]',
+      namedModuleCode: 'export const routes = []',
+      signature: 'stale-signature',
       typedDefinition: 'type TypedRouter = ["stale/page"]',
+      topologyKey: 'topology',
+      pageDeclarationDependencies: {},
+      pageDeclarationFingerprints: {
+        '/project/src/pages/index/index.ts': createAutoRoutesSourceFingerprint('declaration-source'),
+      },
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: ['/project/src/pages/index/index.ts'],
+      namedRouteSourceFiles: [],
       watchFiles: ['/project/src/pages/index/index.ts'],
       watchDirs: ['/project/src/pages/index'],
       fileMtims: {
@@ -620,19 +706,30 @@ describe('createAutoRoutesService branch coverage', () => {
   it('restores custom persistent cache path when configured as string', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath === '/project/configs/.cache/custom-auto-routes.json')
     readJsonMock.mockResolvedValue({
-      version: 1,
+      version: 3,
       snapshot: {
         pages: ['pages/index/index'],
         entries: ['pages/index/index'],
         subPackages: [],
       },
+      namedRoutes: [],
       serialized: JSON.stringify({
         pages: ['pages/index/index'],
         entries: ['pages/index/index'],
         subPackages: [],
       }, null, 2),
       moduleCode: 'export default ["pages/index/index"]',
+      namedModuleCode: 'export const routes = []',
+      signature: 'cached-signature',
       typedDefinition: 'type TypedRouter = ["pages/index/index"]',
+      topologyKey: 'topology',
+      pageDeclarationDependencies: {},
+      pageDeclarationFingerprints: {
+        '/project/src/pages/index/index.ts': createAutoRoutesSourceFingerprint('declaration-source'),
+      },
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: ['/project/src/pages/index/index.ts'],
+      namedRouteSourceFiles: [],
       watchFiles: ['/project/src/pages/index/index.ts'],
       watchDirs: ['/project/src/pages/index'],
       fileMtims: {
@@ -653,5 +750,148 @@ describe('createAutoRoutesService branch coverage', () => {
 
     expect(readJsonMock).toHaveBeenCalledWith('/project/configs/.cache/custom-auto-routes.json')
     expect(scanRoutesMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['success', 'failure'])('discards superseded scan %s before publishing the latest route', async (staleOutcome) => {
+    const currentResult = {
+      snapshot: {
+        pages: ['pages/current/index'],
+        entries: ['pages/current/index'],
+        subPackages: [],
+      },
+      namedRoutes: [],
+      serialized: 'current-routes',
+      moduleCode: 'current-module',
+      namedModuleCode: 'current-named-module',
+      signature: 'current-signature',
+      typedDefinition: 'current-types',
+      topologyKey: 'current-topology',
+      pageSourceFiles: new Set<string>(),
+      namedRouteSourceFiles: new Set<string>(),
+      pageDeclarationDependencies: new Map<string, Set<string>>(),
+      pageDeclarationFingerprints: new Map<string, string>(),
+      usesOpaquePageDeclarationResolver: false,
+      watchFiles: new Set<string>(),
+      watchDirs: new Set<string>(),
+    }
+    const staleResult = {
+      ...currentResult,
+      snapshot: {
+        pages: ['pages/stale/index'],
+        entries: ['pages/stale/index'],
+        subPackages: [],
+      },
+      serialized: 'stale-routes',
+      moduleCode: 'stale-module',
+      signature: 'stale-signature',
+      typedDefinition: 'stale-types',
+      topologyKey: 'stale-topology',
+    }
+    const firstScan = createDeferred<typeof currentResult>()
+    scanRoutesMock
+      .mockImplementationOnce(() => firstScan.promise)
+      .mockResolvedValueOnce(currentResult)
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+    const refresh = service.ensureFresh()
+
+    await expect.poll(() => scanRoutesMock.mock.calls.length).toBe(1)
+    service.markDirty()
+    const nextRefresh = service.ensureFresh()
+    if (staleOutcome === 'failure') {
+      firstScan.reject(new Error('superseded invalid source'))
+    }
+    else {
+      firstScan.resolve(staleResult)
+    }
+    await Promise.all([refresh, nextRefresh])
+
+    expect(scanRoutesMock).toHaveBeenCalledTimes(2)
+    expect(service.getSnapshot().entries).toEqual(['pages/current/index'])
+    expect(outputFileMock).toHaveBeenCalledTimes(1)
+    expect(outputFileMock).toHaveBeenCalledWith(
+      '/project/.weapp-vite/typed-router.d.ts',
+      'current-types',
+      'utf8',
+    )
+    expect(outputJsonMock).toHaveBeenCalledTimes(1)
+    expect(outputJsonMock).toHaveBeenCalledWith(
+      '/project/.weapp-vite/auto-routes.cache.json',
+      expect.objectContaining({
+        topologyKey: 'current-topology',
+      }),
+      { spaces: 2 },
+    )
+  })
+
+  it.each(['types', 'cache'])('keeps the latest %s when an earlier publication finishes late', async (blockedArtifact) => {
+    const firstWrite = createDeferred<void>()
+    const releaseWrite = createDeferred<void>()
+    const watchFiles = new Set(['/project/src/pages/index/index.json'])
+    const staleResult = {
+      snapshot: { pages: ['pages/index/index'], entries: ['pages/index/index'], subPackages: [] },
+      namedRoutes: [],
+      serialized: 'old-routes',
+      moduleCode: 'old-module',
+      namedModuleCode: 'export const routes = []',
+      signature: 'old-signature',
+      typedDefinition: 'export type PagePath = "pages/index/index"',
+      topologyKey: 'topology',
+      pageSourceFiles: new Set<string>(),
+      namedRouteSourceFiles: new Set<string>(),
+      pageDeclarationDependencies: new Map<string, Set<string>>(),
+      pageDeclarationFingerprints: new Map<string, string>(),
+      usesOpaquePageDeclarationResolver: false,
+      watchFiles,
+      watchDirs: new Set<string>(),
+    }
+    // JSON 中的 component 标记变化不改变候选文件集合或脚本指纹。
+    const currentResult = {
+      ...staleResult,
+      snapshot: { pages: [], entries: [], subPackages: [] },
+      serialized: 'current-routes',
+      moduleCode: 'current-module',
+      signature: 'current-signature',
+      typedDefinition: 'export type PagePath = never',
+    }
+    let diskDefinition = ''
+    let diskCache: AutoRoutesPersistentCache | undefined
+    outputFileMock.mockImplementation(async (_path: string, content: string) => {
+      if (blockedArtifact === 'types' && content === staleResult.typedDefinition) {
+        firstWrite.resolve()
+        await releaseWrite.promise
+      }
+      diskDefinition = content
+    })
+    outputJsonMock.mockImplementation(async (_path: string, payload: AutoRoutesPersistentCache) => {
+      if (blockedArtifact === 'cache' && payload.snapshot.pages.length > 0) {
+        firstWrite.resolve()
+        await releaseWrite.promise
+      }
+      diskCache = payload
+    })
+    scanRoutesMock.mockResolvedValueOnce(staleResult).mockResolvedValueOnce(currentResult)
+    const service = createAutoRoutesService(createContext({
+      autoRoutes: { enabled: true, persistentCache: true },
+    }))
+    const initialRefresh = service.ensureFresh()
+    await firstWrite.promise
+    statMock.mockResolvedValue({ mtimeMs: 2 })
+    service.markDirty()
+    const latestRefresh = service.ensureFresh()
+    // 让已就绪的异步工作完成；旧写入仍由显式屏障阻塞，不依赖计时延迟。
+    await setImmediate()
+    releaseWrite.resolve()
+    await Promise.all([initialRefresh, latestRefresh])
+
+    expect(service.getSnapshot().pages).toEqual([])
+    expect(diskDefinition).toBe('export type PagePath = never')
+    expect(diskCache?.snapshot.pages).toEqual([])
+    expect(diskCache?.fileMtims).toEqual({ '/project/src/pages/index/index.json': 2 })
   })
 })

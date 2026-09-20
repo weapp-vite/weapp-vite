@@ -175,6 +175,7 @@ describe('export barrels', () => {
     expect(router).toMatchObject({
       NavigationFailureType: expect.any(Object),
       createRouter: expect.any(Function),
+      definePage: expect.any(Function),
       createNavigationFailure: expect.any(Function),
       isNavigationFailure: expect.any(Function),
       parseQuery: expect.any(Function),

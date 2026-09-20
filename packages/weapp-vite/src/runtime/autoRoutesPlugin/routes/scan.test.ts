@@ -1,10 +1,22 @@
+import type { MutableCompilerContext } from '../../../context'
 import type { AutoRoutesSubPackage } from '../../../types/routes'
+import type { CandidateEntry } from '../candidates'
 import { describe, expect, it } from 'vitest'
+import { createRuntimeState } from '../../runtimeState'
 import {
+  scanRoutes,
   shouldIncludeScanCandidate,
   sortAutoRoutesEntries,
   sortAutoRoutesSubPackages,
 } from './scan'
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve
+  })
+  return { promise, resolve }
+}
 
 describe('auto routes scan helpers', () => {
   it('sorts entries with pages/index/index first', () => {
@@ -115,5 +127,58 @@ describe('auto routes scan helpers', () => {
     }, undefined, {
       pagePath: 'pages/home',
     })).toBe(true)
+  })
+
+  it('uses one immutable candidate snapshot for route data and topology keys', async () => {
+    const jsonReadStarted = createDeferred<void>()
+    const jsonRead = createDeferred<Record<string, unknown>>()
+    const base = '/project/src/pages/index/index'
+    const candidate: CandidateEntry = {
+      base,
+      files: new Set([`${base}.json`]),
+      hasScript: false,
+      hasTemplate: true,
+      jsonPath: `${base}.json`,
+    }
+    const candidates = new Map([[base, candidate]])
+    const ctx = {
+      runtimeState: createRuntimeState(),
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        cwd: '/project',
+        weappViteConfig: {},
+      },
+      jsonService: {
+        async read() {
+          jsonReadStarted.resolve()
+          return jsonRead.promise
+        },
+      },
+    } as unknown as MutableCompilerContext
+    const pendingScan = scanRoutes(ctx, candidates)
+    await Promise.race([
+      jsonReadStarted.promise,
+      pendingScan.then(() => {
+        throw new Error('Expected the scan to wait for its JSON source')
+      }),
+    ])
+
+    candidate.files.add(`${base}.ts`)
+    candidates.set('/project/src/pages/added/index', {
+      base: '/project/src/pages/added/index',
+      files: new Set(['/project/src/pages/added/index.ts']),
+      hasScript: true,
+      hasTemplate: false,
+    })
+    jsonRead.resolve({})
+    const result = await pendingScan
+
+    expect(result.snapshot.entries).toEqual(['pages/index/index'])
+    expect(JSON.parse(result.topologyKey)).toMatchObject({
+      candidates: [{
+        base: 'pages/index/index',
+        files: ['pages/index/index.json'],
+      }],
+    })
   })
 })

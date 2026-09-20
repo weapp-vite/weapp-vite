@@ -1,15 +1,21 @@
 import type { AutoRoutes } from '../../../types/routes'
 import type { RuntimeState } from '../../runtimeState'
+import type { NamedAutoRoute } from '../types'
+import { createHash } from 'node:crypto'
 import path from 'pathe'
 import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } from '../../../utils/miniProgramGlobals'
 import { cloneRoutes, createTypedRouterDefinition, updateRoutesReference } from '../routes'
 
 export interface AutoRoutesPersistentCache {
-  version: 1
+  version: 3
   snapshot: AutoRoutes
-  serialized: string
-  moduleCode: string
-  typedDefinition: string
+  namedRoutes: NamedAutoRoute[]
+  topologyKey: string
+  pageDeclarationDependencies: Record<string, string[]>
+  pageDeclarationFingerprints: Record<string, string>
+  usesOpaquePageDeclarationResolver: boolean
+  pageSourceFiles: string[]
+  namedRouteSourceFiles: string[]
   watchFiles: string[]
   watchDirs: string[]
   fileMtims: Record<string, number>
@@ -23,6 +29,20 @@ export function updateWatchTargets(target: Set<string>, next: Set<string>) {
   for (const item of next) {
     target.add(item)
   }
+}
+
+export function updatePageDeclarationDependencies(
+  target: Map<string, Set<string>>,
+  next: ReadonlyMap<string, ReadonlySet<string>>,
+) {
+  target.clear()
+  for (const [dependency, owners] of next) {
+    target.set(dependency, new Set(owners))
+  }
+}
+
+export function createAutoRoutesSourceFingerprint(source: string) {
+  return createHash('sha256').update(source).digest('hex')
 }
 
 export function createEmptyAutoRoutesSnapshot(): AutoRoutes {
@@ -75,12 +95,19 @@ export function createAutoRoutesModuleCode(serialized: string) {
   ].join('\n')
 }
 
-export function createAutoRoutesArtifacts(snapshot: AutoRoutes) {
+export function createNamedAutoRoutesModuleCode(serialized: string) {
+  return `export const routes = JSON.parse(${JSON.stringify(serialized)});\n`
+}
+
+export function createAutoRoutesArtifacts(snapshot: AutoRoutes, namedRoutes: NamedAutoRoute[] = []) {
   const serialized = JSON.stringify(snapshot, null, 2)
+  const namedRoutesSerialized = JSON.stringify(namedRoutes, null, 2)
   return {
     serialized,
     moduleCode: createAutoRoutesModuleCode(serialized),
-    typedDefinition: createTypedRouterDefinition(snapshot),
+    namedModuleCode: createNamedAutoRoutesModuleCode(namedRoutesSerialized),
+    signature: JSON.stringify({ routes: snapshot, namedRoutes }),
+    typedDefinition: createTypedRouterDefinition(snapshot, namedRoutes),
   }
 }
 
@@ -88,9 +115,18 @@ export function resetAutoRoutesState(state: RuntimeState['autoRoutes']) {
   const emptySnapshot = createEmptyAutoRoutesSnapshot()
   const artifacts = createAutoRoutesArtifacts(emptySnapshot)
   updateRoutesReference(state.routes, emptySnapshot)
+  state.namedRoutes = []
   state.serialized = artifacts.serialized
   state.typedDefinition = artifacts.typedDefinition
   state.moduleCode = artifacts.moduleCode
+  state.namedModuleCode = artifacts.namedModuleCode
+  state.signature = artifacts.signature
+  state.topologyKey = ''
+  state.pageDeclarationDependencies.clear()
+  state.pageDeclarationFingerprints.clear()
+  state.usesOpaquePageDeclarationResolver = false
+  updateWatchTargets(state.pageSourceFiles, new Set())
+  updateWatchTargets(state.namedRouteSourceFiles, new Set())
   updateWatchTargets(state.watchFiles, new Set())
   updateWatchTargets(state.watchDirs, new Set())
   state.dirty = false
@@ -115,25 +151,52 @@ export function resolvePersistentCacheBaseDir(configService: Pick<RuntimeState['
 }
 
 export function applyPersistentCache(state: RuntimeState['autoRoutes'], cache: AutoRoutesPersistentCache) {
-  const watchFiles = Array.isArray(cache.watchFiles) ? cache.watchFiles : []
+  const artifacts = createAutoRoutesArtifacts(cache.snapshot, cache.namedRoutes)
   updateRoutesReference(state.routes, cache.snapshot)
-  state.serialized = cache.serialized
-  state.moduleCode = cache.moduleCode
-  state.typedDefinition = cache.typedDefinition
-  updateWatchTargets(state.watchFiles, new Set(watchFiles))
-  updateWatchTargets(state.watchDirs, new Set(Array.isArray(cache.watchDirs) ? cache.watchDirs : []))
+  state.namedRoutes = cache.namedRoutes
+  state.serialized = artifacts.serialized
+  state.moduleCode = artifacts.moduleCode
+  state.namedModuleCode = artifacts.namedModuleCode
+  state.signature = `${artifacts.signature}\n${cache.topologyKey}`
+  state.typedDefinition = artifacts.typedDefinition
+  state.topologyKey = cache.topologyKey
+  updatePageDeclarationDependencies(
+    state.pageDeclarationDependencies,
+    new Map(Object.entries(cache.pageDeclarationDependencies).map(([dependency, owners]) => [
+      dependency,
+      new Set(owners),
+    ])),
+  )
+  state.pageDeclarationFingerprints.clear()
+  for (const [sourceFile, fingerprint] of Object.entries(cache.pageDeclarationFingerprints)) {
+    state.pageDeclarationFingerprints.set(sourceFile, fingerprint)
+  }
+  state.usesOpaquePageDeclarationResolver = cache.usesOpaquePageDeclarationResolver
+  updateWatchTargets(state.pageSourceFiles, new Set(cache.pageSourceFiles))
+  updateWatchTargets(state.namedRouteSourceFiles, new Set(cache.namedRouteSourceFiles))
+  updateWatchTargets(state.watchFiles, new Set(cache.watchFiles))
+  updateWatchTargets(state.watchDirs, new Set(cache.watchDirs))
   state.dirty = false
   state.initialized = true
-  state.needsFullRescan = true
+  state.needsFullRescan = false
 }
 
-export function createPersistentCachePayload(state: RuntimeState['autoRoutes'], fileMtims: Record<string, number>): AutoRoutesPersistentCache {
+export function createPersistentCachePayload(
+  state: RuntimeState['autoRoutes'],
+  fileMtims: Record<string, number>,
+): AutoRoutesPersistentCache {
   return {
-    version: 1,
+    version: 3,
     snapshot: cloneRoutes(state.routes),
-    serialized: state.serialized,
-    moduleCode: state.moduleCode,
-    typedDefinition: state.typedDefinition,
+    namedRoutes: state.namedRoutes,
+    topologyKey: state.topologyKey,
+    pageDeclarationDependencies: Object.fromEntries(
+      [...state.pageDeclarationDependencies].map(([dependency, owners]) => [dependency, [...owners]]),
+    ),
+    pageDeclarationFingerprints: Object.fromEntries(state.pageDeclarationFingerprints),
+    usesOpaquePageDeclarationResolver: state.usesOpaquePageDeclarationResolver,
+    pageSourceFiles: [...state.pageSourceFiles],
+    namedRouteSourceFiles: [...state.namedRouteSourceFiles],
     watchFiles: [...state.watchFiles],
     watchDirs: [...state.watchDirs],
     fileMtims,

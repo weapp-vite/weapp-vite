@@ -1,11 +1,14 @@
 import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { InlineConfig, PluginOption } from 'vite'
+import type { MutableCompilerContext } from '../../../../context'
 import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { ConfigService, ResolvedWeappWebConfig } from '../../types'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { defu } from '@weapp-core/shared'
 import { weappWebPlugin } from '@weapp-vite/web'
+import { resolveWeappAutoRoutesConfig } from '../../../../autoRoutesConfig'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
+import { autoRoutes } from '../../../../plugins/autoRoutes'
 import {
   createSelectedRuntimeProviderPlugin,
   resolveRuntimeProvider,
@@ -15,6 +18,7 @@ import { normalizePreserveModulesRolldownOptions } from '../../../preserveModule
 import { stripRollupOptions } from './inline'
 
 interface MergeWebOptions {
+  ctx?: MutableCompilerContext
   configService?: ConfigService
   config: InlineConfig
   web: ResolvedWeappWebConfig | undefined
@@ -32,10 +36,11 @@ export function mergeWebPlugins(
   rawPlugins: InlineConfig['plugins'],
   webPlugin: PluginOption,
   runtimeProviderPlugin?: PluginOption,
+  internalPlugins: PluginOption[] = [],
 ) {
   const remaining: PluginOption[] = []
   const ownedPluginNames = new Set(
-    [webPlugin, runtimeProviderPlugin]
+    [webPlugin, runtimeProviderPlugin, ...internalPlugins]
       .map(option => option && typeof option === 'object' && 'name' in option ? option.name : undefined)
       .filter((name): name is string => typeof name === 'string'),
   )
@@ -64,7 +69,7 @@ export function mergeWebPlugins(
     collect(rawPlugins)
   }
 
-  return [runtimeProviderPlugin, webPlugin, ...remaining].filter(Boolean) as InlineConfig['plugins']
+  return [runtimeProviderPlugin, webPlugin, ...internalPlugins, ...remaining].filter(Boolean) as InlineConfig['plugins']
 }
 
 export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineConfig | undefined>[]) {
@@ -119,7 +124,12 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
       hmrAcceptCode: resolveRuntimeProviderHmrFooter(runtimeProvider),
     },
   })
-  inline.plugins = mergeWebPlugins(inline.plugins, webPlugin, runtimeProviderPlugin)
+  const autoRoutesPlugins = options.ctx
+    && !options.configService?.weappLibConfig?.enabled
+    && resolveWeappAutoRoutesConfig(options.configService?.weappViteConfig?.autoRoutes).enabled
+    ? autoRoutes(options.ctx)
+    : []
+  inline.plugins = mergeWebPlugins(inline.plugins, webPlugin, runtimeProviderPlugin, autoRoutesPlugins)
 
   inline.build ??= {}
   inline.build.outDir = web.outDir

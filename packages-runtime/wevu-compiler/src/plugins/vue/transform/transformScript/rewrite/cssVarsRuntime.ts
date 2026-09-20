@@ -78,7 +78,7 @@ export function injectStableCssVarsRuntime(
     setupFn.body.body.unshift(registration)
     return true
   }
-  if (setupFn && t.isArrowFunctionExpression(setupFn)) {
+  if (setupFn && t.isArrowFunctionExpression(setupFn) && t.isExpression(setupFn.body)) {
     setupFn.body = t.blockStatement([
       registration,
       t.returnStatement(setupFn.body),

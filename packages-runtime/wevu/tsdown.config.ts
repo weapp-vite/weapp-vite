@@ -12,6 +12,7 @@ const entry = {
   'api/vitest/setup': './src/apiVitestSetup',
   'fetch': './src/fetch',
   'router': './src/router',
+  'router/auto-routes': './src/router/auto-routes',
   'web-apis': './src/web-apis',
   'vue-demi': './src/vue-demi',
 }

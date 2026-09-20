@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 106,
-    "wechatTaskCount": 103,
+    "taskCount": 107,
+    "wechatTaskCount": 104,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 266,
-    "casesWithPlan": 266,
+    "expandedCaseDeclarations": 270,
+    "casesWithPlan": 270,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -2639,6 +2639,98 @@
             "check(restore-variable)",
             "callMethod(_runE2E)",
             "check(reactive)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/issue-1029-auto-routes.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:61",
+          "name": "issue #1029: static named routes and runtime metadata > finishes the initial guard before mounting and does not name unannotated pages",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
+              "checkpoints": "[{ id: 'initial', route: ISSUE_1029_HOME, action: '检查首屏异步守卫与声明元信息', nodes: [{ selector: '#route-title', text: '首页' }], }]",
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:62"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "check(initial)",
+            "callMethod(_runE2E)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:87",
+          "name": "issue #1029: static named routes and runtime metadata > navigates by an unchanged name after the page moves and preserves meta through back navigation",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
+              "checkpoints": "[ { id: 'profile', route: MOVED_PROFILE, action: '通过稳定名称跳转到移动后的分包页面', nodes: [{ selector: '#route-title', text: '个人资料' }] }, { id: 'back', route: ISSUE_1029_HOME, action: '返回主页并恢复关联元信息', nodes: [{ selector: '#route-title', text: '首页' }] }, ",
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:88"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(ISSUE_1029_HOME)",
+            "callMethod(_runE2E)",
+            "callMethodWithOptions(_runE2E)",
+            "check(profile)",
+            "check(back)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:111",
+          "name": "issue #1029: static named routes and runtime metadata > retains the current route on abort and applies named guard redirects",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
+              "checkpoints": "[ { id: 'abort', route: ISSUE_1029_HOME, action: '中止命名导航不改变当前页面', nodes: [{ selector: '#route-title', text: '首页' }] }, { id: 'redirect', route: ISSUE_1029_HOME, action: '守卫重定向使用同一名称映射', nodes: [{ selector: '#route-title', text: '首页' }] }, ]",
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:112"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(ISSUE_1029_HOME)",
+            "callMethod(_runE2E)",
+            "callMethodWithOptions(_runE2E)",
+            "check(abort)",
+            "check(redirect)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:130",
+          "name": "issue #1029: static named routes and runtime metadata > keeps path navigation to a page without definePage unnamed",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
+              "checkpoints": "[{ id: 'legacy', route: ISSUE_1029_LEGACY, action: '未声明页面仍可按路径访问且没有伪造名称', nodes: [{ selector: '#legacy-title', text: 'Unannotated page' }], }]",
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:131"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(ISSUE_1029_HOME)",
+            "callMethod(_runE2E)",
+            "callMethodWithOptions(_runE2E)",
+            "check(legacy)"
           ],
           "notes": []
         }
@@ -7114,6 +7206,10 @@
       "sha256": "02bccea02bfa4c3c7dbe968ebd5eedb9c3c3fc379325f07a149c6a47059c8245"
     },
     {
+      "file": "e2e/ide/issue-1029-auto-routes.runtime.test.ts",
+      "sha256": "d0933bc415aae6ad811bab4c0f5a102744177b65d4d61e8bdd7fe0c04cc68fda"
+    },
+    {
       "file": "e2e/ide/issue-340-hoist.runtime.test.ts",
       "sha256": "be11ae8a0779e4fdf9a915c4bff48e6cca7ac23bd0c327dbbb1191f1390a54b8"
     },
@@ -7567,7 +7663,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "b0b802f5d55cd6ac767452eb528b28df9e3174f473deb898b86688ecda6c43df"
+      "sha256": "c8a7432eea706dcf80c906472d70a53eac8c4e029519fc2894576659f82a91bc"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -7696,6 +7792,10 @@
     {
       "file": "e2e/utils/issue1015Project.ts",
       "sha256": "4c017ed49a883bb7e83613fec50f73cced0446a148c5b3f47f50ffd47c1b2859"
+    },
+    {
+      "file": "e2e/utils/issue1029Project.ts",
+      "sha256": "ce49c2712a39d78f0bb59454f439c97ef4d0c5f299d8e94057b8de62c0f3a027"
     },
     {
       "file": "e2e/utils/issue963Project.ts",
