@@ -371,7 +371,7 @@ export default defineComponent({
         </view>
       </view>
       <view class="tip-inline">
-        <text>通过 createPinia().use() 按需挂载插件，安装到应用后观察 action/mutation。</text>
+        <text>通过 createStore().use() 按需挂载插件，安装到应用后观察 action/mutation。</text>
       </view>
     </view>
 
@@ -437,7 +437,7 @@ export default defineComponent({
           🔌
         </text>
         <text class="tip-text">
-          createPinia().use() 可以按需挂载插件，跨 store 复用能力
+          createStore().use() 可以按需挂载插件，跨 store 复用能力
         </text>
       </view>
     </view>

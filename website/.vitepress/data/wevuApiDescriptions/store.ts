@@ -1,7 +1,7 @@
 export const storeApiDescriptions: Record<string, string> = {
-  'createPinia()': '创建独立 Pinia，安装后管理 Store 状态和实例。',
+  'createPinia()': 'createStore 的同实现兼容别名，保留 Pinia 命名。',
   'defineStore()': '使用 Setup 或 Options 写法定义单例 Store。',
-  'createStore()': 'createPinia 的弃用别名，需显式安装。',
+  'createStore()': '推荐入口：创建独立 Store 管理器，显式安装后管理状态和实例。',
   'storeToRefs()': '把 Store 状态和 getter 转换为可解构 Ref。',
   'setActivePinia()': '设置组件外活动的 Pinia。',
   'getActivePinia()': '读取当前应用或活动 Pinia。',

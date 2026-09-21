@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { createPinia, onHide, onLaunch, onShow, use } from 'wevu'
+import { createStore, onHide, onLaunch, onShow, use } from 'wevu'
 import { wpi } from 'wevu/api'
 
-use(createPinia())
+use(createStore())
 
 defineAppJson({
   pages: [

@@ -3,9 +3,9 @@ import { computed, effectScope, onScopeDispose, ref, watch } from '@/reactivity'
 import { nextTick } from '@/scheduler'
 import { createPinia, createStore, defineStore, disposePinia, getActivePinia, setActivePinia } from '@/store'
 
-let pinia: ReturnType<typeof createPinia>
+let pinia: ReturnType<typeof createStore>
 beforeEach(() => {
-  pinia = setActivePinia(createPinia())
+  pinia = setActivePinia(createStore())
 })
 afterEach(() => {
   disposePinia(pinia)

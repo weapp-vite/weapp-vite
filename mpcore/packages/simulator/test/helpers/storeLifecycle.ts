@@ -16,7 +16,7 @@ export async function createStoreLifecycleFiles(): Promise<Array<[string, string
         ? `export { createApp, createWevuComponent } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/runtime/index.ts'))};
            export { nextTick } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/scheduler.ts'))};
            export { ref } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/reactivity/index.ts'))};
-           export { createPinia, storeToRefs } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/store/index.ts'))};
+           export { createStore, storeToRefs } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/store/index.ts'))};
            export * from ${JSON.stringify(path.join(root, 'e2e-apps/github-issues/src/shared/issue1049Store.ts'))};`
         : undefined,
     }],
@@ -27,7 +27,7 @@ export async function createStoreLifecycleFiles(): Promise<Array<[string, string
     files.push(
       ['project.config.json', JSON.stringify({ miniprogramRoot: '.', compileType: 'miniprogram' })],
       ['app.json', JSON.stringify({ pages: ['pages/launch/index', 'pages/result/index'] })],
-      ['app.js', `const r = require('./runtime.js'); r.createApp({}).use(r.createPinia());`],
+      ['app.js', `const r = require('./runtime.js'); r.createApp({}).use(r.createStore());`],
       ['pages/launch/index.json', JSON.stringify({ usingComponents: { subscriber: '/components/subscriber/index' } })],
       ['pages/result/index.json', '{}'],
       ['components/subscriber/index.json', '{"component":true}'],

@@ -56,7 +56,7 @@ export interface Pinia {
   /** @deprecated 使用 use() 注册插件。 */
   _plugins: PiniaPlugin[]
 }
-/** @deprecated 使用 Pinia。 */
+/** createStore 返回的管理器，与 Pinia 使用同一类型契约。 */
 export type StoreManager = Pinia
 
 export interface PiniaCustomProperties {}

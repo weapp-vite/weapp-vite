@@ -8,14 +8,14 @@ wevu Store 的日常用法以 Pinia 4.0.3 为参照，导入来自 `wevu` 或 `w
 
 ```vue
 <script setup lang="ts">
-import { createPinia, use } from 'wevu'
+import { createStore, use } from 'wevu'
 
-const pinia = createPinia()
+const pinia = createStore()
 use(pinia)
 </script>
 ```
 
-使用 `createApp()` 时调用 `app.use(pinia)`。组件外可调用 `useCounter(pinia)`；测试可用 `setActivePinia(createPinia())`。未安装、未传入且无活动实例时，`useStore()` 会报错。不同 Pinia 的实例和状态隔离，同一个 Pinia 中相同 ID 复用实例。
+使用 `createApp()` 时调用 `app.use(pinia)`。组件外可调用 `useCounter(pinia)`；测试可用 `setActivePinia(createStore())`。`createPinia()` 保留为 `createStore()` 的同实现兼容别名，推荐使用 `createStore()`。未安装、未传入且无活动实例时，`useStore()` 会报错。不同 Pinia 的实例和状态隔离，同一个 Pinia 中相同 ID 复用实例。
 
 ## 定义与使用
 
@@ -112,7 +112,7 @@ disposePinia(pinia)
 ## 插件
 
 ```ts
-const pinia = createPinia()
+const pinia = createStore()
 pinia.use(({ store, pinia, app, options }) => {
   console.log(store.$id, pinia, app, options.actions)
   return { lastUpdated: ref(0) }
@@ -124,12 +124,12 @@ pinia.use(({ store, pinia, app, options }) => {
 
 ## 从旧版迁移
 
-本次按 minor 版本发布，但包含旧 Store API 的不兼容调整，不是无感升级。使用 `^7.x` 等允许同一主版本升级的依赖范围时，刷新锁文件可能引入本次变更；升级前应检查 Store 消费者。先安装 Pinia，再迁移 Store 的消费者：
+本次为 major 版本的破坏性变更。继续使用 `createStore()` 创建管理器，但必须显式安装，并按下表迁移 Store 消费者：
 
 | 旧写法/行为 | 当前写法/行为 |
 | --- | --- |
-| 无初始化直接 `useStore()` | `use(createPinia())`、`app.use(pinia)` 或 `useStore(pinia)` |
-| `createStore()` 隐式激活 manager | `createPinia()` 后显式安装；`createStore` 仅为弃用别名 |
+| 无初始化直接 `useStore()` | `use(createStore())`、`app.use(pinia)` 或 `useStore(pinia)` |
+| `createStore()` 隐式激活 manager | `createStore()` 后显式安装，不再隐式激活 manager |
 | 外部 `store.count.value++` | `store.count++` |
 | 从 `storeToRefs()` 解构 action | 从 Store 实例直接解构 action |
 | Setup 自动快照 `$reset()` | 在 setup 返回自定义 `$reset` |

@@ -1,5 +1,5 @@
 import type { StoreManager } from 'wevu'
-import { computed, createPinia, defineStore, reactive, ref } from 'wevu'
+import { computed, createStore, defineStore, reactive, ref } from 'wevu'
 
 const pluginRecords: string[] = []
 let manager: StoreManager | undefined
@@ -10,7 +10,7 @@ export function initStoreManager() {
   if (manager) {
     return manager
   }
-  manager = createPinia()
+  manager = createStore()
   manager.use(({ store }) => {
     const id = (store as any).$id ?? 'unknown'
     pluginRecords.push(id)

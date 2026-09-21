@@ -1,6 +1,6 @@
-import type { ComputedRef, Ref } from 'wevu'
+import type { ComputedRef, createPinia, Ref } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { computed, createPinia, defineStore, disposePinia, getActivePinia, ref, setActivePinia, storeToRefs } from 'wevu'
+import { computed, createStore, defineStore, disposePinia, getActivePinia, ref, setActivePinia, storeToRefs } from 'wevu'
 
 const useOptionsStore = defineStore('options', {
   state: () => ({ count: 0, nested: { counter: 1 } }),
@@ -118,7 +118,8 @@ useAsyncStore().$onAction(({ store, after }) => {
   })
 })
 
-const pinia = createPinia()
+const pinia = createStore()
+expectType<typeof createPinia>(createStore)
 expectType<typeof pinia>(setActivePinia(pinia))
 expectType<typeof pinia | undefined>(getActivePinia())
 expectType<typeof optionsStore>(useOptionsStore(pinia))

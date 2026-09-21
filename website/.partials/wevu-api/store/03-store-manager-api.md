@@ -2,7 +2,7 @@
 description: Wevu Store Manager 的安装、插件和时序差异说明。
 keywords:
   - Wevu Store Manager
-  - createPinia
+  - createStore
   - Store 插件
   - Pinia 迁移
 ---
@@ -44,10 +44,10 @@ keywords:
 每个 Pinia 持有独立 state、实例缓存和根作用域。插件只影响安装后新创建的 Store；`useStore(pinia)` 支持多实例隔离。
 
 ```ts
-import { createApp, createPinia, defineStore } from 'wevu'
+import { createApp, createStore, defineStore } from 'wevu'
 
 const app = createApp({})
-const manager = createPinia()
+const manager = createStore()
 manager.use(({ store }) => {
   console.log('created store', store.$id)
 })

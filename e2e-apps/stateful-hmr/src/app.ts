@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'wevu'
+import { createStore, setActivePinia } from 'wevu'
 
-setActivePinia(createPinia())
+setActivePinia(createStore())
 App({})

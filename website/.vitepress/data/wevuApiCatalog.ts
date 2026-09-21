@@ -240,9 +240,9 @@ export const wevuApiCatalog: WevuApiItem[] = [
     'sfc-style',
   )),
   api('defineStore()', '/wevu/api/store#definestore', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '定义'] }),
+  api('createStore()', '/wevu/api/store#createstore', 'Store 入口', 'store', 'wevu-extension', { entry: 'wevu/store', keywords: ['Manager', '隔离'] }),
   compatibilityApi('pinia', 'createPinia', 'createPinia()', '/wevu/api/store#createpinia', 'Store 入口', 'store', { entry: 'wevu/store', keywords: ['Pinia', '安装', '隔离'] }, 'runtime'),
   ...['setActivePinia', 'getActivePinia', 'disposePinia'].map(name => api(`${name}()`, `/wevu/api/store#${name.toLowerCase()}`, 'Store 入口', 'store', 'vue-compatible', { entry: 'wevu/store', keywords: ['Pinia'] })),
-  api('createStore()', '/wevu/api/store#createstore', 'Store 入口', 'store', 'wevu-extension', { entry: 'wevu/store', keywords: ['Manager', '隔离'] }),
   api('storeToRefs()', '/wevu/api/store#storetorefs', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '解构', '响应式'] }),
   ...[
     ['$dispose()', 'store-dispose', ['释放', '生命周期']],

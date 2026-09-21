@@ -77,7 +77,7 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - **页面/组件注册**：`defineComponent()` 统一通过小程序 `Component()` 注册；`createApp()` 可在存在全局 `App()` 时自动注册应用；`createWevuComponent()` 供 Weapp-vite 编译产物调用。
 - **最小化 setData**：运行时把 state + computed 转为 plain snapshot，diff 后只把变化路径传给 `setData`。
 - **双向绑定辅助**：`bindModel(path)` 生成适配小程序事件的数据/事件绑定对象。
-- **Store（状态管理）**：`defineStore` / `storeToRefs` / `createPinia`（安装与隔离）。
+- **Store（状态管理）**：`defineStore` / `storeToRefs` / `createStore`（安装与隔离）。
 
 :::tip 导入约定
 运行时基础 API 默认从 `wevu` 主入口导入；高阶导航从 `wevu/router` 导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定业务 API）。
@@ -127,7 +127,7 @@ export default defineConfig({
 它们仅为兼容旧代码保留。新代码请优先使用：
 
 - `provide()` / `inject()`：局部依赖注入
-- `defineStore()` / `createPinia()`：稳定全局共享状态
+- `defineStore()` / `createStore()`：稳定全局共享状态
 
 > **注意**：`useRouter()` 不属于 `wevu` 根入口；如果你要使用高阶导航，请从 [`wevu/router`](/wevu/router) 导入。
 

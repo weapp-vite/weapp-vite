@@ -17,7 +17,7 @@ keywords:
 
 ## 1. 推荐做法
 
-后续引用 `defineStore`、`createPinia`、`storeToRefs` 等状态管理 API 时，请统一使用新路径。
+后续引用 `defineStore`、`createStore`、`storeToRefs` 等状态管理 API 时，请统一使用新路径。
 
 ## 2. 参考资源
 

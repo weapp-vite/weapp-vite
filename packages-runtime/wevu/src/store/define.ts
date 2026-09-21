@@ -17,7 +17,7 @@ export function defineStore(id: string, setupOrOptions: any, options?: StoreSetu
   const useStore = (pinia?: Pinia | null) => {
     const owner = pinia ?? getActivePinia()
     if (!owner) {
-      throw new Error('没有活动的 Pinia，请先调用 app.use(createPinia()) 或显式传入 Pinia')
+      throw new Error('没有活动的 Pinia，请先调用 app.use(createStore()) 或显式传入 Pinia')
     }
     setActivePinia(owner)
     if (!owner._s.has(id)) {

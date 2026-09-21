@@ -12,6 +12,7 @@ describe('auto import presets', () => {
     expect(wevu.wevu).toContain('ref')
     expect(wevu.wevu).toContain('onMounted')
     expect(wevu.wevu).toEqual(expect.arrayContaining([
+      'createStore',
       'createPinia',
       'setActivePinia',
       'getActivePinia',

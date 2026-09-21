@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import routes from 'weapp-vite/auto-routes'
-import { createPinia, onLaunch, use } from 'wevu'
+import { createStore, onLaunch, use } from 'wevu'
 import { ensureGithubIssuesRouter } from './shared/appRouter'
 import { ensureIssue911Guard } from './shared/issue911'
 
-use(createPinia())
+use(createStore())
 
 const defaultTabBarList = [
   {
