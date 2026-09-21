@@ -28,7 +28,7 @@ export function resolveSharedHmrRelativeImports() {
 }
 
 export function resolveSharedHmrScriptModuleExt(platform: 'weapp' | 'alipay' | 'tt') {
-  return platform === 'weapp' ? 'wxs' : 'sjs'
+  return platform === 'alipay' ? 'sjs' : 'wxs'
 }
 
 export function buildSharedImportTemplate(marker: string) {
