@@ -1,0 +1,13 @@
+---
+"weapp-vite": minor
+"@weapp-vite/dashboard": minor
+"create-weapp-vite": minor
+---
+
+将 `--ui` 调试链路迁移到 Devframe 分页只读 RPC 与服务端单向状态通知，显式启用 OTP 和 loopback Origin 门禁，支持断线重连、旧历史迁移以及按 revision 缓存并拒绝符号链接的受限文件读取；同时把 Dashboard 重构为面向构建、包体、运行事件和诊断的高密度 DevTools 工作台，新增基于 D3 的可缩放 Chunk 静态/动态依赖图，并修正 mixed vendor 稳定命名、增量模块身份归一化和 WXSS 中的 Vite 资源占位符替换，避免业务依赖被误归属到 `wevu-runtime` 产物、同一依赖因 workspace 与 pnpm 安装路径差异产生虚假增长，以及相对静态资源在最终产物中残留内部占位符。Dashboard 弹出式筛选器改用自有 listbox，统一悬停、选中和展开层视觉，让弹层按照真实视口自动选择上下方向、避让边缘并按选项内容扩展宽度，超长标签则完整换行显示。静态 analyze 模式优先提供已构建 Dashboard 产物，避免本地 dev root 的源码路由在导航时发生动态模块请求失败。
+
+认证失败时完整释放 Devframe 客户端与事件订阅，避免自动重连残留；模块增量比较统一使用规范化标识，Chunk 图节点预算也会为手动选择的节点预留位置。
+
+升级 Devframe 至 1.0.0，继续使用独立的 OTP/Origin 鉴权 bridge，保持 MCP 关闭并验证分页同步、断线恢复与未授权连接拒绝。合并新版构建链路时保留 Vite 定稿后的样式归属与 Tailwind HMR 行为，资源校验同时支持相对路径和小程序产物根路径。
+
+源码对比为每个分析 revision 保留生成同一报告时采集的有界产物文本快照：完整分析捕获对应构建输出，开发模式 fallback 捕获同次 `dist` 扫描读取的字节。后续读取不再猜测当前开发 `dist` 中的同名文件，也不为界面补写 bundle。拒绝旧 revision 和过期异步响应，同路径的新 revision 也会刷新；同时修复编辑器宿主与可拖动面板的高度传递，避免宽窄屏切换后代码区域塌陷为空白。

@@ -51,6 +51,13 @@ function processChunk(
     modules: [],
   }
 
+  if (chunk.imports.length > 0) {
+    chunkEntry.imports = [...chunk.imports].sort((a, b) => a.localeCompare(b))
+  }
+  if (chunk.dynamicImports.length > 0) {
+    chunkEntry.dynamicImports = [...chunk.dynamicImports].sort((a, b) => a.localeCompare(b))
+  }
+
   const moduleEntries = Object.entries(chunk.modules ?? {})
   for (const [rawModuleId, info] of moduleEntries) {
     const absoluteId = normalizeModuleId(rawModuleId)
@@ -108,9 +115,16 @@ function processAsset(
     ...getCompressedSizes(assetBuffer),
   }
 
-  const assetSource = resolveAssetSource(asset.fileName, ctx)
+  let assetSource
+  for (const sourceFile of [...(asset.originalFileNames ?? []), asset.fileName]) {
+    assetSource = resolveAssetSource(sourceFile, ctx)
+    if (assetSource) {
+      break
+    }
+  }
   if (assetSource) {
     entry.source = assetSource.source
+    entry.sourceType = assetSource.sourceType
     registerModuleInPackage(
       modules,
       assetSource.absolute,
@@ -131,6 +145,7 @@ export function processOutput(
   classifierContext: PackageClassifierContext,
   packages: Map<string, PackageAccumulator>,
   modules: Map<string, ModuleAccumulator>,
+  onArtifact?: (fileName: string, content: string | Uint8Array) => void,
 ) {
   if (!output) {
     return
@@ -139,9 +154,11 @@ export function processOutput(
   for (const item of output.output ?? []) {
     if (item.type === 'chunk') {
       processChunk(item, origin, ctx, classifierContext, packages, modules)
+      onArtifact?.(item.fileName, item.code)
     }
     else if (item.type === 'asset') {
       processAsset(item, origin, ctx, classifierContext, packages, modules)
+      onArtifact?.(item.fileName, item.source)
     }
   }
 }

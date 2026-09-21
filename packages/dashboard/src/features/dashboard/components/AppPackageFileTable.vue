@@ -34,8 +34,8 @@ const fileRows = computed(() => props.files.map(file => createPackageFileRow(fil
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-xl border border-(--dashboard-border)">
-    <table class="min-w-full divide-y divide-(--dashboard-border) text-left text-sm">
+  <div class="max-w-full overflow-x-auto rounded-xl border border-(--dashboard-border)">
+    <table class="min-w-[48rem] divide-y divide-(--dashboard-border) text-left text-sm">
       <thead class="bg-(--dashboard-panel-muted) text-(--dashboard-text-soft)">
         <tr>
           <th class="px-3 py-2 text-[11px] font-medium uppercase tracking-[0.18em]">

@@ -25,6 +25,7 @@ export interface AnalyzeHistoryMetadata {
 }
 
 export interface AnalyzeSubpackagesMetadata {
+  projectName?: string
   generatedAt: string
   budgets: AnalyzeBudgetConfig
   history: AnalyzeHistoryMetadata
@@ -38,6 +39,8 @@ export interface PackageFileEntry {
   gzipSize?: number
   brotliSize?: number
   isEntry?: boolean
+  imports?: string[]
+  dynamicImports?: string[]
   modules?: ModuleInFile[]
   source?: string
 }

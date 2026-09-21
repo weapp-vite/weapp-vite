@@ -73,7 +73,7 @@ export const pillButtonStyles = tv({
 })
 
 export const runtimeBadgeStyles = tv({
-  base: 'rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]',
+  base: 'inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em]',
   variants: {
     tone: {
       neutral: 'border-(--dashboard-border) bg-(--dashboard-panel-muted) text-(--dashboard-text-soft)',

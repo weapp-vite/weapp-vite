@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import type { LargestFileEntry } from '../types'
 import type { DashboardFileContent } from '../utils/sourceArtifactFiles'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { dashboardAnalyzeRevision } from '../utils/dashboardDevframe'
 import { configureMonacoDiffEditor, resolveMonacoTheme } from '../utils/monacoDiffTheme'
 import { createSourceArtifactFileKey, createSourcePathOptions, fetchDashboardFileContent } from '../utils/sourceArtifactFiles'
 import { createSourceCompareStats } from '../utils/sourceCompareSummary'
@@ -29,6 +30,7 @@ export function useSourceArtifactCompare(options: {
   let sourceModel: MonacoTextModel | undefined
   let artifactModel: MonacoTextModel | undefined
   let loadRequestId = 0
+  let disposed = false
 
   const artifactOptions = computed(() => options.files.value.map(file => ({
     key: createSourceArtifactFileKey(file),
@@ -74,6 +76,19 @@ export function useSourceArtifactCompare(options: {
     artifactModel = undefined
   }
 
+  function isCurrentLoad(
+    requestId: number,
+    revision: number,
+    sourcePath: string,
+    artifactKey: string,
+  ) {
+    return !disposed
+      && requestId === loadRequestId
+      && dashboardAnalyzeRevision.value === revision
+      && selectedSourcePath.value === sourcePath
+      && selectedArtifactKey.value === artifactKey
+  }
+
   function updateEditorModel() {
     const monaco = monacoRef.value
     if (!monaco || !diffEditor || !sourceContent.value || !artifactContent.value) {
@@ -97,14 +112,19 @@ export function useSourceArtifactCompare(options: {
   }
 
   async function ensureEditor() {
-    if (monacoRef.value || !editorElement.value) {
+    const editorHost = editorElement.value
+    if (disposed || monacoRef.value || !editorHost) {
       return
     }
+    // Monaco 体积较大，仅在编辑器容器就绪后按需加载。
     const monaco = await import('monaco-editor')
+    if (disposed || editorElement.value !== editorHost || monacoRef.value) {
+      return
+    }
     monacoRef.value = monaco
     configureMonacoDiffEditor(monaco)
     monaco.editor.setTheme(resolveMonacoTheme(options.theme.value))
-    diffEditor = monaco.editor.createDiffEditor(editorElement.value, {
+    diffEditor = monaco.editor.createDiffEditor(editorHost, {
       automaticLayout: true,
       minimap: { enabled: false },
       originalEditable: false,
@@ -115,36 +135,51 @@ export function useSourceArtifactCompare(options: {
   }
 
   async function loadComparison() {
+    if (disposed) {
+      return
+    }
     const requestId = ++loadRequestId
     const sourcePath = selectedSourcePath.value
     const artifact = selectedArtifact.value
-    if (!sourcePath || !artifact) {
+    const revision = dashboardAnalyzeRevision.value
+    const artifactKey = selectedArtifactKey.value
+    if (revision === null || !sourcePath || !artifact) {
       sourceContent.value = null
       artifactContent.value = null
       loadError.value = sourceOptions.value.length === 0 ? '无源码候选' : ''
+      loading.value = false
       disposeModels()
       return
     }
 
     loading.value = true
     loadError.value = ''
+    sourceContent.value = null
+    artifactContent.value = null
+    disposeModels()
     options.onSelectFile(artifact)
     try {
       const [source, output] = await Promise.all([
-        fetchDashboardFileContent('source', sourcePath),
-        fetchDashboardFileContent('artifact', artifact.file),
+        fetchDashboardFileContent('source', sourcePath, revision),
+        fetchDashboardFileContent('artifact', artifact.file, revision),
       ])
-      if (requestId !== loadRequestId) {
+      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
         return
       }
       sourceContent.value = source
       artifactContent.value = output
       await nextTick()
+      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
+        return
+      }
       await ensureEditor()
+      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
+        return
+      }
       updateEditorModel()
     }
     catch (error) {
-      if (requestId !== loadRequestId) {
+      if (!isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
         return
       }
       sourceContent.value = null
@@ -153,7 +188,7 @@ export function useSourceArtifactCompare(options: {
       loadError.value = error instanceof Error ? error.message : '文件读取失败'
     }
     finally {
-      if (requestId === loadRequestId) {
+      if (isCurrentLoad(requestId, revision, sourcePath, artifactKey)) {
         loading.value = false
       }
     }
@@ -176,7 +211,7 @@ export function useSourceArtifactCompare(options: {
   )
 
   watch(
-    [selectedArtifactKey, selectedSourcePath],
+    [selectedArtifactKey, selectedSourcePath, dashboardAnalyzeRevision],
     () => {
       void loadComparison()
     },
@@ -191,6 +226,8 @@ export function useSourceArtifactCompare(options: {
   )
 
   onBeforeUnmount(() => {
+    disposed = true
+    loadRequestId += 1
     disposeModels()
     diffEditor?.dispose()
   })
