@@ -1,4 +1,4 @@
-import { defineComponent, nextTick } from 'wevu'
+import { defineComponent, nextTick, storeToRefs } from 'wevu'
 import { buildResult, stringifyResult } from '../../shared/e2e'
 import { getHotVersion, hotUpdateSetupStore, useSetupStore } from '../../shared/store'
 
@@ -25,6 +25,7 @@ export default defineComponent({
   }),
   setup(_props, ctx) {
     const setupStore = useSetupStore()
+    const { count } = storeToRefs(setupStore)
     writeHmrScriptProbe(hmrScriptName)
 
     const runE2E = async () => {
@@ -62,7 +63,7 @@ export default defineComponent({
     }
 
     return {
-      count: setupStore.count,
+      count,
       increment: () => setupStore.inc(1),
       scriptName: hmrScriptName,
       runE2E,
