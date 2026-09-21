@@ -90,9 +90,10 @@ const users = useAsyncDerivation(({ signal }) => fetchUsers({ signal }))
 ## 状态管理
 
 ```ts
-import { createStore, defineStore, storeToRefs } from 'wevu'
+import { createStore, defineStore, storeToRefs, use } from 'wevu'
 
-createStore() // 在小程序入口只需要调用一次，注入插件可选
+const pinia = createStore()
+use(pinia) // 在小程序入口安装一次；使用 createApp() 时调用 app.use(pinia)
 
 export const useCounter = defineStore('counter', {
   state: () => ({ count: 0 }),
@@ -106,7 +107,7 @@ export const useCounter = defineStore('counter', {
   },
 })
 
-// 在页面/组件内使用
+// 在已安装 manager 的页面/组件内使用
 const counter = useCounter()
 const { count, doubled } = storeToRefs(counter)
 counter.$subscribe(({ type }) => console.log('mutation', type))

@@ -7,7 +7,7 @@ wevu 提供了与 Pinia 完全一致的 API 设计，支持 **Setup Store** 和 
 ## 特性
 
 - 🎯 **完全兼容 Pinia API** - 零学习成本，Pinia 开发者即可上手
-- 🚀 **开箱即用** - **无需全局注册插件**，直接使用
+- 🚀 **应用级状态管理** - 在入口安装一次 manager，组件内直接使用
 - 💪 **TypeScript 完整支持** - 完整的类型推导，无需泛型
 - 🔄 **响应式状态管理** - 基于 wevu 的 reactivity 系统
 - 📦 **模块化设计** - 按功能域组织 stores
@@ -18,13 +18,13 @@ wevu 提供了与 Pinia 完全一致的 API 设计，支持 **Setup Store** 和 
 
 | 特性           | Pinia                                 | wevu                        |
 | -------------- | ------------------------------------- | --------------------------- |
-| **全局注册**   | 必须调用 `createPinia()` 并注册到 app | **不需要**，开箱即用        |
+| **全局注册**   | 必须调用 `createPinia()` 并注册到 app | 使用 `createStore()` 创建并安装 manager |
 | **Vue 依赖**   | 依赖 Vue 3                            | **独立**，基于 wevu runtime |
 | **环境**       | Web 应用                              | **微信小程序**              |
 | **API 设计**   | Setup Store + Options Store           | ✅ 完全一致                 |
 | **TypeScript** | 完整支持                              | ✅ 完整支持                 |
 
-### 关键优势：无需全局注册
+### 初始化 Store manager
 
 **Pinia 需要：**
 
@@ -38,20 +38,23 @@ const pinia = createPinia()
 app.use(pinia) // 必须注册才能使用
 ```
 
-**wevu 开箱即用：**
+**wevu 在应用入口安装一次：**
 
 ```typescript
-// ✅ wevu 直接使用
-import { defineStore } from 'wevu'
+// ✅ wevu 在应用入口安装一次 manager
+import { createStore, defineStore, use } from 'wevu'
 
-// 无需任何全局注册，直接定义 store
+const pinia = createStore()
+use(pinia) // 使用 createApp() 时调用 app.use(pinia)
+
+// 定义 store
 export const useCounterStore = defineStore('counter', () => {
   const count = ref(0)
   return { count }
 })
 
-// 在组件中直接使用
-const store = useCounterStore() // 即刻可用
+// 在已安装 manager 的组件中使用
+const store = useCounterStore()
 ```
 
 ## 快速开始
@@ -484,11 +487,11 @@ export const useUserStore = defineStore('user', () => {
 
 ## 插件系统（可选）
 
-wevu 的插件系统是**可选的**，不像 Pinia 那样必须全局注册。你可以在需要时才使用插件扩展功能。
+wevu 的插件系统是**可选的**。使用插件时，仍需在应用入口安装对应的 store manager。
 
 ### 何时需要插件
 
-大多数情况下，你**不需要**使用插件系统。wevu 开箱即用，只有以下场景才需要插件：
+大多数情况下，你**不需要**使用插件系统；只有以下场景才需要插件：
 
 - 为所有 store 添加全局功能
 - 集成第三方服务（如日志、持久化）
@@ -497,10 +500,11 @@ wevu 的插件系统是**可选的**，不像 Pinia 那样必须全局注册。�
 ### 创建插件
 
 ```typescript
-import { createStore } from 'wevu'
+import { createStore, use } from 'wevu'
 
-// 创建 store manager（可选）
+// 创建并安装 store manager
 const storeManager = createStore()
+use(storeManager) // 使用 createApp() 时调用 app.use(storeManager)
 
 // 添加插件（可选）
 storeManager.use(({ store }) => {
@@ -518,9 +522,10 @@ storeManager.use(({ store }) => {
 ### 日志插件示例
 
 ```typescript
-import { createStore } from 'wevu'
+import { createStore, use } from 'wevu'
 
 const storeManager = createStore()
+use(storeManager) // 使用 createApp() 时调用 app.use(storeManager)
 
 storeManager.use(({ store }) => {
   // 订阅状态变化

@@ -64,33 +64,33 @@ The following APIs work exactly like Vue 3:
 
 #### Store (Pinia Compatible)
 
-wevu includes a Pinia-compatible store implementation that works **without global registration**:
+wevu includes a Pinia-compatible store implementation with an explicit application manager:
 
 - `defineStore()` - Define stores (Setup & Options modes)
 - `storeToRefs()` - Extract reactive refs from store
-- `createStore()` - Create store manager with plugin support (optional)
+- `createStore()` - Create a store manager with plugin support
 - `$patch` - Batch update state
 - `$reset` - Reset state to initial values (Setup & Options store)
 - `$subscribe` - Subscribe to state mutations
 - `$onAction` - Subscribe to action calls
 
-**Key Difference: No Global Registration Required**
+**Store manager installation**
 
 ```typescript
 // ❌ Pinia：需要全局注册
 import { createPinia } from 'pinia'
 
-// 不需要 createPinia()，也不需要 app.use(pinia)！
+// ✅ wevu：在应用入口安装一次 manager
+import { createStore, defineStore, use } from 'wevu'
 
-// ✅ wevu：直接使用即可
-import { defineStore } from 'wevu'
+const pinia = createStore()
+use(pinia) // 使用 createApp() 时调用 app.use(pinia)
 
 export const useCounterStore = defineStore('counter', () => {
   const count = ref(0)
   return { count }
 })
-const pinia = createPinia()
-app.use(pinia) // 必须先注册
+// 安装后，组件内可以直接调用 useCounterStore()
 ```
 
 **Setup Store (Recommended):**
