@@ -22,7 +22,8 @@ describe('comprehensive demo public runtime contracts', { concurrent: false }, (
     for (const page of config.pages) {
       await Promise.all(['js', 'json', 'wxml'].map(ext => access(path.join(APP_ROOT, `dist/${page}.${ext}`))))
     }
-    miniProgram = await launchAutomator({ projectPath: APP_ROOT, skipWarmup: true })
+    // 直接验收包含普通/独立分包的原始产物，避免测试镜像引入额外的 IDE 启动差异。
+    miniProgram = await launchAutomator({ projectPath: APP_ROOT, bridgeProjectMode: 'direct', skipWarmup: true })
   }, 240_000)
 
   afterAll(async () => {

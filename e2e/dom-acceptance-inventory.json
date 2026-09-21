@@ -5434,14 +5434,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:32",
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:33",
           "name": "comprehensive demo public runtime contracts > updates Options API computed values through instance methods",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-comprehensive-demo",
               "checkpoints": "[{ id: 'updated', route, action: '更新姓名和数量', nodes: [{ selector: '.page-title', text: '计算属性' }], }]",
-              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:34"
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:35"
             }
           ],
           "routes": [],
@@ -5454,14 +5454,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:50",
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:51",
           "name": "comprehensive demo public runtime contracts > renders lifecycle log aliases and clears the list",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-comprehensive-demo",
               "checkpoints": "[{ id: 'added', route, action: '清空后添加一条日志', nodes: [{ selector: '.log-item', count: 1 }, { selector: '.log-index', text: '1.' }], }, { id: 'cleared', route, action: '清空日志', nodes: [{ selector: '.log-item', count: 0 }], }]",
-              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:52"
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:53"
             }
           ],
           "routes": [],
@@ -5475,14 +5475,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:72",
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:73",
           "name": "comprehensive demo public runtime contracts > keeps created setup exports available after the initial mount",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-comprehensive-demo",
               "checkpoints": "[{ id: 'mounted', route, action: '读取 created 阶段 setup 与原生 export 合并结果', nodes: [{ selector: '.page-title', text: 'setup@created' }], }]",
-              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:74"
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:75"
             }
           ],
           "routes": [],
@@ -5494,14 +5494,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:92",
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:93",
           "name": "comprehensive demo public runtime contracts > only offers explicit subpackage loading when the host provides it",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-comprehensive-demo",
               "checkpoints": "[{ id: 'capability', route, action: '按真实宿主能力显示分包加载入口', nodes: [{ selector: '.page-title', text: '分包场景（普通 / 独立）' }, { selector: '.load-subpackage', count: hasLoader ? 4 : 0 }], }]",
-              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:95"
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:96"
             }
           ],
           "routes": [],
@@ -5513,14 +5513,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:117",
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:118",
           "name": "comprehensive demo public runtime contracts > reads the collapse event detail field",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-comprehensive-demo",
               "checkpoints": "[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: `t-${component}` }], }]",
-              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:119"
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:120"
             }
           ],
           "routes": [],
@@ -5532,14 +5532,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:117",
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:118",
           "name": "comprehensive demo public runtime contracts > reads the steps event detail field",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-comprehensive-demo",
               "checkpoints": "[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: `t-${component}` }], }]",
-              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:119"
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:120"
             }
           ],
           "routes": [],
@@ -5551,14 +5551,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:117",
+          "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:118",
           "name": "comprehensive demo public runtime contracts > reads the side-bar event detail field",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-comprehensive-demo",
               "checkpoints": "[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: `t-${component}` }], }]",
-              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:119"
+              "source": "e2e/ide/wevu-comprehensive.runtime.test.ts:120"
             }
           ],
           "routes": [],
@@ -7523,7 +7523,7 @@
     },
     {
       "file": "e2e/ide/wevu-comprehensive.runtime.test.ts",
-      "sha256": "eae9cebec1726d90d0e72177be3801ecc3c0d0dc90a64a7197fef057f8640473"
+      "sha256": "c362305173db27efe453bd747eaec1ad23fbd50702076a61eb27755f055f3c8c"
     },
     {
       "file": "e2e/ide/wevu-features.runtime.behavior.test.ts",

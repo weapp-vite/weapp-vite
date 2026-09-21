@@ -1989,51 +1989,51 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### comprehensive demo public runtime contracts > updates Options API computed values through instance methods
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:32`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:33`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'updated', route, action: '更新姓名和数量', nodes: [{ selector: '.page-title', text: '计算属性' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:34`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'updated', route, action: '更新姓名和数量', nodes: [{ selector: '.page-title', text: '计算属性' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:35`
 - Operations: `reLaunch(route)`, `callMethod(updateFirstName)`, `callMethod(increaseQuantity)`, `check(updated)`
 
 ### comprehensive demo public runtime contracts > renders lifecycle log aliases and clears the list
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:50`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:51`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'added', route, action: '清空后添加一条日志', nodes: [{ selector: '.log-item', count: 1 }, { selector: '.log-index', text: '1.' }], }, { id: 'cleared', route, action: '清空日志', nodes: [{ selector: '.log-item', count: 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:52`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'added', route, action: '清空后添加一条日志', nodes: [{ selector: '.log-item', count: 1 }, { selector: '.log-index', text: '1.' }], }, { id: 'cleared', route, action: '清空日志', nodes: [{ selector: '.log-item', count: 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:53`
 - Operations: `reLaunch(route)`, `callMethod(clearLogs)`, `callMethod(addLog)`, `check(added)`, `check(cleared)`
 
 ### comprehensive demo public runtime contracts > keeps created setup exports available after the initial mount
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:72`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:73`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'mounted', route, action: '读取 created 阶段 setup 与原生 export 合并结果', nodes: [{ selector: '.page-title', text: 'setup@created' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:74`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'mounted', route, action: '读取 created 阶段 setup 与原生 export 合并结果', nodes: [{ selector: '.page-title', text: 'setup@created' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:75`
 - Operations: `reLaunch(route)`, `callMethod(readComponentExport)`, `check(mounted)`
 
 ### comprehensive demo public runtime contracts > only offers explicit subpackage loading when the host provides it
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:92`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:93`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'capability', route, action: '按真实宿主能力显示分包加载入口', nodes: [{ selector: '.page-title', text: '分包场景（普通 / 独立）' }, { selector: '.load-subpackage', count: hasLoader ? 4 : 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:95`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'capability', route, action: '按真实宿主能力显示分包加载入口', nodes: [{ selector: '.page-title', text: '分包场景（普通 / 独立）' }, { selector: '.load-subpackage', count: hasLoader ? 4 : 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:96`
 - Operations: `reLaunch(route)`, `check(capability)`, `callMethod(onLoadPackage)`
 
 ### comprehensive demo public runtime contracts > reads the collapse event detail field
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:118`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:120`
 - Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
 
 ### comprehensive demo public runtime contracts > reads the steps event detail field
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:118`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:120`
 - Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
 
 ### comprehensive demo public runtime contracts > reads the side-bar event detail field
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:118`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:120`
 - Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
 
 
