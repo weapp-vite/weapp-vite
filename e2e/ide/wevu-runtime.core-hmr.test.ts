@@ -887,6 +887,10 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
       expect(sharedRuntime.code).toContain('setupCounter')
       expect(sharedRuntime.code).toContain('optionsCounter')
       await waitForIdeRecompileSettled()
+      // Store 文档不支持 Pinia HMR；定义变化须重启 App，不能复用旧 Pinia 的实例与插件闭包。
+      // 前面的页面、SFC、layout 检查仍共享会话；这里只为验证新 Store 定义建立冷启动会话。
+      await closeMiniProgram()
+      await cleanupResidualDevtoolsProcesses()
       await relaunchIdeRoute('/pages/store/index', undefined, ctx, {
         storageReady: {
           expected: 'store',
@@ -895,7 +899,7 @@ describe('wevu runtime core hmr matrix (ide)', { concurrent: false }, () => {
           requireOk: true,
         },
       })
-      await check('store:updated')
+      await check('store:restarted')
       await relaunchIdeRoute('/pages/store-share/index', undefined, ctx, {
         allowCurrentSession: true,
         storageReady: {

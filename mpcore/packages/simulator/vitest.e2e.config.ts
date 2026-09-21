@@ -11,6 +11,7 @@ import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativ
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
 import { createStatefulStoreBindingFiles } from './test/helpers/statefulStoreBindings'
 import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
+import { createStoreDefinitionReloadFiles } from './test/helpers/storeDefinitionReload'
 import { createStoreHmrFiles } from './test/helpers/storeHmr'
 import { createStoreLifecycleFiles } from './test/helpers/storeLifecycle'
 
@@ -32,6 +33,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:store-definition-reload-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture' || id === 'virtual:runtime-value-snapshot-fixture') {
         return `\0${id}`
       }
@@ -40,6 +44,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:store-definition-reload-fixture') {
+        return `export default ${JSON.stringify(await createStoreDefinitionReloadFiles())}`
+      }
       if (id === '\0virtual:runtime-value-snapshot-fixture') {
         return `export default ${JSON.stringify(await createRuntimeValueSnapshotFiles())}`
       }

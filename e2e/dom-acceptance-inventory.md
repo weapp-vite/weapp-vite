@@ -2265,7 +2265,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/wevu-runtime.core-hmr.test.ts:590`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `coreHmrPlan({ pageTemplateMarker, pageScriptMarker, pageStyleMarker, sfcTemplateMarker, sfcScriptMarker, sfcStyleMarker, layoutPageTemplateMarker, layoutPageScriptMarker, layoutPageStyleMarker, sharedStoreMarker, })`; source: `e2e/ide/wevu-runtime.core-hmr.test.ts:601`
-- Operations: `check(page:initial)`, `callMethodWithOptions(increment)`, `check(page:interacted)`, `check(page:template)`, `check(page:script)`, `check(page:style)`, `check(sfc:initial)`, `check(sfc:template)`, `check(sfc:script)`, `check(sfc:style)`, `check(layout:initial)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout:admin)`, `check(layout:template)`, `callMethodWithOptions(syncScriptMarker)`, `check(layout:script)`, `check(layout:script-admin)`, `check(layout:style)`, `check(store:initial)`, `check(store:updated)`, `check(store:shared)`
+- Operations: `check(page:initial)`, `callMethodWithOptions(increment)`, `check(page:interacted)`, `check(page:template)`, `check(page:script)`, `check(page:style)`, `check(sfc:initial)`, `check(sfc:template)`, `check(sfc:script)`, `check(sfc:style)`, `check(layout:initial)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout:admin)`, `check(layout:template)`, `callMethodWithOptions(syncScriptMarker)`, `check(layout:script)`, `check(layout:script-admin)`, `check(layout:style)`, `check(store:initial)`, `check(store:restarted)`, `check(store:shared)`
 
 
 ## ide/wevu-runtime.function-props.weapp.test.ts

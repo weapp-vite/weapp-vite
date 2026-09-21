@@ -6262,7 +6262,7 @@
             "check(layout:script-admin)",
             "check(layout:style)",
             "check(store:initial)",
-            "check(store:updated)",
+            "check(store:restarted)",
             "check(store:shared)"
           ],
           "notes": []
@@ -7575,7 +7575,7 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.core-hmr.test.ts",
-      "sha256": "80fa82c8bf76b24cc641c00b0e4763c544990203fe0f05359b76b64a083ff776"
+      "sha256": "6ddbfd038aef1b3061f24ccd35dcb02d68b3248f77325e6b8a39bc13d2e98461"
     },
     {
       "file": "e2e/ide/wevu-runtime.function-props.weapp.test.ts",
@@ -7627,7 +7627,7 @@
     },
     {
       "file": "e2e/ide/wevuRuntimeDom/coreHmr.ts",
-      "sha256": "2b757ae987a832774f7e425ac458de6e22baf8cf6d30bd44ac2169b85f731f3e"
+      "sha256": "090b0939bfcf4efed5bc328f5deab3de6c54e12ddbd2c785450a5de900a3e45a"
     },
     {
       "file": "e2e/ide/wevuRuntimeDom/functionProps.ts",
