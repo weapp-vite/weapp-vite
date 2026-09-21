@@ -8,7 +8,7 @@
 
 ```ts
 import type { Pinia, StoreManager } from 'wevu/store'
-// StoreManager 是 Pinia 的弃用类型别名
+// StoreManager 是继续保留的 Pinia 类型别名，不要求仅为改名而迁移
 ```
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。

@@ -105,9 +105,21 @@
 
 ### 本组示例 {#example-store-instance}
 
-实例 API 可以批量更新、重置并观察 mutation 与 Action 结果。
+以下使用 Options Store 展示批量更新、工厂重置与监听。Setup Store 需要自行返回 `$reset`，不能直接套用 Options 的自动重置。
 
 ```ts
+import { createPinia, defineStore, disposePinia, setActivePinia } from 'wevu'
+
+const manager = createPinia()
+const useCounter = defineStore('instance-example', {
+  state: () => ({ count: 0 }),
+  actions: {
+    increment() {
+      return ++this.count
+    },
+  },
+})
+const counter = useCounter(manager)
 const stopState = counter.$subscribe((mutation, state) => {
   console.log(mutation.type, state.count)
 })
@@ -116,6 +128,7 @@ const stopAction = counter.$onAction(({ name, after, onError }) => {
   onError(error => console.error(name, error))
 })
 
+counter.increment()
 counter.$patch({ count: 2 })
 counter.$patch((state) => {
   state.count += 1
@@ -126,5 +139,8 @@ stopAction()
 counter.$dispose()
 // 需全新状态时，在下次 useCounter(manager) 前显式删除。
 delete manager.state.value[counter.$id]
+// 整个应用或测试结束时，释放 manager。
+disposePinia(manager)
+setActivePinia(undefined)
 ```
 
