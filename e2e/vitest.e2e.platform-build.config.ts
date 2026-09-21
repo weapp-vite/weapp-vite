@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       path.resolve(import.meta.dirname, './platforms/verification.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './scripts/platform-runtime-doctor.test.ts').replaceAll('\\', '/'),
+      path.resolve(import.meta.dirname, './scripts/platform-runtime-doctor.probe.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './ci/platform-build.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './ci/template-multi-platform.build.test.ts').replaceAll('\\', '/'),
       path.resolve(import.meta.dirname, './ci/template-multi-platform-sfc.build.test.ts').replaceAll('\\', '/'),
