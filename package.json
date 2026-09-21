@@ -114,6 +114,7 @@
     "e2e:ide:full:github-issues": "node --import tsx ./e2e/scripts/run-sleep-inhibited-e2e-suite.ts \"ide-full:github-issues\"",
     "e2e:ide:full:wevu-features": "node --import tsx ./e2e/scripts/run-sleep-inhibited-e2e-suite.ts \"ide-full:wevu-features\"",
     "e2e:ide:full:templates": "node --import tsx ./e2e/scripts/run-sleep-inhibited-e2e-suite.ts \"ide-full:templates\"",
+    "e2e:dashboard": "vitest run -c ./e2e/vitest.e2e.dashboard.config.ts",
     "e2e:dev": "vitest -c ./e2e/vitest.e2e.config.ts",
     "e2e:parallel": "vitest run -c ./e2e/vitest.e2e.parallel.config.ts",
     "e2e:retail-parity": "vitest run -c ./e2e/vitest.e2e.retail-parity.config.ts",

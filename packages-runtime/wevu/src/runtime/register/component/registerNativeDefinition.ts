@@ -19,6 +19,9 @@ function createAlipayPageDefinition(componentDefinition: Record<string, any>) {
     ...pageDefinition,
     ...methods,
     onLoad(this: InternalRuntimeState, ...args: any[]) {
+      // 支付宝 Page 不提供微信的 options 字段，在挂载前统一页面参数契约，
+      // 避免 setup 读不到 query 或后续 onShow/onReady 将其清空。
+      ;(this as Record<string, any>).options = args[0] && typeof args[0] === 'object' ? args[0] : {}
       lifetimes.created?.apply(this, args)
       const result = pageOnLoad?.apply(this, args)
       lifetimes.attached?.apply(this, args)

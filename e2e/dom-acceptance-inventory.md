@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：107；微信：104；范围外：3。
-- 展开的 case 声明：269；已接入计划：269；缺计划：0。
+- 任务：108；微信：105；范围外：3。
+- 展开的 case 声明：270；已接入计划：270；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -32,6 +32,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/github-issues.runtime.issue1011.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1012.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1015.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.issue1035.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1049.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
 | ide/github-issues.runtime.issue448-formdata-upload.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue547.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -779,6 +780,17 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'initial', route: ISSUE_ROUTE, action: '检查外部 CSS 变量的首屏注入', nodes: [ { selector: '#issue-1015-page', attributes: { 'data-theme-color': 'red' }, ...(provider === 'devtools' ? { styles: { color: 'rgb(255, 0, 0)' } } : {}), }, { selecto`; source: `e2e/ide/github-issues.runtime.issue1015.test.ts:61`
 - Operations: `check(initial)`, `callMethod(_runE2E)`, `check(updated)`
+
+
+## ide/github-issues.runtime.issue1035.test.ts
+
+### e2e app: github-issues / issue #1035 > shares the App router on cold start, navigation, back and reLaunch
+
+- Source: `e2e/ide/github-issues.runtime.issue1035.test.ts:63`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ homeCheckpoint('cold-start'), { id: 'navigate', route: NEXT, action: '点击命名路由跳转并读取同一 router 和 query', nodes: [ { selector: '#issue-1035-next-identity', text: 'same router: true' }, { selector: '#issue-1035-query', text: 'from: home' }, ], `; source: `e2e/ide/github-issues.runtime.issue1035.test.ts:64`
+- Routes: `/pages/issue-1035/index`
+- Operations: `callMethod(readSnapshot)`, `check(cold-start)`, `tap(<missing>)`, `check(navigate)`, `check(back)`, `reLaunch(/pages/issue-1035/index)`, `check(relaunch)`
 
 
 ## ide/github-issues.runtime.issue1049.test.ts

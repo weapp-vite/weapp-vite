@@ -2,6 +2,8 @@
 
 Issue 修复以真实微信 DevTools E2E 为最终验收标准。headless、单测、类型检查和构建用于定位问题与辅助验证，不能替代真实 runtime 结果。
 
+Issue #1035 的三端冷启动、宿主全局解析和支付宝 query 回归见 [专项验收记录](./github-issues.runtime.issue1035.md)。
+
 ## 首屏守卫回归
 
 `github-issues.runtime.issue911.test.ts` 在同一个 suite 内复用 automator，通过 `reLaunch` 切换场景，覆盖异步 blocking、首屏 redirect、abort、普通后续导航、超时、reject 和 late guard。redirect 必须到达结果页，且原页面未挂载；当前路由和真实渲染节点必须同时符合预期。

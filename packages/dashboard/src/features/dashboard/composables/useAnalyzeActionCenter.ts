@@ -83,7 +83,7 @@ function createIncrementAction(
     title: `定位增长 ${item.label}`,
     meta: `${item.category} · ${item.advice}`,
     value: `+${formatBytes(item.deltaBytes)}`,
-    tone: item.deltaBytes > 1024 ? 'warning' : 'info',
+    tone: 'info',
     tab: file ? 'files' : 'modules',
     priority: 80 + Math.min(item.deltaBytes / 1024, 15),
     file,

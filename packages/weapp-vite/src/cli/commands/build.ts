@@ -9,6 +9,7 @@ import { getBackendForCapability } from '../../backends'
 import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
+import { createDashboardArtifactSnapshot } from '../analyze/dashboardDevframe/artifacts'
 import { formatDuration } from '../formatDuration'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
@@ -167,14 +168,17 @@ export function registerBuildCommand(cli: CAC) {
             if (enableAnalyze) {
               const analyzeStartedAt = Date.now()
               const previousAnalyzeResult = await readLatestAnalyzeHistorySnapshot(configService)
-              const analyzeResult = await analyzeSubpackages(ctx)
+              const artifactSnapshot = createDashboardArtifactSnapshot()
+              const analyzeResult = await analyzeSubpackages(ctx, { onArtifact: artifactSnapshot.capture })
               await writeAnalyzeHistorySnapshot(analyzeResult, configService)
               const analyzeDurationMs = Date.now() - analyzeStartedAt
               analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
                 watch: true,
-                artifactRoot: configService.outDir,
+                artifacts: artifactSnapshot.files,
                 cwd: configService.cwd,
                 packageManagerAgent: configService.packageManager.agent,
+                pluginRoot: configService.absolutePluginRoot,
+                srcRoot: configService.absoluteSrcRoot,
                 previousResult: previousAnalyzeResult,
                 initialEvents: [
                   {

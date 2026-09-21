@@ -20,6 +20,9 @@ function resolveDashboardChunk(id: string) {
   if (id.includes('monaco-editor')) {
     return 'monaco'
   }
+  if (id.includes('/d3-') || id.includes('/node_modules/d3/')) {
+    return 'd3'
+  }
   if (id.includes('echarts')) {
     return 'echarts'
   }

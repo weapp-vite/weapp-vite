@@ -66,6 +66,7 @@ const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.en
 const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
+  'github-issues.runtime.issue1035.test.ts': ['pages/issue-1035/**', 'pages/issue-1035-next/**'],
   'github-issues.runtime.issue1008.test.ts': [
     'pages/issue-1008/**',
   ],
@@ -390,7 +391,8 @@ function resolveGithubIssuesAutoRoutes() {
     return true
   }
 
-  if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue627.test.ts') {
+  if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue627.test.ts'
+    || matchedGithubIssuesTestFile === 'github-issues.runtime.issue1035.test.ts') {
     return {
       include: matchedRoutes,
     }

@@ -1,6 +1,8 @@
 import type { RolldownWatcher } from 'rolldown'
-import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { AnalyzeSubpackagesOptions, AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { CompilerContext } from '../../../context'
 import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput, DashboardRuntimeEventProfile, startAnalyzeDashboard } from '../../analyze/dashboard'
+import type { DashboardArtifactFiles } from '../../analyze/dashboardDevframe/artifacts'
 import type { RuntimeTargets } from '../../runtime'
 import type { GlobalCLIOptions } from '../../types'
 import fs from 'node:fs/promises'
@@ -13,6 +15,7 @@ import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '.
 import { createAnalyzeMetadata } from '../../../analyze/subpackages/metadata'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
+import { createDashboardArtifactSnapshot } from '../../analyze/dashboardDevframe/artifacts'
 import { createInlineConfig } from '../../runtime'
 
 const REG_DIST_PAGE_ENTRY = /pages\/.+\/index\.js$/
@@ -81,13 +84,20 @@ function getCompressedSizes(content: Uint8Array) {
 
 export interface AnalyzeRunResult {
   result: AnalyzeSubpackagesResult
+  artifacts: DashboardArtifactFiles
   previousResult: AnalyzeSubpackagesResult | null
   durationMs: number
   mode: 'full' | 'fallback'
   fallbackReason?: string
 }
+interface AnalyzeUiFallbackOptions {
+  onArtifact?: AnalyzeSubpackagesOptions['onArtifact']
+}
 
-export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCompilerContext>>): Promise<AnalyzeSubpackagesResult> {
+export async function analyzeUiFallback(
+  ctx: CompilerContext,
+  options?: AnalyzeUiFallbackOptions,
+): Promise<AnalyzeSubpackagesResult> {
   const { configService, scanService } = ctx
   await scanService.loadAppEntry()
   const subPackageMetas = scanService.loadSubPackages()
@@ -135,18 +145,18 @@ export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCom
   for (const absoluteFile of absoluteFiles) {
     const relativeFile = path.relative(distRoot, absoluteFile).replace(REG_DIST_POSIX_SEP, '/')
     const packageInfo = classifyPackage(relativeFile)
-    const stat = await fs.stat(absoluteFile)
     const content = await fs.readFile(absoluteFile)
     const fileEntry = ensurePackage(packageInfo.id, packageInfo.type)
     fileEntry.files.push({
       file: relativeFile,
       type: relativeFile.endsWith('.js') ? 'chunk' : 'asset',
       from: packageInfo.type === 'independent' ? 'independent' : 'main',
-      size: stat.size,
+      size: content.byteLength,
       ...getCompressedSizes(content),
       isEntry: relativeFile === 'app.js' || REG_DIST_PAGE_ENTRY.test(relativeFile),
       source: relativeFile.endsWith('.js') ? undefined : relativeFile,
     })
+    options?.onArtifact?.(relativeFile, content)
   }
 
   return {
@@ -175,7 +185,7 @@ export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCom
 
 export function createAnalyzeController(options: {
   configFile: string | undefined
-  ctx: Awaited<ReturnType<typeof createCompilerContext>>
+  ctx: CompilerContext
   options: GlobalCLIOptions
   targets: RuntimeTargets
 }) {
@@ -187,6 +197,20 @@ export function createAnalyzeController(options: {
   const runAnalyze = async (): Promise<AnalyzeRunResult> => {
     const startedAt = Date.now()
     const previousResult = await readLatestAnalyzeHistorySnapshot(configService)
+    const runFallback = async (fallbackReason: string): Promise<AnalyzeRunResult> => {
+      const artifactSnapshot = createDashboardArtifactSnapshot()
+      const result = await analyzeUiFallback(ctx, { onArtifact: artifactSnapshot.capture })
+      await writeAnalyzeHistorySnapshot(result, configService)
+      return {
+        result,
+        artifacts: artifactSnapshot.files,
+        previousResult,
+        durationMs: Date.now() - startedAt,
+        mode: 'fallback',
+        fallbackReason,
+      }
+    }
+
     try {
       const analyzeCtx = await createCompilerContext({
         key: `serve-ui-analyze:${process.pid}:${++analyzeRunId}`,
@@ -199,11 +223,13 @@ export function createAnalyzeController(options: {
         projectConfigPath: cliOptions.projectConfig,
         syncSupportFiles: false,
       })
-      const result = await analyzeSubpackages(analyzeCtx)
+      const artifactSnapshot = createDashboardArtifactSnapshot()
+      const result = await analyzeSubpackages(analyzeCtx, { onArtifact: artifactSnapshot.capture })
       if (hasAnalyzeData(result)) {
         await writeAnalyzeHistorySnapshot(result, configService)
         return {
           result,
+          artifacts: artifactSnapshot.files,
           previousResult,
           durationMs: Date.now() - startedAt,
           mode: 'full',
@@ -213,26 +239,10 @@ export function createAnalyzeController(options: {
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       logger.warn(`[ui] 完整分析失败，已回退到 dist 文件扫描：${message}`)
-      const result = await analyzeUiFallback(ctx)
-      await writeAnalyzeHistorySnapshot(result, configService)
-      return {
-        result,
-        previousResult,
-        durationMs: Date.now() - startedAt,
-        mode: 'fallback',
-        fallbackReason: message,
-      }
+      return runFallback(message)
     }
 
-    const result = await analyzeUiFallback(ctx)
-    await writeAnalyzeHistorySnapshot(result, configService)
-    return {
-      result,
-      previousResult,
-      durationMs: Date.now() - startedAt,
-      mode: 'fallback',
-      fallbackReason: '完整分析结果为空，已回退到 dist 文件扫描。',
-    }
+    return runFallback('完整分析结果为空，已回退到 dist 文件扫描。')
   }
 
   const triggerAnalyzeUpdate = async (reason: 'initial' | 'watch' = 'watch') => {
@@ -263,7 +273,7 @@ export function createAnalyzeController(options: {
         },
       ])
     }
-    await analyzeHandle.update(next.result, next.previousResult)
+    await analyzeHandle.update(next.result, next.artifacts, next.previousResult)
     emitDashboardEvents(analyzeHandle, [
       {
         kind: next.mode === 'fallback' ? 'diagnostic' : 'build',
@@ -318,9 +328,11 @@ export function createAnalyzeController(options: {
       const initialAnalyze = await runAnalyze()
       analyzeHandle = await startDashboard(initialAnalyze.result, {
         watch: true,
-        artifactRoot: configService.outDir,
+        artifacts: initialAnalyze.artifacts,
         cwd: configService.cwd,
         packageManagerAgent: configService.packageManager.agent,
+        pluginRoot: configService.absolutePluginRoot,
+        srcRoot: configService.absoluteSrcRoot,
         silentStartupLog: true,
         previousResult: initialAnalyze.previousResult,
         initialEvents: [

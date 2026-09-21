@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 107,
-    "wechatTaskCount": 104,
+    "taskCount": 108,
+    "wechatTaskCount": 105,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 269,
-    "casesWithPlan": 269,
+    "expandedCaseDeclarations": 270,
+    "casesWithPlan": 270,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -1803,6 +1803,43 @@
             "check(initial)",
             "callMethod(_runE2E)",
             "check(updated)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1035.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1035.test.ts:63",
+          "name": "e2e app: github-issues / issue #1035 > shares the App router on cold start, navigation, back and reLaunch",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[ homeCheckpoint('cold-start'), { id: 'navigate', route: NEXT, action: '点击命名路由跳转并读取同一 router 和 query', nodes: [ { selector: '#issue-1035-next-identity', text: 'same router: true' }, { selector: '#issue-1035-query', text: 'from: home' }, ], ",
+              "source": "e2e/ide/github-issues.runtime.issue1035.test.ts:64"
+            }
+          ],
+          "routes": [
+            "/pages/issue-1035/index"
+          ],
+          "operations": [
+            "callMethod(readSnapshot)",
+            "check(cold-start)",
+            "tap(<missing>)",
+            "check(navigate)",
+            "check(back)",
+            "reLaunch(/pages/issue-1035/index)",
+            "check(relaunch)"
           ],
           "notes": []
         }
@@ -6957,6 +6994,10 @@
       "sha256": "ee8d8d9e040e4d583d5fb7cf8a320eb1e45e882b71335fee59bcd302d07c95c2"
     },
     {
+      "file": "e2e/ide/github-issues.runtime.issue1035.test.ts",
+      "sha256": "75bc19f56dc6ba5406fae602dc5421736d552bf7fae5016c45df22f22b218dc9"
+    },
+    {
       "file": "e2e/ide/github-issues.runtime.issue1049.test.ts",
       "sha256": "3c9e162e9aee1856f663ab6f7ddbffa8b15dd5367c196b8c9bdcc953b61f4905"
     },
@@ -7650,7 +7691,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "858bf2ea42f76312b7cad158a75112028e20f843cad58e1cc7b5a308b1919c23"
+      "sha256": "ebe4850ac769d6dffaf63e60ce48b68f0dd025c7d2d098d3d8438dfa54f7d75f"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",

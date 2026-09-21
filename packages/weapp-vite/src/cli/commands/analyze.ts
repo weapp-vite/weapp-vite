@@ -17,6 +17,7 @@ import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { resolveHmrProfileJsonPath } from '../../utils/hmrProfile'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
+import { createDashboardArtifactSnapshot } from '../analyze/dashboardDevframe/artifacts'
 import { coerceBooleanOption, filterDuplicateOptions, resolveConfigFile } from '../options'
 import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
@@ -413,6 +414,11 @@ export function registerAnalyzeCommand(cli: CAC) {
       }
       const budgetCheck = coerceBooleanOption(options.budgetCheck)
       const glassEaselCheck = coerceBooleanOption(options.glassEaselCheck)
+      const launchDashboard = !outputJson
+        && !outputMarkdown
+        && !outputPrReport
+        && !budgetCheck
+        && !glassEaselCheck
       const targets = resolveRuntimeTargets(options)
       const inlineConfig = createInlineConfig(targets)
       let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
@@ -496,7 +502,10 @@ export function registerAnalyzeCommand(cli: CAC) {
 
         const previousResult = await readLatestAnalyzeHistorySnapshot(ctx.configService)
         ctx.runtimeState.glassEasel.silent = Boolean(outputJson || outputMarkdown || outputPrReport || glassEaselCheck)
-        const result = await analyzeSubpackages(ctx)
+        const artifactSnapshot = launchDashboard ? createDashboardArtifactSnapshot() : undefined
+        const result = artifactSnapshot
+          ? await analyzeSubpackages(ctx, { onArtifact: artifactSnapshot.capture })
+          : await analyzeSubpackages(ctx)
         await writeAnalyzeHistorySnapshot(result, ctx.configService)
         const writtenPath = await writeAnalyzeResult(
           result,
@@ -530,12 +539,14 @@ export function registerAnalyzeCommand(cli: CAC) {
         if (budgetCheck || glassEaselCheck) {
           return
         }
-        if (!outputPrReport && !outputMarkdown && !outputJson) {
+        if (artifactSnapshot) {
           printAnalysisSummary(result)
           await startAnalyzeDashboard(result, {
-            artifactRoot: ctx.configService.outDir,
+            artifacts: artifactSnapshot.files,
             cwd: ctx.configService.cwd,
             packageManagerAgent: ctx.configService.packageManager.agent,
+            pluginRoot: ctx.configService.absolutePluginRoot,
+            srcRoot: ctx.configService.absoluteSrcRoot,
             previousResult,
           })
         }

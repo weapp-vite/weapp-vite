@@ -102,6 +102,7 @@ describe('runtime/lib', () => {
 
     const resolverByTemplate = createLibEntryFileNameResolver(createResolvedLibConfig({ fileName: 'dist/[name]' }))!
     expect(resolverByTemplate({ name: 'components/button' })).toBe('dist/components/button.js')
+    expect(resolverByTemplate({ name: 'components/input', facadeModuleId: null })).toBe('dist/components/input.js')
 
     const resolverByFn = createLibEntryFileNameResolver(createResolvedLibConfig({
       fileName: ({ name }: { name: string }) => `esm/${name}`,

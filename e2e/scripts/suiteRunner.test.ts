@@ -615,6 +615,7 @@ describe('suiteRunner', () => {
     })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
+      'ide/github-issues.runtime.issue1035.test.ts',
       'ide/issue-963-plugin-es6.runtime.test.ts',
       'ide/issue-997-rebuild.runtime.test.ts',
       'ide/issue-998-tailwind.runtime.test.ts',

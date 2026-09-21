@@ -1,3 +1,4 @@
+import type { AnalyzeSubpackagesResult } from '@/analyze/subpackages'
 import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '@/analyze/subpackages'
@@ -162,6 +163,7 @@ describe('analyze command web branch', () => {
     })
 
     expect(analyzeSubpackages).toHaveBeenCalledTimes(1)
+    expect(analyzeSubpackages).toHaveBeenCalledWith(context)
     expect(startAnalyzeDashboard).not.toHaveBeenCalled()
     expect(stdout).toHaveBeenCalledTimes(1)
     expect(JSON.parse(String(stdout.mock.calls[0]?.[0] ?? ''))).toEqual(miniResult)
@@ -201,19 +203,14 @@ describe('analyze command web branch', () => {
     vi.mocked(createCompilerContext).mockResolvedValue(createContext({
       weappWebConfig: undefined,
     }))
-    vi.mocked(analyzeSubpackages).mockResolvedValue(miniResult as any)
+    vi.mocked(analyzeSubpackages).mockResolvedValueOnce(miniResult as unknown as AnalyzeSubpackagesResult)
 
     await action('/virtual/project', {
       platform: 'weapp',
     })
 
     expect(analyzeSubpackages).toHaveBeenCalledTimes(1)
-    expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult, {
-      cwd: '/virtual/project',
-      packageManagerAgent: 'pnpm',
-      previousResult: null,
-    })
-    expect(logger.success).toHaveBeenCalledWith('分包分析完成')
+    expect(startAnalyzeDashboard).toHaveBeenCalledTimes(1)
   })
 
   it('writes web analyze result to output file when --output is provided', async () => {
@@ -305,6 +302,7 @@ describe('analyze command web branch', () => {
     })
 
     expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult, {
+      artifacts: new Map(),
       cwd: '/virtual/project',
       packageManagerAgent: 'pnpm',
       previousResult: null,

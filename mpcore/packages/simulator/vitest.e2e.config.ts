@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
+import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
@@ -28,13 +29,16 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
-      if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture') {
+      if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
         return `\0${id}`
       }
     },
     async load(id) {
       if (id === '\0virtual:store-lifecycle-fixture') {
         return `export default ${JSON.stringify(await createStoreLifecycleFiles())}`
+      }
+      if (id === '\0virtual:router-bootstrap-fixture') {
+        return `export default ${JSON.stringify(await createRouterBootstrapFiles())}`
       }
       if (id === '\0virtual:stateful-app-bootstrap-fixture') {
         return `export default ${JSON.stringify(await createStatefulAppBootstrapFiles())}`

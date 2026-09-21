@@ -17,11 +17,6 @@ import { useDashboardWorkspace } from './useDashboardWorkspace'
 const overviewLayoutItems = [
   { id: 'metrics', label: '关键指标' },
 ]
-const diagnosticsLayoutItems = [
-  { id: 'actions', label: '问题中心' },
-  { id: 'work-queue', label: '处理清单' },
-  { id: 'history', label: '历史基线' },
-]
 const reviewLayoutItems = [
   { id: 'review', label: 'PR 风险清单' },
 ]
@@ -185,7 +180,6 @@ export function useAnalyzePageController() {
     baselineSnapshotId,
     commandItems,
     comparisonMode,
-    diagnosticsLayoutItems,
     historySnapshots,
     metricPackageTypeSummary,
     modulesLayoutItems,

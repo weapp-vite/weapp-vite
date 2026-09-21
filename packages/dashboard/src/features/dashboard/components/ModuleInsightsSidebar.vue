@@ -73,8 +73,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="grid min-h-0 gap-3 overflow-hidden xl:grid-rows-[auto_minmax(0,1fr)_minmax(0,0.8fr)]">
-    <section :class="surfaceStyles({ padding: 'md' })" class="overflow-hidden">
+  <div class="grid min-h-0 min-w-0 content-start gap-3 overflow-visible">
+    <section :class="surfaceStyles({ padding: 'md' })" class="min-w-0 overflow-hidden">
       <AppPanelHeader icon-name="metric-quality" title="优化计划">
         <template #meta>
           <div class="flex items-center gap-2">
@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
         </template>
       </AppPanelHeader>
 
-      <div class="mt-3 grid grid-cols-3 gap-2">
+      <div class="mt-3 grid gap-2 sm:grid-cols-3">
         <AppMetricTile label="计划项" :value="optimizationPlan.items.length" />
         <AppMetricTile label="估算影响" :value="formatBytes(optimizationPlan.totalImpactBytes)" />
         <AppMetricTile label="低成本项" :value="optimizationPlan.quickWinCount" />
@@ -126,10 +126,10 @@ onBeforeUnmount(() => {
       </AppEmptyState>
     </section>
 
-    <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
+    <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 min-w-0 overflow-hidden">
       <AppPanelHeader icon-name="metric-time" title="增量归因" />
-      <div v-if="incrementItems.length" class="mt-4 grid h-[calc(100%-3.5rem)] min-h-0 gap-3 overflow-hidden lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1fr)]">
-        <div class="space-y-2 overflow-y-auto pr-1">
+      <div v-if="incrementItems.length" class="mt-4 grid min-h-0 min-w-0 gap-3 overflow-visible">
+        <div class="grid max-h-80 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
           <AppSummaryValueCard
             v-for="item in incrementSummaryItems"
             :key="item.key"
@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
             :value="item.value"
           />
         </div>
-        <ul class="space-y-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
+        <ul class="max-h-80 space-y-2 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
           <AppCompactListItem
             v-for="item in incrementItems"
             :key="item.key"
@@ -154,10 +154,10 @@ onBeforeUnmount(() => {
       </AppEmptyState>
     </section>
 
-    <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
+    <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 min-w-0 overflow-hidden">
       <AppPanelHeader icon-name="module-sources" title="模块来源" />
-      <div class="mt-4 grid h-[calc(100%-3.5rem)] min-h-0 gap-3 overflow-hidden lg:grid-cols-2">
-        <div class="space-y-2.5 overflow-y-auto pr-1">
+      <div class="mt-4 grid min-h-0 min-w-0 gap-3 overflow-visible">
+        <div class="grid max-h-80 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2">
           <AppSummaryValueCard
             v-for="item in moduleSourceItems"
             :key="item.key"
@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
             :value="item.value"
           />
         </div>
-        <ul class="space-y-2.5 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
+        <ul class="max-h-80 space-y-2.5 overflow-y-auto pr-1 text-sm text-(--dashboard-text-muted)">
           <AppCompactListItem
             v-for="item in largestFileSampleItems"
             :key="item.key"
