@@ -21,6 +21,7 @@ import {
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { collectRuntimeValueSnapshot } from '../utils/runtimeValueSnapshot'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
 const AUTOMATOR_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_POST_CONNECT_REFRESH'
@@ -82,34 +83,8 @@ function isDevtoolsRouteInfraError(error: unknown) {
 }
 
 async function readVisibleRuntimeSnapshot(miniProgram: any): Promise<RuntimeSnapshot> {
-  const result = await miniProgram.evaluate(() => {
-    return new Promise((resolve) => {
-      const pages = getCurrentPages()
-      const page = pages[pages.length - 1]
-      if (!page) {
-        resolve({
-          route: '',
-          pageData: {},
-          results: [],
-        })
-        return
-      }
-      const query = wx.createSelectorQuery().in(page)
-      // 查询选项由宿主 JSON 创建，避免 DevTools evaluate 代理对象跨上下文克隆失败。
-      const fields = JSON.parse('{"size":true}')
-      query.select('.app-vue-hmr-alias-page').fields(fields)
-      query.select('.app-vue-hmr-alias-page__label').fields(fields)
-      query.select('.app-vue-hmr-alias-page__bootstrap').fields(fields)
-      query.exec(results => resolve({
-        route: page.route,
-        pageData: page.data,
-        runtimeState: (page as any).__wevu?.state,
-        setupState: (page as any).__wevu?.setupState,
-        bridgeSnapshot: globalThis.__WEAPP_VITE_STATEFUL_HMR_BRIDGE__?.getDebugSnapshot?.(),
-        results,
-      }))
-    })
-  }) as {
+  const serialized = await miniProgram.evaluate(collectRuntimeValueSnapshot, [...MARKER_SELECTORS])
+  const result = JSON.parse(serialized) as {
     route?: string
     pageData?: Record<string, unknown>
     runtimeState?: Record<string, unknown>

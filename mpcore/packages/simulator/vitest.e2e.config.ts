@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
+import { createRuntimeValueSnapshotFiles } from './test/helpers/runtimeValueSnapshot'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
@@ -31,7 +32,7 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
-      if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture') {
+      if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture' || id === 'virtual:runtime-value-snapshot-fixture') {
         return `\0${id}`
       }
       if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
@@ -39,6 +40,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:runtime-value-snapshot-fixture') {
+        return `export default ${JSON.stringify(await createRuntimeValueSnapshotFiles())}`
+      }
       if (id === '\0virtual:stateful-store-binding-fixture') {
         return `export default ${JSON.stringify(await createStatefulStoreBindingFiles())}`
       }
