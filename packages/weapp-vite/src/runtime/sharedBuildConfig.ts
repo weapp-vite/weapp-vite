@@ -14,6 +14,7 @@ import { normalizeViteId } from '../utils/viteId'
 import { createAdvancedChunkNameResolver } from './advancedChunks'
 import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 import { createPreserveModulesGroup } from './preserveModules'
+import { resolveVirtualChunkFileName } from './sharedBuildConfig/virtualChunk'
 import { isWevuStableVendorFileName, resolveWevuStableVendorFileName } from './wevuModules'
 
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
@@ -454,7 +455,7 @@ export function createSharedBuildOutput(
           return stableHashedDistChunkFileName
         }
       }
-      return '[name].js'
+      return resolveVirtualChunkFileName(chunk, configService.absoluteSrcRoot) ?? '[name].js'
     },
   }
 

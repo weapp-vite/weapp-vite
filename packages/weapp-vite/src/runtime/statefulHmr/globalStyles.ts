@@ -126,9 +126,10 @@ export function createStatefulHmrGlobalStyleAssets(
   const marker = pageStyleRefreshMarker(token)
   for (const [index, item] of result.entries()) {
     if (item.type !== 'asset' || path.extname(item.fileName) !== path.extname(styleFile)
-      || item.fileName === entryFile || item.fileName === styleFile) {
+      || !routes.has(item.fileName.slice(0, -path.extname(styleFile).length))) {
       continue
     }
+    // 布局组件的无关 WXSS 刷新会破坏宿主中的 slot 样式更新，只刷新继承全局样式的页面。
     const original = Buffer.from(item.source).toString('utf8')
     const source = stripPageStyleRefreshMarker(original)
     // 已移除的全局样式页通过空资产清理旧文件，不能追加标记重新生成非空样式。

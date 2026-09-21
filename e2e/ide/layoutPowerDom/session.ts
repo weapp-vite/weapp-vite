@@ -28,7 +28,8 @@ export async function prepareLayoutPowerSession() {
 
 export async function startLayoutPowerSession() {
   const cliPath = path.join(APP_ROOT, 'node_modules/weapp-vite/bin/weapp-vite.js')
-  const devProcess = startDevProcess(process.execPath, [cliPath, 'dev', '-o', '--non-interactive', '--login-retry', 'never'], {
+  // 测试依赖自动化会话，启动入口直接建立连接，避免依赖自动启用的日志转发再次打开项目。
+  const devProcess = startDevProcess(process.execPath, [cliPath, 'dev', '-o', '--ide-open-strategy', 'automator', '--non-interactive', '--login-retry', 'never'], {
     cwd: APP_ROOT,
     all: true,
     env: createDevProcessEnv(),

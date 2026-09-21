@@ -244,9 +244,17 @@ export async function cleanupProcessesByCommandPatterns(
 ) {
   const processList = await listUnixProcesses()
   const matchedPidSet = new Set<number>()
+  const parentByPid = new Map(processList.map(entry => [entry.pid, entry.ppid]))
+  const protectedPids = new Set([process.pid])
+  let ancestorPid = process.ppid
+  // 启动 shell 的参数也可能包含目标路径，必须保护调用链，避免连带终止当前测试。
+  while (ancestorPid > 0 && !protectedPids.has(ancestorPid)) {
+    protectedPids.add(ancestorPid)
+    ancestorPid = parentByPid.get(ancestorPid) ?? 0
+  }
 
   for (const processEntry of processList) {
-    if (commandPatterns.some(pattern => matchesCommandPattern(processEntry.command, pattern))) {
+    if (!protectedPids.has(processEntry.pid) && commandPatterns.some(pattern => matchesCommandPattern(processEntry.command, pattern))) {
       matchedPidSet.add(processEntry.pid)
     }
   }

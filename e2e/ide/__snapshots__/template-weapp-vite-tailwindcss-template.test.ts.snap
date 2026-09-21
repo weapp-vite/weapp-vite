@@ -1,8 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`template e2e: weapp-vite-tailwindcss-template > renders all pages from app config > weapp-vite-tailwindcss-template::app.wxss 1`] = `
-"/* ! tailwindcss v4.3.3 | MIT License | https://tailwindcss.com */
-view,
+"view,
 text,
 ::after,
 ::before {

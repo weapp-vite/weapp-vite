@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -18,12 +19,15 @@ import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createTdesignNativeScriptUpdate, tdesignNativeScriptCheckpoints } from './tdesignHmr/nativeScript'
 
 const WORKSPACE_ROOT = path.resolve(import.meta.dirname, '../..')
-const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
+const TEMPLATE_SOURCE_ROOT = path.resolve(WORKSPACE_ROOT, 'templates/weapp-vite-tailwindcss-tdesign-template')
+const TEMPLATE_ROOT = path.resolve(WORKSPACE_ROOT, '.tmp/e2e/ide-native-tailwind-hmr', randomUUID())
+const CLI_PATH = path.resolve(WORKSPACE_ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const DIST_ROOT = path.resolve(TEMPLATE_ROOT, 'dist')
 const INDEX_WXML = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.wxml')
 const INDEX_SOURCE = path.resolve(TEMPLATE_ROOT, 'src/pages/index/index.ts')
 const APP_SOURCE = path.resolve(TEMPLATE_ROOT, 'src/app.ts')
 const INDEX_WXML_DIST = path.resolve(TEMPLATE_ROOT, 'dist/pages/index/index.wxml')
+const INDEX_WXSS_DIST = path.resolve(TEMPLATE_ROOT, 'dist/pages/index/index.wxss')
 const APP_WXSS_DIST = path.resolve(TEMPLATE_ROOT, 'dist/app.wxss')
 const INDEX_ROUTE = '/pages/index/index'
 const ROOT_MARKUP_RE = /<view class="min-h-screen \{\{ mode === 'light'\?'[^']+':'bg-gray-900 text-slate-200' \}\} transition-colors duration-500">/
@@ -123,16 +127,8 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
   afterAll(async () => {
     await diagnostics?.capture('finally')
     await stopDevSession()
-    if (originalWxml) {
-      await fs.writeFile(INDEX_WXML, originalWxml, 'utf8').catch(() => {})
-    }
-    if (originalIndexSource) {
-      await fs.writeFile(INDEX_SOURCE, originalIndexSource, 'utf8')
-    }
-    if (originalAppSource) {
-      await fs.writeFile(APP_SOURCE, originalAppSource, 'utf8')
-    }
     await cleanupTrackedDevProcesses()
+    await fs.rm(TEMPLATE_ROOT, { force: true, recursive: true })
   }, 60_000)
 
   async function launchRuntimeAutomator() {
@@ -150,7 +146,7 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
 
   async function startDevSessionForDist(label: string, escapedClass: string, backgroundCss: string) {
     process.stdout.write(`[template-tailwindcss-tdesign:hmr] start-dev-session label=${label}\n`)
-    devProcess = startDevProcess('pnpm', ['exec', 'wv', 'dev', '--non-interactive'], {
+    devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '--non-interactive'], {
       cwd: TEMPLATE_ROOT,
       env: createDevProcessEnv(),
       reject: false,
@@ -186,6 +182,13 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
   }
 
   beforeAll(async () => {
+    await fs.cp(TEMPLATE_SOURCE_ROOT, TEMPLATE_ROOT, {
+      filter(source) {
+        const relative = path.relative(TEMPLATE_SOURCE_ROOT, source)
+        return !['dist', 'node_modules', '.weapp-vite'].some(name => relative === name || relative.startsWith(`${name}${path.sep}`))
+      },
+      recursive: true,
+    })
     originalIndexSource = await fs.readFile(INDEX_SOURCE, 'utf8')
     originalWxml = await fs.readFile(INDEX_WXML, 'utf8')
     const rootMarkupMatch = originalWxml.match(ROOT_MARKUP_RE)
@@ -208,6 +211,7 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await cleanupResidualIdeProcesses()
     await fs.rm(DIST_ROOT, { force: true, recursive: true })
     await startDevSession()
+    await waitForEmittedStylesheet(INDEX_WXSS_DIST, INITIAL_BACKGROUND_CSS)
     diagnostics = createHmrRuntimeDiagnostics(miniProgram, 'templates/weapp-vite-tailwindcss-tdesign-template')
   }, 420_000)
 
@@ -239,11 +243,6 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
   }, 420_000)
 
   it('updates the visible Tailwind arbitrary background color through dev HMR', async (context) => {
-    const toolInfo = await miniProgram?.toolInfo?.().catch(() => undefined)
-    if (toolInfo?.version === '2.02.2609082') {
-      context.skip('微信开发者工具不会在状态保持 HMR 期间应用新增的 Tailwind 任意背景选择器；headless 与构建已覆盖产物语义。')
-      return
-    }
     const dom = createDomAcceptance(context, 'templates/weapp-vite-tailwindcss-tdesign-template', [
       { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [
         { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true },
@@ -287,6 +286,7 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
     await waitForFileContains(INDEX_WXML_DIST, UPDATED_ESCAPED_CLASS)
     await waitForEmittedStylesheet(APP_WXSS_DIST, UPDATED_BACKGROUND_CSS)
     await diagnostics!.capture('tailwind:updated-output')
+    await waitForEmittedStylesheet(INDEX_WXSS_DIST, UPDATED_BACKGROUND_CSS)
     await dom.check('tailwind:hmr-preserved', miniProgram, await waitForIndexPage(miniProgram))
     const preservedIdentity = await diagnostics!.capture('tailwind:preserved-rendered')
     expect(preservedIdentity.errors).toEqual([])

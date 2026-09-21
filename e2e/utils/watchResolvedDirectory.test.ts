@@ -15,10 +15,10 @@ describe('watchResolvedDirectory', () => {
     const watch = vi.spyOn(fs, 'watch').mockReturnValue(watcher)
     const listener = vi.fn()
 
-    expect(watchResolvedDirectory(shortPath, listener)).toBe(watcher)
+    expect(watchResolvedDirectory(shortPath, listener, { recursive: true })).toBe(watcher)
     expect(resolve).toHaveBeenCalledWith(shortPath)
-    expect(watch).toHaveBeenCalledExactlyOnceWith(longPath, listener)
-    const callback = watch.mock.calls[0]![1] as fs.WatchListener<string>
+    expect(watch).toHaveBeenCalledExactlyOnceWith(longPath, { recursive: true }, listener)
+    const callback = watch.mock.calls[0]![2] as fs.WatchListener<string>
     callback('change', 'app.json')
     expect(listener).toHaveBeenCalledExactlyOnceWith('change', 'app.json')
   })

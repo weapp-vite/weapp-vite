@@ -125,7 +125,7 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
   beforeAll(async () => {
     if (runtimeProvider === 'devtools') {
       await cleanupResidualIdeProcesses()
-      await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+      await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     }
     await fs.rm(DIST_ROOT, { force: true, recursive: true })
     await runWeappViteBuildWithLogCapture({

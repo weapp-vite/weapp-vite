@@ -1,7 +1,7 @@
 page {
-  background: #f5f6f8;
-  color: #161823;
   font-family: sans-serif;
+  color: #161823;
+  background: #f5f6f8;
 }
 
 button {

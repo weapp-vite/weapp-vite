@@ -68,11 +68,13 @@ describe('stateful HMR global styles', () => {
     expect(getChangedStatefulHmrSnapshotAssets(next, snapshot('.app { color: blue; }'))).toEqual([])
   })
 
-  it('bumps page stylesheet assets when the imported global stylesheet changes', () => {
-    const options = { createIfMissing: true, refreshPageStyles: true }
+  it('refreshes inheriting pages without invalidating unrelated layout component styles', () => {
+    const options = { createIfMissing: true, refreshPageStyles: true, componentPageGlobalStyleRoutes: ['pages/index/index'] }
+    const layout: StatefulHmrOutputFile = { type: 'asset', fileName: 'layouts/default/index.wxss', source: '.layout { min-height: 100%; }' }
     const initial = createStatefulHmrGlobalStyleAssets([
       { type: 'asset', fileName: 'app.wxss', source: '.probe { background: #f3f4f6; }' },
       { type: 'asset', fileName: 'pages/index/index.wxss', source: '/* empty */' },
+      layout,
     ], 'wxss', options)
     const unchanged = createStatefulHmrGlobalStyleAssets(initial, 'wxss', options)
     const initialPage = String(initial.find(item => item.fileName === 'pages/index/index.wxss')?.source)
@@ -86,6 +88,9 @@ describe('stateful HMR global styles', () => {
         : item),
     ], 'wxss', options)
     const updatedPage = String(updated.find(item => item.fileName === 'pages/index/index.wxss')?.source)
+    expect(initial).toContain(layout)
+    expect(updated).toContain(layout)
+    expect(updatedPage).toContain('.probe { background: #10b981; }')
     expect(updatedPage).toMatch(/\.weapp-vite-stateful-hmr-style-[a-f0-9]{16} \{ --weapp-vite-stateful-hmr-style-token: [a-f0-9]{16}; \}\n$/)
     expect(updatedPage).not.toBe(initialPage)
     expect(getChangedStatefulHmrSnapshotAssets(initial, updated).map(item => item.fileName).sort()).toEqual([

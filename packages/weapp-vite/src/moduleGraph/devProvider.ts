@@ -11,7 +11,7 @@ import {
   WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
 } from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
-import { createViteWatchIgnored } from '../runtime/watch/options'
+import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import {
   parseLogicalEntryId,
@@ -208,6 +208,7 @@ export async function createDevModuleGraphProvider(
 ): Promise<DevModuleGraphProvider> {
   const configService = ctx.configService
   const userWatch = buildConfig.server?.watch
+  const pollingWatchOptions = resolvePollingWatchOptions({ inlineConfig: configService?.inlineConfig ?? {} })
   const ignored = configService?.outDir
     ? createViteWatchIgnored(
         buildConfig.root ?? configService.cwd,
@@ -231,6 +232,7 @@ export async function createDevModuleGraphProvider(
       middlewareMode: true,
       watch: {
         ...(userWatch ?? {}),
+        ...Object.fromEntries(Object.entries(pollingWatchOptions).filter(([, value]) => value !== undefined)),
         ...(ignored !== undefined ? { ignored } : {}),
       },
     },

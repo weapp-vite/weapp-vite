@@ -14,6 +14,6 @@
 .hint,
 .result {
   margin-bottom: 18rpx;
-  color: #5c5f66;
   font-size: 26rpx;
+  color: #5c5f66;
 }

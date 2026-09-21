@@ -605,7 +605,7 @@ export async function prepareGithubIssuesBuild() {
   }
   await prepareIsolatedProjectRoot()
   if (useDevtools) {
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
   }
   await runBuild()
   await assertGithubIssuesAppConfigReady()
@@ -618,7 +618,7 @@ export async function prepareGithubIssuesBuild() {
   if (useDevtools) {
     // cache 命令会临时启动 DevTools；必须等该维护进程完全退出后再启动 automator，
     // 否则新版 DevTools 会让 cache worker 与 simulator 初始化并发，触发模拟器启动失败。
-    await cleanDevtoolsCacheAndStop('all', { cwd: APP_ROOT })
+    await cleanDevtoolsCacheAndStop('compile', { cwd: APP_ROOT })
   }
   sharedBuildPrepared = true
 }

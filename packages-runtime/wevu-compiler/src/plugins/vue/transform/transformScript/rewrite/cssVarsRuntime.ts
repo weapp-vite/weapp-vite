@@ -74,15 +74,17 @@ export function injectStableCssVarsRuntime(
   }
   const registration = createEmptyCssVarsRegistration(useCssVarsLocalName, unrefLocalName)
   const setupFn = resolveSetupFunction(componentOptionsObject)
-  if (setupFn && t.isBlockStatement(setupFn.body)) {
-    setupFn.body.body.unshift(registration)
-    return true
-  }
-  if (setupFn && t.isArrowFunctionExpression(setupFn) && t.isExpression(setupFn.body)) {
-    setupFn.body = t.blockStatement([
-      registration,
-      t.returnStatement(setupFn.body),
-    ])
+  if (setupFn) {
+    const body = setupFn.body
+    if (t.isBlockStatement(body)) {
+      body.body.unshift(registration)
+    }
+    else {
+      setupFn.body = t.blockStatement([
+        registration,
+        t.returnStatement(body),
+      ])
+    }
     return true
   }
 

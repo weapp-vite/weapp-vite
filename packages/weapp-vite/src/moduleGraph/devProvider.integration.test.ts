@@ -43,6 +43,7 @@ describe('dev module graph provider integration', () => {
       configService: {
         cwd: root,
         outDir,
+        inlineConfig: { build: { watch: { chokidar: { usePolling: true, interval: 50 } } } },
       },
       moduleGraphService,
     } as any, {

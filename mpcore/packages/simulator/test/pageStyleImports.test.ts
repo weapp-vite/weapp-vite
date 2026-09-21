@@ -51,6 +51,15 @@ describe('browser page WXSS dependencies', () => {
         expect(rendered.wxml).toContain('count: 1')
         expect(session.getCurrentPages()[0]).toBe(page)
         expect(session.getApp()).toBe(app)
+        files.set('styles/palette.wxss', '')
+        if (source === 'inline') {
+          files.set('pages/shared/index.wxss', '.local-probe { background-color: rgb(31, 41, 55); }')
+        }
+        const removed = session.renderCurrentPage()
+        expect(removed.styles.cssText).not.toContain('.tone-')
+        expect(removed.wxml).toContain('count: 1')
+        expect(session.getCurrentPages()[0]).toBe(page)
+        expect(session.getApp()).toBe(app)
       }
     }
     finally {

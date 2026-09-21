@@ -4500,14 +4500,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:214",
+          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:218",
           "name": "template TailwindCSS TDesign HMR in real WeChat DevTools > updates and restores native Page methods with external npm while retaining rendered interaction state",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
               "checkpoints": "tdesignNativeScriptCheckpoints",
-              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:215"
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:219"
             }
           ],
           "routes": [],
@@ -4523,14 +4523,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:241",
+          "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:245",
           "name": "template TailwindCSS TDesign HMR in real WeChat DevTools > updates the visible Tailwind arbitrary background color through dev HMR",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
               "checkpoints": "[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'",
-              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:247"
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:246"
             }
           ],
           "routes": [],
@@ -5263,14 +5263,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:340",
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337",
           "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
               "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
-              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:342"
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339"
             }
           ],
           "routes": [],
@@ -6851,7 +6851,7 @@
     },
     {
       "file": "e2e/ide/app-lifecycle.test.ts",
-      "sha256": "71a4e31a341179ee4c3c1fef5aff43cca53d8af7778b4d0a621a9db6527b7b10"
+      "sha256": "353ebe9033e3f15aa5f9670e22b66b33d93084eda7e89d5afbd7b62747127a57"
     },
     {
       "file": "e2e/ide/app-prelude-native.runtime.test.ts",
@@ -6859,7 +6859,7 @@
     },
     {
       "file": "e2e/ide/app-vue-hmr-alias.runtime.test.ts",
-      "sha256": "7986a712f87c7f1596e1a59cddc50bce735e20d7ce958142a9c5fc6b04273516"
+      "sha256": "122c5ada18d7219769583669d3fbdc8ca4945a04d49043f46bcc87a055746d3c"
     },
     {
       "file": "e2e/ide/auto-routes-define-app-json.runtime.test.ts",
@@ -6895,7 +6895,7 @@
     },
     {
       "file": "e2e/ide/chunk-modes.runtime.shared.ts",
-      "sha256": "815eb36ccb2b39c1ed328f9e058fe39e2399dee0b3b08b31aab50cb4aa710ff7"
+      "sha256": "bf1900608669ab07ca98482df23927e279a3479a528b32c5dc06d82eb08004a4"
     },
     {
       "file": "e2e/ide/chunkModesDom/index.ts",
@@ -6907,7 +6907,7 @@
     },
     {
       "file": "e2e/ide/devtools-cli-workflow.runtime.test.ts",
-      "sha256": "cd09b617ff8f17ffb775001e10ff50771284c6824f4b647f37b4a887b64bfa7f"
+      "sha256": "a3cec85cf13a4762f1691d0e17c36e51519f6cf7ec36ade181e62dc9ca35b0ca"
     },
     {
       "file": "e2e/ide/dialogImportDom/index.ts",
@@ -7099,7 +7099,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "f8bbdf96be67f0f16baa572d6f8f889a64930d2b262fcf31a0e3fd2757ad81a2"
+      "sha256": "b00e0ee00f7c073bb18f23a01544094edd7dd442923610d070ed460705e53304"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -7195,7 +7195,7 @@
     },
     {
       "file": "e2e/ide/hmr-auto-classic.runtime.test.ts",
-      "sha256": "59df54cf421bf7dbce571efcbbfcdfd60d60143affff2da5d387a9d43c242a6e"
+      "sha256": "f7a873c2c8a28ec47549ef3767b615fe1dea8833f934ac6d8b380c30bc88e40a"
     },
     {
       "file": "e2e/ide/index.test.ts",
@@ -7247,11 +7247,11 @@
     },
     {
       "file": "e2e/ide/layoutPowerDom/session.ts",
-      "sha256": "293116526508b12983e6983034e5fd35d0f2b0d6b4e3b9594e1fb319688c5a55"
+      "sha256": "4f3836e8b0357526d8ad3f4b995a05b1bc5f03ffacae732a777758c116bdc5c8"
     },
     {
       "file": "e2e/ide/lifecycle-compare.test.ts",
-      "sha256": "15be512e717ba4a0fa63fbc3c6e4175d6629659341c3244c3887962d19c9b5aa"
+      "sha256": "d9d2cbd698ccebbd369c8c05f986a1b4ae57e7097db6680af69d369213fd366f"
     },
     {
       "file": "e2e/ide/lifecycleDom/index.ts",
@@ -7267,11 +7267,11 @@
     },
     {
       "file": "e2e/ide/plugin-demo.runtime.test.ts",
-      "sha256": "030b45042565241a7307c9fae2097de18f0d2d041b50b1c4ea09dec863580f4f"
+      "sha256": "fbda1c60db601291fd24538da3b885a46b4be4863a5f185d592bc722f6654b47"
     },
     {
       "file": "e2e/ide/react-runtime-spike.runtime.test.ts",
-      "sha256": "5e920f1ae5d7b3056afce63ad8832790966d600ae2ca9bb3e54f8f95593b4c56"
+      "sha256": "01cb9bf47b74b9afd62c6a050d5c13cc018b593d094db1e971117aaceebb6ebd"
     },
     {
       "file": "e2e/ide/reactRuntimeDom/index.ts",
@@ -7279,11 +7279,11 @@
     },
     {
       "file": "e2e/ide/request-clients-real-native.runtime.test.ts",
-      "sha256": "04a4699ec00bd2fe59e533a51f4b87ce2712ae875010f9d9ce0ed8d9f6e40be6"
+      "sha256": "0f92b967615748864d00141393fa6a32ce47c7314e3c1d0c3f65a4275858fb48"
     },
     {
       "file": "e2e/ide/request-clients-real.runtime.test.ts",
-      "sha256": "2a46f0e31a9be130c82cec5d62781a5c772b6a5aed9527056916b5ffaee1abde"
+      "sha256": "c43672e04a5324050d9ba94a5f95fdbb996492ed30346d51a568f3995de96c0e"
     },
     {
       "file": "e2e/ide/requestClientsDom/index.ts",
@@ -7303,7 +7303,7 @@
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
-      "sha256": "416339d40d1140267b378027449d59610216fbdc895debcda38ced632b41d495"
+      "sha256": "b6aa08dbe1bfabcf8b5f56382f8587eec26028b0435284893ad6bd769930840e"
     },
     {
       "file": "e2e/ide/statefulHmrDom/index.ts",
@@ -7395,7 +7395,7 @@
     },
     {
       "file": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "7922ea4df89c3e5c4fe063a8101657acbb09a4968289ec7d4c1c143c88bdc17d"
+      "sha256": "c31be31d4842967e29a82fe2d1746f45b923401444432b18e01888b3012ccfc0"
     },
     {
       "file": "e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
@@ -7467,7 +7467,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "0df23e65016a1ee61691331644a2180065afab645891c3777856b80ae0005069"
+      "sha256": "7d9cc53b49169d3181237708013369deb6423b6ee90478978de05818fa39d061"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -7515,7 +7515,7 @@
     },
     {
       "file": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts",
-      "sha256": "128684d3302395155461fa866fdda2cd739a5e9fabd2100cac50478c0e551a5f"
+      "sha256": "e0ee7924076c287b9c4cdcd8a312d2c4ef5463772aa27e86b01fc50724a16165"
     },
     {
       "file": "e2e/ide/wevu-jsx-tsx.runtime.test.ts",
@@ -7547,7 +7547,7 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.core-hmr.test.ts",
-      "sha256": "7e111622dd4e48e1d756448e76df1c56af4bb916ab3a802cabdcdc22ff7a09df"
+      "sha256": "80fa82c8bf76b24cc641c00b0e4763c544990203fe0f05359b76b64a083ff776"
     },
     {
       "file": "e2e/ide/wevu-runtime.function-props.weapp.test.ts",
@@ -7555,7 +7555,7 @@
     },
     {
       "file": "e2e/ide/wevu-runtime.inline-object-reactivity.weapp.test.ts",
-      "sha256": "24b276ad2412bcc8f83dd3a6389295f8653ba966bbb15778f69854c7b0df6bc4"
+      "sha256": "bd7a6b1bd77f119a9a634e86a8ef2fadaa059c1d7b9d784014d2b168b3cb6018"
     },
     {
       "file": "e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts",
@@ -7695,7 +7695,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "292f22e24477a1f85f9bc18307f3b08d9c112920c25a7f78600a6314967ca14e"
+      "sha256": "ed7aec5e2bca249b65ac2dcb13bbc68becfee97f795c9cd56a8d1ce137d7b883"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -7727,7 +7727,7 @@
     },
     {
       "file": "e2e/utils/dev-process.ts",
-      "sha256": "ed0de3b089ee3de9867b48e543f3a5d4428666a064509f2e6f6dae9d84e71c93"
+      "sha256": "90a383a54c6cc9a511928eda8b268b8f85a65ab7a9017a62089d9d1c70d2a999"
     },
     {
       "file": "e2e/utils/devProcessDiagnostics.ts",
@@ -7779,7 +7779,7 @@
     },
     {
       "file": "e2e/utils/ide-devtools-cleanup.ts",
-      "sha256": "0cbd6115d1f58517135673a8116f0393a7da3527be27a5afec21ca6e696330c4"
+      "sha256": "07d4e318acc2e99d767d1eebab024fdd94e98d8c0599ba58afc1e09d1091ee2e"
     },
     {
       "file": "e2e/utils/ide-devtools-logs.ts",
@@ -7899,7 +7899,7 @@
     },
     {
       "file": "e2e/utils/watchResolvedDirectory.ts",
-      "sha256": "6e536366735395c61a22ca11ee9a56fd3fd29210bf25adc567b3b40f8513ab64"
+      "sha256": "14ae9dedbc18d5b3ba7d0f59da43d407e5edb38d2a54e129278bc6822172b680"
     },
     {
       "file": "e2e/utils/wevu-jsx-tsx.ts",
