@@ -9,6 +9,7 @@ import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBoots
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
 import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
+import { createStoreLifecycleFiles } from './test/helpers/storeLifecycle'
 
 const simulatorRoot = import.meta.dirname
 const demoWebRoot = path.resolve(simulatorRoot, '../../demos/web')
@@ -28,11 +29,14 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
-      if (id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
+      if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
         return `\0${id}`
       }
     },
     async load(id) {
+      if (id === '\0virtual:store-lifecycle-fixture') {
+        return `export default ${JSON.stringify(await createStoreLifecycleFiles())}`
+      }
       if (id === '\0virtual:router-bootstrap-fixture') {
         return `export default ${JSON.stringify(await createRouterBootstrapFiles())}`
       }

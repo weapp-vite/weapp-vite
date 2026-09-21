@@ -7,12 +7,8 @@
 **类型签名：**
 
 ```ts
-interface StoreManager {
-  install: (app: any) => void
-  _stores: Map<string, any>
-  use: (plugin: (context: { store: any }) => void) => StoreManager
-  _plugins: Array<(context: { store: any }) => void>
-}
+import type { Pinia, StoreManager } from 'wevu/store'
+// StoreManager 是继续保留的 Pinia 类型别名，不要求仅为改名而迁移
 ```
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
@@ -52,14 +48,8 @@ interface DefineStoreOptions<
 **类型签名：**
 
 ```ts
-type StoreToRefsResult<T extends Record<string, any>> = {
-  [K in keyof T]:
-  T[K] extends (...args: any[]) => any
-    ? T[K]
-    : T[K] extends Ref<infer V>
-      ? Ref<V>
-      : Ref<T[K]>
-}
+import type { StoreToRefsResult } from 'wevu/store'
+// 排除 actions 和管理 API；state 是 Ref，只读 getter 是 ComputedRef
 ```
 
 **运行时说明：** 该类型用于约束 Store 类型 的公开契约，不会在运行时产生额外对象；应从 `wevu/store` 以 `import type` 导入。
@@ -116,7 +106,7 @@ interface ActionSubscriber<TStore = any> {
 
 ```ts
 interface SubscriptionCallback<S = any> {
-  (mutation: { type: MutationType, storeId: string }, state: S): void
+  (mutation: SubscriptionCallbackMutation<S>, state: S): void
 }
 ```
 
@@ -133,7 +123,7 @@ interface SubscriptionCallback<S = any> {
 **类型签名：**
 
 ```ts
-interface StoreSubscribeOptions {
+interface StoreSubscribeOptions extends WatchOptions<boolean> {
   /**
    * @description 是否在卸载后仍保留订阅（适用于跨页面生命周期的订阅）
    */
@@ -154,6 +144,7 @@ interface StoreSubscribeOptions {
 **类型签名：**
 
 ```ts
+// 同时提供运行时 MutationType.direct / patchObject / patchFunction
 type MutationType = 'patch object' | 'patch function' | 'direct'
 ```
 

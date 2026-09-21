@@ -11,9 +11,9 @@ keywords:
 
 # Store API（状态管理）
 
-以下条目来源于 `packages-runtime/wevu/src/store/index.ts` 的模块导出，以及 `defineStore()` 返回实例和 `createStore()` 返回 Manager 的公共契约。
+以下条目来源于 `packages-runtime/wevu/src/store/index.ts` 的模块导出，以及 `defineStore()` 返回实例和 `createPinia()` 返回 Pinia 的公共契约。
 
-> Wevu Store 对齐 Pinia 的主要使用心智，但不是 Pinia 的完整实现。它没有 SSR hydration、HMR、devtools 和完整插件上下文；`createStore()` 设置全局活动 manager，`install()` 是 no-op，Manager 必须在 Store 首次创建前完成配置。
+> 日常 API 与行为以 Pinia 4.0.3 为参照，运行时使用 wevu 响应式。先安装 Pinia 或显式传入实例；支持基础插件上下文。不提供 Web SSR、Pinia HMR 或 Vue Devtools。迁移步骤见 [Store 指南](/wevu/store#从旧版迁移)。
 
 <!--@include: ../../.partials/wevu-api/store/01-核心函数.md-->
 

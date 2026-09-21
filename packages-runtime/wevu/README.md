@@ -8,7 +8,7 @@ Vue 3 风格的小程序运行时，复用同款响应式与调度器，通过�
 - `defineComponent` + `setup` 生命周期钩子（onShow/onPageScroll/onShareAppMessage 等）自动注册微信小程序 `Component`（在微信中可用于页面/组件）
 - 快照 diff + 去重调度，最小化 `setData` 体积，支持 `bindModel` / `useBindModel` 的双向绑定语法
 - 插件、`app.config.globalProperties` 及小程序原生选项可自由组合
-- 内置 `defineStore`/`storeToRefs`/`createStore`，支持 getters、actions、订阅与补丁
+- 内置 `defineStore`/`storeToRefs`/`createPinia`，支持 getters、actions、订阅与补丁
 - TypeScript first，输出 ESM/CJS/types
 
 ## 安装
@@ -89,10 +89,24 @@ const users = useAsyncDerivation(({ signal }) => fetchUsers({ signal }))
 
 ## 状态管理
 
-```ts
-import { createStore, defineStore, storeToRefs } from 'wevu'
+旧项目升级前请阅读 [Store 迁移指南](https://vite.weapp.dev/wevu/store-migration)。本次按 minor 发布，初始化、Setup 状态访问、重置和订阅行为仍需按指南迁移。
 
-createStore() // 在小程序入口只需要调用一次，注入插件可选
+新代码推荐 `createPinia()`；旧名称 `createStore()` 为同一个函数，`StoreManager` 类型继续保留。只创建实例不会激活它。
+
+在 `app.vue` 中安装一次 manager：
+
+```vue
+<script setup lang="ts">
+import { createPinia, use } from 'wevu'
+
+use(createPinia())
+</script>
+```
+
+使用 `createApp()` 时调用 `app.use(pinia)`；`use()` 只能在 app setup 中调用。定义 Store 并在安装后的页面/组件中使用：
+
+```ts
+import { defineStore, storeToRefs } from 'wevu'
 
 export const useCounter = defineStore('counter', {
   state: () => ({ count: 0 }),
@@ -106,7 +120,7 @@ export const useCounter = defineStore('counter', {
   },
 })
 
-// 在页面/组件内使用
+// 在已安装 manager 的页面/组件内使用
 const counter = useCounter()
 const { count, doubled } = storeToRefs(counter)
 counter.$subscribe(({ type }) => console.log('mutation', type))

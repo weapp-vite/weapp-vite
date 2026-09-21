@@ -27,8 +27,8 @@
 
 **示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
-- 用途：读取或浅合并替换 Options Store 的响应式 state。
-- 适用：仅 Options Store 的公共类型包含 `$state`；Setup Store 应直接使用 setup 返回的 state/ref。
+- 用途：读取或通过 function patch 合并响应式 state，维持已有响应式连接。
+- 适用：Setup/Options Store 均支持；Setup state 不包含 computed/actions。
 
 ### `$patch()` {#store-patch}
 
@@ -57,8 +57,8 @@
 
 **示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
-- 用途：恢复 Store 创建时保存的初始状态快照。
-- 适用：Setup Store 与 Options Store；Setup Store 中不可写的 computed/readonly ref 会被跳过。
+- 用途：Options Store 重新调用 state 工厂；Setup Store 返回自定义 `$reset`。
+- 适用：未自定义的 Setup `$reset` 在开发模式报错、生产模式为空操作。
 
 ### `$subscribe()` {#store-subscribe}
 
@@ -74,7 +74,7 @@
 
 - 用途：订阅 Store 状态变化，回调接收 mutation 信息和当前状态。
 - 返回值：取消订阅函数。
-- 选项：支持 `{ detached: true }`，用于跨页面生命周期保留订阅。
+- 选项：支持 watch 选项，默认异步，`flush: 'sync'` 同步。默认随注册作用域解绑，`{ detached: true }` 保留订阅。
 
 ### `$onAction()` {#store-onaction}
 
@@ -88,14 +88,38 @@
 
 **示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
-- 用途：订阅 Action 调用，可通过 `after()` 和 `onError()` 监听成功结果或错误。
+- 用途：订阅 Action 调用，可通过 `after()` 和 `onError()` 监听成功结果或错误。第二个参数 `true` 脱离注册作用域；解绑/释放不会取消在途 action 已登记的结果回调。
 - 返回值：取消订阅函数。
+
+### `$dispose()` {#store-dispose}
+
+<!-- api-reference-details -->
+
+**类型签名：** `() => void`
+
+**运行时说明：** 停止 Store scope、清理订阅和实例缓存，保留 Pinia 状态。再次 useStore 创建新实例并复用状态。幂等释放，页面卸载不会自动销毁 Store。
+
+**Vue/Pinia 差异：** API 释放语义与 Pinia 一致，副作用由 wevu 的独立 Store scope 管理。
+
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
 
 ### 本组示例 {#example-store-instance}
 
-实例 API 可以批量更新、重置并观察 mutation 与 Action 结果。
+以下使用 Options Store 展示批量更新、工厂重置与监听。Setup Store 需要自行返回 `$reset`，不能直接套用 Options 的自动重置。
 
 ```ts
+import { createPinia, defineStore, disposePinia, setActivePinia } from 'wevu'
+
+const manager = createPinia()
+const useCounter = defineStore('instance-example', {
+  state: () => ({ count: 0 }),
+  actions: {
+    increment() {
+      return ++this.count
+    },
+  },
+})
+const counter = useCounter(manager)
 const stopState = counter.$subscribe((mutation, state) => {
   console.log(mutation.type, state.count)
 })
@@ -104,6 +128,7 @@ const stopAction = counter.$onAction(({ name, after, onError }) => {
   onError(error => console.error(name, error))
 })
 
+counter.increment()
 counter.$patch({ count: 2 })
 counter.$patch((state) => {
   state.count += 1
@@ -111,4 +136,11 @@ counter.$patch((state) => {
 counter.$reset()
 stopState()
 stopAction()
+counter.$dispose()
+// 需全新状态时，在下次 useCounter(manager) 前显式删除。
+delete manager.state.value[counter.$id]
+// 整个应用或测试结束时，释放 manager。
+disposePinia(manager)
+setActivePinia(undefined)
 ```
+

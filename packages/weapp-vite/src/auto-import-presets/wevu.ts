@@ -3,6 +3,14 @@ type ImportsMap = Record<string, string[]>
 const wevu: ImportsMap = {
   wevu: [
     'createApp',
+    'createStore',
+    'createPinia',
+    'setActivePinia',
+    'getActivePinia',
+    'disposePinia',
+    'defineStore',
+    'storeToRefs',
+    'MutationType',
     'defineComponent',
     'defineProps',
     'withDefaults',

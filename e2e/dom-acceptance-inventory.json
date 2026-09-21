@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 107,
-    "wechatTaskCount": 104,
+    "taskCount": 108,
+    "wechatTaskCount": 105,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 267,
-    "casesWithPlan": 267,
+    "expandedCaseDeclarations": 270,
+    "casesWithPlan": 270,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -1840,6 +1840,85 @@
             "check(back)",
             "reLaunch(/pages/issue-1035/index)",
             "check(relaunch)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/github-issues.runtime.issue1049.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:33",
+          "name": "e2e app: github-issues / issue #1049 > preserves Store boundaries and batches subscription work for mini-programs",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'boundaries', route: RESULT_ROUTE, action: '批处理、嵌套 patch、浅层状态与插件初始化后渲染通知计数', nodes: [{ selector: '#issue1049-boundaries', text: 'patch:3 shallow:2 plugin:1 batch:4' }], }]",
+              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:34"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "callMethod(_boundaries)",
+            "callMethod(_boundarySnapshot)",
+            "check(boundaries)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:72",
+          "name": "e2e app: github-issues / issue #1049 > unsubscribes page and child scopes on reLaunch, retaining shared computed and in-flight actions",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'initial', route: LAUNCH_ROUTE, action: '页面和子组件注册订阅', nodes: [{ selector: '#issue1049-count', text: '0' }, { selector: '#issue1049-child', scope: ['#issue1049-subscriber'], text: 'child subscribed' }], }, { id: 'result', route: RESUL",
+              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:73"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "callMethod(_resetScenario)",
+            "check(initial)",
+            "callMethod(_mutate)",
+            "callMethod(_startActions)",
+            "callMethod(_finish)",
+            "callMethod(_snapshot)",
+            "check(result)",
+            "callMethod(_dispose)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:118",
+          "name": "e2e app: github-issues / issue #1049 > keeps hidden page subscriptions and releases only an unmounted child",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'child-removed', route: LAUNCH_ROUTE, action: '卸载子组件后更新 Store', nodes: [{ selector: '#issue1049-count', text: '1' }, { selector: '#issue1049-double', text: '2' }], }, { id: 'hidden-page', route: RESULT_ROUTE, action: 'navigateTo 只隐藏页",
+              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:119"
+            }
+          ],
+          "routes": [
+            "/pages/issue-1049/result/index"
+          ],
+          "operations": [
+            "callMethod(_resetScenario)",
+            "callMethod(_removeChild)",
+            "callMethod(_mutate)",
+            "check(child-removed)",
+            "navigateTo(/pages/issue-1049/result/index)",
+            "check(hidden-page)"
           ],
           "notes": []
         }
@@ -6919,6 +6998,10 @@
       "sha256": "75bc19f56dc6ba5406fae602dc5421736d552bf7fae5016c45df22f22b218dc9"
     },
     {
+      "file": "e2e/ide/github-issues.runtime.issue1049.test.ts",
+      "sha256": "3c9e162e9aee1856f663ab6f7ddbffa8b15dd5367c196b8c9bdcc953b61f4905"
+    },
+    {
       "file": "e2e/ide/github-issues.runtime.issue289.test.ts",
       "sha256": "eebdc8af20fa9f95c145520fd26914788bebfc46208adb2362797ac711c34c53"
     },
@@ -7608,7 +7691,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "b8160805fe4e959f8a9ac24ef953db65f14f16e24e1ba2865eded88a713921e6"
+      "sha256": "ebe4850ac769d6dffaf63e60ce48b68f0dd025c7d2d098d3d8438dfa54f7d75f"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",

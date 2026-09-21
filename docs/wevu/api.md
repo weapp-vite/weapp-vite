@@ -29,7 +29,7 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
   - Layout 宿主能力：`resolveLayoutBridge`、`resolveLayoutHost`、`waitForLayoutHost`
   - 适合场景：把 TDesign Toast/Dialog、全局反馈层、抽屉等放在 layout 中，再通过 `layout-host` 暴露给页面或组件
 - 状态管理（Store 适配）
-  - `createStore`、`defineStore`、`storeToRefs`（主入口导出）→ 参见 Store 章节
+  - `createPinia`、`defineStore`、`storeToRefs`（主入口导出）；`createStore` 仍为 `createPinia` 的同函数别名，`StoreManager` 类型继续保留 → 参见 [Store](./store.md) 与 [PR 前后迁移指南](./store-migration.md)
 
 导入示例
 
@@ -37,7 +37,7 @@ wevu 暴露的核心能力与入口如下，详细说明请参见对应文档：
 import {
   computed, // 运行时
   createApp,
-  createStore,
+  createPinia,
   defineComponent,
   defineStore,
   getCurrentInstance,

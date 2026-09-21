@@ -983,6 +983,18 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-1049/index",
+          "pathName": "pages/issue-1049/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "pages/issue-1049/result/index",
+          "pathName": "pages/issue-1049/result/index",
+          "query": "",
+          "scene": null
         }
       ]
     }

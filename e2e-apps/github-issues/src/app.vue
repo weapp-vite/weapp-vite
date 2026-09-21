@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import routes from 'weapp-vite/auto-routes'
-import { onLaunch } from 'wevu'
+import { createStore, onLaunch, use } from 'wevu'
 import { ensureGithubIssuesRouter } from './shared/appRouter'
 import { ensureIssue911Guard } from './shared/issue911'
 import { initializeIssue1035Router } from './shared/issue1035'
 
 const issue1035Enabled = routes.pages.length === 2 && routes.pages.includes('pages/issue-1035/index')
+
+use(createStore())
 
 const defaultTabBarList = [
   {
