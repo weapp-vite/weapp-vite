@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@12.4.2",
+  "packageManager": "pnpm@12.5.1",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "repository": {

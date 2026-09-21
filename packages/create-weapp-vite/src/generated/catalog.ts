@@ -38,7 +38,7 @@ export const TEMPLATE_CATALOG = {
   'lru-cache': '^11.5.3',
   'magic-string': '^1.4.1',
   'miniprogram-api-typings': '^5.2.3',
-  'oxc-parser': '^0.150.0',
+  'oxc-parser': '^0.151.0',
   'oxc-walker': '^1.1.1',
   'pkg-types': '^2.3.3',
   'postcss-selector-parser': '^7.1.6',
