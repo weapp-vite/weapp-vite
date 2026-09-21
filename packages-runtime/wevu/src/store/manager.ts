@@ -21,7 +21,7 @@ export function getActivePinia(): Pinia | undefined {
 }
 
 /** 创建独立的状态树与作用域；安装或显式激活后再使用 Store。 */
-export function createStore(): Pinia {
+export function createPinia(): Pinia {
   const scope = effectScope(true)
   const plugins: PiniaPlugin[] = []
   const pending: PiniaPlugin[] = []
@@ -49,8 +49,8 @@ export function createStore(): Pinia {
   return pinia
 }
 
-/** Pinia 命名兼容入口，与推荐的 createStore 共用同一实现。 */
-export const createPinia = createStore
+/** 保留原有创建名称，与推荐的 createPinia 是同一个函数。 */
+export const createStore = createPinia
 
 /** 释放整个管理器；与单个 Store 的 $dispose 不同，此操作也清除状态。 */
 export function disposePinia(pinia: Pinia) {

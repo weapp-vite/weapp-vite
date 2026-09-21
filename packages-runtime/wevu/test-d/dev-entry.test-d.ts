@@ -1,4 +1,5 @@
 import type { RouterNavigation } from 'wevu/dev/router'
+import type { createPinia } from 'wevu/dev/store'
 import { expectType } from 'tsd'
 import { createApp, defineComponent, ref } from 'wevu/dev'
 import { createRouter } from 'wevu/dev/router'
@@ -20,6 +21,7 @@ expectType<number>(counter.count)
 expectType<ReturnType<typeof createApp>>(createApp({ setup() {} }))
 expectType<RouterNavigation>(createRouter())
 expectType<ReturnType<typeof createStore>>(createStore())
+expectType<typeof createPinia>(createStore)
 
 const useCounter = defineStore('dev-counter', {
   state: () => ({

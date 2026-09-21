@@ -106,9 +106,11 @@ for (const implementation of implementations) {
       const owner = manager()
       let initial = 1
       const store = api.defineStore('options', { state: () => ({ n: initial }) })(owner)
+      store.$state.extra = 'temporary'
       initial = 2
       store.$reset()
       expect(store.n).toBe(2)
+      expect(store.$state.extra).toBe('temporary')
       const custom = api.defineStore('custom', () => {
         const n = r.ref(1)
         return { n, $reset() {
@@ -120,6 +122,32 @@ for (const implementation of implementations) {
       const withoutReset = api.defineStore('without-reset', () => ({ n: r.ref(1) }))(owner)
       expect(() => withoutReset.$reset()).toThrow()
       api.disposePinia(owner)
+    })
+
+    it('normalizes custom thenables with async actions before notifying after callbacks', async () => {
+      const owner = manager()
+      const thenable = { then: (resolve: (value: number) => void) => resolve(42) }
+      const store = api.defineStore('thenable', {
+        actions: {
+          raw: () => thenable,
+          async normalized() {
+            return await thenable
+          },
+        },
+      })(owner)
+      const results: unknown[] = []
+      store.$onAction(({ after }: any) => after((value: unknown) => results.push(value)))
+      try {
+        expect(store.raw()).toBe(thenable)
+        expect(results).toEqual([thenable])
+        const result = store.normalized()
+        expect(results).toHaveLength(1)
+        expect(await result).toBe(42)
+        expect(results).toEqual([thenable, 42])
+      }
+      finally {
+        api.disposePinia(owner)
+      }
     })
 
     it('matches direct, patch, reset and $state mutation timing', async () => {

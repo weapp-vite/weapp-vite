@@ -62,13 +62,13 @@ The following APIs work exactly like Vue 3:
 - `hasInjectionContext()` - Check whether current setup has injection context
 - `provideGlobal()` / `injectGlobal()` - Global provide/inject (deprecated)
 
-#### Store (Pinia Compatible)
+#### Store (Pinia-style API)
 
-wevu includes a Pinia-compatible store implementation with an explicit application manager:
+wevu provides a Pinia-style Store with an explicit application manager, referencing Pinia 4.0.3 public usage. It does not promise all upstream capabilities, Web SSR, Pinia HMR, Vue Devtools, or arbitrary third-party plugins.
 
 - `defineStore()` - Define stores (Setup & Options modes)
 - `storeToRefs()` - Extract reactive refs from store
-- `createStore()` - Create a store manager with plugin support
+- `createPinia()` - Create a store manager with plugin support
 - `$patch` - Batch update state
 - `$reset` - Options Store uses the state factory; Setup Store must provide its own implementation
 - `$subscribe` - Subscribe to state mutations
@@ -80,13 +80,15 @@ Install once in `app.vue`:
 
 ```vue
 <script setup lang="ts">
-import { createStore, use } from 'wevu'
+import { createPinia, use } from 'wevu'
 
-use(createStore())
+use(createPinia())
 </script>
 ```
 
 With `createApp()`, use `app.use(pinia)`. Outside components, pass the manager to `useStore(pinia)`; tests can explicitly activate it with `setActivePinia(pinia)`. `use()` is only available in app setup.
+
+`createStore()` remains the same function as `createPinia()`, and the `StoreManager` type is retained. Existing applications do not need a rename-only migration.
 
 This update ships as a minor release but requires changes to existing Store consumers. Follow the [Store migration guide](https://vite.weapp.dev/wevu/store-migration) before upgrading.
 

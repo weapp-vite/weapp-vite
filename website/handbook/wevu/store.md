@@ -18,14 +18,14 @@ wevu Store 的日常用法以 Pinia 4.0.3 为参照，导入来自 `wevu` 或 `w
 
 ```vue
 <script setup lang="ts">
-import { createStore, use } from 'wevu'
+import { createPinia, use } from 'wevu'
 
-const pinia = createStore()
+const pinia = createPinia()
 use(pinia)
 </script>
 ```
 
-使用 `createApp()` 时调用 `app.use(pinia)`。组件外可调用 `useCounter(pinia)`；测试可用 `setActivePinia(createStore())`。`createPinia()` 保留为 `createStore()` 的同实现兼容别名，推荐使用 `createStore()`。未安装、未传入且无活动实例时，`useStore()` 会报错。不同 Pinia 的实例和状态隔离，同一个 Pinia 中相同 ID 复用实例。
+使用 `createApp()` 时调用 `app.use(pinia)`。组件外可调用 `useCounter(pinia)`；测试可用 `setActivePinia(createPinia())`。`createStore()` 保留为 `createPinia()` 的同实现兼容别名，不新增弃用警告；既有应用无需仅为改名而修改。未安装、未传入且无活动实例时，`useStore()` 会报错。不同 Pinia 的实例和状态隔离，同一个 Pinia 中相同 ID 复用实例。
 
 ## 定义与使用
 
@@ -122,7 +122,7 @@ disposePinia(pinia)
 ## 插件
 
 ```ts
-const pinia = createStore()
+const pinia = createPinia()
 pinia.use(({ store, pinia, app, options }) => {
   console.log(store.$id, pinia, app, options.actions)
   return { lastUpdated: ref(0) }
@@ -134,17 +134,17 @@ pinia.use(({ store, pinia, app, options }) => {
 
 ## 从旧版迁移
 
-本次按 minor 发布，但包含需要旧 Store 消费者迁移的不兼容变化。请先阅读 [Store 迁移指南](/wevu/store-migration)，再按下表检查消费者。继续使用 `createStore()` 创建管理器，通过应用安装、显式传参或测试中显式激活后使用：
+本次按 minor 发布，但包含需要旧 Store 消费者迁移的不兼容变化。请先阅读 [Store 迁移指南](/wevu/store-migration)，再按下表检查消费者。推荐使用 `createPinia()` 创建管理器；旧名称 `createStore()` 仍可使用，通过应用安装、显式传参或测试中显式激活后使用：
 
 | 旧写法/行为 | 当前写法/行为 |
 | --- | --- |
-| 无初始化直接 `useStore()` | `use(createStore())`、`app.use(pinia)` 或 `useStore(pinia)` |
-| `createStore()` 隐式激活 manager | `createStore()` 后显式安装，不再隐式激活 manager |
+| 无初始化直接 `useStore()` | `use(createPinia())`、`app.use(pinia)` 或 `useStore(pinia)` |
+| `createStore()` 保存隐式 manager | `createPinia()` 后显式安装，不再隐式激活 manager |
 | 外部 `store.count.value++` | `store.count++` |
 | 从 `storeToRefs()` 解构 action | 从 Store 实例直接解构 action |
 | Setup 自动快照 `$reset()` | 在 setup 返回自定义 `$reset` |
 | 直接修改同步触发 `$subscribe` | 默认异步；确需同步时设置 `flush: 'sync'` |
-| 释放后回到初始状态 | `$dispose()` 保留状态，需要时显式删除 `pinia.state.value[id]` |
+| 旧版没有释放 API（新增能力） | `$dispose()` 保留状态，需要时显式删除 `pinia.state.value[id]` |
 | 无作用域自动解绑 | 页面/组件 setup 中默认解绑，detached 或无作用域时手动取消 |
 
 不要用 `$dispose()` 代替页面卸载钩子；共享 Store 的生命周期属于 Pinia，页面只拥有自己的订阅。

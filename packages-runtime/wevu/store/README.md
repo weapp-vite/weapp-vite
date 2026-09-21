@@ -20,7 +20,7 @@ wevu Store 的公开用法和主要行为以 Pinia 4.0.3 为参照，支持 **Se
 
 | 特性           | Pinia                                 | wevu                        |
 | -------------- | ------------------------------------- | --------------------------- |
-| **全局注册**   | 必须调用 `createPinia()` 并注册到 app | 使用 `createStore()` 创建并安装 manager |
+| **全局注册**   | 必须调用 `createPinia()` 并注册到 app | 使用 `createPinia()` 创建并安装 manager |
 | **Vue 依赖**   | 依赖 Vue 3                            | **独立**，基于 wevu runtime |
 | **环境**       | Web 应用                              | **微信小程序**              |
 | **API 设计**   | Setup Store + Options Store           | 常用公开行为以 Pinia 为参照 |
@@ -32,13 +32,13 @@ wevu Store 的公开用法和主要行为以 Pinia 4.0.3 为参照，支持 **Se
 
 ```vue
 <script setup lang="ts">
-import { createStore, use } from 'wevu'
+import { createPinia, use } from 'wevu'
 
-use(createStore())
+use(createPinia())
 </script>
 ```
 
-使用 `createApp()` 时调用 `app.use(pinia)`；`use()` 只能在 app setup 中调用。安装后，页面/组件可以调用 `useCounterStore()`。组件外显式传入 `useCounterStore(pinia)`，测试可用 `setActivePinia(pinia)` 激活独立实例。只调用 `createStore()` 不会安装或激活 manager。
+使用 `createApp()` 时调用 `app.use(pinia)`；`use()` 只能在 app setup 中调用。安装后，页面/组件可以调用 `useCounterStore()`。组件外显式传入 `useCounterStore(pinia)`，测试可用 `setActivePinia(pinia)` 激活独立实例。只调用 `createPinia()` 不会安装或激活 manager。`createStore()` 是同一个函数的兼容别名，`StoreManager` 类型继续保留，既有应用无需仅为改名而修改。
 
 ## 快速开始
 
@@ -483,11 +483,11 @@ wevu 的插件系统是**可选的**。使用插件时，仍需在应用入口�
 ### 创建插件
 
 ```typescript
-import { createApp, createStore } from 'wevu'
+import { createApp, createPinia } from 'wevu'
 
 // 在应用入口创建并安装 store manager
 const app = createApp({})
-const storeManager = createStore()
+const storeManager = createPinia()
 app.use(storeManager)
 
 // 添加插件（可选）
@@ -506,10 +506,10 @@ storeManager.use(({ store }) => {
 ### 日志插件示例
 
 ```typescript
-import { createApp, createStore } from 'wevu'
+import { createApp, createPinia } from 'wevu'
 
 const app = createApp({})
-const storeManager = createStore()
+const storeManager = createPinia()
 app.use(storeManager)
 
 storeManager.use(({ store }) => {
