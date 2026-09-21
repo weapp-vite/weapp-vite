@@ -60,6 +60,12 @@ describe('github-issues targeted fixture route scope', () => {
     expect(config.weapp.npm.enable).toBe(false)
   })
 
+  it('keeps issue 1035 free of warmup pages so launch exercises its own first page', async () => {
+    const config = await readFixtureConfig('ide/github-issues.runtime.issue1035.test.ts')
+    expect(config.weapp.autoRoutes).toEqual({ include: ['pages/issue-1035/**', 'pages/issue-1035-next/**'] })
+    expect(config.weapp.npm.enable).toBe(false)
+  })
+
   it.each([
     'ide/github-issues.runtime.unregistered.test.ts',
     'ide\\github-issues.runtime.unregistered.test.ts',

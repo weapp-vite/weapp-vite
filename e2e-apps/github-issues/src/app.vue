@@ -3,6 +3,9 @@ import routes from 'weapp-vite/auto-routes'
 import { onLaunch } from 'wevu'
 import { ensureGithubIssuesRouter } from './shared/appRouter'
 import { ensureIssue911Guard } from './shared/issue911'
+import { initializeIssue1035Router } from './shared/issue1035'
+
+const issue1035Enabled = routes.pages.length === 2 && routes.pages.includes('pages/issue-1035/index')
 
 const defaultTabBarList = [
   {
@@ -69,7 +72,7 @@ const tabBarList = issue793BuildScopeEnabled
   : defaultTabBarList
 
 defineAppJson({
-  pages: routes.pages,
+  pages: issue1035Enabled ? ['pages/issue-1035/index', 'pages/issue-1035-next/index'] : routes.pages,
   subPackages: appSubPackages,
   ...(routes.pages.includes('pages/issue-955/index')
     ? { style: 'v2', componentFramework: 'glass-easel' }
@@ -101,7 +104,12 @@ defineAppJson({
     : {}),
 })
 
-ensureGithubIssuesRouter()
+if (issue1035Enabled) {
+  initializeIssue1035Router()
+}
+else {
+  ensureGithubIssuesRouter()
+}
 ensureIssue911Guard()
 
 onLaunch(() => {})

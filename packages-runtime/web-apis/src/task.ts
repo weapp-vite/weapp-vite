@@ -5,7 +5,9 @@ export function queueMicrotaskPolyfill(callback: () => void) {
     throw new TypeError('Failed to execute \'queueMicrotask\': callback must be a function')
   }
 
-  const nativeQueueMicrotask = (globalThis as Record<string, any>).queueMicrotask
+  const nativeQueueMicrotask = typeof globalThis !== 'undefined'
+    ? (globalThis as Record<string, any>).queueMicrotask
+    : undefined
   if (
     typeof nativeQueueMicrotask === 'function'
     && nativeQueueMicrotask !== queueMicrotaskPolyfill

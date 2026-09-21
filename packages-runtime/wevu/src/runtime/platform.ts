@@ -10,6 +10,10 @@ import {
 } from '@weapp-core/shared/platforms'
 
 type MiniProgramGlobal = Record<string, any>
+declare const tt: MiniProgramGlobal | undefined
+declare const swan: MiniProgramGlobal | undefined
+declare const jd: MiniProgramGlobal | undefined
+declare const xhs: MiniProgramGlobal | undefined
 type MiniProgramHostConfig = Record<string, any>
 type MiniProgramGlobalRouterMethodName = 'switchTab' | 'reLaunch' | 'redirectTo' | 'navigateTo' | 'navigateBack'
 type MiniProgramGlobalRouter = Record<MiniProgramGlobalRouterMethodName, (...args: any[]) => any>
@@ -33,15 +37,29 @@ function getGlobalRuntime() {
   return globalThis as MiniProgramGlobal
 }
 
-function getStaticMiniProgramGlobalObject(): MiniProgramGlobal | undefined {
-  if (typeof my !== 'undefined') {
-    return my as MiniProgramGlobal
+function getStaticMiniProgramGlobalObject(globalKey: string): MiniProgramGlobal | undefined {
+  switch (globalKey) {
+    case 'wx':
+      return typeof wx !== 'undefined' ? wx as MiniProgramGlobal : undefined
+    case 'my':
+      return typeof my !== 'undefined' ? my as MiniProgramGlobal : undefined
+    case 'tt':
+      return typeof tt !== 'undefined' ? tt : undefined
+    case 'swan':
+      return typeof swan !== 'undefined' ? swan : undefined
+    case 'jd':
+      return typeof jd !== 'undefined' ? jd : undefined
+    case 'xhs':
+      return typeof xhs !== 'undefined' ? xhs : undefined
   }
   return undefined
 }
 
+function resolveRuntimeGlobalObject(globalKey: string): MiniProgramGlobal | undefined {
+  return getGlobalRuntime()?.[globalKey] ?? getStaticMiniProgramGlobalObject(globalKey)
+}
+
 export function resolveCurrentMiniProgramPlatform() {
-  const globalRuntime = getGlobalRuntime()
   const compiledPlatform = (import.meta as ImportMetaWithEnv).env?.PLATFORM
 
   // 优先命中编译期平台分支，便于构建阶段做 dead-code elimination。
@@ -51,7 +69,7 @@ export function resolveCurrentMiniProgramPlatform() {
   }
 
   for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
-    if (globalRuntime?.[globalKey]) {
+    if (resolveRuntimeGlobalObject(globalKey)) {
       return getMiniProgramPlatformByRuntimeGlobalKey(globalKey)
     }
   }
@@ -67,21 +85,39 @@ export function supportsCurrentMiniProgramRuntimeCapability(capabilityName: Mini
   return supportsMiniProgramRuntimeCapability(resolveCurrentMiniProgramPlatform(), capabilityName)
 }
 
+export function getMiniProgramGlobalObject(platformInput?: string): MiniProgramGlobal | undefined {
+  const compiledPlatform = platformInput ?? (import.meta as ImportMetaWithEnv).env?.PLATFORM
+  const resolvedCompiledPlatform = resolveMiniProgramPlatform(compiledPlatform)
+
+  if (resolvedCompiledPlatform) {
+    const globalKey = getMiniProgramRuntimeGlobalKey(resolvedCompiledPlatform)
+    return resolveRuntimeGlobalObject(globalKey)
+      ?? (resolvedCompiledPlatform === 'tt' ? resolveRuntimeGlobalObject('wx') : undefined)
+  }
+
+  for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
+    const candidate = resolveRuntimeGlobalObject(globalKey)
+    if (candidate) {
+      return candidate as MiniProgramGlobal
+    }
+  }
+  return undefined
+}
+
 export function getCurrentMiniProgramPages(): Array<Record<string, any>> {
   if (!supportsCurrentMiniProgramRuntimeCapability('globalPageStack')) {
     return []
   }
   const globalRuntime = getGlobalRuntime()
-  const platform = resolveCurrentMiniProgramPlatform()
-  const runtimeGlobalKey = platform ? getMiniProgramRuntimeGlobalKey(platform) : undefined
-  const getCurrentPagesFn = (runtimeGlobalKey ? globalRuntime?.[runtimeGlobalKey]?.getCurrentPages : undefined)
-    ?? getStaticMiniProgramGlobalObject()?.getCurrentPages
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const getCurrentPagesFn = miniProgramGlobal?.getCurrentPages
     ?? globalRuntime?.getCurrentPages
+    ?? (typeof getCurrentPages !== 'undefined' ? getCurrentPages : undefined)
   if (typeof getCurrentPagesFn !== 'function') {
     return []
   }
   try {
-    const pages = getCurrentPagesFn()
+    const pages = getCurrentPagesFn.call(miniProgramGlobal)
     return Array.isArray(pages) ? pages as Array<Record<string, any>> : []
   }
   catch {
@@ -94,26 +130,6 @@ export function getCurrentMiniProgramHostConfig(): MiniProgramHostConfig | undef
   const hostConfigKey = getMiniProgramRuntimeHostConfigKey(resolveCurrentMiniProgramPlatform())
   const hostConfig = globalRuntime?.[hostConfigKey]
   return hostConfig && typeof hostConfig === 'object' ? hostConfig as MiniProgramHostConfig : undefined
-}
-
-export function getMiniProgramGlobalObject(platformInput?: string): MiniProgramGlobal | undefined {
-  const globalRuntime = getGlobalRuntime()
-  const compiledPlatform = platformInput ?? (import.meta as ImportMetaWithEnv).env?.PLATFORM
-  const resolvedCompiledPlatform = resolveMiniProgramPlatform(compiledPlatform)
-
-  if (resolvedCompiledPlatform) {
-    const globalKey = getMiniProgramRuntimeGlobalKey(resolvedCompiledPlatform)
-    return globalRuntime?.[globalKey] as MiniProgramGlobal | undefined
-      ?? (resolvedCompiledPlatform === 'alipay' ? getStaticMiniProgramGlobalObject() : undefined)
-  }
-
-  for (const globalKey of getMiniProgramRuntimeGlobalKeys()) {
-    const candidate = globalRuntime?.[globalKey]
-    if (candidate) {
-      return candidate as MiniProgramGlobal
-    }
-  }
-  return undefined
 }
 
 export function getMiniProgramRuntimeGlobalObject(): MiniProgramGlobal | undefined {
