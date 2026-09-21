@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from '@/runtime/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effect, effectScope, ref, watchSyncEffect } from '@/reactivity'
+import { computed, effect, effectScope, ref, watch } from '@/reactivity'
 import { createApp } from '@/runtime/app'
 import { mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register/runtimeInstance'
 import { nextTick } from '@/scheduler'
@@ -58,7 +58,7 @@ describe('store runtime integration', () => {
     expect(store!.double).toBe(4)
   })
 
-  it('$patch and $reset batch options store effects', () => {
+  it('$patch and $reset notify effects for each write but group subscriptions', () => {
     const useProfile = defineStore('options-patch-reset-batch', {
       state: () => ({
         firstName: 'Ada',
@@ -80,7 +80,7 @@ describe('store runtime integration', () => {
       lastName: 'Hopper',
     })
 
-    expect(effectRuns).toBe(2)
+    expect(effectRuns).toBe(3)
     expect(fullName).toBe('Grace Hopper')
     expect(mutations).toEqual(['patch object'])
 
@@ -89,7 +89,7 @@ describe('store runtime integration', () => {
       state.lastName = 'Johnson'
     })
 
-    expect(effectRuns).toBe(3)
+    expect(effectRuns).toBe(5)
     expect(fullName).toBe('Katherine Johnson')
 
     expect(mutations).toEqual(['patch object', 'patch function'])
@@ -98,7 +98,7 @@ describe('store runtime integration', () => {
     effectRuns = 0
     store.$reset()
 
-    expect(effectRuns).toBe(1)
+    expect(effectRuns).toBe(2)
     expect(fullName).toBe('Ada Lovelace')
     expect(mutations).toEqual(['patch function'])
   })
@@ -117,9 +117,7 @@ describe('store runtime integration', () => {
     })
     const store = useCounter()
     const snapshots: string[] = []
-    watchSyncEffect(() => {
-      snapshots.push(`${store.n}:${store.saved}:${store.doubled}`)
-    })
+    watch(() => store.saved, saved => snapshots.push(`${saved}:${store.doubled}`), { flush: 'sync', immediate: true })
 
     store.$patch((state) => {
       state.n = 2
@@ -128,10 +126,10 @@ describe('store runtime integration', () => {
       state.n = 3
       store.saveDoubled()
       expect(state.saved).toBe(6)
-      expect(snapshots).toEqual(['1:0:2'])
+      expect(snapshots).toEqual(['0:2', '4:4', '6:6'])
     })
 
-    expect(snapshots).toEqual(['1:0:2', '3:6:6'])
+    expect(snapshots).toEqual(['0:2', '4:4', '6:6'])
   })
 
   it('$patch produces one runtime setData dispatch', async () => {

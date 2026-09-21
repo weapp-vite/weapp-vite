@@ -76,6 +76,7 @@ export function createStoreInstance(id: string, definition: any, pinia: Pinia, s
         Object.assign(store, plugin({ store, pinia, app: pinia._a, options }) ?? {})
       }
     })
+    base.activateSubscriptions()
     return store
   }
   catch (error) {

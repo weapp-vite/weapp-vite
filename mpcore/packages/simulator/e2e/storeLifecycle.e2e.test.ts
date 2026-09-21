@@ -31,6 +31,20 @@ it('renders shared computed after page and child subscription disposal', async (
     expect(preview.querySelector('#doubled')?.textContent).toBe('6')
     expect(result.snapshot()).toMatchObject({ page: 2, child: 1, detached: 3, after: 1, errors: 1 })
     expect(result.dispose()).toBe(3)
+    result.boundaries()
+    await expect.poll(() => result.boundarySnapshot()).toMatchObject({
+      patch: ['patch object:2', 'patch function:3', 'direct:4'],
+      pluginDuring: [],
+      pluginSync: ['direct:3'],
+      pluginAsync: ['direct:1', 'direct:3'],
+      identity: true,
+      rawNested: true,
+      shallowDuring: [],
+      shallowEvents: ['direct', 'direct'],
+      values: [5, 6],
+    })
+    render()
+    expect(preview.querySelector('#boundaries')?.textContent).toBe('patch:3 shallow:2 plugin:1')
   }
   finally {
     session.close()

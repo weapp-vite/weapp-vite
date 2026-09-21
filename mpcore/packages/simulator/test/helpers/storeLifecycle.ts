@@ -17,7 +17,8 @@ export async function createStoreLifecycleFiles(): Promise<Array<[string, string
            export { nextTick } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/scheduler.ts'))};
            export { ref } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/reactivity/index.ts'))};
            export { createStore, storeToRefs } from ${JSON.stringify(path.join(root, 'packages-runtime/wevu/src/store/index.ts'))};
-           export * from ${JSON.stringify(path.join(root, 'e2e-apps/github-issues/src/shared/issue1049Store.ts'))};`
+           export * from ${JSON.stringify(path.join(root, 'e2e-apps/github-issues/src/shared/issue1049Store.ts'))};
+           export * from ${JSON.stringify(path.join(root, 'e2e-apps/github-issues/src/shared/issue1049Boundaries.ts'))};`
         : undefined,
     }],
   })
@@ -38,7 +39,7 @@ export async function createStoreLifecycleFiles(): Promise<Array<[string, string
           return {};
         }});`],
       ['pages/launch/index.wxml', '<view id="count">{{ count }}</view><subscriber wx:if="{{visible}}" />'],
-      ['pages/result/index.wxml', '<view id="count">{{ count }}</view><view id="doubled">{{ doubled }}</view>'],
+      ['pages/result/index.wxml', '<view id="count">{{ count }}</view><view id="doubled">{{ doubled }}</view><view id="boundaries">{{ boundarySummary }}</view>'],
       ['pages/launch/index.js', `const r = require('../../runtime.js');
         r.createWevuComponent({ setup() {
           r.resetScenario();
@@ -62,7 +63,12 @@ export async function createStoreLifecycleFiles(): Promise<Array<[string, string
       ['pages/result/index.js', `const r = require('../../runtime.js');
         r.createWevuComponent({ setup() {
           const store = r.useIssue1049Store();
+          const boundarySummary = r.ref('pending');
+          let boundaryResult = null;
           return {
+            boundarySummary,
+            boundaries: () => { void r.runStoreBoundaries().then(result => { boundaryResult = result; boundarySummary.value = result.summary; }).catch(error => { boundaryResult = { error: String(error) }; }); },
+            boundarySnapshot: () => boundaryResult,
             ...r.storeToRefs(store), flush: () => r.nextTick(),
             mutate: () => { store.increment(); return r.nextTick(); },
             finish: r.settleActions, snapshot: r.snapshot,

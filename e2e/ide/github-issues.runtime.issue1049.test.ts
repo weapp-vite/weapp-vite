@@ -30,6 +30,37 @@ describe('e2e app: github-issues / issue #1049', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   }, 30_000)
 
+  it('preserves nested patch, shallow state and plugin initialization boundaries', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'boundaries',
+      route: RESULT_ROUTE,
+      action: '嵌套 patch、浅层状态与插件初始化后渲染通知计数',
+      nodes: [{ selector: '#issue1049-boundaries', text: 'patch:3 shallow:2 plugin:1' }],
+    }])
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const page = await relaunchPage(miniProgram, RESULT_ROUTE)
+      assert(page)
+      await page.callMethod('_boundaries')
+      await expect.poll(() => page.callMethod('_boundarySnapshot')).toEqual({
+        patch: ['patch object:2', 'patch function:3', 'direct:4'],
+        pluginDuring: [],
+        pluginSync: ['direct:3'],
+        pluginAsync: ['direct:1', 'direct:3'],
+        identity: true,
+        rawNested: true,
+        shallowDuring: [],
+        shallowEvents: ['direct', 'direct'],
+        values: [5, 6],
+        summary: 'patch:3 shallow:2 plugin:1',
+      })
+      await dom.check('boundaries', miniProgram, page)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('unsubscribes page and child scopes on reLaunch, retaining shared computed and in-flight actions', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
       id: 'initial',

@@ -1,4 +1,4 @@
-import { isReactive, isRef, reactive, toRaw } from '../reactivity'
+import { isReactive, isRef, isShallowReactive, reactive, toRaw } from '../reactivity'
 import { ReactiveFlags } from '../reactivity/reactive/shared'
 import { isPlainObject } from './utils'
 
@@ -12,12 +12,16 @@ export function storeView<T extends object>(source: T): T {
   if (!isPlainObject(source) && !Array.isArray(source)) {
     return source
   }
+  if (isReactive(source) && isShallowReactive(source)) {
+    return source
+  }
   const target = isReactive(source) ? source : reactive(source)
   const cached = views.get(target)
   if (cached) {
     return cached
   }
-  const storeViewValue = (value: any): any => value && typeof value === 'object' ? storeView(value) : value
+  // 属性视图只解包既有响应式来源，不把 shallowRef 的普通值转成深层代理。
+  const storeViewValue = (value: any): any => isReactive(value) ? storeView(value) : value
   const view = new Proxy(target, {
     get(object, key, receiver) {
       const value = Reflect.get(object, key, receiver)

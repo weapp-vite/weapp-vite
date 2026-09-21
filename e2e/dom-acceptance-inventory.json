@@ -5,8 +5,8 @@
     "taskCount": 107,
     "wechatTaskCount": 104,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 268,
-    "casesWithPlan": 268,
+    "expandedCaseDeclarations": 269,
+    "casesWithPlan": 269,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -1820,13 +1820,32 @@
       "cases": [
         {
           "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:33",
+          "name": "e2e app: github-issues / issue #1049 > preserves nested patch, shallow state and plugin initialization boundaries",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'boundaries', route: RESULT_ROUTE, action: '嵌套 patch、浅层状态与插件初始化后渲染通知计数', nodes: [{ selector: '#issue1049-boundaries', text: 'patch:3 shallow:2 plugin:1' }], }]",
+              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:34"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "callMethod(_boundaries)",
+            "callMethod(_boundarySnapshot)",
+            "check(boundaries)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:64",
           "name": "e2e app: github-issues / issue #1049 > unsubscribes page and child scopes on reLaunch, retaining shared computed and in-flight actions",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "[{ id: 'initial', route: LAUNCH_ROUTE, action: '页面和子组件注册订阅', nodes: [{ selector: '#issue1049-count', text: '0' }, { selector: '#issue1049-child', scope: ['#issue1049-subscriber'], text: 'child subscribed' }], }, { id: 'result', route: RESUL",
-              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:34"
+              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:65"
             }
           ],
           "routes": [],
@@ -1843,14 +1862,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:79",
+          "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:110",
           "name": "e2e app: github-issues / issue #1049 > keeps hidden page subscriptions and releases only an unmounted child",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues",
               "checkpoints": "[{ id: 'child-removed', route: LAUNCH_ROUTE, action: '卸载子组件后更新 Store', nodes: [{ selector: '#issue1049-count', text: '1' }, { selector: '#issue1049-double', text: '2' }], }, { id: 'hidden-page', route: RESULT_ROUTE, action: 'navigateTo 只隐藏页",
-              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:80"
+              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:111"
             }
           ],
           "routes": [
@@ -6939,7 +6958,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue1049.test.ts",
-      "sha256": "23cd2281c1add22dfb2a23c9cfb4637ed70dd4937876bd85eb155aaa2cfe6cfa"
+      "sha256": "144f88b86f7de702daf03ccb166389362d6538c05929e8ce7a1f0a2392bb7f1e"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue289.test.ts",

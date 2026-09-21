@@ -13,6 +13,32 @@ afterEach(() => {
 })
 
 describe('store ownership and failure recovery', () => {
+  it('disposes failed plugin subscriptions before retrying initialization', async () => {
+    const events: number[] = []
+    let shouldFail = true
+    let failedStore: any
+    pinia.use(({ store }) => {
+      store.$subscribe((_mutation: unknown, state: { n: number }) => events.push(state.n), { flush: 'sync' })
+      store.n = 1
+      if (shouldFail) {
+        failedStore = store
+        throw new Error('plugin failed')
+      }
+    })
+    pinia.install({ provide() {}, config: { globalProperties: {} } })
+    const useCounter = defineStore('plugin-retry', { state: () => ({ n: 0 }) })
+    expect(() => useCounter()).toThrow('plugin failed')
+    expect(pinia._s.has('plugin-retry')).toBe(false)
+    expect(pinia.state.value['plugin-retry']).toBeUndefined()
+    expect(events).toEqual([])
+    shouldFail = false
+    const store = useCounter()
+    failedStore.n = 9
+    store.n = 2
+    await nextTick()
+    expect(events).toEqual([2])
+  })
+
   it('requires an installed or explicit manager and keeps the legacy name as an alias', () => {
     expect(createStore).toBe(createPinia)
     setActivePinia(undefined)

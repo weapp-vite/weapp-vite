@@ -1,6 +1,6 @@
 import type { EffectScope } from '../reactivity/core'
 import type { ActionSubscriber, Pinia, StoreSubscribeOptions, SubscriptionCallback } from './types'
-import { batch, isRef, onScopeDispose, toRaw, watch } from '../reactivity'
+import { isRef, onScopeDispose, toRaw, watch } from '../reactivity'
 import { track } from '../reactivity/core'
 import { ReactiveFlags } from '../reactivity/reactive/shared'
 import { nextTick } from '../scheduler'
@@ -38,8 +38,8 @@ function trackState(value: any, depth: number, seen = new Map<object, number>())
 export function createBaseApi(id: string, pinia: Pinia, scope: EffectScope, getStore: () => any) {
   const subscriptions = new Set<SubscriptionCallback>()
   const actionSubscriptions = new Set<ActionSubscriber>()
-  let listening = true
-  let syncListening = true
+  let listening = false
+  let syncListening = false
   let listenerVersion = 0
   let disposed = false
   scope.run(() => onScopeDispose(() => {
@@ -50,18 +50,17 @@ export function createBaseApi(id: string, pinia: Pinia, scope: EffectScope, getS
     $id: id,
     $patch(patch: Record<string, any> | ((state: any) => void)) {
       listening = syncListening = false
-      const version = ++listenerVersion
       try {
-        batch(() => {
-          if (typeof patch === 'function') {
-            patch(pinia.state.value[id])
-          }
-          else {
-            mergeState(pinia.state.value[id], patch)
-          }
-        })
+        if (typeof patch === 'function') {
+          patch(pinia.state.value[id])
+        }
+        else {
+          mergeState(pinia.state.value[id], patch)
+        }
       }
       finally {
+        // 外层修改完成后才取得版本，避免内层 patch 提前恢复异步监听。
+        const version = ++listenerVersion
         syncListening = true
         void nextTick().then(() => {
           if (listenerVersion === version) {
@@ -124,5 +123,12 @@ export function createBaseApi(id: string, pinia: Pinia, scope: EffectScope, getS
     get: () => pinia.state.value[id],
     set: state => api.$patch((target: any) => Object.assign(target, state)),
   })
-  return { api, actionSubscriptions }
+  return {
+    api,
+    actionSubscriptions,
+    // 创建流程拥有初始化边界，插件注册的同步订阅不能观察半初始化状态。
+    activateSubscriptions() {
+      listening = syncListening = true
+    },
+  }
 }
