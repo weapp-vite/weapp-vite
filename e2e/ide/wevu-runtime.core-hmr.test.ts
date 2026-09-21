@@ -480,8 +480,8 @@ async function relaunchIdeRoute(
 
   const recoveryPasses = [
     { cleanType: 'compile', settleDelay: 1_200 },
-    { cleanType: 'all', settleDelay: 1_800 },
-    { cleanType: 'all', settleDelay: 2_400 },
+    { cleanType: 'compile', settleDelay: 1_800 },
+    { cleanType: 'compile', settleDelay: 2_400 },
   ] as const
 
   for (const { cleanType, settleDelay } of recoveryPasses) {

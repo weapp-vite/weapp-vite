@@ -41,7 +41,6 @@ import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
-import { resolveComponentPageGlobalStyleRoutes } from '../statefulHmr/componentPageStyles'
 import { runStatefulHmrDev } from '../statefulHmr/session'
 import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
@@ -1293,10 +1292,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       try {
         const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin)
         const initialSnapshot = toStatefulHmrOutput(snapshot.output)
-        const initialGlobalStyleRoutes = resolveComponentPageGlobalStyleRoutes(
-          initialSnapshot,
-          snapshot.getComponentPageStyleOptions(),
-        )
+        const initialGlobalStyleRoutes = snapshot.getGlobalStyleRoutes()
         const initialEntryIds = collectStatefulHmrEntryIds(
           snapshot.getEntryIds(),
         )
@@ -1371,7 +1367,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 output,
                 entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
                 delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-                componentPageGlobalStyleRoutes: resolveComponentPageGlobalStyleRoutes(output, snapshot.getComponentPageStyleOptions()),
+                componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
               }
             },
           }),

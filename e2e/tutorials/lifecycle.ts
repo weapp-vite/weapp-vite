@@ -11,6 +11,7 @@ import {
   terminateProcess,
   waitForChildClose,
 } from '../../scripts/project-lifecycle.mjs'
+import { createDevProcessEnv } from '../utils/dev-process-env'
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 60 * 1000
 const DEFAULT_DEV_TIMEOUT_MS = 3 * 60 * 1000
@@ -178,7 +179,7 @@ export async function runDevCycle(options: DevCycleOptions) {
     cwd,
     detached: process.platform !== 'win32',
     env: {
-      ...process.env,
+      ...createDevProcessEnv(),
       ...env,
       CI: 'true',
     },

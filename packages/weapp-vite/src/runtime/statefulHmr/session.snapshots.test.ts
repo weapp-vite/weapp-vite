@@ -70,7 +70,7 @@ function snapshot(color: string, routes: string[] = [route]): StatefulHmrSnapsho
   }
 }
 
-async function start(initial = snapshot('red'), entryIds: string[] = []) {
+async function start(initial = snapshot('red'), entryIds: string[] = [], inlineConfig: InlineConfig = {}) {
   const rebuild = vi.fn(async (_files: string[]) => snapshot('blue'))
   const changes = new Map<string, string>()
   const ctx = {
@@ -81,6 +81,7 @@ async function start(initial = snapshot('red'), entryIds: string[] = []) {
       absoluteSrcRoot: path.join(root, 'src'),
       outDir: path.join(root, 'dist'),
       weappViteConfig: {},
+      inlineConfig,
     },
     scanService: { subPackageMap: new Map() },
     moduleGraphService: {
@@ -146,6 +147,11 @@ describe('stateful snapshot output transactions', () => {
       ;(plugin.configureServer as (server: unknown) => void)(server)
       return server
     })
+  })
+
+  it('applies configured build polling to the Vite source watcher', async () => {
+    await start(snapshot('red'), [], { build: { watch: { chokidar: { usePolling: true, interval: 50 } } } })
+    expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
   })
 
   it('defers patches until a discovered entry graph has completed a full build', async () => {

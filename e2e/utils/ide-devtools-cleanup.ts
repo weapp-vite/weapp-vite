@@ -27,7 +27,7 @@ const UNIX_DEVTOOLS_PROCESS_PATTERNS = [
   'wechatwebdevtools',
 ] as const
 
-type DevtoolsCacheCleanType = 'compile' | 'network' | 'all'
+type DevtoolsCacheCleanType = 'compile'
 
 export function resolveIdeDevtoolsProcessPatterns(platform = process.platform) {
   if (platform === 'win32') {
@@ -91,6 +91,10 @@ async function runCleanDevtoolsCacheCommand(
     platform?: NodeJS.Platform
   },
 ) {
+  // 自动恢复只处理构建缓存，不能清除用户授权、登录会话或业务数据。
+  if (cleanType !== 'compile') {
+    throw new Error('Automatic E2E recovery may clean only compile cache; authentication and user data must be preserved')
+  }
   const result = await execa(resolveWechatCliPath(options.cliPath, options.platform), ['cache', '--clean', cleanType], {
     cwd: options.cwd,
     reject: false,

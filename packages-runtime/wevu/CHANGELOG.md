@@ -1,5 +1,30 @@
 # wevu
 
+## 7.1.4
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.6，同步工作区默认依赖、固定版本回归环境及脚手架模板映射，使新建项目与仓库验证使用一致的 Tailwind 集成版本。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - weapp-vite：dependencies.@babel/preset-env
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 修复连续 HMR 中 App 入口被普通编译脚本覆盖、外部 CSS 变量删除后恢复时模块图漂移，以及开发期复用失效解析上下文的问题，避免注册初始化丢失、页面白屏或后续重建中断。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.5
+  - @weapp-core/shared@3.2.4
+  - @weapp-core/types@1.1.2
+  - @wevu/api@0.3.4
+  - @wevu/compiler@7.1.4
+  - @wevu/web-apis@1.3.1
+
 ## 7.1.3
 
 ### Patch Changes

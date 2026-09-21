@@ -356,7 +356,7 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
     }
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     originalAppSource = await fs.readFile(APP_VUE_PATH, 'utf8')
     originalLayoutSource = await fs.readFile(LAYOUT_VUE_PATH, 'utf8')
     originalPageSource = await fs.readFile(PAGE_VUE_PATH, 'utf8')

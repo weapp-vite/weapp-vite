@@ -248,7 +248,7 @@ async function resetDevtoolsProjectState(projectPath: string) {
   await closeSharedMiniProgram()
   // chunk mode 会连续切换共享 chunk 拓扑；只清 compile cache 时，DevTools 仍可能沿用旧项目索引启动模拟器。
   if (resolveRuntimeProviderName() === 'devtools') {
-    await cleanDevtoolsCache('all', { cwd: projectPath }).catch(() => {})
+    await cleanDevtoolsCache('compile', { cwd: projectPath }).catch(() => {})
     await cleanupResidualIdeProcesses()
   }
 }

@@ -1,11 +1,13 @@
 import type { Plugin } from 'vite'
 import type { RequestClientsRealDevSetupResult } from '../utils/requestClientsRealDevPlugin'
+import { execFile } from 'node:child_process'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { loadConfigFromFile } from 'vite'
+import { promisify } from 'node:util'
+import { createServer, loadConfigFromFile } from 'vite'
 import { afterEach, describe, expect, it } from 'vitest'
 import { requestClientsRealDevPlugin } from '../utils/requestClientsRealDevPlugin'
 import { startRequestClientsRealServer } from '../utils/requestClientsRealServer'
@@ -79,6 +81,39 @@ describe('request client dev server ownership across config runners', () => {
     const restarted = await requestClientsRealDevPlugin({ projectRoot, serverPort })
     cleanups.push(restarted.stop)
     expect(await requestCount(restarted.baseUrl)).toBe(1)
+  })
+
+  it('restores completed writes before later shutdown listeners run', async () => {
+    const projectRoot = await createProject()
+    const script = [
+      'import { readFileSync } from \'node:fs\'',
+      `import { requestClientsRealDevPlugin } from ${JSON.stringify(pathToFileURL(utilityPath).href)}`,
+      `await requestClientsRealDevPlugin(${JSON.stringify({ projectRoot, serverPort: 0 })})`,
+      'process.once(\'SIGTERM\', () => {',
+      `  const config = readFileSync(${JSON.stringify(path.join(projectRoot, 'project.private.config.json'))}, 'utf8')`,
+      `  const source = readFileSync(${JSON.stringify(path.join(projectRoot, 'src/shared/requestClientsRealDevBaseUrl.ts'))}, 'utf8')`,
+      `  console.log(JSON.stringify({ restored: config === ${JSON.stringify(originalConfig)} && source === ${JSON.stringify(originalModule)} }))`,
+      '})',
+      'process.emit(\'SIGTERM\')',
+    ].join('\n')
+    const { stdout } = await promisify(execFile)(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', script])
+    expect(JSON.parse(stdout.trim())).toEqual({ restored: true })
+    await expectOriginalFiles(projectRoot)
+  })
+
+  it('restores fixture files when the owning Vite server closes', async () => {
+    const projectRoot = await createProject()
+    const runtime = await requestClientsRealDevPlugin({ projectRoot, serverPort: 0 })
+    cleanups.push(runtime.stop)
+    const server = await createServer({
+      root: projectRoot,
+      configFile: false,
+      plugins: [runtime.plugin],
+      server: { middlewareMode: true },
+    })
+    cleanups.push(() => server.close())
+    await server.close()
+    await expectOriginalFiles(projectRoot)
   })
 
   it('coalesces concurrent initialization for normalized project paths', async () => {

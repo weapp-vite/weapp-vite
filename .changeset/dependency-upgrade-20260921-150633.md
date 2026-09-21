@@ -37,5 +37,6 @@
 'wevu': patch
 ---
 
-基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
-默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+自动补充依赖升级发布记录。
+涉及包：
+- @weapp-vite/glass-easel-web-adapter：devDependencies.tsx

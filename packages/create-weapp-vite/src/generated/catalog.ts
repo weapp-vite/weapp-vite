@@ -52,7 +52,7 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.113',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.11',
-  'weapp-tailwindcss': '^5.5.6',
+  'weapp-tailwindcss': '^5.5.7',
   autoprefixer: '^10.6.1',
   axios: '^1.20.0',
   clsx: '^2.1.1',
@@ -77,7 +77,7 @@ export const TEMPLATE_CATALOG = {
   stylelint: '^17.15.0',
   tailwindcss: '^4.3.3',
   tslib: '^2.8.1',
-  tsx: '^4.23.13',
+  tsx: '^4.23.15',
   typescript: '^6.0.3',
   vite: '8.3.0',
   vue: '^3.5.43',
@@ -89,7 +89,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.1'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.5.6'
+    'weapp-tailwindcss': '5.5.7'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',

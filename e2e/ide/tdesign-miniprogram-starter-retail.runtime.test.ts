@@ -579,7 +579,7 @@ describe('e2e app: tdesign-miniprogram-starter-retail', { concurrent: false }, (
             }
             detachRuntimeCollectors(activeMiniProgram)
             await closeSharedMiniProgram()
-            await cleanDevtoolsCache('all', { cwd: APP_ROOT })
+            await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
             await cleanupResidualIdeProcesses()
             activeMiniProgram = await getSharedMiniProgram()
             attachRuntimeCollectors(activeMiniProgram)

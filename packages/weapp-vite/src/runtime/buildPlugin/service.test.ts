@@ -59,7 +59,7 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
 const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
   options: { build: {}, plugins: [] as Plugin[] },
-  getComponentPageStyleOptions: () => new Map(),
+  getGlobalStyleRoutes: () => [],
   getEntryIds: () => new Set<string>(),
   getDelegatedComponentEntryIds: () => new Set<string>(),
 })))
@@ -346,7 +346,7 @@ describe('runtime buildPlugin service', () => {
     runStatefulHmrDevMock.mockReset()
     createStatefulHmrSnapshotOptionsMock.mockReset().mockImplementation(async () => ({
       options: { build: {}, plugins: [] },
-      getComponentPageStyleOptions: () => new Map(),
+      getGlobalStyleRoutes: () => [],
       getEntryIds: () => new Set<string>(),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }))
@@ -490,12 +490,12 @@ describe('runtime buildPlugin service', () => {
     const snapshotEntry = '/project/src/components/leaf/index.vue'
     createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
-      getComponentPageStyleOptions: () => new Map(),
+      getGlobalStyleRoutes: () => [],
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }).mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
-      getComponentPageStyleOptions: () => new Map(),
+      getGlobalStyleRoutes: () => [],
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     })
@@ -537,7 +537,7 @@ describe('runtime buildPlugin service', () => {
     })
     createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
       options: { build: {}, plugins: [] },
-      getComponentPageStyleOptions: () => new Map(),
+      getGlobalStyleRoutes: () => [],
       getEntryIds: () => new Set(['/project/src/pages/index.ts']),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     })
