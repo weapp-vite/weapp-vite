@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
-import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope'
+import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
 export default defineConfig({
