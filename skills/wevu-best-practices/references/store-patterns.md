@@ -130,7 +130,7 @@ pinia.use(({ store, pinia, app, options }) => {
 
 ## 从旧版迁移
 
-本次为 major 版本的破坏性变更。继续使用 `createStore()` 创建管理器，但必须显式安装，并按下表迁移 Store 消费者：
+本次按 minor 发布，但包含需要旧 Store 消费者迁移的不兼容变化。请先阅读 [Store 迁移指南](https://vite.weapp.dev/wevu/store-migration)，再按下表检查消费者。继续使用 `createStore()` 创建管理器，通过应用安装、显式传参或测试中显式激活后使用：
 
 | 旧写法/行为 | 当前写法/行为 |
 | --- | --- |

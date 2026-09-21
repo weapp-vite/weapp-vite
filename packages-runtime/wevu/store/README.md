@@ -2,11 +2,13 @@
 
 > Pinia 风格的状态管理库，专为微信小程序设计
 
-wevu 提供了与 Pinia 完全一致的 API 设计，支持 **Setup Store** 和 **Options Store** 两种模式，完美适配微信小程序环境。
+wevu Store 的公开用法和主要行为以 Pinia 4.0.3 为参照，支持 **Setup Store** 和 **Options Store**。响应式和渲染调度使用 wevu 实现。
+
+本次按 minor 发布，但旧项目需要迁移初始化、状态访问、重置与订阅行为。完整步骤见 [Store 迁移指南](https://vite.weapp.dev/wevu/store-migration)。
 
 ## 特性
 
-- 🎯 **完全兼容 Pinia API** - 零学习成本，Pinia 开发者即可上手
+- 🎯 **Pinia 风格 API** - 支持常用 Store 定义和消费方式
 - 🚀 **应用级状态管理** - 在入口安装一次 manager，组件内直接使用
 - 💪 **TypeScript 完整支持** - 完整的类型推导，无需泛型
 - 🔄 **响应式状态管理** - 基于 wevu 的 reactivity 系统
@@ -21,41 +23,22 @@ wevu 提供了与 Pinia 完全一致的 API 设计，支持 **Setup Store** 和 
 | **全局注册**   | 必须调用 `createPinia()` 并注册到 app | 使用 `createStore()` 创建并安装 manager |
 | **Vue 依赖**   | 依赖 Vue 3                            | **独立**，基于 wevu runtime |
 | **环境**       | Web 应用                              | **微信小程序**              |
-| **API 设计**   | Setup Store + Options Store           | ✅ 完全一致                 |
+| **API 设计**   | Setup Store + Options Store           | 常用公开行为以 Pinia 为参照 |
 | **TypeScript** | 完整支持                              | ✅ 完整支持                 |
 
 ### 初始化 Store manager
 
-**Pinia 需要：**
+在 `app.vue` 中安装一次：
 
-```typescript
-// ❌ Pinia 必须这样
-import { createPinia } from 'pinia'
-import { createApp } from 'vue'
+```vue
+<script setup lang="ts">
+import { createStore, use } from 'wevu'
 
-const app = createApp(App)
-const pinia = createPinia()
-app.use(pinia) // 必须注册才能使用
+use(createStore())
+</script>
 ```
 
-**wevu 在应用入口安装一次：**
-
-```typescript
-// ✅ wevu 在应用入口安装一次 manager
-import { createStore, defineStore, use } from 'wevu'
-
-const pinia = createStore()
-use(pinia) // 使用 createApp() 时调用 app.use(pinia)
-
-// 定义 store
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  return { count }
-})
-
-// 在已安装 manager 的组件中使用
-const store = useCounterStore()
-```
+使用 `createApp()` 时调用 `app.use(pinia)`；`use()` 只能在 app setup 中调用。安装后，页面/组件可以调用 `useCounterStore()`。组件外显式传入 `useCounterStore(pinia)`，测试可用 `setActivePinia(pinia)` 激活独立实例。只调用 `createStore()` 不会安装或激活 manager。
 
 ## 快速开始
 
@@ -270,7 +253,7 @@ console.log(counterStore.$id) // 'counter'
 
 ### `$state`
 
-访问或替换整个状态（仅 Options Store）：
+Setup/Options Store 都有 `$state`。Setup state 包含返回的 ref/reactive，不包含 computed 和 actions。赋值会通过 function patch 合并字段并保留响应式连接：
 
 ```typescript
 const userStore = useUserStore()
@@ -278,7 +261,7 @@ const userStore = useUserStore()
 // 读取整个状态
 console.log(userStore.$state)
 
-// 替换整个状态
+// 合并状态字段，未提供的字段保留
 userStore.$state = {
   name: 'Alice',
   age: 25
@@ -287,7 +270,7 @@ userStore.$state = {
 
 ### `$patch`
 
-批量更新状态：
+对象 patch 深层合并普通对象、替换数组；函数 patch 接收自动解包后的 state。普通同步 watcher 仍逐次观察函数内的写入，页面渲染由小程序调度器合并：
 
 ```typescript
 const counterStore = useCounterStore()
@@ -307,7 +290,7 @@ counterStore.$patch((state) => {
 
 ### `$reset`
 
-重置状态到初始值（Setup / Options Store 均支持）：
+Options Store 的 `$reset()` 重新调用 state 工厂；Setup Store 必须返回自定义 `$reset`，未提供时开发模式报错、生产模式为空操作。以下示例使用 Options Store：
 
 ```typescript
 const userStore = useUserStore()
@@ -324,7 +307,7 @@ console.log(userStore.age) // 0
 
 ### `$subscribe`
 
-订阅状态变化：
+直接修改默认异步通知，`flush: 'sync'` 可同步通知；`$patch` 同步发布 patch 通知。页面/组件 setup 中注册的普通订阅随卸载解绑，`detached` 或无作用域的订阅由调用方取消：
 
 ```typescript
 const counterStore = useCounterStore()
@@ -500,11 +483,12 @@ wevu 的插件系统是**可选的**。使用插件时，仍需在应用入口�
 ### 创建插件
 
 ```typescript
-import { createStore, use } from 'wevu'
+import { createApp, createStore } from 'wevu'
 
-// 创建并安装 store manager
+// 在应用入口创建并安装 store manager
+const app = createApp({})
 const storeManager = createStore()
-use(storeManager) // 使用 createApp() 时调用 app.use(storeManager)
+app.use(storeManager)
 
 // 添加插件（可选）
 storeManager.use(({ store }) => {
@@ -517,15 +501,16 @@ storeManager.use(({ store }) => {
 })
 ```
 
-> **注意**: 与 Pinia 不同，wevu 的插件系统是**完全可选的**。不使用插件的情况下，所有功能都能正常工作。
+> **注意**：插件扩展可选，manager 初始化仍然必需。插件仅作用于安装后新创建的 Store。
 
 ### 日志插件示例
 
 ```typescript
-import { createStore, use } from 'wevu'
+import { createApp, createStore } from 'wevu'
 
+const app = createApp({})
 const storeManager = createStore()
-use(storeManager) // 使用 createApp() 时调用 app.use(storeManager)
+app.use(storeManager)
 
 storeManager.use(({ store }) => {
   // 订阅状态变化
@@ -755,19 +740,9 @@ export const useUserStore = defineStore('user', () => {
 
 ## 与 Pinia 的兼容性
 
-wevu 提供与 Pinia 完全一致的 API：
+wevu 支持常用 Setup/Options Store、state/getters/actions、订阅和基础插件。Setup Store 需自行实现 `$reset`；初始化、状态访问和释放语义见 [迁移指南](https://vite.weapp.dev/wevu/store-migration)。
 
-| Pinia API       | wevu    | 状态     |
-| --------------- | ------- | -------- |
-| `defineStore()` | ✅ 支持 | 完全兼容 |
-| `storeToRefs()` | ✅ 支持 | 完全兼容 |
-| Setup Store     | ✅ 支持 | 完全兼容 |
-| Options Store   | ✅ 支持 | 完全兼容 |
-| `$patch`        | ✅ 支持 | 完全兼容 |
-| `$reset`        | ✅ 支持 | 完全兼容 |
-| `$subscribe`    | ✅ 支持 | 完全兼容 |
-| `$onAction`     | ✅ 支持 | 完全兼容 |
-| Plugins         | ✅ 支持 | 完全兼容 |
+Web SSR、Vue Devtools 和 Pinia HMR 不在支持范围内。依赖 Vue 响应式内部对象的第三方插件不能假定直接兼容。
 
 ## 示例项目
 

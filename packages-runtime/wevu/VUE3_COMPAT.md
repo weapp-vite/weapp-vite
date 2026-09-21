@@ -70,28 +70,25 @@ wevu includes a Pinia-compatible store implementation with an explicit applicati
 - `storeToRefs()` - Extract reactive refs from store
 - `createStore()` - Create a store manager with plugin support
 - `$patch` - Batch update state
-- `$reset` - Reset state to initial values (Setup & Options store)
+- `$reset` - Options Store uses the state factory; Setup Store must provide its own implementation
 - `$subscribe` - Subscribe to state mutations
 - `$onAction` - Subscribe to action calls
 
 **Store manager installation**
 
-```typescript
-// ❌ Pinia：需要全局注册
-import { createPinia } from 'pinia'
+Install once in `app.vue`:
 
-// ✅ wevu：在应用入口安装一次 manager
-import { createStore, defineStore, use } from 'wevu'
+```vue
+<script setup lang="ts">
+import { createStore, use } from 'wevu'
 
-const pinia = createStore()
-use(pinia) // 使用 createApp() 时调用 app.use(pinia)
-
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  return { count }
-})
-// 安装后，组件内可以直接调用 useCounterStore()
+use(createStore())
+</script>
 ```
+
+With `createApp()`, use `app.use(pinia)`. Outside components, pass the manager to `useStore(pinia)`; tests can explicitly activate it with `setActivePinia(pinia)`. `use()` is only available in app setup.
+
+This update ships as a minor release but requires changes to existing Store consumers. Follow the [Store migration guide](https://vite.weapp.dev/wevu/store-migration) before upgrading.
 
 **Setup Store (Recommended):**
 

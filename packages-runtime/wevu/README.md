@@ -89,11 +89,22 @@ const users = useAsyncDerivation(({ signal }) => fetchUsers({ signal }))
 
 ## 状态管理
 
-```ts
-import { createStore, defineStore, storeToRefs, use } from 'wevu'
+旧项目升级前请阅读 [Store 迁移指南](https://vite.weapp.dev/wevu/store-migration)。本次按 minor 发布，初始化、Setup 状态访问、重置和订阅行为仍需按指南迁移。
 
-const pinia = createStore()
-use(pinia) // 在小程序入口安装一次；使用 createApp() 时调用 app.use(pinia)
+在 `app.vue` 中安装一次 manager：
+
+```vue
+<script setup lang="ts">
+import { createStore, use } from 'wevu'
+
+use(createStore())
+</script>
+```
+
+使用 `createApp()` 时调用 `app.use(pinia)`；`use()` 只能在 app setup 中调用。定义 Store 并在安装后的页面/组件中使用：
+
+```ts
+import { defineStore, storeToRefs } from 'wevu'
 
 export const useCounter = defineStore('counter', {
   state: () => ({ count: 0 }),
