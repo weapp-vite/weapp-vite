@@ -119,6 +119,14 @@ describe('platform build verification gate', { concurrent: false }, () => {
     }
     expect(vueTemplate).toContain('onTap="__weapp_vite_inline"')
     expect(vueTemplate).toContain('a:if=')
+    const vueStyle = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.acss'), 'utf8')
+    const scope = /\b(data-v-[\w-]+)=""/.exec(vueTemplate)?.[1]
+    expect(scope).toBeTruthy()
+    expect(vueTemplate).toContain(`class="page ${scope}"`)
+    expect(vueTemplate).toMatch(new RegExp(`class="[^"\\n]*\\}\\} ${scope}"`))
+    expect(vueStyle).toContain(`.page.${scope}`)
+    expect(vueStyle).toContain(`.panel.odd.${scope}`)
+    expect(vueStyle).not.toMatch(/\[data-v-/)
     expect(vueConfig.usingComponents?.['ant-button']).toBe('/node_modules/antd-mini/es/Button/index')
 
     const antdButtonRoot = path.join(outputRoot, 'node_modules/antd-mini/es/Button')

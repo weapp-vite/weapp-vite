@@ -179,6 +179,8 @@ pnpm exec wv open --platform alipay
 - 在支付宝 IDE 中导入 `dist/` 目录即可预览。
 - `open --platform alipay` 会自动通过 `minidev ide` 打开支付宝开发者工具（需先安装 `minidev`）。
 
+支付宝 Vue SFC 的 `<style scoped>` 使用 class 作用域标记，以兼容 ACSS 不支持 Vue 属性选择器的限制；动态 class 和样式热更新保留相同的作用域隔离，无需改成全局样式。
+
 支付宝构建会按平台选择同名 sidecar。模板优先级为 `.axml`、`.wxml`、`.html`，样式优先级为 `.acss`、`.wxss`、`.css` 和预处理器。因此迁移现有支付宝项目时，可以保留原生目录：
 
 ```text
