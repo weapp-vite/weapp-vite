@@ -33,6 +33,14 @@ it('renders shared computed after page and child subscription disposal', async (
     expect(result.dispose()).toBe(3)
     result.boundaries()
     await expect.poll(() => result.boundarySnapshot()).toMatchObject({
+      batching: {
+        sync: ['patch function:20', 'patch object:21', 'patch function:22', 'direct:23'],
+        async: ['patch function:20', 'patch object:21', 'patch function:22', 'direct:23'],
+        patchReads: 3000,
+        batchReads: 3000,
+        watcherRuns: 22,
+        value: 23,
+      },
       patch: ['patch object:2', 'patch function:3', 'direct:4'],
       pluginDuring: [],
       pluginSync: ['direct:3'],
@@ -44,7 +52,7 @@ it('renders shared computed after page and child subscription disposal', async (
       values: [5, 6],
     })
     render()
-    expect(preview.querySelector('#boundaries')?.textContent).toBe('patch:3 shallow:2 plugin:1')
+    expect(preview.querySelector('#boundaries')?.textContent).toBe('patch:3 shallow:2 plugin:1 batch:4')
   }
   finally {
     session.close()

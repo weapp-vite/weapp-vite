@@ -1,4 +1,5 @@
 import { createStore, defineStore, disposePinia, getActivePinia, isReactive, nextTick, setActivePinia, shallowReactive, shallowRef, storeToRefs } from 'wevu'
+import { runStoreBatching } from './issue1049Batching'
 
 /** 在独立管理器中收集真实 runtime 的 Store 边界，结束后恢复应用管理器。 */
 export async function runStoreBoundaries() {
@@ -48,7 +49,9 @@ export async function runStoreBoundaries() {
     const shallowDuring = shallowEvents.slice()
     refs.source.value = { n: 5 }
     shallow.data.nested = { n: 6 }
+    const batching = await runStoreBatching(owner)
     return {
+      batching,
       patch,
       pluginDuring,
       pluginSync,
@@ -58,7 +61,7 @@ export async function runStoreBoundaries() {
       shallowDuring,
       shallowEvents,
       values: [shallow.source.n, shallow.data.nested.n],
-      summary: `patch:${patch.length} shallow:${shallowEvents.length} plugin:${pluginSync.length}`,
+      summary: `patch:${patch.length} shallow:${shallowEvents.length} plugin:${pluginSync.length} batch:${batching.sync.length}`,
     }
   }
   finally {

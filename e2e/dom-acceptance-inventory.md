@@ -783,25 +783,25 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ## ide/github-issues.runtime.issue1049.test.ts
 
-### e2e app: github-issues / issue #1049 > preserves nested patch, shallow state and plugin initialization boundaries
+### e2e app: github-issues / issue #1049 > preserves Store boundaries and batches subscription work for mini-programs
 
 - Source: `e2e/ide/github-issues.runtime.issue1049.test.ts:33`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'boundaries', route: RESULT_ROUTE, action: '嵌套 patch、浅层状态与插件初始化后渲染通知计数', nodes: [{ selector: '#issue1049-boundaries', text: 'patch:3 shallow:2 plugin:1' }], }]`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:34`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'boundaries', route: RESULT_ROUTE, action: '批处理、嵌套 patch、浅层状态与插件初始化后渲染通知计数', nodes: [{ selector: '#issue1049-boundaries', text: 'patch:3 shallow:2 plugin:1 batch:4' }], }]`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:34`
 - Operations: `callMethod(_boundaries)`, `callMethod(_boundarySnapshot)`, `check(boundaries)`
 
 ### e2e app: github-issues / issue #1049 > unsubscribes page and child scopes on reLaunch, retaining shared computed and in-flight actions
 
-- Source: `e2e/ide/github-issues.runtime.issue1049.test.ts:64`
+- Source: `e2e/ide/github-issues.runtime.issue1049.test.ts:72`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: LAUNCH_ROUTE, action: '页面和子组件注册订阅', nodes: [{ selector: '#issue1049-count', text: '0' }, { selector: '#issue1049-child', scope: ['#issue1049-subscriber'], text: 'child subscribed' }], }, { id: 'result', route: RESUL`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:65`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'initial', route: LAUNCH_ROUTE, action: '页面和子组件注册订阅', nodes: [{ selector: '#issue1049-count', text: '0' }, { selector: '#issue1049-child', scope: ['#issue1049-subscriber'], text: 'child subscribed' }], }, { id: 'result', route: RESUL`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:73`
 - Operations: `callMethod(_resetScenario)`, `check(initial)`, `callMethod(_mutate)`, `callMethod(_startActions)`, `callMethod(_finish)`, `callMethod(_snapshot)`, `check(result)`, `callMethod(_dispose)`
 
 ### e2e app: github-issues / issue #1049 > keeps hidden page subscriptions and releases only an unmounted child
 
-- Source: `e2e/ide/github-issues.runtime.issue1049.test.ts:110`
+- Source: `e2e/ide/github-issues.runtime.issue1049.test.ts:118`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'child-removed', route: LAUNCH_ROUTE, action: '卸载子组件后更新 Store', nodes: [{ selector: '#issue1049-count', text: '1' }, { selector: '#issue1049-double', text: '2' }], }, { id: 'hidden-page', route: RESULT_ROUTE, action: 'navigateTo 只隐藏页`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:111`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'child-removed', route: LAUNCH_ROUTE, action: '卸载子组件后更新 Store', nodes: [{ selector: '#issue1049-count', text: '1' }, { selector: '#issue1049-double', text: '2' }], }, { id: 'hidden-page', route: RESULT_ROUTE, action: 'navigateTo 只隐藏页`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:119`
 - Routes: `/pages/issue-1049/result/index`
 - Operations: `callMethod(_resetScenario)`, `callMethod(_removeChild)`, `callMethod(_mutate)`, `check(child-removed)`, `navigateTo(/pages/issue-1049/result/index)`, `check(hidden-page)`
 

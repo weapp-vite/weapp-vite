@@ -30,12 +30,12 @@ describe('e2e app: github-issues / issue #1049', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   }, 30_000)
 
-  it('preserves nested patch, shallow state and plugin initialization boundaries', async (ctx) => {
+  it('preserves Store boundaries and batches subscription work for mini-programs', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
       id: 'boundaries',
       route: RESULT_ROUTE,
-      action: '嵌套 patch、浅层状态与插件初始化后渲染通知计数',
-      nodes: [{ selector: '#issue1049-boundaries', text: 'patch:3 shallow:2 plugin:1' }],
+      action: '批处理、嵌套 patch、浅层状态与插件初始化后渲染通知计数',
+      nodes: [{ selector: '#issue1049-boundaries', text: 'patch:3 shallow:2 plugin:1 batch:4' }],
     }])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
@@ -43,6 +43,14 @@ describe('e2e app: github-issues / issue #1049', { concurrent: false }, () => {
       assert(page)
       await page.callMethod('_boundaries')
       await expect.poll(() => page.callMethod('_boundarySnapshot')).toEqual({
+        batching: {
+          sync: ['patch function:20', 'patch object:21', 'patch function:22', 'direct:23'],
+          async: ['patch function:20', 'patch object:21', 'patch function:22', 'direct:23'],
+          patchReads: 3000,
+          batchReads: 3000,
+          watcherRuns: 22,
+          value: 23,
+        },
         patch: ['patch object:2', 'patch function:3', 'direct:4'],
         pluginDuring: [],
         pluginSync: ['direct:3'],
@@ -52,7 +60,7 @@ describe('e2e app: github-issues / issue #1049', { concurrent: false }, () => {
         shallowDuring: [],
         shallowEvents: ['direct', 'direct'],
         values: [5, 6],
-        summary: 'patch:3 shallow:2 plugin:1',
+        summary: 'patch:3 shallow:2 plugin:1 batch:4',
       })
       await dom.check('boundaries', miniProgram, page)
     }

@@ -36,6 +36,14 @@ describe.each(['node', 'browser'] as const)('%s wevu Store lifecycle', (provider
       expect(result.dispose()).toBe(3)
       result.boundaries()
       await expect.poll(() => result.boundarySnapshot()).toEqual({
+        batching: {
+          sync: ['patch function:20', 'patch object:21', 'patch function:22', 'direct:23'],
+          async: ['patch function:20', 'patch object:21', 'patch function:22', 'direct:23'],
+          patchReads: 3000,
+          batchReads: 3000,
+          watcherRuns: 22,
+          value: 23,
+        },
         patch: ['patch object:2', 'patch function:3', 'direct:4'],
         pluginDuring: [],
         pluginSync: ['direct:3'],
@@ -45,9 +53,9 @@ describe.each(['node', 'browser'] as const)('%s wevu Store lifecycle', (provider
         shallowDuring: [],
         shallowEvents: ['direct', 'direct'],
         values: [5, 6],
-        summary: 'patch:3 shallow:2 plugin:1',
+        summary: 'patch:3 shallow:2 plugin:1 batch:4',
       })
-      expect(session.renderCurrentPage().wxml).toContain('patch:3 shallow:2 plugin:1')
+      expect(session.renderCurrentPage().wxml).toContain('patch:3 shallow:2 plugin:1 batch:4')
     }
     finally {
       session.close()

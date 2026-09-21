@@ -14,7 +14,7 @@ keywords:
 
 # Store（状态管理）
 
-wevu Store 的日常用法以 Pinia 4.0.3 为参照，导入来自 `wevu` 或 `wevu/store`，状态由 wevu 响应式系统管理。支持 Setup/Options Store、独立 Pinia 实例、基础插件和订阅作用域。Web SSR、Vue Devtools 和 Pinia HMR 不在支持范围内。
+wevu Store 面向小程序，公开用法和主要行为以 Pinia 4.0.3 为参照，导入来自 `wevu` 或 `wevu/store`。响应式核心、依赖追踪、调度与 `setData` 使用 wevu 的实现，不承诺复刻 Vue/Pinia 的内部执行时序。支持 Setup/Options Store、独立 Pinia 实例、基础插件和订阅作用域。Web SSR、Vue Devtools 和 Pinia HMR 不在支持范围内。
 
 ## 初始化
 
@@ -104,6 +104,12 @@ const stopAction = store.$onAction(({ name, args, after, onError }) => {
 ```
 
 直接修改默认随 watcher 调度异步通知；`flush: 'sync'` 同步通知。`$patch` 同步发布 `patch object` 或 `patch function`，对象 patch 附带原 payload；`$state` 和 Options `$reset` 发布 `patch function`。支持 `deep`、`immediate`、`once` 等 wevu watch 选项。
+
+`$patch` 暂停 Store 内部订阅的重复依赖收集；同步订阅在 patch 结束后刷新，默认异步订阅在同一轮调度中合并刷新。普通 `watch(..., { flush: 'sync' })` 仍逐次观察 patch 内的写入；页面渲染和 `setData` 由小程序调度器合并。
+
+显式使用 `batch(() => { ... })` 时，普通同步 watcher 按 wevu 的批处理语义合并执行。批次内每次 `$patch` 仍同步发布自己的 patch 通知，内部订阅在外层批次结束后恢复，不再重复发布该批次的 `direct`。需要单独观察的直接修改应放在批次之外；默认异步订阅需等待 `nextTick()` 后恢复。
+
+大列表优先按业务拆分 Store，使用 `shallowRef`、`shallowReactive` 或 `markRaw` 明确更新边界。深订阅仍有遍历成本，批处理不会使任意大状态的观察变成常数开销。Pinia 版本升级需审查公开行为变化，并通过小程序 runtime 与性能回归；不自动追随其内部调度实现。
 
 默认订阅绑定注册时的作用域：页面 `onUnload`、组件 `detached` 后自动解绑；`onHide` 不解绑。`$subscribe(cb, { detached: true })`、`$onAction(cb, true)` 或无作用域登记的订阅由调用方取消。取消订阅或释放 Store 不取消已经开始的 action 的 `after/onError`。
 

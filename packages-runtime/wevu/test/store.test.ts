@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from '@/runtime/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effect, effectScope, ref, watch } from '@/reactivity'
+import { batch, computed, effect, effectScope, ref, watch } from '@/reactivity'
 import { createApp } from '@/runtime/app'
 import { mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register/runtimeInstance'
 import { nextTick } from '@/scheduler'
@@ -132,7 +132,7 @@ describe('store runtime integration', () => {
     expect(snapshots).toEqual(['0:2', '4:4', '6:6'])
   })
 
-  it('$patch produces one runtime setData dispatch', async () => {
+  it.each([false, true])('$patch produces one runtime setData dispatch (batch: %s)', async (batched) => {
     const useProfile = defineStore('store-set-data-batch', {
       state: () => ({
         firstName: 'Ada',
@@ -153,10 +153,16 @@ describe('store runtime integration', () => {
     await nextTick()
     setData.mockClear()
 
-    store.$patch({
+    const patch = () => store.$patch({
       firstName: 'Grace',
       lastName: 'Hopper',
     })
+    if (batched) {
+      batch(patch)
+    }
+    else {
+      patch()
+    }
     await nextTick()
 
     expect(setData).toHaveBeenCalledTimes(1)
