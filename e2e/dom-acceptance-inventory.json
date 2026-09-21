@@ -7608,7 +7608,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "d8a8d7d864f9cda811331195d9a9d67a4c6a1a47170c241275c941de22031b56"
+      "sha256": "b8160805fe4e959f8a9ac24ef953db65f14f16e24e1ba2865eded88a713921e6"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",

@@ -280,6 +280,7 @@ const CI_PR_PATTERNS = [
   'ci/config-merge.e2e.test.ts',
   'ci/github-issues-runtime-shared.test.ts',
   'ci/github-issues.build.test.ts',
+  'ci/github-issues.issue1035.build.test.ts',
   'ci/issue-862-output-watch.test.ts',
   'ci/headless-automator-provider.test.ts',
   'ci/platform-build.test.ts',
