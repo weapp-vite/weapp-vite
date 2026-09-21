@@ -91,6 +91,18 @@
 - 用途：订阅 Action 调用，可通过 `after()` 和 `onError()` 监听成功结果或错误。第二个参数 `true` 脱离注册作用域；解绑/释放不会取消在途 action 已登记的结果回调。
 - 返回值：取消订阅函数。
 
+### `$dispose()` {#store-dispose}
+
+<!-- api-reference-details -->
+
+**类型签名：** `() => void`
+
+**运行时说明：** 停止 Store scope、清理订阅和实例缓存，保留 Pinia 状态。再次 useStore 创建新实例并复用状态。幂等释放，页面卸载不会自动销毁 Store。
+
+**Vue/Pinia 差异：** API 释放语义与 Pinia 一致，副作用由 wevu 的独立 Store scope 管理。
+
+**示例：** 见 [本组示例](/wevu/api/store#example-store-instance)。
+
 ### 本组示例 {#example-store-instance}
 
 实例 API 可以批量更新、重置并观察 mutation 与 Action 结果。
@@ -111,14 +123,8 @@ counter.$patch((state) => {
 counter.$reset()
 stopState()
 stopAction()
+counter.$dispose()
+// 需全新状态时，在下次 useCounter(manager) 前显式删除。
+delete manager.state.value[counter.$id]
 ```
 
-### `$dispose()` {#store-dispose}
-
-<!-- api-reference-details -->
-
-**类型签名：** `() => void`
-
-**运行时说明：** 停止 Store scope、清理订阅和实例缓存，保留 Pinia 状态。再次 useStore 创建新实例并复用状态。幂等释放，页面卸载不会自动销毁 Store。
-
-**示例：** `store.$dispose()`；需全新状态再执行 `delete pinia.state.value[store.$id]`。
