@@ -1,6 +1,6 @@
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, defineStore, nextTick, onAttached, onUnload, reactive, ref } from '@/index'
+import { createPinia, defineComponent, defineStore, nextTick, onAttached, onUnload, reactive, ref, setActivePinia, storeToRefs } from '@/index'
 import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
 
 describe('runtime: stateful HMR', () => {
@@ -10,6 +10,7 @@ describe('runtime: stateful HMR', () => {
   let trackedDefinition: Record<string, any> | undefined
 
   beforeEach(() => {
+    setActivePinia(createPinia())
     refresh = undefined
     registeredDefinition = undefined
     trackedDefinition = undefined
@@ -278,7 +279,9 @@ describe('runtime: stateful HMR', () => {
       const count = ref(0)
       return {
         count,
-        increment: (delta: number) => { count.value += delta },
+        increment: (delta: number) => {
+          count.value += delta
+        },
       }
     })
     let useCounter = createCounter()
@@ -289,7 +292,7 @@ describe('runtime: stateful HMR', () => {
         return {
           count,
           store,
-          storeCount: store.count,
+          storeCount: storeToRefs(store).count,
           increment: () => {
             count.value += delta
             store.increment(delta)
@@ -301,7 +304,9 @@ describe('runtime: stateful HMR', () => {
     const instance: any = {
       data: {},
       properties: {},
-      setData(payload: Record<string, any>) { Object.assign(this.data, payload) },
+      setData(payload: Record<string, any>) {
+        Object.assign(this.data, payload)
+      },
     }
     registeredDefinition!.lifetimes.attached.call(instance)
     instance.__wevu.methods.increment()
@@ -324,12 +329,12 @@ describe('runtime: stateful HMR', () => {
     applying = false
     expect(useCounter().count).toBe(storeRef)
     expect(useCounter().increment).toBe(storeAction)
-    expect(useCounter().count.value).toBe(2)
+    expect(useCounter().count).toBe(2)
     expect(instance.data).toMatchObject({ count: 2, storeCount: 2 })
     instance.__wevu.methods.increment()
     await nextTick()
     await nextTick()
     expect(instance.data).toMatchObject({ count: 4, storeCount: 4 })
-    expect(useCounter().count.value).toBe(4)
+    expect(useCounter().count).toBe(4)
   })
 })

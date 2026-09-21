@@ -1,8 +1,8 @@
 import type { ActionContext, SubscriptionCallback } from 'wevu'
-import { computed, createStore, defineStore, ref } from 'wevu'
+import { computed, createPinia, defineStore, ref } from 'wevu'
 
-// 全局 store manager（可选）：挂载插件用于演示 $onAction/$subscribe 扩展
-export const storeManager = createStore()
+// 应用安装的 Pinia，挂载插件用于演示 $onAction/$subscribe。
+export const storeManager = createPinia()
 storeManager.use(({ store }) => {
   if (store.$id !== 'plugin-demo') {
     return
@@ -162,7 +162,7 @@ export const useTodoStore = defineStore('todo', {
   },
 })
 
-// 插件示例：结合 createStore().use() + $onAction/$subscribe
+// 插件示例：结合 createPinia().use() + $onAction/$subscribe
 export const usePluginDemoStore = defineStore('plugin-demo', {
   state: () => ({
     status: 'idle' as 'idle' | 'pending' | 'ok' | 'error',
@@ -195,9 +195,9 @@ export const usePluginDemoStore = defineStore('plugin-demo', {
     },
     clearStatus() {
       this.$reset()
-      const pluginLog = (this as any).$pluginLog as undefined | { value: string[] }
+      const pluginLog = (this as any).$pluginLog as undefined | string[]
       if (pluginLog) {
-        pluginLog.value.unshift('通过 $reset 回到初始状态')
+        pluginLog.unshift('通过 $reset 回到初始状态')
       }
     },
   },

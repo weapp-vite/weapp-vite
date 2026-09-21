@@ -1,6 +1,6 @@
 import type { RuntimeInstance, WatchOptions } from 'wevu'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
-import { createApp, onError, onErrorCaptured, onHide, onShow } from 'wevu'
+import { createApp, createPinia, onError, onErrorCaptured, onHide, onShow } from 'wevu'
 
 import { pushLifecycleLog } from './stores/lifecycle'
 
@@ -115,6 +115,8 @@ export const appRuntime = createApp({
     pushLifecycleLog('onHide', 'app', '原生生命周期 onHide')
   },
 })
+
+appRuntime.use(createPinia())
 
 appRuntime.use(VueQueryPlugin, {
   queryClient,

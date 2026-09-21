@@ -293,5 +293,8 @@
     "@wevu/compiler": "workspace:*",
     "@wevu/web-apis": "workspace:*",
     "vue": "catalog:"
+  },
+  "devDependencies": {
+    "pinia": "4.0.3"
   }
 }

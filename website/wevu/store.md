@@ -14,221 +14,141 @@ keywords:
 
 # Store（状态管理）
 
-Wevu 内置了类 Pinia 的 Store：
+wevu Store 的日常用法以 Pinia 4.0.3 为参照，导入来自 `wevu` 或 `wevu/store`，状态由 wevu 响应式系统管理。支持 Setup/Options Store、独立 Pinia 实例、基础插件和订阅作用域。Web SSR、Vue Devtools 和 Pinia HMR 不在支持范围内。
 
-- 用 `defineStore()` 定义 Store
-- 用 `useXxx()` 获取**单例**实例
-- 用 `storeToRefs()` 解构 state/getter，避免丢失响应式
+## 初始化
 
-Store 适合客户端状态；服务端列表、详情、请求缓存和跨页刷新使用独立的 [`@wevu/query`](#server-state-query)。
+在小程序 `app.vue` 中安装一次：
 
-:::tip 导入约定
-内置 Store API 从 `wevu` 主入口导入；服务端查询 API 从 `@wevu/query` 导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
-:::
+```vue
+<script setup lang="ts">
+import { createPinia, use } from 'wevu'
 
-## 导入与核心 API
+const pinia = createPinia()
+use(pinia)
+</script>
+```
 
-- `defineStore(id, setup | options)`：定义 Store，返回 `useXxx()` 获取单例实例。
-- `storeToRefs(store)`：将 state/getter 包装为 `ref`，函数保持原样，解构不丢失响应式。
-- `createStore()`：可选的插件入口；只有需要插件时才调用（见下文）。
+使用 `createApp()` 时调用 `app.use(pinia)`。组件外可调用 `useCounter(pinia)`；测试可用 `setActivePinia(createPinia())`。未安装、未传入且无活动实例时，`useStore()` 会报错。不同 Pinia 的实例和状态隔离，同一个 Pinia 中相同 ID 复用实例。
 
-## Setup Store 示例（推荐）
+## 定义与使用
 
 ```ts
-// stores/counter.ts
-import { computed, defineStore, ref } from 'wevu'
+import { computed, defineStore, ref, storeToRefs } from 'wevu'
 
 export const useCounter = defineStore('counter', () => {
   const count = ref(0)
   const doubled = computed(() => count.value * 2)
-  const inc = () => count.value++
-  return { count, doubled, inc }
-})
-```
-
-特点：
-
-- 你可以返回任意字段；函数会被当作 action（除 `$` 开头的保留字段）。
-- `$patch/$subscribe/$onAction` 等基础 API 会自动合并进返回对象。
-
-## Options Store 示例
-
-```ts
-// stores/user.ts
-import { defineStore } from 'wevu'
-
-export const useUser = defineStore('user', {
-  state: () => ({ name: '', age: 0 }),
-  getters: {
-    label(state) {
-      return `${state.name}:${state.age}`
-    },
-    canVote() {
-      return this.age >= 18
-    },
-  },
-  actions: {
-    grow() {
-      this.age += 1
-    },
-  },
-})
-```
-
-## 在页面/组件中使用
-
-```ts
-// pages/counter/index.ts
-import { defineComponent, storeToRefs } from 'wevu'
-import { useCounter } from '@/stores/counter'
-
-export default defineComponent({
-  setup() {
-    const counter = useCounter()
-    const { count, doubled } = storeToRefs(counter)
-
-    counter.$subscribe((mutation) => {
-      console.log('[counter]', mutation.type, mutation.storeId)
-    })
-
-    return { count, doubled, inc: counter.inc }
-  },
-})
-```
-
-要点：
-
-- Store 是单例，在页面/组件 `setup` 里调用 `useXxx()` 即可复用。
-- 解构 state/getter 请使用 `storeToRefs`，actions 可以直接解构。
-
-## 插件与订阅
-
-- 默认无需插件即可使用；只有当你需要统一扩展所有 Store 时再调用 `createStore()` 并注册插件。
-- 插件需在第一次 `useXxx()` 之前注册。`createStore()` 会记录为全局单例，之后创建的 Store 会自动应用插件（插件参数为 `{ store }`）。
-
-```ts
-import { createStore, defineStore } from 'wevu'
-
-const manager = createStore()
-manager.use(({ store }) => {
-  store.$onAction((ctx) => {
-    ctx.after(res => console.log('[after]', ctx.name, res))
-    ctx.onError(err => console.error('[error]', ctx.name, err))
-  })
-  store.$subscribe((mutation, state) => {
-    console.log(`[${store.$id}]`, mutation.type, state)
-  })
-})
-
-// 之后定义的任何 store 都会自动套用上述插件
-export const useCart = defineStore('cart', {
-  state: () => ({ items: [] as Array<{ id: string, count: number }> }),
-  actions: {
-    add(id: string, count = 1) {
-      const found = this.items.find(i => i.id === id)
-      if (found) {
-        found.count += count
-      }
-      else { this.items.push({ id, count }) }
-    },
-  },
-})
-```
-
-## 持久化（storage）与初始化顺序
-
-Store 是单例，适合承载登录态、用户偏好、缓存索引等“跨页面共享”的状态。常见诉求是把部分 state 持久化到本地存储（`wx.setStorageSync` / `wx.setStorage`）。
-
-推荐做法：
-
-- 只持久化必要字段（避免把大对象/列表直接塞进 storage）
-- 统一在插件中处理（避免每个 store 手写重复逻辑）
-- 注意初始化顺序：在第一次 `useXxx()` 之前完成“读取 → 回填”
-
-示例（简化版，仅展示形态）：
-
-```ts
-import { createStore, defineStore } from 'wevu'
-
-const manager = createStore()
-manager.use(({ store }) => {
-  const key = `wevu:${store.$id}`
-  try {
-    const raw = wx.getStorageSync(key)
-    if (raw) {
-      store.$patch(JSON.parse(raw))
-    }
+  function increment() {
+    count.value++
   }
-  catch {}
-
-  store.$subscribe((_mutation, state) => {
-    try {
-      wx.setStorageSync(key, JSON.stringify(state))
-    }
-    catch {}
-  })
+  function $reset() {
+    count.value = 0
+  }
+  return { count, doubled, increment, $reset }
 })
 
-export const usePrefs = defineStore('prefs', {
-  state: () => ({ theme: 'light' as 'light' | 'dark' }),
+// 在安装后的页面/组件 setup 中使用
+const store = useCounter()
+store.count++
+console.log(store.doubled)
+const { count, doubled } = storeToRefs(store)
+const { increment } = store
+count.value++
+```
+
+只有 setup 内部的 ref 和 `storeToRefs()` 返回值使用 `.value`。`storeToRefs()` 包含响应式 state、getters 和插件响应式属性，不包含 actions、普通属性和管理 API；只读 getter 仍只读。向模板暴露解构出的 refs 和 actions。
+
+Options Store 的 getter/action 中可以用 `this`：
+
+```ts
+export const useProfile = defineStore('profile', {
+  state: () => ({ profile: { name: 'Ada', age: 18 }, visits: 0 }),
+  getters: { label: state => `${state.profile.name}: ${state.visits}` },
+  actions: { visit() {
+    this.visits++
+  } },
 })
 ```
 
-:::warning 注意
-上面示例直接读取/写入 `wx` 存储，必须在小程序运行时执行；如果你在 Node/Vitest 环境跑测试，需要 stub `wx` 或把持久化逻辑封装到可替换的 adapter。
-:::
+## 修改与重置
 
-## Store 实例 API
+两种 Store 均有 `$state`。Setup Store 的 state 只包含返回的 ref/reactive，不包含 computed 和 actions。
 
-- `$id`：当前 Store 的唯一标识。
-- `$state`（Options Store）：读取/替换整个 state；赋值会做浅合并并触发 `patch object`。
-- `$patch(patch | fn)`：批量修改；Setup/Options Store 均可用，支持对象合并或回调方式。
-- `$reset()`（Options Store）：将 state 重置为初始值。
-- `$subscribe((mutation, state) => void)`：订阅变更，返回取消订阅函数；`mutation.type` 为 `patch object` 或 `patch function`。
-- `$onAction(({ name, store, args, after, onError }) => void)`：订阅 action 调用，支持成功/失败回调。
-- `storeToRefs(store)`：将所有非函数字段转换为可写 `ref`，函数保持原样，避免解构丢失响应式。
-
-## TypeScript 与最佳实践
-
-- Setup Store 会自动推导返回对象的类型；Options Store 可通过泛型精确声明 `state/getters/actions`。
-- Store 文件按功能域组织（例如 `stores/user.ts`、`stores/cart.ts`），Store ID 使用小写单数。
-- 避免直接解构 state：使用 `storeToRefs`；actions 可以直接解构。
-- SSR/HMR/Devtools：Wevu 面向小程序运行环境，暂未提供这些 Web 专属能力。
-
-## 常见问题
-
-- 内置 Store API 从 `wevu` 主入口导入。
-- 不需要为了使用 store 先调用 `createStore()`；仅在使用插件时才需要。
-
-## 服务端状态查询：`@wevu/query` {#server-state-query}
-
-`@wevu/query` 是面向 Wevu 小程序的查询包。一个 `QueryClient` 管理一份内存缓存；同键请求共享进行中的 Promise，页面分别持有自己的观察者。
-
-在 `app.vue` 的 setup 中安装插件，并显式接入微信宿主：
-
-```vue
-<script setup lang="ts">
-import { createQueryClient, createQueryPlugin, createWechatQueryHost } from '@wevu/query'
-import { use } from 'wevu'
-
-const queryClient = createQueryClient()
-use(createQueryPlugin(queryClient, {
-  host: createWechatQueryHost(wx),
-}))
-</script>
+```ts
+const profile = useProfile()
+profile.$patch({ profile: { age: 20 } }) // 保留 name
+profile.$patch((state) => {
+  state.visits++
+})
+profile.$state = { profile: { name: 'Lin', age: 21 }, visits: 2 }
+profile.$reset()
 ```
 
-- `defineQueryOptions()`：保留查询键与返回数据的类型关联，供 `fetchQuery()`、`getQueryData()` 和 `setQueryData()` 共享。
-- `useQuery()`：返回逐字段只读 computed，如 `data`、`error`、`status` 和 `fetchStatus`；`refresh()` 复用新鲜缓存，`refetch()` 强制重新请求。`select` 失败只改变当前观察者的错误状态，不污染原始缓存。
-- `useMutation()` / `createMutation()`：执行服务端变更，并通过 `onSuccess` 等回调更新或失效关联查询。
-- `useInfiniteQuery()` / `observeInfiniteQuery()`：在同一缓存内维护 `pages` 与 `pageParams`，通过 `fetchNextPage()` 追加下一页；失效后的重新查询从初始页开始。
-- `queryClient.invalidateQueries({ key: ['orders'] })`：按键前缀失效关联数据。页面隐藏时不自动刷新，返回页面后再按新鲜度刷新；隐藏本身不会取消其他页面仍在共享的请求。
-- `queryClient.setScope(accountId)`：切换账号或租户时清空并撤销旧作用域结果。`clear()` 与作用域切换都会重置现有观察者，**不会自动重跑旧配置，之后的页面显示事件也不会触发重跑**；业务需显式 `refresh()` / `invalidateQueries()`，或更新查询键、重新启用查询。`clear()` 后仍可复用，`dispose()` 是终止操作，之后不能再发起查询或 mutation。
+对象 patch 深层合并普通对象、替换数组；函数 patch 接收自动解包后的 state。`$state` 赋值通过 function patch 合并字段，保留响应式连接。Options `$reset()` 重新调用 state 工厂；Setup 必须返回自定义 `$reset`，未提供时开发模式报错、生产模式为空操作。
 
-`query({ key, signal })` 由业务提供真实请求。使用 `wx.request` 时，应将 `signal` 绑定到返回的 `RequestTask.abort()`，并在请求结束时移除监听；请求取消与旧结果隔离由查询核心协调，不要求业务依赖浏览器 `fetch`。
+## 订阅与作用域
 
-默认 `staleTime` 为 5 秒、`gcTime` 为 5 分钟，可在 client 或查询选项中覆盖。同一缓存条目的多个使用者以最长 `gcTime` 保留数据。离线的显式查询会等待恢复；最后一个观察者销毁后，其观察者拥有的排队请求会取消。
+```ts
+const stop = store.$subscribe((mutation, state) => {
+  console.log(mutation.type, mutation.storeId, state.count)
+  if (mutation.type === 'patch object') {
+    console.log(mutation.payload)
+  }
+}, { flush: 'sync' })
 
-缓存只保存在内存中，不内置持久化、失败重试策略或乐观更新。作用域撤销会屏蔽旧 mutation 的结果和回调，但不能撤销已经发送到服务端的写入。
+const stopAction = store.$onAction(({ name, args, after, onError }) => {
+  after(result => console.log(name, args, result))
+  onError(error => console.error(error))
+})
+```
 
-真实 `wx.request` 与“列表 → 详情变更 → 返回刷新”示例位于仓库 `e2e-apps/wevu-features/src/shared/queryFixture.ts` 和 `src/pages/query-list`、`src/pages/query-detail`；业务源码不区分 DevTools 与 headless provider。该回归 fixture **故意不转发 `signal`**，用于证明底层请求忽略取消、旧响应仍然返回时不会覆盖当前查询结果；生产请求仍应按上文接入 `RequestTask.abort()`。
+直接修改默认随 watcher 调度异步通知；`flush: 'sync'` 同步通知。`$patch` 同步发布 `patch object` 或 `patch function`，对象 patch 附带原 payload；`$state` 和 Options `$reset` 发布 `patch function`。支持 `deep`、`immediate`、`once` 等 wevu watch 选项。
+
+默认订阅绑定注册时的作用域：页面 `onUnload`、组件 `detached` 后自动解绑；`onHide` 不解绑。`$subscribe(cb, { detached: true })`、`$onAction(cb, true)` 或无作用域登记的订阅由调用方取消。取消订阅或释放 Store 不取消已经开始的 action 的 `after/onError`。
+
+## 显式释放
+
+`store.$dispose()` 停止 Store scope、watcher 和登记的 cleanup，清空订阅并删除实例缓存，**保留 Pinia 的 state**。页面卸载不会销毁共享 Store。下一次 `useStore()` 创建新实例并复用原状态；重复释放旧实例不会删除新实例。
+
+```ts
+store.$dispose()
+// 需要全新状态时，显式删除保存的状态
+const pinia = getActivePinia()!
+delete pinia.state.value[useCounter.$id]
+const fresh = useCounter(pinia)
+// 整个应用或测试结束后释放全部 Store 与状态
+disposePinia(pinia)
+```
+
+上例中的 `getActivePinia`、`disposePinia` 同样从 `wevu` / `wevu/store` 导入。释放不会冻结旧引用、重建旧实例或取消业务异步任务。初始化失败允许后续重试；cleanup 抛错时仍尝试完成剩余清理后报告错误。
+
+## 插件
+
+```ts
+const pinia = createPinia()
+pinia.use(({ store, pinia, app, options }) => {
+  console.log(store.$id, pinia, app, options.actions)
+  return { lastUpdated: ref(0) }
+})
+// app.vue 用 use(pinia)，createApp 场景用 app.use(pinia)
+```
+
+插件在安装后作用于新创建的 Store，可以返回扩展属性。`PiniaCustomProperties` 和 `PiniaCustomStateProperties` 支持类型声明合并。不要假定依赖 Vue Devtools、Web SSR 或 Vue 响应式内部对象的第三方插件能直接运行。
+
+## 从旧版迁移
+
+这是破坏性变更。先安装 Pinia，再迁移 Store 的消费者：
+
+| 旧写法/行为 | 当前写法/行为 |
+| --- | --- |
+| 无初始化直接 `useStore()` | `use(createPinia())`、`app.use(pinia)` 或 `useStore(pinia)` |
+| `createStore()` 隐式激活 manager | `createPinia()` 后显式安装；`createStore` 仅为弃用别名 |
+| 外部 `store.count.value++` | `store.count++` |
+| 从 `storeToRefs()` 解构 action | 从 Store 实例直接解构 action |
+| Setup 自动快照 `$reset()` | 在 setup 返回自定义 `$reset` |
+| 直接修改同步触发 `$subscribe` | 默认异步；确需同步时设置 `flush: 'sync'` |
+| 释放后回到初始状态 | `$dispose()` 保留状态，需要时显式删除 `pinia.state.value[id]` |
+| 无作用域自动解绑 | 页面/组件 setup 中默认解绑，detached 或无作用域时手动取消 |
+
+不要用 `$dispose()` 代替页面卸载钩子；共享 Store 的生命周期属于 Pinia，页面只拥有自己的订阅。

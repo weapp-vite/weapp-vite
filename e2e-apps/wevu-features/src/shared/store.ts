@@ -1,28 +1,27 @@
-import { computed, createStore, defineStore, reactive, ref } from 'wevu'
+import { computed, createPinia, defineStore, reactive, ref } from 'wevu'
 
 const pluginRecords: string[] = []
-let storeManagerReady = false
+let storeManager: ReturnType<typeof createPinia> | undefined
 
 export function initFeatureStoreManager() {
-  if (storeManagerReady) {
-    return
+  if (storeManager) {
+    return storeManager
   }
 
-  const manager = createStore()
+  const manager = createPinia()
   manager.use(({ store }) => {
     const storeId = String((store as any).$id ?? 'unknown')
     pluginRecords.push(storeId)
     ;(store as any).__featurePluginTouched = true
   })
 
-  storeManagerReady = true
+  storeManager = manager
+  return manager
 }
 
 export function getFeaturePluginRecords() {
   return pluginRecords.slice()
 }
-
-initFeatureStoreManager()
 
 export const useSetupFeatureStore = defineStore('featureSetupCounter', () => {
   const count = ref(0)
@@ -54,6 +53,11 @@ export const useSetupFeatureStore = defineStore('featureSetupCounter', () => {
     inc,
     visit,
     rename,
+    $reset() {
+      count.value = 0
+      label.value = 'init'
+      meta.visits = 0
+    },
   }
 })
 

@@ -28,6 +28,7 @@ const declarationEntry = {
 export default defineConfig([
   {
     entry: declarationEntry,
+    define: { 'process.env.NODE_ENV': JSON.stringify('production') },
     format: ['esm'],
     target: 'es2018',
     dts: true,
@@ -52,6 +53,7 @@ export default defineConfig([
   },
   {
     entry,
+    define: { 'process.env.NODE_ENV': JSON.stringify('development') },
     outDir: './dist/dev',
     format: ['esm'],
     target: 'es2018',

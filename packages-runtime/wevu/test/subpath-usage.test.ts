@@ -8,8 +8,9 @@ import { createWeapi, wpi } from '@/api'
 import { fetch as wevuFetch } from '@/fetch'
 import { ref } from '@/reactivity'
 import { createRouter } from '@/router'
+import { createApp } from '@/runtime/app'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
-import { createStore, defineStore, storeToRefs } from '@/store'
+import { createPinia, defineStore, storeToRefs } from '@/store'
 
 interface MockRequestOptions {
   url?: string
@@ -68,9 +69,11 @@ describe('subpath usage integration', () => {
   it('integrates router/store/api/fetch workflows in one scenario', async () => {
     const { navigateTo } = createRouterContext()
 
-    createStore().use(({ store }) => {
+    const pinia = createPinia().use(({ store }) => {
       ;(store as any).__unitPluginTouched = true
     })
+
+    createApp({}).use(pinia)
 
     const useScenarioStore = defineStore('subpath-unit-scenario', () => {
       const count = ref(0)

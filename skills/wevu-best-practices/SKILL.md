@@ -67,7 +67,7 @@ Router 选择和迁移见 `references/router-runtime-matrix.md`。
 
 - 不要在 `await` 后注册 hooks。
 - 不要直接解构 store 丢失响应性。
-- 不要调用 `createPinia()` 或向 `useStore()` 传 manager；`createStore()` 是全局时序敏感的可选插件入口，`install()` 不执行额外逻辑。
+- Store 以 Pinia 4.0.3 为参照：用 `use(createPinia())` / `app.use(pinia)` 安装，或显式 `useStore(pinia)`；外部 state 自动解包，Setup 自行提供 `$reset`，`$dispose` 保留 manager 状态。
 - 不要返回不可序列化原生实例到模板状态。
 - 不要把浏览器 Vue 行为当成 wevu 默认行为。
 - 不要在没有基线时同时修改性能、运行时和业务逻辑三类变量。

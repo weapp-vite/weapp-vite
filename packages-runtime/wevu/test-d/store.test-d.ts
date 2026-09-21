@@ -1,6 +1,6 @@
-import type { Ref } from 'wevu'
+import type { ComputedRef, Ref } from 'wevu'
 import { expectError, expectType } from 'tsd'
-import { defineStore, storeToRefs } from 'wevu'
+import { computed, createPinia, defineStore, disposePinia, getActivePinia, ref, setActivePinia, storeToRefs } from 'wevu'
 
 const useOptionsStore = defineStore('options', {
   state: () => ({ count: 0, nested: { counter: 1 } }),
@@ -60,10 +60,10 @@ expectError(optionsStore.$state = { count: 'invalid', nested: { counter: 1 } })
 
 const optionsRefs = storeToRefs(optionsStore)
 expectType<Ref<number>>(optionsRefs.count)
-expectType<Ref<number>>(optionsRefs.double)
-expectType<Ref<number>>(optionsRefs.doublePlus)
-expectType<Ref<string>>(optionsRefs.upper)
-expectType<Ref<number>>(optionsRefs.doubleCounter)
+expectType<ComputedRef<number>>(optionsRefs.double)
+expectType<ComputedRef<number>>(optionsRefs.doublePlus)
+expectType<ComputedRef<string>>(optionsRefs.upper)
+expectType<ComputedRef<number>>(optionsRefs.doubleCounter)
 
 const useSetupStore = defineStore('setup', () => {
   const count = 1
@@ -74,7 +74,7 @@ const useSetupStore = defineStore('setup', () => {
 const setupStore = useSetupStore()
 expectType<number>(setupStore.count)
 expectType<number>(setupStore.inc())
-expectType<string>(setupStore.$id)
+expectType<'setup'>(setupStore.$id)
 expectType<void>(setupStore.$reset())
 const unsubSetup = setupStore.$subscribe(() => {})
 expectType<() => void>(unsubSetup)
@@ -83,9 +83,9 @@ expectType<() => void>(unsubActionSetup)
 expectError(setupStore.notExists)
 
 const stopAction = optionsStore.$onAction((context) => {
-  expectType<string>(context.name)
+  expectType<'inc'>(context.name)
   expectType<typeof optionsStore>(context.store)
-  expectType<any[]>(context.args)
+  expectType<[]>(context.args)
   context.after((res) => {
     expectType<number>(res)
   })
@@ -117,3 +117,62 @@ useAsyncStore().$onAction(({ store, after }) => {
     expectType<number>(result)
   })
 })
+
+const pinia = createPinia()
+expectType<typeof pinia>(setActivePinia(pinia))
+expectType<typeof pinia | undefined>(getActivePinia())
+expectType<typeof optionsStore>(useOptionsStore(pinia))
+expectType<void>(optionsStore.$dispose())
+expectType<() => void>(optionsStore.$onAction(() => {}, true))
+expectError(optionsStore.double = 4)
+expectError(optionsRefs.double.value = 4)
+expectError(optionsRefs.inc)
+expectError(optionsRefs.$patch)
+optionsStore.$patch({ nested: {} })
+expectError(optionsStore.$patch({ nested: { counter: 'bad' } }))
+
+const useTypedSetup = defineStore('typed-setup', () => {
+  const n = ref(1)
+  const doubled = computed(() => n.value * 2)
+  const writable = computed({ get: () => n.value, set: (value: number) => n.value = value })
+  return { n, doubled, writable, add: (value: number) => n.value += value }
+})
+const typedSetup = useTypedSetup(pinia)
+expectType<number>(typedSetup.n)
+expectType<number>(typedSetup.doubled)
+expectType<number>(typedSetup.writable)
+expectError(typedSetup.doubled = 1)
+expectError(typedSetup.n.value)
+expectError(typedSetup.add('wrong'))
+expectError(typedSetup.$state.doubled)
+expectError(typedSetup.$state.add)
+const typedRefs = storeToRefs(typedSetup)
+expectType<Ref<number>>(typedRefs.n)
+expectType<ComputedRef<number>>(typedRefs.doubled)
+expectType<Ref<number>>(typedRefs.writable)
+expectError(typedRefs.add)
+expectError(typedRefs.doubled.value = 1)
+expectType<void>(typedSetup.$dispose())
+expectType<void>(disposePinia(pinia))
+
+const useActionTypes = defineStore('action-types', {
+  actions: {
+    add(n: number) {
+      return n + 1
+    },
+    async label(value: string) {
+      return value.toUpperCase()
+    },
+  },
+})
+useActionTypes(pinia).$onAction((context) => {
+  if (context.name === 'add') {
+    expectType<[n: number]>(context.args)
+    context.after(value => expectType<number>(value))
+  }
+  else {
+    expectType<[value: string]>(context.args)
+    context.after(value => expectType<string>(value))
+  }
+})
+expectType<() => void>(typedSetup.$onAction(() => {}, true))

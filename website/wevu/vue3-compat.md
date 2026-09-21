@@ -93,7 +93,7 @@ keywords:
 
 - `defineStore()`：定义 Store（Setup/Options 两种模式）
 - `storeToRefs()`：从 store 提取 refs
-- `createStore()`：可选的 store manager（可做插件入口）
+- `createPinia()`：独立 Store manager，通过 `app.use` / `use` 安装
 - `$patch`：批量更新 state
 - `$reset`：重置 state（仅 Options Store）
 - `$subscribe`：订阅 state 变更

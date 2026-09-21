@@ -11,6 +11,15 @@ describe('auto import presets', () => {
     expect(symbols(wevu).length).toBe(new Set(symbols(wevu)).size)
     expect(wevu.wevu).toContain('ref')
     expect(wevu.wevu).toContain('onMounted')
+    expect(wevu.wevu).toEqual(expect.arrayContaining([
+      'createPinia',
+      'setActivePinia',
+      'getActivePinia',
+      'disposePinia',
+      'defineStore',
+      'storeToRefs',
+      'MutationType',
+    ]))
   })
 
   it('exports router APIs from wevu/router', () => {

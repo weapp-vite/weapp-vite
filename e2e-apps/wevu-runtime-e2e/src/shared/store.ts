@@ -1,5 +1,5 @@
 import type { StoreManager } from 'wevu'
-import { computed, createStore, defineStore, reactive, ref } from 'wevu'
+import { computed, createPinia, defineStore, reactive, ref } from 'wevu'
 
 const pluginRecords: string[] = []
 let manager: StoreManager | undefined
@@ -10,7 +10,7 @@ export function initStoreManager() {
   if (manager) {
     return manager
   }
-  manager = createStore()
+  manager = createPinia()
   manager.use(({ store }) => {
     const id = (store as any).$id ?? 'unknown'
     pluginRecords.push(id)
@@ -18,8 +18,6 @@ export function initStoreManager() {
   })
   return manager
 }
-
-initStoreManager()
 
 export function getPluginRecords() {
   return pluginRecords.slice()
@@ -33,8 +31,8 @@ export function hotUpdateSetupStore(store: ReturnType<typeof useSetupStore>) {
   hotVersion += 1
   const step = hotVersion
   store.inc = (delta = 1) => {
-    store.count.value += delta * step
-    return store.count.value
+    store.count += delta * step
+    return store.count
   }
   return step
 }
@@ -67,6 +65,11 @@ export const useSetupStore = defineStore('setupCounter', () => {
     inc,
     visit,
     setName,
+    $reset() {
+      count.value = 0
+      name.value = setupStoreInitialName
+      meta.visits = 0
+    },
   }
 })
 

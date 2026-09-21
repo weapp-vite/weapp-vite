@@ -3,6 +3,9 @@ import { createQueryClient, createQueryPlugin, createWechatQueryHost } from '@we
 import routes from 'weapp-vite/auto-routes'
 import { defineAppSetup, provide, use } from 'wevu'
 import { ensureWevuFeaturesRouter } from './shared/appRouter'
+import { initFeatureStoreManager } from './shared/store'
+
+use(initFeatureStoreManager())
 
 const queryClient = createQueryClient()
 

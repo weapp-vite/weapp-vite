@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { TodoFilter } from '../../stores/storeDemo'
-import { defineComponent, ref, storeToRefs } from 'wevu'
+import { defineComponent, ref, storeToRefs, toRef } from 'wevu'
 import {
 
   useCounterStore,
@@ -75,9 +75,9 @@ export default defineComponent({
       statusText,
       requestCount,
     } = storeToRefs(pluginStore)
-    const pluginLog = (pluginStore as any).$pluginLog ?? ref<string[]>([])
-    const pluginLastMutation = (pluginStore as any).$lastMutation ?? ref('尚未触发')
-    const pluginLastAction = (pluginStore as any).$lastAction ?? ref('尚未调用')
+    const pluginLog = toRef(pluginStore as any, '$pluginLog')
+    const pluginLastMutation = toRef(pluginStore as any, '$lastMutation')
+    const pluginLastAction = toRef(pluginStore as any, '$lastAction')
 
     async function runPluginTask() {
       await pluginStore.runAsyncTask()
@@ -371,7 +371,7 @@ export default defineComponent({
         </view>
       </view>
       <view class="tip-inline">
-        <text>通过 createStore().use() 按需挂载插件，无需全局注册也能观察 action/mutation。</text>
+        <text>通过 createPinia().use() 按需挂载插件，安装到应用后观察 action/mutation。</text>
       </view>
     </view>
 
@@ -437,7 +437,7 @@ export default defineComponent({
           🔌
         </text>
         <text class="tip-text">
-          createStore().use() 可以按需挂载插件，跨 store 复用能力
+          createPinia().use() 可以按需挂载插件，跨 store 复用能力
         </text>
       </view>
     </view>

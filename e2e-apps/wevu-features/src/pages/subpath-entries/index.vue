@@ -3,9 +3,9 @@ import { computed, nextTick, ref } from 'wevu'
 import { createWeapi, wpi } from 'wevu/api'
 import { fetch as wevuFetch } from 'wevu/fetch'
 import { useRouter } from 'wevu/router'
-import { createStore, defineStore, storeToRefs } from 'wevu/store'
+import { defineStore, getActivePinia, storeToRefs } from 'wevu/store'
 
-createStore().use(({ store }) => {
+getActivePinia()!.use(({ store }) => {
   ;(store as any).__subpathPluginTouched = true
 })
 

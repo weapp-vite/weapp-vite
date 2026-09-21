@@ -2,14 +2,14 @@
 description: Wevu Store Manager 的安装、插件和时序差异说明。
 keywords:
   - Wevu Store Manager
-  - createStore
+  - createPinia
   - Store 插件
   - Pinia 迁移
 ---
 
 ## Store Manager API
 
-### `manager.install()` {#storemanager-install}
+### `app.use(manager)` {#storemanager-install}
 
 <!-- api-reference-details -->
 
@@ -17,12 +17,12 @@ keywords:
 
 **运行时说明：** 状态由 Wevu 响应式系统追踪，并随所属页面或组件的渲染批次同步；解构 state/getter 时必须使用 `storeToRefs()`。
 
-**Vue/Pinia 差异：** Pinia 通过 `app.use(pinia)` 注入 Vue App；Wevu 小程序没有同等插件挂载阶段，`install()` 仅保留兼容入口。
+**Vue/Pinia 差异：** 支持 `app.use(pinia)`；小程序 app.vue 通过既有 `use(pinia)` 安装。
 
 **示例：** 见 [本组示例](/wevu/api/store#example-store-manager)。
 
-- 用途：保留与插件安装心智一致的接口。
-- 差异：小程序环境不需要注册全局插件入口，当前实现不执行额外逻辑。
+- 用途：向应用安装 Pinia。
+- 差异：安装时注入并激活 Pinia，再应用排队的插件。
 
 ### `manager.use()` {#storemanager-use}
 
@@ -36,21 +36,22 @@ keywords:
 
 **示例：** 见 [本组示例](/wevu/api/store#example-store-manager)。
 
-- 用途：注册 Store 插件；每个新建 Store 会调用插件并传入 `{ store }`。
+- 用途：注册 Store 插件；每个新建 Store 会调用插件并传入 `{ store, pinia, app, options }`，可返回扩展属性。
 - 返回值：当前 `StoreManager`，支持链式调用。
 
 ### 本组示例 {#example-store-manager}
 
-Manager 是全局活动实例，插件只影响之后首次创建的 Store。再次调用 `createStore()` 会替换后续 Store 捕获的 manager；`useXxx()` 不接收 manager 参数，因此不要依赖并行 manager 隔离。
+每个 Pinia 持有独立 state、实例缓存和根作用域。插件只影响安装后新创建的 Store；`useStore(pinia)` 支持多实例隔离。
 
 ```ts
-import { createStore, defineStore } from 'wevu'
+import { createApp, createPinia, defineStore } from 'wevu'
 
-const manager = createStore()
+const app = createApp({})
+const manager = createPinia()
 manager.use(({ store }) => {
   console.log('created store', store.$id)
 })
-manager.install()
+app.use(manager)
 
 const useSession = defineStore('session', { state: () => ({ token: '' }) })
 const session = useSession()
