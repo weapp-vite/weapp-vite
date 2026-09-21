@@ -32,7 +32,7 @@
     "@vue/shared": "^3.5.43",
     "echarts": "catalog:",
     "element-plus": "^2.14.6",
-    "gridstack": "^13.3.0",
+    "gridstack": "^14.0.0",
     "theme-transition": "^2.1.1",
     "vue": "catalog:",
     "vue-echarts": "^8.3.0"
@@ -42,7 +42,7 @@
     "@iconify-json/bi": "^1.2.7",
     "@iconify-json/logos": "^1.2.14",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.78",
+    "@iconify-json/vscode-icons": "^1.2.79",
     "@shikijs/vitepress-twoslash": "^4.4.3",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
