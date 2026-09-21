@@ -17,6 +17,8 @@ app:setup → app:router-created → app:onLaunch
 
 没有观察到页面早于 App setup，也没有观察到同一主包加载不同 router 实例。因此未新增 App 初始化门控或抖音 Page 桥，router 仍按运行时执行域隔离。原有独立分包隔离测试继续通过；只有同步 setup 上下文沿用跨 runtime 副本共享语义。
 
+setup 上下文在 `globalThis` 可用时保持原有执行域归属，仅在缺失时回退宿主对象。Web 会在入口模块之间安装 `wx`，如果始终优先宿主，不同导入时机会拆出两份状态；新增 VM 回归覆盖该顺序，现有 `auto-import-wevu-presets` Web E2E 验证自动导入的生命周期钩子与挂载入口共享上下文。
+
 ## 验收证据
 
 2026-09-21，macOS，以下均使用重建后的包和 Vite 输出：

@@ -135,4 +135,21 @@ describe('mini program host bindings (issue #1035)', () => {
     expect(runtime.getMiniProgramGlobalObject()).toBeUndefined()
     expect(runtime.useRouter).toThrow('useRouter() 未找到已创建的 router 实例')
   })
+
+  it('keeps one setup context when Web installs its host between runtime imports', () => {
+    const root: Record<string, unknown> = {}
+    const first = loadRuntime('weapp', { globalThis: root })
+    root.wx = createHost()
+    const second = loadRuntime('weapp', { globalThis: root, wx: root.wx })
+    const instance = {} as Parameters<Runtime['setCurrentInstance']>[0]
+    const context = { instance }
+    first.setCurrentInstance(instance)
+    first.setCurrentSetupContext(context)
+    expect(second.getCurrentInstance()).toBe(instance)
+    expect(second.getCurrentSetupContext()).toBe(context)
+    second.setCurrentInstance(undefined)
+    second.setCurrentSetupContext(undefined)
+    expect(first.getCurrentInstance()).toBeUndefined()
+    expect(first.getCurrentSetupContext()).toBeUndefined()
+  })
 })

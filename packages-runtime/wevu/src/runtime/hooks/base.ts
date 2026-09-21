@@ -10,7 +10,11 @@ interface CurrentSetupState {
 }
 
 const currentSetupState: CurrentSetupState = (() => {
-  const host = getMiniProgramRuntimeGlobalObject()
+  // Web 会在模块加载后安装宿主 API；可用时优先使用稳定的执行域全局，
+  // 防止不同入口因导入时机不同而持有两份 setup 状态。
+  const host = typeof globalThis !== 'undefined'
+    ? globalThis as Record<string, any>
+    : getMiniProgramRuntimeGlobalObject()
   return host ? host[WEVU_CURRENT_SETUP_STATE_KEY] ??= {} : {}
 })()
 
