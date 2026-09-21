@@ -3,6 +3,7 @@ import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-features')
@@ -366,8 +367,10 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     expect(useStorePageWxml).toContain('id="store-options-ref-write"')
     expect(useStorePageWxml).toContain('bindtap="__weapp_vite_inline"')
     expect(useStorePageWxml).toContain('data-wi-tap=')
-    expect(useStorePageJs).toContain('featureSetupCounter')
-    expect(useStorePageJs).toContain('featureOptionsCounter')
+    // Store 由多个入口共享，定义可能被构建器移至共享 chunk。
+    const storeOutput = await readJavaScriptOutput(DIST_ROOT)
+    expect(storeOutput.code).toContain('featureSetupCounter')
+    expect(storeOutput.code).toContain('featureOptionsCounter')
     expect(useStorePageJs).toContain('setupInc')
     expect(useStorePageJs).toContain('setupPatchObject')
     expect(useStorePageJs).toContain('optionsPatchFunction')
