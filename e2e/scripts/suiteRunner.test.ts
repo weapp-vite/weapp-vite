@@ -637,6 +637,7 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.issue911.test.ts',
       'ide/github-issues.runtime.issue941.test.ts',
       'ide/github-issues.runtime.issue1009.test.ts',
+      'ide/github-issues.runtime.issue1049.test.ts',
       'ide/github-issues.runtime.issue1011.test.ts',
       'ide/github-issues.runtime.issue1012.test.ts',
       'ide/github-issues.runtime.issue852.test.ts',
