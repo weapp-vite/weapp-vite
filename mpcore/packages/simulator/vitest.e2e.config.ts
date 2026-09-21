@@ -8,6 +8,7 @@ import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
+import { createStatefulStoreBindingFiles } from './test/helpers/statefulStoreBindings'
 import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
 import { createStoreHmrFiles } from './test/helpers/storeHmr'
 import { createStoreLifecycleFiles } from './test/helpers/storeLifecycle'
@@ -30,7 +31,7 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
-      if (id === 'virtual:store-hmr-fixture') {
+      if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture') {
         return `\0${id}`
       }
       if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
@@ -38,6 +39,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:stateful-store-binding-fixture') {
+        return `export default ${JSON.stringify(await createStatefulStoreBindingFiles())}`
+      }
       if (id === '\0virtual:store-hmr-fixture') {
         return `export default ${JSON.stringify(await createStoreHmrFiles())}`
       }
