@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
@@ -10,6 +11,7 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    exclude: excludedE2ETestPatterns(),
     include: [
       path.resolve(import.meta.dirname, './ci/**/*.test.ts'),
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),

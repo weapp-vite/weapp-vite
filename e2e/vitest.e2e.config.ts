@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
@@ -18,7 +19,7 @@ export default defineConfig({
       path.resolve(import.meta.dirname, './ci/**/*.test.ts'),
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
     ]),
-    exclude: [RETAIL_PARITY_TEST_PATH],
+    exclude: [RETAIL_PARITY_TEST_PATH, ...excludedE2ETestPatterns()],
     testTimeout: 36_000_000,
     globals: true,
     pool: 'threads',

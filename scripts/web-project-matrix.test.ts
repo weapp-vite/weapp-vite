@@ -1,6 +1,6 @@
 import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { discoverWebProjects, webProjectExpectationOverrides } from './web-project-matrix'
 
 interface PackageManifest {
@@ -8,6 +8,9 @@ interface PackageManifest {
 }
 
 const ROOT = path.resolve(import.meta.dirname, '..')
+
+beforeEach(() => vi.stubEnv('WEAPP_VITE_E2E_EXCLUDE_PROJECTS', ''))
+afterEach(() => vi.unstubAllEnvs())
 
 describe('Web project matrix', () => {
   it('covers every e2e app and template with standard Web commands and entry', async () => {

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
@@ -13,6 +14,7 @@ ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    exclude: excludedE2ETestPatterns(),
     // 参数化标题是 DOM 验收清单的 case 身份，必须保留完整名称。
     taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
     include: resolveVitestIncludePatterns(import.meta.dirname, [
