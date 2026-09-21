@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from '@/index'
+import { useRoute } from '@/router'
 import { getMiniProgramRuntimeGlobalObject } from '@/runtime/platform'
 
 const registeredComponents: Record<string, any>[] = []
@@ -24,6 +25,28 @@ afterEach(() => {
 })
 
 describe('runtime: alipay page registration', () => {
+  it('retains onLoad query through setup, show and ready when the native page has no options', () => {
+    let route: ReturnType<typeof useRoute> | undefined
+    let setupQuery: unknown
+    defineComponent({
+      __wevu_isPage: true,
+      setup() {
+        route = useRoute()
+        setupQuery = { ...route.query }
+        return {}
+      },
+    })
+    const page = registeredPages[0]
+    const instance = { data: {}, route: 'pages/next/index', setData: vi.fn() }
+    page.onLoad.call(instance, { from: 'home' })
+    expect(setupQuery).toEqual({ from: 'home' })
+    expect(route?.query).toEqual({ from: 'home' })
+    page.onShow.call(instance)
+    page.onReady.call(instance)
+    expect(route?.query).toEqual({ from: 'home' })
+    page.onUnload.call(instance)
+  })
+
   it('registers pages through Page and exposes template event methods at top level', () => {
     defineComponent({
       __wevu_isPage: true,

@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from '../types'
-import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
+import { WEVU_CURRENT_SETUP_STATE_KEY, WEVU_HOOKS_KEY } from '@weapp-core/constants'
+import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, getMiniProgramRuntimeGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
 // 仅供同步 setup() 调用期间使用的当前实例引用。wevu 的根入口与
 // `wevu/router` 可能被打包成多个模块副本，必须通过宿主全局共享状态。
@@ -10,8 +10,12 @@ interface CurrentSetupState {
 }
 
 const currentSetupState: CurrentSetupState = (() => {
-  const host = globalThis as typeof globalThis & { __wevuCurrentSetupState__?: CurrentSetupState }
-  return host.__wevuCurrentSetupState__ ??= {}
+  // Web 会在模块加载后安装宿主 API；可用时优先使用稳定的执行域全局，
+  // 防止不同入口因导入时机不同而持有两份 setup 状态。
+  const host = typeof globalThis !== 'undefined'
+    ? globalThis as Record<string, any>
+    : getMiniProgramRuntimeGlobalObject()
+  return host ? host[WEVU_CURRENT_SETUP_STATE_KEY] ??= {} : {}
 })()
 
 export function getCurrentInstance<T extends InternalRuntimeState = InternalRuntimeState>(): T | undefined {
