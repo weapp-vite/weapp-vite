@@ -1,5 +1,32 @@
 # @weapp-core/shared
 
+## 3.2.5
+
+### Patch Changes
+
+- 修复抖音原生多端模板中 PascalCase 组件标签与 usingComponents 注册名不一致导致组件不显示的问题，在平台描述中统一启用标签归一化，保持自闭合和嵌套标签一致。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：tsx, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsx
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+
 ## 3.2.4
 
 ### Patch Changes

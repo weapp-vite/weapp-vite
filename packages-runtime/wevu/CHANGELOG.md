@@ -1,5 +1,58 @@
 # wevu
 
+## 7.2.0
+
+### Minor Changes
+
+- 新增职责独立的 `definePage({ name, meta })` 路由编译宏及 `wevu/router/auto-routes` 纯数据入口。路由声明要求应用内唯一的非空静态 `name`，可选 `meta` 必须是有限静态 JSON 对象；未声明该宏的页面保持未命名。该能力复用现有页面发现、分包、scope、缓存和更新链路生成稳定名称、最终路径及元信息，不恢复已移除的同名页面注册能力，也不解析 `PageMeta.route`；旧名 `definePageRoute` 不提供兼容别名。旧协议的持久化命名记录会随缓存 schema 自动失效并重新扫描，无需手动清理。
+
+  生成声明按路由名称关联并结构化拓宽 `meta`，贯穿导航、守卫、当前路由和动态记录类型，同时保留未命名页面及无生成映射项目的兼容行为。支持小程序和现有 Web 构建目标；路由 `meta.title` 与 `meta.layout` 只是业务数据，不会改变宿主标题或页面 layout。页面元信息与布局继续由 `definePageMeta` 负责，宿主 JSON 由 `definePageJson` 负责，组件选项由 `defineOptions` 负责。
+
+  支持全局无导入 `definePage`，以及从 `wevu/router` 导入（含别名）的宏调用，并正确处理绑定、遮蔽和支持路径中的源位置映射。宏在编译期移除，不提供运行时注册或兜底函数。自动导入声明为 Volar 和 vue-tsc 提供参数补全与类型诊断；公共路由声明类型独立于编译器 AST 依赖。外部 SFC 脚本、alias 和包导出继续保留相对模块引用。既有 `definePageMeta` 的 `layout`（包括 Vue SFC 的动态 `layout.props` 值）和其他字段保持原语义，不会进入路由 `meta`；模板表达式仍交给平台编译链路处理。仅修改路由元信息时同步更新原生增量产物与生成类型，并保留 JSON 元信息的自有键。
+
+  自动路由关闭时清理过期声明与缓存，并串行发布并发刷新结果，避免旧产物覆盖新版本。Web 开发模式在路由元信息或页面拓扑变化时重新加载应用入口，确保活动 Router 使用新快照；Web 扫描完成后原子发布状态，刷新期间和失败后保留完整的上一份虚拟模块。页面新增和删除在 Vite 结构性 HMR 前完成扫描，并在快照发布时同步失效 Web 入口、路由模块及扫描拥有的脚本、模板和 SFC 合成样式，避免入口引用已删除页面、模板保留已删除布局、脚本遗漏新增模板和样式或 SFC 样式缓存滞留。修复 Web 页面未保留原生 `options` 查询参数导致重定向后活动页面状态丢失的问题。
+
+- 以 Pinia 4.0.3 为公开用法和主要行为参照，完善 Store 初始化、Setup 自动解包、深层 patch、重置、插件和生命周期。本次按 minor 发布，但包含需要旧 Store 消费者迁移的不兼容变化，推荐使用 `createPinia()` 创建管理器，`createStore()` 保留为同一个函数的兼容别名，继续保留 `StoreManager` 及已有公开 API 名称，升级前须按 [Store 迁移指南](https://vite.weapp.dev/wevu/store-migration) 检查消费者：显式安装 Store 管理器、将外部 `store.field.value` 改为 `store.field`、直接从 Store 解构 actions，并为 Setup Store 自行实现 `$reset`。默认订阅改为异步且随注册作用域解绑；`$dispose` 保留状态，在途 action 结果回调继续执行。同步自动导入、兼容诊断、示例与迁移文档。
+
+  修正嵌套 `$patch` 在下一轮调度中重复发布直接修改通知的问题，保留普通同步 watcher 的逐次更新；Store 解包保留 `shallowRef` 与 `shallowReactive` 的引用和浅层响应式边界；插件初始化期间的同步订阅、默认异步订阅及显式 patch 通知对齐 Pinia。
+
+  Store 继续使用面向小程序的 wevu 响应式核心和 setData 调度。减少 patch 中被抑制的订阅重复遍历，默认订阅跨同一轮多个 patch 合并收集；修复显式 batch 与 patch 组合时重复发布 direct 的问题，保留普通同步 watcher 语义，并增加真实小程序中的通知、渲染与依赖收集次数回归。
+
+### Patch Changes
+
+- 修复抖音等小程序模块缺少 globalThis 或仅提供顶层宿主绑定时的 router 初始化与微任务调度，统一宿主解析并保留独立分包的 router 隔离；同时修复支付宝页面在 setup 和后续生命周期中丢失路由 query 的问题。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：tsx, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsx
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+
+- 修复支付宝 Vue SFC 子组件未执行 setup、computed 不渲染及 emit 无法回传父组件的问题。将支付宝生命周期、props 更新和函数事件回调接入现有组件运行时，保持卸载清理与重新挂载的实例隔离。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.6
+  - @weapp-core/shared@3.2.5
+  - @weapp-core/types@1.1.3
+  - @wevu/api@0.3.5
+  - @wevu/compiler@7.2.0
+  - @wevu/web-apis@1.3.2
+
 ## 7.1.4
 
 ### Patch Changes

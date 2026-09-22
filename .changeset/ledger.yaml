@@ -14,6 +14,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@mpcore/core@0.0.4":
+  dir: mpcore/packages/core
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@mpcore/simulator@0.3.3":
   dir: mpcore/packages/simulator
   intents:
@@ -89,6 +98,16 @@
     - dependency-upgrade-20260919-192714
     - issue-969-startup-navigation
     - issue-989-simulator-host-tabbar
+"@mpcore/simulator@0.6.2":
+  dir: mpcore/packages/simulator
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
@@ -105,6 +124,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@mpcore/test@0.1.13":
+  dir: mpcore/packages/test
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@mpcore/test@0.1.9":
   dir: mpcore/packages/test
   intents:
@@ -134,6 +162,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@mpcore/vitest@0.2.5":
+  dir: mpcore/packages/vitest
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@mpcore/weapp-vite@0.1.10":
   dir: mpcore/packages/weapp-vite
   intents:
@@ -154,6 +191,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@mpcore/weapp-vite@0.1.27":
+  dir: mpcore/packages/weapp-vite
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-core/api@0.2.0":
   dir: "@weapp-core/api"
   intents:
@@ -183,6 +229,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-core/api@0.3.5":
+  dir: "@weapp-core/api"
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-core/constants@0.2.0":
   dir: "@weapp-core/constants"
   intents:
@@ -217,6 +272,17 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-core/constants@0.2.6":
+  dir: "@weapp-core/constants"
+  intents:
+    - calm-routers-share-host
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
 "@weapp-core/init@6.0.16":
   dir: "@weapp-core/init"
   intents:
@@ -241,6 +307,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-core/init@6.0.22":
+  dir: "@weapp-core/init"
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-core/logger@3.1.2":
   dir: "@weapp-core/logger"
   intents:
@@ -261,6 +336,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-core/logger@3.1.6":
+  dir: "@weapp-core/logger"
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-core/schematics@6.2.0":
   dir: "@weapp-core/schematics"
   intents:
@@ -290,6 +374,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-core/schematics@6.2.6":
+  dir: "@weapp-core/schematics"
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-core/shared@3.2.0":
   dir: "@weapp-core/shared"
   intents:
@@ -314,6 +407,16 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-core/shared@3.2.5":
+  dir: "@weapp-core/shared"
+  intents:
+    - bright-douyin-component-tags
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-core/types@1.1.0":
   dir: "@weapp-core/types"
   intents:
@@ -331,6 +434,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-core/types@1.1.3":
+  dir: "@weapp-core/types"
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/ast-native@0.0.6":
   dir: packages/ast-native
   intents:
@@ -371,6 +483,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/ast-native@0.1.6":
+  dir: packages/ast-native
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/ast@6.20.5":
   dir: packages/ast
   intents:
@@ -401,6 +522,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/ast@7.2.0":
+  dir: packages/ast
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -426,6 +556,16 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/dashboard@7.2.0":
+  dir: packages/dashboard
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - weapp-vite-devframe-devtools
 "@weapp-vite/devtools-runtime@0.4.19":
   dir: packages/devtools-runtime
   intents:
@@ -442,6 +582,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/devtools-runtime@0.4.22":
+  dir: packages/devtools-runtime
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/eslint@0.2.0":
   dir: packages/eslint
   intents:
@@ -474,6 +623,16 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/eslint@0.2.7":
+  dir: packages/eslint
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - wevu-pinia-store-alignment
 "@weapp-vite/glass-easel-web-adapter@0.1.1":
   dir: packages-runtime/glass-easel-web-adapter
   intents:
@@ -487,6 +646,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/glass-easel-web-adapter@0.1.3":
+  dir: packages-runtime/glass-easel-web-adapter
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/i18n@0.2.0":
   dir: packages-runtime/i18n
   intents:
@@ -512,6 +680,16 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/i18n@0.2.6":
+  dir: packages-runtime/i18n
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
 "@weapp-vite/mcp@1.5.0":
   dir: packages/mcp
   intents:
@@ -536,6 +714,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/mcp@1.5.6":
+  dir: packages/mcp
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/miniprogram-automator@1.2.14":
   dir: packages/miniprogram-automator
   intents:
@@ -577,6 +764,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/miniprogram-automator@1.2.21":
+  dir: packages/miniprogram-automator
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/qr@1.1.2":
   dir: packages/qr
   intents:
@@ -597,6 +793,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/qr@1.1.6":
+  dir: packages/qr
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/react@0.2.1":
   dir: packages-runtime/react
   intents:
@@ -631,6 +836,25 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@weapp-vite/react@0.2.9":
+  dir: packages-runtime/react
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
+"@weapp-vite/volar@2.1.10":
+  dir: packages/volar
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@weapp-vite/volar@2.1.5":
   dir: packages/volar
   intents:
@@ -715,6 +939,16 @@
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
     - tidy-web-runtime-globals
+"@weapp-vite/web@1.5.5":
+  dir: packages-runtime/web
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
 "@wevu/api@0.2.17":
   dir: packages-runtime/weapi
   intents:
@@ -748,6 +982,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@wevu/api@0.3.5":
+  dir: packages-runtime/weapi
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@wevu/compiler@6.20.5":
   dir: packages-runtime/wevu-compiler
   intents:
@@ -825,6 +1068,16 @@
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
     - quiet-app-hmr-owner
+"@wevu/compiler@7.2.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -845,6 +1098,15 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@wevu/query@0.0.5":
+  dir: packages-runtime/wevu-query
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 "@wevu/test-utils@0.2.0":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -875,6 +1137,16 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@wevu/test-utils@0.2.17":
+  dir: packages-runtime/wevu-test-utils
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
 "@wevu/test-utils@0.2.2":
   dir: packages-runtime/wevu-test-utils
   intents:
@@ -912,6 +1184,17 @@
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+"@wevu/web-apis@1.3.2":
+  dir: packages-runtime/web-apis
+  intents:
+    - calm-routers-share-host
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - typed-page-named-routes
 create-weapp-vite@2.8.0:
   dir: packages/create-weapp-vite
   intents:
@@ -1146,6 +1429,23 @@ create-weapp-vite@2.8.9:
   intents:
     - initial-navigation-timeout
     - router-guard-sync
+create-weapp-vite@2.9.0:
+  dir: packages/create-weapp-vite
+  intents:
+    - bright-douyin-component-tags
+    - calm-routers-share-host
+    - calm-templates-publish
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - fresh-alipay-scoped-styles
+    - quiet-alipay-components
+    - typed-page-named-routes
+    - weapp-vite-devframe-devtools
+    - wevu-pinia-store-alignment
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -1174,6 +1474,15 @@ rolldown-require@2.0.31:
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+rolldown-require@2.0.32:
+  dir: packages/rolldown-require
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 vite-plugin-performance@2.0.2:
   dir: packages/vite-plugin-performance
   intents:
@@ -1190,6 +1499,15 @@ vite-plugin-performance@2.0.4:
     - catalog-upgrade-20260918-174609
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
+vite-plugin-performance@2.0.5:
+  dir: packages/vite-plugin-performance
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 weapp-ide-cli@6.0.8:
   dir: packages/weapp-ide-cli
   intents:
@@ -1227,6 +1545,15 @@ weapp-ide-cli@6.1.6:
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
     - fresh-devtools-service-port
+weapp-ide-cli@6.1.7:
+  dir: packages/weapp-ide-cli
+  intents:
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
 weapp-vite-plugin-template@1.0.0:
   dir: templates/weapp-vite-plugin-template
   intents:
@@ -1426,6 +1753,21 @@ weapp-vite@7.1.4:
     - native-style-import-resolution
     - quiet-app-hmr-owner
     - watch-polling-virtual-chunks
+weapp-vite@7.2.0:
+  dir: packages/weapp-vite
+  intents:
+    - bright-douyin-component-tags
+    - calm-templates-publish
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - fresh-alipay-scoped-styles
+    - typed-page-named-routes
+    - weapp-vite-devframe-devtools
+    - wevu-pinia-store-alignment
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -1521,3 +1863,16 @@ wevu@7.1.4:
     - catalog-upgrade-20260919-192714
     - dependency-upgrade-20260919-192714
     - quiet-app-hmr-owner
+wevu@7.2.0:
+  dir: packages-runtime/wevu
+  intents:
+    - calm-routers-share-host
+    - catalog-upgrade-20260921-150634
+    - catalog-upgrade-20260922-000806
+    - catalog-upgrade-20260922-215212
+    - dependency-upgrade-20260921-150633
+    - dependency-upgrade-20260922-000805
+    - dependency-upgrade-20260922-215212
+    - quiet-alipay-components
+    - typed-page-named-routes
+    - wevu-pinia-store-alignment
