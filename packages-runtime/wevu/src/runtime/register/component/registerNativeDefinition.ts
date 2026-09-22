@@ -1,6 +1,7 @@
 import type { InternalRuntimeState } from '../../types'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { getMiniProgramRuntimeGlobalObject, resolveCurrentMiniProgramPlatform } from '../../platform'
+import { createAlipayComponentDefinition } from './alipay'
 
 function createAlipayPageDefinition(componentDefinition: Record<string, any>) {
   const {
@@ -66,9 +67,12 @@ export function registerNativeComponentDefinition(
     Page(pageDefinition)
     return
   }
+  const nativeDefinition = resolveCurrentMiniProgramPlatform() === 'alipay'
+    ? createAlipayComponentDefinition(componentDefinition)
+    : componentDefinition
   if (typeof statefulHmrBridge?.Component === 'function') {
-    statefulHmrBridge.Component(componentDefinition)
+    statefulHmrBridge.Component(nativeDefinition)
     return
   }
-  Component(componentDefinition)
+  Component(nativeDefinition)
 }
