@@ -65,6 +65,11 @@ interface WebDevServer {
   middlewares: {
     use: (middleware: ReturnType<typeof createWebAssetMiddleware>) => void
   }
+  moduleGraph?: {
+    getModuleById: (id: string) => object | undefined
+    getModulesByFile: (file: string) => Set<object> | undefined
+    invalidateModule: (module: object) => void
+  }
 }
 
 interface WeappWebVitePlugin {
@@ -76,6 +81,11 @@ interface WeappWebVitePlugin {
   buildStart?: (this: WebPluginContext) => void | Promise<void>
   resolveId?: (id: string, importer?: string) => string | null | Promise<string | null>
   load?: (id: string) => string | null | Promise<string | null>
+  watchChange?: {
+    order: 'post'
+    sequential: true
+    handler: (this: WebPluginContext, id: string, change: { event: 'create' | 'update' | 'delete' }) => Promise<void>
+  }
   handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void>
   transform?: (
     this: WebPluginContext,
@@ -89,6 +99,8 @@ const WEB_RUNTIME_MODULE_IDS = [
   'lit/async-directive.js',
   'lit/directives/repeat.js',
 ] as const
+
+const SCAN_VIRTUAL_MODULE_IDS = [ENTRY_ID, RESOLVED_AUTO_ROUTES_ID] as const
 
 function isTemplateFile(id: string) {
   const lower = id.toLowerCase()
@@ -173,6 +185,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   let root = process.cwd()
   let srcRoot = resolve(root, options.srcDir ?? 'src')
   let enableHmr = false
+  let devServer: WebDevServer | undefined
   let resolveWebModuleId: ResolveWebModuleId | undefined
   let resolveMiniProgramModuleId: ResolveWebModuleId | undefined
   let resolveWebAutoImportTag: ResolveWebAutoImportTag | undefined
@@ -252,13 +265,56 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           nextComponentImportIdMap.set(component.importId, component.script)
         }
       }
+      const graph = devServer?.moduleGraph
+      const files = graph ? new Set<string>() : undefined
+      if (files) {
+        for (const snapshot of [state, nextState]) {
+          for (const file of snapshot.moduleMeta.keys()) {
+            files.add(file)
+          }
+          for (const file of snapshot.templatePathSet) {
+            files.add(file)
+          }
+          for (const [file, result] of snapshot.sfcResults) {
+            files.add(`${file}.${resolveWebVueSfcStyleLanguage(result, file)}`)
+          }
+        }
+      }
       // 虚拟模块始终读取最后一次完整快照，不暴露扫描过程中的空映射。
       state = nextState
       componentImportIdMap = nextComponentImportIdMap
+      if (graph && files) {
+        for (const id of SCAN_VIRTUAL_MODULE_IDS) {
+          const module = graph.getModuleById(id)
+          if (module) {
+            graph.invalidateModule(module)
+          }
+        }
+        // 入口失效不会向下传播；脚本、模板和合成样式同样属于扫描快照。
+        for (const file of files) {
+          const modules = graph.getModulesByFile(file)
+          if (modules) {
+            for (const module of modules) {
+              graph.invalidateModule(module)
+            }
+          }
+        }
+      }
     })
     // 调用方仍接收原始错误；队尾只负责允许下一次文件变更恢复扫描。
     scanQueue = result.catch(() => {})
     return result
+  }
+
+  const scanChangedFile = async (context: WebPluginContext, file: string) => {
+    const clean = cleanUrl(file)
+    const normalized = normalizePath(clean)
+    if (!isInsideDir(clean, srcRoot) && !state.moduleMeta.has(normalized) && !state.templatePathSet.has(normalized)) {
+      return
+    }
+    if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
+      await scan(context)
+    }
   }
 
   return {
@@ -305,6 +361,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       ])).filter(dependency => !isUniAppDependency(dependency, uniAppIncludes))
     },
     configureServer(server: WebDevServer) {
+      devServer = server
       server.middlewares.use(createWebAssetMiddleware(srcRoot))
     },
     async buildStart(this: WebPluginContext) {
@@ -452,15 +509,18 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
       return null
     },
+    watchChange: {
+      order: 'post',
+      sequential: true,
+      async handler(this: WebPluginContext, id, change) {
+        // Vite 的 handleHotUpdate 不处理增删；必须在结构性 HMR 前发布完整入口。
+        if (enableHmr && change.event !== 'update') {
+          await scanChangedFile(this, id)
+        }
+      },
+    },
     async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
-      const clean = cleanUrl(ctx.file)
-      const normalized = normalizePath(clean)
-      if (!isInsideDir(clean, srcRoot) && !state.moduleMeta.has(normalized) && !state.templatePathSet.has(normalized)) {
-        return
-      }
-      if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
-        await scan(this)
-      }
+      await scanChangedFile(this, ctx.file)
     },
     async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)

@@ -135,6 +135,144 @@ describe('weapp web plugin hook matrix', () => {
     }
   })
 
+  it('refreshes cached Web entries before Vite handles page removal and re-addition', async () => {
+    const { root, srcRoot } = await createPluginFixture()
+    const keptPage = join(srcRoot, 'pages/kept/index.js')
+    await mkdir(dirname(keptPage), { recursive: true })
+    await writeFile(keptPage, 'Page({})')
+    await writeFile(join(srcRoot, 'app.json'), JSON.stringify({
+      pages: ['pages/index/index', 'pages/kept/index'],
+    }))
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const entryUrl = '/@weapp-vite/web/entry'
+      expect((await server.transformRequest(entryUrl))?.code).toContain('/src/pages/index/index.js')
+      expect((await server.transformRequest(AUTO_ROUTES_ID))?.code).toContain('pages/index/index')
+
+      const removedPage = join(server.config.root, 'src/pages/index/index.js')
+      await rm(removedPage)
+      // 经过 Vite 的真实 watchChange 调度，断言后续消费结果而非插件调用次数。
+      await server.environments.client!.pluginContainer.watchChange(removedPage, { event: 'delete' })
+      const entry = (await server.transformRequest(entryUrl))!.code
+      const routes = (await server.transformRequest(AUTO_ROUTES_ID))!.code
+      expect(entry).not.toContain('/src/pages/index/index.js')
+      expect(entry).toContain('/src/pages/kept/index.js')
+      expect(routes).not.toContain('pages/index/index')
+      expect(routes).toContain('pages/kept/index')
+
+      await writeFile(removedPage, 'Page({})')
+      await server.environments.client!.pluginContainer.watchChange(removedPage, { event: 'create' })
+      expect((await server.transformRequest(entryUrl))?.code).toContain('/src/pages/index/index.js')
+      expect((await server.transformRequest(AUTO_ROUTES_ID))?.code).toContain('pages/index/index')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('invalidates cached native page templates when a layout is removed', async () => {
+    const { root } = await createPluginFixture()
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const templateUrl = '/src/pages/index/index.wxml?weapp-web-template'
+      expect((await server.transformRequest(templateUrl))?.code).toContain('wv-component-layouts-default')
+
+      const removedLayout = join(server.config.root, 'src/layouts/default/index.js')
+      await rm(removedLayout)
+      await server.environments.client!.pluginContainer.watchChange(removedLayout, { event: 'delete' })
+      expect((await server.transformRequest(templateUrl))?.code).not.toContain('wv-component-layouts-default')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('refreshes cached native page imports when template and style resources appear', async () => {
+    const { root, pageDir } = await createPluginFixture()
+    await rm(join(pageDir, 'index.wxml'))
+    await rm(join(pageDir, 'index.wxss'))
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const scriptUrl = '/src/pages/index/index.js'
+      const original = (await server.transformRequest(scriptUrl))!.code
+      expect(original).not.toContain('/src/pages/index/index.wxml')
+      expect(original).not.toContain('/src/pages/index/index.wxss')
+
+      const template = join(server.config.root, 'src/pages/index/index.wxml')
+      await writeFile(template, '<view>new template</view>')
+      await server.environments.client!.pluginContainer.watchChange(template, { event: 'create' })
+      expect((await server.transformRequest(scriptUrl))?.code).toContain('/src/pages/index/index.wxml')
+
+      const style = join(server.config.root, 'src/pages/index/index.wxss')
+      await writeFile(style, 'view { color: red; }')
+      await server.environments.client!.pluginContainer.watchChange(style, { event: 'create' })
+      expect((await server.transformRequest(scriptUrl))?.code).toContain('/src/pages/index/index.wxss')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('refreshes cached synthetic SFC styles after a source update', async () => {
+    const { root, pageDir } = await createSfcResolverFixture('<view>style</view>')
+    const source = '<template><view>style</view></template><style>view { font-size: 31px; }</style>'
+    await writeFile(join(pageDir, 'index.vue'), source)
+    const plugin = weappWebPlugin()
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [plugin as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      await server.transformRequest('/src/pages/index/index.vue')
+      const styleUrl = '/src/pages/index/index.vue.css?weapp-web-sfc-style&inline'
+      expect((await server.transformRequest(styleUrl))?.code).toContain('31px')
+      const page = join(server.config.root, 'src/pages/index/index.vue')
+      await writeFile(page, source.replace('31px', '37px'))
+      await server.environments.client!.pluginContainer.watchChange(page, { event: 'update' })
+      server.environments.client!.moduleGraph.onFileChange(page)
+      await plugin.handleHotUpdate!.call({}, { file: page })
+      const style = (await server.transformRequest(styleUrl))!.code
+      expect(style).toContain('37px')
+      expect(style).not.toContain('31px')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('resolves virtual, component, extensionless and SFC style module ids', async () => {
     const { root, srcRoot } = await createPluginFixture()
     const plugin = weappWebPlugin({ srcDir: 'src' })
