@@ -301,9 +301,9 @@ describe('scanWxml', () => {
     ])
   })
 
-  it('should rewrite pascal-case tags for alipay', () => {
+  it.each(['alipay', 'tt'] as const)('should rewrite pascal-case tags for %s', (platform) => {
     const wxml = '<HelloWorld><InnerItem /></HelloWorld>'
-    const result = scanWxml(wxml, { platform: 'alipay' })
+    const result = scanWxml(wxml, { platform })
 
     expect(result.tagNameTokens).toEqual([
       {
