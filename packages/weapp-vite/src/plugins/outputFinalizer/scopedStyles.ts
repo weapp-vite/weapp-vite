@@ -7,8 +7,8 @@ import selectorParser from 'postcss-selector-parser'
 
 const SCOPE_ATTRIBUTE_RE = /^data-v-[\w-]+$/
 
-/** 支付宝不支持 scoped 属性选择器，使用同等优先级的 class 保留作用域。 */
-export function normalizeAlipayScopedTemplate(source: string) {
+/** 支付宝和抖音不支持 scoped 属性选择器，使用同等优先级的 class 保留作用域。 */
+export function normalizeClassScopedTemplate(source: string) {
   if (!source.includes('data-v-')) {
     return source
   }
@@ -59,7 +59,7 @@ export function normalizeAlipayScopedTemplate(source: string) {
   return result.toString()
 }
 
-export function normalizeAlipayScopedStyle(source: string) {
+export function normalizeClassScopedStyle(source: string) {
   if (!source.includes('data-v-')) {
     return source
   }
@@ -80,17 +80,17 @@ export function normalizeAlipayScopedStyle(source: string) {
 }
 
 /** 在 bundler 写盘前同时归一化模板和样式，也覆盖仅包含样式资源的 HMR。 */
-export function normalizeAlipayScopedAssets(bundle: OutputBundle) {
+export function normalizeClassScopedAssets(bundle: OutputBundle, extensions: { wxml: string, wxss: string }) {
   for (const output of Object.values(bundle)) {
     if (output.type !== 'asset') {
       continue
     }
     const source = typeof output.source === 'string' ? output.source : Buffer.from(output.source).toString('utf8')
-    if (output.fileName.endsWith('.axml')) {
-      output.source = normalizeAlipayScopedTemplate(source)
+    if (output.fileName.endsWith(`.${extensions.wxml}`)) {
+      output.source = normalizeClassScopedTemplate(source)
     }
-    else if (output.fileName.endsWith('.acss')) {
-      output.source = normalizeAlipayScopedStyle(source)
+    else if (output.fileName.endsWith(`.${extensions.wxss}`)) {
+      output.source = normalizeClassScopedStyle(source)
     }
   }
 }

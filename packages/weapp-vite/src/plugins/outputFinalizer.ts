@@ -19,7 +19,7 @@ import { transformI18nOutputTemplate } from './i18n'
 import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
-import { normalizeAlipayScopedAssets } from './outputFinalizer/scopedStyles'
+import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
 import { hasManagedTailwindcssOutputMarker, isManagedTailwindcssEntry } from './tailwindcssMarker'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
@@ -420,8 +420,8 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           assets.stage,
         )
         normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
-        if (ctx.configService.platform === 'alipay') {
-          normalizeAlipayScopedAssets(outputBundle)
+        if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
+          normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
         }
         pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
           runtimeRewriteDone: true,
