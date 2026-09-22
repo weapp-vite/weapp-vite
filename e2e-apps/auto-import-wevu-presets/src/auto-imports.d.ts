@@ -8,12 +8,15 @@
 // biome-ignore lint: disable
 export {}
 declare global {
+  const MutationType: typeof import('wevu').MutationType
   const addMutationRecorder: typeof import('wevu').addMutationRecorder
   const batch: typeof import('wevu').batch
   const computed: typeof import('wevu').computed
   const createApp: typeof import('wevu').createApp
   const createNavigationFailure: typeof import('wevu/router').createNavigationFailure
+  const createPinia: typeof import('wevu').createPinia
   const createRouter: typeof import('wevu/router').createRouter
+  const createStore: typeof import('wevu').createStore
   const customRef: typeof import('wevu').customRef
   const defineAppJson: typeof import('wevu').defineAppJson
   const defineAppSetup: typeof import('wevu').defineAppSetup
@@ -23,15 +26,19 @@ declare global {
   const defineExpose: typeof import('wevu').defineExpose
   const defineModel: typeof import('wevu').defineModel
   const defineOptions: typeof import('wevu').defineOptions
+  const definePage: typeof import('wevu/router').definePage
   const definePageJson: typeof import('wevu').definePageJson
   const definePageMeta: typeof import('wevu').definePageMeta
   const defineProps: typeof import('wevu').defineProps
   const defineSitemapJson: typeof import('wevu').defineSitemapJson
   const defineSlots: typeof import('wevu').defineSlots
+  const defineStore: typeof import('wevu').defineStore
   const defineThemeJson: typeof import('wevu').defineThemeJson
+  const disposePinia: typeof import('wevu').disposePinia
   const effect: typeof import('wevu').effect
   const effectScope: typeof import('wevu').effectScope
   const endBatch: typeof import('wevu').endBatch
+  const getActivePinia: typeof import('wevu').getActivePinia
   const getCurrentInstance: typeof import('wevu').getCurrentInstance
   const getCurrentPageStackSnapshot: typeof import('wevu').getCurrentPageStackSnapshot
   const getCurrentScope: typeof import('wevu').getCurrentScope
@@ -97,6 +104,7 @@ declare global {
   const removeMutationRecorder: typeof import('wevu').removeMutationRecorder
   const resetWevuDefaults: typeof import('wevu').resetWevuDefaults
   const resolveRouteLocation: typeof import('wevu/router').resolveRouteLocation
+  const setActivePinia: typeof import('wevu').setActivePinia
   const setPageLayout: typeof import('wevu').setPageLayout
   const setWevuDefaults: typeof import('wevu').setWevuDefaults
   const shallowReactive: typeof import('wevu').shallowReactive
@@ -104,6 +112,7 @@ declare global {
   const shallowRef: typeof import('wevu').shallowRef
   const startBatch: typeof import('wevu').startBatch
   const stop: typeof import('wevu').stop
+  const storeToRefs: typeof import('wevu').storeToRefs
   const stringifyQuery: typeof import('wevu/router').stringifyQuery
   const toRaw: typeof import('wevu').toRaw
   const toRef: typeof import('wevu').toRef

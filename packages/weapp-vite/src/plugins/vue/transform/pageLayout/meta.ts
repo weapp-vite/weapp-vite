@@ -2,10 +2,10 @@ import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { LayoutPropValue, ResolvedLayoutMeta } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { parse as parseSfc } from 'vue/compiler-sfc'
+import { collectPageMetaCallsFromPrograms } from 'wevu/compiler'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../../utils/babel'
 import { normalizeLayoutName } from './shared'
 
-const PAGE_META_MACRO_NAME = 'definePageMeta'
 const analyzedPageLayoutSourceCache = new Map<string, {
   source: string
   result: {
@@ -161,19 +161,11 @@ function extractLayoutValueFromObject(node: t.ObjectExpression, filename: string
   return layout
 }
 
-function extractLayoutFromProgram(ast: BabelFile, filename: string) {
+function extractLayoutFromPrograms(programs: { script?: BabelFile, scriptSetup?: BabelFile }, filename: string) {
   let layout: ResolvedLayoutMeta | undefined
-  let macroCount = 0
+  const calls = collectPageMetaCallsFromPrograms(programs)
 
-  for (const statement of ast.program.body) {
-    if (!t.isExpressionStatement(statement) || !t.isCallExpression(statement.expression)) {
-      continue
-    }
-    const call = statement.expression
-    if (!t.isIdentifier(call.callee, { name: PAGE_META_MACRO_NAME })) {
-      continue
-    }
-    macroCount += 1
+  for (const call of calls) {
     if (call.arguments.length !== 1) {
       throw new Error(`${filename} 中 definePageMeta() 必须且只能接收一个对象参数。`)
     }
@@ -188,7 +180,7 @@ function extractLayoutFromProgram(ast: BabelFile, filename: string) {
     layout = extractLayoutValueFromObject(normalized, filename)
   }
 
-  if (macroCount > 1) {
+  if (calls.length > 1) {
     throw new Error(`${filename} 中 definePageMeta() 只能声明一次。`)
   }
 
@@ -263,20 +255,7 @@ function analyzeVueScriptBlocks(source: string, filename: string) {
 function analyzePageLayoutSourceUncached(source: string, filename: string) {
   if (filename.endsWith('.vue')) {
     const { scriptAst, scriptSetupAst } = analyzeVueScriptBlocks(source, filename)
-    let layoutMeta: ResolvedLayoutMeta | undefined
-
-    if (scriptAst) {
-      layoutMeta = extractLayoutFromProgram(scriptAst, filename)
-    }
-    if (scriptSetupAst) {
-      const setupLayout = extractLayoutFromProgram(scriptSetupAst, filename)
-      if (layoutMeta !== undefined && setupLayout !== undefined) {
-        throw new Error(`${filename} 中的 <script> 与 <script setup> 不能同时声明 definePageMeta().`)
-      }
-      if (setupLayout !== undefined) {
-        layoutMeta = setupLayout
-      }
-    }
+    const layoutMeta = extractLayoutFromPrograms({ script: scriptAst, scriptSetup: scriptSetupAst }, filename)
 
     const dynamicSwitch = Boolean(
       (scriptAst && hasSetPageLayoutCallInProgram(scriptAst))
@@ -299,7 +278,7 @@ function analyzePageLayoutSourceUncached(source: string, filename: string) {
   const ast = parseScriptAst(source)
   const dynamicSwitch = hasSetPageLayoutCallInProgram(ast)
   return {
-    layoutMeta: extractLayoutFromProgram(ast, filename),
+    layoutMeta: extractLayoutFromPrograms({ script: ast }, filename),
     dynamicSwitch,
     dynamicPropKeys: dynamicSwitch ? collectSetPageLayoutPropKeysFromProgram(ast) : [],
   }

@@ -864,6 +864,13 @@ describe('router navigation helpers', () => {
       requiresAuth: true,
       page: 'detail',
     })
+
+    const jsonMeta = JSON.parse('{"__proto__":{"title":"own-key"},"layout":"leaf"}') as Record<string, unknown>
+    router.addRoute('home', { name: 'own-meta', path: 'own-meta', meta: jsonMeta })
+    const resolvedMeta = router.resolve({ name: 'own-meta' }).meta!
+    expect(resolvedMeta).toEqual({ ...jsonMeta, requiresAuth: false })
+    expect(Object.hasOwn(resolvedMeta, '__proto__')).toBe(true)
+    expect(Object.getPrototypeOf(resolvedMeta)).toBe(Object.prototype)
   })
 
   it('returns unknown navigation failure for invalid named route targets', async () => {

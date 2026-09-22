@@ -163,6 +163,40 @@ export default {
     expect(defaultsInjected.code).not.toContain('Object.defineProperty(__returned__')
   })
 
+  it('strips only canonical or global-unbound page metadata macros on the Babel path', () => {
+    const canonical = transformScript(`
+import { definePageMeta as pageMeta, ref } from 'wevu'
+pageMeta({ layout: false })
+export default { setup: () => ({ count: ref(0) }) }
+    `.trim(), { sourceMap: false })
+    const compiledSetup = transformScript(`
+export default {
+  setup() {
+    definePageMeta({ layout: false })
+    return {}
+  },
+}
+    `.trim(), { sourceMap: false })
+    const local = transformScript(`
+const definePageMeta = (value) => value
+definePageMeta({ runtime: true })
+export default {}
+    `.trim(), { sourceMap: false })
+    const foreign = transformScript(`
+import { definePageMeta } from 'another-router'
+definePageMeta({ runtime: true })
+export default {}
+    `.trim(), { sourceMap: false })
+
+    expect(canonical.code).not.toContain('definePageMeta')
+    expect(canonical.code).not.toContain('pageMeta')
+    expect(canonical.code).toContain('ref(0)')
+    expect(compiledSetup.code).not.toContain('definePageMeta')
+    expect(local.code).toContain('definePageMeta')
+    expect(foreign.code).toContain(`from 'another-router'`)
+    expect(foreign.code).toContain('definePageMeta')
+  })
+
   it('keeps default sourcemap behavior on the Babel path', () => {
     const result = transformScript(compiledScriptSetupSource, {
       isPage: true,

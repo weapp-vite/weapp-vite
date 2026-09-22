@@ -1,5 +1,7 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
+import { WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { collectPageMetaCallsFromPrograms } from 'wevu/compiler'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 
 export function stripTypeSyntaxFromAst(ast: BabelFile) {
@@ -103,12 +105,31 @@ export function findNativePageOptionsObject(ast: BabelFile) {
 }
 
 export function stripDefinePageMetaCalls(ast: BabelFile) {
+  const calls = new Set(collectPageMetaCallsFromPrograms({ script: ast }))
   let mutated = false
 
   traverse(ast, {
+    ImportDeclaration(path) {
+      if (path.node.source.value !== 'wevu' || path.node.importKind === 'type') {
+        return
+      }
+      const specifiers = path.node.specifiers.filter(specifier =>
+        !t.isImportSpecifier(specifier)
+        || (t.isIdentifier(specifier.imported) ? specifier.imported.name : specifier.imported.value) !== WEVU_DEFINE_PAGE_META_MACRO
+        || specifier.importKind === 'type',
+      )
+      if (specifiers.length === path.node.specifiers.length) {
+        return
+      }
+      mutated = true
+      path.node.specifiers = specifiers
+      if (!path.node.specifiers.length) {
+        path.remove()
+      }
+    },
     ExpressionStatement(path: any) {
       const expression = path.node.expression
-      if (!t.isCallExpression(expression) || !t.isIdentifier(expression.callee, { name: 'definePageMeta' })) {
+      if (!t.isCallExpression(expression) || !calls.has(expression)) {
         return
       }
       mutated = true

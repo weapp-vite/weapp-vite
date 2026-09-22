@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import {
   getSfcCheckMtime,
+  parseVueSfc,
   preprocessScriptSetupSrc,
   preprocessScriptSrc,
   readAndParseSfc,
@@ -16,30 +17,64 @@ describe('vueSfc utils', () => {
     const source = `
 <template><view /></template>
 <script setup lang="ts" src="./setup.ts"></script>
-<script lang="ts" src="./main.ts"></script>
+<script lang="ts" data-label="src > setup" src="./setup-main.ts"></script>
     `.trim()
 
     const preprocessed = preprocessScriptSrc(preprocessScriptSetupSrc(source))
-    expect(preprocessed).toContain('data-weapp-vite-src')
-    expect(preprocessed).toContain('data-weapp-vite-script-src')
-
-    const descriptor = {
-      scriptSetup: {
-        attrs: {
-          'data-weapp-vite-src': './setup.ts',
-        },
-      },
-      script: {
-        attrs: {
-          'data-weapp-vite-script-src': './main.ts',
-        },
-      },
-    } as any
+    const { descriptor, errors } = parseSfc(preprocessed, { ignoreEmpty: false })
+    expect(errors).toEqual([])
 
     restoreScriptSetupSrc(descriptor)
     restoreScriptSrc(descriptor)
-    expect(descriptor.scriptSetup.src).toBe('./setup.ts')
-    expect(descriptor.script.src).toBe('./main.ts')
+    expect(descriptor.scriptSetup?.src).toBe('./setup.ts')
+    expect(descriptor.scriptSetup?.attrs.src).toBe('./setup.ts')
+    expect(descriptor.script?.src).toBe('./setup-main.ts')
+    expect(descriptor.script?.attrs.src).toBe('./setup-main.ts')
+    expect(descriptor.script?.attrs['data-label']).toBe('src > setup')
+  })
+
+  it('keeps parser source and locations while accepting external script pairs', () => {
+    const source = [
+      '<template>',
+      '  <!-- <script src="./template-comment.ts"></script> -->',
+      `  <view>{{ '<script src="./template-text.ts">' }}</view>`,
+      '</template>',
+      '<script setup lang="ts" src="./setup.ts"></script>',
+      '<script lang="ts" src="./main.ts"></script>',
+    ].join('\r\n')
+    const setupContentOffset = source.indexOf('></script>', source.indexOf('./setup.ts')) + 1
+    const scriptContentOffset = source.indexOf('></script>', source.indexOf('./main.ts')) + 1
+
+    const { descriptor, errors } = parseVueSfc(source, {
+      filename: '/project/src/pages/external.vue',
+    })
+
+    expect(errors).toEqual([])
+    expect(descriptor.source).toBe(source)
+    expect(descriptor.template?.content).toContain('<script src="./template-comment.ts">')
+    expect(descriptor.template?.content).toContain('<script src="./template-text.ts">')
+    expect(descriptor.scriptSetup?.src).toBe('./setup.ts')
+    expect(descriptor.scriptSetup?.attrs.src).toBe('./setup.ts')
+    expect(descriptor.scriptSetup?.loc.start.offset).toBe(setupContentOffset)
+    expect(descriptor.script?.src).toBe('./main.ts')
+    expect(descriptor.script?.attrs.src).toBe('./main.ts')
+    expect(descriptor.script?.loc.start.offset).toBe(scriptContentOffset)
+  })
+
+  it('does not preprocess script-like text outside top-level attributes', () => {
+    const source = [
+      '<template>',
+      '  <!-- <script src="./template-comment.ts"></script> -->',
+      `  <view>{{ '<script src="./template-text.ts">' }}</view>`,
+      '</template>',
+      '<script lang="ts">',
+      `const snippet = '<script src="./embed.js">'`,
+      '// <script src="./script-comment.ts">',
+      '</script>',
+    ].join('\n')
+
+    expect(preprocessScriptSetupSrc(source)).toBe(source)
+    expect(preprocessScriptSrc(source)).toBe(source)
   })
 
   it('resolves src blocks with custom resolver and reader', async () => {

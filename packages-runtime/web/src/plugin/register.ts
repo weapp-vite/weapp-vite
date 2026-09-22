@@ -8,6 +8,7 @@ import _babelTraverse from '@babel/traverse'
 import * as t from '@babel/types'
 
 import MagicString from 'magic-string'
+import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
 import { STYLE_QUERY, TEMPLATE_QUERY } from './constants'
 import { appendQuery, resolveRuntimePolyfillPath, toRelativeImport, toViteFsImport } from './path'
 
@@ -123,6 +124,9 @@ export function transformScriptModule({
   runtimeModuleId,
   hmrAcceptCode,
 }: TransformScriptModuleOptions): null | { code: string, map: SourceMap } {
+  if (meta.kind === 'page' && mayContainPageDeclaration(code)) {
+    code = stripPageDeclaration(code, cleanId)?.code ?? code
+  }
   let ast: ReturnType<typeof parse> | undefined
   try {
     ast = parse(code, {

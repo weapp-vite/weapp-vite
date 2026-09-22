@@ -30,6 +30,36 @@ describe('createTypedRouterDefinition', () => {
     expect(dts).toContain('entries: import(\'weapp-vite/auto-routes\').AutoRoutesEntries[number];')
   })
 
+  it('augments route names with widened correlated meta types', () => {
+    const dts = createTypedRouterDefinition({
+      pages: ['pages/home/index', 'pages/plain/index'],
+      entries: ['pages/home/index', 'pages/plain/index'],
+      subPackages: [],
+    }, [
+      {
+        name: 'home',
+        path: '/pages/home/index',
+        meta: {
+          title: '首页',
+          requiresAuth: false,
+          retries: 1,
+          tags: ['primary', 'mobile'],
+          nested: { enabled: true, nullable: null },
+        },
+      },
+    ])
+
+    expect(dts).toContain('interface WevuNamedRouteMap {')
+    expect(dts).toContain('"home": {')
+    expect(dts).toContain('path: "/pages/home/index";')
+    expect(dts).toContain('"title": string;')
+    expect(dts).toContain('"requiresAuth": boolean;')
+    expect(dts).toContain('"retries": number;')
+    expect(dts).toContain('"tags": Array<string>;')
+    expect(dts).toContain('"nullable": null;')
+    expect(dts).not.toContain('"plain"')
+  })
+
   it('preserves subpackage tuple literal shape', () => {
     const dts = createTypedRouterDefinition({
       pages: ['pages/home/index'],

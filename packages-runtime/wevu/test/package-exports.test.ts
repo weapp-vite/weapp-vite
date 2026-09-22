@@ -30,6 +30,7 @@ const publicEntries = [
   ['./fetch', 'fetch'],
   ['./web-apis', 'web-apis'],
   ['./router', 'router'],
+  ['./router/auto-routes', 'router/auto-routes'],
   ['./vue-demi', 'vue-demi'],
 ] as const
 

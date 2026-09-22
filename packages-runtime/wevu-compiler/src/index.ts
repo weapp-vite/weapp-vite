@@ -1,6 +1,19 @@
 export { builtinComponentsSet, isBuiltinComponent } from './auto-import-components/builtin'
 export { createRuntimeBindingManifest } from './bindingManifest'
 export * from './constants'
+export {
+  collectPageMetaCallsFromPrograms,
+  extractPageDeclaration,
+  extractPageDeclarationWithDependencies,
+  mayContainPageDeclaration,
+  mayContainPageMeta,
+  stripPageDeclaration,
+} from './pageDeclaration'
+export type {
+  ExtractPageDeclarationWithDependenciesResult,
+  StaticPageDeclaration,
+  StaticRouteValue,
+} from './pageDeclaration'
 export { compileJsxFile } from './plugins/jsx/compileJsxFile'
 export { isUniAppCompatibilityFile, transformUniAppConditionalCode, transformUniAppSource } from './plugins/uniApp'
 export type { TransformUniAppSourceOptions, UniAppCompatibilityTarget } from './plugins/uniApp'

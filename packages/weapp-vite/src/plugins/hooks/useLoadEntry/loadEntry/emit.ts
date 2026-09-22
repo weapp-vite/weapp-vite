@@ -12,6 +12,7 @@ import { performance } from 'node:perf_hooks'
 import { fs as sharedFs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
 import path from 'pathe'
+import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
 import logger from '../../../../logger'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
@@ -457,6 +458,10 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       return
     }
     throw error
+  }
+
+  if (type === 'page' && !NON_VUE_PAGE_RE.test(id) && mayContainPageDeclaration(code)) {
+    code = stripPageDeclaration(code, id)?.code ?? code
   }
 
   if (
