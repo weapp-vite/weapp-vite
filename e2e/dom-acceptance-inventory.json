@@ -5,8 +5,8 @@
     "taskCount": 108,
     "wechatTaskCount": 105,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 270,
-    "casesWithPlan": 270,
+    "expandedCaseDeclarations": 271,
+    "casesWithPlan": 271,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -1919,6 +1919,30 @@
             "check(child-removed)",
             "navigateTo(/pages/issue-1049/result/index)",
             "check(hidden-page)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:159",
+          "name": "e2e app: github-issues / issue #1049 > keeps the caller session usable after route recovery replaces the transport",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues",
+              "checkpoints": "[{ id: 'before-recovery', route: LAUNCH_ROUTE, action: '旧会话页面修改共享计数', nodes: [{ selector: '#issue1049-count', text: '1' }], }, { id: 'recovered', route: LAUNCH_ROUTE, action: '注入一次导航连接故障，恢复后通过原会话采集版本和 DOM', nodes: [{ selector: '#issue1049-c",
+              "source": "e2e/ide/github-issues.runtime.issue1049.test.ts:160"
+            }
+          ],
+          "routes": [
+            "/pages/issue-1049/result/index"
+          ],
+          "operations": [
+            "callMethod(_resetScenario)",
+            "callMethod(_mutate)",
+            "check(before-recovery)",
+            "check(recovered)",
+            "navigateTo(/pages/issue-1049/result/index)",
+            "check(navigated)"
           ],
           "notes": []
         }
@@ -6999,7 +7023,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue1049.test.ts",
-      "sha256": "3c9e162e9aee1856f663ab6f7ddbffa8b15dd5367c196b8c9bdcc953b61f4905"
+      "sha256": "05a1f1adaec221d8dd9e50310461ec59045e98238b8210d9ccd42eaf3c7a34ef"
     },
     {
       "file": "e2e/ide/github-issues.runtime.issue289.test.ts",
@@ -7131,7 +7155,7 @@
     },
     {
       "file": "e2e/ide/github-issues.runtime.shared.ts",
-      "sha256": "b00e0ee00f7c073bb18f23a01544094edd7dd442923610d070ed460705e53304"
+      "sha256": "90902fd1f82fd8115dc64cc3208513c6051eb7652d47b1e82b8f59776b91e181"
     },
     {
       "file": "e2e/ide/github-issues.runtime.slot-fallback-compiler-off.test.ts",
@@ -7856,6 +7880,10 @@
     {
       "file": "e2e/utils/queryRequestTransport.ts",
       "sha256": "d33fa36e8ea5bf051739fac820692b476aeb64a24c004dd2c27825aa4fe99c41"
+    },
+    {
+      "file": "e2e/utils/recoverableSession.ts",
+      "sha256": "c5493ad45473d703af47e38a714cd9eafe31127b6cb8bbd4461be4a6a158d745"
     },
     {
       "file": "e2e/utils/requestClientsRealDom.ts",

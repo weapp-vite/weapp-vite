@@ -42,6 +42,8 @@
 
 Store 定义更新需区分 action 手动替换与 Pinia HMR。当前 Store 不支持 Pinia HMR；修改定义后应冷启动 App，再验证新默认值、插件记录与跨页共享，不能用页面 `reLaunch` 代替 App 重启。页面、SFC、layout 的状态保持检查仍须在同一会话完成。
 
+共享 automator 在基础设施故障后重启时，调用方必须继续引用当前连接；不能混用新页面与旧会话采集版本、截图或执行后续导航。`github-issues.runtime.issue1049.test.ts` 主动注入一次导航故障，检查恢复后的冷启动状态、版本与 DOM 证据，以及原会话引用的后续导航；同一场景同时运行 devtools/headless，simulator 保留 Node/浏览器对应测试。恢复失败仍须报错，不把旧连接超时改写成通过。
+
 共享模板 HMR 同时检查输出与宿主状态：import/include 更新完成后，内容未变化的页面和组件 JS 不应重新写入；检查仍处于原路由且显示新模板。脚本失效仍须刷新入口，新增组件必须生成脚本，WXS 更新按实际 classic 重载行为验收。`e2e/ci/hmr-shared-template-wxs.test.ts` 在三端核对输出时间，微信对应的共享模板/WXS suite 检查路由和 DOM，避免仅凭产物文本更新就判断 HMR 通过。
 
 每个项目记录 IDE/基础库版本、repo-relative 项目路径、路由、动作、操作前后文本或状态、控制台错误、结果与证据。router 或生命周期修复至少包含冷启动主路径及返回、abort、redirect 等相关边界，不将微信专属 React 能力推断为支付宝或抖音支持。

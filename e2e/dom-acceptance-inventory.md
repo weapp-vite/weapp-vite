@@ -7,7 +7,7 @@
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
 - 任务：108；微信：105；范围外：3。
-- 展开的 case 声明：270；已接入计划：270；缺计划：0。
+- 展开的 case 声明：271；已接入计划：271；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -33,7 +33,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/github-issues.runtime.issue1012.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1015.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1035.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
-| ide/github-issues.runtime.issue1049.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/github-issues.runtime.issue1049.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/github-issues.runtime.issue448-formdata-upload.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue547.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue558.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -816,6 +816,14 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'child-removed', route: LAUNCH_ROUTE, action: '卸载子组件后更新 Store', nodes: [{ selector: '#issue1049-count', text: '1' }, { selector: '#issue1049-double', text: '2' }], }, { id: 'hidden-page', route: RESULT_ROUTE, action: 'navigateTo 只隐藏页`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:119`
 - Routes: `/pages/issue-1049/result/index`
 - Operations: `callMethod(_resetScenario)`, `callMethod(_removeChild)`, `callMethod(_mutate)`, `check(child-removed)`, `navigateTo(/pages/issue-1049/result/index)`, `check(hidden-page)`
+
+### e2e app: github-issues / issue #1049 > keeps the caller session usable after route recovery replaces the transport
+
+- Source: `e2e/ide/github-issues.runtime.issue1049.test.ts:159`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'before-recovery', route: LAUNCH_ROUTE, action: '旧会话页面修改共享计数', nodes: [{ selector: '#issue1049-count', text: '1' }], }, { id: 'recovered', route: LAUNCH_ROUTE, action: '注入一次导航连接故障，恢复后通过原会话采集版本和 DOM', nodes: [{ selector: '#issue1049-c`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:160`
+- Routes: `/pages/issue-1049/result/index`
+- Operations: `callMethod(_resetScenario)`, `callMethod(_mutate)`, `check(before-recovery)`, `check(recovered)`, `navigateTo(/pages/issue-1049/result/index)`, `check(navigated)`
 
 
 ## ide/github-issues.runtime.issue448-formdata-upload.test.ts
