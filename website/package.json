@@ -28,7 +28,7 @@
     "postinstall": "node ../scripts/print-rolldown-versions-at-install-tail.mjs"
   },
   "dependencies": {
-    "@iconify/vue": "^5.0.2",
+    "@iconify/vue": "^5.0.3",
     "@vue/shared": "^3.5.43",
     "echarts": "catalog:",
     "element-plus": "^2.14.6",
@@ -42,7 +42,7 @@
     "@iconify-json/bi": "^1.2.7",
     "@iconify-json/logos": "^1.2.14",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.79",
+    "@iconify-json/vscode-icons": "^1.2.80",
     "@shikijs/vitepress-twoslash": "^4.4.3",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
@@ -55,6 +55,6 @@
     "vitepress-plugin-llms": "1.14.0",
     "vitepress-plugin-mermaid": "^2.0.17",
     "weapp-vite": "workspace:*",
-    "wrangler": "^4.136.0"
+    "wrangler": "^4.136.2"
   }
 }
