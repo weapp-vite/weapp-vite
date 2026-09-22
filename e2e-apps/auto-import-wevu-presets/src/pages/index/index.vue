@@ -6,7 +6,7 @@ onMounted(() => {
 const route = useRoute()
 const router = useRouter()
 function goNext() {
-  router.navigateTo('/pages/next/index')
+  router.push('/pages/next/index')
 }
 </script>
 

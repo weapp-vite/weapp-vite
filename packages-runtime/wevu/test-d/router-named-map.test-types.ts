@@ -11,10 +11,10 @@ import type {
 } from 'wevu/router'
 import type { WevuAutoRoutes } from 'wevu/router/auto-routes'
 import { expectAssignable, expectError, expectType } from 'tsd'
-import { definePageMeta } from 'wevu'
 import {
   createNavigationFailure,
   createRouter,
+  definePage,
   NavigationFailureType,
   resolveRouteLocation,
   useRoute,
@@ -60,9 +60,9 @@ expectAssignable<StaticPageDeclaration>({
     },
   },
 })
-definePageMeta({ route: { name: 'plain' } })
-expectError(definePageMeta({ route: { name: 'invalid', meta: { missing: undefined } } }))
-expectError(definePageMeta({ route: { name: 'invalid', meta: { handler: () => true } } }))
+definePage({ name: 'plain' })
+expectError(definePage({ name: 'invalid', meta: { missing: undefined } }))
+expectError(definePage({ name: 'invalid', meta: { handler: () => true } }))
 
 expectAssignable<readonly WevuAutoRoute<WevuNamedRouteMap>[]>(routes)
 expectType<WevuAutoRoutes>(routes)

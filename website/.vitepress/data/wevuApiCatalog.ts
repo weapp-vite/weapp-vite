@@ -270,6 +270,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
     ['StoreSubscribeOptions', 'storesubscribeoptions'],
     ['MutationType', 'mutationtype'],
   ].map(([name, anchor]) => api(name, `/wevu/api/store#${anchor}`, 'Store 类型', 'type', 'wevu-extension', { entry: 'wevu/store', keywords: ['TypeScript', '类型'] })),
+  routerApi('definePage()', 'definepage', 'Router 编译宏', 'macro', 'wevu-extension', ['name', 'meta', 'auto-routes', '命名路由', '编译期']),
   ...[
     ['createRouter()', 'createrouter'],
     ['useRouter()', 'userouter'],
@@ -316,7 +317,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
     'RouterResolve',
     'StaticPageDeclaration',
     'StaticRouteValue',
-  ].map(name => routerType(name, '命名路由类型', 'wevu-extension', ['TypeScript', 'definePageMeta', 'PageMeta.route', 'meta', 'auto-routes'])),
+  ].map(name => routerType(name, '命名路由类型', 'wevu-extension', ['TypeScript', 'definePage', 'meta', 'auto-routes'])),
   ...[
     'RouterNavigation',
     'UseRouterOptions',

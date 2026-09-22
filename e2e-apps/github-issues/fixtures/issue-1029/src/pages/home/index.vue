@@ -5,7 +5,10 @@ import { navigate, snapshot, trace } from '../../router'
 
 definePageMeta({
   layout: false,
-  route: { name: 'home', meta: { title: '首页', requiresAuth: false, tags: ['public'] } },
+})
+definePage({
+  name: 'home',
+  meta: { title: '首页', requiresAuth: false, tags: ['public'] },
 })
 definePageJson({ navigationBarTitleText: '宿主标题' })
 

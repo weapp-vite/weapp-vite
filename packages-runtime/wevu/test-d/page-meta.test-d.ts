@@ -1,5 +1,9 @@
 import { expectError, expectType } from 'tsd'
 import { definePageMeta } from 'wevu'
+import {
+  definePage as declarePage,
+  definePage,
+} from 'wevu/router'
 import * as router from 'wevu/router'
 
 declare const dynamicTitle: string
@@ -15,52 +19,57 @@ expectType<void>(definePageMeta({
       transform: transformLayoutValue,
     },
   },
-  route: {
-    name: 'home',
-    meta: {
-      title: 'Home',
-      requiresAuth: false,
-      priority: 1,
-      parent: null,
-      tags: ['root', null],
-      transition: {
-        name: 'fade',
-      },
+  custom: {
+    title: dynamicTitle,
+    transform: transformLayoutValue,
+  },
+}))
+
+expectType<void>(definePage({
+  name: 'home',
+  meta: {
+    title: 'Home',
+    requiresAuth: false,
+    priority: 1,
+    parent: null,
+    tags: ['root', null],
+    transition: {
+      name: 'fade',
     },
   },
 } as const))
 
-expectError(definePageMeta({
-  route: {
-    name: 'invalid-undefined',
-    meta: {
-      value: undefined,
-    },
-  },
+expectType<void>(declarePage({
+  name: 'profile',
 }))
 
-expectError(definePageMeta({
-  route: {
-    name: 'invalid-function',
-    meta: {
-      handler: transformLayoutValue,
-    },
-  },
-}))
-
-expectError(definePageMeta({
-  route: {
-    name: 'invalid-meta',
-    meta: null,
-  },
-}))
-
-expectType<void>(definePageMeta({
-  name: '',
+expectError(definePage({
+  name: 'invalid-undefined',
   meta: {
     value: undefined,
+  },
+}))
+
+expectError(definePage({
+  name: 'invalid-function',
+  meta: {
     handler: transformLayoutValue,
   },
 }))
 
-expectError(router.definePage)
+expectError(definePage({
+  name: 'invalid-meta',
+  meta: null,
+}))
+
+expectError(definePage({
+  name: 'invalid-layout',
+  layout: false,
+}))
+
+expectError(definePage({
+  name: 'invalid-path',
+  path: '/pages/invalid/index',
+}))
+
+expectError(router.definePageRoute)

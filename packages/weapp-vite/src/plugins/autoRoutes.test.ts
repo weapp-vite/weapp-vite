@@ -226,7 +226,7 @@ describe('auto-routes plugin alias fallback', () => {
     const pageDeclarationPaths = [jsPagePath, tsPagePath, ...externalPageScripts, vuePagePath]
     const { plugin, isPageDeclarationSource } = createPlugin()
     isPageDeclarationSource.mockImplementation((id: string) => pageDeclarationPaths.includes(id))
-    const source = 'import { definePageMeta } from "wevu"; definePageMeta({ route: { name: "home" } }); export const answer = 42'
+    const source = 'import { definePage } from "wevu/router"; definePage({ name: "home" }); definePageMeta({ layout: false }); export const answer = 42'
 
     for (const id of [jsPagePath, tsPagePath, ...externalPageScripts, `${vuePagePath}?vue&type=script`]) {
       const result = await plugin.transform?.call({}, source, id)
@@ -237,7 +237,8 @@ describe('auto-routes plugin alias fallback', () => {
       if (!result || typeof result !== 'object') {
         throw new Error('Expected a transformed page script')
       }
-      expect(result.code).not.toContain('definePageMeta')
+      expect(result.code).not.toMatch(/\bdefinePage\b/)
+      expect(result.code).toContain('definePageMeta({ layout: false })')
     }
     await expect(plugin.transform?.call({}, source, vuePagePath)).resolves.toBeNull()
     await expect(plugin.transform?.call({}, source, '/virtual/project/src/components/card.ts')).resolves.toBeNull()
@@ -251,19 +252,19 @@ describe('auto-routes plugin alias fallback', () => {
 
     const requests = [
       {
-        code: String.raw`.icon\:active::before { content: "definePageMeta"; }`,
+        code: String.raw`.icon\:active::before { content: "definePage"; }`,
         id: `${vuePagePath}?vue&type=style&lang.css`,
       },
       {
-        code: String.raw`.icon\:active::before { content: "definePageMeta"; }`,
+        code: String.raw`.icon\:active::before { content: "definePage"; }`,
         id: `${externalScriptPath}?vue&type=style&lang.css`,
       },
       {
-        code: '<view>definePageMeta is documentation text</view>',
+        code: '<view>definePage is documentation text</view>',
         id: `${vuePagePath}?vue&type=template`,
       },
       {
-        code: String.raw`<docs>Use \definePageMeta in page scripts.</docs>`,
+        code: String.raw`<docs>Use \definePage in page scripts.</docs>`,
         id: `${vuePagePath}?vue&type=custom&index=0`,
       },
     ]

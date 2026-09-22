@@ -98,7 +98,7 @@ router.beforeEach((to, from) => {
 
 ### `StaticPageDeclaration` {#type-staticpagedeclaration}
 
-`PageMeta.route` 经编译器提取后的内部结构：必填 `name: string` 与可选 `meta: Record<string, StaticRouteValue>`。业务页面通过 `definePageMeta({ route })` 声明；TypeScript 约束值的形状，编译器另行检查静态表达式、顶层位置、页面归属与名称唯一性。
+`definePage()` 经编译器提取后的内部结构：必填 `name: string` 与可选 `meta: Record<string, StaticRouteValue>`。`StaticPageDeclaration` 保留为编译器与路由生成链路之间的纯 DTO；业务页面直接声明 `{ name, meta }`，TypeScript 约束值的形状，编译器另行检查静态表达式、顶层位置、页面归属与名称唯一性。
 
 ### `StaticRouteValue` {#type-staticroutevalue}
 

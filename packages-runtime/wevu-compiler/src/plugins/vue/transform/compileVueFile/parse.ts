@@ -6,7 +6,7 @@ import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
-import { mayContainPageDeclaration, stripPageDeclarationFromSfcDescriptor } from '../../../../pageDeclaration'
+import { mayContainPageDeclaration, mayContainPageMeta, stripPageCompileTimeMacrosFromSfcDescriptor } from '../../../../pageDeclaration'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import { composeSourceMapForSource, composeSourceMaps } from '../../../../utils/sourcemap'
 import { normalizeLineEndings } from '../../../../utils/text'
@@ -271,8 +271,9 @@ export async function parseVueFile(
     scriptResolvedId
     || scriptSetupResolvedId
     || mayContainPageDeclaration(normalizedSource)
+    || mayContainPageMeta(normalizedSource)
   )) {
-    const stripped = stripPageDeclarationFromSfcDescriptor(
+    const stripped = stripPageCompileTimeMacrosFromSfcDescriptor(
       normalizedSource,
       filename,
       resolvedDescriptor,

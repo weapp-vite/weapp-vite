@@ -2771,14 +2771,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:61",
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:63",
           "name": "issue #1029: static named routes and runtime metadata > finishes the initial guard before mounting and does not name unannotated pages",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
               "checkpoints": "[{ id: 'initial', route: ISSUE_1029_HOME, action: '检查首屏异步守卫与声明元信息', nodes: [{ selector: '#route-title', text: '首页' }], }]",
-              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:62"
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:64"
             }
           ],
           "routes": [],
@@ -2789,14 +2789,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:87",
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:89",
           "name": "issue #1029: static named routes and runtime metadata > navigates by an unchanged name after the page moves and preserves meta through back navigation",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
               "checkpoints": "[ { id: 'profile', route: MOVED_PROFILE, action: '通过稳定名称跳转到移动后的分包页面', nodes: [{ selector: '#route-title', text: '个人资料' }] }, { id: 'back', route: ISSUE_1029_HOME, action: '返回主页并恢复关联元信息', nodes: [{ selector: '#route-title', text: '首页' }] }, ",
-              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:88"
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:90"
             }
           ],
           "routes": [],
@@ -2810,14 +2810,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:111",
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:113",
           "name": "issue #1029: static named routes and runtime metadata > retains the current route on abort and applies named guard redirects",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
               "checkpoints": "[ { id: 'abort', route: ISSUE_1029_HOME, action: '中止命名导航不改变当前页面', nodes: [{ selector: '#route-title', text: '首页' }] }, { id: 'redirect', route: ISSUE_1029_HOME, action: '守卫重定向使用同一名称映射', nodes: [{ selector: '#route-title', text: '首页' }] }, ]",
-              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:112"
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:114"
             }
           ],
           "routes": [],
@@ -2831,14 +2831,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:130",
+          "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:132",
           "name": "issue #1029: static named routes and runtime metadata > keeps path navigation to a page without route metadata unnamed",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues/fixtures/issue-1029",
               "checkpoints": "[{ id: 'legacy', route: ISSUE_1029_LEGACY, action: '未声明页面仍可按路径访问且没有伪造名称', nodes: [{ selector: '#legacy-title', text: 'Unannotated page' }], }]",
-              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:131"
+              "source": "e2e/ide/issue-1029-auto-routes.runtime.test.ts:133"
             }
           ],
           "routes": [],
@@ -7331,7 +7331,7 @@
     },
     {
       "file": "e2e/ide/issue-1029-auto-routes.runtime.test.ts",
-      "sha256": "7c29b4435c54553a0616042d9038d1792a0fc8edaf4ad856e5d9f5492991e6d0"
+      "sha256": "c0cbff284ff60648be3922394474c5cfad02a1dc9b1667fb0bd8a963a4ef8eaf"
     },
     {
       "file": "e2e/ide/issue-340-hoist.runtime.test.ts",

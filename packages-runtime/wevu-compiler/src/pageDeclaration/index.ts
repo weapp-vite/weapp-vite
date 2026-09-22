@@ -1,15 +1,21 @@
 import type { SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
 import type { ResolveSfcBlockSrcOptions } from '../plugins/utils/vueSfc'
 import type { EncodedSourceMapLike } from '../utils/sourcemap'
-import type { PageDeclarationAnalysis, PageDeclarationScriptBlock, PageDeclarationScriptBlockKind, StaticPageDeclaration } from './types'
-import { WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
+import type { StaticPageDeclaration } from './public'
+import type { PageDeclarationAnalysis, PageDeclarationScriptBlock, PageDeclarationScriptBlockKind } from './types'
+import { WEVU_DEFINE_PAGE_MACRO, WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import MagicString, { Bundle } from 'magic-string'
 import { parseVueSfc, resolveSfcBlockSrc } from '../plugins/utils/vueSfc'
-import { analyzePageDeclarationBlocks } from './analyze'
+import { analyzePageCompileTimeMacroBlocks, analyzePageDeclarationBlocks } from './analyze'
 import { rebaseExternalScriptImports } from './rewrite'
 
+const PAGE_DECLARATION_MACRO_HINT_RE = new RegExp(
+  `(?:^|[^\\p{ID_Continue}$\\u200C\\u200D])${WEVU_DEFINE_PAGE_MACRO}(?![\\p{ID_Continue}$\\u200C\\u200D])`,
+  'u',
+)
+
 export { collectPageMetaCallsFromPrograms } from './analyze'
-export type { StaticPageDeclaration, StaticRouteValue } from './types'
+export type { StaticPageDeclaration, StaticRouteValue } from './public'
 
 interface ResolvedScriptSourceIds {
   scriptResolvedId?: string
@@ -260,20 +266,30 @@ function createDescriptorForExternalScriptCompile(
   }
 }
 
+/**
+ * 源码是否可能包含页面路由声明宏。
+ */
 export function mayContainPageDeclaration(source: string) {
   // 转义的导入标识符必须交给 AST 绑定分析，不能因原始文本不匹配而遗漏。
+  return source.includes('\\') || PAGE_DECLARATION_MACRO_HINT_RE.test(source)
+}
+
+/**
+ * 源码是否可能包含页面元信息宏。
+ */
+export function mayContainPageMeta(source: string) {
+  // 页面布局的预筛选独立于路由声明，保留转义标识符的保守解析路径。
   return source.includes('\\') || source.includes(WEVU_DEFINE_PAGE_META_MACRO)
 }
 
-export function stripPageDeclarationFromSfcDescriptor(
+function stripAnalyzedPageMacrosFromSfcDescriptor(
   source: string,
   filename: string,
   descriptor: SFCDescriptor,
-  sourceMap = true,
-  resolvedIds: ResolvedScriptSourceIds = {},
+  sourceMap: boolean,
+  blocks: PageDeclarationScriptBlock[],
+  analysis: PageDeclarationAnalysis,
 ): StripSfcPageDeclarationResult | undefined {
-  const blocks = collectSfcScriptBlocks(source, filename, descriptor, resolvedIds)
-  const analysis = analyzePageDeclarationBlocks(blocks)
   if (!analysis.edits.length && !blocks.some(block => block.filename !== filename)) {
     return undefined
   }
@@ -328,6 +344,49 @@ export function stripPageDeclarationFromSfcDescriptor(
       : undefined,
     scriptMap: externalCompile?.map,
   }
+}
+
+export function stripPageDeclarationFromSfcDescriptor(
+  source: string,
+  filename: string,
+  descriptor: SFCDescriptor,
+  sourceMap = true,
+  resolvedIds: ResolvedScriptSourceIds = {},
+) {
+  const blocks = collectSfcScriptBlocks(source, filename, descriptor, resolvedIds)
+  return stripAnalyzedPageMacrosFromSfcDescriptor(
+    source,
+    filename,
+    descriptor,
+    sourceMap,
+    blocks,
+    analyzePageDeclarationBlocks(blocks),
+  )
+}
+
+/**
+ * 在 Vue 收集 setup 暴露绑定前移除页面编译宏，避免已擦除的导入残留在返回对象中。
+ *
+ * 该入口只服务 SFC 编译；公开的页面路由擦除入口仍仅处理 `definePage`。
+ *
+ * @internal
+ */
+export function stripPageCompileTimeMacrosFromSfcDescriptor(
+  source: string,
+  filename: string,
+  descriptor: SFCDescriptor,
+  sourceMap = true,
+  resolvedIds: ResolvedScriptSourceIds = {},
+) {
+  const blocks = collectSfcScriptBlocks(source, filename, descriptor, resolvedIds)
+  return stripAnalyzedPageMacrosFromSfcDescriptor(
+    source,
+    filename,
+    descriptor,
+    sourceMap,
+    blocks,
+    analyzePageCompileTimeMacroBlocks(blocks),
+  )
 }
 
 /**

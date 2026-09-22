@@ -7,26 +7,28 @@ import {
   collectPageMetaCallsFromPrograms,
   extractPageDeclaration,
   extractPageDeclarationWithDependencies,
+  mayContainPageDeclaration,
+  mayContainPageMeta,
   stripPageDeclaration,
 } from './index'
 
 describe('static page declarations', () => {
-  it('extracts only the route namespace as finite JSON without prototype mutation', () => {
+  it('extracts a finite route declaration without crossing into page metadata', () => {
     const source = `<script setup lang="ts">
-import { definePageMeta as page } from 'wevu'
+import { definePage as page } from 'wevu/router'
+import { definePageMeta } from 'wevu'
 const layoutTitle = resolveLayoutTitle()
-page({
+definePageMeta({
   layout: { name: 'panel', props: { title: layoutTitle.value } },
-  name: 'legacy-page-name',
-  meta: { legacy: true },
-  route: {
-    name: 'home',
-    meta: {
-      title: '首页',
-      requiresAuth: false,
-      nested: { count: -1, values: [null, true, \`static\`] },
-      '__proto__': { polluted: true },
-    },
+  route: { name: 'legacy-page-name', meta: { legacy: true } },
+})
+page({
+  name: 'home',
+  meta: {
+    title: '首页',
+    requiresAuth: false,
+    nested: { count: -1, values: [null, true, \`static\`] },
+    '__proto__': { polluted: true },
   },
 } as const)
 </script>`
@@ -65,22 +67,59 @@ page({
       `enum definePageMeta { Value }; definePageMeta({ route: { name: 'enum' } })`,
       BABEL_TS_MODULE_PARSER_OPTIONS,
     )
+    const crossBlockImportAst = parse(
+      `import { definePageMeta as page } from 'wevu'; export default {}`,
+      BABEL_TS_MODULE_PARSER_OPTIONS,
+    )
+    const crossBlockCallAst = parse(
+      `page({ layout: { name: 'panel', props: { title: dynamicTitle } } })`,
+      BABEL_TS_MODULE_PARSER_OPTIONS,
+    )
+    const routeAst = parse(
+      `import { definePage } from 'wevu/router'; definePage({ name: 'route' })`,
+      BABEL_TS_MODULE_PARSER_OPTIONS,
+    )
 
     expect(collectPageMetaCallsFromPrograms({ script: globalAst })).toHaveLength(1)
     expect(collectPageMetaCallsFromPrograms({ script: importedAst })).toHaveLength(1)
     expect(collectPageMetaCallsFromPrograms({ script: localAst })).toHaveLength(0)
     expect(collectPageMetaCallsFromPrograms({ script: foreignAst })).toHaveLength(0)
     expect(collectPageMetaCallsFromPrograms({ script: typescriptValueAst })).toHaveLength(0)
+    expect(collectPageMetaCallsFromPrograms({
+      script: crossBlockImportAst,
+      scriptSetup: crossBlockCallAst,
+    })).toHaveLength(1)
+    expect(collectPageMetaCallsFromPrograms({ script: routeAst })).toHaveLength(0)
   })
 
-  it('extracts and strips a global route while preserving adjacent metadata pipelines', () => {
+  it('keeps route declarations and page metadata hints independent', () => {
+    expect(mayContainPageDeclaration('definePage({ name: "home" })')).toBe(true)
+    expect(mayContainPageDeclaration('definePageMeta({ layout: false })')).toBe(false)
+    expect(mayContainPageDeclaration('definePageJson({ navigationBarTitleText: "Home" })')).toBe(false)
+    expect(mayContainPageDeclaration('definePageRoute({ name: "obsolete" })')).toBe(false)
+    expect(mayContainPageMeta('definePageMeta({ layout: false })')).toBe(true)
+    expect(mayContainPageMeta('definePage({ name: "home" })')).toBe(false)
+  })
+
+  it('does not register or reject legacy PageMeta.route declarations', () => {
+    const source = `import { definePageMeta } from 'wevu'
+const escaped = definePageMeta
+definePageMeta({ route: { name: routeName, meta: loadMeta() } })
+console.log(escaped)`
+
+    expect(extractPageDeclaration(source, '/project/src/pages/legacy-meta.ts')).toBeUndefined()
+    expect(stripPageDeclaration(source, '/project/src/pages/legacy-meta.ts')).toBeUndefined()
+  })
+
+  it('extracts and strips a global route while preserving page metadata pipelines', () => {
     const source = `const layoutTitle = resolveLayoutTitle()
 definePageMeta({
   layout: { name: 'panel', props: { title: layoutTitle.value } },
   meta: { title: 'legacy metadata' },
   customField: loadLegacyMetadata(),
-  route: { name: 'global-home', meta: { requiresAuth: false } },
+  route: { name: 'legacy-route', meta: { ignored: true } },
 })
+definePage({ name: 'global-home', meta: { requiresAuth: false } })
 definePageJson({ navigationBarTitleText: 'Global home' })`
 
     expect(extractPageDeclaration(source, '/project/src/pages/global.ts')).toEqual({
@@ -88,12 +127,14 @@ definePageJson({ navigationBarTitleText: 'Global home' })`
       meta: { requiresAuth: false },
     })
     const stripped = stripPageDeclaration(source, '/project/src/pages/global.ts')
-    expect(stripped?.code).not.toContain('definePageMeta')
+    expect(stripped?.code).not.toMatch(/\bdefinePage\s*\(/)
+    expect(stripped?.code).toContain('definePageMeta')
+    expect(stripped?.code).toContain(`name: 'legacy-route'`)
     expect(stripped?.code).toContain('const layoutTitle')
     expect(stripped?.code).toContain('definePageJson')
   })
 
-  it('strips an imported layout-only macro before runtime compilation', async () => {
+  it('leaves an imported layout-only macro for the page metadata transform', async () => {
     const source = `<script setup lang="ts">
 import { definePageMeta as pageMeta, ref } from 'wevu'
 const title = ref('Dynamic layout title')
@@ -102,11 +143,7 @@ pageMeta({ layout: { name: 'panel', props: { title: title.value } } })
 <template><view>{{ title }}</view></template>`
 
     expect(extractPageDeclaration(source, '/project/src/pages/layout-only.vue')).toBeUndefined()
-    const stripped = stripPageDeclaration(source, '/project/src/pages/layout-only.vue')
-    expect(stripped?.code).not.toContain('definePageMeta')
-    expect(stripped?.code).not.toContain('pageMeta(')
-    expect(stripped?.code).toContain(`import {`)
-    expect(stripped?.code).toContain('ref')
+    expect(stripPageDeclaration(source, '/project/src/pages/layout-only.vue')).toBeUndefined()
 
     const compiled = await compileVueFile(source, '/project/src/pages/layout-only.vue', {
       isPage: true,
@@ -117,16 +154,17 @@ pageMeta({ layout: { name: 'panel', props: { title: title.value } } })
     expect(compiled.script).toContain('Dynamic layout title')
   })
 
-  it('erases only canonical macro imports and the recognized declaration', () => {
-    const source = `import runtimeDefault, { definePageMeta as page, ref } from 'wevu'
-import { definePageMeta as unusedPage, useRouter } from 'wevu'
-import { definePageMeta } from 'another-router'
-page({ layout: false, route: { name: 'home', meta: { title: '首页' } } })
+  it('erases only canonical route imports and the recognized declaration', () => {
+    const source = `import runtimeDefault, { definePageMeta, ref } from 'wevu'
+import { definePage as page, definePage as unusedPage, useRouter } from 'wevu/router'
+import { definePage } from 'another-router'
+page({ name: 'home', meta: { title: '首页' } })
 definePageJson({ navigationBarTitleText: '首页' })
 function invoke(page: (value: unknown) => void) {
   page({ runtime: true })
 }
-definePageMeta({ runtime: true })
+definePageMeta({ route: { name: 'legacy' }, runtime: true })
+definePage({ runtime: true })
 console.log(runtimeDefault, ref, useRouter, invoke)`
 
     const result = stripPageDeclaration(source, '/project/src/pages/home.ts')
@@ -134,18 +172,19 @@ console.log(runtimeDefault, ref, useRouter, invoke)`
     expect(result!.code).toContain('runtimeDefault')
     expect(result!.code).toContain('ref')
     expect(result!.code).toContain('useRouter')
-    expect(result!.code).not.toContain('definePageMeta as unusedPage')
-    expect(result!.code).not.toContain('definePageMeta as page')
-    expect(result!.code).toContain(`import { definePageMeta } from 'another-router'`)
+    expect(result!.code).not.toContain('definePage as unusedPage')
+    expect(result!.code).not.toContain('definePage as page')
+    expect(result!.code).toContain(`import { definePage } from 'another-router'`)
     expect(result!.code).toContain(`definePageJson({ navigationBarTitleText: '首页' })`)
     expect(result!.code).toContain('page({ runtime: true })')
-    expect(result!.code).toContain('definePageMeta({ runtime: true })')
+    expect(result!.code).toContain('definePageMeta({ route:')
+    expect(result!.code).toContain('definePage({ runtime: true })')
     parse(result!.code, BABEL_TS_MODULE_PARSER_OPTIONS)
   })
 
   it('preserves line mappings while removing the declaration', () => {
-    const source = `import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'mapped' } })
+    const source = `import { definePage } from 'wevu/router'
+definePage({ name: 'mapped' })
 export const visible = true`
     const result = stripPageDeclaration(source, '/project/src/pages/mapped.ts')
     const traceMapInput = result!.map! as unknown as ConstructorParameters<typeof TraceMap>[0]
@@ -159,40 +198,44 @@ export const visible = true`
   })
 
   it('treats post-Vue script module ids as JavaScript', () => {
-    const source = `import { definePageMeta as page } from 'wevu'
-page({ route: { name: 'web-page' } })`
+    const source = `import { definePage as page } from 'wevu/router'
+page({ name: 'web-page' })`
     expect(extractPageDeclaration(
       source,
       '/project/src/pages/web.vue?vue&type=script&setup=true&lang.ts',
     )).toEqual({ name: 'web-page' })
   })
 
-  it('returns undefined for absent, obsolete, unrelated and value-shadowed declarations', () => {
-    const unrelated = `import { definePageMeta } from 'another-router'
-definePageMeta({ route: { name: dynamicName } })`
-    const obsolete = `import { definePage } from 'wevu/router'
-definePage({ name: 'obsolete' })`
-    const shadowed = `import { definePageMeta as page } from 'wevu'
+  it('returns undefined for absent, obsolete, unrelated, legacy metadata and value-shadowed declarations', () => {
+    const unrelated = `import { definePage } from 'another-router'
+definePage({ name: dynamicName })`
+    const obsolete = `import { definePageRoute } from 'wevu/router'
+definePageRoute({ name: 'obsolete' })`
+    const legacyMeta = `import { definePageMeta } from 'wevu'
+definePageMeta({ route: { name: 'legacy' } })`
+    const shadowed = `import { definePage as page } from 'wevu/router'
 function run(page: (value: unknown) => void) {
-  page({ route: { name: dynamicName } })
+  page({ name: dynamicName })
 }`
 
     expect(extractPageDeclaration('const value = 1', '/project/src/page.ts')).toBeUndefined()
     expect(stripPageDeclaration(unrelated, '/project/src/page.ts')).toBeUndefined()
     expect(stripPageDeclaration(obsolete, '/project/src/page.ts')).toBeUndefined()
+    expect(extractPageDeclaration(legacyMeta, '/project/src/page.ts')).toBeUndefined()
+    expect(stripPageDeclaration(legacyMeta, '/project/src/page.ts')).toBeUndefined()
     expect(extractPageDeclaration(shadowed, '/project/src/page.ts')).toBeUndefined()
     const strippedShadow = stripPageDeclaration(shadowed, '/project/src/page.ts')
-    expect(strippedShadow?.code).not.toContain(`from 'wevu'`)
-    expect(strippedShadow?.code).toContain('page({ route: { name: dynamicName } })')
+    expect(strippedShadow?.code).not.toContain(`from 'wevu/router'`)
+    expect(strippedShadow?.code).toContain('page({ name: dynamicName })')
   })
 
   it('rejects duplicate declarations across both SFC script blocks', () => {
     const source = `<script lang="ts">
-import { definePageMeta as page } from 'wevu'
-page({ route: { name: 'first' } })
+import { definePage as page } from 'wevu/router'
+page({ name: 'first' })
 </script>
 <script setup lang="ts">
-page({ route: { name: 'second' } })
+page({ name: 'second' })
 </script>`
 
     expect(() => extractPageDeclaration(source, '/project/src/pages/duplicate.vue'))
@@ -202,7 +245,7 @@ page({ route: { name: 'second' } })
   it('rejects escaped macro bindings at their original SFC location', () => {
     const source = `<template><view /></template>
 <script setup lang="ts">
-import { definePageMeta as page } from 'wevu'
+import { definePage as page } from 'wevu/router'
 const escaped = page
 </script>`
 
@@ -219,12 +262,12 @@ const escaped = page
     ['a type-only namespace', `namespace page { export interface Value { value: string } }`, 'cross-block-type-namespace'],
   ])('extracts and erases a cross-block declaration through %s', (_, namespaceDeclaration, routeName) => {
     const source = `<script lang="ts">
-import { definePageMeta as page } from 'wevu'
+import { definePage as page } from 'wevu/router'
 export default {}
 </script>
 <script setup lang="ts">
 ${namespaceDeclaration}
-page({ route: { name: '${routeName}' } })
+page({ name: '${routeName}' })
 </script>`
 
     expect(extractPageDeclaration(source, '/project/src/pages/cross-block.vue'))
@@ -232,19 +275,19 @@ page({ route: { name: '${routeName}' } })
     const result = stripPageDeclaration(source, '/project/src/pages/cross-block.vue')
     expect(result).toBeDefined()
     expect(result!.code).toContain(namespaceDeclaration)
-    expect(result!.code).not.toContain(`from 'wevu'`)
+    expect(result!.code).not.toContain(`from 'wevu/router'`)
     expect(result!.code).not.toContain(`name: '${routeName}'`)
   })
 
   it('keeps same-block type queries separate from runtime macro references', () => {
-    const source = `import { definePageMeta as page } from 'wevu'
+    const source = `import { definePage as page } from 'wevu/router'
 interface page { value: string }
 type PageFactory = typeof page
-page({ route: { name: 'type-query' } })`
+page({ name: 'type-query' })`
     expect(extractPageDeclaration(source, '/project/src/pages/type-query.ts')).toEqual({ name: 'type-query' })
     const result = stripPageDeclaration(source, '/project/src/pages/type-query.ts')
     expect(result?.code).toContain('type PageFactory = typeof page')
-    expect(result?.code).not.toContain(`from 'wevu'`)
+    expect(result?.code).not.toContain(`from 'wevu/router'`)
   })
 
   it.each([
@@ -253,43 +296,43 @@ page({ route: { name: 'type-query' } })`
     `import page = Other.runtime; const selected = page`,
   ])('does not treat a TypeScript runtime value shadow as a macro: %s', (runtimeSource) => {
     const source = `<script lang="ts">
-import { definePageMeta as page } from 'wevu'
+import { definePage as page } from 'wevu/router'
 export default {}
 </script><script setup lang="ts">${runtimeSource}</script>`
     expect(extractPageDeclaration(source, '/project/src/pages/value-shadow.vue')).toBeUndefined()
     const stripped = stripPageDeclaration(source, '/project/src/pages/value-shadow.vue')
-    expect(stripped?.code).not.toContain(`from 'wevu'`)
+    expect(stripped?.code).not.toContain(`from 'wevu/router'`)
     expect(stripped?.code).toContain(runtimeSource)
   })
 
   it('keeps TypeScript value shadows inside their function and namespace scopes', () => {
-    const source = `import { definePageMeta as page } from 'wevu'
+    const source = `import { definePage as page } from 'wevu/router'
 function local() { enum page { Value }; return page.Value }
 namespace Other { export enum page { Value }; export const selected = page.Value }
-page({ route: { name: 'outer-scope' } })`
+page({ name: 'outer-scope' })`
     expect(extractPageDeclaration(source, '/project/src/pages/scopes.ts')).toEqual({ name: 'outer-scope' })
     const result = stripPageDeclaration(source, '/project/src/pages/scopes.ts')
     expect(result?.code).toContain('return page.Value')
     expect(result?.code).toContain('selected = page.Value')
-    expect(result?.code).not.toContain(`from 'wevu'`)
+    expect(result?.code).not.toContain(`from 'wevu/router'`)
   })
 
   it.each(['page as unknown', 'page!'])('rejects runtime references wrapped by TypeScript syntax: %s', (reference) => {
-    const source = `import { definePageMeta as page } from 'wevu'; const escaped = ${reference}`
+    const source = `import { definePage as page } from 'wevu/router'; const escaped = ${reference}`
     expect(() => extractPageDeclaration(source, '/project/src/pages/escaped.ts'))
       .toThrow('/project/src/pages/escaped.ts:1:')
   })
 
   it.each([
-    ['declaration-level', `import type { definePageMeta as page } from 'wevu'`],
-    ['specifier-level', `import { type definePageMeta as page } from 'wevu'`],
+    ['declaration-level', `import type { definePage as page } from 'wevu/router'`],
+    ['specifier-level', `import { type definePage as page } from 'wevu/router'`],
   ])('rejects %s type-only macro imports used as cross-block values', (_, macroImport) => {
     const source = `<script lang="ts">
 ${macroImport}
 export default {}
 </script>
 <script setup lang="ts">
-page({ route: { name: 'type-only-cross-block' } })
+page({ name: 'type-only-cross-block' })
 </script>`
 
     expect(() => extractPageDeclaration(source, '/project/src/pages/type-only-cross-block.vue'))
@@ -305,7 +348,7 @@ page({ route: { name: 'type-only-cross-block' } })
     ['a for-in binding', 'for ({ page } in replacements) {}', 8],
   ])('rejects a cross-block macro alias used by %s', (_, write, column) => {
     const source = `<script lang="ts">
-import { definePageMeta as page } from 'wevu'
+import { definePage as page } from 'wevu/router'
 export default {}
 </script>
 <script setup lang="ts">
@@ -317,8 +360,8 @@ ${write}
   })
 
   it('keeps the same-block macro reassignment diagnostic', () => {
-    const source = `import { definePageMeta } from 'wevu'
-definePageMeta = replacement`
+    const source = `import { definePage } from 'wevu/router'
+definePage = replacement`
 
     expect(() => extractPageDeclaration(source, '/project/src/pages/same-block-write.ts'))
       .toThrow('/project/src/pages/same-block-write.ts:2:1')
@@ -326,11 +369,11 @@ definePageMeta = replacement`
 
   it('erases a cross-block declaration without touching value-shadowed aliases', () => {
     const source = `<script lang="ts">
-import { definePageMeta as page } from 'wevu'
+import { definePage as page } from 'wevu/router'
 export default {}
 </script>
 <script setup lang="ts">
-page({ route: { name: 'cross-block-shadow' } })
+page({ name: 'cross-block-shadow' })
 function invoke(page: (value: unknown) => void, replacement: (value: unknown) => void) {
   page({ runtime: true })
   page = replacement
@@ -341,55 +384,56 @@ function invoke(page: (value: unknown) => void, replacement: (value: unknown) =>
       .toEqual({ name: 'cross-block-shadow' })
     const result = stripPageDeclaration(source, '/project/src/pages/cross-block-shadow.vue')
     expect(result).toBeDefined()
-    expect(result!.code).not.toContain(`from 'wevu'`)
+    expect(result!.code).not.toContain(`from 'wevu/router'`)
     expect(result!.code).not.toContain(`name: 'cross-block-shadow'`)
     expect(result!.code).toContain('page({ runtime: true })')
     expect(result!.code).toContain('page = replacement')
   })
 
   it.each([
-    'const escaped = definePageMeta',
-    `if (ready) definePageMeta({ route: { name: 'home' } })`,
+    'const escaped = definePage',
+    `if (ready) definePage({ name: 'home' })`,
   ])('rejects a global macro outside a top-level direct call: %s', (source) => {
     expect(() => extractPageDeclaration(source, '/project/src/pages/global.ts'))
       .toThrow('/project/src/pages/global.ts:1:')
   })
 
   it.each([
-    'definePageMeta = replacement',
-    '({ definePageMeta } = replacement)',
-    'definePageMeta++',
-    'for (definePageMeta of replacements) {}',
+    'definePage = replacement',
+    '({ definePage } = replacement)',
+    'definePage++',
+    'for (definePage of replacements) {}',
   ])('rejects a global macro write target: %s', (source) => {
     expect(() => extractPageDeclaration(source, '/project/src/pages/global-write.ts'))
       .toThrow('/project/src/pages/global-write.ts:1:')
   })
 
   it.each([
-    [`definePageMeta({ get route() { return { name: 'home' } } })`, 'route 必须使用非计算的静态对象属性'],
-    [`definePageMeta({ ['route']: { name: 'home' } })`, 'route 必须使用非计算的静态对象属性'],
-    [`definePageMeta({ route: { name: routeName } })`, 'route.name 必须是非空静态字符串'],
-    [`definePageMeta({ route: { name: '' } })`, 'route.name 必须是非空静态字符串'],
-    [`definePageMeta({ route: routeConfig })`, 'route 必须是静态对象'],
-    [`definePageMeta({ route: { meta: {} } })`, 'route 必须声明非空静态 name'],
-    [`definePageMeta({ route: { name: 'first' }, route: { name: 'second' } })`, 'route 属性不能重复'],
-    [`definePageMeta({ route: { name: 'bad', path: '/bad' } })`, 'route 不支持属性 "path"'],
-    [`definePageMeta({ route: { name: 'bad', ...extra } })`, 'route 不支持展开'],
-    [`definePageMeta({ route: { ['name']: 'bad' } })`, 'route 不支持计算或动态属性名'],
-    [`definePageMeta({ route: { name: 'bad', meta: routeMeta } })`, 'route.meta 必须是静态对象'],
-    [`definePageMeta({ route: { name: 'bad', meta: { value: undefined } } })`, 'route.meta 只能包含静态有限 JSON 值'],
-    [`definePageMeta({ route: { name: 'bad', meta: { value: 1e400 } } })`, 'route.meta 只能包含静态有限 JSON 值'],
+    [`definePage()`, '必须且只能接收一个静态对象参数'],
+    [`definePage({ name: 'home' }, extra)`, '必须且只能接收一个静态对象参数'],
+    [`definePage(routeConfig)`, '必须且只能接收一个静态对象参数'],
+    [`definePage({ name: routeName })`, '.name 必须是非空静态字符串'],
+    [`definePage({ name: '' })`, '.name 必须是非空静态字符串'],
+    [`definePage({ meta: {} })`, '必须声明非空静态 name'],
+    [`definePage({ name: 'first', name: 'second' })`, '属性 "name" 不能重复'],
+    [`definePage({ name: 'bad', path: '/bad' })`, '不支持属性 "path"'],
+    [`definePage({ name: 'bad', layout: false })`, '不支持属性 "layout"'],
+    [`definePage({ route: { name: 'wrapped' } })`, '不支持属性 "route"'],
+    [`definePage({ name: 'bad', ...extra })`, '不支持展开'],
+    [`definePage({ ['name']: 'bad' })`, '不支持计算或动态属性名'],
+    [`definePage({ name: 'bad', meta: routeMeta })`, '.meta 必须是静态对象'],
+    [`definePage({ name: 'bad', meta: { value: undefined } })`, '.meta 只能包含静态有限 JSON 值'],
+    [`definePage({ name: 'bad', meta: { value: 1e400 } })`, '.meta 只能包含静态有限 JSON 值'],
   ])('rejects a non-static route declaration in %s', (call, message) => {
     expect(() => extractPageDeclaration(call, '/project/src/pages/invalid.ts')).toThrow(message)
   })
 
   it('removes the macro before mini-program SFC runtime generation', async () => {
     const source = `<script setup lang="ts">
-import { definePageMeta as page, ref } from 'wevu'
-page({
-  layout: false,
-  route: { name: 'compiled-home', meta: { title: '首页' } },
-})
+import { definePageMeta, ref } from 'wevu'
+import { definePage as page } from 'wevu/router'
+definePageMeta({ layout: false })
+page({ name: 'compiled-home', meta: { title: '首页' } })
 definePageJson({ navigationBarTitleText: '宿主标题' })
 const title = ref('consumer-visible')
 </script>
@@ -401,6 +445,7 @@ const title = ref('consumer-visible')
     })
 
     expect(result.script).not.toContain('definePageMeta')
+    expect(result.script).not.toMatch(/\bdefinePage\s*\(/)
     expect(result.script).not.toContain('compiled-home')
     expect(result.script).toContain('consumer-visible')
     expect(result.template).toContain('{{title}}')
@@ -410,8 +455,8 @@ const title = ref('consumer-visible')
 
   it('erases declarations whose import binding uses escaped source text', async () => {
     const source = String.raw`<script setup lang="ts">
-import { definePage\u004deta as page } from "w\u0065vu"
-page({ route: { name: 'escaped-home' } })
+import { defineP\u0061ge as page } from "w\u0065vu/router"
+page({ name: 'escaped-home' })
 </script>
 <template><view>binding</view></template>`
 
@@ -433,14 +478,14 @@ page({ route: { name: 'escaped-home' } })
   })
 
   it.each([
-    ['script', `import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'external-script', meta: { source: 'script' } } })
+    ['script', `import { definePage } from 'wevu/router'
+definePage({ name: 'external-script', meta: { source: 'script' } })
 export const visible = 'external-script-visible'
 export default {}`],
     ['script setup', `import { ref } from 'wevu'
 import { suffix } from './helpers'
-import { definePageMeta as page } from 'wevu'
-page({ route: { name: 'external-setup', meta: { source: 'setup' } } })
+import { definePage as page } from 'wevu/router'
+page({ name: 'external-setup', meta: { source: 'setup' } })
 const visible = ref('external-setup-visible' + suffix)
 defineExpose({ visible })`],
   ])('extracts and erases a declaration from external %s during actual compilation', async (kind, externalSource) => {
@@ -471,8 +516,8 @@ defineExpose({ visible })`],
     })
 
     expect(result.script).toContain(kind === 'script' ? 'external-script-visible' : 'external-setup-visible')
-    expect(result.script).not.toContain('definePageMeta')
-    expect(result.script).not.toMatch(/from\s+['"]wevu['"]/)
+    expect(result.script).not.toMatch(/\bdefinePage\s*\(/)
+    expect(result.script).not.toMatch(/from\s+['"]wevu\/router['"]/)
     expect(result.scriptMap?.sources).toContain(externalFilename)
     expect(result.scriptMap?.sourcesContent).toContain(externalSource)
     if (kind === 'script setup') {
@@ -642,9 +687,9 @@ export default {}`
     const filename = '/project/src/pages/external-diagnostic.vue'
     const externalFilename = '/project/src/pageScripts/external-diagnostic.ts'
     const source = '<script setup lang="ts" src="../pageScripts/external-diagnostic.ts"></script>'
-    const externalSource = `import { definePageMeta } from 'wevu'
+    const externalSource = `import { definePage } from 'wevu/router'
 
-definePageMeta({ route: { name: routeName } })`
+definePage({ name: routeName })`
 
     await expect(extractPageDeclarationWithDependencies(source, filename, {
       async resolveId() {
@@ -660,13 +705,13 @@ definePageMeta({ route: { name: routeName } })`
     const filename = '/project/src/pages/external-duplicate.vue'
     const externalFilename = '/project/src/pageScripts/external-duplicate.ts'
     const source = `<script lang="ts">
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'inline' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'inline' })
 export default {}
 </script>
 <script setup lang="ts" src="../pageScripts/external-duplicate.ts"></script>`
-    const externalSource = `import { definePageMeta as page } from 'wevu'
-page({ route: { name: 'external' } })`
+    const externalSource = `import { definePage as page } from 'wevu/router'
+page({ name: 'external' })`
 
     await expect(compileVueFile(source, filename, {
       isPage: true,
@@ -689,8 +734,8 @@ page({ route: { name: 'external' } })`
 definePageJson({ navigationBarTitleText: 'External JSON' })
 const visible = 'json-visible'
 </script>`
-    const externalSource = `import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'external-json' } })
+    const externalSource = `import { definePage } from 'wevu/router'
+definePage({ name: 'external-json' })
 export default {}`
 
     const result = await compileVueFile(source, filename, {
@@ -707,7 +752,7 @@ export default {}`
 
     expect(result.script).toContain('json-visible')
     expect(result.script).not.toContain('external-json')
-    expect(result.script).not.toContain('definePageMeta')
+    expect(result.script).not.toMatch(/\bdefinePage\s*\(/)
     expect(JSON.parse(result.config!)).toMatchObject({
       navigationBarTitleText: 'External JSON',
     })
@@ -718,11 +763,11 @@ export default {}`
     const externalFilename = '/project/src/pageScripts/external-options.ts'
     const source = `<script lang="ts" src="../pageScripts/external-options.ts"></script>
 <script setup lang="ts">
-page({ route: { name: 'external-options' } })
+page({ name: 'external-options' })
 defineOptions(() => ({ name: 'VisibleOptions' }))
 const visible = 'options-visible'
 </script>`
-    const externalSource = `import { definePageMeta as page } from 'wevu'
+    const externalSource = `import { definePage as page } from 'wevu/router'
 export default {}`
 
     const result = await compileVueFile(source, filename, {
@@ -739,6 +784,6 @@ export default {}`
 
     expect(result.script).toContain('options-visible')
     expect(result.script).not.toContain('external-options')
-    expect(result.script).not.toContain('definePageMeta')
+    expect(result.script).not.toMatch(/\bdefinePage\s*\(/)
   })
 })

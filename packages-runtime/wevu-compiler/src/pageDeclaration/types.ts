@@ -1,18 +1,6 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { CallExpression, ExpressionStatement, File, ImportDeclaration, ImportSpecifier, Node, Program } from '@weapp-vite/ast/babelTypes'
-
-export type StaticRouteValue
-  = | null
-    | boolean
-    | number
-    | string
-    | StaticRouteValue[]
-    | { [key: string]: StaticRouteValue }
-
-export interface StaticPageDeclaration {
-  name: string
-  meta?: Record<string, StaticRouteValue>
-}
+import type { StaticPageDeclaration } from './public'
 
 export type PageDeclarationScriptBlockKind = 'script' | 'scriptSetup'
 

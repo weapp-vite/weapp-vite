@@ -12,7 +12,7 @@ import { createHash } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
-import { mayContainPageDeclaration, resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { mayContainPageMeta, resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { storeVueSfcHmrSignatures } from '../../../../runtime/storeVueSfcHmrSignatures'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
@@ -66,7 +66,7 @@ interface VueConfigCacheRecord {
 }
 
 function hasPageLayoutSourceHint(source: string) {
-  return mayContainPageDeclaration(source) || source.includes('setPageLayout')
+  return mayContainPageMeta(source) || source.includes('setPageLayout')
 }
 
 function hashText(value: string) {

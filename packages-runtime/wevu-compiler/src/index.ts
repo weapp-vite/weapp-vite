@@ -6,6 +6,7 @@ export {
   extractPageDeclaration,
   extractPageDeclarationWithDependencies,
   mayContainPageDeclaration,
+  mayContainPageMeta,
   stripPageDeclaration,
 } from './pageDeclaration'
 export type {

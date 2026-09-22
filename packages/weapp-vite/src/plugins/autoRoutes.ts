@@ -3,9 +3,9 @@ import type { ModuleNode, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { WeappViteRuntime } from '../pluginHost'
 import type { AutoRoutesService } from '../runtime/autoRoutesPlugin/service'
-import { WEVU_AUTO_ROUTES_MODULE_ID, WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID, WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
+import { WEVU_AUTO_ROUTES_MODULE_ID, WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID } from '@weapp-core/constants'
 import chokidar from 'chokidar'
-import { stripPageDeclaration } from 'wevu/compiler'
+import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
 import { scriptExtensions, vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import { resolveAutoRoutesManagedOutputPaths } from '../runtime/autoRoutesPlugin/generatedPaths'
@@ -409,7 +409,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     },
 
     async transform(code, id) {
-      if (!code.includes(WEVU_DEFINE_PAGE_META_MACRO) && !code.includes('\\')) {
+      if (!mayContainPageDeclaration(code)) {
         return null
       }
       const normalizedId = normalizeFsResolvedId(id)

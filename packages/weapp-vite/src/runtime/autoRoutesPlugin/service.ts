@@ -3,8 +3,8 @@ import type { AutoRoutes } from '../../types/routes'
 import type { CandidateEntry } from './candidates'
 import type { ScanRoutesOptions } from './routes'
 import type { AutoRoutesFileEvent } from './watch'
-import { WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
+import { mayContainPageDeclaration } from 'wevu/compiler'
 import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { requireConfigService } from '../utils/requireConfigService'
@@ -94,7 +94,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
     try {
       const source = await fs.readFile(sourcePath, 'utf8')
-      return source.includes(WEVU_DEFINE_PAGE_META_MACRO) || source.includes('\\')
+      return mayContainPageDeclaration(source)
     }
     catch {
       return true

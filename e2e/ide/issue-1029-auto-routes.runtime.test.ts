@@ -42,6 +42,8 @@ describe('issue #1029: static named routes and runtime metadata', { concurrent: 
         await access(path.join(project, `dist/${route}.${extension}`))
       }
     }
+    const emittedPages = await Promise.all(registered.map(route => readFile(path.join(project, `dist/${route}.js`), 'utf8')))
+    expect(emittedPages.join('\n')).not.toMatch(/\b(?:definePage|declarePage)\s*\(/)
     const hostConfig = JSON.parse(await readFile(path.join(project, 'dist/pages/home/index.json'), 'utf8')) as Record<string, unknown>
     expect(hostConfig.navigationBarTitleText).toBe('宿主标题')
     miniProgram = await launchAutomator({

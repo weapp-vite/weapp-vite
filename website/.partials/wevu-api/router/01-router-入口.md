@@ -57,6 +57,20 @@
 在 `setup()` 同步阶段读取只读的当前路由状态，并随页面生命周期和导航完成事件更新。
 
 
+### `definePage()` {#definepage}
+
+<!-- api-reference-details -->
+
+**类型签名：** `typeof import('wevu/router')['definePage']`
+
+**编译期说明：** 这是页面 `<script setup>` 的顶层直接声明，编译后会被擦除，不提供可动态调用的运行时实现。规范写法是直接使用全局宏；需要显式绑定时，可以从 `wevu/router` 具名导入或使用别名。
+
+**Vue Router 差异：** 这是 weapp-vite 页面扫描与自动路由生成使用的 Wevu 编译宏，不是 Vue Router API。它是当前独立的路由声明宏，与已移除的历史页面注册能力职责不同；旧名 `definePageRoute` 不提供兼容别名。
+
+**示例：** 见 [本组示例](/wevu/api/router#example-router-entry)。
+
+每个页面最多声明一次。参数只接受应用内唯一的非空静态 `name` 和可选的有限静态 JSON 对象 `meta`；不接受 `path`、顶层 `layout`、展开、计算键、动态引用或函数调用。
+
 ### `wevu/router/auto-routes` {#auto-routes}
 
 **类型签名：** `routes: WevuAutoRoutes`；`WevuAutoRoutes` 从此子入口以 `import type` 导入。
@@ -86,21 +100,26 @@ const route = useRoute()
 console.log(router.currentRoute, route.fullPath)
 ```
 
-自动路由的页面元信息和 App 初始化分别写在对应源文件中：
+自动路由的页面路由、layout 和宿主配置分别写在对应宏中：
 
 ```vue
 <script setup lang="ts">
 definePageMeta({
   layout: false,
-  route: {
-    name: 'home',
-    meta: { title: '首页', requiresAuth: false },
-  },
+})
+
+definePage({
+  name: 'home',
+  meta: { title: '首页', requiresAuth: false },
+})
+
+definePageJson({
+  navigationBarTitleText: '宿主首页',
 })
 </script>
 ```
 
-这里使用的是全局 `definePageMeta()` 宏；如需显式导入，只能从 `wevu` 导入（允许别名），不要从 `wevu/router` 导入。省略 `route` 时页面保持未命名。
+这里使用的是全局 `definePage()` 宏；如需显式导入或别名，只能来自 `wevu/router`。`definePageMeta()` 继续负责原有页面元信息和 layout，`definePageJson()` 负责宿主配置。`definePage({ name, meta })` 参数中的 `meta.title` 或 `meta.layout` 只作为路由业务数据，不会替代后两者。
 
 ```ts
 import { createRouter } from 'wevu/router'

@@ -3,8 +3,8 @@
 - 子路径: `./router`
 - 类型入口: `./dist/router.d.mts`
 - 运行时入口: `./dist/router.mjs`
-- 类型导出总数: **68**
-- 仅类型导出数（推断）: **57**
+- 类型导出总数: **69**
+- 仅类型导出数（推断）: **58**
 - 运行时同名导出数: **11**
 
 ## 心智对齐补充
@@ -79,14 +79,15 @@
 58. `WevuTypedRouterRouteMap`
 59. `createNavigationFailure`
 60. `createRouter`
-61. `isNavigationFailure`
-62. `parseQuery`
-63. `resolveRouteLocation`
-64. `stringifyQuery`
-65. `useNativePageRouter`
-66. `useNativeRouter`
-67. `useRoute`
-68. `useRouter`
+61. `definePage`
+62. `isNavigationFailure`
+63. `parseQuery`
+64. `resolveRouteLocation`
+65. `stringifyQuery`
+66. `useNativePageRouter`
+67. `useNativeRouter`
+68. `useRoute`
+69. `useRouter`
 
 ## 仅类型导出（推断）
 
@@ -147,6 +148,7 @@
 55. `WevuNamedRoutePath`
 56. `WevuRouteName`
 57. `WevuTypedRouterRouteMap`
+58. `definePage`
 
 ## 与运行时同名导出
 

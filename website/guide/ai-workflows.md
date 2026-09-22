@@ -148,7 +148,7 @@ wv ide logs --open
 执行顺序：
 
 1. 先读项目根 `AGENTS.md` 和本地 `node_modules/weapp-vite/dist/docs/vue-sfc.md`。
-2. 检查 `definePageJson`、`definePageMeta`、`usingComponents` 和 `<json>` 是否职责混杂。
+2. 检查 `definePageJson`、`definePageMeta`、`definePage`、`defineOptions`、`usingComponents` 和 `<json>` 是否职责混杂。
 3. `.weapp-vite` 类型文件漂移时先执行 `wv prepare`。
 4. 再做页面级或组件级验证。
 

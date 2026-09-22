@@ -100,7 +100,8 @@ import { definePageMeta } from 'other-library'
 export default {}
 </script>
 <script setup lang="ts">
-definePageMeta({ layout: 'AdminDashboard', route: { name: 'home' } })
+definePageMeta({ layout: 'AdminDashboard' })
+definePage({ name: 'home', meta: { layout: 'business-value' } })
 </script>`
     expect(extractPageLayoutName(source, '/project/src/pages/shadowed.vue')).toBeUndefined()
   })
@@ -165,17 +166,18 @@ definePageMeta({
     })
   })
 
-  it('uses the same imported macro binding for layout and route declarations', () => {
+  it('keeps imported layout metadata independent of route declarations', () => {
     expect(extractPageLayoutName(`
 <script setup lang="ts">
 import { definePageMeta as pageMeta } from 'wevu'
-pageMeta({ layout: 'AdminDashboard', route: { name: 'home' } })
+definePage({ name: 'home', meta: { layout: 'business-value' } })
+pageMeta({ layout: 'AdminDashboard' })
 </script>
 `, '/project/src/pages/index/index.vue')).toBe('admin-dashboard')
     expect(extractPageLayoutName(`
 <script setup lang="ts">
 import { definePageMeta } from 'other-library'
-definePageMeta({ layout: 'foreign-layout', route: { name: 'home' } })
+definePageMeta({ layout: 'foreign-layout' })
 </script>
 `, '/project/src/pages/index/index.vue')).toBeUndefined()
   })

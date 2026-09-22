@@ -123,7 +123,7 @@ definePageMeta({
 </script>
 ```
 
-这些表达式由既有 layout 编译链路生成绑定，不会被求值成 Router `meta`。需要路由业务数据时，另写静态的 `definePageMeta({ route: { name, meta } })`。
+这些表达式由既有 layout 编译链路生成绑定，不会被求值成 Router `meta`。需要路由业务数据时，另写静态的 `definePage({ name, meta })`；其中 `meta.layout` 仍只是业务数据，不会选择页面壳。
 
 ### 3.4 显式关闭 layout
 

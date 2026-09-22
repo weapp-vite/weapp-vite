@@ -3,7 +3,7 @@ import type { DiscoveredLayoutFile, LayoutPropValue, NativeLayoutAssets, PageLay
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import picomatch from 'picomatch'
-import { mayContainPageDeclaration } from 'wevu/compiler'
+import { mayContainPageMeta } from 'wevu/compiler'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../../utils'
 import { normalizeWatchPath, toPosixPath } from '../../../../utils/path'
 import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
@@ -240,7 +240,7 @@ export async function resolvePageLayoutPlan(
   filename: string,
   configService: PageLayoutConfigService,
 ): Promise<ResolvedPageLayoutPlan | undefined> {
-  const hasPageMetaHint = mayContainPageDeclaration(source)
+  const hasPageMetaHint = mayContainPageMeta(source)
   const hasDynamicLayoutHint = source.includes(SET_PAGE_LAYOUT_HINT)
   const analyzedSource = hasPageMetaHint || hasDynamicLayoutHint
     ? analyzePageLayoutSource(source, filename)

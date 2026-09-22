@@ -192,8 +192,8 @@ describe('createAutoRoutesService', () => {
 
   it('restores routes from persistent cache after validating current topology', async () => {
     await fs.writeFile(path.join(srcRoot, 'pages', 'index', 'index.ts'), `
-import { def\\u0069nePageMeta as page } from 'w\\u0065vu'
-page({ route: { name: 'cached-home', meta: { cached: true } } })
+import { def\\u0069nePage as page } from 'w\\u0065vu/router'
+page({ name: 'cached-home', meta: { cached: true } })
 `, 'utf8')
     const firstCtx = createContext({ enabled: true, persistentCache: true })
     const firstService = createAutoRoutesService(firstCtx)
@@ -346,8 +346,8 @@ page({ route: { name: 'cached-home', meta: { cached: true } } })
   it('rebuilds routes after rename events', async () => {
     const oldPage = path.join(srcRoot, 'pages', 'index', 'index.ts')
     await fs.writeFile(oldPage, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'stable-page', meta: { moved: true } } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'stable-page', meta: { moved: true } })
 `, 'utf8')
     const ctx = createContext()
     const service = createAutoRoutesService(ctx)
@@ -471,8 +471,8 @@ definePageMeta({ route: { name: 'stable-page', meta: { moved: true } } })
     const componentPath = path.join(srcRoot, 'components', 'card', 'index.ts')
     await fs.ensureDir(path.dirname(componentPath))
     await fs.writeFile(componentPath, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: getName() } })
+import { definePage } from 'wevu/router'
+definePage({ name: getName() })
 `, 'utf8')
     const pagePath = path.join(srcRoot, 'pages', 'index', 'index.ts')
     const service = createAutoRoutesService(createContext())
@@ -480,8 +480,8 @@ definePageMeta({ route: { name: getName() } })
     await expect(service.ensureFresh()).resolves.toBeUndefined()
 
     await fs.writeFile(pagePath, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: getName() } })
+import { definePage } from 'wevu/router'
+definePage({ name: getName() })
 `, 'utf8')
     await expect(service.handleFileChange(pagePath, 'update'))
       .rejects
@@ -495,6 +495,7 @@ definePageMeta({
   layout: { name: 'panel', props: { title: currentTitle.value } },
   name: 'legacy-name',
   meta: { title: currentTitle.value },
+  route: { name: 'not-a-route', meta: { title: currentTitle.value } },
 })
 `
     await fs.writeFile(pagePath, legacyMeta, 'utf8')
@@ -502,10 +503,9 @@ definePageMeta({
     await service.ensureFresh()
     expect(parseNamedRoutesModule(service.getNamedModuleCode())).toEqual([])
 
-    await fs.writeFile(pagePath, legacyMeta.replace(
-      '  name: \'legacy-name\',',
-      '  route: { name: \'home\', meta: { title: \'Route title\', layout: \'business-value\' } },',
-    ), 'utf8')
+    await fs.writeFile(pagePath, `${legacyMeta}
+definePage({ name: 'home', meta: { title: 'Route title', layout: 'business-value' } })
+`, 'utf8')
     await service.handleFileChange(pagePath, 'update')
     expect(parseNamedRoutesModule(service.getNamedModuleCode())).toEqual([{
       name: 'home',
@@ -521,13 +521,13 @@ definePageMeta({
 
   it('does not restore named declarations from the previous macro cache format', async () => {
     const pagePath = path.join(srcRoot, 'pages', 'index', 'index.ts')
-    await fs.writeFile(pagePath, 'definePageMeta({ route: { name: \'current\' } })', 'utf8')
+    await fs.writeFile(pagePath, 'definePage({ name: \'current\' })', 'utf8')
     const config = { enabled: true, persistentCache: true }
     const service = createAutoRoutesService(createContext(config))
     await service.ensureFresh()
     const cachePath = path.join(tempDir, '.weapp-vite/auto-routes.cache.json')
     const cache = await fs.readJSON(cachePath) as Record<string, unknown>
-    cache.version = 3
+    cache.version = 5
     cache.namedRoutes = [{ name: 'obsolete', path: '/pages/index/index', meta: {} }]
     await fs.writeJSON(cachePath, cache)
 
@@ -543,11 +543,11 @@ definePageMeta({
   it('generates named route data and refreshes metadata-only declaration changes', async () => {
     const pagePath = path.join(srcRoot, 'pages', 'index', 'index.ts')
     await fs.writeFile(pagePath, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: {
+import { definePage } from 'wevu/router'
+definePage({
   name: 'home',
   meta: { title: 'Home', requiresAuth: false, tags: ['main'] },
-} })
+})
 `, 'utf8')
     const ctx = createContext()
     const service = createAutoRoutesService(ctx)
@@ -576,8 +576,8 @@ definePageMeta({ route: {
 
     const initialSignature = service.getSignature()
     await fs.writeFile(pagePath, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'home', meta: { title: 'Dashboard', rank: 2 } } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'home', meta: { title: 'Dashboard', rank: 2 } })
 `, 'utf8')
     await expect(service.handleFileChange(pagePath, 'update')).resolves.toBe(true)
 
@@ -600,13 +600,13 @@ definePageMeta({ route: { name: 'home', meta: { title: 'Dashboard', rank: 2 } } 
     const firstPage = path.join(srcRoot, 'pages', 'index', 'index.ts')
     const secondPage = path.join(srcRoot, 'pages', 'about', 'index.ts')
     await fs.writeFile(firstPage, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'duplicate', meta: {} } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'duplicate', meta: {} })
 `, 'utf8')
     await fs.ensureDir(path.dirname(secondPage))
     await fs.writeFile(secondPage, `
-import { definePageMeta as page } from 'wevu'
-page({ route: { name: 'duplicate' } })
+import { definePage as page } from 'wevu/router'
+page({ name: 'duplicate' })
 `, 'utf8')
     const service = createAutoRoutesService(createContext())
 
@@ -626,8 +626,8 @@ page({ route: { name: 'duplicate' } })
     await fs.writeFile(firstPage, '<script setup lang="ts" src="../../pageScripts/shared.ts"></script>', 'utf8')
     await fs.writeFile(secondPage, '<script setup lang="ts" src="../../pageScripts/shared.ts"></script>', 'utf8')
     await fs.writeFile(externalScript, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'shared-name' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'shared-name' })
 `, 'utf8')
     const service = createAutoRoutesService(createContext())
 
@@ -640,13 +640,13 @@ definePageMeta({ route: { name: 'shared-name' } })
     const mainPage = path.join(srcRoot, 'pages', 'index', 'index.ts')
     const subPage = path.join(srcRoot, 'packageA', 'pages', 'detail', 'index.ts')
     await fs.writeFile(mainPage, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'main-page' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'main-page' })
 `, 'utf8')
     await fs.ensureDir(path.dirname(subPage))
     await fs.writeFile(subPage, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'package-detail', meta: { section: 'orders' } } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'package-detail', meta: { section: 'orders' } })
 `, 'utf8')
     const service = createAutoRoutesService(createContext(true, {
       buildScope: {
@@ -681,8 +681,8 @@ definePageMeta({ route: { name: 'package-detail', meta: { section: 'orders' } } 
     const addedPage = path.join(srcRoot, 'pages', 'added', 'index.ts')
     await fs.ensureDir(path.dirname(addedPage))
     await fs.writeFile(addedPage, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'added-page' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'added-page' })
 `, 'utf8')
 
     const restoredService = createAutoRoutesService(createContext({ enabled: true, persistentCache: true }))
@@ -705,8 +705,8 @@ definePageMeta({ route: { name: 'added-page' } })
     await fs.ensureDir(path.dirname(externalScript))
     await fs.writeFile(pageVue, '<script setup lang="ts" src="../../pageScripts/profile.ts"></script>', 'utf8')
     await fs.writeFile(externalScript, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'profile', meta: { title: 'Profile' } } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'profile', meta: { title: 'Profile' } })
 `, 'utf8')
     const service = createAutoRoutesService(createContext())
 
@@ -723,8 +723,8 @@ definePageMeta({ route: { name: 'profile', meta: { title: 'Profile' } } })
     expect([...service.getWatchDirectories()]).toContain(path.dirname(externalScript))
 
     await fs.writeFile(externalScript, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'profile', meta: { title: 'Account', rank: 2 } } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'profile', meta: { title: 'Account', rank: 2 } })
 `, 'utf8')
     await expect(service.handleFileChange(externalScript, 'update')).resolves.toBe(true)
 
@@ -751,8 +751,8 @@ definePageMeta({ route: { name: 'profile', meta: { title: 'Account', rank: 2 } }
     await fs.ensureDir(path.dirname(externalScript))
     await fs.writeFile(pageVue, '<script setup lang="ts" src="@/pageScripts/aliased.ts"></script>', 'utf8')
     await fs.writeFile(externalScript, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'aliased-page', meta: { aliased: true } } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'aliased-page', meta: { aliased: true } })
 `, 'utf8')
     const service = createAutoRoutesService(createContext(true, {}, {
       aliasEntries: [{ find: '@', replacement: srcRoot }],
@@ -778,12 +778,12 @@ definePageMeta({ route: { name: 'aliased-page', meta: { aliased: true } } })
     await fs.ensureDir(secondRoot)
     await fs.writeFile(pageVue, '<script setup lang="ts" src="@route/page.ts"></script>', 'utf8')
     await fs.writeFile(path.join(firstRoot, 'page.ts'), `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'alias-first' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'alias-first' })
 `, 'utf8')
     await fs.writeFile(path.join(secondRoot, 'page.ts'), `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'alias-second' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'alias-second' })
 `, 'utf8')
     const cacheConfig = { enabled: true, persistentCache: true }
     const firstService = createAutoRoutesService(createContext(cacheConfig, {}, {
@@ -806,8 +806,8 @@ definePageMeta({ route: { name: 'alias-second' } })
     await fs.ensureDir(path.dirname(externalScript))
     await fs.writeFile(pageVue, '<script setup lang="ts" src="page-script-entry"></script>', 'utf8')
     await fs.writeFile(externalScript, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'bare-page' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'bare-page' })
 `, 'utf8')
     const service = createAutoRoutesService(createContext())
     service.setPageDeclarationSourceResolver(async (source, importer) => {
@@ -834,12 +834,12 @@ definePageMeta({ route: { name: 'bare-page' } })
     await fs.ensureDir(path.dirname(firstExternal))
     await fs.writeFile(pageVue, '<script setup lang="ts" src="opaque-page"></script>', 'utf8')
     await fs.writeFile(firstExternal, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'opaque-first' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'opaque-first' })
 `, 'utf8')
     await fs.writeFile(secondExternal, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'opaque-second' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'opaque-second' })
 `, 'utf8')
     const cacheConfig = { enabled: true, persistentCache: true }
     const firstService = createAutoRoutesService(createContext(cacheConfig))
@@ -857,11 +857,11 @@ definePageMeta({ route: { name: 'opaque-second' } })
     const pageScript = path.join(srcRoot, 'pages', 'index', 'index.ts')
     const pageVue = path.join(srcRoot, 'pages', 'index', 'index.vue')
     const externalScript = path.join(srcRoot, 'pageScripts', 'cached.ts')
-    const initialSource = `import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'cached-one', meta: { phase: 'one' } } })
+    const initialSource = `import { definePage } from 'wevu/router'
+definePage({ name: 'cached-one', meta: { phase: 'one' } })
 `
-    const changedSource = `import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'cached-two', meta: { phase: 'two' } } })
+    const changedSource = `import { definePage } from 'wevu/router'
+definePage({ name: 'cached-two', meta: { phase: 'two' } })
 `
     await fs.remove(pageScript)
     await fs.ensureDir(path.dirname(externalScript))
@@ -888,12 +888,12 @@ definePageMeta({ route: { name: 'cached-two', meta: { phase: 'two' } } })
     const pageScript = path.join(srcRoot, 'pages', 'index', 'index.ts')
     const pageVue = path.join(srcRoot, 'pages', 'index', 'index.vue')
     await fs.writeFile(pageScript, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'mini-owner' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'mini-owner' })
 `, 'utf8')
     await fs.writeFile(pageVue, `<script setup lang="ts">
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'web-owner' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'web-owner' })
 </script>`, 'utf8')
 
     const miniService = createAutoRoutesService(createContext())
@@ -911,12 +911,12 @@ definePageMeta({ route: { name: 'web-owner' } })
     const pageScript = path.join(srcRoot, 'pages', 'index', 'index.ts')
     const pageVue = path.join(srcRoot, 'pages', 'index', 'index.vue')
     await fs.writeFile(pageScript, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'cached-native' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'cached-native' })
 `, 'utf8')
     await fs.writeFile(pageVue, `<script setup lang="ts">
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'configured-web' } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'configured-web' })
 </script>`, 'utf8')
     const cacheConfig = { enabled: true, persistentCache: true }
     const nativeService = createAutoRoutesService(createContext(cacheConfig))
@@ -934,15 +934,15 @@ definePageMeta({ route: { name: 'configured-web' } })
     const addedPage = path.join(srcRoot, 'pages', 'recovery', 'index.ts')
     await fs.ensureDir(path.dirname(addedPage))
     await fs.writeFile(addedPage, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: dynamicName } })
+import { definePage } from 'wevu/router'
+definePage({ name: dynamicName })
 `, 'utf8')
 
     await expect(service.handleFileChange(addedPage, 'create')).rejects.toThrow('name 必须是非空静态字符串')
 
     await fs.writeFile(addedPage, `
-import { definePageMeta } from 'wevu'
-definePageMeta({ route: { name: 'recovered-page', meta: { ready: true } } })
+import { definePage } from 'wevu/router'
+definePage({ name: 'recovered-page', meta: { ready: true } })
 `, 'utf8')
     await expect(service.handleFileChange(addedPage, 'update')).resolves.toBe(true)
     expect(parseNamedRoutesModule(service.getNamedModuleCode())).toContainEqual({

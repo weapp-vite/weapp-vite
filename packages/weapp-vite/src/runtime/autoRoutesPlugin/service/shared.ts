@@ -7,7 +7,7 @@ import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } f
 import { cloneRoutes, createTypedRouterDefinition, updateRoutesReference } from '../routes'
 
 export interface AutoRoutesPersistentCache {
-  version: 4
+  version: 6
   snapshot: AutoRoutes
   namedRoutes: NamedAutoRoute[]
   topologyKey: string
@@ -186,7 +186,7 @@ export function createPersistentCachePayload(
   fileMtims: Record<string, number>,
 ): AutoRoutesPersistentCache {
   return {
-    version: 4,
+    version: 6,
     snapshot: cloneRoutes(state.routes),
     namedRoutes: state.namedRoutes,
     topologyKey: state.topologyKey,

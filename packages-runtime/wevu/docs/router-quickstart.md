@@ -2,18 +2,23 @@
 
 本文档提供一套可直接落地的最小配置，帮助你在小程序项目里快速使用 `wevu/router`。
 
-## 自动路由：页面元信息与生成入口
+## 自动路由：页面路由声明与生成入口
 
-在 `weapp-vite.config.ts` 开启 `weapp.autoRoutes`，然后在被现有页面扫描识别的页面中增强既有页面元信息：
+在 `weapp-vite.config.ts` 开启 `weapp.autoRoutes`，然后在被现有页面扫描识别的页面中分别声明 layout、命名路由和宿主页面配置：
 
 ```vue
 <script setup lang="ts">
 definePageMeta({
   layout: false,
-  route: {
-    name: 'home',
-    meta: { title: '首页', requiresAuth: false },
-  },
+})
+
+definePage({
+  name: 'home',
+  meta: { title: '首页', requiresAuth: false },
+})
+
+definePageJson({
+  navigationBarTitleText: '宿主首页',
 })
 </script>
 ```
@@ -43,15 +48,15 @@ if (route.name === 'home') {
 
 升级后，旧协议留下的持久化命名记录会随缓存 schema 自动失效并重新扫描；不需要手动清理缓存。
 
-`definePageMeta()` 是既有 `<script setup>` 编译宏，全局、无导入调用是规范写法；也可以从 `wevu` 具名导入并使用别名。不要从 `wevu/router` 导入。编译器会区分宏绑定与同名遮蔽，并在支持的编译路径中保留错误源位置。命名路由只是该宏新增的 `route` 能力，不会恢复历史 `definePage` 页面注册宏。
+`definePage()` 是专用于路由信息的 `<script setup>` 编译宏。全局、无导入调用是规范写法；需要显式导入时，从 `wevu/router` 具名导入，也可以使用别名。它必须作为页面脚本的顶层直接调用，每个页面最多一次；编译器会区分宏绑定与同名遮蔽，并在支持的编译路径中保留错误源位置。
 
-`route` 是可选专用命名空间；存在时必须包含应用内唯一的非空静态 `name`，可选 `meta` 必须是有限静态 JSON 对象，省略时生成 `{}`。不接受导入常量、函数、展开、计算键、`undefined` 或 `path`。省略整个 `route` 时不会生成命名路由。
+参数必须直接包含应用内唯一的非空静态 `name`；可选 `meta` 必须是有限静态 JSON 对象，省略时生成 `{}`。不接受导入常量、函数、展开、计算键、`undefined`、`path` 或顶层 `layout`。
 
-顶层 `layout` 仍由原有 layout 编译链路处理；Vue SFC 的 `layout.props` 对象与键名需要静态可分析，但值可以保留响应式表达式。其他顶层 `PageMeta` 字段继续保持原有语义，均不会流入 `route.meta`。`route.meta` 只是守卫和业务代码的数据：其中的 `title` 或 `layout` 不会设置宿主标题或页面壳；宿主页面 JSON 使用 `definePageJson()`，组件选项使用 `defineOptions()`。
+`definePageMeta()` 继续负责原有页面元信息和 layout；Vue SFC 的 `layout.props` 对象与键名需要静态可分析，但值可以保留响应式表达式。`definePageMeta({ route: ... })` 不会生成命名路由。`definePage()` 是预期使用的独立路由编译宏，与已移除的历史页面注册能力职责不同；旧名 `definePageRoute` 不提供兼容别名。`definePage({ name, meta })` 参数中的 `meta` 只是守卫和业务代码的数据：其中的 `title` 或 `layout` 不会设置宿主标题或页面壳；宿主页面 JSON 使用 `definePageJson()`，组件选项使用 `defineOptions()`。
 
-SFC 内联脚本和 `<script src>` / `<script setup src>` 的外部脚本均可声明。外部脚本的声明仍属于引用它的页面；移动页面时名称不变，路径随页面最终注册位置更新。`src` 支持相对路径、`resolve.alias` 和包导出，`prepare` 也会解析；外部脚本内的相对模块引用仍以原脚本目录为准。
+SFC 内联脚本和 `<script src>` / `<script setup src>` 的外部脚本均可声明 `definePage()`。外部脚本的声明仍属于引用它的页面；移动页面时名称不变，路径随页面最终注册位置更新。`src` 支持相对路径、`resolve.alias` 和包导出，`prepare` 也会解析；外部脚本内的相对模块引用仍以原脚本目录为准。
 
-未声明 `route` 的页面仍按路径注册；初始路由及未命名路由的 `name/meta` 仍可能缺省。旧 `weapp-vite/auto-routes` 的 `pages/entries/subPackages` 保持不变。该功能也适用于 weapp-vite 的 Web 目标，不是通用 Vue Router 插件。
+未声明 `definePage()` 的页面仍按路径注册；初始路由及未命名路由的 `name/meta` 仍可能缺省。旧 `weapp-vite/auto-routes` 的 `pages/entries/subPackages` 保持不变。该功能也适用于 weapp-vite 的 Web 目标，不是通用 Vue Router 插件。
 
 Web 开发模式会在路由声明或页面拓扑变化时重新加载应用入口，更新挂载中的 Router 快照；此次更新不保留页面状态。普通源码修改若未改变路由声明，仍使用原有 HMR。
 

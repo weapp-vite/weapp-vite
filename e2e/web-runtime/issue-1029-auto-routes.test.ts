@@ -126,7 +126,7 @@ describe('issue #1029: shared named routes on the Web target', { concurrent: fal
       await expect.poll(() => activePage.locator('#route-redirect').textContent()).toBe('yes')
 
       const source = await readFile(externalFile, 'utf8')
-      await writeFile(externalFile, source.replace('title: \'个人资料\'', 'title: \'Web external metadata\', webRevision: true'))
+      await writeFile(externalFile, source.replace('meta: { title: \'个人资料\'', 'meta: { title: \'Web external metadata\', webRevision: true'))
       await dev.waitFor(expect.poll(readRoutes, { timeout: 45_000 }).toContainEqual({
         name: 'profile',
         path: ISSUE_1029_PROFILE,

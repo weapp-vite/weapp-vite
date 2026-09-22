@@ -2,6 +2,7 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { runInNewContext } from 'node:vm'
 import { execa } from 'execa'
 import { afterEach, describe, expect, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
@@ -89,7 +90,7 @@ router.addRoute({ name: 'profile', path: '/subpackages/account/pages/profile/ind
     const declaration = path.join(project, '.weapp-vite/typed-router.d.ts')
     expect(await readFile(declaration, 'utf8')).toContain('"profile"')
     await runIssue1029Command(project, 'build')
-    await writeFile(path.join(packageDir, 'retargeted.cjs'), source.replace('meta: {', 'meta: { packageRevision: 2,'))
+    await writeFile(path.join(packageDir, 'retargeted.cjs'), source.replace('meta: { title: \'个人资料\'', 'meta: { packageRevision: 2, title: \'个人资料\''))
     await writeFile(packageFile, JSON.stringify({ ...packageConfig, exports: './retargeted.cjs' }))
     await runIssue1029Command(project, 'prepare')
     expect(await readFile(declaration, 'utf8')).toMatch(/packageRevision["']?\s*:\s*number/)
@@ -118,6 +119,51 @@ router.addRoute({ name: 'profile', path: '/subpackages/account/pages/profile/ind
     const regenerated = await readFile(declaration, 'utf8')
     expect(regenerated).toContain('"profileAfterEnable"')
     expect(regenerated).not.toContain('"profile"')
+  })
+
+  it('erases native page macros without route service installation, including independent subpackages', async () => {
+    const project = await createIssue1029Project()
+    projects.push(project)
+    const configFile = path.join(project, 'weapp-vite.config.ts')
+    const config = await readFile(configFile, 'utf8')
+    await rm(path.join(project, 'src/app.vue'))
+    await writeFile(path.join(project, 'src/app.ts'), 'App({})')
+    await writeFile(path.join(project, 'src/app.json'), JSON.stringify({
+      pages: ['pages/native/index'],
+      subPackages: [{
+        root: 'subpackages/isolated',
+        pages: ['pages/native/index'],
+        independent: true,
+      }],
+    }))
+    const pages = [
+      ['pages/native/index', 'native-home'],
+      ['subpackages/isolated/pages/native/index', 'native-independent'],
+    ] as const
+    for (const [entry, name] of pages) {
+      const base = path.join(project, 'src', entry)
+      await mkdir(path.dirname(base), { recursive: true })
+      await writeFile(`${base}.ts`, `
+import { definePage as route } from 'wevu/router'
+route({ name: '${name}' })
+Page({ data: { routeMarker: '${name}' } })
+`)
+      await writeFile(`${base}.json`, '{}')
+      await writeFile(`${base}.wxml`, '<view>{{routeMarker}}</view>')
+    }
+    for (const enabled of [false, true]) {
+      await writeFile(configFile, enabled ? config : config.replace('autoRoutes: { persistentCache: true }', 'autoRoutes: false'))
+      await runIssue1029Command(project, 'build')
+      for (const [entry, name] of pages) {
+        let registered: unknown
+        runInNewContext(await readFile(path.join(project, 'dist', `${entry}.js`), 'utf8'), {
+          Page(options: unknown) {
+            registered = options
+          },
+        })
+        expect(registered).toEqual({ data: { routeMarker: name } })
+      }
+    }
   })
 
   it('diagnoses both locations for duplicate names rather than choosing a page', async () => {
@@ -165,14 +211,24 @@ router.addRoute({ name: 'profile', path: '/subpackages/account/pages/profile/ind
       return (await Promise.all(files.filter(file => file.endsWith('.js')).map(file => readFile(path.join(output, file), 'utf8')))).join('\n')
     }
     try {
-      await dev.waitFor(expect.poll(readEmittedScripts, { timeout: 90_000 }).toContain('requiresAuth'), 'initial route metadata emitted')
-      await writeFile(file, source.replace('title: \'首页\'', 'title: \'route-metadata-after-save\', revision: 2'))
+      await dev.waitFor(expect.poll(async () => {
+        const scripts = await readEmittedScripts()
+        return {
+          hasRouteMetadata: scripts.includes('requiresAuth'),
+          hasRouteMacroCall: /\b(?:definePage|declarePage)\s*\(/.test(scripts),
+        }
+      }, { timeout: 90_000 }).toEqual({
+        hasRouteMetadata: true,
+        hasRouteMacroCall: false,
+      }), 'initial route metadata is emitted and the compile-time macro is erased')
+      await writeFile(file, source.replace('meta: { title: \'首页\'', 'meta: { title: \'route-metadata-after-save\', revision: 2'))
       await dev.waitFor(expect.poll(readEmittedScripts, { timeout: 90_000 }).toContain('route-metadata-after-save'), 'metadata-only save updates runtime data')
       await dev.waitFor(expect.poll(() => readFile(declaration, 'utf8'), { timeout: 30_000 }).toMatch(/revision["']?\s*:\s*number/), 'metadata-only save updates type shape')
       const externalSource = await readFile(externalFile, 'utf8')
-      await writeFile(externalFile, externalSource.replace('title: \'个人资料\'', 'title: \'external-profile-after-save\', external: true'))
+      await writeFile(externalFile, externalSource.replace('meta: { title: \'个人资料\'', 'meta: { title: \'external-profile-after-save\', external: true'))
       await dev.waitFor(expect.poll(readEmittedScripts, { timeout: 90_000 }).toContain('external-profile-after-save'), 'external script metadata save updates runtime data')
       await dev.waitFor(expect.poll(() => readFile(declaration, 'utf8'), { timeout: 30_000 }).toMatch(/external["']?\s*:\s*boolean/), 'external script metadata save updates type shape')
+      expect(await readEmittedScripts()).not.toMatch(/\b(?:definePage|declarePage)\s*\(/)
     }
     finally {
       await dev.stop(5_000)
