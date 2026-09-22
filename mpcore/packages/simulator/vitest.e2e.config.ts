@@ -80,6 +80,9 @@ export default defineConfig({
     fs: {
       allow: [mpcoreRoot, path.resolve(simulatorRoot, '../../../e2e/utils/requestClientsRealWebSocketProbe.ts'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/src/pages/css-nested-vars')],
     },
+    warmup: {
+      clientFiles: [path.resolve(simulatorRoot, './e2e/statefulVueComponent.e2e.test.ts')],
+    },
   },
   test: {
     attachmentsDir: path.resolve(simulatorRoot, '../../../docs/reports/simulator-browser'),
