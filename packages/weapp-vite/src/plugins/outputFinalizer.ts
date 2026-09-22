@@ -341,17 +341,19 @@ export function pruneUnchangedDevHmrOutputs(
     stabilizeWevuRuntimeChunkAccess(bundle)
   }
   for (const [fileName, output] of Object.entries(bundle)) {
-    const shouldForceEmitCurrentHmrChunk = isHmrBuild
+    const isCurrentHmrChunk = isHmrBuild
       && output.type === 'chunk'
       && (
         emittedChunkFileNames?.has(fileName) === true
         || emittedChunkFileNames?.has(output.fileName) === true
       )
+    const shouldForceEmitCurrentHmrChunk = isCurrentHmrChunk
+      && ctx.runtimeState.build.hmr.forceEmitUnchangedChunks !== false
     if (
       isHmrBuild
       && output.type === 'chunk'
       && emittedChunkFileNames?.size
-      && !shouldForceEmitCurrentHmrChunk
+      && !isCurrentHmrChunk
     ) {
       delete bundle[fileName]
       continue

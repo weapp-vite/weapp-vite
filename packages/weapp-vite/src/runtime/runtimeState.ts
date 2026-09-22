@@ -152,6 +152,7 @@ export interface RuntimeState {
       lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>
       lastEmittedChunkFileNames: Set<string>
+      forceEmitUnchangedChunks: boolean
       sharedChunkSourceModuleIds: Set<string>
       recentProfiles: Array<{
         timestamp?: string
@@ -394,6 +395,7 @@ export function createRuntimeState(): RuntimeState {
         lastHmrEntryIds: new Set<string>(),
         lastEmittedEntryIds: new Set<string>(),
         lastEmittedChunkFileNames: new Set<string>(),
+        forceEmitUnchangedChunks: true,
         sharedChunkSourceModuleIds: new Set<string>(),
         recentProfiles: [],
         profile: {},
