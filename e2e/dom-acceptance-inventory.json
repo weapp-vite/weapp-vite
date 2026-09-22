@@ -4670,7 +4670,7 @@
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-tailwindcss-tdesign-template",
               "checkpoints": "[ { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true }, { selector: '#tailwind-mode', text: '当前模式 light 切换模式'",
-              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:246"
+              "source": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts:252"
             }
           ],
           "routes": [],
@@ -7543,7 +7543,7 @@
     },
     {
       "file": "e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "c31be31d4842967e29a82fe2d1746f45b923401444432b18e01888b3012ccfc0"
+      "sha256": "4d68734c662133b789f2787b0fe21e17f041c5bea56c8fd891903923cbe16a13"
     },
     {
       "file": "e2e/ide/template-weapp-vite-multi-platform-sfc-template.test.ts",
