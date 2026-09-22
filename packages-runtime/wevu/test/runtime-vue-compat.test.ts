@@ -1494,10 +1494,10 @@ describe('runtime: vue compat helpers', () => {
     const opts = registeredComponents[0]
     const inst: any = {
       setData() {},
-      properties: {},
+      props: {},
     }
-    opts.lifetimes.created.call(inst)
-    opts.lifetimes.attached.call(inst)
+    opts.onInit.call(inst)
+    opts.didMount.call(inst)
 
     expectRouteOption(myGlobal.navigateTo.mock.calls[0], '/pages/fallback-my/index')
     expect(myGlobal.navigateBack).toHaveBeenCalledWith({ delta: 1 })

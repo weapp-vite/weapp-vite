@@ -7,7 +7,7 @@
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
 - 任务：109；微信：106；范围外：3。
-- 展开的 case 声明：274；已接入计划：274；缺计划：0。
+- 展开的 case 声明：275；已接入计划：275；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -33,7 +33,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/github-issues.runtime.issue1012.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1015.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1035.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
-| ide/github-issues.runtime.issue1049.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
+| ide/github-issues.runtime.issue1049.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/github-issues.runtime.issue448-formdata-upload.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue547.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue558.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -164,9 +164,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### app.vue alias import layout HMR runtime > keeps visible page elements and bundled alias imports across app, layout, page, and dependency HMR
 
-- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:443`
+- Source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:418`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:448`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/app-vue-hmr-alias`; checkpoints: `[ ['initial', BASE_APP_MARKER, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['app-update', appMarker, BASE_LAYOUT_MARKER, PAGE_MARKER, BOOTSTRAP_MARKER], ['layout-update', appMarker, layoutMarker, PAGE_MARKER, BOOTSTRAP_MARKER], ['pa`; source: `e2e/ide/app-vue-hmr-alias.runtime.test.ts:423`
 - Routes: ``
 - Operations: `check(initial)`, `check(app-update)`, `check(layout-update)`, `check(page-update)`, `check(dependency-update)`
 
@@ -817,6 +817,14 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'child-removed', route: LAUNCH_ROUTE, action: '卸载子组件后更新 Store', nodes: [{ selector: '#issue1049-count', text: '1' }, { selector: '#issue1049-double', text: '2' }], }, { id: 'hidden-page', route: RESULT_ROUTE, action: 'navigateTo 只隐藏页`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:119`
 - Routes: `/pages/issue-1049/result/index`
 - Operations: `callMethod(_resetScenario)`, `callMethod(_removeChild)`, `callMethod(_mutate)`, `check(child-removed)`, `navigateTo(/pages/issue-1049/result/index)`, `check(hidden-page)`
+
+### e2e app: github-issues / issue #1049 > keeps the caller session usable after route recovery replaces the transport
+
+- Source: `e2e/ide/github-issues.runtime.issue1049.test.ts:159`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'before-recovery', route: LAUNCH_ROUTE, action: '旧会话页面修改共享计数', nodes: [{ selector: '#issue1049-count', text: '1' }], }, { id: 'recovered', route: LAUNCH_ROUTE, action: '注入一次导航连接故障，恢复后通过原会话采集版本和 DOM', nodes: [{ selector: '#issue1049-c`; source: `e2e/ide/github-issues.runtime.issue1049.test.ts:160`
+- Routes: `/pages/issue-1049/result/index`
+- Operations: `callMethod(_resetScenario)`, `callMethod(_mutate)`, `check(before-recovery)`, `check(recovered)`, `navigateTo(/pages/issue-1049/result/index)`, `check(navigated)`
 
 
 ## ide/github-issues.runtime.issue448-formdata-upload.test.ts
@@ -2021,51 +2029,51 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### comprehensive demo public runtime contracts > updates Options API computed values through instance methods
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:32`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:33`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'updated', route, action: '更新姓名和数量', nodes: [{ selector: '.page-title', text: '计算属性' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:34`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'updated', route, action: '更新姓名和数量', nodes: [{ selector: '.page-title', text: '计算属性' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:35`
 - Operations: `reLaunch(route)`, `callMethod(updateFirstName)`, `callMethod(increaseQuantity)`, `check(updated)`
 
 ### comprehensive demo public runtime contracts > renders lifecycle log aliases and clears the list
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:50`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:51`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'added', route, action: '清空后添加一条日志', nodes: [{ selector: '.log-item', count: 1 }, { selector: '.log-index', text: '1.' }], }, { id: 'cleared', route, action: '清空日志', nodes: [{ selector: '.log-item', count: 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:52`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'added', route, action: '清空后添加一条日志', nodes: [{ selector: '.log-item', count: 1 }, { selector: '.log-index', text: '1.' }], }, { id: 'cleared', route, action: '清空日志', nodes: [{ selector: '.log-item', count: 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:53`
 - Operations: `reLaunch(route)`, `callMethod(clearLogs)`, `callMethod(addLog)`, `check(added)`, `check(cleared)`
 
 ### comprehensive demo public runtime contracts > keeps created setup exports available after the initial mount
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:72`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:73`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'mounted', route, action: '读取 created 阶段 setup 与原生 export 合并结果', nodes: [{ selector: '.page-title', text: 'setup@created' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:74`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'mounted', route, action: '读取 created 阶段 setup 与原生 export 合并结果', nodes: [{ selector: '.page-title', text: 'setup@created' }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:75`
 - Operations: `reLaunch(route)`, `callMethod(readComponentExport)`, `check(mounted)`
 
 ### comprehensive demo public runtime contracts > only offers explicit subpackage loading when the host provides it
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:92`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:93`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'capability', route, action: '按真实宿主能力显示分包加载入口', nodes: [{ selector: '.page-title', text: '分包场景（普通 / 独立）' }, { selector: '.load-subpackage', count: hasLoader ? 4 : 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:95`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'capability', route, action: '按真实宿主能力显示分包加载入口', nodes: [{ selector: '.page-title', text: '分包场景（普通 / 独立）' }, { selector: '.load-subpackage', count: hasLoader ? 4 : 0 }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:96`
 - Operations: `reLaunch(route)`, `check(capability)`, `callMethod(onLoadPackage)`
 
 ### comprehensive demo public runtime contracts > reads the collapse event detail field
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:118`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:120`
 - Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
 
 ### comprehensive demo public runtime contracts > reads the steps event detail field
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:118`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:120`
 - Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
 
 ### comprehensive demo public runtime contracts > reads the side-bar event detail field
 
-- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:117`
+- Source: `e2e/ide/wevu-comprehensive.runtime.test.ts:118`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:119`
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-comprehensive-demo`; checkpoints: `[{ id: 'changed', route, action: '派发组件 change 事件载荷', nodes: [{ selector: '.page-title', text: \`t-${component}\` }], }]`; source: `e2e/ide/wevu-comprehensive.runtime.test.ts:120`
 - Operations: `reLaunch(route)`, `callMethod(onChange)`, `check(changed)`
 
 
@@ -2297,7 +2305,7 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Source: `e2e/ide/wevu-runtime.core-hmr.test.ts:590`
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `coreHmrPlan({ pageTemplateMarker, pageScriptMarker, pageStyleMarker, sfcTemplateMarker, sfcScriptMarker, sfcStyleMarker, layoutPageTemplateMarker, layoutPageScriptMarker, layoutPageStyleMarker, sharedStoreMarker, })`; source: `e2e/ide/wevu-runtime.core-hmr.test.ts:601`
-- Operations: `check(page:initial)`, `callMethodWithOptions(increment)`, `check(page:interacted)`, `check(page:template)`, `check(page:script)`, `check(page:style)`, `check(sfc:initial)`, `check(sfc:template)`, `check(sfc:script)`, `check(sfc:style)`, `check(layout:initial)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout:admin)`, `check(layout:template)`, `callMethodWithOptions(syncScriptMarker)`, `check(layout:script)`, `check(layout:script-admin)`, `check(layout:style)`, `check(store:initial)`, `check(store:updated)`, `check(store:shared)`
+- Operations: `check(page:initial)`, `callMethodWithOptions(increment)`, `check(page:interacted)`, `check(page:template)`, `check(page:script)`, `check(page:style)`, `check(sfc:initial)`, `check(sfc:template)`, `check(sfc:script)`, `check(sfc:style)`, `check(layout:initial)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout:admin)`, `check(layout:template)`, `callMethodWithOptions(syncScriptMarker)`, `check(layout:script)`, `check(layout:script-admin)`, `check(layout:style)`, `check(store:initial)`, `check(store:restarted)`, `check(store:shared)`
 
 
 ## ide/wevu-runtime.function-props.weapp.test.ts

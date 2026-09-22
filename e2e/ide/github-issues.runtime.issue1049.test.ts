@@ -155,4 +155,48 @@ describe('e2e app: github-issues / issue #1049', { concurrent: false }, () => {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
+
+  it('keeps the caller session usable after route recovery replaces the transport', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'before-recovery',
+      route: LAUNCH_ROUTE,
+      action: '旧会话页面修改共享计数',
+      nodes: [{ selector: '#issue1049-count', text: '1' }],
+    }, {
+      id: 'recovered',
+      route: LAUNCH_ROUTE,
+      action: '注入一次导航连接故障，恢复后通过原会话采集版本和 DOM',
+      nodes: [{ selector: '#issue1049-count', text: '0' }],
+    }, {
+      id: 'navigated',
+      route: RESULT_ROUTE,
+      action: '通过原会话导航，验证恢复后的 Store 和页面使用同一连接',
+      nodes: [{ selector: '#issue1049-count', text: '1' }, { selector: '#issue1049-double', text: '2' }],
+    }])
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const preparation = await relaunchPage(miniProgram, RESULT_ROUTE)
+      assert(preparation)
+      await preparation.callMethod('_resetScenario')
+      const page = await relaunchPage(miniProgram, LAUNCH_ROUTE)
+      assert(page)
+      await page.callMethod('_mutate')
+      await dom.check('before-recovery', miniProgram, page)
+      // 只替换旧连接的导航方法，强制走真实关闭/启动流程；新连接保持原方法。
+      miniProgram.reLaunch = async () => {
+        throw new Error('Connection closed, check if wechat web devTools is still running')
+      }
+      const recoveredPage = await relaunchPage(miniProgram, LAUNCH_ROUTE, undefined, 45_000, { forceRelaunch: true })
+      assert(recoveredPage)
+      expect(await getSharedMiniProgram(ctx) === miniProgram).toBe(true)
+      await dom.check('recovered', miniProgram, recoveredPage)
+      await recoveredPage.callMethod('_mutate')
+      const result = await miniProgram.navigateTo(RESULT_ROUTE)
+      assert(result)
+      await dom.check('navigated', miniProgram, result)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 })

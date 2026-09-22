@@ -101,6 +101,21 @@ describe('useLoadEntry emitDirtyEntries', () => {
     loadEntryMock.mockClear()
   })
 
+  it.each(['metadata', 'direct', 'dependency'] as const)('derives unchanged chunk publication from %s invalidation', async (reason) => {
+    const ctx = createContext()
+    const hook = useLoadEntry(ctx)
+    const pageId = '/project/src/pages/index/index.ts'
+    hook.entriesMap.set(pageId, { type: 'page', path: pageId } as any)
+    hook.resolvedEntryMap.set(pageId, { id: pageId } as any)
+    hook.markEntryDirty(pageId, reason)
+
+    await hook.emitDirtyEntries.call(createPluginContext())
+
+    expect(ctx.runtimeState.build.hmr.forceEmitUnchangedChunks).toBe(reason !== 'metadata')
+    await hook.emitDirtyEntries.call(createPluginContext())
+    expect(ctx.runtimeState.build.hmr.forceEmitUnchangedChunks).toBe(false)
+  })
+
   it('reuses runtimeState-backed hmr containers across hook creation', () => {
     const ctx = createContext()
     const first = useLoadEntry(ctx, {})

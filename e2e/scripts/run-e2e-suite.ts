@@ -2,6 +2,7 @@ import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { excludedE2EProjects, isExcludedE2EProject } from '../../scripts/e2eProjectScope'
 import { cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
@@ -127,6 +128,13 @@ export async function runE2ESuiteCli(args = process.argv.slice(2)) {
   }
 
   let tasks = await getSuiteTasks(mode)
+  const excludedProjects = excludedE2EProjects()
+  tasks = tasks.map(task => isExcludedE2EProject(task.label, excludedProjects)
+    ? { ...task, outOfScopeReason: 'Excluded by WEAPP_VITE_E2E_EXCLUDE_PROJECTS' }
+    : task)
+  if (excludedProjects.length) {
+    console.log(`[e2e:${mode}] excluded projects: ${excludedProjects.join(', ')}`)
+  }
   const plannedTasks = [...tasks]
 
   if (tasks.length === 0) {

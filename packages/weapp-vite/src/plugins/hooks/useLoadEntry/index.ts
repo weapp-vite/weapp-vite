@@ -571,6 +571,7 @@ export function useLoadEntry(
     },
     async emitDirtyEntries(this: PluginContext) {
       entryChunkLifecycle.beginBuild()
+      ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = false
       if (!dirtyEntrySet.size) {
         options?.hmr?.setDidEmitAllEntries?.(false)
         options?.hmr?.setLastEmittedEntries?.(new Set())
@@ -608,6 +609,8 @@ export function useLoadEntry(
         rootInputIds,
       })
       const pendingEntryIds = pendingResolution.pending
+      // 发射集合还会包含元数据扫描发现的已有组件；仅脚本失效才需要重写内容未变的入口。
+      ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = [...pendingEntryIds].some(entryId => dirtyEntryReasons.get(entryId) !== 'metadata')
       const pending: ResolvedId[] = []
       chunkEmitStats.chunkEmitCount = 0
       chunkEmitStats.emitFileMs = 0

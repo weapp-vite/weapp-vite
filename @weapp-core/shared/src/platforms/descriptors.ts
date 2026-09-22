@@ -219,6 +219,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     wxml: {
       eventBindingStyle: 'default',
       directivePrefix: 'tt',
+      normalizeComponentTagName: true,
     },
     compiler: {
       templatePreset: 'tt',

@@ -13,6 +13,7 @@ import {
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanDevtoolsCache, cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent, resolveReportProjectPath } from '../utils/ideWarningReport'
+import { createRecoverableSession } from '../utils/recoverableSession'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 
@@ -584,7 +585,9 @@ async function assertGithubIssuesAppConfigReady() {
   await syncProjectPrivateConfigConditions(config)
 }
 
-let sharedMiniProgram: any = null
+type SharedSession = ReturnType<typeof createRecoverableSession<any>>
+let sharedSession: SharedSession | null = null
+const sharedSessionOwners = new WeakMap<object, SharedSession>()
 let sharedBuildPrepared = false
 let sharedLaunchInfraUnavailableMessage: string | null = null
 
@@ -726,6 +729,9 @@ async function runAutomatorOp<T>(
 }
 
 async function closeMiniProgramSafely(miniProgram: any) {
+  if (!miniProgram) {
+    return
+  }
   await runAutomatorOp('close mini program', () => miniProgram.close(), {
     timeoutMs: 6_000,
     retries: 1,
@@ -1148,11 +1154,11 @@ export async function closeSharedMiniProgram(options: CloseSharedMiniProgramOpti
   if (shouldDeferSharedMiniProgramClose(options)) {
     return
   }
-  if (!sharedMiniProgram) {
+  if (!sharedSession) {
     return
   }
-  const miniProgram = sharedMiniProgram
-  sharedMiniProgram = null
+  const miniProgram = sharedSession.clear()
+  sharedSession = null
   await closeMiniProgramSafely(miniProgram)
   if (resolveRuntimeProviderName() === 'devtools') {
     await cleanupResidualIdeProcesses()
@@ -1163,15 +1169,15 @@ export function disconnectSharedMiniProgram(options: CloseSharedMiniProgramOptio
   if (shouldDeferSharedMiniProgramClose(options)) {
     return
   }
-  if (!sharedMiniProgram) {
-    return
-  }
-  sharedMiniProgram = null
+  sharedSession = null
 }
 
 export async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
-  sharedMiniProgram ??= await launchGithubIssuesMiniProgram(ctx)
-  return sharedMiniProgram
+  if (!sharedSession) {
+    sharedSession = createRecoverableSession(await launchGithubIssuesMiniProgram(ctx))
+    sharedSessionOwners.set(sharedSession.session, sharedSession)
+  }
+  return sharedSession.session
 }
 
 export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) => void }) {
@@ -1179,10 +1185,11 @@ export async function launchFreshMiniProgram(ctx?: { skip: (message?: string) =>
 }
 
 export async function releaseSharedMiniProgram(miniProgram: any) {
-  if (sharedMiniProgram === miniProgram) {
+  if (sharedSession?.session === miniProgram) {
     return
   }
-  await closeMiniProgramSafely(miniProgram)
+  const owner = sharedSessionOwners.get(miniProgram)
+  await closeMiniProgramSafely(owner ? owner.clear() : miniProgram)
 }
 
 export async function callCurrentPageMethod<T = any>(miniProgram: any, methodName: string, ...args: any[]): Promise<T> {
@@ -1215,15 +1222,29 @@ export async function callCurrentPageMethod<T = any>(miniProgram: any, methodNam
 }
 
 async function restartSharedMiniProgram(ctx?: { skip: (message?: string) => void }, launchRoute?: string) {
-  await closeSharedMiniProgram({ force: true })
-  const restartRoute = resolveSharedMiniProgramRestartRoute(launchRoute)
-  if (restartRoute) {
-    const prioritized = await prioritizeDistLaunchRoute(restartRoute)
-    if (prioritized) {
-      await delay(600)
-    }
+  const recoveringSession = sharedSession
+  if (!recoveringSession) {
+    return await getSharedMiniProgram(ctx)
   }
-  return await getSharedMiniProgram(ctx)
+  try {
+    await closeMiniProgramSafely(recoveringSession.clear())
+    if (resolveRuntimeProviderName() === 'devtools') {
+      await cleanupResidualIdeProcesses()
+    }
+    const restartRoute = resolveSharedMiniProgramRestartRoute(launchRoute)
+    if (restartRoute) {
+      const prioritized = await prioritizeDistLaunchRoute(restartRoute)
+      if (prioritized) {
+        await delay(600)
+      }
+    }
+    recoveringSession.replace(await launchGithubIssuesMiniProgram(ctx))
+    return recoveringSession.session
+  }
+  catch (error) {
+    sharedSession = null
+    throw error
+  }
 }
 
 export function relaunchPage(
@@ -1355,7 +1376,7 @@ export async function relaunchPage(
     return primaryPage
   }
 
-  if (miniProgram === sharedMiniProgram) {
+  if (miniProgram === sharedSession?.session) {
     for (let restartAttempt = 1; restartAttempt <= 2; restartAttempt += 1) {
       process.stdout.write(`[github-issues:relaunch] restart shared automator route=${route} attempt=${restartAttempt}/2\n`)
       const restartedMiniProgram = await restartSharedMiniProgram(undefined, route)
@@ -1395,7 +1416,7 @@ export async function verifyRouteRenderedWithRecovery<T>(
     return await verifyCurrentRoute(miniProgram)
   }
   catch (error) {
-    if (!isRenderedProtocolSessionError(error) || miniProgram !== sharedMiniProgram) {
+    if (!isRenderedProtocolSessionError(error) || miniProgram !== sharedSession?.session) {
       throw error
     }
 
@@ -1496,7 +1517,7 @@ export async function callRoutePageMethodWithOptions<T = any>(
       }
 
       process.stdout.write(`[github-issues:route-method-recover] route=${route} method=${methodName} attempt=${recoveryAttempt + 1}/${recoveryAttempts} reason=${error instanceof Error ? error.message : String(error)}\n`)
-      if (targetMiniProgram === sharedMiniProgram) {
+      if (targetMiniProgram === sharedSession?.session) {
         targetMiniProgram = await restartSharedMiniProgram(undefined, route)
       }
       const page = await relaunchPage(targetMiniProgram, route, undefined, 45_000, {
@@ -1505,8 +1526,8 @@ export async function callRoutePageMethodWithOptions<T = any>(
       if (!page) {
         throw error
       }
-      if (sharedMiniProgram) {
-        targetMiniProgram = sharedMiniProgram
+      if (sharedSession) {
+        targetMiniProgram = sharedSession.session
       }
     }
   }

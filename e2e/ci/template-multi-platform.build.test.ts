@@ -54,6 +54,15 @@ describe('multi-platform template build matrix', { concurrent: false }, () => {
       expect(template).toContain(eventAttr)
       expect(template).toContain('platform-marker')
       expect(template).toContain('increment-button')
+      if (id === 'alipay' || id === 'tt') {
+        const pageConfig = await fs.readJson(`${pageRoot}.json`) as { usingComponents?: Record<string, string> }
+        expect(pageConfig.usingComponents?.['platform-card']).toBe('/components/PlatformCard/index')
+        expect(template).toContain('<platform-card ')
+        expect(template).not.toContain('<PlatformCard ')
+        for (const extension of [templateExt, 'json', 'js']) {
+          expect(await fs.pathExists(path.join(outputRoot, `components/PlatformCard/index.${extension}`))).toBe(true)
+        }
+      }
       expect(pageScript).toMatch(new RegExp(`platform:\\s*["']${id}["']`))
 
       if (scriptModuleExt && scriptModuleTag) {

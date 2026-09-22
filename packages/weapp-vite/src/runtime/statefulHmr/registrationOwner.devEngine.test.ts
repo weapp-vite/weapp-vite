@@ -1,6 +1,6 @@
 import type { RolldownOutput } from 'rolldown'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
-import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { createContext, runInContext } from 'node:vm'
 import path from 'pathe'
@@ -121,7 +121,10 @@ describe('registration owners in actual DevEngine output', () => {
 
       for (const step of [2, 1]) {
         nextUpdate = Promise.withResolvers<StatefulHmrDevEngineUpdate>()
-        await writeFile(source, sourceCode(step))
+        // 轮询可能读到 writeFile 截断后的空模块；以原子替换提交完整的一次源码更新。
+        const pendingSource = `${source}.pending`
+        await writeFile(pendingSource, sourceCode(step))
+        await rename(pendingSource, source)
         let timer: ReturnType<typeof setTimeout> | undefined
         const changed = await Promise.race([nextUpdate.promise, new Promise<never>((_resolve, reject) => {
           timer = setTimeout(() => reject(new Error('Native engine HMR event timed out')), 5_000)

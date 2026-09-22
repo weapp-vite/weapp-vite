@@ -35,7 +35,7 @@ async function pathExists(filePath: string) {
   }
 }
 
-async function commandExists(command: string) {
+async function commandExists(command: string, args: string[]) {
   const searchPath = process.env.WEAPP_VITE_PLATFORM_DOCTOR_PATH
   const env = searchPath == null
     ? process.env
@@ -45,7 +45,7 @@ async function commandExists(command: string) {
         NoDefaultCurrentDirectoryInExePath: '1',
       }
   try {
-    const result = await execa(command, ['--version'], {
+    const result = await execa(command, args, {
       env,
       extendEnv: false,
       reject: false,
@@ -61,7 +61,7 @@ async function commandExists(command: string) {
 }
 
 async function findCli(platform: string) {
-  if (platform === 'alipay' && await commandExists('minidev')) {
+  if (platform === 'alipay' && await commandExists('minidev', ['--vers'])) {
     return 'minidev'
   }
   if (process.env.WEAPP_VITE_PLATFORM_DOCTOR_SKIP_DEFAULT_PATHS === '1') {

@@ -64,7 +64,7 @@ export function coreHmrPlan(markers: CoreHmrMarkers): DomCheckpoint[] {
       { selector: '.page', styles: { 'background-color': 'rgb(224, 242, 254)' }, visible: true },
     ]),
     checkpoint('store:initial', 'store', [...store, { selector: '#store-initial-name', text: 'initial name: init' }]),
-    checkpoint('store:updated', 'store', [...store, { selector: '#store-initial-name', text: `initial name: ${markers.sharedStoreMarker}` }]),
+    checkpoint('store:restarted', 'store', [...store, { selector: '#store-initial-name', text: `initial name: ${markers.sharedStoreMarker}` }]),
     checkpoint('store:shared', 'store-share', store),
   ]
 }
