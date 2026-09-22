@@ -162,7 +162,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
     entry: 'wevu' as const,
     keywords: ['JSON', 'weapp-vite', '配置宏'],
   })),
-  api('definePageMeta()', '/wevu/api/core#definepagemeta', 'Script Setup 宏', 'macro', 'wevu-extension'),
+  api('definePageMeta()', '/wevu/api/core#definepagemeta', 'Script Setup 宏', 'macro', 'wevu-extension', { entry: 'wevu', keywords: ['layout', 'route', 'name', 'meta', 'auto-routes', '命名路由'] }),
   api('defineAppSetup()', '/wevu/api/core#defineappsetup', 'Script Setup 宏', 'macro', 'wevu-extension'),
   ...['ref', 'customRef', 'reactive', 'shallowRef', 'shallowReactive', 'readonly', 'shallowReadonly', 'computed', 'watch', 'watchEffect', 'watchPostEffect', 'watchSyncEffect', 'effectScope', 'getCurrentScope', 'onScopeDispose', 'toRef', 'toRefs', 'unref', 'toValue', 'triggerRef', 'toRaw', 'markRaw', 'isRef', 'isReactive', 'isShallowRef', 'isShallowReactive', 'isRaw', 'isReadonly', 'isProxy', 'nextTick']
     .map(name => reactivity(name)),
@@ -270,6 +270,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
     ['StoreSubscribeOptions', 'storesubscribeoptions'],
     ['MutationType', 'mutationtype'],
   ].map(([name, anchor]) => api(name, `/wevu/api/store#${anchor}`, 'Store 类型', 'type', 'wevu-extension', { entry: 'wevu/store', keywords: ['TypeScript', '类型'] })),
+  routerApi('definePage()', 'definepage', 'Router 编译宏', 'macro', 'wevu-extension', ['name', 'meta', 'auto-routes', '命名路由', '编译期']),
   ...[
     ['createRouter()', 'createrouter'],
     ['useRouter()', 'userouter'],
@@ -303,6 +304,20 @@ export const wevuApiCatalog: WevuApiItem[] = [
     .map(name => routerApi(`router.${name}()`, `router-${name.toLowerCase()}`, '动态路由', 'runtime', 'vue-different', ['路由记录', 'route record', '动态'])),
   ...['beforeEach', 'beforeResolve', 'afterEach', 'onError']
     .map(name => routerApi(`router.${name}()`, `router-${name.toLowerCase()}`, '导航守卫', 'runtime', 'vue-different', ['守卫', 'guard', '错误处理'])),
+  ...[
+    'WevuNamedRouteMap',
+    'WevuBroadRouteMap',
+    'WevuNamedRouteDefinition',
+    'WevuRouteName',
+    'WevuNamedRoutePath',
+    'WevuNamedRouteMeta',
+    'WevuAutoRoute',
+    'RouteLocationNamedRaw',
+    'RouteLocationNormalizedByName',
+    'RouterResolve',
+    'StaticPageDeclaration',
+    'StaticRouteValue',
+  ].map(name => routerType(name, '命名路由类型', 'wevu-extension', ['TypeScript', 'definePage', 'meta', 'auto-routes'])),
   ...[
     'RouterNavigation',
     'UseRouterOptions',

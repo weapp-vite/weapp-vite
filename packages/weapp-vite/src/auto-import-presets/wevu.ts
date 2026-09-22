@@ -1,3 +1,5 @@
+import { WEVU_DEFINE_PAGE_MACRO, WEVU_ROUTER_MODULE_ID } from '@weapp-core/constants'
+
 type ImportsMap = Record<string, string[]>
 
 const wevu: ImportsMap = {
@@ -135,6 +137,9 @@ const wevu: ImportsMap = {
     'isNoSetData',
     'addMutationRecorder',
     'removeMutationRecorder',
+  ],
+  [WEVU_ROUTER_MODULE_ID]: [
+    WEVU_DEFINE_PAGE_MACRO,
   ],
 }
 

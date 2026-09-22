@@ -1,6 +1,7 @@
 import type { CompileVueFileOptions, ResolvedUsingComponentPath, VueTransformResult } from '../vue/transform/compileVueFile/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { mayContainPageDeclaration, stripPageDeclaration } from '../../pageDeclaration'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../runtimeCapabilities'
 import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
 import { getMiniProgramTemplatePlatform } from '../vue/compiler/template'
@@ -38,6 +39,9 @@ export async function compileJsxFile(
   filename: string,
   options?: CompileVueFileOptions,
 ): Promise<VueTransformResult> {
+  if (options?.isPage && mayContainPageDeclaration(source)) {
+    source = stripPageDeclaration(source, filename)?.code ?? source
+  }
   const jsonKind = options?.json?.kind
     ?? (options?.isApp ? 'app' : options?.isPage ? 'page' : 'component')
   const jsonDefaults = options?.json?.defaults?.[jsonKind]

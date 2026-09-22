@@ -1409,6 +1409,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
     let failedSnapshotReasons: SnapshotBuildReason[] = []
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
+    // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
+    let emittedAutoRoutesSignature: string | undefined
     const devBuildWatcher = target === 'app' ? createDevBuildWatcher() : undefined
 
     function markSnapshotEntriesFullDirty() {
@@ -1511,7 +1513,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
-        await refreshSnapshotSources(ctx, batchReasons.flatMap(batchReason => batchReason.file ? [batchReason.file] : []))
+        const { routeSignature, routeDependentEntries } = await refreshSnapshotSources(
+          ctx,
+          batchReasons.flatMap(batchReason => batchReason.file ? [batchReason.file] : []),
+          emittedAutoRoutesSignature,
+        )
+        for (const entryId of graphAffectedEntries) {
+          routeDependentEntries.delete(entryId)
+        }
+        for (const entryId of routeDependentEntries) {
+          graphAffectedEntries.add(entryId)
+        }
         const styleScriptChanges = new Set<string>()
         for (const batchReason of batchReasons) {
           if (!batchReason.file) {
@@ -1529,7 +1541,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
           for (const entryId of graphAffectedEntries) {
             if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
-              markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : dirtyReason)
+              markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : routeDependentEntries.has(entryId) ? 'dependency' : dirtyReason)
             }
           }
           const summaryCounts = new Map<string, number>()
@@ -1553,6 +1565,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           try {
             devBuildWatcher?.emitEvent({ code: 'START' })
             await build(snapshotBuildOptions)
+            emittedAutoRoutesSignature = routeSignature
             devBuildWatcher?.emitEvent({ code: 'END' })
           }
           catch (error) {
@@ -1584,6 +1597,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
             },
           })
+          emittedAutoRoutesSignature = routeSignature
           devBuildWatcher?.emitEvent({ code: 'END' })
           return 'snapshot'
         }
@@ -1674,7 +1688,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ? (async () => {
           devBuildWatcher!.emitEvent({ code: 'START' })
           try {
+            await ctx.autoRoutesService?.ensureFresh()
+            const routeSignature = ctx.autoRoutesService?.getSignature()
             await build(snapshotBuildOptions)
+            emittedAutoRoutesSignature = routeSignature
             devBuildWatcher!.emitEvent({ code: 'END' })
             return devBuildWatcher!.watcher
           }

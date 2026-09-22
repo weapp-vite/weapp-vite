@@ -1,4 +1,10 @@
+import type { ModuleNode, ViteDevServer } from 'vite'
 import type { ConfigService } from '../runtime/config/types'
+import {
+  WEVU_AUTO_ROUTES_MODULE_ID,
+  WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
+} from '@weapp-core/constants'
 import path from 'pathe'
 import { isAutoRoutesGeneratedFileName } from '../runtime/autoRoutesPlugin/generatedPaths'
 import { normalizeWatchPath } from '../utils/path'
@@ -37,15 +43,22 @@ export function collectAutoRoutesWatchDirs(
 }
 
 /**
- * 过滤出真正需要交给 auto-routes watcher 处理的路由 Vue 文件。
+ * 过滤出真正需要交给 auto-routes watcher 处理的路由源文件。
+ * 已知声明依赖不受普通页面发现扩展名限制，其他文件仍沿用发现规则。
  */
 export function isAutoRoutesWatchFile(
   filePath: string,
   allowedExtensions: ReadonlySet<string>,
   isPagesRelatedPath: (id: string) => boolean,
+  isPageDeclarationSource: (id: string) => boolean,
 ) {
-  return !isAutoRoutesGeneratedFileName(path.basename(filePath))
-    && allowedExtensions.has(path.extname(filePath))
+  if (isAutoRoutesGeneratedFileName(path.basename(filePath))) {
+    return false
+  }
+  if (isPageDeclarationSource(filePath)) {
+    return true
+  }
+  return allowedExtensions.has(path.extname(filePath))
     && isPagesRelatedPath(filePath)
 }
 
@@ -111,18 +124,52 @@ export function addAutoRoutesWatchTargets(
   }
 }
 
+export function invalidateAutoRoutesVirtualModules(
+  server: ViteDevServer | undefined,
+  resolvedIds: readonly string[],
+) {
+  if (!server) {
+    return
+  }
+  const seen = new Set<ModuleNode>()
+  const invalidateModuleWithImporters = (module: ModuleNode) => {
+    if (seen.has(module)) {
+      return
+    }
+    seen.add(module)
+    server.moduleGraph.invalidateModule(module)
+    for (const importer of module.importers) {
+      invalidateModuleWithImporters(importer)
+    }
+  }
+  for (const id of resolvedIds) {
+    const virtualModule = server.moduleGraph.getModuleById(id)
+    if (virtualModule) {
+      invalidateModuleWithImporters(virtualModule)
+    }
+  }
+}
+
 /**
  * 统一解析 auto-routes 虚拟模块与 alias 入口的命中关系。
  */
 export function resolveAutoRoutesVirtualId(
   id: string,
-  aliasTargets: ReadonlySet<string>,
+  aliasTargets?: ReadonlySet<string>,
 ) {
+  if (
+    id === WEVU_AUTO_ROUTES_MODULE_ID
+    || id === WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID
+    || id === WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID
+  ) {
+    return WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID
+  }
+
   if (id === AUTO_ROUTES_ID || id === VIRTUAL_MODULE_ID || id === RESOLVED_VIRTUAL_ID) {
     return RESOLVED_VIRTUAL_ID
   }
 
-  return aliasTargets.has(id) ? RESOLVED_VIRTUAL_ID : null
+  return aliasTargets?.has(id) ? RESOLVED_VIRTUAL_ID : null
 }
 
 /**
@@ -159,8 +206,36 @@ export function resolveAutoRoutesHotUpdateAction(
   return { shouldHandle: false, shouldUpdateRouteFile: false }
 }
 
+/**
+ * Web 路由表在创建 router 时完成快照，必须越过 SFC 自接受边界重新加载入口。
+ * 入口排在前面，避免依赖失效先将生成的入口降为仅更新时间戳的软失效。
+ */
+export function collectAutoRoutesReloadModules(modules: ReadonlySet<ModuleNode>): ModuleNode[] {
+  const pending = [...modules]
+  const visited = new Set(pending)
+  const reloadModules = new Set<ModuleNode>()
+  for (const module of pending) {
+    if (module.importers.size === 0) {
+      reloadModules.add(module)
+    }
+    for (const importer of module.importers) {
+      if (!visited.has(importer)) {
+        visited.add(importer)
+        pending.push(importer)
+      }
+    }
+  }
+  for (const module of modules) {
+    reloadModules.add(module)
+  }
+  return [...reloadModules]
+}
+
 export {
   AUTO_ROUTES_ID,
   RESOLVED_VIRTUAL_ID,
   VIRTUAL_MODULE_ID,
+  WEVU_AUTO_ROUTES_MODULE_ID,
+  WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
 }

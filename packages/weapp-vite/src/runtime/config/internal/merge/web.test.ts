@@ -1,3 +1,5 @@
+import type { MutableCompilerContext } from '../../../../context'
+import type { ConfigService } from '../../types'
 import { describe, expect, it, vi } from 'vitest'
 import {
   mergeWeb,
@@ -35,6 +37,44 @@ describe('runtime config merge web', () => {
       userPlugin,
     ])
     expect(mergeWebPlugins(undefined, { name: 'web' } as any)).toEqual([{ name: 'web' }])
+  })
+
+  it('keeps the auto-routes generator in the Web plugin chain', () => {
+    const configService = {
+      weappViteConfig: {
+        autoRoutes: true,
+      },
+    } as unknown as ConfigService
+    const ctx = {
+      autoRoutesService: {},
+      configService,
+      runtimeState: {},
+    } as unknown as MutableCompilerContext
+
+    const result = mergeWeb({
+      ctx,
+      configService,
+      config: {},
+      web: {
+        enabled: true,
+        root: '/project/web',
+        outDir: '/project/dist-web',
+        pluginOptions: {
+          srcDir: 'src',
+        },
+      },
+      mode: 'production',
+      isDev: false,
+      applyRuntimePlatform: vi.fn(),
+      injectBuiltinAliases: vi.fn(),
+      getDefineImportMetaEnv: () => ({}),
+    })
+
+    expect(result?.plugins?.map(plugin => plugin && typeof plugin === 'object' && 'name' in plugin ? plugin.name : undefined)).toEqual([
+      'weapp-vite:runtime-provider:web-runtime',
+      'weapp-web-plugin',
+      'weapp-vite:auto-routes',
+    ])
   })
 
   it('injects weapp-vite host metadata for web runtime', () => {

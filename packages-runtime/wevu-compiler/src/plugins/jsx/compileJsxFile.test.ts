@@ -579,10 +579,13 @@ export default defineComponent({
     expect(result.template).toContain('bind:animation-finish="handleCamel"')
   })
 
-  it('extracts json macro config from tsx source', async () => {
+  it('erases page route declarations while extracting independent JSON macro config from tsx source', async () => {
     const source = `
 import { defineComponent } from 'wevu'
 import { definePageJson } from 'weapp-vite'
+import { definePage as page } from 'wevu/router'
+
+page({ name: 'jsx', meta: { title: 'JSX route' } })
 
 definePageJson({
   navigationBarTitleText: 'JSX 页面',
@@ -607,11 +610,13 @@ export default defineComponent({
     })
 
     expect(result.config).toBeTruthy()
-    const parsed = JSON.parse(result.config!)
+    const parsed = JSON.parse(result.config!) as Record<string, unknown>
     expect(parsed.navigationBarTitleText).toBe('JSX 页面')
     expect(parsed.enablePullDownRefresh).toBe(true)
     expect(result.script).not.toContain('definePageJson(')
     expect(result.script).not.toMatch(/from\s*['"]weapp-vite['"]/)
+    expect(result.script).not.toMatch(/from\s*['"]wevu\/router['"]/)
+    expect(result.script).not.toMatch(/\bpage\s*\(/)
     expect(result.script).toContain('virtual:weapp-vite/runtime')
     expect(result.meta?.jsonMacroHash).toBeTruthy()
   })

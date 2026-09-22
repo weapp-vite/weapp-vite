@@ -5,11 +5,11 @@ import { createPageMetaVisitors } from './pageMeta'
 import { createSetupExposeVisitors } from './setupExpose'
 import { createStripTypesVisitors } from './stripTypes'
 
-export function createMacroVisitors(program: t.Program, state: TransformState) {
-  const appSetupVisitors = createAppSetupVisitors(program, state)
+export function createMacroVisitors(ast: t.File, state: TransformState) {
+  const appSetupVisitors = createAppSetupVisitors(ast.program, state)
   const setupExposeVisitors = createSetupExposeVisitors(state)
   const stripTypesVisitors = createStripTypesVisitors(state)
-  const pageMetaVisitors = createPageMetaVisitors(state)
+  const pageMetaVisitors = createPageMetaVisitors(ast, state)
   const mergedVisitors: Record<string, any> = {
     ...appSetupVisitors,
     ...setupExposeVisitors,

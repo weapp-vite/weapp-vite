@@ -1,3 +1,4 @@
+import type { WevuNamedRouteMap } from '../router'
 import type {
   NavigationAfterEach,
   NavigationAfterEachContext,
@@ -47,23 +48,26 @@ function resolveNavigationFailureType(error: unknown): NavigationFailureTypeValu
   return NavigationFailureType.unknown
 }
 
-export function createNavigationFailure(
+export function createNavigationFailure<TRouteMap extends object = WevuNamedRouteMap>(
   type: NavigationFailureTypeValue,
-  to?: RouteLocationNormalizedLoaded,
-  from?: RouteLocationNormalizedLoaded,
+  to?: RouteLocationNormalizedLoaded<NoInfer<TRouteMap>>,
+  from?: RouteLocationNormalizedLoaded<NoInfer<TRouteMap>>,
   cause?: unknown,
-): NavigationFailure {
+): NavigationFailure<TRouteMap> {
   const message = normalizeNavigationErrorMessage(cause) || 'Navigation failed'
-  const error = new Error(message) as NavigationFailure
-  ;(error as { __wevuNavigationFailure: true }).__wevuNavigationFailure = true
-  ;(error as { type: NavigationFailureTypeValue }).type = type
-  ;(error as { to?: RouteLocationNormalizedLoaded }).to = to
-  ;(error as { from?: RouteLocationNormalizedLoaded }).from = from
-  ;(error as { cause?: unknown }).cause = cause
-  return error
+  return Object.assign(new Error(message), {
+    __wevuNavigationFailure: true as const,
+    type,
+    to,
+    from,
+    cause,
+  })
 }
 
-export function isNavigationFailure(error: unknown, type?: NavigationFailureTypeValue): error is NavigationFailure {
+export function isNavigationFailure<TRouteMap extends object = WevuNamedRouteMap>(
+  error: unknown,
+  type?: NavigationFailureTypeValue,
+): error is NavigationFailure<TRouteMap> {
   if (!error || typeof error !== 'object') {
     return false
   }

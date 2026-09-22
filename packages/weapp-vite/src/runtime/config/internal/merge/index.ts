@@ -103,6 +103,7 @@ export function createMergeFactories(options: MergeFactoryOptions): MergeFactory
       : undefined
     return backend.driver.mergeConfig({
       merge: (...backendConfigs) => mergeWeb({
+        ctx,
         configService,
         config: currentOptions.config,
         web: currentOptions.weappWeb,

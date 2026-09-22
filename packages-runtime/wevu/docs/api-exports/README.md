@@ -17,7 +17,7 @@
 | `wevu/api`                     | `./api`                     |            0 |                  0 |              0 | [查看](wevu-api.md)         |
 | `wevu/fetch`                   | `./fetch`                   |            5 |                  4 |              1 | [查看](wevu-fetch.md)       |
 | `wevu/web-apis`                | `./web-apis`                |            2 |                  0 |              2 | [查看](wevu-web-apis.md)    |
-| `wevu/router`                  | `./router`                  |           54 |                 43 |             11 | [查看](wevu-router.md)      |
+| `wevu/router`                  | `./router`                  |           69 |                 58 |             11 | [查看](wevu-router.md)      |
 | `wevu/vue-demi`                | `./vue-demi`                |          421 |                266 |            155 | [查看](wevu-vue-demi.md)    |
 
 ## 文档列表

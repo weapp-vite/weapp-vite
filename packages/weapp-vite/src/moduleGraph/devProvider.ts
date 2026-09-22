@@ -1,7 +1,15 @@
 import type { HotUpdateOptions, InlineConfig, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../context'
 import { createLogger, createServer, transformWithOxc } from 'vite'
-import { parse as parseSfc } from 'vue/compiler-sfc'
+import { readAndParseSfc } from 'wevu/compiler'
+import {
+  AUTO_ROUTES_ID,
+  resolveAutoRoutesVirtualId,
+  VIRTUAL_MODULE_ID,
+  WEVU_AUTO_ROUTES_MODULE_ID,
+  WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
+} from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
@@ -16,6 +24,7 @@ const DEV_EXTERNAL_PREFIX = '\0weapp-vite:module-graph-external:'
 
 type DevModuleGraphCompilerContext = Pick<CompilerContext, 'moduleGraphService' | 'runtimeState'>
   & Pick<MutableCompilerContext, 'configService'>
+  & Partial<Pick<CompilerContext, 'autoRoutesService'>>
 
 export interface DevModuleGraphProvider {
   close: () => Promise<void>
@@ -41,12 +50,14 @@ function collectResolverPlugins(config: InlineConfig) {
 }
 
 async function transformVueSource(code: string, id: string, config?: ResolvedConfig) {
-  const { descriptor, errors } = parseSfc(code, { filename: id })
+  const { descriptor, errors } = await readAndParseSfc(id, { source: code })
   if (errors.length) {
     throw errors[0]
   }
-  const blocks = [descriptor.script, descriptor.scriptSetup].filter(block => block?.content)
-  const source = blocks.map(block => block!.content).join('\n') || 'export default {}'
+  const blocks = [descriptor.script, descriptor.scriptSetup].filter(block => block?.content || block?.src)
+  const source = blocks.map(block => block!.src
+    ? `import ${JSON.stringify(block!.src)};`
+    : block!.content).join('\n') || 'export default {}'
   const lang = blocks.some(block => block?.lang === 'tsx')
     ? 'tsx'
     : blocks.some(block => block?.lang === 'ts') ? 'ts' : 'js'
@@ -94,7 +105,21 @@ function createProviderPlugin(
   return {
     name: 'weapp-vite:module-graph-provider',
     enforce: 'pre',
+    config() {
+      return {
+        resolve: {
+          alias: [
+            { find: WEVU_AUTO_ROUTES_MODULE_ID, replacement: WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID },
+            { find: AUTO_ROUTES_ID, replacement: VIRTUAL_MODULE_ID },
+          ],
+        },
+      }
+    },
     async resolveId(id, importer) {
+      const autoRoutesId = resolveAutoRoutesVirtualId(id)
+      if (autoRoutesId) {
+        return autoRoutesId
+      }
       const virtualId = resolveVirtualModuleId(id)
       if (virtualId) {
         return virtualId
@@ -122,6 +147,13 @@ function createProviderPlugin(
       return null
     },
     load(id) {
+      const autoRoutesId = resolveAutoRoutesVirtualId(id)
+      const service = ctx.autoRoutesService
+      if (autoRoutesId && service) {
+        return service.ensureFresh().then(() => autoRoutesId === WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID
+          ? service.getNamedModuleCode()
+          : service.getModuleCode())
+      }
       if (id.startsWith(DEV_EXTERNAL_PREFIX)) {
         return 'export default {}'
       }

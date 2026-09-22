@@ -34,11 +34,25 @@
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       }
+    },
+    "./page-route": {
+      "types": "./dist/pageDeclaration/public.d.mts",
+      "import": {
+        "types": "./dist/pageDeclaration/public.d.mts",
+        "default": "./dist/pageDeclaration/public.mjs"
+      }
     }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "typesVersions": {
+    "*": {
+      "page-route": [
+        "dist/pageDeclaration/public.d.mts"
+      ]
+    }
+  },
   "files": [
     "dist"
   ],

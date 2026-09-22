@@ -12,6 +12,9 @@ import {
   RESOLVED_VIRTUAL_ID,
   shouldStartAutoRoutesWatcher,
   VIRTUAL_MODULE_ID,
+  WEVU_AUTO_ROUTES_MODULE_ID,
+  WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
+  WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID,
 } from './autoRoutes.shared'
 
 describe('auto routes plugin shared helpers', () => {
@@ -42,15 +45,24 @@ describe('auto routes plugin shared helpers', () => {
     ])
   })
 
-  it('filters route vue files by extension and pages matcher', () => {
+  it('filters ordinary route files by discovery extensions and keeps known declaration sources', () => {
     const isPagesRelatedPath = (id: string) => id.includes('/pages/') || id.includes('\\pages\\')
+    const declarationSources: Record<string, true> = {
+      '/project/packages/routes/profile.mjs': true,
+      '/project/packages/routes/settings.cjs': true,
+    }
+    const isPageDeclarationSource = (id: string) => Boolean(declarationSources[id])
     const allowedExtensions = new Set(['.vue', '.ts'])
 
-    expect(isAutoRoutesWatchFile('/project/src/pages/home/index.vue', allowedExtensions, isPagesRelatedPath)).toBe(true)
-    expect(isAutoRoutesWatchFile('C:\\project\\src\\pages\\home\\index.ts', allowedExtensions, isPagesRelatedPath)).toBe(true)
-    expect(isAutoRoutesWatchFile('/project/src/pages/home/index.scss', allowedExtensions, isPagesRelatedPath)).toBe(false)
-    expect(isAutoRoutesWatchFile('/project/src/components/card/index.vue', allowedExtensions, isPagesRelatedPath)).toBe(false)
-    expect(isAutoRoutesWatchFile('/project/src/pages/home/.app.json.auto-routes-inline.ts', allowedExtensions, isPagesRelatedPath)).toBe(false)
+    expect(isAutoRoutesWatchFile('/project/src/pages/home/index.vue', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(true)
+    expect(isAutoRoutesWatchFile('C:\\project\\src\\pages\\home\\index.ts', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(true)
+    expect(isAutoRoutesWatchFile('/project/packages/routes/profile.mjs', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(true)
+    expect(isAutoRoutesWatchFile('/project/packages/routes/settings.cjs', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(true)
+    expect(isAutoRoutesWatchFile('/project/src/pages/home/index.mjs', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(false)
+    expect(isAutoRoutesWatchFile('/project/src/pages/home/index.cjs', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(false)
+    expect(isAutoRoutesWatchFile('/project/src/pages/home/index.scss', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(false)
+    expect(isAutoRoutesWatchFile('/project/src/components/card/index.vue', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(false)
+    expect(isAutoRoutesWatchFile('/project/src/pages/home/.app.json.auto-routes-inline.ts', allowedExtensions, isPagesRelatedPath, isPageDeclarationSource)).toBe(false)
   })
 
   it('checks watcher startup preconditions', () => {
@@ -133,6 +145,9 @@ describe('auto routes plugin shared helpers', () => {
     expect(resolveAutoRoutesVirtualId(VIRTUAL_MODULE_ID, aliasTargets)).toBe(RESOLVED_VIRTUAL_ID)
     expect(resolveAutoRoutesVirtualId(RESOLVED_VIRTUAL_ID, aliasTargets)).toBe(RESOLVED_VIRTUAL_ID)
     expect(resolveAutoRoutesVirtualId('/project/src/auto-routes.ts', aliasTargets)).toBe(RESOLVED_VIRTUAL_ID)
+    expect(resolveAutoRoutesVirtualId(WEVU_AUTO_ROUTES_MODULE_ID, aliasTargets)).toBe(WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID)
+    expect(resolveAutoRoutesVirtualId(WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID, aliasTargets)).toBe(WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID)
+    expect(resolveAutoRoutesVirtualId(WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID, aliasTargets)).toBe(WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID)
     expect(resolveAutoRoutesVirtualId('/project/src/pages/index.ts', aliasTargets)).toBeNull()
   })
 

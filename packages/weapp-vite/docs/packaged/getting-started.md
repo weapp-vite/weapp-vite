@@ -79,7 +79,7 @@ weapp-vite mcp
 - 目录结构、`AGENTS.md`、`.weapp-vite`：[`project-structure.md`](./project-structure.md)
 - `vite.config.ts` 与 `weapp` 配置：[`weapp-config.md`](./weapp-config.md)
 - wevu 页面/组件/store 写法：[`wevu-authoring.md`](./wevu-authoring.md)
-- Vue SFC 宏、`definePageMeta`、`v-model`：[`vue-sfc.md`](./vue-sfc.md)
+- Vue SFC 宏、`definePageMeta`、`definePage`、`v-model`：[`vue-sfc.md`](./vue-sfc.md)
 
 ## 常见命令
 

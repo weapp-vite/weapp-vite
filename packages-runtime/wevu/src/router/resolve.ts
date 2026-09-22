@@ -1,5 +1,5 @@
 import type { RouteResolveCodec } from '../routerInternal/shared'
-import type { RouteLocationNormalizedLoaded, RouteLocationRaw } from './types'
+import type { RouteLocationNormalizedLoaded, RouteLocationRaw, WevuBroadRouteMap } from './types'
 import {
   createRouteLocation,
   normalizeHash,
@@ -17,10 +17,10 @@ export const DEFAULT_ROUTE_RESOLVE_CODEC: RouteResolveCodec = {
 }
 
 export function resolveRouteLocation(
-  to: RouteLocationRaw,
+  to: RouteLocationRaw<WevuBroadRouteMap>,
   currentPath = '',
   codec: RouteResolveCodec = DEFAULT_ROUTE_RESOLVE_CODEC,
-): RouteLocationNormalizedLoaded {
+): RouteLocationNormalizedLoaded<WevuBroadRouteMap> {
   if (typeof to === 'string') {
     const parsed = parsePathInput(to, codec)
     const path = resolvePath(parsed.path, currentPath)

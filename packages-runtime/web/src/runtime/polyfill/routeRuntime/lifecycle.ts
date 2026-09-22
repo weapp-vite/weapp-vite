@@ -8,6 +8,7 @@ const PAGE_STATE_SYMBOL = Symbol('@weapp-vite/web:page-state')
 interface RouteMetaCarrier {
   [ROUTE_META_SYMBOL]?: RouteMeta
   route?: string
+  options?: Record<string, string>
 }
 
 interface PageInstanceState {
@@ -79,6 +80,7 @@ export function attachRouteMeta(
   const carrier = element as RouteMetaCarrier
   carrier[ROUTE_META_SYMBOL] = meta
   carrier.route = meta.id
+  carrier.options = meta.query
 }
 
 export function hidePageInstance(instance: ComponentPublicInstance, record: PageRecord) {
