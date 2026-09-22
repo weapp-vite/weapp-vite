@@ -1,6 +1,6 @@
 import type { ObjectExpression } from '@weapp-vite/ast/babelTypes'
 import type { PageDeclarationCall, StaticPageDeclaration, StaticRouteValue } from './types'
-import { WEVU_DEFINE_PAGE_MACRO } from '@weapp-core/constants'
+import { WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createPageDeclarationError } from './diagnostics'
 
@@ -86,7 +86,7 @@ function resolveStaticRouteValue(
         throw createPageDeclarationError(
           pageCall.block,
           element ?? value,
-          `${WEVU_DEFINE_PAGE_MACRO}().meta 只能包含无空项、无展开的有限 JSON 值。`,
+          `${WEVU_DEFINE_PAGE_META_MACRO}().route.meta 只能包含无空项、无展开的有限 JSON 值。`,
         )
       }
       return resolveStaticRouteValue(pageCall, element)
@@ -99,7 +99,7 @@ function resolveStaticRouteValue(
         throw createPageDeclarationError(
           pageCall.block,
           property,
-          `${WEVU_DEFINE_PAGE_MACRO}().meta 不支持展开、方法或访问器。`,
+          `${WEVU_DEFINE_PAGE_META_MACRO}().route.meta 不支持展开、方法或访问器。`,
         )
       }
       const key = resolveObjectKey(property)
@@ -107,7 +107,7 @@ function resolveStaticRouteValue(
         throw createPageDeclarationError(
           pageCall.block,
           property.key,
-          `${WEVU_DEFINE_PAGE_MACRO}().meta 不支持计算或动态属性名。`,
+          `${WEVU_DEFINE_PAGE_META_MACRO}().route.meta 不支持计算或动态属性名。`,
         )
       }
       defineSafeProperty(result, key, resolveStaticRouteValue(pageCall, property.value))
@@ -118,40 +118,81 @@ function resolveStaticRouteValue(
   throw createPageDeclarationError(
     pageCall.block,
     value,
-    `${WEVU_DEFINE_PAGE_MACRO}().meta 只能包含静态有限 JSON 值。`,
+    `${WEVU_DEFINE_PAGE_META_MACRO}().route.meta 只能包含静态有限 JSON 值。`,
   )
 }
 
 export function resolvePageDeclaration(
   pageCall: PageDeclarationCall,
-): StaticPageDeclaration {
+): StaticPageDeclaration | undefined {
   const call = pageCall.call
   if (call.arguments.length !== 1) {
-    throw createPageDeclarationError(
-      pageCall.block,
-      call,
-      `${WEVU_DEFINE_PAGE_MACRO}() 必须且只能接收一个静态对象参数。`,
-    )
+    return undefined
   }
   const argument = call.arguments[0]!
-  if (!t.isExpression(argument) || !t.isObjectExpression(unwrapStaticExpression(argument))) {
+  if (!t.isExpression(argument)) {
+    return undefined
+  }
+  const pageMeta = unwrapStaticExpression(argument)
+  if (!t.isObjectExpression(pageMeta)) {
+    return undefined
+  }
+
+  let routeProperty: t.ObjectProperty | undefined
+  for (const property of pageMeta.properties) {
+    if (t.isSpreadElement(property)) {
+      continue
+    }
+    const key = !property.computed && t.isIdentifier(property.key)
+      ? property.key.name
+      : t.isExpression(property.key) ? resolveStaticString(property.key) : undefined
+    if (key !== 'route') {
+      continue
+    }
+    if (!t.isObjectProperty(property) || property.computed) {
+      throw createPageDeclarationError(
+        pageCall.block,
+        property,
+        `${WEVU_DEFINE_PAGE_META_MACRO}() 的 route 必须使用非计算的静态对象属性。`,
+      )
+    }
+    if (routeProperty) {
+      throw createPageDeclarationError(
+        pageCall.block,
+        property.key,
+        `${WEVU_DEFINE_PAGE_META_MACRO}() 的 route 属性不能重复。`,
+      )
+    }
+    routeProperty = property
+  }
+  if (!routeProperty) {
+    return undefined
+  }
+  if (!t.isExpression(routeProperty.value)) {
     throw createPageDeclarationError(
       pageCall.block,
-      argument,
-      `${WEVU_DEFINE_PAGE_MACRO}() 必须且只能接收一个静态对象参数。`,
+      routeProperty,
+      `${WEVU_DEFINE_PAGE_META_MACRO}().route 必须是静态对象。`,
+    )
+  }
+  const route = unwrapStaticExpression(routeProperty.value)
+  if (!t.isObjectExpression(route)) {
+    throw createPageDeclarationError(
+      pageCall.block,
+      routeProperty.value,
+      `${WEVU_DEFINE_PAGE_META_MACRO}().route 必须是静态对象。`,
     )
   }
 
-  const object = unwrapStaticExpression(argument) as ObjectExpression
   let name: string | undefined
   let meta: Record<string, StaticRouteValue> | undefined
   const seen = new Set<string>()
-  for (const property of object.properties) {
+  for (const property of route.properties) {
     if (!t.isObjectProperty(property) || !t.isExpression(property.value)) {
       throw createPageDeclarationError(
         pageCall.block,
         property,
-        `${WEVU_DEFINE_PAGE_MACRO}() 不支持展开、方法或访问器。`,
+        `${WEVU_DEFINE_PAGE_META_MACRO}().route 不支持展开、方法或访问器。`,
       )
     }
     const key = resolveObjectKey(property)
@@ -159,21 +200,21 @@ export function resolvePageDeclaration(
       throw createPageDeclarationError(
         pageCall.block,
         property.key,
-        `${WEVU_DEFINE_PAGE_MACRO}() 不支持计算或动态属性名。`,
+        `${WEVU_DEFINE_PAGE_META_MACRO}().route 不支持计算或动态属性名。`,
       )
     }
     if (key !== 'name' && key !== 'meta') {
       throw createPageDeclarationError(
         pageCall.block,
         property.key,
-        `${WEVU_DEFINE_PAGE_MACRO}() 不支持属性 "${key}"；path 由页面注册位置生成。`,
+        `${WEVU_DEFINE_PAGE_META_MACRO}().route 不支持属性 "${key}"；path 由页面注册位置生成。`,
       )
     }
     if (seen.has(key)) {
       throw createPageDeclarationError(
         pageCall.block,
         property.key,
-        `${WEVU_DEFINE_PAGE_MACRO}() 的属性 "${key}" 不能重复。`,
+        `${WEVU_DEFINE_PAGE_META_MACRO}().route 的属性 "${key}" 不能重复。`,
       )
     }
     seen.add(key)
@@ -184,7 +225,7 @@ export function resolvePageDeclaration(
         throw createPageDeclarationError(
           pageCall.block,
           property.value,
-          `${WEVU_DEFINE_PAGE_MACRO}().name 必须是非空静态字符串。`,
+          `${WEVU_DEFINE_PAGE_META_MACRO}().route.name 必须是非空静态字符串。`,
         )
       }
       name = staticName
@@ -195,7 +236,7 @@ export function resolvePageDeclaration(
         throw createPageDeclarationError(
           pageCall.block,
           property.value,
-          `${WEVU_DEFINE_PAGE_MACRO}().meta 必须是静态对象。`,
+          `${WEVU_DEFINE_PAGE_META_MACRO}().route.meta 必须是静态对象。`,
         )
       }
       meta = resolveStaticRouteValue(pageCall, value)
@@ -204,8 +245,8 @@ export function resolvePageDeclaration(
   if (name == null) {
     throw createPageDeclarationError(
       pageCall.block,
-      object,
-      `${WEVU_DEFINE_PAGE_MACRO}() 必须声明非空静态 name。`,
+      route,
+      `${WEVU_DEFINE_PAGE_META_MACRO}().route 必须声明非空静态 name。`,
     )
   }
   return meta === undefined ? { name } : { name, meta }

@@ -226,7 +226,7 @@ describe('auto-routes plugin alias fallback', () => {
     const pageDeclarationPaths = [jsPagePath, tsPagePath, ...externalPageScripts, vuePagePath]
     const { plugin, isPageDeclarationSource } = createPlugin()
     isPageDeclarationSource.mockImplementation((id: string) => pageDeclarationPaths.includes(id))
-    const source = 'import { definePage } from "wevu/router"; definePage({ name: "home" }); export const answer = 42'
+    const source = 'import { definePageMeta } from "wevu"; definePageMeta({ route: { name: "home" } }); export const answer = 42'
 
     for (const id of [jsPagePath, tsPagePath, ...externalPageScripts, `${vuePagePath}?vue&type=script`]) {
       const result = await plugin.transform?.call({}, source, id)
@@ -237,7 +237,7 @@ describe('auto-routes plugin alias fallback', () => {
       if (!result || typeof result !== 'object') {
         throw new Error('Expected a transformed page script')
       }
-      expect(result.code).not.toContain('definePage')
+      expect(result.code).not.toContain('definePageMeta')
     }
     await expect(plugin.transform?.call({}, source, vuePagePath)).resolves.toBeNull()
     await expect(plugin.transform?.call({}, source, '/virtual/project/src/components/card.ts')).resolves.toBeNull()
@@ -251,19 +251,19 @@ describe('auto-routes plugin alias fallback', () => {
 
     const requests = [
       {
-        code: String.raw`.icon\:active::before { content: "definePage"; }`,
+        code: String.raw`.icon\:active::before { content: "definePageMeta"; }`,
         id: `${vuePagePath}?vue&type=style&lang.css`,
       },
       {
-        code: String.raw`.icon\:active::before { content: "definePage"; }`,
+        code: String.raw`.icon\:active::before { content: "definePageMeta"; }`,
         id: `${externalScriptPath}?vue&type=style&lang.css`,
       },
       {
-        code: '<view>definePage is documentation text</view>',
+        code: '<view>definePageMeta is documentation text</view>',
         id: `${vuePagePath}?vue&type=template`,
       },
       {
-        code: String.raw`<docs>Use \definePage in page scripts.</docs>`,
+        code: String.raw`<docs>Use \definePageMeta in page scripts.</docs>`,
         id: `${vuePagePath}?vue&type=custom&index=0`,
       },
     ]
@@ -459,7 +459,7 @@ describe('auto-routes plugin alias fallback', () => {
       },
     })
     handleFileChange
-      .mockRejectedValueOnce(new Error('definePage 名称 "home" 重复'))
+      .mockRejectedValueOnce(new Error('Duplicate route "home"'))
       .mockResolvedValueOnce(true)
     ctx.runtimeState.build.hmr.resolvedEntryMap.set(appEntry, { id: appEntry })
     ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
@@ -500,7 +500,7 @@ describe('auto-routes plugin alias fallback', () => {
         type: 'error',
         err: expect.objectContaining({
           id: invalidPage,
-          message: expect.stringContaining('definePage 名称 "home" 重复'),
+          message: expect.stringContaining('Duplicate route "home"'),
           plugin: 'weapp-vite:auto-routes',
           stack: expect.any(String),
         }),

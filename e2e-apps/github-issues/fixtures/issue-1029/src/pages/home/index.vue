@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'wevu'
-import { definePage, useRoute } from 'wevu/router'
+import { useRoute } from 'wevu/router'
 import { navigate, snapshot, trace } from '../../router'
 
-definePage({ name: 'home', meta: { title: '首页', requiresAuth: false, tags: ['public'] } })
+definePageMeta({
+  layout: false,
+  route: { name: 'home', meta: { title: '首页', requiresAuth: false, tags: ['public'] } },
+})
 definePageJson({ navigationBarTitleText: '宿主标题' })
-definePageMeta({ layout: false })
 
 const route = useRoute()
 const title = computed(() => route.meta?.title ?? '')

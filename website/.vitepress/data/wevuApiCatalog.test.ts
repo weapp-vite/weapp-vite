@@ -183,12 +183,16 @@ describe('wevu API catalog', () => {
     const expectedNames = [
       'defineStore()',
       'createPinia()',
+      'setActivePinia()',
+      'getActivePinia()',
+      'disposePinia()',
       'createStore()',
       'storeToRefs()',
       '$id',
       '$state',
       '$patch()',
       '$reset()',
+      '$dispose()',
       '$subscribe()',
       '$onAction()',
       'manager.install()',
@@ -237,7 +241,6 @@ describe('wevu API catalog', () => {
   it('covers the complete public Router surface', () => {
     const routerNames = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu/router').map(item => item.name))
     const expectedNames = [
-      'definePage()',
       'createRouter()',
       '<RouterLink>',
       '<router-link>',

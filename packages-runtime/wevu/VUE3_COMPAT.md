@@ -62,36 +62,35 @@ The following APIs work exactly like Vue 3:
 - `hasInjectionContext()` - Check whether current setup has injection context
 - `provideGlobal()` / `injectGlobal()` - Global provide/inject (deprecated)
 
-#### Store (Pinia Compatible)
+#### Store (Pinia-style API)
 
-wevu includes a Pinia-compatible store implementation that works **without global registration**:
+wevu provides a Pinia-style Store with an explicit application manager, referencing Pinia 4.0.3 public usage. It does not promise all upstream capabilities, Web SSR, Pinia HMR, Vue Devtools, or arbitrary third-party plugins.
 
 - `defineStore()` - Define stores (Setup & Options modes)
 - `storeToRefs()` - Extract reactive refs from store
-- `createStore()` - Create store manager with plugin support (optional)
+- `createPinia()` - Create a store manager with plugin support
 - `$patch` - Batch update state
-- `$reset` - Reset state to initial values (Setup & Options store)
+- `$reset` - Options Store uses the state factory; Setup Store must provide its own implementation
 - `$subscribe` - Subscribe to state mutations
 - `$onAction` - Subscribe to action calls
 
-**Key Difference: No Global Registration Required**
+**Store manager installation**
 
-```typescript
-// ❌ Pinia：需要全局注册
-import { createPinia } from 'pinia'
+Install once in `app.vue`:
 
-// 不需要 createPinia()，也不需要 app.use(pinia)！
+```vue
+<script setup lang="ts">
+import { createPinia, use } from 'wevu'
 
-// ✅ wevu：直接使用即可
-import { defineStore } from 'wevu'
-
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  return { count }
-})
-const pinia = createPinia()
-app.use(pinia) // 必须先注册
+use(createPinia())
+</script>
 ```
+
+With `createApp()`, use `app.use(pinia)`. Outside components, pass the manager to `useStore(pinia)`; tests can explicitly activate it with `setActivePinia(pinia)`. `use()` is only available in app setup.
+
+`createStore()` remains the same function as `createPinia()`, and the `StoreManager` type is retained. Existing applications do not need a rename-only migration.
+
+This update ships as a minor release but requires changes to existing Store consumers. Follow the [Store migration guide](https://vite.weapp.dev/wevu/store-migration) before upgrading.
 
 **Setup Store (Recommended):**
 

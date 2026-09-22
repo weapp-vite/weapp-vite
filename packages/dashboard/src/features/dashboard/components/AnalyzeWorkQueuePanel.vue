@@ -50,7 +50,7 @@ function getToneClassName(tone: AnalyzeWorkQueueItem['tone']) {
 </script>
 
 <template>
-  <section :class="surfaceStyles({ padding: 'md' })" class="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden">
+  <section :class="surfaceStyles({ padding: 'md' })" class="grid min-h-0 min-w-0 gap-3 overflow-visible xl:h-full xl:grid-rows-[auto_auto_minmax(0,1fr)] xl:overflow-hidden">
     <AppPanelHeader icon-name="metric-bookmark" title="处理清单">
       <template #meta>
         <button
@@ -104,7 +104,7 @@ function getToneClassName(tone: AnalyzeWorkQueueItem['tone']) {
       </button>
     </div>
 
-    <div class="mt-3 min-h-0 overflow-hidden">
+    <div class="mt-3 max-h-[32rem] min-h-0 overflow-y-auto xl:max-h-none xl:overflow-hidden">
       <AppEmptyState v-if="visibleItems.length === 0" compact>
         当前没有处理事项。
       </AppEmptyState>

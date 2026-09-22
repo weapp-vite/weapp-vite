@@ -49,7 +49,7 @@ export default defineComponent({
       })
       setupStore.$reset()
 
-      const setupResetOk = setupStore.count.value === 0 && setupStore.name.value === setupStoreInitialName
+      const setupResetOk = setupStore.count === 0 && setupStore.name === setupStoreInitialName
 
       const beforeCount = optionsStore.count
       optionsStore.inc(3)
@@ -77,7 +77,7 @@ export default defineComponent({
         setupReset: setupResetOk,
         optionsReset: optionsResetOk,
         optionsPatched: patchedCount === beforeCount + 4,
-        refsSetup: setupRefs.count.value === setupStore.count.value,
+        refsSetup: setupRefs.count.value === setupStore.count,
         refsOptions: optionsRefs.count.value === optionsStore.count,
         refsGetter: optionsRefs.doubled.value === optionsStore.count * 2,
       }
@@ -85,8 +85,8 @@ export default defineComponent({
       const result = buildResult('store', checks, {
         subscribeLogs,
         actionLogs,
-        setupCount: setupStore.count.value,
-        setupName: setupStore.name.value,
+        setupCount: setupStore.count,
+        setupName: setupStore.name,
         optionsCount: optionsStore.count,
         optionsLabel: optionsStore.label,
       })

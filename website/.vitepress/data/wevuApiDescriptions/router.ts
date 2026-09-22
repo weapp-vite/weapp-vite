@@ -1,7 +1,6 @@
 export const routerApiDescriptions: Record<string, string> = {
   '<RouterLink>': 'Vue Router 链接组件在小程序模板中不可用。',
   '<router-link>': 'Vue Router 链接标签在小程序模板中不可用。',
-  'definePage()': '静态声明页面名称与元信息，由构建生成命名路由。',
   'createRouter()': '创建并注册具有守卫、动态路由和失败分类的 Router。',
   'useRouter()': '获取当前已经创建的高阶 Router 实例。',
   'useRoute()': '响应式读取当前页面的标准化路由位置。',
@@ -43,7 +42,7 @@ export const routerApiDescriptions: Record<string, string> = {
   'RouteLocationNamedRaw': '排除路径字段的类型安全名称导航目标。',
   'RouteLocationNormalizedByName': '按名称关联规范化位置与元信息。',
   'RouterResolve': '名称目标与路径目标分别推导结果的解析函数。',
-  'StaticPageDeclaration': 'definePage 编译宏的静态名称与元信息输入。',
+  'StaticPageDeclaration': '从 PageMeta.route 提取的静态名称与元信息。',
   'StaticRouteValue': '可静态提取的递归 JSON 路由元信息值。',
   'RouterNavigation': 'createRouter 返回的完整 Router 实例类型。',
   'UseRouterOptions': 'Router 路由表、tabBar 和解析策略配置。',

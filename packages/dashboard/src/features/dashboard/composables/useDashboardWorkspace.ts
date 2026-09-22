@@ -9,15 +9,18 @@ import type {
   WorkspaceSignalItem,
 } from '../types'
 import type { DashboardWorkspaceContext } from './dashboardWorkspaceContext'
-import { computed, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
+import { computed, inject, onBeforeUnmount, provide, shallowRef, watch } from 'vue'
 import {
   createAnalyzeHistorySnapshot,
+  isSameAnalyzeProject,
   isSameAnalyzeResult,
   normalizeHistorySnapshots,
   readStoredAnalyzeHistory,
   resolveInitialPreviousResult,
+  resolveTrustedAnalyzePrevious,
   writeStoredAnalyzeHistory,
 } from '../utils/analyzeHistory'
+import { dashboardAnalyzeSnapshot } from '../utils/dashboardDevframe'
 import {
   createWorkspaceActivityItems,
   createWorkspaceCommands,
@@ -33,8 +36,8 @@ import {
 } from './useDashboardRuntimeEventStream'
 
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
-  const initialPayload = window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null
-  const initialPreviousPayload = window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ ?? null
+  const initialPayload = dashboardAnalyzeSnapshot.value?.current ?? null
+  const initialPreviousPayload = dashboardAnalyzeSnapshot.value?.previous ?? null
   const storedHistory = readStoredAnalyzeHistory()
   const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(initialPayload)
   const previousResultRef = shallowRef<AnalyzeSubpackagesResult | null>(
@@ -115,38 +118,63 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     summary: summary.value,
   }))
 
-  const syncFromWindow = () => {
-    const incoming = window.__WEAPP_VITE_ANALYZE_RESULT__
+  const syncFromTransport = (payload: typeof dashboardAnalyzeSnapshot.value) => {
+    const incoming = payload?.current
     if (!incoming) {
       return
     }
 
-    const previousFromWindow = window.__WEAPP_VITE_PREVIOUS_ANALYZE_RESULT__ ?? null
-    const stored = readStoredAnalyzeHistory()
-    let previousResult = stored?.previous ?? previousResultRef.value
-    if (stored?.current && !isSameAnalyzeResult(incoming, stored.current)) {
-      previousResult = stored.current
-    }
-    if (resultRef.value && !isSameAnalyzeResult(incoming, resultRef.value)) {
-      previousResult = resultRef.value
-    }
-    if (previousFromWindow && !isSameAnalyzeResult(incoming, previousFromWindow)) {
-      previousResult = previousFromWindow
+    const previousFromTransport = resolveTrustedAnalyzePrevious(incoming, payload.previous)
+    const currentProjectChanged = Boolean(
+      resultRef.value && !isSameAnalyzeProject(incoming, resultRef.value),
+    )
+    if (currentProjectChanged) {
+      previousResultRef.value = null
+      historySnapshots.value = []
+      baselineSnapshotId.value = null
+      comparisonMode.value = 'previous'
     }
 
-    previousResultRef.value = isSameAnalyzeResult(incoming, previousResult)
-      ? null
-      : previousResult
+    const stored = readStoredAnalyzeHistory()
+    const storedMatchesProject = Boolean(
+      stored?.current && isSameAnalyzeProject(incoming, stored.current),
+    )
+    let previousResult = storedMatchesProject
+      && stored?.previous
+      && isSameAnalyzeProject(incoming, stored.previous)
+      ? stored.previous
+      : null
+    if (storedMatchesProject && stored?.current && !isSameAnalyzeResult(incoming, stored.current)) {
+      previousResult = stored.current
+    }
+    if (
+      !currentProjectChanged
+      && resultRef.value
+      && isSameAnalyzeProject(incoming, resultRef.value)
+      && !isSameAnalyzeResult(incoming, resultRef.value)
+    ) {
+      previousResult = resultRef.value
+    }
+    if (
+      previousFromTransport
+      && !isSameAnalyzeResult(incoming, previousFromTransport)
+    ) {
+      previousResult = previousFromTransport
+    }
+
+    previousResultRef.value = previousResult && !isSameAnalyzeResult(incoming, previousResult)
+      ? previousResult
+      : null
     resultRef.value = incoming
     const incomingSnapshot = createAnalyzeHistorySnapshot(incoming)
     const nextSnapshots = normalizeHistorySnapshots({
       current: incoming,
       previous: previousResultRef.value,
-      snapshots: [incomingSnapshot, ...historySnapshots.value],
+      snapshots: [incomingSnapshot, ...historySnapshots.value.filter(snapshot => isSameAnalyzeProject(incoming, snapshot.result))],
     })
     historySnapshots.value = nextSnapshots
     if (baselineSnapshotId.value && !nextSnapshots.some(snapshot => snapshot.id === baselineSnapshotId.value)) {
-      baselineSnapshotId.value = nextSnapshots[nextSnapshots.length - 1]?.id ?? null
+      baselineSnapshotId.value = null
     }
     if (comparisonMode.value === 'baseline' && !baselineSnapshotId.value) {
       comparisonMode.value = 'previous'
@@ -189,14 +217,8 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     persistHistoryPreferences()
   }
 
-  onMounted(() => {
-    window.addEventListener('weapp-analyze:update', syncFromWindow)
-    syncFromWindow()
-  })
-
-  onBeforeUnmount(() => {
-    window.removeEventListener('weapp-analyze:update', syncFromWindow)
-  })
+  const stopAnalyzeSync = watch(dashboardAnalyzeSnapshot, syncFromTransport, { immediate: true })
+  onBeforeUnmount(stopAnalyzeSync)
 
   return {
     resultRef,

@@ -54,7 +54,7 @@ function isPersistentCache(value: unknown, topologyKey: string): value is AutoRo
   const pageSourceFiles = value.pageSourceFiles
   const dependencyEntries = Object.entries(value.pageDeclarationDependencies)
   const fingerprints = value.pageDeclarationFingerprints
-  return value.version === 3
+  return value.version === 4
     && value.topologyKey === topologyKey
     && typeof value.usesOpaquePageDeclarationResolver === 'boolean'
     && isStringArray(value.snapshot.pages)

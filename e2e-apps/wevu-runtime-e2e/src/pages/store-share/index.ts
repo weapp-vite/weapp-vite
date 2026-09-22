@@ -25,14 +25,14 @@ export default defineComponent({
 
     const runE2E = async () => {
       const checks = {
-        sharedName: setupStore.name.value === 'shared',
+        sharedName: setupStore.name === 'shared',
         sharedLabel: optionsStore.label === 'shared',
-        sharedCount: setupStore.count.value >= 1 && optionsStore.count >= 1,
+        sharedCount: setupStore.count >= 1 && optionsStore.count >= 1,
       }
 
       const result = buildResult('store-share', checks, {
-        setupCount: setupStore.count.value,
-        setupName: setupStore.name.value,
+        setupCount: setupStore.count,
+        setupName: setupStore.name,
         optionsCount: optionsStore.count,
         optionsLabel: optionsStore.label,
       })

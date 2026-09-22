@@ -1,45 +1,43 @@
-import type { ActionSubscriber } from './types'
+import type { ActionSubscriber, Pinia } from './types'
+import { setActivePinia } from './manager'
 
-export function wrapAction<TStore extends Record<string, any>>(
-  store: TStore,
+/** Action 的结果回调属于已开始的调用，不随后续退订取消。 */
+export function wrapAction(
+  store: Record<string, any>,
   name: string,
   action: (...args: any[]) => any,
-  actionSubs: Set<ActionSubscriber<TStore>>,
+  subscriptions: Set<ActionSubscriber>,
+  pinia: Pinia,
 ) {
   return function wrapped(this: any, ...args: any[]) {
-    const afterCbs: Array<(r: any) => void> = []
-    const errorCbs: Array<(e: any) => void> = []
-    const after = (cb: (r: any) => void) => afterCbs.push(cb)
-    const onError = (cb: (e: any) => void) => errorCbs.push(cb)
-    actionSubs.forEach((sub) => {
-      try {
-        sub({ name, store, args, after, onError })
-      }
-      catch {
-        // 捕获订阅者回调内部的异常，避免单个监听器出错影响其他订阅和原始 action 执行链
-      }
-    })
-    let res: any
+    setActivePinia(pinia)
+    const afterCallbacks = new Set<(result: any) => any>()
+    const errorCallbacks = new Set<(error: any) => any>()
+    subscriptions.forEach(callback => callback({
+      name,
+      store,
+      args,
+      after: callback => afterCallbacks.add(callback),
+      onError: callback => errorCallbacks.add(callback),
+    }))
+    let result: any
     try {
-      res = action.apply(store, args)
+      result = action.apply(this && this.$id === store.$id ? this : store, args)
     }
-    catch (e) {
-      errorCbs.forEach(cb => cb(e))
-      throw e
+    catch (error) {
+      errorCallbacks.forEach(callback => callback(error))
+      throw error
     }
-    const finalize = (r: any) => {
-      afterCbs.forEach(cb => cb(r))
-      return r
+    if (result instanceof Promise) {
+      return result.then((value: any) => {
+        afterCallbacks.forEach(callback => callback(value))
+        return value
+      }).catch((error: any) => {
+        errorCallbacks.forEach(callback => callback(error))
+        return Promise.reject(error)
+      })
     }
-    if (res && typeof (res as Promise<any>).then === 'function') {
-      return (res as Promise<any>).then(
-        r => finalize(r),
-        (e) => {
-          errorCbs.forEach(cb => cb(e))
-          return Promise.reject(e)
-        },
-      )
-    }
-    return finalize(res)
+    afterCallbacks.forEach(callback => callback(result))
+    return result
   }
 }

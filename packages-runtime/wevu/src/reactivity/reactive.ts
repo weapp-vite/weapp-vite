@@ -1,5 +1,5 @@
 import type { MutationKind, MutationOp } from './reactive/mutation'
-import { track, trigger } from './core'
+import { batch, track, trigger } from './core'
 import { mutationRecorders } from './reactive/mutation'
 import {
   adoptReactiveRoot,
@@ -132,6 +132,7 @@ const mutableHandlers: ProxyHandler<any> = {
     return res
   },
   set(target, key, value, receiver) {
+    const hadKey = hasOwn(target, key)
     const isArr = Array.isArray(target)
     const oldLength = isArr ? target.length : 0
     const oldValue = Reflect.get(target, key, receiver)
@@ -156,19 +157,24 @@ const mutableHandlers: ProxyHandler<any> = {
           rawPathMap.set(childRaw, nextPath)
         }
       }
-      trigger(target, key)
-      if (isArr && typeof key === 'string' && isArrayIndexKey(key) && Number(key) >= oldLength) {
-        trigger(target, 'length')
-      }
-      // 任意写操作都提升通用版本号
-      trigger(target, VERSION_KEY)
-      bumpRawVersion(target)
-      bumpAncestorVersions(target)
-      const root = rawRootMap.get(target)
-      if (root && root !== target) {
-        trigger(root, VERSION_KEY)
-        bumpRawVersion(root)
-      }
+      batch(() => {
+        trigger(target, key)
+        if (isArr && typeof key === 'string' && isArrayIndexKey(key) && Number(key) >= oldLength) {
+          trigger(target, 'length')
+        }
+        // 任意写操作都提升通用版本号
+        trigger(target, VERSION_KEY)
+        bumpRawVersion(target)
+        bumpAncestorVersions(target)
+        const root = rawRootMap.get(target)
+        if (root && root !== target) {
+          trigger(root, VERSION_KEY)
+          bumpRawVersion(root)
+        }
+        if (!hadKey) {
+          trigger(target, Symbol.iterator)
+        }
+      })
       emitMutation(target, key, 'set')
     }
     return result
@@ -182,16 +188,19 @@ const mutableHandlers: ProxyHandler<any> = {
       if (oldRaw) {
         removeParentLink(oldRaw, target, key)
       }
-      trigger(target, key)
-      // 删除同样提升通用版本号
-      trigger(target, VERSION_KEY)
-      bumpRawVersion(target)
-      bumpAncestorVersions(target)
-      const root = rawRootMap.get(target)
-      if (root && root !== target) {
-        trigger(root, VERSION_KEY)
-        bumpRawVersion(root)
-      }
+      batch(() => {
+        trigger(target, key)
+        // 删除同样提升通用版本号
+        trigger(target, VERSION_KEY)
+        bumpRawVersion(target)
+        bumpAncestorVersions(target)
+        const root = rawRootMap.get(target)
+        if (root && root !== target) {
+          trigger(root, VERSION_KEY)
+          bumpRawVersion(root)
+        }
+        trigger(target, Symbol.iterator)
+      })
       emitMutation(target, key, 'delete')
     }
     return result

@@ -1,5 +1,7 @@
 /// <reference types="miniprogram-api-typings" />
 
+import type { StaticPageDeclaration } from '@wevu/compiler'
+
 import type {
   BooleanKey,
   ComponentTypeEmits,
@@ -92,6 +94,7 @@ export type PageLayoutMeta = string | false | {
 
 export interface PageMeta {
   layout?: PageLayoutMeta
+  route?: StaticPageDeclaration
   [key: string]: unknown
 }
 

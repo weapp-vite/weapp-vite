@@ -118,15 +118,16 @@ createRouter()
 
 ### 3.2 从页面生成命名路由
 
-启用 `weapp.autoRoutes` 后，在已被页面发现机制识别的 Vue 页面中声明稳定名称；路径仍由现有主包、分包和 scope 规则决定，不需要再维护一份路径表。
+启用 `weapp.autoRoutes` 后，在已被页面发现机制识别的 Vue 页面中通过既有 `definePageMeta()` 声明稳定名称；路径仍由现有主包、分包和 scope 规则决定，不需要再维护一份路径表。命名路由是页面元信息宏的新能力，不会恢复历史 `definePage` 页面注册宏，也不需要第二个页面声明入口。
 
 ```vue
 <script setup lang="ts">
-import { definePage } from 'wevu/router'
-
-definePage({
-  name: 'home',
-  meta: { title: '首页', requiresAuth: false },
+definePageMeta({
+  layout: false,
+  route: {
+    name: 'home',
+    meta: { title: '首页', requiresAuth: false },
+  },
 })
 </script>
 ```
@@ -151,12 +152,15 @@ await router.push({ name: 'home' })
 ```
 
 - `weapp-vite/auto-routes` 仍导出原有的 `pages / entries / subPackages`；新入口只导出具名 `routes`，不导入或执行页面模块。
-- `definePage` 必须显式从 `wevu/router` 导入，允许导入别名；每个页面只能有一个顶层调用。`name` 是应用内唯一的非空静态字符串，`meta` 是可选的静态 JSON 对象，省略时生成 `{}`。
+- 升级后，旧协议留下的持久化命名记录会随缓存 schema 自动失效并重新扫描；不需要手动删除缓存文件。
+- 全局、未绑定的 `definePageMeta()` 是规范写法；也可以从 `wevu` 具名导入并使用别名。编译器会区分绑定与遮蔽，不要从 `wevu/router` 导入。
+- `route` 是可选专用命名空间。只要写了它，就必须提供应用内唯一的非空静态 `name`；`meta` 是可选静态 JSON 对象，省略时生成 `{}`。没有 `route` 的页面仍按路径注册，但不会得到自动名称。
+- 顶层 `layout` 继续走原有 layout 分析：在 Vue SFC 中，`props` 对象与键名需要静态可分析，值可以保留响应式表达式。其他顶层 `PageMeta` 字段也保持原有语义；它们都不会成为 Router `meta`。
+- `route.meta` 是守卫和业务代码读取的数据。它里面的 `title` 或 `layout` 不会设置宿主标题或选择页面壳；宿主 JSON 使用 `definePageJson()`，组件选项使用 `defineOptions()`。
 - 支持 SFC 内联脚本，以及 `<script src>` / `<script setup src>` 引用的外部脚本；声明属于引用脚本的页面，路由路径始终来自页面的最终注册位置，而不是外部脚本所在目录。`src` 可使用相对路径、`resolve.alias` 或包导出，`prepare` 同样解析；外部脚本中的相对模块引用仍以原脚本目录为准。
-- 启用 Web 目标时，同一路由的多个候选源文件如含页面声明，`name/meta` 必须一致；冲突会报告候选文件，而不会为两个目标猜选不同的命名映射。未声明的旧页面保持原有发现规则。
-- 支持字符串、有限数字、布尔值、`null`、数组和嵌套对象；不支持导入常量、变量引用、函数调用、展开、计算键、访问器、`undefined` 或手写 `path`。重复名称及非法声明会报告源文件位置。
-- 未调用 `definePage` 的页面仍正常注册并可按路径导航，但不会得到自动名称。`meta.title` 只是业务数据，不会改写宿主标题；标题仍用 `definePageJson` 配置，可以与 `definePageMeta` 共存。
-- 运行 `weapp-vite prepare` 后，将 `.weapp-vite/typed-router.d.ts` 纳入项目 TypeScript 的 `include`。`dev/build` 使用同一生成链路；移动页面、增删声明和仅修改 `meta` 都会更新数据与类型。
+- 启用 Web 目标时，同一路由的多个候选源文件如含页面声明，`route.name/meta` 必须一致；冲突会报告候选文件，而不会为两个目标猜选不同的命名映射。未声明的旧页面保持原有发现规则。
+- `route.meta` 支持字符串、有限数字、布尔值、`null`、数组和嵌套对象；不支持导入常量、变量引用、函数调用、展开、计算键、访问器、`undefined` 或手写 `path`。重复名称及非法声明会报告源文件位置。
+- 运行 `weapp-vite prepare` 后，将 `.weapp-vite/typed-router.d.ts` 纳入项目 TypeScript 的 `include`。`dev/build` 使用同一生成链路；移动页面、增删 `route` 和仅修改 `route.meta` 都会更新数据与类型。
 - Web 开发模式下，命名路由元信息或页面拓扑变化会重新加载应用入口，让挂载中的 Router 使用新快照；不会保留该次更新前的页面状态。未改变路由声明的普通源码修改仍走原有 HMR。
 - 生成的 `WevuNamedRouteMap` 让 `createRouter/useRouter/useRoute`、守卫和导航 API 按名称关联 `meta`；值会结构化拓宽，不固定为初始字面量。未知名称、混用 `name` 与 `path/fullPath`、同名动态替换时不匹配的路径或 `meta` 会产生类型错误；不推导页面精确 `params/query`。
 - 没有命名映射时保持原有宽类型。确需运行时任意名称时，在创建和读取 Router 时一致使用 `createRouter<WevuBroadRouteMap>()`、`useRouter<WevuBroadRouteMap>()`、`useRoute<WevuBroadRouteMap>()`；这会主动放弃名称与元信息收窄。

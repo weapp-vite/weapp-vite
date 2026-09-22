@@ -70,7 +70,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
     : undefined
 
   const vueSfcVisitors = vueSfcTransformPlugin().visitor as Record<string, any>
-  const macroVisitors = createMacroVisitors(ast.program, state)
+  const macroVisitors = createMacroVisitors(ast, state)
   const importVisitors = createImportVisitors(ast.program, state)
   const collectVisitors = createCollectVisitors(state)
   const visitor = {
@@ -79,6 +79,10 @@ export function transformScript(source: string, options?: TransformScriptOptions
     ...importVisitors,
     ...collectVisitors,
     ImportDeclaration(path: any) {
+      runVisitor(macroVisitors.ImportDeclaration, path)
+      if (path.removed) {
+        return
+      }
       const source = path.node.source.value
       const canProvideUseSlots = source === 'vue' || isWevuRuntimeModuleId(source)
       for (const specifier of path.node.specifiers) {

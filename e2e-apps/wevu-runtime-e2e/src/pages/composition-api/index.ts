@@ -8,13 +8,13 @@ import {
   callHookList,
   callHookReturn,
   computed,
-  createStore,
   customRef,
   defineComponent,
   defineStore,
   effect,
   effectScope,
   endBatch,
+  getActivePinia,
   getCurrentInstance,
   getCurrentScope,
   getCurrentSetupContext,
@@ -237,7 +237,7 @@ export default defineComponent({
     const normalizedClass = normalizeClass(['a', { b: true, c: false }])
     const normalizedStyle = normalizeStyle([{ fontSize: '24rpx' }, 'color:#111'])
 
-    const manager = createStore()
+    const manager = getActivePinia()!
     let pluginRuns = 0
     manager.use(() => {
       pluginRuns += 1
@@ -480,7 +480,7 @@ export default defineComponent({
         mergeModels: Array.isArray(mergedArray) && mergedArray.length === 3 && (mergedObject as any).b === 2,
         normalizeClass: normalizedClass === 'a b',
         normalizeStyle: normalizedStyle.includes('font-size:24rpx') && normalizedStyle.includes('color:#111'),
-        defineStore: apiStore.doubled.value === 4,
+        defineStore: apiStore.doubled === 4,
         createStore: typeof manager.install === 'function',
         storeToRefs: apiStoreRefs.value.value === 2,
       }

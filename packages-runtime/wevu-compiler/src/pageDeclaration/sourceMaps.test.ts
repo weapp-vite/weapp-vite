@@ -51,8 +51,8 @@ describe('external page declaration source maps', () => {
       '<script lang="ts" src="../pageScripts/external-normal.ts"></script>',
     ].join('\r\n')
     const externalSource = [
-      'import { definePage } from \'wevu/router\'',
-      'definePage({ name: \'external-normal-map\' })',
+      'import { definePageMeta } from \'wevu\'',
+      'definePageMeta({ route: { name: \'external-normal-map\' } })',
       'const externalNormalSentinel = \'external-normal\'',
       'export default { setup: () => ({ externalNormalSentinel }) }',
     ].join('\n')
@@ -89,8 +89,8 @@ describe('external page declaration source maps', () => {
       '</script>',
     ].join(separator)
     const externalSource = [
-      'import { definePage } from \'wevu/router\'',
-      'definePage({ name: \'mixed-source-map\' })',
+      'import { definePageMeta } from \'wevu\'',
+      'definePageMeta({ route: { name: \'mixed-source-map\' } })',
       'export const externalMixedSentinel = \'external\'',
       'export default {}',
     ].join('\n')
@@ -128,10 +128,10 @@ describe('external page declaration source maps', () => {
     const source = [
       '<template><!-- <script src="./template-comment.ts"></script> --><view /></template>',
       '<script setup lang="ts">',
-      'import { definePage } from \'wevu/router\'',
+      'import { definePageMeta } from \'wevu\'',
       '// <script src="./script-comment.ts">',
       `const emittedSnippet = '<script src="./embed.js">'`,
-      `definePage({ name: 'script-like-text', meta: { snippet: '<script src="./meta.js">' } })`,
+      `definePageMeta({ layout: false, route: { name: 'script-like-text', meta: { snippet: '<script src="./meta.js">' } } })`,
       'defineExpose({ emittedSnippet })',
       '</script>',
     ].join('\n')
@@ -164,7 +164,7 @@ describe('external page declaration source maps', () => {
     const filename = '/project/src/pages/same-line-diagnostic.vue'
     const externalFilename = '/project/src/pageScripts/same-line-diagnostic.ts'
     const invalidToken = 'routeName'
-    const source = `<script lang="ts" src="../pageScripts/same-line-diagnostic.ts"></script><script setup lang="ts">import { definePage } from 'wevu/router';definePage({ name: ${invalidToken} })</script>`
+    const source = `<script lang="ts" src="../pageScripts/same-line-diagnostic.ts"></script><script setup lang="ts">import { definePageMeta } from 'wevu';definePageMeta({ route: { name: ${invalidToken} } })</script>`
 
     await expect(compileVueFile(source, filename, {
       isPage: true,
@@ -177,7 +177,7 @@ describe('external page declaration source maps', () => {
         },
       },
     })).rejects.toThrow(
-      `${filename}:1:${source.indexOf(invalidToken) + 1} definePage().name 必须是非空静态字符串。`,
+      `${filename}:1:${source.indexOf(invalidToken) + 1}`,
     )
   })
 

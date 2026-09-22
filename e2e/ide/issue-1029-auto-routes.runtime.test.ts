@@ -127,7 +127,7 @@ describe('issue #1029: static named routes and runtime metadata', { concurrent: 
     expect((await redirected.callMethod('_runE2E') as RouteSnapshot).route).toMatchObject({ name: 'home', meta: { title: '首页' } })
   })
 
-  it('keeps path navigation to a page without definePage unnamed', async (context) => {
+  it('keeps path navigation to a page without route metadata unnamed', async (context) => {
     const dom = createDomAcceptance(context, 'e2e-apps/github-issues/fixtures/issue-1029', [{
       id: 'legacy',
       route: ISSUE_1029_LEGACY,

@@ -9,7 +9,6 @@ export { parseQuery, stringifyQuery }
 export {
   createRouter,
 } from './router/createRouter'
-export { definePage } from './router/definePage'
 export {
   createNavigationFailure,
   isNavigationFailure,

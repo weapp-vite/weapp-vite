@@ -276,7 +276,7 @@ describe('createAutoRoutesService branch coverage', () => {
   it('restores ordinary routes from persistent cache with a plugin resolver registered', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 3,
+      version: 4,
       snapshot: {
         pages: ['pages/index/index'],
         entries: ['pages/index/index'],
@@ -339,7 +339,7 @@ describe('createAutoRoutesService branch coverage', () => {
     const firstStat = createDeferred<{ mtimeMs: number }>()
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 3,
+      version: 4,
       snapshot: {
         pages: ['pages/index/index', 'pages/about/index'],
         entries: ['pages/index/index', 'pages/about/index'],
@@ -409,7 +409,7 @@ describe('createAutoRoutesService branch coverage', () => {
     const pendingStat = createDeferred<{ mtimeMs: number }>()
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 3,
+      version: 4,
       snapshot: {
         pages: ['pages/cached/index'],
         entries: ['pages/cached/index'],
@@ -473,7 +473,7 @@ describe('createAutoRoutesService branch coverage', () => {
   it('does not rewrite persistent cache when payload is already current', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 3,
+      version: 4,
       snapshot: {
         pages: [],
         entries: [],
@@ -613,7 +613,7 @@ describe('createAutoRoutesService branch coverage', () => {
   it('falls back to a full scan when persistent cache mtimes do not match', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
-      version: 3,
+      version: 4,
       snapshot: {
         pages: ['stale/page'],
         entries: ['stale/page'],
@@ -706,7 +706,7 @@ describe('createAutoRoutesService branch coverage', () => {
   it('restores custom persistent cache path when configured as string', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath === '/project/configs/.cache/custom-auto-routes.json')
     readJsonMock.mockResolvedValue({
-      version: 3,
+      version: 4,
       snapshot: {
         pages: ['pages/index/index'],
         entries: ['pages/index/index'],

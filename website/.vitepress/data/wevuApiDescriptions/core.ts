@@ -8,7 +8,7 @@ export const coreApiDescriptions: Record<string, string> = {
   'defineExpose()': '声明组件向父级实例暴露的成员。',
   'defineModel()': '声明可双向绑定的组件 model。',
   'defineOptions()': '在 script setup 中补充组件选项。',
-  'definePageMeta()': '声明页面路由、布局和页面级元信息。',
+  'definePageMeta()': '声明页面 layout 与可选命名路由元信息。',
   'defineAppSetup()': '声明 App 启动时执行的 setup 逻辑。',
   'ref()': '创建持有单个响应式值的 Ref。',
   'customRef()': '自定义 Ref 的依赖追踪和触发时机。',

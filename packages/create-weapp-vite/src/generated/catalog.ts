@@ -15,6 +15,7 @@ export const TEMPLATE_CATALOG = {
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
   '@tailwindcss/vite': '^4.3.3',
+  '@types/d3': '^7.4.3',
   '@types/node': '^26.6.2',
   '@types/react': '19.3.0',
   '@types/react-reconciler': '0.33.0',
@@ -37,7 +38,7 @@ export const TEMPLATE_CATALOG = {
   'lru-cache': '^11.5.3',
   'magic-string': '^1.4.1',
   'miniprogram-api-typings': '^5.2.3',
-  'oxc-parser': '^0.150.0',
+  'oxc-parser': '^0.151.0',
   'oxc-walker': '^1.1.1',
   'pkg-types': '^2.3.3',
   'postcss-selector-parser': '^7.1.6',
@@ -51,11 +52,13 @@ export const TEMPLATE_CATALOG = {
   'uview-plus': '3.8.113',
   'vite-plugin-inspect': '^12.0.2',
   'vue-tsc': '^3.3.11',
-  'weapp-tailwindcss': '^5.5.6',
+  'weapp-tailwindcss': '^5.5.7',
   autoprefixer: '^10.6.1',
   axios: '^1.20.0',
   clsx: '^2.1.1',
+  d3: '^7.9.0',
   dayjs: '^1.11.23',
+  devframe: '1.0.0',
   echarts: '^6.1.0',
   esbuild: '^0.28.2',
   eslint: '^10.11.0',
@@ -74,7 +77,7 @@ export const TEMPLATE_CATALOG = {
   stylelint: '^17.15.0',
   tailwindcss: '^4.3.3',
   tslib: '^2.8.1',
-  tsx: '^4.23.13',
+  tsx: '^4.23.15',
   typescript: '^6.0.3',
   vite: '8.3.0',
   vue: '^3.5.43',
@@ -86,7 +89,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'tdesign-miniprogram': '1.16.1'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '5.5.6'
+    'weapp-tailwindcss': '5.5.7'
   },
   latest: {
     'miniprogram-api-typings': '^5.2.3',

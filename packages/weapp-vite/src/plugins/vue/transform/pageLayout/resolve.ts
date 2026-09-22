@@ -3,6 +3,7 @@ import type { DiscoveredLayoutFile, LayoutPropValue, NativeLayoutAssets, PageLay
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import picomatch from 'picomatch'
+import { mayContainPageDeclaration } from 'wevu/compiler'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../../utils'
 import { normalizeWatchPath, toPosixPath } from '../../../../utils/path'
 import { usingComponentFromResolvedFile } from '../../../../utils/usingComponentFrom'
@@ -15,7 +16,6 @@ const TRAILING_INDEX_RE = /\/index$/
 const LEADING_SLASHES_RE = /^\/+/
 const ROUTE_RULE_GLOB_TOKEN_RE = /[*?[\]{}()!+@]/g
 const layoutFilesCache = new Map<string, Promise<Map<string, DiscoveredLayoutFile>>>()
-const PAGE_META_HINT = 'definePageMeta'
 const SET_PAGE_LAYOUT_HINT = 'setPageLayout'
 
 function normalizePageRouteCandidates(
@@ -240,7 +240,7 @@ export async function resolvePageLayoutPlan(
   filename: string,
   configService: PageLayoutConfigService,
 ): Promise<ResolvedPageLayoutPlan | undefined> {
-  const hasPageMetaHint = source.includes(PAGE_META_HINT)
+  const hasPageMetaHint = mayContainPageDeclaration(source)
   const hasDynamicLayoutHint = source.includes(SET_PAGE_LAYOUT_HINT)
   const analyzedSource = hasPageMetaHint || hasDynamicLayoutHint
     ? analyzePageLayoutSource(source, filename)

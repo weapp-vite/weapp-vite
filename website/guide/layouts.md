@@ -103,19 +103,27 @@ definePageMeta({
 
 ### 3.3 指定 layout + props
 
+`layout.name` 必须静态可分析；`props` 仍要求对象字面量和静态键名，但在 Vue SFC 中每个值可以保留响应式表达式：
+
 ```vue
 <script setup lang="ts">
+import { computed } from 'wevu'
+
+const layoutTitle = computed(() => '控制台')
+
 definePageMeta({
   layout: {
     name: 'admin',
     props: {
       sidebar: true,
-      title: '控制台',
+      title: layoutTitle.value,
     },
   },
 })
 </script>
 ```
+
+这些表达式由既有 layout 编译链路生成绑定，不会被求值成 Router `meta`。需要路由业务数据时，另写静态的 `definePageMeta({ route: { name, meta } })`。
 
 ### 3.4 显式关闭 layout
 
@@ -131,24 +139,25 @@ definePageMeta({
 
 ## 4. `definePageMeta({ layout })` 的约束
 
-这部分需要特别注意，因为它是编译期静态分析的：
+这部分需要特别注意，因为 layout 名称和 props 形状由编译期静态分析：
 
-| 支持的写法                                         | 是否支持 |
-| -------------------------------------------------- | -------- |
-| `layout: 'admin'`                                  | ✅       |
-| `layout: false`                                    | ✅       |
-| `layout: { name: 'admin', props: { title: 'A' } }` | ✅       |
-| `layout: someRef.value`                            | ❌       |
-| `layout: computed(() => 'admin')`                  | ❌       |
-| `props: dynamicObject`                             | ❌       |
+| 支持的写法                                                   | 是否支持 |
+| ------------------------------------------------------------ | -------- |
+| `layout: 'admin'`                                            | ✅       |
+| `layout: false`                                              | ✅       |
+| `layout: { name: 'admin', props: { title: 'A' } }`           | ✅       |
+| `layout: { name: 'admin', props: { title: titleRef.value } }` | ✅       |
+| `layout: someRef.value`                                      | ❌       |
+| `layout: computed(() => 'admin')`                            | ❌       |
+| `props: dynamicObject`                                       | ❌       |
 
 也就是说：
 
 - `layout` 只支持静态字符串、`false`，或 `{ name, props }` 对象
-- `props` 必须是对象字面量
-- `props` 的键名必须是静态键名
+- `props` 必须是对象字面量，键名必须是静态键名
+- Vue SFC 中的 `props` 值可以是表达式；编译器保留绑定，不会执行表达式
 
-> **提示**：如果你需要按状态切换 layout，不要把 `layout.name` 写成响应式值，而应该改用运行时 `setPageLayout()`。
+> **提示**：如果你需要按状态切换 layout 名称，不要把 `layout.name` 写成响应式值，而应该改用运行时 `setPageLayout()`。
 
 ## 5. `routeRules` 怎么和 layout 配合
 
@@ -275,7 +284,7 @@ layout 不只是“包一层壳”，还经常要解决页面和壳子之间的�
 
 | 方式                                                          | 方向                     | 适合场景                   | 推荐程度 |
 | ------------------------------------------------------------- | ------------------------ | -------------------------- | -------- |
-| `definePageMeta({ layout: { name, props } })`                 | page -> layout           | 静态标题、模式、文案       | 高       |
+| `definePageMeta({ layout: { name, props } })`                 | page -> layout           | 初始或响应式标题、模式、文案 | 高       |
 | `setPageLayout(name, props)`                                  | page -> layout           | 运行时切换 layout 与 props | 高       |
 | `usePageLayout()`                                             | page 读取 layout 状态    | 页面感知当前壳子模式       | 高       |
 | store + page `watch`                                          | store -> page -> layout  | 统一管理布局状态与交互意图 | 高       |
@@ -284,7 +293,7 @@ layout 不只是“包一层壳”，还经常要解决页面和壳子之间的�
 
 ### 7.1 通过 layout props 通信
 
-最直接的方式是由页面把布局需要的静态信息传给 layout，例如标题、副标题、页面模式、头部按钮文案。
+最直接的方式是由页面把布局需要的初始或响应式信息传给 layout，例如标题、副标题、页面模式、头部按钮文案。
 
 编译期静态场景：
 
@@ -548,14 +557,14 @@ layout 能力的核心不是“多一个配置项”，而是让“页面内容�
 
 最后可以按下面的顺序选型：
 
-| 目标                     | 更推荐的方式                                  |
-| ------------------------ | --------------------------------------------- |
-| 页面给 layout 传静态信息 | `definePageMeta({ layout: { name, props } })` |
-| 页面在运行时切换 layout  | `setPageLayout()`                             |
-| 页面读取当前 layout      | `usePageLayout()`                             |
-| 统一管理布局状态         | store + page `watch`                          |
-| 访问 layout 内反馈节点   | `layout-host` / `resolveLayoutHost()`         |
-| 共享全局状态             | store                                         |
+| 目标                             | 更推荐的方式                                  |
+| -------------------------------- | --------------------------------------------- |
+| 页面给 layout 传初始或响应式信息 | `definePageMeta({ layout: { name, props } })` |
+| 页面在运行时切换 layout          | `setPageLayout()`                             |
+| 页面读取当前 layout              | `usePageLayout()`                             |
+| 统一管理布局状态                 | store + page `watch`                          |
+| 访问 layout 内反馈节点           | `layout-host` / `resolveLayoutHost()`         |
+| 共享全局状态                     | store                                         |
 
 ## 12. 参考资源
 

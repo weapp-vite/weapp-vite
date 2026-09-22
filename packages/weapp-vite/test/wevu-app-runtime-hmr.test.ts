@@ -196,9 +196,10 @@ describe('wevu app runtime HMR', { concurrent: false }, () => {
       appSourcePath,
       appSource
         .replace(
-          'import { onLaunch } from \'wevu\'',
+          '<script setup lang="ts">',
           [
-            'import { onLaunch, ref } from \'wevu\'',
+            '<script setup lang="ts">',
+            'import { ref } from \'wevu\'',
             'import { normalizeClass } from \'wevu/internal-template\'',
             '',
             'const hmrProbeRef = ref(0)',

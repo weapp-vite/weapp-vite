@@ -30,7 +30,7 @@
 - `storeToRefs`
 - 避免巨型跨页面全局 store
 
-`createStore()` 只设置全局活动 manager，插件必须在 Store 第一次创建前注册；`install()` 是 no-op，`useXxx()` 不接收 manager 参数。Wevu Store 不提供 Pinia SSR、HMR 或 devtools 契约。
+Store 日常用法以 Pinia 4.0.3 为参照。先通过 `use(createPinia())` / `app.use(pinia)` 安装，或调用 `useXxx(pinia)`；外部 state 自动解包。`storeToRefs` 只返回响应式 state/getters，action 从 Store 直接解构。Setup 自行提供 `$reset`；`$dispose` 保留 manager 状态。插件接收 `{ store, pinia, app, options }`。推荐 `createPinia`；`createStore` 保留为同一个函数的兼容别名，`StoreManager` 类型继续保留。不提供 Web SSR、Pinia HMR 或 Vue Devtools。本次按 minor 发布，旧消费者仍需按 [PR 前后迁移指南](https://vite.weapp.dev/wevu/store-migration) 检查初始化、外部 ref、reset、订阅与插件。
 
 ## router
 

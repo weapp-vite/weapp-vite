@@ -182,6 +182,7 @@ definePageMeta({
 > [!NOTE]
 > `definePageMeta().layout` 只支持静态字符串、`false`，或 `{ name, props }` 对象。
 > `props` 必须是对象字面量，键名必须是静态的。
+> Vue SFC 中 `props` 的值可以保留表达式绑定；这一点不改变 Router 元信息的静态 JSON 约束。
 
 ## 运行时动态切换
 

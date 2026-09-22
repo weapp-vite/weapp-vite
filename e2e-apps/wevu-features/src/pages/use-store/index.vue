@@ -4,33 +4,8 @@ import { getFeaturePluginRecords, useOptionsFeatureStore, useSetupFeatureStore }
 
 const setupStore = useSetupFeatureStore()
 const optionsStore = useOptionsFeatureStore()
-const setupRefs = storeToRefs({
-  count: setupStore.count,
-  label: setupStore.label,
-  meta: setupStore.meta,
-  doubled: setupStore.doubled,
-})
-const optionsRefs = storeToRefs({
-  count: computed({
-    get: () => optionsStore.count,
-    set: (next: number) => {
-      optionsStore.count = next
-    },
-  }),
-  label: computed({
-    get: () => optionsStore.label,
-    set: (next: string) => {
-      optionsStore.label = next
-    },
-  }),
-  items: computed({
-    get: () => optionsStore.items,
-    set: (next: number[]) => {
-      optionsStore.items = next
-    },
-  }),
-  doubled: computed(() => optionsStore.doubled),
-})
+const setupRefs = storeToRefs(setupStore)
+const optionsRefs = storeToRefs(optionsStore)
 
 const metrics = {
   subscribeEventCount: 0,
@@ -119,14 +94,14 @@ function setupRenameAlpha() {
 
 function setupPatchObject() {
   setupStore.$patch({
-    __setupObjectPatched: true,
+    label: 'setup-alpha',
   })
   syncMetricsView()
 }
 
 function setupPatchFunction() {
   setupStore.$patch((state: any) => {
-    state.__setupFunctionPatched = true
+    state.label = 'setup-alpha'
   })
   syncMetricsView()
 }
@@ -192,8 +167,8 @@ async function runMutationE2E() {
   syncMetricsView()
 
   const beforeResetChecks = {
-    setupCount: setupStore.count.value === 4,
-    setupLabel: setupStore.label.value === 'setup-alpha',
+    setupCount: setupStore.count === 4,
+    setupLabel: setupStore.label === 'setup-alpha',
     setupVisits: setupStore.meta.visits === 1,
     optionsCount: optionsStore.count === 7,
     optionsLabel: optionsStore.label === 'options-patched',
@@ -214,8 +189,8 @@ async function runResetE2E() {
   syncMetricsView()
 
   const afterResetChecks = {
-    setupResetCount: setupStore.count.value === 0,
-    setupResetLabel: setupStore.label.value === 'init',
+    setupResetCount: setupStore.count === 0,
+    setupResetLabel: setupStore.label === 'init',
     setupResetVisits: setupStore.meta.visits === 0,
     optionsResetCount: optionsStore.count === 0,
     optionsResetLabel: optionsStore.label === 'zero',
@@ -229,8 +204,8 @@ async function runResetE2E() {
     checks: afterResetChecks,
     details: {
       setup: {
-        count: setupStore.count.value,
-        label: setupStore.label.value,
+        count: setupStore.count,
+        label: setupStore.label,
         visits: setupStore.meta.visits,
       },
       options: {

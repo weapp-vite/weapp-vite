@@ -44,7 +44,7 @@ export function hasValueBinding(parsed: PageDeclarationParsedBlock, reference: N
     || hasTypeScriptValueBinding(parsed, reference, name)
 }
 
-function hasModuleVisibleValueBinding(parsedBlocks: PageDeclarationParsedBlock[], name: string) {
+export function hasModuleVisibleValueBinding(parsedBlocks: PageDeclarationParsedBlock[], name: string) {
   return parsedBlocks.some((parsed) => {
     if (parsed.block.kind === 'script' && parsed.typeScriptValueBindings.get(parsed.ast.program)?.has(name)) {
       return true

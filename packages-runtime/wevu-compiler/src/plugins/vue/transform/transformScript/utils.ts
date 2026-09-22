@@ -144,8 +144,6 @@ export interface TransformState {
   defaultExportPath: NodePath<t.ExportDefaultDeclaration> | null
 }
 
-export const PAGE_META_MACRO_NAME = 'definePageMeta'
-
 export function isPlainRecord(value: unknown): value is Record<string, any> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false

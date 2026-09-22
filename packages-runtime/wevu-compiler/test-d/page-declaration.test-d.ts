@@ -1,11 +1,14 @@
+import type { CallExpression, File } from '@weapp-vite/ast/babelTypes'
 import type {
   ExtractPageDeclarationWithDependenciesResult,
   StaticPageDeclaration,
   StaticRouteValue,
 } from '@wevu/compiler'
 import {
+  collectPageMetaCallsFromPrograms,
   extractPageDeclaration,
   extractPageDeclarationWithDependencies,
+  mayContainPageDeclaration,
   stripPageDeclaration,
 } from '@wevu/compiler'
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd'
@@ -28,16 +31,20 @@ expectAssignable<StaticPageDeclaration>({
 expectNotAssignable<StaticPageDeclaration>({ name: 'invalid', meta: null })
 
 expectType<StaticPageDeclaration | undefined>(
-  extractPageDeclaration(`import { definePage } from 'wevu/router'; definePage({ name: 'home' })`, 'page.ts'),
+  extractPageDeclaration(`import { definePageMeta } from 'wevu'; definePageMeta({ route: { name: 'home' } })`, 'page.ts'),
 )
 const stripped = stripPageDeclaration(
-  `import { definePage } from 'wevu/router'; definePage({ name: 'home' })`,
+  `import { definePageMeta } from 'wevu'; definePageMeta({ route: { name: 'home' } })`,
   'page.ts',
 )
 if (stripped) {
   expectType<string>(stripped.code)
   expectType<string[] | undefined>(stripped.map?.sources)
 }
+
+declare const pageMetaAst: File
+expectType<CallExpression[]>(collectPageMetaCallsFromPrograms({ script: pageMetaAst, scriptSetup: pageMetaAst }))
+expectType<boolean>(mayContainPageDeclaration('definePageMeta({ layout: false })'))
 
 expectType<Promise<ExtractPageDeclarationWithDependenciesResult>>(
   extractPageDeclarationWithDependencies(

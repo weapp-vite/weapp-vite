@@ -6,12 +6,14 @@ import type {
   PageDeclarationImport,
   PageDeclarationParsedBlock,
   PageDeclarationScriptBlock,
+  PageDeclarationScriptBlockKind,
 } from './types'
-import { WEVU_DEFINE_PAGE_MACRO, WEVU_ROUTER_MODULE_ID } from '@weapp-core/constants'
+import { WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { WE_VU_MODULE_ID } from '../constants'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse, traverse } from '../utils/babel'
 import { createPageDeclarationError, createPageDeclarationParseError, getAbsoluteOffset } from './diagnostics'
-import { getImportRemovalEdits, hasTypeScriptValueBinding, hasValueBinding } from './rewrite'
+import { getImportRemovalEdits, hasModuleVisibleValueBinding, hasTypeScriptValueBinding, hasValueBinding } from './rewrite'
 import { resolvePageDeclaration } from './static'
 
 type ProgramPath = NodePath<t.Program>
@@ -69,18 +71,7 @@ function isRuntimeReference(path: NodePath) {
   )
 }
 
-function parseBlock(block: PageDeclarationScriptBlock): PageDeclarationParsedBlock {
-  let ast: File
-  try {
-    ast = parse(block.content, {
-      ...BABEL_TS_MODULE_PARSER_OPTIONS,
-      sourceFilename: block.filename,
-    }) as File
-  }
-  catch (error) {
-    throw createPageDeclarationParseError(block, error)
-  }
-
+function createParsedBlock(ast: File, block: PageDeclarationScriptBlock): PageDeclarationParsedBlock {
   let programPath: ProgramPath | undefined
   // Babel 不登记 enum/namespace 的值绑定；按原 AST 作用域补齐，不改写源码位置。
   const typeScriptValueBindings: PageDeclarationParsedBlock['typeScriptValueBindings'] = new Map()
@@ -114,6 +105,20 @@ function parseBlock(block: PageDeclarationScriptBlock): PageDeclarationParsedBlo
   return { ast, block, programPath, typeScriptValueBindings }
 }
 
+function parseBlock(block: PageDeclarationScriptBlock): PageDeclarationParsedBlock {
+  let ast: File
+  try {
+    ast = parse(block.content, {
+      ...BABEL_TS_MODULE_PARSER_OPTIONS,
+      sourceFilename: block.filename,
+    }) as File
+  }
+  catch (error) {
+    throw createPageDeclarationParseError(block, error)
+  }
+  return createParsedBlock(ast, block)
+}
+
 function importedName(specifier: ImportSpecifier) {
   return t.isIdentifier(specifier.imported)
     ? specifier.imported.name
@@ -123,11 +128,11 @@ function importedName(specifier: ImportSpecifier) {
 function collectMacroImports(parsed: PageDeclarationParsedBlock): MacroImportBinding[] {
   const imports: MacroImportBinding[] = []
   for (const statement of parsed.ast.program.body) {
-    if (!t.isImportDeclaration(statement) || statement.source.value !== WEVU_ROUTER_MODULE_ID) {
+    if (!t.isImportDeclaration(statement) || statement.source.value !== WE_VU_MODULE_ID) {
       continue
     }
     for (const specifier of statement.specifiers) {
-      if (!t.isImportSpecifier(specifier) || importedName(specifier) !== WEVU_DEFINE_PAGE_MACRO) {
+      if (!t.isImportSpecifier(specifier) || importedName(specifier) !== WEVU_DEFINE_PAGE_META_MACRO) {
         continue
       }
       imports.push({
@@ -144,16 +149,107 @@ function collectMacroImports(parsed: PageDeclarationParsedBlock): MacroImportBin
   return imports
 }
 
-function resolveDirectCall(referencePath: NodePath) {
+function isCanonicalMacroImportBinding(bindingPath: NodePath | undefined) {
+  if (!bindingPath?.isImportSpecifier()) {
+    return false
+  }
+  const declaration = bindingPath.parentPath
+  return declaration?.isImportDeclaration() === true
+    && declaration.node.source.value === WE_VU_MODULE_ID
+    && declaration.node.importKind !== 'type'
+    && bindingPath.node.importKind !== 'type'
+    && importedName(bindingPath.node) === WEVU_DEFINE_PAGE_META_MACRO
+}
+
+function resolveDirectCall(referencePath: NodePath, topLevelOnly = true) {
   const callPath = referencePath.parentPath
   if (!callPath?.isCallExpression() || callPath.node.callee !== referencePath.node) {
     return undefined
   }
   const statementPath = callPath.parentPath
-  if (!statementPath?.isExpressionStatement() || !statementPath.parentPath?.isProgram()) {
+  if (!statementPath?.isExpressionStatement()
+    || (topLevelOnly && !statementPath.parentPath?.isProgram())) {
     return undefined
   }
   return { callPath, statementPath }
+}
+
+function collectDirectPageMetaCalls(
+  parsed: PageDeclarationParsedBlock,
+  options: {
+    hasModuleShadow?: (name: string) => boolean
+    includeCanonicalImports?: boolean
+    topLevelOnly?: boolean
+    rejectInvalidReferences?: boolean
+  } = {},
+) {
+  const calls: PageDeclarationCall[] = []
+  const isGlobalMacro = (path: NodePath, name: string) =>
+    name === WEVU_DEFINE_PAGE_META_MACRO
+    && !hasValueBinding(parsed, path, name)
+    && options.hasModuleShadow?.(name) !== true
+  const rejectGlobalWrite = (path: NodePath) => {
+    if (!options.rejectInvalidReferences) {
+      return
+    }
+    const identifier = t.getAssignmentIdentifiers(path.node)[WEVU_DEFINE_PAGE_META_MACRO]
+    if (identifier && isGlobalMacro(path, WEVU_DEFINE_PAGE_META_MACRO)) {
+      throw createPageDeclarationError(parsed.block, identifier, `${WEVU_DEFINE_PAGE_META_MACRO} 全局宏不能被重新赋值。`)
+    }
+  }
+  traverse(parsed.ast, {
+    'AssignmentExpression|UpdateExpression|ForInStatement|ForOfStatement': rejectGlobalWrite,
+    ReferencedIdentifier(path) {
+      const binding = path.scope.getBinding(path.node.name)
+      const canonicalImport = isCanonicalMacroImportBinding(binding?.path)
+      if (canonicalImport && options.includeCanonicalImports === false) {
+        return
+      }
+      if (!canonicalImport && !isGlobalMacro(path, path.node.name)) {
+        return
+      }
+      if (!isRuntimeReference(path)) {
+        return
+      }
+      const directCall = resolveDirectCall(path, options.topLevelOnly !== false)
+      if (!directCall) {
+        if (options.rejectInvalidReferences) {
+          throw createPageDeclarationError(
+            parsed.block,
+            path.node,
+            `${WEVU_DEFINE_PAGE_META_MACRO} 全局宏只能用于顶层直接调用，不能被引用、传递或嵌套调用。`,
+          )
+        }
+        return
+      }
+      calls.push({
+        block: parsed.block,
+        call: directCall.callPath.node,
+        statement: directCall.statementPath.node,
+      })
+    },
+  })
+  return calls
+}
+
+function createProgramBlock(ast: File, kind: PageDeclarationScriptBlockKind) {
+  return createParsedBlock(ast, {
+    content: '',
+    filename: '',
+    kind,
+    offset: 0,
+    order: 0,
+    source: '',
+  })
+}
+
+/**
+ * 收集脚本转换阶段可能位于编译后 setup 函数内的页面元信息调用。
+ *
+ * @internal
+ */
+export function collectPageMetaCallsForTransform(ast: File): t.CallExpression[] {
+  return collectDirectPageMetaCalls(createProgramBlock(ast, 'script'), { topLevelOnly: false }).map(call => call.call)
 }
 
 function collectBoundCalls(
@@ -169,7 +265,7 @@ function collectBoundCalls(
     throw createPageDeclarationError(
       macroImport.block,
       write.node,
-      `${WEVU_DEFINE_PAGE_MACRO} 导入绑定不能被重新赋值。`,
+      `${WEVU_DEFINE_PAGE_META_MACRO} 导入绑定不能被重新赋值。`,
     )
   }
 
@@ -184,7 +280,7 @@ function collectBoundCalls(
       throw createPageDeclarationError(
         macroImport.block,
         referencePath.node,
-        `${WEVU_DEFINE_PAGE_MACRO} 导入绑定只能用于顶层直接调用，不能被引用、传递或嵌套调用。`,
+        `${WEVU_DEFINE_PAGE_META_MACRO} 导入绑定只能用于顶层直接调用，不能被引用、传递或嵌套调用。`,
       )
     }
     calls.push({
@@ -238,7 +334,7 @@ function collectCrossBlockCalls(
         throw createPageDeclarationError(
           parsed.block,
           identifier,
-          `${WEVU_DEFINE_PAGE_MACRO} 导入绑定不能被重新赋值。`,
+          `${WEVU_DEFINE_PAGE_META_MACRO} 导入绑定不能被重新赋值。`,
         )
       }
     }
@@ -263,14 +359,14 @@ function collectCrossBlockCalls(
           throw createPageDeclarationError(
             parsed.block,
             path.node,
-            `${WEVU_DEFINE_PAGE_MACRO} 导入绑定只能用于顶层直接调用，不能被引用、传递或嵌套调用。`,
+            `${WEVU_DEFINE_PAGE_META_MACRO} 导入绑定只能用于顶层直接调用，不能被引用、传递或嵌套调用。`,
           )
         }
         if (runtimeCandidates.length > 1) {
           throw createPageDeclarationError(
             parsed.block,
             path.node,
-            `${WEVU_DEFINE_PAGE_MACRO} 调用对应了多个导入绑定。`,
+            `${WEVU_DEFINE_PAGE_META_MACRO} 调用对应了多个导入绑定。`,
           )
         }
         calls.push({
@@ -287,6 +383,32 @@ function collectCrossBlockCalls(
   return calls
 }
 
+function collectPageMetaCalls(parsedBlocks: PageDeclarationParsedBlock[], macroImports: MacroImportBinding[]) {
+  return [
+    ...macroImports.flatMap(collectBoundCalls),
+    ...collectCrossBlockCalls(parsedBlocks, macroImports),
+    ...parsedBlocks.flatMap(parsed => collectDirectPageMetaCalls(parsed, {
+      hasModuleShadow: name => hasModuleVisibleValueBinding(parsedBlocks, name),
+      includeCanonicalImports: false,
+      rejectInvalidReferences: true,
+    })),
+  ]
+}
+
+/**
+ * 共享普通脚本与 setup 的模块绑定，收集指向全局宏或规范导入的顶层页面元信息调用。
+ */
+export function collectPageMetaCallsFromPrograms(programs: { script?: File, scriptSetup?: File }): t.CallExpression[] {
+  const parsedBlocks: PageDeclarationParsedBlock[] = []
+  for (const kind of ['script', 'scriptSetup'] as const) {
+    const ast = programs[kind]
+    if (ast) {
+      parsedBlocks.push(createProgramBlock(ast, kind))
+    }
+  }
+  return collectPageMetaCalls(parsedBlocks, parsedBlocks.flatMap(collectMacroImports)).map(call => call.call)
+}
+
 export function analyzePageDeclarationBlocks(
   blocks: PageDeclarationScriptBlock[],
 ): PageDeclarationAnalysis {
@@ -294,32 +416,35 @@ export function analyzePageDeclarationBlocks(
   const macroImports = parsedBlocks.flatMap(collectMacroImports)
   const runtimeMacroImports = macroImports.filter(macroImport => !macroImport.typeOnly)
   const blockOrder = new Map(blocks.map((block, index) => [block, index]))
-  const calls = [
-    ...macroImports.flatMap(collectBoundCalls),
-    ...collectCrossBlockCalls(parsedBlocks, macroImports),
-  ].sort((left, right) => {
+  const calls = collectPageMetaCalls(parsedBlocks, macroImports).sort((left, right) => {
     const order = (blockOrder.get(left.block) ?? 0) - (blockOrder.get(right.block) ?? 0)
     return order || getAbsoluteOffset(left.block, left.call) - getAbsoluteOffset(right.block, right.call)
   })
 
+  const importEdits = getImportRemovalEdits(runtimeMacroImports)
   if (!calls.length) {
-    return { edits: [], parsedBlocks }
+    return { edits: importEdits, parsedBlocks }
   }
   if (calls.length > 1) {
     throw createPageDeclarationError(
       calls[1]!.block,
       calls[1]!.call,
-      `同一个页面只能声明一次 ${WEVU_DEFINE_PAGE_MACRO}()。`,
+      `同一个页面只能声明一次 ${WEVU_DEFINE_PAGE_META_MACRO}()。`,
     )
   }
 
   const pageCall = calls[0]!
+  const declaration = resolvePageDeclaration(pageCall)
   return {
-    declaration: resolvePageDeclaration(pageCall),
-    declarationSourceFile: pageCall.block.filename,
+    ...(declaration
+      ? {
+          declaration,
+          declarationSourceFile: pageCall.block.filename,
+        }
+      : {}),
     parsedBlocks,
     edits: [
-      ...getImportRemovalEdits(runtimeMacroImports),
+      ...importEdits,
       {
         block: pageCall.block,
         start: pageCall.statement.start ?? 0,

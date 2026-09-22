@@ -22,6 +22,20 @@
     "miniprogram": {
       "list": [
         {
+          "name": "issue 1035 router cold start",
+          "pathName": "pages/issue-1035/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "issue 1035 router navigation",
+          "pathName": "pages/issue-1035-next/index",
+          "query": "from=home",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 1009 inline expression identifier hygiene",
           "pathName": "pages/issue-1009/index",
           "query": "",
@@ -969,6 +983,18 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-1049/index",
+          "pathName": "pages/issue-1049/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "pages/issue-1049/result/index",
+          "pathName": "pages/issue-1049/result/index",
+          "query": "",
+          "scene": null
         }
       ]
     }

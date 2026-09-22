@@ -98,6 +98,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 ] as const
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
+  'ide/github-issues.runtime.issue1035.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
@@ -123,6 +124,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue911.test.ts',
   'ide/github-issues.runtime.issue941.test.ts',
   'ide/github-issues.runtime.issue1009.test.ts',
+  'ide/github-issues.runtime.issue1049.test.ts',
   'ide/github-issues.runtime.issue1011.test.ts',
   'ide/github-issues.runtime.issue1012.test.ts',
   'ide/github-issues.runtime.issue852.test.ts',
@@ -229,6 +231,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/github-issues.runtime.issue1035.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
@@ -268,6 +271,7 @@ const IDE_HEADLESS_FULL_TESTS = [...new Set([
   path.resolve(ROOT, 'ide/github-issues.runtime.issue826.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.issue1009.test.ts'),
+  path.resolve(ROOT, 'ide/github-issues.runtime.issue1049.test.ts'),
   path.resolve(ROOT, 'ide/shared-styles.runtime.test.ts'),
   path.resolve(ROOT, 'ide/wevu-jsx-tsx.runtime.test.ts'),
   path.resolve(ROOT, 'ide/wevu-query.runtime.test.ts'),
@@ -280,6 +284,7 @@ const CI_PR_PATTERNS = [
   'ci/config-merge.e2e.test.ts',
   'ci/github-issues-runtime-shared.test.ts',
   'ci/github-issues.build.test.ts',
+  'ci/github-issues.issue1035.build.test.ts',
   'ci/issue-862-output-watch.test.ts',
   'ci/issue-1029-auto-routes.test.ts',
   'ci/headless-automator-provider.test.ts',

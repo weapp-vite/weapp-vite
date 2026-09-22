@@ -2,8 +2,10 @@ export { builtinComponentsSet, isBuiltinComponent } from './auto-import-componen
 export { createRuntimeBindingManifest } from './bindingManifest'
 export * from './constants'
 export {
+  collectPageMetaCallsFromPrograms,
   extractPageDeclaration,
   extractPageDeclarationWithDependencies,
+  mayContainPageDeclaration,
   stripPageDeclaration,
 } from './pageDeclaration'
 export type {

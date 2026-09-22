@@ -29,13 +29,13 @@ export default defineComponent({
 
     const runE2E = async () => {
       const versionBefore = getHotVersion()
-      const before = setupStore.count.value
+      const before = setupStore.count
       setupStore.inc(1)
-      const afterInc = setupStore.count.value
+      const afterInc = setupStore.count
 
       const nextVersion = hotUpdateSetupStore(setupStore)
       setupStore.inc(1)
-      const afterHot = setupStore.count.value
+      const afterHot = setupStore.count
 
       await nextTick()
 

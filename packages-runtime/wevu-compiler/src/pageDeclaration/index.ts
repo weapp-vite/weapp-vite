@@ -2,12 +2,13 @@ import type { SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
 import type { ResolveSfcBlockSrcOptions } from '../plugins/utils/vueSfc'
 import type { EncodedSourceMapLike } from '../utils/sourcemap'
 import type { PageDeclarationAnalysis, PageDeclarationScriptBlock, PageDeclarationScriptBlockKind, StaticPageDeclaration } from './types'
-import { WEVU_DEFINE_PAGE_MACRO, WEVU_ROUTER_MODULE_ID } from '@weapp-core/constants'
+import { WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import MagicString, { Bundle } from 'magic-string'
 import { parseVueSfc, resolveSfcBlockSrc } from '../plugins/utils/vueSfc'
 import { analyzePageDeclarationBlocks } from './analyze'
 import { rebaseExternalScriptImports } from './rewrite'
 
+export { collectPageMetaCallsFromPrograms } from './analyze'
 export type { StaticPageDeclaration, StaticRouteValue } from './types'
 
 interface ResolvedScriptSourceIds {
@@ -260,9 +261,8 @@ function createDescriptorForExternalScriptCompile(
 }
 
 export function mayContainPageDeclaration(source: string) {
-  // 转义的模块名或导入标识符必须交给 AST 绑定分析，不能因原始文本不匹配而遗漏。
-  return source.includes('\\')
-    || (source.includes(WEVU_ROUTER_MODULE_ID) && source.includes(WEVU_DEFINE_PAGE_MACRO))
+  // 转义的导入标识符必须交给 AST 绑定分析，不能因原始文本不匹配而遗漏。
+  return source.includes('\\') || source.includes(WEVU_DEFINE_PAGE_META_MACRO)
 }
 
 export function stripPageDeclarationFromSfcDescriptor(
@@ -274,7 +274,7 @@ export function stripPageDeclarationFromSfcDescriptor(
 ): StripSfcPageDeclarationResult | undefined {
   const blocks = collectSfcScriptBlocks(source, filename, descriptor, resolvedIds)
   const analysis = analyzePageDeclarationBlocks(blocks)
-  if (!analysis.declaration && !blocks.some(block => block.filename !== filename)) {
+  if (!analysis.edits.length && !blocks.some(block => block.filename !== filename)) {
     return undefined
   }
 
@@ -425,7 +425,7 @@ export function stripPageDeclaration(
     source,
   }
   const analysis = analyzePageDeclarationBlocks([block])
-  if (!analysis.declaration) {
+  if (!analysis.edits.length) {
     return undefined
   }
   const transform = createSourceTransforms(filename, source, [block], analysis).get(filename)!
