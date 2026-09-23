@@ -89,9 +89,11 @@ async function listAll(root: string) {
 
 const tmpRoot = path.join(os.tmpdir(), 'weapp-vite-create-cli-tests')
 let originalArgv: string[] = []
+let originalExitCode: typeof process.exitCode
 const initialCwd = process.cwd()
 
 beforeEach(async () => {
+  originalExitCode = process.exitCode
   originalArgv = [...process.argv]
   process.argv = process.argv.slice(0, 2)
   initConfigMock.mockReset()
@@ -99,6 +101,8 @@ beforeEach(async () => {
   await fs.remove(tmpRoot)
   await fs.ensureDir(tmpRoot)
   answers.installSkills = false
+  const npm = await import('@/npm')
+  vi.spyOn(npm, 'getPackageVersionsFromNpm').mockResolvedValue([])
 })
 
 afterEach(async () => {
@@ -108,6 +112,7 @@ afterEach(async () => {
   lastSelectChoices = undefined
   vi.resetModules()
   process.argv = originalArgv
+  process.exitCode = originalExitCode
 })
 
 describe('create-weapp-vite CLI (mocked prompts)', () => {
@@ -215,8 +220,34 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
 
     expect(createProjectMock).toHaveBeenCalledWith(name, 'default', {
       installSkills: false,
+      dependencyVersionStrategy: 'compatible',
     })
   })
+
+  it.each(['compatible', 'bundled'])('passes the %s dependency strategy to project creation', async (strategy) => {
+    process.chdir(tmpRoot)
+    process.argv = [...process.argv.slice(0, 2), 'app', 'default', `--dependency-versions=${strategy}`, '--no-install-skills']
+    const cli = await import('../src/cli')
+    await cli.runPromise
+    expect(createProjectMock).toHaveBeenCalledWith('app', 'default', {
+      installSkills: false,
+      dependencyVersionStrategy: strategy,
+    })
+    expect(await fs.pathExists(path.join(tmpRoot, 'app', 'package.json'))).toBe(true)
+  })
+
+  it.each(['--dependency-versions=latest', '--dependency-versions=', '--dependency-versions'])(
+    'fails before writing project files for %s',
+    async (arg) => {
+      process.chdir(tmpRoot)
+      process.argv = [...process.argv.slice(0, 2), 'app', 'default', arg]
+      const cli = await import('../src/cli')
+      await cli.runPromise
+      expect(createProjectMock).not.toHaveBeenCalled()
+      expect(await fs.pathExists(path.join(tmpRoot, 'app'))).toBe(false)
+      expect(process.exitCode).toBe(1)
+    },
+  )
 
   it('routes init command to @weapp-core/init without creating a project', async () => {
     const cwd = path.join(tmpRoot, 'init-command')

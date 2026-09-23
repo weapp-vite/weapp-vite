@@ -344,7 +344,7 @@ describe('template parity', () => {
     const root = await createTmpRoot(templateName)
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
-    await createProject(root, templateName)
+    await createProject(root, templateName, { dependencyVersionStrategy: 'bundled' })
 
     const [expectedFiles, actualFiles, expectedPackageJson, actualPackageJson] = await Promise.all([
       collectExpectedTemplateFiles(templateName),

@@ -2859,6 +2859,9 @@ importers:
       pkg-types:
         specifier: 'catalog:'
         version: 2.3.3
+      semver:
+        specifier: ^7.8.5
+        version: 7.8.5
 
   packages/dashboard:
     dependencies:
