@@ -2,6 +2,7 @@ import type { InlineConfig, PluginOption } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../../plugins'
+import { isWeappCompilerPlugin } from '../../../../plugins/compilerPlugin'
 
 const WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME = 'weapp-vite:output-finalizer'
 
@@ -35,6 +36,8 @@ export function arrangePlugins(
   const others: PluginOption[] = []
   const finalizers: PluginOption[] = []
   const sourceCompilers: PluginOption[] = []
+  const outputCompilers: PluginOption[] = []
+  const cssPlugins: PluginOption[] = []
 
   for (const entry of internal) {
     if (!entry) {
@@ -44,9 +47,17 @@ export function arrangePlugins(
       finalizers.push(entry)
       continue
     }
-    if (isNamedPlugin(entry, 'weapp-vite:tailwindcss')) {
-      // 保持 enforce:pre，但排在用户 pre 插件之后、Vite CSS 之前消费内存源码。
+    if (isWeappCompilerPlugin(entry, 'source')) {
+      // 保持 source compiler 在用户插件之后、Vite CSS 之前消费内存源码。
       sourceCompilers.push(entry)
+      continue
+    }
+    if (isWeappCompilerPlugin(entry, 'output')) {
+      outputCompilers.push(entry)
+      continue
+    }
+    if (isNamedPlugin(entry, 'weapp-vite:css')) {
+      cssPlugins.push(entry)
       continue
     }
     others.push(entry)
@@ -69,5 +80,5 @@ export function arrangePlugins(
     others.push(entry)
   }
 
-  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...finalizers]
+  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...cssPlugins, ...finalizers, ...outputCompilers]
 }

@@ -154,6 +154,7 @@ function isEntryStyleStableHmr(runtimeState: CompilerContext['runtimeState']) {
     || reason.startsWith('json-sidecar:')
     || reason.startsWith('sidecar-direct:')
     || reason.startsWith('entry-local-asset:')
+    || reason.startsWith('compiler-content:')
     || reason.startsWith('tailwind-content:'),
   )
 }

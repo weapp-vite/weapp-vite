@@ -122,6 +122,7 @@ function isEntryJsonStableHmr(ctx: CompilerContext) {
     || reason.startsWith('shared-chunk-source:')
     || reason.startsWith('css-importer:')
     || reason.startsWith('css-importer-fallback:')
+    || reason.startsWith('compiler-content:')
     || reason.startsWith('tailwind-content:')
     || reason.startsWith('entry-style-only:')
     || reason.startsWith('style-sidecar:')

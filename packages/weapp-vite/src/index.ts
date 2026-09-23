@@ -21,4 +21,5 @@ export type {
 } from './plugins/vue/runtime'
 export * from './runtimeTarget'
 
+export * from './types/compilerPlugin'
 export * from './types/external'

@@ -3,6 +3,7 @@ import type { WrapPluginOptions } from 'vite-plugin-performance'
 import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 import type { CreateCompilerOptions } from 'weapp-tailwindcss/core'
 import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
+import type { WeappCompilerPluginOption } from '../compilerPlugin'
 import type {
   AutoImportComponentsOption,
   EnhanceOptions,
@@ -170,6 +171,10 @@ export interface WeappViteConfig {
    * - `object`: 启用并传入 weapp-tailwindcss core options
    */
   tailwindcss?: boolean | WeappTailwindcssOptions
+  /**
+   * 可扩展的底层编译插件。插件负责声明源码所有权，并可参与 CSS、WXML、JavaScript、bundle 和 HMR 生命周期。
+   */
+  compilerPlugins?: WeappCompilerPluginOption | WeappCompilerPluginOption[]
   /**
    * 应用入口目录（`app.json` 所在目录）。
    */

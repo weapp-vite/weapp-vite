@@ -403,13 +403,14 @@ class StatefulHmrSession {
     if (output.type === 'Noop' || files.length === 0) {
       return false
     }
-    const allowTailwindContentPatch = dirtyReasonSummary.some(reason => reason.startsWith('tailwind-content:'))
+    const allowCompilerContentPatch = dirtyReasonSummary.some(isCompilerContentDirtyReason)
     if (!isSafeJavaScriptPatch(
       files,
       output,
       dirtyReasonSummary,
       {
-        allowTailwindContent: allowTailwindContentPatch,
+        allowCompilerContent: allowCompilerContentPatch,
+        allowTailwindContent: allowCompilerContentPatch,
         root: this.server.config.root,
         srcRoot: this.ctx.configService!.absoluteSrcRoot,
         entryIds: this.entryIds,
@@ -432,7 +433,7 @@ class StatefulHmrSession {
       }
       return false
     }
-    if (allowTailwindContentPatch || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))) {
+    if (allowCompilerContentPatch || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))) {
       // 安全的 JS patch 与模板、样式快照分别同步，混合视觉更新不能无故重载并清空交互状态。
       this.requestSnapshotRefresh(files)
     }
@@ -826,12 +827,15 @@ export function isSafeJavaScriptPatch(
   files: string[],
   output: StatefulHmrDevEngineUpdate,
   dirtyReasonSummary: string[] = [],
-  options: { allowTailwindContent?: boolean, root?: string, srcRoot?: string, entryIds?: Iterable<string> } = {},
+  options: { allowCompilerContent?: boolean, allowTailwindContent?: boolean, root?: string, srcRoot?: string, entryIds?: Iterable<string> } = {},
 ): output is Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }> {
   return output.type === 'Patch'
     && files.every(file => /\.(?:[cm]?[jt]sx?|vue)$/.test(file))
     && !output.changedIds?.some(id => isNonJavaScriptSidecarId(id) && !isChangedNativeComponentSidecar(id, files, options))
-    && !dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(reason, options.allowTailwindContent === true))
+    && !dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(
+      reason,
+      options.allowCompilerContent === true || options.allowTailwindContent === true,
+    ))
 }
 
 export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
@@ -844,11 +848,16 @@ export function isStatefulHmrAssetFile(file: string): boolean {
   return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
 }
 
-function isUnsafeStatefulHmrReason(reason: string, allowTailwindContent = false): boolean {
-  if (allowTailwindContent && reason.startsWith('tailwind-content:')) {
+function isUnsafeStatefulHmrReason(reason: string, allowCompilerContent = false): boolean {
+  if (allowCompilerContent && isCompilerContentDirtyReason(reason)) {
     return false
   }
-  return /^(?:entry-json-only|entry-local-asset|entry-style-only|entry-mixed-config|react-template|tailwind-content):/.test(reason)
+  return /^(?:entry-json-only|entry-local-asset|entry-style-only|entry-mixed-config|react-template|compiler-content|tailwind-content):/.test(reason)
+}
+
+/** 编译 provider 触发的内容变化使用统一 reason 前缀，保留旧 Tailwind reason 兼容。 */
+export function isCompilerContentDirtyReason(reason: string): boolean {
+  return /^(?:compiler-content|tailwind-content):/.test(reason)
 }
 
 export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): boolean {
@@ -856,7 +865,7 @@ export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): 
     /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason),
   )
   return hasAssetOnlyEntry && dirtyReasonSummary.every(reason =>
-    /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason),
+    /^(?:entry-json-only|entry-local-asset|entry-style-only|compiler-content|tailwind-content):/.test(reason),
   )
 }
 

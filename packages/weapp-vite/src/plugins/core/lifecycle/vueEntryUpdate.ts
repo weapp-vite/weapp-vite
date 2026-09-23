@@ -10,8 +10,11 @@ export interface VueEntryUpdateInspector {
   isJsonOnlyUpdate: () => Promise<boolean>
   isLocalAssetOnlyUpdate: () => Promise<boolean>
   isStyleOnlyUpdate: () => Promise<boolean>
+  isCompilerContentUpdate: (provider?: string) => Promise<boolean>
   isTailwindContentUpdate: () => Promise<boolean>
 }
+
+const DEFAULT_COMPILER_CONTENT_PROVIDER = 'tailwindcss'
 
 export function createVueEntryUpdateInspector(
   state: CorePluginState,
@@ -85,21 +88,43 @@ export function createVueEntryUpdateInspector(
       return blocks?.length === 1 && blocks[0] === 'style'
     },
 
-    async isTailwindContentUpdate() {
-      const previousTemplate = state.ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.get(normalizedId)
-      const previousScript = state.ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.get(normalizedId)
-      if (!previousTemplate || !previousScript) {
+    async isCompilerContentUpdate(provider = DEFAULT_COMPILER_CONTENT_PROVIDER) {
+      const hmr = state.ctx.runtimeState.build.hmr
+      const previousContent = hmr.vueEntryContentSignatures?.get(normalizedId)?.[provider]
+      const previousTemplate = hmr.vueEntryTemplateContentSignatures?.get(normalizedId)?.[provider]
+        ?? (provider === DEFAULT_COMPILER_CONTENT_PROVIDER
+          ? hmr.vueEntryTailwindTemplateContentSignatures?.get(normalizedId)
+          : undefined)
+      const previousScript = hmr.vueEntryScriptContentSignatures?.get(normalizedId)?.[provider]
+        ?? (provider === DEFAULT_COMPILER_CONTENT_PROVIDER
+          ? hmr.vueEntryTailwindScriptContentSignatures?.get(normalizedId)
+          : undefined)
+      if (!previousContent && (!previousTemplate || !previousScript)) {
         return true
       }
 
       const signatures = await resolveSignatures()
-      const currentTemplate = signatures?.tailwindTemplateContentSignature
+      const currentContent = signatures?.contentSignatures?.[provider]
+      if (previousContent) {
+        return !currentContent || currentContent !== previousContent
+      }
+      const currentTemplate = signatures?.templateContentSignatures?.[provider]
+        ?? (provider === DEFAULT_COMPILER_CONTENT_PROVIDER
+          ? signatures?.tailwindTemplateContentSignature
+          : undefined)
       if (!currentTemplate || currentTemplate !== previousTemplate) {
         return true
       }
 
-      const currentScript = signatures.tailwindScriptContentSignature
+      const currentScript = signatures?.scriptContentSignatures?.[provider]
+        ?? (provider === DEFAULT_COMPILER_CONTENT_PROVIDER
+          ? signatures?.tailwindScriptContentSignature
+          : undefined)
       return !currentScript || currentScript !== previousScript
+    },
+
+    async isTailwindContentUpdate() {
+      return await this.isCompilerContentUpdate(DEFAULT_COMPILER_CONTENT_PROVIDER)
     },
   }
 }

@@ -57,4 +57,11 @@ describe('resolveTouchAppWxssEnabled', () => {
       dirtyReasonSummary: ['entry-local-asset:1', 'tailwind-content:2'],
     })).toBe(true)
   })
+
+  it('recognizes provider-neutral compiler content invalidation', () => {
+    expect(resolveTouchAppWxssEnabled({
+      ...base,
+      dirtyReasonSummary: ['compiler-content:unocss:1'],
+    })).toBe(true)
+  })
 })

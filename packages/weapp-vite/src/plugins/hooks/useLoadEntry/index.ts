@@ -99,6 +99,7 @@ function isSharedChunkSourceRepresentativeRefresh(dirtyReasonSummary?: string[])
     && dirtyReasonSummary.some(item => item.startsWith('shared-chunk-source:'))
     && dirtyReasonSummary.every(item =>
       item.startsWith('shared-chunk-source:')
+      || item.startsWith('compiler-content:')
       || item.startsWith('tailwind-content:'),
     ),
   )
