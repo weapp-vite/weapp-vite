@@ -85,7 +85,6 @@ describe('ModuleGraphService', () => {
       getModuleIds: () => infos.keys(),
       getModuleInfo: id => infos.get(id),
     })
-    service.bindPluginContext({ resolve: vi.fn() })
 
     expect(service.collectAffectedEntries('/project/src/shared/static.ts')).toEqual(new Set([pageId]))
     expect(service.collectAffectedEntries('/project/src/shared/dynamic.ts')).toEqual(new Set([pageId]))
@@ -124,7 +123,6 @@ describe('ModuleGraphService', () => {
       [secondEntry, { importers: [secondLogical] }],
       [secondLogical, { importers: [], isEntry: true }],
     ])))
-    service.bindPluginContext({ resolve: vi.fn() })
 
     expect(service.collectAffectedEntries(firstDependency)).toEqual(new Set([firstEntry]))
     expect(service.collectAffectedEntries(secondDependency)).toEqual(new Set([secondEntry]))
@@ -269,7 +267,7 @@ describe('ModuleGraphService', () => {
     const resolve = vi.fn(async (source: string) => ({ id: `/resolved/${source}` }))
     const load = vi.fn(async ({ id }: { id: string }) => ({ code: `export default ${JSON.stringify(id)}` }))
     const service = createModuleGraphService()
-    service.bindPluginContext({ resolve, load })
+    service.bindPluginContext({}, { resolve, load })
 
     await expect(service.resolve('pkg', '/project/src/app.ts')).resolves.toEqual({ id: '/resolved/pkg' })
     await expect(service.load({ id: '/resolved/pkg' })).resolves.toEqual({ code: 'export default "/resolved/pkg"' })

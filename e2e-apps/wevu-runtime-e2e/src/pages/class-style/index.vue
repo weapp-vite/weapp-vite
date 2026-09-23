@@ -266,7 +266,7 @@ export default defineComponent({
       root-guard-class
     </view>
 
-    <text selectable class="details">
+    <text user-select class="details">
       {{ __e2eText }}
     </text>
   </view>

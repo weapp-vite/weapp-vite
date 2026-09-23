@@ -8086,7 +8086,7 @@
     },
     {
       "file": "e2e/utils/shared-hmr-fixture.ts",
-      "sha256": "909e8ccea5ee478f0a74b3fb957cee18fcd090f7fbe2ced8c675f9b002721031"
+      "sha256": "bb9ddcc6200ea2ea10f95e4de360ce13ea8b6cfe0a2d85fba2177295316c0b53"
     },
     {
       "file": "e2e/utils/startupProtocolDiagnostics.ts",

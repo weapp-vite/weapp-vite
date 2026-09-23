@@ -93,6 +93,13 @@ describe('dev module graph provider integration', () => {
     finally {
       await provider.close()
     }
+    await provider.close()
+    expect(moduleGraphService.hasModule(sharedId)).toBe(false)
+    expect(moduleGraphService.collectAffectedEntries(sharedId)).toEqual(new Set())
+    expect(moduleGraphService.collectAffectedEntries(templateId)).toEqual(new Set([normalizeSourceId(pageId)]))
+    moduleGraphService.removeEntryDependencies(pageId)
+    expect(moduleGraphService.hasModule(templateId)).toBe(false)
+    expect(moduleGraphService.collectAffectedEntries(styleId)).toEqual(new Set())
   })
 
   it('tracks named route data through an external SFC script and conflicting router alias', async () => {

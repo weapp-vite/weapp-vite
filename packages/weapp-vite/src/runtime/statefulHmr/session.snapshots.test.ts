@@ -7,6 +7,7 @@ import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { runInNewContext } from 'node:vm'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -26,6 +27,7 @@ interface AdapterCallbacks {
 
 const harness = vi.hoisted(() => ({
   callbacks: undefined as AdapterCallbacks | undefined,
+  nativeOutput: [] as StatefulHmrOutputFile[],
   createServer: vi.fn(),
   writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets) => Promise<void>>(),
   fullBuild: vi.fn<() => Promise<void>>(),
@@ -63,7 +65,7 @@ const watchers: Array<{ close: () => Promise<void> }> = []
 const temporaryDirectories: string[] = []
 
 function appOutput(): StatefulHmrOutputFile[] {
-  return [{ type: 'chunk', fileName: 'app.js', code: 'App({});', modules: {} }]
+  return [{ type: 'chunk', fileName: 'app.js', code: 'App({});', modules: {} }, ...harness.nativeOutput]
 }
 
 function snapshot(color: string, routes: string[] = [route]): StatefulHmrSnapshot {
@@ -157,6 +159,7 @@ describe('stateful snapshot output transactions', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    harness.nativeOutput = []
     harness.writeOutput.mockReset().mockResolvedValue()
     harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.beforeFullPrepare.mockReset().mockResolvedValue()
@@ -428,6 +431,76 @@ describe('stateful snapshot output transactions', () => {
     expect(published.get(componentJson.fileName)).toBe(componentJson.source)
     expect(published.get('assets/new.svg')).toBe('<svg />')
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('boots with the native graph prelude across full, additional and snapshot publications', async () => {
+    const scopes = ['', 'feature/']
+    const withPrelude = (color: string) => {
+      const value = snapshot(color)
+      value.output.push(...scopes.map(prefix => ({
+        type: 'asset' as const,
+        fileName: `${prefix}app.prelude.js`,
+        source: `require("./snapshot-installer.js").installWebRuntimeGlobals({ targets: [${JSON.stringify(color === 'red' ? 'fetch' : 'Headers')}] }).ready;`,
+      })))
+      return value
+    }
+    const nativeOutput = (version: string): StatefulHmrOutputFile[] => scopes.flatMap(prefix => [
+      {
+        type: 'asset',
+        fileName: `${prefix}app.prelude.js`,
+        source: `require("./native-${version}.js").installWebRuntimeGlobals().ready;`,
+      },
+      {
+        type: 'chunk',
+        fileName: `${prefix}native-${version}.js`,
+        code: `exports.installWebRuntimeGlobals = () => ({ ready: ${JSON.stringify(`${prefix}${version}`)} });`,
+      },
+      {
+        type: 'chunk',
+        fileName: `${prefix}snapshot-installer.js`,
+        code: '__rolldown_runtime__.registerModule("facade", { exports: {} });',
+      },
+    ])
+    const published = new Map<string, StatefulHmrOutputFile>()
+    harness.writeOutput.mockImplementation(async (_outDir, output) => {
+      for (const item of output) {
+        published.set(item.fileName, item)
+      }
+    })
+    const boot = (prefix: string) => {
+      const prelude = published.get(`${prefix}app.prelude.js`)
+      if (prelude?.type !== 'asset') {
+        throw new Error(`Missing native prelude in ${prefix || 'main'}`)
+      }
+      return runInNewContext(String(prelude.source), {
+        require(request: string) {
+          const chunk = published.get(path.join(prefix, request))
+          if (chunk?.type !== 'chunk') {
+            throw new Error(`Missing native installer: ${request}`)
+          }
+          const exports = {}
+          runInNewContext(chunk.code, { exports, __rolldown_runtime__: { registerModule() {} } })
+          return exports
+        },
+      })
+    }
+    harness.nativeOutput = nativeOutput('initial')
+    const session = await start(withPrelude('red'))
+    expect(scopes.map(boot)).toEqual(['initial', 'feature/initial'])
+
+    await harness.callbacks!.onOutput(nativeOutput('additional'), 'additional')
+    expect(scopes.map(boot)).toEqual(['additional', 'feature/additional'])
+
+    session.rebuild.mockResolvedValue(withPrelude('blue'))
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(scopes.map(boot)).toEqual(['additional', 'feature/additional'])
+    expect(published.get(styleFile)).toMatchObject({ source: '.probe { color: blue; }' })
+
+    harness.nativeOutput = nativeOutput('rebuilt')
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(scopes.map(boot)).toEqual(['rebuilt', 'feature/rebuilt'])
   })
 
   it('keeps an older native full output on the adopted snapshot while draining before the new batch', async () => {

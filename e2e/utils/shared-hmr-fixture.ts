@@ -64,7 +64,7 @@ export function buildSharedHmrPageWxml(importTemplatePath: string, includeTempla
     '  <view class="title">HMR</view>',
     '  <template is="hmrSharedCard" data="{{ label: hmrShared.label() }}" />',
     '  <view class="summary">ok: {{__e2e.ok}}</view>',
-    '  <text class="details" selectable>{{__e2eText}}</text>',
+    '  <text class="details" user-select>{{__e2eText}}</text>',
     '</view>',
     '',
   ].join('\n')
@@ -78,7 +78,7 @@ export function buildOriginalHmrPageWxml() {
     '  <view id="hmr-count">count: {{count}}</view>',
     '  <view id="hmr-script">script: {{scriptName}}</view>',
     '  <view class="summary">ok: {{__e2e.ok}}</view>',
-    '  <text class="details" selectable>{{__e2eText}}</text>',
+    '  <text class="details" user-select>{{__e2eText}}</text>',
     '</view>',
     '',
   ].join('\n')

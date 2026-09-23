@@ -86,6 +86,7 @@ describe('core plugin watchChange', () => {
           return request
         }),
         hasModule: vi.fn(() => false),
+        removeEntryDependencies: vi.fn(),
         invalidate: vi.fn((file: string) => new Set(
           /\.(?:json(?:\.ts)?|s?css|wxml|wxss)$/.test(file)
             ? ['/project/src/pages/index/index.ts']

@@ -34,7 +34,7 @@ import { createStatefulHmrGlobalStyleAssets } from './globalStyles'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 import { createStatefulHmrInitialGraph, resolveStatefulHmrModuleRoot } from './initialModuleGraph'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
-import { selectStatefulHmrAdditionalOutput } from './outputOwnership'
+import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrPatchImportResolver, transformStatefulHmrPatchImports } from './patchModule'
 import { createStatefulHmrControlSource } from './runtimeSource'
@@ -726,7 +726,7 @@ export function mergeStatefulHmrSnapshotAssets(
   snapshotAssets: Iterable<StatefulHmrOutputFile>,
 ): void {
   for (const asset of snapshotAssets) {
-    if (asset.type !== 'asset') {
+    if (!isStatefulHmrSnapshotAsset(asset)) {
       continue
     }
     const index = output.findIndex(item => item.fileName === asset.fileName)
@@ -748,10 +748,10 @@ export function getChangedStatefulHmrSnapshotAssets(
   next: Iterable<StatefulHmrOutputFile>,
 ): StatefulHmrOutputFile[] {
   const previousAssets = new Map(
-    Array.from(previous).flatMap(item => item.type === 'asset' ? [[item.fileName, item.source] as const] : []),
+    Array.from(previous).flatMap(item => isStatefulHmrSnapshotAsset(item) ? [[item.fileName, item.source] as const] : []),
   )
   return Array.from(next).filter((item) => {
-    if (item.type !== 'asset') {
+    if (!isStatefulHmrSnapshotAsset(item)) {
       return false
     }
     const previousSource = previousAssets.get(item.fileName)
@@ -775,11 +775,19 @@ function createWatcherAdapter(
   session: StatefulHmrSession,
   buildEvents: DevBuildWatcherController,
 ): RolldownWatcher {
+  let closePromise: Promise<void> | undefined
   const watcher: RolldownWatcher = {
     ...buildEvents.watcher,
-    async close() {
-      await session.close()
-      await server.close()
+    close() {
+      closePromise ??= (async () => {
+        try {
+          await session.close()
+        }
+        finally {
+          await server.close()
+        }
+      })()
+      return closePromise
     },
     on(event, listener) {
       buildEvents.watcher.on(event, listener)

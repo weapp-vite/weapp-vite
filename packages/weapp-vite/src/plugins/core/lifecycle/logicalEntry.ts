@@ -156,7 +156,7 @@ export function createLogicalEntryResolveHook(state: CorePluginState) {
     if (!sidecarSource) {
       return null
     }
-    state.ctx.moduleGraphService.bindPluginContext(this)
+    state.ctx.moduleGraphService.bindPluginContext(state, this)
     const resolved = await this.resolve(id, importer, { skipSelf: true })
     return {
       id: resolved?.id ?? createSidecarSourceSpecifier(sidecarSource.ownerId, sidecarSource.sourceId, sidecarSource.kind),
@@ -169,7 +169,7 @@ export function createLogicalEntryLoadHook(state: CorePluginState) {
   return async function load(this: PluginContext, id: string) {
     const logicalEntry = parseLogicalEntryId(id)
     if (logicalEntry) {
-      state.ctx.moduleGraphService.bindPluginContext(this)
+      state.ctx.moduleGraphService.bindPluginContext(state, this)
       if (state.ctx.configService.isDev) {
         await state.loadEntry.call(
           this,

@@ -124,7 +124,7 @@ const _runE2E = runE2E
       </view>
     </view>
 
-    <text selectable class="details">
+    <text user-select class="details">
       {{ __e2eText }}
     </text>
   </view>
