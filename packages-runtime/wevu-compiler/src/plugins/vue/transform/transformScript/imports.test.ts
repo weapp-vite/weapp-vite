@@ -3,6 +3,28 @@ import { generate, parseJsLike, traverse } from '../../../../utils/babel'
 import { createImportVisitors } from './imports'
 
 describe('createImportVisitors', () => {
+  it('moves CSS variable helpers to Wevu without rewriting unrelated Vue imports', () => {
+    const ast = parseJsLike(`
+import { useCssVars as registerVars, unref as unwrap, ref as vueRef } from 'vue'
+registerVars(() => ({ color: unwrap(color) }))
+const count = vueRef(1)
+    `.trim())
+    const state: any = {
+      transformed: false,
+      defineComponentAliases: new Set<string>(),
+      defineComponentDecls: new Map(),
+      defaultExportPath: null,
+    }
+
+    traverse(ast, createImportVisitors(ast.program, state) as any)
+    const code = generate(ast).code
+
+    expect(code).toContain('import { unref as unwrap } from "virtual:weapp-vite/runtime/reactivity"')
+    expect(code).toContain('useCssVars as registerVars')
+    expect(code).toContain('import { ref as vueRef } from \'vue\'')
+    expect(code).toContain('unwrap(color)')
+  })
+
   it('moves selected vue imports to wevu and strips type-only imports', () => {
     const ast = parseJsLike(`
 import { defineComponent, useSlots, useAttrs, type Ref } from 'vue'

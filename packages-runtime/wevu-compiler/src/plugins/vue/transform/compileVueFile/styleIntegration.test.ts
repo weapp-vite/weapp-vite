@@ -219,7 +219,7 @@ const borderColor = 'black'
     expect(readCount).toBe(4)
   })
 
-  it('keeps stateful development CSS variable runtime imports stable when variables disappear and return', async () => {
+  it.each([false, true])('keeps stateful development CSS variable imports stable without project Vue (skipComponentTransform: %s)', async (skipComponentTransform) => {
     const filename = path.resolve('src/pages/style/stable.vue')
     const styleFilename = path.join(path.dirname(filename), 'stable.css')
     const source = `
@@ -233,6 +233,7 @@ const color = ref('red')
     let css = '.box { color: v-bind(color); }'
     const options = {
       stabilizeCssVarsRuntime: true,
+      skipComponentTransform,
       sfcSrc: {
         resolveId: async () => styleFilename,
         readFile: async () => css,
@@ -241,6 +242,7 @@ const color = ref('red')
 
     const results: VueTransformResult[] = []
     for (const content of [
+      '.box { color: black; }',
       '.box { color: v-bind(color); }',
       '.box { color: black; }',
       '.box { color: v-bind(color); }',
@@ -249,7 +251,8 @@ const color = ref('red')
       results.push(await compileVueFile(source, filename, options))
     }
 
-    const [initial, removed, restored] = results
+    const [empty, initial, removed, restored] = results
+    expect(empty.meta?.cssVars).toEqual([])
     expect(initial.meta?.cssVars).toEqual(['color'])
     expect(removed.meta?.cssVars).toEqual([])
     expect(restored.meta?.cssVars).toEqual(['color'])
@@ -257,8 +260,11 @@ const color = ref('red')
       expect(result.template).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
       expect(result.script).toContain('useCssVars')
       expect(result.script).toContain('unref')
+      expect(collectRuntimeImportContract(result.script)).toContain('virtual:weapp-vite/runtime/reactivity:unref')
+      expect(collectRuntimeImportContract(result.script).some(entry => entry.startsWith('vue:'))).toBe(false)
       expectCssVarContract(result)
     }
+    expect(collectRuntimeImportContract(empty.script)).toEqual(collectRuntimeImportContract(initial.script))
     expect(collectRuntimeImportContract(removed.script)).toEqual(collectRuntimeImportContract(initial.script))
     expect(collectRuntimeImportContract(restored.script)).toEqual(collectRuntimeImportContract(initial.script))
   })
