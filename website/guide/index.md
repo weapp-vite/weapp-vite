@@ -108,7 +108,7 @@ bun create weapp-vite
 
 脚手架当前会根据你选择的模板，生成原生小程序、Wevu、TailwindCSS、TDesign 等不同组合。新项目建议优先用脚手架，而不是手动拷模板。
 
-交互模式下，脚手架还会默认询问是否安装推荐的 AI skills，并提示将执行：
+交互模式下，脚手架还会询问是否安装推荐的 AI skills（默认跳过），并提示将执行：
 
 ```sh
 npx skills add sonofmagic/skills

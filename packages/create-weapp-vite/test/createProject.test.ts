@@ -103,12 +103,12 @@ describe('createProject', () => {
       : originalReadJSON(value as string))
     const latestSpy = vi.spyOn(npm, 'latestVersion')
     try {
-      await createProject(root, TemplateName.tailwindcss, { dependencyVersionStrategy: 'bundled' })
+      await createProject(root, TemplateName.tailwindcss)
       expect(npm.getPackageVersionsFromNpm).not.toHaveBeenCalled()
       expect(latestSpy).not.toHaveBeenCalled()
       const pkgJson = await readPackageJson(path.join(root, 'package.json'))
       expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe(TEMPLATE_CATALOG['weapp-tailwindcss'])
-      expect(logger.info).toHaveBeenCalledWith('pnpm --config.registry=https://registry.npmjs.org/ install')
+      expect(logger.info).toHaveBeenCalledWith('pnpm install')
       expect(await fs.pathExists(path.join(root, '.npmrc'))).toBe(false)
     }
     finally {
@@ -126,6 +126,50 @@ describe('createProject', () => {
       expect(await fs.pathExists(path.join(root, 'app'))).toBe(false)
     }
     finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('validates an explicit registry before creating project files', async () => {
+    const root = await createTmpRoot('invalid-registry')
+    try {
+      await expect(createProject(path.join(root, 'app'), TemplateName.default, {
+        registry: 'file:///registry',
+      })).rejects.toThrow()
+      expect(await fs.pathExists(path.join(root, 'app'))).toBe(false)
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('preserves npmrc and recommends the explicitly selected registry without querying in bundled mode', async () => {
+    const root = await createTmpRoot('registry')
+    const npmrc = '# keep the team configuration\nregistry=https://team.example.test/\n'
+    await fs.writeFile(path.join(root, '.npmrc'), npmrc)
+    try {
+      await createProject(root, TemplateName.default, { registry: 'https://registry.npmmirror.com/' })
+      expect(await fs.readFile(path.join(root, '.npmrc'), 'utf8')).toBe(npmrc)
+      expect(npm.getPackageVersionsFromNpm).not.toHaveBeenCalled()
+      expect(logger.info).toHaveBeenCalledWith('pnpm --config.registry=https://registry.npmmirror.com/ install')
+      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('bundled'))
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('keeps an environment registry override in the install hint for native pnpm', async () => {
+    const root = await createTmpRoot('environment-registry')
+    vi.stubEnv('CREATE_WEAPP_VITE_REGISTRY', undefined)
+    vi.stubEnv('npm_config_registry', 'https://environment.example.test/')
+    try {
+      await createProject(root, TemplateName.default)
+      expect(logger.info).toHaveBeenCalledWith('pnpm --config.registry=https://environment.example.test/ install')
+      expect(await fs.pathExists(path.join(root, '.npmrc'))).toBe(false)
+    }
+    finally {
+      vi.unstubAllEnvs()
       await fs.remove(root)
     }
   })
@@ -256,8 +300,8 @@ describe('createProject', () => {
       installSkills: true,
     })
 
-    expect(installSpy).toHaveBeenCalledWith(root)
-    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('npx skills add sonofmagic/skills'))
+    expect(installSpy).toHaveBeenCalledWith(root, { env: expect.objectContaining({ npm_config_registry: expect.any(String) }) })
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('npx --yes skills add sonofmagic/skills'))
     expect(logger.log).toHaveBeenCalledWith('✨ 已安装推荐的 AI skills!')
   })
 
@@ -271,8 +315,8 @@ describe('createProject', () => {
       installSkills: true,
     })
 
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('安装 AI skills 失败'))
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('npx skills add sonofmagic/skills'))
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('安装 AI skills 未完成'))
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('npx --yes skills add sonofmagic/skills'))
     expect(logger.log).toHaveBeenCalledWith('✨ 创建模板成功!')
   })
 
@@ -486,6 +530,19 @@ describe('createProject', () => {
     expect(files).not.toContain('src/features/dist-web/app.js')
   })
 
+  it('never copies a template npmrc over the installation configuration', async () => {
+    const sourceRoot = await createTmpRoot('npmrc-source')
+    const targetRoot = await createTmpRoot('npmrc-target')
+    await fs.outputFile(path.join(sourceRoot, '.npmrc'), 'registry=https://template.example.test/')
+    await fs.outputFile(path.join(sourceRoot, 'nested', '.npmrc'), 'registry=https://nested.example.test/')
+    await fs.outputFile(path.join(targetRoot, '.npmrc'), 'registry=https://team.example.test/')
+
+    await createProjectInternal.copyTemplateDir(sourceRoot, sourceRoot, targetRoot)
+
+    expect(await fs.readFile(path.join(targetRoot, '.npmrc'), 'utf8')).toBe('registry=https://team.example.test/')
+    expect(await fs.pathExists(path.join(targetRoot, 'nested', '.npmrc'))).toBe(false)
+  })
+
   it('does not skip template files when Windows verbatim paths are used', () => {
     const fakeInstalledTemplateRoot = 'C:/tmp/node_modules/create-weapp-vite/templates/default'
     const windowsVerbatimFilePath = '\\\\?\\C:\\tmp\\node_modules\\create-weapp-vite\\templates\\default\\src\\app.json'
@@ -503,26 +560,6 @@ describe('createProject', () => {
         fakeInstalledTemplateRoot,
       ),
     ).toBe(true)
-  })
-
-  it('upserts tailwindcss versions across code paths', async () => {
-    const versionSpy = vi.spyOn(npm, 'latestVersion').mockResolvedValue('^1.2.3')
-    const pkgWithoutDeps: any = {}
-    await createProjectInternal.upsertTailwindcssVersion(pkgWithoutDeps)
-    expect(pkgWithoutDeps.devDependencies).toBeUndefined()
-
-    const pkgWithFallback = { devDependencies: {} as Record<string, string> }
-    await createProjectInternal.upsertTailwindcssVersion(pkgWithFallback)
-    expect(pkgWithFallback.devDependencies['weapp-tailwindcss']).toBeUndefined()
-
-    const pkgWithExisting = { devDependencies: { 'weapp-tailwindcss': 'workspace:*' } }
-    await createProjectInternal.upsertTailwindcssVersion(pkgWithExisting)
-    expect(pkgWithExisting.devDependencies['weapp-tailwindcss']).toBe('^1.2.3')
-
-    const pkgWithResolved = { devDependencies: { 'weapp-tailwindcss': '^1.0.0' } }
-    await createProjectInternal.upsertTailwindcssVersion(pkgWithResolved)
-    expect(versionSpy).toHaveBeenCalled()
-    expect(pkgWithResolved.devDependencies['weapp-tailwindcss']).toBe('^1.2.3')
   })
 
   it('updates wevu version when present in dependencies, devDependencies or peerDependencies', async () => {

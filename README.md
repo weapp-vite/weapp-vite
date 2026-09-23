@@ -78,23 +78,15 @@ yarn create weapp-vite
 npm create weapp-vite@latest
 ```
 
-脚手架默认从官方 npm 查询模板实际使用的 `weapp-vite`、`wevu`、`@weapp-vite/dashboard`，选择内置版本 caret 范围内共同可用的最新稳定版本，保持版本一致；不会跨大版本或降级。查询最多等待 5 秒，失败时会提示并保留内置版本组合。需要复现内置模板依赖时，使用 `--dependency-versions=bundled` 跳过版本查询。
+脚手架默认使用随包发布的依赖版本（`bundled`），生成项目时不查询远程版本，AI skills 默认跳过。模板随 npm 包分发，生成过程不需要下载 GitHub 模板。创建后进入项目目录执行 `pnpm install`、`pnpm build`、`pnpm dev`。
 
-若创建出的依赖仍然偏旧，可能是镜像尚未同步 `create-weapp-vite`，或 pnpm 仍在使用缓存的脚手架。先查询官方源，再用查询结果指定精确版本：
-
-```bash
-pnpm --config.registry=https://registry.npmjs.org/ view create-weapp-vite version
-# 将下面的 2.9.0 替换为上一步查询出的版本
-pnpm --config.registry=https://registry.npmjs.org/ dlx create-weapp-vite@2.9.0
-```
-
-`2.9.0` 是已发布的恢复示例，其内置 `weapp-vite@7.2.0`；该历史版本不含上述动态版本选择功能。仅添加 `@latest` 不能保证刷新 pnpm 的执行缓存。创建完成后，可在项目目录临时使用官方源安装依赖：
+需要更新兼容版本时可显式启用联网查询，并指定当前可用的源：
 
 ```bash
-pnpm --config.registry=https://registry.npmjs.org/ install
+pnpm create weapp-vite my-app wevu --dependency-versions=compatible --registry=https://registry.npmmirror.com/
 ```
 
-这些命令不会修改全局或项目 registry 配置。完整策略、离线用法和排查步骤见[脚手架文档](https://vite.weapp.dev/packages/create-weapp-vite)。
+查询会读取 npm registry、作用域源、代理和 CA 配置，核心依赖与 Tailwind 共用最多 5 秒的网络预算；失败保留随包版本。`--registry` 只作用于脚手架启动后的查询及安装提示，首次下载脚手架仍由 pnpm 的配置决定。国内镜像可能延迟同步，网络异常、旧脚手架缓存与精确版本恢复步骤见[脚手架文档](https://vite.weapp.dev/packages/create-weapp-vite)。离线生成不等于离线安装，依赖安装仍需要可用的 registry 或完整本地缓存。
 
 ### 本地开发当前仓库
 

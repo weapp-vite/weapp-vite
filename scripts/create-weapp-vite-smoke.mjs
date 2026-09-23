@@ -2,740 +2,228 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
-import { setTimeout as delay } from 'node:timers/promises'
-import { fileURLToPath, pathToFileURL } from 'node:url'
-import {
-  cleanupChildProcessHandles,
-  createChildProcess,
-  formatCommand,
-  tail,
-  terminateProcess,
-  waitForChildClose,
-} from './project-lifecycle.mjs'
+import { pathToFileURL } from 'node:url'
+import { resolveSmokeCache } from './createWeappViteSmoke/cache.mjs'
+import { createScenario, createTarballCommand, installTarballRunner } from './createWeappViteSmoke/commands.mjs'
+import { timedRunCommand } from './createWeappViteSmoke/process.mjs'
+import { classifyFailure, createPnpmProfileConfig, createRegistryEnvironment, REGISTRY_PROFILES, reportError, resolveRegistryProfiles, resolveRegistryVersion, versionLag } from './createWeappViteSmoke/registry.mjs'
+import { runDevSmoke } from './createWeappViteSmoke/runtime.mjs'
+import { assertPreparedProject, DEFAULT_TEMPLATE_NAMES, validateCreatedProjectStructure } from './createWeappViteSmoke/templates.mjs'
 
-const CREATE_PACKAGE_NAME = 'weapp-vite'
-const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
-const DEFAULT_PACKAGE_SPEC = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
-const DEFAULT_TEMPLATE_NAMES = ['default', 'plugin', 'lib', 'wevu', 'wevu-tdesign', 'tailwindcss', 'vant', 'tdesign']
-const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? DEFAULT_TEMPLATE_NAMES)
-  .map(name => name.trim())
-  .filter(Boolean)
-const DEFAULT_SCENARIO_NAMES = ['pnpm', 'yarn', 'npm']
-const REQUESTED_SCENARIO_NAMES = (
-  process.env.CREATE_WEAPP_VITE_SCENARIOS?.split(',') ?? DEFAULT_SCENARIO_NAMES
-)
-  .map(name => name.trim())
-  .filter(Boolean)
-const NODE_MAJOR = Number.parseInt(process.versions.node.split('.')[0] ?? '', 10)
 const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_MS || 10 * 60 * 1000)
 const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS || 10 * 60 * 1000)
-const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
-const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
-const UPDATE_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_UPDATE_TIMEOUT_MS || 60 * 1000)
-const DEFAULT_PNPM_VERSION = process.env.CREATE_WEAPP_VITE_PNPM_VERSION?.trim() || '12'
-const REPORT_FILE = process.env.CREATE_WEAPP_VITE_REPORT_FILE?.trim()
-const REPORT_META = {
-  os: process.env.CREATE_WEAPP_VITE_REPORT_OS?.trim() || process.platform,
-  nodeVersion: process.env.CREATE_WEAPP_VITE_REPORT_NODE?.trim() || process.version,
-  runId: process.env.GITHUB_RUN_ID?.trim() || '',
-  runAttempt: process.env.GITHUB_RUN_ATTEMPT?.trim() || '',
-}
-const RESOLVED_CREATE_WEAPP_VITE_VERSION = process.env.CREATE_WEAPP_VITE_RESOLVED_VERSION?.trim() || ''
-const DEV_REBUILD_SUCCESS_RE = /小程序已重新构建/
-const TEMPLATE_DIR_MAP = {
-  'default': 'weapp-vite-template',
-  'plugin': 'weapp-vite-plugin-template',
-  'lib': 'weapp-vite-lib-template',
-  'wevu': 'weapp-vite-wevu-template',
-  'wevu-tdesign': 'weapp-vite-wevu-tailwindcss-tdesign-template',
-  'tailwindcss': 'weapp-vite-tailwindcss-template',
-  'tdesign': 'weapp-vite-tailwindcss-tdesign-template',
-  'vant': 'weapp-vite-tailwindcss-vant-template',
+const captureUrl = new URL('./createWeappViteSmoke/capture.mjs', import.meta.url).href
+
+function parseList(value, defaults) {
+  return [...new Set((value?.split(',') ?? defaults).map(item => item.trim()).filter(Boolean))]
 }
 
-function isCurrentModuleEntry(entryArg, moduleUrl) {
-  if (!entryArg) {
-    return false
+export async function readReceipt(receiptPath) {
+  const receipt = JSON.parse(await fs.readFile(receiptPath, 'utf8'))
+  if (typeof receipt.version !== 'string' || typeof receipt.packageRoot !== 'string') {
+    throw new TypeError('The scaffold process did not report its actual installed version')
   }
-
-  const resolvedEntryPath = path.isAbsolute(entryArg)
-    ? entryArg
-    : path.resolve(entryArg)
-
-  try {
-    return moduleUrl === pathToFileURL(resolvedEntryPath).href
-  }
-  catch {
-    return false
-  }
+  return receipt
 }
 
-function resolveEnabledScenarioNames() {
-  const names = new Set(REQUESTED_SCENARIO_NAMES)
-
-  // Yarn Classic 会在 install 阶段严格拦截 engines。
-  // 当前模板链路里的部分 ESLint 依赖要求 Node >= 22，
-  // 因此低版本 Node 的 smoke 仅验证 npm / pnpm / bun 发布链路。
-  if (NODE_MAJOR > 0 && NODE_MAJOR < 22) {
-    names.delete('yarn')
-  }
-
-  return names
-}
-
-const ENABLED_SCENARIO_NAMES = resolveEnabledScenarioNames()
-
-function isFilePresent(file) {
-  return fs.access(file).then(() => true).catch(() => false)
-}
-
-function normalizeRelativePath(value) {
-  return value.split(path.sep).join('/')
-}
-
-function normalizeTemplatePath(value) {
-  return value.split('\\').join('/')
-}
-
-function normalizeTemplateRelativePath(relativePath) {
-  if (!relativePath || relativePath === '.') {
-    return ''
-  }
-  return normalizeTemplatePath(relativePath)
-}
-
-function isGeneratedOutputSegment(segment) {
-  return segment === 'dist' || segment.startsWith('dist-')
-}
-
-function hasTemplatePathSegment(relativePath, predicate) {
-  return relativePath.split('/').some(predicate)
-}
-
-function resolveWorkspaceTemplateDir(templateName) {
-  const templateDirName = TEMPLATE_DIR_MAP[templateName] || templateName
-  return path.resolve(MODULE_DIR, '../templates', templateDirName)
-}
-
-async function resolveExpectedTemplateDir(templateName) {
-  const packagedTemplateDir = path.resolve(MODULE_DIR, '../packages/create-weapp-vite/templates', templateName)
-  if (await isFilePresent(packagedTemplateDir)) {
-    return packagedTemplateDir
-  }
-  return resolveWorkspaceTemplateDir(templateName)
-}
-
-function shouldSkipTemplateFile(filePath, templateRoot = '') {
-  const relativePath = normalizeTemplateRelativePath(
-    templateRoot
-      ? path.relative(normalizeTemplatePath(templateRoot), normalizeTemplatePath(filePath))
-      : filePath,
-  )
-
-  if (!relativePath) {
-    return false
-  }
-
-  return (
-    hasTemplatePathSegment(relativePath, segment => segment === 'node_modules')
-    || hasTemplatePathSegment(relativePath, segment => segment === '.weapp-vite')
-    || hasTemplatePathSegment(relativePath, isGeneratedOutputSegment)
-    || hasTemplatePathSegment(relativePath, segment => segment === '.turbo')
-    || relativePath === 'vite.config.ts.timestamp'
-    || relativePath.endsWith('/vite.config.ts.timestamp')
-    || relativePath === 'CHANGELOG.md'
-    || relativePath.endsWith('/CHANGELOG.md')
-    || relativePath === '.DS_Store'
-    || relativePath.endsWith('/.DS_Store')
-  )
-}
-
-function normalizeExpectedProjectPath(relativePath) {
-  if (relativePath === 'gitignore') {
-    return '.gitignore'
-  }
-  return relativePath
-}
-
-async function collectProjectFiles(rootDir) {
-  const files = []
-
-  async function walk(currentDir) {
-    const entries = await fs.readdir(currentDir, { withFileTypes: true })
-    for (const entry of entries) {
-      const fullPath = path.join(currentDir, entry.name)
-      const relativePath = normalizeRelativePath(path.relative(rootDir, fullPath))
-      if (entry.isDirectory()) {
-        await walk(fullPath)
-        continue
-      }
-      files.push(relativePath)
-    }
-  }
-
-  if (await isFilePresent(rootDir)) {
-    await walk(rootDir)
-  }
-
-  return files.sort((a, b) => a.localeCompare(b))
-}
-
-async function collectExpectedTemplateFiles(templateName) {
-  const templateDir = await resolveExpectedTemplateDir(templateName)
-  const files = []
-
-  async function walk(currentDir) {
-    const entries = await fs.readdir(currentDir, { withFileTypes: true })
-    for (const entry of entries) {
-      const fullPath = path.join(currentDir, entry.name)
-      if (shouldSkipTemplateFile(fullPath, templateDir)) {
-        continue
-      }
-      if (entry.isDirectory()) {
-        await walk(fullPath)
-        continue
-      }
-      const relativePath = normalizeRelativePath(path.relative(templateDir, fullPath))
-      files.push(normalizeExpectedProjectPath(relativePath))
-    }
-  }
-
-  await walk(templateDir)
-  files.push('AGENTS.md')
-
-  return files.sort((a, b) => a.localeCompare(b))
-}
-
-function formatMissingFiles(files, limit = 20) {
-  if (files.length === 0) {
-    return ''
-  }
-
-  const visible = files.slice(0, limit).map(file => `- ${file}`).join('\n')
-  const remaining = files.length - Math.min(files.length, limit)
-  return remaining > 0
-    ? `${visible}\n- ... and ${remaining} more`
-    : visible
-}
-
-async function validateCreatedProjectStructure(projectDir, templateName, label) {
-  const [expectedFiles, actualFiles] = await Promise.all([
-    collectExpectedTemplateFiles(templateName),
-    collectProjectFiles(projectDir),
-  ])
-  const actualFileSet = new Set(actualFiles)
-  const missingFiles = expectedFiles.filter(file => !actualFileSet.has(file))
-
-  if (missingFiles.length > 0) {
-    throw new Error(
-      [
-        `[${label}] Generated project is missing ${missingFiles.length} expected file(s) for template "${templateName}"`,
-        `expected files: ${expectedFiles.length}`,
-        `actual files: ${actualFiles.length}`,
-        'missing files:',
-        formatMissingFiles(missingFiles),
-      ].join('\n'),
-    )
-  }
-}
-
-function getCreatePackageSpecifier(packageManager, packageSpec) {
-  if (!packageSpec || packageSpec === 'latest') {
-    return packageManager === 'yarn'
-      ? CREATE_PACKAGE_NAME
-      : `${CREATE_PACKAGE_NAME}@latest`
-  }
-  return `${CREATE_PACKAGE_NAME}@${packageSpec}`
-}
-
-function createPnpmCommand(args, pnpmVersion = DEFAULT_PNPM_VERSION) {
-  return {
-    command: 'corepack',
-    args: [`pnpm@${pnpmVersion}`, ...args],
-  }
-}
-
-function createPnpmInstallCommand(pnpmVersion = DEFAULT_PNPM_VERSION) {
-  return createPnpmCommand(['install', '--ignore-scripts'], pnpmVersion)
-}
-
-const SCENARIOS = [
-  {
-    name: 'pnpm',
-    createCommand(projectName, templateName, packageSpec) {
-      return createPnpmCommand(['create', getCreatePackageSpecifier('pnpm', packageSpec), projectName, templateName])
-    },
-    installCommand() {
-      return createPnpmInstallCommand()
-    },
-    buildCommand() {
-      return createPnpmCommand(['build'])
-    },
-    devCommand() {
-      return createPnpmCommand(['dev'])
-    },
-  },
-  {
-    name: 'yarn',
-    createCommand(projectName, templateName, packageSpec) {
-      return {
-        command: 'yarn',
-        args: ['create', getCreatePackageSpecifier('yarn', packageSpec), projectName, templateName],
-      }
-    },
-    installCommand() {
-      return {
-        command: 'yarn',
-        args: ['install'],
-      }
-    },
-    buildCommand() {
-      return {
-        command: 'yarn',
-        args: ['build'],
-      }
-    },
-    devCommand() {
-      return {
-        command: 'yarn',
-        args: ['dev'],
-      }
-    },
-  },
-  {
-    name: 'npm',
-    createCommand(projectName, templateName, packageSpec) {
-      return {
-        command: 'npm',
-        args: ['create', getCreatePackageSpecifier('npm', packageSpec), projectName, templateName],
-      }
-    },
-    installCommand() {
-      return {
-        command: 'npm',
-        args: ['install'],
-      }
-    },
-    buildCommand() {
-      return {
-        command: 'npm',
-        args: ['run', 'build'],
-      }
-    },
-    devCommand() {
-      return {
-        command: 'npm',
-        args: ['run', 'dev'],
-      }
-    },
-  },
-].filter(scenario => ENABLED_SCENARIO_NAMES.has(scenario.name))
-
-async function runCommand({ cwd, command, args, timeoutMs, label }) {
-  const stdoutChunks = []
-  const stderrChunks = []
-  const printableCommand = formatCommand(command, args)
-
-  console.log(`\n[${label}] ${printableCommand}`)
-
-  return await new Promise((resolve, reject) => {
-    const child = createChildProcess(command, args, {
-      cwd,
-      env: {
-        ...process.env,
-        CI: 'true',
-      },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
-
-    const timer = setTimeout(async () => {
-      await terminateProcess(child)
-      reject(new Error(`[${label}] Timed out after ${timeoutMs}ms\n${printableCommand}`))
-    }, timeoutMs)
-
-    child.stdout.on('data', (chunk) => {
-      const text = chunk.toString()
-      stdoutChunks.push(text)
-      process.stdout.write(text)
-    })
-
-    child.stderr.on('data', (chunk) => {
-      const text = chunk.toString()
-      stderrChunks.push(text)
-      process.stderr.write(text)
-    })
-
-    child.on('error', (error) => {
-      clearTimeout(timer)
-      reject(error)
-    })
-
-    child.on('close', (code, signal) => {
-      clearTimeout(timer)
-      if (code === 0) {
-        resolve({
-          stdout: stdoutChunks.join(''),
-          stderr: stderrChunks.join(''),
-        })
-        return
-      }
-
-      const stdout = tail(stdoutChunks.join(''))
-      const stderr = tail(stderrChunks.join(''))
-      reject(new Error(
-        [
-          `[${label}] Command failed with code ${code ?? 'null'} signal ${signal ?? 'null'}`,
-          printableCommand,
-          stdout ? `stdout:\n${stdout}` : '',
-          stderr ? `stderr:\n${stderr}` : '',
-        ].filter(Boolean).join('\n\n'),
-      ))
-    })
-  })
-}
-
-async function timedRunCommand(input) {
-  const startedAt = Date.now()
-  await runCommand(input)
-  return Date.now() - startedAt
-}
-
-async function distHasRequiredOutputs(projectDir) {
-  const requiredFiles = [
-    path.join(projectDir, 'dist/app.json'),
-    path.join(projectDir, 'dist/app.js'),
-  ]
-  const checks = await Promise.all(requiredFiles.map(isFilePresent))
-  return checks.every(Boolean)
-}
-
-async function findExistingFile(paths) {
-  for (const file of paths) {
-    try {
-      await fs.access(file)
-      return file
-    }
-    catch {
-      continue
-    }
-  }
-  return null
-}
-
-async function waitForFileChange(file, previousMtimeMs, timeoutMs) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < timeoutMs) {
-    try {
-      const stat = await fs.stat(file)
-      if (stat.mtimeMs > previousMtimeMs) {
-        return Date.now() - startedAt
-      }
-    }
-    catch {
-      // noop
-    }
-    await delay(500)
-  }
-  throw new Error(`Timed out waiting for file update: ${file}`)
-}
-
-function hasSuccessfulRebuildSince(stdout, previousLength) {
-  const nextOutput = stdout.slice(previousLength)
-  return DEV_REBUILD_SUCCESS_RE.test(nextOutput)
-}
-
-async function waitForFileChangeOrSuccessfulRebuild({
-  file,
-  previousMtimeMs,
-  stdoutChunks,
-  previousStdoutLength,
-  timeoutMs,
-  pollIntervalMs = 500,
-}) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < timeoutMs) {
-    try {
-      const stat = await fs.stat(file)
-      if (stat.mtimeMs > previousMtimeMs) {
-        return Date.now() - startedAt
-      }
-    }
-    catch {
-      // noop
-    }
-
-    if (hasSuccessfulRebuildSince(stdoutChunks.join(''), previousStdoutLength)) {
-      return Date.now() - startedAt
-    }
-
-    await delay(pollIntervalMs)
-  }
-
-  throw new Error(`Timed out waiting for file update: ${file}`)
-}
-
-async function measureDevUpdate(projectDir, stdoutChunks) {
-  const sourceFile = await findExistingFile([
-    path.join(projectDir, 'src/app.json'),
-    path.join(projectDir, 'src/app.ts'),
-    path.join(projectDir, 'src/app.js'),
-    path.join(projectDir, 'src/app.vue'),
-  ])
-  const distFile = await findExistingFile([
-    path.join(projectDir, 'dist/app.json'),
-    path.join(projectDir, 'dist/app.js'),
-  ])
-
-  if (!sourceFile || !distFile) {
-    throw new Error('Missing source/dist file for dev update measurement')
-  }
-
-  const original = await fs.readFile(sourceFile, 'utf8')
-  const marker = `\n/* create-weapp-vite-smoke:${Date.now()} */\n`
-  const previousMtimeMs = (await fs.stat(distFile)).mtimeMs
-  const previousStdoutLength = stdoutChunks.join('').length
-
-  try {
-    await fs.writeFile(sourceFile, `${original}${marker}`, 'utf8')
-    return await waitForFileChangeOrSuccessfulRebuild({
-      file: distFile,
-      previousMtimeMs,
-      stdoutChunks,
-      previousStdoutLength,
-      timeoutMs: UPDATE_TIMEOUT_MS,
-    })
-  }
-  finally {
-    await fs.writeFile(sourceFile, original, 'utf8')
-  }
-}
-
-async function runDevSmoke(projectDir, label, devCommand) {
-  await fs.rm(path.join(projectDir, 'dist'), { recursive: true, force: true })
-
-  console.log(`\n[${label}] ${formatCommand(devCommand.command, devCommand.args)}`)
-
-  const stdoutChunks = []
-  const stderrChunks = []
-  const child = createChildProcess(devCommand.command, devCommand.args, {
-    cwd: projectDir,
-    env: {
-      ...process.env,
-      CI: 'true',
-    },
-    detached: process.platform !== 'win32',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-
-  child.stdout.on('data', (chunk) => {
-    const text = chunk.toString()
-    stdoutChunks.push(text)
-    process.stdout.write(text)
-  })
-
-  child.stderr.on('data', (chunk) => {
-    const text = chunk.toString()
-    stderrChunks.push(text)
-    process.stderr.write(text)
-  })
-
-  const start = Date.now()
-  try {
-    while (true) {
-      if (child.exitCode !== null) {
-        throw new Error(
-          [
-            `[${label}] dev command exited before outputs were ready with code ${child.exitCode}`,
-            tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
-            tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
-          ].filter(Boolean).join('\n\n'),
-        )
-      }
-
-      if (await distHasRequiredOutputs(projectDir)) {
-        const readyMs = Date.now() - start
-        await delay(DEV_SETTLE_MS)
-        if (child.exitCode !== null) {
-          throw new Error(
-            [
-              `[${label}] dev command exited during settle window with code ${child.exitCode}`,
-              tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
-              tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
-            ].filter(Boolean).join('\n\n'),
-          )
-        }
-        const updateMs = await measureDevUpdate(projectDir, stdoutChunks)
-        return {
-          readyMs,
-          updateMs,
-        }
-      }
-
-      if (Date.now() - start > DEV_TIMEOUT_MS) {
-        throw new Error(
-          [
-            `[${label}] Timed out waiting for dev outputs after ${DEV_TIMEOUT_MS}ms`,
-            tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
-            tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
-          ].filter(Boolean).join('\n\n'),
-        )
-      }
-
-      await delay(1000)
-    }
-  }
-  finally {
-    await terminateProcess(child)
-    const closed = await waitForChildClose(child)
-    if (!closed) {
-      console.warn(`[${label}] dev command did not fully close after termination; forcing stdio cleanup`)
-      cleanupChildProcessHandles(child)
-    }
-  }
-}
-
-async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }) {
+async function runScenario({ scenario, templateName, packageSpec, scenarioRoot, profile, env, tarballPackageRoot, context }) {
   const projectName = `${scenario.name}-${templateName}`
-  const labelPrefix = `${scenario.name}/${templateName}`
-  const createCommand = scenario.createCommand(projectName, templateName, packageSpec)
-  const installCommand = scenario.installCommand(projectName, templateName, packageSpec)
-  const buildCommand = scenario.buildCommand(projectName, templateName, packageSpec)
-  const devCommand = scenario.devCommand(projectName, templateName, packageSpec)
-
-  await fs.mkdir(scenarioRoot, { recursive: true })
-
-  const createMs = await timedRunCommand({
-    cwd: scenarioRoot,
-    command: createCommand.command,
-    args: createCommand.args,
-    timeoutMs: INSTALL_TIMEOUT_MS,
-    label: `${labelPrefix} create`,
-  })
-
+  const label = `${profile.name}/${scenario.name}/${templateName}`
   const projectDir = path.join(scenarioRoot, projectName)
-
-  await validateCreatedProjectStructure(projectDir, templateName, `${labelPrefix} create`)
-
-  const installMs = await timedRunCommand({
-    cwd: projectDir,
-    command: installCommand.command,
-    args: installCommand.args,
+  await fs.mkdir(scenarioRoot, { recursive: true })
+  const receiptPath = path.join(scenarioRoot, 'scaffold-receipt.json')
+  const createCommand = tarballPackageRoot
+    ? await createTarballCommand(tarballPackageRoot, projectName, templateName)
+    : scenario.createCommand(projectName, templateName, packageSpec)
+  const createMs = await timedRunCommand({
+    ...createCommand,
+    cwd: scenarioRoot,
     timeoutMs: INSTALL_TIMEOUT_MS,
-    label: `${labelPrefix} install`,
+    label: `${label} create`,
+    env: {
+      ...env,
+      NODE_OPTIONS: `${env.NODE_OPTIONS ?? ''} --import=${captureUrl}`.trim(),
+      CREATE_WEAPP_VITE_RECEIPT: receiptPath,
+    },
   })
-
-  const buildMs = await timedRunCommand({
+  const receipt = await readReceipt(receiptPath)
+  context.actualCreateVersion = receipt.version
+  context.stage = 'structure'
+  await validateCreatedProjectStructure(projectDir, templateName, label, receipt.packageRoot)
+  context.stage = 'install'
+  const installMs = await timedRunCommand({
+    ...scenario.installCommand(),
     cwd: projectDir,
-    command: buildCommand.command,
-    args: buildCommand.args,
-    timeoutMs: BUILD_TIMEOUT_MS,
-    label: `${labelPrefix} build`,
+    env,
+    timeoutMs: INSTALL_TIMEOUT_MS,
+    label: `${label} install`,
   })
-
-  const dev = await runDevSmoke(projectDir, `${labelPrefix} dev`, devCommand)
-
-  return {
-    scenario: scenario.name,
-    template: templateName,
-    createMs,
-    installMs,
-    buildMs,
-    devReadyMs: dev.readyMs,
-    devUpdateMs: dev.updateMs,
-    projectDir,
-  }
+  context.stage = 'prepare'
+  await assertPreparedProject(projectDir)
+  context.stage = 'build'
+  const buildMs = await timedRunCommand({
+    ...scenario.buildCommand(),
+    cwd: projectDir,
+    env,
+    timeoutMs: BUILD_TIMEOUT_MS,
+    label: `${label} build`,
+  })
+  context.stage = 'dev'
+  const dev = await runDevSmoke(projectDir, `${label} dev`, scenario.devCommand(), templateName, env)
+  return { createMs, installMs, buildMs, devReadyMs: dev.readyMs, devUpdateMs: dev.updateMs }
 }
 
-async function writeReport(report) {
-  if (!REPORT_FILE) {
-    return
-  }
-
-  const dir = path.dirname(REPORT_FILE)
-  await fs.mkdir(dir, { recursive: true })
-  await fs.writeFile(REPORT_FILE, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
+export function summarizeReport(report) {
+  const productFailures = report.failures.filter(failure => failure.kind === 'product').length
+  const networkFailures = report.failures.filter(failure => failure.kind === 'network').length
+  const registryFailures = report.failures.filter(failure => failure.kind === 'registry-unavailable').length
+  const laggingRegistries = [...new Set([
+    ...report.registries.filter(registry => registry.lag === 'behind').map(registry => registry.name),
+    ...[...(report.results ?? []), ...report.failures].filter(row => row.lag === 'behind').map(row => row.registryProfile),
+  ])]
+  const status = productFailures
+    ? 'product-failure'
+    : networkFailures
+      ? 'environment-limited'
+      : registryFailures
+        ? 'registry-incomplete'
+        : laggingRegistries.length ? 'passed-with-registry-lag' : 'passed'
+  return { status, productFailures, networkFailures, registryFailures, laggingRegistries }
 }
 
 async function main() {
+  const packageSpec = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
+  const templateNames = parseList(process.env.CREATE_WEAPP_VITE_TEMPLATES, DEFAULT_TEMPLATE_NAMES)
+  for (const name of templateNames) {
+    if (!DEFAULT_TEMPLATE_NAMES.includes(name)) {
+      throw new Error(`Unknown template: ${name}`)
+    }
+  }
+  const scenarios = parseList(process.env.CREATE_WEAPP_VITE_SCENARIOS, ['pnpm', 'yarn', 'npm']).map(name => createScenario(name))
+  const profiles = resolveRegistryProfiles(process.env.CREATE_WEAPP_VITE_REGISTRIES)
+  if (!templateNames.length || !scenarios.length || !profiles.length) {
+    throw new Error('Smoke matrix cannot be empty')
+  }
+  const tarball = process.env.CREATE_WEAPP_VITE_TARBALL ? path.resolve(process.env.CREATE_WEAPP_VITE_TARBALL) : undefined
+  if (tarball) {
+    const stat = await fs.stat(tarball)
+    if (!stat.isFile() || !tarball.endsWith('.tgz')) {
+      throw new Error('CREATE_WEAPP_VITE_TARBALL must point to a packed .tgz file')
+    }
+  }
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-smoke-'))
-
-  console.log(`Node ${process.version}`)
-  console.log(`Package spec: ${DEFAULT_PACKAGE_SPEC}`)
-  if (RESOLVED_CREATE_WEAPP_VITE_VERSION) {
-    console.log(`Resolved create-weapp-vite version: ${RESOLVED_CREATE_WEAPP_VITE_VERSION}`)
+  const { cacheRoot, cacheMode } = resolveSmokeCache(tmpRoot, process.env.CREATE_WEAPP_VITE_CACHE_ROOT)
+  const privateRoots = [cacheRoot, tmpRoot, os.homedir()]
+  const report = {
+    os: process.env.CREATE_WEAPP_VITE_REPORT_OS || process.platform,
+    nodeVersion: process.env.CREATE_WEAPP_VITE_REPORT_NODE || process.version,
+    runId: process.env.GITHUB_RUN_ID || '',
+    runAttempt: process.env.GITHUB_RUN_ATTEMPT || '',
+    packageSpec,
+    artifact: tarball ? path.basename(tarball) : 'registry',
+    cacheMode,
+    expectedOfficialVersion: null,
+    templates: templateNames,
+    scenarios: scenarios.map(scenario => scenario.name),
+    registries: [],
+    results: [],
+    failures: [],
   }
-  console.log(`Templates: ${TEMPLATE_NAMES.join(', ')}`)
-  if (REQUESTED_SCENARIO_NAMES.join(', ') !== Array.from(ENABLED_SCENARIO_NAMES).join(', ')) {
-    console.log(`Requested scenarios: ${REQUESTED_SCENARIO_NAMES.join(', ')}`)
+  const official = { name: 'npmjs', registry: REGISTRY_PROFILES.npmjs }
+  const officialEnv = createRegistryEnvironment(official, path.join(tmpRoot, 'official-cache'))
+  let officialError
+  try {
+    report.expectedOfficialVersion = await resolveRegistryVersion(official, packageSpec, tmpRoot, officialEnv)
   }
-  console.log(`Scenarios: ${SCENARIOS.map(scenario => scenario.name).join(', ')}`)
-  console.log(`Workspace: ${tmpRoot}`)
-
-  const results = []
-  const failures = []
-
-  for (const scenario of SCENARIOS) {
-    for (const templateName of TEMPLATE_NAMES) {
-      const scenarioRoot = path.join(tmpRoot, `${scenario.name}-${templateName}`)
+  catch (error) {
+    officialError = error
+    if (!profiles.some(profile => profile.name === 'npmjs')) {
+      report.failures.push({ registryProfile: 'npmjs', stage: 'registry', kind: classifyFailure(error, { registryProfile: 'npmjs', stage: 'registry' }), error: reportError(error, privateRoots) })
+    }
+  }
+  console.log(`Smoke ${packageSpec}; cache: ${cacheMode}; expected official version: ${report.expectedOfficialVersion ?? 'unavailable'}`)
+  try {
+    for (const profile of profiles) {
+      const profileRoot = path.join(tmpRoot, profile.name)
+      const profileCacheRoot = path.join(cacheRoot, profile.name)
+      await fs.mkdir(profileRoot, { recursive: true })
+      await fs.mkdir(profileCacheRoot, { recursive: true })
+      const env = createRegistryEnvironment(profile, profileCacheRoot)
+      const registryReport = { ...profile, resolvedVersion: null, actualVersions: [], expectedOfficialVersion: report.expectedOfficialVersion, lag: 'unknown' }
+      report.registries.push(registryReport)
       try {
-        const result = await runScenario({
-          scenario,
-          templateName,
-          packageSpec: DEFAULT_PACKAGE_SPEC,
-          scenarioRoot,
-        })
-        results.push(result)
-        console.log(`\n[${scenario.name}/${templateName}] OK`)
+        if (profile.name === 'npmjs') {
+          if (officialError) {
+            throw officialError
+          }
+          registryReport.resolvedVersion = report.expectedOfficialVersion
+        }
+        else {
+          registryReport.resolvedVersion = await resolveRegistryVersion(profile, packageSpec, profileRoot, env)
+        }
+        registryReport.lag = versionLag(registryReport.resolvedVersion, report.expectedOfficialVersion)
       }
       catch (error) {
-        failures.push({
-          packageManager: scenario.name,
-          templateName,
-          error,
-        })
-        console.error(`\n[${scenario.name}/${templateName}] FAILED`)
-        console.error(error instanceof Error ? error.message : String(error))
+        report.failures.push({ registryProfile: profile.name, stage: 'registry', kind: classifyFailure(error, { registryProfile: profile.name, stage: 'registry' }), error: reportError(error, privateRoots) })
+        if (!tarball) {
+          continue
+        }
+      }
+      let tarballPackageRoot
+      if (tarball) {
+        try {
+          tarballPackageRoot = await installTarballRunner(tarball, path.join(profileRoot, 'runner'), env, INSTALL_TIMEOUT_MS)
+        }
+        catch (error) {
+          report.failures.push({ registryProfile: profile.name, stage: 'install', kind: classifyFailure(error, { registryProfile: profile.name, stage: 'install' }), error: reportError(error, privateRoots) })
+          continue
+        }
+      }
+      for (const { name } of scenarios) {
+        const scenario = createScenario(name, createPnpmProfileConfig(profile, profileCacheRoot))
+        for (const templateName of templateNames) {
+          const context = { stage: 'create', actualCreateVersion: null }
+          const metadata = { registryProfile: profile.name, registry: profile.registry, scenario: scenario.name, template: templateName, resolvedRegistryVersion: registryReport.resolvedVersion, expectedOfficialVersion: report.expectedOfficialVersion }
+          try {
+            const result = await runScenario({ scenario, templateName, packageSpec, profile, env, tarballPackageRoot, context, scenarioRoot: path.join(profileRoot, `${scenario.name}-${templateName}`) })
+            report.results.push({ ...metadata, ...result, actualCreateVersion: context.actualCreateVersion, lag: versionLag(context.actualCreateVersion, report.expectedOfficialVersion, Boolean(tarball)) })
+            console.log(`[${profile.name}/${scenario.name}/${templateName}] OK (${context.actualCreateVersion})`)
+          }
+          catch (error) {
+            const receiptFile = path.join(profileRoot, `${scenario.name}-${templateName}`, 'scaffold-receipt.json')
+            const receipt = await readReceipt(receiptFile).catch(() => null)
+            context.actualCreateVersion = receipt?.version ?? context.actualCreateVersion
+            report.failures.push({ ...metadata, ...context, lag: versionLag(context.actualCreateVersion, report.expectedOfficialVersion, Boolean(tarball)), kind: classifyFailure(error, { registryProfile: profile.name, stage: context.stage }), error: reportError(error, privateRoots) })
+            console.error(`[${profile.name}/${scenario.name}/${templateName}] ${context.stage} failed`)
+          }
+          if (context.actualCreateVersion && !registryReport.actualVersions.includes(context.actualCreateVersion)) {
+            registryReport.actualVersions.push(context.actualCreateVersion)
+          }
+        }
       }
     }
   }
-
-  await writeReport({
-    ...REPORT_META,
-    packageSpec: DEFAULT_PACKAGE_SPEC,
-    resolvedCreateWeappViteVersion: RESOLVED_CREATE_WEAPP_VITE_VERSION,
-    templates: TEMPLATE_NAMES,
-    scenarios: SCENARIOS.map(scenario => scenario.name),
-    results,
-    failures: failures.map(failure => ({
-      scenario: failure.packageManager,
-      template: failure.templateName,
-      error: failure.error instanceof Error ? failure.error.message : String(failure.error),
-    })),
-  })
-
-  if (failures.length > 0) {
-    console.error(`\n${failures.length} scenario(s) failed.`)
-    for (const failure of failures) {
-      console.error(`- ${failure.packageManager}/${failure.templateName}`)
+  finally {
+    report.summary = summarizeReport(report)
+    const reportFile = process.env.CREATE_WEAPP_VITE_REPORT_FILE
+    if (reportFile) {
+      await fs.mkdir(path.dirname(reportFile), { recursive: true })
+      await fs.writeFile(reportFile, `${JSON.stringify(report, null, 2)}\n`)
     }
-    process.exitCode = 1
-    return
+    await fs.rm(tmpRoot, { recursive: true, force: true })
   }
-
-  console.log('\nAll create-weapp-vite smoke scenarios passed.')
+  console.log(JSON.stringify(report.summary, null, 2))
+  for (const failure of report.failures) {
+    console.error(`[${failure.registryProfile}/${failure.stage}/${failure.kind}] ${failure.error}`)
+  }
+  process.exitCode = report.summary.productFailures ? 1 : report.summary.networkFailures ? 2 : report.summary.registryFailures ? 3 : 0
 }
 
-if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
   await main()
 }
 
-export {
-  cleanupChildProcessHandles,
-  createPnpmCommand,
-  createPnpmInstallCommand,
-  hasSuccessfulRebuildSince,
-  shouldSkipTemplateFile,
-  waitForChildClose,
-  waitForFileChange,
-  waitForFileChangeOrSuccessfulRebuild,
-}
+export { createPnpmCommand, createPnpmInstallCommand } from './createWeappViteSmoke/commands.mjs'
+export { changeAppTitle, waitForAppTitle } from './createWeappViteSmoke/runtime.mjs'
+export { shouldSkipTemplateFile } from './createWeappViteSmoke/templates.mjs'
+export { cleanupChildProcessHandles, waitForChildClose } from './project-lifecycle.mjs'

@@ -115,7 +115,7 @@ async function collectExpectedTemplateFiles(templateName: TemplateName) {
   }
 
   await walk(preferredTemplateDir)
-  files.push('AGENTS.md')
+  files.push('AGENTS.md', 'pnpm-workspace.yaml')
 
   return files.sort((a, b) => a.localeCompare(b))
 }

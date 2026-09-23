@@ -1,6 +1,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { fs } from '@weapp-core/shared/fs'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
@@ -23,19 +24,27 @@ interface PackageManifest {
   optionalDependencies?: Record<string, string>
 }
 
+interface PackResult {
+  filename: string
+  files: Array<{ path: string }>
+}
+
 async function readPackageManifest(filePath: string): Promise<PackageManifest> {
   return await fs.readJSON(filePath) as PackageManifest
 }
 
 function parsePackJson(stdout: string) {
-  const jsonText = stdout.match(/\[\s*\{[\s\S]*\}\s*\]\s*$/)?.[0]
+  // prepack 构建日志位于 JSON 之前；兼容 pnpm 的对象与数组结果格式。
+  const jsonText = stdout.match(/(?:^|\r?\n)(\{[\s\S]*\}|\[\s*\{[\s\S]*\}\s*\])\s*$/)?.[1]
   if (!jsonText) {
-    throw new Error('npm pack --json 未返回任何输出')
+    throw new Error('pnpm pack --json 未返回有效输出')
   }
-  return JSON.parse(jsonText) as Array<{
-    filename: string
-    files?: Array<{ path: string }>
-  }>
+  const parsed = JSON.parse(jsonText) as PackResult | PackResult[]
+  const result = Array.isArray(parsed) ? parsed[0] : parsed
+  if (!result?.filename || !Array.isArray(result.files)) {
+    throw new Error('pnpm pack 未返回 tarball 文件名或文件清单')
+  }
+  return result
 }
 
 async function assertBundledCliVersions(packageRoot: string, packedPackageRoot: string, tempRoot: string) {
@@ -49,20 +58,23 @@ async function assertBundledCliVersions(packageRoot: string, packedPackageRoot: 
   const projectsRoot = path.join(tempRoot, 'projects')
   await fs.ensureDir(projectsRoot)
   await fs.symlink(path.join(packageRoot, 'node_modules'), path.join(packedPackageRoot, 'node_modules'), 'junction')
+  const networkGuard = path.join(tempRoot, 'deny-network.mjs')
+  await fs.writeFile(networkGuard, `import net from 'node:net'
+net.Socket.prototype.connect = () => { throw new Error('Default scaffolding must not access the network') }
+`)
 
   // 安装目录中不存在源码仓库的模板回退路径，必须使用 tarball 自带模板。
   expect(await fs.pathExists(path.resolve(packedPackageRoot, '../../templates'))).toBe(false)
-  for (const templateName of [TemplateName.default, TemplateName.wevu, TemplateName.react]) {
+  for (const templateName of Object.values(TemplateName)) {
     const projectName = `packed-${templateName}`
     await execa(process.execPath, [
       path.join(packedPackageRoot, 'bin/create-weapp-vite.js'),
       projectName,
       templateName,
-      '--dependency-versions=bundled',
       '--no-install-skills',
     ], {
       cwd: projectsRoot,
-      env: { CI: 'true' },
+      env: { CI: 'true', NODE_OPTIONS: `--import=${pathToFileURL(networkGuard).href}` },
       timeout: 15_000,
     })
 
@@ -84,13 +96,16 @@ async function assertBundledCliVersions(packageRoot: string, packedPackageRoot: 
     }
 
     const dependencies = { ...generated.dependencies, ...generated.devDependencies }
-    expect(dependencies.wevu).toBe(dependencies['weapp-vite'])
+    if (dependencies.wevu) {
+      expect(dependencies.wevu).toBe(dependencies['weapp-vite'])
+    }
     if (dependencies['@weapp-vite/dashboard']) {
       expect(dependencies['@weapp-vite/dashboard']).toBe(dependencies['weapp-vite'])
     }
     expect(await fs.pathExists(path.join(projectRoot, 'src'))).toBe(true)
     expect(await fs.pathExists(path.join(projectRoot, '.gitignore'))).toBe(true)
     expect(await fs.pathExists(path.join(projectRoot, 'AGENTS.md'))).toBe(true)
+    expect(await fs.pathExists(path.join(projectRoot, 'pnpm-workspace.yaml'))).toBe(true)
   }
 }
 
@@ -101,15 +116,14 @@ describe('create-weapp-vite release pack', () => {
     const generatedTemplateFile = path.join(workspaceTemplateRoot, 'dist-plugin', 'pack-sentinel.js')
     const generatedTemplateDirExisted = await fs.pathExists(path.dirname(generatedTemplateFile))
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-pack-'))
-    const cacheDir = path.join(tempRoot, 'cache')
     const packedModulesRoot = path.join(tempRoot, 'installed', 'node_modules')
 
     try {
       await fs.outputFile(generatedTemplateFile, 'generated')
 
       const { stdout } = await execa(
-        'npm',
-        ['pack', '--json', '.', '--ignore-scripts=false', '--dry-run=false', '--pack-destination', tempRoot, '--cache', cacheDir],
+        'pnpm',
+        ['pack', '--json', '--config.ignore-scripts=false', '--pack-destination', tempRoot],
         {
           cwd: packageRoot,
           env: {
@@ -118,11 +132,8 @@ describe('create-weapp-vite release pack', () => {
           },
         },
       )
-      const [packResult] = parsePackJson(stdout)
-      if (!packResult?.filename) {
-        throw new Error('npm pack 未返回 tarball 文件名')
-      }
-      const packedFiles = new Set((packResult?.files ?? []).map(file => file.path))
+      const packResult = parsePackJson(stdout)
+      const packedFiles = new Set(packResult.files.map(file => file.path))
 
       expect(packedFiles.has('bin/create-weapp-vite.js')).toBe(true)
       expect(packedFiles.has('dist/cli.js')).toBe(true)
@@ -150,9 +161,16 @@ describe('create-weapp-vite release pack', () => {
       expect([...packedFiles].some(file => file.startsWith('templates/plugin/dist-'))).toBe(false)
 
       await fs.ensureDir(packedModulesRoot)
-      await execa('tar', ['-xzf', path.join(tempRoot, packResult.filename), '-C', packedModulesRoot])
+      await execa('tar', ['-xzf', path.resolve(tempRoot, packResult.filename), '-C', packedModulesRoot])
       const packedPackageRoot = path.join(packedModulesRoot, 'create-weapp-vite')
       await fs.move(path.join(packedModulesRoot, 'package'), packedPackageRoot)
+      const packedManifest = await readPackageManifest(path.join(packedPackageRoot, 'package.json'))
+      expect(Object.keys(packedManifest.dependencies ?? {})).not.toHaveLength(0)
+      for (const field of dependencyFields) {
+        for (const [name, spec] of Object.entries(packedManifest[field] ?? {})) {
+          expect(spec, `packed package.json: ${field}.${name}`).not.toMatch(/^(?:workspace|catalog):/)
+        }
+      }
       await assertBundledCliVersions(packageRoot, packedPackageRoot, tempRoot)
     }
     finally {
