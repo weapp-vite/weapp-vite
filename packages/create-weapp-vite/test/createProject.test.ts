@@ -1,7 +1,7 @@
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { __internal as createProjectInternal } from '@/createProject'
 import { TemplateName } from '@/enums'
 import { TEMPLATE_CATALOG, TEMPLATE_NAMED_CATALOG } from '@/generated/catalog'
@@ -78,6 +78,10 @@ async function getTemplatePackagePath(templateName: TemplateName) {
 }
 
 describe('createProject', () => {
+  beforeEach(() => {
+    vi.spyOn(npm, 'getPackageVersionsFromNpm').mockResolvedValue([])
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -85,6 +89,46 @@ describe('createProject', () => {
   async function createTmpRoot(suffix: string) {
     return await fs.mkdtemp(path.join(os.tmpdir(), `weapp-create-${suffix}-`))
   }
+
+  it('creates a bundled tailwind project without querying any dependency versions', async () => {
+    const root = await createTmpRoot('bundled')
+    const templatePackagePath = await getTemplatePackagePath(TemplateName.tailwindcss)
+    const templatePackage = await readPackageJson(templatePackagePath)
+    const originalReadJSON = fs.readJSON.bind(fs)
+    vi.spyOn(fs, 'readJSON').mockImplementation(async value => value === templatePackagePath
+      ? {
+          ...templatePackage,
+          devDependencies: { ...templatePackage.devDependencies, 'weapp-tailwindcss': 'catalog:' },
+        }
+      : originalReadJSON(value as string))
+    const latestSpy = vi.spyOn(npm, 'latestVersion')
+    try {
+      await createProject(root, TemplateName.tailwindcss, { dependencyVersionStrategy: 'bundled' })
+      expect(npm.getPackageVersionsFromNpm).not.toHaveBeenCalled()
+      expect(latestSpy).not.toHaveBeenCalled()
+      const pkgJson = await readPackageJson(path.join(root, 'package.json'))
+      expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe(TEMPLATE_CATALOG['weapp-tailwindcss'])
+      expect(logger.info).toHaveBeenCalledWith('pnpm --config.registry=https://registry.npmjs.org/ install')
+      expect(await fs.pathExists(path.join(root, '.npmrc'))).toBe(false)
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('rejects invalid version strategies before creating project files', async () => {
+    const root = await createTmpRoot('invalid-strategy')
+    try {
+      await expect(createProject(path.join(root, 'app'), TemplateName.default, {
+        // @ts-expect-error 检查 JavaScript 调用方传入无效策略的边界。
+        dependencyVersionStrategy: 'latest',
+      })).rejects.toThrow('依赖版本策略')
+      expect(await fs.pathExists(path.join(root, 'app'))).toBe(false)
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
 
   it('creates default template with resolved versions and gitignore rename', async () => {
     const root = await createTmpRoot('default')

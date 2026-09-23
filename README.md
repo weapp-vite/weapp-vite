@@ -78,6 +78,24 @@ yarn create weapp-vite
 npm create weapp-vite@latest
 ```
 
+脚手架默认从官方 npm 查询模板实际使用的 `weapp-vite`、`wevu`、`@weapp-vite/dashboard`，选择内置版本 caret 范围内共同可用的最新稳定版本，保持版本一致；不会跨大版本或降级。查询最多等待 5 秒，失败时会提示并保留内置版本组合。需要复现内置模板依赖时，使用 `--dependency-versions=bundled` 跳过版本查询。
+
+若创建出的依赖仍然偏旧，可能是镜像尚未同步 `create-weapp-vite`，或 pnpm 仍在使用缓存的脚手架。先查询官方源，再用查询结果指定精确版本：
+
+```bash
+pnpm --config.registry=https://registry.npmjs.org/ view create-weapp-vite version
+# 将下面的 2.9.0 替换为上一步查询出的版本
+pnpm --config.registry=https://registry.npmjs.org/ dlx create-weapp-vite@2.9.0
+```
+
+`2.9.0` 是已发布的恢复示例，其内置 `weapp-vite@7.2.0`；该历史版本不含上述动态版本选择功能。仅添加 `@latest` 不能保证刷新 pnpm 的执行缓存。创建完成后，可在项目目录临时使用官方源安装依赖：
+
+```bash
+pnpm --config.registry=https://registry.npmjs.org/ install
+```
+
+这些命令不会修改全局或项目 registry 配置。完整策略、离线用法和排查步骤见[脚手架文档](https://vite.weapp.dev/packages/create-weapp-vite)。
+
 ### 本地开发当前仓库
 
 ```bash

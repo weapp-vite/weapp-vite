@@ -85,6 +85,7 @@
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "pathe": "catalog:",
-    "pkg-types": "catalog:"
+    "pkg-types": "catalog:",
+    "semver": "^7.8.5"
   }
 }
