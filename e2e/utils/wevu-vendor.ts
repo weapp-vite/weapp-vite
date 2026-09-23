@@ -7,6 +7,7 @@ export interface WevuVendorChunk {
 }
 
 export type WevuVendorPredicate = (code: string, filePath: string) => boolean
+export { findMissingWevuVendorExports } from './wevu-vendor-exports'
 
 async function readVendorChunks(distRoot: string): Promise<WevuVendorChunk[]> {
   const vendorRoot = path.join(distRoot, 'weapp-vendors')
