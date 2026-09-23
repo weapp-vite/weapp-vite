@@ -1,6 +1,6 @@
 import type { RolldownOutput } from 'rolldown'
 import type { StatefulHmrDevEngineUpdate } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
-import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { dev } from 'rolldown/experimental'
@@ -21,7 +21,7 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
   const compiled = await compileVueFile(source, sourceId, { isPage: false, skipComponentTransform: true })
   let output: RolldownOutput | undefined
   let buildError: Error | undefined
-  let nextUpdate = Promise.withResolvers<StatefulHmrDevEngineUpdate>()
+  let nextUpdate: PromiseWithResolvers<StatefulHmrDevEngineUpdate> | undefined
   const engine = await dev({
     cwd: root,
     input: ownerId,
@@ -67,15 +67,16 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
     onOutput(result) {
       if (result instanceof Error) {
         buildError = result
+        nextUpdate?.reject(result)
       }
       else { output = result }
     },
     onHmrUpdates(result) {
       if (result instanceof Error) {
-        nextUpdate.reject(result)
+        nextUpdate?.reject(result)
       }
       else if (result.updates[0]) {
-        nextUpdate.resolve(result.updates[0].update as StatefulHmrDevEngineUpdate)
+        nextUpdate?.resolve(result.updates[0].update as StatefulHmrDevEngineUpdate)
       }
     },
   })
@@ -101,14 +102,14 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
       .replace('count.value += 2', 'count.value += 3')
       .replace('step:2', 'step:3')
     for (const updated of [patchedSource, repatchedSource, source]) {
-      nextUpdate = Promise.withResolvers<StatefulHmrDevEngineUpdate>()
-      let timer: ReturnType<typeof setTimeout> | undefined
+      // 与注册 owner 回归保持一致：原子替换源码，避免轮询读取截断后的半成品。
+      const pendingSource = `${sourceId}.pending`
+      await writeFile(pendingSource, updated)
+      const update = Promise.withResolvers<StatefulHmrDevEngineUpdate>()
+      nextUpdate = update
+      const timer = setTimeout(() => update.reject(new Error('Vue companion native HMR event timed out')), 10_000)
       try {
-        const timeout = new Promise<never>((_resolve, reject) => {
-          timer = setTimeout(() => reject(new Error('Vue companion native HMR event timed out')), 10_000)
-        })
-        await writeFile(sourceId, updated)
-        const patch = await Promise.race([nextUpdate.promise, timeout])
+        const [patch] = await Promise.all([update.promise, rename(pendingSource, sourceId)])
         if (patch.type !== 'Patch') {
           throw new Error(`Expected Vue component patch, received ${patch.type}`)
         }
@@ -120,6 +121,7 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
       }
       finally {
         clearTimeout(timer)
+        nextUpdate = undefined
       }
     }
   }

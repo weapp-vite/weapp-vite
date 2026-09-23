@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'pathe'
 import { build } from 'vite'
 import { afterEach, describe, expect, it } from 'vitest'
+import { createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
@@ -77,6 +78,58 @@ describe('stateful snapshot component metadata', () => {
     const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
     expect(outputs.some(item => item.type === 'chunk')).toBe(false)
     expect(snapshot.getGlobalStyleRoutes()).toEqual(['pages/index/index'])
+  })
+
+  it('publishes current asset findings after Glass configuration and source template fixes', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const buildSnapshot = () => buildStatefulHmrSnapshot(options, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-assets-only',
+        enforce: 'post',
+        generateBundle(_options, bundle) {
+          for (const [file, item] of Object.entries(bundle)) {
+            if (item.type === 'chunk') {
+              delete bundle[file]
+            }
+          }
+        },
+      }],
+    }))
+    const consumer = createCompilerContextInstance()
+    const consumeFacts = async () => {
+      const snapshot = await buildSnapshot()
+      const currentFacts = consumer.runtimeState.glassEasel.analysisByOwner
+      currentFacts.clear()
+      for (const [owner, fact] of snapshot.getGlassEaselAnalysisByOwner()) {
+        currentFacts.set(owner, fact)
+      }
+      return createGlassEaselAnalyzeResult(consumer)
+    }
+
+    await fs.writeFile(path.join(root, 'src/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+      glassEaselWebview: true,
+    }))
+    await fs.writeFile(
+      path.join(root, 'src/pages/index/index.wxml'),
+      '<view wx-if="{{ready}}"><wevu-leaf /></view>',
+    )
+    expect((await consumeFacts()).diagnostics.map(item => item.code).sort()).toEqual(['GE001', 'GE002'])
+
+    await fs.writeFile(path.join(root, 'src/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+      componentFramework: 'glass-easel',
+      glassEaselWebview: true,
+    }))
+    expect((await consumeFacts()).diagnostics.map(item => item.code)).toEqual(['GE002'])
+    await fs.writeFile(path.join(root, 'src/pages/index/index.wxml'), '<view wx:if="{{ready}}"><wevu-leaf /></view>')
+    expect(await consumeFacts()).toMatchObject({
+      detected: true,
+      diagnostics: [],
+      summary: { errors: 0, warnings: 0 },
+    })
   })
 
   it('leaves support files with their active owner across successful and failed snapshots', async () => {

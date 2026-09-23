@@ -118,6 +118,14 @@ function createState(overrides: Record<string, any> = {}) {
         handleFileChange: vi.fn(async () => false),
       },
       runtimeState: {
+        glassEasel: {
+          analysisByOwner: new Map(),
+          warnedDiagnostics: new Set(),
+          silent: false,
+        },
+        wxml: {
+          tokenMap: new Map(),
+        },
         build: {
           hmr: {
             profile: {},
@@ -1349,6 +1357,14 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
         ['pages/logs/hmr-added', { type: 'page' }],
       ]),
     })
+    state.ctx.runtimeState.wxml.tokenMap.set(entryId, { code: '', deps: [] })
+    state.ctx.runtimeState.glassEasel.analysisByOwner.set('output:main:pages/logs/hmr-added.js', {
+      kind: 'output',
+      scope: 'main',
+      detected: false,
+      diagnostics: new Map(),
+      sourceIds: new Set([entryId]),
+    })
     const hook = createWatchChangeHook(state)
 
     await hook(entryId, { event: 'delete' })
@@ -1356,6 +1372,8 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(entryId, 'direct')
     expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(state.ctx, entryId, 'delete')
+    expect(state.ctx.runtimeState.wxml.tokenMap.has(entryId)).toBe(false)
+    expect(state.ctx.runtimeState.glassEasel.analysisByOwner.size).toBe(0)
   })
 
   it('syncs auto-routes state before rebuilding a truly deleted route file', async () => {

@@ -1,10 +1,10 @@
 export type CompilerDiagnosticCode
   = | 'WV1002'
     | 'WV1003'
+    | 'WV2003'
     | 'WV2002'
     | 'WV2001'
     | 'WV1001'
-
 export type CompilerDiagnosticSeverity = 'error' | 'warning'
 export type CompilerDiagnosticSource = 'expression' | 'jsx' | 'script' | 'sfc' | 'style' | 'template'
 
@@ -35,4 +35,26 @@ export interface CompilerDiagnostic {
   filename: string
   source: CompilerDiagnosticSource
   loc?: SourceSpan
+}
+
+/**
+ * 携带结构化编译诊断的致命错误。
+ */
+export class CompilerDiagnosticError extends Error implements CompilerDiagnostic {
+  readonly code: CompilerDiagnosticCode
+  readonly severity: CompilerDiagnosticSeverity
+  readonly filename: string
+  readonly source: CompilerDiagnosticSource
+  readonly loc?: SourceSpan
+  declare readonly cause?: unknown
+
+  constructor(diagnostic: CompilerDiagnostic, options?: { cause?: unknown }) {
+    super(diagnostic.message, options)
+    this.name = 'CompilerDiagnosticError'
+    this.code = diagnostic.code
+    this.severity = diagnostic.severity
+    this.filename = diagnostic.filename
+    this.source = diagnostic.source
+    this.loc = diagnostic.loc
+  }
 }

@@ -291,11 +291,54 @@ export function createAnalyzeController(options: {
   }
 
   const bindWatcher = (buildResult: unknown) => {
-    let updating = false
+    // 首个 END 与显式初始化共用一次分析；忙时只保留一次读取最新状态的后续刷新。
+    let initialUpdatePromise: Promise<void> | undefined
+    let watchUpdatePending = false
+    let watchUpdatePromise: Promise<void> | undefined
+
+    const runInitialUpdate = () => {
+      initialUpdatePromise ??= triggerAnalyzeUpdate('initial')
+      return initialUpdatePromise
+    }
+    const runWatchUpdates = () => {
+      watchUpdatePending = true
+      if (!watchUpdatePromise) {
+        const running = (async () => {
+          await runInitialUpdate()
+          while (watchUpdatePending) {
+            watchUpdatePending = false
+            await triggerAnalyzeUpdate('watch')
+          }
+        })()
+        watchUpdatePromise = running
+        const releaseRunningUpdate = () => {
+          if (watchUpdatePromise !== running) {
+            return
+          }
+          watchUpdatePromise = undefined
+          if (watchUpdatePending) {
+            void runWatchUpdates()
+          }
+        }
+        void running.then(releaseRunningUpdate, releaseRunningUpdate)
+      }
+      return watchUpdatePromise
+    }
+
     if (analyzeHandle && buildResult && typeof (buildResult as RolldownWatcher).on === 'function') {
       const watcher = buildResult as RolldownWatcher
       watcher.on('event', (event) => {
-        if (event.code !== 'END' || updating) {
+        if (event.code === 'ERROR') {
+          emitDashboardEvents(analyzeHandle, [{
+            kind: 'diagnostic',
+            level: 'error',
+            title: 'mini hmr rebuild failed',
+            detail: event.error instanceof Error ? event.error.message : String(event.error),
+            tags: ['hmr', 'rebuild'],
+          }])
+          return
+        }
+        if (event.code !== 'END') {
           return
         }
         const recentProfiles = ctx.runtimeState.build.hmr.recentProfiles
@@ -303,20 +346,14 @@ export function createAnalyzeController(options: {
         if (hmrEvent) {
           emitDashboardEvents(analyzeHandle, [hmrEvent])
         }
-        updating = true
-        triggerAnalyzeUpdate('watch').finally(() => {
-          updating = false
-        })
+        if (!initialUpdatePromise) {
+          return runInitialUpdate()
+        }
+        return runWatchUpdates()
       })
     }
     return {
-      async runInitialUpdate() {
-        if (analyzeHandle) {
-          updating = true
-          await triggerAnalyzeUpdate('initial')
-          updating = false
-        }
-      },
+      runInitialUpdate,
     }
   }
 

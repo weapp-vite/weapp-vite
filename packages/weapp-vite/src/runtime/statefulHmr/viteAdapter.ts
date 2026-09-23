@@ -2,6 +2,7 @@
 
 import type { dev, DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
+import type { GlassEaselNativeScriptUpdate } from '../../analyze/glassEasel/nativeScripts'
 import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import {
@@ -80,11 +81,38 @@ interface BundledDevInternal {
   storeOutputFiles: (output: StatefulHmrOutputFile[], source?: StatefulHmrOutputSource) => void
 }
 
+type TrackedOutputSource = Extract<StatefulHmrOutputSource, 'additional' | 'full'>
+
+interface TrackedChunkModules {
+  moduleIds: readonly string[]
+  source: TrackedOutputSource
+}
+
+function collectPatchModuleIds(code: string): Set<string> {
+  const moduleIds = new Set<string>()
+  const moduleIdPattern = /(?:registerFactory|create(?:Esm|Cjs)Initializer)\(\s*("(?:[^"\\]|\\.)*")/g
+  for (const match of code.matchAll(moduleIdPattern)) {
+    try {
+      const moduleId: unknown = JSON.parse(match[1]!)
+      if (typeof moduleId === 'string') {
+        moduleIds.add(moduleId)
+      }
+    }
+    catch {
+      // Rolldown 生成的模块 ID 使用 JSON 字符串；不完整 payload 交由原有 patch 路径处理。
+    }
+  }
+  return moduleIds
+}
+
 export class StatefulHmrViteAdapter {
   private bundledDev?: BundledDevInternal
   private initialOutputError?: Error
   private initialRuntimeValidated = false
   private readonly publication = new StatefulHmrOutputPublication()
+  private readonly chunkModulesByFile = new Map<string, TrackedChunkModules>()
+  private readonly outputFilesByModuleId = new Map<string, Set<string>>()
+  private readonly sourceOnlyModuleIds = new Set<string>()
 
   constructor(
     private readonly config: ResolvedConfig,
@@ -146,15 +174,129 @@ export class StatefulHmrViteAdapter {
   }
 
   async registerPatchModules(code: string): Promise<void> {
-    const moduleIds = new Set<string>()
-    for (const match of code.matchAll(/create(?:Esm|Cjs)Initializer\("([^"]+)"/g)) {
-      moduleIds.add(match[1]!)
-    }
-    await this.registerModules([...moduleIds])
+    await this.registerModules([...collectPatchModuleIds(code)])
   }
 
   async markPayloadDelivered(filename: string): Promise<void> {
     await this.markPayloadsDelivered([filename])
+  }
+
+  async collectGlassEaselScriptUpdates(
+    patchCode: string,
+    changedIds: readonly string[],
+  ): Promise<GlassEaselNativeScriptUpdate[]> {
+    const engine = this.bundledDev?._devEngine
+    if (!engine) {
+      throw new Error('Vite DevEngine 未初始化，无法读取 GlassEasel 模块事实。')
+    }
+    await engine.ensureCurrentBuildFinish()
+    const bundleState = await engine.getBundleState()
+    if (bundleState.lastBuildErrored) {
+      return []
+    }
+
+    const root = resolveStatefulHmrModuleRoot(this.config.root, this.config.build?.rolldownOptions.cwd)
+    const rawModuleIdsByStableId = new Map<string, string[]>()
+    for (const rawId of engine.moduleGraph.getModuleIds()) {
+      const stableId = toStableModuleId(rawId, root)
+      const rawIds = rawModuleIdsByStableId.get(stableId)
+      if (rawIds) {
+        rawIds.push(rawId)
+      }
+      else {
+        rawModuleIdsByStableId.set(stableId, [rawId])
+      }
+    }
+
+    const coveredStableIds = new Set<string>()
+    for (const id of changedIds) {
+      coveredStableIds.add(toStableModuleId(id, root))
+    }
+    for (const id of collectPatchModuleIds(patchCode)) {
+      coveredStableIds.add(toStableModuleId(id, root))
+    }
+
+    const affectedFiles = new Set<string>()
+    for (const stableId of coveredStableIds) {
+      for (const file of this.outputFilesByModuleId.get(stableId) ?? []) {
+        affectedFiles.add(file)
+      }
+    }
+
+    const updates: GlassEaselNativeScriptUpdate[] = []
+    for (const file of [...affectedFiles].sort()) {
+      const tracked = this.chunkModulesByFile.get(file)
+      if (!tracked) {
+        continue
+      }
+      const modules: Array<{ id: string, code: string }> = []
+      const includedRawIds = new Set<string>()
+      let hasModuleWithoutCode = false
+      for (const previousRawId of tracked.moduleIds) {
+        const stableId = toStableModuleId(previousRawId, root)
+        for (const rawId of rawModuleIdsByStableId.get(stableId) ?? []) {
+          if (includedRawIds.has(rawId)) {
+            continue
+          }
+          const moduleInfo = engine.moduleGraph.getModuleInfo(rawId)
+          if (!moduleInfo) {
+            continue
+          }
+          const code = moduleInfo.code
+          if (typeof code !== 'string') {
+            // 当前模块仍存在但没有可靠代码；保留整个 chunk 的上一份事实，不能按空模块清除。
+            hasModuleWithoutCode = true
+            break
+          }
+          includedRawIds.add(rawId)
+          modules.push({ id: rawId, code })
+        }
+        if (hasModuleWithoutCode) {
+          break
+        }
+      }
+      if (!hasModuleWithoutCode) {
+        modules.sort((left, right) => left.id.localeCompare(right.id))
+        updates.push({ file, modules })
+        for (const module of modules) {
+          this.sourceOnlyModuleIds.delete(module.id)
+        }
+      }
+    }
+
+    const emittedSourceIds = new Set<string>()
+    for (const stableId of [...coveredStableIds].sort()) {
+      if (this.outputFilesByModuleId.has(stableId)) {
+        continue
+      }
+      for (const rawId of rawModuleIdsByStableId.get(stableId) ?? []) {
+        if (emittedSourceIds.has(rawId)) {
+          continue
+        }
+        const moduleInfo = engine.moduleGraph.getModuleInfo(rawId)
+        if (!moduleInfo) {
+          continue
+        }
+        const code = moduleInfo.code
+        if (typeof code !== 'string') {
+          continue
+        }
+        emittedSourceIds.add(rawId)
+        this.sourceOnlyModuleIds.add(rawId)
+        updates.push({
+          file: rawId,
+          modules: [{ id: rawId, code }],
+          sourceOnly: true,
+        })
+      }
+    }
+    for (const rawId of this.sourceOnlyModuleIds) {
+      if (!rawModuleIdsByStableId.get(toStableModuleId(rawId, root))?.includes(rawId)) {
+        updates.push({ file: rawId, modules: [], sourceOnly: true })
+        this.sourceOnlyModuleIds.delete(rawId)
+      }
+    }
+    return updates
   }
 
   private async registerModules(moduleIds: string[]): Promise<void> {
@@ -171,6 +313,46 @@ export class StatefulHmrViteAdapter {
     }
     for (const filename of filenames) {
       await engine.notifyPayloadDelivered(filename)
+    }
+  }
+
+  private rememberChunkModules(
+    output: StatefulHmrOutputFile[],
+    source: StatefulHmrOutputSource,
+  ): void {
+    if (source === 'partial') {
+      return
+    }
+    if (source === 'full') {
+      for (const [file, tracked] of this.chunkModulesByFile) {
+        if (tracked.source === 'full') {
+          this.chunkModulesByFile.delete(file)
+        }
+      }
+    }
+    for (const item of output) {
+      if (item.type !== 'chunk') {
+        continue
+      }
+      const file = item.fileName.replaceAll('\\', '/').replace(/^\.\/+/, '')
+      this.chunkModulesByFile.set(file, {
+        moduleIds: Object.keys(item.modules ?? {}),
+        source,
+      })
+    }
+
+    this.outputFilesByModuleId.clear()
+    const root = resolveStatefulHmrModuleRoot(this.config.root, this.config.build?.rolldownOptions.cwd)
+    for (const [file, tracked] of this.chunkModulesByFile) {
+      for (const rawId of tracked.moduleIds) {
+        const stableId = toStableModuleId(rawId, root)
+        let files = this.outputFilesByModuleId.get(stableId)
+        if (!files) {
+          files = new Set<string>()
+          this.outputFilesByModuleId.set(stableId, files)
+        }
+        files.add(file)
+      }
     }
   }
 
@@ -229,6 +411,7 @@ export class StatefulHmrViteAdapter {
           this.initialRuntimeValidated = true
         }
         original(output)
+        this.rememberChunkModules(output, source)
         void this.publication.publish(source, () => this.callbacks.onOutput(output, source)).catch((error) => {
           this.initialOutputError = error instanceof Error ? error : new Error(String(error))
           this.callbacks.onError(this.initialOutputError.message)

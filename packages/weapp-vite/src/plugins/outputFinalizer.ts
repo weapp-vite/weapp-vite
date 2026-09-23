@@ -413,7 +413,17 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         normalizeGraphOnlyAssets(ctx, outputBundle, assets.stage)
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
         if (ctx.configService.platform === 'weapp') {
-          analyzeGlassEaselBundle(ctx, outputBundle)
+          // 在 HMR 裁剪前消费本轮事实；full 也只替换当前构建实例的精确 scope。
+          analyzeGlassEaselBundle(ctx, outputBundle, {
+            mode: preserveCompleteBundle
+              || ctx.runtimeState.build.hmr.didEmitAllEntries
+              || ctx.runtimeState.build.hmr.profile.event === undefined
+              ? 'full'
+              : 'partial',
+            outputScope: subPackageMeta
+              ? `independent:${subPackageMeta.subPackage.root}`
+              : 'main',
+          })
         }
         normalizePreprocessorStyleAssetEntries(
           outputBundle,

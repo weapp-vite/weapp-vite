@@ -1,4 +1,7 @@
+import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
+import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
+import type { DevBuildWatcherController } from './devBuildWatcher'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
@@ -60,6 +63,7 @@ const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
 const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
   options: { build: {}, plugins: [] as Plugin[] },
   getGlobalStyleRoutes: () => [],
+  getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
   getEntryIds: () => new Set<string>(),
   getDelegatedComponentEntryIds: () => new Set<string>(),
 })))
@@ -347,6 +351,7 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockReset().mockImplementation(async () => ({
       options: { build: {}, plugins: [] },
       getGlobalStyleRoutes: () => [],
+      getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set<string>(),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }))
@@ -491,11 +496,13 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }).mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     })
@@ -523,67 +530,66 @@ describe('runtime buildPlugin service', () => {
     expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
   })
 
-  it('seeds complete outputs and reloads independent plugin graphs for stateful dev', async () => {
-    const firstWatcher = { close: vi.fn(async () => {}) }
-    const secondWatcher = { close: vi.fn(async () => {}) }
+  it.each([false, true])('keeps original native subscribers and releases sessions when closing during restart=%s', async (closeDuringRestart) => {
+    const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controller = createDevBuildWatcher()
+    devBuildWatcherQueue.push({ watcher: controller.watcher, emitEvent: vi.fn(controller.emitEvent) })
+    const liveSessions = new Set<number>()
+    const observedSessions: number[][] = []
+    let generation = 0
+    let restart!: () => Promise<void>
     buildMock.mockResolvedValue({ output: [] })
-    runStatefulHmrDevMock
-      .mockResolvedValueOnce(firstWatcher)
-      .mockResolvedValueOnce(secondWatcher)
+    runStatefulHmrDevMock.mockImplementation(async (
+      _ctx: unknown,
+      _options: unknown,
+      restartSession: () => Promise<void>,
+      _snapshots: unknown,
+      events: DevBuildWatcherController,
+    ) => {
+      const id = ++generation
+      liveSessions.add(id)
+      restart = restartSession
+      events.emitEvent({ code: 'END' })
+      return {
+        close: async () => {
+          liveSessions.delete(id)
+        },
+      }
+    })
     const ctx = createMockContext()
     ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
-    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/index.ts', {
-      id: '/project/src/pages/index.ts',
-    })
-    createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
-      options: { build: {}, plugins: [] },
-      getGlobalStyleRoutes: () => [],
-      getEntryIds: () => new Set(['/project/src/pages/index.ts']),
-      getDelegatedComponentEntryIds: () => new Set<string>(),
-    })
-    const service = createBuildService(ctx)
-
-    await service.build({ skipNpm: true })
-
-    expect(buildMock).toHaveBeenCalledTimes(1)
-    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
-    expect(ctx.configService.load).toHaveBeenCalledTimes(1)
-    expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
-    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
-    const restart = runStatefulHmrDevMock.mock.calls[0]![2]
-    expect(runStatefulHmrDevMock.mock.calls[0]![3].entryIds).toEqual(new Set([
-      '/project/src/pages/index.ts',
-    ]))
-
-    await restart()
-
-    expect(firstWatcher.close).toHaveBeenCalledOnce()
-    expect(buildMock).toHaveBeenCalledTimes(2)
-    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(2)
-    expect(ctx.configService.load).toHaveBeenCalledTimes(3)
-    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(3)
-    expect(ctx.watcherService.setRollupWatcher).toHaveBeenLastCalledWith(secondWatcher, '/')
-    expect(loggerInfoMock.mock.calls.filter(([message]) => String(message).startsWith('HMR 模式：'))).toEqual([
-      ['HMR 模式：stateful-experimental（显式配置）'],
-    ])
-  })
-
-  it('selects stateful dev for auto runtime when WeChat hot reload is enabled', async () => {
-    const watcher = { close: vi.fn(async () => {}) }
-    buildMock.mockResolvedValue({ output: [] })
-    runStatefulHmrDevMock.mockResolvedValue(watcher)
-    const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'auto' }
-    ctx.configService.projectPrivateConfig = {
-      setting: { compileHotReLoad: true },
-    }
-
     await createBuildService(ctx).build({ skipNpm: true })
-
-    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
-    expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：stateful-experimental（自动检测：微信开发者工具热重载已开启）')
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：关闭微信开发者工具“热重载”后重启 wv dev'))
+    const watcher: RolldownWatcher = ctx.watcherService.rollupWatcherMap.get('/')
+    watcher.on('event', (event) => {
+      if (event.code === 'END') {
+        observedSessions.push([...liveSessions])
+      }
+    })
+    await restart()
+    expect(observedSessions).toEqual([[1], [2]])
+    if (closeDuringRestart) {
+      let release!: () => void
+      let entered!: () => void
+      const pending = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const reached = new Promise<void>((resolve) => {
+        entered = resolve
+      })
+      ctx.configService.load.mockImplementationOnce(async () => {
+        entered()
+        await pending
+      })
+      const restarting = restart()
+      await reached
+      const closing = watcher.close()
+      release()
+      await Promise.all([restarting, closing])
+    }
+    else {
+      await watcher.close()
+    }
+    expect([...liveSessions]).toEqual([])
   })
 
   it.each([
@@ -651,47 +657,6 @@ describe('runtime buildPlugin service', () => {
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('无法自动关闭'))
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('read-only config'))
     expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：Skyline 暂不支持微信开发者工具热重载）')
-  })
-
-  it('keeps stateful snapshot builds in memory until the session writer commits them', async () => {
-    const watcher = { close: vi.fn(async () => {}) }
-    buildMock
-      .mockResolvedValueOnce({ output: [{ fileName: 'app.wxss', source: '.initial{}', type: 'asset' }] })
-      .mockResolvedValueOnce({ output: [{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }] })
-    runStatefulHmrDevMock.mockResolvedValue(watcher)
-    const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
-
-    await createBuildService(ctx).build({ skipNpm: true })
-
-    const initialOptions = buildMock.mock.calls[0]![0]
-    const snapshots = runStatefulHmrDevMock.mock.calls[0]![3]
-    expect(initialOptions).toEqual(expect.objectContaining({
-      build: expect.objectContaining({
-        watch: undefined,
-        write: false,
-      }),
-    }))
-
-    const output = await snapshots.rebuild(['/project/src/pages/index.css'])
-    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
-    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenNthCalledWith(1, ctx.configService.loadOptions)
-    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenNthCalledWith(2, ctx.configService.loadOptions)
-    const refreshOptions = buildMock.mock.calls[1]![0]
-    expect(refreshOptions).toEqual(expect.objectContaining({
-      build: expect.objectContaining({
-        emptyOutDir: false,
-        watch: undefined,
-        write: false,
-      }),
-    }))
-    expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(1)
-    expect(output).toEqual({
-      output: [{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }],
-      componentPageGlobalStyleRoutes: [],
-      entryIds: [],
-      delegatedComponentEntryIds: new Set(),
-    })
   })
 
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {

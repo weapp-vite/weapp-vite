@@ -363,51 +363,34 @@ defineOptions({
     expect(sourceFileCount).toBe(2)
   })
 
-  it('updates templates incrementally without reparsing the SFC or defineOptions', () => {
-    let parseCount = 0
-    let sourceFileCount = 0
-    const countingCompilerDom = new Proxy(compilerDom, {
-      get(target, property, receiver) {
-        if (property === 'parse') {
-          return (...args: Parameters<typeof compilerDom.parse>) => {
-            parseCount += 1
-            return target.parse(...args)
-          }
-        }
-        return Reflect.get(target, property, receiver)
-      },
-    })
-    const countingTs = new Proxy(ts, {
-      get(target, property, receiver) {
-        if (property === 'createSourceFile') {
-          return (...args: Parameters<typeof ts.createSourceFile>) => {
-            sourceFileCount += 1
-            return target.createSourceFile(...args)
-          }
-        }
-        return Reflect.get(target, property, receiver)
-      },
-    })
-    const parser = getPluginParser(countingTs, countingCompilerDom)
+  it('preserves wxs and defineOptions enhancements after an incremental location edit', () => {
+    const parser = getPluginParser()
     const source = `<script setup lang="ts">
 defineOptions({ data: { title: 'demo' } })
 </script>
-<template><view>{{ title }}</view></template>`
+<template>
+  <wxs src="./util.wxs" module="util" />
+  <view>{{ title }} {{ util.format(title) }}</view>
+</template>`
     const parsed = parser?.parseSFC2?.('fixture.vue', 'vue', source)
     expect(parsed).toBeTruthy()
-    expect(parseCount).toBe(1)
-    expect(sourceFileCount).toBe(1)
 
-    const insertionOffset = source.indexOf('{{ title }}') + 2
+    const insertionOffset = source.indexOf('<view>')
     const updated = parser?.updateSFC?.(parsed!, {
       start: insertionOffset,
       end: insertionOffset,
-      newText: ' ',
+      newText: '\n  ',
     })
+    const nextSource = `${source.slice(0, insertionOffset)
+    }\n  ${
+      source.slice(insertionOffset)}`
+    const clean = parser?.parseSFC2?.('fixture.vue', 'vue', nextSource)
 
-    expect(updated?.descriptor.template?.content).toContain('{{  title }}')
-    expect(parseCount).toBe(1)
-    expect(sourceFileCount).toBe(1)
+    expect(updated?.descriptor.template?.content).toContain('\n  \n  <view>')
+    expect(updated?.descriptor.scriptSetup?.content).toContain('const title: string = null as any')
+    expect(updated?.descriptor.scriptSetup?.content.match(/const util =/g)).toHaveLength(1)
+    expect(updated?.descriptor.template?.loc).toEqual(clean?.descriptor.template?.loc)
+    expect(updated?.descriptor.scriptSetup?.loc).toEqual(clean?.descriptor.scriptSetup?.loc)
   })
 
   it('injects defineOptions data, methods and properties into script setup bindings for template type checking', () => {

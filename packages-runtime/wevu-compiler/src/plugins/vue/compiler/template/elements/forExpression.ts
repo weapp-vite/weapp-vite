@@ -4,6 +4,7 @@ import { parseJsLike } from '../../../../../utils/babel'
 import { generateExpression } from '../expression/parse'
 
 const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+const WHITESPACE_RE = /\s/
 export const FOR_ITEM_ALIAS_PLACEHOLDER = '__wv_for_item__'
 function isIdentifier(value: string) {
   return IDENTIFIER_RE.test(value)
@@ -72,7 +73,7 @@ function splitTopLevelByComma(input: string): string[] {
   }
 
   out.push(input.slice(start).trim())
-  return out.filter(Boolean)
+  return out
 }
 function splitForExpression(exp: string): { source: string, list: string } | null {
   let parenDepth = 0
@@ -80,6 +81,7 @@ function splitForExpression(exp: string): { source: string, list: string } | nul
   let braceDepth = 0
   let quote: '\'' | '"' | '`' | '' = ''
   let escaped = false
+  let emptyAliasSplit: { source: string, list: string } | null = null
 
   for (let i = 0; i < exp.length; i += 1) {
     const ch = exp[i]
@@ -133,15 +135,28 @@ function splitForExpression(exp: string): { source: string, list: string } | nul
       continue
     }
 
-    if (exp.startsWith(' in ', i) || exp.startsWith(' of ', i)) {
-      return {
+    const keyword = exp.startsWith('in', i)
+      ? 'in'
+      : exp.startsWith('of', i)
+        ? 'of'
+        : undefined
+    if (
+      keyword
+      && (i === 0 || WHITESPACE_RE.test(exp[i - 1]!))
+      && (i + keyword.length === exp.length || WHITESPACE_RE.test(exp[i + keyword.length]!))
+    ) {
+      const split = {
         source: exp.slice(0, i).trim(),
-        list: exp.slice(i + 4).trim(),
+        list: exp.slice(i + keyword.length).trim(),
       }
+      if (split.source) {
+        return split
+      }
+      emptyAliasSplit = split
     }
   }
 
-  return null
+  return emptyAliasSplit
 }
 function stripOuterParentheses(value: string): string {
   const trimmed = value.trim()
@@ -273,14 +288,17 @@ function parseItemAliases(pattern: string): PatternAliasResult {
 export function parseForExpression(exp: string): ForParseResult {
   const split = splitForExpression(exp.trim())
   if (!split) {
-    return {}
+    return { error: 'v-for 表达式必须使用 in 或 of 分隔别名与列表。' }
+  }
+  if (!split.source) {
+    return { error: 'v-for 表达式缺少循环项别名。' }
+  }
+  if (!split.list) {
+    return { error: 'v-for 表达式缺少列表。' }
   }
 
   const source = stripOuterParentheses(split.source)
-  const segments = splitTopLevelByComma(source)
-  if (!segments.length) {
-    return { listExp: split.list }
-  }
+  const segments = splitTopLevelByComma(source).filter(Boolean)
   if (segments.length > 3) {
     return {
       listExp: split.list,
@@ -294,7 +312,7 @@ export function parseForExpression(exp: string): ForParseResult {
 
   const rawItem = segments[0]?.trim()
   if (rawItem) {
-    if (isIdentifier(rawItem)) {
+    if (isIdentifier(rawItem) && t.isValidIdentifier(rawItem)) {
       result.item = rawItem
     }
     else {
@@ -315,7 +333,7 @@ export function parseForExpression(exp: string): ForParseResult {
 
   if (segments.length === 2) {
     const rawIndex = segments[1]?.trim()
-    if (rawIndex && isIdentifier(rawIndex)) {
+    if (rawIndex && isIdentifier(rawIndex) && t.isValidIdentifier(rawIndex)) {
       result.index = rawIndex
     }
     else {
@@ -325,7 +343,7 @@ export function parseForExpression(exp: string): ForParseResult {
   else if (segments.length === 3) {
     const rawKey = segments[1]?.trim()
     const rawIndex = segments[2]?.trim()
-    if (rawKey && isIdentifier(rawKey) && rawIndex && isIdentifier(rawIndex)) {
+    if (rawKey && isIdentifier(rawKey) && t.isValidIdentifier(rawKey) && rawIndex && isIdentifier(rawIndex) && t.isValidIdentifier(rawIndex)) {
       result.key = rawKey
       result.index = rawIndex
     }

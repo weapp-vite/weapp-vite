@@ -1,15 +1,24 @@
 import type { OutputBundle } from 'rolldown'
 import type { CompilerContext } from '../../context'
 import type {
-  GlassEaselAnalyzeResult,
+  AnalyzeGlassEaselBundleOptions,
   GlassEaselDiagnostic,
 } from './types'
 import { Buffer } from 'node:buffer'
-import logger from '../../logger'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { scanWxml } from '../../wxml'
+import {
+  collectKnownOutputSources,
+  collectOutputSourceIds,
+  isGlassEaselDetected,
+  normalizeOutputFileName,
+  offsetToLocation,
+  outputOwner,
+  reconcileFullOutputScope,
+  replaceAnalysis,
+  replaceSourceAnalysis,
+} from './state'
 
-const MIGRATION_GUIDE = 'https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/glass-easel/migration.html'
 const TEMPLATE_FILE_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -24,38 +33,6 @@ function getOutputSource(output: OutputBundle[string]) {
     return output.source
   }
   return Buffer.from(output.source).toString('utf8')
-}
-
-function offsetToLocation(source: string, offset: number) {
-  const before = source.slice(0, offset)
-  const lines = before.split(/\r?\n/)
-  return {
-    line: lines.length,
-    column: (lines[lines.length - 1]?.length ?? 0) + 1,
-  }
-}
-
-function diagnosticKey(diagnostic: GlassEaselDiagnostic) {
-  return [
-    diagnostic.code,
-    diagnostic.file,
-    diagnostic.line ?? 0,
-    diagnostic.column ?? 0,
-    diagnostic.message,
-  ].join(':')
-}
-
-function registerDiagnostic(ctx: CompilerContext, diagnostic: GlassEaselDiagnostic) {
-  const key = diagnosticKey(diagnostic)
-  ctx.runtimeState.glassEasel.diagnostics.set(key, diagnostic)
-  if (
-    ctx.runtimeState.glassEasel.silent
-    || ctx.runtimeState.glassEasel.warnedDiagnostics.has(key)
-  ) {
-    return
-  }
-  ctx.runtimeState.glassEasel.warnedDiagnostics.add(key)
-  logger.warn(`[${diagnostic.code}] ${diagnostic.file}${diagnostic.line ? `:${diagnostic.line}:${diagnostic.column}` : ''} ${diagnostic.message}`)
 }
 
 function analyzeJsonConfig(file: string, source: string) {
@@ -117,7 +94,7 @@ function isWxCreateSelectorQueryCall(node: any) {
     && callee.object.name === 'wx'
 }
 
-function analyzeScript(file: string, source: string): GlassEaselDiagnostic[] {
+export function analyzeScript(file: string, source: string): GlassEaselDiagnostic[] {
   const diagnostics: GlassEaselDiagnostic[] = []
   try {
     const ast = parseJsLike(source)
@@ -162,49 +139,63 @@ function analyzeScript(file: string, source: string): GlassEaselDiagnostic[] {
   return diagnostics
 }
 
-export function analyzeGlassEaselBundle(ctx: CompilerContext, bundle: OutputBundle) {
+export function analyzeGlassEaselBundle(
+  ctx: CompilerContext,
+  bundle: OutputBundle,
+  options: AnalyzeGlassEaselBundleOptions = {
+    mode: 'partial',
+    outputScope: 'default',
+  },
+) {
   const entries = Object.entries(bundle)
-  const localDiagnostics: GlassEaselDiagnostic[] = []
-  let detected = ctx.runtimeState.glassEasel.detected
+  const currentOutputOwners = new Set<string>()
+  let sourcesByOutput = isGlassEaselDetected(ctx)
+    ? collectKnownOutputSources(ctx)
+    : undefined
 
   for (const [bundleFileName, output] of entries) {
-    const file = output.fileName || bundleFileName
+    const file = normalizeOutputFileName(output.fileName || bundleFileName)
+    const owner = outputOwner(options.outputScope, file)
+    currentOutputOwners.add(owner)
     if (!file.endsWith('.json')) {
       continue
     }
+
     const result = analyzeJsonConfig(file, getOutputSource(output))
-    detected ||= result.detected
-    localDiagnostics.push(...result.diagnostics)
+    if (!sourcesByOutput && result.detected) {
+      sourcesByOutput = collectKnownOutputSources(ctx)
+    }
+    replaceAnalysis(ctx, owner, {
+      kind: 'output',
+      scope: options.outputScope,
+      detected: result.detected,
+      diagnostics: result.diagnostics,
+      sourceIds: collectOutputSourceIds(output, file, sourcesByOutput),
+    })
   }
 
-  ctx.runtimeState.glassEasel.detected = detected
-  if (!detected) {
+  if (options.mode === 'full') {
+    reconcileFullOutputScope(ctx, options.outputScope, currentOutputOwners)
+  }
+
+  if (!isGlassEaselDetected(ctx)) {
     return
   }
-
-  for (const [sourceFile, token] of ctx.runtimeState.wxml.tokenMap) {
-    for (const finding of token.glassEaselFindings ?? []) {
-      if (finding.code !== 'GE002') {
-        continue
-      }
-      localDiagnostics.push({
-        code: finding.code,
-        severity: finding.severity,
-        message: finding.message,
-        file: ctx.configService.relativeAbsoluteSrcRoot(sourceFile),
-        ...offsetToLocation(token.code, finding.start),
-        normalized: finding.normalized,
-      })
-    }
-  }
+  sourcesByOutput ??= collectKnownOutputSources(ctx)
+  replaceSourceAnalysis(ctx)
 
   for (const [bundleFileName, output] of entries) {
-    const file = output.fileName || bundleFileName
+    const file = normalizeOutputFileName(output.fileName || bundleFileName)
+    if (file.endsWith('.json')) {
+      continue
+    }
+
+    const diagnostics: GlassEaselDiagnostic[] = []
     const source = getOutputSource(output)
     if (TEMPLATE_FILE_RE.test(file)) {
       const token = scanWxml(source, { platform: ctx.configService.platform })
       for (const finding of token.glassEaselFindings ?? []) {
-        localDiagnostics.push({
+        diagnostics.push({
           code: finding.code,
           severity: finding.severity,
           message: finding.message,
@@ -215,33 +206,27 @@ export function analyzeGlassEaselBundle(ctx: CompilerContext, bundle: OutputBund
       }
     }
     else if (output.type === 'chunk') {
-      localDiagnostics.push(...analyzeScript(file, source))
+      diagnostics.push(...analyzeScript(file, source))
     }
-  }
+    else {
+      ctx.runtimeState.glassEasel.analysisByOwner.delete(outputOwner(options.outputScope, file))
+      continue
+    }
 
-  for (const diagnostic of localDiagnostics) {
-    registerDiagnostic(ctx, diagnostic)
+    replaceAnalysis(ctx, outputOwner(options.outputScope, file), {
+      kind: 'output',
+      scope: options.outputScope,
+      detected: false,
+      diagnostics,
+      sourceIds: collectOutputSourceIds(output, file, sourcesByOutput),
+    })
   }
 }
 
-export function createGlassEaselAnalyzeResult(ctx: CompilerContext): GlassEaselAnalyzeResult {
-  const diagnostics = Array.from(ctx.runtimeState.glassEasel.diagnostics.values())
-    .sort((left, right) => left.file.localeCompare(right.file)
-      || (left.line ?? 0) - (right.line ?? 0)
-      || left.code.localeCompare(right.code))
-  return {
-    detected: ctx.runtimeState.glassEasel.detected,
-    minimumBaseLibrary: '3.8.12',
-    migrationGuide: MIGRATION_GUIDE,
-    diagnostics,
-    summary: {
-      errors: diagnostics.filter(item => item.severity === 'error').length,
-      warnings: diagnostics.filter(item => item.severity === 'warning').length,
-    },
-  }
-}
+export { createGlassEaselAnalyzeResult, invalidateGlassEaselSource } from './state'
 
 export type {
+  AnalyzeGlassEaselBundleOptions,
   GlassEaselAnalyzeResult,
   GlassEaselDiagnostic,
   GlassEaselDiagnosticCode,

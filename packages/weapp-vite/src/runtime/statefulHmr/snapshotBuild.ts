@@ -35,6 +35,7 @@ export async function buildStatefulHmrSnapshot(
     const output = await build(options)
     return {
       output,
+      getGlassEaselAnalysisByOwner: () => ctx.runtimeState.glassEasel.analysisByOwner,
       getEntryIds: () => ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
       getDelegatedComponentEntryIds: () => Array.from(ctx.runtimeState.build.hmr.resolvedEntryMap.keys()).filter(id =>
         /\.(?:vue|jsx|tsx)$/.test(id)

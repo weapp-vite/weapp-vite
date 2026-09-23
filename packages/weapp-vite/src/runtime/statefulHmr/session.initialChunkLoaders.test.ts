@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { runInNewContext } from 'node:vm'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
 import { createScanService } from '../scanPlugin/service'
 import { runStatefulHmrDev } from './session'
@@ -126,10 +127,10 @@ describe('stateful session initial chunk package boundaries', () => {
       chunk('independent/vendor.js', 'independent-shared'),
     ]
     const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), {
-      initial: { output: [], componentPageGlobalStyleRoutes: [] },
+      initial: { output: [], componentPageGlobalStyleRoutes: [], glassEaselAnalysisByOwner: new Map() },
       entryIds: [],
-      rebuild: vi.fn(async () => ({ output: [], componentPageGlobalStyleRoutes: [] })),
-    })
+      rebuild: vi.fn(async () => ({ output: [], componentPageGlobalStyleRoutes: [], glassEaselAnalysisByOwner: new Map() })),
+    }, createDevBuildWatcher())
     try {
       const files = harness.writeOutput.mock.calls.flatMap(([, output]) => output)
       const runtime = files.find(file => file.type === 'chunk' && file.fileName === 'rolldown-runtime.js')

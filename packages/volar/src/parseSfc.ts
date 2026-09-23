@@ -16,6 +16,46 @@ export interface SfcTextChange {
   newText: string
 }
 
+type SfcPosition = SfcBlock['loc']['start']
+// 与 @vue/compiler-dom 保持一致：offset/column 按 UTF-16 code unit 计数，只有 LF 推进行号。
+
+function advancePosition(
+  position: SfcPosition,
+  source: string,
+  start = 0,
+  end = source.length,
+): SfcPosition {
+  let lines = 0
+  let lastNewline = -1
+  for (let index = start; index < end; index += 1) {
+    if (source.charCodeAt(index) === 10) {
+      lines += 1
+      lastNewline = index
+    }
+  }
+  return {
+    offset: position.offset + end - start,
+    line: position.line + lines,
+    column: lastNewline < 0
+      ? position.column + end - start
+      : end - lastNewline,
+  }
+}
+
+function applyTextChangeToPosition(
+  position: SfcPosition,
+  oldChangeEnd: SfcPosition,
+  newChangeEnd: SfcPosition,
+  lengthDiff: number,
+) {
+  const oldLine = position.line
+  position.offset += lengthDiff
+  position.line += newChangeEnd.line - oldChangeEnd.line
+  if (oldLine === oldChangeEnd.line) {
+    position.column += newChangeEnd.column - oldChangeEnd.column
+  }
+}
+
 function parseAttr(
   property: CompilerAttributeNode,
   node: CompilerElementNode,
@@ -49,9 +89,15 @@ function repairIncompleteTemplate(
     const endTagOffset = template.content.lastIndexOf('<')
     const endTagText = template.content.slice(endTagOffset).trimEnd()
     if ('</template>'.startsWith(endTagText)) {
-      template.loc.end.offset = template.loc.start.offset + endTagOffset
-      template.content = template.content.slice(0, endTagOffset)
-      template.loc.source = template.content
+      const repairedContent = template.content.slice(0, endTagOffset)
+      template.loc.end = advancePosition(
+        template.loc.start,
+        template.content,
+        0,
+        endTagOffset,
+      )
+      template.content = repairedContent
+      template.loc.source = repairedContent
     }
   }
 }
@@ -72,11 +118,7 @@ function createBlock(
   else {
     const offset = node.loc.source.indexOf('</')
     if (offset > -1) {
-      start = {
-        line: start.line,
-        column: start.column + offset,
-        offset: start.offset + offset,
-      }
+      start = advancePosition(start, node.loc.source, 0, offset)
     }
     end = { ...start }
   }
@@ -210,6 +252,22 @@ export function updateSfc(
   const oldContent = hitBlock.content
   const relativeStart = change.start - hitBlock.loc.start.offset
   const relativeEnd = change.end - hitBlock.loc.start.offset
+  const changeStartPosition = advancePosition(
+    hitBlock.loc.start,
+    oldContent,
+    0,
+    relativeStart,
+  )
+  const oldChangeEndPosition = advancePosition(
+    changeStartPosition,
+    oldContent,
+    relativeStart,
+    relativeEnd,
+  )
+  const newChangeEndPosition = advancePosition(
+    changeStartPosition,
+    change.newText,
+  )
   const newContent = oldContent.slice(0, relativeStart)
     + change.newText
     + oldContent.slice(relativeEnd)
@@ -223,10 +281,20 @@ export function updateSfc(
   const lengthDiff = change.newText.length - (change.end - change.start)
   for (const block of blocks) {
     if (block.loc.start.offset > change.end) {
-      block.loc.start.offset += lengthDiff
+      applyTextChangeToPosition(
+        block.loc.start,
+        oldChangeEndPosition,
+        newChangeEndPosition,
+        lengthDiff,
+      )
     }
     if (block.loc.end.offset >= change.end) {
-      block.loc.end.offset += lengthDiff
+      applyTextChangeToPosition(
+        block.loc.end,
+        oldChangeEndPosition,
+        newChangeEndPosition,
+        lengthDiff,
+      )
     }
   }
   const source = sfc.descriptor.source

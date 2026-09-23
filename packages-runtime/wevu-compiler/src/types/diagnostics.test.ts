@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { compileJsxFile } from '../plugins/jsx/compileJsxFile'
 import { compileVueTemplateToWxml } from '../plugins/vue/compiler/template'
 import { compileVueFile } from '../plugins/vue/transform/compileVueFile'
+import { CompilerDiagnosticError } from './diagnostics'
 
 const filename = '/project/src/pages/diagnostics/index.vue'
 
@@ -38,6 +39,65 @@ describe('compiler diagnostics', () => {
       source: 'template',
       loc: expect.any(Object),
     }))
+  })
+
+  it('rejects invalid loops from the public SFC compiler with the remapped diagnostic', async () => {
+    const expression = 'item in'
+    const source = `<template><view v-for="${expression}">{{ item }}</view></template>`
+
+    try {
+      await compileVueFile(source, filename)
+      throw new Error('Expected compileVueFile to reject an invalid v-for expression')
+    }
+    catch (error) {
+      expect(error).toBeInstanceOf(CompilerDiagnosticError)
+      if (!(error instanceof CompilerDiagnosticError)) {
+        throw error
+      }
+      expect(error).toMatchObject({
+        code: 'WV2001',
+        severity: 'error',
+        filename,
+        source: 'template',
+      })
+      expect(source.slice(error.loc?.start.offset, error.loc?.end.offset)).toBe(expression)
+    }
+  })
+
+  it('preserves SFC parser metadata and original CRLF source positions', async () => {
+    const sourceLines = [
+      '<template>',
+      '  <view>{{ import.meta.env.MODE }}</view>',
+      '  <view>中文😀{{ foo( }}</view>',
+      '</template>',
+    ]
+    const source = sourceLines.join('\r\n')
+
+    try {
+      await compileVueFile(source, filename)
+      throw new Error('Expected compileVueFile to reject an invalid SFC')
+    }
+    catch (error) {
+      expect(error).toBeInstanceOf(CompilerDiagnosticError)
+      if (!(error instanceof CompilerDiagnosticError)) {
+        throw error
+      }
+      expect(error).toMatchObject({
+        code: 'WV2003',
+        severity: 'error',
+        filename,
+        source: 'sfc',
+        loc: {
+          start: {
+            offset: source.indexOf('foo('),
+            line: 3,
+            column: sourceLines[2]!.indexOf('foo(') + 1,
+          },
+        },
+      })
+      expect(error.cause).toBeInstanceOf(Error)
+      expect(error.cause).toMatchObject({ code: 46 })
+    }
   })
 
   it('offsets template diagnostics to the complete SFC source', async () => {
