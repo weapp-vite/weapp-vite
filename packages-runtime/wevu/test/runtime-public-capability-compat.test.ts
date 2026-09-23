@@ -52,6 +52,7 @@ describe('runtime public capability compatibility', () => {
       runtime.installSetDataHighFrequencyWarning,
       runtime.installScopedSlots,
       runtime.installLayout,
+      runtime.installJsxIslands,
     ]
     expect(installers.every(installer => typeof installer === 'function')).toBe(true)
     const nativeRegisterComponent = vi.fn()
@@ -132,6 +133,7 @@ describe('runtime public capability compatibility', () => {
     expect(runtimeCapabilityRegistry.inlineEvents).toBeTruthy()
     expect(runtimeCapabilityRegistry.templateRefs).toBeTruthy()
     expect(runtimeCapabilityRegistry.layout).toBeTruthy()
+    expect(runtimeCapabilityRegistry.jsxIslands).toBeTruthy()
     expect(registerComponent).toHaveBeenCalledTimes(1)
   })
 

@@ -98,6 +98,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 ] as const
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
+  'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
@@ -231,6 +232,7 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
@@ -279,6 +281,7 @@ const IDE_HEADLESS_FULL_TESTS = [...new Set([
 
 // PR 只验证最能代表构建、运行时、路由和平台契约的短路径；完整清单由 nightly 执行。
 const CI_PR_PATTERNS = [
+  'ci/wevu-runtime.pruning.test.ts',
   'ci/app-prelude-native.build.test.ts',
   'ci/auto-routes-define-app-json.test.ts',
   'ci/config-merge.e2e.test.ts',
@@ -296,6 +299,7 @@ const CI_PR_PATTERNS = [
   'ci/template-e2e.utils.test.ts',
   'ci/wevu-features.build.test.ts',
   'ci/wevu-jsx-tsx.build.test.ts',
+  'ci/wevu-runtime.npm-platforms.test.ts',
   'ci/wevu-runtime.platform-dependency-modes.test.ts',
   'ci/wevu-runtime.platforms.test.ts',
   'ci/wevu-runtime.utils.test.ts',

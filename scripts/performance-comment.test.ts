@@ -30,7 +30,7 @@ describe('performance comment report', () => {
     expect(normalized.autoImport.build.results[0].delta.extraMs).toBe(20)
     expect(normalized.runtimeSize.current.targets).toHaveLength(2)
     expect(normalized.runtimeSize.current.targets[0].tiers[0].production.retainedModules.entry).toBe(
-      'wevu-runtime-size-weapp-tier-0-production.mjs',
+      'wevu-runtime-size-weapp-reactivity-core-production.mjs',
     )
     expect(normalized.runtimeSize.baseline.targets[0].tiers[0].production.retainedModules).toBeUndefined()
 
@@ -128,8 +128,8 @@ function createRuntimeArtifact() {
     targets: ['weapp', 'web'].map(id => ({
       id,
       label: id,
-      tiers: Array.from({ length: 5 }, (_, index) => ({
-        id: `tier-${index}`,
+      tiers: ['reactivity-core', 'minimal-app', 'typical-page', 'complex-component', 'full-provider'].map(tierId => ({
+        id: tierId,
         dev: { bytes: 1000 + offset },
         production: {
           bytes: 800 + offset,
@@ -137,7 +137,7 @@ function createRuntimeArtifact() {
           ...(includeRetainedModules
             ? {
                 retainedModules: {
-                  entry: `wevu-runtime-size-${id}-tier-${index}-production.mjs`,
+                  entry: `wevu-runtime-size-${id}-${tierId}-production.mjs`,
                   modules: [],
                 },
               }

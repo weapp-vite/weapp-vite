@@ -1,5 +1,5 @@
 import type { ComponentPublicInstance } from './types'
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 
 type QueryRoot = ParentNode & {
   querySelector?: ParentNode['querySelector']

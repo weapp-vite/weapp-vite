@@ -15,7 +15,7 @@ import {
 import { isRef, markRaw } from '../../reactivity'
 import { ReactiveFlags } from '../../reactivity/reactive'
 import { markNoSetData } from '../noSetData'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramRuntimeCapabilities, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
 type TemplateRefTarget
   = | { type: 'function', fn: (value: any) => void }
@@ -243,7 +243,7 @@ export function createSelectorQuery(target: InternalRuntimeState): MiniProgramSe
   if (!supportsCurrentMiniProgramRuntimeCapability('globalCreateSelectorQuery')) {
     return null
   }
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   if (miniProgramGlobal && typeof miniProgramGlobal.createSelectorQuery === 'function') {
     const query = miniProgramGlobal.createSelectorQuery()
     if (!query) {

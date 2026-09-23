@@ -3,6 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { createTemplate, renderTemplate } from '../src/runtime/legacyTemplate'
 
 describe('legacy template renderer contracts', () => {
+  it.each(['wx', 'a', 's', 'tt'])('keeps %s template directives available through the lightweight runtime contract', (prefix) => {
+    const template = createTemplate(`<view ${prefix}:if="{{ready}}">visible</view><view ${prefix}:else>hidden</view>`)
+    expect(template({ ready: true })).toBe('<weapp-view>visible</weapp-view>')
+    expect(template({ ready: false })).toBe('<weapp-view>hidden</weapp-view>')
+  })
+
   it('filters directives, comments and whitespace while caching parsed templates', () => {
     const source = '<?xml version="1.0"?><!-- ignored -->   <view>{{label}}</view>'
     const first = createTemplate(source)

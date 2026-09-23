@@ -1,112 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { assertString, runtimeSizeSchema, validateArtifact } from './runtime-size-schema.mjs'
+
+export { validateArtifact } from './runtime-size-schema.mjs'
 
 export const COMMENT_MARKER = '<!-- wevu-runtime-size-report -->'
-
-const TARGETS = [
-  { id: 'weapp', label: '微信小程序', gzip: false },
-  { id: 'web', label: 'Web', gzip: true },
-]
-
-const TIERS = [
-  { id: 'reactivity-core', label: '响应式核心', description: '`ref`' },
-  { id: 'minimal-app', label: '最小应用', description: '响应式核心 + `createApp`、`setWevuDefaults`' },
-  { id: 'typical-page', label: '典型页面', description: '最小应用 + 组件注册、常用响应式、页面生命周期、class/style 模板辅助' },
-  { id: 'complex-component', label: '复杂组件', description: '典型页面 + provide/inject、slots、template ref、model、动态 layout' },
-  { id: 'full-provider', label: '完整 Provider', description: '端侧 runtime provider 暴露的全部能力上限' },
-]
-
-function assertObject(value, label) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`${label} must be an object.`)
-  }
-  return value
-}
-
-function assertString(value, label) {
-  if (typeof value !== 'string' || value.length === 0) {
-    throw new Error(`${label} must be a non-empty string.`)
-  }
-  return value
-}
-
-function assertCommit(value, label) {
-  const commit = assertString(value, label)
-  if (!/^[\da-f]{7,64}$/i.test(commit)) {
-    throw new Error(`${label} must be a hexadecimal Git commit.`)
-  }
-  return commit
-}
-
-function assertBytes(value, label) {
-  if (!Number.isSafeInteger(value) || value < 0) {
-    throw new Error(`${label} must be a non-negative safe integer.`)
-  }
-  return value
-}
-
-function validateReport(value, label, artifactVersion) {
-  const report = assertObject(value, label)
-  if (report.version !== artifactVersion) {
-    throw new Error(`${label}.version must match artifact.version (${artifactVersion}).`)
-  }
-  assertCommit(report.commit, `${label}.commit`)
-  if (!Array.isArray(report.targets) || report.targets.length !== TARGETS.length) {
-    throw new Error(`${label}.targets must contain the configured runtime targets.`)
-  }
-
-  for (const [targetIndex, expected] of TARGETS.entries()) {
-    const target = report.targets[targetIndex]
-    if (target?.id !== expected.id) {
-      throw new Error(`${label}.targets[${targetIndex}] must be ${expected.id}.`)
-    }
-    if (!Array.isArray(target.tiers) || target.tiers.length !== TIERS.length) {
-      throw new Error(`${label}.${expected.id}.tiers must contain the configured runtime tiers.`)
-    }
-    for (const [tierIndex, expectedTier] of TIERS.entries()) {
-      const tier = target.tiers[tierIndex]
-      if (tier?.id !== expectedTier.id) {
-        throw new Error(`${label}.${expected.id}.tiers[${tierIndex}] must be ${expectedTier.id}.`)
-      }
-      assertBytes(tier.dev?.bytes, `${label}.${expected.id}.${expectedTier.id}.dev.bytes`)
-      assertBytes(tier.production?.bytes, `${label}.${expected.id}.${expectedTier.id}.production.bytes`)
-      if (tier.dev?.gzipBytes !== undefined) {
-        throw new Error(`${label}.${expected.id}.${expectedTier.id}.dev must not contain gzipBytes.`)
-      }
-      if (expected.gzip) {
-        assertBytes(tier.production?.gzipBytes, `${label}.${expected.id}.${expectedTier.id}.production.gzipBytes`)
-      }
-      else if (tier.production?.gzipBytes !== undefined) {
-        throw new Error(`${label}.${expected.id}.${expectedTier.id} must not contain gzipBytes.`)
-      }
-    }
-  }
-  return report
-}
-
-export function validateArtifact(value, expected) {
-  const artifact = assertObject(value, 'artifact')
-  if (![2, 3].includes(artifact.version) || artifact.kind !== 'wevu-runtime-size-pr-report') {
-    throw new Error('Unsupported runtime size artifact.')
-  }
-  if (artifact.repository !== expected.repository) {
-    throw new Error('Artifact repository does not match the workflow repository.')
-  }
-  if (artifact.prNumber !== expected.prNumber) {
-    throw new Error('Artifact PR number does not match the workflow PR.')
-  }
-  if (artifact.headSha !== expected.headSha) {
-    throw new Error('Artifact head SHA does not match the workflow run.')
-  }
-  assertCommit(artifact.headSha, 'artifact.headSha')
-  assertCommit(artifact.baseSha, 'artifact.baseSha')
-  return {
-    ...artifact,
-    current: validateReport(artifact.current, 'artifact.current', artifact.version),
-    baseline: validateReport(artifact.baseline, 'artifact.baseline', artifact.version),
-  }
-}
 
 export function formatBytes(bytes) {
   const sign = bytes < 0 ? '-' : ''
@@ -133,6 +32,7 @@ function formatMeasurement(current, baseline) {
 }
 
 export function renderSuccessComment(artifact) {
+  const { targets: TARGETS, tiers: TIERS } = runtimeSizeSchema(artifact.version)
   const currentById = new Map(artifact.current.targets.map(target => [target.id, target]))
   const baselineById = new Map(artifact.baseline.targets.map(target => [target.id, target]))
   const lines = [

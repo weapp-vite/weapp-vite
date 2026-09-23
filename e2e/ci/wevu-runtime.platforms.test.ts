@@ -156,18 +156,12 @@ describeRuntimePlatforms('wevu runtime platform outputs', { concurrent: false },
 
     const platformRuntimeChunk = await findWevuSemanticChunk(
       DIST_ROOT,
-      code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
+      code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
       `${platform} platform runtime`,
     )
-    expect(platformRuntimeChunk.code).toMatch(new RegExp(`["'\`]MP_PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
-    expect(platformRuntimeChunk.code).toMatch(new RegExp(`["'\`]PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
-
-    if (platform === 'tt') {
-      expect(platformRuntimeChunk.code).toMatch(/\?\.tt\b|\.tt\b|[`'"]tt[`'"]/)
-    }
-
-    if (platform === 'alipay') {
-      expect(platformRuntimeChunk.code).toMatch(/\?\.my\b|\.my\b|[`'"]my[`'"]/)
-    }
+    const runtimeGlobal = platform === 'alipay' ? 'my' : platform === 'tt' ? 'tt' : 'wx'
+    expect(platformRuntimeChunk.code).toMatch(new RegExp(`(?:\\.${runtimeGlobal}\\b|typeof\\s+${runtimeGlobal}\\b)`))
+    expect(platformRuntimeChunk.code.includes('didMount')).toBe(platform === 'alipay')
+    expect(platformRuntimeChunk.code.includes('didUnmount')).toBe(platform === 'alipay')
   })
 })

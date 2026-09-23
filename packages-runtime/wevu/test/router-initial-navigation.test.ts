@@ -2,11 +2,10 @@ import { WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER } from '@weapp-core/constants'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  cancelInitialNavigation,
-  ensureInitialNavigation,
   getInitialNavigationStatus,
   registerInitialNavigationRunner,
 } from '@/router/initialNavigation'
+import { cancelInitialNavigation, ensureInitialNavigation } from '@/runtime/navigationLifecycle'
 
 const state = vi.hoisted(() => ({
   activeRouter: undefined as object | undefined,
@@ -25,6 +24,44 @@ describe('router: initial navigation state machine', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.useRealTimers()
+  })
+
+  it('leaves pages synchronous when no router has registered an initial navigation runner', () => {
+    state.activeRouter = undefined
+    const onComplete = vi.fn()
+    const page = { route: 'pages/plain/index' }
+
+    expect(ensureInitialNavigation(page, {}, { onComplete })).toBeUndefined()
+    expect(getInitialNavigationStatus(page)).toBeUndefined()
+    expect(onComplete).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+    expect(() => cancelInitialNavigation(page)).not.toThrow()
+  })
+
+  it('keeps pending pages bound to their original runner when the active router changes', async () => {
+    const firstRunner = vi.fn(() => Promise.resolve())
+    registerInitialNavigationRunner(state.activeRouter!, firstRunner, 100)
+    const firstPage = { route: 'pages/first/index' }
+    const firstPending = ensureInitialNavigation(firstPage, { owner: 'first' }, { start: false })
+
+    state.activeRouter = {}
+    const secondRunner = vi.fn(() => Promise.resolve())
+    registerInitialNavigationRunner(state.activeRouter, secondRunner, 200)
+    const secondPending = ensureInitialNavigation({ route: 'pages/second/index' }, { owner: 'second' })
+
+    expect(ensureInitialNavigation(firstPage)).toBe(firstPending)
+    await expect(firstPending).resolves.toBe(true)
+    await expect(secondPending).resolves.toBe(true)
+    expect(firstRunner).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ route: 'pages/first/index' }),
+      { owner: 'first' },
+      expect.any(Function),
+    )
+    expect(secondRunner).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ route: 'pages/second/index' }),
+      { owner: 'second' },
+      expect.any(Function),
+    )
   })
 
   it('mounts after the default timeout and warns once', async () => {

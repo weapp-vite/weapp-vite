@@ -5,7 +5,7 @@ import { runInNewContext } from 'node:vm'
 import { expect, it } from 'vitest'
 import { compileVueSharedRuntime } from './compileVueSharedRuntime'
 
-it('compiles the standalone runtime with unprepared application tsconfig references', async () => {
+it('compiles a static weapp runtime with unprepared application tsconfig references', async () => {
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'vue-shared-runtime-')))
   try {
     const runtimeRoot = path.join(root, 'packages-runtime/wevu/src')
@@ -19,19 +19,24 @@ it('compiles the standalone runtime with unprepared application tsconfig referen
       extends: './.weapp-vite/tsconfig.shared.json',
     }))
     await writeFile(path.join(runtimeRoot, 'internal-runtime.ts'), `
-      export const createApp = (value: string) => 'app:' + value;
+      export const createApp = (value: string) => import.meta.env?.PLATFORM === 'weapp' ? 'app:' + value : 'unexpected-platform';
       export const createWevuComponent = (value: string) => 'component:' + value;
       export const installInlineEvents = (value: string) => 'events:' + value;
     `)
-    await writeFile(path.join(runtimeRoot, 'internal-reactivity.ts'), 'export const ref = (value: number) => ({ value });')
+    await writeFile(path.join(runtimeRoot, 'internal-reactivity.ts'), `
+      export const ref = (value: number) => ({ value });
+      export const computed = (getter: () => number) => ({ get value() { return getter(); } });
+    `)
     await writeFile(path.join(runtimeRoot, 'scheduler.ts'), 'export const nextTick = () => Promise.resolve("ready");')
 
     const { code } = await compileVueSharedRuntime(root)
+    expect(code).not.toContain('unexpected-platform')
     const module = { exports: {} as {
       createApp: (value: string) => string
       createWevuComponent: (value: string) => string
       installInlineEvents: (value: string) => string
       ref: (value: number) => { value: number }
+      computed: (getter: () => number) => { value: number }
       nextTick: () => Promise<string>
     } }
     runInNewContext(code, { module, exports: module.exports })
@@ -39,6 +44,7 @@ it('compiles the standalone runtime with unprepared application tsconfig referen
     expect(module.exports.createWevuComponent('counter')).toBe('component:counter')
     expect(module.exports.installInlineEvents('tap')).toBe('events:tap')
     expect(module.exports.ref(42)).toEqual({ value: 42 })
+    expect(module.exports.computed(() => 6 * 7).value).toBe(42)
     await expect(module.exports.nextTick()).resolves.toBe('ready')
   }
   finally {

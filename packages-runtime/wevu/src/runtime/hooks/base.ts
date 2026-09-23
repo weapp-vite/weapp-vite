@@ -1,6 +1,6 @@
 import type { InternalRuntimeState } from '../types'
 import { WEVU_CURRENT_SETUP_STATE_KEY, WEVU_HOOKS_KEY } from '@weapp-core/constants'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, getMiniProgramRuntimeGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramRuntimeCapabilities, getMiniProgramRuntimeGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
 // 仅供同步 setup() 调用期间使用的当前实例引用。wevu 的根入口与
 // `wevu/router` 可能被打包成多个模块副本，必须通过宿主全局共享状态。
@@ -168,7 +168,7 @@ export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
   if (!supportsCurrentMiniProgramRuntimeCapability('pageShareMenu')) {
     return
   }
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   if (!miniProgramGlobal || typeof miniProgramGlobal.showShareMenu !== 'function') {
     return
   }

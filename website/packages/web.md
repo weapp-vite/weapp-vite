@@ -45,6 +45,8 @@ pnpm add -D @weapp-vite/web
 
 `web` 是规范平台名，`h5` 仅作为向后兼容别名保留。App 模块会先于页面和组件求值，确保 App 注册、`defineAppSetup()`、router 和 `onLaunch` 在首个页面挂载前就绪。仓库通过 44 个 `e2e-apps/*` / `templates/*` 项目的生产构建与 Playwright 启动矩阵持续验证该入口。
 
+Wevu 会根据 `web` 目标[自动裁剪平台适配与未使用能力](/wevu/runtime#按平台与使用能力裁剪)。Web 仍保留 App/Component、页面栈和宿主桥接；其体积不能直接作为 Vue DOM runtime 或原生 App 渲染器的体积基线。
+
 ## Vite 插件接入
 
 ```ts

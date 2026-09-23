@@ -1,3 +1,4 @@
+import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import { createSidecarModuleId } from './protocol'
@@ -52,6 +53,8 @@ describe('logical entry module source', () => {
     const code = createLogicalEntryModuleCode(entry, [])
 
     expect(code).toContain('import { createWevuComponent')
+    expect(code).toContain(`from ${JSON.stringify(WEAPP_VITE_RUNTIME_VIRTUAL_ID)};`)
+    expect(code).not.toContain('from "wevu"')
     expect(code).toContain(`import __weappViteComponentOptions from ${JSON.stringify(entry.sourceId)};`)
     expect(code).toContain('__weappViteCreateWevuComponent(__weappViteComponentOptions);')
     expect(code).toContain('export default __weappViteComponentOptions;')

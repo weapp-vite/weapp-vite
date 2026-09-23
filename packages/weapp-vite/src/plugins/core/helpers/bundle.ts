@@ -110,6 +110,7 @@ const WEVU_INTERNAL_RUNTIME_EXPORTS = [
   'installPatchStrategy',
   'installTemplateRefs',
   'installInlineEvents',
+  'installJsxIslands',
   'installSetDataHighFrequencyWarning',
   'installScopedSlots',
   'installLayout',

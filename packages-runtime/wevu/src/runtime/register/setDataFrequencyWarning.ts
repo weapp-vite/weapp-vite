@@ -1,6 +1,6 @@
 import type { HighFrequencyWarningMonitorOptions } from '../capabilities'
 import type { SetDataSnapshotOptions } from '../types'
-import { getCurrentMiniProgramHostConfig, getMiniProgramGlobalObject, getMiniProgramRuntimeConsoleWarn } from '../platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramHostConfig, getMiniProgramRuntimeConsoleWarn } from '../platform'
 
 interface ResolvedHighFrequencyWarningOptions {
   enabled: boolean
@@ -79,7 +79,7 @@ export function isDevelopmentRuntime(): boolean {
     return true
   }
 
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   try {
     const envVersion = miniProgramGlobal?.getAccountInfoSync?.()?.miniProgram?.envVersion
     if (envVersion === 'develop') {

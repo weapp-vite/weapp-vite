@@ -16,7 +16,7 @@ import {
 } from '@weapp-core/constants'
 import { requireRuntimeCapability } from '../capabilities'
 import { callHookList } from '../hooks'
-import { getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
+import { getCurrentMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 import { mountRuntimeInstance } from './runtimeInstance'
 
 const APP_GLOBAL_LISTENER_STORE_KEY = '__wevuAppGlobalListeners'
@@ -29,7 +29,7 @@ function bindMemoryWarningListener(target: InternalRuntimeState) {
     delete (target as any)[MEMORY_WARNING_LISTENER_KEY]
     return
   }
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   const onMemoryWarning = miniProgramGlobal?.onMemoryWarning
   const offMemoryWarning = miniProgramGlobal?.offMemoryWarning
   if (typeof onMemoryWarning !== 'function') {
@@ -75,7 +75,7 @@ function bindAppGlobalListener(target: InternalRuntimeState, options: {
     delete (target as any)[hookName]
     return
   }
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   const onApi = miniProgramGlobal?.[onApiName]
   const offApi = miniProgramGlobal?.[offApiName]
 

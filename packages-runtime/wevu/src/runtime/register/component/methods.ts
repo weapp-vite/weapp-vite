@@ -2,7 +2,6 @@ import type { InternalRuntimeState, MethodDefinitions } from '../../types'
 import {
   WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
-  WEVU_JSX_ISLAND_HANDLER,
   WEVU_MODEL_HANDLER,
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_OWNER_HANDLER,
@@ -11,7 +10,6 @@ import {
 } from '@weapp-core/constants'
 import { requireRuntimeCapability, runtimeCapabilityRegistry } from '../../capabilities'
 import { parseModelEventValue } from '../../internal'
-import { runJsxIslandHandler } from '../../jsxIsland'
 
 export function createComponentMethods(options: {
   userMethods: Record<string, (...args: any[]) => any>
@@ -56,11 +54,7 @@ export function createComponentMethods(options: {
     }
   }
 
-  if (!finalMethods[WEVU_JSX_ISLAND_HANDLER]) {
-    finalMethods[WEVU_JSX_ISLAND_HANDLER] = function __weapp_vite_jsx_island(this: InternalRuntimeState, event: any) {
-      return runJsxIslandHandler(this, event)
-    }
-  }
+  runtimeCapabilityRegistry.jsxIslands?.attachMethods(finalMethods)
 
   if (!finalMethods[WEVU_OWNER_HANDLER] && typeof (runtimeMethods as any)?.[WEVU_OWNER_HANDLER] === 'function') {
     finalMethods[WEVU_OWNER_HANDLER] = (runtimeMethods as any)[WEVU_OWNER_HANDLER]

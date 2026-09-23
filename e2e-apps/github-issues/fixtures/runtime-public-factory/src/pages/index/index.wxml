@@ -1,0 +1,5 @@
+<view id="public-factory-page">
+  <text id="public-factory-phase">{{phase}}</text>
+  <text id="public-factory-count">{{count}}</text>
+  <button id="public-factory-increment" bindtap="__weapp_vite_jsx_island" data-wv-jsx-handler="{{handlerId}}">Increment</button>
+</view>

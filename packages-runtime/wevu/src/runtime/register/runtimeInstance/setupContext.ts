@@ -17,7 +17,7 @@ import { toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge'
 import { markNoSetData } from '../../noSetData'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramRuntimeCapabilities, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
 
 export { normalizeEmitPayload } from '../../emit'
 
@@ -264,7 +264,7 @@ export function ensureSetupContextInstance(
       return (nativeOwner as any).createSelectorQuery()
     }
 
-    const miniProgramGlobal = getMiniProgramGlobalObject()
+    const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
     if (
       !supportsCurrentMiniProgramRuntimeCapability('globalCreateSelectorQuery')
       || !miniProgramGlobal
@@ -297,7 +297,7 @@ export function ensureSetupContextInstance(
         return (nativeOwner as any).createIntersectionObserver(options ?? {})
       }
 
-      const miniProgramGlobal = getMiniProgramGlobalObject()
+      const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
       if (
         !supportsCurrentMiniProgramRuntimeCapability('globalCreateIntersectionObserver')
         || !miniProgramGlobal

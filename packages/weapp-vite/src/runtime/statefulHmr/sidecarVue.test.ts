@@ -1,5 +1,6 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import path from 'pathe'
 import { rolldown } from 'rolldown'
 import { describe, expect, it } from 'vitest'
@@ -90,7 +91,7 @@ describe('Vue component dependency digests', () => {
         input: { page: parentEntry, counter: childEntry },
         plugins: [{
           name: 'vue-component-graph-fixture',
-          resolveId: id => ({ id, external: id === 'wevu', moduleSideEffects: 'no-treeshake' }),
+          resolveId: id => ({ id, external: id === WEAPP_VITE_RUNTIME_VIRTUAL_ID, moduleSideEffects: 'no-treeshake' }),
           load(id) {
             const sidecar = parseSidecarModuleId(id)
             if (sidecar) {
@@ -130,6 +131,7 @@ describe('Vue component dependency digests', () => {
       expect(initial.edges.get(parentEntry)).toContain(mapping)
       expect(initial.edges.get(mapping)).toContain(digestId)
       expect(initial.edges.get(childEntry)).toContain(child)
+      expect(initial.edges.get(childEntry)).toContain(WEAPP_VITE_RUNTIME_VIRTUAL_ID)
       expect(script.codes.get(digestId)).toBe(initial.codes.get(digestId))
       expect(script.codes.get(child)).not.toBe(initial.codes.get(child))
       expect(script.accepted.has(child)).toBe(false)

@@ -27,11 +27,9 @@ function expectModuleReference(code: string, specifier: string) {
 async function resolveWevuSharedChunk() {
   return await findWevuRuntimeChunk(
     DIST_ROOT,
-    code =>
-      code.includes('MINI_PROGRAM_PLATFORM_DESCRIPTORS')
-      || code.includes('Object.defineProperty(exports, "WEVU_SLOT_OWNER_KEY"')
-      || code.includes('WEVU_SLOT_OWNER_KEY as'),
-    'wevu shared runtime',
+    // 分包共享 ref/computed 响应式实现，不依赖已被裁剪的平台表或打包器导出别名。
+    code => code.includes('__v_isRef'),
+    'wevu shared reactivity runtime',
   )
 }
 

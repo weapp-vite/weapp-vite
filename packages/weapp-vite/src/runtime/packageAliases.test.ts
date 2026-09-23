@@ -1,4 +1,6 @@
+import type { InlineConfig } from 'vite'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createAliasManager, normalizeAliasOptions } from './config/internal/alias'
 import { resolveBuiltinPackageAliases } from './packageAliases'
 
 const { existsSyncMock, getPackageInfoSyncMock } = vi.hoisted(() => ({
@@ -36,11 +38,15 @@ describe('runtime package aliases', () => {
 
     const aliases = resolveBuiltinPackageAliases()
 
-    expect(aliases).toHaveLength(13)
+    expect(aliases).toHaveLength(14)
     expect(aliases).toEqual(expect.arrayContaining([
       {
         find: '@weapp-core/shared/platforms',
         replacement: '/project/node_modules/@weapp-core/shared/dist/platforms/index.js',
+      },
+      {
+        find: '@weapp-core/shared/platforms/runtime',
+        replacement: '/project/node_modules/@weapp-core/shared/dist/platforms/runtime/index.js',
       },
       {
         find: 'class-variance-authority',
@@ -83,6 +89,14 @@ describe('runtime package aliases', () => {
       'wevu/miniprogram/jsx-runtime',
     ]))
     expect(existsSyncMock).not.toHaveBeenCalledWith(expect.stringMatching(/jsx-runtime/))
+
+    const config: InlineConfig = {}
+    createAliasManager({ find: /^~oxc\//, replacement: '/project/.oxc' }, aliases).injectBuiltinAliases(config)
+    const runtimeImport = '@weapp-core/shared/platforms/runtime'
+    const matched = normalizeAliasOptions(config.resolve?.alias).find(alias =>
+      typeof alias.find === 'string' && (runtimeImport === alias.find || runtimeImport.startsWith(`${alias.find}/`)),
+    )
+    expect(matched?.replacement).toBe('/project/node_modules/@weapp-core/shared/dist/platforms/runtime/index.js')
   })
 
   it('uses development wevu entries in dev mode by default', () => {
