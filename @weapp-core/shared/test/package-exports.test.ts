@@ -52,4 +52,14 @@ describe('@weapp-core/shared package exports', () => {
     expect(exports['./platforms']).toEqual(expected)
     expect(publishExports['./platforms']).toEqual(expected)
   })
+
+  it('declares the runtime-only platform subpath export', () => {
+    const { exports, publishExports } = readExports()
+    const expected = {
+      types: './dist/platforms/runtime/index.d.ts',
+      import: './dist/platforms/runtime/index.js',
+    }
+    expect(exports['./platforms/runtime']).toEqual(expected)
+    expect(publishExports['./platforms/runtime']).toEqual(expected)
+  })
 })

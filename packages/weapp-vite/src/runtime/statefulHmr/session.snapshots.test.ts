@@ -1,16 +1,20 @@
+import type { OutputBundle } from 'rolldown'
 import type { InlineConfig, Plugin } from 'vite'
-import type { MutableCompilerContext } from '../../context'
+import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { runInNewContext } from 'node:vm'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { analyzeGlassEaselBundle, createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
+import { refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
-import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
+import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
 import { runStatefulHmrDev } from './session'
 import { StatefulHmrTransport } from './transport'
@@ -23,6 +27,7 @@ interface AdapterCallbacks {
 
 const harness = vi.hoisted(() => ({
   callbacks: undefined as AdapterCallbacks | undefined,
+  nativeOutput: [] as StatefulHmrOutputFile[],
   createServer: vi.fn(),
   writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets) => Promise<void>>(),
   fullBuild: vi.fn<() => Promise<void>>(),
@@ -60,13 +65,46 @@ const watchers: Array<{ close: () => Promise<void> }> = []
 const temporaryDirectories: string[] = []
 
 function appOutput(): StatefulHmrOutputFile[] {
-  return [{ type: 'chunk', fileName: 'app.js', code: 'App({});', modules: {} }]
+  return [{ type: 'chunk', fileName: 'app.js', code: 'App({});', modules: {} }, ...harness.nativeOutput]
 }
 
 function snapshot(color: string, routes: string[] = [route]): StatefulHmrSnapshot {
   return {
     output: [{ type: 'asset', fileName: 'app.wxss', source: `.probe { color: ${color}; }` }],
     componentPageGlobalStyleRoutes: routes,
+    glassEaselAnalysisByOwner: new Map(),
+  }
+}
+
+function analyzedSnapshot(paired: boolean, selector = '.valid'): StatefulHmrSnapshot {
+  // 分析器只读取配置与真实 runtime state；文件系统由现有 session harness 隔离。
+  const producer = {
+    runtimeState: createRuntimeState(),
+    configService: { platform: 'weapp' },
+  } as unknown as CompilerContext
+  producer.runtimeState.glassEasel.silent = true
+  const config = {
+    type: 'asset' as const,
+    fileName: 'app.json',
+    source: JSON.stringify({
+      glassEaselWebview: true,
+      ...(paired ? { componentFramework: 'glass-easel' } : {}),
+    }),
+  }
+  analyzeGlassEaselBundle(producer, {
+    'app.json': config,
+    'page.js': {
+      type: 'chunk',
+      fileName: 'page.js',
+      facadeModuleId: path.join(root, 'src/page.js'),
+      code: `wx.createSelectorQuery().select(${JSON.stringify(selector)}).exec()`,
+    },
+  } as unknown as OutputBundle, { mode: 'full', outputScope: 'main' })
+  const value = snapshot(paired ? 'blue' : 'red')
+  return {
+    ...value,
+    output: [...value.output, config],
+    glassEaselAnalysisByOwner: producer.runtimeState.glassEasel.analysisByOwner,
   }
 }
 
@@ -89,10 +127,13 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
       getPendingChanges: () => Array.from(changes, ([file, event]) => ({ file, event })),
     },
   } as unknown as MutableCompilerContext
-  const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), { initial, entryIds, rebuild })
+  const events = createDevBuildWatcher()
+  const watcher = await runStatefulHmrDev(ctx, { root }, vi.fn(async () => {}), { initial, entryIds, rebuild }, events)
   watchers.push(watcher)
   return {
     rebuild,
+    ctx,
+    events,
     changeProfile(reasons: string[]) {
       ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = reasons
     },
@@ -118,6 +159,7 @@ describe('stateful snapshot output transactions', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
+    harness.nativeOutput = []
     harness.writeOutput.mockReset().mockResolvedValue()
     harness.beforeInitialReady.mockReset().mockResolvedValue()
     harness.beforeFullPrepare.mockReset().mockResolvedValue()
@@ -154,35 +196,18 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.createServer.mock.calls.at(-1)?.[0].server.watch).toMatchObject({ usePolling: true, interval: 50 })
   })
 
-  it('defers patches until a discovered entry graph has completed a full build', async () => {
-    const session = await start()
-    const child = path.join(root, 'src/added-child.js')
-    session.rebuild.mockResolvedValue({ ...snapshot('blue'), entryIds: [child] })
-    session.sourceChange(child, 'create', [ENTRY_GRAPH_CHANGE_REASON])
-    expect(session.patch([])).toBe(false)
-    await vi.advanceTimersByTimeAsync(100)
-    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
-    expect(session.rebuild).toHaveBeenCalledWith([child])
-    expect(session.patch([])).toBe(true)
-  })
-
-  it('upgrades component additions and removals in metadata snapshots to full entry graph builds', async () => {
+  it('rejects old-engine patches and retains successful assets until a metadata topology change replaces the engine', async () => {
     const page = path.join(root, 'src/page.js')
     const child = path.join(root, 'src/added-child.js')
     const session = await start(snapshot('red'), [page])
+    expect(session.patch([])).toBe(true)
     session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
     session.refresh()
     await vi.advanceTimersByTimeAsync(100)
-    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
-    session.rebuild.mockResolvedValueOnce({ ...snapshot('red'), entryIds: [page] })
-    session.refresh()
-    await vi.advanceTimersByTimeAsync(100)
-    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
-    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page] })
-    session.refresh()
-    await vi.advanceTimersByTimeAsync(100)
-    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
-    expect(session.patch([])).toBe(true)
+    expect(session.patch([])).toBe(false)
+    const currentStyle = writtenAssets().filter(item => item.fileName === `${styleFile}`).at(-1)
+    expect(currentStyle?.source).toContain('color: red')
+    expect(currentStyle?.source).not.toContain('color: blue')
   })
 
   afterEach(async () => {
@@ -406,6 +431,76 @@ describe('stateful snapshot output transactions', () => {
     expect(published.get(componentJson.fileName)).toBe(componentJson.source)
     expect(published.get('assets/new.svg')).toBe('<svg />')
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('boots with the native graph prelude across full, additional and snapshot publications', async () => {
+    const scopes = ['', 'feature/']
+    const withPrelude = (color: string) => {
+      const value = snapshot(color)
+      value.output.push(...scopes.map(prefix => ({
+        type: 'asset' as const,
+        fileName: `${prefix}app.prelude.js`,
+        source: `require("./snapshot-installer.js").installWebRuntimeGlobals({ targets: [${JSON.stringify(color === 'red' ? 'fetch' : 'Headers')}] }).ready;`,
+      })))
+      return value
+    }
+    const nativeOutput = (version: string): StatefulHmrOutputFile[] => scopes.flatMap(prefix => [
+      {
+        type: 'asset',
+        fileName: `${prefix}app.prelude.js`,
+        source: `require("./native-${version}.js").installWebRuntimeGlobals().ready;`,
+      },
+      {
+        type: 'chunk',
+        fileName: `${prefix}native-${version}.js`,
+        code: `exports.installWebRuntimeGlobals = () => ({ ready: ${JSON.stringify(`${prefix}${version}`)} });`,
+      },
+      {
+        type: 'chunk',
+        fileName: `${prefix}snapshot-installer.js`,
+        code: '__rolldown_runtime__.registerModule("facade", { exports: {} });',
+      },
+    ])
+    const published = new Map<string, StatefulHmrOutputFile>()
+    harness.writeOutput.mockImplementation(async (_outDir, output) => {
+      for (const item of output) {
+        published.set(item.fileName, item)
+      }
+    })
+    const boot = (prefix: string) => {
+      const prelude = published.get(`${prefix}app.prelude.js`)
+      if (prelude?.type !== 'asset') {
+        throw new Error(`Missing native prelude in ${prefix || 'main'}`)
+      }
+      return runInNewContext(String(prelude.source), {
+        require(request: string) {
+          const chunk = published.get(path.join(prefix, request))
+          if (chunk?.type !== 'chunk') {
+            throw new Error(`Missing native installer: ${request}`)
+          }
+          const exports = {}
+          runInNewContext(chunk.code, { exports, __rolldown_runtime__: { registerModule() {} } })
+          return exports
+        },
+      })
+    }
+    harness.nativeOutput = nativeOutput('initial')
+    const session = await start(withPrelude('red'))
+    expect(scopes.map(boot)).toEqual(['initial', 'feature/initial'])
+
+    await harness.callbacks!.onOutput(nativeOutput('additional'), 'additional')
+    expect(scopes.map(boot)).toEqual(['additional', 'feature/additional'])
+
+    session.rebuild.mockResolvedValue(withPrelude('blue'))
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(scopes.map(boot)).toEqual(['additional', 'feature/additional'])
+    expect(published.get(styleFile)).toMatchObject({ source: '.probe { color: blue; }' })
+
+    harness.nativeOutput = nativeOutput('rebuilt')
+    session.full()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(scopes.map(boot)).toEqual(['rebuilt', 'feature/rebuilt'])
   })
 
   it('keeps an older native full output on the adopted snapshot while draining before the new batch', async () => {
@@ -643,5 +738,50 @@ describe('stateful snapshot output transactions', () => {
     expect(writtenAssets().filter(item => item.fileName === `${route}.wxss`)).toEqual([
       { type: 'asset', fileName: `${route}.wxss`, source: expect.stringContaining('.probe { color: green; }') },
     ])
+  })
+
+  it('never publishes fixed diagnostics from a refresh superseded during its write', async () => {
+    const session = await start(analyzedSnapshot(false))
+    // start() 的上下文已初始化，消费者只读取分析结果。
+    const consumer = session.ctx as CompilerContext
+    const reports: string[][] = []
+    session.events.watcher.on('event', (event) => {
+      if (event.code === 'END') {
+        reports.push(createGlassEaselAnalyzeResult(consumer).diagnostics.map(item => item.code))
+      }
+    })
+    session.rebuild.mockResolvedValueOnce(analyzedSnapshot(true)).mockResolvedValue(analyzedSnapshot(false))
+    const blocked = Promise.withResolvers<void>()
+    harness.writeOutput.mockImplementationOnce(() => blocked.promise)
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(createGlassEaselAnalyzeResult(consumer).diagnostics.map(item => item.code)).toEqual(['GE001'])
+    session.refresh()
+    blocked.resolve()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(reports).toEqual([['GE001'], ['GE001']])
+  })
+
+  it('keeps a newer native script result when an older asset snapshot commits', async () => {
+    const session = await start(analyzedSnapshot(true, '.1-old'))
+    // 同一活动上下文同时消费 native script 与资产快照。
+    const consumer = session.ctx as CompilerContext
+    expect(createGlassEaselAnalyzeResult(consumer).diagnostics.map(item => item.code)).toEqual(['GE005'])
+    session.rebuild.mockResolvedValue(analyzedSnapshot(true, '.1-old'))
+    const blocked = Promise.withResolvers<void>()
+    harness.writeOutput.mockImplementationOnce(() => blocked.promise)
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    refreshGlassEaselNativeScripts(consumer, [{
+      file: 'page.js',
+      modules: [{
+        id: path.join(root, 'src/page.js'),
+        code: 'wx.createSelectorQuery().select(\".valid\").exec()',
+      }],
+    }])
+    expect(createGlassEaselAnalyzeResult(consumer).diagnostics).toEqual([])
+    blocked.resolve()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(createGlassEaselAnalyzeResult(consumer).diagnostics).toEqual([])
   })
 })

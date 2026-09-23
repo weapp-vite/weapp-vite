@@ -3,7 +3,7 @@ import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
 import type { ResolvedId, RolldownOutput } from 'rolldown'
 import type { ComponentStyleOptions, VueSfcBlockSignatures } from 'wevu/compiler'
-import type { GlassEaselDiagnostic } from '../analyze/glassEasel/types'
+import type { GlassEaselAnalysisFact } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
@@ -93,8 +93,7 @@ function createDefaultPackageManager(): DetectResult {
 
 export interface RuntimeState {
   glassEasel: {
-    detected: boolean
-    diagnostics: Map<string, GlassEaselDiagnostic>
+    analysisByOwner: Map<string, GlassEaselAnalysisFact>
     warnedDiagnostics: Set<string>
     silent: boolean
   }
@@ -153,6 +152,10 @@ export interface RuntimeState {
       vueEntryHasTemplate: Map<string, boolean>
       vueEntrySfcSignatures: Map<string, VueSfcBlockSignatures>
       vueEntryStyleBindings: Map<string, VueEntryStyleBindings>
+      /** 编译 provider 内容签名；key 为入口，value 的 key 为 provider 名称。 */
+      vueEntryContentSignatures?: Map<string, Readonly<Record<string, string>>>
+      vueEntryTemplateContentSignatures?: Map<string, Readonly<Record<string, string>>>
+      vueEntryScriptContentSignatures?: Map<string, Readonly<Record<string, string>>>
       vueEntryTailwindContentSignatures: Map<string, string>
       vueEntryTailwindTemplateContentSignatures: Map<string, string>
       vueEntryTailwindScriptContentSignatures: Map<string, string>
@@ -347,8 +350,7 @@ export function createRuntimeState(): RuntimeState {
   const emptyAutoRoutesArtifacts = createAutoRoutesArtifacts(emptyAutoRoutesSnapshot)
   return {
     glassEasel: {
-      detected: false,
-      diagnostics: new Map<string, GlassEaselDiagnostic>(),
+      analysisByOwner: new Map<string, GlassEaselAnalysisFact>(),
       warnedDiagnostics: new Set<string>(),
       silent: false,
     },
@@ -406,6 +408,9 @@ export function createRuntimeState(): RuntimeState {
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntrySfcSignatures: new Map<string, VueSfcBlockSignatures>(),
         vueEntryStyleBindings: new Map<string, VueEntryStyleBindings>(),
+        vueEntryContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
+        vueEntryTemplateContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
+        vueEntryScriptContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
         vueEntryTailwindContentSignatures: new Map<string, string>(),
         vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),

@@ -11,6 +11,7 @@ export type RuntimeCapabilityName
     | 'setDataHighFrequencyWarning'
     | 'scopedSlots'
     | 'layout'
+    | 'jsxIslands'
 
 export interface TemplateRefBinding {
   selector: string
@@ -97,6 +98,9 @@ export interface RuntimeCapabilityRegistry {
     attachPageSetter: (target: InternalRuntimeState) => void
     attachHosts: (bindings: readonly LayoutHostBinding[], target: InternalRuntimeState) => void
     detachHosts: (bindings: readonly LayoutHostBinding[], target: InternalRuntimeState) => void
+  }
+  jsxIslands?: {
+    attachMethods: (methods: Record<string, (...args: any[]) => any>) => void
   }
 }
 

@@ -503,7 +503,9 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
     expect(ideFullLabels).toContain('ide/wevu-query.runtime.test.ts')
+    expect(ideExhaustiveLabels).toContain('ide/wevu-runtime.pruning.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-query.runtime.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/wevu-runtime.pruning.test.ts')
     expect(ideWevuFeaturesLabels).toContain('ide/wevu-query.runtime.test.ts')
     expect(ideFullLabels).toContain('ide/devtools-cli-workflow.runtime.test.ts')
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
@@ -615,6 +617,7 @@ describe('suiteRunner', () => {
     })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
+      'ide/wevu-runtime.pruning.test.ts',
       'ide/github-issues.runtime.issue1035.test.ts',
       'ide/issue-963-plugin-es6.runtime.test.ts',
       'ide/issue-997-rebuild.runtime.test.ts',

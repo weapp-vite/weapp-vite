@@ -1,5 +1,6 @@
 import type { OutputBundle } from 'rolldown'
 import { describe, expect, it } from 'vitest'
+import { createRuntimeState } from '../../runtime/runtimeState'
 import { createOutputFinalizerPlugin } from '../outputFinalizer'
 import { normalizeClassScopedAssets, normalizeClassScopedStyle, normalizeClassScopedTemplate } from './scopedStyles'
 
@@ -46,9 +47,11 @@ describe('Class-based platform scoped styles', () => {
   it.each(['alipay', 'weapp', 'tt'])('normalizes final output for Alipay and Douyin, including style-only updates (%s)', async (platform) => {
     const styleExt = platform === 'alipay' ? 'acss' : platform === 'tt' ? 'ttss' : 'wxss'
     const filename = `pages/index/index.${styleExt}`
+    const runtimeState = createRuntimeState()
+    runtimeState.glassEasel.detected = false
     const ctx = {
       configService: { platform, isDev: true, outputExtensions: { wxss: styleExt } },
-      runtimeState: { glassEasel: { detected: false }, build: { output: { emittedSource: new Map() } } },
+      runtimeState,
     } as any
     const plugin = createOutputFinalizerPlugin(ctx)
     const hook = plugin.generateBundle
@@ -61,6 +64,7 @@ describe('Class-based platform scoped styles', () => {
       expect((bundle[filename] as any).source).toBe(platform !== 'weapp'
         ? `.panel.data-v-owner{color:${color}}`
         : `.panel[data-v-owner]{color:${color}}`)
+      runtimeState.build.hmr.profile.event = 'update'
     }
   })
 })

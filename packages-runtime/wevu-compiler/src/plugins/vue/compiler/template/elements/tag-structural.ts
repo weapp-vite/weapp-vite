@@ -94,14 +94,19 @@ export function transformForElement(node: ElementNode, context: TransformContext
       prop.type === NodeTypes.DIRECTIVE && prop.name === 'for',
   ) as DirectiveNode | undefined
 
-  if (!forDirective || !forDirective.exp) {
+  if (!forDirective) {
     return transformNormalElement(node, context, transformNode)
+  }
+  if (!forDirective.exp) {
+    warn(context, 'v-for 表达式缺少循环项别名与列表。', forDirective.loc, 'template', 'WV2001')
+    return ''
   }
 
   const expValue = forDirective.exp.type === NodeTypes.SIMPLE_EXPRESSION ? forDirective.exp.content : ''
   const forInfo = parseForExpression(expValue)
-  if (forInfo.itemPatternError) {
-    warn(context, forInfo.itemPatternError, forDirective.exp.loc, 'template', 'WV2001')
+  const parseError = forInfo.error ?? forInfo.itemPatternError
+  if (parseError) {
+    warn(context, parseError, forDirective.exp.loc, 'template', 'WV2001')
     return ''
   }
   if (forInfo.item === FOR_ITEM_ALIAS_PLACEHOLDER) {
@@ -121,11 +126,15 @@ export function transformForElement(node: ElementNode, context: TransformContext
     forInfo.index = `__wv_index_${context.forIndexSeed++}`
   }
   const rawListExp = forInfo.listExp?.trim()
-  let listExp = forInfo.listExp
-    ? resolveListExpression(forInfo.listExp, context, 'v-for 列表')
-    : undefined
   let listExpAst = forInfo.listExp
     ? normalizeJsExpressionWithContext(forInfo.listExp, context, { hint: 'v-for 列表' })
+    : undefined
+  if (!listExpAst) {
+    warn(context, 'v-for 列表表达式无法解析。', forDirective.exp.loc, 'template', 'WV2001')
+    return ''
+  }
+  let listExp = forInfo.listExp
+    ? resolveListExpression(forInfo.listExp, context, 'v-for 列表')
     : undefined
   // 投影计算遍历原始项，不能沿用模板中祖先项的投影包装访问。
   const rawListExpAst = rawListExp && context.forStack.some(info => info.itemAccess)

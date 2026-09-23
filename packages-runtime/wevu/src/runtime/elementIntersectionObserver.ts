@@ -6,7 +6,7 @@ import type {
 } from './types'
 import { toValue, watch } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onDetached, onMounted, onUnload, onUnmounted } from './hooks'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from './platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramRuntimeCapabilities, supportsCurrentMiniProgramRuntimeCapability } from './platform'
 
 export type ElementIntersectionObserverCallback<T = unknown> = (result: T) => void
 
@@ -39,7 +39,7 @@ function createObserverFromContext(
     return undefined
   }
 
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   const globalCreator = miniProgramGlobal?.createIntersectionObserver
   if (typeof globalCreator !== 'function') {
     return undefined

@@ -21,6 +21,8 @@ keywords:
 > [!NOTE]
 > 这里讨论的是 `weapp-vite` 在编译阶段帮你做什么，不是 `wevu` 运行时 API 的完整手册。运行时能力请继续阅读 [/wevu/runtime](/wevu/runtime)。
 
+运行时的[平台与能力裁剪](/wevu/runtime#按平台与使用能力裁剪)沿用当前构建目标和编译器分析结果，默认生效，无需新增配置。下方 `autoSetDataPick` 控制的是 `setData.pick` 推导；保持它关闭不会关闭平台适配或 JSX island 等能力的按需导入。
+
 > [!TIP]
 > Wevu 在执行 `defineAppJson()`、`definePageJson()` 等 JSON 宏时，临时配置缓存默认写入项目内的 `.weapp-vite/wevu-config`，并会在首次使用时按需创建该目录；只有无法定位有效项目目录时才会回退到系统临时目录。
 

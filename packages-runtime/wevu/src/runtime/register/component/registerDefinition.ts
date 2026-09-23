@@ -15,11 +15,9 @@ import {
   WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD,
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
-import {
-  ensureInitialNavigation,
-} from '../../../router/initialNavigation'
 import { requireRuntimeCapability, runtimeCapabilityRegistry } from '../../capabilities'
 import { callHookList } from '../../hooks'
+import { ensureInitialNavigation } from '../../navigationLifecycle'
 import { getMiniProgramRuntimeGlobalObject } from '../../platform'
 import { runTeardownSteps } from '../../teardown'
 import { enableDeferredSetData, mountRuntimeInstance, refreshRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'

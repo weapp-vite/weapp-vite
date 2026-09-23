@@ -31,7 +31,7 @@ import {
   stringifyQuery,
   warnDuplicateRouteEntries,
 } from '../routerInternal/shared'
-import { getCurrentMiniProgramTabBarPagePaths, getMiniProgramGlobalObject } from '../runtime/platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramTabBarPagePaths } from '../runtime/platform'
 import { resolveBackNavigationTarget, runBackNavigationGuards } from './backNavigation'
 import { DEFAULT_INITIAL_NAVIGATION_TIMEOUT, registerInitialNavigationRunner } from './initialNavigation'
 import { setActiveRouter } from './instance'
@@ -54,7 +54,7 @@ export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
   // 路由表泛型只约束公开类型；运行时继续使用同一套名称无关的导航引擎。
   const options = optionsInput as unknown as UseRouterOptions
   const nativeRouter = useNativeRouter()
-  installRouteStateSyncOnNativeRouter(getMiniProgramGlobalObject())
+  installRouteStateSyncOnNativeRouter(getCurrentMiniProgramGlobalObject())
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
   const afterEachHooks = new Set<NavigationAfterEach>()

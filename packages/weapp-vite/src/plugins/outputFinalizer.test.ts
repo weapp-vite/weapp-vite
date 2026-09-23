@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { createSidecarModuleId } from '../moduleGraph/protocol'
+import { createManagedCompilerEntryMarker, registerManagedCompilerEntries } from './compilerPluginRegistry'
 import { recordPendingOwnerStyleSource } from './css'
 import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 import { createManagedTailwindcssOutputMarker, registerManagedTailwindcssEntries } from './tailwindcssMarker'
@@ -130,6 +131,56 @@ describe('weapp-vite output finalizer', () => {
 
     expect(bundle['app.wxss']).toMatchObject({ source: '.flex{display:flex}' })
     expect(bundle['weapp_vite_external/graph/weapp-vite:sidecar:style:%2Fproject%2Fsrc%2Fapp.ts:%2Fproject%2Fsrc%2Fapp.css:module.wxss']).toBeUndefined()
+  })
+
+  it('drops graph-only style shadows for a generic compiler owner', () => {
+    const entry = '/project/src/app.css'
+    const graphAsset = 'weapp_vite_external/graph/weapp-vite:sidecar:style:%2Fproject%2Fsrc%2Fapp.ts:%2Fproject%2Fsrc%2Fapp.css:module.wxss'
+    const bundle = {
+      [graphAsset]: {
+        type: 'asset',
+        fileName: graphAsset,
+        source: '.generated{}',
+      },
+      'app.wxss': {
+        type: 'asset',
+        fileName: 'app.wxss',
+        source: `${createManagedCompilerEntryMarker()}\n.compiler{display:block}`,
+      },
+    } as unknown as OutputBundle
+    const finalizerCtx = {
+      configService: {
+        outputExtensions: { wxss: 'wxss' },
+        relativeOutputPath: (id: string) => id.replace('/project/src/', ''),
+      },
+    } as any
+    registerManagedCompilerEntries(finalizerCtx, 'fake-compiler', [entry])
+
+    normalizeGraphOnlyAssets(finalizerCtx, bundle, createBundleAssetEmitter(bundle))
+
+    expect(bundle[graphAsset]).toBeUndefined()
+    expect(bundle['app.wxss']).toMatchObject({ source: expect.stringContaining('.compiler{display:block}') })
+  })
+
+  it('preserves a marked generic compiler sidecar while mapping it to its owner', () => {
+    const entry = '/project/src/app.css'
+    const graphAsset = 'weapp_vite_external/graph/weapp-vite:sidecar:style:%2Fproject%2Fsrc%2Fapp.ts:%2Fproject%2Fsrc%2Fapp.css:module.wxss'
+    const pending = `${createManagedCompilerEntryMarker()}\n.compiler{display:block}`
+    const bundle = {
+      [graphAsset]: { type: 'asset', fileName: graphAsset, source: pending },
+    } as unknown as OutputBundle
+    const finalizerCtx = {
+      configService: {
+        outputExtensions: { wxss: 'wxss' },
+        relativeOutputPath: (id: string) => id.replace('/project/src/', ''),
+      },
+    } as any
+    registerManagedCompilerEntries(finalizerCtx, 'fake-compiler', [entry])
+
+    normalizeGraphOnlyAssets(finalizerCtx, bundle, createBundleAssetEmitter(bundle))
+
+    expect(bundle[graphAsset]).toBeUndefined()
+    expect(bundle['app.wxss']).toMatchObject({ source: pending })
   })
 
   it('preserves a pending Tailwind entry when reemitting its graph-only owner', () => {

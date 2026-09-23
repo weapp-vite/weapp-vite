@@ -1,30 +1,8 @@
-import type { MiniProgramPlatformDescriptor, MiniProgramRuntimeCapabilities } from './types'
+import type { MiniProgramPlatformDescriptor } from './types'
+import { ALIPAY_RUNTIME_DESCRIPTOR, JD_RUNTIME_DESCRIPTOR, SWAN_RUNTIME_DESCRIPTOR, TT_RUNTIME_DESCRIPTOR, WEAPP_RUNTIME_DESCRIPTOR, XHS_RUNTIME_DESCRIPTOR } from './runtime/descriptors'
+import { MINI_PROGRAM_DIRECTIVE_PREFIXES } from './runtime/template'
 
 const DEFAULT_PROJECT_CONFIG_ROOT_KEYS = ['miniprogramRoot', 'srcMiniprogramRoot'] as const
-export const DEFAULT_RUNTIME_CAPABILITIES: MiniProgramRuntimeCapabilities = Object.freeze({
-  globalPageStack: true,
-  globalCreateSelectorQuery: true,
-  selectorQueryScopeByIn: true,
-  globalCreateIntersectionObserver: true,
-  intersectionObserverScopeByParameter: true,
-  pageShareMenu: true,
-  shareTimelineRequiresShareAppMessage: true,
-  pageScrollApi: true,
-  pullDownRefreshApi: true,
-  globalRouterApi: true,
-  appErrorListener: true,
-  appPageNotFoundListener: true,
-  appUnhandledRejectionListener: true,
-  appThemeChangeListener: true,
-  appMemoryWarningListener: true,
-})
-const DEFAULT_PAGE_IDENTITY_RULES = [
-  {
-    prefix: 'route',
-    source: 'route',
-  },
-] as const
-
 /**
  * @description 全仓库统一的小程序平台描述表。
  */
@@ -33,7 +11,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     id: 'weapp',
     displayName: 'WeChat Mini Program',
     family: 'wechat',
-    aliases: ['weapp', 'wechat', 'weixin', 'wx'],
+    aliases: WEAPP_RUNTIME_DESCRIPTOR.aliases,
     outputExtensions: {
       js: 'js',
       json: 'json',
@@ -55,7 +33,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'default',
-      directivePrefix: 'wx',
+      directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.weapp,
     },
     compiler: {
       templatePreset: 'wechat',
@@ -63,32 +41,13 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     typescript: {
       appTypesPackage: 'miniprogram-api-typings',
     },
-    runtime: {
-      globalObjectKey: 'wx',
-      hostConfigKey: '__wxConfig',
-      globalResolvePriority: 1,
-      routeGlobalResolvePriority: 0,
-      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
-      pageIdentityRules: [
-        {
-          prefix: 'webview',
-          source: 'field',
-          field: '__wxWebviewId__',
-        },
-        {
-          prefix: 'exparser',
-          source: 'field',
-          field: '__wxExparserNodeId__',
-        },
-        ...DEFAULT_PAGE_IDENTITY_RULES,
-      ],
-    },
+    runtime: WEAPP_RUNTIME_DESCRIPTOR.runtime,
   },
   {
     id: 'alipay',
     displayName: 'Alipay Mini Program',
     family: 'alipay',
-    aliases: ['alipay', 'ali', 'my'],
+    aliases: ALIPAY_RUNTIME_DESCRIPTOR.aliases,
     outputExtensions: {
       js: 'js',
       json: 'json',
@@ -126,7 +85,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'alipay',
-      directivePrefix: 'a',
+      directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.alipay,
       normalizeComponentTagName: true,
       normalizeVueTemplate: true,
       emitGenericPlaceholder: true,
@@ -137,24 +96,13 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     typescript: {
       appTypesPackage: '@mini-types/alipay',
     },
-    runtime: {
-      globalObjectKey: 'my',
-      hostConfigKey: '__wxConfig',
-      globalResolvePriority: 0,
-      routeGlobalResolvePriority: 2,
-      capabilities: {
-        ...DEFAULT_RUNTIME_CAPABILITIES,
-        pageShareMenu: false,
-        appThemeChangeListener: false,
-      },
-      pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
-    },
+    runtime: ALIPAY_RUNTIME_DESCRIPTOR.runtime,
   },
   {
     id: 'swan',
     displayName: 'Baidu Smart Program',
     family: 'swan',
-    aliases: ['swan', 'baidu', 'bd'],
+    aliases: SWAN_RUNTIME_DESCRIPTOR.aliases,
     outputExtensions: {
       js: 'js',
       json: 'json',
@@ -175,7 +123,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'default',
-      directivePrefix: 's',
+      directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.swan,
     },
     compiler: {
       templatePreset: 'swan',
@@ -183,18 +131,13 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     typescript: {
       appTypesPackage: 'miniprogram-api-typings',
     },
-    runtime: {
-      globalObjectKey: 'swan',
-      hostConfigKey: '__wxConfig',
-      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
-      pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
-    },
+    runtime: SWAN_RUNTIME_DESCRIPTOR.runtime,
   },
   {
     id: 'tt',
     displayName: 'ByteDance / Douyin Mini Program',
     family: 'tt',
-    aliases: ['tt', 'toutiao', 'bytedance', 'douyin'],
+    aliases: TT_RUNTIME_DESCRIPTOR.aliases,
     outputExtensions: {
       js: 'js',
       json: 'json',
@@ -218,7 +161,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'default',
-      directivePrefix: 'tt',
+      directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.tt,
       normalizeComponentTagName: true,
     },
     compiler: {
@@ -227,23 +170,13 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     typescript: {
       appTypesPackage: '@douyin-microapp/typings',
     },
-    runtime: {
-      globalObjectKey: 'tt',
-      hostConfigKey: '__wxConfig',
-      globalResolvePriority: 2,
-      routeGlobalResolvePriority: 1,
-      capabilities: {
-        ...DEFAULT_RUNTIME_CAPABILITIES,
-        appThemeChangeListener: false,
-      },
-      pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
-    },
+    runtime: TT_RUNTIME_DESCRIPTOR.runtime,
   },
   {
     id: 'jd',
     displayName: 'JD Mini Program',
     family: 'wechat',
-    aliases: ['jd', 'jingdong'],
+    aliases: JD_RUNTIME_DESCRIPTOR.aliases,
     outputExtensions: {
       js: 'js',
       json: 'json',
@@ -264,7 +197,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'default',
-      directivePrefix: 'wx',
+      directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.jd,
     },
     compiler: {
       templatePreset: 'wechat',
@@ -272,18 +205,13 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     typescript: {
       appTypesPackage: 'miniprogram-api-typings',
     },
-    runtime: {
-      globalObjectKey: 'jd',
-      hostConfigKey: '__wxConfig',
-      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
-      pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
-    },
+    runtime: JD_RUNTIME_DESCRIPTOR.runtime,
   },
   {
     id: 'xhs',
     displayName: 'Xiaohongshu Mini Program',
     family: 'wechat',
-    aliases: ['xhs', 'xiaohongshu', 'little-red-book', 'red'],
+    aliases: XHS_RUNTIME_DESCRIPTOR.aliases,
     outputExtensions: {
       js: 'js',
       json: 'json',
@@ -304,7 +232,7 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     },
     wxml: {
       eventBindingStyle: 'default',
-      directivePrefix: 'wx',
+      directivePrefix: MINI_PROGRAM_DIRECTIVE_PREFIXES.xhs,
     },
     compiler: {
       templatePreset: 'wechat',
@@ -312,11 +240,6 @@ export const MINI_PROGRAM_PLATFORM_DESCRIPTORS: readonly MiniProgramPlatformDesc
     typescript: {
       appTypesPackage: 'miniprogram-api-typings',
     },
-    runtime: {
-      globalObjectKey: 'xhs',
-      hostConfigKey: '__wxConfig',
-      capabilities: DEFAULT_RUNTIME_CAPABILITIES,
-      pageIdentityRules: DEFAULT_PAGE_IDENTITY_RULES,
-    },
+    runtime: XHS_RUNTIME_DESCRIPTOR.runtime,
   },
 ] as const

@@ -1,6 +1,7 @@
 /* eslint-disable style/max-statements-per-line */
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { validateArtifact } from './runtime-size-schema.mjs'
 
 export const COMMENT_MARKER = '<!-- weapp-vite-performance-report -->'
 const MAX_ERRORS = 20
@@ -30,8 +31,10 @@ export async function collectPerformanceReports({ performanceRoot, runtimeRoot, 
     const value = await readJson(file, result.errors)
     if (!value || value.kind !== 'wevu-runtime-size-pr-report') { continue }
     try {
-      validateRuntimeArtifact(value, runtimeExpected)
-      result.runtimeSize = normalizeRuntimeSize(value)
+      validateArtifact(value, runtimeExpected)
+      if (!result.runtimeSize || value.version >= result.runtimeSize.current.version) {
+        result.runtimeSize = normalizeRuntimeSize(value)
+      }
     }
     catch (error) {
       result.errors.push(`runtime-size: ${error instanceof Error ? error.message : String(error)}`)
@@ -152,22 +155,6 @@ function normalizeRuntimeSize(value) {
   return { baseline: value.baseline, current: value.current }
 }
 
-function validateRuntimeArtifact(value, expected = {}) {
-  if (![2, 3].includes(value.version) || !isObject(value.current) || !isObject(value.baseline)) { throw new Error('unsupported runtime-size artifact') }
-  if (expected.repository && value.repository !== expected.repository) { throw new Error('repository does not match') }
-  if (expected.prNumber != null && value.prNumber !== expected.prNumber) { throw new Error('PR number does not match') }
-  if (expected.headSha && value.headSha !== expected.headSha) { throw new Error('head SHA does not match') }
-  for (const report of [value.current, value.baseline]) {
-    if (report.version !== value.version || !Array.isArray(report.targets) || report.targets.length !== 2) { throw new Error('invalid runtime-size report') }
-    for (const target of report.targets) {
-      if (!Array.isArray(target.tiers) || target.tiers.length !== 5) { throw new Error('invalid runtime-size tiers') }
-      for (const tier of target.tiers) {
-        if (!Number.isSafeInteger(tier.dev?.bytes) || !Number.isSafeInteger(tier.production?.bytes)) { throw new TypeError('invalid runtime-size bytes') }
-      }
-    }
-  }
-}
-
 async function findJsonFiles(root) {
   if (!root) { return [] }
   const files = []
@@ -178,7 +165,7 @@ async function findJsonFiles(root) {
     for (const entry of entries) {
       const target = path.join(dir, entry.name)
       if (entry.isDirectory()) { await visit(target) }
-      else if (entry.isFile() && entry.name === 'report.json') { files.push(target) }
+      else if (entry.isFile() && ['report.json', 'report-full.json'].includes(entry.name)) { files.push(target) }
     }
   }
   await visit(root)

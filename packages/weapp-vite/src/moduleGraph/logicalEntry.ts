@@ -1,4 +1,5 @@
 import type { LogicalEntryRequest, SidecarModuleKind } from './protocol'
+import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { createSidecarModuleId, createSidecarSourceSpecifier } from './protocol'
 
 export interface LogicalEntryDependency {
@@ -16,7 +17,7 @@ export function createLogicalEntryModuleCode(
   const forwardsDefault = entry.type !== 'app' && isVueLikeEntry
   const imports = delegatesComponentRegistration
     ? [
-        `import { createWevuComponent as __weappViteCreateWevuComponent } from "wevu";`,
+        `import { createWevuComponent as __weappViteCreateWevuComponent } from ${JSON.stringify(WEAPP_VITE_RUNTIME_VIRTUAL_ID)};`,
         `import __weappViteComponentOptions from ${source};`,
         `__weappViteCreateWevuComponent(__weappViteComponentOptions);`,
         `export default __weappViteComponentOptions;`,

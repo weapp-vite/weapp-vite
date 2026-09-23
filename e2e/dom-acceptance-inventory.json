@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 109,
-    "wechatTaskCount": 106,
+    "taskCount": 110,
+    "wechatTaskCount": 107,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 275,
-    "casesWithPlan": 275,
+    "expandedCaseDeclarations": 277,
+    "casesWithPlan": 277,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -6532,6 +6532,69 @@
       ]
     },
     {
+      "task": "ide/wevu-runtime.pruning.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/wevu-runtime.pruning.test.ts:35",
+          "name": "issue #1064: runtime after automatic pruning > mounts without a router, updates reactive props and reLaunches a subpackage",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/runtime-pruning",
+              "checkpoints": "[ { id: 'cold-start', route: HOME, action: '验证无 router 首屏挂载', nodes: [{ selector: '#pruning-phase', text: 'mounted' }, { selector: '#pruning-count', text: '0' }] }, { id: 'updated', route: HOME, action: '点击按钮更新响应式状态和子组件 props', nodes: [{ se",
+              "source": "e2e/ide/wevu-runtime.pruning.test.ts:36"
+            }
+          ],
+          "routes": [
+            "/detail/index",
+            "/pages/index/index"
+          ],
+          "operations": [
+            "callMethod(readSnapshot)",
+            "check(cold-start)",
+            "tap(<missing>)",
+            "check(updated)",
+            "reLaunch(/detail/index)",
+            "check(subpackage)",
+            "reLaunch(/pages/index/index)",
+            "check(relaunch)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-runtime.pruning.test.ts:75",
+          "name": "issue #1064: dynamic public factory compatibility > retains JSX island dispatch for a native page using a dynamic public factory",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/runtime-public-factory",
+              "checkpoints": "[ { id: 'public-initial', route: HOME, action: '公开动态工厂首次挂载', nodes: [{ selector: '#public-factory-phase', text: 'mounted' }, { selector: '#public-factory-count', text: '0' }] }, { id: 'public-updated', route: HOME, action: '动态岛按钮派发事件并更新状态',",
+              "source": "e2e/ide/wevu-runtime.pruning.test.ts:76"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "callMethod(readSnapshot)",
+            "check(public-initial)",
+            "tap(<missing>)",
+            "check(public-updated)",
+            "reLaunch(/pages/index/index)",
+            "check(public-relaunch)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/wevu-runtime.shared-template-wxs.hmr.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -7710,6 +7773,10 @@
       "sha256": "3c9d82a6665105302f8e6e15fa9fbf269adef6a404ba92f9372b9d7fc619ff4c"
     },
     {
+      "file": "e2e/ide/wevu-runtime.pruning.test.ts",
+      "sha256": "a4e93fcdac0d41132b78705d593d50c89231b866644f46705ee76a11a2333ec7"
+    },
+    {
       "file": "e2e/ide/wevu-runtime.shared-template-wxs.hmr.test.ts",
       "sha256": "31542defe4704b2a6c87ddf25f10bed99222c422d81d77c60bc549589fd16815"
     },
@@ -7811,7 +7878,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "ec0b812d0019a52c339952dd9b571b7fb1ad3a2601b65de600036d5c8f42a56e"
+      "sha256": "3a65102582bfc6ae54410dcbd87d822fd62ae3f783337f3611ee6c93d6d7317c"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -8008,6 +8075,10 @@
     {
       "file": "e2e/utils/runtimeProvider.ts",
       "sha256": "244b9dfcfcbaab055f505e19bcb9aae902b2f232312f9747ada5bbdac14a6994"
+    },
+    {
+      "file": "e2e/utils/runtimePruning.ts",
+      "sha256": "dfe06114e66db7ccb4579069266fa4342991cae0f6085c7fe53d390dba285cb9"
     },
     {
       "file": "e2e/utils/runtimeValueSnapshot.ts",

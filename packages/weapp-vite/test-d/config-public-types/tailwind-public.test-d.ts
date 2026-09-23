@@ -1,5 +1,5 @@
 import type { CreateCompilerOptions } from 'weapp-tailwindcss/core'
-import type { WeappTailwindcssOptions, WeappViteConfig } from 'weapp-vite/types'
+import type { WeappCompilerPlugin, WeappTailwindcssOptions, WeappViteConfig } from 'weapp-vite/types'
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd'
 import { defineConfig } from 'weapp-vite/config'
 
@@ -29,3 +29,16 @@ expectAssignable<CreateCompilerOptions['compiler']>(tailwind.compiler)
 expectAssignable<NonNullable<NonNullable<CreateCompilerOptions['tailwindcss']>['v4']>['cssSources']>(tailwind.tailwindcss?.v4?.cssSources)
 expectNotAssignable<WeappTailwindcssOptions>({ compiler: { maxRoots: '64' } })
 expectNotAssignable<WeappTailwindcssOptions>({ cssEntries: [42] })
+
+const compilerPlugin: WeappCompilerPlugin = {
+  name: 'example-compiler',
+  capabilities: { style: true, template: true, script: true, hmr: true },
+  create(context) {
+    context.claimSource('src/app.css', 'example-compiler')
+    return {
+      transformCss: ({ code }) => ({ code }),
+    }
+  },
+}
+const compilerConfig = defineConfig({ weapp: { compilerPlugins: [compilerPlugin] } })
+expectAssignable<NonNullable<WeappViteConfig['compilerPlugins']>>(compilerConfig.weapp.compilerPlugins)

@@ -31,5 +31,17 @@ describe('performance reporting workflows', () => {
     expect(workflow.on.workflow_run.workflows).toEqual(['CI Performance', 'Wevu Runtime Size'])
     expect(workflow.permissions).toMatchObject({ 'actions': 'read', 'contents': 'read', 'pull-requests': 'write' })
     expect((workflow.jobs.comment.steps as Array<{ name?: string }>).some(step => step.name === 'Check out trusted reporting scripts')).toBe(true)
+    const checkout = workflow.jobs.comment.steps.find((step: { name?: string }) => step.name === 'Check out trusted reporting scripts')
+    expect(checkout.with.ref).toContain('github.event.repository.default_branch')
+  })
+
+  it('publishes the complete matrix and a compatibility artifact from the same measurement', async () => {
+    const workflow = parse(await readFile(path.join(root, '.github/workflows/wevu-runtime-size.yml'), 'utf8'))
+    const measure = workflow.jobs.measure.steps.find((step: { name?: string }) => step.name === 'Measure head and baseline')
+    expect(measure.run).toContain('--root=../baseline')
+    expect(measure.run).toContain('--artifact-json=../runtime-size-artifact/report-full.json')
+    expect(measure.run).toContain('--legacy-artifact-json=../runtime-size-artifact/report.json')
+    expect(measure.run).toContain('--github-summary')
+    expect(measure.run).toContain('--check')
   })
 })

@@ -151,6 +151,8 @@ export interface TransformContext {
  * v-for 解析结果。
  */
 export interface ForParseResult {
+  /** 无法拆分为完整别名与列表的非法循环表达式诊断。 */
+  error?: string
   listExp?: string
   rawListExp?: string
   listExpAst?: Expression

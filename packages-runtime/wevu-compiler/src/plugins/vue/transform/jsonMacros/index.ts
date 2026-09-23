@@ -30,9 +30,17 @@ type JsonMacroExtractionResultWithMap = JsonMacroExtractionResult & {
 
 function withSourceMap(
   result: JsonMacroExtractionResult,
-  map: EncodedSourceMapLike | undefined,
+  rewrite: { map?: EncodedSourceMapLike },
 ): JsonMacroExtractionResultWithMap {
-  return map ? { ...result, map } : result
+  if (!('map' in rewrite)) {
+    return result
+  }
+  return {
+    ...result,
+    get map() {
+      return rewrite.map
+    },
+  }
 }
 
 async function evaluateJsonMacroConfig(
@@ -86,14 +94,15 @@ async function extractJsonMacroFromScriptSetupInternal(
   const { macroNames, macroStatements } = collectMacroCallPaths(ast, filename)
   assertSingleMacro(macroNames, filename)
 
-  const { stripped, macroStatementSources, map } = stripScriptSetupMacroStatements(
+  const rewrite = stripScriptSetupMacroStatements(
     content,
     ast,
     filename,
     sourceMap,
   )
+  const { stripped, macroStatementSources } = rewrite
   if (macroNames.size === 0) {
-    return withSourceMap({ stripped }, map)
+    return withSourceMap({ stripped }, rewrite)
   }
 
   const macroHash = createHash('sha256')
@@ -103,7 +112,7 @@ async function extractJsonMacroFromScriptSetupInternal(
 
   const staticConfig = resolveStaticJsonMacroConfig(macroStatements, options)
   if (staticConfig) {
-    return withSourceMap({ stripped, config: staticConfig, macroHash, dependencies: [] }, map)
+    return withSourceMap({ stripped, config: staticConfig, macroHash, dependencies: [] }, rewrite)
   }
 
   const result = await evaluateJsonMacroConfig(content, filename, lang, options)
@@ -111,7 +120,7 @@ async function extractJsonMacroFromScriptSetupInternal(
     result
       ? { stripped, config: result.config, macroHash, dependencies: result.dependencies }
       : { stripped, macroHash },
-    map,
+    rewrite,
   )
 }
 

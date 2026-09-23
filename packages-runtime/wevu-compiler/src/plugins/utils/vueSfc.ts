@@ -1,12 +1,17 @@
 import type { AttributeNode, ElementNode, ParserOptions } from '@vue/compiler-core'
 import type { SFCDescriptor, SFCParseOptions, SFCParseResult, SFCScriptBlock, TemplateCompiler } from 'vue/compiler-sfc'
+import type { CompilerDiagnostic, SourcePosition, SourceSpan } from '../../types/diagnostics'
+import type { EncodedSourceMapLike } from '../../utils/sourcemap'
 import type { ResolveSfcBlockSrcOptions } from './vueSfcBlockSrc'
+import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import { NodeTypes } from '@vue/compiler-core'
 import * as compilerDom from '@vue/compiler-dom'
 import { LRUCache } from 'lru-cache'
 import MagicString from 'magic-string'
 import { parse as parseCompilerSfc } from 'vue/compiler-sfc'
+import { CompilerDiagnosticError } from '../../types/diagnostics'
 import { getReadFileCheckMtime } from '../../utils/cachePolicy'
+import { isEncodedSourceMapLike } from '../../utils/sourcemap'
 import { normalizeLineEndings } from '../../utils/text'
 import { readFile as readFileCached } from './cache'
 import { resolveSfcBlockSrc } from './vueSfcBlockSrc'
@@ -54,6 +59,111 @@ const SCRIPT_SRC_ATTR = 'data-weapp-vite-script-src'
 const INTERNAL_SCRIPT_SRC_ATTR = '\0wevu-script-src'
 // compiler-sfc 会在 createBlock 前按 AST children 判空；该哨兵只影响判空，不改变源码和 loc。
 const EXTERNAL_SCRIPT_CONTENT_SENTINEL = '\0wevu-external-script'
+
+interface SfcParseErrorPosition {
+  column: number
+  line: number
+}
+
+interface CreateSfcParseErrorOptions {
+  filename: string
+  source: string
+  sourceMap?: EncodedSourceMapLike | null
+  formatMessage?: (message: string, location: SourceSpan | undefined) => string
+}
+
+function createSourceLineStarts(source: string) {
+  const starts = [0]
+  for (const match of source.matchAll(/\r\n?|\n/g)) {
+    starts.push(match.index + match[0].length)
+  }
+  return starts
+}
+
+function resolvePosition(source: string, lineStarts: number[], line: number, column: number): SourcePosition {
+  const safeLine = Math.min(Math.max(line, 1), lineStarts.length)
+  const lineStart = lineStarts[safeLine - 1] ?? 0
+  const offset = Math.min(source.length, lineStart + Math.max(column - 1, 0))
+  return {
+    offset,
+    line: safeLine,
+    column: offset - lineStart + 1,
+  }
+}
+
+function readSfcParseErrorPosition(value: unknown): SfcParseErrorPosition | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+  if (!('line' in value) || typeof value.line !== 'number' || !('column' in value) || typeof value.column !== 'number') {
+    return undefined
+  }
+  return {
+    line: value.line,
+    column: value.column,
+  }
+}
+
+function readSfcParseErrorLocation(error: unknown) {
+  if (!error || typeof error !== 'object' || !('loc' in error) || !error.loc || typeof error.loc !== 'object') {
+    return undefined
+  }
+  const start = 'start' in error.loc ? readSfcParseErrorPosition(error.loc.start) : undefined
+  const end = 'end' in error.loc ? readSfcParseErrorPosition(error.loc.end) : undefined
+  return start ? { start, end: end ?? start } : undefined
+}
+
+/**
+ * 将 Vue SFC parser 错误转换为编译器的结构化致命错误。
+ */
+export function createSfcParseError(error: unknown, options: CreateSfcParseErrorOptions) {
+  const originalLocation = readSfcParseErrorLocation(error)
+  const sourceLineStarts = originalLocation ? createSourceLineStarts(options.source) : []
+  let traceMap: TraceMap | undefined
+  if (originalLocation && isEncodedSourceMapLike(options.sourceMap)) {
+    try {
+      traceMap = new TraceMap(options.sourceMap as unknown as ConstructorParameters<typeof TraceMap>[0])
+    }
+    catch {
+      traceMap = undefined
+    }
+  }
+  const remap = (position: SfcParseErrorPosition) => {
+    if (traceMap) {
+      try {
+        const mapped = originalPositionFor(traceMap, {
+          line: position.line,
+          column: Math.max(position.column - 1, 0),
+        })
+        if (mapped.line != null && mapped.column != null) {
+          return resolvePosition(options.source, sourceLineStarts, mapped.line, mapped.column + 1)
+        }
+      }
+      catch {
+        // 损坏或不完整的预处理 map 不应遮蔽原始 SFC parser 错误。
+      }
+    }
+    return resolvePosition(options.source, sourceLineStarts, position.line, position.column)
+  }
+  const location: SourceSpan | undefined = originalLocation
+    ? {
+        start: remap(originalLocation.start),
+        end: remap(originalLocation.end),
+      }
+    : undefined
+  const causeMessage = error instanceof Error ? error.message : String(error)
+  const message = options.formatMessage?.(causeMessage, location)
+    ?? `解析 ${options.filename} 失败：${causeMessage}`
+  const diagnostic: CompilerDiagnostic = {
+    code: 'WV2003',
+    severity: 'error',
+    message,
+    filename: options.filename,
+    source: 'sfc',
+    loc: location,
+  }
+  return new CompilerDiagnosticError(diagnostic, { cause: error })
+}
 
 interface SfcScriptSrcAttribute {
   attribute: AttributeNode

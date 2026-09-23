@@ -24,6 +24,7 @@ describe('runtime capability registry', () => {
       import('@/runtime/features/setDataHighFrequencyWarning'),
       import('@/runtime/features/scopedSlots'),
       import('@/runtime/features/layout'),
+      import('@/runtime/features/jsxIslands'),
     ])
 
     expect(runtimeCapabilityRegistry).toEqual({})

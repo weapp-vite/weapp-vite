@@ -16,7 +16,7 @@ import {
 
 function createReport(): RuntimeSizeReport {
   return {
-    version: 2,
+    version: 4,
     generatedAt: '2026-09-04T00:00:00.000Z',
     commit: 'abc1234',
     targets: runtimeSizeTargets.map(target => ({
@@ -32,6 +32,7 @@ function createReport(): RuntimeSizeReport {
           label: tier.label,
           dev: { bytes: 1 },
           production: {
+            ...(target.gzip ? { gzipBytes: 1 } : {}),
             bytes: budget?.ceilingBytes ?? 1,
             retainedModules: {
               entry,
@@ -170,7 +171,7 @@ describe('runtime retained module graph', () => {
       '/runtime/scopedSlots.mjs',
     ])
     expect(runtimeSizeDenyRules.every(rule => (
-      rule.allowedTiers.join(',') === 'complex-component,full-provider'
+      rule.allowedTiers.join(',') === 'complex-component,public-app,public-page,full-provider'
     ))).toBe(true)
     expect(runtimeSizeDenyRules.some(rule => rule.suffix.includes('layout'))).toBe(false)
     expect(runtimeSizeDenyRules.some(rule => rule.suffix.includes('logger'))).toBe(false)

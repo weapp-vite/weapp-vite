@@ -5,6 +5,8 @@ import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
+import { createRuntimePruningFiles } from './test/helpers/runtimePruning'
+import { createRuntimePublicFactoryFiles } from './test/helpers/runtimePublicFactory'
 import { createRuntimeValueSnapshotFiles } from './test/helpers/runtimeValueSnapshot'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
@@ -33,6 +35,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:runtime-pruning-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:store-definition-reload-fixture') {
         return `\0${id}`
       }
@@ -44,6 +49,10 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:runtime-pruning-fixture') {
+        const [pruned, publicFactory] = await Promise.all([createRuntimePruningFiles(), createRuntimePublicFactoryFiles()])
+        return `export default ${JSON.stringify(pruned)}; export const publicFactorySources = ${JSON.stringify(publicFactory)}`
+      }
       if (id === '\0virtual:store-definition-reload-fixture') {
         return `export default ${JSON.stringify(await createStoreDefinitionReloadFiles())}`
       }

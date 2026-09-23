@@ -36,6 +36,12 @@ const PACKAGE_ALIASES: PackageAliasTarget[] = [
     fallbackWorkspacePackagePath: SHARED_WORKSPACE_PACKAGE_PATH,
   },
   {
+    find: '@weapp-core/shared/platforms/runtime',
+    packageName: '@weapp-core/shared',
+    distEntry: 'dist/platforms/runtime/index.js',
+    fallbackWorkspacePackagePath: SHARED_WORKSPACE_PACKAGE_PATH,
+  },
+  {
     find: 'class-variance-authority',
     packageName: 'class-variance-authority',
     distEntry: 'dist/index.js',

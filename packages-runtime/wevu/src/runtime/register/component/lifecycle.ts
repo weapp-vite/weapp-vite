@@ -6,13 +6,10 @@ import {
   WEVU_READY_CALLED_KEY,
   WEVU_ROUTE_DONE_CALLED_KEY,
 } from '@weapp-core/constants'
-import {
-  cancelInitialNavigation,
-  ensureInitialNavigation,
-} from '../../../router/initialNavigation'
 import { notifyRouteStateSync } from '../../../router/routeSync'
 import { runtimeCapabilityRegistry } from '../../capabilities'
 import { callHookList } from '../../hooks'
+import { cancelInitialNavigation, ensureInitialNavigation } from '../../navigationLifecycle'
 import { runTeardownSteps } from '../../teardown'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'

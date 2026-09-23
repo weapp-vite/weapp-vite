@@ -35,7 +35,7 @@ vi.mock('@/router/routeSync', () => ({
   notifyRouteStateSync: mocks.notifyRouteStateSync,
 }))
 
-vi.mock('@/router/initialNavigation', () => ({
+vi.mock('@/runtime/navigationLifecycle', () => ({
   getInitialNavigationRunner: mocks.getInitialNavigationRunner,
   ensureInitialNavigation: mocks.ensureInitialNavigation,
   cancelInitialNavigation: mocks.cancelInitialNavigation,

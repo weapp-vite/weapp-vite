@@ -86,11 +86,12 @@ describe('multi-platform SFC template build matrix', { concurrent: false }, () =
 
       const runtimeChunk = await findWevuSemanticChunk(
         outputRoot,
-        code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
+        code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
         `${platform} SFC template runtime`,
       )
-      expect(runtimeChunk.code).toMatch(new RegExp(`["']MP_PLATFORM["']:\\s*["']${id}["']`))
-      expect(runtimeChunk.code).toMatch(new RegExp(`\\.${runtimeGlobal}\\b|["']${runtimeGlobal}["']`))
+      expect(runtimeChunk.code).toMatch(new RegExp(`(?:\\.${runtimeGlobal}\\b|typeof\\s+${runtimeGlobal}\\b)`))
+      expect(runtimeChunk.code.includes('didMount')).toBe(platform === 'alipay')
+      expect(runtimeChunk.code.includes('didUnmount')).toBe(platform === 'alipay')
     },
   )
 })

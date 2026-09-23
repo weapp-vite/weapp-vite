@@ -1,4 +1,4 @@
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 
 const MINI_PROGRAM_CAPABILITY_SCHEMA_PREFIX_RE = new RegExp(`^(?:${getMiniProgramRuntimeGlobalKeys().join('|')})\\.`)
 

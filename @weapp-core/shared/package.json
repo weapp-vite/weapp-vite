@@ -24,6 +24,12 @@
     "runtime"
   ],
   "sideEffects": false,
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
+  },
   "weapp-vite-dev": {
     "exports": {
       ".": {
@@ -41,6 +47,10 @@
       "./platforms": {
         "types": "./src/platforms/index.ts",
         "default": "./src/platforms/index.ts"
+      },
+      "./platforms/runtime": {
+        "types": "./src/platforms/runtime/index.ts",
+        "default": "./src/platforms/runtime/index.ts"
       }
     },
     "main": "./src/index.ts",
@@ -63,6 +73,10 @@
     "./platforms": {
       "types": "./dist/platforms/index.d.ts",
       "import": "./dist/platforms/index.js"
+    },
+    "./platforms/runtime": {
+      "types": "./dist/platforms/runtime/index.d.ts",
+      "import": "./dist/platforms/runtime/index.js"
     }
   },
   "main": "./dist/index.js",
@@ -79,6 +93,7 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
+    "test:types": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
@@ -102,6 +117,10 @@
       "./platforms": {
         "types": "./dist/platforms/index.d.ts",
         "import": "./dist/platforms/index.js"
+      },
+      "./platforms/runtime": {
+        "types": "./dist/platforms/runtime/index.d.ts",
+        "import": "./dist/platforms/runtime/index.js"
       }
     },
     "main": "./dist/index.js",

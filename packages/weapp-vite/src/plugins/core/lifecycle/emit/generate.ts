@@ -774,7 +774,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         )
         injectAxiosFetchAdapterEnv(rolldownBundle)
         injectRequestGlobalsAppRegistration(rolldownBundle, installerChunks)
-        collapseRequestGlobalsRuntimeSupportChunk(rolldownBundle)
+        // 开发产物跨局部重建复用，不能删除下一轮原始 runtime 仍会引用的支持块。
+        if (!configService.isDev) {
+          collapseRequestGlobalsRuntimeSupportChunk(rolldownBundle)
+        }
       }
 
       const appPreludePath = scanService.appEntry?.preludePath

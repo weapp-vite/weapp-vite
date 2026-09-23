@@ -9,6 +9,7 @@ import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
+import type { DevBuildWatcherController } from './devBuildWatcher'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -19,8 +20,8 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
+import { hasManagedCompilerEntries } from '../../plugins/compilerPluginRegistry'
 import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
-import { hasManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
@@ -189,6 +190,11 @@ interface SnapshotBuildReason {
 interface SnapshotBuildBatch {
   reasons: SnapshotBuildReason[]
   startedAt: number
+}
+
+interface DevWatcherCleanup {
+  releaseSession: () => void
+  closePromise?: Promise<void>
 }
 
 function toStatefulHmrOutput(output: RolldownOutput | RolldownOutput[] | RolldownWatcher): StatefulHmrOutputFile[] {
@@ -380,6 +386,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let devHmrRuntimeNoticeLogged = false
   let skylineHmrFallbackApplied = false
   let activeDevSession: object | undefined
+  const devWatcherCleanups = new WeakMap<RolldownWatcher, DevWatcherCleanup>()
 
   const SKYLINE_HMR_COMPATIBILITY_URL = 'https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98'
 
@@ -1214,7 +1221,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       option: configService.weappViteConfig.hmr?.touchAppWxss,
       platform: configService.platform,
       dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
-      managedTailwindcss: hasManagedTailwindcssEntries(ctx),
+      managedCompiler: hasManagedCompilerEntries(ctx as any),
     })
   }
 
@@ -1229,6 +1236,36 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return false
     }
     return requestedConfigRestartBuilds.delete(target)
+  }
+
+  // 外部消费者只订阅首次返回的 watcher；重启只替换其背后的原生会话与服务器。
+  let activeStatefulWatcher: RolldownWatcher | undefined
+  let statefulBuildEvents: DevBuildWatcherController | undefined
+  let statefulWatcherClosed = false
+
+  function getStatefulBuildEvents() {
+    if (statefulBuildEvents) {
+      return statefulBuildEvents
+    }
+    const buildEvents = createDevBuildWatcher()
+    const closeEvents = buildEvents.watcher.close.bind(buildEvents.watcher)
+    let closePromise: Promise<void> | undefined
+    buildEvents.watcher.close = () => {
+      statefulWatcherClosed = true
+      closePromise ??= (async () => {
+        const activeWatcher = activeStatefulWatcher
+        activeStatefulWatcher = undefined
+        try {
+          await activeWatcher?.close()
+        }
+        finally {
+          await closeEvents()
+        }
+      })()
+      return closePromise
+    }
+    statefulBuildEvents = buildEvents
+    return buildEvents
   }
 
   async function startDev(target: BuildTarget, restartDev: (target: BuildTarget) => Promise<RolldownWatcher>): Promise<RolldownWatcher> {
@@ -1291,6 +1328,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       logHmrRuntimeDecision(hmrDecision)
     }
     if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
+      const nativeBuildEvents = getStatefulBuildEvents()
+      nativeBuildEvents.emitEvent({ code: 'START' })
       try {
         const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin)
         const initialSnapshot = toStatefulHmrOutput(snapshot.output)
@@ -1325,25 +1364,41 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ...(buildOptions.build ?? {}),
           write: true,
         }
+        if (statefulWatcherClosed) {
+          return nativeBuildEvents.watcher
+        }
         const workerPromise = hasWorkersDir && workersDir
           ? devWorkers(configService, watcherService, workersDir)
           : Promise.resolve()
-        let statefulWatcher: RolldownWatcher | undefined
         const startup = await Promise.allSettled([
           runStatefulHmrDev(ctx, buildOptions, async () => {
-            await statefulWatcher?.close()
+            const activeWatcher = activeStatefulWatcher
+            activeStatefulWatcher = undefined
+            await activeWatcher?.close()
+            if (statefulWatcherClosed) {
+              return
+            }
             logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
             ctx.moduleGraphService.resetSession()
             resetRuntimeStateForFreshBuild(ctx.runtimeState)
             await configService.load(configService.loadOptions)
             await scanService.loadAppEntry()
             scanService.loadSubPackages()
+            if (statefulWatcherClosed) {
+              return
+            }
             await restartDev(target)
-            logger.success('微信状态保持 HMR 构建已完成完整重载。')
+            if (!statefulWatcherClosed) {
+              logger.success('微信状态保持 HMR 构建已完成完整重载。')
+            }
           }, {
             entryIds: initialEntryIds,
             delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-            initial: { output: initialSnapshot, componentPageGlobalStyleRoutes: initialGlobalStyleRoutes },
+            initial: {
+              output: initialSnapshot,
+              componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
+              glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+            },
             rebuild: async (files) => {
               for (const file of files) {
                 invalidateFileCache(file)
@@ -1373,9 +1428,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                 entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
                 delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
                 componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
+                glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
               }
             },
-          }),
+          }, nativeBuildEvents),
           workerPromise,
         ])
         const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
@@ -1391,12 +1447,30 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           throw startupErrors.length === 1 ? startupErrors[0] : new AggregateError(startupErrors, 'Stateful development watcher startup failed')
         }
         const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
-        statefulWatcher = watcher
-        watcherService.setRollupWatcher(watcher, '/')
-        return watcher
+        if (statefulWatcherClosed) {
+          await watcher.close()
+          return nativeBuildEvents.watcher
+        }
+        activeStatefulWatcher = watcher
+        const facade = nativeBuildEvents.watcher
+        if (watcherService.rollupWatcherMap.get('/') !== facade) {
+          watcherService.setRollupWatcher(facade, '/')
+        }
+        return facade
       }
       catch (error) {
-        if (hmrDecision.configured !== 'auto' || !isStatefulHmrRuntimeCompatibilityError(error)) {
+        if (statefulWatcherClosed) {
+          return nativeBuildEvents.watcher
+        }
+        const useClassicFallback = hmrDecision.configured === 'auto'
+          && isStatefulHmrRuntimeCompatibilityError(error)
+        if (!useClassicFallback) {
+          nativeBuildEvents.emitEvent({
+            code: 'ERROR',
+            error: error instanceof Error ? error : new Error(String(error)),
+            result: undefined as never,
+          })
+          await nativeBuildEvents.watcher.close()
           throw error
         }
         devHmrDecision = {
@@ -1430,7 +1504,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
     let emittedAutoRoutesSignature: string | undefined
-    const devBuildWatcher = target === 'app' ? createDevBuildWatcher() : undefined
+    const devBuildWatcher = target === 'app' ? (statefulBuildEvents ?? createDevBuildWatcher()) : undefined
 
     function markSnapshotEntriesFullDirty() {
       for (const entryId of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
@@ -1537,7 +1611,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         )
         const { routeSignature, routeDependentEntries } = await refreshSnapshotSources(
           ctx,
-          batchReasons.flatMap(batchReason => batchReason.file ? [batchReason.file] : []),
+          batchReasons.filter((batchReason): batchReason is SnapshotBuildReason & { file: string } => Boolean(batchReason.file)),
           emittedAutoRoutesSignature,
         )
         for (const entryId of graphAffectedEntries) {
@@ -1913,7 +1987,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         throw error
       }
     }
-    watcherService.setRollupWatcher(watcher, watcherRoot)
+    if (watcherService.rollupWatcherMap.get(watcherRoot) !== watcher) {
+      watcherService.setRollupWatcher(watcher, watcherRoot)
+    }
     return watcher
   }
   async function runDev(target: BuildTarget): Promise<RolldownWatcher> {
@@ -1931,11 +2007,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (activeDevSession !== session) {
         return watcher
       }
+      const existingCleanup = devWatcherCleanups.get(watcher)
+      if (existingCleanup) {
+        // native 重启复用公共 watcher；已保存的 close 也必须释放当前会话。
+        existingCleanup.releaseSession = releaseSession
+        if (existingCleanup.closePromise) {
+          await existingCleanup.closePromise.finally(releaseSession)
+        }
+        return watcher
+      }
+      const cleanup: DevWatcherCleanup = { releaseSession }
+      devWatcherCleanups.set(watcher, cleanup)
       const close = watcher.close.bind(watcher)
-      let closePromise: Promise<void> | undefined
       watcher.close = () => {
-        closePromise ??= close().finally(releaseSession)
-        return closePromise
+        cleanup.closePromise ??= close().finally(() => cleanup.releaseSession())
+        return cleanup.closePromise
       }
       return watcher
     }

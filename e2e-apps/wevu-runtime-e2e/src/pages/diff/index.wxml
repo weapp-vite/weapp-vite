@@ -5,5 +5,5 @@
   <view id="diff-nested">nested: {{state.nested.value}}</view>
   <view id="diff-list">list: {{state.list}}</view>
   <view class="hidden">skip: {{state.skip.secret}}</view>
-  <text class="details" selectable>{{__e2eText}}</text>
+  <text class="details" user-select>{{__e2eText}}</text>
 </view>

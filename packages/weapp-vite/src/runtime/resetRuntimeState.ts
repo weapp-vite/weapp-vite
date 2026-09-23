@@ -4,8 +4,7 @@ import { createRuntimeState } from './runtimeState'
 export function resetRuntimeStateForFreshBuild(runtimeState: RuntimeState): void {
   const fresh = createRuntimeState()
 
-  runtimeState.glassEasel.detected = false
-  runtimeState.glassEasel.diagnostics.clear()
+  runtimeState.glassEasel.analysisByOwner.clear()
   runtimeState.glassEasel.warnedDiagnostics.clear()
   runtimeState.glassEasel.silent = false
 

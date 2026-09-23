@@ -30,7 +30,37 @@ function createState(filename: string, source: string) {
   } as unknown as CorePluginState
 }
 
+function createProviderNeutralState(filename: string, source: string) {
+  const signatures = resolveVueSfcHmrSignatures(source, filename)
+
+  return {
+    ctx: {
+      runtimeState: {
+        build: {
+          hmr: {
+            vueEntryHasTemplate: new Map([[filename, signatures.hasTemplate]]),
+            vueEntrySfcSignatures: new Map([[filename, signatures.blockSignatures]]),
+            vueEntryTemplateContentSignatures: new Map([[filename, signatures.templateContentSignatures]]),
+            vueEntryScriptContentSignatures: new Map([[filename, signatures.scriptContentSignatures]]),
+          },
+        },
+      },
+    },
+  } as unknown as CorePluginState
+}
+
 describe('createVueEntryUpdateInspector', () => {
+  it('reads provider-neutral content signatures for compiler HMR', async () => {
+    const filename = '/project/src/app.vue'
+    const source = '<template><view class="page" /></template>'
+    const inspector = createVueEntryUpdateInspector(createProviderNeutralState(filename, source), filename, {
+      readFile: async () => source,
+    })
+
+    await expect(inspector.isCompilerContentUpdate()).resolves.toBe(false)
+    await expect(inspector.isCompilerContentUpdate('missing-provider')).resolves.toBe(true)
+  })
+
   it('reuses one source read across vue entry update checks', async () => {
     const filename = '/project/src/app.vue'
     const source = `

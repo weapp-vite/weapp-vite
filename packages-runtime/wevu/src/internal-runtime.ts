@@ -26,6 +26,7 @@ export {
 export { useDisposables } from './runtime/disposables'
 export { useElementIntersectionObserver } from './runtime/elementIntersectionObserver'
 export { installInlineEvents } from './runtime/features/inlineEvents'
+export { installJsxIslands } from './runtime/features/jsxIslands'
 export { installLayout } from './runtime/features/layout'
 export { installPatchStrategy } from './runtime/features/patchStrategy'
 export {

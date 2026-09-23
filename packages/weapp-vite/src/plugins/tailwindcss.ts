@@ -22,6 +22,7 @@ import { changeFileExtension } from '../utils'
 import { applyOutputChunkTransform } from '../utils/outputChunk'
 import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { markWeappCompilerPlugin } from './compilerPlugin'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
 import { findManagedStyleImports } from './tailwindcss/imports'
@@ -748,5 +749,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     },
   }
 
-  return [managerPlugin, outputPlugin]
+  return [
+    markWeappCompilerPlugin(managerPlugin, 'source', MANAGED_PLUGIN_NAME),
+    markWeappCompilerPlugin(outputPlugin, 'output', `${MANAGED_PLUGIN_NAME}:output`),
+  ]
 }

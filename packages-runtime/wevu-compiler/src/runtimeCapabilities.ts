@@ -12,6 +12,7 @@ export const WE_VU_RUNTIME_CAPABILITY_ORDER = [
   'setDataHighFrequencyWarning',
   'scopedSlots',
   'layout',
+  'jsxIslands',
 ] as const
 
 /**
@@ -43,6 +44,7 @@ export const WE_VU_RUNTIME_CAPABILITY_INSTALLERS = {
   setDataHighFrequencyWarning: 'installSetDataHighFrequencyWarning',
   scopedSlots: 'installScopedSlots',
   layout: 'installLayout',
+  jsxIslands: 'installJsxIslands',
 } as const satisfies Record<WevuRuntimeCapabilityName, string>
 
 /**
@@ -91,6 +93,9 @@ export function createWevuRuntimeCapabilityMetadataFromBindingManifest(
   }
   if (features.layout) {
     required.push('layout')
+  }
+  if (features.jsxIslands) {
+    required.push('jsxIslands')
   }
   return createWevuRuntimeCapabilityMetadata(required)
 }

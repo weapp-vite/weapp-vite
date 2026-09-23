@@ -126,7 +126,11 @@ describe('template build: wevu tdesign shared chunks', { concurrent: false }, ()
     const appScript = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
     expect([...appScript.matchAll(REQUIRE_VENDOR_RE)].length).toBeGreaterThan(0)
     const scripts = await Promise.all((await collectDistJsFiles(DIST_ROOT)).map(jsPath => fs.readFile(jsPath, 'utf8')))
-    expect(scripts.some(source => /["']MP_PLATFORM["']:\s*["']weapp["']/.test(source))).toBe(true)
+    const runtimeScript = scripts.find(source => source.includes('__wevu_runtime') && source.includes('__wevu_options'))
+    expect(runtimeScript).toBeDefined()
+    expect(runtimeScript).toMatch(/(?:\.wx\b|typeof\s+wx\b)/)
+    expect(runtimeScript).not.toContain('didMount')
+    expect(runtimeScript).not.toContain('didUnmount')
 
     const missingByFile: Record<string, string[]> = {}
     for (const jsPath of await collectDistJsFiles(DIST_ROOT)) {

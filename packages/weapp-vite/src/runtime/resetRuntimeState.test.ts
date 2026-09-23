@@ -38,12 +38,17 @@ describe('runtime state fresh build reset', () => {
     state.css.emittedSource.set('app.wxss', '.page {}')
     state.wxml.emittedCode.set('pages/index/index.wxml', '<view />')
     state.scan.warnedMessages.add('warning')
-    state.glassEasel.detected = true
-    state.glassEasel.diagnostics.set('GE001', {
-      code: 'GE001',
-      severity: 'error',
-      message: 'test',
-      file: 'app.json',
+    state.glassEasel.analysisByOwner.set('output:main:app.json', {
+      kind: 'output',
+      scope: 'main',
+      detected: true,
+      diagnostics: new Map([['GE001', {
+        code: 'GE001',
+        severity: 'error',
+        message: 'test',
+        file: 'app.json',
+      }]]),
+      sourceIds: new Set(['app.json']),
     })
     state.glassEasel.warnedDiagnostics.add('GE001')
 
@@ -61,8 +66,7 @@ describe('runtime state fresh build reset', () => {
     expect(state.css.emittedSource.size).toBe(0)
     expect(state.wxml.emittedCode.size).toBe(0)
     expect(state.scan.warnedMessages.size).toBe(0)
-    expect(state.glassEasel.detected).toBe(false)
-    expect(state.glassEasel.diagnostics.size).toBe(0)
+    expect(state.glassEasel.analysisByOwner.size).toBe(0)
     expect(state.glassEasel.warnedDiagnostics.size).toBe(0)
     expect(state.scan.isDirty).toBe(true)
   })

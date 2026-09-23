@@ -3,6 +3,7 @@ import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { createContext, runInContext } from 'node:vm'
+import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import path from 'pathe'
 import { dev } from 'rolldown/experimental'
 import { describe, expect, it } from 'vitest'
@@ -33,7 +34,7 @@ describe('registration owners in actual DevEngine output', () => {
           if (id === owner || id === source || id === pageSource) {
             return id
           }
-          if (id === 'wevu') {
+          if (id === WEAPP_VITE_RUNTIME_VIRTUAL_ID) {
             return runtimeId
           }
         },

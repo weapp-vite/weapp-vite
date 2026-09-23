@@ -2,7 +2,8 @@
 
 import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
-import type { MutableCompilerContext } from '../../context'
+import type { CompilerContext, MutableCompilerContext } from '../../context'
+import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
@@ -17,6 +18,8 @@ import {
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { createServer, transformWithOxc } from 'vite'
+import { isNativeScriptAnalysisOwner, refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
+import { isGlassEaselDetected } from '../../analyze/glassEasel/state'
 import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
@@ -31,7 +34,7 @@ import { createStatefulHmrGlobalStyleAssets } from './globalStyles'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 import { createStatefulHmrInitialGraph, resolveStatefulHmrModuleRoot } from './initialModuleGraph'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
-import { selectStatefulHmrAdditionalOutput } from './outputOwnership'
+import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { createStatefulHmrPatchImportResolver, transformStatefulHmrPatchImports } from './patchModule'
 import { createStatefulHmrControlSource } from './runtimeSource'
@@ -66,7 +69,10 @@ export async function runStatefulHmrDev(
   buildOptions: InlineConfig,
   restart: () => Promise<void>,
   snapshots: StatefulHmrSnapshots,
+  buildEvents: DevBuildWatcherController,
 ): Promise<RolldownWatcher> {
+  // 此入口只在构建服务完成上下文初始化后调用。
+  const compilerContext = ctx as CompilerContext
   const configService = ctx.configService!
   if (configService.platform !== 'weapp') {
     throw new Error('weapp.hmr.runtime="stateful-experimental" 目前仅支持微信小程序平台。')
@@ -83,11 +89,11 @@ export async function runStatefulHmrDev(
       moduleGraphRoot = resolveStatefulHmrModuleRoot(config.root, config.build.rolldownOptions.cwd)
     },
     configureServer(server) {
-      const currentSession = new StatefulHmrSession(ctx, server, restart, entryIds, snapshots, {
+      const currentSession = new StatefulHmrSession(compilerContext, server, restart, entryIds, snapshots, {
         compareContentsForPolling: pollingWatchOptions.usePolling === true ? true : undefined,
         pollInterval: pollingWatchOptions.interval,
         usePolling: pollingWatchOptions.usePolling,
-      }, delegatedComponentEntryIds)
+      }, delegatedComponentEntryIds, buildEvents)
       session = currentSession
       currentSession.install()
     },
@@ -153,7 +159,7 @@ export async function runStatefulHmrDev(
       throw new Error('微信状态保持 HMR session 未完成初始化。')
     }
     await session.refreshControl()
-    return createWatcherAdapter(server, session)
+    return createWatcherAdapter(server, session, buildEvents)
   }
   catch (error) {
     await session?.close().catch(() => {})
@@ -185,13 +191,14 @@ class StatefulHmrSession {
   }
 
   constructor(
-    private readonly ctx: MutableCompilerContext,
+    private readonly ctx: CompilerContext,
     private readonly server: ViteDevServer,
     private readonly restart: () => Promise<void>,
     private readonly entryIds: Set<string>,
     private readonly snapshots: StatefulHmrSnapshots,
     devWatchOptions: { compareContentsForPolling?: boolean, pollInterval?: number, usePolling?: boolean },
     private readonly delegatedComponentEntryIds: Set<string>,
+    private readonly buildEvents: DevBuildWatcherController,
   ) {
     // DevEngine 可能先交付失败输出、随后才等待首轮就绪；保留拒绝结果但提前订阅。
     void this.initialBundle.promise.catch(() => {})
@@ -225,9 +232,11 @@ class StatefulHmrSession {
       execute: batch => this.diagnostics
         ? this.diagnostics.batch(batch, batchId => this.executeSnapshotBatch(batch, batchId))
         : this.executeSnapshotBatch(batch),
-      onError: error => this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', {
-        error: error instanceof Error ? error : new Error(String(error)),
-      }),
+      onError: (error) => {
+        const failure = error instanceof Error ? error : new Error(String(error))
+        this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
+        this.server.config.logger.error('[weapp-vite] stateful HMR snapshot refresh failed', { error: failure })
+      },
     })
   }
 
@@ -361,6 +370,12 @@ class StatefulHmrSession {
         if (snapshotBatch) {
           snapshotBatch.fullOutputCommitted = true
         }
+        else {
+          if (snapshot) {
+            this.commitGlassEaselAnalysis(snapshot, 'full')
+          }
+          this.buildEvents.emitEvent({ code: 'END' })
+        }
         this.server.config.logger.info(`[weapp-vite] 微信状态保持 HMR 已就绪（${moduleCount} modules）`)
         this.initialBundle.resolve()
       }
@@ -388,13 +403,14 @@ class StatefulHmrSession {
     if (output.type === 'Noop' || files.length === 0) {
       return false
     }
-    const allowTailwindContentPatch = dirtyReasonSummary.some(reason => reason.startsWith('tailwind-content:'))
+    const allowCompilerContentPatch = dirtyReasonSummary.some(isCompilerContentDirtyReason)
     if (!isSafeJavaScriptPatch(
       files,
       output,
       dirtyReasonSummary,
       {
-        allowTailwindContent: allowTailwindContentPatch,
+        allowCompilerContent: allowCompilerContentPatch,
+        allowTailwindContent: allowCompilerContentPatch,
         root: this.server.config.root,
         srcRoot: this.ctx.configService!.absoluteSrcRoot,
         entryIds: this.entryIds,
@@ -417,7 +433,7 @@ class StatefulHmrSession {
       }
       return false
     }
-    if (allowTailwindContentPatch || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))) {
+    if (allowCompilerContentPatch || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))) {
       // 安全的 JS patch 与模板、样式快照分别同步，混合视觉更新不能无故重载并清空交互状态。
       this.requestSnapshotRefresh(files)
     }
@@ -438,9 +454,22 @@ class StatefulHmrSession {
         return
       }
       this.transport.addDelta(code, output.changedIds ?? [])
-      return this.adapter.markPayloadDelivered(output.filename)
+      await this.adapter.markPayloadDelivered(output.filename)
+      const updates = isGlassEaselDetected(this.ctx)
+        ? await this.adapter.collectGlassEaselScriptUpdates(output.code, output.changedIds ?? [])
+        : undefined
+      await this.outputChain
+      if (updates) {
+        refreshGlassEaselNativeScripts(this.ctx, updates)
+      }
+      this.buildEvents.emitEvent({ code: 'END' })
     }).catch((error) => {
       this.server.config.logger.error('[weapp-vite] stateful HMR patch transform failed', { error })
+      this.buildEvents.emitEvent({
+        code: 'ERROR',
+        error: error instanceof Error ? error : new Error(String(error)),
+        result: undefined as never,
+      })
       this.requestFullBuild()
     })
     return true
@@ -469,7 +498,9 @@ class StatefulHmrSession {
     this.restartTimer = setTimeout(() => {
       this.restartTimer = undefined
       void this.restart().catch((error) => {
-        this.server.config.logger.error('[weapp-vite] stateful HMR server restart failed', { error })
+        const failure = error instanceof Error ? error : new Error(String(error))
+        this.buildEvents.emitEvent({ code: 'ERROR', error: failure, result: undefined as never })
+        this.server.config.logger.error('[weapp-vite] stateful HMR server restart failed', { error: failure })
       })
     }, 100)
   }
@@ -498,6 +529,7 @@ class StatefulHmrSession {
     isSuperseded: () => boolean
     mode: 'full' | 'refresh'
   }, traceBatchId?: number): Promise<void> {
+    this.buildEvents.emitEvent({ code: 'START' })
     const entryGraphRevision = this.entryGraphRevision
     // 完整构建只消费启动时捕获的事件；同一路径的新事件仍归后续批次所有。
     const sourceChanges = new Map(batch.files.map(file => [file, this.sourceDirtyReasons.get(file)]))
@@ -521,7 +553,17 @@ class StatefulHmrSession {
     const entryGraphChanged = nextEntryIds !== undefined && (
       nextEntryIds.length !== this.entryIds.size || nextEntryIds.some(id => !this.entryIds.has(id))
     )
-    if (batch.mode === 'full' || entryGraphChanged) {
+    if (entryGraphChanged) {
+      if (this.entryGraphRevision === this.rebuiltEntryGraphRevision) {
+        // app.json 等元数据可能直接暴露拓扑差异；显式冻结旧引擎的 patch 接受窗口。
+        this.entryGraphRevision += 1
+      }
+      // DevEngine 的入口图在创建时固定；拓扑变化必须由全新扫描与引擎接管。
+      // 延迟重启让当前批次先退出，避免 close() 等待本批次形成自锁。
+      this.requestServerRestart()
+      return
+    }
+    if (batch.mode === 'full') {
       if (nextEntryIds) {
         this.entryIds.clear()
         for (const id of nextEntryIds) {
@@ -549,6 +591,8 @@ class StatefulHmrSession {
           }
           this.rebuiltEntryGraphRevision = entryGraphRevision
           releaseSourceChanges()
+          this.commitGlassEaselAnalysis(snapshot, 'full')
+          this.buildEvents.emitEvent({ code: 'END' })
         }
       }
       finally {
@@ -568,7 +612,12 @@ class StatefulHmrSession {
       const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
       this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changedOutput, batch.isSuperseded())
       await this.writeOutput('refresh', changedOutput, undefined, traceBatchId)
+      if (batch.isSuperseded()) {
+        return
+      }
       this.adoptSnapshot(snapshot, output)
+      this.commitGlassEaselAnalysis(snapshot, 'refresh')
+      this.buildEvents.emitEvent({ code: 'END' })
     })
   }
 
@@ -583,6 +632,27 @@ class StatefulHmrSession {
         refreshPageStyles: true,
       },
     )
+  }
+
+  private commitGlassEaselAnalysis(snapshot: StatefulHmrSnapshot, mode: 'full' | 'refresh'): void {
+    const current = this.ctx.runtimeState.glassEasel.analysisByOwner
+    const preserveScripts = isGlassEaselDetected(this.ctx)
+    // 资产快照不发布 JS，不能回滚构建期间已经提交的 native full/delta 事实。
+    for (const [owner, analysis] of current) {
+      if (
+        preserveScripts
+        && isNativeScriptAnalysisOwner(owner, analysis)
+        && !(mode === 'full' && owner.startsWith('native-source:'))
+      ) {
+        continue
+      }
+      current.delete(owner)
+    }
+    for (const [owner, analysis] of snapshot.glassEaselAnalysisByOwner) {
+      if (!preserveScripts || !isNativeScriptAnalysisOwner(owner, analysis)) {
+        current.set(owner, analysis)
+      }
+    }
   }
 
   private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
@@ -656,7 +726,7 @@ export function mergeStatefulHmrSnapshotAssets(
   snapshotAssets: Iterable<StatefulHmrOutputFile>,
 ): void {
   for (const asset of snapshotAssets) {
-    if (asset.type !== 'asset') {
+    if (!isStatefulHmrSnapshotAsset(asset)) {
       continue
     }
     const index = output.findIndex(item => item.fileName === asset.fileName)
@@ -678,10 +748,10 @@ export function getChangedStatefulHmrSnapshotAssets(
   next: Iterable<StatefulHmrOutputFile>,
 ): StatefulHmrOutputFile[] {
   const previousAssets = new Map(
-    Array.from(previous).flatMap(item => item.type === 'asset' ? [[item.fileName, item.source] as const] : []),
+    Array.from(previous).flatMap(item => isStatefulHmrSnapshotAsset(item) ? [[item.fileName, item.source] as const] : []),
   )
   return Array.from(next).filter((item) => {
-    if (item.type !== 'asset') {
+    if (!isStatefulHmrSnapshotAsset(item)) {
       return false
     }
     const previousSource = previousAssets.get(item.fileName)
@@ -700,9 +770,14 @@ function statefulHmrAssetSourcesEqual(left: StatefulHmrAssetSource, right: State
   return leftBuffer.equals(rightBuffer)
 }
 
-function createWatcherAdapter(server: ViteDevServer, session: StatefulHmrSession): RolldownWatcher {
+function createWatcherAdapter(
+  server: ViteDevServer,
+  session: StatefulHmrSession,
+  buildEvents: DevBuildWatcherController,
+): RolldownWatcher {
   let closePromise: Promise<void> | undefined
-  return {
+  const watcher: RolldownWatcher = {
+    ...buildEvents.watcher,
     close() {
       closePromise ??= (async () => {
         try {
@@ -714,10 +789,16 @@ function createWatcherAdapter(server: ViteDevServer, session: StatefulHmrSession
       })()
       return closePromise
     },
-    on() {
-      return this
+    on(event, listener) {
+      buildEvents.watcher.on(event, listener)
+      return watcher
     },
-  } as unknown as RolldownWatcher
+    off(event, listener) {
+      buildEvents.watcher.off(event, listener)
+      return watcher
+    },
+  }
+  return watcher
 }
 
 export function redirectNativeComponentRegistration(code: string): string {
@@ -754,12 +835,15 @@ export function isSafeJavaScriptPatch(
   files: string[],
   output: StatefulHmrDevEngineUpdate,
   dirtyReasonSummary: string[] = [],
-  options: { allowTailwindContent?: boolean, root?: string, srcRoot?: string, entryIds?: Iterable<string> } = {},
+  options: { allowCompilerContent?: boolean, allowTailwindContent?: boolean, root?: string, srcRoot?: string, entryIds?: Iterable<string> } = {},
 ): output is Extract<StatefulHmrDevEngineUpdate, { type: 'Patch' }> {
   return output.type === 'Patch'
     && files.every(file => /\.(?:[cm]?[jt]sx?|vue)$/.test(file))
     && !output.changedIds?.some(id => isNonJavaScriptSidecarId(id) && !isChangedNativeComponentSidecar(id, files, options))
-    && !dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(reason, options.allowTailwindContent === true))
+    && !dirtyReasonSummary.some(reason => isUnsafeStatefulHmrReason(
+      reason,
+      options.allowCompilerContent === true || options.allowTailwindContent === true,
+    ))
 }
 
 export function requiresStatefulHmrSnapshot(file: string, dirtyReasonSummary: string[] = []): boolean {
@@ -772,11 +856,16 @@ export function isStatefulHmrAssetFile(file: string): boolean {
   return !/\.(?:[cm]?[jt]sx?|vue)$/.test(file)
 }
 
-function isUnsafeStatefulHmrReason(reason: string, allowTailwindContent = false): boolean {
-  if (allowTailwindContent && reason.startsWith('tailwind-content:')) {
+function isUnsafeStatefulHmrReason(reason: string, allowCompilerContent = false): boolean {
+  if (allowCompilerContent && isCompilerContentDirtyReason(reason)) {
     return false
   }
-  return /^(?:entry-json-only|entry-local-asset|entry-style-only|entry-mixed-config|react-template|tailwind-content):/.test(reason)
+  return /^(?:entry-json-only|entry-local-asset|entry-style-only|entry-mixed-config|react-template|compiler-content|tailwind-content):/.test(reason)
+}
+
+/** 编译 provider 触发的内容变化使用统一 reason 前缀，保留旧 Tailwind reason 兼容。 */
+export function isCompilerContentDirtyReason(reason: string): boolean {
+  return /^(?:compiler-content|tailwind-content):/.test(reason)
 }
 
 export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): boolean {
@@ -784,7 +873,7 @@ export function shouldUseStatefulHmrSnapshotOnly(dirtyReasonSummary: string[]): 
     /^(?:entry-json-only|entry-local-asset|entry-style-only):/.test(reason),
   )
   return hasAssetOnlyEntry && dirtyReasonSummary.every(reason =>
-    /^(?:entry-json-only|entry-local-asset|entry-style-only|tailwind-content):/.test(reason),
+    /^(?:entry-json-only|entry-local-asset|entry-style-only|compiler-content|tailwind-content):/.test(reason),
   )
 }
 

@@ -31,7 +31,7 @@ export interface DevModuleGraphProvider {
 }
 
 export interface DevModuleGraphChange {
-  event: Exclude<HotUpdateOptions['type'], 'delete'>
+  event: HotUpdateOptions['type']
   file: string
 }
 
@@ -184,7 +184,11 @@ function createProviderPlugin(
       return await transformVueSource(code, id, this?.environment?.config)
     },
     async hotUpdate({ type, file, read }) {
-      if (this.environment.name !== 'client' || type === 'delete') {
+      if (this.environment.name !== 'client') {
+        return
+      }
+      if (type === 'delete') {
+        onChange({ event: type, file })
         return
       }
       try {

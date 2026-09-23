@@ -140,6 +140,7 @@ export default defineConfig(env => ({
 | [App Prelude 配置](./app-prelude.md) | `appPrelude` 前置脚本开关、注入模式与产物行为 |
 | [Web Runtime 全局对象注入配置](./web-runtime-globals.md) | `appPrelude.webRuntime` / Web Runtime 全局对象注入 |
 | [共享配置](./shared.md) | `autoRoutes` / `debug` / `logger` / `forwardConsole` / `injectWeapi` / `mcp` |
+| [底层编译插件协议](../integration/compiler-plugins.md) | `weapp.compilerPlugins`、源码所有权、CSS/WXML/JavaScript 转换与 HMR 生命周期 |
 | [Route Rules 与 Layout](./route-rules.md) | `weapp.routeRules`、layout 默认值、`layouts/` 约定 |
 | [JSON 配置](./json.md) | `jsonAlias` / `json.defaults` / `json.mergeStrategy` |
 | [JS 配置](./js.md) | `tsconfigPaths` / `ast` 与顶层 `resolve.alias` 的边界 |

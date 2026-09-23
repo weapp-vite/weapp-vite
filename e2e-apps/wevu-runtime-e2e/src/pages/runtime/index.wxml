@@ -12,5 +12,5 @@
   <x-model id="model" modelValue="{{form.title}}" label="model" />
   <x-compat id="compat" />
   <x-scoped id="scoped" />
-  <text class="details" selectable>{{__e2eText}}</text>
+  <text class="details" user-select>{{__e2eText}}</text>
 </view>

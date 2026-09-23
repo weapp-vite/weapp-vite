@@ -7,7 +7,7 @@ import { runtimeSizeTargets, runtimeSizeTiers } from './runtime-size'
 
 function createReport(commit: string, minimalBytes: number): RuntimeSizeReport {
   return {
-    version: 2,
+    version: 4,
     generatedAt: '2026-09-04T00:00:00.000Z',
     commit,
     targets: runtimeSizeTargets.map(target => ({
@@ -20,6 +20,7 @@ function createReport(commit: string, minimalBytes: number): RuntimeSizeReport {
           label: tier.label,
           dev: { bytes: 1 },
           production: {
+            ...(target.gzip ? { gzipBytes: 1 } : {}),
             bytes: target.id === 'weapp' && tier.id === 'minimal-app' ? minimalBytes : 1,
             retainedModules: {
               entry,
@@ -39,11 +40,13 @@ describe('runtime size report CLI', () => {
       '--root=fixture',
       '--current-json=current.json',
       '--baseline-json=baseline.json',
+      '--legacy-artifact-json=compatibility.json',
       '--check',
     ], cwd)).toMatchObject({
       root: path.join(cwd, 'fixture'),
       currentJson: 'current.json',
       baselineJson: 'baseline.json',
+      legacyArtifactJson: 'compatibility.json',
       build: false,
       check: true,
       githubSummary: false,
@@ -67,6 +70,7 @@ describe('runtime size report CLI', () => {
       outputJson: 'out/head.json',
       outputMarkdown,
       artifactJson: 'out/report.json',
+      legacyArtifactJson: 'out/compatibility.json',
       repository: 'owner/repo',
       prNumber: 42,
       headSha: 'a'.repeat(40),
@@ -99,16 +103,23 @@ describe('runtime size report CLI', () => {
       `text:${outputMarkdown}`,
       'ensure:out/report.json',
       'json:out/report.json',
+      'ensure:out/compatibility.json',
+      'json:out/compatibility.json',
       'stdout',
     ])
     expect(readReport).toHaveBeenNthCalledWith(1, 'head.json')
     expect(readReport).toHaveBeenNthCalledWith(2, 'baseline.json')
     expect(writtenJson[0]).toBe(current)
     expect(writtenJson[1]).toEqual(expect.objectContaining({
-      version: 2,
+      version: 4,
       kind: 'wevu-runtime-size-pr-report',
       current,
       baseline,
+    }))
+    expect(writtenJson[2]).toEqual(expect.objectContaining({
+      version: 2,
+      current: expect.objectContaining({ version: 2, targets: expect.any(Array) }),
+      baseline: expect.objectContaining({ version: 2, targets: expect.any(Array) }),
     }))
   })
 })

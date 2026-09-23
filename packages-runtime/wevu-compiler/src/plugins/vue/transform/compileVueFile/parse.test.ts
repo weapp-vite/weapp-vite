@@ -1,6 +1,8 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vueCompilerSfc from 'vue/compiler-sfc'
+import { CompilerDiagnosticError } from '../../../../types/diagnostics'
 
 import { parseVueFile } from './parse'
 
@@ -326,6 +328,102 @@ definePageJson({ title: 'x' })
     })
   })
 
+  it('maps a JSON-macro reparse error to the original CRLF source when output maps are disabled', async () => {
+    const filename = '/project/src/pages/json-reparse-error.vue'
+    const sourceLines = [
+      '<script setup>',
+      'const prefix = "中文😀"; const sentinel = broken(',
+      'definePageJson({ title: "x" })',
+      '</script>',
+    ]
+    const source = sourceLines.join('\r\n')
+    const macro = 'definePageJson({ title: "x" })'
+    extractJsonMacroFromScriptSetupMock.mockImplementation(async (
+      content: string,
+      _filename: string,
+      _lang: string | undefined,
+      _options: unknown,
+      sourceMap: { offset: number, source: string, sourceFile: string } | undefined,
+    ) => {
+      if (!sourceMap) {
+        throw new Error('Expected an internal error source map')
+      }
+      const start = content.indexOf(macro)
+      const transformed = new MagicString(sourceMap.source, { offset: sourceMap.offset })
+      transformed.remove(start, start + macro.length)
+      return {
+        stripped: transformed.slice(0, content.length),
+        config: { title: 'x' },
+        macroHash: 'mapped-reparse',
+        map: transformed.generateMap({
+          hires: true,
+          includeContent: true,
+          source: sourceMap.sourceFile,
+        }),
+      }
+    })
+
+    const parseMock = vi.mocked(vueCompilerSfc.parse)
+    const parseImplementation = parseMock.getMockImplementation()
+    if (!parseImplementation) {
+      throw new Error('Expected the Vue SFC parser implementation')
+    }
+    let parseCount = 0
+    let originalCause: Error | undefined
+    parseMock.mockImplementation((input, options) => {
+      const parsed = parseImplementation(input, options)
+      parseCount += 1
+      if (parseCount !== 2) {
+        return parsed
+      }
+      const offset = input.indexOf('sentinel')
+      const prefix = input.slice(0, offset).split('\n')
+      const start = {
+        offset,
+        line: prefix.length,
+        column: prefix.at(-1)!.length + 1,
+      }
+      originalCause = Object.assign(new SyntaxError('generated parse failure'), {
+        code: 46,
+        loc: {
+          source: 'sentinel',
+          start,
+          end: {
+            offset: offset + 'sentinel'.length,
+            line: start.line,
+            column: start.column + 'sentinel'.length,
+          },
+        },
+      })
+      return { ...parsed, errors: [originalCause] }
+    })
+
+    try {
+      await parseVueFile(source, filename, { sourceMap: false })
+      throw new Error('Expected JSON macro SFC reparse to fail')
+    }
+    catch (error) {
+      expect(error).toBeInstanceOf(CompilerDiagnosticError)
+      expect(error).toMatchObject({
+        code: 'WV2003',
+        severity: 'error',
+        filename,
+        source: 'sfc',
+        loc: {
+          start: {
+            offset: source.indexOf('sentinel'),
+            line: 2,
+            column: sourceLines[1]!.indexOf('sentinel') + 1,
+          },
+        },
+      })
+      expect((error as CompilerDiagnosticError).cause).toBe(originalCause)
+    }
+    finally {
+      parseMock.mockImplementation(parseImplementation)
+    }
+  })
+
   it('keeps inline defineOptions result after reparsing', async () => {
     const source = `
 <template><view /></template>
@@ -341,5 +439,27 @@ defineOptions({ name: 'InlineErr' })
     const result = await parseVueFile(source, '/project/src/pages/inline-error.vue')
     expect(result.descriptorForCompile.scriptSetup?.content).toBe('<')
     expect(result.defineOptionsHash).toHaveLength(12)
+  })
+
+  it('preserves structured metadata when defineOptions output makes the reparsed SFC invalid', async () => {
+    const source = '<script setup>defineOptions({ name: "Page" })</script>'
+    inlineScriptSetupDefineOptionsArgsMock.mockResolvedValue({
+      code: '</script><template><view>{{ broken( }}</view></template><script setup>',
+    })
+
+    try {
+      await parseVueFile(source, '/project/src/pages/define-options-reparse-error.vue')
+      throw new Error('Expected defineOptions SFC reparse to fail')
+    }
+    catch (error) {
+      expect(error).toBeInstanceOf(CompilerDiagnosticError)
+      expect(error).toMatchObject({
+        code: 'WV2003',
+        severity: 'error',
+        filename: '/project/src/pages/define-options-reparse-error.vue',
+        source: 'sfc',
+        cause: expect.anything(),
+      })
+    }
   })
 })

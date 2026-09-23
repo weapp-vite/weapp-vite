@@ -8,6 +8,7 @@ const openBundles: Array<{ close: () => Promise<void> }> = []
 async function bundleVirtualEntry(source: string) {
   const bundle = await rolldown({
     input: virtualEntryId,
+    tsconfig: false,
     external: ['@weapp-core/shared/platforms', '@wevu/web-apis/abort'],
     plugins: [
       {
@@ -39,6 +40,19 @@ afterEach(async () => {
 })
 
 describe('wevu internal entry tree-shaking', () => {
+  it('omits router guards and JSX islands from a plain compiled page', async () => {
+    const code = await bundleVirtualEntry(`
+import { createWevuComponent } from './internal-runtime.ts'
+
+createWevuComponent({ __wevu_isPage: true, setup: () => ({ count: 1 }) })
+    `.trim())
+
+    expect(code.includes('initial navigation exceeded')).toBe(false)
+    expect(code.includes('__weapp_vite_jsx_island')).toBe(false)
+    expect(code.includes('__wevuJsxIslandHandlers')).toBe(false)
+    expect(code.includes('wevu.jsx.fragment')).toBe(false)
+  })
+
   it('keeps reactivity-only imports away from component runtime', async () => {
     const code = await bundleVirtualEntry(`
 import { nextTick, ref, useAsyncDerivation } from './internal-reactivity.ts'

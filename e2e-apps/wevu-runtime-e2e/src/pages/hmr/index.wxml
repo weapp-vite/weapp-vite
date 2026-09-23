@@ -4,5 +4,5 @@
   <view id="hmr-count">count: {{count}}</view>
   <view id="hmr-script">script: {{scriptName}}</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
-  <text class="details" selectable>{{__e2eText}}</text>
+  <text class="details" user-select>{{__e2eText}}</text>
 </view>

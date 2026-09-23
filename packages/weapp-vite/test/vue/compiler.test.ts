@@ -910,13 +910,15 @@ describe('Vue Template Compiler', () => {
       expect(result.code).not.toContain('wx:if')
     })
 
-    it('should ignore v-for without expression and render normally', () => {
+    it('should reject v-for without an expression instead of rendering a normal element', () => {
       const result = compileVueTemplateToWxml(
         '<view v-for>Empty for</view>',
         'test.vue',
       )
-      expect(result.code).toContain('<view>Empty for</view>')
-      expect(result.code).not.toContain('wx:for')
+      expect(result.code).toBe('')
+      expect(result.diagnostics).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: 'WV2001', severity: 'error', source: 'template' }),
+      ]))
     })
 
     it('should collect parse warnings via onError', () => {

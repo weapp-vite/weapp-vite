@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：109；微信：106；范围外：3。
-- 展开的 case 声明：275；已接入计划：275；缺计划：0。
+- 任务：110；微信：107；范围外：3。
+- 展开的 case 声明：277；已接入计划：277；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -117,6 +117,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/wevu-runtime.function-props.weapp.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/wevu-runtime.inline-object-reactivity.weapp.test.ts | devtools | 2 | 2 | 0 | wechat |
 | ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-runtime.pruning.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
 | ide/wevu-runtime.shared-template-wxs.hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/wevu-runtime.weapp.test.ts | devtools, headless | 6 | 6 | 0 | wechat |
 | ide/wevu-subpackage-placement.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -2347,6 +2348,25 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-runtime-e2e`; checkpoints: `checkpoints`; source: `e2e/ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts:301`
 - Routes: `/pages/layouts/index`
 - Operations: `reLaunch(/pages/layouts/index)`, `check(layout-shared:0)`, `check(layout-shared:1)`, `check(layout-shared:2)`, `callMethodWithOptions(applyAdminLayout)`, `check(layout-shared:3)`, `check(CLASSIC_WXS_RELOAD_CHECKPOINT.id)`, `check(layout-shared:4)`, `check(layout-shared:5)`
+
+
+## ide/wevu-runtime.pruning.test.ts
+
+### issue #1064: runtime after automatic pruning > mounts without a router, updates reactive props and reLaunches a subpackage
+
+- Source: `e2e/ide/wevu-runtime.pruning.test.ts:35`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/runtime-pruning`; checkpoints: `[ { id: 'cold-start', route: HOME, action: '验证无 router 首屏挂载', nodes: [{ selector: '#pruning-phase', text: 'mounted' }, { selector: '#pruning-count', text: '0' }] }, { id: 'updated', route: HOME, action: '点击按钮更新响应式状态和子组件 props', nodes: [{ se`; source: `e2e/ide/wevu-runtime.pruning.test.ts:36`
+- Routes: `/detail/index`, `/pages/index/index`
+- Operations: `callMethod(readSnapshot)`, `check(cold-start)`, `tap(<missing>)`, `check(updated)`, `reLaunch(/detail/index)`, `check(subpackage)`, `reLaunch(/pages/index/index)`, `check(relaunch)`
+
+### issue #1064: dynamic public factory compatibility > retains JSX island dispatch for a native page using a dynamic public factory
+
+- Source: `e2e/ide/wevu-runtime.pruning.test.ts:75`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/runtime-public-factory`; checkpoints: `[ { id: 'public-initial', route: HOME, action: '公开动态工厂首次挂载', nodes: [{ selector: '#public-factory-phase', text: 'mounted' }, { selector: '#public-factory-count', text: '0' }] }, { id: 'public-updated', route: HOME, action: '动态岛按钮派发事件并更新状态',`; source: `e2e/ide/wevu-runtime.pruning.test.ts:76`
+- Routes: `/pages/index/index`
+- Operations: `callMethod(readSnapshot)`, `check(public-initial)`, `tap(<missing>)`, `check(public-updated)`, `reLaunch(/pages/index/index)`, `check(public-relaunch)`
 
 
 ## ide/wevu-runtime.shared-template-wxs.hmr.test.ts

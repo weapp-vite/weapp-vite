@@ -1,4 +1,4 @@
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 
 const MAX_RANDOM_VALUES_BYTE_LENGTH = 65536
 

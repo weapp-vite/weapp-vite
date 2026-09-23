@@ -120,12 +120,23 @@ function createState(overrides: Record<string, any> = {}) {
         handleFileChange: vi.fn(async () => false),
       },
       runtimeState: {
+        glassEasel: {
+          analysisByOwner: new Map(),
+          warnedDiagnostics: new Set(),
+          silent: false,
+        },
+        wxml: {
+          tokenMap: new Map(),
+        },
         build: {
           hmr: {
             profile: {},
             vueEntryHasTemplate: new Map(),
             vueEntrySfcSignatures: new Map(),
             vueEntryStyleBindings: new Map(),
+            vueEntryContentSignatures: new Map(),
+            vueEntryTemplateContentSignatures: new Map(),
+            vueEntryScriptContentSignatures: new Map(),
             vueEntryTailwindContentSignatures: new Map(),
             vueEntryTailwindTemplateContentSignatures: new Map(),
             vueEntryTailwindScriptContentSignatures: new Map(),
@@ -169,6 +180,19 @@ function setVueEntrySfcSignatures(state: CorePluginState, filename: string, sour
 }
 
 describe('core lifecycle watch hook', () => {
+  it('stores provider-neutral Vue SFC content signatures', () => {
+    const state = createState()
+    const filename = '/project/src/pages/index.vue'
+    const source = '<template><view class="page" /></template>'
+
+    setVueEntrySfcSignatures(state, filename, source)
+
+    const signatures = resolveVueSfcHmrSignatures(source, filename)
+    expect(state.ctx.runtimeState.build.hmr.vueEntryContentSignatures?.get(filename)).toEqual(signatures.contentSignatures)
+    expect(state.ctx.runtimeState.build.hmr.vueEntryTemplateContentSignatures?.get(filename)).toEqual(signatures.templateContentSignatures)
+    expect(state.ctx.runtimeState.build.hmr.vueEntryScriptContentSignatures?.get(filename)).toEqual(signatures.scriptContentSignatures)
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(fs, 'pathExists').mockResolvedValue(false)
@@ -1362,6 +1386,14 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     graph.replaceEntryDependencies(entryId, 'template', ['/project/src/pages/logs/hmr-added.wxml'])
     graph.replaceEntryDependencies(survivingEntry, 'style', [sharedStyle])
     state.ctx.moduleGraphService = graph
+    state.ctx.runtimeState.wxml.tokenMap.set(entryId, { code: '', deps: [] })
+    state.ctx.runtimeState.glassEasel.analysisByOwner.set('output:main:pages/logs/hmr-added.js', {
+      kind: 'output',
+      scope: 'main',
+      detected: false,
+      diagnostics: new Map(),
+      sourceIds: new Set([entryId]),
+    })
     const hook = createWatchChangeHook(state)
 
     await hook(entryId, { event: 'delete' })
@@ -1372,6 +1404,8 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(graph.hasModule(entryId)).toBe(false)
     expect(graph.hasModule('/project/src/pages/logs/hmr-added.wxml')).toBe(false)
     expect(graph.collectAffectedEntries(sharedStyle)).toEqual(new Set([survivingEntry]))
+    expect(state.ctx.runtimeState.wxml.tokenMap.has(entryId)).toBe(false)
+    expect(state.ctx.runtimeState.glassEasel.analysisByOwner.size).toBe(0)
   })
 
   it('syncs auto-routes state before rebuilding a truly deleted route file', async () => {

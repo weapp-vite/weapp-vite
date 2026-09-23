@@ -180,6 +180,34 @@ export default defineConfig({
 
 `inject: false` 只生成目标平台样式文件，适合由源码手动 `@import`。未显式配置 `include` 时仍默认排除 app，避免意外把共享样式提升为全局样式。独立分包不能依赖主包资源，不会收到 `weapp.styles` 的自动注入；需要在 `weapp.subPackages.<root>.styles` 中声明分包自己的入口。
 
+### `compilerPlugins`
+
+`compilerPlugins` 是底层源码编译器的扩展入口。第三方 provider 可以声明自己接管的源码，并参与 CSS、WXML、JavaScript、bundle 和 HMR 生命周期：
+
+```ts
+import type { WeappCompilerPlugin } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite/config'
+
+const compilerPlugin: WeappCompilerPlugin = {
+  name: 'example-compiler',
+  capabilities: { style: true, template: true, script: true, hmr: true },
+  create() {
+    return {
+      claimSource: ({ id }) => id.endsWith('.css'),
+      transformCss: ({ code }) => ({ code }),
+    }
+  },
+}
+
+export default defineConfig({
+  weapp: {
+    compilerPlugins: [compilerPlugin],
+  },
+})
+```
+
+provider 的状态由 provider 自己维护，host 负责插件顺序、源码所有权冲突、依赖监听和产物生命周期。`weapp.tailwindcss` 仍然是内置 Tailwind adapter 的兼容门面；UnoCSS 等实现可以独立包的形式提供同一协议。
+
 ### `tailwindcss`
 
 内置的 `weapp-tailwindcss` 集成支持显式配置和 Tailwind CSS v4 自动检测。显式配置优先级最高：设置为 `false` 会完全关闭（包括自动检测），设置为 `true` 或对象会按显式选项启用。未配置时，项目解析到 Tailwind CSS v4 且 CSS 模块实际包含 `@import "tailwindcss"`（也支持 `source(...)` 等合法参数）才会自动启用；Tailwind CSS v3、未安装或未引入该模块时不会生成 Tailwind CSS。

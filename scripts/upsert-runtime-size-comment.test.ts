@@ -117,7 +117,7 @@ describe('runtime size PR comment', () => {
     expect(() => validateArtifact(mixed, expected)).toThrow(
       'artifact.baseline.version must match artifact.version (3)',
     )
-    expect(() => validateArtifact(createArtifact(4), expected)).toThrow(
+    expect(() => validateArtifact(createArtifact(5), expected)).toThrow(
       'Unsupported runtime size artifact',
     )
   })
