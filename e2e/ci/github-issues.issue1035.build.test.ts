@@ -2,6 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
+import { findMissingWevuVendorExports } from '../utils/wevu-vendor'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/github-issues')
@@ -34,6 +35,9 @@ describe('issue #1035 three-platform router fixture outputs', { concurrent: fals
         const target = path.resolve(DIST, path.dirname(file), request!)
         await expect(access(path.extname(target) ? target : `${target}.js`)).resolves.toBeUndefined()
       }
+    }
+    if (platform === 'tt') {
+      expect(await findMissingWevuVendorExports(DIST), 'TT vendor imports must resolve to exported members').toEqual([])
     }
   }, 120_000)
 })

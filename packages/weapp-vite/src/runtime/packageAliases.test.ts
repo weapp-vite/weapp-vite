@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createAliasManager, normalizeAliasOptions } from './config/internal/alias'
 import { resolveBuiltinPackageAliases } from './packageAliases'
 
-const { existsSyncMock, getPackageInfoSyncMock } = vi.hoisted(() => ({
+const { existsSyncMock, getPackageInfoSyncMock, loggerWarnMock } = vi.hoisted(() => ({
   existsSyncMock: vi.fn(),
   getPackageInfoSyncMock: vi.fn(),
+  loggerWarnMock: vi.fn(),
 }))
 
 vi.mock('node:fs', () => ({
@@ -16,9 +17,109 @@ vi.mock('./localPkg', () => ({
   safeGetPackageInfoSync: getPackageInfoSyncMock,
 }))
 
+vi.mock('../logger', () => ({
+  default: {
+    warn: loggerWarnMock,
+  },
+}))
+
 describe('runtime package aliases', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('pins every wevu subpath to the nested compatible copy when the project resolves an older direct version', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
+      if (packageName === 'weapp-vite') {
+        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+        return { rootPath: '/project/node_modules/weapp-vite/node_modules/wevu', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/app')) {
+        return { rootPath: '/project/node_modules/wevu', version: '7.1.4' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockReturnValue(true)
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/project/app' })
+    const wevuAliases = aliases.filter(alias => alias.find === 'wevu' || alias.find.startsWith('wevu/'))
+
+    expect(wevuAliases).toHaveLength(10)
+    expect(wevuAliases.every(alias => alias.replacement.startsWith('/project/node_modules/weapp-vite/node_modules/wevu/'))).toBe(true)
+    expect(loggerWarnMock).toHaveBeenCalledTimes(1)
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('wevu@7.1.4'))
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('wevu@7.2.0'))
+  })
+
+  it('does not warn or switch paths when the direct wevu version already matches', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
+      if (packageName === 'weapp-vite') {
+        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+        return { rootPath: '/project/node_modules/weapp-vite/node_modules/wevu', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/app')) {
+        return { rootPath: '/project/node_modules/wevu', version: '7.2.0' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockReturnValue(true)
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/project/app' })
+
+    expect(aliases).toContainEqual({
+      find: 'wevu',
+      replacement: '/project/node_modules/weapp-vite/node_modules/wevu/dist/index.mjs',
+    })
+    expect(loggerWarnMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps the existing cwd and workspace fallback when no nested compatible copy is available', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
+      if (packageName === 'weapp-vite') {
+        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+        return undefined
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/app')) {
+        return { rootPath: '/project/node_modules/wevu', version: '7.1.4' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockImplementation((filePath: string) => filePath.endsWith('/dist/index.mjs'))
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/project/app' })
+
+    expect(aliases).toContainEqual({
+      find: 'wevu',
+      replacement: '/project/node_modules/wevu/dist/index.mjs',
+    })
+    expect(loggerWarnMock).not.toHaveBeenCalled()
+  })
+
+  it('emits the version preflight warning only once for the same mismatch', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
+      if (packageName === 'weapp-vite') {
+        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+        return { rootPath: '/project/node_modules/weapp-vite/node_modules/wevu', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/warning-app')) {
+        return { rootPath: '/project/node_modules/wevu', version: '7.1.4' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockReturnValue(true)
+
+    resolveBuiltinPackageAliases({ cwd: '/project/warning-app' })
+    resolveBuiltinPackageAliases({ cwd: '/project/warning-app' })
+
+    expect(loggerWarnMock).toHaveBeenCalledTimes(1)
   })
 
   it('adds built file aliases and resolves vue-demi to an absolute entry', () => {
@@ -210,7 +311,7 @@ describe('runtime package aliases', () => {
     const aliases = resolveBuiltinPackageAliases({ cwd: '/worktrees/feature/apps/demo' })
 
     expect(getPackageInfoSyncMock).toHaveBeenCalledWith('wevu', {
-      paths: ['/worktrees/feature/apps/demo'],
+      paths: ['/worktrees/feature/apps/demo/.weapp-vite-package-resolution.mjs'],
     })
     expect(aliases).toContainEqual({
       find: 'wevu/internal-reactivity',

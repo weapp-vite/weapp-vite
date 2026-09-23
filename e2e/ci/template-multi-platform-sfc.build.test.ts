@@ -5,7 +5,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { BUILD_VERIFICATION_CAPABILITIES } from '../platforms/verification'
-import { findWevuSemanticChunk } from '../utils/wevu-vendor'
+import { findMissingWevuVendorExports, findWevuSemanticChunk } from '../utils/wevu-vendor'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(
@@ -92,6 +92,11 @@ describe('multi-platform SFC template build matrix', { concurrent: false }, () =
       expect(runtimeChunk.code).toMatch(new RegExp(`(?:\\.${runtimeGlobal}\\b|typeof\\s+${runtimeGlobal}\\b)`))
       expect(runtimeChunk.code.includes('didMount')).toBe(platform === 'alipay')
       expect(runtimeChunk.code.includes('didUnmount')).toBe(platform === 'alipay')
+
+      if (platform === 'tt') {
+        const missingVendorExports = await findMissingWevuVendorExports(outputRoot)
+        expect(missingVendorExports, 'TT vendor imports must resolve to exported members').toEqual([])
+      }
     },
   )
 })

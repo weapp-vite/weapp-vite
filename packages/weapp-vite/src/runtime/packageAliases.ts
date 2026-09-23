@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import path from 'pathe'
+import logger from '../logger'
 import { safeGetPackageInfoSync } from './localPkg'
 
 export interface BuiltinPackageAliasEntry {
@@ -27,6 +29,11 @@ interface PackageAliasTarget {
 const WEVU_WORKSPACE_PACKAGE_PATH = 'packages-runtime/wevu'
 const SHARED_WORKSPACE_PACKAGE_PATH = '@weapp-core/shared'
 const PACKAGE_ALIAS_MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
+const warnedWevuVersionMismatches = new Set<string>()
+
+function packageResolutionPath(fromDir: string) {
+  return path.join(fromDir, '.weapp-vite-package-resolution.mjs')
+}
 
 const PACKAGE_ALIASES: PackageAliasTarget[] = [
   {
@@ -158,8 +165,11 @@ function resolvePackageEntry(
   distEntries: string[],
   fallbackWorkspacePackagePath?: string,
   cwd?: string,
+  packageRoot?: string,
 ) {
-  const packageInfo = safeGetPackageInfoSync(packageName, cwd ? { paths: [cwd] } : undefined)
+  const packageInfo = packageRoot
+    ? { rootPath: packageRoot }
+    : safeGetPackageInfoSync(packageName, cwd ? { paths: [packageResolutionPath(cwd)] } : undefined)
   if (packageInfo) {
     for (const distEntry of distEntries) {
       const resolvedEntry = path.resolve(packageInfo.rootPath, distEntry)
@@ -193,13 +203,75 @@ function resolvePackageEntry(
   return undefined
 }
 
+function resolveWeappVitePackage(cwd?: string) {
+  const searchPaths = [PACKAGE_ALIAS_MODULE_DIR, cwd].filter((value): value is string => Boolean(value))
+  for (const searchPath of searchPaths) {
+    const packageInfo = safeGetPackageInfoSync('weapp-vite', {
+      paths: [packageResolutionPath(searchPath)],
+    })
+    if (packageInfo) {
+      return packageInfo
+    }
+  }
+  return undefined
+}
+
+interface ResolvedWevuPackage {
+  rootPath: string
+  version?: string
+}
+
+function resolveBundledWevu(cwd?: string): ResolvedWevuPackage | undefined {
+  const weappVitePackage = resolveWeappVitePackage(cwd)
+  if (!weappVitePackage) {
+    return undefined
+  }
+
+  // 只有 weapp-vite 包内确实携带嵌套副本时才绑定它；否则保留项目 cwd/workspace 回退。
+  const bundledRoot = path.resolve(weappVitePackage.rootPath, 'node_modules/wevu')
+  if (!existsSync(path.join(bundledRoot, 'package.json'))) {
+    return undefined
+  }
+
+  // 从 weapp-vite 自身的依赖边界解析，确保 pnpm/npm 在版本冲突时选择其嵌套副本。
+  const bundledWevu = safeGetPackageInfoSync('wevu', {
+    paths: [packageResolutionPath(bundledRoot)],
+  })
+  if (!bundledWevu) {
+    return undefined
+  }
+  return bundledWevu
+}
+
+function warnWevuVersionMismatch(cwd: string | undefined, bundledWevu: ResolvedWevuPackage | undefined) {
+  if (!bundledWevu) {
+    return
+  }
+
+  const projectWevu = safeGetPackageInfoSync('wevu', cwd ? { paths: [packageResolutionPath(cwd)] } : undefined)
+  if (!projectWevu?.version || !bundledWevu?.version || projectWevu.version === bundledWevu.version) {
+    return
+  }
+
+  const warningKey = `${cwd ?? process.cwd()}\0${projectWevu.version}\0${bundledWevu.version}`
+  if (warnedWevuVersionMismatches.has(warningKey)) {
+    return
+  }
+  warnedWevuVersionMismatches.add(warningKey)
+  logger.warn(`[weapp-vite] 检测到项目解析到 wevu@${projectWevu.version}，与 weapp-vite 配套的 wevu@${bundledWevu.version} 不一致，已自动采用兼容副本。建议执行 pnpm update weapp-vite wevu。`)
+}
+
 export function resolveBuiltinPackageAliases(options: ResolveBuiltinPackageAliasesOptions = {}): BuiltinPackageAliasEntry[] {
   const aliases: BuiltinPackageAliasEntry[] = []
+  const bundledWevu = resolveBundledWevu(options.cwd)
+  warnWevuVersionMismatch(options.cwd, bundledWevu)
 
   for (const target of PACKAGE_ALIASES) {
     const { find, packageName, fallbackWorkspacePackagePath } = target
     const distEntries = resolveWevuRuntimeDistEntries(target, options)
-    const resolvedEntry = resolvePackageEntry(packageName, distEntries, fallbackWorkspacePackagePath, options.cwd)
+    const resolvedEntry = packageName === 'wevu' && bundledWevu
+      ? resolvePackageEntry(packageName, distEntries, undefined, options.cwd, bundledWevu.rootPath)
+      : resolvePackageEntry(packageName, distEntries, fallbackWorkspacePackagePath, options.cwd)
     if (!resolvedEntry) {
       continue
     }
