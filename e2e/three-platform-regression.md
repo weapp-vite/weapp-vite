@@ -27,7 +27,13 @@
 | 支付宝官方编译 | `pnpm e2e:platform:runtime:alipay`、`pnpm e2e:platform:ide-build:alipay:template`、`pnpm e2e:platform:ide-build:alipay:sfc-template` |
 | 抖音准备 | `pnpm e2e:platform:doctor:tt`、`pnpm e2e:platform:open:tt` |
 
+`e2e:ci:full` 只执行排除 HMR guard 后的 CI 文件集合，不能单独替代上表的 `e2e:ci`。若分阶段执行，依次运行 `e2e:ci:full`、`e2e:hmr:guard`、`e2e:hmr:guard:auto-import-vue-sfc`、`e2e:hmr:guard:auto-routes-hmr` 和 `e2e:hmr:guard:shared-chunks-auto`。完整验收设置 `WEAPP_VITE_E2E_FORCE_HMR_GUARD=1`，让文件系统型 HMR 用例实际执行；探针跳过不能记作通过。
+
+全仓 lint 不读取专项 E2E 排除变量，应额外传入 `--filter=!e2e-app-uview-plus-compat --filter=!e2e-app-wot-ui-compat`。fresh worktree 的安装阶段可能因尚无 CLI `dist` 而跳过 `prepare`；先完成包构建，再通过下游构建生成受管支持文件。需要验证实际构建而非缓存恢复时，使用 `pnpm build:pkgs --force`。
+
 综合构建命令如果额外包含被排除的独立 workspace 项目，使用对应包名的 pnpm/Turbo 过滤参数。保留其他公开平台原有构建回归，但本流程只要求微信、支付宝、抖音真实 IDE 运行验收。
+
+严格 suite 的 `--filter`、`--from` 只用于定位或续跑诊断：即使选中的任务全部通过，报告仍标记覆盖不完整，并以非零状态退出。不要将这种退出状态误判成新的测试失败，也不能把分段结果拼成最终全量通过。最终执行不带筛选参数的完整入口；需要优先复验某个任务时，可用 `--roll-from=<任务名>` 调整全量执行顺序。首次失败与未修改源码的复验结果分别保留，重跑通过本身不能证明根因已修复。
 
 ## 真实 IDE 复验
 
@@ -79,3 +85,35 @@ Store 定义更新需区分 action 手动替换与 Pinia HMR。当前 Store 不�
 结果区分通过、失败、用户排除、环境阻塞、未执行。修复须保留最小 fixture、根因单测和目标平台运行证据；微信与 headless 差异以真实 IDE 稳定行为为准补齐 mpcore 回归。
 
 PR 只提交有意的源码、测试、复验清单和精简结论，不提交机器路径、登录信息或无关 IDE 改写。行为变更添加中文 changeset；涉及 weapp-vite、wevu 或模板时联动 create-weapp-vite。最终代码严格复验并跟踪全部必需 CI，存在环境阻塞时保留草稿状态。
+
+### 2026-09-22 回归记录
+
+基线为 `origin/main` 的 `6f0fbf2d4f56c54df1dd71bdb7d8a3b1e9cef0ab`。Node `24.18.0`、pnpm `12.5.1`；使用锁文件安装，类型契约验证后强制重建包。用户排除项仅为 `uview-plus-compat`、`wot-ui-compat`，通用平台和运行时覆盖保留。
+
+| 验证 | 结果 |
+| --- | --- |
+| 安装、包构建 | 通过；`install --frozen-lockfile`，36 个包构建任务 |
+| 类型契约、包级 typecheck | 通过；25 / 36 个任务 |
+| 单测 | 通过；1148 个文件、10778 个用例；既有跳过 12 个文件、18 个用例单独保留 |
+| lint | 通过；40 个任务，显式排除两个专项 workspace |
+| 应用、模板、网站构建 | 通过；68 / 26 个任务 |
+| CI full | 通过；74 个任务，`E2E_FULL_MATRIX=1` |
+| HMR guard | 通过；主 guard 27 个用例，auto-import、auto-routes、shared-chunks 各 3 个用例；强制启用 guard |
+| 多平台构建 | 通过；7 个文件、40 个用例 |
+| Web | 通过；47 个项目构建，78 个 E2E 用例、2 个浏览器 smoke 用例 |
+| simulator browser | 通过；52 个文件、101 个用例 |
+| headless full / DOM headless | 通过；43 / 32 个严格任务 |
+| 共享 automator 检查 | 通过；136 个文件 |
+| 微信真实 IDE | 环境阻塞；完整入口确认 109 个任务，清理启动残留后完成到 62 个有效任务；已复验常规模板、GitHub 回归与 HMR，Tailwind 任意背景用例按已复现宿主缺陷 skip，仍未形成无阻塞的最终 exhaustive |
+| 支付宝官方编译 | 通过；demo、原生多端模板、SFC 多端模板均通过官方编译入口 |
+| 支付宝真实 IDE | demo 运行通过；两个模板已在项目列表显示 `alipay` 标记，模板页面交互及模板脚本/样式 HMR 未执行 |
+| 抖音官方准备与构建 | 通过；doctor 4.5.6、demo 构建和项目打开入口通过 |
+| 抖音真实 IDE | demo 运行通过；两个模板已在项目列表显示并完成构建，模板页面交互及模板脚本/样式 HMR 未执行 |
+
+微信开发者工具版本 `2.02.2608070`。首次 exhaustive 在第 39 个任务 `issue-1015-css-hmr` 的 classic `replace-variable` 检查失败：产物已更新，当前路由正确，但目标元素查询为空，未收集到 runtime error。随后未修改源码的独立复验和续跑复验中，classic/stateful 的七个检查点均通过。该异常尚未确定根因，不能标记为已修复；分段复验也不作为完整 exhaustive 通过证据。
+
+最终 exhaustive 入口确认包含 109 个任务；清理一次启动残留后，常规模板 `dev:open` suite 通过，累计完成到 62 个有效任务。`template-tailwindcss-tdesign-hmr.runtime.test.ts` 在独立复验中稳定重现官方宿主兼容性缺陷：WXML、`app.wxss`、`weapp-vite-global.wxss` 和页面 WXSS 均包含更新后的绿色规则，stateful HMR 也报告页面/App 实例保留及 `changed=2`，但官方工具仍将页面计算背景色返回透明。已有诊断文档通过宿主模块对照将根因定位到 `getAppConfig` 负超时导致的当前页 WXSS 编译请求丢失；仓库无法修复官方 IDE 内部实现。本轮在基础库 `3.17.2` 上复现，因此按宿主缺陷约定对 `2.02.2608070` 显式 skip，headless、构建和其他微信页面覆盖继续执行；该 skip 计为“环境阻塞”，不计为产品通过。
+
+支付宝开发者工具为 Mini Program Studio，模拟器基础库 `2.10.15`；抖音开发者工具为 `4.5.6`，模拟器为 iPhone 15 Pro。支付宝 demo 中已人工验证原生计数、wevu SFC、父子事件、computed 值、条件卸载重建、原生分包往返及返回；抖音 demo 中已人工验证 `MP_PLATFORM=tt`、TTML/TTSS、原生计数、本地 npm 组件事件、scoped 标题、Vue 计数和 npm 事件、原生分包往返。控制台可见内容为宿主的 SJS、基础库和调试信息；未见业务异常。
+
+模板任务第一次在 `weapp-vite-wevu-template` 启动时、第二次在 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 启动时均出现 `getPageMetaByWebviewId(...)` 返回空值，导致 automator 等待超时；失败前其他模板已完成运行断言，且 Wevu 模板单独重跑通过。Computer Use 读取到对应模拟器页面实际可见，故归类为微信 DevTools/automator 会话环境阻塞。未弱化断言，也未修改产品源码。支付宝、抖音模板的真实页面交互和三端模板脚本/样式 HMR 尚未执行。
