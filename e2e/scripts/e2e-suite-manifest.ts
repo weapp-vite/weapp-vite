@@ -297,6 +297,7 @@ const CI_PR_PATTERNS = [
   'ci/runtime-provider.test.ts',
   'ci/shared-styles.build.test.ts',
   'ci/template-e2e.utils.test.ts',
+  'ci/template-multi-platform-sfc.hmr.test.ts',
   'ci/wevu-features.build.test.ts',
   'ci/wevu-jsx-tsx.build.test.ts',
   'ci/wevu-runtime.npm-platforms.test.ts',

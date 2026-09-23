@@ -7878,7 +7878,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "3a65102582bfc6ae54410dcbd87d822fd62ae3f783337f3611ee6c93d6d7317c"
+      "sha256": "b261259ea8f4a30991a7dd3b68dbb10f7f6942ca27c5a8d81c378a904c539c43"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -8133,8 +8133,12 @@
       "sha256": "69d94f740e80fdab333f4cf240d5c7c8b330062af232abac64b38263aca100f3"
     },
     {
+      "file": "e2e/utils/wevu-vendor-exports.ts",
+      "sha256": "5e30d715b4a8d10aca41014e422f1ae41fe1db87c52612b0b9947693d4671333"
+    },
+    {
       "file": "e2e/utils/wevu-vendor.ts",
-      "sha256": "27e1dbb4e8a7c3a278278f93f84ef17ac559cb0828d651beda85e40d660fb55d"
+      "sha256": "762580f9583afbf1402611df0a311dfd2f015241c2bec990fdba6ec1246014d4"
     },
     {
       "file": "e2e/utils/wevuTailwindHmrDiagnostics.ts",

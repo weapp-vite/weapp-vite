@@ -31,6 +31,29 @@ describe('wevu vendor helpers', () => {
     ])
   })
 
+  it('checks relative imports between vendor chunks', async () => {
+    const distRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wevu-vendor-'))
+    tempRoots.push(distRoot)
+    await fs.outputFile(
+      path.join(distRoot, 'weapp-vendors/wevu-reactivity.js'),
+      'Object.defineProperty(exports, "getCurrentInstance", { enumerable: true, get: () => getCurrentInstance });',
+    )
+    await fs.outputFile(
+      path.join(distRoot, 'weapp-vendors/wevu-runtime.js'),
+      'const reactivity = require("./wevu-reactivity.js"); reactivity.getMiniProgramGlobalObject();',
+    )
+
+    expect(await findMissingWevuVendorExports(distRoot)).toEqual([
+      'weapp-vendors/wevu-reactivity.js#getMiniProgramGlobalObject',
+    ])
+
+    await fs.writeFile(
+      path.join(distRoot, 'weapp-vendors/wevu-reactivity.js'),
+      'Object.defineProperty(exports, "getMiniProgramGlobalObject", { enumerable: true, get: () => getMiniProgramGlobalObject });',
+    )
+    expect(await findMissingWevuVendorExports(distRoot)).toEqual([])
+  })
+
   it('waits for a shared chunk instead of returning an intermediate page output', async () => {
     const distRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-wevu-vendor-'))
     tempRoots.push(distRoot)

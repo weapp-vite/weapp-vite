@@ -1,13 +1,18 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 
-const VENDOR_MEMBER_REQUIRE_RE = /require\(\s*["']([^"']*weapp-vendors\/[^"']+\.js)["']\)\.([A-Za-z_$][\w$]*)/g
-const VENDOR_VARIABLE_REQUIRE_RE = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(\s*["']([^"']*weapp-vendors\/[^"']+\.js)["']\s*\)/g
-const VENDOR_DESTRUCTURE_REQUIRE_RE = /\b(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\(\s*["']([^"']*weapp-vendors\/[^"']+\.js)["']\s*\)/g
+const MEMBER_REQUIRE_RE = /require\(\s*["']([^"']+\.js)["']\)\.([A-Za-z_$][\w$]*)/g
+const VARIABLE_REQUIRE_RE = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(\s*["']([^"']+\.js)["']\s*\)/g
+const DESTRUCTURE_REQUIRE_RE = /\b(?:const|let|var)\s+\{([^}]+)\}\s*=\s*require\(\s*["']([^"']+\.js)["']\s*\)/g
 const VENDOR_EXPORT_RE = /Object\.defineProperty\(exports,\s*["']([^"']+)["']|\bexports\.([A-Za-z_$][\w$]*)\s*=/g
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function isVendorPath(distRoot: string, filePath: string) {
+  const relative = path.relative(distRoot, filePath).replaceAll('\\', '/')
+  return relative.split('/').includes('weapp-vendors')
 }
 
 async function collectVendorExports(vendorPath: string) {
@@ -32,7 +37,7 @@ export async function findMissingWevuVendorExports(distRoot: string) {
 
   for (const file of files) {
     const normalizedFile = typeof file === 'string' ? file.replaceAll('\\', '/') : ''
-    if (!normalizedFile || !normalizedFile.endsWith('.js') || normalizedFile.includes('/weapp-vendors/')) {
+    if (!normalizedFile || !normalizedFile.endsWith('.js')) {
       continue
     }
 
@@ -40,7 +45,7 @@ export async function findMissingWevuVendorExports(distRoot: string) {
     const source = await fs.readFile(jsPath, 'utf8')
     const usedMembers: Array<{ request: string, member: string }> = []
 
-    for (const match of source.matchAll(VENDOR_MEMBER_REQUIRE_RE)) {
+    for (const match of source.matchAll(MEMBER_REQUIRE_RE)) {
       const request = match[1]
       const member = match[2]
       if (request && member) {
@@ -48,7 +53,7 @@ export async function findMissingWevuVendorExports(distRoot: string) {
       }
     }
 
-    for (const match of source.matchAll(VENDOR_DESTRUCTURE_REQUIRE_RE)) {
+    for (const match of source.matchAll(DESTRUCTURE_REQUIRE_RE)) {
       const bindings = match[1]
       const request = match[2]
       if (!bindings || !request) {
@@ -62,7 +67,7 @@ export async function findMissingWevuVendorExports(distRoot: string) {
       }
     }
 
-    for (const match of source.matchAll(VENDOR_VARIABLE_REQUIRE_RE)) {
+    for (const match of source.matchAll(VARIABLE_REQUIRE_RE)) {
       const variableName = match[1]
       const request = match[2]
       if (!variableName || !request) {
@@ -80,7 +85,7 @@ export async function findMissingWevuVendorExports(distRoot: string) {
 
     for (const { request, member } of usedMembers) {
       const resolved = path.resolve(path.dirname(jsPath), request)
-      if (!(await fs.pathExists(resolved))) {
+      if (!isVendorPath(distRoot, resolved) || !(await fs.pathExists(resolved))) {
         continue
       }
       let exports = exportCache.get(resolved)

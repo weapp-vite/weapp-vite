@@ -31,9 +31,13 @@ describe('runtime package aliases', () => {
   it('pins every wevu subpath to the nested compatible copy when the project resolves an older direct version', () => {
     getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
       if (packageName === 'weapp-vite') {
-        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+        return {
+          rootPath: '/project/node_modules/weapp-vite',
+          version: '7.2.0',
+          packageJson: { dependencies: { wevu: '7.2.0' } },
+        }
       }
-      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/')) {
         return { rootPath: '/project/node_modules/weapp-vite/node_modules/wevu', version: '7.2.0' }
       }
       if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/app')) {
@@ -53,12 +57,16 @@ describe('runtime package aliases', () => {
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('wevu@7.2.0'))
   })
 
-  it('does not warn or switch paths when the direct wevu version already matches', () => {
+  it('uses the compatible copy without warning when the direct wevu version already matches', () => {
     getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
       if (packageName === 'weapp-vite') {
-        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+        return {
+          rootPath: '/project/node_modules/weapp-vite',
+          version: '7.2.0',
+          packageJson: { dependencies: { wevu: '7.2.0' } },
+        }
       }
-      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/')) {
         return { rootPath: '/project/node_modules/weapp-vite/node_modules/wevu', version: '7.2.0' }
       }
       if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/app')) {
@@ -77,12 +85,99 @@ describe('runtime package aliases', () => {
     expect(loggerWarnMock).not.toHaveBeenCalled()
   })
 
+  it('resolves the compatible pnpm sibling copy without a nested node_modules directory', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
+      if (packageName === 'weapp-vite') {
+        return {
+          rootPath: '/project/node_modules/.pnpm/weapp-vite@7.2.0/node_modules/weapp-vite',
+          version: '7.2.0',
+          packageJson: { dependencies: { wevu: '7.2.0' } },
+        }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.includes('/.pnpm/weapp-vite@7.2.0/node_modules/weapp-vite/')) {
+        return { rootPath: '/project/node_modules/.pnpm/weapp-vite@7.2.0/node_modules/wevu', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/pnpm-app')) {
+        return { rootPath: '/project/node_modules/wevu', version: '7.1.4' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockImplementation((filePath: string) => filePath.endsWith('/dist/index.mjs'))
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/pnpm-app' })
+
+    expect(aliases).toContainEqual({
+      find: 'wevu',
+      replacement: '/project/node_modules/.pnpm/weapp-vite@7.2.0/node_modules/wevu/dist/index.mjs',
+    })
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('wevu@7.1.4'))
+  })
+
+  it.each(['7.2.0', 'workspace:*'])('uses the declared wevu dependency %s when the builder has a newer patch version', (dependencyVersion) => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
+      if (packageName === 'weapp-vite') {
+        return {
+          rootPath: '/project/node_modules/weapp-vite',
+          version: '7.2.1',
+          packageJson: { dependencies: { wevu: dependencyVersion } },
+        }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/')) {
+        return { rootPath: '/project/node_modules/weapp-vite/node_modules/wevu', version: '7.2.0' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/independent-patch-app')) {
+        return { rootPath: '/project/node_modules/wevu', version: '7.1.4' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockReturnValue(true)
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/independent-patch-app' })
+
+    expect(aliases).toContainEqual({
+      find: 'wevu/internal-reactivity',
+      replacement: '/project/node_modules/weapp-vite/node_modules/wevu/dist/internal-reactivity.mjs',
+    })
+  })
+
+  it('rejects an incompatible hoisted candidate and retains the project fallback', () => {
+    getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
+      if (packageName === 'weapp-vite') {
+        return {
+          rootPath: '/builder/node_modules/weapp-vite',
+          version: '7.2.1',
+          packageJson: { dependencies: { wevu: '7.2.0' } },
+        }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/builder/node_modules/weapp-vite/')) {
+        return { rootPath: '/builder/node_modules/wevu', version: '7.1.4' }
+      }
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/fallback-app/')) {
+        return { rootPath: '/project/fallback-app/node_modules/wevu', version: '7.2.0' }
+      }
+      return undefined
+    })
+    existsSyncMock.mockImplementation((filePath: string) => filePath.endsWith('/dist/index.mjs'))
+
+    const aliases = resolveBuiltinPackageAliases({ cwd: '/project/fallback-app' })
+
+    expect(aliases).toContainEqual({
+      find: 'wevu',
+      replacement: '/project/fallback-app/node_modules/wevu/dist/index.mjs',
+    })
+    expect(loggerWarnMock).not.toHaveBeenCalled()
+  })
+
   it('keeps the existing cwd and workspace fallback when no nested compatible copy is available', () => {
     getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
       if (packageName === 'weapp-vite') {
-        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+        return {
+          rootPath: '/project/node_modules/weapp-vite',
+          version: '7.2.0',
+          packageJson: { dependencies: { wevu: '7.2.0' } },
+        }
       }
-      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/')) {
         return undefined
       }
       if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/app')) {
@@ -104,9 +199,13 @@ describe('runtime package aliases', () => {
   it('emits the version preflight warning only once for the same mismatch', () => {
     getPackageInfoSyncMock.mockImplementation((packageName: string, options?: { paths?: string[] }) => {
       if (packageName === 'weapp-vite') {
-        return { rootPath: '/project/node_modules/weapp-vite', version: '7.2.0' }
+        return {
+          rootPath: '/project/node_modules/weapp-vite',
+          version: '7.2.0',
+          packageJson: { dependencies: { wevu: '7.2.0' } },
+        }
       }
-      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/node_modules/wevu')) {
+      if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/node_modules/weapp-vite/')) {
         return { rootPath: '/project/node_modules/weapp-vite/node_modules/wevu', version: '7.2.0' }
       }
       if (packageName === 'wevu' && options?.paths?.[0]?.startsWith('/project/warning-app')) {
@@ -120,6 +219,7 @@ describe('runtime package aliases', () => {
     resolveBuiltinPackageAliases({ cwd: '/project/warning-app' })
 
     expect(loggerWarnMock).toHaveBeenCalledTimes(1)
+    expect(loggerWarnMock).toHaveBeenCalledWith('[weapp-vite] 检测到项目解析到 wevu@7.1.4，与 weapp-vite 配套的 wevu@7.2.0 不一致，已自动采用兼容副本。建议执行 pnpm update weapp-vite wevu。')
   })
 
   it('adds built file aliases and resolves vue-demi to an absolute entry', () => {

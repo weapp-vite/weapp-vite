@@ -223,24 +223,23 @@ interface ResolvedWevuPackage {
 
 function resolveBundledWevu(cwd?: string): ResolvedWevuPackage | undefined {
   const weappVitePackage = resolveWeappVitePackage(cwd)
-  if (!weappVitePackage) {
+  const dependencyVersion = weappVitePackage?.packageJson.dependencies?.wevu
+  if (!weappVitePackage || !dependencyVersion) {
     return undefined
   }
 
-  // 只有 weapp-vite 包内确实携带嵌套副本时才绑定它；否则保留项目 cwd/workspace 回退。
-  const bundledRoot = path.resolve(weappVitePackage.rootPath, 'node_modules/wevu')
-  if (!existsSync(path.join(bundledRoot, 'package.json'))) {
-    return undefined
-  }
-
-  // 从 weapp-vite 自身的依赖边界解析，确保 pnpm/npm 在版本冲突时选择其嵌套副本。
+  // 从 weapp-vite 自身的依赖边界解析。pnpm 会把依赖放在虚拟 store 的 sibling
+  // 目录中，而不是 `${rootPath}/node_modules`，因此不能用物理 nested 路径作为门禁。
   const bundledWevu = safeGetPackageInfoSync('wevu', {
-    paths: [packageResolutionPath(bundledRoot)],
+    paths: [packageResolutionPath(weappVitePackage.rootPath)],
   })
-  if (!bundledWevu) {
+  if (!bundledWevu?.version) {
     return undefined
   }
-  return bundledWevu
+  // 构建器和运行时可独立发版，发布包的精确版本依赖才是兼容性依据。
+  return dependencyVersion === 'workspace:*' || bundledWevu.version === dependencyVersion
+    ? bundledWevu
+    : undefined
 }
 
 function warnWevuVersionMismatch(cwd: string | undefined, bundledWevu: ResolvedWevuPackage | undefined) {
