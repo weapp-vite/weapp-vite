@@ -2,7 +2,7 @@ import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSuiteTasks } from './e2e-suite-manifest'
 import { runE2ESuiteCli } from './run-e2e-suite'
-import { runTaskSuite } from './suiteRunner'
+import { getTaskSpawnOptions, runTaskSuite } from './suiteRunner'
 
 vi.mock('./suiteRunner', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./suiteRunner')>()
@@ -16,6 +16,7 @@ vi.mock('./suiteRunner', async (importOriginal) => {
 beforeEach(() => {
   for (const name of [
     'WEAPP_VITE_E2E_DOM_ACCEPTANCE',
+    'WEAPP_VITE_E2E_EXCLUDE_PROJECTS',
     'WEAPP_VITE_E2E_TASK_FILTER',
     'WEAPP_VITE_E2E_TASK_FROM',
     'WEAPP_VITE_E2E_TASK_ROLL_FROM',
@@ -36,6 +37,18 @@ afterEach(() => {
 })
 
 describe('IDE full CLI acceptance policy', () => {
+  it('preserves explicitly excluded tasks as out-of-scope report entries', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_EXCLUDE_PROJECTS', 'uview-plus-compat,wot-ui-compat')
+    await runE2ESuiteCli(['ide-component-libraries'])
+    const [, tasks, options] = vi.mocked(runTaskSuite).mock.calls[0]!
+    expect(tasks).toHaveLength(2)
+    expect(tasks.every(task => task.outOfScopeReason?.includes('WEAPP_VITE_E2E_EXCLUDE_PROJECTS'))).toBe(true)
+    expect(options?.reportContext?.plannedTasks).toEqual(tasks)
+    const nestedTask = { label: 'nested-web', command: 'node', args: [] }
+    expect(getTaskSpawnOptions(nestedTask).env?.WEAPP_VITE_E2E_EXCLUDE_PROJECTS)
+      .toBe('uview-plus-compat,wot-ui-compat')
+  })
+
   it.each(['ide-full', 'ide-full:exhaustive', 'ide-dom-headless'])('passes default strict policy for %s to the runner', async (mode) => {
     await runE2ESuiteCli([mode])
     expect(runTaskSuite).toHaveBeenCalledOnce()

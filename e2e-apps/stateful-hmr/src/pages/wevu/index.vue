@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'wevu'
+import { reactive, ref, storeToRefs } from 'wevu'
 import { useCounterStore } from '../../shared/store'
 
 definePageJson({
@@ -11,7 +11,7 @@ const marker = 'STATEFUL-WEVU-BASE'
 const count = ref(0)
 const input = ref('')
 const store = useCounterStore()
-const storeCount = store.count
+const { count: storeCount } = storeToRefs(store)
 const details = reactive<{ removed?: string, added?: string }>({
   removed: 'initial',
 })

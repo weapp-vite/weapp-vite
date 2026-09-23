@@ -129,7 +129,7 @@ counter.inc()
 
 ## 事件派发（emit）
 
-在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层直接调用小程序 `triggerEvent`。
+在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层调用宿主事件能力。微信和抖音使用 `triggerEvent`；支付宝通过 `props.onXxx` 回调传递事件，并保留模板监听器需要的 `detail` 和数据集。支付宝回调不提供微信的冒泡、捕获和跨组件传播选项。
 
 组件边界遵循 Vue 的大小写约定：camelCase prop 与事件会统一映射为小程序 kebab-case 宿主名称，例如 `maxQuantity` 映射为 `max-quantity`，`emit('quantityChange')` 可由父组件的 `@quantity-change` 监听。`update:modelValue` 等带冒号事件继续沿用既有的 `update-modelvalue` 映射。
 

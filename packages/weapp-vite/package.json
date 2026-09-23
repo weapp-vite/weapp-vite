@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite",
   "type": "module",
-  "version": "7.1.4",
+  "version": "7.2.0",
   "description": "weapp-vite 一个现代化的小程序打包工具",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -183,6 +183,7 @@
     "pathe": "catalog:",
     "picomatch": "^4.0.7",
     "postcss": "catalog:",
+    "postcss-selector-parser": "catalog:",
     "postcss-value-parser": "4.2.0",
     "rolldown": "catalog:",
     "rolldown-plugin-dts": "0.28.6",

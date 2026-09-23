@@ -5,6 +5,7 @@ import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { enrichHmrFailure } from '../utils/hmr-failure-diagnostics'
 import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { resolveSharedHmrScriptModuleExt } from '../utils/shared-hmr-fixture'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const DEFAULT_LAYOUT_WXML = path.join(APP_ROOT, 'src/layouts/default/index.wxml')
@@ -15,10 +16,6 @@ const SHARED_INCLUDE_TEMPLATE = path.join(SHARED_DIR, 'layout-include.wxml')
 const SHARED_WXS = path.join(SHARED_DIR, 'layout-helper.wxs')
 
 const PLATFORM_LIST = resolvePlatforms()
-
-function resolveScriptModuleExt(platform: (typeof PLATFORM_LIST)[number]) {
-  return platform === 'weapp' ? 'wxs' : 'sjs'
-}
 
 function buildSharedImportTemplate(marker: string) {
   return [
@@ -149,7 +146,7 @@ describe('HMR layout shared template and wxs dependencies (dev watch)', { concur
     const adminLayoutOutput = path.join(DIST_ROOT, `layouts/admin/index.${templateExt}`)
     const sharedImportOutput = path.join(DIST_ROOT, `shared-layout-hmr/layout-template.${templateExt}`)
     const sharedIncludeOutput = path.join(DIST_ROOT, `shared-layout-hmr/layout-include.${templateExt}`)
-    const sharedWxsOutput = path.join(DIST_ROOT, `shared-layout-hmr/layout-helper.${resolveScriptModuleExt(platform)}`)
+    const sharedWxsOutput = path.join(DIST_ROOT, `shared-layout-hmr/layout-helper.${resolveSharedHmrScriptModuleExt(platform)}`)
 
     await fs.ensureDir(SHARED_DIR)
     await fs.writeFile(SHARED_IMPORT_TEMPLATE, buildSharedImportTemplate(initialTemplateMarker), 'utf8')

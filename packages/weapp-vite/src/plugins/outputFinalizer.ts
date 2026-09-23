@@ -19,6 +19,7 @@ import { transformI18nOutputTemplate } from './i18n'
 import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
+import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
 import { hasManagedTailwindcssOutputMarker, isManagedTailwindcssEntry } from './tailwindcssMarker'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
@@ -340,17 +341,19 @@ export function pruneUnchangedDevHmrOutputs(
     stabilizeWevuRuntimeChunkAccess(bundle)
   }
   for (const [fileName, output] of Object.entries(bundle)) {
-    const shouldForceEmitCurrentHmrChunk = isHmrBuild
+    const isCurrentHmrChunk = isHmrBuild
       && output.type === 'chunk'
       && (
         emittedChunkFileNames?.has(fileName) === true
         || emittedChunkFileNames?.has(output.fileName) === true
       )
+    const shouldForceEmitCurrentHmrChunk = isCurrentHmrChunk
+      && ctx.runtimeState.build.hmr.forceEmitUnchangedChunks !== false
     if (
       isHmrBuild
       && output.type === 'chunk'
       && emittedChunkFileNames?.size
-      && !shouldForceEmitCurrentHmrChunk
+      && !isCurrentHmrChunk
     ) {
       delete bundle[fileName]
       continue
@@ -429,6 +432,9 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           assets.stage,
         )
         normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
+        if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
+          normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
+        }
         pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
           runtimeRewriteDone: true,
           preserveCompleteBundle,

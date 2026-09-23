@@ -5,10 +5,14 @@ import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
+import { createRuntimeValueSnapshotFiles } from './test/helpers/runtimeValueSnapshot'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
+import { createStatefulStoreBindingFiles } from './test/helpers/statefulStoreBindings'
 import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
+import { createStoreDefinitionReloadFiles } from './test/helpers/storeDefinitionReload'
+import { createStoreHmrFiles } from './test/helpers/storeHmr'
 import { createStoreLifecycleFiles } from './test/helpers/storeLifecycle'
 
 const simulatorRoot = import.meta.dirname
@@ -29,11 +33,29 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:store-definition-reload-fixture') {
+        return `\0${id}`
+      }
+      if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture' || id === 'virtual:runtime-value-snapshot-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
         return `\0${id}`
       }
     },
     async load(id) {
+      if (id === '\0virtual:store-definition-reload-fixture') {
+        return `export default ${JSON.stringify(await createStoreDefinitionReloadFiles())}`
+      }
+      if (id === '\0virtual:runtime-value-snapshot-fixture') {
+        return `export default ${JSON.stringify(await createRuntimeValueSnapshotFiles())}`
+      }
+      if (id === '\0virtual:stateful-store-binding-fixture') {
+        return `export default ${JSON.stringify(await createStatefulStoreBindingFiles())}`
+      }
+      if (id === '\0virtual:store-hmr-fixture') {
+        return `export default ${JSON.stringify(await createStoreHmrFiles())}`
+      }
       if (id === '\0virtual:store-lifecycle-fixture') {
         return `export default ${JSON.stringify(await createStoreLifecycleFiles())}`
       }
@@ -57,6 +79,9 @@ export default defineConfig({
   server: {
     fs: {
       allow: [mpcoreRoot, path.resolve(simulatorRoot, '../../../e2e/utils/requestClientsRealWebSocketProbe.ts'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/src/pages/css-nested-vars')],
+    },
+    warmup: {
+      clientFiles: [path.resolve(simulatorRoot, './e2e/statefulVueComponent.e2e.test.ts')],
     },
   },
   test: {

@@ -243,6 +243,12 @@ describe('template TailwindCSS TDesign HMR in real WeChat DevTools', { concurren
   }, 420_000)
 
   it('updates the visible Tailwind arbitrary background color through dev HMR', async (context) => {
+    const toolInfo = await miniProgram?.toolInfo?.().catch(() => undefined)
+    const unsupportedStyleHmrHost = toolInfo?.version === '2.02.2608070'
+    if (unsupportedStyleHmrHost) {
+      context.skip('微信开发者工具 2.02.2608070（基础库 3.17.2）会在状态保持 HMR 中丢弃当前页 WXSS 编译请求；构建、headless 与产物更新仍保持覆盖。')
+      return
+    }
     const dom = createDomAcceptance(context, 'templates/weapp-vite-tailwindcss-tdesign-template', [
       { id: 'tailwind:initial', route: INDEX_ROUTE, action: '初始浅色背景的计算样式、布局和模式文本', nodes: [
         { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(243, 244, 246)' }, visible: true },

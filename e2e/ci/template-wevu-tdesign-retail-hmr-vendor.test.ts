@@ -232,6 +232,10 @@ describe('retail template HMR keeps wevu vendor exports intact', { concurrent: f
     try {
       await replaceFileByRename(MINIMAL_INDEX_SOURCE_PATH, resetSource)
       await withMinimalDevWatch(async (dev) => {
+        // dev 下稳定 runtime 文件名是热更新契约，生产构建允许合并共享模块。
+        const runtimeVendor = path.join(MINIMAL_DIST_ROOT, 'weapp-vendors/wevu-runtime.js')
+        expect(await fs.pathExists(runtimeVendor)).toBe(true)
+        expect(await fs.readFile(path.join(MINIMAL_DIST_ROOT, 'app.js'), 'utf8')).toContain('weapp-vendors/wevu-runtime.js')
         await replaceFileByRename(MINIMAL_INDEX_SOURCE_PATH, updatedSource)
 
         const output = await dev.waitFor(
@@ -239,6 +243,7 @@ describe('retail template HMR keeps wevu vendor exports intact', { concurrent: f
           'updated minimal template tag text',
         )
         expect(output).toContain(marker)
+        expect(await fs.pathExists(runtimeVendor)).toBe(true)
         expect(await dev.waitFor(waitForVendorMembersIntact(MINIMAL_DIST_ROOT), 'minimal template vendor members after text HMR')).toEqual({})
       })
     }

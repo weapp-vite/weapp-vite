@@ -71,6 +71,8 @@ const classes = useCssModule('theme')
 
 其他小程序平台使用相同编译实现，但在完成对应 IDE/真机验证前视为实验性。
 
+支付宝不支持 Vue 默认生成的 scoped 属性选择器。构建时会将模板作用域标记同步追加为 class，并将样式中的对应属性选择器转换为 class 选择器；保留原始 data 属性、动态 class 和选择器优先级，样式热更新也经过同一转换。无需移除 `<style scoped>`。
+
 ## `usingComponents`
 
 当你在页面或组件里需要显式注册原生小程序组件时，优先明确当前文件使用的 JSON 宏与配置来源，避免多个入口互相覆盖。

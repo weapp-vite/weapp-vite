@@ -2,6 +2,7 @@ import type { AcceptanceIdentity, AcceptanceStatus } from './domAcceptanceReport
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import { excludedE2EProjects } from '../../scripts/e2eProjectScope'
 import { createAcceptanceIdentity, sanitizeAcceptanceValue } from './domAcceptanceReport/helpers'
 
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
@@ -31,6 +32,7 @@ export interface SuiteReportContext extends AcceptanceIdentity {
 }
 
 export interface SuiteReportPayload {
+  excludedProjects: string[]
   generatedAt: string
   jsonFile: string
   markdownFile: string
@@ -120,6 +122,7 @@ function renderSuiteReportMarkdown(payload: SuiteReportPayload) {
   const lines = [
     `# ${payload.suiteName} 汇总报告`,
     '',
+    `- 显式排除项目：${payload.excludedProjects.join(', ') || '无'}`,
     `- 生成时间：\`${payload.generatedAt}\``,
     `- Run：\`${payload.runId}\`，提交：\`${payload.commitSha}\``,
     `- 工作区未提交变更：\`${payload.workingTreeDirty ?? 'unknown'}\``,
@@ -202,6 +205,7 @@ export function createSuiteReport(
   })
   const hasIncomplete = tasks.some(task => task.status !== 'passed' && task.status !== 'out-of-scope')
   const payload: SuiteReportPayload = {
+    excludedProjects: excludedE2EProjects(),
     generatedAt: now.toISOString(),
     suiteName,
     runId: context.runId,

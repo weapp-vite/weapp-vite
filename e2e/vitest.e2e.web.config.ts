@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 
 export default defineConfig({
@@ -12,7 +13,7 @@ export default defineConfig({
       path.resolve(import.meta.dirname, './utils/webDevServer.test.ts'),
       path.resolve(import.meta.dirname, './web-runtime/*.test.ts'),
     ],
-    exclude: [path.resolve(import.meta.dirname, './web-runtime/web-browser-smoke.test.ts')],
+    exclude: [path.resolve(import.meta.dirname, './web-runtime/web-browser-smoke.test.ts'), ...excludedE2ETestPatterns()],
     testTimeout: 180_000,
     hookTimeout: 180_000,
     globals: true,
