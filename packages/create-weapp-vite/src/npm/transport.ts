@@ -11,7 +11,7 @@ interface RegistryAuth {
   key: string | null
 }
 
-// npm-registry-fetch 19 的公开入口导出此函数，社区类型尚未包含它。
+// npm-registry-fetch 的公开入口导出此函数，社区类型尚未包含它。
 const { getAuth } = registryFetch as typeof registryFetch & {
   getAuth: (uri: string, options: RegistryOptions) => RegistryAuth
 }

@@ -28,6 +28,8 @@ keywords:
 
 ## 快速开始
 
+需要 Node.js 22（至少 `22.22.2`）、24（至少 `24.15.0`）或 26 及以上版本。不再支持 Node.js 20。
+
 ```bash
 pnpm create weapp-vite
 # 或 npx create-weapp-vite

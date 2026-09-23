@@ -17,7 +17,7 @@
 
 推荐直接使用包管理器的 create 命令：
 
-> 说明：推荐使用 `Node.js 22+`，再执行 `pnpm create weapp-vite`、`yarn create weapp-vite` 或 `npm create weapp-vite@latest`。
+> 需要 Node.js 22（至少 `22.22.2`）、24（至少 `24.15.0`）或 26 及以上版本，再执行 `pnpm create weapp-vite`、`yarn create weapp-vite` 或 `npm create weapp-vite@latest`。不再支持 Node.js 20。
 
 ```bash
 pnpm create weapp-vite
