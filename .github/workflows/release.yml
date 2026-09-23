@@ -85,4 +85,7 @@ jobs:
           if [[ -n "${REPO_RELEASE_VERSION}" ]]; then
             release_args+=("--version=${REPO_RELEASE_VERSION}")
           fi
+          if [[ "${REPO_RELEASE_MODE}" == "publish" && -z "${REPO_RELEASE_PACKAGE}" ]]; then
+            export GITHUB_REF_NAME=main
+          fi
           pnpm exec repo release ci "${release_args[@]}"
