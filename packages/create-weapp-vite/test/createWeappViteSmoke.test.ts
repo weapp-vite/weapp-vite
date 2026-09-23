@@ -18,6 +18,7 @@ import {
   waitForChildClose,
 } from '../../../scripts/create-weapp-vite-smoke.mjs'
 import { createScenario, createTarballCommand, createTarballInstallCommand } from '../../../scripts/createWeappViteSmoke/commands.mjs'
+import { resolveWindowsPackageManager } from '../../../scripts/createWeappViteSmoke/process.mjs'
 import { classifyFailure, createPnpmProfileConfig, createRegistryEnvironment, resolveRegistryProfiles, resolveRegistryVersion, versionLag } from '../../../scripts/createWeappViteSmoke/registry.mjs'
 import { assertPreparedProject, DEFAULT_TEMPLATE_NAMES, outputDirectory, validateCreatedProjectStructure } from '../../../scripts/createWeappViteSmoke/templates.mjs'
 import { mergeSmokeReports, renderSmokeReport } from '../../../scripts/merge-create-weapp-vite-smoke-reports.mjs'
@@ -126,7 +127,11 @@ describe('create-weapp-vite smoke helpers', () => {
         ['stateDir', path.join(root, 'pnpm-state')],
         ['cacheDir', path.join(root, 'pnpm-cache')],
       ] as const) {
-        const { stdout } = await promisify(execFile)(pnpmExecutable, ['--dir', project, 'config', 'get', key, '--json'], {
+        const args = ['--dir', project, 'config', 'get', key, '--json']
+        const invocation = process.platform === 'win32'
+          ? resolveWindowsPackageManager('pnpm', args, env)
+          : { command: pnpmExecutable, args }
+        const { stdout } = await promisify(execFile)(invocation.command, invocation.args, {
           cwd: path.resolve(import.meta.dirname, '..'),
           env: {
             ...env,

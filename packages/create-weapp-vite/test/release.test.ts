@@ -1,3 +1,4 @@
+import { realpath } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -33,6 +34,34 @@ async function readPackageManifest(filePath: string): Promise<PackageManifest> {
   return await fs.readJSON(filePath) as PackageManifest
 }
 
+async function linkNodeModuleEntry(source: string, destination: string, entry: import('node:fs').Dirent) {
+  if (entry.isSymbolicLink()) {
+    await fs.symlink(await realpath(source), destination, process.platform === 'win32' ? 'junction' : 'dir')
+    return
+  }
+  await fs.copy(source, destination, { dereference: true })
+}
+
+async function materializeNodeModules(source: string, destination: string) {
+  await fs.ensureDir(destination)
+  for (const entry of await fs.readdir(source, { withFileTypes: true })) {
+    const sourcePath = path.join(source, entry.name)
+    const destinationPath = path.join(destination, entry.name)
+    if (entry.name.startsWith('@') && entry.isDirectory()) {
+      await fs.ensureDir(destinationPath)
+      for (const scopedEntry of await fs.readdir(sourcePath, { withFileTypes: true })) {
+        await linkNodeModuleEntry(
+          path.join(sourcePath, scopedEntry.name),
+          path.join(destinationPath, scopedEntry.name),
+          scopedEntry,
+        )
+      }
+      continue
+    }
+    await linkNodeModuleEntry(sourcePath, destinationPath, entry)
+  }
+}
+
 function parsePackJson(stdout: string) {
   // prepack 构建日志位于 JSON 之前；兼容 pnpm 的对象与数组结果格式。
   const jsonText = stdout.match(/(?:^|\r?\n)(\{[\s\S]*\}|\[\s*\{[\s\S]*\}\s*\])\s*$/)?.[1]
@@ -57,7 +86,11 @@ async function assertBundledCliVersions(packageRoot: string, packedPackageRoot: 
   ))
   const projectsRoot = path.join(tempRoot, 'projects')
   await fs.ensureDir(projectsRoot)
-  await fs.symlink(path.join(packageRoot, 'node_modules'), path.join(packedPackageRoot, 'node_modules'), 'junction')
+  // A junction of the whole workspace `node_modules` leaves pnpm's relative
+  // links rooted at the extracted tarball on Windows. Link each direct package
+  // to its real pnpm store location instead, preserving transitive resolution
+  // through the store's sibling `node_modules` directory on every platform.
+  await materializeNodeModules(path.join(packageRoot, 'node_modules'), path.join(packedPackageRoot, 'node_modules'))
   const networkGuard = path.join(tempRoot, 'deny-network.mjs')
   await fs.writeFile(networkGuard, `import net from 'node:net'
 net.Socket.prototype.connect = () => { throw new Error('Default scaffolding must not access the network') }
