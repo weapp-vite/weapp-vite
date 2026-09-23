@@ -1,4 +1,4 @@
-import type { CreateProjectOptions } from 'create-weapp-vite'
+import type { CreateProjectOptions, DependencyVersionStrategy } from 'create-weapp-vite'
 import { createProject, TemplateName } from 'create-weapp-vite'
 import { expectAssignable, expectError, expectType } from 'tsd'
 
@@ -17,6 +17,16 @@ const options: CreateProjectOptions = {
   installSkills: true,
 }
 expectType<boolean | undefined>(options.installSkills)
+expectType<string | undefined>(options.registry)
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default, { registry: 'https://registry.npmmirror.com/' }))
+expectError(createProject('/tmp/demo', TemplateName.default, { registry: 123 }))
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.wevu, options))
+
+expectAssignable<DependencyVersionStrategy>('compatible')
+expectAssignable<DependencyVersionStrategy>('bundled')
+expectType<DependencyVersionStrategy | undefined>(options.dependencyVersionStrategy)
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.wevu, { dependencyVersionStrategy: 'bundled' }))
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default, { dependencyVersionStrategy: 'compatible' }))
+expectError(createProject('/tmp/demo', TemplateName.default, { dependencyVersionStrategy: 'latest' }))
 
 expectError(createProject('/tmp/demo', 'unknown-template'))

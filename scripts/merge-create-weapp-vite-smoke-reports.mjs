@@ -1,113 +1,98 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-
-const reportsDir = process.argv[2]
-const outputDir = process.argv[3]
-const NEWLINE_GLOBAL_RE = /\n/g
-
-if (!reportsDir || !outputDir) {
-  console.error('Usage: node scripts/merge-create-weapp-vite-smoke-reports.mjs <reportsDir> <outputDir>')
-  process.exit(1)
-}
+import { pathToFileURL } from 'node:url'
 
 function formatMs(value) {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return '-'
+  return typeof value === 'number' && Number.isFinite(value) ? `${value} ms` : '-'
+}
+
+function cell(value) {
+  return String(value ?? '-').replaceAll('|', '&#124;').replace(/\r?\n/g, '<br>')
+}
+
+function dependencies(row) {
+  if (row.dependencySource !== 'local-tarballs') {
+    return 'registry'
   }
-  return `${value} ms`
+  return `local tarballs: ${row.dependencyArtifacts.map(({ name, filename }) => `${name} (${filename})`).join(', ')}`
 }
 
 async function findReportFiles(root) {
-  try {
-    await fs.access(root)
-  }
-  catch {
-    return []
-  }
-
-  const entries = await fs.readdir(root, { withFileTypes: true })
+  const entries = await fs.readdir(root, { withFileTypes: true }).catch(() => [])
   const files = []
   for (const entry of entries) {
     const fullPath = path.join(root, entry.name)
     if (entry.isDirectory()) {
       files.push(...await findReportFiles(fullPath))
-      continue
     }
-    if (entry.name.endsWith('.json')) {
+    else if (entry.name.endsWith('.json')) {
       files.push(fullPath)
     }
   }
   return files.sort()
 }
 
-async function main() {
-  const files = await findReportFiles(reportsDir)
-  if (files.length === 0) {
-    await fs.mkdir(outputDir, { recursive: true })
-    const emptyMarkdown = [
-      '# Create Weapp Vite Smoke Report',
-      '',
-      'Rows: 0',
-      'Failures: 0',
-      '',
-      'No smoke report artifacts were found.',
-      '',
-      `Source directory: \`${reportsDir}\``,
-    ]
-    await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.md'), `${emptyMarkdown.join('\n')}\n`, 'utf8')
-    await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.json'), `${JSON.stringify({ rows: [], failures: [] }, null, 2)}\n`, 'utf8')
-    return
-  }
+export function mergeSmokeReports(reports) {
+  const attach = (report, row) => ({
+    os: report.os,
+    nodeVersion: report.nodeVersion,
+    artifact: report.artifact ?? 'registry',
+    cacheMode: report.cacheMode ?? 'unknown',
+    ...row,
+    dependencySource: report.dependencySource ?? 'registry',
+    dependencyArtifacts: (report.dependencyArtifacts ?? []).map(({ name, filename }) => ({ name, filename: path.posix.basename(filename.replaceAll('\\', '/')) })),
+  })
+  const rows = reports.flatMap(report => (report.results ?? []).map(result => attach(report, result)))
+  const failures = reports.flatMap(report => (report.failures ?? []).map(failure => attach(report, failure)))
+  const registries = reports.flatMap(report => (report.registries ?? []).map(registry => attach(report, registry)))
+  const summaries = reports.map(report => attach(report, report.summary ?? {}))
+  rows.sort((a, b) => ['os', 'nodeVersion', 'registryProfile', 'scenario', 'template'].reduce((order, key) => order || String(a[key] ?? '').localeCompare(String(b[key] ?? '')), 0))
+  return { rows, failures, registries, summaries }
+}
 
-  const reports = await Promise.all(files.map(async file => JSON.parse(await fs.readFile(file, 'utf8'))))
-  const rows = reports.flatMap(report =>
-    report.results.map(result => ({
-      os: report.os,
-      nodeVersion: report.nodeVersion,
-      scenario: result.scenario,
-      template: result.template,
-      buildMs: result.buildMs,
-      devReadyMs: result.devReadyMs,
-      devUpdateMs: result.devUpdateMs,
-    })),
-  )
-  const failures = reports.flatMap(report =>
-    report.failures.map(failure => ({
-      os: report.os,
-      nodeVersion: report.nodeVersion,
-      scenario: failure.scenario,
-      template: failure.template,
-      error: failure.error,
-    })),
-  )
-
-  rows.sort((a, b) => (
-    a.os.localeCompare(b.os)
-    || a.nodeVersion.localeCompare(b.nodeVersion)
-    || a.scenario.localeCompare(b.scenario)
-    || a.template.localeCompare(b.template)
-  ))
-
+export function renderSmokeReport({ rows, failures, registries, summaries }) {
   const markdown = [
     '# Create Weapp Vite Smoke Report',
     '',
-    `Rows: ${rows.length}`,
-    `Failures: ${failures.length}`,
+    `Completed scenarios: ${rows.length}`,
+    `Product failures: ${failures.filter(failure => failure.kind === 'product' || !failure.kind).length}`,
+    `Network/environment failures: ${failures.filter(failure => failure.kind === 'network').length}`,
+    `Registry package/version unavailable: ${failures.filter(failure => failure.kind === 'registry-unavailable').length}`,
     '',
-    '| OS | Node | Runtime | Template | Build | Dev Ready | Dev Update |',
-    '| --- | --- | --- | --- | --- | --- | --- |',
-    ...rows.map(row => `| ${row.os} | ${row.nodeVersion} | ${row.scenario} | ${row.template} | ${formatMs(row.buildMs)} | ${formatMs(row.devReadyMs)} | ${formatMs(row.devUpdateMs)} |`),
+    ...summaries.map(summary => `- ${cell(summary.os)} / Node ${cell(summary.nodeVersion)} / Cache ${cell(summary.cacheMode)} / Dependencies ${cell(dependencies(summary))}: ${cell(summary.status ?? 'legacy report')}`),
+    '',
+    '| OS | Node | Cache | Dependencies | Registry | Registry version | Actual scaffold versions | Official expected | Synchronization |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...registries.map(registry => `| ${cell(registry.os)} | ${cell(registry.nodeVersion)} | ${cell(registry.cacheMode)} | ${cell(dependencies(registry))} | ${cell(registry.name)} | ${cell(registry.resolvedVersion)} | ${cell(registry.actualVersions?.join(', '))} | ${cell(registry.expectedOfficialVersion)} | ${cell(registry.lag)} |`),
+    '',
+    '| OS | Node | Cache | Dependencies | Registry | Manager | Template | Actual scaffold | Official expected | Lag | Install | Build | Dev ready | Dev update |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...rows.map(row => `| ${cell(row.os)} | ${cell(row.nodeVersion)} | ${cell(row.cacheMode)} | ${cell(dependencies(row))} | ${cell(row.registryProfile)} | ${cell(row.scenario)} | ${cell(row.template)} | ${cell(row.actualCreateVersion)} | ${cell(row.expectedOfficialVersion)} | ${cell(row.lag)} | ${formatMs(row.installMs)} | ${formatMs(row.buildMs)} | ${formatMs(row.devReadyMs)} | ${formatMs(row.devUpdateMs)} |`),
   ]
-
-  if (failures.length > 0) {
-    markdown.push('', '## Failures', '', '| OS | Node | Runtime | Template | Error |', '| --- | --- | --- | --- | --- |')
-    markdown.push(...failures.map(failure => `| ${failure.os} | ${failure.nodeVersion} | ${failure.scenario} | ${failure.template} | ${failure.error.replace(NEWLINE_GLOBAL_RE, '<br>')} |`))
+  if (failures.length) {
+    markdown.push('', '## Failures', '', '| OS | Node | Cache | Dependencies | Registry | Manager | Template | Stage | Kind | Actual scaffold | Error |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |')
+    markdown.push(...failures.map(failure => `| ${cell(failure.os)} | ${cell(failure.nodeVersion)} | ${cell(failure.cacheMode)} | ${cell(dependencies(failure))} | ${cell(failure.registryProfile)} | ${cell(failure.scenario)} | ${cell(failure.template)} | ${cell(failure.stage)} | ${cell(failure.kind ?? 'product')} | ${cell(failure.actualCreateVersion)} | ${cell(failure.error)} |`))
   }
-
-  await fs.mkdir(outputDir, { recursive: true })
-  await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.md'), `${markdown.join('\n')}\n`, 'utf8')
-  await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.json'), `${JSON.stringify({ rows, failures }, null, 2)}\n`, 'utf8')
+  if (!rows.length && !failures.length) {
+    markdown.push('', 'No smoke report artifacts were found.')
+  }
+  return `${markdown.join('\n')}\n`
 }
 
-await main()
+async function main() {
+  const [reportsDir, outputDir] = process.argv.slice(2)
+  if (!reportsDir || !outputDir) {
+    throw new Error('Usage: node scripts/merge-create-weapp-vite-smoke-reports.mjs <reportsDir> <outputDir>')
+  }
+  const files = await findReportFiles(reportsDir)
+  const reports = await Promise.all(files.map(async file => JSON.parse(await fs.readFile(file, 'utf8'))))
+  const merged = mergeSmokeReports(reports)
+  await fs.mkdir(outputDir, { recursive: true })
+  await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.md'), renderSmokeReport(merged))
+  await fs.writeFile(path.join(outputDir, 'create-weapp-vite-smoke-report.json'), `${JSON.stringify(merged, null, 2)}\n`)
+}
+
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  await main()
+}

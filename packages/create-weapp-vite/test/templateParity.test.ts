@@ -115,7 +115,7 @@ async function collectExpectedTemplateFiles(templateName: TemplateName) {
   }
 
   await walk(preferredTemplateDir)
-  files.push('AGENTS.md')
+  files.push('AGENTS.md', 'pnpm-workspace.yaml')
 
   return files.sort((a, b) => a.localeCompare(b))
 }
@@ -344,7 +344,7 @@ describe('template parity', () => {
     const root = await createTmpRoot(templateName)
     vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
-    await createProject(root, templateName)
+    await createProject(root, templateName, { dependencyVersionStrategy: 'bundled' })
 
     const [expectedFiles, actualFiles, expectedPackageJson, actualPackageJson] = await Promise.all([
       collectExpectedTemplateFiles(templateName),

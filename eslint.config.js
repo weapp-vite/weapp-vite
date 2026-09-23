@@ -233,9 +233,9 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
-      files: ['packages/weapp-vite/package.json'],
+      files: ['packages/weapp-vite/package.json', 'packages/create-weapp-vite/package.json'],
       rules: {
-        // weapp-vite 的版本兼容公开 API 直接依赖 semver。
+        // 构建器与脚手架统一使用 npm 的 semver caret、预发布版本兼容语义。
         'e18e/ban-dependencies': 'off',
       },
     }, {

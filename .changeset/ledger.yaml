@@ -1450,6 +1450,12 @@ create-weapp-vite@2.9.0:
     - typed-page-named-routes
     - weapp-vite-devframe-devtools
     - wevu-pinia-store-alignment
+create-weapp-vite@2.9.1:
+  dir: packages/create-weapp-vite
+  intents:
+    - calm-css-runtime-imports
+    - calm-scaffold-networks
+    - tidy-scaffold-versions
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:

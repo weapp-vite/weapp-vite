@@ -78,6 +78,18 @@ yarn create weapp-vite
 npm create weapp-vite@latest
 ```
 
+脚手架默认使用随包发布的依赖版本（`bundled`），生成项目时不查询远程版本，AI skills 默认跳过。模板随 npm 包分发，生成过程不需要下载 GitHub 模板。创建后进入项目目录执行 `pnpm install`、`pnpm build`、`pnpm dev`。
+
+pnpm 12.5.1 默认有 24 小时发布冷却期（`minimumReleaseAge=1440`）。新版本发布后，`pnpm create weapp-vite` / `pnpm create weapp-vite@latest` 即使用官方源和全新缓存，也可能先运行满足发布年龄的旧版。默认非严格模式允许为明确指定的精确版本记录例外；启用严格模式的用户仍需等待或按 pnpm 提示与团队策略审批。不要仅凭选中旧版判断镜像或缓存异常，也不必全局关闭安全检查，详见[发布冷却期与精确版本恢复](https://vite.weapp.dev/packages/create-weapp-vite#pnpm-release-age)。
+
+需要更新兼容版本时可显式启用联网查询，并指定当前可用的源：
+
+```bash
+pnpm create weapp-vite my-app wevu --dependency-versions=compatible --registry=https://registry.npmmirror.com/
+```
+
+查询会读取 npm registry、作用域源、代理和 CA 配置，核心依赖与 Tailwind 共用最多 5 秒的网络预算；失败保留随包版本。`--registry` 只作用于脚手架启动后的查询及安装提示，首次下载脚手架仍由 pnpm 的配置决定。国内镜像可能延迟同步，网络异常、发布冷却期、旧脚手架缓存与精确版本恢复步骤见[脚手架文档](https://vite.weapp.dev/packages/create-weapp-vite)。离线生成不等于离线安装，依赖安装仍需要可用的 registry 或完整本地缓存。
+
 ### 本地开发当前仓库
 
 ```bash
