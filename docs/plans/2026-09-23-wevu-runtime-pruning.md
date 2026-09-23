@@ -77,7 +77,7 @@ Web gzip 字节：
 - 原微信最小应用、典型页面、完整 Provider 预算分别保持 93,535 B、160,182 B、271,282 B。本轮新增其余 46 个 production 预算，按上表正式实测值 `ceil(bytes * 105 / 100)` 固定，后续测量不会自动更新基线。
 - 矩阵缺失、重复目标或阶梯、非法字节、非法 gzip、无 entry 的模块图均失败。单个平台打包失败不能写成零体积或跳过。
 - 保留模块按 `bytesInOutput > 0` 判断；零贡献 barrel 不误报。全部阶梯禁止 shared 完整平台注册表和构建元数据，允许独立 runtime 描述；已知目标禁止通用平台 fallback；非支付宝禁止支付宝注册实现；非完整阶梯禁止 router 首屏实现、`@weapp-core/api` 与 fetch 实现，允许 Web 调度辅助；普通内部阶梯禁止 JSX handler。原内部阶梯 deny rules 保持，失败诊断提供从入口到违规模块的引用链。
-- 全量报告使用 v4，包含 7×7 测量与模块引用链。CI 同时输出 v2 的微信/Web 原五阶梯投影，让主线旧版可信评论脚本可以读取。升级后的读端兼容 v2/v3/v4，并优先读取完整 v4；job summary 始终展示完整矩阵。
+- 全量报告使用 v4，包含 7×7 测量与模块引用链。CI 同时输出 v2 的微信/Web 原五阶梯投影，让主线旧版可信评论脚本可以读取。现有 Actions artifact `wevu-runtime-size-report` 保留原始测量、v2 `report.json`、v4 `report-full.json` 和 `report.md`，维持评论下载入口；另上传独立 Actions artifact `wevu-runtime-size-report-full`，仅包含 v4 `report-full.json` 与完整矩阵 `report.md`。升级后的读端兼容 v2/v3/v4，并优先读取完整 v4；job summary 始终展示完整矩阵。
 - 带写权限的评论 workflow 继续只执行默认分支脚本，不执行 PR head 代码。报告先保存再执行体积门禁，失败时仍能下载诊断 artifact；artifact 缺失也失败。
 
 ## 复现与验收

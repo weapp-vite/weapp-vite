@@ -93,3 +93,13 @@ jobs:
           name: wevu-runtime-size-report
           path: runtime-size-artifact
           if-no-files-found: error
+
+      - name: Upload complete runtime size report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wevu-runtime-size-report-full
+          path: |
+            runtime-size-artifact/report-full.json
+            runtime-size-artifact/report.md
+          if-no-files-found: error
