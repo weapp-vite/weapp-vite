@@ -4303,8 +4303,8 @@ importers:
         specifier: workspace:*
         version: link:../packages/weapp-vite
       wrangler:
-        specifier: ^4.136.2
-        version: 4.136.2(@types/node@26.6.2)(bufferutil@4.1.0)
+        specifier: ^4.137.0
+        version: 4.137.0(@types/node@26.6.2)(bufferutil@4.1.0)
 
 packages:
 
@@ -17981,8 +17981,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  wrangler@4.136.2:
-    resolution: {integrity: sha512-BeWkkU7leFyalKi++LDHUaWSumwLVNeBeY2Ma+CqylT/hxs2sKT5e/q88MvXUl4Ng4iPS90H9H1qlb5oK3uhhQ==}
+  wrangler@4.137.0:
+    resolution: {integrity: sha512-vq2JmxkvwOjnsMUejQwd89/EK6u1d20OMlGUVVmb55gVi2zSBKp2rvmxUiPqrSEntK8NwzpTF3DQ/S2I9/TLsg==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
@@ -33457,7 +33457,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20260921.1
       '@cloudflare/workerd-windows-64': 1.20260921.1
 
-  wrangler@4.136.2(@types/node@26.6.2)(bufferutil@4.1.0):
+  wrangler@4.137.0(@types/node@26.6.2)(bufferutil@4.1.0):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20260921.1)
