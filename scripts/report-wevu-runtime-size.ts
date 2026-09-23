@@ -6,6 +6,7 @@ import { x } from 'tinyexec'
 import {
   assertRuntimeSizeReport,
   collectRuntimeSizeReport,
+  createRuntimeSizeLegacyArtifact,
   createRuntimeSizePrArtifact,
   readRuntimeSizeReport,
   renderRuntimeSizeMarkdown,
@@ -21,6 +22,7 @@ export interface RuntimeSizeCliOptions {
   outputJson?: string
   outputMarkdown?: string
   artifactJson?: string
+  legacyArtifactJson?: string
   repository?: string
   prNumber?: number
   headSha?: string
@@ -59,6 +61,7 @@ export function parseRuntimeSizeCliOptions(
     outputJson: readArgValue(args, '--output-json'),
     outputMarkdown: readArgValue(args, '--output-markdown'),
     artifactJson: readArgValue(args, '--artifact-json'),
+    legacyArtifactJson: readArgValue(args, '--legacy-artifact-json'),
     repository: readArgValue(args, '--repository'),
     prNumber: prNumberValue ? Number.parseInt(prNumberValue, 10) : undefined,
     headSha: readArgValue(args, '--head-sha'),
@@ -137,20 +140,27 @@ export async function runRuntimeSizeCli(
     await dependencies.ensureParentDirectory(options.outputMarkdown)
     await dependencies.writeText(path.resolve(options.outputMarkdown), markdown, 'utf8')
   }
-  if (options.artifactJson) {
+  if (options.artifactJson || options.legacyArtifactJson) {
     assertArtifactOptions(options)
     if (!baseline) {
       throw new Error('Artifact output requires --baseline-json.')
     }
-    await dependencies.ensureParentDirectory(options.artifactJson)
-    await dependencies.writeJson(options.artifactJson, createRuntimeSizePrArtifact({
+    const artifact = createRuntimeSizePrArtifact({
       repository: options.repository!,
       prNumber: options.prNumber!,
       headSha: options.headSha!,
       baseSha: options.baseSha!,
       current,
       baseline,
-    }))
+    })
+    if (options.artifactJson) {
+      await dependencies.ensureParentDirectory(options.artifactJson)
+      await dependencies.writeJson(options.artifactJson, artifact)
+    }
+    if (options.legacyArtifactJson) {
+      await dependencies.ensureParentDirectory(options.legacyArtifactJson)
+      await dependencies.writeJson(options.legacyArtifactJson, createRuntimeSizeLegacyArtifact(artifact))
+    }
   }
   if (options.githubSummary && process.env.GITHUB_STEP_SUMMARY) {
     await dependencies.appendText(process.env.GITHUB_STEP_SUMMARY, markdown, 'utf8')

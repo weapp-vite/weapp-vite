@@ -1,0 +1,21 @@
+{
+  "libVersion": "3.17.2",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "runtime pruning home",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "runtime pruning subpackage",
+          "pathName": "detail/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  }
+}

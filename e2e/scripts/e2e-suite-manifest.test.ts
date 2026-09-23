@@ -13,6 +13,7 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/wevu-runtime.pruning.test.ts',
     'ide/github-issues.runtime.issue1035.test.ts',
     'ide/issue-963-plugin-es6.runtime.test.ts',
     'ide/issue-998-tailwind.runtime.test.ts',
@@ -100,6 +101,7 @@ describe('e2e suite manifest', () => {
     expect(prTasks.some(task => task.label.startsWith('hmr-guard:'))).toBe(false)
     expect(prTasks.some(task => task.label === 'ci/issue-862-output-watch.test.ts')).toBe(true)
     expect(prTasks.some(task => task.label === 'ci/github-issues.issue1035.build.test.ts')).toBe(true)
+    expect(prTasks.filter(task => task.label === 'ci/wevu-runtime.npm-platforms.test.ts')).toHaveLength(1)
     expect(await getSuiteTasks('ci-pr')).toEqual(await getCiPrTasks())
     expect(await getSuiteTasks('ci-full')).toEqual(await getCiFullTasks())
   })

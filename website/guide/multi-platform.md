@@ -19,6 +19,8 @@ keywords:
 
 `weapp-vite` 内置了多端适配能力：在开发/构建命令后追加 `--platform <id>`（或短写 `-p <id>`），即可输出目标平台所需的文件后缀与目录结构。
 
+Wevu 同时根据当前目标自动裁剪运行时：六类小程序和 Web 各自保留所需的宿主注册适配，未使用的可选能力由编译器和 tree shaking 排除，无需额外配置。公开动态工厂与 API adapter 的兼容边界见 [Wevu 运行时](/wevu/runtime#按平台与使用能力裁剪)。
+
 下面示例假设你在 `package.json` 脚本里使用的是 `wv dev` / `wv build`：
 
 > [!WARNING]

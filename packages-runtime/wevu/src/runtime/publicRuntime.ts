@@ -11,6 +11,7 @@ import {
   defineComponent as defineComponentCore,
 } from './define'
 import { installInlineEvents } from './features/inlineEvents'
+import { installJsxIslands } from './features/jsxIslands'
 import { installLayout } from './features/layout'
 import { installPatchStrategy } from './features/patchStrategy'
 import {
@@ -70,6 +71,7 @@ function installPublicMetadataCapabilities(value: unknown): void {
 function installPublicFactoryCapabilities(options: unknown): void {
   installPublicOptionCapabilities()
   installInlineEvents()
+  installJsxIslands()
   installScopedSlots()
   installPublicMetadataCapabilities(options)
 }
@@ -106,6 +108,7 @@ export const registerComponent: typeof registerComponentCore = (
   options,
 ) => {
   installPublicOptionCapabilities()
+  installJsxIslands()
   installPublicMetadataCapabilities(runtimeApp)
   installPublicMetadataCapabilities(methods)
   installPublicMetadataCapabilities(mpOptions)
@@ -139,6 +142,7 @@ export function createWevuScopedSlotComponent(
 ): void {
   installTemplateRefs()
   installInlineEvents()
+  installJsxIslands()
   installScopedSlots()
   installLayout()
   createWevuScopedSlotComponentCore(overrides)

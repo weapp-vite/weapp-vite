@@ -60,6 +60,7 @@ jobs:
         working-directory: baseline
         run: pnpm --filter '@weapp-vite/web...' build
 
+      # 主线可信评论脚本升级前仍读取 v2 投影；完整矩阵保留在独立 artifact 与 job summary。
       - name: Measure head and baseline
         working-directory: head
         env:
@@ -76,7 +77,8 @@ jobs:
             --baseline-json=../runtime-size-artifact/baseline.json \
             --output-json=../runtime-size-artifact/head.json \
             --output-markdown=../runtime-size-artifact/report.md \
-            --artifact-json=../runtime-size-artifact/report.json \
+            --artifact-json=../runtime-size-artifact/report-full.json \
+            --legacy-artifact-json=../runtime-size-artifact/report.json \
             --repository="$REPOSITORY" \
             --pr-number="$PR_NUMBER" \
             --head-sha="$HEAD_SHA" \
@@ -90,4 +92,4 @@ jobs:
         with:
           name: wevu-runtime-size-report
           path: runtime-size-artifact
-          if-no-files-found: warn
+          if-no-files-found: error

@@ -2,9 +2,9 @@ import type { InternalRuntimeState } from '../../../types'
 import { WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY } from '@weapp-core/constants'
 import { callHookList } from '../../../hooks'
 import {
+  getCurrentMiniProgramGlobalObject,
   getCurrentMiniProgramPages,
   getCurrentMiniProgramRuntimeCapabilities,
-  getMiniProgramGlobalObject,
   supportsCurrentMiniProgramRuntimeCapability,
 } from '../../../platform'
 
@@ -64,7 +64,7 @@ export function ensureMiniProgramGlobalPatched() {
     return
   }
   miniProgramGlobalPatched = true
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   if (!miniProgramGlobal || typeof miniProgramGlobal !== 'object') {
     return
   }
@@ -110,7 +110,7 @@ export function ensurePageShareMenus(options: {
     return
   }
 
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   if (!miniProgramGlobal || typeof miniProgramGlobal.showShareMenu !== 'function') {
     return
   }

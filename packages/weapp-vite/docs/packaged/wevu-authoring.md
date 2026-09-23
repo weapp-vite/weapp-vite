@@ -2,6 +2,12 @@
 
 这个文档聚焦在 weapp-vite 项目里最常见的 wevu 编写约束。
 
+## 自动裁剪
+
+沿用 `--platform` / `weapp.platform` 选择目标，并从 `wevu` 使用具名导入。六类小程序与 Web 会静态选择宿主适配；编译器根据 Binding Manifest 按需安装 JSX island、ref、插槽和 layout 能力，无需新增用户开关。没有 router 的页面不加载首航 guard 状态机。
+
+公开动态工厂保留保守兼容安装；独立工具链未提供平台时保留动态宿主探测。未使用 API/fetch 时可整体移除，使用后保留动态跨平台 adapter。Web 的宿主桥接不等同于 Vue DOM runtime，原生 App 渲染不在本期范围。
+
 ## 页面与组件
 
 优先保持小程序语义，不要默认把 Vue Web 习惯直接搬进来。

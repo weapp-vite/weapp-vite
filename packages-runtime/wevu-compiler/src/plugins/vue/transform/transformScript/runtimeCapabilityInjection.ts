@@ -14,6 +14,7 @@ const INSTALLER_LOCAL_NAMES: Record<WevuRuntimeCapabilityName, string> = {
   setDataHighFrequencyWarning: '__wevuInstallSetDataHighFrequencyWarning',
   scopedSlots: '__wevuInstallScopedSlots',
   layout: '__wevuInstallLayout',
+  jsxIslands: '__wevuInstallJsxIslands',
 }
 
 const CAPABILITY_BY_INSTALLER: Record<string, WevuRuntimeCapabilityName> = Object.fromEntries(

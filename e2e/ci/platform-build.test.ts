@@ -61,8 +61,7 @@ describe('platform build verification gate', { concurrent: false }, () => {
     }
   })
 
-  it.each(BUILD_VERIFICATION_CAPABILITIES)('emits the $id runtime marker for wevu', async ({
-    id,
+  it.each(BUILD_VERIFICATION_CAPABILITIES)('specializes the $id runtime for wevu', async ({
     expectation: { platform, runtimeGlobal, styleExt, templateExt },
   }) => {
     const outputRoot = path.join(WEVU_APP_ROOT, 'dist')
@@ -76,11 +75,12 @@ describe('platform build verification gate', { concurrent: false }, () => {
 
     const runtimeChunk = await findWevuSemanticChunk(
       outputRoot,
-      code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
+      code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
       `${platform} platform runtime`,
     )
-    expect(runtimeChunk.code).toMatch(new RegExp(`["']MP_PLATFORM["']:\\s*["']${id}["']`))
-    expect(runtimeChunk.code).toMatch(new RegExp(`\\.${runtimeGlobal}\\b|["']${runtimeGlobal}["']`))
+    expect(runtimeChunk.code).toMatch(new RegExp(`(?:\\.${runtimeGlobal}\\b|typeof\\s+${runtimeGlobal}\\b)`))
+    expect(runtimeChunk.code.includes('didMount')).toBe(platform === 'alipay')
+    expect(runtimeChunk.code.includes('didUnmount')).toBe(platform === 'alipay')
   })
 
   it('builds the Alipay native, Vue SFC, SJS, and antd-mini integration', async () => {
@@ -141,11 +141,12 @@ describe('platform build verification gate', { concurrent: false }, () => {
 
     const runtimeChunk = await findWevuSemanticChunk(
       outputRoot,
-      code => code.includes('"MP_PLATFORM"') && code.includes('"alipay"'),
+      code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
       'alipay demo runtime',
     )
-    expect(runtimeChunk.code).toMatch(/["']MP_PLATFORM["']:\s*["']alipay["']/)
-    expect(runtimeChunk.code).toMatch(/\?\.my\b|\.my\b|["']my["']/)
+    expect(runtimeChunk.code).toMatch(/(?:\.my\b|typeof\s+my\b)/)
+    expect(runtimeChunk.code).toContain('didMount')
+    expect(runtimeChunk.code).toContain('didUnmount')
   })
 
   it('builds the Douyin native, Vue SFC, WXS, subpackage, and npm integration', async () => {
@@ -198,10 +199,11 @@ describe('platform build verification gate', { concurrent: false }, () => {
 
     const runtimeChunk = await findWevuSemanticChunk(
       outputRoot,
-      code => code.includes('"MP_PLATFORM"') && code.includes('"tt"'),
+      code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
       'douyin demo runtime',
     )
-    expect(runtimeChunk.code).toMatch(/["']MP_PLATFORM["']:\s*["']tt["']/)
-    expect(runtimeChunk.code).toMatch(/\?\.tt\b|\.tt\b|["']tt["']/)
+    expect(runtimeChunk.code).toMatch(/(?:\.tt\b|typeof\s+tt\b)/)
+    expect(runtimeChunk.code).not.toContain('didMount')
+    expect(runtimeChunk.code).not.toContain('didUnmount')
   })
 })

@@ -26,6 +26,14 @@ Wevu 运行时的核心职责是：
 所有 API 都从 `wevu` 主入口导入。
 :::
 
+## 按平台与使用能力裁剪
+
+weapp-vite 构建时，Wevu 使用当前 `--platform` / `weapp.platform` 自动选择宿主适配，支持六类小程序及 Web，无需增加裁剪开关。使用 `wevu` 的具名导入即可让未使用的 Store、router、API/fetch 随 tree shaking 移除。
+
+编译器会按 Binding Manifest 安装 JSX island、模板 ref、插槽和 layout 等能力；没有 router 的页面不加载首航 guard 状态机。公开动态工厂保留兼容能力安装；未提供编译目标的独立工具链保留动态宿主探测。使用 API/fetch 后，动态跨平台 adapter 的映射仍会保留。
+
+Web 保留 App/Component 和页面栈的宿主桥接，其体积与 Vue DOM runtime 不能直接互换比较。原生 App 渲染尚不在本次支持范围。
+
 ## 更新链路：为什么 Wevu 不需要 Virtual DOM
 
 Wevu 的渲染心智模型更接近“小程序原生”：

@@ -4,7 +4,7 @@ import type {
   MiniProgramIntersectionObserverOptions,
 } from './types'
 import { getCurrentInstance, onDetached, onUnload } from './hooks'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from './platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramRuntimeCapabilities, supportsCurrentMiniProgramRuntimeCapability } from './platform'
 
 export type UseIntersectionObserverOptions = MiniProgramIntersectionObserverOptions
 export type UseIntersectionObserverResult = MiniProgramIntersectionObserver
@@ -29,7 +29,7 @@ function createObserverFromGlobal(
   if (!supportsCurrentMiniProgramRuntimeCapability('globalCreateIntersectionObserver')) {
     return undefined
   }
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   const creator = miniProgramGlobal?.createIntersectionObserver
   if (typeof creator !== 'function') {
     return undefined

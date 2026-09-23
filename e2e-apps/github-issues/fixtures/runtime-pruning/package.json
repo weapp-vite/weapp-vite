@@ -1,0 +1,5 @@
+{
+  "name": "issue-1064-runtime-pruning-fixture",
+  "type": "module",
+  "private": true
+}

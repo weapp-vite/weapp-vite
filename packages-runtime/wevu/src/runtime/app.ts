@@ -20,7 +20,7 @@ import { setPendingRuntimeAppRegistration } from './app/pending'
 import { resolveBindingManifest } from './bindingManifest'
 import { isSetDataHighFrequencyWarningRequested, requireRuntimeCapability } from './capabilities'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
-import { getMiniProgramGlobalObject } from './platform'
+import { getCurrentMiniProgramGlobalObject } from './platform'
 import { ensureRuntimeAppProvides, setRuntimeAppProvidedValue } from './provideContext'
 import { registerApp } from './register'
 
@@ -154,7 +154,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   }
 
   const registerRuntimeApp = () => {
-    const globalObject = getMiniProgramGlobalObject()
+    const globalObject = getCurrentMiniProgramGlobalObject()
     const appRegisterKey = '__wevuAppRegistered'
     const hasRegistered = globalObject ? Boolean(globalObject[appRegisterKey]) : false
     // 开发者工具/HMR 可能重复执行入口，避免多次 App() 导致 AppService 事件监听累积。

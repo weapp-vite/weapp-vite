@@ -89,6 +89,22 @@ function expectCanonicalCalls(code: string, required: WevuRuntimeCapabilityName[
 }
 
 describe('wevu runtime capability metadata and emission', () => {
+  it('installs JSX islands from the emitted binding manifest before registration', async () => {
+    const result = await compileJsxFile(`
+import { defineComponent } from 'wevu'
+export default defineComponent({
+  methods: { renderCard() { return <button onTap={() => this.count++}>tap</button> } },
+  data() { return { count: 0 } },
+  render() { return <view>{this.renderCard()}</view> },
+})
+    `.trim(), '/project/src/components/island.tsx', { sourceMap: false })
+
+    expect(result.bindingManifest?.features.jsxIslands).toBe(true)
+    expect(result.meta?.runtimeCapabilities?.required).toContain('jsxIslands')
+    expect(result.script).toContain('installJsxIslands')
+    expectCanonicalCalls(result.script ?? '', ['jsxIslands'])
+  })
+
   it('skips full AST traversal when no relevant wevu value binding exists', () => {
     const ast = parseJsLike(`import { ref } from 'wevu'; function untouched() {}`)
     const declaration = ast.program.body.find(statement => t.isFunctionDeclaration(statement))
@@ -211,6 +227,7 @@ export default defineComponent({ mixins: [unknownMixin] })
     ['inlineEvents'],
     ['setDataHighFrequencyWarning'],
     ['scopedSlots'],
+    ['jsxIslands'],
   ] satisfies Array<[WevuRuntimeCapabilityName]>)('emits exactly the %s capability', (capability) => {
     const result = transformScript('export default {}', {
       runtimeCapabilities: { required: [capability] },
@@ -250,7 +267,7 @@ export default { setData: { highFrequencyWarning: true } }
     `.trim(), {
       isApp: true,
       runtimeCapabilities: {
-        required: ['layout', 'scopedSlots', 'inlineEvents'],
+        required: ['layout', 'scopedSlots', 'inlineEvents', 'jsxIslands'],
       },
       sourceMap: false,
     })

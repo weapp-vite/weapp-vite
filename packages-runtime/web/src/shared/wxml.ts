@@ -1,4 +1,4 @@
-import { getMiniProgramDirectivePrefix, getSupportedMiniProgramPlatforms } from '@weapp-core/shared'
+import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared/platforms/runtime'
 import { resolveNativeComponentWebTag } from './nativeComponents'
 
 const CONTROL_ATTR_SUFFIXES = [
@@ -13,9 +13,7 @@ const CONTROL_ATTR_SUFFIXES = [
 
 export type ControlAttrSuffix = typeof CONTROL_ATTR_SUFFIXES[number]
 
-export const CONTROL_ATTR_PREFIXES = Array.from(new Set(
-  getSupportedMiniProgramPlatforms().map(platform => getMiniProgramDirectivePrefix(platform)),
-))
+export const CONTROL_ATTR_PREFIXES = [...getSupportedMiniProgramDirectivePrefixes()]
 
 export const TEMPLATE_IMPORT_TAG_NAMES = Array.from(new Set([
   'import',

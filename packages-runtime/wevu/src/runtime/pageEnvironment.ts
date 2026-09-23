@@ -1,6 +1,6 @@
 import { computed, ref } from '../reactivity'
 import { getCurrentSetupContext, onAttached, onShow } from './hooks'
-import { getCurrentMiniProgramPages, getMiniProgramGlobalObject } from './platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramPages } from './platform'
 
 export interface PageStackSnapshot {
   canGoBack: boolean
@@ -87,7 +87,7 @@ export function getNavigationBarMetrics(
 ): NavigationBarMetrics {
   const defaultStatusBarHeight = options.defaultStatusBarHeight ?? 20
   const defaultNavigationBarHeight = options.defaultNavigationBarHeight ?? 44
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   const systemInfo = typeof miniProgramGlobal?.getSystemInfoSync === 'function'
     ? miniProgramGlobal.getSystemInfoSync()
     : {}

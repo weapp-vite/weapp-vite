@@ -1,4 +1,4 @@
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 import { resolveTextDecoderConstructor, resolveTextEncoderConstructor } from './constructors'
 
 export interface RequestGlobalsEventLike {

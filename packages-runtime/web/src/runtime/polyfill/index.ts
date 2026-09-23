@@ -12,7 +12,7 @@ import type {
   SetBackgroundTextStyleOptions,
   UpdateManager,
 } from './types'
-import { getDefaultMiniProgramRuntimeGlobalKey, getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { getDefaultMiniProgramRuntimeGlobalKey, getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 import { emitRuntimeWarning } from '../warning'
 import { createAnimation } from './animation'
 import {
