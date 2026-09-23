@@ -54,7 +54,11 @@ describe('pnpm dependency build policy', () => {
         scripts: { postinstall: 'node postinstall.cjs' },
       }))
       await writeFile(path.join(fixture, 'postinstall.cjs'), 'require("node:fs").writeFileSync("built.txt", "ran")\n')
-      await execa('tar', ['-czf', path.join(root, `${archiveName}.tgz`), '-C', path.dirname(fixture), 'package'])
+      const archivePath = path.join(root, `${archiveName}.tgz`)
+      const fixtureRoot = path.dirname(fixture)
+      // GNU tar on Windows treats a drive-letter path as a remote archive
+      // (`C:`), so keep every tar argument relative to its working directory.
+      await execa('tar', ['-czf', path.relative(fixtureRoot, archivePath).replaceAll(path.sep, '/'), 'package'], { cwd: fixtureRoot })
     }
     await writeFile(path.join(project, 'package.json'), JSON.stringify({
       name: 'build-policy-consumer',

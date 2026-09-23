@@ -161,7 +161,12 @@ describe('create-weapp-vite release pack', () => {
       expect([...packedFiles].some(file => file.startsWith('templates/plugin/dist-'))).toBe(false)
 
       await fs.ensureDir(packedModulesRoot)
-      await execa('tar', ['-xzf', path.resolve(tempRoot, packResult.filename), '-C', packedModulesRoot])
+      // GNU tar on Windows interprets an absolute `C:\...` archive path as a
+      // remote host. Use paths relative to the temporary root for portability.
+      const archivePath = path.resolve(tempRoot, packResult.filename)
+      const archiveRelativePath = path.relative(tempRoot, archivePath).replaceAll(path.sep, '/')
+      const modulesRelativePath = path.relative(tempRoot, packedModulesRoot).replaceAll(path.sep, '/')
+      await execa('tar', ['-xzf', archiveRelativePath, '-C', modulesRelativePath], { cwd: tempRoot })
       const packedPackageRoot = path.join(packedModulesRoot, 'create-weapp-vite')
       await fs.move(path.join(packedModulesRoot, 'package'), packedPackageRoot)
       const packedManifest = await readPackageManifest(path.join(packedPackageRoot, 'package.json'))

@@ -23,6 +23,10 @@ import { assertPreparedProject, DEFAULT_TEMPLATE_NAMES, outputDirectory, validat
 import { mergeSmokeReports, renderSmokeReport } from '../../../scripts/merge-create-weapp-vite-smoke-reports.mjs'
 import { TemplateName } from '../src/enums'
 
+// `execFile` does not apply PATHEXT on Windows, so resolve the pnpm shim
+// explicitly when this test probes the user's native package-manager config.
+const pnpmExecutable = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+
 describe('create-weapp-vite smoke helpers', () => {
   it('pins pnpm smoke commands through corepack', () => {
     expect(createPnpmCommand(['create', 'weapp-vite@latest', 'pnpm-default', 'default'])).toEqual({
@@ -122,7 +126,7 @@ describe('create-weapp-vite smoke helpers', () => {
         ['stateDir', path.join(root, 'pnpm-state')],
         ['cacheDir', path.join(root, 'pnpm-cache')],
       ] as const) {
-        const { stdout } = await promisify(execFile)('pnpm', ['--dir', project, 'config', 'get', key, '--json'], {
+        const { stdout } = await promisify(execFile)(pnpmExecutable, ['--dir', project, 'config', 'get', key, '--json'], {
           cwd: path.resolve(import.meta.dirname, '..'),
           env: {
             ...env,

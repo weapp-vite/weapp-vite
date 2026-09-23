@@ -61,7 +61,14 @@ describe('recommended skills installation', () => {
       },
     })
 
-    expect(JSON.parse(await fs.readFile(resultFile, 'utf8'))).toEqual({
+    const result = JSON.parse(await fs.readFile(resultFile, 'utf8')) as {
+      cwd: string
+      registry: string
+      proxy: string
+    }
+    // Windows may expose the same directory through an 8.3 short path when
+    // a child process calls process.cwd(). Compare filesystem identities.
+    expect({ ...result, cwd: await fs.realpath(result.cwd) }).toEqual({
       cwd: await fs.realpath(root),
       registry: 'https://registry.test/',
       proxy: 'http://proxy.test:8080',

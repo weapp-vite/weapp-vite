@@ -35,7 +35,10 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   const releaseJob = workflow.jobs?.release
   const steps = releaseJob?.steps ?? []
   const pnpmSetupStep = steps.find(step => step.uses?.startsWith('pnpm/action-setup@'))
-  const releaseStep = steps.find(step => step.run === 'pnpm exec repo release ci')
+  // The generated workflow keeps release arguments in a multiline shell
+  // block, so identify the step by its stable name/command rather than an
+  // exact scalar match.
+  const releaseStep = steps.find(step => step.name === 'Run repo release CI' || step.run?.includes('pnpm exec repo release ci'))
 
   assert.match(content, /^# repoctl-managed: release\/v2/)
   assert.equal(
