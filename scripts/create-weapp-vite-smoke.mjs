@@ -5,6 +5,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { resolveSmokeCache } from './createWeappViteSmoke/cache.mjs'
 import { createScenario, createTarballCommand, installTarballRunner } from './createWeappViteSmoke/commands.mjs'
+import { applyDependencyTarballs, describeDependencyTarballs, resolveDependencyTarballs, validateDependencyTarballScenarios } from './createWeappViteSmoke/dependencyTarballs.mjs'
 import { timedRunCommand } from './createWeappViteSmoke/process.mjs'
 import { classifyFailure, createPnpmProfileConfig, createRegistryEnvironment, REGISTRY_PROFILES, reportError, resolveRegistryProfiles, resolveRegistryVersion, versionLag } from './createWeappViteSmoke/registry.mjs'
 import { runDevSmoke } from './createWeappViteSmoke/runtime.mjs'
@@ -26,7 +27,7 @@ export async function readReceipt(receiptPath) {
   return receipt
 }
 
-async function runScenario({ scenario, templateName, packageSpec, scenarioRoot, profile, env, tarballPackageRoot, context }) {
+async function runScenario({ scenario, templateName, packageSpec, scenarioRoot, profile, env, tarballPackageRoot, dependencyTarballs, context }) {
   const projectName = `${scenario.name}-${templateName}`
   const label = `${profile.name}/${scenario.name}/${templateName}`
   const projectDir = path.join(scenarioRoot, projectName)
@@ -50,6 +51,7 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot, 
   context.actualCreateVersion = receipt.version
   context.stage = 'structure'
   await validateCreatedProjectStructure(projectDir, templateName, label, receipt.packageRoot)
+  await applyDependencyTarballs(projectDir, dependencyTarballs)
   context.stage = 'install'
   const installMs = await timedRunCommand({
     ...scenario.installCommand(),
@@ -100,6 +102,8 @@ async function main() {
     }
   }
   const scenarios = parseList(process.env.CREATE_WEAPP_VITE_SCENARIOS, ['pnpm', 'yarn', 'npm']).map(name => createScenario(name))
+  const dependencyTarballs = await resolveDependencyTarballs(process.env.CREATE_WEAPP_VITE_DEPENDENCY_TARBALLS)
+  validateDependencyTarballScenarios(dependencyTarballs, scenarios)
   const profiles = resolveRegistryProfiles(process.env.CREATE_WEAPP_VITE_REGISTRIES)
   if (!templateNames.length || !scenarios.length || !profiles.length) {
     throw new Error('Smoke matrix cannot be empty')
@@ -113,7 +117,7 @@ async function main() {
   }
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-smoke-'))
   const { cacheRoot, cacheMode } = resolveSmokeCache(tmpRoot, process.env.CREATE_WEAPP_VITE_CACHE_ROOT)
-  const privateRoots = [cacheRoot, tmpRoot, os.homedir()]
+  const privateRoots = [...dependencyTarballs.flatMap(({ tarball }) => [tarball, tarball.replaceAll('\\', '/')]), cacheRoot, tmpRoot, os.homedir()]
   const report = {
     os: process.env.CREATE_WEAPP_VITE_REPORT_OS || process.platform,
     nodeVersion: process.env.CREATE_WEAPP_VITE_REPORT_NODE || process.version,
@@ -121,6 +125,7 @@ async function main() {
     runAttempt: process.env.GITHUB_RUN_ATTEMPT || '',
     packageSpec,
     artifact: tarball ? path.basename(tarball) : 'registry',
+    ...describeDependencyTarballs(dependencyTarballs),
     cacheMode,
     expectedOfficialVersion: null,
     templates: templateNames,
@@ -185,7 +190,7 @@ async function main() {
           const context = { stage: 'create', actualCreateVersion: null }
           const metadata = { registryProfile: profile.name, registry: profile.registry, scenario: scenario.name, template: templateName, resolvedRegistryVersion: registryReport.resolvedVersion, expectedOfficialVersion: report.expectedOfficialVersion }
           try {
-            const result = await runScenario({ scenario, templateName, packageSpec, profile, env, tarballPackageRoot, context, scenarioRoot: path.join(profileRoot, `${scenario.name}-${templateName}`) })
+            const result = await runScenario({ scenario, templateName, packageSpec, profile, env, tarballPackageRoot, dependencyTarballs, context, scenarioRoot: path.join(profileRoot, `${scenario.name}-${templateName}`) })
             report.results.push({ ...metadata, ...result, actualCreateVersion: context.actualCreateVersion, lag: versionLag(context.actualCreateVersion, report.expectedOfficialVersion, Boolean(tarball)) })
             console.log(`[${profile.name}/${scenario.name}/${templateName}] OK (${context.actualCreateVersion})`)
           }
