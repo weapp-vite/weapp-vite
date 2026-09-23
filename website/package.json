@@ -42,7 +42,7 @@
     "@iconify-json/bi": "^1.2.7",
     "@iconify-json/logos": "^1.2.14",
     "@iconify-json/mdi": "catalog:",
-    "@iconify-json/vscode-icons": "^1.2.80",
+    "@iconify-json/vscode-icons": "^1.2.81",
     "@shikijs/vitepress-twoslash": "^4.4.3",
     "@tailwindcss/vite": "catalog:",
     "create-weapp-vite": "workspace:*",
