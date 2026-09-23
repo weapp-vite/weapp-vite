@@ -1078,6 +1078,10 @@
     - dependency-upgrade-20260922-000805
     - dependency-upgrade-20260922-215212
     - typed-page-named-routes
+"@wevu/compiler@7.2.1":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - calm-css-runtime-imports
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -1768,6 +1772,10 @@ weapp-vite@7.2.0:
     - typed-page-named-routes
     - weapp-vite-devframe-devtools
     - wevu-pinia-store-alignment
+weapp-vite@7.2.1:
+  dir: packages/weapp-vite
+  intents:
+    - calm-css-runtime-imports
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -1876,3 +1884,7 @@ wevu@7.2.0:
     - quiet-alipay-components
     - typed-page-named-routes
     - wevu-pinia-store-alignment
+wevu@7.2.1:
+  dir: packages-runtime/wevu
+  intents:
+    - calm-css-runtime-imports
