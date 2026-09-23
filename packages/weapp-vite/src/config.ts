@@ -52,3 +52,10 @@ export type {
   WeappI18nConfig,
   WeappViteConfig,
 }
+export type {
+  WeappCompilerPlugin,
+  WeappCompilerPluginCapabilities,
+  WeappCompilerPluginContext,
+  WeappCompilerPluginController,
+  WeappCompilerPluginOption,
+} from './types/compilerPlugin'

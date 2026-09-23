@@ -14,6 +14,7 @@ import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../..
 import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { isReactStaticTemplateSource } from '../../react'
 import { isManagedTailwindcssEntry } from '../../tailwindcssMarker'
@@ -30,7 +31,19 @@ import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 import { collectVueStyleScriptChanges } from './vueStyleDependency'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
-const tailwindContentExtensions = new Set(['.vue', '.wxml', '.axml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
+const compilerContentExtensions = new Set([
+  '.vue',
+  ...watchedTemplateExts,
+  ...watchedScriptModuleSuffixes,
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.mts',
+  '.cts',
+  '.mjs',
+  '.cjs',
+])
 const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|@tailwind\s+(?:base|components|utilities)\b|weapp-tailwindcss|tailwindcss\/vite/
 
 interface WatchPathKind {
@@ -376,11 +389,24 @@ async function processChangedFile(
     })
   }
   const markAppEntryForTailwindContent = async () => {
-    if (event !== 'update' || pathKind.isStyle || pathKind.configSuffix || !tailwindContentExtensions.has(pathKind.extension)) {
+    if (event !== 'update' || pathKind.isStyle || pathKind.configSuffix || !compilerContentExtensions.has(pathKind.extension)) {
       return false
     }
-    if (vueEntryUpdateInspector && !await vueEntryUpdateInspector.isTailwindContentUpdate()) {
-      return false
+    if (vueEntryUpdateInspector) {
+      const genericProviders = Object.keys(
+        ctx.runtimeState.build.hmr.vueEntryContentSignatures?.get(normalizedId) ?? {},
+      ).filter(provider => provider !== 'tailwindcss')
+      if (genericProviders.length > 0) {
+        const compilerContentChanged = await Promise.all(
+          genericProviders.map(provider => vueEntryUpdateInspector.isCompilerContentUpdate(provider)),
+        )
+        if (!compilerContentChanged.some(Boolean)) {
+          return false
+        }
+      }
+      else if (!await vueEntryUpdateInspector.isTailwindContentUpdate()) {
+        return false
+      }
     }
     const appEntryId = scanService.appEntry?.path
       ? normalizeFsResolvedId(scanService.appEntry.path)
@@ -392,16 +418,19 @@ async function processChangedFile(
     if (!styleEntry.path) {
       return false
     }
-    if (!isManagedTailwindcssEntry(ctx, styleEntry.path) && !await isTailwindAppStyleSource(styleEntry.path)) {
+    const isManagedTailwindcssStyle = isManagedTailwindcssEntry(ctx, styleEntry.path)
+    const isTailwindStyle = await isTailwindAppStyleSource(styleEntry.path)
+    if (!isManagedCompilerEntry(ctx, styleEntry.path) && !isTailwindStyle) {
       return false
     }
+    const contentReason = isManagedTailwindcssStyle || isTailwindStyle ? 'tailwind-content' : 'compiler-content'
     if (
       concreteChangedEntryId !== appEntryId
       && (loadedEntrySet.has(concreteChangedEntryId) || resolvedEntryMap.has(concreteChangedEntryId))
     ) {
-      markEntryDirtyWithCause(concreteChangedEntryId, 'direct', 'tailwind-content')
+      markEntryDirtyWithCause(concreteChangedEntryId, 'direct', contentReason)
     }
-    markEntryDirtyWithCause(appEntryId, 'metadata', 'tailwind-content')
+    markEntryDirtyWithCause(appEntryId, 'metadata', contentReason)
     invalidateSharedStyleCache()
     return true
   }
@@ -410,6 +439,9 @@ async function processChangedFile(
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntrySfcSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryStyleBindings.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryContentSignatures?.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryTemplateContentSignatures?.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryScriptContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.delete(normalizedId)

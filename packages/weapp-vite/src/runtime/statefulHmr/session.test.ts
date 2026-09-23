@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getChangedStatefulHmrSnapshotAssets,
+  isCompilerContentDirtyReason,
   isSafeJavaScriptPatch,
   isStatefulHmrAssetFile,
   isStatefulHmrBoundary,
@@ -69,6 +70,13 @@ describe('stateful hmr session', () => {
       patch,
       ['entry-direct:1', 'tailwind-content:1'],
       { allowTailwindContent: true },
+    )).toBe(true)
+    expect(isCompilerContentDirtyReason('compiler-content:unocss:1')).toBe(true)
+    expect(isSafeJavaScriptPatch(
+      ['src/pages/index.vue'],
+      patch,
+      ['entry-direct:1', 'compiler-content:unocss:1'],
+      { allowCompilerContent: true },
     )).toBe(true)
     expect(isSafeJavaScriptPatch(['src/pages/index.vue'], {
       ...patch,

@@ -13,6 +13,7 @@ import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeWatchPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
+import { findManagedCompilerEntryMarker, hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import {
   collectSharedStyleEntries,
@@ -24,8 +25,6 @@ import {
 import { collectRenderedStyleSources } from './css/styleOwnership'
 import {
   findManagedTailwindcssEntryMarker,
-  hasManagedTailwindcssOutputMarker,
-  isManagedTailwindcssEntry,
 } from './tailwindcssMarker'
 import { pathExists as pathExistsCached } from './utils/cache'
 import { syncCssImportDependencies } from './utils/invalidateEntry'
@@ -78,7 +77,7 @@ interface BundleStyleAnalysis {
 type SharedStyleImportCache = Map<string, string[]>
 
 const LEADING_BLANK_LINES_RE = /^(?:[ \t]*\r?\n)+/
-const TAILWIND_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite tailwind-content [^*\n]+ \*\/$/
+const COMPILER_CONTENT_HMR_NONCE_RE = /\n\/\* weapp-vite (?:compiler-content|tailwind-content) [^*\n]+ \*\/$/
 const VITE_PREPROCESS_STYLE_RE = /\.(?:acss|css|less|sass|scss|styl|stylus|pcss|postcss|sss)$/
 const TAILWIND_GENERATOR_PLACEHOLDER = '/*! weapp-tailwindcss generator-placeholder */'
 const VITE_STYLE_ASSET_PLACEHOLDER_RE = /__VITE_ASSET__([\w$]+)__(?:\$_(.*?)__)?/g
@@ -117,13 +116,9 @@ export function consumePendingOwnerStyleSources(ctx: CompilerContext) {
 function findGeneratorBoundary(css: string) {
   const externalIndex = css.indexOf(TAILWIND_GENERATOR_PLACEHOLDER)
   const managedIndex = findManagedTailwindcssEntryMarker(css)
-  if (externalIndex < 0) {
-    return managedIndex
-  }
-  if (managedIndex < 0) {
-    return externalIndex
-  }
-  return Math.min(externalIndex, managedIndex)
+  const compilerIndex = findManagedCompilerEntryMarker(css)
+  const boundaryIndexes = [externalIndex, managedIndex, compilerIndex].filter(index => index >= 0)
+  return boundaryIndexes.length > 0 ? Math.min(...boundaryIndexes) : -1
 }
 
 function extractPendingOwnerStyleSource(css: string) {
@@ -161,24 +156,31 @@ function hasStyleDirtyReason(dirtyReasonSummary: string[]) {
     || reason.startsWith('css-importer:')
     || reason.startsWith('css-importer-fallback:')
     || reason.startsWith('entry-style-only:')
+    || reason.startsWith('compiler-content:')
     || reason.startsWith('tailwind-content:'),
   )
 }
 
-function hasTailwindContentDirtyReason(ctx: CompilerContext) {
-  return ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary?.some(reason => reason.startsWith('tailwind-content:')) === true
+function hasCompilerContentDirtyReason(ctx: CompilerContext) {
+  return ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary?.some(reason =>
+    reason.startsWith('compiler-content:') || reason.startsWith('tailwind-content:'),
+  ) === true
 }
 
-function appendTailwindContentHmrNonce(ctx: CompilerContext, source: string) {
-  if (!hasTailwindContentDirtyReason(ctx)) {
+function appendCompilerContentHmrNonce(ctx: CompilerContext, source: string) {
+  const reasons = ctx.runtimeState?.build?.hmr?.profile?.dirtyReasonSummary ?? []
+  if (!hasCompilerContentDirtyReason(ctx)) {
     return source
   }
   const eventId = ctx.runtimeState?.build?.hmr?.profile?.eventId ?? 'unknown'
-  return `${source}\n/* weapp-vite tailwind-content ${eventId} */`
+  const marker = reasons.some(reason => reason.startsWith('compiler-content:'))
+    ? 'compiler-content'
+    : 'tailwind-content'
+  return `${source}\n/* weapp-vite ${marker} ${eventId} */`
 }
 
-function stripTailwindContentHmrNonce(source: string) {
-  return source.replace(TAILWIND_CONTENT_HMR_NONCE_RE, '')
+function stripCompilerContentHmrNonce(source: string) {
+  return source.replace(COMPILER_CONTENT_HMR_NONCE_RE, '')
 }
 
 function isStyleBundleAsset(output: OutputBundle[string], bundleKey: string): output is OutputAsset {
@@ -287,7 +289,7 @@ function isUnchangedDevHmrStyleAsset(
   source: string,
 ) {
   // 待生成入口的文本相同不代表最终 CSS 相同，须交给 Tailwind 输出阶段完成内容生成。
-  if (hasManagedTailwindcssOutputMarker(source)) {
+  if (hasManagedCompilerOutputMarker(source)) {
     return false
   }
   const hmrState = ctx.runtimeState?.build?.hmr
@@ -305,9 +307,9 @@ function isUnchangedDevHmrStyleAsset(
       || (hmrState?.lastEmittedEntryIds?.size ?? 0) > 0
       || hmrState?.profile.event !== undefined
     )
-  const canonicalCurrent = hasTailwindContentDirtyReason(ctx)
+  const canonicalCurrent = hasCompilerContentDirtyReason(ctx)
     ? current
-    : stripTailwindContentHmrNonce(current)
+    : stripCompilerContentHmrNonce(current)
   return isDevHmr
     && canonicalCurrent === source
     && ctx.runtimeState?.css?.emittedSource.get(normalizedFileName) === source
@@ -353,9 +355,9 @@ function emitCssAssetIfChanged(
   const normalizedFileName = toPosixPath(fileName)
   const cache = ctx.runtimeState?.css?.emittedSource
   const existing = bundle[fileName]
-  const forceEmit = hasTailwindContentDirtyReason(ctx) || hasManagedTailwindcssOutputMarker(source)
+  const forceEmit = hasCompilerContentDirtyReason(ctx) || hasManagedCompilerOutputMarker(source)
   const resolvedSource = resolveViteStyleAssetPlaceholders(source, fileName, pluginCtx)
-  const emittedSource = appendTailwindContentHmrNonce(ctx, resolvedSource)
+  const emittedSource = appendCompilerContentHmrNonce(ctx, resolvedSource)
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (!forceEmit && isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, emittedSource)) {
@@ -458,7 +460,7 @@ async function prepareStyleSidecarAsset(
   if (!fileName) {
     return false
   }
-  if (isManagedTailwindcssEntry(ctx, stylePath)) {
+  if (isManagedCompilerEntry(ctx, stylePath)) {
     return false
   }
 
@@ -604,8 +606,8 @@ async function handleBundleEntry(
   const isSourceStyleAssetKey = isSourceStyleAsset(bundleKey)
   const originalStylePath = resolveOriginalStylePath()
   if (
-    isManagedTailwindcssEntry(ctx, originalStylePath)
-    && !hasManagedTailwindcssOutputMarker(asset.source.toString())
+    isManagedCompilerEntry(ctx, originalStylePath)
+    && !hasManagedCompilerOutputMarker(asset.source.toString())
   ) {
     delete bundle[bundleKey]
     return
@@ -621,9 +623,9 @@ async function handleBundleEntry(
 
     if (fileName) {
       const source = asset.source.toString()
-      const canonicalSource = hasTailwindContentDirtyReason(ctx)
+      const canonicalSource = hasCompilerContentDirtyReason(ctx)
         ? source
-        : stripTailwindContentHmrNonce(source)
+        : stripCompilerContentHmrNonce(source)
       const normalizedFileName = toPosixPath(fileName)
       const freshHmrStyleSourcePath = resolveFreshHmrStyleSourcePath(ctx, normalizedFileName)
       const preprocessId = freshHmrStyleSourcePath ?? absOriginal

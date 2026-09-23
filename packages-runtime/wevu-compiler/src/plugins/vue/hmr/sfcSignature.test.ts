@@ -283,13 +283,22 @@ const count = 1
         style: expect.any(String),
         template: expect.any(String),
       },
+      contentSignatures: {
+        tailwindcss: resolveVueSfcTailwindContentSignature(source, filename),
+      },
       nonJsonSignature: resolveVueSfcNonJsonSignature(source, filename),
       scriptSignature: resolveVueSfcScriptSignature(source, filename),
+      scriptContentSignatures: {
+        tailwindcss: expect.any(String),
+      },
       styleIndependentSignature: resolveVueSfcStyleIndependentSignature(source, filename),
       tailwindContentSignature: resolveVueSfcTailwindContentSignature(source, filename),
       tailwindTemplateContentSignature: expect.any(String),
       tailwindScriptContentSignature: expect.any(String),
       hasTemplate: resolveVueSfcHasTemplate(source, filename),
+      templateContentSignatures: {
+        tailwindcss: expect.any(String),
+      },
     })
   })
 

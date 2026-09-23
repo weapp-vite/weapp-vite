@@ -12,6 +12,15 @@ export function storeVueSfcHmrSignatures(
   if (signatures.blockSignatures) {
     hmr.vueEntrySfcSignatures.set(filename, signatures.blockSignatures)
   }
+  if (signatures.contentSignatures) {
+    hmr.vueEntryContentSignatures?.set(filename, signatures.contentSignatures)
+  }
+  if (signatures.templateContentSignatures) {
+    hmr.vueEntryTemplateContentSignatures?.set(filename, signatures.templateContentSignatures)
+  }
+  if (signatures.scriptContentSignatures) {
+    hmr.vueEntryScriptContentSignatures?.set(filename, signatures.scriptContentSignatures)
+  }
   if (signatures.tailwindContentSignature) {
     hmr.vueEntryTailwindContentSignatures.set(filename, signatures.tailwindContentSignature)
   }

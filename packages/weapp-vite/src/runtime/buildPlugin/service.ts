@@ -18,8 +18,8 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
+import { hasManagedCompilerEntries } from '../../plugins/compilerPluginRegistry'
 import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
-import { hasManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
@@ -1212,7 +1212,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       option: configService.weappViteConfig.hmr?.touchAppWxss,
       platform: configService.platform,
       dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
-      managedTailwindcss: hasManagedTailwindcssEntries(ctx),
+      managedCompiler: hasManagedCompilerEntries(ctx as any),
     })
   }
 

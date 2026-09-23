@@ -13,6 +13,7 @@ import { changeFileExtension } from '../utils'
 import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
 import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
+import { hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { consumePendingOwnerStyleSources } from './css'
 import { transformI18nOutputTemplate } from './i18n'
@@ -20,7 +21,6 @@ import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
-import { hasManagedTailwindcssOutputMarker, isManagedTailwindcssEntry } from './tailwindcssMarker'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
@@ -67,8 +67,8 @@ export function normalizeGraphOnlyAssets(
     const sidecar = moduleId ? parseSidecarModuleId(moduleId) : undefined
     if (
       sidecar?.kind === 'style'
-      && isManagedTailwindcssEntry(ctx, sidecar.sourceId)
-      && !hasManagedTailwindcssOutputMarker(output.source.toString())
+      && isManagedCompilerEntry(ctx, sidecar.sourceId)
+      && !hasManagedCompilerOutputMarker(output.source.toString())
     ) {
       delete bundle[bundleFileName]
       continue

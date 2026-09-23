@@ -7,6 +7,7 @@ import { createSelectedRuntimeProviderPlugin, resolveRuntimeProvider } from '@/r
 import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
+import { createCompilerPluginPlugins } from './compilerPlugin'
 import { weappVite } from './core'
 import { css } from './css'
 import { i18n } from './i18n'
@@ -93,8 +94,12 @@ export function vitePluginWeapp(
     groups.push(autoImport(ctx))
   }
 
+  const compilerPlugins = createCompilerPluginPlugins(ctx)
   const tailwindcssPlugins = createTailwindcssPlugin(ctx)
   groups.push(i18n(ctx, subPackageMeta), weappVite(ctx, subPackageMeta), wxs(ctx))
+  if (compilerPlugins.length > 0) {
+    groups.push([compilerPlugins[0]!])
+  }
   if (tailwindcssPlugins.length > 0) {
     groups.push([tailwindcssPlugins[0]!])
   }
@@ -102,6 +107,9 @@ export function vitePluginWeapp(
   groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
   if (tailwindcssPlugins.length > 1) {
     groups.push([tailwindcssPlugins[1]!])
+  }
+  if (compilerPlugins.length > 1) {
+    groups.push([compilerPlugins[1]!])
   }
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))

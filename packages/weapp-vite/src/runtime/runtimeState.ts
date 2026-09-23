@@ -153,6 +153,10 @@ export interface RuntimeState {
       vueEntryHasTemplate: Map<string, boolean>
       vueEntrySfcSignatures: Map<string, VueSfcBlockSignatures>
       vueEntryStyleBindings: Map<string, VueEntryStyleBindings>
+      /** 编译 provider 内容签名；key 为入口，value 的 key 为 provider 名称。 */
+      vueEntryContentSignatures?: Map<string, Readonly<Record<string, string>>>
+      vueEntryTemplateContentSignatures?: Map<string, Readonly<Record<string, string>>>
+      vueEntryScriptContentSignatures?: Map<string, Readonly<Record<string, string>>>
       vueEntryTailwindContentSignatures: Map<string, string>
       vueEntryTailwindTemplateContentSignatures: Map<string, string>
       vueEntryTailwindScriptContentSignatures: Map<string, string>
@@ -405,6 +409,9 @@ export function createRuntimeState(): RuntimeState {
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntrySfcSignatures: new Map<string, VueSfcBlockSignatures>(),
         vueEntryStyleBindings: new Map<string, VueEntryStyleBindings>(),
+        vueEntryContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
+        vueEntryTemplateContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
+        vueEntryScriptContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
         vueEntryTailwindContentSignatures: new Map<string, string>(),
         vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),

@@ -21,6 +21,14 @@ export interface WeappI18nConfig {
 
 export interface WeappViteConfig {
   srcRoot?: string
+  compilerPlugins?: Array<{
+    name: string
+    create: (context: {
+      root: string
+      srcRoot: string
+      platform: string
+    }) => unknown
+  }>
   tailwindcss?: boolean | {
     cssEntries?: string[]
     rem2rpx?: boolean | Record<string, unknown>
