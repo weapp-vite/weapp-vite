@@ -70,6 +70,9 @@ bun create weapp-vite
 
 :::
 
+> [!TIP]
+> pnpm 12.5.1 默认要求新版本发布满 24 小时（`minimumReleaseAge=1440`），因此 `pnpm create weapp-vite` / `pnpm create weapp-vite@latest` 在冷却期内可能选中成熟的旧版，即使官方源与缓存都正常。默认非严格模式支持为明确指定的精确版本记录例外；严格模式仍需等待或按 pnpm 提示与团队策略审批。遇到文档与旧版行为不同，先看[发布冷却期与精确版本恢复](/packages/create-weapp-vite#pnpm-release-age)，无需全局关闭安全检查。
+
 ::: details 生成的 `my-app` 项目中，默认包含以下内容:
 
 ```sh
@@ -108,7 +111,7 @@ bun create weapp-vite
 
 脚手架当前会根据你选择的模板，生成原生小程序、Wevu、TailwindCSS、TDesign 等不同组合。新项目建议优先用脚手架，而不是手动拷模板。
 
-交互模式下，脚手架还会默认询问是否安装推荐的 AI skills，并提示将执行：
+交互模式下，脚手架还会询问是否安装推荐的 AI skills（默认跳过），并提示将执行：
 
 ```sh
 npx skills add sonofmagic/skills

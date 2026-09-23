@@ -1,188 +1,214 @@
-import type { ClientRequest, IncomingMessage } from 'node:http'
-import { EventEmitter } from 'node:events'
-import https from 'node:https'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RequestListener, Server } from 'node:http'
+import type { RegistryOptions } from '../src/npm'
+import { Buffer } from 'node:buffer'
+import { createServer } from 'node:http'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getLatestVersionFromNpm, getPackageVersionsFromNpm, latestVersion } from '../src/npm'
+import * as transport from '../src/npm/transport'
 
-function createRequestHarness() {
-  const request = Object.assign(new EventEmitter(), { destroy: vi.fn() })
-  let onResponse: (response: IncomingMessage) => void
-  const get = vi.spyOn(https, 'get').mockImplementation(((_url, _options, callback) => {
-    onResponse = callback!
-    return request as unknown as ClientRequest
-  }) as typeof https.get)
+const servers: Server[] = []
 
-  function respond(data: string, statusCode: number | undefined = 200) {
-    const response = Object.assign(new EventEmitter(), {
-      statusCode,
-      resume: vi.fn(),
-      setEncoding: vi.fn(),
-    })
-    onResponse(response as unknown as IncomingMessage)
-    if (statusCode && statusCode >= 200 && statusCode < 300) {
-      response.emit('data', data)
-      response.emit('end')
-    }
-    return response
+async function registry(handler: RequestListener): Promise<RegistryOptions> {
+  const server = createServer(handler)
+  servers.push(server)
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  if (!address || typeof address === 'string') {
+    throw new Error('No listening address')
   }
-
-  function startResponse() {
-    const response = Object.assign(new EventEmitter(), {
-      statusCode: 200,
-      resume: vi.fn(),
-      setEncoding: vi.fn(),
-    })
-    onResponse(response as unknown as IncomingMessage)
-    return response
-  }
-
-  return { request, get, respond, startResponse }
+  return { registry: `http://127.0.0.1:${address.port}/`, proxy: false, strictSSL: true }
 }
 
-describe('official npm metadata requests', () => {
-  beforeEach(() => {
+afterEach(async () => {
+  vi.restoreAllMocks()
+  vi.useRealTimers()
+  await Promise.all(servers.splice(0).map(async (server) => {
+    server.closeAllConnections()
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
+  }))
+})
+
+describe('registry metadata requests', () => {
+  it('uses the scoped registry and path-bound authentication', async () => {
+    let requestedPath = ''
+    let authorization: string | undefined
+    let accept: string | undefined
+    const target = await registry((request, response) => {
+      requestedPath = request.url ?? ''
+      authorization = request.headers.authorization
+      accept = request.headers.accept
+      response.end(JSON.stringify({ versions: { '7.1.4': {}, '7.2.0': {} } }))
+    })
+    const scoped = `${target.registry}private/`
+    const options: RegistryOptions = {
+      ...target,
+      'registry': 'https://unreachable.example/',
+      '@weapp-vite:registry': scoped,
+      [`//${new URL(scoped).host}/private/:_authToken`]: 'fixture-token',
+    }
+    await expect(getPackageVersionsFromNpm('@weapp-vite/dashboard', undefined, options)).resolves.toEqual(['7.1.4', '7.2.0'])
+    expect(requestedPath).toBe('/private/%40weapp-vite%2Fdashboard')
+    expect(authorization).toBe('Bearer fixture-token')
+    expect(accept).toBe('application/vnd.npm.install-v1+json')
+  })
+
+  it('retries a transient response once and succeeds', async () => {
+    let count = 0
+    const options = await registry((_request, response) => {
+      count++
+      response.statusCode = count === 1 ? 503 : 200
+      response.end(count === 1 ? '{}' : '{"version":"5.5.8"}')
+    })
+    await expect(getLatestVersionFromNpm('weapp-tailwindcss', undefined, options)).resolves.toBe('5.5.8')
+    expect(count).toBe(2)
+  })
+
+  it.each([401, 403, 404])('does not retry HTTP %s or expose a response body', async (status) => {
+    let count = 0
+    const options = await registry((_request, response) => {
+      count++
+      response.statusCode = status
+      response.end('{"error":"credential-secret"}')
+    })
+    const result = getPackageVersionsFromNpm('weapp-vite', undefined, options)
+    await expect(result).rejects.toThrow(`HTTP ${status}`)
+    await expect(result).rejects.not.toThrow('credential-secret')
+    expect(count).toBe(1)
+  })
+
+  it('limits repeated transient errors to one retry', async () => {
+    let count = 0
+    const options = await registry((_request, response) => {
+      count++
+      response.statusCode = 503
+      response.end('{}')
+    })
+    await expect(getPackageVersionsFromNpm('weapp-vite', undefined, options)).rejects.toThrow('HTTP 503')
+    expect(count).toBe(2)
+  })
+
+  it.each(['{invalid', 'null', '[]', '{}', '{"versions":[]}'])('rejects malformed metadata %s', async (body) => {
+    const options = await registry((_request, response) => response.end(body))
+    await expect(getPackageVersionsFromNpm('weapp-vite', undefined, options)).rejects.toThrow()
+  })
+
+  it('does not send a token to another registry', async () => {
+    let authorization: string | undefined
+    const options = await registry((request, response) => {
+      authorization = request.headers.authorization
+      response.end('{"versions":{}}')
+    })
+    options['//private.example/:_authToken'] = 'fixture-token'
+    await getPackageVersionsFromNpm('weapp-vite', undefined, options)
+    expect(authorization).toBeUndefined()
+  })
+
+  it('routes metadata through the configured HTTP proxy', async () => {
+    let requestedUrl = ''
+    const proxy = await registry((request, response) => {
+      requestedUrl = request.url ?? ''
+      response.end('{"versions":{"7.2.0":{}}}')
+    })
+    const options: RegistryOptions = {
+      registry: 'http://registry.example/',
+      proxy: proxy.registry,
+      noProxy: '',
+      strictSSL: true,
+    }
+    await expect(getPackageVersionsFromNpm('weapp-vite', undefined, options)).resolves.toEqual(['7.2.0'])
+    expect(requestedUrl).toBe('http://registry.example/weapp-vite')
+  })
+
+  it('bypasses an unavailable proxy for a NO_PROXY host', async () => {
+    const options = await registry((_request, response) => response.end('{"versions":{"7.2.0":{}}}'))
+    options.proxy = 'http://unavailable-proxy.invalid:8080'
+    options.noProxy = '127.0.0.1'
+    await expect(getPackageVersionsFromNpm('weapp-vite', undefined, options)).resolves.toEqual(['7.2.0'])
+  })
+
+  it.each(['port', 'hostname'])('rejects authenticated redirects to another %s before contacting the target', async (boundary) => {
+    let requestCount = 0
+    const target = await registry((request, response) => {
+      requestCount++
+      expect(request.headers.authorization).toBeUndefined()
+      response.end('{"versions":{}}')
+    })
+    const options = await registry((_request, response) => {
+      response.statusCode = 302
+      response.setHeader('location', boundary === 'hostname' ? target.registry.replace('127.0.0.1', 'localhost') : target.registry)
+      response.end()
+    })
+    options[`//${new URL(options.registry).host}/:_authToken`] = 'fixture-token'
+    await expect(getPackageVersionsFromNpm('weapp-vite', undefined, options)).rejects.toThrow('查询失败')
+    expect(requestCount).toBe(0)
+  })
+
+  it('supports npm basic authentication on a direct registry request', async () => {
+    let authorization: string | undefined
+    const options = await registry((request, response) => {
+      authorization = request.headers.authorization
+      response.end('{"versions":{}}')
+    })
+    const host = new URL(options.registry).host
+    options[`//${host}/:username`] = 'fixture-user'
+    options[`//${host}/:_password`] = Buffer.from('fixture-password').toString('base64')
+    await getPackageVersionsFromNpm('weapp-vite', undefined, options)
+    expect(authorization).toBe(`Basic ${Buffer.from('fixture-user:fixture-password').toString('base64')}`)
+  })
+
+  it('follows public registry redirects without authentication', async () => {
+    const target = await registry((_request, response) => response.end('{"versions":{"7.2.0":{}}}'))
+    const options = await registry((_request, response) => {
+      response.writeHead(302, { location: target.registry })
+      response.end()
+    })
+    await expect(getPackageVersionsFromNpm('weapp-vite', undefined, options)).resolves.toEqual(['7.2.0'])
+  })
+
+  it('rejects redirects when client certificate identity is configured', async () => {
+    let requestCount = 0
+    const options = await registry((_request, response) => {
+      requestCount++
+      response.writeHead(302, { location: '/redirected' })
+      response.end()
+    })
+    // HTTP fixture 不执行 TLS 握手，仍能验证证书身份触发的重定向策略。
+    options.cert = 'fixture-cert'
+    options.key = 'fixture-key'
+    await expect(getPackageVersionsFromNpm('weapp-vite', undefined, options)).rejects.toThrow('查询失败')
+    expect(requestCount).toBe(1)
+  })
+
+  it('cancels a stalled response through the shared AbortSignal', async () => {
+    const controller = new AbortController()
+    const options = await registry((_request, response) => {
+      response.write('{')
+      controller.abort(new Error('private-token-do-not-log'))
+    })
+    const result = getPackageVersionsFromNpm('weapp-vite', controller.signal, options)
+    await expect(result).rejects.toThrow('查询已取消')
+    await expect(result).rejects.not.toThrow('private-token-do-not-log')
+  })
+
+  it('applies one total deadline across retries and streaming', async () => {
     vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.useRealTimers()
-  })
-
-  it('requests scoped packages from the official registry with abbreviated metadata', async () => {
-    const { get, respond, request } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('@weapp-vite/dashboard')
-    respond(JSON.stringify({ versions: { '7.1.4': {}, '7.2.0': {} } }))
-    await expect(result).resolves.toEqual(['7.1.4', '7.2.0'])
-    expect(get).toHaveBeenCalledWith(
-      'https://registry.npmjs.org/%40weapp-vite%2Fdashboard',
-      { headers: { Accept: 'application/vnd.npm.install-v1+json' } },
-      expect.any(Function),
-    )
-    expect(request.destroy).not.toHaveBeenCalled()
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it.each([301, 404, 503])('rejects HTTP %s without following another registry', async (status) => {
-    const { respond, request } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('weapp-vite')
-    const response = respond('', status)
-    await expect(result).rejects.toThrow(`status ${status}`)
-    expect(response.resume).toHaveBeenCalledOnce()
-    expect(request.destroy).toHaveBeenCalledOnce()
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('rejects invalid JSON and destroys the failed request', async () => {
-    const { respond, request } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('weapp-vite')
-    respond('{invalid')
-    await expect(result).rejects.toThrow()
-    expect(request.destroy).toHaveBeenCalledOnce()
-  })
-
-  it.each([null, [], {}, { versions: [] }, { versions: '7.2.0' }])('rejects malformed version metadata %j', async (metadata) => {
-    const { respond } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('weapp-vite')
-    respond(JSON.stringify(metadata))
-    await expect(result).rejects.toThrow('missing versions')
-  })
-
-  it('destroys requests on connection errors', async () => {
-    const { request } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('weapp-vite')
-    request.emit('error', new Error('connection failed'))
-    await expect(result).rejects.toThrow('connection failed')
-    expect(request.destroy).toHaveBeenCalledOnce()
-  })
-
-  it.each(['error', 'aborted'])('rejects interrupted response streams (%s)', async (event) => {
-    const { startResponse, request } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('weapp-vite')
-    startResponse().emit(event, new Error('stream failed'))
-    await expect(result).rejects.toThrow(event === 'error' ? 'stream failed' : 'aborted')
-    expect(request.destroy).toHaveBeenCalledOnce()
-  })
-
-  it('bounds a stalled request and destroys its socket after five seconds', async () => {
-    const { request } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('weapp-vite')
-    const rejected = expect(result).rejects.toThrow('timed out after 5000ms')
+    const fetch = vi.spyOn(transport, 'requestMetadata').mockImplementation(() => new Promise(() => {}))
+    const options: RegistryOptions = { registry: 'https://registry.example/', strictSSL: true }
+    const result = getPackageVersionsFromNpm('weapp-vite', undefined, options)
+    const rejected = expect(result).rejects.toThrow('超过 5 秒')
     await vi.advanceTimersByTimeAsync(5_000)
     await rejected
-    expect(request.destroy).toHaveBeenCalledWith(expect.any(Error))
+    expect(fetch.mock.calls[0]?.[2].aborted).toBe(true)
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('counts streaming time toward the request deadline', async () => {
-    const { request, startResponse } = createRequestHarness()
-    const result = getPackageVersionsFromNpm('weapp-vite')
-    const rejected = expect(result).rejects.toThrow('timed out')
-    const response = startResponse()
-    response.emit('data', '{')
-    await vi.advanceTimersByTimeAsync(4_999)
-    expect(request.destroy).not.toHaveBeenCalled()
-    response.emit('data', '"versions":')
-    await vi.advanceTimersByTimeAsync(1)
-    await rejected
-    expect(request.destroy).toHaveBeenCalledOnce()
+  it('does not request metadata for an already cancelled operation', async () => {
+    const fetch = vi.spyOn(transport, 'requestMetadata')
+    await expect(getPackageVersionsFromNpm('weapp-vite', AbortSignal.abort())).rejects.toThrow('查询已取消')
+    expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('cancels in-flight requests through the shared AbortSignal', async () => {
-    const { request } = createRequestHarness()
-    const controller = new AbortController()
-    const removeListener = vi.spyOn(controller.signal, 'removeEventListener')
-    const result = getPackageVersionsFromNpm('weapp-vite', controller.signal)
-    controller.abort(new Error('group deadline'))
-    await expect(result).rejects.toThrow('group deadline')
-    expect(request.destroy).toHaveBeenCalledOnce()
-    expect(removeListener).toHaveBeenCalledWith('abort', expect.any(Function))
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('does not open a socket for an already aborted group', async () => {
-    const { get } = createRequestHarness()
-    const controller = new AbortController()
-    controller.abort(new Error('cancelled before request'))
-    await expect(getPackageVersionsFromNpm('weapp-vite', controller.signal)).rejects.toThrow('cancelled before request')
-    expect(get).not.toHaveBeenCalled()
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('removes abort listeners after a successful response', async () => {
-    const { respond, request } = createRequestHarness()
-    const controller = new AbortController()
-    const result = getPackageVersionsFromNpm('weapp-vite', controller.signal)
-    respond('{"versions":{}}')
-    await result
-    controller.abort()
-    expect(request.destroy).not.toHaveBeenCalled()
-  })
-
-  it('cleans up timers when creating the request throws', async () => {
-    vi.spyOn(https, 'get').mockImplementation(() => {
-      throw new Error('invalid request')
-    })
-    await expect(getPackageVersionsFromNpm('weapp-vite')).rejects.toThrow('invalid request')
-    expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('preserves the latest-version API', async () => {
-    const { get, respond } = createRequestHarness()
-    const result = getLatestVersionFromNpm('weapp-tailwindcss')
-    respond('{"version":"4.0.0"}')
-    await expect(result).resolves.toBe('4.0.0')
-    expect(get.mock.calls[0]?.[0]).toBe('https://registry.npmjs.org/weapp-tailwindcss/latest')
-  })
-
-  it.each([{}, { version: 7 }, { version: '' }])('rejects malformed latest metadata %j', async (metadata) => {
-    const { respond } = createRequestHarness()
-    const result = getLatestVersionFromNpm('weapp-tailwindcss')
-    respond(JSON.stringify(metadata))
-    await expect(result).rejects.toThrow('missing version')
-  })
-
-  it('preserves latestVersion prefixes and null fallback', async () => {
+  it('keeps the latest-version helper signature and null fallback', async () => {
     await expect(latestVersion('example', '~', async () => '1.2.3')).resolves.toBe('~1.2.3')
     await expect(latestVersion('example', '^', async () => '')).resolves.toBeNull()
     await expect(latestVersion('example', '^', async () => {

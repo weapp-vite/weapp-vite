@@ -60,9 +60,20 @@ const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName }> = [
 function parseCliArgs(argv: string[]) {
   const positionals: string[] = []
   let installSkills: boolean | undefined
-  let dependencyVersionStrategy = 'compatible'
+  let dependencyVersionStrategy = 'bundled'
+  let registry: string | undefined
 
   for (const arg of argv) {
+    if (arg.startsWith('--registry=')) {
+      registry = arg.slice('--registry='.length)
+      if (!registry) {
+        throw new Error('请使用 --registry=<http(s) URL>')
+      }
+      continue
+    }
+    if (arg === '--registry') {
+      throw new Error('请使用 --registry=<http(s) URL>')
+    }
     if (arg.startsWith('--dependency-versions=')) {
       dependencyVersionStrategy = arg.slice('--dependency-versions='.length)
       continue
@@ -89,6 +100,7 @@ function parseCliArgs(argv: string[]) {
     templateName: positionals[1] as TemplateName | undefined,
     installSkills,
     dependencyVersionStrategy,
+    registry,
   }
 }
 
@@ -125,16 +137,17 @@ export async function run() {
         default: TemplateName.default,
       })
 
-  const installSkills = isArgMode
-    ? argInstallSkills ?? false
+  const installSkills = argInstallSkills ?? (isArgMode
+    ? false
     : await confirm({
         message: `是否安装推荐的 AI skills？将执行 \`${RECOMMENDED_SKILLS_INSTALL_COMMAND}\`，也可稍后手动执行`,
-        default: true,
-      })
+        default: false,
+      }))
 
   await createProject(targetDir, templateName, {
     installSkills,
     dependencyVersionStrategy: parsedArgs.dependencyVersionStrategy,
+    registry: parsedArgs.registry,
   })
 }
 

@@ -1,5 +1,6 @@
 import type { PackageJson } from 'pkg-types'
 import type { DependencyVersionStrategy } from './dependencyVersions'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared/fs'
@@ -7,7 +8,9 @@ import path from 'pathe'
 import { createAgentsGuidelines } from './agents'
 import { resolveDependencyVersions, validateDependencyVersionStrategy } from './dependencyVersions'
 import { TemplateName } from './enums'
-import { latestVersion } from './npm'
+import { installationCommand } from './installationCommand'
+import { displayRegistry, registryEnvironment, resolveRegistryOptions } from './npm'
+import { ensurePnpmBuildPolicy } from './pnpmBuildPolicy'
 import { installRecommendedSkills, RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 import { ensureManagedTypeScriptDevDependencies, normalizeTemplateDependencySpecs } from './templateDependencies'
 import { updateGitIgnore } from './updateGitignore'
@@ -85,6 +88,7 @@ function shouldSkipTemplateFile(filePath: string, templateRoot: string) {
     || hasTemplatePathSegment(relativePath, segment => segment === '.weapp-vite')
     || hasTemplatePathSegment(relativePath, isGeneratedOutputSegment)
     || hasTemplatePathSegment(relativePath, segment => segment === '.turbo')
+    || hasTemplatePathSegment(relativePath, segment => segment === '.npmrc')
     || relativePath === 'vite.config.ts.timestamp'
     || relativePath.endsWith('/vite.config.ts.timestamp')
     || relativePath === 'CHANGELOG.md'
@@ -188,20 +192,11 @@ function createEmptyPackageJson(): PackageJson {
   }
 }
 
-async function upsertTailwindcssVersion(pkgJson: PackageJson) {
-  if (!pkgJson.devDependencies?.['weapp-tailwindcss']) {
-    return
-  }
-
-  const resolved = await latestVersion('weapp-tailwindcss')
-  if (resolved) {
-    pkgJson.devDependencies['weapp-tailwindcss'] = resolved
-  }
-}
-
 export interface CreateProjectOptions {
   installSkills?: boolean
   dependencyVersionStrategy?: DependencyVersionStrategy
+  /** 本次依赖查询与建议安装命令使用的 registry，不写入用户配置。 */
+  registry?: string
 }
 
 /**
@@ -212,8 +207,9 @@ export async function createProject(
   templateName: TemplateName = TemplateName.default,
   options: CreateProjectOptions = {},
 ) {
-  const dependencyVersionStrategy = options.dependencyVersionStrategy ?? 'compatible'
+  const dependencyVersionStrategy = options.dependencyVersionStrategy ?? 'bundled'
   validateDependencyVersionStrategy(dependencyVersionStrategy)
+  const network = await resolveRegistryOptions({ registry: options.registry, projectRoot: path.resolve(targetDir || '.') })
 
   const {
     preferredTemplateDir,
@@ -245,12 +241,10 @@ export async function createProject(
   normalizeTemplateDependencySpecs(pkgJson)
   ensureManagedTypeScriptDevDependencies(pkgJson)
 
-  await resolveDependencyVersions(pkgJson, dependencyVersionStrategy)
-  if (dependencyVersionStrategy === 'compatible') {
-    await upsertTailwindcssVersion(pkgJson)
-  }
+  const resolution = await resolveDependencyVersions(pkgJson, dependencyVersionStrategy, network)
 
   await writeJsonFile(packageJsonPath, pkgJson)
+  await ensurePnpmBuildPolicy(targetDir)
   // eslint-disable-next-line ts/no-use-before-define
   await writeAgentsGuidelines(targetDir, templateName)
   await updateGitIgnore({ root: targetDir, write: true })
@@ -259,19 +253,25 @@ export async function createProject(
     logger.info(`🤖 即将安装 AI skills：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
     logger.info('如果你更想手动执行，也可以在项目创建后自行运行上面的命令。')
     try {
-      await installRecommendedSkills(targetDir)
+      await installRecommendedSkills(targetDir, {
+        env: registryEnvironment(network),
+      })
       logger.log('✨ 已安装推荐的 AI skills!')
     }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`安装 AI skills 失败：${message}`)
+    catch {
+      logger.warn('安装 AI skills 未完成（网络错误、取消或超时），项目已保留。')
       logger.warn(`你可以稍后手动执行：${RECOMMENDED_SKILLS_INSTALL_COMMAND}`)
     }
   }
 
   logger.log('✨ 创建模板成功!')
-  logger.info('进入项目目录后，可临时使用官方源安装依赖：')
-  logger.info('pnpm --config.registry=https://registry.npmjs.org/ install')
+  logger.info(`依赖版本策略：${resolution.strategy}；registry：${displayRegistry(network.registry)}`)
+  logger.info('进入项目目录后安装依赖：')
+  // 临时环境配置不一定被 pnpm 的原生入口继承，安装提示显式保持同一个源。
+  const temporaryRegistry = options.registry ?? process.env.CREATE_WEAPP_VITE_REGISTRY
+    ?? process.env.npm_config_registry ?? process.env.NPM_CONFIG_REGISTRY
+    ?? process.env.pnpm_config_registry ?? process.env.PNPM_CONFIG_REGISTRY
+  logger.info(installationCommand(temporaryRegistry !== undefined ? network.registry : undefined))
 }
 
 async function writeAgentsGuidelines(targetDir: string, templateName: TemplateName) {
@@ -295,5 +295,4 @@ export const __internal = {
   resolveTemplateDirs,
   shouldSkipTemplateFile,
   installRecommendedSkills,
-  upsertTailwindcssVersion,
 }

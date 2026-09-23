@@ -1,7 +1,7 @@
 {
   "name": "create-weapp-vite",
   "type": "module",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "description": "create-weapp-vite tools and runtime components for modern WeChat and multi-platform mini-program development.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -81,11 +81,20 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^8.7.2",
+    "@npmcli/config": "^10.13.0",
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "execa": "^9.6.1",
+    "make-fetch-happen": "^15.0.6",
+    "npm-registry-fetch": "^19.1.1",
     "pathe": "catalog:",
     "pkg-types": "catalog:",
     "semver": "^7.8.5"
+  },
+  "devDependencies": {
+    "@types/make-fetch-happen": "^10.0.4",
+    "@types/npm-registry-fetch": "^8.0.9",
+    "@types/npmcli__config": "^6.0.4"
   }
 }
