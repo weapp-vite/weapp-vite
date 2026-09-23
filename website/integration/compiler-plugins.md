@@ -1,3 +1,17 @@
+---
+title: 底层编译插件协议
+description: 介绍 weapp.compilerPlugins 与 WeappCompilerPlugin 协议，帮助 UnoCSS 和其他编译器接入 weapp-vite 的 CSS、WXML、JavaScript 与 HMR 链路。
+keywords:
+  - compiler plugin
+  - compilerPlugins
+  - WeappCompilerPlugin
+  - CSS 编译
+  - WXML 编译
+  - HMR
+  - UnoCSS
+  - weapp-vite
+---
+
 # 底层编译插件协议
 
 `weapp.compilerPlugins` 是 `weapp-vite` 提供的底层编译扩展入口。第三方包可以通过公开的 `WeappCompilerPlugin` 协议声明源码所有权，并参与 CSS、WXML、JavaScript、bundle 和 HMR 生命周期。
