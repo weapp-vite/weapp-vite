@@ -531,6 +531,10 @@
     - dependency-upgrade-20260921-150633
     - dependency-upgrade-20260922-000805
     - dependency-upgrade-20260922-215212
+"@weapp-vite/ast@7.2.2":
+  dir: packages/ast
+  intents:
+    - steady-trusted-scaffold
 "@weapp-vite/dashboard@6.20.5":
   dir: packages/dashboard
   intents:
@@ -566,6 +570,10 @@
     - dependency-upgrade-20260922-000805
     - dependency-upgrade-20260922-215212
     - weapp-vite-devframe-devtools
+"@weapp-vite/dashboard@7.2.2":
+  dir: packages/dashboard
+  intents:
+    - steady-trusted-scaffold
 "@weapp-vite/devtools-runtime@0.4.19":
   dir: packages/devtools-runtime
   intents:
@@ -1082,6 +1090,10 @@
   dir: packages-runtime/wevu-compiler
   intents:
     - calm-css-runtime-imports
+"@wevu/compiler@7.2.2":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - steady-trusted-scaffold
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -1456,6 +1468,10 @@ create-weapp-vite@2.9.1:
     - calm-css-runtime-imports
     - calm-scaffold-networks
     - tidy-scaffold-versions
+create-weapp-vite@2.9.2:
+  dir: packages/create-weapp-vite
+  intents:
+    - steady-trusted-scaffold
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -1782,6 +1798,10 @@ weapp-vite@7.2.1:
   dir: packages/weapp-vite
   intents:
     - calm-css-runtime-imports
+weapp-vite@7.2.2:
+  dir: packages/weapp-vite
+  intents:
+    - steady-trusted-scaffold
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
@@ -1894,3 +1914,7 @@ wevu@7.2.1:
   dir: packages-runtime/wevu
   intents:
     - calm-css-runtime-imports
+wevu@7.2.2:
+  dir: packages-runtime/wevu
+  intents:
+    - steady-trusted-scaffold
