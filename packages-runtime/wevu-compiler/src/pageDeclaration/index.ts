@@ -5,7 +5,7 @@ import type { StaticPageDeclaration } from './public'
 import type { PageDeclarationAnalysis, PageDeclarationScriptBlock, PageDeclarationScriptBlockKind } from './types'
 import { WEVU_DEFINE_PAGE_MACRO, WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import MagicString, { Bundle } from 'magic-string'
-import { parseVueSfc, resolveSfcBlockSrc } from '../plugins/utils/vueSfc'
+import { createSfcParseError, parseVueSfc, resolveSfcBlockSrc } from '../plugins/utils/vueSfc'
 import { analyzePageCompileTimeMacroBlocks, analyzePageDeclarationBlocks } from './analyze'
 import { rebaseExternalScriptImports } from './rewrite'
 
@@ -48,35 +48,15 @@ function isOriginalVueSfc(filename: string) {
   return !filename.includes('?') && !filename.includes('#') && /\.vue$/i.test(filename)
 }
 
-function createSfcParseError(filename: string, error: unknown) {
-  if (typeof error === 'string') {
-    return new Error(`${filename}:1:1 解析页面声明 SFC 失败：${error}`)
-  }
-  let line = 1
-  let column = 1
-  if (error && typeof error === 'object' && 'loc' in error) {
-    const location = error.loc
-    if (location && typeof location === 'object' && 'start' in location) {
-      const start = location.start
-      if (start && typeof start === 'object') {
-        if ('line' in start && typeof start.line === 'number') {
-          line = start.line
-        }
-        if ('column' in start && typeof start.column === 'number') {
-          column = start.column
-        }
-      }
-    }
-  }
-  const message = error instanceof Error ? error.message : String(error)
-  return new Error(`${filename}:${line}:${column} 解析页面声明 SFC 失败：${message}`)
-}
-
 function parsePageDeclarationSfc(source: string, filename: string, ignoreEmpty = true) {
   // 页面声明只读取脚本块；模板表达式由后续平台预处理与模板编译负责解析。
   const parsed = parseVueSfc(source, { filename, ignoreEmpty, templateParseOptions: { prefixIdentifiers: false } })
   if (parsed.errors.length) {
-    throw createSfcParseError(filename, parsed.errors[0]!)
+    throw createSfcParseError(parsed.errors[0], {
+      filename,
+      source,
+      formatMessage: (message, location) => `${filename}:${location?.start.line ?? 1}:${location?.start.column ?? 1} 解析页面声明 SFC 失败：${message}`,
+    })
   }
   return parsed.descriptor
 }

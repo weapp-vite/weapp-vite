@@ -1,3 +1,4 @@
+import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
@@ -9,6 +10,7 @@ import { createStatefulHmrStyleRebaser } from './globalStyles/rebase'
 export interface StatefulHmrSnapshot {
   output: StatefulHmrOutputFile[]
   componentPageGlobalStyleRoutes: string[]
+  glassEaselAnalysisByOwner: ReadonlyMap<string, GlassEaselAnalysisFact>
   entryIds?: string[]
   delegatedComponentEntryIds?: string[]
 }

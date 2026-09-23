@@ -267,7 +267,11 @@ export async function inlineScriptSetupDefineOptionsArgs(
     sourceFile: string
     offset: number
   },
-) {
+): Promise<{
+  code: string
+  dependencies: string[]
+  map?: EncodedSourceMapLike
+}> {
   const { statements } = collectDefineOptionsStatements(content, filename)
   if (!statements.length) {
     return {
@@ -325,17 +329,20 @@ export async function inlineScriptSetupDefineOptionsArgs(
   }
 
   const code = sourceMap ? ms.slice(0, content.length) : ms.toString()
+  const result = { code, dependencies: dependencies.filter(Boolean) }
+  if (!sourceMap || code === content) {
+    return result
+  }
+  const sourceFile = sourceMap.sourceFile
+  let map: EncodedSourceMapLike | undefined
   return {
-    code,
-    dependencies: dependencies.filter(Boolean),
-    ...(sourceMap && code !== content
-      ? {
-          map: ms.generateMap({
-            hires: true,
-            includeContent: true,
-            source: sourceMap.sourceFile,
-          }) as EncodedSourceMapLike,
-        }
-      : {}),
+    ...result,
+    get map() {
+      return map ??= ms.generateMap({
+        hires: true,
+        includeContent: true,
+        source: sourceFile,
+      }) as EncodedSourceMapLike
+    },
   }
 }

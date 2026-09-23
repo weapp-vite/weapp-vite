@@ -2,6 +2,7 @@ import { originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import { parse } from '@weapp-vite/ast/babel'
 import { describe, expect, it } from 'vitest'
 import { compileVueFile } from '../plugins/vue/transform/compileVueFile'
+import { CompilerDiagnosticError } from '../types/diagnostics'
 import { BABEL_TS_MODULE_PARSER_OPTIONS } from '../utils/babel'
 import {
   collectPageMetaCallsFromPrograms,
@@ -13,6 +14,29 @@ import {
 } from './index'
 
 describe('static page declarations', () => {
+  it('preserves structured SFC parser errors for page declaration callers', () => {
+    const filename = '/project/src/pages/invalid-declaration.vue'
+    const source = '<template><view></template><script setup>definePage({ name: "invalid" })</script>'
+
+    try {
+      extractPageDeclaration(source, filename)
+      throw new Error('Expected page declaration SFC parsing to fail')
+    }
+    catch (error) {
+      expect(error).toBeInstanceOf(CompilerDiagnosticError)
+      expect(error).toMatchObject({
+        code: 'WV2003',
+        severity: 'error',
+        filename,
+        source: 'sfc',
+        cause: expect.objectContaining({ code: 24 }),
+        loc: expect.objectContaining({
+          start: { offset: 10, line: 1, column: 11 },
+        }),
+      })
+    }
+  })
+
   it('extracts a finite route declaration without crossing into page metadata', () => {
     const source = `<script setup lang="ts">
 import { definePage as page } from 'wevu/router'

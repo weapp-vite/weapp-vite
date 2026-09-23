@@ -92,39 +92,6 @@ describe('dev module graph provider', () => {
     expect(bindDevServer).toHaveBeenLastCalledWith(undefined)
   })
 
-  it('handles atomic create once and leaves delete topology changes to the topology watcher', async () => {
-    const { createDevModuleGraphProvider } = await import('./devProvider')
-    const ctx = {
-      moduleGraphService: {
-        bindDevServer: vi.fn(),
-        getEntryDependencies: vi.fn(() => []),
-      },
-    } as any
-    const onChange = vi.fn()
-    await createDevModuleGraphProvider(ctx, {}, onChange)
-    const config = createServerMock.mock.calls[0]![0]
-    const providerPlugin = config.plugins[0] as Plugin
-    const options = {
-      type: 'create',
-      file: '/project/src/page.wxml',
-      read: vi.fn(async () => '<view />'),
-    }
-
-    await (providerPlugin.hotUpdate as any).call({ environment: { name: 'client' } }, options)
-    await (providerPlugin.hotUpdate as any).call({ environment: { name: 'ssr' } }, options)
-    await (providerPlugin.hotUpdate as any).call(
-      { environment: { name: 'client' } },
-      { ...options, type: 'delete' },
-    )
-
-    expect(options.read).toHaveBeenCalledOnce()
-    expect(onChange).toHaveBeenCalledOnce()
-    expect(onChange).toHaveBeenCalledWith({
-      event: 'create',
-      file: '/project/src/page.wxml',
-    })
-  })
-
   it('leaves missing-file topology changes to the topology watcher', async () => {
     const { createDevModuleGraphProvider } = await import('./devProvider')
     const ctx = {

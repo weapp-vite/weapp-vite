@@ -303,7 +303,7 @@ const suffix = '!'
     expect(childAutoBindings.at(-1)?.outputPath).toBe('__wv_bind_200')
   })
 
-  it('disables automatic pick when manifest collection is incomplete', async () => {
+  it('disables automatic pick when manifest collection is incomplete', () => {
     const externallyConstructedManifest: WevuBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/pages/external.vue',
@@ -332,28 +332,28 @@ const suffix = '!'
       updateMode: 'snapshot-fallback',
     })
     expect(resolveBindingManifestPickKeys(wildcardManifest, true)).toEqual([])
+  })
 
+  it('rejects failed template compilation instead of publishing fallback binding data', async () => {
     const failingPlatform = {
       ...wechatPlatform,
       wrapIf() {
         throw new Error('synthetic template failure')
       },
     }
-    const result = await compileVueFile(
+    await expect(compileVueFile(
       '<template><view v-if="ready">{{ ready }}</view></template><script setup>const ready = true</script>',
       '/src/pages/fallback.vue',
       {
         autoSetDataPick: true,
         template: { platform: failingPlatform },
       },
-    )
-
-    expect(result.bindingManifest?.bindings).toContainEqual(expect.objectContaining({
-      outputPath: '*',
-      updateMode: 'snapshot-fallback',
-    }))
-    expect(result.script).toContain(WEVU_BINDING_MANIFEST_KEY)
-    expect(result.script).not.toContain('setData')
+    )).rejects.toMatchObject({
+      code: 'WV2002',
+      severity: 'error',
+      source: 'template',
+      filename: '/src/pages/fallback.vue',
+    })
   })
 
   it('records every compiler-generated mustache dependency before automatic pick', async () => {

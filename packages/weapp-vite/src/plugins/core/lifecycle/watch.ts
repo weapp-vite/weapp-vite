@@ -4,6 +4,7 @@ import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { invalidateGlassEaselSource } from '../../../analyze/glassEasel'
 import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
@@ -407,12 +408,17 @@ async function processChangedFile(
   }
 
   if (isDeletedMissingSelf) {
+    resolvedEntryMap.delete(normalizedId)
+    loadedEntrySet.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntrySfcSignatures.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryStyleBindings.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.delete(normalizedId)
+    // 仅在原子保存复查后确认真实删除时撤销 source/output 双重归属。
+    ctx.runtimeState.wxml.tokenMap.delete(normalizedId)
+    invalidateGlassEaselSource(ctx, normalizedId)
   }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {

@@ -1,6 +1,7 @@
 import type {
   CompilerDiagnostic,
   CompilerDiagnosticCode,
+  CompilerDiagnosticError,
   SourceSpan,
 } from '@wevu/compiler'
 import { compileJsxFile, compileSfc, compileTemplate } from '@wevu/compiler'
@@ -12,10 +13,17 @@ const templateResult = compileTemplate(
 )
 expectType<CompilerDiagnostic[]>(templateResult.diagnostics)
 expectAssignable<CompilerDiagnosticCode>('WV1001')
+expectAssignable<CompilerDiagnosticCode>('WV2003')
 expectNotAssignable<CompilerDiagnosticCode>('WV9999')
 expectType<CompilerDiagnosticCode>(templateResult.diagnostics[0]!.code)
 expectType<SourceSpan | undefined>(templateResult.diagnostics[0]?.loc)
 expectError(templateResult.warnings)
+
+declare const compilerError: CompilerDiagnosticError
+expectType<CompilerDiagnosticCode>(compilerError.code)
+expectType<string>(compilerError.filename)
+expectType<SourceSpan | undefined>(compilerError.loc)
+expectType<unknown>(compilerError.cause)
 
 compileSfc(
   '<template><view v-html="html" /></template>',

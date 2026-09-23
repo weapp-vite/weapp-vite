@@ -136,6 +136,7 @@ export type {
   WevuRuntimeBindingRecordV1,
 } from './types/bindingManifest'
 export type { ComponentStyleOptions, ComponentStylePrimitive, StaticComponentStyleOption } from './types/componentStyleOptions'
+export { CompilerDiagnosticError } from './types/diagnostics'
 export type {
   CompilerDiagnostic,
   CompilerDiagnosticCode,

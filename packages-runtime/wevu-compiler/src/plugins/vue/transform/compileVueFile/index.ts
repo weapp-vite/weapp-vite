@@ -1,6 +1,8 @@
+import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { CompileVueFileOptions, VueTransformResult } from './types'
 import { compileScript } from 'vue/compiler-sfc'
 import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
+import { CompilerDiagnosticError } from '../../../../types/diagnostics'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
@@ -131,9 +133,16 @@ export async function compileVueFile(
     result,
     options?.bindingManifestSourceFile,
   )
-  if (templateCompiled?.diagnostics.length && options?.warn) {
+  if (templateCompiled?.diagnostics.length) {
+    let fatalDiagnostic: CompilerDiagnostic | undefined
     for (const diagnostic of templateCompiled.diagnostics) {
-      options.warn(diagnostic.message)
+      options?.warn?.(diagnostic.message)
+      if (diagnostic.severity === 'error') {
+        fatalDiagnostic ??= diagnostic
+      }
+    }
+    if (fatalDiagnostic) {
+      throw new CompilerDiagnosticError(fatalDiagnostic)
     }
   }
 

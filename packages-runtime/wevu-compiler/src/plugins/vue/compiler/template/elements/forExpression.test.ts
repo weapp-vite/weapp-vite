@@ -291,4 +291,59 @@ describe('v-for item patterns', () => {
     expect(compiled.code).not.toContain('{{rest}}')
     expect(compiled.code).not.toContain('{{values}}')
   })
+
+  it.each([
+    ['missing list', 'item in'],
+    ['missing alias', 'in items'],
+    ['missing delimiter', 'item items'],
+    ['malformed list', 'item in broken('],
+    ['reserved item alias', 'for in items'],
+    ['reserved index alias', '(item, this) in items'],
+    ['reserved key alias', '(item, class, index) in items'],
+  ])('rejects an invalid loop expression with %s', (_name, expression) => {
+    const source = `<view v-for="${expression}">{{ item }}</view>`
+    const compiled = compileVueTemplateToWxml(source, 'src/pages/invalid-for.vue')
+    const diagnostic = compiled.diagnostics.find(item => item.severity === 'error')
+
+    expect(diagnostic).toEqual(expect.objectContaining({
+      code: 'WV2001',
+      severity: 'error',
+      source: 'template',
+    }))
+    expect(source.slice(diagnostic?.loc?.start.offset, diagnostic?.loc?.end.offset)).toBe(expression)
+    expect(compiled.code).toBe('')
+    expect(compiled.code).not.toContain('wx:for')
+  })
+
+  it('rejects v-for without an expression instead of emitting a normal element', () => {
+    const source = '<view v-for>{{ item }}</view>'
+    const compiled = compileVueTemplateToWxml(source, 'src/pages/invalid-for.vue')
+    const diagnostic = compiled.diagnostics[0]
+
+    expect(diagnostic).toEqual(expect.objectContaining({
+      code: 'WV2001',
+      severity: 'error',
+      source: 'template',
+    }))
+    expect(source.slice(diagnostic?.loc?.start.offset, diagnostic?.loc?.end.offset)).toBe('v-for')
+    expect(compiled.code).toBe('')
+  })
+
+  it.each([
+    'item in items',
+    'item of items',
+    '(item, key, index) in items',
+    '([head, second], index) of rows',
+    '(item, , index) in items',
+    '(, key) in items',
+    '() in items',
+  ])('keeps supported loop expression: %s', (expression) => {
+    const compiled = compileVueTemplateToWxml(
+      `<view v-for="${expression}">{{ item }}</view>`,
+      'src/pages/valid-for.vue',
+    )
+
+    expect(compiled.diagnostics).toEqual([])
+    expect(compiled.code).toContain('wx:for=')
+  })
 })

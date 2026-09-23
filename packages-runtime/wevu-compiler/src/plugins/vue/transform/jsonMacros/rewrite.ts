@@ -17,7 +17,11 @@ export function stripScriptSetupMacroStatements(
     sourceFile: string
     offset: number
   },
-) {
+): {
+  stripped: string
+  macroStatementSources: string[]
+  map?: EncodedSourceMapLike
+} {
   const ms = sourceMap
     ? new MagicString(sourceMap.source, { offset: sourceMap.offset })
     : new MagicString(content)
@@ -50,18 +54,21 @@ export function stripScriptSetupMacroStatements(
   }
 
   const stripped = sourceMap ? ms.slice(0, content.length) : ms.toString()
+  const result = { stripped, macroStatementSources }
+  if (!sourceMap || stripped === content) {
+    return result
+  }
+  const sourceFile = sourceMap.sourceFile
+  let map: EncodedSourceMapLike | undefined
   return {
-    stripped,
-    macroStatementSources,
-    ...(sourceMap && stripped !== content
-      ? {
-          map: ms.generateMap({
-            hires: true,
-            includeContent: true,
-            source: sourceMap.sourceFile,
-          }) as EncodedSourceMapLike,
-        }
-      : {}),
+    ...result,
+    get map() {
+      return map ??= ms.generateMap({
+        hires: true,
+        includeContent: true,
+        source: sourceFile,
+      }) as EncodedSourceMapLike
+    },
   }
 }
 
