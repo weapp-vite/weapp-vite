@@ -5,6 +5,7 @@ import path from 'pathe'
 import { build } from 'vite'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
+import { createLogicalEntryId } from '../../moduleGraph/protocol'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { syncProjectSupportFiles } from '../supportFiles'
@@ -86,6 +87,19 @@ describe('stateful snapshot component metadata', () => {
     active.currentBuildTarget = 'app'
     await active.configService.load(options)
     await syncProjectSupportFiles(active)
+    const activeOwner = path.join(root, 'src/pages/active.ts')
+    const activeDependency = path.join(root, 'src/active-dependency.ts')
+    const activeLogical = createLogicalEntryId(activeOwner, 'page')
+    const activeScope = {}
+    active.moduleGraphService.bindBuildContext(activeScope, {
+      getModuleIds: () => [activeDependency, activeLogical],
+      getModuleInfo: id => id === activeDependency ? { importers: [activeLogical] } : {},
+    })
+    active.moduleGraphService.bindPluginContext(activeScope, {
+      resolve: async () => ({ id: activeDependency }),
+      load: async () => ({ exports: ['active'] }),
+    })
+    active.moduleGraphService.replaceEntryDependencies(activeOwner, 'template', [path.join(root, 'src/active.wxml')])
     const supportFiles = ['auto-import-components.json', 'typed-components.d.ts', 'components.d.ts', 'mini-program.html-data.json']
     const before = new Map<string, string>()
     for (const name of supportFiles) {
@@ -120,6 +134,11 @@ describe('stateful snapshot component metadata', () => {
         expect(await fs.readFile(filename, 'utf8'), name).toBe(before.get(name))
         expect((await fs.stat(filename)).mtimeMs, `${name} was rewritten`).toBe(1000)
       }
+      expect(active.moduleGraphService.hasModule(activeDependency)).toBe(true)
+      expect(active.moduleGraphService.collectAffectedEntries(activeDependency)).toEqual(new Set([activeOwner]))
+      expect(active.moduleGraphService.collectAffectedEntries(path.join(root, 'src/active.wxml'))).toEqual(new Set([activeOwner]))
+      await expect(active.moduleGraphService.resolve('active')).resolves.toEqual({ id: activeDependency })
+      await expect(active.moduleGraphService.load({ id: activeDependency })).resolves.toEqual({ exports: ['active'] })
     }
 
     active.autoImportService.setSupportFileResolverComponents({ 'late-leaf': 'fixture-components/late-leaf' })
@@ -163,6 +182,7 @@ describe('stateful snapshot component metadata', () => {
     const loadOptions = { cwd: root, isDev: true, mode: 'development' }
     for (let iteration = 0; iteration < 2; iteration++) {
       resetRuntimeStateForFreshBuild(ctx.runtimeState)
+      ctx.moduleGraphService.resetSession()
       await ctx.configService.load(loadOptions)
       await ctx.scanService.loadAppEntry()
       ctx.scanService.loadSubPackages()

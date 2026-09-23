@@ -242,12 +242,20 @@ export async function createDevModuleGraphProvider(
       write: false,
     },
   })
-  ctx.moduleGraphService.bindDevServer(server)
+  const releaseServer = ctx.moduleGraphService.bindDevServer(server)
+  let closePromise: Promise<void> | undefined
 
   return {
-    async close() {
-      await server.close()
-      ctx.moduleGraphService.bindDevServer(undefined)
+    close() {
+      closePromise ??= (async () => {
+        try {
+          await server.close()
+        }
+        finally {
+          releaseServer()
+        }
+      })()
+      return closePromise
     },
   }
 }

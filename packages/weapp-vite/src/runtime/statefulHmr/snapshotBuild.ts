@@ -42,5 +42,5 @@ export async function buildStatefulHmrSnapshot(
       ),
       getGlobalStyleRoutes: () => globalStyleRoutes,
     }
-  })
+  }).finally(() => ctx.moduleGraphService.resetSession())
 }

@@ -12,6 +12,7 @@ import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { build } from 'vite'
@@ -378,6 +379,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let devHmrDecision: HmrRuntimeDecision | undefined
   let devHmrRuntimeNoticeLogged = false
   let skylineHmrFallbackApplied = false
+  let activeDevSession: object | undefined
 
   const SKYLINE_HMR_COMPATIBILITY_URL = 'https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98'
 
@@ -1229,7 +1231,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     return requestedConfigRestartBuilds.delete(target)
   }
 
-  async function runDev(target: BuildTarget) {
+  async function startDev(target: BuildTarget, restartDev: (target: BuildTarget) => Promise<RolldownWatcher>): Promise<RolldownWatcher> {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
@@ -1305,14 +1307,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           })
         }
         if (devHmrDecision?.runtime === 'classic') {
+          ctx.moduleGraphService.resetSession()
           resetRuntimeStateForFreshBuild(ctx.runtimeState)
           await configService.load(configService.loadOptions)
           await scanService.loadAppEntry()
           scanService.loadSubPackages()
-          return await runDev(target)
+          return await restartDev(target)
         }
         logHmrRuntimeDecision(hmrDecision)
         await configService.load(configService.loadOptions)
+        ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await scanService.loadAppEntry()
         scanService.loadSubPackages()
@@ -1325,15 +1329,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ? devWorkers(configService, watcherService, workersDir)
           : Promise.resolve()
         let statefulWatcher: RolldownWatcher | undefined
-        const [watcher] = await Promise.all([
+        const startup = await Promise.allSettled([
           runStatefulHmrDev(ctx, buildOptions, async () => {
             await statefulWatcher?.close()
             logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
+            ctx.moduleGraphService.resetSession()
             resetRuntimeStateForFreshBuild(ctx.runtimeState)
             await configService.load(configService.loadOptions)
             await scanService.loadAppEntry()
             scanService.loadSubPackages()
-            await runDev(target)
+            await restartDev(target)
             logger.success('微信状态保持 HMR 构建已完成完整重载。')
           }, {
             entryIds: initialEntryIds,
@@ -1373,6 +1378,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }),
           workerPromise,
         ])
+        const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+        if (startupErrors.length > 0) {
+          if (startup[0].status === 'fulfilled') {
+            try {
+              await startup[0].value.close()
+            }
+            catch (error) {
+              startupErrors.push(error)
+            }
+          }
+          throw startupErrors.length === 1 ? startupErrors[0] : new AggregateError(startupErrors, 'Stateful development watcher startup failed')
+        }
+        const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
         statefulWatcher = watcher
         watcherService.setRollupWatcher(watcher, '/')
         return watcher
@@ -1388,11 +1406,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         logger.warn(`微信状态保持 HMR 运行时不可用，已自动降级为 classic：${error instanceof Error ? error.message : String(error)}`)
         logger.info(formatHmrRuntimeStartupMessages(devHmrDecision)[0])
+        ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await configService.load(configService.loadOptions)
         await scanService.loadAppEntry()
         scanService.loadSubPackages()
-        return await runDev(target)
+        return await restartDev(target)
       }
     }
     const snapshotBuildOptions: InlineConfig = {
@@ -1481,6 +1500,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         for (const batchReason of batchReasons) {
           if (batchReason.file) {
             ctx.moduleGraphService.recordChangedFile(batchReason.file, batchReason.event ?? 'update')
+            if (batchReason.event === 'delete' && !await fs.pathExists(batchReason.file)) {
+              ctx.moduleGraphService.removeEntryDependencies(batchReason.file)
+            }
           }
         }
         if (reason?.event || reason?.file) {
@@ -1587,7 +1609,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         markSnapshotEntriesFullDirty()
         // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
         resetEmittedOutputCaches(ctx.runtimeState)
-        process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
+        const hmr = ctx.runtimeState.build.hmr
+        hmr.forceFullSharedChunkRefresh = true
         try {
           devBuildWatcher?.emitEvent({ code: 'START' })
           await build({
@@ -1611,7 +1634,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         finally {
           recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
-          delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
+          hmr.forceFullSharedChunkRefresh = false
         }
       })
       snapshotBuildChain = currentSnapshotBuild.catch(() => {
@@ -1761,6 +1784,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (shouldRestart) {
             await watcher.close()
             logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
+            ctx.moduleGraphService.resetSession()
             resetRuntimeStateForFreshBuild(ctx.runtimeState)
             await configService.load(configService.loadOptions)
             try {
@@ -1775,7 +1799,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             }
             await scanService.loadAppEntry()
             scanService.loadSubPackages()
-            await runDev(target)
+            await restartDev(target)
             logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
             resolveWatcher(e)
             return
@@ -1863,8 +1887,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       })
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
-          await snapshotWatcher.close()
-          await moduleGraphProvider?.close()
+          try {
+            await snapshotWatcher.close()
+          }
+          finally {
+            await moduleGraphProvider?.close()
+          }
         },
       })
       attachSidecarWatcherToWatcherClose({
@@ -1887,6 +1915,34 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     watcherService.setRollupWatcher(watcher, watcherRoot)
     return watcher
+  }
+  async function runDev(target: BuildTarget): Promise<RolldownWatcher> {
+    const session = {}
+    activeDevSession = session
+    const releaseSession = () => {
+      if (activeDevSession === session) {
+        activeDevSession = undefined
+        ctx.moduleGraphService.resetSession()
+      }
+    }
+    try {
+      const watcher = await startDev(target, runDev)
+      // 递归降级或重启已经把所有权交给新会话，旧关闭回调不能清空新图。
+      if (activeDevSession !== session) {
+        return watcher
+      }
+      const close = watcher.close.bind(watcher)
+      let closePromise: Promise<void> | undefined
+      watcher.close = () => {
+        closePromise ??= close().finally(releaseSession)
+        return closePromise
+      }
+      return watcher
+    }
+    catch (error) {
+      releaseSession()
+      throw error
+    }
   }
 
   async function runProd(target: BuildTarget) {

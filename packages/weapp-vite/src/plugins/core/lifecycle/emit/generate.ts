@@ -4,7 +4,6 @@ import type { SubPackageMetaValue } from '../../../../types'
 import type { CorePluginState } from '../../helpers'
 import type { BundleChunkSnapshot } from '../../helpers/bundle'
 import type { ChunkScriptAnalysisCache } from './rewrite'
-import process from 'node:process'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { parseLogicalEntryId } from '../../../../moduleGraph/protocol'
@@ -459,7 +458,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     const startedAt = performance.now()
     try {
       ctx.moduleGraphService?.bindBuildContext(state, this)
-      ctx.moduleGraphService?.bindPluginContext(this)
+      ctx.moduleGraphService?.bindPluginContext(state, this)
       const rolldownBundle = bundle as unknown as OutputBundle
       const scriptAnalysisCache: ChunkScriptAnalysisCache = new WeakMap()
       const nativeDevBundle = state.resolvedConfig?.experimental?.bundledDev === true
@@ -507,7 +506,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         let redundantBytesTotal = 0
 
         if (configService.isDev && (state.hmrSharedChunksMode === 'auto' || state.hmrSharedChunksMode === 'full')) {
-          const forceFullSharedChunkRefresh = process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS === '1'
+          const forceFullSharedChunkRefresh = ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh
           if (
             assetOnlyDevHmrBundle
             && !forceFullSharedChunkRefresh

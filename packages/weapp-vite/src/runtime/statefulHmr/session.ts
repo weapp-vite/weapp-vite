@@ -701,10 +701,18 @@ function statefulHmrAssetSourcesEqual(left: StatefulHmrAssetSource, right: State
 }
 
 function createWatcherAdapter(server: ViteDevServer, session: StatefulHmrSession): RolldownWatcher {
+  let closePromise: Promise<void> | undefined
   return {
-    close: async () => {
-      await session.close()
-      await server.close()
+    close() {
+      closePromise ??= (async () => {
+        try {
+          await session.close()
+        }
+        finally {
+          await server.close()
+        }
+      })()
+      return closePromise
     },
     on() {
       return this

@@ -20,6 +20,7 @@ import {
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
 import { resolveRequestGlobalsExportName, resolveRequestGlobalsInstallerName } from './emit/requestGlobals'
@@ -94,11 +95,7 @@ vi.mock('../../../logger', () => ({
 function createState(overrides: Record<string, any> = {}) {
   const state = {
     ctx: {
-      runtimeState: {
-        wxml: {
-          emittedCode: new Map(),
-        },
-      },
+      runtimeState: createRuntimeState(),
       scanService: {
         subPackageMap: new Map(),
       },
@@ -720,13 +717,17 @@ describe('core lifecycle emit hook extra branches', () => {
     { bundledDev: false, metadataOnly: true },
     { bundledDev: true, metadataOnly: false },
     { bundledDev: true, metadataOnly: true },
-  ])('uses native bundle ownership instead of classic event pruning ($bundledDev/$metadataOnly)', async ({ bundledDev, metadataOnly }) => {
+  ].flatMap(options => [false, true].map(forceFullSharedChunkRefresh => ({
+    ...options,
+    forceFullSharedChunkRefresh,
+  }))))('uses native bundle ownership instead of classic event pruning ($bundledDev/$metadataOnly/$forceFullSharedChunkRefresh)', async ({ bundledDev, metadataOnly, forceFullSharedChunkRefresh }) => {
     const state = createState({
       subPackageMeta: undefined,
       resolvedConfig: { experimental: { bundledDev } },
       ctx: {
         configService: { isDev: true },
         runtimeState: { build: { hmr: {
+          forceFullSharedChunkRefresh,
           profile: { event: 'update' },
           lastEmittedChunkFileNames: new Set(['components/example.js']),
         } } },

@@ -205,7 +205,7 @@ export function createBuildStartHook(state: CorePluginState) {
     const startedAt = performance.now()
     try {
       ctx.moduleGraphService?.bindBuildContext(state, this)
-      ctx.moduleGraphService?.bindPluginContext(this)
+      ctx.moduleGraphService?.bindPluginContext(state, this)
       resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
       if (configService.isDev) {
         let sharedChunkAffectedEntryCount = 0
@@ -304,6 +304,9 @@ async function processChangedFile(
   }
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
+  if (isDeletedMissingSelf) {
+    ctx.moduleGraphService.removeEntryDependencies(normalizedId)
+  }
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
   const pathKind = resolveWatchPathKind(normalizedId)
   if (pathKind.isStyle) {
@@ -704,7 +707,7 @@ export function createWatchChangeHook(state: CorePluginState) {
     const startedAt = performance.now()
     const eventId = createHmrProfileEventId()
     const normalizedId = normalizeFsResolvedId(id)
-    state.ctx.moduleGraphService?.bindPluginContext(this)
+    state.ctx.moduleGraphService?.bindPluginContext(state, this)
     state.ctx.moduleGraphService?.recordChangedFile?.(normalizedId, change.event)
     if (isSkippableResolvedId(normalizedId)) {
       return

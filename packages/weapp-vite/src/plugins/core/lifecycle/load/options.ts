@@ -183,7 +183,7 @@ export function createOptionsHook(state: CorePluginState) {
 
   return async function options(this: any, options: any) {
     if (this) {
-      ctx.moduleGraphService?.bindPluginContext(this)
+      ctx.moduleGraphService?.bindPluginContext(state, this)
     }
     state.hmrRootInputIds ??= new Set<string>()
     state.hmrRootInputIds.clear()

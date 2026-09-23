@@ -35,6 +35,7 @@
     "build:templates": "turbo run build --filter=./templates/*",
     "test": "vitest run --configLoader bundle --exclude '**/.codex-tmp/**'",
     "test:serial": "cross-env WEAPP_VITE_TEST_MAX_WORKERS=1 vitest run --configLoader bundle --exclude '**/.codex-tmp/**'",
+    "verify:edit-sequence": "node --import tsx scripts/editSequence/run.ts",
     "test:coverage": "vitest run --configLoader bundle --coverage.enabled --exclude '**/.codex-tmp/**'",
     "test:coverage:web": "node --import tsx scripts/run-web-coverage.ts",
     "check:web-coverage": "node --import tsx scripts/check-web-coverage.ts",
