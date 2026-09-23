@@ -114,20 +114,31 @@ pnpm --config.registry=https://registry.npmmirror.com/ install
 
 首次 `pnpm create weapp-vite` 下载由 pnpm 负责；包尚未下载时，脚手架的容错逻辑无法执行。镜像中的框架包、脚手架包和 tarball 可能不同步。完全离线也只有在脚手架及其依赖已经缓存后，才可能进入本地模板生成。
 
-先向当前可达的源查询版本：
+### pnpm 12 的发布冷却期
+
+pnpm 12.5.1 默认启用 `minimumReleaseAge=1440`（分钟，即 24 小时），未显式配置时采用非严格模式。新版本发布后的冷却期内，`pnpm create weapp-vite` 或 `pnpm create weapp-vite@latest` 可能选择已经满足发布年龄的旧版；即使使用官方源和全新缓存，也可能出现这种结果。`pnpm view ... version` 显示的是源中的最新版本，不代表 `create` 一定会执行它。
+
+可以等待目标版本满足当前发布年龄策略；需要提前使用某个已核对的版本时，按下文指定精确版本。默认非严格模式会为明确指定的包版本自动记录精确的 `minimumReleaseAgeExclude` 例外；`create` / `dlx` 的例外记录在其临时工作区，不会全局关闭发布年龄检查，也不代表后续项目安装中的其他依赖获得豁免。
+
+若用户或团队启用了 `minimumReleaseAgeStrict`，应等待配置的冷却期结束，或根据 pnpm 的交互提示和团队流程审批该精确版本；非交互 / CI 环境可能直接拒绝安装。显式设置发布年龄时，pnpm 12.5.1 默认转为严格模式。精确版本、换源和清缓存都不能保证绕过用户的严格策略或其他安全检查，不建议为运行脚手架全局关闭这些检查。
+
+### 确认版本并重试
+
+先向当前可达的源查询版本；需要核对冷却期时，也可查看发布时间：
 
 ```bash
 pnpm --config.registry=https://registry.npmmirror.com/ view create-weapp-vite version
 pnpm --config.registry=https://registry.npmjs.org/ view create-weapp-vite version
+pnpm --config.registry=https://registry.npmjs.org/ view create-weapp-vite time --json
 ```
 
-选择包含本次修复且该源已同步的精确版本，将下面的 `<version>` 替换为查询结果，再运行：
+选择包含所需修复、该源已同步且符合你的安全策略的精确版本，将下面的 `<version>` 替换为已核对的版本号（例如 `2.9.1`），再运行：
 
 ```bash
 pnpm --config.registry=https://registry.npmmirror.com/ dlx create-weapp-vite@<version> my-app wevu
 ```
 
-如果当前镜像尚未同步且官方源可达，可将命令中的 registry 改为官方源；官方源不可达时使用可用镜像或已配置的代理，不必强制直连。指定精确版本能避开旧 `latest` 执行缓存；旧脚手架本身不会获得新版代码中的修复。历史 `2.9.0` 及更早发布版本不包含本文的默认离线、代理与超时改造。
+如果当前镜像尚未同步且官方源可达，可将命令中的 registry 改为官方源；官方源不可达时使用可用镜像或已配置的代理，不必强制直连。指定精确版本可避免复用旧 `latest` 的执行缓存，并明确请求哪个版本；它对发布冷却期的处理仍受上述严格 / 非严格模式约束。旧脚手架本身不会获得新版代码中的修复。历史 `2.9.0` 及更早发布版本不包含本文的默认离线、代理与超时改造。
 
 安装时报 DNS、超时或连接错误时先检查 registry/代理；证书错误应配置正确 CA，401/403 应修正该源认证。包或版本 404 通常需要检查镜像同步、作用域源和 tarball 是否齐全。生成成功只说明模板完整，仍须以正常 `pnpm install`（包含 `wv prepare`）、`pnpm build` 和 `pnpm dev` 验证安装与构建。
 
