@@ -3,15 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { cleanupChildProcessHandles, createChildProcess, formatCommand, tail, terminateProcess } from '../project-lifecycle.mjs'
 
-// Package-manager shims installed by Node/Corepack/pnpm action versions use
-// either the `.js` or `.cjs` entrypoint spelling. Resolve the entry directly
-// so Windows never has to execute a `.cmd` file through `execFile`/a shell.
-const MANAGER_ENTRY_NAMES = {
-  npm: ['npm-cli.js'],
-  pnpm: ['pnpm.cjs', 'pnpm.js'],
-  corepack: ['corepack.js'],
-  yarn: ['yarn.js'],
-}
+const MANAGER_ENTRY_NAMES = { npm: 'npm-cli.js', corepack: 'corepack.js', yarn: 'yarn.js' }
 
 function environmentValue(env, name) {
   const key = Object.keys(env).find(key => key.toUpperCase() === name)
@@ -39,8 +31,8 @@ function resolveWindowsExecutable(command, env) {
 /** 直接执行官方包管理器 shim 指向的 Node 入口，避免 cmd 对空格和元字符二次解释。 */
 export function resolveWindowsPackageManager(command, args, env = process.env) {
   const manager = path.basename(command).replace(/\.(?:cmd|bat|exe|com)$/i, '').toLowerCase()
-  const entryNames = MANAGER_ENTRY_NAMES[manager]
-  if (!entryNames || command === process.execPath) {
+  const entryName = MANAGER_ENTRY_NAMES[manager]
+  if (!entryName || command === process.execPath) {
     return { command, args }
   }
   const executable = resolveWindowsExecutable(command, env)
@@ -51,7 +43,7 @@ export function resolveWindowsPackageManager(command, args, env = process.env) {
   const targets = shim.matchAll(/%(?:dp0%|~dp0)[\\/]([^"\r\n]+\.(?:mjs|cjs|js))"/gi)
   for (const match of targets) {
     const entry = path.resolve(path.dirname(executable), match[1].replaceAll('\\', path.sep))
-    if (entryNames.includes(path.basename(entry)) && fs.statSync(entry, { throwIfNoEntry: false })?.isFile()) {
+    if (path.basename(entry) === entryName && fs.statSync(entry, { throwIfNoEntry: false })?.isFile()) {
       return { command: process.execPath, args: [entry, ...args] }
     }
   }

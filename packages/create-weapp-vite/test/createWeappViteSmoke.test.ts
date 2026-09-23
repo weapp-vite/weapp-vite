@@ -5,6 +5,8 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
+// eslint-disable-next-line e18e/ban-dependencies -- execa resolves Windows package-manager shims without invoking execFile on a .cmd file.
+import { execa } from 'execa'
 import { describe, expect, it, vi } from 'vitest'
 import {
   changeAppTitle,
@@ -18,15 +20,10 @@ import {
   waitForChildClose,
 } from '../../../scripts/create-weapp-vite-smoke.mjs'
 import { createScenario, createTarballCommand, createTarballInstallCommand } from '../../../scripts/createWeappViteSmoke/commands.mjs'
-import { resolveWindowsPackageManager } from '../../../scripts/createWeappViteSmoke/process.mjs'
 import { classifyFailure, createPnpmProfileConfig, createRegistryEnvironment, resolveRegistryProfiles, resolveRegistryVersion, versionLag } from '../../../scripts/createWeappViteSmoke/registry.mjs'
 import { assertPreparedProject, DEFAULT_TEMPLATE_NAMES, outputDirectory, validateCreatedProjectStructure } from '../../../scripts/createWeappViteSmoke/templates.mjs'
 import { mergeSmokeReports, renderSmokeReport } from '../../../scripts/merge-create-weapp-vite-smoke-reports.mjs'
 import { TemplateName } from '../src/enums'
-
-// `execFile` does not apply PATHEXT on Windows, so resolve the pnpm shim
-// explicitly when this test probes the user's native package-manager config.
-const pnpmExecutable = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 
 describe('create-weapp-vite smoke helpers', () => {
   it('pins pnpm smoke commands through corepack', () => {
@@ -128,10 +125,7 @@ describe('create-weapp-vite smoke helpers', () => {
         ['cacheDir', path.join(root, 'pnpm-cache')],
       ] as const) {
         const args = ['--dir', project, 'config', 'get', key, '--json']
-        const invocation = process.platform === 'win32'
-          ? resolveWindowsPackageManager('pnpm', args, env)
-          : { command: pnpmExecutable, args }
-        const { stdout } = await promisify(execFile)(invocation.command, invocation.args, {
+        const { stdout } = await execa('pnpm', args, {
           cwd: path.resolve(import.meta.dirname, '..'),
           env: {
             ...env,

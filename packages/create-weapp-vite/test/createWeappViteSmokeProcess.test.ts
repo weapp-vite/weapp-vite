@@ -10,7 +10,6 @@ import { resolveWindowsPackageManager } from '../../../scripts/createWeappViteSm
 describe('standalone smoke Windows launch', () => {
   it.each([
     ['npm', 'node_modules/npm/bin/npm-cli.js', 'SET "NPM_CLI_JS=%~dp0\\node_modules\\npm\\bin\\npm-cli.js"'],
-    ['pnpm', 'node_modules/pnpm/bin/pnpm.cjs', '"%_prog%" "%dp0%\\node_modules\\pnpm\\bin\\pnpm.cjs" %*'],
     ['corepack', 'node_modules/corepack/dist/corepack.js', '"%_prog%" "%dp0%\\node_modules\\corepack\\dist\\corepack.js" %*'],
     ['yarn', 'node_modules/corepack/dist/yarn.js', '"%_prog%" "%dp0%\\node_modules\\corepack\\dist\\yarn.js" %*'],
   ])('runs %s through its Node entry without interpreting path or argument metacharacters', async (manager, relativeEntry, shimSource) => {
