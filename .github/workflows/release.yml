@@ -77,12 +77,12 @@ jobs:
         run: |
           release_args=()
           if [[ -n "${REPO_RELEASE_MODE}" ]]; then
-            release_args+=(--mode "${REPO_RELEASE_MODE}")
+            release_args+=("--mode=${REPO_RELEASE_MODE}")
           fi
           if [[ -n "${REPO_RELEASE_PACKAGE}" ]]; then
-            release_args+=(--package "${REPO_RELEASE_PACKAGE}")
+            release_args+=("--package=${REPO_RELEASE_PACKAGE}")
           fi
           if [[ -n "${REPO_RELEASE_VERSION}" ]]; then
-            release_args+=(--version "${REPO_RELEASE_VERSION}")
+            release_args+=("--version=${REPO_RELEASE_VERSION}")
           fi
           pnpm exec repo release ci "${release_args[@]}"
