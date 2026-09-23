@@ -8,7 +8,7 @@ wevu 依赖小程序自身运行时，在响应式数据变化时点对点更新
 
 ## 自动裁剪运行时
 
-weapp-vite 复用当前构建目标静态选择 Wevu 宿主适配。六类小程序和 Web 的产物不需要携带其他目标的注册实现，也不需要编译器、IDE 或 npm 构建元数据。无需新增配置，继续使用 `wevu` 的具名导入。
+weapp-vite 将当前构建目标替换到 `import.meta.env.PLATFORM`，Wevu 内部直接比较该编译期常量来选择宿主适配。发布包保留平台表达式，供应用消费时替换并删除不成立的分支。六类小程序和 Web 的产物不需要携带其他目标的注册实现，也不需要编译器、IDE 或 npm 构建元数据。无需新增配置，继续使用 `wevu` 的具名导入。七个平台值及裁剪示例见[多平台构建](../../website/guide/multi-platform.md#platform-env)。
 
 编译器根据 Binding Manifest 按需安装 JSX island、模板 ref、作用域插槽、layout 等能力；未使用 router 时，组件生命周期只保留轻量桥接，不引入首航 guard 状态机。公开动态工厂保留兼容安装，未提供平台的独立工具链保留动态宿主探测。显式使用 API/fetch 后仍支持动态切换 adapter，本次不裁剪其跨平台映射。
 

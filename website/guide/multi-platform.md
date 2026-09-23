@@ -163,6 +163,41 @@ export default defineConfig({
 
 `multiPlatform` 不会一次构建所有平台。`wv build -p weapp`、`wv build -p alipay`、`wv build -p web` 都是独立的单目标构建。`multiPlatform.targets` 是小程序平台 allowlist；上面的显式声明与 `multi-platform`、`multi-platform-sfc` 两个模板一致。
 
+## 平台环境变量与条件裁剪 {#platform-env}
+
+weapp-vite 会把当前构建目标注入 `import.meta.env.PLATFORM`，`import.meta.env.MP_PLATFORM` 具有相同值。无需新增 `.env` 配置或裁剪开关：
+
+| 构建目标 | `import.meta.env.PLATFORM` |
+| --- | --- |
+| 微信小程序 | `'weapp'` |
+| 支付宝小程序 | `'alipay'` |
+| 抖音小程序 | `'tt'` |
+| 百度智能小程序 | `'swan'` |
+| 京东小程序 | `'jd'` |
+| 小红书小程序 | `'xhs'` |
+| Web | `'web'` |
+
+在源码中直接比较平台值，可以让构建器静态判断分支：
+
+```ts
+if (import.meta.env.PLATFORM === 'web') {
+  console.info('Web 目标')
+}
+else {
+  console.info('小程序目标')
+}
+```
+
+执行 `wv build -p web` 时，变量替换为字面量 `'web'`，条件 `'web' === 'web'` 恒为真。生产优化后的代码等价于：
+
+```js
+console.info('Web 目标')
+```
+
+选择 `wv build -p weapp` 时则只保留小程序分支。变量表示本次构建的目标，不会随着运行设备改变；平台专属初始化也应放在对应分支内，避免无条件导入具有初始化副作用的模块。
+
+Wevu 内部使用相同的编译期变量选择宿主实现，发布包保留判断表达式供应用构建替换；未注入目标时保留动态探测。router、JSX 等同平台内的可选能力根据实际导入与编译结果裁剪，详见 [Wevu 运行时](/wevu/runtime#按平台与使用能力裁剪)。
+
 ## 支付宝小程序 {#platform-alipay}
 
 ```sh

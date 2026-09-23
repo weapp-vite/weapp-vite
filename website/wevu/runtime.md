@@ -30,7 +30,32 @@ Wevu 运行时的核心职责是：
 
 weapp-vite 构建时，Wevu 使用当前 `--platform` / `weapp.platform` 自动选择宿主适配，支持六类小程序及 Web，无需增加裁剪开关。使用 `wevu` 的具名导入即可让未使用的 Store、router、API/fetch 随 tree shaking 移除。
 
-编译器会按 Binding Manifest 安装 JSX island、模板 ref、插槽和 layout 等能力；没有 router 的页面不加载首航 guard 状态机。公开动态工厂保留兼容能力安装；未提供编译目标的独立工具链保留动态宿主探测。使用 API/fetch 后，动态跨平台 adapter 的映射仍会保留。
+### 平台变量如何裁掉其他分支
+
+Wevu 内部直接比较 `import.meta.env.PLATFORM` 来选择宿主访问函数和注册适配器。该变量由 weapp-vite 根据构建目标自动注入，可取 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs` 或 `web`，对应关系见[多平台构建](/guide/multi-platform#platform-env)。业务代码也可以使用同样的写法，下面用日志演示条件裁剪：
+
+```ts
+if (import.meta.env.PLATFORM === 'alipay') {
+  console.info('支付宝小程序')
+}
+else {
+  console.info('其他平台')
+}
+```
+
+执行 `wv build -p alipay` 时，构建器将 `import.meta.env.PLATFORM` 替换为字符串字面量 `'alipay'`。条件成为恒真的 `'alipay' === 'alipay'`，生产优化后的代码等价于：
+
+```js
+console.info('支付宝小程序')
+```
+
+其他分支会被移除；仅被这些分支引用、且没有模块初始化副作用的依赖也可以被 tree shaking 移除。平台专属逻辑应放在静态条件分支中，避免在判断前无条件执行各端初始化。
+
+Wevu 发布包会保留平台表达式，直到应用消费该包时才替换并裁剪，因此同一份 npm 包可以用于不同目标。使用 weapp-vite 无需手动配置 `define`；在没有注入目标的独立工具链中，Wevu 保留动态宿主探测。最终应用仍可按宿主要求降低语法版本。
+
+### 平台裁剪与能力裁剪
+
+平台变量负责排除其他宿主的实现；同一平台内是否需要 router、JSX 等能力，则由导入和编译结果决定。编译器会按 Binding Manifest 安装 JSX island、模板 ref、插槽和 layout 等能力；没有 router 的页面不加载首航 guard 状态机。公开动态工厂保留兼容能力安装。使用 API/fetch 后，动态跨平台 adapter 的映射仍会保留。
 
 Web 保留 App/Component 和页面栈的宿主桥接，其体积与 Vue DOM runtime 不能直接互换比较。原生 App 渲染尚不在本次支持范围。
 

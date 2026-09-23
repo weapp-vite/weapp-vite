@@ -184,9 +184,9 @@ const onActiveChange = bindModel.model<boolean>('isActive').onChange
 
 ## 开发产物与源码调试
 
-使用 weapp-vite 构建时，Wevu 根据现有 `--platform` / `weapp.platform` 选择六类小程序或 Web 运行时，生产打包会移除其他平台的注册适配及构建、IDE 等元数据，无需额外裁剪配置。继续从 `wevu` 使用具名导入即可；未使用的 Store、router 和 API/fetch 不会因根入口导出而强制进入产物。
+使用 weapp-vite 构建时，现有 `--platform` / `weapp.platform` 会自动注入编译期常量 `import.meta.env.PLATFORM`，取值为 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs` 或 `web`。Wevu 发布包保留平台表达式，消费构建替换后即可移除非目标平台分支及构建、IDE 等元数据，无需额外裁剪配置。
 
-SFC / JSX 编译器根据 Binding Manifest 安装实际需要的能力；普通 SFC 不依赖 JSX island 处理器，没有创建 router 时不加载首航 guard 状态机。公开动态工厂仍保留兼容能力安装，不能把编译器精简入口的测量值当成任意动态工厂的体积承诺。
+能力裁剪取决于实际使用：继续从 `wevu` 使用具名导入，未使用的 Store、router 和 API/fetch 不会因根入口导出而强制进入产物。SFC / JSX 编译器根据 Binding Manifest 安装所需能力；普通 SFC 不依赖 JSX island 处理器，没有创建 router 时不加载首航 guard 状态机。公开动态工厂仍保留兼容能力安装，不能把编译器精简入口的测量值当成任意动态工厂的体积承诺。
 
 直接在其他工具链中使用时，未提供构建目标会保留宿主探测；显式使用 API/fetch 后，其动态跨平台 adapter 仍保留。Web 继续使用自己的宿主桥接，不等同于 Vue DOM runtime，也不表示已支持原生 App 渲染。
 

@@ -4,7 +4,20 @@
 
 ## 自动裁剪
 
-沿用 `--platform` / `weapp.platform` 选择目标，并从 `wevu` 使用具名导入。六类小程序与 Web 会静态选择宿主适配；编译器根据 Binding Manifest 按需安装 JSX island、ref、插槽和 layout 能力，无需新增用户开关。没有 router 的页面不加载首航 guard 状态机。
+平台分支通过编译期常量 `import.meta.env.PLATFORM` 裁剪，取值为 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs` 或 `web`。沿用 `--platform` / `weapp.platform` 选择目标，weapp-vite 会自动注入对应值，无需额外裁剪配置。Wevu 发布包保留平台表达式，由消费构建替换常量并移除非目标分支。
+
+平台专属逻辑可直接判断该常量，例如构建支付宝目标时只保留下面的支付宝分支：
+
+```ts
+if (import.meta.env.PLATFORM === 'alipay') {
+  console.info('支付宝目标')
+}
+else if (import.meta.env.PLATFORM === 'web') {
+  console.info('Web 目标')
+}
+```
+
+能力裁剪取决于实际使用：从 `wevu` 使用具名导入，编译器根据 Binding Manifest 按需安装 JSX island、ref、插槽和 layout 能力；没有创建 router 时不加载首航 guard 状态机。这些能力无需额外用户开关，也不由平台常量决定是否启用。
 
 公开动态工厂保留保守兼容安装；独立工具链未提供平台时保留动态宿主探测。未使用 API/fetch 时可整体移除，使用后保留动态跨平台 adapter。Web 的宿主桥接不等同于 Vue DOM runtime，原生 App 渲染不在本期范围。
 
