@@ -2,7 +2,7 @@
 
 
 exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/class-style/index 1`] = `
-"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"><view class="page"><view class="title"> Class Style </view><view class="summary"> ok: {{__e2e.ok}}</view><view style="{{__wv_style_0}}" class="{{__wv_cls_0}}" id="class-style-target"> class-style-target </view><map class="map-zone" id="class-style-map" markers="{{markers}}" latitude="39.9100" longitude="116.4000" scale="13"><view slot="callout"><cover-view class="{{__wv_cls_1[index]}}" a:for="{{events}}" a:for-item="event" a:for-index="index" a:key="id" marker-id="{{index}}"> callout-{{index}}</cover-view></view></map><block a:if="{{root}}"><view class="{{__wv_cls_2}}" id="guard-root-class"> root-guard-class </view></block><text class="details" selectable="">{{__e2eText}}</text></view></weapp-layout-default>"
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"><view class="page"><view class="title"> Class Style </view><view class="summary"> ok: {{__e2e.ok}}</view><view style="{{__wv_style_0}}" class="{{__wv_cls_0}}" id="class-style-target"> class-style-target </view><map class="map-zone" id="class-style-map" markers="{{markers}}" latitude="39.9100" longitude="116.4000" scale="13"><view slot="callout"><cover-view class="{{__wv_cls_1[index]}}" a:for="{{events}}" a:for-item="event" a:for-index="index" a:key="id" marker-id="{{index}}"> callout-{{index}}</cover-view></view></map><block a:if="{{root}}"><view class="{{__wv_cls_2}}" id="guard-root-class"> root-guard-class </view></block><text class="details" user-select="">{{__e2eText}}</text></view></weapp-layout-default>"
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/class-style/index.style 1`] = `
@@ -42,7 +42,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
   <view id="diff-nested">nested: {{state.nested.value}}</view>
   <view id="diff-list">list: {{state.list}}</view>
   <view class="hidden">skip: {{state.skip.secret}}</view>
-  <text class="details" selectable="">{{__e2eText}}</text>
+  <text class="details" user-select="">{{__e2eText}}</text>
 </view>
 </weapp-layout-default>"
 `;
@@ -73,7 +73,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
   <view id="hmr-count">count: {{count}}</view>
   <view id="hmr-script">script: {{scriptName}}</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
-  <text class="details" selectable="">{{__e2eText}}</text>
+  <text class="details" user-select="">{{__e2eText}}</text>
 </view>
 </weapp-layout-default>"
 `;
@@ -318,7 +318,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
   <x-model id="model" modelValue="{{form.title}}" label="model"/>
   <x-compat id="compat"/>
   <x-scoped id="scoped"/>
-  <text class="details" selectable="">{{__e2eText}}</text>
+  <text class="details" user-select="">{{__e2eText}}</text>
 </view>
 </weapp-layout-default>"
 `;
@@ -354,7 +354,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
   <view class="summary">ok: {{__e2e.ok}}</view>
   <view id="store-setup">setup: {{__e2e.details.setupCount}} {{__e2e.details.setupName}}</view>
   <view id="store-options">options: {{__e2e.details.optionsCount}} {{__e2e.details.optionsLabel}}</view>
-  <text class="details" selectable="">{{__e2eText}}</text>
+  <text class="details" user-select="">{{__e2eText}}</text>
 </view>
 </weapp-layout-default>"
 `;
@@ -384,7 +384,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
   <view class="summary">ok: {{__e2e.ok}}</view>
   <view id="store-setup">setup: {{__e2e.details.setupCount}} {{__e2e.details.setupName}}</view>
   <view id="store-options">options: {{__e2e.details.optionsCount}} {{__e2e.details.optionsLabel}}</view>
-  <text class="details" selectable="">{{__e2eText}}</text>
+  <text class="details" user-select="">{{__e2eText}}</text>
 </view>
 </weapp-layout-default>"
 `;
@@ -409,7 +409,7 @@ exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > w
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/style-matrix/index 1`] = `
-"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"><view class="page"><view class="title"> Style Matrix </view><view class="summary"> ok: {{__e2e.ok}}</view><view style="{{__wv_style_0}}" class="cell" id="style-string"> style-string </view><view style="{{__wv_style_1}}" class="cell" id="style-object"> style-object </view><view style="{{__wv_style_2}}" class="cell" id="style-camel"> style-camel </view><view style="{{__wv_style_3}}" class="cell" id="style-array"> style-array </view><view style="{{__wv_style_4}}" class="cell" id="style-nested"> style-nested </view><view style="{{__wv_style_5}}" class="cell" id="style-nullable"> style-nullable </view><view style="{{__wv_style_6}}" class="cell" id="style-override"> style-override </view><view style="{{__wv_style_7}}" class="cell" id="style-important"> style-important </view><view style="{{__wv_style_8}}" class="cell" id="style-css-var"> style-css-var </view><view style="{{__wv_style_9}}" class="cell" id="style-conditional"> style-conditional </view><text class="details" selectable="">{{__e2eText}}</text></view></weapp-layout-default>"
+"<weapp-layout-default __wvSlotOwnerId="{{__wvSlotOwnerId || __wvOwnerId || ''}}"><view class="page"><view class="title"> Style Matrix </view><view class="summary"> ok: {{__e2e.ok}}</view><view style="{{__wv_style_0}}" class="cell" id="style-string"> style-string </view><view style="{{__wv_style_1}}" class="cell" id="style-object"> style-object </view><view style="{{__wv_style_2}}" class="cell" id="style-camel"> style-camel </view><view style="{{__wv_style_3}}" class="cell" id="style-array"> style-array </view><view style="{{__wv_style_4}}" class="cell" id="style-nested"> style-nested </view><view style="{{__wv_style_5}}" class="cell" id="style-nullable"> style-nullable </view><view style="{{__wv_style_6}}" class="cell" id="style-override"> style-override </view><view style="{{__wv_style_7}}" class="cell" id="style-important"> style-important </view><view style="{{__wv_style_8}}" class="cell" id="style-css-var"> style-css-var </view><view style="{{__wv_style_9}}" class="cell" id="style-conditional"> style-conditional </view><text class="details" user-select="">{{__e2eText}}</text></view></weapp-layout-default>"
 `;
 
 exports[`wevu runtime platform outputs > builds and snapshots alipay outputs > wevu-runtime::alipay::pages/style-matrix/index.style 1`] = `
