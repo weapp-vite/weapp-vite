@@ -1,0 +1,89 @@
+diff --git a/dist/commands-D8kCvxPl.mjs b/dist/commands-D8kCvxPl.mjs
+index 44318bcd232b4fce5651284bc0d4dcddbaa2715b..88044bb0b3cb447c2711a5f6ee157d66f85d1989 100644
+--- a/dist/commands-D8kCvxPl.mjs
++++ b/dist/commands-D8kCvxPl.mjs
+@@ -8,6 +8,7 @@ import { simpleGit } from "simple-git";
+ import { findWorkspaceDir } from "@pnpm/find-workspace-dir";
+ import path from "pathe";
+ import process from "node:process";
++import { stripVTControlCharacters } from "node:util";
+ import { access, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
+ import { execFileSync, spawnSync } from "node:child_process";
+ import fs from "node:fs";
+@@ -3369,29 +3370,57 @@ async function getPublishCandidates(cwd) {
+ 	if (!candidates.length) throw new ReleaseCommandError("no versioned publishable workspace packages were found");
+ 	return candidates;
+ }
+-/**
+-* 发布 workspace 包，并在 provenance 服务出现瞬时错误时按包重试。
+-*
+-* 首次尝试仍交给 pnpm 处理 workspace 发布顺序；只有失败后才查询已上传的
+-* 版本，并为剩余包追加筛选条件，避免重复发布已成功上传的包。
+-*/
++/** 从 pnpm 的成功行恢复失败批次未落盘的清单，只接受本次候选包的精确版本。 */
++function readAcknowledgedPackages(output, candidates) {
++	const acknowledged = new Set([...stripVTControlCharacters(output).matchAll(/^\s*✅ Published package (\S+)\s*$/gm)].map((match) => match[1]));
++	return candidates.filter((candidate) => acknowledged.has(`${candidate.name}@${candidate.version}`));
++}
++function remainingPackages(candidates, published) {
++	return candidates.filter((candidate) => !published.some((pkg) => pkg.name === candidate.name && pkg.version === candidate.version));
++}
++/** 已接收的上传不能重复提交；只读轮询确认 registry 可见后才能完成恢复。 */
++async function confirmPublishedPackages(packages, options) {
++	let pending = packages;
++	for (let attempt = 0; attempt < 6; attempt += 1) {
++		pending = remainingPackages(pending, readPublishedCandidates(pending, options));
++		if (!pending.length) return;
++		if (attempt < 5) await sleep(2e4, options);
++	}
++	throw new ReleaseCommandError(`npm accepted uploads are not yet visible in the registry: ${pending.map((pkg) => `${pkg.name}@${pkg.version}`).join(", ")}; publish summary preserved for recovery`);
++}
++/** 发布器持有跨次尝试的成功状态，registry 暂时不可见不能将成功包退回待发布队列。 */
+ async function publishWithRetry(args, options, candidates) {
+ 	let attemptArgs = args;
+ 	let publishedBeforeRetry = await readPublishSummary(options.cwd);
++	let needsConfirmation = [];
+ 	for (let attempt = 1; attempt <= publishAttempts; attempt += 1) {
++		if (attempt > 1) {
++			publishedBeforeRetry = mergePackages(publishedBeforeRetry, readPublishedCandidates(candidates, options));
++			await preservePublishSummary(options.cwd, publishedBeforeRetry);
++			const remaining = remainingPackages(candidates, publishedBeforeRetry);
++			if (!remaining.length) {
++				await confirmPublishedPackages(needsConfirmation, options);
++				return;
++			}
++			attemptArgs = addPackageFilters(args, remaining);
++		}
+ 		const result = runPublishAttempt(attemptArgs, options);
+ 		const currentSummary = await readPublishSummary(options.cwd);
+-		publishedBeforeRetry = mergePackages(publishedBeforeRetry, currentSummary);
++		const output = commandOutput(result);
++		const acknowledged = readAcknowledgedPackages(output, candidates);
++		publishedBeforeRetry = mergePackages(publishedBeforeRetry, currentSummary, acknowledged);
++		await preservePublishSummary(options.cwd, publishedBeforeRetry);
+ 		if (result.status === 0) {
+-			await preservePublishSummary(options.cwd, publishedBeforeRetry);
++			await confirmPublishedPackages(needsConfirmation, options);
+ 			return;
+ 		}
+-		const output = commandOutput(result);
++		needsConfirmation = mergePackages(needsConfirmation, currentSummary, acknowledged);
+ 		const published = readPublishedCandidates(candidates, options);
+ 		publishedBeforeRetry = mergePackages(publishedBeforeRetry, published);
+-		const unpublished = candidates.filter((candidate) => !published.some((pkg) => pkg.name === candidate.name && pkg.version === candidate.version));
++		await preservePublishSummary(options.cwd, publishedBeforeRetry);
++		const unpublished = remainingPackages(candidates, publishedBeforeRetry);
+ 		if (!unpublished.length) {
+-			await preservePublishSummary(options.cwd, publishedBeforeRetry);
++			await confirmPublishedPackages(needsConfirmation, options);
+ 			logger.warn("npm publish returned an error, but all requested package versions are present in the registry; continuing.");
+ 			return;
+ 		}
+@@ -3400,7 +3429,6 @@ async function publishWithRetry(args, options, candidates) {
+ 		const delay = retryDelays[attempt - 1] ?? retryDelays[retryDelays.length - 1] ?? 0;
+ 		logger.warn(`npm publish transient failure; retrying ${unpublished.length} package(s) in ${delay / 1e3}s (attempt ${attempt + 1}/${publishAttempts}).`);
+ 		await sleep(delay, options);
+-		attemptArgs = addPackageFilters(args, unpublished);
+ 	}
+ }
+ //#endregion
