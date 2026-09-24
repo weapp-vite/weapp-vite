@@ -32,6 +32,7 @@ describe.each(['node', 'browser'] as const)('%s final template transform parity'
     expect(template).not.toContain('data-clean=')
     expect(template).not.toContain('data-use-view')
     expect(template).toContain('data-analytics=')
+    expect(template).not.toContain('removed-child')
     const session = provider === 'browser'
       ? createBrowserHeadlessSession({ files: createBrowserVirtualFiles(files) })
       : createHeadlessSession({ projectPath: project })
@@ -50,6 +51,11 @@ describe.each(['node', 'browser'] as const)('%s final template transform parity'
       expect(await renamed?.attr('data-bool')).toBe('false')
       expect(await renamed?.attr('data-expression')).toBe('dynamic')
       expect(await (await render().$('#retained'))?.attr('data-testid')).toBe('keep')
+      expect(await (await render().$('#retained'))?.attr('data-direct-child')).toBe('true')
+      const nested = await render().$('view#nested-child')
+      expect(await nested?.text()).toBe('nested')
+      expect(await nested?.attr('data-subtree-visited')).toBe('true')
+      expect(await render().$('[data-remove-subtree]')).toBeNull()
       await (await render().$('#tap'))?.tap()
       await expect.poll(async () => (await render().$('#result'))?.text()).toBe('1:track')
     }

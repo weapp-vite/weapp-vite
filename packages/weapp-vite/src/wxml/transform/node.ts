@@ -1,4 +1,4 @@
-import type { WxmlAttribute, WxmlElementInfo, WxmlTransformNode } from '../../types'
+import type { WxmlAttribute, WxmlElementInfo, WxmlTransformNode, WxmlTransformVisitor } from '../../types'
 import type { WxmlSyntax } from '../template/lexical'
 import type { SourceEdit } from '../template/ranges'
 import type { Attribute, Element } from '../template/scan'
@@ -23,7 +23,16 @@ export interface EditorState {
   locate: ReturnType<typeof createLocator>
 }
 
-export function createEditableNode(state: EditorState, node: Element, parent?: WxmlElementInfo) {
+interface NodeNavigation {
+  children: () => readonly WxmlTransformNode[]
+  childInfo: () => readonly WxmlElementInfo[]
+  assertActive: () => void
+  walk: (visitor: WxmlTransformVisitor) => Promise<void>
+  skipChildren: () => void
+  remove: () => void
+}
+
+export function createEditableNode(state: EditorState, node: Element, navigation: NodeNavigation, parent?: WxmlElementInfo) {
   const { code, fileName } = state
   let tagName = node.tag
   const attrs: EditableAttribute[] = node.attrs.map(attr => ({
@@ -40,6 +49,7 @@ export function createEditableNode(state: EditorState, node: Element, parent?: W
     if (!state.active || node.removed) {
       fail('This template node is no longer editable.')
     }
+    navigation.assertActive()
   }
   const assertName = (name: string) => {
     if (typeof name !== 'string' || !/^[A-Z_][\w:.-]*$/i.test(name)) {
@@ -72,16 +82,32 @@ export function createEditableNode(state: EditorState, node: Element, parent?: W
     attr.value = Object.freeze({ name, rawValue, quote: rawValue === null ? undefined : '"' })
   }
   const info: WxmlElementInfo = Object.freeze({
-    get tagName() { return tagName },
-    get attributes() { return Object.freeze(attrs.filter(attr => !attr.removed).map(attr => attr.value)) },
+    get children() {
+      return navigation.childInfo()
+    },
+    get tagName() {
+      return tagName
+    },
+    get attributes() {
+      return Object.freeze(attrs.filter(attr => !attr.removed).map(attr => attr.value))
+    },
     parent,
     location: state.locate(node.start),
     hasAttribute: (name: string) => Boolean(find(name)),
     getAttribute: (name: string) => find(name)?.value,
   })
   const handle: WxmlTransformNode = Object.freeze<WxmlTransformNode>({
-    get tagName() { return info.tagName },
-    get attributes() { return info.attributes },
+    get children() {
+      return navigation.children()
+    },
+    walk: navigation.walk,
+    skipChildren: navigation.skipChildren,
+    get tagName() {
+      return info.tagName
+    },
+    get attributes() {
+      return info.attributes
+    },
     parent,
     location: info.location,
     hasAttribute: info.hasAttribute,
@@ -138,13 +164,16 @@ export function createEditableNode(state: EditorState, node: Element, parent?: W
       if (structuralTags.has(node.tag)) {
         fail(`Cannot remove structural tag <${node.tag}>.`)
       }
-      node.removed = true
+      navigation.remove()
     },
   })
   return {
     info,
     handle,
     edits(): SourceEdit[] {
+      if (node.parent?.removed) {
+        return []
+      }
       if (node.removed) {
         return [{ start: node.start, end: node.end }]
       }

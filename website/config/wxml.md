@@ -108,6 +108,87 @@ export default defineConfig({
 
 编辑工具沿用关键属性、结构标签及条件链保护。明确修改事件、平台指令或已识别的框架元数据会抛错并附带位置。直接返回源码允许完整控制，不提供上述语义保护；后续 `remove` 与宿主编译检查仍会执行。
 
+### 子节点访问与子树编辑
+
+`node.children` 返回按源码顺序排列的直接子标签；`await node.walk(visitor)` 深度优先遍历全部后代，不包含节点自身。下面的完整配置只处理带 `data-card` 的 `view`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      transform: (code, ctx) => ctx.edit(code, async (node) => {
+        if (node.tagName !== 'view' || !node.hasAttribute('data-card'))
+          return
+
+        for (const child of node.children) {
+          if (child.tagName === 'text')
+            child.setAttribute('selectable', true)
+        }
+
+        await node.walk(async (child) => {
+          if (child.hasAttribute('data-private-zone')) {
+            child.skipChildren()
+            return
+          }
+          if (child.tagName === 'button')
+            child.setAttribute('hover-class', 'none')
+          if (child.hasAttribute('data-debug'))
+            child.remove()
+        })
+        node.skipChildren()
+      }),
+    },
+  },
+})
+```
+
+- 直接子 `text` 获得 `selectable="{{true}}"`；更深的 `text` 不会因直接子节点循环而改变。
+- 后代 `button` 获得 `hover-class="none"`，带 `data-debug` 的普通标签及其子树删除。带 `data-private-zone` 的标签保留，其后代在这次手动遍历中跳过。
+- 末尾的 `node.skipChildren()` 跳过外层自动遍历，避免同一子树再次被外层回调处理；因此示例中的 private zone 也不会再被外层自动遍历访问。删除该行时，外层仍会继续访问所有未删除后代。
+
+| 接口 | 行为 |
+| --- | --- |
+| `children` | 当前未删除的直接子标签；只读数组，元素是可编辑句柄 |
+| `walk(visitor)` | 返回 `Promise<void>`；同步或异步回调按源码顺序逐个等待，不包含自身 |
+| `skipChildren()` | 仅跳过当前回调所属遍历的后代；不影响兄弟、其他遍历或输出 |
+| `parent.children` | 只读观察节点，不允许借父节点修改祖先或兄弟 |
+
+每次读取 `children` 得到一个数组快照；旧数组不会自动减少，删除节点及其全部后代的编辑句柄立即失效。子节点提前改名或修改属性后，后续自动回调与父节点观察到的是同一份新状态。源码位置始终对应本次 `edit` 输入，不因编辑重新计算。
+
+手动 `walk` 每调用一次都会遍历一次，不会自动消费外层遍历；多层标记容器可能因此重复处理后代。若某个容器已负责全部后代处理，在它的外层回调中显式 `skipChildren()`。先 `skipChildren()` 再显式 `walk()` 也有效。内层回调中的跳过只属于内层遍历，不会跳过外层后续访问。
+
+`skipChildren()` 只能对当前正在回调的节点调用；对 `children[0]`、其他保存的节点或回调结束后的句柄调用会报带源码位置的错误。嵌套遍历必须正确 `await`／`return`；同一编辑会话不支持 `Promise.all` 并发遍历或编辑，也不要发起未等待的异步任务或跨构建保存节点句柄。
+
+`children` 与 `walk` 只识别本模板里的标签，不包含文本、注释、插值和 WXS/SJS 原始内容，不展开导入模板或自定义组件内部。事件、指令、结构标签、框架元数据与条件链保护在子树操作中同样生效。删除整个父节点会覆盖已记录的子节点编辑，并跳过全部相关后代回调。
+
+`validate` 的 `node.children` 同样可用于结构检查，但元素只有只读观察接口；遍历仍用 `ctx.walk()`，没有节点编辑、`node.walk()` 或 `skipChildren()`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      validate: async (_code, ctx) => {
+        await ctx.walk((node) => {
+          if (node.hasAttribute('data-card')
+            && !node.children.some(child => child.tagName === 'button')) {
+            ctx.report({
+              severity: 'warning',
+              code: 'card-button',
+              message: '卡片缺少直接子 button',
+              location: node.location,
+            })
+          }
+        })
+      },
+    },
+  },
+})
+```
+
 ### 输出顺序与热更新
 
 执行顺序：模板编译 / 平台归一化 / i18n → `transform` → `remove` → 既有 Tailwind 与 compiler-plugin 输出处理 → `validate` → HMR 内容比较 → bundler 输出。后续输出插件仍可修改模板。独立分包转换完成后汇入主包，不重复转换。
@@ -178,7 +259,7 @@ interface WxmlValidationDiagnostic {
 
 - 单函数和函数数组都支持异步；数组按声明顺序等待，所有回调读取同一份模板。返回值必须为 `undefined`，返回字符串、`null`、`false` 等会报错；修改模板请使用 `transform`。
 - `ctx.walk(visitor)` 返回 `Promise<void>`，须 `await` 或 `return`。同步／异步 visitor 按源码顺序深度优先访问节点；同一模板在本轮多个回调间复用一次扫描，只检查 `code` 而不遍历时不解析。
-- 节点使用只读 `WxmlElementInfo`：`tagName`、`attributes`、`parent`、`location`、`hasAttribute`、`getAttribute`；没有 `setAttribute`、`renameTag` 或 `remove`。属性、父节点和位置不可改写。
+- 节点使用只读 `WxmlElementInfo`：`tagName`、`attributes`、`children`、`parent`、`location`、`hasAttribute`、`getAttribute`；没有 `setAttribute`、`renameTag` 或 `remove`。属性、父节点和位置不可改写。
 - 属性 `rawValue` 不解码、不求值，`{{tracking}}` 不代表已知运行时值。静态值规则只比较可确定的字面内容，校验不能判断页面数据变化后的属性值。
 - `ctx.report` 的 `warning` 允许输出，`error` 汇总当前构建内其他回调及模板的正常诊断后阻止输出。同轮同文件、回调、严重程度、代码、消息和位置均相同的诊断去重。
 - 诊断包含输出相对路径、从 1 开始的回调序号、可选规则代码和行列；不传 `location` 时为文件级诊断。位置对应本轮最终模板，不映射回 `.vue` 源文件。

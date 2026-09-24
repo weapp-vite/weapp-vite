@@ -1,3 +1,4 @@
+import type { WxmlTransformNode } from 'weapp-vite/config'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { defineConfig } from 'weapp-vite/config'
@@ -23,6 +24,9 @@ export default defineConfig(({ mode }) => ({
           ctx.report({ severity: 'error', code: 'fixture-reject', message: 'validation fixture rejected' })
         }
         await ctx.walk((node) => {
+          if (node.tagName === 'view' && node.getAttribute('data-subtree-visited')?.rawValue !== '{{true}}') {
+            ctx.report({ severity: 'error', message: 'missing subtree edit', location: node.location })
+          }
           if (node.tagName === 'view' && node.hasAttribute('data-analytics') && !node.hasAttribute('data-rule')) {
             ctx.report({ severity: 'error', message: 'missing transformed attribute', location: node.location })
           }
@@ -32,7 +36,11 @@ export default defineConfig(({ mode }) => ({
         async (code, ctx) => {
           ctx.addWatchFile('transform-rules.json')
           const rules = JSON.parse(await readFile(resolve(ctx.root, 'transform-rules.json'), 'utf8')) as { label: string }
-          return ctx.edit(code, async (node) => {
+          const editNode = async (node: WxmlTransformNode) => {
+            if (node.hasAttribute('data-subtree-visited'))
+              throw new Error('subtree processed twice')
+            if (node.tagName === 'view' || node.tagName === 'text')
+              node.setAttribute('data-subtree-visited', true)
             if (node.tagName === 'view') {
               node.renameAttribute('data-testid', 'data-analytics')
               node.setAttribute('data-rule', rules.label)
@@ -43,6 +51,11 @@ export default defineConfig(({ mode }) => ({
               node.renameTag('view')
               node.setAttribute('data-transformed', true)
             }
+          }
+          return ctx.edit(code, async (node) => {
+            await editNode(node)
+            await node.walk(editNode)
+            node.skipChildren()
           })
         },
         code => `${code}<!-- transform-once -->`,

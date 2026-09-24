@@ -20,6 +20,7 @@ describe('WXML transform final build artifacts', () => {
       await compiler.ctx.buildService.build()
       for (const file of templates) {
         const code = await fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')
+        expect(code, file).toContain('data-subtree-visited="{{true}}"')
         if (mode.includes('validate')) {
           expect(code.match(/<!-- output-plugin -->/g), file).toHaveLength(1)
         }
@@ -38,7 +39,7 @@ describe('WXML transform final build artifacts', () => {
       const native = await fs.readFile(path.join(project.tempDir, 'dist/pages/native/index.wxml'), 'utf8')
       expect(native).toContain('bindtap="tap"')
       expect(native).toContain('wx:if="{{visible}}"')
-      expect(native).toMatch(/<view data-testid="precise-native-text" data-transformed="\{\{true\}\}">precise-native-child<\/view>/)
+      expect(native).toMatch(/<view data-testid="precise-native-text" data-subtree-visited="\{\{true\}\}" data-transformed="\{\{true\}\}">precise-native-child<\/view>/)
       const vue = await fs.readFile(path.join(project.tempDir, 'dist/pages/vue/index.wxml'), 'utf8')
       expect(vue).toContain('data-analytics="precise-vue"')
       expect(vue).toContain('bindtap=')

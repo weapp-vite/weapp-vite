@@ -14,7 +14,11 @@ function tap(event: { currentTarget: { dataset: { analytics: string } } }) {
 <div :data-label="label" id="transform-root" data-testid="remove">
   <text id="retained" data-testid="keep">retained</text>
   <text id="renamed" data-use-view data-clean="remove">renamed</text>
-  <button id="tap" data-track="track" @tap="tap">tap</button>
+  <view id="subtree">
+    <text id="nested-child" data-use-view data-clean="remove">nested</text>
+    <view data-remove-subtree><text>removed-child</text></view>
+    <button id="tap" data-track="track" @tap="tap">tap</button>
+  </view>
   <div id="result">{{count}}:{{track}}</div>
 </div>
 </template>

@@ -58,6 +58,8 @@ describe('final WXML validation', () => {
           expect(Object.isFrozen(node.attributes)).toBe(true)
           expect(Object.isFrozen(node.location)).toBe(true)
           expect(node).not.toHaveProperty('remove')
+          expect(node).not.toHaveProperty('walk')
+          expect(Object.isFrozen(node.children)).toBe(true)
         })
       },
       async (_, options) => {
@@ -75,6 +77,9 @@ describe('final WXML validation', () => {
       expect(first[0]?.getAttribute('a')).toEqual({ name: 'a', rawValue: '&amp;', quote: '"' })
       expect(first[0]?.getAttribute('flag')?.rawValue).toBeNull()
       expect(first[1]?.parent).toBe(first[0])
+      expect(first[0]?.children).toEqual([first[1], first[2]])
+      expect(first[0]?.children[0]).toBe(first[1])
+      expect(first[2]?.children).toEqual([])
       expect(first[1]?.getAttribute('value')?.rawValue).toBe('hello {{name}}')
       expect(() => retained!.report({ severity: 'warning', message: 'late' })).toThrow('completed')
       expect(() => retained!.addWatchFile('late.json')).toThrow('completed')

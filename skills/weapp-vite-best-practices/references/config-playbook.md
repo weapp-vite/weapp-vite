@@ -41,6 +41,7 @@ export default defineConfig({
 - 推荐 `return ctx.edit(code, node => { if (node.tagName === 'view') node.removeAttribute('data-testid') })`；匹配最终静态标签名，Vue HTML 映射发生在此前。
 - 字符串属性值是字面量，数字与布尔值保留类型；动态值写 `{ expression: 'value' }`，无值属性用 `setBooleanAttribute`。读取 `rawValue` 不代表运行时值。
 - 编辑工具保护事件、平台指令、框架元数据和结构标签；原始字符串返回提供完整控制。替换自定义组件时必须自行注册，不自动改组件依赖。
+- 子树编辑使用 `node.children`（直接子标签）和 `await node.walk(visitor)`（全部后代，不含自身）。手动 walk 不消费外层遍历；外层当前节点调用 `skipChildren()` 可避免再次处理。内层 skip 只影响内层遍历。父节点与 `validate` 中的 `node.children` 始终只读；删除父节点使全部后代句柄失效，不并发遍历或跨会话保存句柄。
 - `transform` 在 `remove` 前执行，后续 Tailwind/compiler-plugin 仍能修改输出。显式注册外部依赖 `ctx.addWatchFile('rules.json')`，变化触发完整模板重建；不要依赖跨文件回调顺序或全局计数。
 
 - 最终产物约束使用 `weapp.wxml.validate(code, ctx)`，支持同步／异步和顺序数组；它在 transform/remove 和框架输出插件之后、HMR 比较及发布之前执行，不修改源码。

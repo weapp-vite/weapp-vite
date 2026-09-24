@@ -19,6 +19,8 @@ export interface WxmlAttribute {
 
 /** 父节点只提供观察接口，不允许通过子节点改写父树。 */
 export interface WxmlElementInfo {
+  /** 当前未删除的直接子标签；不包含文本、注释或脚本模块内容。 */
+  readonly children: readonly WxmlElementInfo[]
   readonly tagName: string
   readonly attributes: readonly WxmlAttribute[]
   readonly parent: WxmlElementInfo | undefined
@@ -29,6 +31,11 @@ export interface WxmlElementInfo {
 
 /** 当前节点的编辑句柄仅在本次 edit 调用中有效。 */
 export interface WxmlTransformNode extends WxmlElementInfo {
+  readonly children: readonly WxmlTransformNode[]
+  /** 按源码深度优先顺序遍历后代，不含自身；必须等待完成。 */
+  walk: (visitor: WxmlTransformVisitor) => Promise<void>
+  /** 只跳过当前回调所属遍历的后代，不改变其他遍历。 */
+  skipChildren: () => void
   setAttribute: (name: string, value: WxmlAttributeValue) => void
   setBooleanAttribute: (name: string) => void
   renameAttribute: (from: string, to: string) => void

@@ -18,7 +18,7 @@ describe('WXML validation external dependencies', { concurrent: false }, () => {
     const failures: unknown[] = []
     const read = (file: string) => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8').catch(() => '')
     const waitForLabel = async (label: string) => {
-      await expect.poll(async () => (await Promise.all(outputs.map(read))).every(code => code.includes(`data-rule="${label}"`) && code.includes('<!-- output-plugin -->')), { timeout: 45_000 }).toBe(true)
+      await expect.poll(async () => (await Promise.all(outputs.map(read))).every(code => code.includes(`data-rule="${label}"`) && code.includes('<!-- output-plugin -->') && code.includes('data-subtree-visited="{{true}}"')), { timeout: 45_000 }).toBe(true)
     }
     try {
       watcher = await compiler.ctx.buildService.build({ skipNpm: true }) as WatcherInstance

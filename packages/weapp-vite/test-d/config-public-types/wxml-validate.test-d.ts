@@ -5,6 +5,11 @@ import { defineConfig } from 'weapp-vite/config'
 
 const visitor: WxmlValidationVisitor = async (node) => {
   expectType<WxmlElementInfo>(node)
+  expectType<readonly WxmlElementInfo[]>(node.children)
+  expectError(node.children[0]?.remove())
+  expectError(node.children.push(node))
+  expectError(node.walk(visitor))
+  expectError(node.skipChildren())
   expectType<string | null | undefined>(node.getAttribute('value')?.rawValue)
   expectError(node.remove())
   expectError(node.setAttribute('value', 'changed'))
