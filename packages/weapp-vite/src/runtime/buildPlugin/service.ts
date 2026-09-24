@@ -38,6 +38,7 @@ import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJso
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { getWxmlTransformWatchFiles, isWxmlTransformDependency, observeWxmlTransformDependencies } from '../../wxml/transform/dependencies'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -1214,7 +1215,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     buildIndependentBundle,
     getIndependentOutput,
     invalidateIndependentOutput,
-  } = createIndependentBuilder(configService, buildState)
+  } = createIndependentBuilder(configService, buildState, ctx)
 
   function shouldTouchAppWxss() {
     return resolveTouchAppWxssEnabled({
@@ -1331,7 +1332,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       const nativeBuildEvents = getStatefulBuildEvents()
       nativeBuildEvents.emitEvent({ code: 'START' })
       try {
-        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin)
+        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx)
         const initialSnapshot = toStatefulHmrOutput(snapshot.output)
         const initialGlobalStyleRoutes = snapshot.getGlobalStyleRoutes()
         const initialEntryIds = collectStatefulHmrEntryIds(
@@ -1421,7 +1422,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                   },
                 ]
                 return snapshotOptions
-              })
+              }, ctx)
               const output = toStatefulHmrOutput(snapshot.output)
               return {
                 output,
@@ -1918,13 +1919,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        createSnapshotSidecarWatchPatterns(configService, buildOptions),
+        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...getWxmlTransformWatchFiles(ctx)],
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
           ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
+      const unobserveTransform = observeWxmlTransformDependencies(ctx, files => snapshotWatcher.add(files))
       snapshotWatcher.on('all', (event, id) => {
         if (!id) {
           return
@@ -1932,20 +1934,35 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (isDevOutputFile(id)) {
           return
         }
-        if (!shouldHandleSnapshotSidecarFile(id, ctx)) {
+        if (!isWxmlTransformDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
         const normalizedId = normalizeFsResolvedId(id)
+        const isTransformDependency = isWxmlTransformDependency(ctx, normalizedId)
+        if (event === 'unlink' && isTransformDependency) {
+          // Chokidar 删除单文件监听后不总是监听其父目录；关闭旧句柄后重新登记缺失文件，才能观察恢复。
+          queueMicrotask(() => {
+            if (!devWatcherClosed) {
+              snapshotWatcher.add(normalizedId)
+            }
+          })
+        }
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency) {
+        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isTransformDependency) {
           return
         }
-        if (event.startsWith('add') && !isConfigDependency && ctx.moduleGraphService.hasModule(id)) {
+        if (event.startsWith('add') && !isConfigDependency && !isTransformDependency && ctx.moduleGraphService.hasModule(id)) {
           return
         }
         if (isConfigDependency) {
           requestedConfigRestartBuilds.add(target)
+        }
+        if (isTransformDependency) {
+          for (const root of scanService.independentSubPackageMap.keys()) {
+            invalidateIndependentOutput(root)
+            scanService.markIndependentDirty(root)
+          }
         }
         const sidecarStartedAt = performance.now()
         const normalizedEvent = event.startsWith('unlink')
@@ -1962,6 +1979,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
           try {
+            unobserveTransform()
             await snapshotWatcher.close()
           }
           finally {

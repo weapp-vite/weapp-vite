@@ -21,7 +21,7 @@ export function failAt(code: string, fileName: string, offset: number, message: 
       column++
     }
   }
-  throw new Error(`[weapp.wxml.remove] ${fileName}:${line}:${column}: ${message}`)
+  throw new Error(`[weapp.wxml] ${fileName}:${line}:${column}: ${message}`)
 }
 
 export function isSpace(char: string | undefined) {
@@ -61,6 +61,32 @@ function skipString(code: string, start: number, fileName: string, encoding: 'ra
   return failAt(code, fileName, start, 'Unterminated string in template interpolation.')
 }
 
+function encodedQuoteAt(code: string, start: number) {
+  const match = /^&(?:quot|apos|#0*(?:34|39)|#x0*(?:22|27));/i.exec(code.slice(start, start + 16))
+  if (!match) {
+    return undefined
+  }
+  return { token: match[0], quote: /^(?:&quot;|&#0*34;|&#x0*22;)$/i.test(match[0]) ? '"' : '\'' }
+}
+
+function skipEncodedString(code: string, start: number, fileName: string) {
+  const opening = encodedQuoteAt(code, start)!
+  for (let i = start + opening.token.length; i < code.length;) {
+    const encoded = encodedQuoteAt(code, i)
+    if ((encoded?.quote ?? code[i]) === opening.quote) {
+      return i + (encoded?.token.length ?? 1)
+    }
+    if (code[i] === '\\') {
+      i++
+      i += encodedQuoteAt(code, i)?.token.length ?? 1
+    }
+    else {
+      i += encoded?.token.length ?? 1
+    }
+  }
+  return failAt(code, fileName, start, 'Unterminated encoded string in template interpolation.')
+}
+
 export function skipInterpolation(code: string, start: number, fileName: string, syntax: WxmlSyntax, outerQuote?: string) {
   const legacyAttribute = syntax === 'legacy' && outerQuote !== undefined
   let depth = 0
@@ -68,6 +94,9 @@ export function skipInterpolation(code: string, start: number, fileName: string,
     const char = code[i]
     if (legacyAttribute && char === '\\' && code[i + 1] === outerQuote) {
       i = skipString(code, i + 1, fileName, 'attribute-delimiter') - 1
+    }
+    else if (syntax === 'xml' && outerQuote && char === '&' && encodedQuoteAt(code, i)) {
+      i = skipEncodedString(code, i, fileName) - 1
     }
     else if (char === '"' || char === '\'' || char === '`') {
       i = skipString(code, i, fileName, legacyAttribute ? 'attribute' : 'raw') - 1

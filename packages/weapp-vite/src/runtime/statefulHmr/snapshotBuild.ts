@@ -1,8 +1,10 @@
 import type { InlineConfig } from 'vite'
+import type { CompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
+import { shareWxmlTransformDependencies } from '../../wxml/transform/dependencies'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 
@@ -10,8 +12,12 @@ import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 export async function buildStatefulHmrSnapshot(
   loadOptions: LoadConfigOptions,
   configure: (options: InlineConfig) => InlineConfig = options => options,
+  owner?: Pick<CompilerContext, 'runtimeState'>,
 ) {
   const ctx = createCompilerContextInstance()
+  if (owner) {
+    shareWxmlTransformDependencies(owner, ctx)
+  }
   return await ctx.autoImportService.runWithoutOutputWrites(async () => {
     ctx.currentBuildTarget = 'app'
     await ctx.configService.load(loadOptions)

@@ -15,6 +15,7 @@ import type {
   NpmSubPackageConfig,
   StyleConfigEntry,
 } from './foundation'
+import type { WxmlTransform } from './wxmlTransform'
 import type { Resolver } from '@/auto-import-components/resolvers'
 
 export { type Resolver }
@@ -83,6 +84,8 @@ export type EnhanceWxmlOptions = ScanWxmlOptions & Omit<HandleWxmlOptions, 'remo
   removeComment?: boolean
   /** `true` 删除四种测试属性及普通注释；环境由用户配置控制。 */
   remove?: boolean | WxmlRemoveOptions
+  /** 在最终模板清理前按顺序执行同步或异步转换。 */
+  transform?: WxmlTransform | WxmlTransform[]
 }
 
 /**

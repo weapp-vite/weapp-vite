@@ -7,6 +7,7 @@ import { createCompilerContextInstance } from '../../context/createCompilerConte
 import { logger } from '../../context/shared'
 import { findAutoImportCandidates } from '../../plugins/autoImport'
 import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
+import { shareWxmlTransformDependencies } from '../../wxml/transform/dependencies'
 import { getAutoImportConfig } from '../autoImport/config'
 import { createIndependentBuildError } from '../independentError'
 
@@ -32,6 +33,7 @@ function syncImportMetaEnvDefineOverride(
 export function createIndependentBuilder(
   configService: NonNullable<MutableCompilerContext['configService']>,
   buildState: MutableCompilerContext['runtimeState']['build'],
+  owner?: Pick<MutableCompilerContext, 'runtimeState'>,
 ): IndependentBuilderState {
   const independentState = buildState.independent
   const independentBuildTasks = new Map<string, Promise<RolldownOutput>>()
@@ -58,6 +60,9 @@ export function createIndependentBuilder(
       try {
         const chunkRoot = meta.subPackage.root ?? root
         const isolatedCtx = createCompilerContextInstance()
+        if (owner) {
+          shareWxmlTransformDependencies(owner, isolatedCtx)
+        }
         return await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
           await isolatedCtx.configService.load({
             cwd: configService.cwd,

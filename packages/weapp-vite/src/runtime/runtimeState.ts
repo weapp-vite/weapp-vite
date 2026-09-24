@@ -92,6 +92,11 @@ function createDefaultPackageManager(): DetectResult {
 }
 
 export interface RuntimeState {
+  wxmlTransform: {
+    dependencies: Map<string, Map<string, Set<string>>>
+    pending: Map<symbol, { scope: string, templates: Map<string, Set<string>> }>
+    listeners: Set<(files: string[]) => void>
+  }
   glassEasel: {
     analysisByOwner: Map<string, GlassEaselAnalysisFact>
     warnedDiagnostics: Set<string>
@@ -349,6 +354,7 @@ export function createRuntimeState(): RuntimeState {
   const emptyAutoRoutesSnapshot = createEmptyAutoRoutesSnapshot()
   const emptyAutoRoutesArtifacts = createAutoRoutesArtifacts(emptyAutoRoutesSnapshot)
   return {
+    wxmlTransform: { dependencies: new Map(), pending: new Map(), listeners: new Set() },
     glassEasel: {
       analysisByOwner: new Map<string, GlassEaselAnalysisFact>(),
       warnedDiagnostics: new Set<string>(),

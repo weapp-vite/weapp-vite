@@ -1,29 +1,11 @@
 import type { WxmlRemoveOptions } from '../../types'
-import type { SourceRange, WxmlSyntax } from './lexical'
+import type { SourceRange, WxmlSyntax } from '../template/lexical'
 import type { NameMatcher } from './matcher'
-import { failAt } from './lexical'
+import { failAt } from '../template/lexical'
+import { applySourceEdits } from '../template/ranges'
+import { scanTemplate } from '../template/scan'
 import { compileNames, matches } from './matcher'
 import { assertSafeConditionalRemoval, isInstructionComment, isProtectedAttribute, scriptTags, structuralTags } from './safety'
-import { scanTemplate } from './scan'
-
-function removeRanges(code: string, ranges: SourceRange[], ordered = false) {
-  if (ranges.length === 0) {
-    return code
-  }
-  if (!ordered) {
-    ranges.sort((a, b) => a.start - b.start || b.end - a.end)
-  }
-  const parts: string[] = []
-  let end = 0
-  for (const range of ranges) {
-    if (range.start > end) {
-      parts.push(code.slice(end, range.start))
-    }
-    end = Math.max(end, range.end)
-  }
-  parts.push(code.slice(end))
-  return parts.join('')
-}
 
 /** 编译一次清理规则，在最终产物上仅删除匹配的源码区间。 */
 export function createWxmlRemover(options: WxmlRemoveOptions): (code: string, fileName: string, syntax?: WxmlSyntax) => string {
@@ -66,7 +48,7 @@ export function createWxmlRemover(options: WxmlRemoveOptions): (code: string, fi
         }
       }
       comments.length = count
-      return removeRanges(code, comments, true)
+      return applySourceEdits(code, comments, true)
     }
     const ranges: SourceRange[] = []
     let removedElement = false
@@ -108,6 +90,6 @@ export function createWxmlRemover(options: WxmlRemoveOptions): (code: string, fi
         ranges.push(comment)
       }
     }
-    return removeRanges(code, ranges)
+    return applySourceEdits(code, ranges)
   }
 }

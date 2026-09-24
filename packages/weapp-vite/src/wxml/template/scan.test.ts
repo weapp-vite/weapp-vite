@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getScriptModuleTagNames } from '../../utils/wxmlScriptModule'
-import { createWxmlRemover } from './index'
+import { createWxmlRemover } from '../remove'
 
 const fileName = 'pages/source/index.wxml'
 

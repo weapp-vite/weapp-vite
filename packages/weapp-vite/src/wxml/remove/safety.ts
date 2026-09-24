@@ -1,4 +1,4 @@
-import type { Attribute, Element } from './scan'
+import type { Attribute, Element } from '../template/scan'
 import {
   WEVU_SLOT_NAMES_ATTR,
   WEVU_SLOT_NAMES_PROP,
@@ -7,7 +7,7 @@ import {
 } from '@weapp-core/constants'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
 import { getScriptModuleTagNames } from '../../utils/wxmlScriptModule'
-import { failAt } from './lexical'
+import { failAt } from '../template/lexical'
 
 export const scriptTags = new Set(getScriptModuleTagNames())
 export const structuralTags = new Set(['block', 'slot', 'template', 'import', 'include', ...scriptTags])

@@ -37,10 +37,83 @@ interface WxmlRemoveOptions {
 type WxmlConfig = boolean | {
   excludeComponent?: (tagName: string) => boolean
   remove?: boolean | WxmlRemoveOptions
+  transform?: WxmlTransform | WxmlTransform[]
 }
 ```
 
 `WxmlRemoveAttrRule`、`WxmlRemoveOptions` 可从 `weapp-vite/config` 或 `weapp-vite/types` 导入。`transformEvent`、`scriptModuleExtension`、`scriptModuleTag`、`templateExtension` 仍是未接入用户配置的历史处理字段，不用于控制清理。
+
+## 函数式转换 {#transform}
+
+`weapp.wxml.transform` 接收一个函数或函数数组，支持异步。每个函数收到当前模板源码；数组按声明顺序等待执行。返回 `null` / `undefined` 保持当前源码，返回空字符串清空模板。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      transform: async (code, ctx) => {
+        if (ctx.isDev)
+          return
+        return ctx.edit(code, (node) => {
+          if (node.tagName === 'view')
+            node.removeAttribute('data-testid')
+          if (node.tagName === 'button') {
+            node.renameAttribute('data-track', 'data-analytics')
+            if (!node.hasAttribute('hover-class'))
+              node.setAttribute('hover-class', 'none')
+            node.setAttribute('disabled', { expression: 'submitting' })
+          }
+          if (node.tagName === 'text' && node.hasAttribute('data-use-view')) {
+            node.renameTag('view')
+            node.removeAttribute('data-use-view')
+          }
+        })
+      },
+    },
+  },
+})
+```
+
+匹配编译后的静态标签名，例如 Vue HTML 映射后的 `view`。第一版只转换最终模板：替换成自定义组件时，仍需通过既有 `usingComponents` 等配置注册组件；不会生成组件依赖、JS 或样式。
+
+### 回调上下文
+
+| 字段 / 方法 | 含义 |
+| --- | --- |
+| `fileName` | 相对输出根目录的 POSIX 文件名，包含分包目录 |
+| `root` | 项目根目录 |
+| `platform` / `mode` / `isDev` | 当前平台、模式及开发状态 |
+| `subPackageRoot` | 独立分包构建的根目录；主包构建（含普通分包）为 `undefined` |
+| `edit(code, visitor)` | 返回 `Promise<string>`，支持异步 visitor |
+| `addWatchFile(path)` | 注册外部文件依赖，相对路径从项目根目录解析 |
+| `warn(message)` / `error(message)` | 报告警告 / 中止本轮构建 |
+
+`WxmlTransform`、`WxmlTransformResult`、`WxmlTransformContext`、`WxmlTransformVisitor`、`WxmlTransformNode`、`WxmlElementInfo`、`WxmlAttribute`、`WxmlAttributeValue`、`WxmlSourceLocation` 均可从 `weapp-vite/config` 和 `weapp-vite/types` 导入。回调执行于构建端，可以使用闭包、正则和异步读取；非法返回值或异常会中止输出，并报告文件名、回调序号及原始错误。
+
+### 编辑节点与属性值
+
+`ctx.edit` 每次只扫描一次，按源码顺序深度优先遍历标签。未修改的区间逐字保留；WXS 等脚本模块的原始内容不作为标签遍历。
+
+- `tagName`、`attributes`、`parent`、`location` 为只读观察信息；位置包含从零开始的 `offset` 和从一开始的 `line` / `column`。父节点没有修改接口。
+- `hasAttribute(name)` 和 `getAttribute(name)` 读取当前编辑状态。属性记录包含 `name`、原始 `rawValue` 与 `quote`，不求值动态或混合绑定；无值属性的 `rawValue` 为 `null`。
+- `setAttribute(name, value)` 设置属性：字符串为字面量，数字和布尔值输出保持类型的绑定，`{ expression: 'submitting' }` 输出模板表达式。不要给表达式再包 `{{ }}`。
+- `setBooleanAttribute(name)` 设置无值属性。`setAttribute(name, false)` 保留布尔 `false` 语义，不表示删除。
+- `renameAttribute(from, to)` 保留原值，目标存在时抛错；源不存在时无操作。删除清除全部同名项，设置将重复属性收敛为一个。
+- `renameTag(name)` 同时改开始和结束标签；`remove()` 删除整个子树并跳过子节点回调。
+
+同一节点后续操作可以读取已修改状态。编辑句柄仅在当前 `edit` 会话内有效。不提供节点移动、插入或 unwrap；需要这些操作时可自行返回完整源码。
+
+编辑工具沿用关键属性、结构标签及条件链保护。明确修改事件、平台指令或已识别的框架元数据会抛错并附带位置。直接返回源码允许完整控制，不提供上述语义保护；后续 `remove` 与宿主编译检查仍会执行。
+
+### 输出顺序与热更新
+
+执行顺序：模板编译 / 平台归一化 / i18n → `transform` → `remove` → 既有 Tailwind 与 compiler-plugin 输出处理 → HMR 内容比较 → bundler 输出。后续输出插件仍可修改模板。独立分包转换完成后汇入主包，不重复转换。
+
+外部规则文件必须显式调用 `ctx.addWatchFile('rules.json')`，建议在读取前注册，以便文件缺失导致构建失败后仍能恢复。外部依赖修改、删除、恢复会触发完整模板重建，覆盖主包、普通和独立分包。同一文件跨模板注册会去重；不自动追踪任意文件读取、环境变量或网络请求，也不允许监听构建输出目录。
+
+每轮从当前编译输入重新转换，避免连续 HMR 累加上轮结果。回调应根据输入与显式依赖生成结果；不保证跨文件、跨分包的全局调用顺序，也不保证整个开发会话只调用一次。未配置 `transform` 时不增加编辑扫描；只返回字符串而不调用 `edit` 时，也不会为了回调额外解析模板。
 
 ## 环境与预设 {#remove}
 

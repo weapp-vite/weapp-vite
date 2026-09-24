@@ -3,12 +3,19 @@ import { failAt, findScriptClose, isSpace, skipDelimited, skipInterpolation, ski
 
 export interface Attribute extends SourceRange {
   name: string
+  nameEnd: number
+  quote?: string
   valueStart: number
   valueEnd: number
 }
 
 export interface Element extends SourceRange {
   tag: string
+  nameStart: number
+  nameEnd: number
+  openingEnd: number
+  closingName?: SourceRange
+  selfClosing: boolean
   attrs: Attribute[]
   parent?: Element
   previous?: Element
@@ -31,7 +38,7 @@ function readAttribute(code: string, start: number, fileName: string, syntax: Wx
   const nameEnd = i
   i = skipSpace(code, i)
   if (code[i] !== '=') {
-    attributes?.push({ name: code.slice(start, nameEnd), start, end: nameEnd, valueStart: nameEnd, valueEnd: nameEnd })
+    attributes?.push({ name: code.slice(start, nameEnd), nameEnd, start, end: nameEnd, valueStart: nameEnd, valueEnd: nameEnd })
     return nameEnd
   }
   i = skipSpace(code, i + 1)
@@ -46,7 +53,7 @@ function readAttribute(code: string, start: number, fileName: string, syntax: Wx
     }
     else if (quote ? code[i] === quote : isSpace(code[i]) || code[i] === '>' || code.startsWith('/>', i)) {
       const end = quote ? i + 1 : i
-      attributes?.push({ name: code.slice(start, nameEnd), start, end, valueStart, valueEnd: i })
+      attributes?.push({ name: code.slice(start, nameEnd), nameEnd, quote, start, end, valueStart, valueEnd: i })
       return end
     }
     else {
@@ -130,6 +137,7 @@ export function scanTemplate(
       i++
       if (collectElements) {
         frame.node!.end = i
+        frame.node!.closingName = { start: nameStart, end: nameEnd }
         stack.pop()
       }
       continue
@@ -149,7 +157,7 @@ export function scanTemplate(
     }
     const tag = code.slice(nameStart, i)
     const node: Element | undefined = collectElements
-      ? { tag, start, end: 0, attrs: [], parent: frame.node, previous: frame.previous, removed: false }
+      ? { tag, nameStart, nameEnd: i, openingEnd: 0, selfClosing: false, start, end: 0, attrs: [], parent: frame.node, previous: frame.previous, removed: false }
       : undefined
     let selfClosing = false
     let openingEnd = 0
@@ -170,6 +178,8 @@ export function scanTemplate(
     }
     if (node) {
       node.end = openingEnd
+      node.openingEnd = openingEnd
+      node.selfClosing = selfClosing
       elements.push(node)
       frame.previous = node
       if (!selfClosing) {

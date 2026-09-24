@@ -34,3 +34,11 @@ export default defineConfig({
 - 自动化场景优先非交互 CLI 参数
 - sourcemap 验证要覆盖构建后 npm、平台 API 和 chunk 重写，不能只看 Vite 初始 map
 - React 项目只在这里配置 `weapp.react`；render mode、Compiler 和 bridge 转交 React skill
+
+## 最终模板转换
+
+- 精确删除使用 `weapp.wxml.remove.attr: [{ tag: 'view', name: 'data-testid' }]`；修改、属性改名、标签转换使用 `weapp.wxml.transform(code, ctx)`，支持异步及函数数组。
+- 推荐 `return ctx.edit(code, node => { if (node.tagName === 'view') node.removeAttribute('data-testid') })`；匹配最终静态标签名，Vue HTML 映射发生在此前。
+- 字符串属性值是字面量，数字与布尔值保留类型；动态值写 `{ expression: 'value' }`，无值属性用 `setBooleanAttribute`。读取 `rawValue` 不代表运行时值。
+- 编辑工具保护事件、平台指令、框架元数据和结构标签；原始字符串返回提供完整控制。替换自定义组件时必须自行注册，不自动改组件依赖。
+- `transform` 在 `remove` 前执行，后续 Tailwind/compiler-plugin 仍能修改输出。显式注册外部依赖 `ctx.addWatchFile('rules.json')`，变化触发完整模板重建；不要依赖跨文件回调顺序或全局计数。

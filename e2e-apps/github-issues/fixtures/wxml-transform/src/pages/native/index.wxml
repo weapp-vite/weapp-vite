@@ -1,0 +1,6 @@
+<view id="transform-root" data-testid="remove">
+  <text id="retained" data-testid="keep">retained</text>
+  <text id="renamed" data-use-view data-clean="remove">renamed</text>
+  <button id="tap" data-track="track" bindtap="tap">tap</button>
+  <view id="result">{{count}}:{{track}}</view>
+</view>

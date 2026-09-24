@@ -35,7 +35,7 @@ async function runGenerateBundle(plugins: ReturnType<typeof createOutputPlugins>
 }
 
 describe('weapp-vite output finalizer', () => {
-  it.each([true, false])('applies an explicit preset independently of isDev=%s', (isDev) => {
+  it.each([true, false])('applies an explicit preset independently of isDev=%s', async (isDev) => {
     const bundle = {
       'pages/index.wxml': {
         type: 'asset',
@@ -47,7 +47,7 @@ describe('weapp-vite output finalizer', () => {
     const ctx = {
       configService: { isDev, weappViteConfig: { wxml: { remove: true } } },
     } as unknown as CompilerContext
-    normalizeTemplateAssets(ctx, bundle)
+    await normalizeTemplateAssets(ctx, bundle)
     expect(bundle['pages/index.wxml']).toMatchObject({
       source: expect.stringContaining('aria-label="accessible">kept</view>'),
     })
@@ -67,7 +67,7 @@ describe('weapp-vite output finalizer', () => {
   ]
   it.each(legacyCommentCases.flatMap(({ remove, expected }) =>
     [true, false].flatMap(removeComment => [true, false].map(removeComments => ({ remove, expected, removeComment, removeComments }))),
-  ))('ignores legacy wxml=$removeComment and vue=$removeComments flags with remove=$remove', ({ remove, expected, removeComment, removeComments }) => {
+  ))('ignores legacy wxml=$removeComment and vue=$removeComments flags with remove=$remove', async ({ remove, expected, removeComment, removeComments }) => {
     const bundle = {
       'pages/index.wxml': {
         type: 'asset',
@@ -84,11 +84,11 @@ describe('weapp-vite output finalizer', () => {
         },
       },
     } as unknown as CompilerContext
-    normalizeTemplateAssets(ctx, bundle)
+    await normalizeTemplateAssets(ctx, bundle)
     expect(bundle['pages/index.wxml']).toMatchObject({ source: expected })
   })
 
-  it('cleans buffer-backed templates without normalization markers and preserves custom comments', () => {
+  it('cleans buffer-backed templates without normalization markers and preserves custom comments', async () => {
     const bundle = {
       'components/card.wxml': {
         type: 'asset',
@@ -100,9 +100,9 @@ describe('weapp-vite output finalizer', () => {
     const ctx = {
       configService: { weappViteConfig: { wxml: { remove: { attr: ['data-debug'] } } } },
     } as unknown as CompilerContext
-    normalizeTemplateAssets(ctx, bundle)
+    await normalizeTemplateAssets(ctx, bundle)
     const first = { ...bundle['components/card.wxml'] }
-    normalizeTemplateAssets(ctx, bundle)
+    await normalizeTemplateAssets(ctx, bundle)
     expect(bundle['components/card.wxml']).toEqual(first)
     expect(bundle['components/card.wxml']).toMatchObject({
       source: expect.stringContaining('<!-- note --><view data-qa="keep"'),
@@ -112,7 +112,7 @@ describe('weapp-vite output finalizer', () => {
     })
   })
 
-  it('uses XML attribute boundaries for non-WeChat output', () => {
+  it('uses XML attribute boundaries for non-WeChat output', async () => {
     const bundle = {
       'pages/index.wxml': {
         type: 'asset',
@@ -126,11 +126,11 @@ describe('weapp-vite output finalizer', () => {
         weappViteConfig: { wxml: { remove: true } },
       },
     } as unknown as CompilerContext
-    normalizeTemplateAssets(ctx, bundle)
+    await normalizeTemplateAssets(ctx, bundle)
     expect(bundle['pages/index.wxml']).toMatchObject({ source: String.raw`<view title="slash\" />` })
   })
 
-  it('keeps current WeChat escaping when a component framework is configured', () => {
+  it('keeps current WeChat escaping when a component framework is configured', async () => {
     const bundle = {
       'app.json': {
         type: 'asset',
@@ -146,7 +146,7 @@ describe('weapp-vite output finalizer', () => {
     const ctx = {
       configService: { platform: 'weapp', weappViteConfig: { wxml: { remove: true } } },
     } as unknown as CompilerContext
-    normalizeTemplateAssets(ctx, bundle)
+    await normalizeTemplateAssets(ctx, bundle)
     expect(bundle['pages/index.wxml']).toMatchObject({
       source: String.raw`<view title="{{ value === \"legacy\" }}" />`,
     })
@@ -185,7 +185,7 @@ describe('weapp-vite output finalizer', () => {
     })
   })
 
-  it('still applies conditional compilation when optional cleanup is disabled', () => {
+  it('still applies conditional compilation when optional cleanup is disabled', async () => {
     const bundle = {
       'pages/index.wxml': {
         type: 'asset',
@@ -197,7 +197,7 @@ describe('weapp-vite output finalizer', () => {
     const ctx = {
       configService: { platform: 'weapp', weappViteConfig: { wxml: { remove: false } } },
     } as unknown as CompilerContext
-    normalizeTemplateAssets(ctx, bundle)
+    await normalizeTemplateAssets(ctx, bundle)
     expect(bundle['pages/index.wxml']).toMatchObject({ source: '<!-- keep --><view id="keep"/>' })
   })
 
@@ -475,7 +475,7 @@ describe('weapp-vite output finalizer', () => {
     ])
   })
 
-  it('normalizes template event shorthand left by post-process plugins', () => {
+  it('normalizes template event shorthand left by post-process plugins', async () => {
     const bundle = {
       'pages/index/index.wxml': {
         type: 'asset',
@@ -484,7 +484,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    normalizeTemplateAssets({
+    await normalizeTemplateAssets({
       configService: {
         platform: 'weapp',
         outputExtensions: {
@@ -498,7 +498,7 @@ describe('weapp-vite output finalizer', () => {
     expect((bundle['pages/index/index.wxml'] as any).source).not.toContain('@tap=')
   })
 
-  it('normalizes binary template assets emitted by post-process plugins', () => {
+  it('normalizes binary template assets emitted by post-process plugins', async () => {
     const bundle = {
       'pages/index/index.wxml': {
         type: 'asset',
@@ -507,7 +507,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    normalizeTemplateAssets({
+    await normalizeTemplateAssets({
       configService: {
         platform: 'weapp',
         outputExtensions: {
@@ -520,7 +520,7 @@ describe('weapp-vite output finalizer', () => {
     expect((bundle['pages/index/index.wxml'] as any).source).toContain('bind:tap="handleTap"')
   })
 
-  it('preserves the Alipay import-sjs tag during final template normalization', () => {
+  it('preserves the Alipay import-sjs tag during final template normalization', async () => {
     const bundle = {
       'pages/index/index.axml': {
         type: 'asset',
@@ -529,7 +529,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    normalizeTemplateAssets({
+    await normalizeTemplateAssets({
       configService: {
         platform: 'alipay',
         outputExtensions: {
@@ -556,7 +556,7 @@ describe('weapp-vite output finalizer', () => {
     expect(mayNeedTemplateNormalization('<view wx-if="{{ready}}" />', 'weapp')).toBe(true)
   })
 
-  it('normalizes legacy glass-easel directives in final template assets', () => {
+  it('normalizes legacy glass-easel directives in final template assets', async () => {
     const bundle = {
       'pages/index/index.wxml': {
         type: 'asset',
@@ -565,7 +565,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    normalizeTemplateAssets({
+    await normalizeTemplateAssets({
       configService: {
         platform: 'weapp',
         outputExtensions: { wxml: 'wxml', wxs: 'wxs' },

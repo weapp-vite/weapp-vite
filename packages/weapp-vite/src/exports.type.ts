@@ -49,3 +49,5 @@ export type {
   WxmlRemoveAttrRule,
   WxmlRemoveOptions,
 }
+
+export type { WxmlAttribute, WxmlAttributeValue, WxmlElementInfo, WxmlSourceLocation, WxmlTransform, WxmlTransformContext, WxmlTransformNode, WxmlTransformResult, WxmlTransformVisitor } from './types/config/wxmlTransform'

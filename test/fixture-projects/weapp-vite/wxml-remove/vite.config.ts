@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig(({ mode }) => ({
@@ -5,6 +7,25 @@ export default defineConfig(({ mode }) => ({
     srcRoot: 'src',
     autoImportComponents: false,
     wxml: {
+      transform: mode.startsWith('transform') ? [
+        async (code, ctx) => {
+          ctx.addWatchFile('transform-rules.json')
+          const rules = JSON.parse(await readFile(resolve(ctx.root, 'transform-rules.json'), 'utf8')) as { label: string }
+          return ctx.edit(code, async (node) => {
+            if (node.tagName === 'view') {
+              node.renameAttribute('data-testid', 'data-analytics')
+              node.setAttribute('data-rule', rules.label)
+              node.setAttribute('data-scope', ctx.subPackageRoot ?? 'main')
+              node.setAttribute('data-output', ctx.fileName)
+            }
+            if (node.tagName === 'text' && node.hasAttribute('data-testid')) {
+              node.renameTag('view')
+              node.setAttribute('data-transformed', true)
+            }
+          })
+        },
+        code => `${code}<!-- transform-once -->`,
+      ] : undefined,
       remove: mode === 'precise' ? { attr: [{ tag: 'view', name: 'data-testid' }] }
         : mode === 'legacy' ? undefined
           : mode === 'custom' ? { attr: [{ tag: ['view', 'text'], name: ['data-debug-*'] }], tag: ['debug-panel', 'dev-only-*'] }

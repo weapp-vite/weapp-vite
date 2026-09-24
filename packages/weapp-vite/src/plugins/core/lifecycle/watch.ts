@@ -15,6 +15,7 @@ import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../..
 import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { getWxmlTransformWatchFiles, isWxmlTransformDependency } from '../../../wxml/transform/dependencies'
 import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { isReactStaticTemplateSource } from '../../react'
@@ -241,7 +242,7 @@ export function createBuildStartHook(state: CorePluginState) {
             `shared-chunk-source:${sharedChunkAffectedEntryCount}`,
           ]
         }
-        addNormalizedWatchFiles(this, configService.configFileDependencies)
+        addNormalizedWatchFiles(this, [...configService.configFileDependencies, ...getWxmlTransformWatchFiles(ctx)])
         if (isPluginBuild) {
           if (configService.absolutePluginRoot) {
             ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
@@ -677,13 +678,22 @@ async function processChangedFile(
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
   const isConfigDependency = isConfigFileDependencyChange(state, normalizedId)
+  const isTransformDependency = isWxmlTransformDependency(ctx, normalizedId)
 
-  if (isConfigDependency) {
+  if (isConfigDependency || isTransformDependency) {
     ;(loadEntry as any)?.invalidateResolveCache?.()
     scanService.markDirty()
-    buildService.requestConfigRestart?.(state.buildTarget)
+    if (isConfigDependency) {
+      buildService.requestConfigRestart?.(state.buildTarget)
+    }
+    if (isTransformDependency) {
+      for (const root of scanService.independentSubPackageMap.keys()) {
+        buildService.invalidateIndependentOutput(root)
+        scanService.markIndependentDirty(root)
+      }
+    }
     for (const entryId of resolvedEntryMap.keys()) {
-      markEntryDirtyWithCause(entryId, 'direct', 'config-restart')
+      markEntryDirtyWithCause(entryId, 'direct', isTransformDependency ? 'wxml-transform-dependency' : 'config-restart')
     }
   }
 
