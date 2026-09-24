@@ -4,6 +4,7 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { createSidecarModuleId } from '../moduleGraph/protocol'
+import { createRuntimeState } from '../runtime/runtimeState'
 import { createManagedCompilerEntryMarker, registerManagedCompilerEntries } from './compilerPluginRegistry'
 import { recordPendingOwnerStyleSource } from './css'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
@@ -81,28 +82,77 @@ describe('weapp-vite output finalizer', () => {
     })
   })
 
-  it.each(['alipay', 'glass-easel'])('uses XML attribute boundaries for %s output', (framework) => {
+  it('uses XML attribute boundaries for non-WeChat output', () => {
     const bundle = {
-      'app.json': {
-        type: 'asset',
-        fileName: 'app.json',
-        source: JSON.stringify({ componentFramework: framework === 'glass-easel' ? 'glass-easel' : undefined }),
-      },
       'pages/index.wxml': {
         type: 'asset',
         fileName: 'pages/index.wxml',
         source: String.raw`<view title="slash\" data-testid="drop"/><!-- ordinary -->`,
       },
     } as unknown as OutputBundle
-    // 只提供最终模板处理消费的配置；编译器激活不依赖运行时检测。
     const ctx = {
       configService: {
-        platform: framework === 'alipay' ? 'alipay' : 'weapp',
+        platform: 'alipay',
         weappViteConfig: { wxml: { remove: true } },
       },
     } as unknown as CompilerContext
     normalizeTemplateAssets(ctx, bundle)
     expect(bundle['pages/index.wxml']).toMatchObject({ source: String.raw`<view title="slash\" />` })
+  })
+
+  it('keeps current WeChat escaping when a component framework is configured', () => {
+    const bundle = {
+      'app.json': {
+        type: 'asset',
+        fileName: 'app.json',
+        source: '{"componentFramework":"glass-easel"}',
+      },
+      'pages/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index.wxml',
+        source: String.raw`<view title="{{ value === \"legacy\" }}" data-testid="drop"/><!-- ordinary -->`,
+      },
+    } as unknown as OutputBundle
+    const ctx = {
+      configService: { platform: 'weapp', weappViteConfig: { wxml: { remove: true } } },
+    } as unknown as CompilerContext
+    normalizeTemplateAssets(ctx, bundle)
+    expect(bundle['pages/index.wxml']).toMatchObject({
+      source: String.raw`<view title="{{ value === \"legacy\" }}" />`,
+    })
+  })
+
+  it('cleans the current UTF-8 template when full output transitions to partial HMR', async () => {
+    const runtimeState = createRuntimeState()
+    const ctx = {
+      configService: { platform: 'weapp', isDev: true, weappViteConfig: { wxml: { remove: true } } },
+      runtimeState,
+    } as unknown as CompilerContext
+    const plugins = [createOutputFinalizerPlugin(ctx)]
+    const first = {
+      'pages/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index.wxml',
+        source: Buffer.from(String.raw`<view title="{{ value === \"初始\" }}" data-testid="drop"/><!-- ordinary -->`),
+      },
+    } as unknown as OutputBundle
+    await runGenerateBundle(plugins, first)
+    expect(first['pages/index.wxml']).toMatchObject({
+      source: String.raw`<view title="{{ value === \"初始\" }}" />`,
+    })
+
+    runtimeState.build.hmr.profile.event = 'change'
+    const updated = {
+      'pages/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index.wxml',
+        source: new Uint8Array(Buffer.from(String.raw`<view title="{{ value === \"更新\" }}" data-testid="drop"/><!-- ordinary -->`)),
+      },
+    } as unknown as OutputBundle
+    await runGenerateBundle(plugins, updated)
+    expect(updated['pages/index.wxml']).toMatchObject({
+      source: String.raw`<view title="{{ value === \"更新\" }}" />`,
+    })
   })
 
   it('still applies conditional compilation when optional cleanup is disabled', () => {
