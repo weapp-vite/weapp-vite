@@ -90,47 +90,53 @@ export async function normalizeTemplateAssetEntries(
   const removeOptions = resolveWxmlRemoveOptions(wxml)
   const remove = createWxmlRemover(removeOptions)
   const previous = ctx.runtimeState?.wxmlProcessing
-  const dependencies = useTransform || previous?.dependencies.size || previous?.pending.size
+  const dependencies = useTransform || previous?.dependencies.size || previous?.pending.size || previous?.failed.size
     ? beginWxmlDependencies(ctx, subPackageMeta ? `independent:${subPackageMeta.subPackage.root}` : 'main', hooks?.partial ?? false)
     : undefined
   const syntax: WxmlSyntax = (configService?.platform ?? 'weapp') === 'weapp' ? 'legacy' : 'xml'
-  for (const { bundleFileName, output } of entries) {
-    const fileName = output.fileName || bundleFileName
-    const source = output.source
-    const code = typeof source === 'string'
-      ? source
-      : source instanceof Uint8Array
-        ? Buffer.from(source).toString('utf8')
-        : undefined
-    if (code === undefined) {
-      continue
-    }
-    let normalized = code
-    if (mayNeedTemplateNormalization(code, configService?.platform)) {
-      const token = scanWxml(code, { platform: configService?.platform })
-      normalized = handleWxml(token, {
-        removeComment: false,
-        scriptModuleExtension: configService?.outputExtensions?.wxs,
-        scriptModuleTag: resolveScriptModuleTagName({
-          platform: configService?.platform,
+  try {
+    for (const { bundleFileName, output } of entries) {
+      const fileName = output.fileName || bundleFileName
+      const source = output.source
+      const code = typeof source === 'string'
+        ? source
+        : source instanceof Uint8Array
+          ? Buffer.from(source).toString('utf8')
+          : undefined
+      if (code === undefined) {
+        continue
+      }
+      let normalized = code
+      if (mayNeedTemplateNormalization(code, configService?.platform)) {
+        const token = scanWxml(code, { platform: configService?.platform })
+        normalized = handleWxml(token, {
+          removeComment: false,
           scriptModuleExtension: configService?.outputExtensions?.wxs,
-        }),
-        templateExtension: configService?.outputExtensions?.wxml,
-      }).code
-    }
-    const localized = transformI18nOutputTemplate(ctx, fileName, normalized, subPackageMeta)
-    let custom = localized
-    if (useTransform) {
-      const register = dependencies!.template(fileName)
-      custom = await transformWxml(ctx, localized, fileName, syntax, (file) => {
-        const resolved = register(file)
-        hooks?.addWatchFile(resolved)
-      }, message => hooks?.warn(message), subPackageMeta?.subPackage.root)
-    }
-    const transformed = remove(custom, fileName, syntax)
-    if (transformed !== code) {
-      output.source = transformed
+          scriptModuleTag: resolveScriptModuleTagName({
+            platform: configService?.platform,
+            scriptModuleExtension: configService?.outputExtensions?.wxs,
+          }),
+          templateExtension: configService?.outputExtensions?.wxml,
+        }).code
+      }
+      const localized = transformI18nOutputTemplate(ctx, fileName, normalized, subPackageMeta)
+      let custom = localized
+      if (useTransform) {
+        const register = dependencies!.template(fileName)
+        custom = await transformWxml(ctx, localized, fileName, syntax, (file) => {
+          const resolved = register(file)
+          hooks?.addWatchFile(resolved)
+        }, message => hooks?.warn(message), subPackageMeta?.subPackage.root)
+      }
+      const transformed = remove(custom, fileName, syntax)
+      if (transformed !== code) {
+        output.source = transformed
+      }
     }
   }
-  return dependencies ? () => dependencies.commit() : undefined
+  catch (error) {
+    dependencies?.fail()
+    throw error
+  }
+  return dependencies?.publish
 }

@@ -19,10 +19,15 @@ export function parseWxsTemplateDocument(templateSource: string) {
     lowerCaseTags: false,
     recognizeSelfClosing: true,
   })
+  if (!scripts.length && !masked.attributes.size) {
+    return document
+  }
   const restore = (node: TemplateNodeLike) => {
-    for (const [name, token] of Object.entries(node.attribs ?? {})) {
-      if (masked.attributes.has(token)) {
-        node.attribs![name] = masked.attributes.get(token)!
+    if (masked.attributes.size && node.attribs) {
+      for (const [name, token] of Object.entries(node.attribs)) {
+        if (masked.attributes.has(token)) {
+          node.attribs[name] = masked.attributes.get(token)!
+        }
       }
     }
     if (node.name === 'wxs' && Object.hasOwn(node.attribs ?? {}, 'data-sim-wxs')) {

@@ -2,6 +2,33 @@ import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { HeadlessTestingNodeHandle } from '../src/view/nodeHandle'
 
+it.each([false, true])('renders ordinary attributes without placeholder restoration (WXS: %s)', (withWxs) => {
+  const files = createBrowserVirtualFiles([
+    ['app.json', '{"pages":["pages/index/index"]}'],
+    ['app.js', 'App({})'],
+    ['pages/index/index.js', 'Page({data:{value:"initial"}})'],
+    ['pages/index/index.wxml', `${withWxs ? '<wxs module="x">module.exports={title:"from-wxs"}</wxs>' : ''}<view id="ordinary" title="中文" data-value="{{value}}"><text>${withWxs ? '{{x.title}}' : 'plain'}</text>{{value}}</view>`],
+  ])
+  const session = createBrowserHeadlessSession({ files })
+  const preview = document.createElement('div')
+  document.body.append(preview)
+  try {
+    const page = session.reLaunch('/pages/index/index')
+    for (const value of ['initial', 'updated']) {
+      page.setData({ value })
+      preview.innerHTML = session.renderCurrentPage().wxml
+      const view = preview.querySelector('#ordinary')
+      expect(view?.getAttribute('title')).toBe('中文')
+      expect(view?.getAttribute('data-value')).toBe(value)
+      expect(view?.textContent).toBe(`${withWxs ? 'from-wxs' : 'plain'}${value}`)
+    }
+  }
+  finally {
+    session.close()
+    preview.remove()
+  }
+})
+
 it('renders WXML literal delimiters and escaped attributes without breaking event datasets', async () => {
   const literal = '中文 & "单\'双" \\ {{literal}}'
   const files = createBrowserVirtualFiles(new Map([

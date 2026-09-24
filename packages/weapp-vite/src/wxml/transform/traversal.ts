@@ -19,6 +19,7 @@ export function createTraversal(
   isActive: () => boolean,
 ) {
   const frames = new AsyncLocalStorage<VisitFrame>()
+  let hasRemovals = false
   const assertActive = (element: Element) => {
     const frame = frames.getStore()
     if (!isActive() || element.removed || !frame?.active) {
@@ -54,6 +55,7 @@ export function createTraversal(
   }
   return {
     assertActive,
+    hasRemovals: () => hasRemovals,
     close: () => frames.disable(),
     visit: (visitor: WxmlTransformVisitor) => visit(0, elements.length, visitor),
     walk(element: Element, visitor: WxmlTransformVisitor): Promise<void> {
@@ -78,6 +80,7 @@ export function createTraversal(
       frame.skipped = true
     },
     remove(element: Element) {
+      hasRemovals = true
       for (let index = tree.start(element); index < tree.end(element); index++) {
         elements[index]!.removed = true
       }

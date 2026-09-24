@@ -9,10 +9,12 @@ import { createLocator } from '../transform/encoding'
 export function createValidationNodes(code: string, fileName: string, syntax: WxmlSyntax): readonly WxmlElementInfo[] {
   const { elements } = scanTemplate(code, fileName, scriptTags, false, syntax)
   const tree = indexElementTree(elements)
-  const locate = createLocator(code)
+  let locate: ReturnType<typeof createLocator> | undefined
   const nodes = new Map<typeof elements[number], WxmlElementInfo>()
   for (const element of elements) {
-    const attributes = Object.freeze(element.attrs.map(attr => Object.freeze({
+    let attributes: WxmlElementInfo['attributes'] | undefined
+    let location: WxmlElementInfo['location'] | undefined
+    const readAttributes = () => attributes ??= Object.freeze(element.attrs.map(attr => Object.freeze({
       name: attr.name,
       rawValue: attr.end === attr.nameEnd ? null : code.slice(attr.valueStart, attr.valueEnd),
       quote: attr.quote,
@@ -22,11 +24,15 @@ export function createValidationNodes(code: string, fileName: string, syntax: Wx
         return Object.freeze(tree.children(element).map(child => nodes.get(child)!))
       },
       tagName: element.tag,
-      attributes,
+      get attributes() {
+        return readAttributes()
+      },
       parent: element.parent ? nodes.get(element.parent) : undefined,
-      location: locate(element.start),
-      hasAttribute: (name: string) => attributes.some(attr => attr.name === name),
-      getAttribute: (name: string) => attributes.find(attr => attr.name === name),
+      get location() {
+        return location ??= (locate ??= createLocator(code))(element.start)
+      },
+      hasAttribute: (name: string) => readAttributes().some(attr => attr.name === name),
+      getAttribute: (name: string) => readAttributes().find(attr => attr.name === name),
     }))
   }
   return Object.freeze([...nodes.values()])

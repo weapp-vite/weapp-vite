@@ -14,11 +14,15 @@ function decodeAttribute(raw: string, quote: string) {
 
 /** 先保存 WXML 属性词法值，再交给 HTML parser 构建标签树，避免反斜杠引号提前截断属性。 */
 export function maskTemplateAttributes(source: string) {
+  const attributes = new Map<string, string>()
+  // 普通属性可由 tokenizer 原样解析；仅转义值需要占位和后续恢复。
+  if (!source.includes('\\')) {
+    return { source, attributes }
+  }
   let prefix = '__mpcore_quoted_attribute_'
   while (source.includes(prefix)) {
     prefix += '_'
   }
-  const attributes = new Map<string, string>()
   let output = ''
   let offset = 0
   for (let i = 0; i < source.length; i++) {
@@ -44,8 +48,12 @@ export function maskTemplateAttributes(source: string) {
       if (i >= source.length) {
         break
       }
+      const raw = source.slice(start, i)
+      if (!raw.includes('\\')) {
+        continue
+      }
       const token = `${prefix}${attributes.size}`
-      attributes.set(token, decodeAttribute(source.slice(start, i), quote))
+      attributes.set(token, decodeAttribute(raw, quote))
       output += source.slice(offset, start) + token
       offset = i
     }

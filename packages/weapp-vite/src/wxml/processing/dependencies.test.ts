@@ -26,6 +26,7 @@ describe('WXML transform dependency ownership', () => {
     validation.commit()
     const failed = beginWxmlDependencies(ctx, 'main', false, 'validate')
     failed.template('a.wxml')('missing.json')
+    failed.fail()
     expect(getWxmlWatchFiles(ctx)).toHaveLength(4)
     const partial = beginWxmlDependencies(ctx, 'main', true, 'validate')
     partial.template('a.wxml')('recovered.json')
@@ -93,6 +94,7 @@ describe('WXML transform dependency ownership', () => {
     const ctx = context()
     const failed = beginWxmlDependencies(ctx, 'main', false)
     failed.template('a.wxml')('missing.json')
+    failed.fail()
     expect(getWxmlWatchFiles(ctx)).toEqual([normalizeFsResolvedId(path.join(ctx.configService.cwd, 'missing.json'))])
     const recovered = beginWxmlDependencies(ctx, 'main', false)
     recovered.template('a.wxml')('restored.json')
@@ -106,5 +108,103 @@ describe('WXML transform dependency ownership', () => {
     expect(() => register('')).toThrow('nonempty')
     expect(() => register('dist/page.wxml')).toThrow('generated output')
     expect(() => register('dist')).toThrow('generated output')
+  })
+  it('registers incrementally without enumerating unrelated templates or pending transactions', () => {
+    const ctx = context()
+    const state = ctx.runtimeState.wxmlProcessing
+    const listener = vi.fn()
+    observeWxmlDependencies(ctx, listener)
+    const committed = vi.spyOn(state.dependencies, 'values')
+    const pending = vi.spyOn(state.pending, 'values')
+    const refs = vi.spyOn(state.references, 'keys')
+    const build = beginWxmlDependencies(ctx, 'main', false)
+    for (let index = 0; index < 2000; index++) {
+      const register = build.template(`pages/${index}.wxml`)
+      register('shared.json')
+      register('shared.json')
+      register(`rules/${index}.json`)
+      expect(isWxmlDependency(ctx, path.join(ctx.configService.cwd, 'shared.json'))).toBe(true)
+    }
+    expect(committed).not.toHaveBeenCalled()
+    expect(pending).not.toHaveBeenCalled()
+    expect(refs).not.toHaveBeenCalled()
+    expect(listener).toHaveBeenCalledTimes(2002)
+    expect(listener.mock.calls.slice(1).every(([files]) => files.length === 1)).toBe(true)
+    build.commit()
+    expect(state.references.get(normalizeFsResolvedId(path.join(ctx.configService.cwd, 'shared.json')))).toBe(2000)
+    beginWxmlDependencies(ctx, 'main', false).commit()
+    expect(state.references.size).toBe(0)
+  })
+
+  it('deduplicates repeated failed rounds and preserves untouched recovery dependencies', () => {
+    const ctx = context()
+    const state = ctx.runtimeState.wxmlProcessing
+    for (let round = 0; round < 100; round++) {
+      const build = beginWxmlDependencies(ctx, 'main', false)
+      build.template('a.wxml')('shared.json')
+      build.template('b.wxml')('shared.json')
+      build.fail()
+      build.fail()
+      expect(state.pending.size).toBe(0)
+      expect(state.failed.get('transform:main')?.size).toBe(2)
+      expect([...state.references.values()]).toEqual([2])
+    }
+    const partial = beginWxmlDependencies(ctx, 'main', true)
+    partial.template('a.wxml')
+    partial.commit()
+    expect(state.failed.get('transform:main')?.size).toBe(1)
+    expect([...state.references.values()]).toEqual([1])
+    beginWxmlDependencies(ctx, 'main', false).commit()
+    expect(state.failed.size).toBe(0)
+    expect(state.references.size).toBe(0)
+  })
+
+  it('does not resurrect a closed session from pending callbacks', () => {
+    const ctx = context()
+    const pending = beginWxmlDependencies(ctx, 'main', false)
+    const register = pending.template('a.wxml')
+    register('rules.json')
+    clearWxmlDependencies(ctx)
+    expect(() => register('late.json')).toThrow('completed')
+    pending.commit()
+    pending.fail()
+    expect(getWxmlWatchFiles(ctx)).toEqual([])
+    expect(ctx.runtimeState.wxmlProcessing.dependencies.size).toBe(0)
+    expect(ctx.runtimeState.wxmlProcessing.failed.size).toBe(0)
+  })
+
+  it('returns to an empty registry when callbacks do not declare dependencies', () => {
+    const ctx = context()
+    for (const finish of ['commit', 'fail'] as const) {
+      const build = beginWxmlDependencies(ctx, 'main', false)
+      for (let index = 0; index < 100; index++) {
+        build.template(`${index}.wxml`)
+      }
+      build[finish]()
+      expect(ctx.runtimeState.wxmlProcessing.dependencies.size).toBe(0)
+      expect(ctx.runtimeState.wxmlProcessing.pending.size).toBe(0)
+      expect(ctx.runtimeState.wxmlProcessing.failed.size).toBe(0)
+    }
+  })
+
+  it('releases removed independent scopes without dropping active in-flight ownership', () => {
+    const ctx = context()
+    ctx.scanService = { independentSubPackageMap: new Map([['active', {}]]) } as CompilerContext['scanService']
+    for (const stage of ['transform', 'validate'] as const) {
+      const stale = beginWxmlDependencies(ctx, 'independent:removed', false, stage)
+      stale.template('page.wxml')('stale.json')
+      stale.commit()
+      const failed = beginWxmlDependencies(ctx, 'independent:removed', false, stage)
+      failed.template('page.wxml')('missing.json')
+      failed.fail()
+    }
+    const active = beginWxmlDependencies(ctx, 'independent:active', false)
+    active.template('page.wxml')('active.json')
+    beginWxmlDependencies(ctx, 'main', false).commit()
+    expect(getWxmlWatchFiles(ctx).map(file => path.basename(file))).toEqual(['active.json'])
+    expect(ctx.runtimeState.wxmlProcessing.pending.size).toBe(1)
+    expect(ctx.runtimeState.wxmlProcessing.failed.size).toBe(0)
+    active.commit()
+    expect(ctx.runtimeState.wxmlProcessing.pending.size).toBe(0)
   })
 })

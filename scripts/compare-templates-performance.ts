@@ -10,6 +10,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand, createBenchmarkTemplateDependenciesCommand } from './benchmark-checkout-preparation'
 import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
+import { verifyBenchmarkAppOutputs } from './benchmarkTemplatesPerformance/appOutputs'
 import { createPeakRssSampler } from './benchmarkTemplatesPerformance/peakRssSampler'
 import { runRssSamplingCommand } from './benchmarkTemplatesPerformance/rssCommand'
 import { renderHmrTimingSources } from './benchmarkTemplatesPerformance/timing'
@@ -144,6 +145,16 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
       const output = `${result.stdout}\n${result.stderr}`
       const sanitizedOutput = sanitizeCheckoutOutput(cwd, output)
       process.stdout.write(sanitizedOutput)
+      let artifactError: string | undefined
+      let artifacts: Awaited<ReturnType<typeof verifyBenchmarkAppOutputs>> | undefined
+      if (result.exitCode === 0 && process.env.TEMPLATES_PERF_ASSERT_APP_OUTPUTS === '1') {
+        try {
+          artifacts = await verifyBenchmarkAppOutputs(template.root)
+        }
+        catch (error) {
+          artifactError = sanitizeCheckoutOutput(cwd, error instanceof Error ? error.message : String(error))
+        }
+      }
       const sample = {
         iteration: index + 1,
         template: template.id,
@@ -152,11 +163,12 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         cliBuildMs: parseCliBuildMs(output),
         rssPeakBytes: memory.rssPeakBytes,
         rssSampling: memory.rssSampling,
-        status: result.exitCode ?? 1,
-        error: result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput),
+        artifacts,
+        status: artifactError ? 1 : result.exitCode ?? 1,
+        error: artifactError ?? (result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput)),
       }
       samples.push(sample)
-      if (result.exitCode !== 0) {
+      if (sample.status !== 0) {
         process.stderr.write(`[templates-perf] ${id}: build ${template.id} failed, continue collecting report\n`)
         break
       }

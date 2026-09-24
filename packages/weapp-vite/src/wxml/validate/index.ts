@@ -23,6 +23,7 @@ export async function validateWxmlBundle(
   const callbacks = validate === undefined ? [] : Array.isArray(validate) ? validate : [validate]
   const state = ctx.runtimeState?.wxmlProcessing
   const hasPrevious = state && ([...state.dependencies.keys()].some(key => key.startsWith('validate:'))
+    || [...state.failed.keys()].some(key => key.startsWith('validate:'))
     || [...state.pending.values()].some(build => build.stage === 'validate'))
   if (!callbacks.length && !hasPrevious) {
     return
@@ -31,65 +32,71 @@ export async function validateWxmlBundle(
   const dependencies = beginWxmlDependencies(ctx, scope, hooks.partial, 'validate')
   const diagnostics = createValidationDiagnostics(hooks.warn)
   const syntax: WxmlSyntax = (config.platform ?? 'weapp') === 'weapp' ? 'legacy' : 'xml'
-  for (const [key, output] of Object.entries(bundle)) {
-    if (output.type !== 'asset' || !TEMPLATE_ASSET_RE.test(output.fileName || key)) {
-      continue
-    }
-    const fileName = path.normalize(output.fileName || key)
-    const code = typeof output.source === 'string' ? output.source : Buffer.from(output.source).toString('utf8')
-    const register = dependencies.template(fileName)
-    let nodes: readonly WxmlElementInfo[] | undefined
-    for (const [index, callback] of callbacks.entries()) {
-      let active = true
-      const assertActive = () => {
-        if (!active) {
-          throw new Error('The template validation callback has already completed.')
-        }
+  try {
+    for (const [key, output] of Object.entries(bundle)) {
+      if (output.type !== 'asset' || !TEMPLATE_ASSET_RE.test(output.fileName || key)) {
+        continue
       }
-      const context: WxmlValidationContext = Object.freeze<WxmlValidationContext>({
-        fileName,
-        root: config.cwd,
-        platform: config.platform ?? 'weapp',
-        mode: config.mode,
-        isDev: config.isDev,
-        subPackageRoot,
-        addWatchFile(file) {
-          assertActive()
-          hooks.addWatchFile(register(file))
-        },
-        report(diagnostic) {
-          assertActive()
-          diagnostics.report(fileName, index + 1, diagnostic)
-        },
-        async walk(visitor) {
-          assertActive()
-          if (typeof visitor !== 'function') {
-            throw new TypeError('walk expects a visitor function.')
+      const fileName = path.normalize(output.fileName || key)
+      const code = typeof output.source === 'string' ? output.source : Buffer.from(output.source).toString('utf8')
+      const register = dependencies.template(fileName)
+      let nodes: readonly WxmlElementInfo[] | undefined
+      for (const [index, callback] of callbacks.entries()) {
+        let active = true
+        const assertActive = () => {
+          if (!active) {
+            throw new Error('The template validation callback has already completed.')
           }
-          nodes ??= createValidationNodes(code, fileName, syntax)
-          for (const node of nodes) {
+        }
+        const context: WxmlValidationContext = Object.freeze<WxmlValidationContext>({
+          fileName,
+          root: config.cwd,
+          platform: config.platform ?? 'weapp',
+          mode: config.mode,
+          isDev: config.isDev,
+          subPackageRoot,
+          addWatchFile(file) {
             assertActive()
-            await visitor(node)
+            hooks.addWatchFile(register(file))
+          },
+          report(diagnostic) {
+            assertActive()
+            diagnostics.report(fileName, index + 1, diagnostic)
+          },
+          async walk(visitor) {
+            assertActive()
+            if (typeof visitor !== 'function') {
+              throw new TypeError('walk expects a visitor function.')
+            }
+            nodes ??= createValidationNodes(code, fileName, syntax)
+            for (const node of nodes) {
+              assertActive()
+              await visitor(node)
+            }
+          },
+        })
+        try {
+          if (typeof callback !== 'function') {
+            throw new TypeError('Expected a validation function.')
           }
-        },
-      })
-      try {
-        if (typeof callback !== 'function') {
-          throw new TypeError('Expected a validation function.')
+          const result = await callback(code, context)
+          if (result !== undefined) {
+            throw new TypeError('Expected an undefined validation result; use transform to change template source.')
+          }
         }
-        const result = await callback(code, context)
-        if (result !== undefined) {
-          throw new TypeError('Expected an undefined validation result; use transform to change template source.')
+        catch (cause) {
+          throw new Error(`[weapp.wxml.validate] ${fileName} (callback ${index + 1}): ${cause instanceof Error ? cause.message : String(cause)}`, { cause })
         }
-      }
-      catch (cause) {
-        throw new Error(`[weapp.wxml.validate] ${fileName} (callback ${index + 1}): ${cause instanceof Error ? cause.message : String(cause)}`, { cause })
-      }
-      finally {
-        active = false
+        finally {
+          active = false
+        }
       }
     }
+    diagnostics.finish()
   }
-  diagnostics.finish()
-  return () => dependencies.commit()
+  catch (error) {
+    dependencies.fail()
+    throw error
+  }
+  return dependencies.publish
 }

@@ -24,6 +24,7 @@ export interface EditorState {
 }
 
 interface NodeNavigation {
+  parent: () => WxmlElementInfo | undefined
   children: () => readonly WxmlTransformNode[]
   childInfo: () => readonly WxmlElementInfo[]
   assertActive: () => void
@@ -32,10 +33,11 @@ interface NodeNavigation {
   remove: () => void
 }
 
-export function createEditableNode(state: EditorState, node: Element, navigation: NodeNavigation, parent?: WxmlElementInfo) {
+export function createEditableNode(state: EditorState, node: Element, navigation: NodeNavigation) {
   const { code, fileName } = state
   let tagName = node.tag
-  const attrs: EditableAttribute[] = node.attrs.map(attr => ({
+  let attributes: EditableAttribute[] | undefined
+  const readAttributes = (): EditableAttribute[] => attributes ??= node.attrs.map(attr => ({
     name: attr.name,
     source: attr,
     value: Object.freeze({
@@ -61,27 +63,33 @@ export function createEditableNode(state: EditorState, node: Element, navigation
     assertName(name)
     const synthetic: Attribute = { name, nameEnd: 0, start: 0, end: rawValue.length, valueStart: 0, valueEnd: rawValue.length }
     if (isProtectedAttribute(rawValue, { ...node, tag: tagName }, synthetic, true)
-      || attrs.some(attr => !attr.removed && attr.name === name && attr.source && isProtectedAttribute(code, node, attr.source, true))) {
+      || readAttributes().some(attr => !attr.removed && attr.name === name && attr.source && isProtectedAttribute(code, node, attr.source, true))) {
       fail(`Cannot modify protected attribute ${name}.`)
     }
   }
-  const find = (name: string) => attrs.find(attr => !attr.removed && attr.name === name)
+  const find = (name: string) => readAttributes().find(attr => !attr.removed && attr.name === name)
   const set = (name: string, rawValue: string | null) => {
     assertAttribute(name, rawValue ?? '')
     let attr = find(name)
-    for (const item of attrs) {
+    for (const item of readAttributes()) {
       if (!item.removed && item.name === name && item !== attr) {
         item.removed = true
       }
     }
     if (!attr) {
       attr = { name, value: { name, rawValue, quote: undefined } }
-      attrs.push(attr)
+      readAttributes().push(attr)
     }
     attr.replacement = rawValue === null ? name : `${name}="${rawValue}"`
     attr.value = Object.freeze({ name, rawValue, quote: rawValue === null ? undefined : '"' })
   }
-  const info: WxmlElementInfo = Object.freeze({
+  let location: ReturnType<typeof state.locate> | undefined
+  const attributeValues = () => Object.freeze(readAttributes().filter(attr => !attr.removed).map(attr => attr.value))
+  const hasAttribute = (name: string) => Boolean(find(name))
+  const getAttribute = (name: string) => find(name)?.value
+  const getLocation = () => location ??= state.locate(node.start)
+  let info: WxmlElementInfo | undefined
+  const readInfo = (): WxmlElementInfo => info ??= Object.freeze({
     get children() {
       return navigation.childInfo()
     },
@@ -89,29 +97,38 @@ export function createEditableNode(state: EditorState, node: Element, navigation
       return tagName
     },
     get attributes() {
-      return Object.freeze(attrs.filter(attr => !attr.removed).map(attr => attr.value))
+      return attributeValues()
     },
-    parent,
-    location: state.locate(node.start),
-    hasAttribute: (name: string) => Boolean(find(name)),
-    getAttribute: (name: string) => find(name)?.value,
+    get parent() {
+      return navigation.parent()
+    },
+    get location() {
+      return getLocation()
+    },
+    hasAttribute,
+    getAttribute,
   })
-  const handle: WxmlTransformNode = Object.freeze<WxmlTransformNode>({
+  let handle: WxmlTransformNode | undefined
+  const readHandle = () => handle ??= Object.freeze<WxmlTransformNode>({
     get children() {
       return navigation.children()
     },
     walk: navigation.walk,
     skipChildren: navigation.skipChildren,
     get tagName() {
-      return info.tagName
+      return tagName
     },
     get attributes() {
-      return info.attributes
+      return attributeValues()
     },
-    parent,
-    location: info.location,
-    hasAttribute: info.hasAttribute,
-    getAttribute: info.getAttribute,
+    get parent() {
+      return navigation.parent()
+    },
+    get location() {
+      return getLocation()
+    },
+    hasAttribute,
+    getAttribute,
     setAttribute(name, value) {
       let encoded: string
       try {
@@ -125,7 +142,7 @@ export function createEditableNode(state: EditorState, node: Element, navigation
     setBooleanAttribute: name => set(name, null),
     removeAttribute(name) {
       assertAttribute(name)
-      for (const attr of attrs) {
+      for (const attr of readAttributes()) {
         if (attr.name === name) {
           attr.removed = true
         }
@@ -140,7 +157,7 @@ export function createEditableNode(state: EditorState, node: Element, navigation
       if (find(to)) {
         fail(`Cannot rename ${from} to existing attribute ${to}.`)
       }
-      for (const attr of attrs) {
+      for (const attr of readAttributes()) {
         if (attr.removed || attr.name !== from) {
           continue
         }
@@ -168,8 +185,12 @@ export function createEditableNode(state: EditorState, node: Element, navigation
     },
   })
   return {
-    info,
-    handle,
+    get info() {
+      return readInfo()
+    },
+    get handle() {
+      return readHandle()
+    },
     edits(): SourceEdit[] {
       if (node.parent?.removed) {
         return []
@@ -185,7 +206,7 @@ export function createEditableNode(state: EditorState, node: Element, navigation
         }
       }
       const additions: string[] = []
-      for (const attr of attrs) {
+      for (const attr of attributes ?? []) {
         if (attr.source && (attr.removed || attr.replacement !== undefined)) {
           edits.push({ ...attr.source, text: attr.removed ? '' : attr.replacement })
         }

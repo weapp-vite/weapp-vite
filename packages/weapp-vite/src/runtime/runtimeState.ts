@@ -7,6 +7,7 @@ import type { GlassEaselAnalysisFact } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
+import type { WxmlDependencyRegistry } from '../wxml/processing/registry'
 import type { LocalAutoImportMatch } from './autoImport/types'
 import type { NamedAutoRoute } from './autoRoutesPlugin/types'
 import type { LoadConfigResult, PackageInfo } from './config/types'
@@ -92,11 +93,7 @@ function createDefaultPackageManager(): DetectResult {
 }
 
 export interface RuntimeState {
-  wxmlProcessing: {
-    dependencies: Map<string, Map<string, Set<string>>>
-    pending: Map<symbol, { scope: string, stage: 'transform' | 'validate', templates: Map<string, Set<string>> }>
-    listeners: Set<(files: string[]) => void>
-  }
+  wxmlProcessing: WxmlDependencyRegistry
   glassEasel: {
     analysisByOwner: Map<string, GlassEaselAnalysisFact>
     warnedDiagnostics: Set<string>
@@ -354,7 +351,7 @@ export function createRuntimeState(): RuntimeState {
   const emptyAutoRoutesSnapshot = createEmptyAutoRoutesSnapshot()
   const emptyAutoRoutesArtifacts = createAutoRoutesArtifacts(emptyAutoRoutesSnapshot)
   return {
-    wxmlProcessing: { dependencies: new Map(), pending: new Map(), listeners: new Set() },
+    wxmlProcessing: { dependencies: new Map(), pending: new Map(), failed: new Map(), references: new Map(), listeners: new Set() },
     glassEasel: {
       analysisByOwner: new Map<string, GlassEaselAnalysisFact>(),
       warnedDiagnostics: new Set<string>(),
