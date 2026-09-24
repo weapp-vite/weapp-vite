@@ -141,7 +141,7 @@ async function createFixture() {
     state.hmrState.didEmitAllEntries = false
     return { output: Object.values(bundle) }
   })
-  const sidecar = Object.assign(new EventEmitter(), { close: async () => {} })
+  const sidecar = Object.assign(new EventEmitter(), { add: vi.fn(), close: async () => {} })
   harness.sidecar = sidecar
   const service = createBuildService(ctx)
   const startup = service.build({ skipNpm: true })

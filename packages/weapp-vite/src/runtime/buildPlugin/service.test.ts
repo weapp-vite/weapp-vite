@@ -57,6 +57,7 @@ const createIndependentBuilderMock = vi.hoisted(() => vi.fn(() => ({
 const appendFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const mkdirMock = vi.hoisted(() => vi.fn(async () => {}))
 const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
+  add: vi.fn(),
   on: vi.fn(),
   close: vi.fn(),
 })))
@@ -241,6 +242,7 @@ function createManualWatcher() {
 function createManualSidecarWatcher() {
   let allCallback: ((event: string, id?: string) => void) | undefined
   const watcher: any = {
+    add: vi.fn(),
     on: vi.fn((event: string, callback: (event: string, id?: string) => void) => {
       if (event === 'all') {
         allCallback = callback
@@ -696,9 +698,9 @@ describe('runtime buildPlugin service', () => {
     const closeOriginalWatcher = watcher.close.bind(watcher)
     const restarting = runStatefulHmrDevMock.mock.calls[0]![2]()
     await entered.promise
-    await closeOriginalWatcher()
+    const closing = closeOriginalWatcher()
     ready.resolve()
-    await restarting
+    await Promise.all([restarting, closing])
 
     expect(closed).toEqual([1, 2])
     expect(graph.hasModule('/project/src/page-2.ts')).toBe(false)
@@ -741,6 +743,37 @@ describe('runtime buildPlugin service', () => {
     expect(closed).toBe(true)
     expect(graph.hasModule(dependency)).toBe(false)
     expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
+  })
+
+  it('waits for an in-flight native restart snapshot before close returns', async () => {
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue({ close: vi.fn(async () => {}) })
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const reached = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    buildMock.mockImplementationOnce(async () => {
+      reached.resolve()
+      await release.promise
+      return { output: [] }
+    })
+    const restarting = runStatefulHmrDevMock.mock.calls[0]![2]()
+    await reached.promise
+    let closed = false
+    const closing = watcher.close().then(() => {
+      closed = true
+    })
+    try {
+      await new Promise(resolve => setImmediate(resolve))
+      expect(closed).toBe(false)
+    }
+    finally {
+      release.resolve()
+      await Promise.all([restarting, closing])
+    }
+    expect(closed).toBe(true)
+    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
   })
 
   it.each([false, true])('keeps original native subscribers and releases sessions when closing during restart=%s', async (closeDuringRestart) => {

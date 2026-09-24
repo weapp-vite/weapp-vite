@@ -109,6 +109,7 @@ describe('buildService independent bundles', () => {
       outputsHelpers: { scheduleManifestWrite } as unknown as OutputsHelpers,
     })
     createCompilerContextInstanceMock.mockReturnValue({
+      runtimeState: createRuntimeState(),
       autoImportService: isolatedScheduling,
       configService: isolatedConfigServiceMock,
     })

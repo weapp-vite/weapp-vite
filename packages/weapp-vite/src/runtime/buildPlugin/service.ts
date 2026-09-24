@@ -1243,6 +1243,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let activeStatefulWatcher: RolldownWatcher | undefined
   let statefulBuildEvents: DevBuildWatcherController | undefined
   let statefulWatcherClosed = false
+  const statefulRestartTasks = new Set<Promise<void>>()
+  let stopStatefulWatcher: (() => Promise<void>) | undefined
+
+  async function trackStatefulRestart(restart: () => Promise<void>) {
+    const task = restart()
+    statefulRestartTasks.add(task)
+    try {
+      await task
+    }
+    finally {
+      statefulRestartTasks.delete(task)
+    }
+  }
 
   function getStatefulBuildEvents() {
     if (statefulBuildEvents) {
@@ -1250,10 +1263,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     const buildEvents = createDevBuildWatcher()
     const closeEvents = buildEvents.watcher.close.bind(buildEvents.watcher)
-    let closePromise: Promise<void> | undefined
-    buildEvents.watcher.close = () => {
+    let stopPromise: Promise<void> | undefined
+    stopStatefulWatcher = () => {
       statefulWatcherClosed = true
-      closePromise ??= (async () => {
+      stopPromise ??= (async () => {
         const activeWatcher = activeStatefulWatcher
         activeStatefulWatcher = undefined
         try {
@@ -1263,8 +1276,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           await closeEvents()
         }
       })()
-      return closePromise
+      return stopPromise
     }
+    let closePromise: Promise<void> | undefined
+    buildEvents.watcher.close = () => closePromise ??= (async () => {
+      try {
+        await stopStatefulWatcher!()
+      }
+      finally {
+        // 重启期间 active watcher 暂为空，仍须等待快照和新服务器退出，才能允许删除输出目录。
+        await Promise.allSettled([...statefulRestartTasks])
+      }
+    })()
     statefulBuildEvents = buildEvents
     return buildEvents
   }
@@ -1372,7 +1395,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ? devWorkers(configService, watcherService, workersDir)
           : Promise.resolve()
         const startup = await Promise.allSettled([
-          runStatefulHmrDev(ctx, buildOptions, async () => {
+          runStatefulHmrDev(ctx, buildOptions, () => trackStatefulRestart(async () => {
             const activeWatcher = activeStatefulWatcher
             activeStatefulWatcher = undefined
             await activeWatcher?.close()
@@ -1392,7 +1415,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             if (!statefulWatcherClosed) {
               logger.success('微信状态保持 HMR 构建已完成完整重载。')
             }
-          }, {
+          }), {
             entryIds: initialEntryIds,
             delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
             initial: {
@@ -1471,7 +1494,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             error: error instanceof Error ? error : new Error(String(error)),
             result: undefined as never,
           })
-          await nativeBuildEvents.watcher.close()
+          // 失败可能发生在被 close 等待的重启任务内部，停止资源时不能反向等待自身。
+          await stopStatefulWatcher!()
           throw error
         }
         devHmrDecision = {
@@ -2030,7 +2054,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         // native 重启复用公共 watcher；已保存的 close 也必须释放当前会话。
         existingCleanup.releaseSession = releaseSession
         if (existingCleanup.closePromise) {
-          await existingCleanup.closePromise.finally(releaseSession)
+          // 原生启动已在关闭标记下释放新资源；公共 close 正在等待本轮重启，不在这里形成循环等待。
+          releaseSession()
         }
         return watcher
       }
