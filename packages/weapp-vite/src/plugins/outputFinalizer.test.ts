@@ -1,5 +1,6 @@
 import type { OutputBundle } from 'rolldown'
 import type { CompilerContext } from '../context'
+import type { WxmlRemoveOptions } from '../types'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -56,6 +57,35 @@ describe('weapp-vite output finalizer', () => {
     expect(bundle['pages/index.wxml']).toMatchObject({
       source: expect.not.stringContaining('<!--'),
     })
+  })
+
+  const legacyCommentCases: Array<{ remove: boolean | WxmlRemoveOptions | undefined, expected: string }> = [
+    { remove: undefined, expected: '<view data-testid="probe">kept</view>' },
+    { remove: false, expected: '<!-- note --><view data-testid="probe">kept</view>' },
+    { remove: true, expected: '<view >kept</view>' },
+    { remove: { attr: [{ tag: 'view', name: 'data-testid' }] }, expected: '<!-- note --><view >kept</view>' },
+  ]
+  it.each(legacyCommentCases.flatMap(({ remove, expected }) =>
+    [true, false].flatMap(removeComment => [true, false].map(removeComments => ({ remove, expected, removeComment, removeComments }))),
+  ))('ignores legacy wxml=$removeComment and vue=$removeComments flags with remove=$remove', ({ remove, expected, removeComment, removeComments }) => {
+    const bundle = {
+      'pages/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index.wxml',
+        source: '<!-- note --><view data-testid="probe">kept</view>',
+      },
+    } as unknown as OutputBundle
+    // 旧字段仅保留类型兼容；最终清理只消费 remove。
+    const ctx = {
+      configService: {
+        weappViteConfig: {
+          wxml: { removeComment, remove },
+          vue: { template: { removeComments } },
+        },
+      },
+    } as unknown as CompilerContext
+    normalizeTemplateAssets(ctx, bundle)
+    expect(bundle['pages/index.wxml']).toMatchObject({ source: expected })
   })
 
   it('cleans buffer-backed templates without normalization markers and preserves custom comments', () => {

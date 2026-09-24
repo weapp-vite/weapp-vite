@@ -239,7 +239,7 @@ export default defineConfig({
 >
 > `htmlTagToWxmlTagClass` 只在“标签名确实发生了 HTML -> WXML 映射”时生效；像 `button -> button` 这类未改名场景，不会额外注入 `.button`。
 >
-> 普通注释清理统一使用 [`weapp.wxml.remove.comment`](/config/wxml#remove)，原先未接入的 `removeComments` 配置已移除。`simplifyWhitespace` 仍是未接入实际编译流程的兼容性预留位；其余字段已经参与模板编译输出。
+> 普通注释清理统一使用 [`weapp.wxml.remove.comment`](/config/wxml#remove)，旧 `removeComments` 保留类型并标记为弃用，延续未接入实际编译流程的行为，不影响新 `remove` 配置。`simplifyWhitespace` 仍是未接入实际编译流程的兼容性预留位；其余字段已经参与模板编译输出。
 
 ### 自定义具名插槽 wrapper {#slot-fallback-wrapper}
 

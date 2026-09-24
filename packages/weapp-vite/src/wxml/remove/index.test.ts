@@ -18,6 +18,12 @@ describe('createWxmlRemover matching', () => {
       .toBe('<view\r\n\t  id="keep" data-test-extra="keep" DATA-TEST="keep"> x </view>\r\n')
   })
 
+  it('removes only the exact attribute on the selected tag and preserves its children', () => {
+    const code = '<view data-testid="view" data-testid-extra="keep"><text data-testid="text">child</text><view data-testid="nested"/></view><web-view data-testid="web"/>'
+    expect(createWxmlRemover({ attr: [{ tag: 'view', name: 'data-testid' }] })(code, fileName))
+      .toBe('<view  data-testid-extra="keep"><text data-testid="text">child</text><view /></view><web-view data-testid="web"/>')
+  })
+
   it('unions global and tag-scoped attribute rules without deleting nodes', () => {
     const code = '<debug-card global="a" flag label="keep"><button flag global="b"/></debug-card><debug-panel flag/><view flag global="c"/>'
     const remove = createWxmlRemover({

@@ -131,14 +131,14 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(warned.value).toBe(true)
   })
 
-  it.each(['weapp', 'alipay'])('preserves comments through production Vue compilation and %s normalization', async (platform) => {
+  it.each(['weapp', 'alipay'].flatMap(platform => [undefined, true, false].map(removeComments => ({ platform, removeComments }))))('preserves comments through production $platform compilation with legacy removeComments=$removeComments', async ({ platform, removeComments }) => {
     const filename = 'src/pages/comments/index.vue'
     // 此测试仅提供编译选项与平台模板转换实际读取的服务。
     const configService = {
       platform,
       isDev: false,
       outputExtensions: {},
-      weappViteConfig: { wxs: false },
+      weappViteConfig: { wxs: false, vue: { template: { removeComments } } },
       relativeOutputPath: () => undefined,
     } as unknown as NonNullable<CompilerContext['configService']>
     const ctx = { configService } as CompilerContext

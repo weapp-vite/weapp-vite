@@ -72,6 +72,29 @@ export default defineConfig(({ mode }) => ({
 
 ## 属性与标签匹配 {#remove-matching}
 
+只删除特定标签上的特定属性，使用 `{ tag, name }` 规则：
+
+```ts
+export default defineConfig({
+  weapp: {
+    wxml: {
+      remove: {
+        attr: [
+          { tag: 'view', name: 'data-testid' },
+          { tag: 'my-card', name: ['role', 'aria-label'] },
+        ],
+      },
+    },
+  },
+})
+```
+
+上述配置只删除 `view` 的 `data-testid` 和 `my-card` 的 `role`、`aria-label`。`text` 上的同名属性、`view` 的 `data-testid-extra`、标签及其子内容均保留；对象配置未设置 `comment`，因此普通注释也保留。
+
+标签和属性名都针对最终模板匹配。全局字符串规则与标签限定规则取并集：如果同时加入 `'data-testid'`，所有标签上的该属性都会删除，后面的标签限定规则不能撤销它。
+
+需要通配符、整节点或注释清理时，可显式组合：
+
 ```ts
 export default defineConfig(({ mode }) => ({
   weapp: {
@@ -149,7 +172,7 @@ export default defineConfig(({ mode }) => ({
 
 ## 旧配置迁移 {#remove-migration}
 
-旧的 `weapp.wxml.removeComment` 和 `weapp.vue.template.removeComments` 原先未接入用户配置的实际编译流程，现已从这些用户配置类型中移除，不保留兼容别名：
+旧的 `weapp.wxml.removeComment` 和 `weapp.vue.template.removeComments` 保留公开类型并标记为弃用，以兼容已有 TypeScript 配置。它们延续原先未接入实际编译流程的行为，设置为 `true` 或 `false` 都不会控制注释清理，也不会影响新 `remove` 配置；它们不是兼容别名。请按原配置意图迁移：
 
 | 旧配置意图 | 新配置 |
 | --- | --- |

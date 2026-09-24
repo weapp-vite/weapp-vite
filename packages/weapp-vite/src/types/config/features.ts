@@ -79,6 +79,8 @@ export interface WxmlRemoveOptions {
 }
 
 export type EnhanceWxmlOptions = ScanWxmlOptions & Omit<HandleWxmlOptions, 'removeComment'> & {
+  /** @deprecated 仅保留类型兼容，未接入编译流程；请使用 `weapp.wxml.remove.comment`。 */
+  removeComment?: boolean
   /** `true` 删除四种测试属性及普通注释；环境由用户配置控制。 */
   remove?: boolean | WxmlRemoveOptions
 }
@@ -328,6 +330,8 @@ export interface WeappWorkerConfig {
  * @description Vue 模板编译配置
  */
 export interface WeappVueTemplateConfig {
+  /** @deprecated 仅保留类型兼容，未接入编译流程；请使用 `weapp.wxml.remove.comment`。 */
+  removeComments?: boolean
   simplifyWhitespace?: boolean
   formatWxml?: boolean | 'auto'
   htmlTagToWxml?: boolean | Record<string, string>

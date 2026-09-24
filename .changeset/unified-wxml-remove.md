@@ -1,5 +1,5 @@
 ---
-"weapp-vite": major
+"weapp-vite": minor
 "@wevu/compiler": minor
 "create-weapp-vite": patch
 ---
@@ -12,4 +12,4 @@ WebView glass-easel 专项适配延期，等待官方正式支持后再实现；
 
 Vue 编译器新增 `preserveComments` 选项，让构建工具在最终输出阶段统一决定注释清理。独立调用编译器的默认注释行为不变。
 
-迁移说明：从用户配置类型中移除原先未生效的 `weapp.wxml.removeComment` 和 `weapp.vue.template.removeComments`，统一迁移到 `weapp.wxml.remove.comment`，不保留别名。未配置 `remove` 时维持历史普通注释清理，不新增属性或节点删除；`remove: true` 不隐含生产环境限制。由于旧配置字段的类型移除属于不兼容变更，`weapp-vite` 按主版本发布。
+兼容说明：保留 `weapp.wxml.removeComment` 和 `weapp.vue.template.removeComments` 的公开类型并标记为弃用，延续原先未接入编译流程的行为；它们不作为新配置的别名，也不影响 `weapp.wxml.remove`。注释清理请使用 `weapp.wxml.remove.comment`。未配置 `remove` 时维持历史普通注释清理，不新增属性或节点删除；`remove: true` 不隐含生产环境限制。本次新增能力按 minor 发布。

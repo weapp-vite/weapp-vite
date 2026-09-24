@@ -121,6 +121,19 @@ describe('WXML remove final build artifacts', () => {
     expectRuntimeSemantics(outputs)
   }, 60_000)
 
+  it('removes an exact attribute only on final view tags in native and mapped Vue templates', async () => {
+    const { outputs } = await buildFixture('precise')
+    for (const kind of ['native', 'vue']) {
+      const template = outputs[`pages/${kind}/index.wxml`]
+      expect(template).not.toContain(`data-testid="precise-${kind}"`)
+      expect(template).toMatch(new RegExp(`<view[^>]*data-testid-extra="precise-${kind}-extra"[^>]*>\\s*<text data-testid="precise-${kind}-text">precise-${kind}-child</text>\\s*</view>`))
+      expect(template).toContain(`<!-- ${kind}-comment -->`)
+    }
+    expect(outputs['pages/native/index.wxml']).toContain('data-testid="keep-prop"')
+    expect(outputs['pages/vue/index.wxml']).toContain('data-testid="vue-component-call"')
+    expectRuntimeSemantics(outputs)
+  }, 60_000)
+
   it('removes only comments with an explicitly empty attribute list', async () => {
     const { outputs } = await buildFixture('comments')
     expect(outputs['pages/native/index.wxml']).toContain('data-testid="native"')

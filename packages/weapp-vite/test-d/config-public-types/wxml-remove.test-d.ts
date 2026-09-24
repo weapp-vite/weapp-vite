@@ -14,5 +14,13 @@ expectNotAssignable<WxmlRemoveOptions>({ attr: [/test/] })
 expectNotAssignable<WxmlRemoveOptions>({ attr: [{ tag: 'view' }] })
 expectNotAssignable<WxmlRemoveOptions>({ tag: true })
 expectNotAssignable<WeappViteConfig>({ wxml: { removeAttributes: ['data-testid'] } })
-expectNotAssignable<WeappViteConfig>({ wxml: { removeComment: false } })
-expectNotAssignable<WeappViteConfig>({ vue: { template: { removeComments: false } } })
+for (const legacy of [true, false]) {
+  expectAssignable<WeappViteConfig>({ wxml: { removeComment: legacy } })
+  expectAssignable<WeappViteConfig>({ vue: { template: { removeComments: legacy } } })
+  defineConfig({
+    weapp: {
+      wxml: { removeComment: legacy, remove },
+      vue: { template: { removeComments: legacy } },
+    },
+  })
+}
