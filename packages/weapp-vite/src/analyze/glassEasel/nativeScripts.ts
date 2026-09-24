@@ -1,24 +1,11 @@
 import type { CompilerContext } from '../../context'
-import type { GlassEaselAnalysisFact, GlassEaselDiagnostic } from './types'
+import type { GlassEaselAnalysisFact, GlassEaselDiagnostic, GlassEaselNativeScriptUpdate } from './types'
 import { analyzeScript } from './index'
 import { normalizeOutputFileName, normalizeSourceId, outputOwner, replaceAnalysis } from './state'
 
+export type { GlassEaselNativeScriptModule, GlassEaselNativeScriptUpdate } from './types'
+
 const nativeSourceOwnerPrefix = 'native-source:'
-
-export interface GlassEaselNativeScriptModule {
-  /** DevEngine moduleGraph 中的原始模块 ID。 */
-  id: string
-  /** DevEngine moduleGraph 中当前完整的模块代码。 */
-  code: string
-}
-
-export interface GlassEaselNativeScriptUpdate {
-  /** 已知产物为 chunk 文件名；尚未映射的模块为真实原始模块 ID。 */
-  file: string
-  modules: readonly GlassEaselNativeScriptModule[]
-  /** 模块尚无实际 chunk 归属，不得将 file 当作构建产物。 */
-  sourceOnly?: true
-}
 
 export function isNativeScriptAnalysisOwner(
   owner: string,

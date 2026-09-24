@@ -36,6 +36,11 @@ async function openRoute(miniProgram: any, route: string, options: { preferCurre
       return currentPage
     }
   }
+  // 分包页面沿用当前页面栈导航，避免 reLaunch 销毁旧 webview 后异步派发
+  // routeDone，微信开发者工具会将该回调错误地投递到已不存在的 webview。
+  if (normalizeRoute(route).startsWith('subpackages/') && typeof miniProgram.navigateTo === 'function') {
+    return await miniProgram.navigateTo(route)
+  }
   return await miniProgram.reLaunch(route)
 }
 
@@ -73,7 +78,7 @@ describe('e2e app: wevu-subpackage-placement', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   })
 
-  it('reLaunches main, normal subpackage, and independent subpackage vue routes', async (context) => {
+  it('visits main, normal subpackage, and independent subpackage vue routes', async (context) => {
     const dom = createDomAcceptance(context, 'e2e-apps/wevu-subpackage-placement', subpackagePlacementCheckpoints)
     const miniProgram = await getSharedMiniProgram()
     for (const [index, routeCase] of subpackagePlacementRoutes.entries()) {

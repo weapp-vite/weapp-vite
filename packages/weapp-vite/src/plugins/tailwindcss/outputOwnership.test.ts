@@ -119,6 +119,7 @@ describe('managed Tailwind output ownership', () => {
     }
     await generate(plugins[1]!, bundle)
 
+    expect(Object.keys(bundle)).toEqual([fileName])
     expect(readDeclarations(bundle, '.text-xl', 'line-height', fileName)).toEqual(['var(--tw-leading, var(--text-xl--line-height))'])
     expect(readDeclarations(bundle, ':root', '--text-xl--line-height', fileName)).toEqual(['1.4'])
     expect(readDeclarations(bundle, '.author', 'color', fileName)).toEqual(['red'])

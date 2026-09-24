@@ -11,7 +11,7 @@ import { createCompilerPluginPlugins } from './compilerPlugin'
 import { weappVite } from './core'
 import { css } from './css'
 import { i18n } from './i18n'
-import { createOutputFinalizerPlugin } from './outputFinalizer'
+import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
 import { preflight } from './preflight'
 import { createReactPlugin, isReactEnabled } from './react'
 import { createTailwindcssPlugin } from './tailwindcss'
@@ -111,6 +111,8 @@ export function vitePluginWeapp(
   if (compilerPlugins.length > 1) {
     groups.push([compilerPlugins[1]!])
   }
+
+  groups.push([createOutputPublicationPlugin(ctx, subPackageMeta)])
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))
   if (subPackageMeta) {

@@ -86,6 +86,7 @@ interface CssEmitPluginContext {
   addWatchFile?: (id: string) => void
   emitFile: (asset: { type: 'asset', fileName: string, source: string, originalFileName?: string }) => void
   getFileName?: (referenceId: string) => string
+  getModuleInfo?: Parameters<typeof collectRenderedStyleSources>[0]['getModuleInfo']
 }
 
 function resolveViteStyleAssetPlaceholders(
@@ -357,7 +358,9 @@ function emitCssAssetIfChanged(
   const existing = bundle[fileName]
   const forceEmit = hasCompilerContentDirtyReason(ctx) || hasManagedCompilerOutputMarker(source)
   const resolvedSource = resolveViteStyleAssetPlaceholders(source, fileName, pluginCtx)
-  const emittedSource = appendCompilerContentHmrNonce(ctx, resolvedSource)
+  const emittedSource = hasManagedCompilerOutputMarker(resolvedSource)
+    ? resolvedSource
+    : appendCompilerContentHmrNonce(ctx, resolvedSource)
   if (existing?.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (!forceEmit && isUnchangedDevHmrStyleAsset(ctx, normalizedFileName, current, emittedSource)) {
@@ -412,6 +415,39 @@ function injectSharedStyleImportsCached(
     return css
   }
   return prependSharedStyleImports(css, missingStatements)
+}
+
+function emitMissingManagedStyleAssets(ctx: CompilerContext, pluginCtx: CssEmitPluginContext, bundle: OutputBundle) {
+  if (!ctx.configService.isDev) {
+    return
+  }
+  const emittedSource = ctx.runtimeState?.css?.emittedSource
+  if (!emittedSource?.size) {
+    return
+  }
+  for (const output of Object.values(bundle)) {
+    if (output.type !== 'chunk' || !output.facadeModuleId) {
+      continue
+    }
+    const ownerId = resolveGraphOutputOwner(output.facadeModuleId) ?? output.facadeModuleId
+    const fileName = resolveOutputStyleFileName(ctx.configService, ownerId)
+    const source = fileName && emittedSource.get(toPosixPath(fileName))
+    if (!fileName || bundle[fileName] || !source || !hasManagedCompilerOutputMarker(source)) {
+      continue
+    }
+    if (pluginCtx.getModuleInfo?.(output.facadeModuleId) && !collectRenderedStyleSources(pluginCtx, output.facadeModuleId).size) {
+      // 移除最后一个样式导入后 Vite 不再生成 CSS；由当前模块图撤销归属，清空已发布内容。
+      emitCssAssetIfChanged(ctx, pluginCtx, bundle, fileName, '')
+    }
+  }
+  for (const [fileName, source] of emittedSource) {
+    if (bundle[fileName] || !hasManagedCompilerOutputMarker(source)) {
+      continue
+    }
+    // 内容变化可能只产出页面 chunk；使用 owner 已合并的完整待生成内容，
+    // 保留作者规则、共享导入及入口位置，最终仍由编译器 output hook 替换标记。
+    emitCssAssetIfChanged(ctx, pluginCtx, bundle, fileName, source)
+  }
 }
 
 function resolveStyleOwnerId(id: string) {
@@ -1020,12 +1056,12 @@ export function css(ctx: CompilerContext): Plugin[] {
         order: 'post',
         async handler(_opts, bundle) {
           const rolldownBundle = bundle as unknown as OutputBundle
-          if (shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
-            return
+          if (!shouldSkipUnchangedStyleHmrBundle(ctx, rolldownBundle)) {
+            const styleAnalysis = analyzeBundleStyles(rolldownBundle)
+            const renderedOwners = await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
+            await emitCollectedStyleSidecars.call(this, ctx, rolldownBundle, renderedOwners, resolvedConfig)
           }
-          const styleAnalysis = analyzeBundleStyles(rolldownBundle)
-          const renderedOwners = await generateBundleSharedCss.call(this, ctx, configService, bundle, styleAnalysis, resolvedConfig)
-          await emitCollectedStyleSidecars.call(this, ctx, rolldownBundle, renderedOwners, resolvedConfig)
+          emitMissingManagedStyleAssets(ctx, this, rolldownBundle)
         },
       },
     },

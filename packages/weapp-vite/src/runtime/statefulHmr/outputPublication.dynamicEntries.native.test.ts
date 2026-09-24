@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'pathe'
 import { expect, it } from 'vitest'
 import { EntryChunkLifecycle } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
-import { createOutputFinalizerPlugin } from '../../plugins/outputFinalizer'
+import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../../plugins/outputFinalizer'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { StatefulHmrOutputPublication } from './outputPublication'
 import { createViteDevEngine } from './viteDevEngine'
@@ -34,11 +34,11 @@ it('preserves complete native output after a watched module re-emits a component
       output: { emittedSource: new Map<string, string>() },
     } },
   }
-  const finalizer = createOutputFinalizerPlugin(context as any)
-  const configure = finalizer.configResolved as ((config: any) => void) | undefined
-  configure?.({ experimental: { bundledDev: true } })
-  const finalize = finalizer.generateBundle
-  const finalizeBundle = typeof finalize === 'function' ? finalize : finalize?.handler
+  const outputPlugins = [createOutputFinalizerPlugin(context as any), createOutputPublicationPlugin(context as any)]
+  for (const plugin of outputPlugins) {
+    const configure = plugin.configResolved as ((config: any) => void) | undefined
+    configure?.({ experimental: { bundledDev: true } })
+  }
   const engine = await createViteDevEngine({
     cwd: root,
     input: { app: main },
@@ -79,7 +79,11 @@ it('preserves complete native output after a watched module re-emits a component
       },
       async generateBundle(options, bundle) {
         unpruned.push(Object.keys(bundle))
-        await finalizeBundle?.call(this as any, options, bundle, false)
+        for (const plugin of outputPlugins) {
+          const hook = plugin.generateBundle
+          const handler = typeof hook === 'function' ? hook : hook?.handler
+          await handler?.call(this as any, options, bundle, false)
+        }
       },
     }],
   }, { entryFileNames: '[name].js' }, {

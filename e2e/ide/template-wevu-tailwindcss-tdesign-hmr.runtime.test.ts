@@ -105,6 +105,7 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
   let devProcess: ReturnType<typeof startDevProcess> | undefined
   let distAppJs = ''
   let indexJsDist = ''
+  let indexWxssDist = ''
   let distWevuRuntimeJs = ''
   let fixtureRoot = ''
   let indexVue = ''
@@ -302,6 +303,7 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     distAppJs = path.join(distRoot, 'app.js')
     distWevuRuntimeJs = path.join(distRoot, 'weapp-vendors/wevu-runtime.js')
     indexJsDist = path.join(distRoot, 'pages/index/index.js')
+    indexWxssDist = path.join(distRoot, 'pages/index/index.wxss')
     indexWxmlDist = path.join(distRoot, 'pages/index/index.wxml')
     currentVue = addRuntimeProbe(await fs.readFile(indexVue, 'utf8'))
     await fs.writeFile(indexVue, currentVue, 'utf8')
@@ -429,7 +431,10 @@ onLaunch(function (this: Record<string, unknown>) {
       currentVue = currentVue.replace('<t-tag ', '<view id="wevu-tailwind-local-probe" class="bg-[#fce7f3] local-priority">Local style</view>\n      <t-tag ')
       currentVue += '\n<style>\n.local-priority { background-color: #1f2937; }\n</style>\n'
       await fs.writeFile(indexVue, currentVue, 'utf8')
-      await waitForFileContains(indexWxmlDist, 'wevu-tailwind-local-probe')
+      await Promise.all([
+        waitForFileContains(indexWxmlDist, 'wevu-tailwind-local-probe'),
+        waitForEmittedStylesheet(indexWxssDist, '#1f2937'),
+      ])
       await dom.check('local-style-priority', miniProgram, await waitForIndexPage())
       const finalIdentity = await diagnostics.capture('local-style-priority:rendered')
       expect(finalIdentity.errors).toEqual([])

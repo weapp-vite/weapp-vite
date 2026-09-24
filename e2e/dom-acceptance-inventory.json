@@ -5,8 +5,8 @@
     "taskCount": 110,
     "wechatTaskCount": 107,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 277,
-    "casesWithPlan": 277,
+    "expandedCaseDeclarations": 278,
+    "casesWithPlan": 278,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -4535,14 +4535,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-retail-checkout.runtime.test.ts:57",
-          "name": "retail checkout nullable settlement rendering > renders nullable settlement results and refreshes quantity and amount after reLaunch",
+          "source": "e2e/ide/template-retail-checkout.runtime.test.ts:75",
+          "name": "retail checkout and goods card contracts > renders nullable settlement results and refreshes quantity and amount after reLaunch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template",
               "checkpoints": "[{ id: 'home-ready', route: '/pages/home/home', action: '从首页启动并确认首屏商品已经呈现，再进入结算分包', nodes: [{ selector: '.goods-card__title', scope: [{ has: '.goods-list-wrap' }, '#home-goods-list-gd-0'], text: '白色短袖连衣裙荷叶边裙摆宽松韩版休闲纯白清爽优雅连衣裙', }], }, ...scen",
-              "source": "e2e/ide/template-retail-checkout.runtime.test.ts:63"
+              "source": "e2e/ide/template-retail-checkout.runtime.test.ts:81"
             }
           ],
           "routes": [
@@ -4556,6 +4556,34 @@
             "act(scenario.id)",
             "reLaunch(${RETAIL_CHECKOUT_ROUTE}?type=cart)",
             "check(scenario.id)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/template-retail-checkout.runtime.test.ts:108",
+          "name": "retail checkout and goods card contracts > passes cardId through cart, order and specs cards while retaining generated IDs and goods identity",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template",
+              "checkpoints": "[ { id: 'initial-card-ids', route: RETAIL_GOODS_CARD_ROUTE, action: '通过父级绑定分别传入三类卡片的 cardId，并对照未传值时生成的节点标识', nodes: retailGoodsCardNodes('explicit'), }, ...RETAIL_GOODS_CARD_VARIANTS.map(variant => ({ id: `click-${variant}`, route: RETAIL_G",
+              "source": "e2e/ide/template-retail-checkout.runtime.test.ts:109"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "act(initial-card-ids)",
+            "reLaunch(RETAIL_GOODS_CARD_ROUTE)",
+            "check(initial-card-ids)",
+            "act(click-${variant})",
+            "tap(<missing>)",
+            "check(click-${variant})",
+            "act(updated-card-ids)",
+            "callMethod(updateCardIds)",
+            "check(updated-card-ids)",
+            "act(cleared-card-ids)",
+            "callMethod(clearCardIds)",
+            "check(cleared-card-ids)"
           ],
           "notes": []
         }
@@ -5259,14 +5287,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:50",
+          "source": "e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:68",
           "name": "e2e app: template-wevu-regression simplified portal > emits the simplified portal structure and auto-imported component usage",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/template-wevu-regression",
               "checkpoints": "[ { id: 'portal', route: '/pages/index/index', action: 'launch portal', nodes: homeNodes }, ...targets.flatMap(target => [ { id: target.id, route: target.route, action: `tap ${target.title} portal entry`, nodes: [ { selector: '.card__title'",
-              "source": "e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:70"
+              "source": "e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:88"
             }
           ],
           "routes": [
@@ -5279,8 +5307,8 @@
             "reLaunch(/pages/index/index)",
             "check(portal)",
             "tap(<missing>)",
-            "check(target.id)",
             "callMethodWithOptions(waitForNavigation)",
+            "check(target.id)",
             "check(${target.id}-return)"
           ],
           "notes": []
@@ -5403,14 +5431,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337",
+          "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339",
           "name": "template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "templates/weapp-vite-wevu-tailwindcss-tdesign-template",
               "checkpoints": "[...colors.map((color, index) => ({ id: `background:${index}`, route: INDEX_ROUTE, action: `背景阶段 ${index}：计算样式、布局与点击计数`, nodes: [ { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'",
-              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339"
+              "source": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:341"
             }
           ],
           "routes": [],
@@ -6806,23 +6834,25 @@
       "scope": "wechat",
       "reason": null,
       "providers": [
-        "devtools"
+        "devtools",
+        "headless"
       ],
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wevu-subpackage-placement.runtime.test.ts:76",
-          "name": "e2e app: wevu-subpackage-placement > reLaunches main, normal subpackage, and independent subpackage vue routes",
+          "source": "e2e/ide/wevu-subpackage-placement.runtime.test.ts:81",
+          "name": "e2e app: wevu-subpackage-placement > visits main, normal subpackage, and independent subpackage vue routes",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/wevu-subpackage-placement",
               "checkpoints": "subpackagePlacementCheckpoints",
-              "source": "e2e/ide/wevu-subpackage-placement.runtime.test.ts:77"
+              "source": "e2e/ide/wevu-subpackage-placement.runtime.test.ts:82"
             }
           ],
           "routes": [],
           "operations": [
+            "navigateTo(route)",
             "reLaunch(route)",
             "check(${routeCase.id}:initial)",
             "callMethodWithOptions(runE2E)",
@@ -7598,7 +7628,7 @@
     },
     {
       "file": "e2e/ide/template-retail-checkout.runtime.test.ts",
-      "sha256": "e13549de6233c6c9eb47816454be130e36d4fff60ff80f0017e99ab8aafb0eca"
+      "sha256": "122f8df1211023745216586e1805a4505642adc911a4bd14bf64e7a5a78c7650"
     },
     {
       "file": "e2e/ide/template-tailwindcss-dev-open-multi.runtime.test.ts",
@@ -7662,7 +7692,7 @@
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts",
-      "sha256": "0cf40204e80d8fe1fee671c91ebc475a41fb472f8f840623cde65b969007a3a1"
+      "sha256": "40216165221e3b11e82acb221ba82c1d7520d374d1601f96ff2cee4db5ae0a2c"
     },
     {
       "file": "e2e/ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts",
@@ -7678,7 +7708,7 @@
     },
     {
       "file": "e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts",
-      "sha256": "7d9cc53b49169d3181237708013369deb6423b6ee90478978de05818fa39d061"
+      "sha256": "4e5939f3f9448882496efbeca6d83fd85114c6a6341b8aa14de08e3a59e72b6e"
     },
     {
       "file": "e2e/ide/template-wevu-tdesign-regression.shared.ts",
@@ -7786,7 +7816,7 @@
     },
     {
       "file": "e2e/ide/wevu-subpackage-placement.runtime.test.ts",
-      "sha256": "eed4c2a7c383081c213a7c77c6883c4ea50a396f1b779eca276d0c5e57617e78"
+      "sha256": "4d2990101bd37fe3c350b4ce63755e79f0709414e85a7d2a78da37d4c99f4005"
     },
     {
       "file": "e2e/ide/wevu-vue-demo.script-setup.emit.runtime.test.ts",
@@ -7878,7 +7908,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "b261259ea8f4a30991a7dd3b68dbb10f7f6942ca27c5a8d81c378a904c539c43"
+      "sha256": "35617b877841e5dea60d1962c477e737af345227665e9d680c63b2bf249ccda4"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -8115,6 +8145,10 @@
     {
       "file": "e2e/utils/templateAcceptance/retailCheckout.ts",
       "sha256": "31f98bba9f741194ee70405ffeca4971bc4d3c636d742a930591732a730e07ce"
+    },
+    {
+      "file": "e2e/utils/templateAcceptance/retailGoodsCard.ts",
+      "sha256": "722fcba1243ca45a58ce756642d79067f96b150e3721ea7383b6b25c58bb9a9b"
     },
     {
       "file": "e2e/utils/templateAcceptance/wevu.ts",
