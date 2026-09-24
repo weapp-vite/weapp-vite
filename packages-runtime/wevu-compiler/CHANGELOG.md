@@ -1,5 +1,34 @@
 # @wevu/compiler
 
+## 7.3.0
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- 修复非法 v-for 被静默降级，并保留 SFC 解析错误的结构化元数据、原始原因及改写前位置。
+
+- 复用单次模板组件标签分析，减少重复解析并保持标签识别与错误警告行为不变。
+
+  将 classic HMR 的强制共享 chunk 刷新状态隔离到当前构建上下文，并完善模块图的构建作用域释放、监听会话清理及入口依赖所有权管理，避免并发构建和会话重启之间相互污染。
+
+  开发模式保留请求运行时支持块的模块边界，避免首轮内联删除依赖后，局部 HMR 重新发射的运行时引用缺失模块；生产构建继续保留内联优化。
+
+  状态保持 HMR 的 prelude 随原生可执行图发布，避免普通构建快照覆盖后，初始化代码与实际安装器导出不匹配；完整构建、增量输出与资产刷新统一遵守该所有权边界。
+
+- 根据六类小程序与 Web 构建目标自动裁剪 Wevu 宿主适配，移除未使用的首航路由与 JSX island 实现，并避免 SFC 子组件注册重新引入完整兼容工厂。保留动态公开 API 和跨平台 adapter 行为，补充七端体积门禁与真实消费回归，同步脚手架随包指引。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.7
+  - @weapp-core/shared@3.2.6
+  - @weapp-vite/ast@7.3.0
+  - rolldown-require@2.0.33
+
 ## 7.2.1
 
 ### Patch Changes
