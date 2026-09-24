@@ -1,0 +1,383 @@
+{
+  "sha": "e7862e61dd83e3b9e356ac1e176267b31ab298af",
+  "samples": [
+    {
+      "iteration": 1,
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "packageName": "weapp-vite-tailwindcss-tdesign-template",
+      "totalMs": 2231.544292000006,
+      "cliBuildMs": 1604,
+      "rssPeakBytes": 879722496,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 17,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 2,
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "packageName": "weapp-vite-tailwindcss-tdesign-template",
+      "totalMs": 2091.9229169999962,
+      "cliBuildMs": 1472,
+      "rssPeakBytes": 889847808,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 3,
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "packageName": "weapp-vite-tailwindcss-tdesign-template",
+      "totalMs": 2085.2667500000025,
+      "cliBuildMs": 1468,
+      "rssPeakBytes": 892829696,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 4,
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "packageName": "weapp-vite-tailwindcss-tdesign-template",
+      "totalMs": 2068.6805840000015,
+      "cliBuildMs": 1455,
+      "rssPeakBytes": 901267456,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 5,
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "packageName": "weapp-vite-tailwindcss-tdesign-template",
+      "totalMs": 2094.3257920000033,
+      "cliBuildMs": 1479,
+      "rssPeakBytes": 896319488,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 6,
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "packageName": "weapp-vite-tailwindcss-tdesign-template",
+      "totalMs": 2089.407333999996,
+      "cliBuildMs": 1471,
+      "rssPeakBytes": 873414656,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 7,
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "packageName": "weapp-vite-tailwindcss-tdesign-template",
+      "totalMs": 2087.787208000009,
+      "cliBuildMs": 1473,
+      "rssPeakBytes": 892567552,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 1,
+      "template": "weapp-vite-template",
+      "packageName": "weapp-vite-template",
+      "totalMs": 883.7464590000018,
+      "cliBuildMs": 281,
+      "rssPeakBytes": 465764352,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 2,
+      "template": "weapp-vite-template",
+      "packageName": "weapp-vite-template",
+      "totalMs": 868.9926669999986,
+      "cliBuildMs": 272,
+      "rssPeakBytes": 470876160,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 3,
+      "template": "weapp-vite-template",
+      "packageName": "weapp-vite-template",
+      "totalMs": 873.8119169999991,
+      "cliBuildMs": 273,
+      "rssPeakBytes": 468353024,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 4,
+      "template": "weapp-vite-template",
+      "packageName": "weapp-vite-template",
+      "totalMs": 871.9725419999886,
+      "cliBuildMs": 274,
+      "rssPeakBytes": 470548480,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 5,
+      "template": "weapp-vite-template",
+      "packageName": "weapp-vite-template",
+      "totalMs": 858.065082999994,
+      "cliBuildMs": 269,
+      "rssPeakBytes": 470024192,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 6,
+      "template": "weapp-vite-template",
+      "packageName": "weapp-vite-template",
+      "totalMs": 867.9489160000085,
+      "cliBuildMs": 277,
+      "rssPeakBytes": 472793088,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 7,
+      "template": "weapp-vite-template",
+      "packageName": "weapp-vite-template",
+      "totalMs": 866.6889579999988,
+      "cliBuildMs": 269,
+      "rssPeakBytes": 469057536,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 1,
+      "template": "weapp-vite-wevu-template",
+      "packageName": "weapp-vite-wevu-template",
+      "totalMs": 928.7134579999984,
+      "cliBuildMs": 314,
+      "rssPeakBytes": 469417984,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 2,
+      "template": "weapp-vite-wevu-template",
+      "packageName": "weapp-vite-wevu-template",
+      "totalMs": 951.5184160000063,
+      "cliBuildMs": 322,
+      "rssPeakBytes": 460095488,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 3,
+      "template": "weapp-vite-wevu-template",
+      "packageName": "weapp-vite-wevu-template",
+      "totalMs": 947.7629580000066,
+      "cliBuildMs": 318,
+      "rssPeakBytes": 460439552,
+      "rssSampling": {
+        "status": "partial",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 1
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 4,
+      "template": "weapp-vite-wevu-template",
+      "packageName": "weapp-vite-wevu-template",
+      "totalMs": 949.8233750000072,
+      "cliBuildMs": 320,
+      "rssPeakBytes": 465403904,
+      "rssSampling": {
+        "status": "partial",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 1
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 5,
+      "template": "weapp-vite-wevu-template",
+      "packageName": "weapp-vite-wevu-template",
+      "totalMs": 934.7203329999902,
+      "cliBuildMs": 313,
+      "rssPeakBytes": 466419712,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 6,
+      "template": "weapp-vite-wevu-template",
+      "packageName": "weapp-vite-wevu-template",
+      "totalMs": 936.4918330000073,
+      "cliBuildMs": 320,
+      "rssPeakBytes": 464977920,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      },
+      "status": 0
+    },
+    {
+      "iteration": 7,
+      "template": "weapp-vite-wevu-template",
+      "packageName": "weapp-vite-wevu-template",
+      "totalMs": 928.7828339999978,
+      "cliBuildMs": 313,
+      "rssPeakBytes": 467877888,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      },
+      "status": 0
+    }
+  ]
+}

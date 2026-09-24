@@ -1,0 +1,50 @@
+[
+  {
+    "name": "watch-main-classic-default",
+    "exitCode": -15,
+    "forcedCleanup": true,
+    "complete": true,
+    "output": "watch-main-classic-default.json",
+    "completeObservedBeforeExit": true
+  },
+  {
+    "name": "watch-main-stateful-experimental-default",
+    "exitCode": 1,
+    "forcedCleanup": false,
+    "complete": false,
+    "output": "watch-main-stateful-experimental-default.json",
+    "completeObservedBeforeExit": false
+  },
+  {
+    "name": "watch-before-classic-default",
+    "exitCode": 0,
+    "forcedCleanup": false,
+    "complete": true,
+    "output": "watch-before-classic-default.json",
+    "completeObservedBeforeExit": false
+  },
+  {
+    "name": "watch-before-stateful-experimental-default",
+    "exitCode": 0,
+    "forcedCleanup": false,
+    "complete": true,
+    "output": "watch-before-stateful-experimental-default.json",
+    "completeObservedBeforeExit": true
+  },
+  {
+    "name": "watch-before-classic-enabled",
+    "exitCode": 0,
+    "forcedCleanup": false,
+    "complete": true,
+    "output": "watch-before-classic-enabled.json",
+    "completeObservedBeforeExit": false
+  },
+  {
+    "name": "watch-before-stateful-experimental-enabled",
+    "exitCode": 0,
+    "forcedCleanup": false,
+    "complete": true,
+    "output": "watch-before-stateful-experimental-enabled.json",
+    "completeObservedBeforeExit": true
+  }
+]

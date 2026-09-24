@@ -1,0 +1,320 @@
+{
+  "sha": "33c7646c5bc05272cbf496beedd233736c5d4261",
+  "samples": [
+    {
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "iteration": 1,
+      "ms": 2407.185375,
+      "rssPeakBytes": 855392256,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 18,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      }
+    },
+    {
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "iteration": 2,
+      "ms": 2112.7398749999998,
+      "rssPeakBytes": 881262592,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      }
+    },
+    {
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "iteration": 3,
+      "ms": 2090.8512500000006,
+      "rssPeakBytes": 876986368,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      }
+    },
+    {
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "iteration": 4,
+      "ms": 2106.43675,
+      "rssPeakBytes": 876412928,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      }
+    },
+    {
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "iteration": 5,
+      "ms": 2134.9076669999995,
+      "rssPeakBytes": 855834624,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      }
+    },
+    {
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "iteration": 6,
+      "ms": 2154.5576249999995,
+      "rssPeakBytes": 830242816,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 17,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      }
+    },
+    {
+      "template": "weapp-vite-tailwindcss-tdesign-template",
+      "iteration": 7,
+      "ms": 2095.832875,
+      "rssPeakBytes": 876986368,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 16,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "7b3aeaac14e6d1c98b029e6450d77da985b9f1b0266b3f48cdd38cc2aeb43501"
+      }
+    },
+    {
+      "template": "weapp-vite-template",
+      "iteration": 1,
+      "ms": 876.1725829999996,
+      "rssPeakBytes": 462520320,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      }
+    },
+    {
+      "template": "weapp-vite-template",
+      "iteration": 2,
+      "ms": 874.3222500000011,
+      "rssPeakBytes": 466927616,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      }
+    },
+    {
+      "template": "weapp-vite-template",
+      "iteration": 3,
+      "ms": 872.5797500000008,
+      "rssPeakBytes": 465272832,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      }
+    },
+    {
+      "template": "weapp-vite-template",
+      "iteration": 4,
+      "ms": 872.1515829999989,
+      "rssPeakBytes": 466239488,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      }
+    },
+    {
+      "template": "weapp-vite-template",
+      "iteration": 5,
+      "ms": 872.8261249999996,
+      "rssPeakBytes": 464158720,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      }
+    },
+    {
+      "template": "weapp-vite-template",
+      "iteration": 6,
+      "ms": 870.3927499999991,
+      "rssPeakBytes": 464289792,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      }
+    },
+    {
+      "template": "weapp-vite-template",
+      "iteration": 7,
+      "ms": 867.3418749999983,
+      "rssPeakBytes": 465223680,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 7,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "797295621fbc6545ead01b1ab879f9a4c58257b3063a30340d9bbc480b84d6f2"
+      }
+    },
+    {
+      "template": "weapp-vite-wevu-template",
+      "iteration": 1,
+      "ms": 939.9237079999984,
+      "rssPeakBytes": 457342976,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      }
+    },
+    {
+      "template": "weapp-vite-wevu-template",
+      "iteration": 2,
+      "ms": 961.8543329999993,
+      "rssPeakBytes": 493699072,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      }
+    },
+    {
+      "template": "weapp-vite-wevu-template",
+      "iteration": 3,
+      "ms": 937.1589589999967,
+      "rssPeakBytes": 460390400,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      }
+    },
+    {
+      "template": "weapp-vite-wevu-template",
+      "iteration": 4,
+      "ms": 940.7672920000005,
+      "rssPeakBytes": 459292672,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      }
+    },
+    {
+      "template": "weapp-vite-wevu-template",
+      "iteration": 5,
+      "ms": 930.1884170000012,
+      "rssPeakBytes": 463323136,
+      "rssSampling": {
+        "status": "partial",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 1
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      }
+    },
+    {
+      "template": "weapp-vite-wevu-template",
+      "iteration": 6,
+      "ms": 939.497707999999,
+      "rssPeakBytes": 458784768,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      }
+    },
+    {
+      "template": "weapp-vite-wevu-template",
+      "iteration": 7,
+      "ms": 944.2255839999998,
+      "rssPeakBytes": 457048064,
+      "rssSampling": {
+        "status": "available",
+        "completedSampleCount": 8,
+        "unavailableSampleCount": 0
+      },
+      "artifacts": {
+        "pageCount": 2,
+        "sha256": "2d9388e43a68526e4f355474f90b7e9b2cd7526d2d0aff361a2aed56bb3bff49"
+      }
+    }
+  ]
+}

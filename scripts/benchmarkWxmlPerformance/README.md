@@ -56,3 +56,5 @@ node --expose-gc --import tsx scripts/benchmarkWxmlPerformance/watch.ts
 针对 HMR 的单场景复测可直接运行 `scripts/benchmark-templates-hmr.ts`，用 `TEMPLATES_HMR_SCENARIO_FILTER` 指定逗号分隔的精确场景 ID（例如 `native-page-script,vue-page-script`），同时保留模板筛选及 20 次采样。交换 checkout 的测量顺序；单场景新会话与整套场景中的热态结果分开报告。未匹配任何场景仍按失败处理。
 
 `watch.ts` 支持 `WXML_PERF_RUNTIME` 单独选择 `classic` 或 `stateful-experimental`，以及 `WXML_PERF_FILTER` / `WXML_PERF_EXCLUDE` 按输出路径子串缩小诊断范围。筛选条件写入 JSON，筛选运行不能代替被排除场景的验收。旧 baseline 若完成采样后因遗留 watcher 无法退出，必须记录生命周期失败并终止该进程，再测下一个场景；不能把缺样本或强制结束当作完整通过。
+
+做版本对照时，每个 runtime 分别启动独立进程（设置 `WXML_PERF_RUNTIME`），所有版本使用相同顺序和生命周期。同一进程先 classic 再 stateful 的结果适合观察长会话缓存与堆状态，不能直接与新进程的 stateful 结果比较。关闭后无法正常退出、清理时仍有子 watcher 写盘的 baseline 标记为生命周期失败，保留已取得的延迟数据与不可比较原因。
