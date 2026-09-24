@@ -71,7 +71,7 @@ export default defineComponent({
       id="function-prop-child"
       :handler="callbacks[currentKey]"
     />
-    <text selectable class="details">
+    <text user-select class="details">
       {{ __e2eText }}
     </text>
   </view>

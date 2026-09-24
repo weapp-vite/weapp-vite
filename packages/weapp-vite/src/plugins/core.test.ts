@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createModuleGraphService } from '../moduleGraph'
+import { createRuntimeState } from '../runtime/runtimeState'
 import { weappVite } from './core'
 
 const mocked = vi.hoisted(() => {
@@ -140,6 +141,7 @@ describe('weapp-vite:pre load', () => {
 
     const plugins = weappVite({
       currentBuildTarget: 'app',
+      runtimeState: createRuntimeState(),
       configService: {
         absoluteSrcRoot: '/project/src',
         isDev: true,
@@ -248,6 +250,7 @@ describe('weapp-vite:pre load', () => {
 
     const plugins = weappVite({
       currentBuildTarget: 'app',
+      runtimeState: createRuntimeState(),
       configService: {
         absoluteSrcRoot: '/project/src',
         isDev: true,
@@ -338,6 +341,7 @@ describe('weapp-vite:pre load', () => {
 
     const plugins = weappVite({
       currentBuildTarget: 'app',
+      runtimeState: createRuntimeState(),
       configService: {
         absoluteSrcRoot: '/project/src',
         isDev: true,
@@ -493,6 +497,7 @@ describe('weapp-vite:pre load', () => {
 
     const plugins = weappVite({
       currentBuildTarget: 'app',
+      runtimeState: createRuntimeState(),
       configService: {
         absoluteSrcRoot: '/project/src',
         isDev: true,
@@ -572,6 +577,7 @@ describe('weapp-vite:pre load', () => {
 
     const plugins = weappVite({
       currentBuildTarget: 'app',
+      runtimeState: createRuntimeState(),
       configService: {
         absoluteSrcRoot: '/project/src',
         isDev: true,

@@ -11,7 +11,6 @@ import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGrap
 import { parseSidecarModuleId } from '../moduleGraph/protocol'
 import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
-import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
 import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
 import { resolveWxmlRemoveOptions } from '../wxml/options'
@@ -21,10 +20,11 @@ import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } fr
 import { consumePendingOwnerStyleSources } from './css'
 import { transformI18nOutputTemplate } from './i18n'
 import { createOutputAssetTransaction } from './outputFinalizer/assets'
-import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
 import { collectXmlTemplates } from './outputFinalizer/wxmlSyntax'
+
+export { createOutputPublicationPlugin, pruneUnchangedDevHmrOutputs, pruneUneventedDevHmrChunks } from './outputFinalizer/publication'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
@@ -126,17 +126,6 @@ function collectOutputFinalizerAssetEntries(bundle: OutputBundle) {
     preprocessorStyleAssets,
     templateAssets,
   }
-}
-
-function outputSourceToString(output: OutputBundle[string]) {
-  if (output.type === 'chunk') {
-    return output.code
-  }
-
-  const source = output.source
-  return typeof source === 'string'
-    ? source
-    : Buffer.from(source).toString('base64')
 }
 
 function mergePendingOwnerStyleSources(ctx: CompilerContext, bundle: OutputBundle) {
@@ -339,77 +328,6 @@ export function normalizeTemplateAssets(
   normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets, bundle, { inputs: new Map(), partial: false })
 }
 
-export function pruneUneventedDevHmrChunks(
-  ctx: CompilerContext,
-  bundle: OutputBundle,
-) {
-  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-  if (
-    !ctx.configService?.isDev
-    || ctx.runtimeState?.build?.hmr?.profile?.event === undefined
-    || !emittedChunkFileNames?.size
-  ) {
-    return
-  }
-
-  for (const [fileName, output] of Object.entries(bundle)) {
-    if (
-      output?.type === 'chunk'
-      && !emittedChunkFileNames.has(fileName)
-      && !emittedChunkFileNames.has(output.fileName)
-    ) {
-      delete bundle[fileName]
-    }
-  }
-}
-
-export function pruneUnchangedDevHmrOutputs(
-  ctx: CompilerContext,
-  bundle: OutputBundle,
-  rewriteOptions?: RewriteWevuInternalRuntimeImportsOptions,
-  options?: {
-    runtimeRewriteDone?: boolean
-    preserveCompleteBundle?: boolean
-  },
-) {
-  const cache = ctx.runtimeState?.build?.output?.emittedSource
-  if (!ctx.configService?.isDev || !cache) {
-    return
-  }
-
-  const isHmrBuild = !options?.preserveCompleteBundle && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
-  const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
-  if (!options?.runtimeRewriteDone) {
-    rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
-    stabilizeWevuRuntimeChunkAccess(bundle)
-  }
-  for (const [fileName, output] of Object.entries(bundle)) {
-    const isCurrentHmrChunk = isHmrBuild
-      && output.type === 'chunk'
-      && (
-        emittedChunkFileNames?.has(fileName) === true
-        || emittedChunkFileNames?.has(output.fileName) === true
-      )
-    const shouldForceEmitCurrentHmrChunk = isCurrentHmrChunk
-      && ctx.runtimeState.build.hmr.forceEmitUnchangedChunks !== false
-    if (
-      isHmrBuild
-      && output.type === 'chunk'
-      && emittedChunkFileNames?.size
-      && !isCurrentHmrChunk
-    ) {
-      delete bundle[fileName]
-      continue
-    }
-    const source = outputSourceToString(output)
-    if (isHmrBuild && !shouldForceEmitCurrentHmrChunk && cache.get(fileName) === source) {
-      delete bundle[fileName]
-      continue
-    }
-    cache.set(fileName, source)
-  }
-}
-
 export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   let preserveCompleteBundle = false
   // 每个构建实例保留 UTF-8 编译输入；输出比较指纹（尤其二进制 base64）不能用作源文本。
@@ -448,7 +366,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     },
     generateBundle: {
       order: 'post',
-      async handler(_options, bundle) {
+      handler(_options, bundle) {
         const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
         const outputBundle = assets.bundle
         mergePendingOwnerStyleSources(ctx, outputBundle)
@@ -479,13 +397,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
           normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
         }
-        pruneUnchangedDevHmrOutputs(ctx, outputBundle, wevuRuntimeRewriteOptions, {
-          runtimeRewriteDone: true,
-          preserveCompleteBundle,
-        })
-        syncOutputChunkSourceMapAssets(outputBundle)
         assets.publish(asset => this.emitFile(asset))
-        await flushIndependentOutputs(ctx, subPackageMeta, asset => this.emitFile(asset))
       },
     },
   }

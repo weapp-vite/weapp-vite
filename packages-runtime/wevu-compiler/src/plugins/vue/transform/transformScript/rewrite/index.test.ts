@@ -102,7 +102,8 @@ describe('rewriteDefaultExport', () => {
 
     expect(transformed).toBe(true)
     expect(code).toContain('virtual:weapp-vite/runtime')
-    expect(code).toContain('from "vue"')
+    expect(code).toContain('virtual:weapp-vite/runtime/reactivity')
+    expect(code).not.toMatch(/from ['"]vue['"]/)
     expect(code).toMatch(/useCssVars\w*\(\(\) => \{[\s\S]*unref\w*\(undefined\)[\s\S]*return \{\}/)
     expect(code.match(/\bsetup\b/g)).toHaveLength(1)
   })
@@ -114,7 +115,18 @@ export default {}
     `.trim(), { stabilizeCssVarsRuntime: true })
 
     expect(code).toMatch(/import type \{ Ref \} from ['"]vue['"]/)
-    expect(code).toMatch(/import \{ unref as \w+ \} from "vue"/)
+    expect(code).toMatch(/import \{ unref as \w+ \} from "virtual:weapp-vite\/runtime\/reactivity"/)
+  })
+
+  it('reuses the existing Wevu unref binding for the empty CSS variable runtime', () => {
+    const { code } = runRewrite(`
+import { unref as unwrap } from 'virtual:weapp-vite/runtime/reactivity'
+export default {}
+    `.trim(), { stabilizeCssVarsRuntime: true })
+
+    expect(code).toContain('unwrap(undefined)')
+    expect(code.match(/\bunref\b/g)).toHaveLength(1)
+    expect(code).not.toMatch(/from ['"]vue['"]/)
   })
 
   it('preserves component default export after creating wevu component', () => {

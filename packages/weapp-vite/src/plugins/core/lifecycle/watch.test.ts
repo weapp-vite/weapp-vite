@@ -2,6 +2,7 @@ import type { CorePluginState } from '../helpers'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { createModuleGraphService } from '../../../moduleGraph/service'
 import { storeVueSfcHmrSignatures } from '../../../runtime/storeVueSfcHmrSignatures'
 import { createBuildStartHook, createWatchChangeHook } from './watch'
 
@@ -90,6 +91,7 @@ function createState(overrides: Record<string, any> = {}) {
         invalidate: collectAffectedEntriesMock,
         requestTopologyRescan: vi.fn(),
         consumeTopologyRescan: vi.fn(() => undefined),
+        removeEntryDependencies: vi.fn(),
       },
       configService: {
         platform: 'weapp',
@@ -1117,6 +1119,9 @@ const count = 1
     const state = createState({
       loadedEntrySet: new Set([entryId]),
     })
+    const graph = createModuleGraphService()
+    graph.replaceEntryDependencies(entryId, 'template', ['/project/src/pages/hmr/index.wxml'])
+    state.ctx.moduleGraphService = graph
     const hook = createWatchChangeHook(state)
 
     await hook(entryId, { event: 'delete' })
@@ -1125,6 +1130,7 @@ const count = 1
     expect(state.loadEntry.invalidateResolveCache).not.toHaveBeenCalled()
     expect(invalidateEntryForSidecarMock).not.toHaveBeenCalled()
     expect(loggerSuccessMock).toHaveBeenCalledWith('[update] src/pages/hmr/index.ts')
+    expect(graph.collectAffectedEntries('/project/src/pages/hmr/index.wxml')).toEqual(new Set([entryId]))
   })
 
   it('marks page entries dirty when app.vue shell template changes', async () => {
@@ -1373,6 +1379,13 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
         ['pages/logs/hmr-added', { type: 'page' }],
       ]),
     })
+    const graph = createModuleGraphService()
+    const sharedStyle = '/project/src/shared.css'
+    const survivingEntry = '/project/src/pages/other.vue'
+    graph.replaceEntryDependencies(entryId, 'style', [sharedStyle])
+    graph.replaceEntryDependencies(entryId, 'template', ['/project/src/pages/logs/hmr-added.wxml'])
+    graph.replaceEntryDependencies(survivingEntry, 'style', [sharedStyle])
+    state.ctx.moduleGraphService = graph
     state.ctx.runtimeState.wxml.tokenMap.set(entryId, { code: '', deps: [] })
     state.ctx.runtimeState.glassEasel.analysisByOwner.set('output:main:pages/logs/hmr-added.js', {
       kind: 'output',
@@ -1388,6 +1401,9 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.markEntryDirty).not.toHaveBeenCalledWith(entryId, 'direct')
     expect(state.loadEntry.invalidateResolveCache).toHaveBeenCalledTimes(1)
     expect(invalidateEntryForSidecarMock).toHaveBeenCalledWith(state.ctx, entryId, 'delete')
+    expect(graph.hasModule(entryId)).toBe(false)
+    expect(graph.hasModule('/project/src/pages/logs/hmr-added.wxml')).toBe(false)
+    expect(graph.collectAffectedEntries(sharedStyle)).toEqual(new Set([survivingEntry]))
     expect(state.ctx.runtimeState.wxml.tokenMap.has(entryId)).toBe(false)
     expect(state.ctx.runtimeState.glassEasel.analysisByOwner.size).toBe(0)
   })

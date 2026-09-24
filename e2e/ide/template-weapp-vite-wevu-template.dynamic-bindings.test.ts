@@ -36,6 +36,24 @@ async function waitForPage(miniProgram: any, route: string) {
   throw new Error(`Portal navigation did not reach ${route}`)
 }
 
+async function waitForPortalNavigation(page: any, route: string) {
+  const deadline = Date.now() + 5_000
+  let lastError: unknown
+  while (Date.now() < deadline) {
+    try {
+      return await page.callMethodWithOptions('waitForNavigation', { routeOnly: true }, route)
+    }
+    catch (error) {
+      lastError = error
+      if (!String(error).includes('No portal navigation has started')) {
+        throw error
+      }
+      await delay(50)
+    }
+  }
+  throw lastError ?? new Error(`Portal navigation did not start for ${route}`)
+}
+
 describe('e2e app: template-wevu-regression simplified portal', { concurrent: false }, () => {
   beforeAll(async () => {
     await runBuild()
@@ -132,11 +150,12 @@ describe('e2e app: template-wevu-regression simplified portal', { concurrent: fa
       const buttons = await page.$$('.entry-card .action-btn', { fallback: false })
       expect(buttons).toHaveLength(4)
       await buttons[target.index]!.tap()
+      // 点击协议可能先于页面事件处理返回；在旧页面仍可用时重试读取导航
+      // Promise，避免高负载 DevTools 在 webview 销毁后才处理 routeDone。
+      const navigationRoute = await waitForPortalNavigation(homePage, target.route)
+      expect(navigationRoute).toBe(target.route)
       page = await waitForPage(miniProgram, target.route)
       await dom.check(target.id, miniProgram, page)
-      // 目标 DOM 可早于 navigateTo 的宿主回调；提前 reLaunch 会让同一次导航超时。
-      // 首页仍保留在页面栈中，但 Page 协议只能调用栈顶；显式通过 AppService 等待原首页的 Promise。
-      expect(await homePage.callMethodWithOptions('waitForNavigation', { routeOnly: true }, target.route)).toBe(target.route)
       page = await miniProgram.reLaunch('/pages/index/index')
       await dom.check(`${target.id}-return`, miniProgram, page)
     }

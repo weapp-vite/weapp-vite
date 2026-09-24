@@ -97,7 +97,7 @@ export default defineComponent({
       :meta-title="meta.title"
       :dynamic-label="labels[currentKey]"
     />
-    <text selectable class="details">
+    <text user-select class="details">
       {{ __e2eText }}
     </text>
   </view>

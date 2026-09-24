@@ -27,21 +27,6 @@ function resolveImportedLocalName(program: Program, source: string, importedName
   return undefined
 }
 
-function ensureVueImport(program: Program, importedName: string, localName: string) {
-  let target = program.body.find(
-    statement => t.isImportDeclaration(statement)
-      && statement.importKind !== 'type'
-      && statement.source.value === 'vue',
-  ) as t.ImportDeclaration | undefined
-  if (!target) {
-    target = t.importDeclaration([], t.stringLiteral('vue'))
-    program.body.unshift(target)
-  }
-  target.specifiers.push(
-    t.importSpecifier(t.identifier(localName), t.identifier(importedName)),
-  )
-}
-
 function createEmptyCssVarsRegistration(useCssVarsLocalName: string, unrefLocalName: string) {
   return t.expressionStatement(
     t.callExpression(t.identifier(useCssVarsLocalName), [
@@ -62,15 +47,16 @@ export function injectStableCssVarsRuntime(
   scope: NodePath['scope'],
 ) {
   const runtimeImportPath = resolveWevuInternalImportModuleId('useCssVars')
+  const reactivityImportPath = resolveWevuInternalImportModuleId('unref')
   const useCssVarsLocalName = resolveImportedLocalName(program, runtimeImportPath, 'useCssVars')
     ?? scope.generateUidIdentifier('useCssVars').name
-  const unrefLocalName = resolveImportedLocalName(program, 'vue', 'unref')
+  const unrefLocalName = resolveImportedLocalName(program, reactivityImportPath, 'unref')
     ?? scope.generateUidIdentifier('unref').name
   if (!resolveImportedLocalName(program, runtimeImportPath, 'useCssVars')) {
     ensureRuntimeImport(program, 'useCssVars', useCssVarsLocalName)
   }
-  if (!resolveImportedLocalName(program, 'vue', 'unref')) {
-    ensureVueImport(program, 'unref', unrefLocalName)
+  if (!resolveImportedLocalName(program, reactivityImportPath, 'unref')) {
+    ensureRuntimeImport(program, 'unref', unrefLocalName)
   }
   const registration = createEmptyCssVarsRegistration(useCssVarsLocalName, unrefLocalName)
   const setupFn = resolveSetupFunction(componentOptionsObject)

@@ -2,7 +2,7 @@
 
 import type { dev, DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
-import type { GlassEaselNativeScriptUpdate } from '../../analyze/glassEasel/nativeScripts'
+import type { GlassEaselNativeScriptUpdate } from '../../analyze/glassEasel/types'
 import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import {

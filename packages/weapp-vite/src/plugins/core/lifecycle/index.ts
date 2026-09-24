@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite'
+import type { BuildGraphContext } from '../../../moduleGraph/types'
 import type { CorePluginState } from '../helpers'
 import { parseSidecarSourceRequest } from '../../../moduleGraph/protocol'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
@@ -15,6 +16,13 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   const loadLogicalEntry = createLogicalEntryLoadHook(state)
   const loadSource = createLoadHook(state)
   const buildEnd = createBuildEndHook(state)
+  let releaseServer: (() => void) | undefined
+
+  const releaseScope = (context?: BuildGraphContext) => {
+    state.ctx.moduleGraphService.unbindBuildContext(state, context)
+    releaseServer?.()
+    releaseServer = undefined
+  }
 
   return {
     name: 'weapp-vite:pre',
@@ -23,14 +31,15 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
       state.resolvedConfig = config
     },
     configureServer(server) {
-      state.ctx.moduleGraphService.bindDevServer(server)
+      releaseServer?.()
+      releaseServer = state.ctx.moduleGraphService.bindDevServer(server)
     },
     buildStart: createBuildStartHook(state),
     watchChange: createWatchChangeHook(state),
     options: createOptionsHook(state),
     resolveId: createLogicalEntryResolveHook(state),
     async load(id) {
-      state.ctx.moduleGraphService.bindPluginContext(this)
+      state.ctx.moduleGraphService.bindPluginContext(state, this)
       const logicalResult = await loadLogicalEntry.call(this, id)
       if (logicalResult || parseSidecarSourceRequest(id)) {
         return logicalResult
@@ -48,6 +57,15 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     async buildEnd() {
       state.entryChunkLifecycle?.endBuild()
       return await buildEnd.call(this)
+    },
+    closeBundle() {
+      // watch 构建每轮都可能关闭 bundle；scope 必须保留到 watcher 真正关闭。
+      if (!this.meta.watchMode || state.resolvedConfig?.command === 'serve') {
+        releaseScope(this)
+      }
+    },
+    closeWatcher() {
+      releaseScope(this)
     },
   }
 }

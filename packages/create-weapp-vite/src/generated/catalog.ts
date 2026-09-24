@@ -9,8 +9,8 @@ export const TEMPLATE_CATALOG = {
   '@babel/types': '^8.0.6',
   '@douyin-microapp/typings': '^1.3.1',
   '@egoist/tailwindcss-icons': '^1.9.2',
-  '@icebreakers/eslint-config': '^8.0.1',
-  '@icebreakers/stylelint-config': '^5.1.1',
+  '@icebreakers/eslint-config': '^8.0.2',
+  '@icebreakers/stylelint-config': '^5.1.2',
   '@iconify-json/mdi': '^1.2.3',
   '@iconify/tailwind4': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
@@ -36,18 +36,18 @@ export const TEMPLATE_CATALOG = {
   'graphql-request': '^7.4.0',
   'happy-dom': '^20.14.5',
   'lru-cache': '^11.5.3',
-  'magic-string': '^1.4.1',
+  'magic-string': '^1.4.2',
   'miniprogram-api-typings': '^5.2.3',
   'oxc-parser': '^0.151.0',
   'oxc-walker': '^1.1.1',
   'pkg-types': '^2.3.3',
   'postcss-selector-parser': '^7.1.6',
   'react-reconciler': '0.34.0',
-  'sass-embedded': '^1.104.1',
+  'sass-embedded': '^1.105.0',
   'socket.io-client': '^4.8.3',
   'tailwind-merge': '^3.7.0',
   'tailwind-variants': '^3.3.1',
-  'tdesign-miniprogram': '^1.16.1',
+  'tdesign-miniprogram': '^1.17.0',
   'ts-morph': '^28.0.0',
   'uview-plus': '3.8.113',
   'vite-plugin-inspect': '^12.0.2',
@@ -71,8 +71,8 @@ export const TEMPLATE_CATALOG = {
   picocolors: '^1.1.1',
   postcss: '^8.5.28',
   react: '19.3.0',
-  rolldown: '1.2.9',
-  sass: '^1.104.1',
+  rolldown: '1.2.10',
+  sass: '^1.105.0',
   sharp: '^0.35.4',
   stylelint: '^17.15.0',
   tailwindcss: '^4.3.3',
@@ -86,7 +86,7 @@ export const TEMPLATE_CATALOG = {
 
 export const TEMPLATE_NAMED_CATALOG = {
   'tdesign-miniprogram-fixed': {
-    'tdesign-miniprogram': '1.16.1'
+    'tdesign-miniprogram': '1.17.0'
   },
   'weapp-tailwindcss-fixed': {
     'weapp-tailwindcss': '5.5.8'

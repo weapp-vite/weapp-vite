@@ -35,7 +35,7 @@ describe('runtime config merge plugins', () => {
     ])
   })
 
-  it('keeps generic compiler output after the output finalizer', () => {
+  it('keeps compiler output between normalization and final publication', () => {
     const compilerSource = markWeappCompilerPlugin(
       { name: 'weapp-vite:compiler:source', enforce: 'pre' },
       'source',
@@ -47,15 +47,17 @@ describe('runtime config merge plugins', () => {
       'fake-output',
     )
     const outputFinalizer = { name: 'weapp-vite:output-finalizer' }
+    const outputPublication = { name: 'weapp-vite:output-publication' }
     vitePluginWeappMock.mockReturnValueOnce([
       { name: 'weapp-vite:context' },
+      outputPublication,
       compilerSource,
       { name: 'weapp-vite:css' },
       outputFinalizer,
       compilerOutput,
     ])
     const userPre = { name: 'user-pre', enforce: 'pre' }
-    const config: any = { plugins: [userPre] }
+    const config: any = { plugins: [userPre, { name: 'weapp-vite:output-publication' }] }
     arrangePlugins(config, {} as any, undefined)
     expect(config.plugins.map((plugin: any) => plugin.name)).toEqual([
       'weapp-vite:context',
@@ -64,6 +66,7 @@ describe('runtime config merge plugins', () => {
       'weapp-vite:css',
       'weapp-vite:output-finalizer',
       'weapp-vite:compiler:output',
+      'weapp-vite:output-publication',
     ])
     expect(config.plugins.indexOf(compilerSource)).toBe(2)
   })

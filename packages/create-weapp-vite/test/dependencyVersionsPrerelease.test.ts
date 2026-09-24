@@ -18,7 +18,7 @@ describe('prerelease dependency baselines', () => {
       optionalDependencies: { 'weapp-vite': 'workspace:*', '@weapp-vite/dashboard': 'workspace:*' },
     }
 
-    await resolveDependencyVersions(pkg)
+    await resolveDependencyVersions(pkg, 'compatible')
 
     expect(getPackageVersionsFromNpm).not.toHaveBeenCalled()
     for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'] as const) {

@@ -1,11 +1,11 @@
 Component({
   properties: {
     callback: {
-      type: Function,
+      type: null,
       value: undefined,
     },
     handler: {
-      type: Function,
+      type: null,
       value: undefined,
     },
     metaTitle: {

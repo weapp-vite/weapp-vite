@@ -17,6 +17,9 @@ const options: CreateProjectOptions = {
   installSkills: true,
 }
 expectType<boolean | undefined>(options.installSkills)
+expectType<string | undefined>(options.registry)
+expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.default, { registry: 'https://registry.npmmirror.com/' }))
+expectError(createProject('/tmp/demo', TemplateName.default, { registry: 123 }))
 expectType<Promise<void>>(createProject('/tmp/demo', TemplateName.wevu, options))
 
 expectAssignable<DependencyVersionStrategy>('compatible')

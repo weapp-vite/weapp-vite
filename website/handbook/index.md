@@ -16,7 +16,7 @@ keywords:
 
 ## 你需要准备什么
 
-- Node.js 22 LTS（`>=22.12.0`）
+- Node.js 22（至少 `22.22.2`）、24（至少 `24.15.0`）或 26 及以上版本
 - pnpm
 - 微信开发者工具
 
@@ -31,6 +31,8 @@ pnpm install
 ```
 
 这条命令确定性地选择 Wevu 模板，并跳过可选的 AI skills 安装询问，适合第一次照着教程操作。想体验交互式模板选择时，也可以直接执行 `pnpm create weapp-vite`。
+
+pnpm 12.5.1 默认有 24 小时发布冷却期，`pnpm create weapp-vite` / `pnpm create weapp-vite@latest` 在新版本发布后可能先选择成熟的旧版；这也可能发生在官方源和全新缓存中。需要当前修复时，按[发布冷却期与精确版本恢复](/packages/create-weapp-vite#pnpm-release-age)核对版本：默认非严格模式可记录精确版本例外，严格模式仍须等待或审批，不要全局关闭安全检查。
 
 创建完之后，你会看到大概这样的目录：
 

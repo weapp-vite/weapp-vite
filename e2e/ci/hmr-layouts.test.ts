@@ -44,7 +44,7 @@ const HMR_CASES: LayoutHmrCase[] = [
     name: 'page json',
     sourcePath: path.join(APP_ROOT, 'src/pages/layouts/index.json'),
     getDistPath: () => path.join(DIST_ROOT, 'pages/layouts/index.json'),
-    initialMarker: 'LAYOUTS-PAGE-JSON-BASE',
+    initialMarker: 'layouts-page-json-base',
   },
   {
     name: 'default layout template',
@@ -68,7 +68,7 @@ const HMR_CASES: LayoutHmrCase[] = [
     name: 'default layout json',
     sourcePath: path.join(APP_ROOT, 'src/layouts/default/index.json'),
     getDistPath: () => path.join(DIST_ROOT, 'layouts/default/index.json'),
-    initialMarker: 'DEFAULT-LAYOUT-JSON-BASE',
+    initialMarker: 'default-layout-json-base',
   },
   {
     name: 'admin layout template',
@@ -92,7 +92,7 @@ const HMR_CASES: LayoutHmrCase[] = [
     name: 'admin layout json',
     sourcePath: path.join(APP_ROOT, 'src/layouts/admin/index.json'),
     getDistPath: () => path.join(DIST_ROOT, 'layouts/admin/index.json'),
-    initialMarker: 'ADMIN-LAYOUT-JSON-BASE',
+    initialMarker: 'admin-layout-json-base',
   },
 ]
 
@@ -167,7 +167,10 @@ describe('HMR layouts matrix (dev watch)', { concurrent: false }, () => {
 
       for (const testCase of HMR_CASES) {
         const originalSource = await fs.readFile(testCase.sourcePath, 'utf8')
-        const marker = createHmrMarker(`LAYOUTS-${testCase.name.replaceAll(' ', '-').toUpperCase()}`, platform)
+        const rawMarker = createHmrMarker(`LAYOUTS-${testCase.name.replaceAll(' ', '-').toUpperCase()}`, platform)
+        const marker = testCase.sourcePath.endsWith('.json')
+          ? rawMarker.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+          : rawMarker
         const updatedSource = originalSource.replace(testCase.initialMarker, marker)
 
         if (updatedSource === originalSource) {

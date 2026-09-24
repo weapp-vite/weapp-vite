@@ -109,13 +109,13 @@ describe('stateful patch external modules', () => {
     ctx.scanService!.subPackageMap.set('feature', { subPackage: { root: 'feature', dependencies: ['native-controls'] } } as never)
     const source = [
       'import * as controls from "native-controls";',
-      '__rolldown_runtime__.registerFactory("src/shared.ts", "esm", () => {});',
-      '__rolldown_runtime__.registerFactory("src/feature/page.ts", "esm", () => controls.default.show());',
+      '__rolldown_runtime__.registerFactory("src/shared.ts", () => {});',
+      '__rolldown_runtime__.registerFactory("src/feature/page.ts", () => controls.default.show());',
     ].join('\n')
     const options = { filename: 'update.js', resolveImport: createStatefulHmrPatchImportResolver(ctx, 'update.js') }
     const output = transformStatefulHmrPatchImports(source, options)
     expect(output).toContain('require("../feature/miniprogram_npm/native-controls/index")')
-    expect(() => transformStatefulHmrPatchImports(`${source}\n__rolldown_runtime__.registerFactory("src/page.ts", "esm", () => controls.default.show());`, options))
+    expect(() => transformStatefulHmrPatchImports(`${source}\n__rolldown_runtime__.registerFactory("src/page.ts", () => controls.default.show());`, options))
       .toThrow('different npm roots')
   })
 

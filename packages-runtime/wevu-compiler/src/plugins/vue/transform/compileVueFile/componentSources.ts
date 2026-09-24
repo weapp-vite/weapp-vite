@@ -7,7 +7,7 @@ import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import * as fs from '../../../../utils/fs'
-import { collectVueTemplateTags, isAutoImportCandidateTag } from '../../../../utils/vueTemplateTags'
+import { analyzeVueTemplateTags, isAutoImportCandidateTag, warnVueTemplateTagAnalysis } from '../../../../utils/vueTemplateTags'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { normalizeTemplateTagName } from '../../compiler/template/htmlTagMapping'
 
@@ -224,21 +224,19 @@ function mergeComponentSourceInfo(target: ComponentSourceInfo, source: Component
 
 function collectTemplateComponentTagInfo(template: string, filename: string, warn?: (message: string) => void): TemplateComponentTagInfo {
   const warnHandler = resolveWarnHandler(warn)
-  const autoImportTags = collectVueTemplateTags(template, {
-    filename,
-    warnLabel: '组件标签',
-    warn: (message: string) => warnHandler(message),
-    shouldCollect: isAutoImportCandidateTag,
-  })
-  const templateTags = collectVueTemplateTags(template, {
-    filename,
-    warnLabel: '脚本导入组件标签',
-    warn: (message: string) => warnHandler(message),
-    shouldCollect: () => true,
-  })
+  const analysis = analyzeVueTemplateTags(template)
+  if (analysis.errorMessage !== undefined) {
+    for (const warnLabel of ['组件标签', '脚本导入组件标签']) {
+      warnVueTemplateTagAnalysis(analysis.errorMessage, { filename, warnLabel, warn: warnHandler })
+    }
+  }
+  const autoImportTags = new Set<string>()
   const componentNames = new Set<string>()
   const tagsByComponentName = new Map<string, Set<string>>()
-  for (const tag of templateTags) {
+  for (const tag of analysis.tags) {
+    if (isAutoImportCandidateTag(tag)) {
+      autoImportTags.add(tag)
+    }
     const camelName = kebabToCamel(tag)
     for (const componentName of [tag, camelName, capitalize(camelName)]) {
       componentNames.add(componentName)
