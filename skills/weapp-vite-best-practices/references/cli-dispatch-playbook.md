@@ -36,7 +36,7 @@ else {
 - 但 `weapp-vite ide logs` 是 `weapp-vite` 原生日志桥接命令。
 - `close` 是 `weapp-vite` 原生命令，用于关闭微信开发者工具。
 - `mcp init|print|doctor` 是 `weapp-vite` 原生命令，用于管理 AI 客户端配置。
-- `upload` 是六端生产构建并上传的原生命令；旧微信 IDE 上传必须显式使用 `ide upload`，不能按参数猜测后回退。
+- `upload`、`preview` 是六端生产构建后调用官方上传、预览接口的原生命令；旧微信 IDE 上传、预览必须显式使用 `ide upload`、`ide preview`，不能按参数猜测后回退。
 - `help <cmd>`：
   - native command：保留 native help
   - ide command：转发给 `weapp-ide-cli`

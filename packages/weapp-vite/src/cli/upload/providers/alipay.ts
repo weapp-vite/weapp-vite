@@ -1,4 +1,4 @@
-import type { PreparedUpload, UploadContext } from '../types'
+import type { PreparedUpload, PreviewResult, UploadAction, UploadContext } from '../types'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { loadUploadPackage, requireUploadAppId, requireUploadEnv } from '../tools'
@@ -14,19 +14,27 @@ interface MinidevSdk {
       versionDescription: string
       experience: false
     }) => Promise<{ version: string, experienceQrCodeUrl?: string }>
+    preview: (options: {
+      appId: string
+      project: string
+      identityKeyPath: string
+      clientType: 'alipay'
+    }) => Promise<{ qrcodeUrl: string, qrcodeSchema?: string, version: string }>
   }
 }
 
-/** 校验支付宝身份密钥与版本，只在执行阶段加载并调用官方 SDK。 */
-export async function prepareAlipayUpload(context: UploadContext): Promise<PreparedUpload> {
+/** 校验支付宝身份密钥及上传版本，只在执行阶段加载并调用官方 SDK。 */
+export async function prepareAlipayUpload(context: UploadContext, action: UploadAction = 'upload'): Promise<PreparedUpload> {
   const appId = requireUploadAppId({ ...context, appid: context.env.ALIPAY_APP_ID?.trim() || context.appid })
   const identityKeyPath = path.resolve(context.cwd, requireUploadEnv(context, 'ALIPAY_IDENTITY_KEY_PATH'))
-  if (!/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(context.version)
-    || context.version.split('.').some(part => Number(part) > 2147483647)) {
-    throw new Error('支付宝上传版本必须为 x.y.z 格式，各段不能有前导零且不能超过 2147483647。')
-  }
-  if (context.desc.length >= 200) {
-    throw new Error('支付宝上传描述必须少于 200 个字符。')
+  if (action === 'upload') {
+    if (!/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(context.version)
+      || context.version.split('.').some(part => Number(part) > 2147483647)) {
+      throw new Error('支付宝上传版本必须为 x.y.z 格式，各段不能有前导零且不能超过 2147483647。')
+    }
+    if (context.desc.length >= 200) {
+      throw new Error('支付宝上传描述必须少于 200 个字符。')
+    }
   }
 
   let identityKey: string
@@ -61,6 +69,19 @@ export async function prepareAlipayUpload(context: UploadContext): Promise<Prepa
     secrets,
     async run() {
       const sdk = await loadUploadPackage<MinidevSdk>('minidev', context.cwd)
+      if (action === 'preview') {
+        const result = await sdk.minidev.preview({
+          appId,
+          project: context.projectPath,
+          identityKeyPath,
+          clientType: 'alipay',
+        })
+        const qrCodeUrl = typeof result?.qrcodeUrl === 'string' ? result.qrcodeUrl.trim() : ''
+        if (!qrCodeUrl) {
+          throw new Error('支付宝预览未返回二维码地址。')
+        }
+        return { qrCodeUrl } satisfies PreviewResult
+      }
       return sdk.minidev.upload({
         appId,
         project: context.projectPath,

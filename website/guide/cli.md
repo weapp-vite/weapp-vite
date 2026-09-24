@@ -1,6 +1,6 @@
 ---
 title: CLI 命令参考
-description: weapp-vite CLI 命令参考，覆盖 dev、build、六端 upload、analyze、prepare、mcp、ide logs、generate，以及 screenshot/compare 等 weapp-ide-cli 透传规则。
+description: weapp-vite CLI 命令参考，覆盖 dev、build、六端 upload/preview、analyze、prepare、mcp、ide logs、generate，以及 screenshot/compare 等 weapp-ide-cli 透传规则。
 keywords:
   - guide
   - cli
@@ -13,7 +13,7 @@ keywords:
 
 本文汇总 `weapp-vite` 在当前版本可用的命令与参数，优先覆盖日常开发、构建、支持文件预生成、AI 协作与 IDE 自动化场景。
 
-> 微信开发者工具命令可通过 `wv ide <command>` 调用。`wv upload` 是六端构建上传的原生命令；原有微信 IDE 上传请改用 `wv ide upload`。
+> 微信开发者工具命令可通过 `wv ide <command>` 调用。`wv upload`、`wv preview` 是六端构建上传和预览的原生命令；原有微信 IDE 上传、预览请使用 `wv ide upload`、`wv ide preview`。
 
 > `wv` 是 `weapp-vite` 的简写。下文统一使用 `wv` 作为命令示例。
 
@@ -392,7 +392,7 @@ wv mcp doctor codex
 
 ```bash
 # 京东、百度分别构建并上传
-wv upload --platform jd --upload-version 1.2.3 --desc "更新首页"
+wv upload --platform jd --uv 1.2.3 --desc "更新首页"
 wv upload --platform swan --mode production
 
 # 按指定顺序处理多个目标；all 显式选择六个平台
@@ -405,15 +405,15 @@ wv upload --platform all --dry-run
 
 `upload [root]` 从源码项目根目录执行，复用目标平台的生产构建和项目配置解析。每个目标构建完成后才上传，不复用旧产物；多个目标串行执行，首次失败即停止，已经上传的目标不会自动撤回。未指定平台时使用项目配置；启用 `weapp.multiPlatform` 的项目仍需显式选择平台。`web` 不支持小程序上传。
 
-| 参数                         | 说明                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| `-p, --platform <platform>`  | `weapp`、`alipay`、`tt`、`xhs`、`jd`、`swan`；支持逗号分隔或 `all`        |
-| `--upload-version <version>` | 默认读取目标项目 `package.json.version`；`--version/-v` 仍是 CLI 版本查询 |
-| `--desc <text>`              | 版本说明；默认使用项目名称与版本                                          |
-| `--project-config <path>`    | 使用指定项目配置；文件名须是目标平台的标准名称                            |
-| `--dry-run`                  | 只构建并检查 SDK 读取的代码目录与本次产物一致、`app.json` 存在            |
-| `-m, --mode <mode>`          | 默认 `production`，同时选择构建配置和 `.env` 模式                         |
-| `-c, --config <file>`        | 指定 Vite 配置                                                            |
+| 参数                        | 说明                                                                      |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `-p, --platform <platform>` | `weapp`、`alipay`、`tt`、`xhs`、`jd`、`swan`；支持逗号分隔或 `all`        |
+| `--uv <version>`            | 默认读取目标项目 `package.json.version`；`--version/-v` 仍是 CLI 版本查询 |
+| `--desc <text>`             | 版本说明；默认使用项目名称与版本                                          |
+| `--project-config <path>`   | 使用指定项目配置；文件名须是目标平台的标准名称                            |
+| `--dry-run`                 | 只构建并检查 SDK 读取的代码目录与本次产物一致、`app.json` 存在            |
+| `-m, --mode <mode>`         | 默认 `production`，同时选择构建配置和 `.env` 模式                         |
+| `-c, --config <file>`       | 指定 Vite 配置                                                            |
 
 #### 上传工具与凭据
 
@@ -436,6 +436,7 @@ wv upload --platform all --dry-run
 - 工具接收的目录由构建配置推导。上传前会检查 SDK 配置的代码根目录与本次构建输出是否相同，不一致时拒绝上传；嵌套项目配置、自定义输出目录尤其需要确认此对应关系。京东适配器会进一步定位到包含 `app.json` 的目录。
 - SDK 在独立进程运行，输出过滤已知凭据及 URL 用户名密码后返回；异常退出或未确认完成都视为失败，不会因 SDK 提前 `exit(0)` 报成功。取消父进程会停止上传子进程，但无法撤回平台已经接收的版本。
 - **工具凭据限制**：抖音官方 SDK 会把 Token 写入自己的本地配置；百度官方 CLI 必须通过 `--token` 传递账号登录凭据 BDUSS，子进程参数可能被同机有权限的用户读取。请使用可信、隔离的 CI runner，并在任务完成后销毁其环境，不要在不可信的共享主机上执行。进程隔离不等于第三方依赖安全沙箱。
+- **京东并发限制**：官方 `jd-miniprogram-ci@1.0.8` 的上传和预览共用系统临时目录中的 `jd_mini_temp.zip`。本命令会串行执行多个目标，但不能隔离其他 CLI 进程；同一机器上共享临时目录的京东上传、预览任务也应串行，避免临时包相互覆盖。
 
 这里只上传小程序开发版本，**不自动提审、不正式上线**；体验版二维码和可用状态依各平台规则。真实上传需要有效凭据、平台权限及网络，`--dry-run` 成功不代表平台已接受版本，也不能替代目标 IDE/真机验证。组件库和独立插件不在此入口范围内。
 
@@ -449,6 +450,31 @@ wv ide upload --project ./dist -v 1.2.3 -d "release"
 
 该入口仍调用已登录的微信开发者工具，不额外构建。新的 `wv upload` 不接收旧 IDE 参数，也不隐式回退到 IDE 上传。
 
+### `preview`：构建并生成六端预览
+
+```bash
+wv preview -p tt --mode test
+wv preview -p xhs --mode production
+wv preview -p jd,swan --mode test
+wv preview -p all --dry-run
+```
+
+`preview [root]` 使用与 `upload` 相同的六个平台、项目根目录、生产构建、平台工具及凭据。每个目标先构建，再调用官方 **preview** 接口，不调用开发版本上传、提审或正式发布；多目标串行处理，首次失败停止。
+
+支持 `-p/--platform`、`--project-config`、`--desc`、`--dry-run` 以及全局 `-m/--mode`、`-c/--config`。默认 mode 为 `production`；`--mode test` 选择 `.env.test` 和 `.env.test.local` 等环境配置，并不改变生产构建方式。预览不要求上传版本，也不接收 `--uv`。
+
+| 平台               | 返回结果                                                                     |
+| ------------------ | ---------------------------------------------------------------------------- |
+| 微信               | SDK 生成的本地二维码图片，保存到 `.weapp-vite/preview/` 下本次任务的独立文件 |
+| 支付宝、京东       | 官方二维码图片 URL                                                           |
+| 抖音、小红书、百度 | 官方扫码目标 / 预览链接，不是二维码图片 URL                                  |
+
+CLI 打印对应链接或图片路径，不自动打开浏览器或修改剪贴板。百度预览也必须配置 `SWAN_MIN_VERSION`；若官方工具同时返回低版本与默认基础库两种预览码，此入口返回默认版本的预览链接。微信私钥和 IP 白名单、抖音本地 Token 存储、百度 Token 参数可见性等限制与上传相同。
+
+只有官方调用成功并返回有效预览结果才报告完成。`--dry-run` 不调用远端服务、不生成二维码；预览有效期、扫码者权限以及目标宿主可用性由平台决定，不能用 dry-run 代替真机验收。
+
+旧微信预览脚本 `wv preview --project ...` 应迁移为 `wv ide preview --project ...`。该显式入口继续使用已登录的微信开发者工具，不额外构建；`wv alipay preview` 也保留为原有 minidev 透传入口。
+
 ## `weapp-ide-cli` 透传规则
 
 当你输入的命令不是 `weapp-vite` 原生命令时，CLI 会判断是否属于 `weapp-ide-cli` 顶层命令。若命中，则直接透传执行。
@@ -459,6 +485,7 @@ wv ide upload --project ./dist -v 1.2.3 -d "release"
 - `serve`
 - `build`
 - `upload`
+- `preview`
 - `close`
 - `analyze`
 - `init`
@@ -488,7 +515,7 @@ wv ide upload --project ./dist -v 1.0.0 -d "ci upload"
 常见透传示例：
 
 ```bash
-wv preview --project ./dist -q terminal
+wv ide preview --project ./dist -q terminal
 wv ide upload --project ./dist -v 1.0.0 -d "ci upload"
 wv cache --clean compile
 wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
@@ -587,7 +614,7 @@ wv screenshot --project ./dist/build/mp-weixin --page pages/index/index --output
 wv compare --project ./dist/build/mp-weixin --page pages/index/index --baseline .screenshots/baseline/index.png --diff-output .tmp/index.diff.png --max-diff-pixels 100 --json
 
 # 透传微信预览命令
-wv preview --project ./dist -q terminal
+wv ide preview --project ./dist -q terminal
 
 # 清理微信开发者工具缓存
 wv cache --clean compile

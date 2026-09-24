@@ -139,12 +139,22 @@ pnpm build:web
 六个小程序目标可通过统一入口构建并上传，Web 不参与：
 
 ```sh
-pnpm exec wv upload --platform jd --upload-version 1.2.3
+pnpm exec wv upload --platform jd --uv 1.2.3
 pnpm exec wv upload --platform swan
 pnpm exec wv upload --platform all --dry-run
 ```
 
 `upload` 按目标逐一执行完整生产构建，再调用各平台上传工具；不会改变 `build` 的单目标规则。多目标上传需显式传入逗号分隔的平台或 `all`，首次失败停止。请按 [CLI 上传文档](/guide/cli) 安装对应官方工具、设置平台 AppID 与凭据；百度还需显式设置最低基础库版本。`--dry-run` 只验证构建与产物目录，真实上传、IDE 编译和 Runtime 验收是不同门禁。
+
+预览使用相同的构建、目标选择和凭据，但调用官方 preview 接口，不上传开发版本：
+
+```sh
+pnpm exec wv preview -p tt --mode test
+pnpm exec wv preview -p xhs,jd,swan --mode production
+pnpm exec wv preview -p all --dry-run
+```
+
+返回各平台的二维码图片或预览链接；`preview` 不要求上传版本。具体结果形式、扫码权限和旧 IDE 命令迁移见 [CLI 预览说明](/guide/cli)。
 
 ## 目标声明 {#targets}
 

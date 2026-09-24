@@ -83,9 +83,9 @@ describe('build and upload transitions', () => {
     expect(state.execute).not.toHaveBeenCalled()
   })
 
-  it('does not load credentials or invoke an uploader in dry-run mode', async () => {
+  it.each(['upload', 'preview'] as const)('does not load credentials or invoke an SDK in %s dry-run mode', async (action) => {
     state.prepare.mockRejectedValue(new Error('credentials unavailable'))
-    await runUploadCommand(root, { platform: 'jd', dryRun: true })
+    await runUploadCommand(root, { platform: 'jd', dryRun: true }, action)
     expect(events).toEqual(['build:jd', 'close:jd'])
     expect(state.prepare).not.toHaveBeenCalled()
     expect(state.execute).not.toHaveBeenCalled()

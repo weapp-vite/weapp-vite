@@ -1,12 +1,14 @@
-import type { UploadContext } from './types'
+import type { PreviewResult, UploadAction, UploadContext } from './types'
 import { fork } from 'node:child_process'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import logger from '../../logger'
+import { validatePreviewResult } from './result'
 import { redactUploadSecrets } from './tools'
 
 /** 隔离官方 SDK 的日志和进程级副作用，主进程通过 stdin 传入上下文。 */
-export async function executeUpload(platform: string, context: UploadContext, secrets: string[]): Promise<void> {
+export async function executeUpload(platform: string, context: UploadContext, secrets: string[], action: UploadAction = 'upload'): Promise<PreviewResult | undefined> {
+  let result: unknown
   const output = await new Promise<string>((resolve, reject) => {
     const child = fork(fileURLToPath(new URL('./upload-worker.mjs', import.meta.url)), [], {
       cwd: context.cwd,
@@ -37,8 +39,12 @@ export async function executeUpload(platform: string, context: UploadContext, se
     child.stdout?.setEncoding('utf8').on('data', collect)
     child.stderr?.setEncoding('utf8').on('data', collect)
     child.on('message', (message) => {
-      completed = message !== null && typeof message === 'object'
-        && 'type' in message && message.type === 'uploaded'
+      if (message !== null && typeof message === 'object'
+        && 'type' in message && message.type === 'completed'
+        && 'action' in message && message.action === action) {
+        completed = true
+        result = 'result' in message ? message.result : undefined
+      }
     })
     child.once('error', reject)
     child.once('close', (code, signal) => {
@@ -46,15 +52,16 @@ export async function executeUpload(platform: string, context: UploadContext, se
       process.off('SIGTERM', cancel)
       const safeOutput = redactUploadSecrets(captured, secrets).trim()
       if (code !== 0 || !completed || exceeded || cancelled) {
-        reject(new Error(`${platform} 上传失败（${exceeded ? '日志超限' : signal ?? code ?? 'unknown'}，${completed ? '进程异常结束' : '未收到完成确认'}）${safeOutput ? `\n${safeOutput}` : ''}`))
+        reject(new Error(`${platform} ${action === 'preview' ? '预览' : '上传'}失败（${exceeded ? '日志超限' : signal ?? code ?? 'unknown'}，${completed ? '进程异常结束' : '未收到完成确认'}）${safeOutput ? `\n${safeOutput}` : ''}`))
         return
       }
       resolve(safeOutput)
     })
     child.stdin?.on('error', () => { /* 子进程提前退出的错误由 close 事件处理。 */ })
-    child.stdin?.end(JSON.stringify({ platform, context }))
+    child.stdin?.end(JSON.stringify({ platform, context, action }))
   })
   if (output) {
     logger.info(output)
   }
+  return action === 'preview' ? validatePreviewResult(result, context) : undefined
 }

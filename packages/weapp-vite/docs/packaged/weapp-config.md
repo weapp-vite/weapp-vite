@@ -514,7 +514,7 @@ wv mcp doctor codex
 
 ```bash
 weapp-vite build
-weapp-vite preview --project ./dist/build/mp-weixin
+weapp-vite preview -p weapp --mode test
 weapp-vite ide preview --project ./dist/build/mp-weixin
 ```
 

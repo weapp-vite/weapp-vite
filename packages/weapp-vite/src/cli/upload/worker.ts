@@ -1,4 +1,4 @@
-import type { UploadContext } from './types'
+import type { UploadAction, UploadContext } from './types'
 import process from 'node:process'
 import { prepareUpload } from './index'
 
@@ -12,13 +12,16 @@ try {
   for await (const chunk of process.stdin) {
     input += String(chunk)
   }
-  const { platform, context } = JSON.parse(input) as { platform: string, context: UploadContext }
-  const upload = await prepareUpload(platform, context)
-  await upload.run()
+  const { platform, context, action } = JSON.parse(input) as { platform: string, context: UploadContext, action: UploadAction }
+  if (action !== 'upload' && action !== 'preview') {
+    throw new Error('不支持的上传或预览操作。')
+  }
+  const upload = await prepareUpload(platform, context, action)
+  const result = await upload.run()
   // SDK 完成后不保留第三方心跳；等待 IPC 确认和输出排空再退出。
   const finish = () => process.stderr.write('', () => process.stdout.write('', () => process.exit(0)))
   if (process.send) {
-    process.send({ type: 'uploaded' }, (error) => {
+    process.send({ type: 'completed', action, result: action === 'preview' ? result : undefined }, (error) => {
       if (error) {
         process.exit(1)
       }

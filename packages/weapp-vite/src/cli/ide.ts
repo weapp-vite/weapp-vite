@@ -6,6 +6,7 @@ const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'serve',
   'build',
   'upload',
+  'preview',
   'close',
   'analyze',
   'alipay',

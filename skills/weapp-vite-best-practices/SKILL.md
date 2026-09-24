@@ -63,10 +63,10 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
-   - 原生命令包含 `dev` / `serve` / `build` / `upload` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
+   - 原生命令包含 `dev` / `serve` / `build` / `upload` / `preview` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
    - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
-   - `wv upload -p <weapp|alipay|tt|xhs|jd|swan>` 先构建再调用按需安装的官方上传工具；多目标用逗号分隔或显式 `all`，`--dry-run` 不上传。只上传开发版本，不提审、不正式上线。旧微信 IDE 上传使用 `wv ide upload`。
-   - `preview` / `ide upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定；新上传入口用 `--upload-version`，不要沿用 IDE 的 `-v/-d/--project`。
+   - `wv upload/preview -p <weapp|alipay|tt|xhs|jd|swan>` 先构建再调用按需安装的官方工具；多目标用逗号分隔或显式 `all`，`--dry-run` 不调用 SDK。upload 只上传开发版本，preview 只生成官方预览结果；均不提审、不正式上线。旧微信 IDE 上传、预览使用 `wv ide upload/preview`。
+   - `ide preview` / `ide upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定；原生上传入口用 `--uv`，不要沿用 IDE 的 `-v/-d/--project`。原生 preview 不要求上传版本。
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
    - 输出路径不对：查 `srcRoot`、project config、`build.outDir`

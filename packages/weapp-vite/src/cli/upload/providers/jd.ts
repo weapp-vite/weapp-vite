@@ -1,4 +1,4 @@
-import type { PreparedUpload, UploadContext } from '../types'
+import type { PreparedUpload, PreviewResult, UploadAction, UploadContext } from '../types'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { loadUploadPackage, requireUploadEnv } from '../tools'
@@ -11,10 +11,16 @@ interface JdCi {
     desc: string
     ignores: string[]
   }) => Promise<{ base64Data?: string, imgUrl?: string }>
+  preview: (options: {
+    privateKey: string
+    projectPath: string
+    qrcodeFormat: 'image'
+    ignores: string[]
+  }) => Promise<{ base64Data?: string, imgUrl?: string }>
 }
 
 /** 京东 SDK 不解析 IDE 配置，需要将项目根目录转换为 app.json 所在目录。 */
-export async function prepareJdUpload(context: UploadContext): Promise<PreparedUpload> {
+export async function prepareJdUpload(context: UploadContext, action: UploadAction = 'upload'): Promise<PreparedUpload> {
   const privateKey = requireUploadEnv(context, 'JD_PRIVATE_KEY')
   let projectPath = context.projectPath
   const configText = await readFile(path.join(projectPath, 'project.config.json'), 'utf8').catch((error: NodeJS.ErrnoException) => {
@@ -42,20 +48,33 @@ export async function prepareJdUpload(context: UploadContext): Promise<PreparedU
     }
   }
 
-  // 官方 SDK 对无效项目会直接 exit(0)，必须在执行前拒绝，避免误报上传成功。
+  // 官方 SDK 对无效项目会直接 exit(0)，必须在执行前拒绝，避免误报成功。
   try {
     if (!(await stat(path.join(projectPath, 'app.json'))).isFile()) {
       throw new Error('not a file')
     }
   }
   catch {
-    throw new Error('京东上传目录缺少 app.json，请先构建并检查 project.config.json 的 miniprogramRoot。')
+    throw new Error(`京东${action === 'preview' ? '预览' : '上传'}目录缺少 app.json，请先构建并检查 project.config.json 的 miniprogramRoot。`)
   }
 
   return {
     secrets: [privateKey],
     async run() {
       const ci = await loadUploadPackage<JdCi>('jd-miniprogram-ci', context.cwd)
+      if (action === 'preview') {
+        const result = await ci.preview({
+          privateKey,
+          projectPath,
+          qrcodeFormat: 'image',
+          ignores: ['node_modules/**/*'],
+        })
+        const qrCodeUrl = typeof result?.imgUrl === 'string' ? result.imgUrl.trim() : ''
+        if (!qrCodeUrl) {
+          throw new Error('京东预览未返回二维码地址。')
+        }
+        return { qrCodeUrl } satisfies PreviewResult
+      }
       return ci.upload({
         privateKey,
         projectPath,

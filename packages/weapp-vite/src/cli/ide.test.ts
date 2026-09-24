@@ -27,42 +27,6 @@ describe('tryRunIdeCommand', () => {
     )
   })
 
-  it('forwards ide-only command to weapp-ide-cli', async () => {
-    const { tryRunIdeCommand } = await import('./ide')
-
-    const forwarded = await tryRunIdeCommand([
-      'preview',
-      '--project',
-      '/tmp/demo',
-    ])
-
-    expect(forwarded).toBe(true)
-    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith([
-      'preview',
-      '--project',
-      '/tmp/demo',
-    ])
-  })
-
-  it('prefers helper dispatch for ide-only command before execute fallback', async () => {
-    const { tryRunIdeCommand } = await import('./ide')
-    dispatchWechatCliCommandMock.mockResolvedValueOnce(true)
-
-    const forwarded = await tryRunIdeCommand([
-      'preview',
-      '--project',
-      '/tmp/demo',
-    ])
-
-    expect(forwarded).toBe(true)
-    expect(dispatchWechatCliCommandMock).toHaveBeenCalledWith([
-      'preview',
-      '--project',
-      '/tmp/demo',
-    ])
-    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
-  })
-
   it('forwards cache command to weapp-ide-cli', async () => {
     const { tryRunIdeCommand } = await import('./ide')
 
@@ -180,15 +144,15 @@ describe('tryRunIdeCommand', () => {
     expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
   })
 
-  it('keeps upload native but preserves the explicit IDE upload entry', async () => {
+  it.each(['upload', 'preview'])('keeps %s native but preserves its explicit IDE entry', async (command) => {
     const { tryRunIdeCommand } = await import('./ide')
 
-    expect(await tryRunIdeCommand(['upload', '--platform', 'jd'])).toBe(false)
-    expect(await tryRunIdeCommand(['help', 'upload'])).toBe(false)
+    expect(await tryRunIdeCommand([command, '--platform', 'jd'])).toBe(false)
+    expect(await tryRunIdeCommand(['help', command])).toBe(false)
     expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
 
-    expect(await tryRunIdeCommand(['ide', 'upload', '--version', '1.0.0', '--desc', 'release'])).toBe(true)
-    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith(['upload', '--version', '1.0.0', '--desc', 'release'])
+    expect(await tryRunIdeCommand(['ide', command, '--project', './dist'])).toBe(true)
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith([command, '--project', './dist'])
   })
 
   it('does not forward weapp-vite mcp command', async () => {

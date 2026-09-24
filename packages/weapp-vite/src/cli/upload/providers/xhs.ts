@@ -1,4 +1,4 @@
-import type { PreparedUpload, UploadContext } from '../types'
+import type { PreparedUpload, PreviewResult, UploadAction, UploadContext } from '../types'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { loadUploadPackage, requireUploadAppId, requireUploadEnv } from '../tools'
@@ -6,6 +6,10 @@ import { loadUploadPackage, requireUploadAppId, requireUploadEnv } from '../tool
 interface XhsUploadCi {
   core: { login: () => Promise<void> }
   setAppConfig: (options: { appId: string, config: { token: string } }) => void
+  preview: (options: {
+    project: { projectPath: string }
+    verbose: false
+  }) => Promise<{ qrcodeUrl?: unknown } | null | undefined>
   upload: (options: {
     project: { projectPath: string }
     version: string
@@ -18,11 +22,11 @@ interface XhsUploadModule {
   CI: new () => XhsUploadCi
 }
 
-/** 使用独立的官方 CI 实例上传小红书项目，禁止回退到扫码登录。 */
-export async function prepareXhsUpload(context: UploadContext): Promise<PreparedUpload> {
+/** 使用独立的官方 CI 实例上传或预览小红书项目，禁止回退到扫码登录。 */
+export async function prepareXhsUpload(context: UploadContext, action: UploadAction = 'upload'): Promise<PreparedUpload> {
   const token = requireUploadEnv(context, 'XHS_UPLOAD_TOKEN')
   const appid = context.env.XHS_APP_ID?.trim() || requireUploadAppId(context)
-  if (!context.version.trim() || !context.desc.trim()) {
+  if (action === 'upload' && (!context.version.trim() || !context.desc.trim())) {
     throw new Error('小红书上传需要非空版本号和版本描述。')
   }
   const projectConfig = JSON.parse(await readFile(path.join(context.projectPath, 'project.config.json'), 'utf8')) as { appid?: unknown } | null
@@ -36,9 +40,20 @@ export async function prepareXhsUpload(context: UploadContext): Promise<Prepared
       const { CI } = await loadUploadPackage<XhsUploadModule>('xhs-mp-cli/dist/ci.js', context.cwd)
       const sdk = new CI()
       sdk.core.login = async () => {
-        throw new Error('小红书上传仅支持 Token 认证，禁止扫码登录，请检查 XHS_UPLOAD_TOKEN 和项目 AppID。')
+        throw new Error('小红书上传与预览仅支持 Token 认证，禁止扫码登录，请检查 XHS_UPLOAD_TOKEN 和项目 AppID。')
       }
       sdk.setAppConfig({ appId: appid, config: { token } })
+      if (action === 'preview') {
+        const result = await sdk.preview({
+          project: { projectPath: context.projectPath },
+          verbose: false,
+        })
+        if (typeof result?.qrcodeUrl !== 'string' || !result.qrcodeUrl.trim()) {
+          throw new Error('小红书预览未返回有效的预览链接。')
+        }
+        // 官方 Core 将二维码图片解码后返回 qrcodeUrl，它是预览入口而非图片地址。
+        return { previewUrl: result.qrcodeUrl.trim() } satisfies PreviewResult
+      }
       return sdk.upload({
         project: { projectPath: context.projectPath },
         version: context.version,

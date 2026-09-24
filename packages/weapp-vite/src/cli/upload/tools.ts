@@ -46,14 +46,14 @@ export async function loadUploadPackage<T>(specifier: string, cwd: string): Prom
 }
 
 /** 使用 Node 直接执行包入口，避免 Windows 的 .cmd 解析与 shell 引号差异。 */
-export async function runUploadCli(context: UploadContext, packageName: string, binName: string, args: string[], secrets: string[]): Promise<void> {
+export async function runUploadCli(context: UploadContext, packageName: string, binName: string, args: string[], secrets: string[], captureOutput = false): Promise<string> {
   const info = await getPackageInfo(packageName, { paths: [context.cwd] })
   const bins: unknown = info?.packageJson.bin
   const bin = typeof bins === 'string' ? bins : bins && typeof bins === 'object' ? (bins as Record<string, unknown>)[binName] : undefined
   if (!info || typeof bin !== 'string') {
     throw new Error(`无法解析上传工具 ${binName}，请在项目中安装：pnpm add -D ${packageName}`)
   }
-  await new Promise<void>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const child = execFile(process.execPath, [path.resolve(info.rootPath, bin), ...args], {
       cwd: context.cwd,
       env: context.env,
@@ -63,13 +63,13 @@ export async function runUploadCli(context: UploadContext, packageName: string, 
     }, (error, stdout, stderr) => {
       const safeOutput = redactUploadSecrets(`${stdout}\n${stderr}`, secrets).trim()
       if (error) {
-        reject(new Error(`${packageName} 上传失败（${error.signal ?? error.code ?? 'unknown'}）${safeOutput ? `\n${safeOutput}` : ''}`))
+        reject(new Error(`${packageName} 执行失败（${error.signal ?? error.code ?? 'unknown'}）${safeOutput ? `\n${safeOutput}` : ''}`))
         return
       }
-      if (safeOutput) {
+      if (safeOutput && !captureOutput) {
         logger.info(safeOutput)
       }
-      resolve()
+      resolve(stdout)
     })
     function cancel() {
       // worker 即将退出，不能等待 CLI 的信号处理；强制结束自有进程，防止继续上传。

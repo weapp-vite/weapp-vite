@@ -1,4 +1,11 @@
 export type UploadPlatform = 'weapp' | 'alipay' | 'tt' | 'xhs' | 'jd' | 'swan'
+export type UploadAction = 'upload' | 'preview'
+
+export interface PreviewResult {
+  qrCodeUrl?: string
+  qrCodeFile?: string
+  previewUrl?: string
+}
 
 export interface UploadContext {
   cwd: string
@@ -6,6 +13,7 @@ export interface UploadContext {
   appid?: string
   version: string
   desc: string
+  qrCodePath?: string
   env: Record<string, string | undefined>
 }
 

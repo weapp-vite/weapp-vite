@@ -42,7 +42,7 @@ weapp-vite build
 ### 构建并上传
 
 ```bash
-wv upload --platform jd --upload-version 1.2.3 --desc "release"
+wv upload --platform jd --uv 1.2.3 --desc "release"
 wv upload --platform swan
 wv upload --platform all --dry-run
 ```
@@ -52,6 +52,16 @@ wv upload --platform all --dry-run
 工具需安装在当前项目：微信 `miniprogram-ci`、支付宝 `minidev`、抖音 `tt-ide-cli`、小红书 `xhs-mp-cli`、京东 `jd-miniprogram-ci`、百度 `swan-toolkit`。通过 CI Secrets 或未提交的 `.env.<mode>.local` 配置对应凭据，详情见 `README.md` 的“六端构建并上传”。百度还要求 `SWAN_MIN_VERSION`；官方 CLI Token 会进入子进程参数，仅在可信隔离 runner 上运行。
 
 旧的微信 IDE 上传请改用 `wv ide upload --project <IDE项目根> -v 1.2.3 -d "release"`；该命令依赖 IDE 登录，不额外构建。
+
+### 构建并预览
+
+```bash
+wv preview -p tt --mode test
+wv preview -p xhs,jd,swan --mode production
+wv preview -p all --dry-run
+```
+
+使用同一套六端工具与凭据，先构建再调用官方预览接口，不上传开发版本、不提审、不正式发布。微信返回本次生成的本地二维码图片；支付宝、京东返回二维码图片 URL；抖音、小红书、百度返回预览链接。百度仍需 `SWAN_MIN_VERSION`，预览无需 `--uv`。旧微信 IDE 预览使用 `wv ide preview --project <IDE项目根>`，不额外构建。
 
 ### 4. 分包预下载审计
 
@@ -104,7 +114,7 @@ weapp-vite build
 wv dev -p web --host
 wv build -p web
 weapp-vite open
-weapp-vite preview --project ./dist/build/mp-weixin
+weapp-vite preview -p weapp --mode test
 weapp-vite ide preview --project ./dist/build/mp-weixin
 weapp-vite ide logs --open
 weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json

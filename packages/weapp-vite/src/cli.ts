@@ -14,7 +14,7 @@ import { registerNpmCommand } from './cli/commands/npm'
 import { registerOpenCommand } from './cli/commands/open'
 import { registerPrepareCommand } from './cli/commands/prepare'
 import { registerServeCommand } from './cli/commands/serve'
-import { registerUploadCommand } from './cli/commands/upload'
+import { registerPreviewCommand, registerUploadCommand } from './cli/commands/upload'
 import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
 import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
@@ -52,6 +52,7 @@ registerIdeCommand(cli)
 registerAlipayCommand(cli)
 registerBuildCommand(cli)
 registerUploadCommand(cli)
+registerPreviewCommand(cli)
 registerCloseCommand(cli)
 registerAnalyzeCommand(cli)
 registerInitCommand(cli)
@@ -92,7 +93,7 @@ function resolveManagedTsconfigBootstrapRoot(args: string[]) {
     }
     return undefined
   }
-  if (['analyze', 'build', 'close', 'dev', 'open', 'prepare', 'serve', 'upload'].includes(firstArg)) {
+  if (['analyze', 'build', 'close', 'dev', 'open', 'prepare', 'preview', 'serve', 'upload'].includes(firstArg)) {
     if (secondArg && !secondArg.startsWith('-')) {
       return path.resolve(secondArg)
     }
