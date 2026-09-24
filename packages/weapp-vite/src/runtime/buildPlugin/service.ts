@@ -1951,6 +1951,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }),
       )
       const unobserveWxml = observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
+      const independentWatch = ctx.runtimeState.build.independent
+      const observeIndependent = (files: string[]) => {
+        snapshotWatcher.add(files)
+      }
+      independentWatch.watchListeners.add(observeIndependent)
+      for (const files of independentWatch.watchFiles.values()) {
+        snapshotWatcher.add([...files])
+      }
       snapshotWatcher.on('all', (event, id) => {
         if (!id) {
           return
@@ -1958,12 +1966,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (isDevOutputFile(id)) {
           return
         }
-        if (!isWxmlDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
+        const normalizedId = normalizeFsResolvedId(id)
+        const independentRoots: string[] = []
+        for (const [root, files] of independentWatch.watchFiles) {
+          if (files.has(normalizedId)) {
+            independentRoots.push(root)
+          }
+        }
+        const independentSource = independentRoots.length > 0 && !ctx.moduleGraphService.hasModule(id)
+        if (!independentSource && !isWxmlDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
-        const normalizedId = normalizeFsResolvedId(id)
         const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
-        if (event === 'unlink' && isWxmlDependencyFile) {
+        if (event === 'unlink' && (isWxmlDependencyFile || independentSource)) {
           // Chokidar 删除单文件监听后不总是监听其父目录；关闭旧句柄后重新登记缺失文件，才能观察恢复。
           queueMicrotask(() => {
             if (!devWatcherClosed) {
@@ -1973,7 +1988,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isWxmlDependencyFile) {
+        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isWxmlDependencyFile && !independentSource) {
           return
         }
         if (event.startsWith('add') && !isConfigDependency && !isWxmlDependencyFile && ctx.moduleGraphService.hasModule(id)) {
@@ -1981,6 +1996,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         if (isConfigDependency) {
           requestedConfigRestartBuilds.add(target)
+        }
+        for (const root of independentRoots) {
+          invalidateIndependentOutput(root)
+          scanService.markIndependentDirty(root)
         }
         if (isWxmlDependencyFile) {
           for (const root of scanService.independentSubPackageMap.keys()) {
@@ -2004,6 +2023,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         close: async () => {
           try {
             unobserveWxml()
+            independentWatch.watchListeners.delete(observeIndependent)
             await snapshotWatcher.close()
           }
           finally {

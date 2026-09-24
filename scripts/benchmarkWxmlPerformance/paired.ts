@@ -22,6 +22,9 @@ assert.ok(globalThis.gc)
 for (let testIndex = 0; testIndex < suites[0]!.length; testIndex++) {
   const tests = suites.map(suite => suite[testIndex]!)
   const name = tests[0]!.name
+  if (process.env.WXML_PERF_FILTER && !name.includes(process.env.WXML_PERF_FILTER)) {
+    continue
+  }
   const count = Number(name.split('/').at(-1))
   const batch = name.includes('text-static') ? 1000 : name.includes('text-binding') || name.includes('/parse') ? Math.max(2, 10000 / count) : 1
   const samples: Array<Array<{ ms: number, rss: number, heapUsed: number }>> = [[], []]
@@ -53,3 +56,5 @@ for (let testIndex = 0; testIndex < suites[0]!.length; testIndex++) {
   await writeFile(output, `${JSON.stringify(report, null, 2)}\n`)
   process.stdout.write(`${name}: ${medians.map(value => value.toFixed(4)).join(' -> ')} ms (${row.changePercent.toFixed(1)}%)\n`)
 }
+
+assert.ok(report.results.length, 'No paired scenarios matched the requested filter')

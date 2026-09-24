@@ -37,7 +37,7 @@ node --expose-gc --import tsx scripts/benchmarkWxmlPerformance/index.ts
 node --expose-gc --import tsx scripts/benchmarkWxmlPerformance/paired.ts
 ```
 
-公共场景预热 10 对，再采样 20 对，逐对交换先后顺序。快速操作使用两边完全相同的批量，报告折算的单次耗时。默认路径超过 5% 的差异需要结合成对复测定位，不能用所有场景的平均值掩盖个别退化。
+可用 `WXML_PERF_FILTER` 按场景名称子串筛选复测。公共场景预热 10 对，再采样 20 对，逐对交换先后顺序。快速操作使用两边完全相同的批量，报告折算的单次耗时。默认路径超过 5% 的差异需要结合成对复测定位，不能用所有场景的平均值掩盖个别退化。
 
 ## 整个构建与 HMR
 
@@ -50,3 +50,9 @@ node --expose-gc --import tsx scripts/benchmarkWxmlPerformance/watch.ts
 ```
 
 使用固定的 WXML fixture 和被测 checkout 的 dist，分别运行 classic/stateful。每个原生、Vue、普通分包、独立分包磁盘修改场景采样 20 次；启用功能后额外采样共享依赖变化和删除恢复，各 20 次。保持前次编译输入独立，检查转换标记只出现一次，关闭后检查增量引用集合已释放。需要先重建受影响包，且不可与另一个 E2E 或基准并发。
+
+仅重测生产构建时，设置 `WXML_PERF_ROOT` 和 `WXML_PERF_OUTPUT`，运行 `pnpm exec tsx scripts/benchmarkWxmlPerformance/build.ts`。它串行运行上述三类模板、每类 7 次，使用同一进程树 RSS 采样器并逐次检查 app 页面产物；不替代 HMR 采样。
+
+针对 HMR 的单场景复测可直接运行 `scripts/benchmark-templates-hmr.ts`，用 `TEMPLATES_HMR_SCENARIO_FILTER` 指定逗号分隔的精确场景 ID（例如 `native-page-script,vue-page-script`），同时保留模板筛选及 20 次采样。交换 checkout 的测量顺序；单场景新会话与整套场景中的热态结果分开报告。未匹配任何场景仍按失败处理。
+
+`watch.ts` 支持 `WXML_PERF_RUNTIME` 单独选择 `classic` 或 `stateful-experimental`，以及 `WXML_PERF_FILTER` / `WXML_PERF_EXCLUDE` 按输出路径子串缩小诊断范围。筛选条件写入 JSON，筛选运行不能代替被排除场景的验收。旧 baseline 若完成采样后因遗留 watcher 无法退出，必须记录生命周期失败并终止该进程，再测下一个场景；不能把缺样本或强制结束当作完整通过。

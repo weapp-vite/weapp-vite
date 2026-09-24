@@ -34,6 +34,14 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       await waitForOutputs(project.tempDir, 'initial')
       // 等待原生 watcher 完成首轮注册后，使用真实磁盘事件驱动重建。
       await new Promise(resolve => setTimeout(resolve, 500))
+      // 独立子构建没有自己的 watcher，源码依赖必须交给主构建监听。
+      const independentSource = path.join(project.tempDir, 'src/independent/index.wxml')
+      expect(compiler.ctx.runtimeState.build.independent.watchFiles.get('independent')).toContain(independentSource)
+      for (const marker of ['independent-first', 'independent-second']) {
+        await fs.appendFile(independentSource, `<view>${marker}</view>`)
+        await expect.poll(async () => fs.readFile(path.join(project.tempDir, 'dist/independent/index.wxml'), 'utf8'), { timeout: 45_000 }).toContain(marker)
+        await waitForOutputs(project.tempDir, 'initial')
+      }
       const rules = path.join(project.tempDir, 'transform-rules.json')
       await fs.writeJSON(rules, { label: 'changed' })
       await waitForOutputs(project.tempDir, 'changed')
@@ -63,6 +71,8 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
     finally {
       await watcher?.close()
       await compiler.ctx.watcherService.closeAll()
+      expect(compiler.ctx.runtimeState.build.independent.watchFiles.size).toBe(0)
+      expect(compiler.ctx.runtimeState.build.independent.watchListeners.size).toBe(0)
       await compiler.dispose()
       await project.cleanup()
     }

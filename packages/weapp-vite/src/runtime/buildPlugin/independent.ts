@@ -10,6 +10,7 @@ import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getAutoImportConfig } from '../autoImport/config'
 import { createIndependentBuildError } from '../independentError'
+import { collectIndependentWatchFiles } from './independentWatch'
 
 interface IndependentBuilderState {
   buildIndependentBundle: (root: string, meta: SubPackageMetaValue) => Promise<RolldownOutput>
@@ -110,6 +111,10 @@ export function createIndependentBuilder(
             }, autoImportGlobs)
             await Promise.all(candidates.map(candidate => isolatedCtx.autoImportService.registerPotentialComponent(candidate)))
           }
+          const watch = configService.isDev ? collectIndependentWatchFiles(independentState.watchFiles, root, source => isolatedCtx.moduleGraphService.getEntryDependencies(source).map(dependency => dependency.sourceId), independentState.watchListeners) : undefined
+          if (watch) {
+            inlineConfig.plugins = [...inlineConfig.plugins ?? [], watch.plugin]
+          }
           const restoreDefineEnv = syncImportMetaEnvDefineOverride(isolatedConfigService, inlineConfig.define as Record<string, unknown> | undefined)
           let result: RolldownOutput | RolldownOutput[]
           try {
@@ -125,6 +130,7 @@ export function createIndependentBuilder(
           if (!output) {
             throw new Error(`独立分包 ${root} 未产生输出`)
           }
+          watch?.commit()
           storeIndependentOutput(root, output)
           return output
         })

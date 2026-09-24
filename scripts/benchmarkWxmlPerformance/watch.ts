@@ -13,7 +13,7 @@ const output = path.resolve(process.env.WXML_PERF_OUTPUT ?? '.tmp/wxml-performan
 const enabled = process.env.WXML_PERF_ENABLED === '1'
 const { createCompilerContext } = await import(pathToFileURL(path.join(root, 'packages/weapp-vite/dist/index.mjs')).href)
 const outputs = ['pages/native/index.wxml', 'pages/vue/index.wxml', 'sub/index.wxml', 'independent/index.wxml']
-const report: any = { sha: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), enabled, results: [] }
+const report: any = { sha: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(), enabled, filter: process.env.WXML_PERF_FILTER ?? null, exclude: process.env.WXML_PERF_EXCLUDE ?? null, runtime: process.env.WXML_PERF_RUNTIME ?? null, results: [] }
 await mkdir(path.dirname(output), { recursive: true })
 
 async function until(check: () => Promise<boolean>) {
@@ -24,7 +24,7 @@ async function until(check: () => Promise<boolean>) {
   }
 }
 
-for (const runtime of ['classic', 'stateful-experimental']) {
+for (const runtime of ['classic', 'stateful-experimental'].filter(value => !process.env.WXML_PERF_RUNTIME || value === process.env.WXML_PERF_RUNTIME)) {
   // 固定同一输入 fixture，依赖全部链接到被测 checkout，避免混用 dist。
   const parent = path.join(root, '.tmp/wxml-performance/projects')
   await mkdir(parent, { recursive: true })
@@ -47,7 +47,7 @@ for (const runtime of ['classic', 'stateful-experimental']) {
     watcher = await ctx.buildService.build({ skipNpm: true })
     await until(async () => (await Promise.all(outputs.map(file => readFile(path.join(project.tempDir, 'dist', file), 'utf8').catch(() => '')))).every(Boolean))
     await setTimeout(500)
-    for (const file of outputs) {
+    for (const file of outputs.filter(value => (!process.env.WXML_PERF_FILTER || value.includes(process.env.WXML_PERF_FILTER)) && (!process.env.WXML_PERF_EXCLUDE || !value.includes(process.env.WXML_PERF_EXCLUDE)))) {
       const sourceFile = path.join(project.tempDir, 'src', file.replace('pages/vue/index.wxml', 'pages/vue/index.vue'))
       const original = await readFile(sourceFile, 'utf8')
       const samples = []
@@ -105,6 +105,12 @@ for (const runtime of ['classic', 'stateful-experimental']) {
     await watcher?.close()
     await ctx.watcherService.closeAll()
     assert.equal(ctx.runtimeState.wxmlProcessing?.references?.size ?? 0, 0)
+    assert.equal(ctx.runtimeState.build.independent.watchFiles?.size ?? 0, 0)
+    assert.equal(ctx.runtimeState.build.independent.watchListeners?.size ?? 0, 0)
     await project.cleanup()
   }
 }
+
+assert.ok(report.results.length, 'No watch scenarios matched the requested filters')
+report.completed = true
+await writeFile(output, `${JSON.stringify(report, null, 2)}\n`)

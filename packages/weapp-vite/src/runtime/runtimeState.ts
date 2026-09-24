@@ -136,6 +136,8 @@ export interface RuntimeState {
     npmBuilt: boolean
     independent: {
       outputs: Map<string, RolldownOutput>
+      watchFiles: Map<string, Set<string>>
+      watchListeners: Set<(files: string[]) => void>
       pendingOutputs: Promise<RolldownOutput>[]
     }
     output: {
@@ -393,6 +395,8 @@ export function createRuntimeState(): RuntimeState {
       npmBuilt: false,
       independent: {
         outputs: new Map<string, RolldownOutput>(),
+        watchFiles: new Map<string, Set<string>>(),
+        watchListeners: new Set<(files: string[]) => void>(),
         pendingOutputs: [],
       },
       output: {

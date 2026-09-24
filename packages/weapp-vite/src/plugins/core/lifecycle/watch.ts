@@ -718,6 +718,13 @@ async function processChangedFile(
       scanService.markDirty()
     }
 
+    for (const [root, files] of ctx.runtimeState.build.independent?.watchFiles ?? []) {
+      if (files.has(normalizedId)) {
+        buildService.invalidateIndependentOutput(root)
+        scanService.markIndependentDirty(root)
+      }
+    }
+
     let independentRoot: string | undefined
     for (const root of scanService.independentSubPackageMap.keys()) {
       if (relativeSrc.startsWith(`${root}/`)) {

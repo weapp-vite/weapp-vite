@@ -162,6 +162,7 @@ const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MA
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
 const failOnError = process.env.TEMPLATES_HMR_FAIL_ON_ERROR === '1'
 const filter = parseFilterEnv(process.env.TEMPLATES_HMR_FILTER)
+const scenarioFilter = parseFilterEnv(process.env.TEMPLATES_HMR_SCENARIO_FILTER)
 const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
 const scenarioGroupPriority: ScenarioGroup[] = [
   'app-json',
@@ -261,7 +262,8 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   const profilePath = path.join(template.workspaceRoot, '.weapp-vite/hmr-profile.jsonl')
   await rm(profilePath, { force: true }).catch(() => {})
 
-  const scenarios = selectScenarios(await discoverScenarios(workspace), maxScenariosPerTemplate)
+  const discovered = await discoverScenarios(workspace)
+  const scenarios = selectScenarios(scenarioFilter.length ? discovered.filter(scenario => scenarioFilter.includes(scenario.id)) : discovered, maxScenariosPerTemplate)
   result.scenarioCount = scenarios.length
   result.scenarios = scenarios.map(createPendingScenarioResult)
 
