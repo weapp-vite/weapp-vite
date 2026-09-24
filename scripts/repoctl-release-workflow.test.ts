@@ -62,7 +62,10 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
   const summaryStep = steps.find(step => step.name === 'Preserve npm publish summary')
   assert.equal(summaryStep?.if, 'always()')
   assert.match(summaryStep?.uses ?? '', /^actions\/upload-artifact@[\da-f]{40}$/)
-  assert.equal(summaryStep?.with?.path, 'pnpm-publish-summary.json')
+  assert.deepEqual(String(summaryStep?.with?.path).trim().split(/\r?\n/), [
+    'pnpm-publish-summary.json',
+    'repoctl-publish-progress.json',
+  ])
   assert.equal(summaryStep?.with?.['if-no-files-found'], 'ignore')
   assert.ok(steps.indexOf(summaryStep!) > steps.indexOf(releaseStep!))
   const repoctlConfig = await createJiti(import.meta.url).import<typeof import('../repoctl.config').default>('../repoctl.config.ts', { default: true })
