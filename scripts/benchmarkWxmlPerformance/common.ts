@@ -12,31 +12,37 @@ export async function commonCases(load: (file: string) => Promise<any>, cleanup:
   const removeComments = cleanup ? (await load('packages/weapp-vite/src/wxml/remove/index.ts')).createWxmlRemover({ comment: true }) : (code: string) => code
   for (const count of [100, 1000, 5000]) {
     const source = `<view>${'<view data-testid="x" a="{{value}}"><text>中文</text></view>'.repeat(count)}</view>`
-    const files = createBrowserVirtualFiles([
-      ['app.json', '{"pages":["pages/index/index"]}'],
-      ['app.js', 'App({})'],
-      ['pages/index/index.js', 'Page({data:{value:"initial"}})'],
-      ['pages/index/index.wxml', source],
-    ])
-    cases.push({
-      name: `simulator/public-render/${count}`,
-      bytes: Buffer.byteLength(source),
-      run: () => {
-        const session = createBrowserHeadlessSession({ files })
-        try {
-          const page = session.reLaunch('/pages/index/index')
-          page.setData({ value: 'updated' })
-          return session.renderCurrentPage().wxml
-        }
-        finally {
-          session.close()
-        }
-      },
-      verify: (result) => {
-        assert.equal(result.match(/a="updated"/g)?.length, count)
-        assert.equal(result.match(/中文/g)?.length, count)
-      },
-    })
+    for (const inlineWxs of [false, true]) {
+      const renderedSource = inlineWxs ? `<wxs module="x">module.exports = {value: "ready"}</wxs>${source.replace('<view>', '<view data-wxs="{{x.value}}">')}` : source
+      const files = createBrowserVirtualFiles([
+        ['app.json', '{"pages":["pages/index/index"]}'],
+        ['app.js', 'App({})'],
+        ['pages/index/index.js', 'Page({data:{value:"initial"}})'],
+        ['pages/index/index.wxml', renderedSource],
+      ])
+      cases.push({
+        name: `simulator/public-render${inlineWxs ? '-wxs' : ''}/${count}`,
+        bytes: Buffer.byteLength(renderedSource),
+        run: () => {
+          const session = createBrowserHeadlessSession({ files })
+          try {
+            const page = session.reLaunch('/pages/index/index')
+            page.setData({ value: 'updated' })
+            return session.renderCurrentPage().wxml
+          }
+          finally {
+            session.close()
+          }
+        },
+        verify: (result) => {
+          assert.equal(result.match(/a="updated"/g)?.length, count)
+          assert.equal(result.match(/中文/g)?.length, count)
+          if (inlineWxs) {
+            assert.ok(result.includes('data-wxs="ready"'))
+          }
+        },
+      })
+    }
     cases.push({
       name: `simulator/parse/${count}`,
       bytes: Buffer.byteLength(source),

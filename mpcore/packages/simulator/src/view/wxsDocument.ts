@@ -22,8 +22,9 @@ export function parseWxsTemplateDocument(templateSource: string) {
   if (!scripts.length && !masked.attributes.size) {
     return document
   }
+  const hasAttributes = masked.attributes.size > 0
   const restore = (node: TemplateNodeLike) => {
-    if (masked.attributes.size && node.attribs) {
+    if (hasAttributes && node.attribs) {
       for (const [name, token] of Object.entries(node.attribs)) {
         if (masked.attributes.has(token)) {
           node.attribs[name] = masked.attributes.get(token)!
