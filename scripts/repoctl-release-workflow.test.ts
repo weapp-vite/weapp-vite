@@ -2,13 +2,16 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createJiti } from 'jiti'
 import { it } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowStep {
   name?: string
+  if?: string
   uses?: string
   env?: Record<string, unknown>
+  with?: Record<string, unknown>
   run?: string
 }
 
@@ -55,4 +58,13 @@ it('keeps the repoctl-managed release workflow aligned with the current contract
     githubExpression('secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token'),
   )
   assert.equal(releaseStep?.env?.VSCE_PAT, githubExpression('secrets.VSCE_PAT'))
+
+  const summaryStep = steps.find(step => step.name === 'Preserve npm publish summary')
+  assert.equal(summaryStep?.if, 'always()')
+  assert.match(summaryStep?.uses ?? '', /^actions\/upload-artifact@[\da-f]{40}$/)
+  assert.equal(summaryStep?.with?.path, 'pnpm-publish-summary.json')
+  assert.equal(summaryStep?.with?.['if-no-files-found'], 'ignore')
+  assert.ok(steps.indexOf(summaryStep!) > steps.indexOf(releaseStep!))
+  const repoctlConfig = await createJiti(import.meta.url).import<typeof import('../repoctl.config').default>('../repoctl.config.ts', { default: true })
+  assert.ok(repoctlConfig.commands.release.qualityScripts.includes('test:release'))
 })

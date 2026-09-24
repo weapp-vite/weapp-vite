@@ -250,6 +250,7 @@ it('repoctl release lifecycle keeps PR-only intent guards outside main push chec
   const releaseConfig = config.commands.release
 
   assert.deepEqual(releaseConfig.qualityScripts, [
+    'test:release',
     'check:changeset:frontmatter',
     'check:weapp-core-constants-dependency-range',
     'check:rolldown:single-version',

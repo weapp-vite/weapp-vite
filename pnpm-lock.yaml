@@ -425,6 +425,7 @@ overrides:
   rolldown: 1.2.10
 
 patchedDependencies:
+  '@icebreakers/monorepo@5.5.5': 236a7c67d85e264d019ac773cde87f756b0bdfff25391617ec7e155a940e15f5
   uview-plus@3.8.113: 65917f1784a3ded1c4483daa760f73397945f689f390b1c2108d847c536fdb46
 
 importers:
@@ -678,7 +679,7 @@ importers:
         specifier: ^3.9.9
         version: 3.9.9
       repoctl:
-        specifier: ^5.5.5
+        specifier: 5.5.5
         version: 5.5.5(eaaacb705656b16e14bad9d1775d8ca1)
       rolldown:
         specifier: 1.2.10
@@ -20120,7 +20121,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@5.5.5(676e9f583e8dea56a25ab1b4f5cbda88)':
+  '@icebreakers/monorepo@5.5.5(patch_hash=236a7c67d85e264d019ac773cde87f756b0bdfff25391617ec7e155a940e15f5)(676e9f583e8dea56a25ab1b4f5cbda88)':
     dependencies:
       '@icebreakers/commitlint-config': 4.1.1(conventional-changelog-conventionalcommits@10.4.0)
       '@icebreakers/eslint-config': 8.0.2(@next/eslint-plugin-next@16.2.4)(@unocss/eslint-plugin@66.6.8(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint-plugin-jsx-a11y@6.10.2(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-pnpm@1.9.1(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2)))(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(globals@17.12.0)(supports-color@10.2.2))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(postcss@8.5.28)(stylelint-config-html@2.0.0(postcss-html@2.0.0(postcss@8.5.28))(stylelint@17.15.0(supports-color@10.2.2)(typescript@6.0.3)))(stylelint@17.15.0(supports-color@10.2.2)(typescript@6.0.3))(supports-color@10.2.2)(tailwindcss@4.3.3)(ts-declaration-location@1.0.7(typescript@6.0.3))(typescript@6.0.3)(vitest@5.0.1)
@@ -31001,7 +31002,7 @@ snapshots:
 
   repoctl@5.5.5(eaaacb705656b16e14bad9d1775d8ca1):
     dependencies:
-      '@icebreakers/monorepo': 5.5.5(676e9f583e8dea56a25ab1b4f5cbda88)
+      '@icebreakers/monorepo': 5.5.5(patch_hash=236a7c67d85e264d019ac773cde87f756b0bdfff25391617ec7e155a940e15f5)(676e9f583e8dea56a25ab1b4f5cbda88)
     optionalDependencies:
       '@commitlint/cli': 21.2.3(@types/node@26.6.2)(conventional-commits-parser@7.1.2)(typescript@6.0.3)
       eslint: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
