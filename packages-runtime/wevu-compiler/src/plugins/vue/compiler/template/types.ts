@@ -125,6 +125,7 @@ export interface TransformContext {
   objectLiteralBindMode: ObjectLiteralBindMode
   mustacheInterpolation: MustacheInterpolationMode
   formatWxml: boolean
+  preserveComments: boolean
   classStyleBindings: ClassStyleBinding[]
   bindingConditions?: BindingCondition[]
   classStyleWxs: boolean
@@ -202,6 +203,10 @@ export interface TemplateCompileOptions {
   objectLiteralBindMode?: ObjectLiteralBindMode
   mustacheInterpolation?: MustacheInterpolationMode
   formatWxml?: boolean
+  /**
+   * 保留模板注释，供最终产物阶段统一处理；默认移除。
+   */
+  preserveComments?: boolean
   runtimeBindingManifest?: WevuRuntimeBindingManifestMode
   wxsExtension?: string
   classStyleWxsSrc?: string

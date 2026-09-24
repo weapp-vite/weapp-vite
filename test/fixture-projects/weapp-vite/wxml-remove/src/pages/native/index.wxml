@@ -1,0 +1,16 @@
+<!-- native-comment -->
+<!-- #ifdef alipay -->
+<text id="excluded-platform">excluded</text>
+<!-- #endif -->
+<wxs module="raw">module.exports = { text: '<debug-panel data-testid="inside"> > <!-- raw-comment -->' };</wxs>
+<view id="native" data-testid="native" data-test="test" data-cy="cy" data-qa="qa" data-testid-extra="keep" data-debug-info="remove-scoped" data-id="runtime" aria-label="accessible" wx:if="{{visible}}" bindtap="tap">
+  <text wx:for="{{items}}" wx:key="*this" data-testid="loop" data-debug-info="loop-debug">{{item}}</text>
+  <debug-panel data-testid="component"><debug-panel /><text>nested-debug-content</text></debug-panel>
+  <keep-card data-testid="keep-prop" data-debug-info="business-prop" />
+  <dev-only-box><text>dev-subtree</text></dev-only-box>
+  <branch-debug wx:if="{{visible}}" /><text wx:else>branch-fallback</text>
+  <include src="../../shared/card.wxml" />
+  <text>business-content</text>
+  <view data-testid="\"legacy-id\"" data-debug-payload="{\"name\":\"probe\"}" title="{{ label === \"legacy\" ? \"ok\" : \"other\" }}">legacy-escaped-content</view>
+  <!-- legacy-boundary-comment -->
+</view>

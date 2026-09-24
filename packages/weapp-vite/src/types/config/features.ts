@@ -65,7 +65,23 @@ export interface WeappUniAppConfig {
   include: string[]
 }
 
-export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
+/** 最终模板中的标签限定属性删除规则，名称区分大小写并支持 `*`。 */
+export interface WxmlRemoveAttrRule {
+  tag: string | string[]
+  name: string | string[]
+}
+
+/** 最终模板的可选清理；对象形式只执行显式配置，不叠加预设。 */
+export interface WxmlRemoveOptions {
+  attr?: Array<string | WxmlRemoveAttrRule>
+  tag?: string[]
+  comment?: boolean
+}
+
+export type EnhanceWxmlOptions = ScanWxmlOptions & Omit<HandleWxmlOptions, 'removeComment'> & {
+  /** `true` 删除四种测试属性及普通注释；环境由用户配置控制。 */
+  remove?: boolean | WxmlRemoveOptions
+}
 
 /**
  * @description WXML 扫描阶段配置
@@ -312,7 +328,6 @@ export interface WeappWorkerConfig {
  * @description Vue 模板编译配置
  */
 export interface WeappVueTemplateConfig {
-  removeComments?: boolean
   simplifyWhitespace?: boolean
   formatWxml?: boolean | 'auto'
   htmlTagToWxml?: boolean | Record<string, string>

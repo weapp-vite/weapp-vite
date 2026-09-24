@@ -1,4 +1,6 @@
 import type { OutputBundle } from 'rolldown'
+import type { Plugin } from 'vite'
+import type { CompilerContext } from '../context'
 import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -17,7 +19,7 @@ function createBundleAssetEmitter(bundle: OutputBundle) {
   }
 }
 
-async function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizerPlugin>, bundle: OutputBundle) {
+async function runGenerateBundle(plugin: Plugin, bundle: OutputBundle) {
   const hook = plugin.generateBundle
   const handler = typeof hook === 'function' ? hook : hook?.handler
   await handler?.call({
@@ -26,6 +28,94 @@ async function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizer
 }
 
 describe('weapp-vite output finalizer', () => {
+  it.each([true, false])('applies an explicit preset independently of isDev=%s', (isDev) => {
+    const bundle = {
+      'pages/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index.wxml',
+        source: '<!-- note --><view data-testid="probe" aria-label="accessible">kept</view>',
+      },
+    } as unknown as OutputBundle
+    // 此路径只读取配置，不需要构造其他编译服务。
+    const ctx = {
+      configService: { isDev, weappViteConfig: { wxml: { remove: true } } },
+    } as unknown as CompilerContext
+    normalizeTemplateAssets(ctx, bundle)
+    expect(bundle['pages/index.wxml']).toMatchObject({
+      source: expect.stringContaining('aria-label="accessible">kept</view>'),
+    })
+    expect(bundle['pages/index.wxml']).toMatchObject({
+      source: expect.not.stringContaining('data-testid'),
+    })
+    expect(bundle['pages/index.wxml']).toMatchObject({
+      source: expect.not.stringContaining('<!--'),
+    })
+  })
+
+  it('cleans buffer-backed templates without normalization markers and preserves custom comments', () => {
+    const bundle = {
+      'components/card.wxml': {
+        type: 'asset',
+        fileName: 'components/card.wxml',
+        source: Buffer.from('<!-- note --><view data-qa="keep" data-debug="remove">kept</view>'),
+      },
+    } as unknown as OutputBundle
+    // 此路径只读取配置，不需要构造其他编译服务。
+    const ctx = {
+      configService: { weappViteConfig: { wxml: { remove: { attr: ['data-debug'] } } } },
+    } as unknown as CompilerContext
+    normalizeTemplateAssets(ctx, bundle)
+    const first = { ...bundle['components/card.wxml'] }
+    normalizeTemplateAssets(ctx, bundle)
+    expect(bundle['components/card.wxml']).toEqual(first)
+    expect(bundle['components/card.wxml']).toMatchObject({
+      source: expect.stringContaining('<!-- note --><view data-qa="keep"'),
+    })
+    expect(bundle['components/card.wxml']).toMatchObject({
+      source: expect.not.stringContaining('data-debug'),
+    })
+  })
+
+  it.each(['alipay', 'glass-easel'])('uses XML attribute boundaries for %s output', (framework) => {
+    const bundle = {
+      'app.json': {
+        type: 'asset',
+        fileName: 'app.json',
+        source: JSON.stringify({ componentFramework: framework === 'glass-easel' ? 'glass-easel' : undefined }),
+      },
+      'pages/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index.wxml',
+        source: String.raw`<view title="slash\" data-testid="drop"/><!-- ordinary -->`,
+      },
+    } as unknown as OutputBundle
+    // 只提供最终模板处理消费的配置；编译器激活不依赖运行时检测。
+    const ctx = {
+      configService: {
+        platform: framework === 'alipay' ? 'alipay' : 'weapp',
+        weappViteConfig: { wxml: { remove: true } },
+      },
+    } as unknown as CompilerContext
+    normalizeTemplateAssets(ctx, bundle)
+    expect(bundle['pages/index.wxml']).toMatchObject({ source: String.raw`<view title="slash\" />` })
+  })
+
+  it('still applies conditional compilation when optional cleanup is disabled', () => {
+    const bundle = {
+      'pages/index.wxml': {
+        type: 'asset',
+        fileName: 'pages/index.wxml',
+        source: '<!-- keep --><!-- #ifdef alipay --><view id="foreign"/><!-- #endif --><view id="keep"/>',
+      },
+    } as unknown as OutputBundle
+    // 此路径只读取配置，不需要构造其他编译服务。
+    const ctx = {
+      configService: { platform: 'weapp', weappViteConfig: { wxml: { remove: false } } },
+    } as unknown as CompilerContext
+    normalizeTemplateAssets(ctx, bundle)
+    expect(bundle['pages/index.wxml']).toMatchObject({ source: '<!-- keep --><view id="keep"/>' })
+  })
+
   it('merges user CSS remembered from a Tailwind Vite asset into the final owner output', async () => {
     const ctx = {
       configService: {
@@ -371,7 +461,8 @@ describe('weapp-vite output finalizer', () => {
   it('skips template parser for assets without normalization markers', () => {
     expect(mayNeedTemplateNormalization('<view class="page"><text>Hello</text></view>', 'weapp')).toBe(false)
     expect(mayNeedTemplateNormalization('<view @tap="handleTap" />', 'weapp')).toBe(true)
-    expect(mayNeedTemplateNormalization('<view><!-- comment --></view>', 'weapp')).toBe(true)
+    expect(mayNeedTemplateNormalization('<view><!-- comment --></view>', 'weapp')).toBe(false)
+    expect(mayNeedTemplateNormalization('<!-- #ifdef alipay --><view /><!-- #endif -->', 'weapp')).toBe(true)
     expect(mayNeedTemplateNormalization('<view a:if="{{ready}}" />', 'weapp')).toBe(true)
     expect(mayNeedTemplateNormalization('<IMPORT src="./SHARED.WXML" />', 'weapp')).toBe(true)
     expect(mayNeedTemplateNormalization('<import src="./shared.wxml" />', 'alipay')).toBe(true)

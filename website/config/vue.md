@@ -29,7 +29,6 @@ keywords:
 - **类型**：
   ```ts
   {
-    removeComments?: boolean
     simplifyWhitespace?: boolean
     formatWxml?: boolean | 'auto'
     htmlTagToWxml?: boolean | Record<string, string>
@@ -240,7 +239,7 @@ export default defineConfig({
 >
 > `htmlTagToWxmlTagClass` 只在“标签名确实发生了 HTML -> WXML 映射”时生效；像 `button -> button` 这类未改名场景，不会额外注入 `.button`。
 >
-> `removeComments` / `simplifyWhitespace` 当前仍是兼容性预留位，尚未接入实际编译流程；其余字段已经参与模板编译输出。
+> 普通注释清理统一使用 [`weapp.wxml.remove.comment`](/config/wxml#remove)，原先未接入的 `removeComments` 配置已移除。`simplifyWhitespace` 仍是未接入实际编译流程的兼容性预留位；其余字段已经参与模板编译输出。
 
 ### 自定义具名插槽 wrapper {#slot-fallback-wrapper}
 

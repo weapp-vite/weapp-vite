@@ -2,6 +2,7 @@ import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import type { MpPlatform, SubPackageMetaValue } from '../types'
+import type { WxmlSyntax } from '../wxml/remove/lexical'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import { Buffer } from 'node:buffer'
 import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
@@ -13,6 +14,8 @@ import { changeFileExtension } from '../utils'
 import { syncOutputChunkSourceMapAssets } from '../utils/outputChunk'
 import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../wxml'
+import { resolveWxmlRemoveOptions } from '../wxml/options'
+import { createWxmlRemover } from '../wxml/remove'
 import { hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { consumePendingOwnerStyleSources } from './css'
@@ -21,12 +24,14 @@ import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { flushIndependentOutputs } from './outputFinalizer/independent'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
+import { collectXmlTemplates } from './outputFinalizer/wxmlSyntax'
 
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
 const TEMPLATE_STATIC_REWRITE_MARKERS = [
   '@',
-  '<!--',
+  '#ifdef',
+  '#endif',
   '<wxs',
   '</wxs',
   '<sjs',
@@ -250,10 +255,22 @@ export function normalizePreprocessorStyleAssets(
 function normalizeTemplateAssetEntries(
   ctx: CompilerContext,
   entries: OutputAssetEntry[],
-  subPackageMeta?: SubPackageMetaValue,
+  bundle: OutputBundle,
+  options: { inputs: Map<string, string>, partial: boolean, subPackageMeta?: SubPackageMetaValue },
 ) {
   const { configService } = ctx
+  const { inputs, partial, subPackageMeta } = options
+  if (!partial) {
+    inputs.clear()
+  }
+  const removeOptions = resolveWxmlRemoveOptions(configService?.weappViteConfig?.wxml)
+  const remove = createWxmlRemover(removeOptions)
+  const active = Boolean(removeOptions.comment || removeOptions.attr?.length || removeOptions.tag?.length)
+  const defaultSyntax: WxmlSyntax = (configService?.platform ?? 'weapp') === 'weapp' ? 'legacy' : 'xml'
+  let needsSyntax = false
+  // 先完成全部必需转换，再固定输入；可选节点删除不能改变其他模板的编译器归属。
   for (const { bundleFileName, output } of entries) {
+    const fileName = output.fileName || bundleFileName
     const source = output.source
     const code = typeof source === 'string'
       ? source
@@ -265,10 +282,9 @@ function normalizeTemplateAssetEntries(
     }
     let normalized = code
     if (mayNeedTemplateNormalization(code, configService?.platform)) {
-      const token = scanWxml(code, {
-        platform: configService?.platform,
-      })
+      const token = scanWxml(code, { platform: configService?.platform })
       normalized = handleWxml(token, {
+        removeComment: false,
         scriptModuleExtension: configService?.outputExtensions?.wxs,
         scriptModuleTag: resolveScriptModuleTagName({
           platform: configService?.platform,
@@ -277,12 +293,39 @@ function normalizeTemplateAssetEntries(
         templateExtension: configService?.outputExtensions?.wxml,
       }).code
     }
-    const transformed = transformI18nOutputTemplate(
-      ctx,
-      output.fileName || bundleFileName,
-      normalized,
-      subPackageMeta,
-    )
+    const localized = transformI18nOutputTemplate(ctx, fileName, normalized, subPackageMeta)
+    inputs.set(fileName, localized)
+    if (localized !== code) {
+      output.source = localized
+    }
+    needsSyntax ||= active && defaultSyntax === 'legacy' && localized.includes('\\')
+  }
+  if (defaultSyntax === 'legacy') {
+    for (const [key, output] of Object.entries(bundle)) {
+      const fileName = output.fileName || key
+      if (output.type !== 'asset' || !fileName.endsWith('.json')) {
+        continue
+      }
+      // 只记录组件/页面及 app/plugin 配置；复制的数据 JSON 不是编译器配置。
+      if (!/(?:^|\/)(?:app|plugin)\.json$/.test(fileName)
+        && !inputs.has(fileName)
+        && !inputs.has(changeFileExtension(fileName, configService?.outputExtensions?.wxml ?? 'wxml'))
+        && !bundle[changeFileExtension(fileName, 'js')]
+        && !ctx.runtimeState?.json?.emittedSource.has(fileName)) {
+        continue
+      }
+      inputs.set(fileName, typeof output.source === 'string' ? output.source : Buffer.from(output.source).toString('utf8'))
+    }
+  }
+  // 两种词法仅在反斜杠处不同；普通模板不读取配置依赖闭包。
+  const xmlTemplates = needsSyntax ? collectXmlTemplates(ctx, inputs, subPackageMeta) : undefined
+  for (const { bundleFileName, output } of entries) {
+    const fileName = output.fileName || bundleFileName
+    const code = inputs.get(fileName)
+    if (code === undefined) {
+      continue
+    }
+    const transformed = remove(code, fileName, xmlTemplates?.has(fileName) ? 'xml' : defaultSyntax)
     if (transformed !== code) {
       output.source = transformed
     }
@@ -293,7 +336,7 @@ export function normalizeTemplateAssets(
   ctx: CompilerContext,
   bundle: OutputBundle,
 ) {
-  normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets)
+  normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets, bundle, { inputs: new Map(), partial: false })
 }
 
 export function pruneUneventedDevHmrChunks(
@@ -369,6 +412,8 @@ export function pruneUnchangedDevHmrOutputs(
 
 export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   let preserveCompleteBundle = false
+  // 每个构建实例保留 UTF-8 编译输入；输出比较指纹（尤其二进制 base64）不能用作源文本。
+  const templateInputs = new Map<string, string>()
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
@@ -412,14 +457,13 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         restoreNativePageLayoutOutputs(ctx, outputBundle)
         normalizeGraphOnlyAssets(ctx, outputBundle, assets.stage)
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
+        const partial = !preserveCompleteBundle
+          && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
+          && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
         if (ctx.configService.platform === 'weapp') {
           // 在 HMR 裁剪前消费本轮事实；full 也只替换当前构建实例的精确 scope。
           analyzeGlassEaselBundle(ctx, outputBundle, {
-            mode: preserveCompleteBundle
-              || ctx.runtimeState.build.hmr.didEmitAllEntries
-              || ctx.runtimeState.build.hmr.profile.event === undefined
-              ? 'full'
-              : 'partial',
+            mode: partial ? 'partial' : 'full',
             outputScope: subPackageMeta
               ? `independent:${subPackageMeta.subPackage.root}`
               : 'main',
@@ -431,7 +475,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           ctx.configService.outputExtensions?.wxss,
           assets.stage,
         )
-        normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
+        normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, outputBundle, { inputs: templateInputs, partial, subPackageMeta })
         if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
           normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
         }

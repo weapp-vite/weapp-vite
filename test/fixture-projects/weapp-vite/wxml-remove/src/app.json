@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/native/index",
+    "pages/vue/index",
+    "pages/runtime/index"
+  ],
+  "subPackages": [
+    {
+      "root": "sub",
+      "pages": [
+        "index"
+      ]
+    },
+    {
+      "root": "independent",
+      "independent": true,
+      "pages": [
+        "index"
+      ]
+    }
+  ]
+}

@@ -414,7 +414,7 @@ function renderPlainSlotContentInSourceOrder(
             })
           : ''
       }
-      return shouldRenderImplicitDefault
+      return shouldRenderImplicitDefault || (!implicitDefaultDeclaration && item.child.type === NodeTypes.COMMENT)
         ? transformNode(item.child, context)
         : ''
     })
@@ -481,12 +481,13 @@ export function transformComponentWithSlots(
       }
     }
     nonTemplateChildren.push(compatibleChild)
-    if (isRenderableSlotChild(compatibleChild)) {
+    if (isRenderableSlotChild(compatibleChild) || (context.preserveComments && compatibleChild.type === NodeTypes.COMMENT)) {
       renderItems.push({ type: 'default-child', child: compatibleChild })
     }
   }
 
   const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+  const defaultSlotContent = context.preserveComments ? nonTemplateChildren : defaultSlotChildren
   let implicitDefaultDeclaration: ScopedSlotDeclaration | undefined
 
   if (slotDirective) {
@@ -510,12 +511,12 @@ export function transformComponentWithSlots(
       warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
-      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
+      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotContent, context, { implicitDefault: true })
       slotDeclarations.push(implicitDefaultDeclaration)
     }
   }
   else if (!slotDeclarations.length && defaultSlotChildren.length && !context.scopedSlotsRequireProps && !hasLegacySlotAttribute(defaultSlotChildren)) {
-    implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
+    implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotContent, context, { implicitDefault: true })
     slotDeclarations.push(implicitDefaultDeclaration)
   }
 
@@ -666,12 +667,13 @@ export function transformComponentWithSlotsFallback(
       }
     }
     nonTemplateChildren.push(compatibleChild)
-    if (isRenderableSlotChild(compatibleChild)) {
+    if (isRenderableSlotChild(compatibleChild) || (context.preserveComments && compatibleChild.type === NodeTypes.COMMENT)) {
       renderItems.push({ type: 'default-child', child: compatibleChild })
     }
   }
 
   const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+  const defaultSlotContent = context.preserveComments ? nonTemplateChildren : defaultSlotChildren
   let implicitDefaultDeclaration: ScopedSlotDeclaration | undefined
 
   if (slotDirective) {
@@ -695,7 +697,7 @@ export function transformComponentWithSlotsFallback(
       warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
-      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context)
+      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotContent, context)
       slotDeclarations.push(implicitDefaultDeclaration)
     }
   }

@@ -1,0 +1,11 @@
+{
+  "name": "fixture-weapp-vite-wxml-remove",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "weapp-vite build"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
+  }
+}

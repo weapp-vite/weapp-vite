@@ -1,0 +1,1 @@
+<view data-testid="debug-component">debug-component-body<slot /></view>

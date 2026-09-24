@@ -158,6 +158,7 @@ export function transformVueTemplateForPlatform(
     platform: options.platform as any,
   })
   return handleWxml(token, {
+    removeComment: false,
     templateExtension: options.templateExtension,
     scriptModuleExtension: options.scriptModuleExtension,
     scriptModuleTag: options.scriptModuleTag,

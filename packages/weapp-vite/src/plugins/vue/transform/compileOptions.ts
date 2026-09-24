@@ -400,6 +400,7 @@ function buildCompileVueFileOptions(
       functionPropNames,
       templateSafeCallNames,
       formatWxml,
+      preserveComments: true,
       wxsExtension: templatePlatformOptions.wxsExtension,
       classStyleWxsSrc,
     },

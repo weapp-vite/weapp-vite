@@ -1,7 +1,7 @@
 // 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/node/types/vite.ts
 // 参考：https://github.com/vitest-dev/vitest/blob/main/packages/vitest/src/public/config.ts
 import type { ConfigEnv, UserConfig as ViteUserConfig } from 'vite'
-import type { WeappI18nConfig, WeappViteConfig } from './types'
+import type { WeappI18nConfig, WeappViteConfig, WxmlRemoveAttrRule, WxmlRemoveOptions } from './types'
 
 export * from './json'
 export * from './pluginHost'
@@ -51,6 +51,8 @@ export function defineConfig(config: UserConfigExport): UserConfigExport {
 export type {
   WeappI18nConfig,
   WeappViteConfig,
+  WxmlRemoveAttrRule,
+  WxmlRemoveOptions,
 }
 export type {
   WeappCompilerPlugin,

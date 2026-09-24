@@ -1,6 +1,9 @@
+import type { CompilerContext } from '../../../context'
 import { realpathSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { compileVueFile } from 'wevu/compiler'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { normalizeVueTemplateForPlatform } from './bundle/platform'
 import { createCompileVueFileOptions, isVueTransformSourceMapEnabled, resolveSfcStylePreprocessOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
 
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -126,6 +129,48 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(fallbackOptions.wxsExtension).toBeUndefined()
     expect(fallbackOptions.classStyleRuntime).toBe('js')
     expect(warned.value).toBe(true)
+  })
+
+  it.each(['weapp', 'alipay'])('preserves comments through production Vue compilation and %s normalization', async (platform) => {
+    const filename = 'src/pages/comments/index.vue'
+    // 此测试仅提供编译选项与平台模板转换实际读取的服务。
+    const configService = {
+      platform,
+      isDev: false,
+      outputExtensions: {},
+      weappViteConfig: { wxs: false },
+      relativeOutputPath: () => undefined,
+    } as unknown as NonNullable<CompilerContext['configService']>
+    const ctx = { configService } as CompilerContext
+    const options = createCompileVueFileOptions(
+      ctx,
+      {},
+      filename,
+      true,
+      false,
+      configService,
+      {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    )
+    const result = await compileVueFile(
+      '<template><view v-if="ready"><!-- keep > &amp; {{ raw }} --><text>Ready</text></view><!-- branch --><view v-else>Waiting</view></template>',
+      filename,
+      options,
+    )
+    const template = normalizeVueTemplateForPlatform(result.template!, {
+      platform,
+      templateExtension: platform === 'weapp' ? 'wxml' : 'axml',
+    })
+    const prefix = platform === 'weapp' ? 'wx' : 'a'
+
+    expect(template).toContain('<!-- keep > &amp; {{ raw }} -->')
+    expect(template).toContain('<!-- branch -->')
+    expect(template).toContain(`${prefix}:else`)
+    expect(template).toContain(`${prefix}:if="{{ready}}"`)
+    expect(template).not.toContain('v-if')
+    expect(template).not.toContain('v-else')
   })
 
   it('creates compile options with resolved platform helpers', async () => {
