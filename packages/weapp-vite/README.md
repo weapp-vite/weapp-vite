@@ -333,7 +333,7 @@ wv upload --platform all --dry-run
 
 平台工具按需安装：`miniprogram-ci`、`minidev`、`tt-ide-cli`、`xhs-mp-cli`、`jd-miniprogram-ci`、`swan-toolkit`。上传凭据分别使用 `WEAPP_CI_PRIVATE_KEY_PATH`、`ALIPAY_IDENTITY_KEY_PATH`、`TT_UPLOAD_TOKEN`、`XHS_UPLOAD_TOKEN`、`JD_PRIVATE_KEY`、`SWAN_UPLOAD_TOKEN`；百度还必须设置 `SWAN_MIN_VERSION`。文件路径相对项目根目录解析，京东密钥直接提供内容。
 
-版本默认读取项目 `package.json.version`，`--mode` 同时选择构建和 `.env` 模式。多目标串行执行，首次失败停止；`--dry-run` 不调用上传服务。百度官方 CLI 的 Token 会出现在子进程参数中，请使用可信隔离 runner。完整凭据说明与限制见 [CLI 上传文档](https://vite.weapp.dev/guide/cli.html)。
+可通过 `weapp.upload: { version: '1.2.3', desc: '更新首页' }` 配置默认参数，CLI `--uv` / `--desc` 优先；版本未配置时读取 `package.json.version`。配置本身、普通 `build`、`dev/HMR` 不触发上传，`preview` 不读取该配置。只有显式执行 `wv upload` 且本次构建与产物校验通过后才上传。`--mode` 同时选择构建和 `.env` 模式。多目标串行执行，首次失败停止；`--dry-run` 不调用上传服务。百度官方 CLI 的 Token 会出现在子进程参数中，请使用可信隔离 runner。完整凭据说明与限制见 [CLI 上传文档](https://vite.weapp.dev/guide/cli.html)。
 
 ## 六端构建并预览
 

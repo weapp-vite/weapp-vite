@@ -4,6 +4,7 @@ import type { UploadAction, UploadContext, UploadPlatform } from '../upload/type
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import process from 'node:process'
+import { parseArgs } from 'node:util'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
 import { getProjectPlatformOptions } from '../../platform'
@@ -42,11 +43,12 @@ async function buildUploadTarget(cwd: string, platform: UploadPlatform | undefin
       throw new Error(`${action} 仅支持完整小程序项目，不支持组件库或独立插件构建。`)
     }
     const resolvedPlatform = resolveUploadPlatforms(config.platform)[0]!
-    const version = (options.uv ?? config.packageJson.version)?.trim() ?? ''
+    const uploadConfig = action === 'upload' ? config.weappViteConfig.upload : undefined
+    const version = (options.uv ?? uploadConfig?.version ?? config.packageJson.version)?.trim() ?? ''
     if (action === 'upload' && !version) {
-      throw new Error('请通过 --uv 或项目 package.json 的 version 指定上传版本。')
+      throw new Error('请通过 --uv、weapp.upload.version 或项目 package.json 的 version 指定上传版本。')
     }
-    const desc = options.desc?.trim() || `${config.packageJson.name ?? resolvedPlatform}${version ? `@${version}` : ''}`
+    const desc = (options.desc ?? uploadConfig?.desc)?.trim() || `${config.packageJson.name ?? resolvedPlatform}${version ? `@${version}` : ''}`
     const env = options.dryRun
       ? {}
       : await loadUploadEnv(config.cwd, config.mode, config.inlineConfig.root, config.inlineConfig.envDir)
@@ -116,16 +118,39 @@ export async function runUploadCommand(root: string | undefined, options: Upload
   }
 }
 
+function readUploadMetadata(cli: CAC) {
+  for (const name of ['uv', 'desc']) {
+    const value: unknown = cli.options[name]
+    if (typeof value === 'boolean' || (Array.isArray(value) && value.some(item => typeof item === 'boolean'))) {
+      throw new Error(`--${name} 需要指定字符串参数。`)
+    }
+  }
+  // CAC 会把数字形态与空白参数转成 number；从原始参数保留版本和说明的字符串语义。
+  const { values } = parseArgs({
+    args: cli.rawArgs.slice(2),
+    allowPositionals: true,
+    strict: false,
+    options: {
+      uv: { type: 'string' },
+      desc: { type: 'string' },
+    },
+  })
+  return {
+    uv: typeof values.uv === 'string' ? values.uv : undefined,
+    desc: typeof values.desc === 'string' ? values.desc : undefined,
+  }
+}
+
 export function registerUploadCommand(cli: CAC) {
   cli
     .command('upload [root]', 'build and upload mini programs (does not submit for review or publish)')
     .option('-p, --platform <platform>', '[string] weapp | alipay | tt | xhs | jd | swan; comma-separated targets or all')
     .option('--project-config <path>', '[string] project config path')
-    .option('--uv <version>', '[string] upload version (default: package.json version)')
-    .option('--desc <text>', '[string] upload description')
+    .option('--uv <version>', '[string] upload version (default: weapp.upload.version or package.json version)')
+    .option('--desc <text>', '[string] upload description (default: weapp.upload.desc or project name and version)')
     .option('--dry-run', '[boolean] build without validating upload credentials or uploading')
     .action(async (root: string | undefined, options: UploadCLIOptions) => {
-      await runUploadCommand(root, options)
+      await runUploadCommand(root, { ...options, ...readUploadMetadata(cli) })
       scheduleCompletedProductionBuildExit({}, undefined)
     })
 }
@@ -138,7 +163,7 @@ export function registerPreviewCommand(cli: CAC) {
     .option('--desc <text>', '[string] preview description')
     .option('--dry-run', '[boolean] build without validating credentials or generating previews')
     .action(async (root: string | undefined, options: UploadCLIOptions) => {
-      await runUploadCommand(root, options, 'preview')
+      await runUploadCommand(root, { ...options, ...readUploadMetadata(cli) }, 'preview')
       scheduleCompletedProductionBuildExit({}, undefined)
     })
 }

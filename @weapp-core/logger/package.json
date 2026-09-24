@@ -42,12 +42,18 @@
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
     "test": "vitest run",
+    "test:types": "tsd --typings dist/index.d.ts --files test/index.test-d.ts",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "sync": "cnpm sync @weapp-core/logger"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext"
+    }
   },
   "publishConfig": {
     "exports": {

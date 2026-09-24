@@ -41,6 +41,15 @@ keywords:
 > [!NOTE]
 > 当启用 `weapp.multiPlatform`，且多个平台共用相对 `miniprogramRoot` 时，建议明确检查最终产物目录，避免不同平台互相覆盖。
 
+## `weapp.upload` {#weapp-upload}
+
+- **类型**：`{ version?: string; desc?: string }`
+- **默认值**：未配置
+
+为显式执行的 `wv upload` 提供默认版本与说明。CLI 的 `--uv` / `--desc` 优先；版本未配置时读取 `package.json.version`，说明未配置时使用项目名称与最终版本。
+
+这不是自动上传开关：`build`、`dev/HMR`、`preview` 不会因该配置触发上传。只有 `wv upload` 在本次生产构建和产物校验成功后调用官方工具；`--dry-run` 不调用远端服务。凭据使用环境变量，配置示例与触发矩阵见 [CLI 上传文档](../guide/cli.md#上传配置与触发时机)。
+
 ## `weapp.platform` {#weapp-platform}
 
 - **类型**：`'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'`

@@ -405,15 +405,42 @@ wv upload --platform all --dry-run
 
 `upload [root]` 从源码项目根目录执行，复用目标平台的生产构建和项目配置解析。每个目标构建完成后才上传，不复用旧产物；多个目标串行执行，首次失败即停止，已经上传的目标不会自动撤回。未指定平台时使用项目配置；启用 `weapp.multiPlatform` 的项目仍需显式选择平台。`web` 不支持小程序上传。
 
-| 参数                        | 说明                                                                      |
-| --------------------------- | ------------------------------------------------------------------------- |
-| `-p, --platform <platform>` | `weapp`、`alipay`、`tt`、`xhs`、`jd`、`swan`；支持逗号分隔或 `all`        |
-| `--uv <version>`            | 默认读取目标项目 `package.json.version`；`--version/-v` 仍是 CLI 版本查询 |
-| `--desc <text>`             | 版本说明；默认使用项目名称与版本                                          |
-| `--project-config <path>`   | 使用指定项目配置；文件名须是目标平台的标准名称                            |
-| `--dry-run`                 | 只构建并检查 SDK 读取的代码目录与本次产物一致、`app.json` 存在            |
-| `-m, --mode <mode>`         | 默认 `production`，同时选择构建配置和 `.env` 模式                         |
-| `-c, --config <file>`       | 指定 Vite 配置                                                            |
+| 参数                        | 说明                                                                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `-p, --platform <platform>` | `weapp`、`alipay`、`tt`、`xhs`、`jd`、`swan`；支持逗号分隔或 `all`                                 |
+| `--uv <version>`            | 覆盖 `weapp.upload.version`，未配置时读取 `package.json.version`；`--version/-v` 仍是 CLI 版本查询 |
+| `--desc <text>`             | 覆盖 `weapp.upload.desc`；默认使用项目名称与版本                                                   |
+| `--project-config <path>`   | 使用指定项目配置；文件名须是目标平台的标准名称                                                     |
+| `--dry-run`                 | 只构建并检查 SDK 读取的代码目录与本次产物一致、`app.json` 存在                                     |
+| `-m, --mode <mode>`         | 默认 `production`，同时选择构建配置和 `.env` 模式                                                  |
+| `-c, --config <file>`       | 指定 Vite 配置                                                                                     |
+
+#### 上传配置与触发时机
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    upload: {
+      version: '1.2.3',
+      desc: '更新首页',
+    },
+  },
+})
+```
+
+`weapp.upload` 只提供 `wv upload` 的默认参数，**不是构建完成自动上传的开关**。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。版本与说明会去除首尾空白；显式空版本报错，空说明使用自动生成的说明。
+
+| 操作                             | 是否上传                                         |
+| -------------------------------- | ------------------------------------------------ |
+| 仅添加 `weapp.upload` 配置       | 否                                               |
+| `wv build` / `wv dev` / HMR 重建 | 否，即使 mode 是 `production`                    |
+| `wv upload -p weapp`             | 是，仅在本次构建成功、产物校验通过后调用平台工具 |
+| `wv upload -p all --dry-run`     | 否，不校验凭据、不调用平台工具                   |
+| `wv preview`                     | 否，仅生成预览，且不读取 `weapp.upload` 的参数   |
+
+上传是有外部副作用的操作，不挂在 Vite `closeBundle` 或文件监听回调中，避免普通构建、HMR、分析构建重复上传。在 CI 中把 `wv upload` 放在测试通过后的显式步骤；该命令本身会重新构建，无需再串联一次 `wv build`。凭据继续通过环境变量提供，不写入可提交的配置文件。
 
 #### 上传工具与凭据
 

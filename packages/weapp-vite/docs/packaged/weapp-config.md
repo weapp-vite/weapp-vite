@@ -24,6 +24,12 @@ export default defineConfig({
 
 适合希望用约定生成页面路由的项目。启用后要保持 pages 目录与输出约定稳定。
 
+### `upload`
+
+`weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv upload` 的默认参数，不是自动上传开关。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
+
+只有显式上传命令在本次构建成功、产物校验通过后调用平台工具。普通 `build`、`dev/HMR` 不上传；`preview` 不使用该配置；`upload --dry-run` 不校验凭据、不调用工具。CI 应在测试通过后的显式步骤执行 `wv upload`，凭据仍通过环境变量提供，不提交私钥或 Token。
+
 ### `buildScope`
 
 用于只构建主包和指定分包。常用在大项目里只调试某几个业务分包：

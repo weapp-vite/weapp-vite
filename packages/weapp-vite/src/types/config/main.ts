@@ -155,6 +155,20 @@ export interface WeappAnalyzeConfig {
 }
 
 /**
+ * @description 显式执行 upload 命令时使用的默认参数，不会触发自动上传。
+ */
+export interface WeappUploadConfig {
+  /**
+   * 上传版本；CLI --uv 优先，未配置时读取 package.json.version。
+   */
+  version?: string
+  /**
+   * 上传说明；CLI --desc 优先，未配置时使用项目名称与版本。
+   */
+  desc?: string
+}
+
+/**
  * @description weapp-vite 主配置
  */
 export interface WeappViteConfig {
@@ -205,6 +219,11 @@ export interface WeappViteConfig {
    * analyze 报告配置。
    */
   analyze?: WeappAnalyzeConfig
+  /**
+   * 上传命令默认参数。仅在显式执行 upload 且构建与产物校验成功后上传；
+   * build、dev/HMR、preview 和 upload --dry-run 不触发上传。
+   */
+  upload?: WeappUploadConfig
   /**
    * 局部构建范围。默认不启用，启用后只构建主包和指定分包。
    */
