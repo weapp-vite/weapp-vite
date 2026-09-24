@@ -28,6 +28,10 @@ afterAll(async () => {
 
 describe.each(['node', 'browser'] as const)('%s final template transform parity', (provider) => {
   it.each(['native', 'vue'])('renders typed attributes and preserves events for %s', async (kind) => {
+    const template = files.find(([file]) => file === `pages/${kind}/index.wxml`)?.[1]
+    expect(template).not.toContain('data-clean=')
+    expect(template).not.toContain('data-use-view')
+    expect(template).toContain('data-analytics=')
     const session = provider === 'browser'
       ? createBrowserHeadlessSession({ files: createBrowserVirtualFiles(files) })
       : createHeadlessSession({ projectPath: project })

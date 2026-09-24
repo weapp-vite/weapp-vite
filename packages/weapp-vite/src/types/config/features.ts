@@ -16,6 +16,7 @@ import type {
   StyleConfigEntry,
 } from './foundation'
 import type { WxmlTransform } from './wxmlTransform'
+import type { WxmlValidate } from './wxmlValidate'
 import type { Resolver } from '@/auto-import-components/resolvers'
 
 export { type Resolver }
@@ -86,6 +87,8 @@ export type EnhanceWxmlOptions = ScanWxmlOptions & Omit<HandleWxmlOptions, 'remo
   remove?: boolean | WxmlRemoveOptions
   /** 在最终模板清理前按顺序执行同步或异步转换。 */
   transform?: WxmlTransform | WxmlTransform[]
+  /** 在输出插件处理后、HMR 比较及发布前检查最终模板。 */
+  validate?: WxmlValidate | WxmlValidate[]
 }
 
 /**

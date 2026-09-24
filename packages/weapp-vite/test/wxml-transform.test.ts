@@ -13,13 +13,16 @@ const templates = [
 ]
 
 describe('WXML transform final build artifacts', () => {
-  it('awaits function chains once for native, mapped Vue, components, imports and both subpackage kinds', async () => {
+  it.each(['transform', 'transform-validate'])('awaits %s once for native, mapped Vue, components, imports and both subpackage kinds', async (mode) => {
     const project = await createTempFixtureProject(getFixture('wxml-remove'), 'wxml-transform')
-    const compiler = await createTestCompilerContext({ cwd: project.tempDir, mode: 'transform', isDev: false })
+    const compiler = await createTestCompilerContext({ cwd: project.tempDir, mode, isDev: false })
     try {
       await compiler.ctx.buildService.build()
       for (const file of templates) {
         const code = await fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')
+        if (mode.includes('validate')) {
+          expect(code.match(/<!-- output-plugin -->/g), file).toHaveLength(1)
+        }
         if (file === 'shared/card.wxml') {
           expect(code).toContain('<view data-testid="included"')
           expect(code).toContain('data-transformed="{{true}}"')

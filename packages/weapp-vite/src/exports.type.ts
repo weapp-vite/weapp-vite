@@ -51,3 +51,5 @@ export type {
 }
 
 export type { WxmlAttribute, WxmlAttributeValue, WxmlElementInfo, WxmlSourceLocation, WxmlTransform, WxmlTransformContext, WxmlTransformNode, WxmlTransformResult, WxmlTransformVisitor } from './types/config/wxmlTransform'
+
+export type { WxmlValidate, WxmlValidationContext, WxmlValidationDiagnostic, WxmlValidationVisitor } from './types/config/wxmlValidate'

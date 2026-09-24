@@ -7,7 +7,7 @@ import { createCompilerContextInstance } from '../../context/createCompilerConte
 import { logger } from '../../context/shared'
 import { findAutoImportCandidates } from '../../plugins/autoImport'
 import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
-import { shareWxmlTransformDependencies } from '../../wxml/transform/dependencies'
+import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getAutoImportConfig } from '../autoImport/config'
 import { createIndependentBuildError } from '../independentError'
 
@@ -61,7 +61,7 @@ export function createIndependentBuilder(
         const chunkRoot = meta.subPackage.root ?? root
         const isolatedCtx = createCompilerContextInstance()
         if (owner) {
-          shareWxmlTransformDependencies(owner, isolatedCtx)
+          shareWxmlDependencies(owner, isolatedCtx)
         }
         return await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
           await isolatedCtx.configService.load({
@@ -95,6 +95,9 @@ export function createIndependentBuilder(
               },
             },
           })
+          // 独立构建只返回内存产物，由主构建统一发布；defu 会丢弃 null，
+          // 因此必须在配置合并后关闭 watch，避免子 watcher 绕过主包校验写盘。
+          inlineConfig.build = { ...inlineConfig.build, write: false, watch: null }
           const autoImportGlobs = getAutoImportConfig(isolatedConfigService)?.globs
           if (autoImportGlobs?.length) {
             const candidates = await findAutoImportCandidates({

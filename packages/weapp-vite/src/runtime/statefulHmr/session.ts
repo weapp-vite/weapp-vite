@@ -27,7 +27,7 @@ import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { isWxmlTransformDependency } from '../../wxml/transform/dependencies'
+import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { isStatefulHmrBoundary } from './boundaries'
 import { StatefulHmrDirectoryUpdates } from './directoryUpdates'
@@ -295,7 +295,7 @@ class StatefulHmrSession {
       this.requestServerRestart()
       return
     }
-    if (isWxmlTransformDependency(this.ctx, normalizedFile)) {
+    if (isWxmlDependency(this.ctx, normalizedFile)) {
       this.requestFullBuild([normalizedFile])
       return
     }

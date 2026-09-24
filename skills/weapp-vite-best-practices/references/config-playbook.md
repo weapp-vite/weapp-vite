@@ -42,3 +42,7 @@ export default defineConfig({
 - 字符串属性值是字面量，数字与布尔值保留类型；动态值写 `{ expression: 'value' }`，无值属性用 `setBooleanAttribute`。读取 `rawValue` 不代表运行时值。
 - 编辑工具保护事件、平台指令、框架元数据和结构标签；原始字符串返回提供完整控制。替换自定义组件时必须自行注册，不自动改组件依赖。
 - `transform` 在 `remove` 前执行，后续 Tailwind/compiler-plugin 仍能修改输出。显式注册外部依赖 `ctx.addWatchFile('rules.json')`，变化触发完整模板重建；不要依赖跨文件回调顺序或全局计数。
+
+- 最终产物约束使用 `weapp.wxml.validate(code, ctx)`，支持同步／异步和顺序数组；它在 transform/remove 和框架输出插件之后、HMR 比较及发布之前执行，不修改源码。
+- 使用 `await ctx.walk(node => { ... })` 观察只读节点，以 `ctx.report({ severity: 'warning' | 'error', message, code?, location? })` 报告结果；warning 允许发布，error 汇总后阻止输出。回调只能返回 undefined，不能返回模板字符串或 null。
+- 校验位置是最终模板位置，`rawValue` 是原始绑定内容；不要把动态绑定当运行时值。外部规则读取前登记 `addWatchFile`，转换与校验共享监听但分别维护依赖；独立分包校验不在主包重复执行。

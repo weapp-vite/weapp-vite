@@ -8,6 +8,19 @@ export default defineConfig({
     vue: { template: { htmlTagToWxml: true } },
     wxml: {
       remove: { attr: ['data-clean'] },
+      validate: async (_, ctx) => ctx.walk((node) => {
+        const report = (message: string) => ctx.report({ severity: 'error', message, location: node.location })
+        if (node.hasAttribute('data-clean') || node.hasAttribute('data-use-view')) {
+          report('校验必须观察转换和清理完成后的模板')
+        }
+        if (node.getAttribute('id')?.rawValue === 'renamed'
+          && (node.tagName !== 'view' || node.getAttribute('data-number')?.rawValue !== '{{42}}')) {
+          report('标签与数值属性必须先完成转换')
+        }
+        if (node.tagName === 'button' && (!node.hasAttribute('data-analytics') || !node.hasAttribute('bindtap'))) {
+          report('最终模板必须保留埋点与点击事件')
+        }
+      }),
       transform: async (code, ctx) => ctx.edit(code, (node) => {
         if (node.tagName === 'view')
           node.removeAttribute('data-testid')

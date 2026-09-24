@@ -38,7 +38,7 @@ import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJso
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { getWxmlTransformWatchFiles, isWxmlTransformDependency, observeWxmlTransformDependencies } from '../../wxml/transform/dependencies'
+import { getWxmlWatchFiles, isWxmlDependency, observeWxmlDependencies } from '../../wxml/processing/dependencies'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -1943,14 +1943,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...getWxmlTransformWatchFiles(ctx)],
+        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...getWxmlWatchFiles(ctx)],
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
           ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
-      const unobserveTransform = observeWxmlTransformDependencies(ctx, files => snapshotWatcher.add(files))
+      const unobserveWxml = observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
       snapshotWatcher.on('all', (event, id) => {
         if (!id) {
           return
@@ -1958,12 +1958,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (isDevOutputFile(id)) {
           return
         }
-        if (!isWxmlTransformDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
+        if (!isWxmlDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
         const normalizedId = normalizeFsResolvedId(id)
-        const isTransformDependency = isWxmlTransformDependency(ctx, normalizedId)
-        if (event === 'unlink' && isTransformDependency) {
+        const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
+        if (event === 'unlink' && isWxmlDependencyFile) {
           // Chokidar 删除单文件监听后不总是监听其父目录；关闭旧句柄后重新登记缺失文件，才能观察恢复。
           queueMicrotask(() => {
             if (!devWatcherClosed) {
@@ -1973,16 +1973,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isTransformDependency) {
+        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isWxmlDependencyFile) {
           return
         }
-        if (event.startsWith('add') && !isConfigDependency && !isTransformDependency && ctx.moduleGraphService.hasModule(id)) {
+        if (event.startsWith('add') && !isConfigDependency && !isWxmlDependencyFile && ctx.moduleGraphService.hasModule(id)) {
           return
         }
         if (isConfigDependency) {
           requestedConfigRestartBuilds.add(target)
         }
-        if (isTransformDependency) {
+        if (isWxmlDependencyFile) {
           for (const root of scanService.independentSubPackageMap.keys()) {
             invalidateIndependentOutput(root)
             scanService.markIndependentDirty(root)
@@ -2003,7 +2003,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
           try {
-            unobserveTransform()
+            unobserveWxml()
             await snapshotWatcher.close()
           }
           finally {

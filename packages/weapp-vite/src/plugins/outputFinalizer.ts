@@ -8,7 +8,7 @@ import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
 import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
 import { parseSidecarModuleId } from '../moduleGraph/protocol'
 import { changeFileExtension } from '../utils'
-import { observeWxmlTransformDependencies } from '../wxml/transform/dependencies'
+import { deferWxmlDependencyCommit, observeWxmlDependencies } from '../wxml/processing/dependencies'
 import { hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { consumePendingOwnerStyleSources } from './css'
@@ -213,10 +213,12 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
     configureServer(server) {
-      unobserve = observeWxmlTransformDependencies(ctx, files => server.watcher.add(files))
+      unobserve = observeWxmlDependencies(ctx, files => server.watcher.add(files))
       server.httpServer?.once('close', () => unobserve?.())
     },
-    closeWatcher() { unobserve?.() },
+    closeWatcher() {
+      unobserve?.()
+    },
     configResolved(config) {
       // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。
       preserveCompleteBundle = config.experimental?.bundledDev === true
@@ -224,6 +226,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
+        deferWxmlDependencyCommit(ctx)
         const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
         const outputBundle = assets.bundle
         mergePendingOwnerStyleSources(ctx, outputBundle)
@@ -250,11 +253,12 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           ctx.configService.outputExtensions?.wxss,
           assets.stage,
         )
-        await normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta, {
+        const commitDependencies = await normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta, {
           addWatchFile: file => this.addWatchFile?.(file),
           warn: message => this.warn(message),
           partial,
         })
+        deferWxmlDependencyCommit(ctx, commitDependencies)
         if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
           normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
         }

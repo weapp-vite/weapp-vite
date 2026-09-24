@@ -6939,14 +6939,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/wxml-transform.runtime.test.ts:40",
+          "source": "e2e/ide/wxml-transform.runtime.test.ts:42",
           "name": "WXML function transform runtime > preserves typed attributes, renamed tags and events in native templates",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues/fixtures/wxml-transform",
               "checkpoints": "[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex",
-              "source": "e2e/ide/wxml-transform.runtime.test.ts:44"
+              "source": "e2e/ide/wxml-transform.runtime.test.ts:46"
             }
           ],
           "routes": [],
@@ -6959,14 +6959,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wxml-transform.runtime.test.ts:40",
+          "source": "e2e/ide/wxml-transform.runtime.test.ts:42",
           "name": "WXML function transform runtime > preserves typed attributes, renamed tags and events in vue templates",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/github-issues/fixtures/wxml-transform",
               "checkpoints": "[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex",
-              "source": "e2e/ide/wxml-transform.runtime.test.ts:44"
+              "source": "e2e/ide/wxml-transform.runtime.test.ts:46"
             }
           ],
           "routes": [],
@@ -7916,7 +7916,7 @@
     },
     {
       "file": "e2e/ide/wxml-transform.runtime.test.ts",
-      "sha256": "0514a32d6bebc019360ce6906d6720bdc2bc79d1050fc8acb29fc5f29d18072b"
+      "sha256": "322baa50cfbf42e573424ac29275017c8cb7d7e481227fffe72f6e6100883317"
     },
     {
       "file": "e2e/scripts/domAcceptanceReport/expectedErrors.ts",

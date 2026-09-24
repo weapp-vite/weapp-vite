@@ -2474,16 +2474,16 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### WXML function transform runtime > preserves typed attributes, renamed tags and events in native templates
 
-- Source: `e2e/ide/wxml-transform.runtime.test.ts:40`
+- Source: `e2e/ide/wxml-transform.runtime.test.ts:42`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/wxml-transform`; checkpoints: `[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex`; source: `e2e/ide/wxml-transform.runtime.test.ts:44`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/wxml-transform`; checkpoints: `[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex`; source: `e2e/ide/wxml-transform.runtime.test.ts:46`
 - Operations: `reLaunch(route)`, `check(transformed)`, `tap(<missing>)`, `check(event)`
 
 ### WXML function transform runtime > preserves typed attributes, renamed tags and events in vue templates
 
-- Source: `e2e/ide/wxml-transform.runtime.test.ts:40`
+- Source: `e2e/ide/wxml-transform.runtime.test.ts:42`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/wxml-transform`; checkpoints: `[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex`; source: `e2e/ide/wxml-transform.runtime.test.ts:44`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/wxml-transform`; checkpoints: `[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex`; source: `e2e/ide/wxml-transform.runtime.test.ts:46`
 - Operations: `reLaunch(route)`, `check(transformed)`, `tap(<missing>)`, `check(event)`
 
 

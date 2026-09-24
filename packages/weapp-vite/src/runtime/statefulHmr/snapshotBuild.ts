@@ -4,7 +4,7 @@ import type { LoadConfigOptions } from '../config/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
-import { shareWxmlTransformDependencies } from '../../wxml/transform/dependencies'
+import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 
@@ -16,7 +16,7 @@ export async function buildStatefulHmrSnapshot(
 ) {
   const ctx = createCompilerContextInstance()
   if (owner) {
-    shareWxmlTransformDependencies(owner, ctx)
+    shareWxmlDependencies(owner, ctx)
   }
   return await ctx.autoImportService.runWithoutOutputWrites(async () => {
     ctx.currentBuildTarget = 'app'

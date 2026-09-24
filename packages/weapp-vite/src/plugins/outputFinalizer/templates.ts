@@ -8,9 +8,9 @@ import { getWxmlPlatformTransformOptions } from '../../platform'
 import { resolveScriptModuleTagName } from '../../utils/wxmlScriptModule'
 import { handleWxml, scanWxml } from '../../wxml'
 import { resolveWxmlRemoveOptions } from '../../wxml/options'
+import { beginWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createWxmlRemover } from '../../wxml/remove'
 import { transformWxml } from '../../wxml/transform'
-import { beginWxmlTransformDependencies } from '../../wxml/transform/dependencies'
 import { transformI18nOutputTemplate } from '../i18n'
 
 const TEMPLATE_STATIC_REWRITE_MARKERS = [
@@ -89,9 +89,9 @@ export async function normalizeTemplateAssetEntries(
   const useTransform = Boolean(transform && (!Array.isArray(transform) || transform.length))
   const removeOptions = resolveWxmlRemoveOptions(wxml)
   const remove = createWxmlRemover(removeOptions)
-  const previous = ctx.runtimeState?.wxmlTransform
+  const previous = ctx.runtimeState?.wxmlProcessing
   const dependencies = useTransform || previous?.dependencies.size || previous?.pending.size
-    ? beginWxmlTransformDependencies(ctx, subPackageMeta ? `independent:${subPackageMeta.subPackage.root}` : 'main', hooks?.partial ?? false)
+    ? beginWxmlDependencies(ctx, subPackageMeta ? `independent:${subPackageMeta.subPackage.root}` : 'main', hooks?.partial ?? false)
     : undefined
   const syntax: WxmlSyntax = (configService?.platform ?? 'weapp') === 'weapp' ? 'legacy' : 'xml'
   for (const { bundleFileName, output } of entries) {
@@ -132,5 +132,5 @@ export async function normalizeTemplateAssetEntries(
       output.source = transformed
     }
   }
-  dependencies?.commit()
+  return dependencies ? () => dependencies.commit() : undefined
 }

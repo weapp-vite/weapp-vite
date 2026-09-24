@@ -23,6 +23,8 @@ describe('WXML function transform runtime', { concurrent: false }, () => {
       }
       const source = await readFile(path.join(project, `dist/pages/${kind}/index.wxml`), 'utf8')
       expect(source).not.toContain('data-clean=')
+      expect(source).not.toContain('data-use-view')
+      expect(source).toContain('data-analytics=')
       expect(source).toContain('data-testid="keep"')
       expect(source).toContain('bindtap=')
     }

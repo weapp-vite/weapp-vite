@@ -6,7 +6,28 @@ export default defineConfig(({ mode }) => ({
   weapp: {
     srcRoot: 'src',
     autoImportComponents: false,
+    compilerPlugins: mode.includes('validate') ? [{
+      name: 'validation-fixture',
+      phase: 'output',
+      capabilities: { template: true },
+      create: () => ({ transformTemplate: ({ code }) => ({ code: `${code}<!-- output-plugin -->` }) }),
+    }] : [],
     wxml: {
+      validate: mode.includes('validate') ? async (code, ctx) => {
+        ctx.addWatchFile('validation-rules.json')
+        const rules = JSON.parse(await readFile(resolve(ctx.root, 'validation-rules.json'), 'utf8')) as { reject?: string }
+        if (!code.includes('<!-- output-plugin -->')) {
+          ctx.report({ severity: 'error', message: 'output plugin must run before validation' })
+        }
+        if (rules.reject && ctx.fileName.startsWith(rules.reject)) {
+          ctx.report({ severity: 'error', code: 'fixture-reject', message: 'validation fixture rejected' })
+        }
+        await ctx.walk((node) => {
+          if (node.tagName === 'view' && node.hasAttribute('data-analytics') && !node.hasAttribute('data-rule')) {
+            ctx.report({ severity: 'error', message: 'missing transformed attribute', location: node.location })
+          }
+        })
+      } : undefined,
       transform: mode.startsWith('transform') ? [
         async (code, ctx) => {
           ctx.addWatchFile('transform-rules.json')

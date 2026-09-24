@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { SidecarWatcher, WatcherInstance } from './watcher/types'
-import { clearWxmlTransformDependencies } from '../wxml/transform/dependencies'
+import { clearWxmlDependencies } from '../wxml/processing/dependencies'
 
 export type { WatcherInstance } from './watcher/types'
 
@@ -80,7 +80,7 @@ function createWatcherService(ctx: MutableCompilerContext): WatcherService {
       }
       // 一个关闭失败不能中断其余资源回收；快照退出需等全部监听器停止。
       await Promise.allSettled(tasks)
-      clearWxmlTransformDependencies(ctx)
+      clearWxmlDependencies(ctx)
     },
     close(root: string = '/') {
       const watcher = rollupWatcherMap.get(root)
