@@ -321,13 +321,27 @@ weapp-vite dev --open
 # o -> 重新打开当前 DevTools 项目
 ```
 
+## 六端构建并上传
+
+`wv upload` 统一支持微信 `weapp`、支付宝 `alipay`、抖音 `tt`、小红书 `xhs`、京东 `jd`、百度 `swan`。每个目标先生产构建再上传；只上传开发版本，不自动提审或正式上线。
+
+```sh
+wv upload --platform jd --upload-version 1.2.3 --desc "更新首页"
+wv upload --platform jd,swan
+wv upload --platform all --dry-run
+```
+
+平台工具按需安装：`miniprogram-ci`、`minidev`、`tt-ide-cli`、`xhs-mp-cli`、`jd-miniprogram-ci`、`swan-toolkit`。上传凭据分别使用 `WEAPP_CI_PRIVATE_KEY_PATH`、`ALIPAY_IDENTITY_KEY_PATH`、`TT_UPLOAD_TOKEN`、`XHS_UPLOAD_TOKEN`、`JD_PRIVATE_KEY`、`SWAN_UPLOAD_TOKEN`；百度还必须设置 `SWAN_MIN_VERSION`。文件路径相对项目根目录解析，京东密钥直接提供内容。
+
+版本默认读取项目 `package.json.version`，`--mode` 同时选择构建和 `.env` 模式。多目标串行执行，首次失败停止；`--dry-run` 不调用上传服务。百度官方 CLI 的 Token 会出现在子进程参数中，请使用可信隔离 runner。完整凭据说明与限制见 [CLI 上传文档](https://vite.weapp.dev/guide/cli.html)。
+
 ## CLI 中调用 weapp-ide-cli
 
-`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/close/open/init/generate/analyze/npm/prepare/mcp` 等原生命令外，其它 IDE 相关命令都可以直接调用：
+`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/upload/close/open/init/generate/analyze/npm/prepare/mcp` 等原生命令外，其它 IDE 相关命令都可以直接调用。旧微信上传使用显式 `ide upload`，不再占用顶层 `upload`：
 
 ```sh
 weapp-vite preview --project ./dist/build/mp-weixin
-weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+weapp-vite ide upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 weapp-vite cache --clean compile
 weapp-vite cache --clean all
 weapp-vite config lang zh

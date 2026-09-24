@@ -134,6 +134,18 @@ pnpm build:web
 
 <!-- tutorial-e2e:multi-platform:end -->
 
+## 构建并上传 {#upload}
+
+六个小程序目标可通过统一入口构建并上传，Web 不参与：
+
+```sh
+pnpm exec wv upload --platform jd --upload-version 1.2.3
+pnpm exec wv upload --platform swan
+pnpm exec wv upload --platform all --dry-run
+```
+
+`upload` 按目标逐一执行完整生产构建，再调用各平台上传工具；不会改变 `build` 的单目标规则。多目标上传需显式传入逗号分隔的平台或 `all`，首次失败停止。请按 [CLI 上传文档](/guide/cli) 安装对应官方工具、设置平台 AppID 与凭据；百度还需显式设置最低基础库版本。`--dry-run` 只验证构建与产物目录，真实上传、IDE 编译和 Runtime 验收是不同门禁。
+
 ## 目标声明 {#targets}
 
 多平台项目建议先启用多平台模式，再通过命令参数选择单个平台构建：

@@ -39,6 +39,20 @@ weapp-vite ide logs --open
 weapp-vite build
 ```
 
+### 构建并上传
+
+```bash
+wv upload --platform jd --upload-version 1.2.3 --desc "release"
+wv upload --platform swan
+wv upload --platform all --dry-run
+```
+
+六个平台为 `weapp/alipay/tt/xhs/jd/swan`，支持逗号分隔或显式 `all`。每个目标先构建再上传；失败后停止后续目标，不自动提审或正式上线。`--dry-run` 只执行构建和产物目录检查，不调用平台上传服务。
+
+工具需安装在当前项目：微信 `miniprogram-ci`、支付宝 `minidev`、抖音 `tt-ide-cli`、小红书 `xhs-mp-cli`、京东 `jd-miniprogram-ci`、百度 `swan-toolkit`。通过 CI Secrets 或未提交的 `.env.<mode>.local` 配置对应凭据，详情见 `README.md` 的“六端构建并上传”。百度还要求 `SWAN_MIN_VERSION`；官方 CLI Token 会进入子进程参数，仅在可信隔离 runner 上运行。
+
+旧的微信 IDE 上传请改用 `wv ide upload --project <IDE项目根> -v 1.2.3 -d "release"`；该命令依赖 IDE 登录，不额外构建。
+
 ### 4. 分包预下载审计
 
 微信小程序可以检查静态跨分包跳转，并把建议输出为 JSON：

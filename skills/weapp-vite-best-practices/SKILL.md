@@ -17,7 +17,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 用户要处理支付宝 `.axml/.acss`、抖音 `.ttml/.ttss`、`buildScope`、sourcemap 或自动 HMR 模式选择。
 - 用户要用 Vitest 对真实小程序编译产物进行页面或组件测试。
 - 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
-- 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、透传边界、`preview/upload/open/config` 这类 DevTools CLI 能力。
+- 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、六端构建上传与 `ide upload/preview/open/config` 等 IDE 能力边界。
 
 ## 不适用场景
 
@@ -63,9 +63,10 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
-   - 原生命令包含 `dev` / `serve` / `build` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
+   - 原生命令包含 `dev` / `serve` / `build` / `upload` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
    - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
-   - `preview` / `upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
+   - `wv upload -p <weapp|alipay|tt|xhs|jd|swan>` 先构建再调用按需安装的官方上传工具；多目标用逗号分隔或显式 `all`，`--dry-run` 不上传。只上传开发版本，不提审、不正式上线。旧微信 IDE 上传使用 `wv ide upload`。
+   - `preview` / `ide upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定；新上传入口用 `--upload-version`，不要沿用 IDE 的 `-v/-d/--project`。
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
    - 输出路径不对：查 `srcRoot`、project config、`build.outDir`

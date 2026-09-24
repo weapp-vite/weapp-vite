@@ -21,7 +21,7 @@ describe('tryRunIdeCommand', () => {
     dispatchWechatCliCommandMock.mockResolvedValue(false)
     executeWechatIdeCliCommandMock.mockResolvedValue(undefined)
     isWeappIdeTopLevelCommandMock.mockImplementation((command: string) =>
-      ['cache', 'preview', 'navigate', 'config', 'screenshot', 'compare'].includes(
+      ['cache', 'preview', 'upload', 'navigate', 'config', 'screenshot', 'compare'].includes(
         command,
       ),
     )
@@ -178,6 +178,17 @@ describe('tryRunIdeCommand', () => {
 
     expect(forwarded).toBe(false)
     expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps upload native but preserves the explicit IDE upload entry', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    expect(await tryRunIdeCommand(['upload', '--platform', 'jd'])).toBe(false)
+    expect(await tryRunIdeCommand(['help', 'upload'])).toBe(false)
+    expect(executeWechatIdeCliCommandMock).not.toHaveBeenCalled()
+
+    expect(await tryRunIdeCommand(['ide', 'upload', '--version', '1.0.0', '--desc', 'release'])).toBe(true)
+    expect(executeWechatIdeCliCommandMock).toHaveBeenCalledWith(['upload', '--version', '1.0.0', '--desc', 'release'])
   })
 
   it('does not forward weapp-vite mcp command', async () => {

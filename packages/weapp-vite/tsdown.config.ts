@@ -5,6 +5,7 @@ export default defineConfig({
     'index': './src/index.ts',
     'web-apis': './src/webApis.ts',
     'cli': './src/cli.ts',
+    'upload-worker': './src/cli/upload/worker.ts',
     'config': './src/config.ts',
     'json': './src/json.ts',
     'volar': './src/volar.ts',
