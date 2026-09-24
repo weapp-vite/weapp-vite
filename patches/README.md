@@ -1,32 +1,45 @@
-# 发布重试补丁
+# 发布重试与恢复
 
-`@icebreakers__monorepo@5.5.5.patch` 修复 Release 中部分上传成功后的重试状态丢失。
-复现来源：[Release 35973791530](https://github.com/weapp-vite/weapp-vite/actions/runs/35973791530)。
+仓库固定使用 `repoctl@5.5.7`，发布重试由上游正式实现负责，不再保留
+`@icebreakers/monorepo@5.5.5` 的临时补丁。其他依赖补丁保持独立维护。
 
-pnpm 12.5.1 在递归发布中途失败时不会写入部分成功的 summary。GitHub OIDC 短暂返回 503 后，
-repoctl 5.5.5 只根据即时 `npm view` 结果决定待重试包，且在退避等待之前完成查询。
-npm 仍在暂存或传播元数据时，已经上传的版本会被重复提交，导致 409 并阻塞剩余发布。
+此前 [Release 35973791530](https://github.com/weapp-vite/weapp-vite/actions/runs/35973791530)
+在部分上传成功后遇到 OIDC 503。pnpm 12.5.1 没有保存失败批次的部分 summary，
+旧重试逻辑又将暂不可查询的版本加入上传队列，触发 npm staged 409。
+上游 [#913](https://github.com/icelib/repoctl/pull/913) 已修复该问题，对应需求为
+[#912](https://github.com/icelib/repoctl/issues/912)。
 
-补丁在发布器边界维护跨尝试的成功集合：合并 summary、候选包精确版本的 pnpm 成功行和 registry 查询结果；
-每次尝试都保存清单，重试等待结束后重新查询；已确认上传的包不会再次提交。
-从失败批次恢复的上传还需要通过只读查询确认可见，最多等待 100 秒，超时仍然失败并保留清单。
-永久权限错误及不伴随瞬时故障的 404 仍直接失败。provenance 和质量检查保持开启。
+## 当前发布契约
 
-`repoctl` 固定在 5.5.5，避免自动升级绕过精确版本补丁。升级时先核对上游
-`packages/monorepo/src/commands/release/publish.ts` 是否覆盖这些语义，再移除或迁移补丁，运行：
+- 合并 summary、候选包精确版本的成功行及 registry 查询结果，累计保存成功状态。
+- 退避等待后重新查询 registry；已接受上传的版本不再进入上传队列。
+- 正常上传及故障恢复均确认版本可见性，确认预算为 5 分钟，单次查询最多 10 秒。
+- 可见性确认超时、永久权限错误及不伴随瞬时故障的 404 仍明确失败。
+- GitHub tags/releases 与发布后置 hooks 仅在确认成功后执行；provenance 与质量检查保持开启。
+
+回归通过公开 `publishStable` 和 `releaseCi` 入口执行，注入进程和等待器，
+不访问真实发布端点。`test:release` 继续作为发布质量门禁；后续升级前运行：
 
 ```sh
 pnpm install --frozen-lockfile
 pnpm test:release
 ```
 
-回归通过 `repoctl` 的公开 `publishStable` 入口执行，注入进程和等待器，不访问真实发布端点。
-`test:release` 已加入 Release 的质量检查；测试不会依赖打包后的内部函数名。
+## 诊断与恢复
 
-恢复实际发布时，在修复提交进入目标分支后手动运行 Release 的 `publish` 模式，
+Release 无论成功或失败均尝试保存 `npm-publish-summary-<run_attempt>` artifact，包含：
+
+- `pnpm-publish-summary.json`：累计已接受上传的包，不代表都已可查询。
+- `repoctl-publish-progress.json`：候选包、已接受上传、已确认可见及当前执行状态。
+
+诊断文件用于核对与恢复依据；新一轮发布不会盲信旧文件，最终可用性以 registry 查询为准。
+本地运行生成的这两个文件已加入 Git 忽略列表。
+
+需要恢复实际发布时，在修复进入目标分支后手动运行 Release 的 `publish` 模式，
 继续发布当前版本并核对 npm 包、GitHub tags/releases 和 VS Code Marketplace 后置步骤。
-不要为绕过暂存冲突修改包版本，也不要在旧提交上直接重跑而误认为已经应用补丁。
-工作流无论成功或失败都会尝试保存 `npm-publish-summary-<run_attempt>` artifact。
-其中的 `pnpm-publish-summary.json` 记录的是已上传包，最终是否可用仍需以 registry 查询为准。
+此前失败批次已上传的包可能不在新一轮 summary 中，应另行核对并通过 repoctl 的
+`reconcile` 接口补齐缺失的 GitHub 发布记录。
+不要为绕过暂存冲突修改包版本，也不要在旧提交上重跑而误认为已使用新版实现。
 
-此变更仅影响仓库发布维护，不修改对外包行为，因此不添加 changeset，也不联动 `create-weapp-vite` 版本。
+本次升级仅影响仓库发布维护，不改变对外包行为，不添加 changeset，也不联动
+`create-weapp-vite` 版本。
