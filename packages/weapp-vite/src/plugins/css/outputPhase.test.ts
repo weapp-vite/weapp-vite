@@ -8,7 +8,7 @@ import { build } from 'vite'
 import { describe, expect, it } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { css } from '../css'
-import { createOutputFinalizerPlugin } from '../outputFinalizer'
+import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
 
 describe('CSS ownership after Vite output finalization', () => {
   it('publishes finalized CSS once and does not rewrite it for an unrelated template update', async () => {
@@ -57,6 +57,7 @@ describe('CSS ownership after Vite output finalization', () => {
       },
       downstream,
       createOutputFinalizerPlugin(ctx),
+      createOutputPublicationPlugin(ctx),
     ]
     const render = async () => await build({
       root,

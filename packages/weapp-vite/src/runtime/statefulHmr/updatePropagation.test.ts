@@ -1,3 +1,4 @@
+import type { DevRuntime } from 'rolldown/experimental/runtime'
 import { createContext, runInContext } from 'node:vm'
 import { describe, expect, it, vi } from 'vitest'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
@@ -9,7 +10,7 @@ interface PreparedUpdate {
 interface Runtime {
   contexts: Map<string, { data: object }>
   registerGraph: (graph: { ids: string[], localCount: number, edges: number[][], dynamicEdges: number[][] }) => void
-  registerFactory: (id: string, kind: string, factory: (id: string) => void) => void
+  registerFactory: DevRuntime['registerFactory']
   registerModule: (id: string, module: { exports: unknown }) => void
   createModuleHotContext: (id: string) => { data: object, accept: (...args: unknown[]) => void }
   initModule: (id: string) => void
@@ -29,7 +30,7 @@ function fixture(edges: Record<string, string[]>) {
   }
   graph(edges)
   const register = (id: string, value: unknown, accept?: (hot: ReturnType<Runtime['createModuleHotContext']>) => void) => {
-    runtime.registerFactory(id, 'esm', (moduleId) => {
+    runtime.registerFactory(id, (moduleId) => {
       runtime.registerModule(moduleId, { exports: value })
       accept?.(runtime.createModuleHotContext(moduleId))
     })

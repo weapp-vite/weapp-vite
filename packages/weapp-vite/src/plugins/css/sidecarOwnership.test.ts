@@ -12,7 +12,7 @@ import { createModuleGraphService } from '../../moduleGraph/service'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { css } from '../css'
-import { createOutputFinalizerPlugin } from '../outputFinalizer'
+import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
 
 describe('warm graph style ownership', () => {
   it.each([false, true])('keeps graph dependencies inert and preserves transformed CSS with collected sidecars: %s', async (collectSidecar) => {
@@ -72,7 +72,7 @@ describe('warm graph style ownership', () => {
       runtimeState.css.sidecarImports.add(style)
       runtimeState.css.sidecarImports.add(nativeStyle)
     }
-    const plugins = [graph, preTransform, ...css(ctx), createOutputFinalizerPlugin(ctx)]
+    const plugins = [graph, preTransform, ...css(ctx), createOutputFinalizerPlugin(ctx), createOutputPublicationPlugin(ctx)]
     const render = async () => await build({
       root,
       configFile: false,

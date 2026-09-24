@@ -5,6 +5,7 @@ import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../../plu
 import { isWeappCompilerPlugin } from '../../../../plugins/compilerPlugin'
 
 const WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME = 'weapp-vite:output-finalizer'
+const WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME = 'weapp-vite:output-publication'
 
 export function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
   const normalized: PluginOption[] = []
@@ -35,6 +36,7 @@ export function arrangePlugins(
   const tsconfigPlugins: PluginOption[] = []
   const others: PluginOption[] = []
   const finalizers: PluginOption[] = []
+  const publishers: PluginOption[] = []
   const sourceCompilers: PluginOption[] = []
   const outputCompilers: PluginOption[] = []
   const cssPlugins: PluginOption[] = []
@@ -45,6 +47,10 @@ export function arrangePlugins(
     }
     if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)) {
       finalizers.push(entry)
+      continue
+    }
+    if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME)) {
+      publishers.push(entry)
       continue
     }
     if (isWeappCompilerPlugin(entry, 'source')) {
@@ -74,11 +80,12 @@ export function arrangePlugins(
     if (
       isNamedPlugin(entry, WEAPP_VITE_CONTEXT_PLUGIN_NAME)
       || isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)
+      || isNamedPlugin(entry, WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME)
     ) {
       continue
     }
     others.push(entry)
   }
 
-  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...cssPlugins, ...finalizers, ...outputCompilers]
+  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...cssPlugins, ...finalizers, ...outputCompilers, ...publishers]
 }

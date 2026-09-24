@@ -265,6 +265,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/tdesign-dialog-import.runtime.test.ts',
   'ide/wevu-vue-demo.script-setup.emit.runtime.test.ts',
   'ide/wevu-comprehensive.runtime.test.ts',
+  'ide/wevu-subpackage-placement.runtime.test.ts',
 ]
 const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,

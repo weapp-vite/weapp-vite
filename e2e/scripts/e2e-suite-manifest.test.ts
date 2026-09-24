@@ -25,6 +25,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
+    'ide/wevu-subpackage-placement.runtime.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
     const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)
     expect(headless?.env).toMatchObject({

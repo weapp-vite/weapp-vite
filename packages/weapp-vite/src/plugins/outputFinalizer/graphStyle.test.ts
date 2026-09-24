@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { createSidecarModuleId } from '../../moduleGraph/protocol'
 import { resetEmittedOutputCaches } from '../../runtime/buildPlugin/outputs'
 import { createRuntimeState } from '../../runtime/runtimeState'
-import { createOutputFinalizerPlugin } from '../outputFinalizer'
+import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
 
 describe.each(['graph-only', 'preprocessor'] as const)('output finalizer %s style writes through Rolldown', (kind) => {
   function createFixture() {
@@ -45,6 +45,7 @@ describe.each(['graph-only', 'preprocessor'] as const)('output finalizer %s styl
             },
           },
           createOutputFinalizerPlugin(ctx) as Plugin,
+          createOutputPublicationPlugin(ctx) as Plugin,
         ],
       })
       try {

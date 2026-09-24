@@ -9,7 +9,7 @@ import { postcss } from 'weapp-tailwindcss/core'
 import { createRuntimeState } from '../../runtime/runtimeState'
 import { createStatefulHmrGlobalStyleAssets } from '../../runtime/statefulHmr/globalStyles'
 import { css } from '../css'
-import { createOutputFinalizerPlugin } from '../outputFinalizer'
+import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
 import { createTailwindcssPlugin } from '../tailwindcss'
 import { createManagedTailwindcssEntryMarker } from '../tailwindcssMarker'
 
@@ -78,6 +78,7 @@ describe('published Core page style priority', () => {
       await generate(output!, bundle)
       if (nativeSidecar) {
         await generate(createOutputFinalizerPlugin(ctx as any), bundle)
+        await generate(createOutputPublicationPlugin(ctx as any), bundle)
       }
       return { bundle, files: createStatefulHmrGlobalStyleAssets(Object.values(bundle), 'wxss', { componentPageGlobalStyleRoutes: ['pages/index/index'] }) }
     }

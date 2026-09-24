@@ -89,7 +89,7 @@ describe('stateful HMR GlassEasel module facts', () => {
     await refresh([first, other])
     modules.set(first, { code: 'export const fixed = true' })
     modules.set(introduced, { code: invalidSelector('introduced') })
-    await refresh(['src/first.ts'], '__rolldown_runtime__.registerFactory("src/new.ts", "esm", () => {});')
+    await refresh(['src/first.ts'], '__rolldown_runtime__.registerFactory("src/new.ts", () => {});')
     expect(diagnostics()).toEqual([
       expect.objectContaining({ file: introduced, message: expect.stringContaining('introduced') }),
       expect.objectContaining({ file: 'pages/first.js', message: expect.stringContaining(sibling) }),

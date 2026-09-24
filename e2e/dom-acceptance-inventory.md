@@ -7,7 +7,7 @@
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
 - 任务：110；微信：107；范围外：3。
-- 展开的 case 声明：277；已接入计划：277；缺计划：0。
+- 展开的 case 声明：278；已接入计划：278；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -78,7 +78,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/template-dev-open-all.runtime.test.ts | devtools | 11 | 11 | 0 | wechat |
 | ide/template-multi-platform-sfc.swan.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
 | ide/template-multi-platform.swan.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
-| ide/template-retail-checkout.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/template-retail-checkout.runtime.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
 | ide/template-tailwindcss-dev-open-multi.runtime.test.ts | devtools | 3 | 3 | 0 | wechat |
 | ide/template-tailwindcss-tdesign-hmr.runtime.test.ts | devtools | 2 | 2 | 0 | wechat |
 | ide/template-weapp-vite-multi-platform-sfc-template.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
@@ -120,7 +120,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/wevu-runtime.pruning.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
 | ide/wevu-runtime.shared-template-wxs.hmr.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/wevu-runtime.weapp.test.ts | devtools, headless | 6 | 6 | 0 | wechat |
-| ide/wevu-subpackage-placement.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-subpackage-placement.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/wevu-vue-demo.script-setup.emit.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/wevu-watch.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/chunk-modes.runtime.duplicate.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
@@ -1694,13 +1694,20 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ## ide/template-retail-checkout.runtime.test.ts
 
-### retail checkout nullable settlement rendering > renders nullable settlement results and refreshes quantity and amount after reLaunch
+### retail checkout and goods card contracts > renders nullable settlement results and refreshes quantity and amount after reLaunch
 
-- Source: `e2e/ide/template-retail-checkout.runtime.test.ts:57`
+- Source: `e2e/ide/template-retail-checkout.runtime.test.ts:75`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template`; checkpoints: `[{ id: 'home-ready', route: '/pages/home/home', action: '从首页启动并确认首屏商品已经呈现，再进入结算分包', nodes: [{ selector: '.goods-card__title', scope: [{ has: '.goods-list-wrap' }, '#home-goods-list-gd-0'], text: '白色短袖连衣裙荷叶边裙摆宽松韩版休闲纯白清爽优雅连衣裙', }], }, ...scen`; source: `e2e/ide/template-retail-checkout.runtime.test.ts:63`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template`; checkpoints: `[{ id: 'home-ready', route: '/pages/home/home', action: '从首页启动并确认首屏商品已经呈现，再进入结算分包', nodes: [{ selector: '.goods-card__title', scope: [{ has: '.goods-list-wrap' }, '#home-goods-list-gd-0'], text: '白色短袖连衣裙荷叶边裙摆宽松韩版休闲纯白清爽优雅连衣裙', }], }, ...scen`; source: `e2e/ide/template-retail-checkout.runtime.test.ts:81`
 - Routes: `/pages/home/home`, `${RETAIL_CHECKOUT_ROUTE}?type=cart`
 - Operations: `act(home-ready)`, `reLaunch(/pages/home/home)`, `check(home-ready)`, `act(scenario.id)`, `reLaunch(${RETAIL_CHECKOUT_ROUTE}?type=cart)`, `check(scenario.id)`
+
+### retail checkout and goods card contracts > passes cardId through cart, order and specs cards while retaining generated IDs and goods identity
+
+- Source: `e2e/ide/template-retail-checkout.runtime.test.ts:108`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template`; checkpoints: `[ { id: 'initial-card-ids', route: RETAIL_GOODS_CARD_ROUTE, action: '通过父级绑定分别传入三类卡片的 cardId，并对照未传值时生成的节点标识', nodes: retailGoodsCardNodes('explicit'), }, ...RETAIL_GOODS_CARD_VARIANTS.map(variant => ({ id: \`click-${variant}\`, route: RETAIL_G`; source: `e2e/ide/template-retail-checkout.runtime.test.ts:109`
+- Operations: `act(initial-card-ids)`, `reLaunch(RETAIL_GOODS_CARD_ROUTE)`, `check(initial-card-ids)`, `act(click-${variant})`, `tap(<missing>)`, `check(click-${variant})`, `act(updated-card-ids)`, `callMethod(updateCardIds)`, `check(updated-card-ids)`, `act(cleared-card-ids)`, `callMethod(clearCardIds)`, `check(cleared-card-ids)`
 
 
 ## ide/template-tailwindcss-dev-open-multi.runtime.test.ts
@@ -1934,11 +1941,11 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### e2e app: template-wevu-regression simplified portal > emits the simplified portal structure and auto-imported component usage
 
-- Source: `e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:50`
+- Source: `e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:68`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/template-wevu-regression`; checkpoints: `[ { id: 'portal', route: '/pages/index/index', action: 'launch portal', nodes: homeNodes }, ...targets.flatMap(target => [ { id: target.id, route: target.route, action: \`tap ${target.title} portal entry\`, nodes: [ { selector: '.card__title'`; source: `e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:70`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/template-wevu-regression`; checkpoints: `[ { id: 'portal', route: '/pages/index/index', action: 'launch portal', nodes: homeNodes }, ...targets.flatMap(target => [ { id: target.id, route: target.route, action: \`tap ${target.title} portal entry\`, nodes: [ { selector: '.card__title'`; source: `e2e/ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts:88`
 - Routes: `/pages/overview/index`, `/packageA/pages/workspace/index`, `/packageB/pages/settings/index`, `/pages/index/index`
-- Operations: `reLaunch(/pages/index/index)`, `check(portal)`, `tap(<missing>)`, `check(target.id)`, `callMethodWithOptions(waitForNavigation)`, `check(${target.id}-return)`
+- Operations: `reLaunch(/pages/index/index)`, `check(portal)`, `tap(<missing>)`, `callMethodWithOptions(waitForNavigation)`, `check(target.id)`, `check(${target.id}-return)`
 
 
 ## ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts
@@ -1980,9 +1987,9 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ### template wevu TailwindCSS TDesign HMR in real WeChat DevTools > serializes consecutive arbitrary background updates without reloading the page stack
 
-- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:337`
+- Source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:339`
+- Registration: `createDomAcceptance`; fixture: `templates/weapp-vite-wevu-tailwindcss-tdesign-template`; checkpoints: `[...colors.map((color, index) => ({ id: \`background:${index}\`, route: INDEX_ROUTE, action: \`背景阶段 ${index}：计算样式、布局与点击计数\`, nodes: [ { selector: \`#${PROBE_ID}\`, styles: { 'background-color': color }, visible: true }, { selector: '#count-label'`; source: `e2e/ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts:341`
 - Operations: `check(background:0)`, `callMethodWithOptions(handleCountTap)`, `check(background:1)`, `check(background:${updateIndex + 2})`, `check(local-style-priority)`
 
 
@@ -2433,12 +2440,12 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 
 ## ide/wevu-subpackage-placement.runtime.test.ts
 
-### e2e app: wevu-subpackage-placement > reLaunches main, normal subpackage, and independent subpackage vue routes
+### e2e app: wevu-subpackage-placement > visits main, normal subpackage, and independent subpackage vue routes
 
-- Source: `e2e/ide/wevu-subpackage-placement.runtime.test.ts:76`
+- Source: `e2e/ide/wevu-subpackage-placement.runtime.test.ts:81`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-subpackage-placement`; checkpoints: `subpackagePlacementCheckpoints`; source: `e2e/ide/wevu-subpackage-placement.runtime.test.ts:77`
-- Operations: `reLaunch(route)`, `check(${routeCase.id}:initial)`, `callMethodWithOptions(runE2E)`, `check(${routeCase.id}:result)`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-subpackage-placement`; checkpoints: `subpackagePlacementCheckpoints`; source: `e2e/ide/wevu-subpackage-placement.runtime.test.ts:82`
+- Operations: `navigateTo(route)`, `reLaunch(route)`, `check(${routeCase.id}:initial)`, `callMethodWithOptions(runE2E)`, `check(${routeCase.id}:result)`
 
 
 ## ide/wevu-vue-demo.script-setup.emit.runtime.test.ts

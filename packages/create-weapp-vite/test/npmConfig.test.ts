@@ -10,6 +10,17 @@ let root: string
 let project: string
 let userconfig: string
 
+function readRegistry(command: string, cwd: string) {
+  if (command === 'pnpm') {
+    // 从包根启动以复用仓库锁定的 pnpm，避免临时目录触发 Corepack 默认版本。
+    return execa(command, ['--dir', cwd, 'config', 'get', 'registry'], {
+      cwd: path.resolve(import.meta.dirname, '..'),
+      env: { COREPACK_ENABLE_NETWORK: '0' },
+    })
+  }
+  return execa(command, ['config', 'get', 'registry'], { cwd })
+}
+
 beforeEach(async () => {
   root = await mkdtemp(path.join(os.tmpdir(), 'scaffold-npm-config-'))
   project = path.join(root, 'project')
@@ -70,11 +81,11 @@ describe('npm network configuration', () => {
     expect(beforeCreation['//private.example/:_authToken']).toBeUndefined()
     await mkdir(target)
     await writeFile(path.join(target, 'package.json'), '{"name":"network-fixture","private":true}')
-    const result = await execa(command, ['config', 'get', 'registry'], { cwd: target })
+    const result = await readRegistry(command, target)
     expect(result.stdout.trim()).toBe(beforeCreation.registry)
     await writeFile(path.join(target, '.npmrc'), 'registry=https://target.example/\n')
     const existing = await resolveRegistryOptions({ projectRoot: target })
-    const targetResult = await execa(command, ['config', 'get', 'registry'], { cwd: target })
+    const targetResult = await readRegistry(command, target)
     expect(targetResult.stdout.trim()).toBe(existing.registry)
   })
 
@@ -97,7 +108,7 @@ describe('npm network configuration', () => {
     await mkdir(nested)
     const network = await resolveRegistryOptions({ projectRoot: target })
     const fromCwd = await resolveRegistryOptions({ cwd: nested })
-    const actual = await execa('pnpm', ['config', 'get', 'registry'], { cwd: target })
+    const actual = await readRegistry('pnpm', target)
     expect(actual.stdout.trim()).toBe('https://workspace.example/')
     expect(network.registry).toBe(actual.stdout.trim())
     expect(fromCwd.registry).toBe(actual.stdout.trim())
@@ -114,7 +125,7 @@ describe('npm network configuration', () => {
     const beforeCreation = await resolveRegistryOptions({ projectRoot: target })
     await mkdir(target)
     await writeFile(path.join(target, 'package.json'), '{"name":"network-fixture","private":true}')
-    const actual = await execa('pnpm', ['config', 'get', 'registry'], { cwd: target })
+    const actual = await readRegistry('pnpm', target)
     expect(actual.stdout.trim()).toBe('https://workspace.example/')
     expect(beforeCreation.registry).toBe(actual.stdout.trim())
   })
@@ -128,7 +139,7 @@ describe('npm network configuration', () => {
     const fromCwd = await resolveRegistryOptions({ cwd: project })
     const fromProject = await resolveRegistryOptions({ projectRoot: project })
     await writeFile(path.join(project, 'package.json'), '{"name":"network-fixture","private":true}')
-    const actual = await execa('pnpm', ['config', 'get', 'registry'], { cwd: project })
+    const actual = await readRegistry('pnpm', project)
     expect(actual.stdout.trim()).toBe('https://user.example/')
     expect(fromCwd.registry).toBe(actual.stdout.trim())
     expect(fromProject.registry).toBe(actual.stdout.trim())

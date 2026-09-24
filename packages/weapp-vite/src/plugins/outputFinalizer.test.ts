@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { createSidecarModuleId } from '../moduleGraph/protocol'
 import { createManagedCompilerEntryMarker, registerManagedCompilerEntries } from './compilerPluginRegistry'
 import { recordPendingOwnerStyleSource } from './css'
-import { createOutputFinalizerPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
+import { createOutputFinalizerPlugin, createOutputPublicationPlugin, mayNeedTemplateNormalization, normalizeGraphOnlyAssets, normalizePreprocessorStyleAssets, normalizeTemplateAssets, pruneUnchangedDevHmrOutputs } from './outputFinalizer'
 import { createManagedTailwindcssOutputMarker, registerManagedTailwindcssEntries } from './tailwindcssMarker'
 
 function createBundleAssetEmitter(bundle: OutputBundle) {
@@ -17,12 +17,18 @@ function createBundleAssetEmitter(bundle: OutputBundle) {
   }
 }
 
-async function runGenerateBundle(plugin: ReturnType<typeof createOutputFinalizerPlugin>, bundle: OutputBundle) {
-  const hook = plugin.generateBundle
-  const handler = typeof hook === 'function' ? hook : hook?.handler
-  await handler?.call({
-    emitFile: createBundleAssetEmitter(bundle),
-  } as any, {} as any, bundle, false)
+function createOutputPlugins(ctx: Parameters<typeof createOutputFinalizerPlugin>[0]) {
+  return [createOutputFinalizerPlugin(ctx), createOutputPublicationPlugin(ctx)]
+}
+
+async function runGenerateBundle(plugins: ReturnType<typeof createOutputPlugins>, bundle: OutputBundle) {
+  for (const plugin of plugins) {
+    const hook = plugin.generateBundle
+    const handler = typeof hook === 'function' ? hook : hook?.handler
+    await handler?.call({
+      emitFile: createBundleAssetEmitter(bundle),
+    } as any, {} as any, bundle, false)
+  }
 }
 
 describe('weapp-vite output finalizer', () => {
@@ -50,7 +56,7 @@ describe('weapp-vite output finalizer', () => {
       },
     } as unknown as OutputBundle
 
-    await runGenerateBundle(createOutputFinalizerPlugin(ctx), bundle)
+    await runGenerateBundle(createOutputPlugins(ctx), bundle)
 
     expect((bundle['app.wxss'] as any).source).toContain('.flex{display:flex}')
     expect((bundle['app.wxss'] as any).source).toContain('.author{color:#893a6d}')
@@ -401,7 +407,7 @@ describe('weapp-vite output finalizer', () => {
   })
 
   it('runs as a post generateBundle plugin', async () => {
-    const plugin = createOutputFinalizerPlugin({
+    const plugin = createOutputPlugins({
       configService: {
         outputExtensions: {
           wxss: 'wxss',
@@ -418,8 +424,10 @@ describe('weapp-vite output finalizer', () => {
 
     await runGenerateBundle(plugin, bundle)
 
-    expect(plugin.enforce).toBe('post')
-    expect(typeof plugin.generateBundle === 'object' && plugin.generateBundle.order).toBe('post')
+    for (const outputPlugin of plugin) {
+      expect(outputPlugin.enforce).toBe('post')
+      expect(typeof outputPlugin.generateBundle === 'object' && outputPlugin.generateBundle.order).toBe('post')
+    }
     expect(bundle['app.scss']).toBeUndefined()
     expect(bundle['app.wxss']).toMatchObject({
       type: 'asset',
@@ -428,7 +436,7 @@ describe('weapp-vite output finalizer', () => {
   })
 
   it('merges completed independent outputs after finalizing the main bundle', async () => {
-    const plugin = createOutputFinalizerPlugin({
+    const plugin = createOutputPlugins({
       configService: {
         outputExtensions: {
           wxss: 'wxss',
@@ -474,7 +482,7 @@ describe('weapp-vite output finalizer', () => {
   })
 
   it('rewrites app vue hmr bare wevu runtime imports after late script replacement', async () => {
-    const plugin = createOutputFinalizerPlugin({
+    const plugin = createOutputPlugins({
       configService: {
         outputExtensions: {
           wxss: 'wxss',
@@ -517,7 +525,7 @@ describe('weapp-vite output finalizer', () => {
   })
 
   it('rewrites app vue partial hmr runtime imports with the remembered vendor chunk', async () => {
-    const plugin = createOutputFinalizerPlugin({
+    const plugin = createOutputPlugins({
       configService: {
         isDev: true,
         outputExtensions: {
@@ -572,7 +580,7 @@ describe('weapp-vite output finalizer', () => {
 
   it('prunes unchanged dev hmr outputs after the plugin runtime rewrite pass only once', async () => {
     const emittedSource = new Map<string, string>()
-    const plugin = createOutputFinalizerPlugin({
+    const plugin = createOutputPlugins({
       configService: {
         isDev: true,
         outputExtensions: {

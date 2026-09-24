@@ -1,3 +1,4 @@
+import type { DevRuntime } from 'rolldown/experimental/runtime'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import path from 'node:path'
 import { createContext, runInContext } from 'node:vm'
@@ -11,7 +12,7 @@ interface Runtime {
   initialChunkLoaders: Map<string, { ids: string[], loading: boolean, load: () => void }>
   initModule: (id: string) => unknown
   registerModule: (id: string, holder: { exports: unknown }) => void
-  registerFactory: (id: string, kind: 'esm', factory: (id: string) => void) => void
+  registerFactory: DevRuntime['registerFactory']
   beginPatch: () => void
   endPatch: () => void
   registerGraph: (graph: { ids: string[], localCount: number, edges: number[][], dynamicEdges: number[][] }) => void
@@ -157,7 +158,7 @@ describe('initial native chunk loaders', () => {
     const { runtime, loads } = createRuntime([
       chunk('vendor/facade.js', '__rolldown_runtime__.registerModule("facade", { exports: "old" });'),
     ])
-    runtime.registerFactory('facade', 'esm', (id) => {
+    runtime.registerFactory('facade', (id) => {
       runtime.registerModule(id, { exports: 'updated' })
     })
     runtime.beginPatch()
@@ -185,7 +186,7 @@ describe('initial native chunk loaders', () => {
       `),
     ])
     runtime.registerGraph({ ids: ['changed', 'new-dependency'], localCount: 1, edges: [[1]], dynamicEdges: [[]] })
-    runtime.registerFactory('changed', 'esm', id => runtime.registerModule(id, { exports: 'updated' }))
+    runtime.registerFactory('changed', id => runtime.registerModule(id, { exports: 'updated' }))
     runtime.beginPatch()
     expect(runtime.initModule('changed')).toBe('updated')
     runtime.endPatch()

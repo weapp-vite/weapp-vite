@@ -4,7 +4,7 @@ interface GoodsData {
 }
 
 const props = withDefaults(defineProps<{
-  id?: string
+  cardId?: string
   hidden?: boolean | null
   data?: GoodsData | null
   layout?: string
@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<{
   cartColor?: string
   disablePopup?: boolean
 }>(), {
-  id: '',
+  cardId: '',
   hidden: false,
   data: () => ({}),
   layout: 'horizontal',
@@ -77,7 +77,7 @@ defineComponentJson({
 
 <template>
   <goods-card
-    :id="id"
+    :card-id="cardId"
     class="wr-specs-goods-card"
     :layout="layout"
     :data="data"
