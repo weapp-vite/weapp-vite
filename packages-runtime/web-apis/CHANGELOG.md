@@ -1,5 +1,22 @@
 # @wevu/web-apis
 
+## 1.3.3
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- 根据六类小程序与 Web 构建目标自动裁剪 Wevu 宿主适配，移除未使用的首航路由与 JSX island 实现，并避免 SFC 子组件注册重新引入完整兼容工厂。保留动态公开 API 和跨平台 adapter 行为，补充七端体积门禁与真实消费回归，同步脚手架随包指引。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.7
+  - @wevu/api@0.3.6
+
 ## 1.3.2
 
 ### Patch Changes
