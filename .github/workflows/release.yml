@@ -86,3 +86,13 @@ jobs:
             release_args+=("--version=${REPO_RELEASE_VERSION}")
           fi
           pnpm exec repo release ci "${release_args[@]}"
+
+      - name: Preserve npm publish summary
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: npm-publish-summary-${{ github.run_attempt }}
+          path: |
+            pnpm-publish-summary.json
+            repoctl-publish-progress.json
+          if-no-files-found: ignore

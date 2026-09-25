@@ -1,5 +1,56 @@
 # weapp-vite
 
+## 7.3.0
+
+### Minor Changes
+
+- 新增可扩展的 `weapp.compilerPlugins` 底层编译插件协议，允许第三方编译器参与 CSS、WXML、JavaScript、bundle 与 HMR 生命周期；现有 `weapp.tailwindcss` 配置继续兼容。
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- 修复抖音小程序项目混用不同版本 `wevu` 时的运行时兼容问题，构建期间优先绑定 `weapp-vite` 配套的 `wevu` 副本，并增加版本不一致预检提示；同步更新脚手架版本联动。
+
+- 修复 GlassEasel 增量分析残留旧诊断，保留未重分析文件的问题，并同步 classic、native 会话及 Dashboard 的修复、重命名和删除状态。
+
+- 修复 Tailwind CSS 增量构建遗漏样式更新、作者样式或共享导入的问题。按实际样式归属补全生成内容，并在编译器完成后按最终内容去重，避免重复样式文件和无变化的样式写入；移除最后一个样式导入后清除旧内容。
+
+- 复用单次模板组件标签分析，减少重复解析并保持标签识别与错误警告行为不变。
+
+  将 classic HMR 的强制共享 chunk 刷新状态隔离到当前构建上下文，并完善模块图的构建作用域释放、监听会话清理及入口依赖所有权管理，避免并发构建和会话重启之间相互污染。
+
+  开发模式保留请求运行时支持块的模块边界，避免首轮内联删除依赖后，局部 HMR 重新发射的运行时引用缺失模块；生产构建继续保留内联优化。
+
+  状态保持 HMR 的 prelude 随原生可执行图发布，避免普通构建快照覆盖后，初始化代码与实际安装器导出不匹配；完整构建、增量输出与资产刷新统一遵守该所有权边界。
+
+- 根据六类小程序与 Web 构建目标自动裁剪 Wevu 宿主适配，移除未使用的首航路由与 JSX island 实现，并避免 SFC 子组件注册重新引入完整兼容工厂。保留动态公开 API 和跨平台 adapter 行为，补充七端体积门禁与真实消费回归，同步脚手架随包指引。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.7
+  - @weapp-core/init@6.0.23
+  - @weapp-core/logger@3.1.7
+  - @weapp-core/schematics@6.2.7
+  - @weapp-core/shared@3.2.6
+  - @weapp-vite/ast@7.3.0
+  - @weapp-vite/eslint@0.2.8
+  - @weapp-vite/i18n@0.2.7
+  - @weapp-vite/mcp@1.5.7
+  - @weapp-vite/miniprogram-automator@1.2.22
+  - @weapp-vite/volar@2.1.11
+  - @weapp-vite/web@1.5.6
+  - @wevu/api@0.3.6
+  - @wevu/web-apis@1.3.3
+  - rolldown-require@2.0.33
+  - vite-plugin-performance@2.0.6
+  - weapp-ide-cli@6.1.8
+  - wevu@7.3.0
+
 ## 7.2.1
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @weapp-vite/i18n
 
+## 0.2.7
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.7
+
 ## 0.2.6
 
 ### Patch Changes

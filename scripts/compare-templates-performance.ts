@@ -12,6 +12,7 @@ import path from 'pathe'
 import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand, createBenchmarkTemplateDependenciesCommand } from './benchmark-checkout-preparation'
 import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
 import { verifyBenchmarkAppOutputs } from './benchmarkTemplatesPerformance/appOutputs'
+import { parseCliBuildMs } from './benchmarkTemplatesPerformance/cliTiming'
 import { createPeakRssSampler } from './benchmarkTemplatesPerformance/peakRssSampler'
 import { sampleProcessTreeRssBytes } from './benchmarkTemplatesPerformance/processTreeRss'
 import { renderHmrTimingSources } from './benchmarkTemplatesPerformance/timing'
@@ -663,14 +664,6 @@ function fasterPercent(baseline: number | null, optimized: number | null) {
 
 function reducedPercent(baseline: number | null, optimized: number | null) {
   return fasterPercent(baseline, optimized)
-}
-
-function parseCliBuildMs(output: string) {
-  const match = output.match(/(?:built in\s*|耗时：)(?:(\d+(?:\.\d+)?)s|(\d+)ms)/)
-  if (!match) {
-    return null
-  }
-  return match[1] ? Number.parseFloat(match[1]) * 1000 : Number.parseInt(match[2]!, 10)
 }
 
 function readPositiveIntegerEnv(name: string, fallback: number) {

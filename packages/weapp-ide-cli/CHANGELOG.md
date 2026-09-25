@@ -1,5 +1,22 @@
 # weapp-ide-cli
 
+## 6.1.8
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.7
+  - @weapp-core/shared@3.2.6
+  - @weapp-vite/devtools-runtime@0.4.23
+  - @weapp-vite/miniprogram-automator@1.2.22
+
 ## 6.1.7
 
 ### Patch Changes

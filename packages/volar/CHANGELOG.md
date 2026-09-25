@@ -1,5 +1,21 @@
 # @weapp-vite/volar
 
+## 2.1.11
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- 修复 Vue SFC 增量编辑后的行列位置漂移，使当前块、后续块和空块的位置与完整解析一致。
+
+- Updated dependencies:
+  - @weapp-core/schematics@6.2.7
+
 ## 2.1.10
 
 ### Patch Changes

@@ -4,6 +4,7 @@ export default {
   commands: {
     release: {
       qualityScripts: [
+        'test:release',
         'check:changeset:frontmatter',
         'check:weapp-core-constants-dependency-range',
         'check:rolldown:single-version',
