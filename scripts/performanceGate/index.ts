@@ -67,14 +67,14 @@ try {
 catch (error) {
   primary.errors.push(String(error))
 }
-const primaryScenarios = pairBatch(primary)
+const primaryScenarios = pairBatch(primary, manifest.metrics)
 const initial = evaluateGate(primaryScenarios)
 const eligible = new Set(primaryScenarios.filter(row => !row.error && row.pairs.length === row.requiredPairs).map(row => row.id))
 const exceeded = new Set(initial.scenarios.filter(row => eligible.has(row.id) && row.primary.changePercent !== null && row.primary.changePercent > 5).map(row => row.id))
 const confirmation = exceeded.size && !process.env.TEMPLATES_PERF_DIAGNOSTIC_PAIRS
   ? await collectBatch('confirmation', exceeded)
   : undefined
-const gate = evaluateAuditGate(primary, confirmation)
+const gate = evaluateAuditGate(primary, confirmation, manifest.metrics)
 const featureCosts = autoImportFeatureCosts(primary)
 const report = { ...createAuditReport(checkouts, primary, confirmation, gate), manifest, featureCosts }
 await writeFile(path.join(output, 'report.json'), `${JSON.stringify(report, null, 2)}\n`)

@@ -2,8 +2,7 @@
 export function mutateJsonMarker(source: string, marker: string) {
   const json = JSON.parse(source) as Record<string, unknown>
   const windowOptions = json.window
-  if (windowOptions && typeof windowOptions === 'object' && !Array.isArray(windowOptions)
-    && typeof (windowOptions as Record<string, unknown>).navigationBarTitleText === 'string') {
+  if (windowOptions && typeof windowOptions === 'object' && !Array.isArray(windowOptions)) {
     (windowOptions as Record<string, unknown>).navigationBarTitleText = marker
   }
   else if (typeof json.desc === 'string') {

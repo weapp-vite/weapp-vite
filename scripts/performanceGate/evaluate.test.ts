@@ -25,4 +25,18 @@ describe('paired performance gate', () => {
     expect(summarizePairs(pairs)).toMatchObject({ currentMedianMs: 106, currentP95Ms: 300, pairedDeltaMedianMs: 6 })
     expect(pairs).toHaveLength(7)
   })
+  it('does not calculate apparently valid medians from a partially missing paired side', () => {
+    const input = scenario(110)
+    input.pairs[3]!.current = Number.NaN
+    const result = evaluateGate([input])
+    expect(result.status).toBe('incomplete')
+    expect(result.scenarios[0]!.primary).toMatchObject({
+      count: 7,
+      baselineMedianMs: 100,
+      currentMedianMs: null,
+      currentP95Ms: null,
+      pairedDeltaMedianMs: null,
+      changePercent: null,
+    })
+  })
 })

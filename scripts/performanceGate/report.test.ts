@@ -4,7 +4,7 @@ import { autoImportMetrics } from './autoImport'
 import { evaluateGate } from './evaluate'
 import { autoImportFeatureCosts } from './featureCosts'
 import { assertManifestMetrics } from './manifest'
-import { evaluateAuditGate, pairBatch } from './report'
+import { evaluateAuditGate, pairBatch, renderGate } from './report'
 
 function makeBatch(): AuditBatch {
   return { errors: [], samples: Array.from({ length: 7 }, (_, round) => (['baseline', 'optimized'] as const).map(side => ({
@@ -15,6 +15,17 @@ function makeBatch(): AuditBatch {
 }
 
 describe('performance comparison dimensions', () => {
+  it('lists declared scenarios with no successful samples as incomplete rows', () => {
+    const id = 'hmr:classic:native:app-json:first:edit'
+    const result = evaluateAuditGate(makeBatch(), undefined, [id])
+    expect(result.status).toBe('incomplete')
+    expect(result.scenarios.find(row => row.id === id)).toMatchObject({
+      status: 'incomplete',
+      primary: { count: 0, baselineMedianMs: null, currentMedianMs: null, changePercent: null },
+    })
+    expect(renderGate(result)).toContain(id)
+    expect(renderGate(result)).not.toContain('NaN')
+  })
   it('retains independent regression evidence and confirmation despite a different collection failure', () => {
     const batch = makeBatch()
     batch.errors.push('HMR baseline failed')

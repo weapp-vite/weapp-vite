@@ -11,8 +11,8 @@ export interface AuditBatch {
 }
 
 /** 严格按轮次与场景配对，不因一侧缺失而缩小比较集合。 */
-export function pairBatch(batch: AuditBatch): GateScenario[] {
-  const ids = new Set(batch.samples.flatMap(row => row.values.map(value => value.id)))
+export function pairBatch(batch: AuditBatch, expected: string[] = []): GateScenario[] {
+  const ids = new Set([...expected, ...batch.samples.flatMap(row => row.values.map(value => value.id))])
   return [...ids].map((id) => {
     const baseline = batch.samples.filter(row => row.side === 'baseline' && row.values.some(value => value.id === id))
     const current = batch.samples.filter(row => row.side === 'optimized' && row.values.some(value => value.id === id))
@@ -35,8 +35,8 @@ export function pairBatch(batch: AuditBatch): GateScenario[] {
 }
 
 /** 单个类别失败不抹去其他类别的完整证据，但始终阻止整个验收通过。 */
-export function evaluateAuditGate(primary: AuditBatch, confirmation?: AuditBatch): GateSummary {
-  const gate = evaluateGate(pairBatch(primary), confirmation ? pairBatch(confirmation) : [])
+export function evaluateAuditGate(primary: AuditBatch, confirmation?: AuditBatch, expected: string[] = []): GateSummary {
+  const gate = evaluateGate(pairBatch(primary, expected), confirmation ? pairBatch(confirmation) : [])
   if (primary.errors.length || confirmation?.errors.length) {
     gate.status = gate.status === 'regression' ? 'regression' : 'incomplete'
   }

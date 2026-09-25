@@ -24,7 +24,7 @@ export interface GateSummary {
 
 /** 固定上分位法，保留所有样本；不以最小值替代正常编辑耗时。 */
 export function percentile(samples: number[], fraction: number): number | null {
-  if (!samples.length) {
+  if (!samples.length || samples.some(value => !Number.isFinite(value))) {
     return null
   }
   const sorted = [...samples].sort((a, b) => a - b)
