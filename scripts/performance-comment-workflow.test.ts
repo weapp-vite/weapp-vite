@@ -32,6 +32,18 @@ describe('performance reporting workflows', () => {
     expect(workflow.jobs.summary.if).toContain('always()')
   })
 
+  it('resolves pnpm from the checked-out packageManager instead of a second version pin', async () => {
+    for (const [file, job, manifest] of [
+      ['ci-performance.yml', 'smoke', 'package.json'],
+      ['nightly-performance.yml', 'collect', 'driver/package.json'],
+    ]) {
+      const workflow = parse(await readFile(path.join(root, '.github/workflows', file!), 'utf8'))
+      const setup = workflow.jobs[job!].steps.find((step: { uses?: string }) => step.uses?.startsWith('pnpm/action-setup@'))
+      expect(setup.with?.version).toBeUndefined()
+      expect(setup.with?.package_json_file ?? 'package.json').toBe(manifest)
+    }
+  })
+
   it('uses trusted workflow_run permissions and both source workflows', async () => {
     const workflow = parse(await readFile(path.join(root, '.github/workflows/ci-performance-comment.yml'), 'utf8'))
     expect(workflow.on.workflow_run.workflows).toEqual(['CI Performance', 'Wevu Runtime Size', 'Performance Smoke', 'Nightly Performance'])
