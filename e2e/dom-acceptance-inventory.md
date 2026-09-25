@@ -7,7 +7,7 @@
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
 - 任务：111；微信：108；范围外：3。
-- 展开的 case 声明：280；已接入计划：280；缺计划：0。
+- 展开的 case 声明：281；已接入计划：281；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -70,7 +70,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/request-clients-real-native.runtime.test.ts | devtools | 6 | 6 | 0 | wechat |
 | ide/request-clients-real.runtime.test.ts | devtools | 7 | 7 | 0 | wechat |
 | ide/shared-styles.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
-| ide/stateful-hmr.runtime.test.ts | devtools | 5 | 5 | 0 | wechat |
+| ide/stateful-hmr.runtime.test.ts | devtools | 6 | 6 | 0 | wechat |
 | ide/stream-capability.runtime.test.ts | devtools, headless | 8 | 8 | 0 | wechat |
 | ide/subpackage-shared-strategy-complex.runtime.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
 | ide/swan-runtime.optional.test.ts | swan | 1 | 0 | - | out-of-scope |
@@ -1440,39 +1440,47 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across style updates and JavaScript patches
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:320`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:348`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:321`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('native')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:349`
 - Routes: `pages/native/index`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(style-updated)`, `check(patched)`, `check(updated)`, `check(restored)`, `check(restored-updated)`
 
+### stateful HMR in real WeChat DevTools > ignores unowned editor files while publishing consecutive native script edits and restorations
+
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:408`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `editorFileCheckpoints()`; source: `e2e/ide/stateful-hmr.runtime.test.ts:412`
+- Routes: `pages/native/index`
+- Operations: `check(initial)`, `check(ignored)`, `tap(<missing>)`, `check(cycle-${cycle}-step-2)`, `check(cycle-${cycle}-step-1)`
+
 ### stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:383`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:465`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:392`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('wevu')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:474`
 - Routes: `pages/wevu/index`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(template-b)`, `check(template-a)`, `check(patched)`, `check(updated)`, `check(mixed-style)`, `check(mixed-style-updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:483`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:565`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:484`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `statefulHmrCheckpoints('component')`; source: `e2e/ide/stateful-hmr.runtime.test.ts:566`
 - Routes: `pages/component/index`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(updated)`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:523`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:605`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:524`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `nativeChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:606`
 
 ### stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:545`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:627`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:546`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `vueChildCheckpoints`; source: `e2e/ide/stateful-hmr.runtime.test.ts:628`
 
 
 ## ide/stream-capability.runtime.test.ts

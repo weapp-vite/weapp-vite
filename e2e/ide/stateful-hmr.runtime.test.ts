@@ -9,15 +9,19 @@ import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import {
+  parseStatefulHmrControlSource,
   replaceFileByRename,
   waitForFileContains,
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { relaunchPage } from './github-issues.runtime.shared'
 import { statefulHmrCheckpoints } from './statefulHmrDom'
+import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -55,6 +59,7 @@ let originalNativeStyle = ''
 let originalWevuSource = ''
 let previousPostConnectRefresh: string | undefined
 let sharedInfraUnavailableMessage = ''
+let headlessTransport: ReturnType<typeof installStatefulHmrTransport> | undefined
 
 class StatefulHmrDevtoolsTransportError extends Error {
   constructor(message: string) {
@@ -147,6 +152,7 @@ async function waitForClientVersion(expectedVersion: number, timeoutMs = 30_000)
   const start = Date.now()
   let latest = -1
   while (Date.now() - start < timeoutMs) {
+    headlessTransport?.assertHealthy()
     latest = await miniProgram.evaluate(() => {
       const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
       return typeof client?.getVersion === 'function' ? Number(client.getVersion()) : -1
@@ -160,7 +166,15 @@ async function waitForClientVersion(expectedVersion: number, timeoutMs = 30_000)
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
-  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}; devOutput=${devOutput}`)
+  const diagnostics = await miniProgram.evaluate(() => {
+    const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
+    return {
+      transport: client?.getTransportState?.(),
+      lastApply: client?.getLastApply?.(),
+    }
+  }).catch(() => null)
+  const runtimeLogs = miniProgram.__weappViteRuntimeLogMeta?.entries?.slice(-40) ?? []
+  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}; diagnostics=${JSON.stringify(diagnostics)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
 async function readClientVersion(): Promise<number> {
@@ -250,6 +264,13 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess.waitFor(waitForStatefulHmrControl(CONTROL_FILE), 'stateful HMR control ready')
 
     miniProgram = await launchAutomator({
+      async configureHeadlessSession(session) {
+        const control = parseStatefulHmrControlSource(await fs.readFile(CONTROL_FILE, 'utf8'))
+        if (!control?.url) {
+          throw new Error('Missing current CLI HMR endpoint')
+        }
+        headlessTransport = installStatefulHmrTransport(session, control.url, UPDATE_FILE)
+      },
       bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       projectPath: APP_ROOT,
@@ -279,8 +300,15 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   }, 600_000)
 
   afterAll(async () => {
+    await headlessTransport?.close()
+    headlessTransport = undefined
     try {
-      await miniProgram?.disconnect?.()
+      if (resolveRuntimeProviderName() === 'headless') {
+        await miniProgram?.close?.()
+      }
+      else {
+        await miniProgram?.disconnect?.()
+      }
     }
     catch {}
     miniProgram = undefined
@@ -375,6 +403,60 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await waitForPatchedBehavior(4, page)
     await dom.check('restored-updated', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'native-instance' })
+  })
+
+  it('ignores unowned editor files while publishing consecutive native script edits and restorations', async (ctx) => {
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', editorFileCheckpoints())
+    const page = await relaunchStatefulRoute(NATIVE_ROUTE)
+    await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
+    await prepareRuntimeState('editor-file-ownership')
+    const scratch = path.join(path.dirname(NATIVE_SOURCE), 'editor-buffer.note')
+    const hiddenScratch = path.join(path.dirname(NATIVE_SOURCE), '.editor-buffer')
+    const initialVersion = await readClientVersion()
+    let expectedCount = 0
+    try {
+      // 无关文件既覆盖普通文件名，也覆盖隐藏文件；不允许实现依赖临时文件名黑名单。
+      await fs.writeFile(scratch, 'unowned')
+      await fs.writeFile(hiddenScratch, 'unowned')
+      await new Promise(resolve => setTimeout(resolve, 500))
+      expect(await readClientVersion()).toBe(initialVersion)
+      expect(await readRuntimeState(page)).toMatchObject({ identity: 'editor-file-ownership', count: 0, input: 'held-input' })
+      await dom.check('ignored', miniProgram, page)
+      const updatedSource = originalNativeSource
+        .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
+        .replace('this.data.count + 1', 'this.data.count + 2')
+      for (let cycle = 0; cycle < 2; cycle += 1) {
+        for (const step of [2, 1]) {
+          const version = await readClientVersion()
+          await fs.writeFile(scratch, `cycle ${cycle}, step ${step}`)
+          await replaceFileByRename(NATIVE_SOURCE, step === 2 ? updatedSource : originalNativeSource)
+          await fs.remove(hiddenScratch)
+          await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, `this.data.count + ${step}`), 'native editor-save patch published')
+          await waitForClientVersion(version + 1)
+          await triggerIncrement()
+          expectedCount += step
+          await waitForPatchedBehavior(expectedCount, page)
+          await dom.check(`cycle-${cycle}-step-${step}`, miniProgram, await miniProgram.currentPage())
+          expect(await readRuntimeState(page)).toEqual({
+            count: expectedCount,
+            identity: 'editor-file-ownership',
+            input: 'held-input',
+            route: 'pages/native/index',
+            source: 'e2e',
+          })
+          await fs.writeFile(hiddenScratch, `cycle ${cycle}, step ${step}`)
+        }
+      }
+    }
+    finally {
+      await fs.remove(scratch)
+      await fs.remove(hiddenScratch)
+      await replaceFileByRename(NATIVE_SOURCE, originalNativeSource)
+    }
   })
 
   // 微信开发者工具 2.02.2609082（基础库 3.17.3）在 component:true 的 Wevu 页面

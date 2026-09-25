@@ -28,6 +28,7 @@ import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
+import { watchAssetSources } from '../watch/assets'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { isStatefulHmrBoundary } from './boundaries'
 import { StatefulHmrDirectoryUpdates } from './directoryUpdates'
@@ -159,6 +160,7 @@ export async function runStatefulHmrDev(
     if (!session) {
       throw new Error('微信状态保持 HMR session 未完成初始化。')
     }
+    await session.watchAssets()
     await session.refreshControl()
     return createWatcherAdapter(server, session, buildEvents)
   }
@@ -170,6 +172,7 @@ export async function runStatefulHmrDev(
 }
 
 class StatefulHmrSession {
+  private assetWatcher?: ReturnType<typeof watchAssetSources>
   private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
   private readonly initialBundle = Promise.withResolvers<void>()
@@ -247,7 +250,23 @@ class StatefulHmrSession {
     this.ctx.onStatefulHmrSourceChange = this.sourceChangeListener
   }
 
+  async watchAssets(): Promise<void> {
+    this.assetWatcher = watchAssetSources(this.ctx.configService, {
+      isModule: file => (this.server.moduleGraph.getModulesByFile(file)?.size ?? 0) > 0,
+      onChange: (file, event) => {
+        this.ctx.moduleGraphService.recordChangedFile(file, event)
+        this.handleSourceUpdate(file)
+      },
+      onError: (error) => {
+        this.buildEvents.emitEvent({ code: 'ERROR', error, result: undefined as never })
+        this.server.config.logger.error('[weapp-vite] asset watcher failed', { error })
+      },
+    })
+    await this.assetWatcher.ready
+  }
+
   async close(): Promise<void> {
+    await this.assetWatcher?.close()
     if (this.restartTimer) {
       clearTimeout(this.restartTimer)
     }

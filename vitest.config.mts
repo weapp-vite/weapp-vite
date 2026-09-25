@@ -141,6 +141,7 @@ const projects = [
         'e2e/utils/issue963Project.test.ts',
         'e2e/utils/opened-automator.test.ts',
         'e2e/utils/queryRequestTransport.test.ts',
+        'e2e/utils/statefulHmrTransport.test.ts',
         'e2e/utils/recoverableSession.test.ts',
         'e2e/utils/shared-hmr-fixture.test.ts',
         'e2e/utils/vitestTargetFile.test.ts',

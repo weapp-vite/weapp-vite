@@ -1,7 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
-import type { CopyGlobs } from '../types'
 import { Buffer } from 'node:buffer'
 import {
   WEVU_SLOT_NAMES_PROP,
@@ -12,14 +11,11 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
-import { fdir as Fdir } from 'fdir'
-import path from 'pathe'
-import picomatch from 'picomatch'
-import { defaultAssetExtensions, defaultExcluded } from '../defaults'
 import { resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../utils'
 import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTransformCode } from '../utils/outputChunk'
 import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
+import { createAssetSourcePlan } from './asset/sources'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
 import { injectNativeScopedSlotHostPropertiesInJs } from './vue/transform/injectNativeScopedSlotHostProperties'
 
@@ -30,10 +26,6 @@ interface AssetPluginState {
   pendingAssets?: Promise<string[]>
 }
 
-function normalizeCopyGlobs(globs?: CopyGlobs): string[] {
-  return Array.isArray(globs) ? globs : []
-}
-
 function stripQueryAndHash(value: string) {
   const queryIndex = value.indexOf('?')
   const hashIndex = value.indexOf('#')
@@ -41,25 +33,6 @@ function stripQueryAndHash(value: string) {
     .filter(index => index >= 0)
     .reduce((min, index) => Math.min(min, index), Number.POSITIVE_INFINITY)
   return Number.isFinite(endIndex) ? value.slice(0, endIndex) : value
-}
-
-function createPathMatcher(patterns: string[], options?: picomatch.PicomatchOptions) {
-  if (!patterns.length) {
-    return () => false
-  }
-
-  return picomatch(patterns.map(pattern => normalizePath(pattern)), options)
-}
-
-function createAssetPathVariants(file: string, roots: string[]) {
-  const variants = [file]
-  for (const root of roots) {
-    const relative = path.relative(root, file)
-    if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) {
-      variants.push(relative)
-    }
-  }
-  return variants.map(variant => normalizePath(variant))
 }
 
 function parseJsonBuffer(buffer: Buffer) {
@@ -353,66 +326,6 @@ export function resolvePendingAssetFiles(
   })
 }
 
-function scanAssetFiles(configService: CompilerContext['configService'], config: ResolvedConfig, buildTarget: BuildTarget) {
-  const weappViteConfig = configService.weappViteConfig
-  const include = normalizeCopyGlobs(weappViteConfig?.copy?.include)
-  const exclude = normalizeCopyGlobs(weappViteConfig?.copy?.exclude)
-  const filter = weappViteConfig?.copy?.filter ?? (() => true)
-
-  const ignore = [
-    ...defaultExcluded,
-    path.resolve(configService.cwd, `${config.build.outDir}/**/*`),
-    ...exclude,
-  ]
-
-  const patterns = [
-    `**/*.{${defaultAssetExtensions.join(',')}}`,
-    ...include,
-  ]
-  const includeMatcher = createPathMatcher(patterns, { dot: false })
-  const ignoreMatcher = createPathMatcher(ignore, { dot: true })
-
-  const roots = new Set<string>()
-  if (buildTarget !== 'plugin') {
-    roots.add(configService.absoluteSrcRoot)
-  }
-  if (configService.absolutePluginRoot && buildTarget === 'plugin') {
-    roots.add(configService.absolutePluginRoot)
-  }
-
-  if (!roots.size) {
-    return Promise.resolve([])
-  }
-
-  const crawlPromises = Array.from(roots).map((root) => {
-    return new Fdir({
-      includeDirs: false,
-      pathSeparator: '/',
-    })
-      .withFullPaths()
-      .crawl(root)
-      .withPromise()
-      .then((files) => {
-        return files.filter((file) => {
-          const variants = createAssetPathVariants(file, [root, configService.absoluteSrcRoot, configService.cwd])
-          return variants.some(variant => includeMatcher(variant))
-            && !variants.some(variant => ignoreMatcher(variant))
-        })
-      })
-  })
-
-  return Promise.all(crawlPromises)
-    .then((groups) => {
-      const files = new Set<string>()
-      for (const group of groups) {
-        for (const file of group) {
-          files.add(file)
-        }
-      }
-      return Array.from(files).filter(filter)
-    })
-}
-
 async function emitAssets(
   ctx: CompilerContext,
   pluginContext: { emitFile: (asset: { type: 'asset', fileName: string, source: Buffer | string }) => void },
@@ -471,7 +384,7 @@ function createAssetCollector(state: AssetPluginState): Plugin {
         return
       }
 
-      state.pendingAssets = scanAssetFiles(configService, state.resolvedConfig, state.buildTarget)
+      state.pendingAssets = createAssetSourcePlan(configService, state.resolvedConfig.build.outDir, state.buildTarget).scan()
     },
 
     async generateBundle(_options, bundle) {

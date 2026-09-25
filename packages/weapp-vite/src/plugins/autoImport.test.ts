@@ -336,8 +336,8 @@ describe('autoImport plugin', () => {
 
       expect(reset).not.toHaveBeenCalled()
       expect(registerPotentialComponent).not.toHaveBeenCalled()
-      expect(addWatchFile).toHaveBeenCalledWith(srcRoot)
-      expect(addWatchFile).toHaveBeenCalledWith(path.join(srcRoot, 'components'))
+      expect(addWatchFile).not.toHaveBeenCalled()
+      expect(chokidarWatchMock).toHaveBeenCalled()
 
       ctx.runtimeState.autoImport.preparedGlobsKey = 'other/**/*.vue'
       const nextPlugin = autoImport(ctx)[0]
@@ -461,7 +461,7 @@ describe('autoImport plugin', () => {
     expect(addWatchFile).toHaveBeenCalledWith('/project/src/packages/order/components')
   })
 
-  it('starts sidecar watcher with narrowed glob base directories instead of src root fallback', async () => {
+  it('prunes sidecar traversal to glob bases while retaining their topology ancestors', async () => {
     const reset = vi.fn()
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
     const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
@@ -502,15 +502,15 @@ describe('autoImport plugin', () => {
     plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
     await plugin.buildStart?.call({ addWatchFile: vi.fn() } as any)
 
-    expect(chokidarWatchMock).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        '/project/src/components',
-        '/project/src/packages/order/components',
-      ]),
-      expect.any(Object),
-    )
-    const watchArgs = chokidarWatchMock.mock.calls[0]?.[0] ?? []
-    expect(watchArgs).not.toContain('/project/src')
+    expect(chokidarWatchMock).toHaveBeenCalledOnce()
+    const ignored = chokidarWatchMock.mock.calls[0]?.[1].ignored
+    expect(ignored('/project/src')).toBe(false)
+    expect(ignored('/project/src/components/Card.vue')).toBe(false)
+    expect(ignored('/project/src/packages')).toBe(false)
+    expect(ignored('/project/src/packages/order/components/Card.wxml')).toBe(false)
+    expect(ignored('/project/src/pages')).toBe(true)
+    expect(ignored('/project/src/packages/other')).toBe(true)
+    expect(ignored('/project/dist')).toBe(true)
   })
 
   it('waits for sidecar watcher ready before finishing dev buildStart', async () => {
