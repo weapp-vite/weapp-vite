@@ -1,17 +1,18 @@
-# main Nightly 36172401898：后续 14 个分片证据
+# main Nightly 36172401898：后续 16 个分片证据
 
-🔴 **本次补充 14 个已完成分片，连同[首批 9 个](./nightly-main-36172401898-partial.md)共归档 23/27 个分片；完整性能未通过，剩余 4 个 macOS 分片仍在运行。** 本轮冻结旧 main，不包含 #1085 和 #1086 的修复。
+🔴 **本次补充 16 个已完成分片，连同[首批 9 个](./nightly-main-36172401898-partial.md)共归档 25/27 个分片；完整性能未通过，剩余 2 个 macOS 分片仍在运行。** 本轮冻结旧 main，不包含 #1085 和 #1086 的修复。
 
 - 冻结 main / 驱动：`d657d7b64bf2e5fb367862377255d513dab0ec07`。
 - 固定批准基线：`e7862e61dd83e3b9e356ac1e176267b31ab298af`，采样契约 `paired-v2-template-shards`。
 - [原始运行](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898)：三 OS、构建 7 对、HMR 20 对；超过 5% 仅一次等量确认。未修改样本、轮询或判定阈值。
 - 新确认回退：Ubuntu `auto-hmr:20:manual:repeat:edit` +16.48% / +10.21%；Windows `auto-hmr:1:manual:first:restore` +9.07% / +5.56%；macOS `auto-build:50:manual:first` +8.24% / +6.14%。
-- 三项均是手动配置，不能仅凭指标分类含 auto 就归因为组件自动发现成本；编译、文件监听和发布链路仍须分别定位。
+- macOS 另外确认：stateful TDesign App JSON 首次编辑 +16.02% / +6.66%；classic Wevu 脚本重复恢复 +10.44% / +9.09%。
+- 前三项均是手动配置，不能仅凭指标分类含 auto 就归因为组件自动发现成本；编译、文件监听和发布链路仍须分别定位。
 - Windows 原生 classic/stateful 全部 16 项局部 passed，自动导入构建 16 项局部 passed；不能抵消其他场景失败。macOS 原生 classic 的 4 个越线指标均为 unstable，不按确认下降改判通过。
 
 ## 身份与完整性复核
 
-使用仓库 `verifyShard` 从原始样本复核 schema、用途、两侧 SHA、驱动 SHA、OS、清单、确认计划、交替顺序、重复轮次、构建产物证据及门禁状态；所有 14 份通过结构复核。结构复核成功不等于性能通过。完整指标的首批/确认中位数、百分比、P95 与逐样本复算一致。缺项保留原始单侧记录，不伪造配对或补零。
+使用仓库 `verifyShard` 从原始样本复核 schema、用途、两侧 SHA、驱动 SHA、OS、清单、确认计划、交替顺序、重复轮次、构建产物证据及门禁状态；所有 16 份通过结构复核。结构复核成功不等于性能通过。完整指标的首批/确认中位数、百分比、P95 与逐样本复算一致。缺项保留原始单侧记录，不伪造配对或补零。
 
 指标数顺序为 passed / regression / unstable / incomplete；分片名称取自原始报告。
 
@@ -19,8 +20,10 @@
 | --- | --- | --- | --- | --- |
 | [macos-0](./nightly-main-36172401898-macos-0.json.gz) | `build` | 🔴 unstable | 4 / 0 / 2 / 0 | [10885262339](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10885262339) |
 | [macos-1](./nightly-main-36172401898-macos-1.json.gz) | `hmr:classic:weapp-vite-tailwindcss-tdesign-template` | 🔴 unstable | 11 / 0 / 5 / 0 | [10886843151](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10886843151) |
+| [macos-2](./nightly-main-36172401898-macos-2.json.gz) | `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template` | 🔴 regression | 9 / 1 / 2 / 4 | [10888018486](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10888018486) |
 | [macos-3](./nightly-main-36172401898-macos-3.json.gz) | `hmr:classic:weapp-vite-template` | 🔴 unstable | 12 / 0 / 4 / 0 | [10887178761](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10887178761) |
 | [macos-4](./nightly-main-36172401898-macos-4.json.gz) | `hmr:stateful-experimental:weapp-vite-template` | 🔴 incomplete | 15 / 0 / 0 / 1 | [10886602768](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10886602768) |
+| [macos-5](./nightly-main-36172401898-macos-5.json.gz) | `hmr:classic:weapp-vite-wevu-template` | 🔴 regression | 9 / 1 / 2 / 4 | [10888491660](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10888491660) |
 | [macos-7](./nightly-main-36172401898-macos-7.json.gz) | `auto-build` | 🔴 regression | 14 / 1 / 1 / 0 | [10887004933](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10887004933) |
 | [ubuntu-8](./nightly-main-36172401898-ubuntu-8.json.gz) | `auto-hmr` | 🔴 regression | 29 / 1 / 2 / 0 | [10883983772](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10883983772) |
 | [windows-1](./nightly-main-36172401898-windows-1.json.gz) | `hmr:classic:weapp-vite-tailwindcss-tdesign-template` | 🔴 unstable | 13 / 0 / 3 / 0 | [10884448737](https://github.com/weapp-vite/weapp-vite/actions/runs/36172401898/artifacts/10884448737) |
@@ -68,6 +71,27 @@
 | `native-page-style:repeat:edit` | passed | 20/20 | +1.37% | 0/0 | — |
 | `native-page-style:repeat:restore` | passed | 20/20 | +4.21% | 0/0 | — |
 
+### macos-2：`hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template`
+
+| 指标 | 状态 | 首批 baseline/current | 首批变化 | 确认 baseline/current | 确认变化 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `app-json:first:edit` | 🔴 regression | 20/20 | +16.02% | 20/20 | +6.66% |
+| `app-json:first:restore` | 🔴 unstable | 20/20 | +10.76% | 20/20 | -3.56% |
+| `app-json:repeat:edit` | 🔴 unstable | 20/20 | +7.76% | 20/20 | +0.81% |
+| `app-json:repeat:restore` | passed | 20/20 | +3.00% | 0/0 | — |
+| `native-page-script:first:edit` | 🔴 incomplete | 19/20 | +5.16% | 0/0 | — |
+| `native-page-script:first:restore` | 🔴 incomplete | 19/20 | -10.73% | 0/0 | — |
+| `native-page-script:repeat:edit` | 🔴 incomplete | 19/20 | +4.90% | 0/0 | — |
+| `native-page-script:repeat:restore` | 🔴 incomplete | 19/20 | -14.83% | 0/0 | — |
+| `native-page-template:first:edit` | 🟢 passed | 20/20 | -4.11% | 0/0 | — |
+| `native-page-template:first:restore` | passed | 20/20 | +0.13% | 0/0 | — |
+| `native-page-template:repeat:edit` | 🟢 passed | 20/20 | -8.54% | 0/0 | — |
+| `native-page-template:repeat:restore` | 🟢 passed | 20/20 | -10.10% | 0/0 | — |
+| `native-page-style:first:edit` | 🟢 passed | 20/20 | -4.44% | 0/0 | — |
+| `native-page-style:first:restore` | 🟢 passed | 20/20 | -8.27% | 0/0 | — |
+| `native-page-style:repeat:edit` | 🟢 passed | 20/20 | -5.09% | 0/0 | — |
+| `native-page-style:repeat:restore` | passed | 20/20 | +4.06% | 0/0 | — |
+
 ### macos-3：`hmr:classic:weapp-vite-template`
 
 | 指标 | 状态 | 首批 baseline/current | 首批变化 | 确认 baseline/current | 确认变化 |
@@ -109,6 +133,27 @@
 | `native-page-style:first:restore` | passed | 20/20 | +3.97% | 0/0 | — |
 | `native-page-style:repeat:edit` | 🟢 passed | 20/20 | -5.74% | 0/0 | — |
 | `native-page-style:repeat:restore` | passed | 20/20 | +2.56% | 0/0 | — |
+
+### macos-5：`hmr:classic:weapp-vite-wevu-template`
+
+| 指标 | 状态 | 首批 baseline/current | 首批变化 | 确认 baseline/current | 确认变化 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `vue-page-script:first:edit` | passed | 20/20 | +0.00% | 0/0 | — |
+| `vue-page-script:first:restore` | passed | 20/20 | +1.18% | 0/0 | — |
+| `vue-page-script:repeat:edit` | 🔴 unstable | 20/20 | +7.24% | 20/20 | -4.76% |
+| `vue-page-script:repeat:restore` | 🔴 regression | 20/20 | +10.44% | 20/20 | +9.09% |
+| `vue-page-style:first:edit` | 🟢 passed | 20/20 | -7.70% | 0/0 | — |
+| `vue-page-style:first:restore` | passed | 20/20 | +0.85% | 0/0 | — |
+| `vue-page-style:repeat:edit` | 🟢 passed | 20/20 | -0.98% | 0/0 | — |
+| `vue-page-style:repeat:restore` | passed | 20/20 | +4.08% | 0/0 | — |
+| `vue-page-template:first:edit` | 🟢 passed | 20/20 | -4.50% | 0/0 | — |
+| `vue-page-template:first:restore` | 🔴 unstable | 20/20 | +7.13% | 20/20 | +0.07% |
+| `vue-page-template:repeat:edit` | passed | 20/20 | +1.18% | 0/0 | — |
+| `vue-page-template:repeat:restore` | 🟢 passed | 20/20 | -3.27% | 0/0 | — |
+| `json-sitemap:first:edit` | 🔴 incomplete | 0/20 | — | 0/0 | — |
+| `json-sitemap:first:restore` | 🔴 incomplete | 0/20 | — | 0/0 | — |
+| `json-sitemap:repeat:edit` | 🔴 incomplete | 0/20 | — | 0/0 | — |
+| `json-sitemap:repeat:restore` | 🔴 incomplete | 0/20 | — | 0/0 | — |
 
 ### macos-7：`auto-build`
 
@@ -356,11 +401,13 @@
 
 错误条数可能同时包括外层采集器失败和内层场景详情，不等于独立失败次数。以下仅列场景详情，完整错误仍在归档内。
 
+- 🔴 macos-2：primary pair 1 baseline: PartialHmrCollectionError: weapp-vite-tailwindcss-tdesign-template/native-page-script: Timed out waiting for a stateful HMR patch batch matching the current source mutation.
+- 🔴 macos-2：confirmation pair 8 baseline: PartialHmrCollectionError: weapp-vite-tailwindcss-tdesign-template/native-page-script: Timed out waiting for a stateful HMR patch batch matching the current source mutation.
 - 🔴 macos-4：confirmation pair 1 optimized: PartialHmrCollectionError: weapp-vite-template/native-page-script: Timed out waiting for a stateful HMR patch batch matching the current source mutation. Failed to restore benchmark source/output: Timed out waiting for a stateful HMR patch batch matching the current source mutation.
 - 🔴 windows-2：primary pair 8 optimized: PartialHmrCollectionError: weapp-vite-tailwindcss-tdesign-template/native-page-script: Timed out waiting for a stateful HMR patch batch matching the current source mutation. Failed to restore benchmark source/output: Timed out waiting for a stateful HMR patch batch matching the current source mutation.
 - 🔴 windows-2：primary pair 12 optimized: PartialHmrCollectionError: weapp-vite-tailwindcss-tdesign-template/native-page-script: Timed out waiting for a stateful HMR patch batch matching the current source mutation.
 - 🔴 windows-6：confirmation pair 14 baseline: PartialHmrCollectionError: weapp-vite-wevu-template/vue-page-script: Timed out waiting for a stateful HMR patch batch matching the current source mutation.
-- 🔴 Windows classic Wevu 的固定基线 sitemap 首批 20 次失败，保留 40 条外层及场景错误。当前侧修复不使旧基线变为可比较。
+- 🔴 Windows classic Wevu 固定基线 sitemap 首批 20 次失败，保留 40 条外层及场景错误；macOS classic Wevu 首批和确认各 20 次失败、各 40 条错误。当前侧修复不使旧基线变为可比较。
 - 不以输出 marker 或文件变更替代 `batch-published`。尚未证明以上所有发布超时与 #1086 或 #1081 同因。
 - 固定基线不变，独立包旧 watcher 与统一发布生命周期不可比较仍单列，未被本次结果消除。
 
@@ -383,8 +430,10 @@ gzip 保留顶层报告全部结构、数值、样本顺序和错误，仅替换
 | --- | --- | --- |
 | [macos-0](./nightly-main-36172401898-macos-0.json.gz) | `b9f6b97c7af275981deb05a69656013b19e8b74d8a93baa76f1cd8fb5a7610b9` | `8480725b4cd33af5397b17800195049996aa0a4c39ab48093b73c0a74619ddf2` |
 | [macos-1](./nightly-main-36172401898-macos-1.json.gz) | `1f0a29a486504b5a9ab6836caa820f7e2ad86a7e35bf7f34f89f95a15604e2e5` | `eacdabb1ceee3bee3b5048480ff3cf5cc8ad778a6921477c04efc18fef3e3f63` |
+| [macos-2](./nightly-main-36172401898-macos-2.json.gz) | `eb91fc7c181277567fc943b33d4224a6a55dc3d38a4da45d7a78b5199539d674` | `894d180bc74fe7d6c5a6dfcb5b8377a127176bca9848bf25ac12bc36967ebc9b` |
 | [macos-3](./nightly-main-36172401898-macos-3.json.gz) | `e3b46556cb88af2eac39c3216d911e7e6ef5e446402738d3dd7598fb39a9668c` | `680b1f683d0579a47c180f94a1f631a8e6c9976809623b5d6ea9c602cb5117ae` |
 | [macos-4](./nightly-main-36172401898-macos-4.json.gz) | `c7a5d9a85baddb0555d1aa9b01414d5dcd2baba8136ecf9e754d0be98b61fac3` | `7b7ba6be219fa568b61bfa765c02d9fd63ed084b10bf7a0c639f731c27e80131` |
+| [macos-5](./nightly-main-36172401898-macos-5.json.gz) | `b8a52fc410acedfbf8b8a3edc1c857cf3809c7bd5c03f9b62f0e89db99c8260a` | `bf180023f185da3dd00e3d167878d24a72bdb7704fd2563c79dd4719d8b7c6cf` |
 | [macos-7](./nightly-main-36172401898-macos-7.json.gz) | `5de43a436b244e1aa3207ce34b8901f90bc93112226de806cd0a024bea24127e` | `05c374fc571b624d42709662561db35d2c9b67499fdb5cddeb7b5b74efee0fff` |
 | [ubuntu-8](./nightly-main-36172401898-ubuntu-8.json.gz) | `edb85cb6ba77c386d1378238841357f103df06fad9556a89d99c61bd38697616` | `11b0c5f1f66f677010c71175c24493d63faca0333afd3469e34d623c0915d0e1` |
 | [windows-1](./nightly-main-36172401898-windows-1.json.gz) | `8caa4ebcd3db8ff3dc48804c739eacd2e0e468b9e177ea2f0d5a94b55d491d5f` | `f6937954d3e0767dc5b2e4a59ab6286a0796979834143be9ce38e0fe2446a45d` |

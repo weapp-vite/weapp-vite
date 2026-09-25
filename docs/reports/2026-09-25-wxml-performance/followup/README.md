@@ -8,7 +8,7 @@
 
 [main Nightly 36172401898 首批九分片](./nightly-main-36172401898-partial.md) 保留确认回退、不稳定、缺样本与固定基线缺陷；不是完整三平台验收。
 
-[后续十四分片](./nightly-main-36172401898-additional.md) 补齐 Ubuntu/Windows，并保留已完成的 macOS 证据；合计 23/27 分片，新增三项确认回退。冻结旧 main 不包含 #1085/#1086。
+[后续十六分片](./nightly-main-36172401898-additional.md) 补齐 Ubuntu/Windows，并保留已完成的 macOS 证据；合计 25/27 分片，新增五项确认回退。冻结旧 main 不包含 #1085/#1086。
 
 ## 提交与驱动
 
