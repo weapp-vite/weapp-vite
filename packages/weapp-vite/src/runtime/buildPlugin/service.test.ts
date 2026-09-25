@@ -1405,6 +1405,43 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
   })
 
+  it.each([false, true])('publishes independent updates without invalidating unrelated main entries (shared=%s)', async (shared) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    const file = '/project/src/independent/index.wxml'
+    const entry = '/project/src/pages/main/index.ts'
+    const unrelated = '/project/src/pages/other/index.ts'
+    ctx.scanService.markIndependentDirty = vi.fn()
+    ctx.runtimeState.build.independent.watchFiles.set('independent', new Set([file]))
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set(shared ? [entry] : []))
+    for (const id of [entry, unrelated]) {
+      ctx.runtimeState.build.hmr.resolvedEntryMap.set(id, { id })
+      ctx.runtimeState.build.hmr.loadedEntrySet.add(id)
+    }
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValueOnce(watcher).mockResolvedValue({ output: [] })
+    const service = createBuildService(ctx)
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', file)
+    await waitForMockCalls(buildMock, 2)
+    expect(independentInvalidateMock).toHaveBeenCalledWith('independent')
+    expect(ctx.scanService.markIndependentDirty).toHaveBeenCalledWith('independent')
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set(shared ? [entry] : []))
+    expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(unrelated)).toBe(true)
+    expect(ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh).not.toBe(true)
+    expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      build: expect.objectContaining({ emptyOutDir: false }),
+    }))
+    await watcher.close()
+  })
+
   it('classifies imported style changes through their graph-owned entry', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()

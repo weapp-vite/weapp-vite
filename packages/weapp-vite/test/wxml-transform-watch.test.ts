@@ -31,6 +31,12 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
     let watcher: WatcherInstance | undefined
     try {
       watcher = await compiler.ctx.buildService.build({ skipNpm: true }) as WatcherInstance
+      const failures: unknown[] = []
+      ;(watcher as WatcherInstance & { on: (name: string, cb: (event: { code: string, error?: unknown }) => void) => void }).on('event', (event) => {
+        if (event.code === 'ERROR') {
+          failures.push(event.error)
+        }
+      })
       await waitForOutputs(project.tempDir, 'initial')
       // 等待原生 watcher 完成首轮注册后，使用真实磁盘事件驱动重建。
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -41,18 +47,25 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
         await fs.appendFile(independentSource, `<view>${marker}</view>`)
         await expect.poll(async () => fs.readFile(path.join(project.tempDir, 'dist/independent/index.wxml'), 'utf8'), { timeout: 45_000 }).toContain(marker)
         await waitForOutputs(project.tempDir, 'initial')
+        if (runtime === 'classic') {
+          const profile = compiler.ctx.runtimeState.build.hmr.recentProfiles.at(-1)
+          expect(profile?.dirtyReasonSummary).not.toContainEqual(expect.stringMatching(/^snapshot-full:/))
+          expect(profile?.dirtyCount ?? 0).toBe(0)
+        }
       }
       const rules = path.join(project.tempDir, 'transform-rules.json')
+      const independentInput = await fs.readFile(independentSource, 'utf8')
+      const previousOutputs = await Promise.all(outputs.map(file => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')))
+      await fs.appendFile(independentSource, '<view data-subtree-visited />')
+      await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(0)
+      expect(await Promise.all(outputs.map(file => fs.readFile(path.join(project.tempDir, 'dist', file), 'utf8')))).toEqual(previousOutputs)
+      await fs.writeFile(independentSource, `${independentInput}<view>independent-recovered</view>`)
+      await expect.poll(async () => fs.readFile(path.join(project.tempDir, 'dist/independent/index.wxml'), 'utf8'), { timeout: 45_000 }).toContain('independent-recovered')
       await fs.writeJSON(rules, { label: 'changed' })
       await waitForOutputs(project.tempDir, 'changed')
-      const failures: unknown[] = []
-      ;(watcher as WatcherInstance & { on: (name: string, cb: (event: { code: string, error?: unknown }) => void) => void }).on('event', (event) => {
-        if (event.code === 'ERROR') {
-          failures.push(event.error)
-        }
-      })
+      const previousFailures = failures.length
       await fs.remove(rules)
-      await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(0)
+      await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(previousFailures)
       const previous = await fs.readFile(path.join(project.tempDir, 'dist/pages/native/index.wxml'), 'utf8')
       expect(previous).toContain('data-rule="changed"')
       await fs.writeJSON(rules, { label: 'restored' })

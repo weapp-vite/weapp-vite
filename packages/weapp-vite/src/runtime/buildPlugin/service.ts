@@ -186,6 +186,7 @@ interface SnapshotBuildReason {
   event?: ChangeEvent
   file?: string
   forceFullRescan?: boolean
+  independentOutput?: boolean
 }
 
 interface SnapshotBuildBatch {
@@ -1655,7 +1656,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             graphAffectedEntries.add(entryId)
           }
         }
-        if (!requiresFullRescan && graphAffectedEntries.size) {
+        // 独立包失效也需要主 bundler 发布，但不因此重新编译未受影响的主包入口。
+        const hasIndependentOutput = batchReasons.some(batchReason => batchReason.independentOutput)
+        if (!requiresFullRescan && (graphAffectedEntries.size || hasIndependentOutput)) {
           const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
           const dirtyReason = dirtyReasons.includes('direct')
             ? 'direct'
@@ -2016,7 +2019,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event: normalizedEvent,
           file: id,
-          forceFullRescan: true,
+          independentOutput: independentRoots.length > 0,
+          forceFullRescan: !independentSource || isConfigDependency || isWxmlDependencyFile,
         }, sidecarStartedAt)
       })
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
