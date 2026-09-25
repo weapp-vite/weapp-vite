@@ -133,8 +133,8 @@ async function createFixture() {
     state.resolvedConfig = config
     const emitted: WxmlAssetPayload[] = []
     // 与 classic 一次性 build 相同：重新加载 owner，再执行真实 render/finalizer。
-    await load.call({ resolve: async () => null } as never, createLogicalEntryId(owner, 'component'))
-    await load.call({ resolve: async () => null } as never, createLogicalEntryId(unrelatedOwner, 'page'))
+    await load.call({ resolve: async () => null, addWatchFile: vi.fn() } as never, createLogicalEntryId(owner, 'component'))
+    await load.call({ resolve: async () => null, addWatchFile: vi.fn() } as never, createLogicalEntryId(unrelatedOwner, 'page'))
     await controls.beforeRender?.()
     await end.call({ getModuleIds: () => [] })
     await render.call({ emitFile: (asset: WxmlAssetPayload) => emitted.push(asset) })

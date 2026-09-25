@@ -40,6 +40,13 @@ it.each(['classic', 'stateful-experimental'] as const)('updates sitemap owned by
     expect(dependencies()).not.toContainEqual({ kind: 'json', sourceId: source })
     await fs.writeJSON(newSitemap, { desc: 'relocated-updated', rules: [] })
     await expect.poll(() => fs.readFile(path.join(project.tempDir, 'dist/next-sitemap.json'), 'utf8'), { timeout: 10_000 }).toContain('relocated-updated')
+    await fs.writeFile(appSource, app)
+    await expect.poll(() => dependencies(), { timeout: 10_000 }).toContainEqual({ kind: 'json', sourceId: source })
+    expect(dependencies()).not.toContainEqual({ kind: 'json', sourceId: newSitemap })
+    await fs.writeJSON(source, { desc: 'original-path-updated', rules: [] })
+    await expect.poll(() => fs.readFile(output, 'utf8'), { timeout: 10_000 }).toContain('original-path-updated')
+    await fs.writeFile(source, original)
+    await expect.poll(() => fs.readFile(output, 'utf8'), { timeout: 10_000 }).toBe(originalOutput)
   }
   finally {
     await watcher?.close()

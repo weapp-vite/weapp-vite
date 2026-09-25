@@ -45,7 +45,7 @@
 
 [原始 CLI JSON](./issue1082-watch-ownership-cli.json.gz) 保留所有逐次数据、阶段及错误。gzip 原文 SHA256：`f692ef23b3fe83e11c0397782d96f35f4e99b0071a9746add1670df982120467`。
 
-## 最终源码的串行交付验证
+## 首次交付的串行验证（后续 CI 仍发现遗漏）
 
 最后一次产品构建后，在正常监听配置、未开启快照 trace 的情况下，CLI 两项、headless 一项、真实 DevTools 一项全部通过。两个 runtime provider 各采集 6/6 DOM 检查点，均无验收违规；连续两轮脚本编辑/恢复满足精确版本、行为及状态断言。该结果与前文早期失败分别保留，不能推导历史所有生命周期超时已经消失。
 
@@ -54,3 +54,26 @@
 ## 文件边界
 
 新的资源选择、监听和组件目录计划放在独立小文件。既有超过 300 行的自动导入插件、build service、stateful session 和对应 harness 仅修改注册、事件路由与关闭点，避免为此重排大型生命周期文件。DOM 计划、headless 传输适配及其回归也独立成文件。行为修复包含 weapp-vite / create-weapp-vite 中文 patch changeset。
+
+## CI 暴露的逻辑入口与独立子构建依赖遗漏
+
+远端 `98d4d822` 的 Performance Smoke 通过，但 Ubuntu Node 22 的完整测试暴露 10 项失败。本地同样复现，其他 OS 不执行同一套完整测试，不能据此归因为平台差异。
+
+- 8 项来自 snapshotTemplates 的 chokidar mock 把所有监听器共用为一个 EventEmitter。夹具现为每次 watch 创建独立对象，仍要求每个 watcher 只有一个 ready 订阅；删除恢复场景继续明确驱动 snapshot watcher。
+- App Vue 修改 sitemap 路径时，原生事件已经抵达并分类为 `entry-json-only`，资产快照也能重新构建，但逻辑入口缓存没有因宿主源码读取而失效。逻辑加载器现通过 `addWatchFile` 声明源码读取关系，使侧车依赖列表随配置重新加载。覆盖路径切换、切回、后续编辑和完整恢复。
+- 独立 WXML 文件存在于子构建 registry，却未登记给活动原生主引擎。主发布插件在等待子构建后接管精确依赖，子构建失败时也登记恢复所需文件。已有真实 watcher 用例覆盖连续更新、拒绝无效输出、修复后恢复及外部 WXML 依赖删除恢复。
+
+只增加逻辑入口依赖时，headless 曾拒绝 native page 的逻辑包装补丁。进一步记录真实 transform 源码证明：首次加载与图恢复时，同一依赖集合的 JSON/script import 次序不同，导致包装模块发生无意义变化。新增真实引擎回归修正前得到两份不同源码（预期一份）；固定去重后的依赖 ID 排序后，编辑/恢复均保持同一包装源码。实际宿主源码仍是首个导入，增删真实依赖仍改变包装内容。没有扩大客户端接受边界、放松 Patch 判断或忽略发布协议。
+
+🔴 调查过程中还保留一次 headless 启动传输错误（注册请求落入 mock-only 网络，未进入场景）；诊断运行中端点匹配正常，但尚未证明该次启动失败的完整原因。Wevu 样式场景在 headless 因 computed-style 能力检查被拒绝，也不能记为通过；真实 DevTools 结果单独记录。
+
+## 本轮依赖修正的验证与交付阻塞
+
+- 最终源码：12 个定向测试文件、113 项通过；包级 typecheck、test:types 和 build 通过。
+- 最后重建 dist 后串行运行正常 CLI 资产用例，两种 runtime 共 2 项通过；headless 编辑器文件场景 1 项严格通过，6/6 DOM 检查点，无违规。
+- 🔴 真实 DevTools 2.02.2609231 / 基础库 3.16.3 两项均未通过，共 4/14 检查点。原生脚本收到真实 `batch-published`，客户端版本仍为 0；Wevu 初始页面与准备状态通过，但已写入产物的模板新增节点未在 IDE DOM 出现。不能用文件内容替代 runtime 断言，也不能据此把缺陷归为编译成功。
+- IDE 连接、预热和初始 DOM 均成功。尝试通过本机辅助访问读取 IDE 窗口被操作系统拒绝，当前没有可调用的 Computer Use 工具；这限制了 UI 排查，但不能证明以上 runtime 失败是环境问题。尚未确认根因，PR 保持草稿，不宣称 runtime 最终验收完成。
+
+[本轮诊断与最终检查原始归档](./issue1082-owned-dependencies-delivery.json.gz) 保存首次 CI 本地复现、逻辑顺序回归、headless 各阶段失败、最终单测/CLI/runtime 日志和完整 DOM 报告；仅脱敏机器路径和回环端口。包含测试时三份产品源码 SHA256，未将未提交工作区的检查冒称远端 HEAD 验收。gzip 解压 JSON 共 278714 字节，SHA256：`a81d993ed288a04b990175547c1363bef2cb7c237e2f054c0fd4d10e903a2a87`。
+
+三个产品变更文件均不足 300 行；新真实引擎回归单独成文件。已有大型 snapshot harness 只补齐实际插件上下文契约。固定基线和所有正式门禁均未改，#1082 保持开放。

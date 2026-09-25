@@ -174,6 +174,9 @@ export function createLogicalEntryLoadHook(state: CorePluginState) {
     const logicalEntry = parseLogicalEntryId(id)
     if (logicalEntry) {
       state.ctx.moduleGraphService.bindPluginContext(state, this)
+      // 逻辑入口读取宿主源码中的配置，必须由该读取关系触发重新加载。
+      // 仅依靠 script import 无法让原生增量图更新已缓存的侧车依赖列表。
+      this.addWatchFile(logicalEntry.sourceId)
       if (state.ctx.configService.isDev) {
         await state.loadEntry.call(
           this,
