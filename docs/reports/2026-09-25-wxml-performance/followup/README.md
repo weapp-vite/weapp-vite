@@ -8,6 +8,8 @@
 
 [main Nightly 36172401898 首批九分片](./nightly-main-36172401898-partial.md) 保留确认回退、不稳定、缺样本与固定基线缺陷；不是完整三平台验收。
 
+[后续十四分片](./nightly-main-36172401898-additional.md) 补齐 Ubuntu/Windows，并保留已完成的 macOS 证据；合计 23/27 分片，新增三项确认回退。冻结旧 main 不包含 #1085/#1086。
+
 ## 提交与驱动
 
 - 固定原始 main：`e7862e61dd83e3b9e356ac1e176267b31ab298af`。
@@ -68,7 +70,7 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - 单个 HMR 场景失败会保留同轮其他已完成场景，不补零、不伪造缺失时间；一类采集失败也不会抹掉其他类别的完整证据；独立类别继续采集，完整且越线的类别仍执行唯一等量复核。任何采集错误都会阻止总门禁通过，确认回退仍标为回退。
 - 没有改动 5% 阈值、没有绝对毫秒豁免、没有重新采样直到获得有利结果。历史失败及不可比较项不因其他 CI 绿色而消失。
 
-报告渲染纠错单独交付于 [#1080](https://github.com/weapp-vite/weapp-vite/pull/1080)，仍未自动合并；高权限自动评论继续读取 main 的可信脚本。在前置 PR 合并前，以 Actions 摘要和原始 artifact 为准。
+报告渲染纠错单独交付于 [#1080](https://github.com/weapp-vite/weapp-vite/pull/1080)，已按用户授权合并；高权限自动评论只读取 main 的可信脚本，历史 Actions 摘要及原始 artifact 继续保留。
 
 ## 本地修复验证
 
@@ -80,4 +82,4 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 
 - [8f78 Windows 六小时超时与部分确认原始证据](./8f78-windows-results.md)；合并后由 #1082 继续跟踪。
 - [Issue 1082 合并后 CPU 诊断与 stateful 混合事件复现](./issue1082-diagnosis.md)。
-- [Issue 1082 监听收窄方案的资产更新回归与真实 DevTools 复核失败](./issue1082-watch-boundary-diagnostic.md)；待修复方案尚未交付。
+- [Issue 1082 监听收窄方案的资产更新回归与真实 DevTools 复核失败](./issue1082-watch-boundary-diagnostic.md)；记录早期方案的失败，后续完整监听归属修复见 [#1086](https://github.com/weapp-vite/weapp-vite/pull/1086)，不据此抹除历史证据。
