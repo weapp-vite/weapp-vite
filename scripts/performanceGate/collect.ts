@@ -1,5 +1,6 @@
 /* eslint-disable e18e/ban-dependencies -- 基准串行启动两个 checkout 的进程。 */
 import type { PeakRssSamplingStats } from '../benchmarkTemplatesPerformance/peakRssSampler'
+import type { HmrReport } from './hmrSamples'
 import type { OutputEvidence } from './outputEvidence'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -9,6 +10,7 @@ import { execa } from 'execa'
 import { parseCliBuildMs } from '../benchmarkTemplatesPerformance/cliTiming'
 import { createPeakRssSampler } from '../benchmarkTemplatesPerformance/peakRssSampler'
 import { sampleProcessTreeRssBytes } from '../benchmarkTemplatesPerformance/processTreeRss'
+import { readHmrSamples } from './hmrSamples'
 import { captureOutputEvidence } from './outputEvidence'
 
 export interface Checkout {
@@ -82,11 +84,6 @@ export async function collectBuilds(checkout: Checkout, logDir: string): Promise
   return samples
 }
 
-interface HmrSample { wallMs: number, phase: string, rssBytes?: number, heapUsedBytes?: number, timingSource?: string, profileStatus?: string }
-interface HmrReport {
-  templates: Array<{ id: string, error?: string, scenarios: Array<{ id: string, error?: string, samples: HmrSample[], cycles?: Array<{ edit: HmrSample, restore: HmrSample }> }> }>
-}
-
 /** 每对使用独立 dev 会话，分别记录首次编辑、连续编辑和恢复，禁止取较快阶段。 */
 export async function collectHmr(checkout: Checkout, driverRoot: string, logDir: string, runtime: string): Promise<AuditSample[]> {
   await mkdir(logDir, { recursive: true })
@@ -115,29 +112,5 @@ export async function collectHmr(checkout: Checkout, driverRoot: string, logDir:
   if (report.templates.length !== checkout.templates.length) {
     throw new Error('Missing HMR templates')
   }
-  const samples: AuditSample[] = []
-  for (const template of report.templates) {
-    if (template.error || !template.scenarios.length) {
-      throw new Error(`${template.id}: ${template.error ?? 'missing scenarios'}`)
-    }
-    for (const scenario of template.scenarios) {
-      if (scenario.error || scenario.samples.length !== 2 || scenario.cycles?.length !== 2) {
-        throw new Error(`${template.id}/${scenario.id}: ${scenario.error ?? 'incomplete edit/restore cycles'}`)
-      }
-      for (const [index, cycle] of scenario.cycles.entries()) {
-        const phase = index === 0 ? 'first' : 'repeat'
-        for (const action of ['edit', 'restore'] as const) {
-          const sample = cycle[action]
-          if (!Number.isFinite(sample.wallMs) || sample.wallMs <= 0 || sample.phase !== action) {
-            throw new Error('Invalid HMR output observation')
-          }
-          const profile = sample.timingSource === 'compiler-profile'
-            ? Object.fromEntries(Object.entries(sample).filter(([key, value]) => key !== 'wallMs' && key.endsWith('Ms') && typeof value === 'number')) as Record<string, number>
-            : undefined
-          samples.push({ id: `hmr:${runtime}:${template.id}:${scenario.id}:${phase}:${action}`, template: template.id, phase: `${phase}:${action}`, ms: sample.wallMs, rssBytes: sample.rssBytes, heapBytes: sample.heapUsedBytes, profile, profileStatus: sample.profileStatus })
-        }
-      }
-    }
-  }
-  return samples
+  return readHmrSamples(report, runtime)
 }

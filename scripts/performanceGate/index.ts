@@ -7,6 +7,7 @@ import { autoImportMetrics, collectAutoImport } from './autoImport'
 import { collectBuilds, collectHmr, prepareCheckouts } from './collect'
 import { assertGatePassed, evaluateGate } from './evaluate'
 import { autoImportFeatureCosts, renderFeatureCosts } from './featureCosts'
+import { PartialHmrCollectionError } from './hmrSamples'
 import { assertManifestMetrics, discoverManifest } from './manifest'
 import { createAuditReport, evaluateAuditGate, pairBatch, renderGate } from './report'
 
@@ -37,6 +38,11 @@ async function collectBatch(name: string, selected?: Set<string>) {
         }
         catch (error) {
           batch.errors.push(`${name} ${kind} pair ${round + 1} ${side}: ${String(error).replaceAll(checkouts[side].cwd, '<checkout>').replaceAll(driver, '<driver>')}`)
+          if (error instanceof PartialHmrCollectionError) {
+            batch.samples.push({ round, side, values: selected ? error.samples.filter(value => selected.has(value.id)) : error.samples })
+            await checkpoint()
+            continue
+          }
           await checkpoint()
           return false
         }
