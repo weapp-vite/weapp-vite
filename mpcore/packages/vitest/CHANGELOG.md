@@ -1,5 +1,12 @@
 # @mpcore/vitest
 
+## 0.2.7
+
+### Patch Changes
+
+- Updated dependencies:
+  - @mpcore/test@0.1.15
+
 ## 0.2.6
 
 ### Patch Changes

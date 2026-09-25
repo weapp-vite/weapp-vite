@@ -1,5 +1,12 @@
 # @weapp-vite/web
 
+## 1.5.7
+
+### Patch Changes
+
+- Updated dependencies:
+  - wevu@7.4.0
+
 ## 1.5.6
 
 ### Patch Changes
