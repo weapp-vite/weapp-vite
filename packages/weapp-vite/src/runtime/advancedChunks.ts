@@ -1,6 +1,7 @@
 import type { ResolveSharedChunkNameOptions } from './chunkStrategy'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { isLogicalEntrySource } from '../moduleGraph/traversal'
+import { withRealpathScope } from '../utils/realpathScope'
 import { resolveSharedChunkName } from './chunkStrategy'
 
 export type AdvancedChunkNameResolver = (
@@ -41,7 +42,7 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
 
   const isVendor = testByReg2DExpList(vendorsMatchers)
 
-  return (id, ctx) => {
+  return (id, ctx) => withRealpathScope(() => {
     if (parseSidecarSourceRequest(id)) {
       return undefined
     }
@@ -72,5 +73,5 @@ export function createAdvancedChunkNameResolver(options: AdvancedChunkResolverOp
     }
 
     return sharedName
-  }
+  })
 }

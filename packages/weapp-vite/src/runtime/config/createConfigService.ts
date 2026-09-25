@@ -14,6 +14,7 @@ import { resolveMultiPlatformConfig } from '../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../platform'
 import { createImportMetaDefineRegistry, pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
 import { normalizeRelativePath, toPosixPath } from '../../utils/path'
+import { resolveRealpath } from '../../utils/realpathScope'
 import { SUB_PACKAGE_SHARED_DIR } from '../chunkStrategy/constants'
 import { safeGetPackageInfoSync } from '../localPkg'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
@@ -45,7 +46,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const normalizeComparablePath = (input: string) => {
     const resolved = path.resolve(input)
     try {
-      return normalizeRelativePath(fs.realpathSync.native(resolved))
+      return normalizeRelativePath(resolveRealpath(resolved))
     }
     catch {
       const suffixParts: string[] = []
@@ -59,7 +60,7 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       }
 
       try {
-        const normalizedBase = normalizeRelativePath(fs.realpathSync.native(cursor))
+        const normalizedBase = normalizeRelativePath(resolveRealpath(cursor))
         return suffixParts.length > 0
           ? normalizeRelativePath(path.join(normalizedBase, ...suffixParts))
           : normalizedBase
