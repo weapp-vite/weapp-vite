@@ -138,7 +138,7 @@ jobs:
     name: Templates Performance (${{ matrix.os }} / Node 24)
     if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'release/pnpm-version')
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -151,12 +151,27 @@ jobs:
         with:
           path: head
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event.inputs['templates-head-ref'] || github.sha }}
+          fetch-depth: 0
+
+      - name: Pin PR comparison to its common baseline
+        if: github.event_name == 'pull_request'
+        id: comparison-baseline
+        working-directory: head
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: >-
+          node --input-type=module -e
+          'import { execFileSync } from "node:child_process";
+          import { appendFileSync } from "node:fs";
+          const sha = execFileSync("git", ["merge-base", "HEAD", process.env.BASE_SHA], { encoding: "utf8" }).trim();
+          if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error("Invalid comparison baseline");
+          appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);'
 
       - name: Check out baseline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: baseline
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.inputs['templates-baseline-ref'] || github.event.repository.default_branch }}
+          ref: ${{ steps.comparison-baseline.outputs.sha || github.event.inputs['templates-baseline-ref'] || github.event.repository.default_branch }}
 
       - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
         with:
@@ -207,14 +222,18 @@ jobs:
           if [[ -n "${INPUT_HMR_ITERATIONS}" ]]; then
             export TEMPLATES_PERF_HMR_ITERATIONS="${INPUT_HMR_ITERATIONS}"
           elif [[ "${EVENT_NAME}" == "pull_request" ]]; then
-            export TEMPLATES_PERF_HMR_ITERATIONS="1"
+            export TEMPLATES_PERF_HMR_ITERATIONS="20"
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then
             export TEMPLATES_PERF_HMR_ITERATIONS="2"
           else
             export TEMPLATES_PERF_HMR_ITERATIONS="3"
           fi
 
-          export TEMPLATES_PERF_BUILD_ITERATIONS="${INPUT_BUILD_ITERATIONS:-1}"
+          if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            export TEMPLATES_PERF_BUILD_ITERATIONS="7"
+          else
+            export TEMPLATES_PERF_BUILD_ITERATIONS="${INPUT_BUILD_ITERATIONS:-1}"
+          fi
           export TEMPLATES_PERF_HMR_FILTER="${INPUT_HMR_FILTER:-${TEMPLATES_PERF_TEMPLATE_FILTER}}"
           if [[ -n "${INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE}" ]]; then
             export TEMPLATES_PERF_HMR_MAX_SCENARIOS_PER_TEMPLATE="${INPUT_MAX_HMR_SCENARIOS_PER_TEMPLATE}"
@@ -251,7 +270,7 @@ jobs:
             echo "- HMR profile timeout: \`${TEMPLATES_PERF_HMR_PROFILE_TIMEOUT_MS}ms\`"
             echo "- HMR startup timeout: \`${TEMPLATES_PERF_HMR_STARTUP_TIMEOUT_MS}ms\`"
             echo "- HMR sample mode: \`${TEMPLATES_PERF_HMR_SAMPLE_MODE}\`"
-            echo "- note: PR 在 Ubuntu、Windows、macOS 对 3 个代表模板各跑 1 轮 HMR、每模板最多 4 个场景；schedule/手动运行保留完整矩阵。HMR 场景优先覆盖 JSON、样式、JS/TS、WXML/HTML 与 Vue；手动触发可调高迭代跑全量诊断"
+            echo "- note: PR 三平台执行严格成对门禁：每类构建 7 对，classic/stateful HMR 各 20 对，超过 5% 后仅一次等量复核；首次/重复、编辑/恢复分别保留。schedule/手动入口保留原有诊断矩阵，不能替代 PR 门禁"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run templates performance benchmark
@@ -266,7 +285,11 @@ jobs:
             echo "snapshot trace: enabled (diagnostic run)"
             echo "- snapshot trace: enabled; 本次仅供诊断。Trace I/O 可能影响耗时，不能代替最终关闭 trace 的完整性能验收。" >> "$GITHUB_STEP_SUMMARY"
           fi
-          pnpm exec tsx scripts/compare-templates-performance.ts
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            pnpm exec tsx scripts/performanceGate/index.ts
+          else
+            pnpm exec tsx scripts/compare-templates-performance.ts
+          fi
 
       - name: Upload templates performance report artifact
         if: always()

@@ -7,6 +7,7 @@ export const HMR_OUTPUT_POLL_INTERVAL_MS = 10
 interface MeasureFileMarkerUpdateOptions {
   outputPath: string
   marker: string
+  expectedOutput?: string
   update: () => Promise<void>
   timeoutMs: number
   signal?: AbortSignal
@@ -20,7 +21,10 @@ export async function measureFileMarkerUpdate(options: MeasureFileMarkerUpdateOp
   }
   signal?.throwIfAborted()
   const initialOutput = await readFile(outputPath, 'utf8')
-  if (initialOutput.includes(marker)) {
+  if (options.expectedOutput !== undefined && initialOutput === options.expectedOutput) {
+    throw new Error('HMR output is already restored before the source update')
+  }
+  if (options.expectedOutput === undefined && initialOutput.includes(marker)) {
     throw new Error(`HMR output already contains the update marker: ${marker}`)
   }
 
@@ -44,7 +48,7 @@ export async function measureFileMarkerUpdate(options: MeasureFileMarkerUpdateOp
     if (elapsedMs >= timeoutMs) {
       break
     }
-    if (output?.includes(marker)) {
+    if (options.expectedOutput === undefined ? output?.includes(marker) : output === options.expectedOutput) {
       return elapsedMs
     }
     await setTimeout(Math.min(HMR_OUTPUT_POLL_INTERVAL_MS, timeoutMs - elapsedMs), undefined, { signal })

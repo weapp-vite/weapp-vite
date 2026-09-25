@@ -97,6 +97,7 @@ interface ScenarioResult {
   outputFile: string
   overBudget: boolean
   samples: ScenarioSample[]
+  cycles?: Array<{ edit: ScenarioSample, restore: ScenarioSample }>
   sourceFile: string
   diagnostics?: {
     phase: string
@@ -186,6 +187,16 @@ export async function main() {
   const selectedTemplates = templates.filter((template) => {
     return matchesFilter(template.id, filter)
   })
+  if (process.env.TEMPLATES_HMR_PLAN_ONLY === '1') {
+    const manifest = []
+    for (const template of selectedTemplates) {
+      const discovered = await discoverScenarios(template)
+      const scenarios = selectScenarios(scenarioFilter.length ? discovered.filter(scenario => scenarioFilter.includes(scenario.id)) : discovered, maxScenariosPerTemplate)
+      manifest.push({ id: template.id, scenarios: scenarios.map(scenario => scenario.id) })
+    }
+    await writeFile(path.join(reportRoot, 'manifest.json'), JSON.stringify(manifest, null, 2))
+    return
+  }
   const results: TemplateResult[] = []
 
   for (const template of selectedTemplates) {
@@ -272,7 +283,12 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     return result
   }
 
+  const cpuProfileDir = process.env.TEMPLATES_HMR_CPU_PROFILE_DIR
+  if (cpuProfileDir) {
+    await mkdir(cpuProfileDir, { recursive: true })
+  }
   const dev = startDevProcess(process.execPath, [
+    ...(cpuProfileDir ? ['--cpu-prof', `--cpu-prof-dir=${cpuProfileDir}`] : []),
     cliPath,
     'dev',
     normalizePath(path.relative(repoRoot, template.workspaceRoot)),
@@ -353,6 +369,16 @@ async function prepareWorkspace(template: TemplateCase) {
     recursive: true,
     filter: source => !isIgnoredCopyPath(template.templateRoot, source),
   })
+
+  const runtime = process.env.TEMPLATES_HMR_RUNTIME
+  if (runtime) {
+    if (runtime !== 'classic' && runtime !== 'stateful-experimental') {
+      throw new Error(`Unknown benchmark runtime: ${runtime}`)
+    }
+    const filename = path.join(template.workspaceRoot, 'weapp-vite.config.ts')
+    await writeFile(path.join(template.workspaceRoot, 'benchmark-original.config.ts'), await readFile(filename, 'utf8'))
+    await writeFile(filename, `import original from './benchmark-original.config'\nexport default async (env) => {\n const config = await (typeof original === 'function' ? original(env) : original)\n return { ...config, weapp: { ...config.weapp, hmr: { ...config.weapp?.hmr, runtime: '${runtime}' } } }\n}\n`)
+  }
 
   const originalNodeModules = path.join(template.templateRoot, 'node_modules')
   if (await pathExists(originalNodeModules)) {
@@ -591,6 +617,7 @@ async function benchmarkScenario(
 
   const original = await readFile(scenario.sourceFile, 'utf8')
   const samples: ScenarioSample[] = []
+  const cycles: Array<{ edit: ScenarioSample, restore: ScenarioSample }> = []
   const transport: Array<StatefulHmrAuditEvent & { phase: string }> = []
   let phase = 'prepare'
   let expectedMarker = ''
@@ -657,6 +684,7 @@ async function benchmarkScenario(
       const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs))
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
+      cycles.push({ edit: editSample, restore: restoreSample })
       const sample = sampleMode === 'edit-only' ? editSample : selectBestScenarioSample(editSample, restoreSample)
       samples.push(sample)
       process.stdout.write(`[templates-hmr] ${template.id} ${scenario.id} ${index + 1}/${iterations} ${sample.phase ?? 'edit'} wall=${sample.wallMs.toFixed(2)}ms total=${formatMs(sample.totalMs)}\n`)
@@ -684,6 +712,7 @@ async function benchmarkScenario(
       ...createPendingScenarioResult(scenario),
       error: formatError(error),
       samples,
+      cycles,
       diagnostics,
     }
   }
@@ -721,6 +750,7 @@ async function benchmarkScenario(
     outputFile: formatReportPath(scenario.outputFile),
     overBudget: typeof maxMs === 'number' && maxMs > budgetMs,
     samples,
+    cycles,
     sourceFile: formatReportPath(scenario.sourceFile),
   }
 }

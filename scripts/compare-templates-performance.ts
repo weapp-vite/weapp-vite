@@ -1,6 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 import type { PeakRssSamplingStats } from './benchmarkTemplatesPerformance/peakRssSampler'
 import type { TemplatesHmrReport } from './templates-performance-integrity'
+import { createHash } from 'node:crypto'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
@@ -40,6 +41,12 @@ async function main() {
   await mkdir(reportRootDir, { recursive: true })
 
   await prepareBenchmarkRunner()
+  if (process.env.TEMPLATES_PERF_PREPARE_ONLY === '1') {
+    const baseline = await prepareCheckout('baseline', baselineDir)
+    const optimized = await prepareCheckout('optimized', optimizedDir)
+    await writeFile(path.join(reportRootDir, 'prepared.json'), JSON.stringify({ baseline, optimized }))
+    return
+  }
   const baseline = await benchmarkCheckout('baseline', baselineDir)
   const optimized = await benchmarkCheckout('optimized', optimizedDir)
   const report = createReport(baseline, optimized)
@@ -65,12 +72,12 @@ async function prepareBenchmarkRunner() {
   await run(command.command, command.args, optimizedDir)
 }
 
-async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutResult> {
+async function prepareCheckout(id: CheckoutId, cwd: string) {
   const reportDir = path.join(reportRootDir, id)
   const hmrReportDir = path.join(reportDir, 'hmr')
   await mkdir(hmrReportDir, { recursive: true })
 
-  const commit = (await execa('git', ['rev-parse', '--short=8', 'HEAD'], { cwd })).stdout.trim()
+  const commit = (await execa('git', ['rev-parse', 'HEAD'], { cwd })).stdout.trim()
   process.stdout.write(`[templates-perf] ${id} ${commit}: sync generated dependency sources\n`)
   for (const command of createBenchmarkCheckoutPreparationCommands()) {
     await run(command.command, command.args, cwd)
@@ -86,6 +93,14 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
   }
   await assertBenchmarkTypeScriptPrepared(cwd, referencedProjects)
   await prepareTemplates(id, cwd, templates)
+  const packageManager = (await execa('pnpm', ['--version'], { cwd })).stdout.trim()
+  const lockfileSha256 = createHash('sha256').update(await readFile(path.join(cwd, 'pnpm-lock.yaml'))).digest('hex')
+  return { id, cwd, commit, templates, packageManager, lockfileSha256 }
+}
+
+async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutResult> {
+  const { commit, templates } = await prepareCheckout(id, cwd)
+  const hmrReportDir = path.join(reportRootDir, id, 'hmr')
   const build = await benchmarkTemplateBuilds(id, cwd, templates)
 
   process.stdout.write(`[templates-perf] ${id} ${commit}: templates HMR benchmark (${hmrIterations}x)\n`)

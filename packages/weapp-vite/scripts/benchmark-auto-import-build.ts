@@ -1,34 +1,27 @@
 /* eslint-disable ts/no-use-before-define */
 import { spawn } from 'node:child_process'
-import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
+import { verifyBenchmarkAppOutputs } from '../../../scripts/benchmarkTemplatesPerformance/appOutputs'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
-import { resolveRepoRoot, resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
+import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
 import { patchProjectConfigFile } from './utils/config-file'
 import { createPeakRssSampler, formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
-const workspaceRootNodeModulesDir = resolveWorkspaceNodeModulesDir(import.meta.dirname)
-if (!workspaceRootNodeModulesDir) {
-  throw new Error('Unable to locate workspace node_modules directory for auto-import build benchmark.')
-}
-const workspaceWeappViteDir = path.resolve(import.meta.dirname, '..')
-const workspaceRootDir = resolveRepoRoot(import.meta.dirname)
-if (!workspaceRootDir) {
-  throw new Error('Unable to locate repo root for auto-import build benchmark.')
-}
+const { workspaceRootDir, workspaceRootNodeModulesDir, workspaceWeappViteDir } = resolveBenchmarkTarget(import.meta.dirname)
 const reportDir = resolveReportDir('auto-import-build')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const resolverComponents = createVantResolverComponents()
 const allResolverTags = Object.keys(resolverComponents).sort((a, b) => a.localeCompare(b))
-const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'src/config.ts')).href
+const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'dist/config.mjs')).href
 const BENCHMARK_RESOLVER_PATH = './benchmark-vant-resolver'
 const VANT_PACKAGE_PREFIX_RE = /^@vant\/weapp\/?/
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
@@ -69,7 +62,9 @@ async function main() {
 }
 
 async function runScenario(usedCount: number) {
+  const requestedCount = usedCount
   const usedTags = allResolverTags.slice(0, usedCount)
+  usedCount = usedTags.length
   const baselineSamples: BuildSample[] = []
   const currentSamples: BuildSample[] = []
 
@@ -85,6 +80,8 @@ async function runScenario(usedCount: number) {
 
   return {
     usedCount,
+    requestedCount,
+    raw: { manual: baselineSamples, automatic: currentSamples },
     baseline,
     baselineMemory,
     current,
@@ -115,8 +112,21 @@ async function measureBuild(options: {
 
     const start = performance.now()
     const memory = await runBuild(project.tempDir)
+    const durationMs = performance.now() - start
+    await verifyBenchmarkAppOutputs(project.tempDir)
+    let repeatDurationMs: number | undefined
+    let repeatRssPeakBytes: number | null | undefined
+    if (process.env.AUTO_IMPORT_BENCH_PAIRED === '1') {
+      const repeatStart = performance.now()
+      const repeatMemory = await runBuild(project.tempDir)
+      repeatDurationMs = performance.now() - repeatStart
+      repeatRssPeakBytes = repeatMemory.rssPeakBytes
+      await verifyBenchmarkAppOutputs(project.tempDir)
+    }
     return {
-      durationMs: performance.now() - start,
+      durationMs,
+      repeatDurationMs,
+      repeatRssPeakBytes,
       rssPeakBytes: memory.rssPeakBytes,
     }
   }
@@ -254,9 +264,10 @@ async function ensureBenchmarkResolverPackage(projectRoot: string, usedTags: str
 }
 
 async function createTempFixtureProject(sourceRoot: string, prefix: string) {
-  const tempRoot = path.resolve(sourceRoot, '..', '__temp__')
-  await mkdir(tempRoot, { recursive: true })
-  const tempDir = await mkdtemp(path.join(tempRoot, `${prefix}-`))
+  const base = path.join(workspaceRootDir, '.tmp/auto-import-workspaces')
+  await mkdir(base, { recursive: true })
+  const tempRoot = await mkdtemp(path.join(base, `${prefix}-`))
+  const tempDir = path.join(tempRoot, 'project')
   const ignored = new Set(['.weapp-vite', 'dist', 'node_modules'])
 
   await cp(sourceRoot, tempDir, {
@@ -277,12 +288,7 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
   return {
     tempDir,
     cleanup: async () => {
-      await rm(tempDir, { recursive: true, force: true })
-      await rm(path.join(tempRoot, 'node_modules'), { recursive: true, force: true })
-      const remaining = await readdir(tempRoot).catch(() => null)
-      if (remaining && remaining.length === 0) {
-        await rm(tempRoot, { recursive: true, force: true })
-      }
+      await rm(tempRoot, { recursive: true, force: true })
     },
   }
 }
@@ -310,18 +316,19 @@ async function linkWorkspaceNodeModules(projectRoot: string) {
 }
 
 async function runBuild(cwd: string) {
-  const cliPath = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
+  const cliPath = path.join(workspaceWeappViteDir, 'bin/weapp-vite.js')
   const workspaceBinDir = path.join(workspaceRootNodeModulesDir, '.bin')
   return await new Promise<{ rssPeakBytes: number | null }>((resolve, reject) => {
     const child = spawn(process.execPath, [cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
         ...process.env,
-        PATH: `${workspaceBinDir}:${process.env.PATH ?? ''}`,
+        PATH: createBenchmarkPath(workspaceBinDir),
       },
       stdio: 'pipe',
     })
     const memorySampler = createPeakRssSampler(child.pid)
+    child.stdout.resume()
 
     let stderr = ''
     child.stderr.on('data', (chunk) => {
@@ -443,6 +450,8 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
 }
 
 interface BuildSample {
+  repeatDurationMs?: number
+  repeatRssPeakBytes?: number | null
   durationMs: number
   rssPeakBytes: number | null
 }
