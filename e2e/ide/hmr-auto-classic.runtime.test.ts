@@ -8,6 +8,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
@@ -79,6 +80,18 @@ async function connectAutomatorSession() {
   })
 }
 
+async function disconnectAutomatorSession() {
+  const session = miniProgram
+  miniProgram = undefined
+  if (resolveRuntimeProviderName() === 'headless') {
+    // headless 没有可分离的 IDE 连接；关闭旧 runtime，再从真实 CLI 的新产物启动。
+    await session?.close()
+  }
+  else {
+    await session?.disconnect()
+  }
+}
+
 describe('automatic classic HMR in real WeChat DevTools', { concurrent: false }, () => {
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
@@ -122,7 +135,7 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
 
   afterAll(async () => {
     try {
-      await miniProgram?.disconnect?.()
+      await disconnectAutomatorSession()
     }
     catch {}
     miniProgram = undefined
@@ -185,7 +198,7 @@ describe('automatic classic HMR in real WeChat DevTools', { concurrent: false },
       'classic HMR direct page output update',
     )
 
-    await miniProgram.disconnect()
+    await disconnectAutomatorSession()
     miniProgram = await connectAutomatorSession()
     // 重连 bridge 后宿主可能只恢复 path 而丢失 query，显式重放完整 route 保持断言身份稳定。
     page = await miniProgram.reLaunch(NATIVE_ROUTE)

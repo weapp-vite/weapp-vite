@@ -1080,9 +1080,9 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state
 
-- Source: `e2e/ide/hmr-auto-classic.runtime.test.ts:144`
+- Source: `e2e/ide/hmr-auto-classic.runtime.test.ts:157`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `[ ['initial', 'STATEFUL-NATIVE-BASE', 0, ''], ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'], ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''], ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''], ].map(([id, marker, count, input]) =`; source: `e2e/ide/hmr-auto-classic.runtime.test.ts:145`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `[ ['initial', 'STATEFUL-NATIVE-BASE', 0, ''], ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'], ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''], ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''], ].map(([id, marker, count, input]) =`; source: `e2e/ide/hmr-auto-classic.runtime.test.ts:158`
 - Routes: `/pages/native/index`, `/pages/native/index?source=classic-auto-e2e`
 - Operations: `reLaunch(/pages/native/index?source=classic-auto-e2e)`, `check(initial)`, `check(prepared)`, `check(reloaded)`, `check(updated)`
 

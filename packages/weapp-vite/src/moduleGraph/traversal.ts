@@ -1,12 +1,12 @@
 import type { BuildGraphContext, DevModuleNode, DevServerGraphHost } from './types'
-import { realpathSync } from 'node:fs'
+import { resolveRealpath, withRealpathScope } from '../utils/realpathScope'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { parseLogicalEntryId, parseSidecarModuleId, parseSidecarSourceRequest } from './protocol'
 
 export function normalizeSourceId(id: string) {
   const normalized = normalizeFsResolvedId(id).split('?')[0]!
   try {
-    return normalizeFsResolvedId(realpathSync.native(normalized))
+    return normalizeFsResolvedId(resolveRealpath(normalized))
   }
   catch {
     return normalized
@@ -46,24 +46,28 @@ function moduleIdMatchesFile(id: string, file: string) {
 }
 
 export function collectBuildStartIds(context: BuildGraphContext, file: string) {
-  const ids = new Set<string>()
-  if (typeof context.getModuleIds !== 'function') {
-    return ids
-  }
-  for (const id of context.getModuleIds()) {
-    if (moduleIdMatchesFile(id, file)) {
-      ids.add(id)
+  return withRealpathScope(() => {
+    const ids = new Set<string>()
+    if (typeof context.getModuleIds !== 'function') {
+      return ids
     }
-  }
-  return ids
+    for (const id of context.getModuleIds()) {
+      if (moduleIdMatchesFile(id, file)) {
+        ids.add(id)
+      }
+    }
+    return ids
+  })
 }
 
 export function collectDevStartNodes(server: DevServerGraphHost, file: string) {
-  const nodes = new Set<DevModuleNode>(server.moduleGraph.getModulesByFile(file) ?? [])
-  for (const [id, node] of server.moduleGraph.idToModuleMap ?? []) {
-    if (moduleIdMatchesFile(id, file)) {
-      nodes.add(node)
+  return withRealpathScope(() => {
+    const nodes = new Set<DevModuleNode>(server.moduleGraph.getModulesByFile(file) ?? [])
+    for (const [id, node] of server.moduleGraph.idToModuleMap ?? []) {
+      if (moduleIdMatchesFile(id, file)) {
+        nodes.add(node)
+      }
     }
-  }
-  return nodes
+    return nodes
+  })
 }

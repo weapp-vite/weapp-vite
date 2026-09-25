@@ -53,6 +53,39 @@ Page({ data: { greeting: 'ready' }, onLoad() { console.info('page:load') } })
     await expect(handle?.currentPage()).rejects.toThrow(/closed/i)
   })
 
+  it('launches updated classic output in a fresh runtime after closing the previous session', async () => {
+    const projectPath = createBaseFixture()
+    directories.push(projectPath)
+    const source = (marker: string, step: number) => `Page({
+      data: { marker: '${marker}', count: 0 },
+      increment() { this.setData({ count: this.data.count + ${step} }) },
+    })`
+    const script = path.join(projectPath, 'dist/pages/index/index.js')
+    fs.writeFileSync(script, source('initial', 1))
+    fs.writeFileSync(path.join(projectPath, 'dist/pages/index/index.wxml'), '<text id="result">{{marker}}:{{count}}</text>')
+    const previous = await launch({ projectPath })
+    try {
+      const page = (await previous.currentPage())!
+      await page.callMethod('increment')
+      expect(await (await page.$('#result'))!.text()).toBe('initial:1')
+    }
+    finally {
+      await previous.close()
+    }
+    await expect(previous.currentPage()).rejects.toThrow(/closed/i)
+    fs.writeFileSync(script, source('updated', 2))
+    const next = await launch({ projectPath })
+    try {
+      const page = (await next.currentPage())!
+      expect(await (await page.$('#result'))!.text()).toBe('updated:0')
+      await page.callMethod('increment')
+      expect(await (await page.$('#result'))!.text()).toBe('updated:2')
+    }
+    finally {
+      await next.close()
+    }
+  })
+
   it.each([
     { entryPagePath: undefined, expectedRoute: 'pages/index/index' },
     { entryPagePath: '/pages/entry/index', expectedRoute: 'pages/entry/index' },
