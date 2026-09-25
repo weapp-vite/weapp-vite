@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url'
 import path from 'pathe'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-memory'
 import { startDevProcess } from '../../../e2e/utils/dev-process'
-import { createDevProcessEnv } from '../../../e2e/utils/dev-process-env'
+import { createBenchmarkDevEnv } from '../../../scripts/benchmarkTemplatesHmr/environment'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
@@ -166,7 +166,7 @@ async function measureHmr(options: {
     const dev = startDevProcess(process.execPath, [CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
-        ...createDevProcessEnv({ nodeOptions: memoryNodeOptions }),
+        ...createBenchmarkDevEnv(memoryNodeOptions),
         DEBUG: 'weapp-vite:load-entry',
         PATH: createBenchmarkPath(path.join(workspaceRootNodeModulesDir, '.bin')),
       },

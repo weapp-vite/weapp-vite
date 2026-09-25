@@ -8,7 +8,7 @@ import { collectBuilds, collectHmr, prepareCheckouts } from './collect'
 import { assertGatePassed, evaluateGate } from './evaluate'
 import { autoImportFeatureCosts, renderFeatureCosts } from './featureCosts'
 import { assertManifestMetrics, discoverManifest } from './manifest'
-import { createAuditReport, pairBatch, renderGate } from './report'
+import { createAuditReport, evaluateAuditGate, pairBatch, renderGate } from './report'
 
 const driver = path.resolve(import.meta.dirname, '../..')
 const output = path.resolve(process.env.TEMPLATES_PERF_REPORT_DIR ?? '.tmp/paired-performance')
@@ -45,17 +45,11 @@ async function collectBatch(name: string, selected?: Set<string>) {
     }
     return true
   }
-  if (await sample('build:', 7, collectBuilds) === false) {
-    return batch
-  }
+  await sample('build:', 7, collectBuilds)
   for (const runtime of runtimes) {
-    if (await sample(`hmr:${runtime}:`, 20, (checkout, dir) => collectHmr(checkout, driver, dir, runtime)) === false) {
-      return batch
-    }
+    await sample(`hmr:${runtime}:`, 20, (checkout, dir) => collectHmr(checkout, driver, dir, runtime))
   }
-  if (await sample('auto-build:', 7, (checkout, dir) => collectAutoImport(checkout, driver, dir, 'build')) === false) {
-    return batch
-  }
+  await sample('auto-build:', 7, (checkout, dir) => collectAutoImport(checkout, driver, dir, 'build'))
   await sample('auto-hmr:', 20, (checkout, dir) => collectAutoImport(checkout, driver, dir, 'hmr'))
   return batch
 }
@@ -71,13 +65,10 @@ const primaryScenarios = pairBatch(primary)
 const initial = evaluateGate(primaryScenarios)
 const eligible = new Set(primaryScenarios.filter(row => !row.error && row.pairs.length === row.requiredPairs).map(row => row.id))
 const exceeded = new Set(initial.scenarios.filter(row => eligible.has(row.id) && row.primary.changePercent !== null && row.primary.changePercent > 5).map(row => row.id))
-const confirmation = !primary.errors.length && exceeded.size && !process.env.TEMPLATES_PERF_DIAGNOSTIC_PAIRS
+const confirmation = exceeded.size && !process.env.TEMPLATES_PERF_DIAGNOSTIC_PAIRS
   ? await collectBatch('confirmation', exceeded)
   : undefined
-const gate = evaluateGate(pairBatch(primary), confirmation ? pairBatch(confirmation) : [])
-if (primary.errors.length || confirmation?.errors.length) {
-  gate.status = 'incomplete'
-}
+const gate = evaluateAuditGate(primary, confirmation)
 const featureCosts = autoImportFeatureCosts(primary)
 const report = { ...createAuditReport(checkouts, primary, confirmation, gate), manifest, featureCosts }
 await writeFile(path.join(output, 'report.json'), `${JSON.stringify(report, null, 2)}\n`)
@@ -86,6 +77,9 @@ const markdown = [
   `环境：${process.platform}/${process.arch}，Node ${process.version}；同一驱动、交替串行、产物确认计时。`,
   '',
   renderGate(gate),
+  ...primary.errors.length || confirmation?.errors.length
+    ? ['', '采集失败（总门禁不可通过）：', ...[...primary.errors, ...confirmation?.errors ?? []].map(error => `- ${error.replaceAll('\n', ' ')}`)]
+    : [],
   renderFeatureCosts(featureCosts),
 ].join('\n')
 await writeFile(path.join(output, 'report.md'), markdown)

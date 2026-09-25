@@ -2,7 +2,7 @@ import type { AuditSample, Checkout } from './collect'
 import type { GateScenario, GateSummary } from './evaluate'
 import os from 'node:os'
 import process from 'node:process'
-import { percentile } from './evaluate'
+import { evaluateGate, percentile } from './evaluate'
 import { isOutputEvidence } from './outputEvidence'
 
 export interface AuditBatch {
@@ -30,8 +30,17 @@ export function pairBatch(batch: AuditBatch): GateScenario[] {
       }
       return { baseline: a.length === 1 ? a[0]!.ms : Number.NaN, current: after.length === 1 && b.length === 1 ? b[0]!.ms : Number.NaN }
     })
-    return { id, requiredPairs: id.startsWith('build:') || id.startsWith('auto-build:') ? 7 : 20, pairs, error: batch.errors.length ? batch.errors.join('; ') : duplicatedRound ? 'Duplicate paired round' : outputMismatch ? 'Missing or different emitted page/template/config evidence' : current.length !== baseline.length ? 'Unequal sample counts' : undefined }
+    return { id, requiredPairs: id.startsWith('build:') || id.startsWith('auto-build:') ? 7 : 20, pairs, error: duplicatedRound ? 'Duplicate paired round' : outputMismatch ? 'Missing or different emitted page/template/config evidence' : current.length !== baseline.length ? 'Unequal sample counts' : undefined }
   })
+}
+
+/** 单个类别失败不抹去其他类别的完整证据，但始终阻止整个验收通过。 */
+export function evaluateAuditGate(primary: AuditBatch, confirmation?: AuditBatch): GateSummary {
+  const gate = evaluateGate(pairBatch(primary), confirmation ? pairBatch(confirmation) : [])
+  if (primary.errors.length || confirmation?.errors.length) {
+    gate.status = gate.status === 'regression' ? 'regression' : 'incomplete'
+  }
+  return gate
 }
 
 /** 兼容既有 artifact 外壳，同时保留新门禁全部原始成对样本。 */

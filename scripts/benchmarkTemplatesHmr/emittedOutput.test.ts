@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './emittedOutput'
 
 describe('template benchmark emitted ownership', () => {
@@ -65,6 +65,25 @@ describe('template benchmark emitted ownership', () => {
     await expect(waitForBenchmarkOutput(read, 'old-marker', { absent: true, timeoutMs: 30, intervalMs: 1 }))
       .rejects
       .toThrow('Missing emitted script: missing.js')
+  })
+
+  it('waits through truncated and partial restores until the entire original output is visible', async () => {
+    const original = '<view>中文\r\n<text>original</text></view>'
+    const read = vi.fn()
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('<view>中文')
+      .mockResolvedValueOnce('<view>wrong content</view>')
+      .mockResolvedValue(original)
+    await expect(waitForBenchmarkOutput(read, 'old-marker', { absent: true, expectedContent: original, timeoutMs: 100, intervalMs: 1 }))
+      .resolves
+      .toBe(original)
+    expect(read).toHaveBeenCalledTimes(4)
+  })
+
+  it('rejects a different complete output even when the marker is absent', async () => {
+    await expect(waitForBenchmarkOutput(async () => '<view>wrong</view>', 'old-marker', { absent: true, expectedContent: '<view>original</view>', timeoutMs: 30, intervalMs: 1 }))
+      .rejects
+      .toThrow('Timed out')
   })
 
   it('rejects imports that escape the output root', async () => {

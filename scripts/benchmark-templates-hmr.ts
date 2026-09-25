@@ -11,13 +11,14 @@ import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import { execa } from 'execa'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils/dev-process'
-import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
+import { createBenchmarkDevEnv } from './benchmarkTemplatesHmr/environment'
 import { captureBenchmarkFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
 import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
+import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
 import { collectBenchmarkHmrProfile } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
@@ -297,10 +298,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   ], {
     cwd: repoRoot,
     env: {
-      ...createDevProcessEnv({
-        disableSidecarWatch: true,
-        nodeOptions: memoryNodeOptions,
-      }),
+      ...createBenchmarkDevEnv(memoryNodeOptions),
       WEAPP_VITE_HMR_PROFILE_JSON: '1',
     },
     stdout: 'pipe',
@@ -576,27 +574,6 @@ function createVueScenarios(template: TemplateCase, sourceFile: string, source: 
   return scenarios
 }
 
-function mutateJsonMarker(source: string, marker: string) {
-  const json = JSON.parse(source) as Record<string, unknown>
-  const windowOptions = json.window
-  if (
-    windowOptions
-    && typeof windowOptions === 'object'
-    && !Array.isArray(windowOptions)
-    && typeof (windowOptions as Record<string, unknown>).navigationBarTitleText === 'string'
-  ) {
-    const appWindow = windowOptions as Record<string, unknown>
-    appWindow.navigationBarTitleText = marker
-    return `${JSON.stringify(json, null, 2)}\n`
-  }
-  if (typeof json.sitemapLocation === 'string') {
-    json.sitemapLocation = marker
-    return `${JSON.stringify(json, null, 2)}\n`
-  }
-  json.__hmrMarker = marker
-  return `${JSON.stringify(json, null, 2)}\n`
-}
-
 function mutateNavigationBarTitleText(source: string, marker: string) {
   return source.replace(/navigationBarTitleText:\s*(['"`])[^'"`]*\1/, `navigationBarTitleText: '${marker}'`)
 }
@@ -622,14 +599,18 @@ async function benchmarkScenario(
   let phase = 'prepare'
   let expectedMarker = ''
   let failure: ScenarioResult | undefined
-  const readOutput = scenario.group === 'native-script' || scenario.group === 'vue-script'
+  const isScript = scenario.group === 'native-script' || scenario.group === 'vue-script'
+  const readOutput = isScript
     ? createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))
     : scenario.group.endsWith('style')
       ? () => readEmittedStylesheet(scenario.outputFile)
       : () => readFile(scenario.outputFile, 'utf8')
   const controlPath = path.join(template.workspaceRoot, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
   const runtime = await pathExists(controlPath) ? 'stateful' : 'standard'
-  const usesStatefulScript = (scenario.group === 'native-script' || scenario.group === 'vue-script') && runtime === 'stateful'
+  const usesStatefulScript = isScript && runtime === 'stateful'
+  // 脚本含随 HMR 变化的版本/载荷；模板、样式和 JSON 则必须完整恢复原产物，
+  // 不能把 bundler 截断文件后暂时没有标记的空窗口当作更新完成。
+  const originalOutput = isScript ? undefined : await readOutput()
   const readControl = async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
   const waitForOutput = async (marker: string, absent = false) => {
     if (usesStatefulScript) {
@@ -647,7 +628,7 @@ async function benchmarkScenario(
         },
       })
     }
-    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs })
+    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined })
   }
 
   try {
@@ -1104,9 +1085,7 @@ function createMarker(templateId: string, scenarioId: string, index: number) {
 async function runCli(args: string[]) {
   await execa(process.execPath, [cliPath, ...args], {
     cwd: repoRoot,
-    env: createDevProcessEnv({
-      disableSidecarWatch: true,
-    }),
+    env: createBenchmarkDevEnv(),
     stdio: 'inherit',
   })
 }

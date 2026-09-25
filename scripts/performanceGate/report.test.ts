@@ -4,7 +4,7 @@ import { autoImportMetrics } from './autoImport'
 import { evaluateGate } from './evaluate'
 import { autoImportFeatureCosts } from './featureCosts'
 import { assertManifestMetrics } from './manifest'
-import { pairBatch } from './report'
+import { evaluateAuditGate, pairBatch } from './report'
 
 function makeBatch(): AuditBatch {
   return { errors: [], samples: Array.from({ length: 7 }, (_, round) => (['baseline', 'optimized'] as const).map(side => ({
@@ -15,6 +15,18 @@ function makeBatch(): AuditBatch {
 }
 
 describe('performance comparison dimensions', () => {
+  it('retains independent regression evidence and confirmation despite a different collection failure', () => {
+    const batch = makeBatch()
+    batch.errors.push('HMR baseline failed')
+    for (const row of batch.samples.filter(row => row.side === 'optimized')) {
+      row.values.forEach(value => value.ms *= 1.1)
+    }
+    expect(pairBatch(batch).every(row => !row.error)).toBe(true)
+    expect(evaluateAuditGate(batch).status).toBe('incomplete')
+    expect(evaluateAuditGate(batch, batch).status).toBe('regression')
+    expect(evaluateAuditGate(batch, makeBatch()).status).toBe('incomplete')
+    expect(evaluateAuditGate(batch, makeBatch()).scenarios[0]?.status).toBe('unstable')
+  })
   it('does not mistake feature overhead for a cross-commit regression', () => {
     const batch = makeBatch()
     expect(evaluateGate(pairBatch(batch)).status).toBe('passed')

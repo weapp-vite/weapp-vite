@@ -100,7 +100,7 @@ export function createEmittedScriptReader(entryFile: string, outputRoot: string)
 export async function waitForBenchmarkOutput(
   read: () => Promise<string>,
   marker: string,
-  options: { absent?: boolean, timeoutMs: number, intervalMs?: number },
+  options: { absent?: boolean, timeoutMs: number, intervalMs?: number, expectedContent?: string },
 ) {
   const startedAt = performance.now()
   let latestError = ''
@@ -108,7 +108,8 @@ export async function waitForBenchmarkOutput(
     try {
       const content = await read()
       latestError = ''
-      if (content.includes(marker) !== Boolean(options.absent) && performance.now() - startedAt < options.timeoutMs) {
+      const matchesContent = options.expectedContent === undefined || content === options.expectedContent
+      if (matchesContent && content.includes(marker) !== Boolean(options.absent) && performance.now() - startedAt < options.timeoutMs) {
         return content
       }
     }
