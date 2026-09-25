@@ -2663,14 +2663,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:144",
+          "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:157",
           "name": "automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "[ ['initial', 'STATEFUL-NATIVE-BASE', 0, ''], ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'], ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''], ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''], ].map(([id, marker, count, input]) =",
-              "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:145"
+              "source": "e2e/ide/hmr-auto-classic.runtime.test.ts:158"
             }
           ],
           "routes": [
@@ -7488,7 +7488,7 @@
     },
     {
       "file": "e2e/ide/hmr-auto-classic.runtime.test.ts",
-      "sha256": "f7a873c2c8a28ec47549ef3767b615fe1dea8833f934ac6d8b380c30bc88e40a"
+      "sha256": "6c60232320eb3386c5c7f56a9c68a079d569f7ed0a4b372d057c833126b45f8b"
     },
     {
       "file": "e2e/ide/index.test.ts",
