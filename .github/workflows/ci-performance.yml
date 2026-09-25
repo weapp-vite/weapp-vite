@@ -39,7 +39,7 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Check collector contracts
         if: steps.scope.outputs.needed == 'true'
-        run: pnpm exec vitest run scripts/performanceGate scripts/benchmarkTemplatesHmr scripts/benchmarkTemplatesPerformance/measuredBuild.test.ts scripts/performance-comment-workflow.test.ts
+        run: pnpm exec vitest run --config scripts/vitest.config.mjs scripts/performanceGate scripts/benchmarkTemplatesHmr scripts/benchmarkTemplatesPerformance/measuredBuild.test.ts scripts/performance-comment-workflow.test.ts
       - name: Run correctness smoke
         if: steps.scope.outputs.needed == 'true'
         env:

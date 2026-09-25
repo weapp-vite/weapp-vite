@@ -15,6 +15,7 @@ describe('performance reporting workflows', () => {
     expect(workflow.permissions).toEqual({ 'contents': 'read', 'pull-requests': 'read' })
     expect(workflow.jobs.smoke.steps.some((step: { run?: string }) => step.run?.includes('full.ts'))).toBe(false)
     expect(workflow.jobs.smoke.steps.find((step: { name?: string }) => step.name === 'Run correctness smoke').if).toContain('steps.scope.outputs.needed')
+    expect(workflow.jobs.smoke.steps.find((step: { name?: string }) => step.name === 'Check collector contracts').run).toContain('--config scripts/vitest.config.mjs')
   })
 
   it('isolates scheduled full collection, bounds concurrency and always retains failed evidence', async () => {
