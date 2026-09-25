@@ -67,8 +67,10 @@ try {
 catch (error) {
   primary.errors.push(String(error))
 }
-const initial = evaluateGate(pairBatch(primary))
-const exceeded = new Set(initial.scenarios.filter(row => row.primary.changePercent !== null && row.primary.changePercent > 5).map(row => row.id))
+const primaryScenarios = pairBatch(primary)
+const initial = evaluateGate(primaryScenarios)
+const eligible = new Set(primaryScenarios.filter(row => !row.error && row.pairs.length === row.requiredPairs).map(row => row.id))
+const exceeded = new Set(initial.scenarios.filter(row => eligible.has(row.id) && row.primary.changePercent !== null && row.primary.changePercent > 5).map(row => row.id))
 const confirmation = !primary.errors.length && exceeded.size && !process.env.TEMPLATES_PERF_DIAGNOSTIC_PAIRS
   ? await collectBatch('confirmation', exceeded)
   : undefined

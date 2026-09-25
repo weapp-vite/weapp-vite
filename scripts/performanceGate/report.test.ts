@@ -10,7 +10,7 @@ function makeBatch(): AuditBatch {
   return { errors: [], samples: Array.from({ length: 7 }, (_, round) => (['baseline', 'optimized'] as const).map(side => ({
     round,
     side,
-    values: ['manual', 'automatic'].map(mode => ({ id: `auto-build:1:${mode}:first`, template: 'auto-import-1', phase: 'first', ms: mode === 'manual' ? 100 : 130 })),
+    values: ['manual', 'automatic'].map(mode => ({ id: `auto-build:1:${mode}:first`, template: 'auto-import-1', phase: 'first', output: { pageCount: 1, templateDigest: 'a'.repeat(64), configDigest: 'b'.repeat(64) }, ms: mode === 'manual' ? 100 : 130 })),
   }))).flat() }
 }
 
@@ -24,6 +24,14 @@ describe('performance comparison dimensions', () => {
   it('rejects duplicated pairs instead of increasing confidence', () => {
     const batch = makeBatch()
     batch.samples[2]!.round = 0
+    expect(evaluateGate(pairBatch(batch)).status).toBe('incomplete')
+  })
+  it('rejects a faster build that loses output and evidence-free timings', () => {
+    const batch = makeBatch()
+    batch.samples[1]!.values[0]!.output!.templateDigest = 'c'.repeat(64)
+    batch.samples[1]!.values[0]!.ms = 50
+    expect(evaluateGate(pairBatch(batch)).status).toBe('incomplete')
+    delete batch.samples[1]!.values[0]!.output
     expect(evaluateGate(pairBatch(batch)).status).toBe('incomplete')
   })
   it('requires every declared four-group metric and rejects duplicates', () => {

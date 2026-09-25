@@ -1,11 +1,12 @@
 /* eslint-disable ts/no-use-before-define */
+import type { OutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
 import { spawn } from 'node:child_process'
 import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
-import { verifyBenchmarkAppOutputs } from '../../../scripts/benchmarkTemplatesPerformance/appOutputs'
+import { captureOutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
@@ -113,20 +114,23 @@ async function measureBuild(options: {
     const start = performance.now()
     const memory = await runBuild(project.tempDir)
     const durationMs = performance.now() - start
-    await verifyBenchmarkAppOutputs(project.tempDir)
+    const output = await captureOutputEvidence(project.tempDir)
     let repeatDurationMs: number | undefined
     let repeatRssPeakBytes: number | null | undefined
+    let repeatOutput: OutputEvidence | undefined
     if (process.env.AUTO_IMPORT_BENCH_PAIRED === '1') {
       const repeatStart = performance.now()
       const repeatMemory = await runBuild(project.tempDir)
       repeatDurationMs = performance.now() - repeatStart
       repeatRssPeakBytes = repeatMemory.rssPeakBytes
-      await verifyBenchmarkAppOutputs(project.tempDir)
+      repeatOutput = await captureOutputEvidence(project.tempDir)
     }
     return {
       durationMs,
       repeatDurationMs,
       repeatRssPeakBytes,
+      output,
+      repeatOutput,
       rssPeakBytes: memory.rssPeakBytes,
     }
   }
@@ -450,6 +454,8 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
 }
 
 interface BuildSample {
+  output: OutputEvidence
+  repeatOutput?: OutputEvidence
   repeatDurationMs?: number
   repeatRssPeakBytes?: number | null
   durationMs: number

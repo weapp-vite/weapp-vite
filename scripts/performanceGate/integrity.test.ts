@@ -16,7 +16,7 @@ function artifact() {
     manifest: { metrics: ids },
     primary: {
       errors: [] as string[],
-      samples: Array.from({ length: 20 }, (_, round) => ['baseline', 'optimized'].map(side => ({ round, side, values: ids.filter(id => !id.startsWith('build:') || round < 7).map(id => ({ id, template: 'native', phase: 'edit', ms: 100 })) }))).flat(),
+      samples: Array.from({ length: 20 }, (_, round) => ['baseline', 'optimized'].map(side => ({ round, side, values: ids.filter(id => !id.startsWith('build:') || round < 7).map(id => ({ id, template: 'native', phase: 'edit', output: { pageCount: 1, templateDigest: 'a'.repeat(64), configDigest: 'b'.repeat(64) }, ms: 100 })) }))).flat(),
     },
   }
 }

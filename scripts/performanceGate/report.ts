@@ -3,6 +3,7 @@ import type { GateScenario, GateSummary } from './evaluate'
 import os from 'node:os'
 import process from 'node:process'
 import { percentile } from './evaluate'
+import { isOutputEvidence } from './outputEvidence'
 
 export interface AuditBatch {
   samples: Array<{ round: number, side: 'baseline' | 'optimized', values: AuditSample[] }>
@@ -16,13 +17,20 @@ export function pairBatch(batch: AuditBatch): GateScenario[] {
     const baseline = batch.samples.filter(row => row.side === 'baseline' && row.values.some(value => value.id === id))
     const current = batch.samples.filter(row => row.side === 'optimized' && row.values.some(value => value.id === id))
     const duplicatedRound = [baseline, current].some(rows => new Set(rows.map(row => row.round)).size !== rows.length)
+    let outputMismatch = false
     const pairs = baseline.map((before) => {
       const after = current.filter(row => row.round === before.round)
       const a = before.values.filter(value => value.id === id)
       const b = after[0]?.values.filter(value => value.id === id) ?? []
+      if (id.startsWith('build:') || id.startsWith('auto-build:')) {
+        const first = a[0]?.output
+        const second = b[0]?.output
+        outputMismatch ||= !isOutputEvidence(first) || !isOutputEvidence(second)
+          || first.pageCount !== second.pageCount || first.templateDigest !== second.templateDigest || first.configDigest !== second.configDigest
+      }
       return { baseline: a.length === 1 ? a[0]!.ms : Number.NaN, current: after.length === 1 && b.length === 1 ? b[0]!.ms : Number.NaN }
     })
-    return { id, requiredPairs: id.startsWith('build:') || id.startsWith('auto-build:') ? 7 : 20, pairs, error: batch.errors.length ? batch.errors.join('; ') : duplicatedRound ? 'Duplicate paired round' : current.length !== baseline.length ? 'Unequal sample counts' : undefined }
+    return { id, requiredPairs: id.startsWith('build:') || id.startsWith('auto-build:') ? 7 : 20, pairs, error: batch.errors.length ? batch.errors.join('; ') : duplicatedRound ? 'Duplicate paired round' : outputMismatch ? 'Missing or different emitted page/template/config evidence' : current.length !== baseline.length ? 'Unequal sample counts' : undefined }
   })
 }
 

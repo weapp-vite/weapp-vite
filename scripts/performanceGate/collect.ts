@@ -1,14 +1,15 @@
 /* eslint-disable e18e/ban-dependencies -- 基准串行启动两个 checkout 的进程。 */
 import type { PeakRssSamplingStats } from '../benchmarkTemplatesPerformance/peakRssSampler'
+import type { OutputEvidence } from './outputEvidence'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { execa } from 'execa'
-import { verifyBenchmarkAppOutputs } from '../benchmarkTemplatesPerformance/appOutputs'
 import { parseCliBuildMs } from '../benchmarkTemplatesPerformance/cliTiming'
 import { createPeakRssSampler } from '../benchmarkTemplatesPerformance/peakRssSampler'
 import { sampleProcessTreeRssBytes } from '../benchmarkTemplatesPerformance/processTreeRss'
+import { captureOutputEvidence } from './outputEvidence'
 
 export interface Checkout {
   id: 'baseline' | 'optimized'
@@ -29,6 +30,7 @@ export interface AuditSample {
   rssSampling?: PeakRssSamplingStats
   profile?: Record<string, number>
   profileStatus?: string
+  output?: OutputEvidence
 }
 
 /** 两侧先完成相同准备，准备和依赖构建不进入性能采样。 */
@@ -73,8 +75,8 @@ export async function collectBuilds(checkout: Checkout, logDir: string): Promise
       if (result.exitCode !== 0) {
         throw new Error(`${checkout.id} ${template.id} build failed (${result.exitCode})`)
       }
-      await verifyBenchmarkAppOutputs(template.root)
-      samples.push({ id: `build:${template.id}:${phase}`, template: template.id, phase, ms, cliMs: parseCliBuildMs(`${result.stdout}\n${result.stderr}`), rssBytes: memory.rssPeakBytes, rssSampling: memory.rssSampling })
+      const output = await captureOutputEvidence(template.root)
+      samples.push({ id: `build:${template.id}:${phase}`, template: template.id, phase, ms, cliMs: parseCliBuildMs(`${result.stdout}\n${result.stderr}`), rssBytes: memory.rssPeakBytes, rssSampling: memory.rssSampling, output })
     }
   }
   return samples

@@ -12,6 +12,8 @@ PR 性能任务在同一 runner 上先准备两份 checkout，再使用当前提
 
 计时前发现并冻结两侧模板和场景清单。缺少模板、runtime、编辑/恢复阶段、有效样本，或基线、产物检查、关闭进程失败，均不可通过。独立完整性检查从原始样本重算结论，不只读取保存的 `gate.status`。每侧完成后落盘 checkpoint，失败不会抹去已采集数据。
 
+构建计时外记录每一轮的页面集合、模板内容和 app/页面配置摘要，跨提交不一致或缺少证据时标为不可比较，不能将少发页面/模板误判为变快。JSON 只忽略键顺序；模板不忽略内容或属性差异。JS 检查实际文件存在且非空，语义由既有构建/运行时回归保障，不绑定压缩变量名或 chunk hash。
+
 `TEMPLATES_PERF_DIAGNOSTIC_PAIRS` 只能缩短诊断轮次，完整性判据仍要求 7/20 对，因此诊断运行不得显示验收通过。`TEMPLATES_PERF_SKIP_PREPARE=1` 只用于复用已准备的诊断 checkout，必须保留 `preparation/prepared.json` 且 SHA 一致。
 
 ```sh

@@ -2,6 +2,7 @@ import type { AuditSample } from './collect'
 import type { AuditBatch } from './report'
 import { assertGatePassed, evaluateGate } from './evaluate'
 import { assertManifestMetrics } from './manifest'
+import { isOutputEvidence } from './outputEvidence'
 import { pairBatch } from './report'
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -21,7 +22,7 @@ function parseBatch(value: unknown): AuditBatch {
       if (!record(sample) || typeof sample.id !== 'string' || typeof sample.template !== 'string' || typeof sample.phase !== 'string' || typeof sample.ms !== 'number' || !Number.isFinite(sample.ms) || sample.ms <= 0) {
         throw new Error('Invalid paired timing sample')
       }
-      return { id: sample.id, template: sample.template, phase: sample.phase, ms: sample.ms }
+      return { id: sample.id, template: sample.template, phase: sample.phase, ms: sample.ms, output: isOutputEvidence(sample.output) ? sample.output : undefined }
     })
     return { side: row.side, round: Number(row.round), values }
   })

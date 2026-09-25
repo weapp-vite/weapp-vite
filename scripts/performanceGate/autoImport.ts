@@ -1,4 +1,5 @@
 import type { AuditSample, Checkout } from './collect'
+import type { OutputEvidence } from './outputEvidence'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -7,7 +8,7 @@ import { execa } from 'execa'
 
 export const autoImportCounts = [1, 20, 50, 69]
 const modes = ['manual', 'automatic'] as const
-interface RawBuild { durationMs: number, repeatDurationMs: number, rssPeakBytes?: number, repeatRssPeakBytes?: number }
+interface RawBuild { durationMs: number, repeatDurationMs: number, rssPeakBytes?: number, repeatRssPeakBytes?: number, output: OutputEvidence, repeatOutput: OutputEvidence }
 interface RawHmr { startupMs: number, cycles: Array<{ editMs: number, restoreMs: number }>, updateMemory?: { rss: number, heapUsed: number } }
 
 export function autoImportMetrics() {
@@ -41,7 +42,7 @@ export async function collectAutoImport(checkout: Checkout, driver: string, outp
   if (data.results.map(row => row.usedCount).join(',') !== autoImportCounts.join(',')) {
     throw new Error('Missing auto-import component-count scenarios')
   }
-  return data.results.flatMap(row => modes.flatMap((mode) => {
+  return data.results.flatMap(row => modes.flatMap((mode): AuditSample[] => {
     const values = row.raw[mode]
     if (values.length !== 1) {
       throw new Error('Missing auto-import raw sample')
@@ -49,7 +50,7 @@ export async function collectAutoImport(checkout: Checkout, driver: string, outp
     const value = values[0]!
     const template = `auto-import-${row.usedCount}`
     if (kind === 'build') {
-      return ['first', 'repeat'].map(phase => ({ id: `auto-build:${row.usedCount}:${mode}:${phase}`, template, phase, ms: phase === 'first' ? value.durationMs : value.repeatDurationMs, rssBytes: phase === 'first' ? value.rssPeakBytes : value.repeatRssPeakBytes }))
+      return ['first', 'repeat'].map(phase => ({ id: `auto-build:${row.usedCount}:${mode}:${phase}`, template, phase, ms: phase === 'first' ? value.durationMs : value.repeatDurationMs, rssBytes: phase === 'first' ? value.rssPeakBytes : value.repeatRssPeakBytes, output: phase === 'first' ? value.output : value.repeatOutput }))
     }
     if (value.cycles.length !== 2) {
       throw new Error('Missing auto-import continuous update and restore')
