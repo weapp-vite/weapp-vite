@@ -1,16 +1,17 @@
 ---
 layout: page
-title: Weapp-vite
-titleTemplate: 小程序工程化、Vue SFC 与 Wevu 运行时的一体化工具链
-description: Weapp-vite 是面向小程序的现代工程化工具链，覆盖开发、构建、自动化、Vue SFC、Wevu 运行时、MCP 与多平台能力。
+title: Weapp-vite：AI 时代的小程序研发基线
+titleTemplate: 原生小程序工程化、多端构建与可验证 AI 工作流
+description: Weapp-vite 是面向原生小程序团队的现代研发基线，覆盖渐进接入、TypeScript、Vite/Rolldown、多端构建、Vue SFC、Wevu、MCP 与 DevTools 验收。
 keywords:
   - Weapp-vite
-  - 小程序工程化
+  - AI 小程序开发
+  - 原生小程序工程化
+  - 多端构建
   - Vue SFC
   - Wevu
   - MCP
-  - 多平台
-  - 自动化
+  - DevTools 验收
 ---
 
 <HomePage />
