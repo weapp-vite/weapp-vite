@@ -203,7 +203,8 @@ describe('core logical entry lifecycle', () => {
       const load = createLogicalEntryLoadHook(state as any)
       const id = createLogicalEntryId(sourceId, 'component')
       const result = await load.call({ addWatchFile: vi.fn() } as any, id)
-      expect(result?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, dependencyId, 'jsx')))
+      expect(result?.code).not.toContain(JSON.stringify(createSidecarModuleId(sourceId, dependencyId, 'jsx')))
+      expect(state.ctx.moduleGraphService.replaceEntryDependencies).not.toHaveBeenCalledWith(sourceId, 'jsx', expect.anything())
       expect([...state.resolvedEntryMap.keys()]).toEqual([sourceId])
       expect(state.resolvedEntryMap.get(sourceId)).toMatchObject({ id: sourceId })
       const resolved = { id: sourceId, meta: { registration: 'resolver' }, moduleSideEffects: false, external: false }

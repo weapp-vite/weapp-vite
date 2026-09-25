@@ -133,6 +133,23 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     expect(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8')).toContain('this.count += 2')
     runtime.applyBatch(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8'))
     expect(runtime.getVersion()).toBe(pageBatch.targetVersion)
+    // 逻辑入口重新加载后，源码 transform 的 JSX 归属不能被清空或提升为包装模块 import。
+    expect(ctx.moduleGraphService.getEntryDependencies(source)).toContainEqual({ kind: 'jsx', sourceId: shared })
+    let version = pageBatch.targetVersion
+    for (const [file, content, marker] of [
+      [shared, 'export const sharedFragment=<text>restored-shared</text>;export const createDynamicBlock=(factory)=>factory()', 'restored-shared'],
+      [source, page, 'initial-page'],
+    ]) {
+      await fs.writeFile(file, content)
+      await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain(marker)
+      const batch = await report('poll', version)
+      expect(batch.type).toBe('batch-published')
+      expect(batch.targetVersion).toBeGreaterThan(version)
+      runtime.applyBatch(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8'))
+      version = batch.targetVersion
+      expect(runtime.getVersion()).toBe(version)
+      expect(ctx.runtimeState.build.hmr).toBe(hmrState)
+    }
     await new Promise(resolve => setTimeout(resolve, 2_000))
     expect(createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')).toBe(controlHash)
     expect(errors).toEqual([])

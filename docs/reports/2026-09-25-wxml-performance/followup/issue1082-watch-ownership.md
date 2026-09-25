@@ -77,3 +77,15 @@
 [本轮诊断与最终检查原始归档](./issue1082-owned-dependencies-delivery.json.gz) 保存首次 CI 本地复现、逻辑顺序回归、headless 各阶段失败、最终单测/CLI/runtime 日志和完整 DOM 报告；仅脱敏机器路径和回环端口。包含测试时三份产品源码 SHA256，未将未提交工作区的检查冒称远端 HEAD 验收。gzip 解压 JSON 共 278714 字节，SHA256：`a81d993ed288a04b990175547c1363bef2cb7c237e2f054c0fd4d10e903a2a87`。
 
 三个产品变更文件均不足 300 行；新真实引擎回归单独成文件。已有大型 snapshot harness 只补齐实际插件上下文契约。固定基线和所有正式门禁均未改，#1082 保持开放。
+
+## JSX 依赖归属补充（c9135f7f7 后续）
+
+新 HEAD c9135f7f7 的全部 CI 为 30 success / 10 skipped / 1 failure；唯一失败是原有 `test/runtime/jsxStatefulHmr.test.ts`。Ubuntu Node 22 执行完整测试，其他 OS 没有执行同一套测试，不能称为 OS 专属回退。原先十项失败均不再出现，此次完整测试共 11489 项通过、1 项失败。
+
+失败已在本机原样复现：页面 handler 更新时，客户端收到逻辑入口模块但找不到接受方。生成代码诊断证实，源码 transform 后发现的共享 JSX 依赖被后续逻辑入口 load 重新提升为额外 sidecar import，改变了包装模块；它不是已修复的同集合顺序漂移。JSX transform 已通过 `addWatchFile` 和模块图维护该依赖，本轮让逻辑入口不再导入或重置 JSX 类依赖，仍保留其他侧车的发现和更新规则。未放松客户端接受边界或 Patch 安全判断。
+
+原回归用例新增逻辑入口重载后的 JSX 依赖存在断言，并连续验证共享模块再次编辑、页面恢复、客户端版本和引擎状态身份。6 文件 16 项定向测试通过，包级 typecheck/build 与 scoped ESLint 通过。这里的 VM 补丁执行验证是真实编译产物的局部契约，不能替代最终 DevTools 验收。先前真实 DevTools 两项失败仍保留，PR 继续草稿。
+
+原始诊断与验证日志归档于 [issue1082-jsx-owner.json.gz](./issue1082-jsx-owner.json.gz)，解压 29369 字节，SHA256 `05310cae6fe53a07e680d0d98ea811d3ecca7931b0fac365c29724649a62afe2`。仅脱敏路径/本机端口并移除终端颜色，未更改结果。
+
+进一步只读调查发现：先前通过运行的 IDE 文件服务 `enableContentDiff=true`，失败运行为 false；失败轮日志没有 update.js 或模板的 change 事件，只有 add/unlink。已安装 IDE 的事件合并器忽略普通 change，仅把 contentChange 转为编译 change，而内容差异事件受上述开关控制。这解释了一个可能的事件断点，但尚未确定开关差异来源或用真实 IDE 完成因果验证；没有修改安装的 IDE、强制执行补丁、手写产物或据此将失败判为环境通过。

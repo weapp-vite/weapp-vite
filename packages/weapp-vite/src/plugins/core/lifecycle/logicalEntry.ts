@@ -117,6 +117,11 @@ async function collectLogicalEntryDependencies(
     }
   }
   for (const dependency of pendingDependencies) {
+    // JSX 依赖在源码 transform 中发现并登记 addWatchFile，由源码模块持有。
+    // 不能把后发现的依赖提升为逻辑入口的新 import，否则纯脚本更新会改变包装模块。
+    if (dependency.kind === 'jsx') {
+      continue
+    }
     // App JSON 依赖由本轮入口记录重新声明，不能从上次图中复活已改名/移除的附属文件。
     if (entry?.type === 'app' && dependency.kind === 'json') {
       continue
@@ -140,7 +145,7 @@ async function collectLogicalEntryDependencies(
   }
   dependencies.push(...collectTemplateDependencies(state, templatePath))
   dependencies.push(...await collectUsingComponentDependencies(state, pluginContext, ownerId, entry?.json))
-  for (const kind of ['json', 'jsx', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
+  for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
     state.ctx.moduleGraphService.replaceEntryDependencies(
       ownerId,
       kind,
