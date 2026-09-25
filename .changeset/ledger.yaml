@@ -118,6 +118,10 @@
   intents:
     - catalog-upgrade-20260923-230700
     - dependency-upgrade-20260923-230659
+"@mpcore/simulator@0.6.4":
+  dir: mpcore/packages/simulator
+  intents:
+    - unified-wxml-remove
 "@mpcore/test@0.1.10":
   dir: mpcore/packages/test
   intents:
@@ -1223,6 +1227,10 @@
     - real-peaches-hang
     - template-analysis-build-scope
     - wevu-runtime-platform-pruning
+"@wevu/compiler@7.4.0":
+  dir: packages-runtime/wevu-compiler
+  intents:
+    - unified-wxml-remove
 "@wevu/query@0.0.0":
   dir: packages-runtime/wevu-query
   intents:
@@ -1626,6 +1634,11 @@ create-weapp-vite@3.0.0:
     - template-analysis-build-scope
     - wevu-runtime-platform-pruning
     - wild-pigs-rush
+create-weapp-vite@3.0.1:
+  dir: packages/create-weapp-vite
+  intents:
+    - quiet-rivers-measure
+    - unified-wxml-remove
 rolldown-require@2.0.26:
   dir: packages/rolldown-require
   intents:
@@ -1982,6 +1995,11 @@ weapp-vite@7.3.0:
     - tailwind-canonical-asset
     - template-analysis-build-scope
     - wevu-runtime-platform-pruning
+weapp-vite@7.4.0:
+  dir: packages/weapp-vite
+  intents:
+    - quiet-rivers-measure
+    - unified-wxml-remove
 wevu@6.20.5:
   dir: packages-runtime/wevu
   intents:
