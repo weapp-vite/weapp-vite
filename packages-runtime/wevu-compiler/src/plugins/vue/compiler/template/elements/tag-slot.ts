@@ -561,6 +561,9 @@ function renderPlainSlotOutlet(node: ElementNode, context: TransformContext, tra
     slotAttrs.push(nameAttr)
   }
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
+  if (context.preserveComments && fallbackContent && !compatibleNode.children.some(isRenderableFallbackChild)) {
+    return `${fallbackContent}<slot${slotAttrString} />`
+  }
   if (!hasScopeBindings && fallbackContent) {
     const slotPresentExp = createSlotPresenceExpression(slotNameInfo)
     if (slotPresentExp) {
@@ -626,7 +629,9 @@ function renderSlotFallbackContent(
 
   const renderableChildren = decl.children.filter(isRenderableFallbackChild)
   if (!renderableChildren.length) {
-    return ''
+    return context.preserveComments
+      ? decl.children.map(child => child.type === NodeTypes.COMMENT ? transformNode(child, context) : '').join('')
+      : ''
   }
   const staticSlotName = resolveSlotStaticName(decl.name)
   const wrapper = resolveSlotFallbackWrapper(context, {
@@ -660,11 +665,14 @@ function renderSlotFallbackContent(
         : injectAttributesIntoOpeningTag(transformNode(child, context), [slotAttr, ...wrapperAttrs])
     }
     if (projected) {
-      return wrapCondition(projected)
+      const content = context.preserveComments
+        ? decl.children.map(sourceChild => sourceChild === child ? projected : transformFallbackChild(sourceChild, context, transformNode)).join('')
+        : projected
+      return wrapCondition(content)
     }
   }
 
-  const content = renderableChildren
+  const content = (context.preserveComments ? decl.children : renderableChildren)
     .map(child => transformFallbackChild(child, context, transformNode))
     .join('')
 
@@ -733,9 +741,10 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
 
   const slotAttrString = slotAttrs.length ? ` ${slotAttrs.join(' ')}` : ''
   let slotTag = `<slot${slotAttrString} />`
-  const slotPresentExp = fallbackContent ? createSlotPresenceExpression(slotNameInfo) : undefined
+  const hasFallbackContent = fallbackContent && (!context.preserveComments || node.children.some(isRenderableFallbackChild))
+  const slotPresentExp = hasFallbackContent ? createSlotPresenceExpression(slotNameInfo) : undefined
 
-  if (fallbackContent) {
+  if (hasFallbackContent) {
     if (!slotPropsExp && slotPresentExp) {
       slotTag = `${context.platform.wrapIf(slotPresentExp, slotTag, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
     }
@@ -752,7 +761,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
       || !context.isPage
     )
   ) {
-    return slotTag
+    return fallbackContent && !hasFallbackContent ? `${fallbackContent}${slotTag}` : slotTag
   }
 
   context.bindingManifest.features.scopedSlots = true
@@ -791,7 +800,7 @@ export function transformSlotElement(node: ElementNode, context: TransformContex
     return `${context.platform.wrapIf(slotPresentExp, projectedContent, exp => renderMustache(exp, context))}${context.platform.wrapElse(fallbackContent)}`
   }
 
-  return projectedContent
+  return fallbackContent && !hasFallbackContent ? `${fallbackContent}${projectedContent}` : projectedContent
 }
 
 export function transformSlotElementPlain(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {

@@ -7,6 +7,7 @@ import type { GlassEaselAnalysisFact } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
+import type { WxmlDependencyRegistry } from '../wxml/processing/registry'
 import type { LocalAutoImportMatch } from './autoImport/types'
 import type { NamedAutoRoute } from './autoRoutesPlugin/types'
 import type { LoadConfigResult, PackageInfo } from './config/types'
@@ -92,6 +93,7 @@ function createDefaultPackageManager(): DetectResult {
 }
 
 export interface RuntimeState {
+  wxmlProcessing: WxmlDependencyRegistry
   glassEasel: {
     analysisByOwner: Map<string, GlassEaselAnalysisFact>
     warnedDiagnostics: Set<string>
@@ -134,6 +136,8 @@ export interface RuntimeState {
     npmBuilt: boolean
     independent: {
       outputs: Map<string, RolldownOutput>
+      watchFiles: Map<string, Set<string>>
+      watchListeners: Set<(files: string[]) => void>
       pendingOutputs: Promise<RolldownOutput>[]
     }
     output: {
@@ -217,6 +221,12 @@ export interface RuntimeState {
         snapshotResolveMs?: number
         snapshotBuildMs?: number
         writeMs?: number
+        finalizePrepareMs?: number
+        finalizeTemplateMs?: number
+        finalizePublishMs?: number
+        publicationValidateMs?: number
+        publicationIndependentMs?: number
+        publicationPruneMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
@@ -275,6 +285,12 @@ export interface RuntimeState {
         snapshotResolveMs?: number
         snapshotBuildMs?: number
         writeMs?: number
+        finalizePrepareMs?: number
+        finalizeTemplateMs?: number
+        finalizePublishMs?: number
+        publicationValidateMs?: number
+        publicationIndependentMs?: number
+        publicationPruneMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
@@ -349,6 +365,7 @@ export function createRuntimeState(): RuntimeState {
   const emptyAutoRoutesSnapshot = createEmptyAutoRoutesSnapshot()
   const emptyAutoRoutesArtifacts = createAutoRoutesArtifacts(emptyAutoRoutesSnapshot)
   return {
+    wxmlProcessing: { dependencies: new Map(), pending: new Map(), failed: new Map(), references: new Map(), listeners: new Set() },
     glassEasel: {
       analysisByOwner: new Map<string, GlassEaselAnalysisFact>(),
       warnedDiagnostics: new Set<string>(),
@@ -390,6 +407,8 @@ export function createRuntimeState(): RuntimeState {
       npmBuilt: false,
       independent: {
         outputs: new Map<string, RolldownOutput>(),
+        watchFiles: new Map<string, Set<string>>(),
+        watchListeners: new Set<(files: string[]) => void>(),
         pendingOutputs: [],
       },
       output: {

@@ -57,6 +57,7 @@ const createIndependentBuilderMock = vi.hoisted(() => vi.fn(() => ({
 const appendFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const mkdirMock = vi.hoisted(() => vi.fn(async () => {}))
 const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
+  add: vi.fn(),
   on: vi.fn(),
   close: vi.fn(),
 })))
@@ -241,6 +242,7 @@ function createManualWatcher() {
 function createManualSidecarWatcher() {
   let allCallback: ((event: string, id?: string) => void) | undefined
   const watcher: any = {
+    add: vi.fn(),
     on: vi.fn((event: string, callback: (event: string, id?: string) => void) => {
       if (event === 'all') {
         allCallback = callback
@@ -696,9 +698,9 @@ describe('runtime buildPlugin service', () => {
     const closeOriginalWatcher = watcher.close.bind(watcher)
     const restarting = runStatefulHmrDevMock.mock.calls[0]![2]()
     await entered.promise
-    await closeOriginalWatcher()
+    const closing = closeOriginalWatcher()
     ready.resolve()
-    await restarting
+    await Promise.all([restarting, closing])
 
     expect(closed).toEqual([1, 2])
     expect(graph.hasModule('/project/src/page-2.ts')).toBe(false)
@@ -741,6 +743,37 @@ describe('runtime buildPlugin service', () => {
     expect(closed).toBe(true)
     expect(graph.hasModule(dependency)).toBe(false)
     expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
+  })
+
+  it('waits for an in-flight native restart snapshot before close returns', async () => {
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue({ close: vi.fn(async () => {}) })
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const reached = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    buildMock.mockImplementationOnce(async () => {
+      reached.resolve()
+      await release.promise
+      return { output: [] }
+    })
+    const restarting = runStatefulHmrDevMock.mock.calls[0]![2]()
+    await reached.promise
+    let closed = false
+    const closing = watcher.close().then(() => {
+      closed = true
+    })
+    try {
+      await new Promise(resolve => setImmediate(resolve))
+      expect(closed).toBe(false)
+    }
+    finally {
+      release.resolve()
+      await Promise.all([restarting, closing])
+    }
+    expect(closed).toBe(true)
+    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
   })
 
   it.each([false, true])('keeps original native subscribers and releases sessions when closing during restart=%s', async (closeDuringRestart) => {
@@ -1370,6 +1403,43 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/logs/index.ts')).toBe(false)
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/about/index.ts')).toBe(true)
     expect(touchMock).not.toHaveBeenCalled()
+  })
+
+  it.each([false, true])('publishes independent updates without invalidating unrelated main entries (shared=%s)', async (shared) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    const file = '/project/src/independent/index.wxml'
+    const entry = '/project/src/pages/main/index.ts'
+    const unrelated = '/project/src/pages/other/index.ts'
+    ctx.scanService.markIndependentDirty = vi.fn()
+    ctx.runtimeState.build.independent.watchFiles.set('independent', new Set([file]))
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set(shared ? [entry] : []))
+    for (const id of [entry, unrelated]) {
+      ctx.runtimeState.build.hmr.resolvedEntryMap.set(id, { id })
+      ctx.runtimeState.build.hmr.loadedEntrySet.add(id)
+    }
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValueOnce(watcher).mockResolvedValue({ output: [] })
+    const service = createBuildService(ctx)
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', file)
+    await waitForMockCalls(buildMock, 2)
+    expect(independentInvalidateMock).toHaveBeenCalledWith('independent')
+    expect(ctx.scanService.markIndependentDirty).toHaveBeenCalledWith('independent')
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set(shared ? [entry] : []))
+    expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(unrelated)).toBe(true)
+    expect(ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh).not.toBe(true)
+    expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      build: expect.objectContaining({ emptyOutDir: false }),
+    }))
+    await watcher.close()
   })
 
   it('classifies imported style changes through their graph-owned entry', async () => {
@@ -2092,6 +2162,12 @@ describe('runtime buildPlugin service', () => {
 
     ctx.runtimeState.build.hmr.profile = {
       eventId: 'hmr-event-1',
+      finalizePrepareMs: 0.1,
+      finalizeTemplateMs: 0.2,
+      finalizePublishMs: 0.3,
+      publicationValidateMs: 0.4,
+      publicationIndependentMs: 0.5,
+      publicationPruneMs: 0.6,
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       buildStartMs: 4,
@@ -2146,6 +2222,12 @@ describe('runtime buildPlugin service', () => {
     expect(payload.endsWith('\n')).toBe(true)
     expect(payload).toContain('"event":"update"')
     expect(payload).toContain('"eventId":"hmr-event-1"')
+    expect(payload).toContain('"finalizePrepareMs":0.1')
+    expect(payload).toContain('"finalizeTemplateMs":0.2')
+    expect(payload).toContain('"finalizePublishMs":0.3')
+    expect(payload).toContain('"publicationValidateMs":0.4')
+    expect(payload).toContain('"publicationIndependentMs":0.5')
+    expect(payload).toContain('"publicationPruneMs":0.6')
     expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
     expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
     expect(payload).toContain('"buildStartMs":4')

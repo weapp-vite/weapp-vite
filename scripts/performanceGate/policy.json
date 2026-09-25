@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 2,
+  "samplingContract": "paired-v2-template-shards",
+  "baselineSha": "e7862e61dd83e3b9e356ac1e176267b31ab298af",
+  "label": "performance:nightly",
+  "operatingSystems": ["ubuntu-latest", "windows-latest", "macos-latest"],
+  "templates": [
+    { "id": "weapp-vite-tailwindcss-tdesign-template", "scenarios": ["app-json", "native-page-script", "native-page-template", "native-page-style"] },
+    { "id": "weapp-vite-template", "scenarios": ["app-json", "native-page-script", "native-page-template", "native-page-style"] },
+    { "id": "weapp-vite-wevu-template", "scenarios": ["vue-page-script", "vue-page-style", "vue-page-template", "json-sitemap"] }
+  ]
+}

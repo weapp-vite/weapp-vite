@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import type { HmrProfileDurationKey } from './hmrProfile'
+import { describe, expect, it, vi } from 'vitest'
 import {
+  createHmrProfileCheckpoint,
   createHmrProfileEventId,
   DEFAULT_HMR_PROFILE_JSONL_RELATIVE_PATH,
   HMR_PROFILE_JSON_ENV,
@@ -64,5 +66,35 @@ describe('resolveHmrProfileJsonEnvOption', () => {
 describe('createHmrProfileEventId', () => {
   it('creates unique ids for profile event correlation', () => {
     expect(createHmrProfileEventId()).not.toBe(createHmrProfileEventId())
+  })
+})
+
+describe('createHmrProfileCheckpoint', () => {
+  it('attributes elapsed time to consecutive stages without accumulating earlier phases again', async () => {
+    const clock = vi.spyOn(performance, 'now').mockReturnValueOnce(100).mockReturnValueOnce(107).mockReturnValueOnce(123).mockReturnValueOnce(125)
+    try {
+      const profile: Partial<Record<HmrProfileDurationKey, number>> = {}
+      const checkpoint = createHmrProfileCheckpoint(profile)
+      checkpoint('finalizePrepareMs')
+      await Promise.resolve()
+      checkpoint('finalizeTemplateMs')
+      checkpoint('finalizePrepareMs')
+      expect(profile).toEqual({ finalizePrepareMs: 9, finalizeTemplateMs: 16 })
+    }
+    finally {
+      clock.mockRestore()
+    }
+  })
+
+  it('does not read the clock when profiling is disabled', () => {
+    const clock = vi.spyOn(performance, 'now')
+    try {
+      const checkpoint = createHmrProfileCheckpoint(undefined)
+      checkpoint('publicationValidateMs')
+      expect(clock).not.toHaveBeenCalled()
+    }
+    finally {
+      clock.mockRestore()
+    }
   })
 })

@@ -1,57 +1,30 @@
 import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
-import type { MpPlatform, SubPackageMetaValue } from '../types'
+import type { SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
-import { Buffer } from 'node:buffer'
-import { getSupportedMiniProgramDirectivePrefixes } from '@weapp-core/shared'
+import type { OutputAssetEntry } from './outputFinalizer/templates'
 import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
 import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
 import { parseSidecarModuleId } from '../moduleGraph/protocol'
-import { getWxmlPlatformTransformOptions } from '../platform'
 import { changeFileExtension } from '../utils'
-import { resolveScriptModuleTagName } from '../utils/wxmlScriptModule'
-import { handleWxml, scanWxml } from '../wxml'
+import { createHmrProfileCheckpoint } from '../utils/hmrProfile'
+import { deferWxmlDependencyCommit, observeWxmlDependencies } from '../wxml/processing/dependencies'
 import { hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { consumePendingOwnerStyleSources } from './css'
-import { transformI18nOutputTemplate } from './i18n'
 import { createOutputAssetTransaction } from './outputFinalizer/assets'
 import { restoreNativePageLayoutOutputs } from './outputFinalizer/pageLayout'
 import { normalizeClassScopedAssets } from './outputFinalizer/scopedStyles'
+import { normalizeTemplateAssetEntries } from './outputFinalizer/templates'
 
 export { createOutputPublicationPlugin, pruneUnchangedDevHmrOutputs, pruneUneventedDevHmrChunks } from './outputFinalizer/publication'
 
+export { mayNeedTemplateNormalization } from './outputFinalizer/templates'
+
 const PREPROCESSOR_STYLE_ASSET_RE = /\.(?:less|sass|scss|styl|stylus|pcss|postcss|sss)$/i
 const TEMPLATE_ASSET_RE = /\.(?:wxml|axml|swan|ttml|jxml|qml|ksml|xhsml)$/i
-const TEMPLATE_STATIC_REWRITE_MARKERS = [
-  '@',
-  '<!--',
-  '<wxs',
-  '</wxs',
-  '<sjs',
-  '</sjs',
-  '.html',
-  '.wxs',
-  '.sjs',
-  '.wxml',
-  '.axml',
-  '.swan',
-  '.ttml',
-  '.jxml',
-  '.qml',
-  '.ksml',
-  '.xhsml',
-  'import.meta.',
-  'wx-if',
-  'wx-for',
-] as const
-const TEMPLATE_DIRECTIVE_PREFIXES = getSupportedMiniProgramDirectivePrefixes()
 type EmitAsset = (asset: EmittedAsset) => void
-interface OutputAssetEntry {
-  bundleFileName: string
-  output: Extract<OutputBundle[string], { type: 'asset' }>
-}
 
 export function normalizeGraphOnlyAssets(
   ctx: CompilerContext,
@@ -144,40 +117,6 @@ function mergePendingOwnerStyleSources(ctx: CompilerContext, bundle: OutputBundl
   }
 }
 
-export function mayNeedTemplateNormalization(code: string, platform?: MpPlatform) {
-  let lowerCode: string | undefined
-  const readLowerCode = () => {
-    lowerCode ??= code.toLowerCase()
-    return lowerCode
-  }
-  const hasUppercase = /[A-Z]/.test(code)
-  const { directivePrefix, eventBindingStyle, normalizeComponentTagName } = getWxmlPlatformTransformOptions(platform)
-  if (normalizeComponentTagName && hasUppercase) {
-    return true
-  }
-
-  for (const prefix of TEMPLATE_DIRECTIVE_PREFIXES) {
-    if (prefix !== directivePrefix) {
-      const marker = prefix === 's' ? 's-' : `${prefix}:`
-      if (code.includes(marker)) {
-        return true
-      }
-    }
-  }
-
-  if (eventBindingStyle === 'alipay' && (
-    readLowerCode().includes('bind')
-    || readLowerCode().includes('catch')
-    || readLowerCode().includes('capture-')
-    || readLowerCode().includes('mut-bind')
-  )) {
-    return true
-  }
-
-  const normalizedCode = hasUppercase ? readLowerCode() : code
-  return TEMPLATE_STATIC_REWRITE_MARKERS.some(marker => normalizedCode.includes(marker))
-}
-
 function normalizePreprocessorStyleAssetEntries(
   bundle: OutputBundle,
   entries: OutputAssetEntry[],
@@ -236,57 +175,16 @@ export function normalizePreprocessorStyleAssets(
   )
 }
 
-function normalizeTemplateAssetEntries(
-  ctx: CompilerContext,
-  entries: OutputAssetEntry[],
-  subPackageMeta?: SubPackageMetaValue,
-) {
-  const { configService } = ctx
-  for (const { bundleFileName, output } of entries) {
-    const source = output.source
-    const code = typeof source === 'string'
-      ? source
-      : source instanceof Uint8Array
-        ? Buffer.from(source).toString('utf8')
-        : undefined
-    if (code === undefined) {
-      continue
-    }
-    let normalized = code
-    if (mayNeedTemplateNormalization(code, configService?.platform)) {
-      const token = scanWxml(code, {
-        platform: configService?.platform,
-      })
-      normalized = handleWxml(token, {
-        scriptModuleExtension: configService?.outputExtensions?.wxs,
-        scriptModuleTag: resolveScriptModuleTagName({
-          platform: configService?.platform,
-          scriptModuleExtension: configService?.outputExtensions?.wxs,
-        }),
-        templateExtension: configService?.outputExtensions?.wxml,
-      }).code
-    }
-    const transformed = transformI18nOutputTemplate(
-      ctx,
-      output.fileName || bundleFileName,
-      normalized,
-      subPackageMeta,
-    )
-    if (transformed !== code) {
-      output.source = transformed
-    }
-  }
-}
-
-export function normalizeTemplateAssets(
+export async function normalizeTemplateAssets(
   ctx: CompilerContext,
   bundle: OutputBundle,
 ) {
-  normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets)
+  await normalizeTemplateAssetEntries(ctx, collectOutputFinalizerAssetEntries(bundle).templateAssets)
 }
 
 export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   let preserveCompleteBundle = false
+  let unobserve: (() => void) | undefined
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
@@ -315,13 +213,22 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
   return {
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
+    configureServer(server) {
+      unobserve = observeWxmlDependencies(ctx, files => server.watcher.add(files))
+      server.httpServer?.once('close', () => unobserve?.())
+    },
+    closeWatcher() {
+      unobserve?.()
+    },
     configResolved(config) {
       // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。
       preserveCompleteBundle = config.experimental?.bundledDev === true
     },
     generateBundle: {
       order: 'post',
-      handler(_options, bundle) {
+      async handler(_options, bundle) {
+        const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
+        deferWxmlDependencyCommit(ctx)
         const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
         const outputBundle = assets.bundle
         mergePendingOwnerStyleSources(ctx, outputBundle)
@@ -330,14 +237,13 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         restoreNativePageLayoutOutputs(ctx, outputBundle)
         normalizeGraphOnlyAssets(ctx, outputBundle, assets.stage)
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
+        const partial = !preserveCompleteBundle
+          && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
+          && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
         if (ctx.configService.platform === 'weapp') {
           // 在 HMR 裁剪前消费本轮事实；full 也只替换当前构建实例的精确 scope。
           analyzeGlassEaselBundle(ctx, outputBundle, {
-            mode: preserveCompleteBundle
-              || ctx.runtimeState.build.hmr.didEmitAllEntries
-              || ctx.runtimeState.build.hmr.profile.event === undefined
-              ? 'full'
-              : 'partial',
+            mode: partial ? 'partial' : 'full',
             outputScope: subPackageMeta
               ? `independent:${subPackageMeta.subPackage.root}`
               : 'main',
@@ -349,11 +255,19 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           ctx.configService.outputExtensions?.wxss,
           assets.stage,
         )
-        normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta)
+        checkpoint('finalizePrepareMs')
+        const commitDependencies = await normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta, {
+          addWatchFile: file => this.addWatchFile?.(file),
+          warn: message => this.warn(message),
+          partial,
+        })
+        checkpoint('finalizeTemplateMs')
+        deferWxmlDependencyCommit(ctx, commitDependencies)
         if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
           normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
         }
         assets.publish(asset => this.emitFile(asset))
+        checkpoint('finalizePublishMs')
       },
     },
   }

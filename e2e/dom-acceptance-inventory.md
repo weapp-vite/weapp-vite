@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：110；微信：107；范围外：3。
-- 展开的 case 声明：278；已接入计划：278；缺计划：0。
+- 任务：111；微信：108；范围外：3。
+- 展开的 case 声明：280；已接入计划：280；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -123,6 +123,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/wevu-subpackage-placement.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/wevu-vue-demo.script-setup.emit.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/wevu-watch.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wxml-transform.runtime.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
 | ide/chunk-modes.runtime.duplicate.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
 | ide/chunk-modes.runtime.extras.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/chunk-modes.runtime.hoist.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
@@ -2467,6 +2468,23 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/app-lifecycle-wevu-ts`; checkpoints: `[ { id: 'watch:initial', route: '/pages/index/index', action: '检查 watcher 初始界面', nodes: [ { selector: '#app-lifecycle-route', text: 'App lifecycle wevu' }, { selector: '#watch-result', text: 'watch results: 0' }, { selector: '.watch-result-`; source: `e2e/ide/wevu-watch.test.ts:62`
 - Routes: `/pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(watch:initial)`, `callMethodWithOptions(runWatchE2E)`, `check(watch:result)`
+
+
+## ide/wxml-transform.runtime.test.ts
+
+### WXML function transform runtime > preserves typed attributes, renamed tags and events in native templates
+
+- Source: `e2e/ide/wxml-transform.runtime.test.ts:43`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/wxml-transform`; checkpoints: `[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex`; source: `e2e/ide/wxml-transform.runtime.test.ts:47`
+- Operations: `reLaunch(route)`, `check(transformed)`, `tap(<missing>)`, `check(event)`
+
+### WXML function transform runtime > preserves typed attributes, renamed tags and events in vue templates
+
+- Source: `e2e/ide/wxml-transform.runtime.test.ts:43`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/wxml-transform`; checkpoints: `[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex`; source: `e2e/ide/wxml-transform.runtime.test.ts:47`
+- Operations: `reLaunch(route)`, `check(transformed)`, `tap(<missing>)`, `check(event)`
 
 
 ## ide/chunk-modes.runtime.duplicate.test.ts

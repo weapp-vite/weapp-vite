@@ -1,5 +1,6 @@
 import type { TemplateNodeLike } from './templateRuntime'
 import { parseDocument } from 'htmlparser2'
+import { maskTemplateAttributes } from './templateAttributes'
 
 const INLINE_WXS_RE = /<wxs\b([^>]*)(?<!\/)>([\s\S]*?)<\/wxs\s*>/g
 
@@ -10,14 +11,26 @@ export function parseWxsTemplateDocument(templateSource: string) {
     const index = scripts.push(script) - 1
     return `<wxs data-sim-wxs="${index}"${attributes}>wxs-source</wxs>`
   })
-  const document = parseDocument(`<page>${source}</page>`, {
+  const masked = maskTemplateAttributes(source)
+  const document = parseDocument(`<page>${masked.source}</page>`, {
     xmlMode: false,
     decodeEntities: false,
     lowerCaseAttributeNames: false,
     lowerCaseTags: false,
     recognizeSelfClosing: true,
   })
+  if (!scripts.length && !masked.attributes.size) {
+    return document
+  }
+  const hasAttributes = masked.attributes.size > 0
   const restore = (node: TemplateNodeLike) => {
+    if (hasAttributes && node.attribs) {
+      for (const [name, token] of Object.entries(node.attribs)) {
+        if (masked.attributes.has(token)) {
+          node.attribs[name] = masked.attributes.get(token)!
+        }
+      }
+    }
     if (node.name === 'wxs' && Object.hasOwn(node.attribs ?? {}, 'data-sim-wxs')) {
       node.children![0]!.data = scripts[Number(node.attribs!['data-sim-wxs'])]
       delete node.attribs!['data-sim-wxs']

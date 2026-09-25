@@ -1,0 +1,3062 @@
+{
+  "sha": "e7862e61dd83e3b9e356ac1e176267b31ab298af",
+  "dirty": false,
+  "node": "v24.18.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "supportsWxml": false,
+  "compilation": "esbuild ESM, bundle/splitting, external packages, no keepNames",
+  "results": [
+    {
+      "name": "simulator/public-render/100",
+      "bytes": 6213,
+      "medianMs": 4.946374999999989,
+      "p95Ms": 5.253499999999974,
+      "samples": [
+        {
+          "ms": 4.2902500000000146,
+          "rss": 139886592,
+          "heapUsed": 29101704,
+          "heapDelta": 5842400,
+          "retainedHeapDelta": -35112
+        },
+        {
+          "ms": 4.827499999999986,
+          "rss": 139968512,
+          "heapUsed": 29056184,
+          "heapDelta": 5836112,
+          "retainedHeapDelta": -13456
+        },
+        {
+          "ms": 5.063666000000012,
+          "rss": 139984896,
+          "heapUsed": 28984432,
+          "heapDelta": 5826792,
+          "retainedHeapDelta": 24720
+        },
+        {
+          "ms": 5.159207999999978,
+          "rss": 140083200,
+          "heapUsed": 29144216,
+          "heapDelta": 6048472,
+          "retainedHeapDelta": 172960
+        },
+        {
+          "ms": 4.716124999999977,
+          "rss": 140197888,
+          "heapUsed": 29188520,
+          "heapDelta": 5923072,
+          "retainedHeapDelta": 59360
+        },
+        {
+          "ms": 4.946374999999989,
+          "rss": 140230656,
+          "heapUsed": 29033960,
+          "heapDelta": 5724816,
+          "retainedHeapDelta": 70592
+        },
+        {
+          "ms": 5.047209000000009,
+          "rss": 140230656,
+          "heapUsed": 28968488,
+          "heapDelta": 5612536,
+          "retainedHeapDelta": 11536
+        },
+        {
+          "ms": 4.403165999999999,
+          "rss": 140230656,
+          "heapUsed": 28938560,
+          "heapDelta": 5630576,
+          "retainedHeapDelta": 10784
+        },
+        {
+          "ms": 4.543791999999996,
+          "rss": 140328960,
+          "heapUsed": 28950528,
+          "heapDelta": 5651136,
+          "retainedHeapDelta": 27808
+        },
+        {
+          "ms": 4.9743330000000014,
+          "rss": 140328960,
+          "heapUsed": 28958200,
+          "heapDelta": 5658288,
+          "retainedHeapDelta": 27368
+        },
+        {
+          "ms": 5.253499999999974,
+          "rss": 140476416,
+          "heapUsed": 28931712,
+          "heapDelta": 5625864,
+          "retainedHeapDelta": 41088
+        },
+        {
+          "ms": 4.200083999999947,
+          "rss": 140476416,
+          "heapUsed": 28970536,
+          "heapDelta": 5623688,
+          "retainedHeapDelta": 32368
+        },
+        {
+          "ms": 4.379208999999946,
+          "rss": 140541952,
+          "heapUsed": 28986512,
+          "heapDelta": 5635864,
+          "retainedHeapDelta": 48504
+        },
+        {
+          "ms": 4.999917000000096,
+          "rss": 140541952,
+          "heapUsed": 28902504,
+          "heapDelta": 5600448,
+          "retainedHeapDelta": 43928
+        },
+        {
+          "ms": 5.223083999999972,
+          "rss": 140541952,
+          "heapUsed": 28912456,
+          "heapDelta": 5418032,
+          "retainedHeapDelta": -144888
+        }
+      ]
+    },
+    {
+      "name": "simulator/parse/100",
+      "bytes": 6213,
+      "medianMs": 0.7952080000000024,
+      "p95Ms": 1.0166249999999764,
+      "samples": [
+        {
+          "ms": 0.34304099999997106,
+          "rss": 140541952,
+          "heapUsed": 23604128,
+          "heapDelta": 166936,
+          "retainedHeapDelta": 1152
+        },
+        {
+          "ms": 0.31845799999996416,
+          "rss": 140541952,
+          "heapUsed": 23611976,
+          "heapDelta": 164552,
+          "retainedHeapDelta": -1400
+        },
+        {
+          "ms": 0.33987500000000637,
+          "rss": 140541952,
+          "heapUsed": 23619920,
+          "heapDelta": 166936,
+          "retainedHeapDelta": -16328
+        },
+        {
+          "ms": 0.96062500000005,
+          "rss": 140541952,
+          "heapUsed": 23586632,
+          "heapDelta": 179968,
+          "retainedHeapDelta": 5176
+        },
+        {
+          "ms": 0.787499999999909,
+          "rss": 140541952,
+          "heapUsed": 23588656,
+          "heapDelta": 172136,
+          "retainedHeapDelta": 272
+        },
+        {
+          "ms": 0.9533330000000433,
+          "rss": 140656640,
+          "heapUsed": 23601776,
+          "heapDelta": 191296,
+          "retainedHeapDelta": 5160
+        },
+        {
+          "ms": 0.8105419999999413,
+          "rss": 140673024,
+          "heapUsed": 23590720,
+          "heapDelta": 173688,
+          "retainedHeapDelta": 3928
+        },
+        {
+          "ms": 0.3826249999999618,
+          "rss": 140673024,
+          "heapUsed": 23629304,
+          "heapDelta": 192408,
+          "retainedHeapDelta": -2824
+        },
+        {
+          "ms": 0.9797499999999673,
+          "rss": 140673024,
+          "heapUsed": 23598736,
+          "heapDelta": 182344,
+          "retainedHeapDelta": 4256
+        },
+        {
+          "ms": 0.8157909999999902,
+          "rss": 140673024,
+          "heapUsed": 23594008,
+          "heapDelta": 174128,
+          "retainedHeapDelta": 4208
+        },
+        {
+          "ms": 0.4070410000000493,
+          "rss": 140689408,
+          "heapUsed": 23602592,
+          "heapDelta": 166936,
+          "retainedHeapDelta": -13408
+        },
+        {
+          "ms": 0.9309590000000298,
+          "rss": 140689408,
+          "heapUsed": 23626848,
+          "heapDelta": 194648,
+          "retainedHeapDelta": -448
+        },
+        {
+          "ms": 0.7952080000000024,
+          "rss": 140705792,
+          "heapUsed": 23597112,
+          "heapDelta": 174600,
+          "retainedHeapDelta": 4744
+        },
+        {
+          "ms": 0.3730409999999438,
+          "rss": 140705792,
+          "heapUsed": 23617016,
+          "heapDelta": 176760,
+          "retainedHeapDelta": -5328
+        },
+        {
+          "ms": 1.0166249999999764,
+          "rss": 140705792,
+          "heapUsed": 23595392,
+          "heapDelta": 179904,
+          "retainedHeapDelta": 4936
+        }
+      ]
+    },
+    {
+      "name": "simulator/parse-wxs/100",
+      "bytes": 6272,
+      "medianMs": 0.8432500000000118,
+      "p95Ms": 0.9760420000000067,
+      "samples": [
+        {
+          "ms": 0.9384579999999687,
+          "rss": 140705792,
+          "heapUsed": 23625184,
+          "heapDelta": 212112,
+          "retainedHeapDelta": -13320
+        },
+        {
+          "ms": 0.7663749999999254,
+          "rss": 140705792,
+          "heapUsed": 23595200,
+          "heapDelta": 197456,
+          "retainedHeapDelta": 5360
+        },
+        {
+          "ms": 0.39458300000001145,
+          "rss": 140722176,
+          "heapUsed": 23615456,
+          "heapDelta": 193352,
+          "retainedHeapDelta": -4784
+        },
+        {
+          "ms": 0.9564159999999902,
+          "rss": 140722176,
+          "heapUsed": 23597224,
+          "heapDelta": 197080,
+          "retainedHeapDelta": 5384
+        },
+        {
+          "ms": 0.8621249999999918,
+          "rss": 140722176,
+          "heapUsed": 23598096,
+          "heapDelta": 191176,
+          "retainedHeapDelta": 4848
+        },
+        {
+          "ms": 0.37012500000003,
+          "rss": 140722176,
+          "heapUsed": 23606904,
+          "heapDelta": 183952,
+          "retainedHeapDelta": -13408
+        },
+        {
+          "ms": 0.8894999999999982,
+          "rss": 140722176,
+          "heapUsed": 23620840,
+          "heapDelta": 205232,
+          "retainedHeapDelta": -6184
+        },
+        {
+          "ms": 0.9760420000000067,
+          "rss": 140722176,
+          "heapUsed": 23609288,
+          "heapDelta": 208088,
+          "retainedHeapDelta": 15824
+        },
+        {
+          "ms": 0.8432500000000118,
+          "rss": 140754944,
+          "heapUsed": 23598896,
+          "heapDelta": 191144,
+          "retainedHeapDelta": 48
+        },
+        {
+          "ms": 0.9346250000000964,
+          "rss": 140754944,
+          "heapUsed": 23600952,
+          "heapDelta": 199464,
+          "retainedHeapDelta": 7424
+        },
+        {
+          "ms": 0.8127920000000586,
+          "rss": 140754944,
+          "heapUsed": 23597192,
+          "heapDelta": 189152,
+          "retainedHeapDelta": 4208
+        },
+        {
+          "ms": 0.3814589999999498,
+          "rss": 140754944,
+          "heapUsed": 23607768,
+          "heapDelta": 183952,
+          "retainedHeapDelta": -12800
+        },
+        {
+          "ms": 0.8385839999999689,
+          "rss": 140754944,
+          "heapUsed": 23620672,
+          "heapDelta": 204200,
+          "retainedHeapDelta": -6984
+        },
+        {
+          "ms": 0.9485829999999851,
+          "rss": 140754944,
+          "heapUsed": 23610152,
+          "heapDelta": 208088,
+          "retainedHeapDelta": 15824
+        },
+        {
+          "ms": 0.7977920000000722,
+          "rss": 140754944,
+          "heapUsed": 23597768,
+          "heapDelta": 189152,
+          "retainedHeapDelta": 48
+        }
+      ]
+    },
+    {
+      "name": "simulator/text-static/100",
+      "bytes": 1500,
+      "medianMs": 0.007124999999973625,
+      "p95Ms": 0.013665999999943779,
+      "samples": [
+        {
+          "ms": 0.007417000000032203,
+          "rss": 140787712,
+          "heapUsed": 23306360,
+          "heapDelta": 808,
+          "retainedHeapDelta": -4176
+        },
+        {
+          "ms": 0.011708999999996195,
+          "rss": 140787712,
+          "heapUsed": 23302256,
+          "heapDelta": 808,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.008624999999938154,
+          "rss": 140787712,
+          "heapUsed": 23302400,
+          "heapDelta": 808,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.013665999999943779,
+          "rss": 140787712,
+          "heapUsed": 23302616,
+          "heapDelta": 880,
+          "retainedHeapDelta": 408
+        },
+        {
+          "ms": 0.010041999999998552,
+          "rss": 140787712,
+          "heapUsed": 23302872,
+          "heapDelta": 808,
+          "retainedHeapDelta": 264
+        },
+        {
+          "ms": 0.011124999999992724,
+          "rss": 140787712,
+          "heapUsed": 23303152,
+          "heapDelta": 904,
+          "retainedHeapDelta": 304
+        },
+        {
+          "ms": 0.00587499999994634,
+          "rss": 140787712,
+          "heapUsed": 23303296,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.005666999999903055,
+          "rss": 140787712,
+          "heapUsed": 23303440,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.007124999999973625,
+          "rss": 140787712,
+          "heapUsed": 23303584,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.004500000000007276,
+          "rss": 140787712,
+          "heapUsed": 23303728,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.0060409999999819775,
+          "rss": 140787712,
+          "heapUsed": 23303872,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.003917000000001281,
+          "rss": 140787712,
+          "heapUsed": 23304016,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.009791000000063832,
+          "rss": 140787712,
+          "heapUsed": 23304160,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.007124999999973625,
+          "rss": 140787712,
+          "heapUsed": 23304304,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.004708999999934349,
+          "rss": 140787712,
+          "heapUsed": 23304448,
+          "heapDelta": 824,
+          "retainedHeapDelta": 224
+        }
+      ]
+    },
+    {
+      "name": "simulator/text-binding/100",
+      "bytes": 1900,
+      "medianMs": 0.03579100000001745,
+      "p95Ms": 0.04354200000000219,
+      "samples": [
+        {
+          "ms": 0.03416600000002745,
+          "rss": 140787712,
+          "heapUsed": 23338184,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 4632
+        },
+        {
+          "ms": 0.038625000000024556,
+          "rss": 140787712,
+          "heapUsed": 23338760,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.04354200000000219,
+          "rss": 140787712,
+          "heapUsed": 23338904,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.03937499999994998,
+          "rss": 140787712,
+          "heapUsed": 23339048,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.033875000000080036,
+          "rss": 140787712,
+          "heapUsed": 23339192,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.03829200000006949,
+          "rss": 140787712,
+          "heapUsed": 23339336,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.035292000000026746,
+          "rss": 140787712,
+          "heapUsed": 23339480,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.032541999999921245,
+          "rss": 140787712,
+          "heapUsed": 23339624,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.036875000000009095,
+          "rss": 140787712,
+          "heapUsed": 23339768,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.04158400000005713,
+          "rss": 140787712,
+          "heapUsed": 23339912,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.031375000000025466,
+          "rss": 140787712,
+          "heapUsed": 23340056,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.03220900000007987,
+          "rss": 140787712,
+          "heapUsed": 23340200,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.035124999999993634,
+          "rss": 140787712,
+          "heapUsed": 23340344,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.03579100000001745,
+          "rss": 140787712,
+          "heapUsed": 23340488,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.03879200000005767,
+          "rss": 140787712,
+          "heapUsed": 23340632,
+          "heapDelta": 24088,
+          "retainedHeapDelta": 224
+        }
+      ]
+    },
+    {
+      "name": "compiler/plain/100",
+      "bytes": 3711,
+      "medianMs": 10.915708999999879,
+      "p95Ms": 11.87987499999997,
+      "samples": [
+        {
+          "ms": 11.325874999999996,
+          "rss": 215646208,
+          "heapUsed": 50445928,
+          "heapDelta": 13877560,
+          "retainedHeapDelta": -353832
+        },
+        {
+          "ms": 11.87987499999997,
+          "rss": 215564288,
+          "heapUsed": 50317200,
+          "heapDelta": 14143536,
+          "retainedHeapDelta": 43096
+        },
+        {
+          "ms": 10.941458000000011,
+          "rss": 215613440,
+          "heapUsed": 50126776,
+          "heapDelta": 13970552,
+          "retainedHeapDelta": 54152
+        },
+        {
+          "ms": 10.752958000000035,
+          "rss": 215629824,
+          "heapUsed": 50199040,
+          "heapDelta": 14040680,
+          "retainedHeapDelta": 86808
+        },
+        {
+          "ms": 11.21550000000002,
+          "rss": 215646208,
+          "heapUsed": 49893912,
+          "heapDelta": 13704544,
+          "retainedHeapDelta": 99544
+        },
+        {
+          "ms": 10.915708999999879,
+          "rss": 215695360,
+          "heapUsed": 49810200,
+          "heapDelta": 13602464,
+          "retainedHeapDelta": 68664
+        },
+        {
+          "ms": 11.029624999999896,
+          "rss": 215744512,
+          "heapUsed": 49892464,
+          "heapDelta": 13678768,
+          "retainedHeapDelta": 77648
+        },
+        {
+          "ms": 10.8431250000001,
+          "rss": 215744512,
+          "heapUsed": 49737896,
+          "heapDelta": 13520144,
+          "retainedHeapDelta": 26360
+        },
+        {
+          "ms": 10.201500000000124,
+          "rss": 215777280,
+          "heapUsed": 49739136,
+          "heapDelta": 13521048,
+          "retainedHeapDelta": 89952
+        },
+        {
+          "ms": 10.447542000000112,
+          "rss": 215777280,
+          "heapUsed": 49526920,
+          "heapDelta": 13304536,
+          "retainedHeapDelta": 52736
+        },
+        {
+          "ms": 10.615000000000009,
+          "rss": 215793664,
+          "heapUsed": 49494240,
+          "heapDelta": 13273520,
+          "retainedHeapDelta": 69784
+        },
+        {
+          "ms": 10.87237499999992,
+          "rss": 215793664,
+          "heapUsed": 49475144,
+          "heapDelta": 13254272,
+          "retainedHeapDelta": 49232
+        },
+        {
+          "ms": 10.400124999999889,
+          "rss": 215842816,
+          "heapUsed": 49540256,
+          "heapDelta": 13317592,
+          "retainedHeapDelta": 75184
+        },
+        {
+          "ms": 11.280083999999988,
+          "rss": 215859200,
+          "heapUsed": 49634024,
+          "heapDelta": 13417152,
+          "retainedHeapDelta": 85528
+        },
+        {
+          "ms": 10.951416999999992,
+          "rss": 215875584,
+          "heapUsed": 49633800,
+          "heapDelta": 13407448,
+          "retainedHeapDelta": 70952
+        }
+      ]
+    },
+    {
+      "name": "compiler/pipeline-plain/100",
+      "bytes": 3711,
+      "medianMs": 10.582374999999956,
+      "p95Ms": 11.399915999999848,
+      "samples": [
+        {
+          "ms": 10.401749999999993,
+          "rss": 221724672,
+          "heapUsed": 49799040,
+          "heapDelta": 13372768,
+          "retainedHeapDelta": -91800
+        },
+        {
+          "ms": 11.05658399999993,
+          "rss": 221659136,
+          "heapUsed": 49647720,
+          "heapDelta": 13395112,
+          "retainedHeapDelta": 168544
+        },
+        {
+          "ms": 10.776374999999916,
+          "rss": 221773824,
+          "heapUsed": 49578536,
+          "heapDelta": 13326496,
+          "retainedHeapDelta": 61624
+        },
+        {
+          "ms": 10.27579199999991,
+          "rss": 221757440,
+          "heapUsed": 49516936,
+          "heapDelta": 13263056,
+          "retainedHeapDelta": 82160
+        },
+        {
+          "ms": 11.399915999999848,
+          "rss": 221790208,
+          "heapUsed": 49550184,
+          "heapDelta": 13293456,
+          "retainedHeapDelta": 65744
+        },
+        {
+          "ms": 10.48112500000002,
+          "rss": 221839360,
+          "heapUsed": 49594136,
+          "heapDelta": 13334464,
+          "retainedHeapDelta": 123352
+        },
+        {
+          "ms": 10.585915999999997,
+          "rss": 221921280,
+          "heapUsed": 49571392,
+          "heapDelta": 13310552,
+          "retainedHeapDelta": 71328
+        },
+        {
+          "ms": 10.582374999999956,
+          "rss": 221872128,
+          "heapUsed": 49417336,
+          "heapDelta": 13153208,
+          "retainedHeapDelta": 75144
+        },
+        {
+          "ms": 11.017250000000104,
+          "rss": 221904896,
+          "heapUsed": 49576312,
+          "heapDelta": 13293776,
+          "retainedHeapDelta": 36744
+        },
+        {
+          "ms": 10.54708400000004,
+          "rss": 221904896,
+          "heapUsed": 49453152,
+          "heapDelta": 13183384,
+          "retainedHeapDelta": 64560
+        },
+        {
+          "ms": 10.651749999999993,
+          "rss": 221937664,
+          "heapUsed": 49500504,
+          "heapDelta": 13221328,
+          "retainedHeapDelta": 62312
+        },
+        {
+          "ms": 10.715167000000065,
+          "rss": 221954048,
+          "heapUsed": 49491232,
+          "heapDelta": 13219304,
+          "retainedHeapDelta": 68344
+        },
+        {
+          "ms": 10.153542000000016,
+          "rss": 221954048,
+          "heapUsed": 49495512,
+          "heapDelta": 13216920,
+          "retainedHeapDelta": 69816
+        },
+        {
+          "ms": 10.54566600000021,
+          "rss": 221970432,
+          "heapUsed": 49605672,
+          "heapDelta": 13326288,
+          "retainedHeapDelta": 105352
+        },
+        {
+          "ms": 10.52758300000005,
+          "rss": 221970432,
+          "heapUsed": 49282584,
+          "heapDelta": 12989792,
+          "retainedHeapDelta": 52784
+        }
+      ]
+    },
+    {
+      "name": "compiler/comments/100",
+      "bytes": 5311,
+      "medianMs": 10.522041999999828,
+      "p95Ms": 11.231124999999793,
+      "samples": [
+        {
+          "ms": 10.940708000000086,
+          "rss": 246693888,
+          "heapUsed": 49777904,
+          "heapDelta": 13307632,
+          "retainedHeapDelta": -68368
+        },
+        {
+          "ms": 10.627624999999853,
+          "rss": 246693888,
+          "heapUsed": 49606872,
+          "heapDelta": 13274608,
+          "retainedHeapDelta": 67608
+        },
+        {
+          "ms": 10.371875000000045,
+          "rss": 246693888,
+          "heapUsed": 49444016,
+          "heapDelta": 13105696,
+          "retainedHeapDelta": 60608
+        },
+        {
+          "ms": 10.190458000000035,
+          "rss": 246693888,
+          "heapUsed": 49452896,
+          "heapDelta": 13117448,
+          "retainedHeapDelta": 69248
+        },
+        {
+          "ms": 11.1256249999999,
+          "rss": 246693888,
+          "heapUsed": 49505576,
+          "heapDelta": 13166096,
+          "retainedHeapDelta": 61784
+        },
+        {
+          "ms": 10.383957999999893,
+          "rss": 246693888,
+          "heapUsed": 49597800,
+          "heapDelta": 13251152,
+          "retainedHeapDelta": 113336
+        },
+        {
+          "ms": 10.875375000000076,
+          "rss": 246693888,
+          "heapUsed": 49724896,
+          "heapDelta": 13372752,
+          "retainedHeapDelta": 177872
+        },
+        {
+          "ms": 10.81574999999998,
+          "rss": 246693888,
+          "heapUsed": 49537296,
+          "heapDelta": 13180800,
+          "retainedHeapDelta": 76064
+        },
+        {
+          "ms": 11.231124999999793,
+          "rss": 246726656,
+          "heapUsed": 49592248,
+          "heapDelta": 13236776,
+          "retainedHeapDelta": 75432
+        },
+        {
+          "ms": 10.490125000000035,
+          "rss": 246726656,
+          "heapUsed": 49476920,
+          "heapDelta": 13120720,
+          "retainedHeapDelta": 82168
+        },
+        {
+          "ms": 10.49087499999996,
+          "rss": 246726656,
+          "heapUsed": 49608864,
+          "heapDelta": 13244056,
+          "retainedHeapDelta": 84088
+        },
+        {
+          "ms": 10.522041999999828,
+          "rss": 246726656,
+          "heapUsed": 49505520,
+          "heapDelta": 13141704,
+          "retainedHeapDelta": 98440
+        },
+        {
+          "ms": 10.361417000000074,
+          "rss": 246792192,
+          "heapUsed": 49544152,
+          "heapDelta": 13179936,
+          "retainedHeapDelta": 110208
+        },
+        {
+          "ms": 9.888374999999996,
+          "rss": 246792192,
+          "heapUsed": 49502208,
+          "heapDelta": 13126736,
+          "retainedHeapDelta": 72216
+        },
+        {
+          "ms": 10.859542000000147,
+          "rss": 246792192,
+          "heapUsed": 49592288,
+          "heapDelta": 13226648,
+          "retainedHeapDelta": 55008
+        }
+      ]
+    },
+    {
+      "name": "compiler/pipeline-comments/100",
+      "bytes": 5311,
+      "medianMs": 10.609375,
+      "p95Ms": 11.14975000000004,
+      "samples": [
+        {
+          "ms": 10.644083000000137,
+          "rss": 246906880,
+          "heapUsed": 49805696,
+          "heapDelta": 13234096,
+          "retainedHeapDelta": -147704
+        },
+        {
+          "ms": 10.466457999999875,
+          "rss": 246906880,
+          "heapUsed": 49454040,
+          "heapDelta": 13071656,
+          "retainedHeapDelta": 63688
+        },
+        {
+          "ms": 10.612084000000095,
+          "rss": 246906880,
+          "heapUsed": 49489200,
+          "heapDelta": 13104728,
+          "retainedHeapDelta": 76208
+        },
+        {
+          "ms": 10.31558300000006,
+          "rss": 246906880,
+          "heapUsed": 49614232,
+          "heapDelta": 13224584,
+          "retainedHeapDelta": 73176
+        },
+        {
+          "ms": 10.585542000000032,
+          "rss": 246923264,
+          "heapUsed": 49500016,
+          "heapDelta": 13110224,
+          "retainedHeapDelta": 55152
+        },
+        {
+          "ms": 10.691625000000158,
+          "rss": 247365632,
+          "heapUsed": 49615600,
+          "heapDelta": 13225664,
+          "retainedHeapDelta": 81824
+        },
+        {
+          "ms": 10.71462500000007,
+          "rss": 247365632,
+          "heapUsed": 49560392,
+          "heapDelta": 13157496,
+          "retainedHeapDelta": 102952
+        },
+        {
+          "ms": 10.746999999999844,
+          "rss": 247365632,
+          "heapUsed": 49620176,
+          "heapDelta": 13226600,
+          "retainedHeapDelta": 47968
+        },
+        {
+          "ms": 10.657999999999902,
+          "rss": 247398400,
+          "heapUsed": 49571744,
+          "heapDelta": 13171504,
+          "retainedHeapDelta": 51680
+        },
+        {
+          "ms": 10.411542000000281,
+          "rss": 247398400,
+          "heapUsed": 49469608,
+          "heapDelta": 13069280,
+          "retainedHeapDelta": 74288
+        },
+        {
+          "ms": 10.394041000000016,
+          "rss": 247398400,
+          "heapUsed": 49644480,
+          "heapDelta": 13246240,
+          "retainedHeapDelta": 106000
+        },
+        {
+          "ms": 10.609375,
+          "rss": 247414784,
+          "heapUsed": 49641288,
+          "heapDelta": 13243064,
+          "retainedHeapDelta": 179208
+        },
+        {
+          "ms": 10.158332999999857,
+          "rss": 247431168,
+          "heapUsed": 49529976,
+          "heapDelta": 13083784,
+          "retainedHeapDelta": 46472
+        },
+        {
+          "ms": 10.375625000000127,
+          "rss": 247431168,
+          "heapUsed": 49622528,
+          "heapDelta": 13221320,
+          "retainedHeapDelta": 77312
+        },
+        {
+          "ms": 11.14975000000004,
+          "rss": 247431168,
+          "heapUsed": 49612184,
+          "heapDelta": 13211584,
+          "retainedHeapDelta": 62376
+        }
+      ]
+    },
+    {
+      "name": "simulator/public-render/1000",
+      "bytes": 62013,
+      "medianMs": 26.781833000000006,
+      "p95Ms": 29.9865420000001,
+      "samples": [
+        {
+          "ms": 27.939750000000004,
+          "rss": 285032448,
+          "heapUsed": 82420208,
+          "heapDelta": 45506152,
+          "retainedHeapDelta": -51504
+        },
+        {
+          "ms": 26.638500000000022,
+          "rss": 285032448,
+          "heapUsed": 78096400,
+          "heapDelta": 41326912,
+          "retainedHeapDelta": 97376
+        },
+        {
+          "ms": 26.31379199999992,
+          "rss": 284852224,
+          "heapUsed": 77824248,
+          "heapDelta": 41053208,
+          "retainedHeapDelta": 105192
+        },
+        {
+          "ms": 24.389666999999918,
+          "rss": 284884992,
+          "heapUsed": 77817648,
+          "heapDelta": 40987944,
+          "retainedHeapDelta": 73040
+        },
+        {
+          "ms": 29.30487499999981,
+          "rss": 284983296,
+          "heapUsed": 84467464,
+          "heapDelta": 47685744,
+          "retainedHeapDelta": 96528
+        },
+        {
+          "ms": 29.9865420000001,
+          "rss": 285032448,
+          "heapUsed": 83319680,
+          "heapDelta": 46613112,
+          "retainedHeapDelta": 154624
+        },
+        {
+          "ms": 27.95575000000008,
+          "rss": 285032448,
+          "heapUsed": 81696360,
+          "heapDelta": 44981608,
+          "retainedHeapDelta": 213440
+        },
+        {
+          "ms": 26.172209000000294,
+          "rss": 285081600,
+          "heapUsed": 78522384,
+          "heapDelta": 41649888,
+          "retainedHeapDelta": 12136
+        },
+        {
+          "ms": 26.055707999999868,
+          "rss": 285097984,
+          "heapUsed": 77796160,
+          "heapDelta": 41022144,
+          "retainedHeapDelta": 145216
+        },
+        {
+          "ms": 27.899625000000015,
+          "rss": 285114368,
+          "heapUsed": 82058384,
+          "heapDelta": 45237808,
+          "retainedHeapDelta": 84832
+        },
+        {
+          "ms": 25.669332999999824,
+          "rss": 285130752,
+          "heapUsed": 78829264,
+          "heapDelta": 42043208,
+          "retainedHeapDelta": 93872
+        },
+        {
+          "ms": 26.781833000000006,
+          "rss": 285114368,
+          "heapUsed": 81420760,
+          "heapDelta": 44632360,
+          "retainedHeapDelta": 114120
+        },
+        {
+          "ms": 25.77933299999995,
+          "rss": 285114368,
+          "heapUsed": 77494288,
+          "heapDelta": 40706944,
+          "retainedHeapDelta": 98840
+        },
+        {
+          "ms": 26.906792000000223,
+          "rss": 285376512,
+          "heapUsed": 82093408,
+          "heapDelta": 45301448,
+          "retainedHeapDelta": 139848
+        },
+        {
+          "ms": 27.015082999999777,
+          "rss": 285376512,
+          "heapUsed": 78827576,
+          "heapDelta": 42037960,
+          "retainedHeapDelta": 92024
+        }
+      ]
+    },
+    {
+      "name": "simulator/parse/1000",
+      "bytes": 62013,
+      "medianMs": 1.7894999999998618,
+      "p95Ms": 4.121999999999844,
+      "samples": [
+        {
+          "ms": 1.114042000000154,
+          "rss": 284606464,
+          "heapUsed": 39337768,
+          "heapDelta": 1579312,
+          "retainedHeapDelta": 11928
+        },
+        {
+          "ms": 0.8932919999997466,
+          "rss": 284606464,
+          "heapUsed": 39355496,
+          "heapDelta": 1566792,
+          "retainedHeapDelta": -20792
+        },
+        {
+          "ms": 3.346125000000029,
+          "rss": 284606464,
+          "heapUsed": 39313936,
+          "heapDelta": 1633384,
+          "retainedHeapDelta": 42584
+        },
+        {
+          "ms": 1.2910830000000715,
+          "rss": 284606464,
+          "heapUsed": 39295464,
+          "heapDelta": 1577848,
+          "retainedHeapDelta": -9952
+        },
+        {
+          "ms": 3.781749999999647,
+          "rss": 284606464,
+          "heapUsed": 39286272,
+          "heapDelta": 1632032,
+          "retainedHeapDelta": 44864
+        },
+        {
+          "ms": 1.5366670000003069,
+          "rss": 284622848,
+          "heapUsed": 39298640,
+          "heapDelta": 1591816,
+          "retainedHeapDelta": 3280
+        },
+        {
+          "ms": 3.9745419999999285,
+          "rss": 284622848,
+          "heapUsed": 39276640,
+          "heapDelta": 1626704,
+          "retainedHeapDelta": 45240
+        },
+        {
+          "ms": 1.2976250000001528,
+          "rss": 284622848,
+          "heapUsed": 39306496,
+          "heapDelta": 1586240,
+          "retainedHeapDelta": -6736
+        },
+        {
+          "ms": 3.963915999999699,
+          "rss": 284622848,
+          "heapUsed": 39280576,
+          "heapDelta": 1630064,
+          "retainedHeapDelta": 51784
+        },
+        {
+          "ms": 2.0252080000000205,
+          "rss": 284622848,
+          "heapUsed": 39309456,
+          "heapDelta": 1595888,
+          "retainedHeapDelta": 320
+        },
+        {
+          "ms": 3.7108330000000933,
+          "rss": 284622848,
+          "heapUsed": 39335496,
+          "heapDelta": 1625976,
+          "retainedHeapDelta": -19352
+        },
+        {
+          "ms": 1.63866599999983,
+          "rss": 284622848,
+          "heapUsed": 39293688,
+          "heapDelta": 1590696,
+          "retainedHeapDelta": 3448
+        },
+        {
+          "ms": 4.121999999999844,
+          "rss": 284622848,
+          "heapUsed": 39294960,
+          "heapDelta": 1643848,
+          "retainedHeapDelta": 55688
+        },
+        {
+          "ms": 1.7894999999998618,
+          "rss": 284622848,
+          "heapUsed": 39296504,
+          "heapDelta": 1594480,
+          "retainedHeapDelta": 8504
+        },
+        {
+          "ms": 1.282709000000068,
+          "rss": 284622848,
+          "heapUsed": 39285808,
+          "heapDelta": 1567344,
+          "retainedHeapDelta": -8696
+        }
+      ]
+    },
+    {
+      "name": "simulator/parse-wxs/1000",
+      "bytes": 62072,
+      "medianMs": 2.0000420000001213,
+      "p95Ms": 3.8893330000000788,
+      "samples": [
+        {
+          "ms": 0.8701670000000377,
+          "rss": 284344320,
+          "heapUsed": 38783792,
+          "heapDelta": 1284120,
+          "retainedHeapDelta": -23640
+        },
+        {
+          "ms": 3.376541999999972,
+          "rss": 284344320,
+          "heapUsed": 39149528,
+          "heapDelta": 1760160,
+          "retainedHeapDelta": 53296
+        },
+        {
+          "ms": 2.1719170000001213,
+          "rss": 284344320,
+          "heapUsed": 39149872,
+          "heapDelta": 1717144,
+          "retainedHeapDelta": 6848
+        },
+        {
+          "ms": 3.8893330000000788,
+          "rss": 284344320,
+          "heapUsed": 39147464,
+          "heapDelta": 1758768,
+          "retainedHeapDelta": 49648
+        },
+        {
+          "ms": 2.010833000000275,
+          "rss": 284344320,
+          "heapUsed": 39152336,
+          "heapDelta": 1719584,
+          "retainedHeapDelta": 9624
+        },
+        {
+          "ms": 1.4816249999998945,
+          "rss": 284344320,
+          "heapUsed": 39146712,
+          "heapDelta": 1696448,
+          "retainedHeapDelta": 10936
+        },
+        {
+          "ms": 1.3816249999999854,
+          "rss": 284344320,
+          "heapUsed": 39158376,
+          "heapDelta": 1697256,
+          "retainedHeapDelta": 12872
+        },
+        {
+          "ms": 1.1426659999997355,
+          "rss": 284344320,
+          "heapUsed": 39190808,
+          "heapDelta": 1710328,
+          "retainedHeapDelta": -6048
+        },
+        {
+          "ms": 3.5812919999998485,
+          "rss": 284344320,
+          "heapUsed": 39143536,
+          "heapDelta": 1749832,
+          "retainedHeapDelta": 49104
+        },
+        {
+          "ms": 2.11712499999976,
+          "rss": 284344320,
+          "heapUsed": 39154520,
+          "heapDelta": 1714984,
+          "retainedHeapDelta": 16864
+        },
+        {
+          "ms": 3.829041999999845,
+          "rss": 284344320,
+          "heapUsed": 39210432,
+          "heapDelta": 1756296,
+          "retainedHeapDelta": -9712
+        },
+        {
+          "ms": 2.0000420000001213,
+          "rss": 284344320,
+          "heapUsed": 39163160,
+          "heapDelta": 1726336,
+          "retainedHeapDelta": 19480
+        },
+        {
+          "ms": 1.4119999999998072,
+          "rss": 284344320,
+          "heapUsed": 39150136,
+          "heapDelta": 1685896,
+          "retainedHeapDelta": 1272
+        },
+        {
+          "ms": 1.2042500000002292,
+          "rss": 284344320,
+          "heapUsed": 39175240,
+          "heapDelta": 1703384,
+          "retainedHeapDelta": 9440
+        },
+        {
+          "ms": 1.1430420000001504,
+          "rss": 284344320,
+          "heapUsed": 39190336,
+          "heapDelta": 1709120,
+          "retainedHeapDelta": 1296
+        }
+      ]
+    },
+    {
+      "name": "simulator/text-static/1000",
+      "bytes": 15000,
+      "medianMs": 0.007040999999844644,
+      "p95Ms": 0.008499999999912689,
+      "samples": [
+        {
+          "ms": 0.005834000000049855,
+          "rss": 284344320,
+          "heapUsed": 36472624,
+          "heapDelta": 728,
+          "retainedHeapDelta": -13432
+        },
+        {
+          "ms": 0.0075839999999516294,
+          "rss": 284278784,
+          "heapUsed": 36459248,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.006917000000157714,
+          "rss": 284278784,
+          "heapUsed": 36459392,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.008332999999765889,
+          "rss": 284278784,
+          "heapUsed": 36459536,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.005375000000185537,
+          "rss": 284278784,
+          "heapUsed": 36459680,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.007500000000163709,
+          "rss": 284278784,
+          "heapUsed": 36459824,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.007250000000112777,
+          "rss": 284278784,
+          "heapUsed": 36459968,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.007583000000067841,
+          "rss": 284278784,
+          "heapUsed": 36460112,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.008499999999912689,
+          "rss": 284278784,
+          "heapUsed": 36460256,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.00658400000020265,
+          "rss": 284278784,
+          "heapUsed": 36460400,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.007040999999844644,
+          "rss": 284278784,
+          "heapUsed": 36460544,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.007083000000420725,
+          "rss": 284278784,
+          "heapUsed": 36460688,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.006541000000197528,
+          "rss": 284278784,
+          "heapUsed": 36460832,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.005791000000044733,
+          "rss": 284278784,
+          "heapUsed": 36460976,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.00687500000003638,
+          "rss": 284278784,
+          "heapUsed": 36461120,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        }
+      ]
+    },
+    {
+      "name": "simulator/text-binding/1000",
+      "bytes": 19000,
+      "medianMs": 0.21670799999992596,
+      "p95Ms": 0.24570799999992232,
+      "samples": [
+        {
+          "ms": 0.2202079999997295,
+          "rss": 284278784,
+          "heapUsed": 36678152,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 560
+        },
+        {
+          "ms": 0.22779200000013589,
+          "rss": 284278784,
+          "heapUsed": 36678784,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.2244580000001406,
+          "rss": 284278784,
+          "heapUsed": 36678928,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.24570799999992232,
+          "rss": 284278784,
+          "heapUsed": 36679072,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 352
+        },
+        {
+          "ms": 0.23829200000000128,
+          "rss": 284278784,
+          "heapUsed": 36687456,
+          "heapDelta": 205840,
+          "retainedHeapDelta": -3472
+        },
+        {
+          "ms": 0.22733299999981682,
+          "rss": 284278784,
+          "heapUsed": 36681912,
+          "heapDelta": 203848,
+          "retainedHeapDelta": 1128
+        },
+        {
+          "ms": 0.21416699999963384,
+          "rss": 284278784,
+          "heapUsed": 36680696,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.2082909999999174,
+          "rss": 284278784,
+          "heapUsed": 36680840,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.21670799999992596,
+          "rss": 284278784,
+          "heapUsed": 36680984,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.2081249999996544,
+          "rss": 284278784,
+          "heapUsed": 36681128,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.20949999999993452,
+          "rss": 284278784,
+          "heapUsed": 36681272,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.21099999999978536,
+          "rss": 284278784,
+          "heapUsed": 36684208,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.21562500000027285,
+          "rss": 284278784,
+          "heapUsed": 36684352,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.20616699999982302,
+          "rss": 284278784,
+          "heapUsed": 36684496,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.22616599999992104,
+          "rss": 284278784,
+          "heapUsed": 36684640,
+          "heapDelta": 201584,
+          "retainedHeapDelta": 352
+        }
+      ]
+    },
+    {
+      "name": "compiler/plain/1000",
+      "bytes": 37011,
+      "medianMs": 61.31483300000036,
+      "p95Ms": 64.17133300000023,
+      "samples": [
+        {
+          "ms": 56.19591700000001,
+          "rss": 384024576,
+          "heapUsed": 103183272,
+          "heapDelta": 64175840,
+          "retainedHeapDelta": -124064
+        },
+        {
+          "ms": 61.845584000000144,
+          "rss": 384942080,
+          "heapUsed": 102560208,
+          "heapDelta": 64040512,
+          "retainedHeapDelta": 320400
+        },
+        {
+          "ms": 59.992125000000215,
+          "rss": 384696320,
+          "heapUsed": 103314696,
+          "heapDelta": 64794944,
+          "retainedHeapDelta": 379776
+        },
+        {
+          "ms": 61.17895899999985,
+          "rss": 384696320,
+          "heapUsed": 102903456,
+          "heapDelta": 64379352,
+          "retainedHeapDelta": 321712
+        },
+        {
+          "ms": 55.7087919999999,
+          "rss": 384696320,
+          "heapUsed": 102468928,
+          "heapDelta": 63741896,
+          "retainedHeapDelta": 139872
+        },
+        {
+          "ms": 59.0975840000001,
+          "rss": 384745472,
+          "heapUsed": 102897632,
+          "heapDelta": 64363656,
+          "retainedHeapDelta": 344448
+        },
+        {
+          "ms": 63.357124999999996,
+          "rss": 384778240,
+          "heapUsed": 103072232,
+          "heapDelta": 64540424,
+          "retainedHeapDelta": 301664
+        },
+        {
+          "ms": 61.196750000000065,
+          "rss": 384794624,
+          "heapUsed": 102653768,
+          "heapDelta": 64115544,
+          "retainedHeapDelta": 379928
+        },
+        {
+          "ms": 64.17133300000023,
+          "rss": 384827392,
+          "heapUsed": 103279144,
+          "heapDelta": 64739368,
+          "retainedHeapDelta": 314864
+        },
+        {
+          "ms": 61.41854200000034,
+          "rss": 384729088,
+          "heapUsed": 102857688,
+          "heapDelta": 64304720,
+          "retainedHeapDelta": 293920
+        },
+        {
+          "ms": 59.924166000000696,
+          "rss": 384745472,
+          "heapUsed": 102763864,
+          "heapDelta": 64215456,
+          "retainedHeapDelta": 330456
+        },
+        {
+          "ms": 61.31483300000036,
+          "rss": 384761856,
+          "heapUsed": 103784384,
+          "heapDelta": 65233064,
+          "retainedHeapDelta": 335456
+        },
+        {
+          "ms": 61.873749999999745,
+          "rss": 384761856,
+          "heapUsed": 102681984,
+          "heapDelta": 64131584,
+          "retainedHeapDelta": 357424
+        },
+        {
+          "ms": 63.156834000000345,
+          "rss": 384778240,
+          "heapUsed": 103087248,
+          "heapDelta": 64524128,
+          "retainedHeapDelta": 320896
+        },
+        {
+          "ms": 62.51716600000054,
+          "rss": 384778240,
+          "heapUsed": 103824976,
+          "heapDelta": 65260352,
+          "retainedHeapDelta": 320152
+        }
+      ]
+    },
+    {
+      "name": "compiler/pipeline-plain/1000",
+      "bytes": 37011,
+      "medianMs": 61.724959000000126,
+      "p95Ms": 64.6387080000004,
+      "samples": [
+        {
+          "ms": 56.95679099999961,
+          "rss": 385187840,
+          "heapUsed": 103535528,
+          "heapDelta": 64537984,
+          "retainedHeapDelta": -67792
+        },
+        {
+          "ms": 62.535791999999674,
+          "rss": 385007616,
+          "heapUsed": 102924584,
+          "heapDelta": 64344616,
+          "retainedHeapDelta": 296832
+        },
+        {
+          "ms": 56.10466700000052,
+          "rss": 385040384,
+          "heapUsed": 103534256,
+          "heapDelta": 64774744,
+          "retainedHeapDelta": 215112
+        },
+        {
+          "ms": 59.31825000000026,
+          "rss": 385105920,
+          "heapUsed": 102490256,
+          "heapDelta": 63906376,
+          "retainedHeapDelta": 312048
+        },
+        {
+          "ms": 64.6387080000004,
+          "rss": 385122304,
+          "heapUsed": 102920632,
+          "heapDelta": 64348056,
+          "retainedHeapDelta": 292512
+        },
+        {
+          "ms": 60.41650000000027,
+          "rss": 384958464,
+          "heapUsed": 103475024,
+          "heapDelta": 64895824,
+          "retainedHeapDelta": 365088
+        },
+        {
+          "ms": 64.30541699999958,
+          "rss": 384942080,
+          "heapUsed": 103084952,
+          "heapDelta": 64503368,
+          "retainedHeapDelta": 281624
+        },
+        {
+          "ms": 61.04004199999963,
+          "rss": 385040384,
+          "heapUsed": 102904152,
+          "heapDelta": 64324280,
+          "retainedHeapDelta": 366896
+        },
+        {
+          "ms": 63.06733299999996,
+          "rss": 385040384,
+          "heapUsed": 103188048,
+          "heapDelta": 64612520,
+          "retainedHeapDelta": 299848
+        },
+        {
+          "ms": 60.7373749999997,
+          "rss": 385007616,
+          "heapUsed": 103241600,
+          "heapDelta": 64660632,
+          "retainedHeapDelta": 312936
+        },
+        {
+          "ms": 61.61079199999949,
+          "rss": 385056768,
+          "heapUsed": 102735088,
+          "heapDelta": 64150456,
+          "retainedHeapDelta": 328896
+        },
+        {
+          "ms": 62.16691699999956,
+          "rss": 385073152,
+          "heapUsed": 102805384,
+          "heapDelta": 64221456,
+          "retainedHeapDelta": 327568
+        },
+        {
+          "ms": 63.91133300000001,
+          "rss": 384991232,
+          "heapUsed": 102999512,
+          "heapDelta": 64426528,
+          "retainedHeapDelta": 355488
+        },
+        {
+          "ms": 61.724959000000126,
+          "rss": 385024000,
+          "heapUsed": 102978600,
+          "heapDelta": 64394832,
+          "retainedHeapDelta": 317200
+        },
+        {
+          "ms": 61.74725000000035,
+          "rss": 384958464,
+          "heapUsed": 103086488,
+          "heapDelta": 64509920,
+          "retainedHeapDelta": 299024
+        }
+      ]
+    },
+    {
+      "name": "compiler/comments/1000",
+      "bytes": 53011,
+      "medianMs": 62.38954199999989,
+      "p95Ms": 65.31370900000002,
+      "samples": [
+        {
+          "ms": 57.93958300000031,
+          "rss": 385695744,
+          "heapUsed": 104111984,
+          "heapDelta": 65095744,
+          "retainedHeapDelta": -81560
+        },
+        {
+          "ms": 62.38954199999989,
+          "rss": 385499136,
+          "heapUsed": 103271224,
+          "heapDelta": 64671224,
+          "retainedHeapDelta": 297968
+        },
+        {
+          "ms": 62.63658399999986,
+          "rss": 385531904,
+          "heapUsed": 103887832,
+          "heapDelta": 65293720,
+          "retainedHeapDelta": 359272
+        },
+        {
+          "ms": 60.71166700000049,
+          "rss": 385466368,
+          "heapUsed": 103145568,
+          "heapDelta": 64550216,
+          "retainedHeapDelta": 334896
+        },
+        {
+          "ms": 56.20524999999998,
+          "rss": 385499136,
+          "heapUsed": 102691608,
+          "heapDelta": 63877624,
+          "retainedHeapDelta": 132576
+        },
+        {
+          "ms": 58.95591699999932,
+          "rss": 385433600,
+          "heapUsed": 103469584,
+          "heapDelta": 64884632,
+          "retainedHeapDelta": 353144
+        },
+        {
+          "ms": 63.74579099999937,
+          "rss": 385499136,
+          "heapUsed": 103509256,
+          "heapDelta": 64919152,
+          "retainedHeapDelta": 310792
+        },
+        {
+          "ms": 61.11341600000014,
+          "rss": 385499136,
+          "heapUsed": 103206856,
+          "heapDelta": 64614720,
+          "retainedHeapDelta": 368192
+        },
+        {
+          "ms": 63.88604200000009,
+          "rss": 385531904,
+          "heapUsed": 103777688,
+          "heapDelta": 65180480,
+          "retainedHeapDelta": 294224
+        },
+        {
+          "ms": 62.82287499999984,
+          "rss": 385417216,
+          "heapUsed": 103104688,
+          "heapDelta": 64507720,
+          "retainedHeapDelta": 307976
+        },
+        {
+          "ms": 61.190458000000035,
+          "rss": 385433600,
+          "heapUsed": 103221920,
+          "heapDelta": 64624424,
+          "retainedHeapDelta": 315864
+        },
+        {
+          "ms": 60.48887500000001,
+          "rss": 385482752,
+          "heapUsed": 103823136,
+          "heapDelta": 65230424,
+          "retainedHeapDelta": 319496
+        },
+        {
+          "ms": 65.31370900000002,
+          "rss": 385466368,
+          "heapUsed": 103247696,
+          "heapDelta": 64651048,
+          "retainedHeapDelta": 373496
+        },
+        {
+          "ms": 62.464749999999185,
+          "rss": 385466368,
+          "heapUsed": 103475840,
+          "heapDelta": 64877160,
+          "retainedHeapDelta": 295136
+        },
+        {
+          "ms": 63.77129200000036,
+          "rss": 385417216,
+          "heapUsed": 103507152,
+          "heapDelta": 64909080,
+          "retainedHeapDelta": 283096
+        }
+      ]
+    },
+    {
+      "name": "compiler/pipeline-comments/1000",
+      "bytes": 53011,
+      "medianMs": 61.5089169999992,
+      "p95Ms": 65.31016600000021,
+      "samples": [
+        {
+          "ms": 56.32300000000032,
+          "rss": 386416640,
+          "heapUsed": 103881264,
+          "heapDelta": 64843376,
+          "retainedHeapDelta": -85704
+        },
+        {
+          "ms": 61.35620800000015,
+          "rss": 386203648,
+          "heapUsed": 103626560,
+          "heapDelta": 65027224,
+          "retainedHeapDelta": 327216
+        },
+        {
+          "ms": 56.476042000000234,
+          "rss": 386236416,
+          "heapUsed": 103678144,
+          "heapDelta": 64873128,
+          "retainedHeapDelta": 189632
+        },
+        {
+          "ms": 60.494958000000224,
+          "rss": 386269184,
+          "heapUsed": 103357592,
+          "heapDelta": 64758352,
+          "retainedHeapDelta": 309800
+        },
+        {
+          "ms": 63.398167000000285,
+          "rss": 386138112,
+          "heapUsed": 103307688,
+          "heapDelta": 64713600,
+          "retainedHeapDelta": 307640
+        },
+        {
+          "ms": 64.7152500000002,
+          "rss": 386367488,
+          "heapUsed": 103476600,
+          "heapDelta": 64875936,
+          "retainedHeapDelta": 351240
+        },
+        {
+          "ms": 65.31016600000021,
+          "rss": 386334720,
+          "heapUsed": 103205168,
+          "heapDelta": 64606248,
+          "retainedHeapDelta": 291712
+        },
+        {
+          "ms": 61.24904200000037,
+          "rss": 386416640,
+          "heapUsed": 103402352,
+          "heapDelta": 64801400,
+          "retainedHeapDelta": 379296
+        },
+        {
+          "ms": 63.66620800000055,
+          "rss": 386383872,
+          "heapUsed": 103525192,
+          "heapDelta": 64930528,
+          "retainedHeapDelta": 286992
+        },
+        {
+          "ms": 61.91962499999863,
+          "rss": 386416640,
+          "heapUsed": 103342472,
+          "heapDelta": 64742368,
+          "retainedHeapDelta": 304104
+        },
+        {
+          "ms": 60.14125000000058,
+          "rss": 386367488,
+          "heapUsed": 103519536,
+          "heapDelta": 64918904,
+          "retainedHeapDelta": 365416
+        },
+        {
+          "ms": 59.80945799999972,
+          "rss": 386383872,
+          "heapUsed": 103563160,
+          "heapDelta": 64969680,
+          "retainedHeapDelta": 325472
+        },
+        {
+          "ms": 63.91695900000013,
+          "rss": 386449408,
+          "heapUsed": 103162136,
+          "heapDelta": 64572080,
+          "retainedHeapDelta": 364112
+        },
+        {
+          "ms": 61.5089169999992,
+          "rss": 386449408,
+          "heapUsed": 103346888,
+          "heapDelta": 64745128,
+          "retainedHeapDelta": 305744
+        },
+        {
+          "ms": 61.95929200000137,
+          "rss": 386449408,
+          "heapUsed": 103879312,
+          "heapDelta": 65278160,
+          "retainedHeapDelta": 298256
+        }
+      ]
+    },
+    {
+      "name": "simulator/public-render/5000",
+      "bytes": 310013,
+      "medianMs": 119.99437500000022,
+      "p95Ms": 126.24108299999898,
+      "samples": [
+        {
+          "ms": 116.58699999999953,
+          "rss": 389332992,
+          "heapUsed": 70576024,
+          "heapDelta": 30437424,
+          "retainedHeapDelta": 4320
+        },
+        {
+          "ms": 121.92304100000001,
+          "rss": 389234688,
+          "heapUsed": 83121632,
+          "heapDelta": 43132632,
+          "retainedHeapDelta": 149704
+        },
+        {
+          "ms": 120.54004200000054,
+          "rss": 389251072,
+          "heapUsed": 77805896,
+          "heapDelta": 37814136,
+          "retainedHeapDelta": 150368
+        },
+        {
+          "ms": 126.24108299999898,
+          "rss": 389267456,
+          "heapUsed": 82723600,
+          "heapDelta": 42808072,
+          "retainedHeapDelta": 223760
+        },
+        {
+          "ms": 116.12770799999998,
+          "rss": 389169152,
+          "heapUsed": 77901504,
+          "heapDelta": 37909184,
+          "retainedHeapDelta": 136680
+        },
+        {
+          "ms": 122.11695899999904,
+          "rss": 389185536,
+          "heapUsed": 83090240,
+          "heapDelta": 43174280,
+          "retainedHeapDelta": 226544
+        },
+        {
+          "ms": 116.90283399999862,
+          "rss": 389169152,
+          "heapUsed": 77713744,
+          "heapDelta": 37719992,
+          "retainedHeapDelta": 147880
+        },
+        {
+          "ms": 121.55483300000014,
+          "rss": 389201920,
+          "heapUsed": 82728608,
+          "heapDelta": 42812072,
+          "retainedHeapDelta": 230688
+        },
+        {
+          "ms": 116.6894169999996,
+          "rss": 389201920,
+          "heapUsed": 77803328,
+          "heapDelta": 37804248,
+          "retainedHeapDelta": 139936
+        },
+        {
+          "ms": 119.99437500000022,
+          "rss": 389201920,
+          "heapUsed": 83092576,
+          "heapDelta": 43169856,
+          "retainedHeapDelta": 231888
+        },
+        {
+          "ms": 116.84908299999915,
+          "rss": 389201920,
+          "heapUsed": 77775304,
+          "heapDelta": 37775992,
+          "retainedHeapDelta": 141960
+        },
+        {
+          "ms": 121.86654199999975,
+          "rss": 389251072,
+          "heapUsed": 82727824,
+          "heapDelta": 42804816,
+          "retainedHeapDelta": 222376
+        },
+        {
+          "ms": 116.13737500000025,
+          "rss": 389218304,
+          "heapUsed": 77717792,
+          "heapDelta": 37718136,
+          "retainedHeapDelta": 151008
+        },
+        {
+          "ms": 120.08345799999915,
+          "rss": 389234688,
+          "heapUsed": 83335072,
+          "heapDelta": 43407776,
+          "retainedHeapDelta": 233520
+        },
+        {
+          "ms": 117.84020900000178,
+          "rss": 389251072,
+          "heapUsed": 77719960,
+          "heapDelta": 37715128,
+          "retainedHeapDelta": 143920
+        }
+      ]
+    },
+    {
+      "name": "simulator/parse/5000",
+      "bytes": 310013,
+      "medianMs": 7.865209000001414,
+      "p95Ms": 8.741875000001528,
+      "samples": [
+        {
+          "ms": 8.741875000001528,
+          "rss": 388481024,
+          "heapUsed": 52555088,
+          "heapDelta": 7937040,
+          "retainedHeapDelta": -17480
+        },
+        {
+          "ms": 8.30083299999933,
+          "rss": 388481024,
+          "heapUsed": 52481424,
+          "heapDelta": 7946560,
+          "retainedHeapDelta": 72128
+        },
+        {
+          "ms": 8.108415999999124,
+          "rss": 388481024,
+          "heapUsed": 52482824,
+          "heapDelta": 7947384,
+          "retainedHeapDelta": 75608
+        },
+        {
+          "ms": 8.162084000001414,
+          "rss": 388497408,
+          "heapUsed": 50484576,
+          "heapDelta": 5941344,
+          "retainedHeapDelta": 65112
+        },
+        {
+          "ms": 8.38970899999913,
+          "rss": 388497408,
+          "heapUsed": 52468904,
+          "heapDelta": 7933104,
+          "retainedHeapDelta": 67256
+        },
+        {
+          "ms": 7.839749999999185,
+          "rss": 388497408,
+          "heapUsed": 50489080,
+          "heapDelta": 5945560,
+          "retainedHeapDelta": 64400
+        },
+        {
+          "ms": 8.025207999999111,
+          "rss": 388497408,
+          "heapUsed": 52470664,
+          "heapDelta": 7934384,
+          "retainedHeapDelta": 63792
+        },
+        {
+          "ms": 7.865209000001414,
+          "rss": 388497408,
+          "heapUsed": 52475344,
+          "heapDelta": 7938920,
+          "retainedHeapDelta": 66824
+        },
+        {
+          "ms": 7.504291999999623,
+          "rss": 388497408,
+          "heapUsed": 52480424,
+          "heapDelta": 7943856,
+          "retainedHeapDelta": 72312
+        },
+        {
+          "ms": 7.589417000001049,
+          "rss": 388497408,
+          "heapUsed": 50484552,
+          "heapDelta": 5940264,
+          "retainedHeapDelta": 63584
+        },
+        {
+          "ms": 7.753833000000668,
+          "rss": 388497408,
+          "heapUsed": 52469456,
+          "heapDelta": 7932600,
+          "retainedHeapDelta": 66424
+        },
+        {
+          "ms": 7.231416999999055,
+          "rss": 388497408,
+          "heapUsed": 50507424,
+          "heapDelta": 5962848,
+          "retainedHeapDelta": 79960
+        },
+        {
+          "ms": 8.583667000000787,
+          "rss": 388530176,
+          "heapUsed": 52461184,
+          "heapDelta": 7924040,
+          "retainedHeapDelta": 54432
+        },
+        {
+          "ms": 7.819208999999319,
+          "rss": 388530176,
+          "heapUsed": 52480112,
+          "heapDelta": 7942824,
+          "retainedHeapDelta": 69352
+        },
+        {
+          "ms": 7.7722909999993135,
+          "rss": 388530176,
+          "heapUsed": 52482960,
+          "heapDelta": 7945528,
+          "retainedHeapDelta": 69040
+        }
+      ]
+    },
+    {
+      "name": "simulator/parse-wxs/5000",
+      "bytes": 310072,
+      "medianMs": 8.192708000000493,
+      "p95Ms": 8.829624999998487,
+      "samples": [
+        {
+          "ms": 8.829624999998487,
+          "rss": 387760128,
+          "heapUsed": 51782048,
+          "heapDelta": 8521144,
+          "retainedHeapDelta": -15024
+        },
+        {
+          "ms": 8.166042000000743,
+          "rss": 387760128,
+          "heapUsed": 51704824,
+          "heapDelta": 8525256,
+          "retainedHeapDelta": 65936
+        },
+        {
+          "ms": 7.802417000000787,
+          "rss": 387760128,
+          "heapUsed": 51715592,
+          "heapDelta": 8535560,
+          "retainedHeapDelta": 74568
+        },
+        {
+          "ms": 8.457582999999431,
+          "rss": 387760128,
+          "heapUsed": 51708208,
+          "heapDelta": 8529008,
+          "retainedHeapDelta": 75616
+        },
+        {
+          "ms": 7.760541999999987,
+          "rss": 387760128,
+          "heapUsed": 49705960,
+          "heapDelta": 6518928,
+          "retainedHeapDelta": 59440
+        },
+        {
+          "ms": 8.218625000001339,
+          "rss": 387760128,
+          "heapUsed": 51717192,
+          "heapDelta": 8536656,
+          "retainedHeapDelta": 75392
+        },
+        {
+          "ms": 8.614041999999245,
+          "rss": 387760128,
+          "heapUsed": 51705536,
+          "heapDelta": 8525832,
+          "retainedHeapDelta": 66176
+        },
+        {
+          "ms": 7.897208000000319,
+          "rss": 387760128,
+          "heapUsed": 51710264,
+          "heapDelta": 8529440,
+          "retainedHeapDelta": 70440
+        },
+        {
+          "ms": 7.827959000000192,
+          "rss": 387760128,
+          "heapUsed": 51696144,
+          "heapDelta": 8516152,
+          "retainedHeapDelta": 63712
+        },
+        {
+          "ms": 7.724041000001307,
+          "rss": 387760128,
+          "heapUsed": 49725392,
+          "heapDelta": 6537568,
+          "retainedHeapDelta": 72288
+        },
+        {
+          "ms": 8.500541000001249,
+          "rss": 387760128,
+          "heapUsed": 51695384,
+          "heapDelta": 8514128,
+          "retainedHeapDelta": 59480
+        },
+        {
+          "ms": 8.016333999999915,
+          "rss": 387760128,
+          "heapUsed": 51715424,
+          "heapDelta": 8535000,
+          "retainedHeapDelta": 72464
+        },
+        {
+          "ms": 8.487333000000945,
+          "rss": 387760128,
+          "heapUsed": 51708472,
+          "heapDelta": 8526928,
+          "retainedHeapDelta": 68448
+        },
+        {
+          "ms": 8.369042000000263,
+          "rss": 387760128,
+          "heapUsed": 51710240,
+          "heapDelta": 8529528,
+          "retainedHeapDelta": 69728
+        },
+        {
+          "ms": 8.192708000000493,
+          "rss": 387760128,
+          "heapUsed": 51705168,
+          "heapDelta": 8523336,
+          "retainedHeapDelta": 72144
+        }
+      ]
+    },
+    {
+      "name": "simulator/text-static/5000",
+      "bytes": 75000,
+      "medianMs": 0.01170799999999872,
+      "p95Ms": 0.013958999999886146,
+      "samples": [
+        {
+          "ms": 0.011375000000043656,
+          "rss": 386580480,
+          "heapUsed": 38613416,
+          "heapDelta": 728,
+          "retainedHeapDelta": 5792
+        },
+        {
+          "ms": 0.010999999998603016,
+          "rss": 386580480,
+          "heapUsed": 38601008,
+          "heapDelta": 728,
+          "retainedHeapDelta": -12136
+        },
+        {
+          "ms": 0.012791000001016073,
+          "rss": 386580480,
+          "heapUsed": 38588504,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.012625000001207809,
+          "rss": 386580480,
+          "heapUsed": 38588648,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.01187500000014552,
+          "rss": 386580480,
+          "heapUsed": 38588792,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.01208299999962037,
+          "rss": 386580480,
+          "heapUsed": 38588936,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.01299999999901047,
+          "rss": 386580480,
+          "heapUsed": 38589080,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.01170799999999872,
+          "rss": 386580480,
+          "heapUsed": 38589224,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.011542000000190455,
+          "rss": 386580480,
+          "heapUsed": 38589368,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.011625000001004082,
+          "rss": 386580480,
+          "heapUsed": 38589512,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.011042000000088592,
+          "rss": 386580480,
+          "heapUsed": 38589656,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.010709000000133528,
+          "rss": 386580480,
+          "heapUsed": 38589800,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.010541999999986729,
+          "rss": 386580480,
+          "heapUsed": 38589944,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.012875000000349246,
+          "rss": 386580480,
+          "heapUsed": 38590088,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.013958999999886146,
+          "rss": 386580480,
+          "heapUsed": 38590232,
+          "heapDelta": 728,
+          "retainedHeapDelta": 224
+        }
+      ]
+    },
+    {
+      "name": "simulator/text-binding/5000",
+      "bytes": 95000,
+      "medianMs": 1.013082999999824,
+      "p95Ms": 1.0854589999999007,
+      "samples": [
+        {
+          "ms": 1.0337080000008427,
+          "rss": 386727936,
+          "heapUsed": 39781112,
+          "heapDelta": 1107680,
+          "retainedHeapDelta": -3424
+        },
+        {
+          "ms": 1.0151670000013837,
+          "rss": 386727936,
+          "heapUsed": 39773120,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 0.9982079999990674,
+          "rss": 386727936,
+          "heapUsed": 39773264,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 224
+        },
+        {
+          "ms": 1.0314160000016273,
+          "rss": 386727936,
+          "heapUsed": 39773408,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 352
+        },
+        {
+          "ms": 0.9562080000014248,
+          "rss": 386727936,
+          "heapUsed": 39778320,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": -4544
+        },
+        {
+          "ms": 0.9969579999997222,
+          "rss": 386727936,
+          "heapUsed": 39773696,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 352
+        },
+        {
+          "ms": 1.0231669999993755,
+          "rss": 386727936,
+          "heapUsed": 39778608,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": -4544
+        },
+        {
+          "ms": 1.0769579999996495,
+          "rss": 386727936,
+          "heapUsed": 39773984,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 352
+        },
+        {
+          "ms": 0.9945410000000265,
+          "rss": 386727936,
+          "heapUsed": 39778896,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": -4544
+        },
+        {
+          "ms": 1.0482080000001588,
+          "rss": 386727936,
+          "heapUsed": 39774272,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 352
+        },
+        {
+          "ms": 0.9993749999994179,
+          "rss": 386727936,
+          "heapUsed": 39779184,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": -4544
+        },
+        {
+          "ms": 1.0854589999999007,
+          "rss": 386727936,
+          "heapUsed": 39774560,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 352
+        },
+        {
+          "ms": 0.9912499999991269,
+          "rss": 386727936,
+          "heapUsed": 39779472,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": -4544
+        },
+        {
+          "ms": 1.013082999999824,
+          "rss": 386727936,
+          "heapUsed": 39774848,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": 352
+        },
+        {
+          "ms": 1.0120829999996204,
+          "rss": 386727936,
+          "heapUsed": 39779760,
+          "heapDelta": 1103040,
+          "retainedHeapDelta": -4544
+        }
+      ]
+    },
+    {
+      "name": "compiler/plain/5000",
+      "bytes": 185011,
+      "medianMs": 244.04300000000148,
+      "p95Ms": 248.03170800000044,
+      "samples": [
+        {
+          "ms": 244.53283300000112,
+          "rss": 577536000,
+          "heapUsed": 219175360,
+          "heapDelta": 177128272,
+          "retainedHeapDelta": -9208
+        },
+        {
+          "ms": 245.169249999999,
+          "rss": 577552384,
+          "heapUsed": 218791904,
+          "heapDelta": 177150720,
+          "retainedHeapDelta": 410016
+        },
+        {
+          "ms": 248.03170800000044,
+          "rss": 577585152,
+          "heapUsed": 218398984,
+          "heapDelta": 176755056,
+          "retainedHeapDelta": 393248
+        },
+        {
+          "ms": 244.6381250000013,
+          "rss": 577585152,
+          "heapUsed": 218732560,
+          "heapDelta": 177089008,
+          "retainedHeapDelta": 401896
+        },
+        {
+          "ms": 242.12641600000097,
+          "rss": 577601536,
+          "heapUsed": 218597128,
+          "heapDelta": 176950160,
+          "retainedHeapDelta": 395408
+        },
+        {
+          "ms": 239.90891699999884,
+          "rss": 577601536,
+          "heapUsed": 218720880,
+          "heapDelta": 177074520,
+          "retainedHeapDelta": 407056
+        },
+        {
+          "ms": 242.5784169999988,
+          "rss": 577617920,
+          "heapUsed": 218479352,
+          "heapDelta": 176830368,
+          "retainedHeapDelta": 401448
+        },
+        {
+          "ms": 243.36766700000044,
+          "rss": 577617920,
+          "heapUsed": 218865872,
+          "heapDelta": 177223176,
+          "retainedHeapDelta": 410320
+        },
+        {
+          "ms": 244.80112499999996,
+          "rss": 577617920,
+          "heapUsed": 218327976,
+          "heapDelta": 176678704,
+          "retainedHeapDelta": 400216
+        },
+        {
+          "ms": 241.30979200000002,
+          "rss": 577634304,
+          "heapUsed": 218400840,
+          "heapDelta": 176752176,
+          "retainedHeapDelta": 404512
+        },
+        {
+          "ms": 244.5615830000006,
+          "rss": 577634304,
+          "heapUsed": 217974736,
+          "heapDelta": 176322584,
+          "retainedHeapDelta": 403408
+        },
+        {
+          "ms": 244.04300000000148,
+          "rss": 577634304,
+          "heapUsed": 218054176,
+          "heapDelta": 176402632,
+          "retainedHeapDelta": 405176
+        },
+        {
+          "ms": 245.15720799999872,
+          "rss": 577650688,
+          "heapUsed": 218207464,
+          "heapDelta": 176555024,
+          "retainedHeapDelta": 398040
+        },
+        {
+          "ms": 242.6519589999989,
+          "rss": 577650688,
+          "heapUsed": 217852904,
+          "heapDelta": 176206752,
+          "retainedHeapDelta": 396968
+        },
+        {
+          "ms": 242.3811659999992,
+          "rss": 577650688,
+          "heapUsed": 218321560,
+          "heapDelta": 176668832,
+          "retainedHeapDelta": 409768
+        }
+      ]
+    },
+    {
+      "name": "compiler/pipeline-plain/5000",
+      "bytes": 185011,
+      "medianMs": 243.59324999999808,
+      "p95Ms": 252.87441599999875,
+      "samples": [
+        {
+          "ms": 244.47808400000213,
+          "rss": 577650688,
+          "heapUsed": 218551040,
+          "heapDelta": 176478976,
+          "retainedHeapDelta": -5296
+        },
+        {
+          "ms": 243.55291600000055,
+          "rss": 577667072,
+          "heapUsed": 217949624,
+          "heapDelta": 176282664,
+          "retainedHeapDelta": 398848
+        },
+        {
+          "ms": 243.59324999999808,
+          "rss": 577667072,
+          "heapUsed": 217841592,
+          "heapDelta": 176173016,
+          "retainedHeapDelta": 398320
+        },
+        {
+          "ms": 242.86675000000105,
+          "rss": 577667072,
+          "heapUsed": 218048984,
+          "heapDelta": 176380440,
+          "retainedHeapDelta": 414272
+        },
+        {
+          "ms": 243.8265829999982,
+          "rss": 577667072,
+          "heapUsed": 217772752,
+          "heapDelta": 176108992,
+          "retainedHeapDelta": 400856
+        },
+        {
+          "ms": 243.16479099999924,
+          "rss": 577667072,
+          "heapUsed": 218117600,
+          "heapDelta": 176447184,
+          "retainedHeapDelta": 407608
+        },
+        {
+          "ms": 244.3523329999989,
+          "rss": 577667072,
+          "heapUsed": 217989136,
+          "heapDelta": 176317824,
+          "retainedHeapDelta": 402560
+        },
+        {
+          "ms": 242.0241249999999,
+          "rss": 577667072,
+          "heapUsed": 218148864,
+          "heapDelta": 176478160,
+          "retainedHeapDelta": 401304
+        },
+        {
+          "ms": 243.52387499999895,
+          "rss": 577667072,
+          "heapUsed": 217980920,
+          "heapDelta": 176308024,
+          "retainedHeapDelta": 391968
+        },
+        {
+          "ms": 244.3141660000001,
+          "rss": 577667072,
+          "heapUsed": 218530088,
+          "heapDelta": 176857800,
+          "retainedHeapDelta": 411376
+        },
+        {
+          "ms": 241.47133300000132,
+          "rss": 577667072,
+          "heapUsed": 217853800,
+          "heapDelta": 176180616,
+          "retainedHeapDelta": 399904
+        },
+        {
+          "ms": 241.12449999999808,
+          "rss": 577667072,
+          "heapUsed": 218013832,
+          "heapDelta": 176346936,
+          "retainedHeapDelta": 409872
+        },
+        {
+          "ms": 249.3902909999997,
+          "rss": 577667072,
+          "heapUsed": 218140112,
+          "heapDelta": 176466640,
+          "retainedHeapDelta": 402136
+        },
+        {
+          "ms": 250.35254200000054,
+          "rss": 577683456,
+          "heapUsed": 217913568,
+          "heapDelta": 176238760,
+          "retainedHeapDelta": 403624
+        },
+        {
+          "ms": 252.87441599999875,
+          "rss": 577683456,
+          "heapUsed": 218333728,
+          "heapDelta": 176658024,
+          "retainedHeapDelta": 410568
+        }
+      ]
+    },
+    {
+      "name": "compiler/comments/5000",
+      "bytes": 265011,
+      "medianMs": 244.56116699999984,
+      "p95Ms": 247.03045799999745,
+      "samples": [
+        {
+          "ms": 245.39216699999815,
+          "rss": 582221824,
+          "heapUsed": 220794376,
+          "heapDelta": 178717512,
+          "retainedHeapDelta": -13224
+        },
+        {
+          "ms": 240.98758400000224,
+          "rss": 582221824,
+          "heapUsed": 220070088,
+          "heapDelta": 178400792,
+          "retainedHeapDelta": 402592
+        },
+        {
+          "ms": 242.3104170000006,
+          "rss": 582238208,
+          "heapUsed": 220398952,
+          "heapDelta": 178728760,
+          "retainedHeapDelta": 387248
+        },
+        {
+          "ms": 244.35820800000147,
+          "rss": 582254592,
+          "heapUsed": 220088352,
+          "heapDelta": 178418768,
+          "retainedHeapDelta": 403640
+        },
+        {
+          "ms": 244.61837500000183,
+          "rss": 582254592,
+          "heapUsed": 220014360,
+          "heapDelta": 178343880,
+          "retainedHeapDelta": 411952
+        },
+        {
+          "ms": 245.48712499999965,
+          "rss": 582254592,
+          "heapUsed": 220089888,
+          "heapDelta": 178420016,
+          "retainedHeapDelta": 393536
+        },
+        {
+          "ms": 243.4594160000015,
+          "rss": 582254592,
+          "heapUsed": 220211568,
+          "heapDelta": 178540800,
+          "retainedHeapDelta": 393064
+        },
+        {
+          "ms": 243.45579200000066,
+          "rss": 582254592,
+          "heapUsed": 220420080,
+          "heapDelta": 178749920,
+          "retainedHeapDelta": 410456
+        },
+        {
+          "ms": 245.66649999999936,
+          "rss": 582254592,
+          "heapUsed": 220097296,
+          "heapDelta": 178431920,
+          "retainedHeapDelta": 410880
+        },
+        {
+          "ms": 244.56116699999984,
+          "rss": 582254592,
+          "heapUsed": 220484944,
+          "heapDelta": 178814496,
+          "retainedHeapDelta": 404440
+        },
+        {
+          "ms": 243.54562500000247,
+          "rss": 582254592,
+          "heapUsed": 220238584,
+          "heapDelta": 178567240,
+          "retainedHeapDelta": 392928
+        },
+        {
+          "ms": 246.68195800000103,
+          "rss": 582254592,
+          "heapUsed": 220541816,
+          "heapDelta": 178871080,
+          "retainedHeapDelta": 399104
+        },
+        {
+          "ms": 247.03045799999745,
+          "rss": 582254592,
+          "heapUsed": 220216944,
+          "heapDelta": 178545312,
+          "retainedHeapDelta": 400280
+        },
+        {
+          "ms": 243.92712499999834,
+          "rss": 582254592,
+          "heapUsed": 220246776,
+          "heapDelta": 178581432,
+          "retainedHeapDelta": 418552
+        },
+        {
+          "ms": 245.21500000000015,
+          "rss": 582270976,
+          "heapUsed": 220322752,
+          "heapDelta": 178656512,
+          "retainedHeapDelta": 396568
+        }
+      ]
+    },
+    {
+      "name": "compiler/pipeline-comments/5000",
+      "bytes": 265011,
+      "medianMs": 243.55025000000023,
+      "p95Ms": 249.0095840000031,
+      "samples": [
+        {
+          "ms": 243.97612500000105,
+          "rss": 582320128,
+          "heapUsed": 220610096,
+          "heapDelta": 178527160,
+          "retainedHeapDelta": -12824
+        },
+        {
+          "ms": 240.63891700000022,
+          "rss": 582320128,
+          "heapUsed": 220124240,
+          "heapDelta": 178452152,
+          "retainedHeapDelta": 407496
+        },
+        {
+          "ms": 245.45570900000166,
+          "rss": 582320128,
+          "heapUsed": 220342600,
+          "heapDelta": 178669616,
+          "retainedHeapDelta": 392816
+        },
+        {
+          "ms": 240.96937500000058,
+          "rss": 582320128,
+          "heapUsed": 220308176,
+          "heapDelta": 178635800,
+          "retainedHeapDelta": 405752
+        },
+        {
+          "ms": 241.3083340000012,
+          "rss": 582336512,
+          "heapUsed": 220425864,
+          "heapDelta": 178758272,
+          "retainedHeapDelta": 394480
+        },
+        {
+          "ms": 249.0095840000031,
+          "rss": 582336512,
+          "heapUsed": 220064080,
+          "heapDelta": 178391416,
+          "retainedHeapDelta": 411048
+        },
+        {
+          "ms": 248.8380419999994,
+          "rss": 582352896,
+          "heapUsed": 220063192,
+          "heapDelta": 178389632,
+          "retainedHeapDelta": 397744
+        },
+        {
+          "ms": 244.33637499999895,
+          "rss": 582483968,
+          "heapUsed": 220314600,
+          "heapDelta": 178641648,
+          "retainedHeapDelta": 404032
+        },
+        {
+          "ms": 244.721375000001,
+          "rss": 582483968,
+          "heapUsed": 220194712,
+          "heapDelta": 178520864,
+          "retainedHeapDelta": 397736
+        },
+        {
+          "ms": 243.42941699999938,
+          "rss": 582483968,
+          "heapUsed": 220399504,
+          "heapDelta": 178726264,
+          "retainedHeapDelta": 406528
+        },
+        {
+          "ms": 242.4322089999987,
+          "rss": 582483968,
+          "heapUsed": 220387928,
+          "heapDelta": 178719472,
+          "retainedHeapDelta": 410944
+        },
+        {
+          "ms": 243.84137499999997,
+          "rss": 582483968,
+          "heapUsed": 220528880,
+          "heapDelta": 178855352,
+          "retainedHeapDelta": 406416
+        },
+        {
+          "ms": 243.55025000000023,
+          "rss": 582483968,
+          "heapUsed": 220212264,
+          "heapDelta": 178537840,
+          "retainedHeapDelta": 400184
+        },
+        {
+          "ms": 243.3889999999992,
+          "rss": 582483968,
+          "heapUsed": 220622464,
+          "heapDelta": 178948648,
+          "retainedHeapDelta": 396296
+        },
+        {
+          "ms": 241.55341599999883,
+          "rss": 582483968,
+          "heapUsed": 220076800,
+          "heapDelta": 178402088,
+          "retainedHeapDelta": 396736
+        }
+      ]
+    }
+  ]
+}

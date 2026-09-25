@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 110,
-    "wechatTaskCount": 107,
+    "taskCount": 111,
+    "wechatTaskCount": 108,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 278,
-    "casesWithPlan": 278,
+    "expandedCaseDeclarations": 280,
+    "casesWithPlan": 280,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -6929,6 +6929,58 @@
       ]
     },
     {
+      "task": "ide/wxml-transform.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/wxml-transform.runtime.test.ts:43",
+          "name": "WXML function transform runtime > preserves typed attributes, renamed tags and events in native templates",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/wxml-transform",
+              "checkpoints": "[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex",
+              "source": "e2e/ide/wxml-transform.runtime.test.ts:47"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "check(transformed)",
+            "tap(<missing>)",
+            "check(event)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wxml-transform.runtime.test.ts:43",
+          "name": "WXML function transform runtime > preserves typed attributes, renamed tags and events in vue templates",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/wxml-transform",
+              "checkpoints": "[ { id: 'transformed', route, action: '验证标签转换与子内容保留', nodes: [{ selector: 'view#renamed', text: 'renamed' }, { selector: '#retained', text: 'retained' }] }, { id: 'event', route, action: '验证属性改名后受保护的点击事件', nodes: [{ selector: '#result', tex",
+              "source": "e2e/ide/wxml-transform.runtime.test.ts:47"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(route)",
+            "check(transformed)",
+            "tap(<missing>)",
+            "check(event)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/chunk-modes.runtime.duplicate.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -7863,6 +7915,10 @@
       "sha256": "6377c5ec8d6efa5f5b5ddc0e463138cf09a4f596513d966b0cea4cc32013b014"
     },
     {
+      "file": "e2e/ide/wxml-transform.runtime.test.ts",
+      "sha256": "697e7f72f545f1c8df358930c5ecca297d8888bb16f0cf01a4bc88084392d4a2"
+    },
+    {
       "file": "e2e/scripts/domAcceptanceReport/expectedErrors.ts",
       "sha256": "e97afc718a39453dd48fd286cd39979fd57bf12bc297b25a43f6705b562d4a87"
     },
@@ -7908,7 +7964,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "35617b877841e5dea60d1962c477e737af345227665e9d680c63b2bf249ccda4"
+      "sha256": "eb41b2b62f34c903eeff6914ef7fb5803de2889a46d3900415c3b9cbc356fd25"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -8177,6 +8233,10 @@
     {
       "file": "e2e/utils/wevuTailwindHmrDiagnostics.ts",
       "sha256": "b61230ba6cd77e97f742c26c4773bb7cc145aafa002dbf9ceb4977e78187e217"
+    },
+    {
+      "file": "e2e/utils/wxmlTransformProject.ts",
+      "sha256": "6042c0512d7d05e9c9141c21617d1b06f4edf9ab4f3221960b15eb034b9e38d9"
     },
     {
       "file": "e2e/wevu-runtime.utils.ts",

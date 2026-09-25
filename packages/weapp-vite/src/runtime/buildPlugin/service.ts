@@ -38,6 +38,7 @@ import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJso
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { getWxmlWatchFiles, isWxmlDependency, observeWxmlDependencies } from '../../wxml/processing/dependencies'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -118,6 +119,12 @@ interface HmrProfileJsonSample {
   snapshotResolveMs?: number
   snapshotBuildMs?: number
   writeMs?: number
+  finalizePrepareMs?: number
+  finalizeTemplateMs?: number
+  finalizePublishMs?: number
+  publicationValidateMs?: number
+  publicationIndependentMs?: number
+  publicationPruneMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
@@ -185,6 +192,7 @@ interface SnapshotBuildReason {
   event?: ChangeEvent
   file?: string
   forceFullRescan?: boolean
+  independentOutput?: boolean
 }
 
 interface SnapshotBuildBatch {
@@ -516,6 +524,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       snapshotResolveMs: profile.snapshotResolveMs,
       snapshotBuildMs: profile.snapshotBuildMs,
       writeMs: profile.writeMs,
+      finalizePrepareMs: profile.finalizePrepareMs,
+      finalizeTemplateMs: profile.finalizeTemplateMs,
+      finalizePublishMs: profile.finalizePublishMs,
+      publicationValidateMs: profile.publicationValidateMs,
+      publicationIndependentMs: profile.publicationIndependentMs,
+      publicationPruneMs: profile.publicationPruneMs,
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,
       sharedChunkResolveMs: profile.sharedChunkResolveMs,
@@ -1214,7 +1228,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     buildIndependentBundle,
     getIndependentOutput,
     invalidateIndependentOutput,
-  } = createIndependentBuilder(configService, buildState)
+  } = createIndependentBuilder(configService, buildState, ctx)
 
   function shouldTouchAppWxss() {
     return resolveTouchAppWxssEnabled({
@@ -1242,6 +1256,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let activeStatefulWatcher: RolldownWatcher | undefined
   let statefulBuildEvents: DevBuildWatcherController | undefined
   let statefulWatcherClosed = false
+  const statefulRestartTasks = new Set<Promise<void>>()
+  let stopStatefulWatcher: (() => Promise<void>) | undefined
+
+  async function trackStatefulRestart(restart: () => Promise<void>) {
+    const task = restart()
+    statefulRestartTasks.add(task)
+    try {
+      await task
+    }
+    finally {
+      statefulRestartTasks.delete(task)
+    }
+  }
 
   function getStatefulBuildEvents() {
     if (statefulBuildEvents) {
@@ -1249,10 +1276,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     const buildEvents = createDevBuildWatcher()
     const closeEvents = buildEvents.watcher.close.bind(buildEvents.watcher)
-    let closePromise: Promise<void> | undefined
-    buildEvents.watcher.close = () => {
+    let stopPromise: Promise<void> | undefined
+    stopStatefulWatcher = () => {
       statefulWatcherClosed = true
-      closePromise ??= (async () => {
+      stopPromise ??= (async () => {
         const activeWatcher = activeStatefulWatcher
         activeStatefulWatcher = undefined
         try {
@@ -1262,8 +1289,18 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           await closeEvents()
         }
       })()
-      return closePromise
+      return stopPromise
     }
+    let closePromise: Promise<void> | undefined
+    buildEvents.watcher.close = () => closePromise ??= (async () => {
+      try {
+        await stopStatefulWatcher!()
+      }
+      finally {
+        // 重启期间 active watcher 暂为空，仍须等待快照和新服务器退出，才能允许删除输出目录。
+        await Promise.allSettled([...statefulRestartTasks])
+      }
+    })()
     statefulBuildEvents = buildEvents
     return buildEvents
   }
@@ -1331,7 +1368,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       const nativeBuildEvents = getStatefulBuildEvents()
       nativeBuildEvents.emitEvent({ code: 'START' })
       try {
-        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin)
+        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx)
         const initialSnapshot = toStatefulHmrOutput(snapshot.output)
         const initialGlobalStyleRoutes = snapshot.getGlobalStyleRoutes()
         const initialEntryIds = collectStatefulHmrEntryIds(
@@ -1371,7 +1408,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ? devWorkers(configService, watcherService, workersDir)
           : Promise.resolve()
         const startup = await Promise.allSettled([
-          runStatefulHmrDev(ctx, buildOptions, async () => {
+          runStatefulHmrDev(ctx, buildOptions, () => trackStatefulRestart(async () => {
             const activeWatcher = activeStatefulWatcher
             activeStatefulWatcher = undefined
             await activeWatcher?.close()
@@ -1391,7 +1428,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             if (!statefulWatcherClosed) {
               logger.success('微信状态保持 HMR 构建已完成完整重载。')
             }
-          }, {
+          }), {
             entryIds: initialEntryIds,
             delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
             initial: {
@@ -1421,7 +1458,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                   },
                 ]
                 return snapshotOptions
-              })
+              }, ctx)
               const output = toStatefulHmrOutput(snapshot.output)
               return {
                 output,
@@ -1470,7 +1507,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             error: error instanceof Error ? error : new Error(String(error)),
             result: undefined as never,
           })
-          await nativeBuildEvents.watcher.close()
+          // 失败可能发生在被 close 等待的重启任务内部，停止资源时不能反向等待自身。
+          await stopStatefulWatcher!()
           throw error
         }
         devHmrDecision = {
@@ -1630,7 +1668,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             graphAffectedEntries.add(entryId)
           }
         }
-        if (!requiresFullRescan && graphAffectedEntries.size) {
+        // 独立包失效也需要主 bundler 发布，但不因此重新编译未受影响的主包入口。
+        const hasIndependentOutput = batchReasons.some(batchReason => batchReason.independentOutput)
+        if (!requiresFullRescan && (graphAffectedEntries.size || hasIndependentOutput)) {
           const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
           const dirtyReason = dirtyReasons.includes('direct')
             ? 'direct'
@@ -1918,13 +1958,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        createSnapshotSidecarWatchPatterns(configService, buildOptions),
+        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...getWxmlWatchFiles(ctx)],
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
           ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
+      const unobserveWxml = observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
+      const independentWatch = ctx.runtimeState.build.independent
+      const observeIndependent = (files: string[]) => {
+        snapshotWatcher.add(files)
+      }
+      independentWatch.watchListeners.add(observeIndependent)
+      for (const files of independentWatch.watchFiles.values()) {
+        snapshotWatcher.add([...files])
+      }
       snapshotWatcher.on('all', (event, id) => {
         if (!id) {
           return
@@ -1932,20 +1981,46 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (isDevOutputFile(id)) {
           return
         }
-        if (!shouldHandleSnapshotSidecarFile(id, ctx)) {
+        const normalizedId = normalizeFsResolvedId(id)
+        const independentRoots: string[] = []
+        for (const [root, files] of independentWatch.watchFiles) {
+          if (files.has(normalizedId)) {
+            independentRoots.push(root)
+          }
+        }
+        const independentSource = independentRoots.length > 0 && !ctx.moduleGraphService.hasModule(id)
+        if (!independentSource && !isWxmlDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
-        const normalizedId = normalizeFsResolvedId(id)
+        const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
+        if (event === 'unlink' && (isWxmlDependencyFile || independentSource)) {
+          // Chokidar 删除单文件监听后不总是监听其父目录；关闭旧句柄后重新登记缺失文件，才能观察恢复。
+          queueMicrotask(() => {
+            if (!devWatcherClosed) {
+              snapshotWatcher.add(normalizedId)
+            }
+          })
+        }
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency) {
+        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isWxmlDependencyFile && !independentSource) {
           return
         }
-        if (event.startsWith('add') && !isConfigDependency && ctx.moduleGraphService.hasModule(id)) {
+        if (event.startsWith('add') && !isConfigDependency && !isWxmlDependencyFile && ctx.moduleGraphService.hasModule(id)) {
           return
         }
         if (isConfigDependency) {
           requestedConfigRestartBuilds.add(target)
+        }
+        for (const root of independentRoots) {
+          invalidateIndependentOutput(root)
+          scanService.markIndependentDirty(root)
+        }
+        if (isWxmlDependencyFile) {
+          for (const root of scanService.independentSubPackageMap.keys()) {
+            invalidateIndependentOutput(root)
+            scanService.markIndependentDirty(root)
+          }
         }
         const sidecarStartedAt = performance.now()
         const normalizedEvent = event.startsWith('unlink')
@@ -1956,12 +2031,15 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event: normalizedEvent,
           file: id,
-          forceFullRescan: true,
+          independentOutput: independentRoots.length > 0,
+          forceFullRescan: !independentSource || isConfigDependency || isWxmlDependencyFile,
         }, sidecarStartedAt)
       })
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
           try {
+            unobserveWxml()
+            independentWatch.watchListeners.delete(observeIndependent)
             await snapshotWatcher.close()
           }
           finally {
@@ -2012,7 +2090,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         // native 重启复用公共 watcher；已保存的 close 也必须释放当前会话。
         existingCleanup.releaseSession = releaseSession
         if (existingCleanup.closePromise) {
-          await existingCleanup.closePromise.finally(releaseSession)
+          // 原生启动已在关闭标记下释放新资源；公共 close 正在等待本轮重启，不在这里形成循环等待。
+          releaseSession()
         }
         return watcher
       }

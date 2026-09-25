@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "keep-card": "../../components/keep-card/index"
+  }
+}

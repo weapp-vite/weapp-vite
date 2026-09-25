@@ -617,6 +617,7 @@ describe('suiteRunner', () => {
     })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
+      'ide/wxml-transform.runtime.test.ts',
       'ide/wevu-runtime.pruning.test.ts',
       'ide/github-issues.runtime.issue1035.test.ts',
       'ide/issue-963-plugin-es6.runtime.test.ts',

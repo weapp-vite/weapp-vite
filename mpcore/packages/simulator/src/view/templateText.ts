@@ -1,10 +1,13 @@
 import { resolveTemplateExpression } from './templateExpression'
+import { templateInterpolations } from './templateInterpolation'
 
-const TEMPLATE_INTERPOLATION_RE = /\{\{([^{}]+)\}\}/g
-
-export function interpolateTemplateText(input: string, data: Record<string, any>) {
-  return input.replace(TEMPLATE_INTERPOLATION_RE, (_match, expression: string) => {
-    const value = resolveTemplateExpression(data, expression)
-    return value === undefined ? '' : String(value)
-  })
+export function interpolateTemplateText(input: string, data: Record<string, any>, emptyNull = false) {
+  let output = ''
+  let offset = 0
+  for (const range of templateInterpolations(input)) {
+    const value = resolveTemplateExpression(data, range.expression)
+    output += input.slice(offset, range.start) + (value === undefined || (emptyNull && value === null) ? '' : String(value))
+    offset = range.end
+  }
+  return output + input.slice(offset)
 }

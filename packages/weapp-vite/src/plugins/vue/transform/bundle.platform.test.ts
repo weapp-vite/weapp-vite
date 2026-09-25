@@ -344,6 +344,30 @@ describe('emitVueBundleAssets platform output', () => {
     })).toBe('<view')
   })
 
+  it('preserves ordinary comments while applying mandatory conditional and platform normalization', () => {
+    const template = `
+<!-- keep <view> &amp; {{ raw }} -->
+<!-- #ifdef weapp -->
+<view>WeChat only</view>
+<!-- #endif -->
+<!-- #ifdef alipay -->
+<MyCard wx:if="{{ready}}" bindtap="onTap" />
+<!-- #endif -->
+<import src="./shared.wxml" />
+    `.trim()
+
+    const result = normalizeVueTemplateForPlatform(template, {
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })
+
+    expect(result).toContain('<!-- keep <view> &amp; {{ raw }} -->')
+    expect(result).not.toContain('WeChat only')
+    expect(result).toContain('<my-card a:if="{{ready}}" onTap="onTap" />')
+    expect(result).toContain('<import src="./shared.axml" />')
+  })
+
   it('returns original template when wxml normalization throws internally', () => {
     const handleSpy = vi.spyOn(wxmlHandleModule, 'handleWxml').mockImplementationOnce(() => {
       throw new Error('normalize failed')

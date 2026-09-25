@@ -1,18 +1,21 @@
 /* eslint-disable ts/no-use-before-define */
 import type { PeakRssSamplingStats } from './benchmarkTemplatesPerformance/peakRssSampler'
 import type { TemplatesHmrReport } from './templates-performance-integrity'
+import { createHash } from 'node:crypto'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能对比需要调度两个 checkout 的命令并收集报告。 */
 import { execa } from 'execa'
 import path from 'pathe'
 import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand, createBenchmarkTemplateDependenciesCommand } from './benchmark-checkout-preparation'
 import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
+import { verifyBenchmarkAppOutputs } from './benchmarkTemplatesPerformance/appOutputs'
 import { parseCliBuildMs } from './benchmarkTemplatesPerformance/cliTiming'
 import { createPeakRssSampler } from './benchmarkTemplatesPerformance/peakRssSampler'
-import { runRssSamplingCommand } from './benchmarkTemplatesPerformance/rssCommand'
+import { sampleProcessTreeRssBytes } from './benchmarkTemplatesPerformance/processTreeRss'
 import { renderHmrTimingSources } from './benchmarkTemplatesPerformance/timing'
 import { assertTemplatesPerformanceComplete, collectTemplatesPerformanceFailures, parseTemplatesHmrReport } from './templates-performance-integrity'
 
@@ -31,15 +34,20 @@ const hmrSampleMode = process.env.TEMPLATES_PERF_HMR_SAMPLE_MODE === 'best-of-cy
 const reportJsonPath = path.join(reportRootDir, 'report.json')
 const reportMdPath = path.join(reportRootDir, 'report.md')
 
-if (!baselineDir) {
-  throw new Error('TEMPLATES_PERF_BASELINE_DIR is required.')
-}
-
 async function main() {
+  if (!baselineDir) {
+    throw new Error('TEMPLATES_PERF_BASELINE_DIR is required.')
+  }
   await rm(reportRootDir, { recursive: true, force: true })
   await mkdir(reportRootDir, { recursive: true })
 
   await prepareBenchmarkRunner()
+  if (process.env.TEMPLATES_PERF_PREPARE_ONLY === '1') {
+    const baseline = await prepareCheckout('baseline', baselineDir)
+    const optimized = await prepareCheckout('optimized', optimizedDir)
+    await writeFile(path.join(reportRootDir, 'prepared.json'), JSON.stringify({ baseline, optimized }))
+    return
+  }
   const baseline = await benchmarkCheckout('baseline', baselineDir)
   const optimized = await benchmarkCheckout('optimized', optimizedDir)
   const report = createReport(baseline, optimized)
@@ -59,13 +67,13 @@ async function main() {
   assertTemplatesPerformanceComplete(report)
 }
 
-async function prepareBenchmarkRunner() {
+export async function prepareBenchmarkRunner() {
   process.stdout.write('[templates-perf] runner: build benchmark helper dependency dist\n')
   const command = createBenchmarkRunnerPreparationCommand()
-  await run(command.command, command.args, optimizedDir)
+  await run(command.command, command.args, path.resolve(import.meta.dirname, '..'))
 }
 
-async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutResult> {
+export async function prepareCheckout(id: CheckoutId, cwd: string) {
   const reportDir = path.join(reportRootDir, id)
   const hmrReportDir = path.join(reportDir, 'hmr')
   await mkdir(hmrReportDir, { recursive: true })
@@ -86,6 +94,14 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
   }
   await assertBenchmarkTypeScriptPrepared(cwd, referencedProjects)
   await prepareTemplates(id, cwd, templates)
+  const packageManager = (await execa('pnpm', ['--version'], { cwd })).stdout.trim()
+  const lockfileSha256 = createHash('sha256').update(await readFile(path.join(cwd, 'pnpm-lock.yaml'))).digest('hex')
+  return { id, cwd, commit, templates, packageManager, lockfileSha256 }
+}
+
+async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutResult> {
+  const { commit, templates } = await prepareCheckout(id, cwd)
+  const hmrReportDir = path.join(reportRootDir, id, 'hmr')
   const build = await benchmarkTemplateBuilds(id, cwd, templates)
 
   process.stdout.write(`[templates-perf] ${id} ${commit}: templates HMR benchmark (${hmrIterations}x)\n`)
@@ -145,6 +161,16 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
       const output = `${result.stdout}\n${result.stderr}`
       const sanitizedOutput = sanitizeCheckoutOutput(cwd, output)
       process.stdout.write(sanitizedOutput)
+      let artifactError: string | undefined
+      let artifacts: Awaited<ReturnType<typeof verifyBenchmarkAppOutputs>> | undefined
+      if (result.exitCode === 0 && process.env.TEMPLATES_PERF_ASSERT_APP_OUTPUTS === '1') {
+        try {
+          artifacts = await verifyBenchmarkAppOutputs(template.root)
+        }
+        catch (error) {
+          artifactError = sanitizeCheckoutOutput(cwd, error instanceof Error ? error.message : String(error))
+        }
+      }
       const sample = {
         iteration: index + 1,
         template: template.id,
@@ -153,11 +179,12 @@ async function benchmarkTemplateBuilds(id: CheckoutId, cwd: string, templates: T
         cliBuildMs: parseCliBuildMs(output),
         rssPeakBytes: memory.rssPeakBytes,
         rssSampling: memory.rssSampling,
-        status: result.exitCode ?? 1,
-        error: result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput),
+        artifacts,
+        status: artifactError ? 1 : result.exitCode ?? 1,
+        error: artifactError ?? (result.exitCode === 0 ? undefined : summarizeCommandOutput(sanitizedOutput)),
       }
       samples.push(sample)
-      if (result.exitCode !== 0) {
+      if (sample.status !== 0) {
         process.stderr.write(`[templates-perf] ${id}: build ${template.id} failed, continue collecting report\n`)
         break
       }
@@ -230,88 +257,6 @@ async function run(command: string, args: string[], cwd: string, env: NodeJS.Pro
       ...env,
     },
   })
-}
-
-async function sampleProcessTreeRssBytes(rootPid: number) {
-  if (process.platform === 'win32') {
-    return await sampleWindowsProcessTreeRssBytes(rootPid)
-  }
-  return await sampleUnixProcessTreeRssBytes(rootPid)
-}
-
-async function sampleUnixProcessTreeRssBytes(rootPid: number) {
-  const stdout = await runRssSamplingCommand('ps', ['-Ao', 'pid=,ppid=,rss='])
-  if (stdout === null) {
-    return null
-  }
-  const entries = stdout
-    .split('\n')
-    .map((line) => {
-      const [pid, ppid, rssKb] = line.trim().split(/\s+/).map(value => Number.parseInt(value, 10))
-      return Number.isFinite(pid) && Number.isFinite(ppid) && Number.isFinite(rssKb)
-        ? { pid, ppid, rssBytes: rssKb * 1024 }
-        : undefined
-    })
-    .filter((entry): entry is { pid: number, ppid: number, rssBytes: number } => entry !== undefined)
-  return sumProcessTreeRss(rootPid, entries)
-}
-
-async function sampleWindowsProcessTreeRssBytes(rootPid: number) {
-  const stdout = await runRssSamplingCommand('powershell', [
-    '-NoProfile',
-    '-Command',
-    'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,WorkingSetSize | ConvertTo-Json -Compress',
-  ])
-  if (!stdout?.trim()) {
-    return null
-  }
-  const parsed = JSON.parse(stdout) as unknown
-  const items = Array.isArray(parsed) ? parsed : [parsed]
-  const entries = items
-    .map((item) => {
-      if (!item || typeof item !== 'object') {
-        return undefined
-      }
-      const record = item as Record<string, unknown>
-      const pid = Number(record.ProcessId)
-      const ppid = Number(record.ParentProcessId)
-      const rssBytes = Number(record.WorkingSetSize)
-      return Number.isFinite(pid) && Number.isFinite(ppid) && Number.isFinite(rssBytes)
-        ? { pid, ppid, rssBytes }
-        : undefined
-    })
-    .filter((entry): entry is { pid: number, ppid: number, rssBytes: number } => entry !== undefined)
-  return sumProcessTreeRss(rootPid, entries)
-}
-
-function sumProcessTreeRss(
-  rootPid: number,
-  entries: Array<{ pid: number, ppid: number, rssBytes: number }>,
-) {
-  const childrenByParent = new Map<number, Array<{ pid: number, rssBytes: number }>>()
-  const rssByPid = new Map<number, number>()
-  for (const entry of entries) {
-    rssByPid.set(entry.pid, entry.rssBytes)
-    const children = childrenByParent.get(entry.ppid) ?? []
-    children.push({ pid: entry.pid, rssBytes: entry.rssBytes })
-    childrenByParent.set(entry.ppid, children)
-  }
-
-  const visited = new Set<number>()
-  const stack = [rootPid]
-  let total = 0
-  while (stack.length) {
-    const pid = stack.pop()!
-    if (visited.has(pid)) {
-      continue
-    }
-    visited.add(pid)
-    total += rssByPid.get(pid) ?? 0
-    for (const child of childrenByParent.get(pid) ?? []) {
-      stack.push(child.pid)
-    }
-  }
-  return total || null
 }
 
 function toReportTemplate(cwd: string, template: TemplateCase): TemplateCase {
@@ -977,7 +922,9 @@ interface PerformanceReport {
   }
 }
 
-void main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
+}

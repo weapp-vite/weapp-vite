@@ -109,6 +109,7 @@ async function collectLogicalEntryDependencies(
   ownerId: string,
 ) {
   const pendingDependencies = state.ctx.moduleGraphService.getEntryDependencies(ownerId)
+  const entry = resolveEntryRecord(state, ownerId)
   const dependencies: LogicalEntryDependency[] = []
   const addExistingDependency = async (kind: SidecarModuleKind, sourceId?: string) => {
     if (sourceId && await pathExistsCached(sourceId)) {
@@ -116,10 +117,13 @@ async function collectLogicalEntryDependencies(
     }
   }
   for (const dependency of pendingDependencies) {
+    // App JSON 依赖由本轮入口记录重新声明，不能从上次图中复活已改名/移除的附属文件。
+    if (entry?.type === 'app' && dependency.kind === 'json') {
+      continue
+    }
     await addExistingDependency(dependency.kind, dependency.sourceId)
   }
   await addExistingDependency('script', ownerId)
-  const entry = resolveEntryRecord(state, ownerId)
   const [jsonEntry, templateEntry, styleEntry] = await Promise.all([
     findJsonEntry(ownerId),
     findTemplateEntry(ownerId, state.ctx.configService.platform),

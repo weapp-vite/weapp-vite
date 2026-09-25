@@ -1,6 +1,6 @@
+import type { RolldownWatcher } from 'rolldown'
 /* eslint-disable ts/no-use-before-define */
 
-import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
@@ -27,6 +27,7 @@ import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { isStatefulHmrBoundary } from './boundaries'
 import { StatefulHmrDirectoryUpdates } from './directoryUpdates'
@@ -292,6 +293,10 @@ class StatefulHmrSession {
       this.ctx.configService?.weappViteConfig?.react,
     )) {
       this.requestServerRestart()
+      return
+    }
+    if (isWxmlDependency(this.ctx, normalizedFile)) {
+      this.requestFullBuild([normalizedFile])
       return
     }
     const affectedEntries = this.ctx.moduleGraphService.collectAffectedEntries(normalizedFile)

@@ -1,0 +1,68 @@
+import type { AuditBatch } from './report'
+import { describe, expect, it } from 'vitest'
+import { autoImportMetrics } from './autoImport'
+import { evaluateGate } from './evaluate'
+import { autoImportFeatureCosts } from './featureCosts'
+import { assertManifestMetrics } from './manifest'
+import { evaluateAuditGate, pairBatch, renderGate } from './report'
+
+function makeBatch(): AuditBatch {
+  return { errors: [], samples: Array.from({ length: 7 }, (_, round) => (['baseline', 'optimized'] as const).map(side => ({
+    round,
+    side,
+    values: ['manual', 'automatic'].map(mode => ({ id: `auto-build:1:${mode}:first`, template: 'auto-import-1', phase: 'first', output: { pageCount: 1, templateDigest: 'a'.repeat(64), configDigest: 'b'.repeat(64) }, ms: mode === 'manual' ? 100 : 130 })),
+  }))).flat() }
+}
+
+describe('performance comparison dimensions', () => {
+  it('lists declared scenarios with no successful samples as incomplete rows', () => {
+    const id = 'hmr:classic:native:app-json:first:edit'
+    const result = evaluateAuditGate(makeBatch(), undefined, [id])
+    expect(result.status).toBe('incomplete')
+    expect(result.scenarios.find(row => row.id === id)).toMatchObject({
+      status: 'incomplete',
+      primary: { count: 0, baselineMedianMs: null, currentMedianMs: null, changePercent: null },
+    })
+    expect(renderGate(result)).toContain(id)
+    expect(renderGate(result)).not.toContain('NaN')
+  })
+  it('retains independent regression evidence and confirmation despite a different collection failure', () => {
+    const batch = makeBatch()
+    batch.errors.push('HMR baseline failed')
+    for (const row of batch.samples.filter(row => row.side === 'optimized')) {
+      row.values.forEach(value => value.ms *= 1.1)
+    }
+    expect(pairBatch(batch).every(row => !row.error)).toBe(true)
+    expect(evaluateAuditGate(batch).status).toBe('incomplete')
+    expect(evaluateAuditGate(batch, batch).status).toBe('regression')
+    expect(evaluateAuditGate(batch, makeBatch()).status).toBe('incomplete')
+    expect(evaluateAuditGate(batch, makeBatch()).scenarios[0]?.status).toBe('unstable')
+  })
+  it('does not mistake feature overhead for a cross-commit regression', () => {
+    const batch = makeBatch()
+    expect(evaluateGate(pairBatch(batch)).status).toBe('passed')
+    expect(autoImportFeatureCosts(batch)[0]).toMatchObject({ extraMs: 30, extraPercent: 30, overFeatureBudget: false })
+    expect(autoImportFeatureCosts({ samples: [], errors: [] })[0]).toMatchObject({ extraMs: null, extraPercent: null, overFeatureBudget: null })
+  })
+  it('rejects duplicated pairs instead of increasing confidence', () => {
+    const batch = makeBatch()
+    batch.samples[2]!.round = 0
+    expect(evaluateGate(pairBatch(batch)).status).toBe('incomplete')
+  })
+  it('rejects a faster build that loses output and evidence-free timings', () => {
+    const batch = makeBatch()
+    batch.samples[1]!.values[0]!.output!.templateDigest = 'c'.repeat(64)
+    batch.samples[1]!.values[0]!.ms = 50
+    expect(evaluateGate(pairBatch(batch)).status).toBe('incomplete')
+    delete batch.samples[1]!.values[0]!.output
+    expect(evaluateGate(pairBatch(batch)).status).toBe('incomplete')
+  })
+  it('requires every declared four-group metric and rejects duplicates', () => {
+    const metrics = autoImportMetrics()
+    const manifest = { templates: [], metrics }
+    expect(metrics).toHaveLength(48)
+    expect(() => assertManifestMetrics(manifest, metrics)).not.toThrow()
+    expect(() => assertManifestMetrics(manifest, metrics.slice(1))).toThrow('Missing')
+    expect(() => assertManifestMetrics(manifest, [metrics[1]!, ...metrics.slice(1)])).toThrow('Missing')
+  })
+})

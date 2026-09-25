@@ -557,3 +557,293 @@ weapp-vite ide preview --project ./dist/build/mp-weixin
 - 项目结构与 `AGENTS.md`：[`project-structure.md`](./project-structure.md)
 - wevu 运行时写法：[`wevu-authoring.md`](./wevu-authoring.md)
 - Vue SFC 宏与模板：[`vue-sfc.md`](./vue-sfc.md)
+
+## 函数式转换
+
+`weapp.wxml.transform` 接收一个函数或函数数组，支持异步。每个函数收到当前模板源码；数组按声明顺序等待执行。返回 `null` / `undefined` 保持当前源码，返回空字符串清空模板。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      transform: async (code, ctx) => {
+        if (ctx.isDev) {
+          return
+        }
+        return ctx.edit(code, (node) => {
+          if (node.tagName === 'view') {
+            node.removeAttribute('data-testid')
+          }
+          if (node.tagName === 'button') {
+            node.renameAttribute('data-track', 'data-analytics')
+            if (!node.hasAttribute('hover-class')) {
+              node.setAttribute('hover-class', 'none')
+            }
+            node.setAttribute('disabled', { expression: 'submitting' })
+          }
+          if (node.tagName === 'text' && node.hasAttribute('data-use-view')) {
+            node.renameTag('view')
+            node.removeAttribute('data-use-view')
+          }
+        })
+      },
+    },
+  },
+})
+```
+
+匹配编译后的静态标签名，例如 Vue HTML 映射后的 `view`。第一版只转换最终模板：替换成自定义组件时，仍需通过既有 `usingComponents` 等配置注册组件；不会生成组件依赖、JS 或样式。
+
+### 回调上下文
+
+| 字段 / 方法 | 含义 |
+| --- | --- |
+| `fileName` | 相对输出根目录的 POSIX 文件名，包含分包目录 |
+| `root` | 项目根目录 |
+| `platform` / `mode` / `isDev` | 当前平台、模式及开发状态 |
+| `subPackageRoot` | 独立分包构建的根目录；主包构建（含普通分包）为 `undefined` |
+| `edit(code, visitor)` | 返回 `Promise<string>`，支持异步 visitor |
+| `addWatchFile(path)` | 注册外部文件依赖，相对路径从项目根目录解析 |
+| `warn(message)` / `error(message)` | 报告警告 / 中止本轮构建 |
+
+`WxmlTransform`、`WxmlTransformResult`、`WxmlTransformContext`、`WxmlTransformVisitor`、`WxmlTransformNode`、`WxmlElementInfo`、`WxmlAttribute`、`WxmlAttributeValue`、`WxmlSourceLocation` 均可从 `weapp-vite/config` 和 `weapp-vite/types` 导入。回调执行于构建端，可以使用闭包、正则和异步读取；非法返回值或异常会中止输出，并报告文件名、回调序号及原始错误。
+
+### 编辑节点与属性值
+
+`ctx.edit` 每次只扫描一次，按源码顺序深度优先遍历标签。未修改的区间逐字保留；WXS 等脚本模块的原始内容不作为标签遍历。
+
+- `tagName`、`attributes`、`parent`、`location` 为只读观察信息；位置包含从零开始的 `offset` 和从一开始的 `line` / `column`。父节点没有修改接口。
+- `hasAttribute(name)` 和 `getAttribute(name)` 读取当前编辑状态。属性记录包含 `name`、原始 `rawValue` 与 `quote`，不求值动态或混合绑定；无值属性的 `rawValue` 为 `null`。
+- `setAttribute(name, value)` 设置属性：字符串为字面量，数字和布尔值输出保持类型的绑定，`{ expression: 'submitting' }` 输出模板表达式。不要给表达式再包 `{{ }}`。
+- `setBooleanAttribute(name)` 设置无值属性。`setAttribute(name, false)` 保留布尔 `false` 语义，不表示删除。
+- `renameAttribute(from, to)` 保留原值，目标存在时抛错；源不存在时无操作。删除清除全部同名项，设置将重复属性收敛为一个。
+- `renameTag(name)` 同时改开始和结束标签；`remove()` 删除整个子树并跳过子节点回调。
+
+同一节点后续操作可以读取已修改状态。编辑句柄仅在当前 `edit` 会话内有效。不提供节点移动、插入或 unwrap；需要这些操作时可自行返回完整源码。
+
+编辑工具沿用关键属性、结构标签及条件链保护。明确修改事件、平台指令或已识别的框架元数据会抛错并附带位置。直接返回源码允许完整控制，不提供上述语义保护；后续 `remove` 与宿主编译检查仍会执行。
+
+### 子节点访问与子树编辑
+
+`node.children` 返回按源码顺序排列的直接子标签；`await node.walk(visitor)` 深度优先遍历全部后代，不包含节点自身。下面的完整配置只处理带 `data-card` 的 `view`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      transform: (code, ctx) => ctx.edit(code, async (node) => {
+        if (node.tagName !== 'view' || !node.hasAttribute('data-card')) {
+          return
+        }
+
+        for (const child of node.children) {
+          if (child.tagName === 'text') {
+            child.setAttribute('selectable', true)
+          }
+        }
+
+        await node.walk(async (child) => {
+          if (child.hasAttribute('data-private-zone')) {
+            child.skipChildren()
+            return
+          }
+          if (child.tagName === 'button') {
+            child.setAttribute('hover-class', 'none')
+          }
+          if (child.hasAttribute('data-debug')) {
+            child.remove()
+          }
+        })
+        node.skipChildren()
+      }),
+    },
+  },
+})
+```
+
+- 直接子 `text` 获得 `selectable="{{true}}"`；更深的 `text` 不会因直接子节点循环而改变。
+- 后代 `button` 获得 `hover-class="none"`，带 `data-debug` 的普通标签及其子树删除。带 `data-private-zone` 的标签保留，其后代在这次手动遍历中跳过。
+- 末尾的 `node.skipChildren()` 跳过外层自动遍历，避免同一子树再次被外层回调处理；因此示例中的 private zone 也不会再被外层自动遍历访问。删除该行时，外层仍会继续访问所有未删除后代。
+
+| 接口 | 行为 |
+| --- | --- |
+| `children` | 当前未删除的直接子标签；只读数组，元素是可编辑句柄 |
+| `walk(visitor)` | 返回 `Promise<void>`；同步或异步回调按源码顺序逐个等待，不包含自身 |
+| `skipChildren()` | 仅跳过当前回调所属遍历的后代；不影响兄弟、其他遍历或输出 |
+| `parent.children` | 只读观察节点，不允许借父节点修改祖先或兄弟 |
+
+每次读取 `children` 得到一个数组快照；旧数组不会自动减少，删除节点及其全部后代的编辑句柄立即失效。子节点提前改名或修改属性后，后续自动回调与父节点观察到的是同一份新状态。源码位置始终对应本次 `edit` 输入，不因编辑重新计算。
+
+手动 `walk` 每调用一次都会遍历一次，不会自动消费外层遍历；多层标记容器可能因此重复处理后代。若某个容器已负责全部后代处理，在它的外层回调中显式 `skipChildren()`。先 `skipChildren()` 再显式 `walk()` 也有效。内层回调中的跳过只属于内层遍历，不会跳过外层后续访问。
+
+`skipChildren()` 只能对当前正在回调的节点调用；对 `children[0]`、其他保存的节点或回调结束后的句柄调用会报带源码位置的错误。嵌套遍历必须正确 `await`／`return`；同一编辑会话不支持 `Promise.all` 并发遍历或编辑，也不要发起未等待的异步任务或跨构建保存节点句柄。
+
+`children` 与 `walk` 只识别本模板里的标签，不包含文本、注释、插值和 WXS/SJS 原始内容，不展开导入模板或自定义组件内部。事件、指令、结构标签、框架元数据与条件链保护在子树操作中同样生效。删除整个父节点会覆盖已记录的子节点编辑，并跳过全部相关后代回调。
+
+`validate` 的 `node.children` 同样可用于结构检查，但元素只有只读观察接口；遍历仍用 `ctx.walk()`，没有节点编辑、`node.walk()` 或 `skipChildren()`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      validate: async (_code, ctx) => {
+        await ctx.walk((node) => {
+          if (node.hasAttribute('data-card')
+            && !node.children.some(child => child.tagName === 'button')) {
+            ctx.report({
+              severity: 'warning',
+              code: 'card-button',
+              message: '卡片缺少直接子 button',
+              location: node.location,
+            })
+          }
+        })
+      },
+    },
+  },
+})
+```
+
+### 输出顺序与热更新
+
+执行顺序：模板编译 / 平台归一化 / i18n → `transform` → `remove` → 既有 Tailwind 与 compiler-plugin 输出处理 → `validate` → HMR 内容比较 → bundler 输出。后续输出插件仍可修改模板。独立分包转换完成后汇入主包，不重复转换。
+
+外部规则文件必须显式调用 `ctx.addWatchFile('rules.json')`，建议在读取前注册，以便文件缺失导致构建失败后仍能恢复。外部依赖修改、删除、恢复会触发完整模板重建，覆盖主包、普通和独立分包。同一文件跨模板注册会去重；不自动追踪任意文件读取、环境变量或网络请求，也不允许监听构建输出目录。
+
+每轮从当前编译输入重新转换，避免连续 HMR 累加上轮结果。回调应根据输入与显式依赖生成结果；不保证跨文件、跨分包的全局调用顺序，也不保证整个开发会话只调用一次。未配置 `transform` 时不增加编辑扫描；只返回字符串而不调用 `edit` 时，也不会为了回调额外解析模板。
+
+## 最终模板校验
+
+`weapp.wxml.validate` 在 `transform`、`remove` 和框架管理的 Tailwind / compiler-plugin 输出处理完成后执行，在 HMR 内容比较和发布前检查模板。可用于禁止调试节点残留、检查指定标签的必填属性或验证项目约定；默认不启用任何规则。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      remove: { attr: [{ tag: 'view', name: 'data-testid' }] },
+      validate: async (_code, ctx) => {
+        if (ctx.isDev) {
+          return
+        }
+        await ctx.walk((node) => {
+          if (node.tagName === 'debug-panel') {
+            ctx.report({
+              severity: 'error',
+              code: 'no-debug-panel',
+              message: '发布模板不能包含 debug-panel',
+              location: node.location,
+            })
+          }
+          if (node.tagName === 'button' && !node.hasAttribute('data-track')) {
+            ctx.report({
+              severity: 'warning',
+              code: 'button-tracking',
+              message: 'button 缺少 data-track',
+              location: node.location,
+            })
+          }
+        })
+      },
+    },
+  },
+})
+```
+
+### 校验接口与诊断
+
+```ts
+type WxmlValidate = (
+  code: string,
+  ctx: WxmlValidationContext,
+) => void | Promise<void>
+
+interface WxmlValidationDiagnostic {
+  severity: 'warning' | 'error'
+  code?: string
+  message: string
+  location?: WxmlSourceLocation
+}
+
+// weapp.wxml
+// validate?: WxmlValidate | WxmlValidate[]
+```
+
+`WxmlValidate`、`WxmlValidationContext`、`WxmlValidationVisitor`、`WxmlValidationDiagnostic` 均从 `weapp-vite/config` 和 `weapp-vite/types` 导出。
+
+- 单函数和函数数组都支持异步；数组按声明顺序等待，所有回调读取同一份模板。返回值必须为 `undefined`，返回字符串、`null`、`false` 等会报错；修改模板请使用 `transform`。
+- `ctx.walk(visitor)` 返回 `Promise<void>`，须 `await` 或 `return`。同步／异步 visitor 按源码顺序深度优先访问节点；同一模板在本轮多个回调间复用一次扫描，只检查 `code` 而不遍历时不解析。
+- 节点使用只读 `WxmlElementInfo`：`tagName`、`attributes`、`children`、`parent`、`location`、`hasAttribute`、`getAttribute`；没有 `setAttribute`、`renameTag` 或 `remove`。属性、父节点和位置不可改写。
+- 属性 `rawValue` 不解码、不求值，`{{tracking}}` 不代表已知运行时值。静态值规则只比较可确定的字面内容，校验不能判断页面数据变化后的属性值。
+- `ctx.report` 的 `warning` 允许输出，`error` 汇总当前构建内其他回调及模板的正常诊断后阻止输出。同轮同文件、回调、严重程度、代码、消息和位置均相同的诊断去重。
+- 诊断包含输出相对路径、从 1 开始的回调序号、可选规则代码和行列；不传 `location` 时为文件级诊断。位置对应本轮最终模板，不映射回 `.vue` 源文件。
+- 回调异常、扫描失败、非法返回值或诊断格式立即中止并保留原始错误；没有静默跳过或自动修复。失败不会推进该构建的成功输出缓存，独立分包失败会传递到主构建。
+
+上下文提供与 `transform` 相同含义的 `fileName`、`root`、`platform`、`mode`、`isDev`、`subPackageRoot` 和 `addWatchFile`；不提供 `edit`，校验诊断统一通过 `report` 发出。
+
+### 按范围校验与复用规则
+
+下面把普通分包的静态属性检查拆成可复用函数；`fileName` 为输出相对 POSIX 路径，`subPackageRoot` 只标识独立分包构建，普通分包应按路径筛选。
+
+```ts
+import type { WxmlValidate } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite/config'
+
+const checkCheckout: WxmlValidate = async (_code, ctx) => {
+  if (ctx.platform !== 'weapp' || !ctx.fileName.startsWith('packages/checkout/')) {
+    return
+  }
+  await ctx.walk((node) => {
+    if (node.tagName === 'button' && node.getAttribute('data-track')?.rawValue === '') {
+      ctx.report({ severity: 'error', message: '静态埋点属性不可为空字符串', location: node.location })
+    }
+  })
+}
+
+export default defineConfig({
+  weapp: { wxml: { validate: [checkCheckout] } },
+})
+```
+
+校验按最终静态标签名匹配，因此 Vue HTML 映射后的 `div` 通常需要检查 `view`。已被 `remove` 删除的节点不会再命中；输出插件新添加的节点会被检查。独立分包在所属构建中校验一次，汇入主包不重复执行。
+
+### 外部规则与 HMR
+
+外部规则文件与转换阶段共用监听、分阶段记录依赖。在读取前登记文件，即使文件缺失导致失败，也能在恢复时触发重新构建：
+
+```ts
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wxml: {
+      validate: async (_code, ctx) => {
+        ctx.addWatchFile('wxml-policy.json')
+        const policy: unknown = JSON.parse(await readFile(resolve(ctx.root, 'wxml-policy.json'), 'utf8'))
+        if (!Array.isArray(policy) || !policy.every(tag => typeof tag === 'string')) {
+          throw new Error('wxml-policy.json 必须是禁用标签名的字符串数组')
+        }
+        const forbidden = new Set<string>(policy)
+        await ctx.walk((node) => {
+          if (forbidden.has(node.tagName)) {
+            ctx.report({ severity: 'error', message: `不允许使用 ${node.tagName}`, location: node.location })
+          }
+        })
+      },
+    },
+  },
+})
+```
+
+`wxml-policy.json` 例如 `["debug-panel"]`。同一文件跨模板或阶段登记会去重；修改、删除、恢复触发完整模板重建与校验。局部构建保留未触及模板的依赖，成功完整构建清理失效登记。不要监听输出目录，也不要把一次读取的结果永久缓存而忽略规则更新。
+
+“最终”指框架管理的输出链完成后的模板，不保证覆盖任意排在该阶段之后的第三方 Vite 插件修改。不保证跨文件／分包回调顺序，不追踪任意文件读取、环境变量或网络响应；第一版不提供内置业务规则、跨文件全局校验、独立 CLI 或报告文件，也不能替代宿主完整语法和运行时检查。

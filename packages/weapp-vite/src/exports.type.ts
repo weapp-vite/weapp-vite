@@ -20,6 +20,8 @@ import type {
   ScanWxmlOptions,
   SubPackage,
   WeappViteConfig,
+  WxmlRemoveAttrRule,
+  WxmlRemoveOptions,
 } from './types'
 
 export type {
@@ -44,4 +46,10 @@ export type {
   ScanWxmlOptions,
   SubPackage,
   WeappViteConfig,
+  WxmlRemoveAttrRule,
+  WxmlRemoveOptions,
 }
+
+export type { WxmlAttribute, WxmlAttributeValue, WxmlElementInfo, WxmlSourceLocation, WxmlTransform, WxmlTransformContext, WxmlTransformNode, WxmlTransformResult, WxmlTransformVisitor } from './types/config/wxmlTransform'
+
+export type { WxmlValidate, WxmlValidationContext, WxmlValidationDiagnostic, WxmlValidationVisitor } from './types/config/wxmlValidate'

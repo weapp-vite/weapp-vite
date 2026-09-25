@@ -1,5 +1,6 @@
 /* eslint-disable ts/no-use-before-define -- 递归表达式解释器的求值 helper 会互相调用。 */
 import { parseExpression } from '@babel/parser'
+import { isTemplateExpression } from './templateInterpolation'
 import { callWxsFunction } from './wxs'
 
 type ExpressionNode = Record<string, any>
@@ -8,14 +9,9 @@ const expressionCache = new Map<string, ExpressionNode | null>()
 const BLOCKED_MEMBER_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 const NUMERIC_DOT_PATH_RE = /\.(\d+)(?=[.[\s,}\]]|$)/g
 
-function isMustacheOnly(value: string) {
-  const trimmed = value.trim()
-  return trimmed.startsWith('{{') && trimmed.endsWith('}}') && !trimmed.includes('{{', 2)
-}
-
 function unwrapMustacheExpression(expression: string) {
   const normalized = expression.trim()
-  if (isMustacheOnly(normalized)) {
+  if (isTemplateExpression(normalized)) {
     return normalized.slice(2, -2).trim()
   }
   return normalized

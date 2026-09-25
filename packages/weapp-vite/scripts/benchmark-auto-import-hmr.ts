@@ -1,16 +1,17 @@
 /* eslint-disable ts/no-use-before-define */
 import type { DevHeapUsage } from '../../../e2e/utils/dev-memory'
-import { cp, lstat, mkdir, mkdtemp, readdir, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-memory'
 import { startDevProcess } from '../../../e2e/utils/dev-process'
-import { createDevProcessEnv } from '../../../e2e/utils/dev-process-env'
+import { createBenchmarkDevEnv } from '../../../scripts/benchmarkTemplatesHmr/environment'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
-import { resolveRepoRoot, resolveWorkspaceNodeModulesDir } from '../src/utils/workspace'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
+import { benchmarkModeSelected, benchmarkReportResults } from './utils/benchmarkSelection'
+import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
 import { patchProjectConfigFile } from './utils/config-file'
 import { HMR_OUTPUT_POLL_INTERVAL_MS, measureFileMarkerUpdate } from './utils/hmrOutput'
 import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
@@ -19,21 +20,13 @@ const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
 const disableCurrentSupportOutputs = process.env.BENCH_DISABLE_CURRENT_SUPPORT_OUTPUTS === '1'
 const fixtureSource = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/auto-import')
-const workspaceRootNodeModulesDir = resolveWorkspaceNodeModulesDir(import.meta.dirname)
-if (!workspaceRootNodeModulesDir) {
-  throw new Error('Unable to locate workspace node_modules directory for auto-import hmr benchmark.')
-}
-const workspaceWeappViteDir = path.resolve(import.meta.dirname, '..')
-const workspaceRootDir = resolveRepoRoot(import.meta.dirname)
-if (!workspaceRootDir) {
-  throw new Error('Unable to locate repo root for auto-import hmr benchmark.')
-}
+const { workspaceRootDir, workspaceRootNodeModulesDir, workspaceWeappViteDir } = resolveBenchmarkTarget(import.meta.dirname)
 const reportDir = resolveReportDir('auto-import-hmr')
 const reportJsonPath = path.join(reportDir, 'report.json')
 const reportMdPath = path.join(reportDir, 'report.md')
 const resolverComponents = createVantResolverComponents()
 const allResolverTags = Object.keys(resolverComponents).sort((a, b) => a.localeCompare(b))
-const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'src/config.ts')).href
+const DEFINE_CONFIG_IMPORT = pathToFileURL(path.join(workspaceWeappViteDir, 'dist/config.mjs')).href
 const BENCHMARK_RESOLVER_PATH = './benchmark-vant-resolver'
 const VANT_PACKAGE_PREFIX_RE = /^@vant\/weapp\/?/
 const ORIGINAL_AUTO_IMPORT_BLOCK = [
@@ -44,7 +37,7 @@ const ORIGINAL_AUTO_IMPORT_BLOCK = [
   '        ]',
   '      }',
 ].join('\n')
-const CLI_PATH = path.resolve(import.meta.dirname, '../bin/weapp-vite.js')
+const CLI_PATH = path.join(workspaceWeappViteDir, 'bin/weapp-vite.js')
 const DEV_TIMEOUT_MS = Number.parseInt(process.env.AUTO_IMPORT_HMR_TIMEOUT_MS ?? '90000', 10)
 const INITIAL_BUILD_READY_RE = /小程序初次构建完成[\s\S]*开发服务已就绪/
 const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
@@ -69,7 +62,11 @@ async function main() {
   for (const usedCount of scenarioValues) {
     const result = await runScenario(usedCount)
     results.push(result)
-    printScenario(result)
+    if (!process.env.BENCH_CONFIGURATIONS) {
+      printScenario(result)
+    }
+    await mkdir(reportDir, { recursive: true })
+    await writeFile(reportJsonPath, JSON.stringify({ iterations, results: benchmarkReportResults(results) }, null, 2))
   }
 
   await mkdir(reportDir, { recursive: true })
@@ -81,16 +78,19 @@ async function main() {
       clock: 'performance.now',
       pollIntervalMs: HMR_OUTPUT_POLL_INTERVAL_MS,
     },
-    results,
+    results: benchmarkReportResults(results),
   }, null, 2))
-  await writeFile(reportMdPath, renderMarkdown(results), 'utf8')
+  await writeFile(reportMdPath, process.env.BENCH_CONFIGURATIONS ? '配置确认原始样本；未执行的配置不生成比较摘要。\n' : renderMarkdown(results), 'utf8')
 
   console.log(`[auto-import-hmr-bench] report.json -> ${reportJsonPath}`)
   console.log(`[auto-import-hmr-bench] report.md -> ${reportMdPath}`)
 }
 
 async function runScenario(usedCount: number) {
+  const requestedCount = usedCount
   const usedTags = allResolverTags.slice(0, usedCount)
+  usedCount = usedTags.length
+  const raw: { manual: Awaited<ReturnType<typeof measureHmr>>[], automatic: Awaited<ReturnType<typeof measureHmr>>[] } = { manual: [], automatic: [] }
   const baselineStartupSamples: number[] = []
   const currentStartupSamples: number[] = []
   const baselineUpdateSamples: number[] = []
@@ -101,17 +101,24 @@ async function runScenario(usedCount: number) {
   const currentUpdateMemorySamples: Array<DevHeapUsage | undefined> = []
 
   for (let i = 0; i < iterations; i += 1) {
-    const baseline = await measureHmr({ usedTags, mode: 'baseline', iteration: i })
-    baselineStartupSamples.push(baseline.startupMs)
-    baselineUpdateSamples.push(baseline.updateMs)
-    baselineStartupMemorySamples.push(baseline.startupMemory)
-    baselineUpdateMemorySamples.push(baseline.updateMemory)
-
-    const current = await measureHmr({ usedTags, mode: 'current', iteration: i })
-    currentStartupSamples.push(current.startupMs)
-    currentUpdateSamples.push(current.updateMs)
-    currentStartupMemorySamples.push(current.startupMemory)
-    currentUpdateMemorySamples.push(current.updateMemory)
+    if (benchmarkModeSelected(usedCount, 'manual')) {
+      console.log(`[auto-import-progress] ${usedCount}:manual ${i + 1}/${iterations}`)
+      const baseline = await measureHmr({ usedTags, mode: 'baseline', iteration: i })
+      raw.manual.push(baseline)
+      baselineStartupSamples.push(baseline.startupMs)
+      baselineUpdateSamples.push(baseline.updateMs)
+      baselineStartupMemorySamples.push(baseline.startupMemory)
+      baselineUpdateMemorySamples.push(baseline.updateMemory)
+    }
+    if (benchmarkModeSelected(usedCount, 'automatic')) {
+      console.log(`[auto-import-progress] ${usedCount}:automatic ${i + 1}/${iterations}`)
+      const current = await measureHmr({ usedTags, mode: 'current', iteration: i })
+      raw.automatic.push(current)
+      currentStartupSamples.push(current.startupMs)
+      currentUpdateSamples.push(current.updateMs)
+      currentStartupMemorySamples.push(current.startupMemory)
+      currentUpdateMemorySamples.push(current.updateMemory)
+    }
   }
 
   const baselineStartup = summarizeNumbers(baselineStartupSamples)
@@ -121,6 +128,8 @@ async function runScenario(usedCount: number) {
 
   return {
     usedCount,
+    requestedCount,
+    raw,
     startup: {
       baseline: baselineStartup,
       baselineMemory: summarizeHeapSamples(baselineStartupMemorySamples),
@@ -167,9 +176,9 @@ async function measureHmr(options: {
     const dev = startDevProcess(process.execPath, [CLI_PATH, 'dev', project.tempDir, '--platform', 'weapp', '--skipNpm'], {
       cwd: workspaceRootDir,
       env: {
-        ...createDevProcessEnv({ nodeOptions: memoryNodeOptions }),
+        ...createBenchmarkDevEnv(memoryNodeOptions),
         DEBUG: 'weapp-vite:load-entry',
-        PATH: `${path.join(workspaceRootNodeModulesDir, '.bin')}:${process.env.PATH ?? ''}`,
+        PATH: createBenchmarkPath(path.join(workspaceRootNodeModulesDir, '.bin')),
       },
       stdout: 'pipe',
       stderr: 'pipe',
@@ -182,30 +191,41 @@ async function measureHmr(options: {
       const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${mode} auto-import HMR benchmark`, DEV_TIMEOUT_MS)
       const startupMemory = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
 
-      const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}`
-      const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
-      const measurementAbort = new AbortController()
-      let updateMs: number
-      try {
-        updateMs = await dev.waitFor(
-          measureFileMarkerUpdate({
-            outputPath: path.join(project.tempDir, 'dist/pages/bench-hmr-auto-import/index.wxml'),
+      const outputPath = path.join(project.tempDir, 'dist/pages/bench-hmr-auto-import/index.wxml')
+      const originalOutput = await readFile(outputPath, 'utf8')
+      const cycles: Array<{ editMs: number, restoreMs: number }> = []
+      for (let cycle = 0; cycle < (process.env.AUTO_IMPORT_BENCH_PAIRED === '1' ? 2 : 1); cycle++) {
+        const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}-${cycle}`
+        const updatedSource = insertMarkerBeforeClosingView(seededSource, marker)
+        const measurementAbort = new AbortController()
+        try {
+          const editMs = await dev.waitFor(measureFileMarkerUpdate({
+            outputPath,
             marker,
             update: () => writeFile(pagePath, updatedSource, 'utf8'),
             timeoutMs: DEV_TIMEOUT_MS,
             signal: measurementAbort.signal,
-          }),
-          `${mode} emitted hmr marker`,
-        )
+          }), `${mode} emitted hmr marker`)
+          const restoreMs = await dev.waitFor(measureFileMarkerUpdate({
+            outputPath,
+            marker,
+            expectedOutput: originalOutput,
+            update: () => writeFile(pagePath, seededSource, 'utf8'),
+            timeoutMs: DEV_TIMEOUT_MS,
+            signal: measurementAbort.signal,
+          }), `${mode} restored hmr output`)
+          cycles.push({ editMs, restoreMs })
+        }
+        finally {
+          measurementAbort.abort()
+        }
       }
-      finally {
-        // dev 提前退出时同步停止文件轮询，不留下跨场景等待任务。
-        measurementAbort.abort()
-      }
+      const updateMs = cycles[0]!.editMs
       const updateMemory = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
 
       return {
         startupMs,
+        cycles,
         startupMemory,
         updateMs,
         updateMemory,
@@ -356,9 +376,10 @@ async function ensureBenchmarkResolverPackage(projectRoot: string, usedTags: str
 }
 
 async function createTempFixtureProject(sourceRoot: string, prefix: string) {
-  const tempRoot = path.resolve(sourceRoot, '..', '__temp__')
-  await mkdir(tempRoot, { recursive: true })
-  const tempDir = await mkdtemp(path.join(tempRoot, `${prefix}-`))
+  const base = path.join(workspaceRootDir, '.tmp/auto-import-workspaces')
+  await mkdir(base, { recursive: true })
+  const tempRoot = await mkdtemp(path.join(base, `${prefix}-`))
+  const tempDir = path.join(tempRoot, 'project')
   const ignored = new Set(['.weapp-vite', 'dist', 'node_modules'])
 
   await cp(sourceRoot, tempDir, {
@@ -379,12 +400,7 @@ async function createTempFixtureProject(sourceRoot: string, prefix: string) {
   return {
     tempDir,
     cleanup: async () => {
-      await rm(tempDir, { recursive: true, force: true })
-      await rm(path.join(tempRoot, 'node_modules'), { recursive: true, force: true })
-      const remaining = await readdir(tempRoot).catch(() => null)
-      if (remaining && remaining.length === 0) {
-        await rm(tempRoot, { recursive: true, force: true })
-      }
+      await rm(tempRoot, { recursive: true, force: true })
     },
   }
 }
@@ -561,6 +577,7 @@ function formatTimestamp(date: Date) {
 
 void main().catch(async (error) => {
   console.error(error)
-  await rm(reportDir, { recursive: true, force: true }).catch(() => undefined)
+  await mkdir(reportDir, { recursive: true })
+  await writeFile(path.join(reportDir, 'error.txt'), String(error))
   process.exitCode = 1
 })

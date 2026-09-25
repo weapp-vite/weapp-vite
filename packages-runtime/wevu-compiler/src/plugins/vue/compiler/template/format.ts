@@ -1,5 +1,5 @@
 interface WxmlFormatToken {
-  type: 'tag' | 'text'
+  type: 'tag' | 'text' | 'comment'
   value: string
 }
 
@@ -16,6 +16,14 @@ function tokenizeWxml(source: string): WxmlFormatToken[] {
 
     if (start > index) {
       tokens.push({ type: 'text', value: source.slice(index, start) })
+    }
+
+    if (source.startsWith('<!--', start)) {
+      const commentEnd = source.indexOf('-->', start + 4)
+      const end = commentEnd < 0 ? source.length : commentEnd + 3
+      tokens.push({ type: 'comment', value: source.slice(start, end) })
+      index = end
+      continue
     }
 
     let quote: '"' | '\'' | undefined

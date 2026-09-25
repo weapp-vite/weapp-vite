@@ -1,0 +1,3756 @@
+{
+  "sha": "33c7646c5bc05272cbf496beedd233736c5d4261",
+  "iterations": 20,
+  "sampleMode": "edit-only",
+  "budgetMs": 500,
+  "summary": {
+    "maxMs": 1146.2134579999838,
+    "maxWallMs": 1146.2134579999838,
+    "measuredScenarioCount": 20,
+    "overBudgetCount": 7,
+    "failedTemplateCount": 0,
+    "failedScenarioCount": 0,
+    "templateCount": 3,
+    "scenarioCount": 20
+  },
+  "templates": [
+    {
+      "id": "weapp-vite-tailwindcss-tdesign-template",
+      "startupMs": 3176.856167,
+      "scenarios": [
+        {
+          "id": "app-json",
+          "samples": [
+            {
+              "heapUsedBytes": 436761952,
+              "rssBytes": 1575272448,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 551.3683329999994,
+              "wallMs": 551.3683329999994
+            },
+            {
+              "heapUsedBytes": 438223304,
+              "rssBytes": 1588527104,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 548.9437910000006,
+              "wallMs": 548.9437910000006
+            },
+            {
+              "heapUsedBytes": 441055776,
+              "rssBytes": 1606959104,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 575.6247080000003,
+              "wallMs": 575.6247080000003
+            },
+            {
+              "heapUsedBytes": 444880488,
+              "rssBytes": 1621065728,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 576.0515000000014,
+              "wallMs": 576.0515000000014
+            },
+            {
+              "heapUsedBytes": 447778544,
+              "rssBytes": 1632698368,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 574.3650419999994,
+              "wallMs": 574.3650419999994
+            },
+            {
+              "heapUsedBytes": 450244088,
+              "rssBytes": 1641594880,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 574.5638329999983,
+              "wallMs": 574.5638329999983
+            },
+            {
+              "heapUsedBytes": 452957792,
+              "rssBytes": 1652932608,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 575.0188749999998,
+              "wallMs": 575.0188749999998
+            },
+            {
+              "heapUsedBytes": 455429640,
+              "rssBytes": 1666695168,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 706.9943750000002,
+              "wallMs": 706.9943750000002
+            },
+            {
+              "heapUsedBytes": 457975040,
+              "rssBytes": 1677115392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 651.5783330000013,
+              "wallMs": 651.5783330000013
+            },
+            {
+              "heapUsedBytes": 460501456,
+              "rssBytes": 1683750912,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 576.4820419999996,
+              "wallMs": 576.4820419999996
+            },
+            {
+              "heapUsedBytes": 462943520,
+              "rssBytes": 1692762112,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 703.7640829999982,
+              "wallMs": 703.7640829999982
+            },
+            {
+              "heapUsedBytes": 465559304,
+              "rssBytes": 1701232640,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 575.3397080000032,
+              "wallMs": 575.3397080000032
+            },
+            {
+              "heapUsedBytes": 467935424,
+              "rssBytes": 1710014464,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 576.4600829999981,
+              "wallMs": 576.4600829999981
+            },
+            {
+              "heapUsedBytes": 470389448,
+              "rssBytes": 1717583872,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 550.0001249999987,
+              "wallMs": 550.0001249999987
+            },
+            {
+              "heapUsedBytes": 472994760,
+              "rssBytes": 1722646528,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 575.1181660000002,
+              "wallMs": 575.1181660000002
+            },
+            {
+              "heapUsedBytes": 475403360,
+              "rssBytes": 1727201280,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 576.6866670000018,
+              "wallMs": 576.6866670000018
+            },
+            {
+              "heapUsedBytes": 477862768,
+              "rssBytes": 1734918144,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 705.4064169999983,
+              "wallMs": 705.4064169999983
+            },
+            {
+              "heapUsedBytes": 480338448,
+              "rssBytes": 1740718080,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 600.6721670000006,
+              "wallMs": 600.6721670000006
+            },
+            {
+              "heapUsedBytes": 482752240,
+              "rssBytes": 1749286912,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 705.3810419999936,
+              "wallMs": 705.3810419999936
+            },
+            {
+              "heapUsedBytes": 485247344,
+              "rssBytes": 1754398720,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 680.8508750000037,
+              "wallMs": 680.8508750000037
+            }
+          ],
+          "overBudget": true
+        },
+        {
+          "id": "app-style",
+          "samples": [
+            {
+              "heapUsedBytes": 559484840,
+              "rssBytes": 1763606528,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 829.8137089999946,
+              "wallMs": 829.8137089999946
+            },
+            {
+              "heapUsedBytes": 633461896,
+              "rssBytes": 1771012096,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 824.8215829999972,
+              "wallMs": 824.8215829999972
+            },
+            {
+              "heapUsedBytes": 707524248,
+              "rssBytes": 1779089408,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 829.8363330000066,
+              "wallMs": 829.8363330000066
+            },
+            {
+              "heapUsedBytes": 781502920,
+              "rssBytes": 1786085376,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 802.932249999998,
+              "wallMs": 802.932249999998
+            },
+            {
+              "heapUsedBytes": 855586112,
+              "rssBytes": 1791279104,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 802.5918329999986,
+              "wallMs": 802.5918329999986
+            },
+            {
+              "heapUsedBytes": 929432136,
+              "rssBytes": 1853243392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 799.4442090000011,
+              "wallMs": 799.4442090000011
+            },
+            {
+              "heapUsedBytes": 1003320776,
+              "rssBytes": 1938194432,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 769.7412499999991,
+              "wallMs": 769.7412499999991
+            },
+            {
+              "heapUsedBytes": 1077161216,
+              "rssBytes": 2025013248,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 767.2022079999952,
+              "wallMs": 767.2022079999952
+            },
+            {
+              "heapUsedBytes": 1151124808,
+              "rssBytes": 2108801024,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 743.3951249999955,
+              "wallMs": 743.3951249999955
+            },
+            {
+              "heapUsedBytes": 1224947496,
+              "rssBytes": 2191654912,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 767.9886250000054,
+              "wallMs": 767.9886250000054
+            },
+            {
+              "heapUsedBytes": 1298886616,
+              "rssBytes": 2273673216,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 741.2051659999997,
+              "wallMs": 741.2051659999997
+            },
+            {
+              "heapUsedBytes": 1372740832,
+              "rssBytes": 2353020928,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 716.9750410000051,
+              "wallMs": 716.9750410000051
+            },
+            {
+              "heapUsedBytes": 1446713160,
+              "rssBytes": 2433990656,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 851.8567079999993,
+              "wallMs": 851.8567079999993
+            },
+            {
+              "heapUsedBytes": 1520562272,
+              "rssBytes": 2521235456,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 854.6397079999952,
+              "wallMs": 854.6397079999952
+            },
+            {
+              "heapUsedBytes": 1594520512,
+              "rssBytes": 2606432256,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 854.4765000000043,
+              "wallMs": 854.4765000000043
+            },
+            {
+              "heapUsedBytes": 1668395944,
+              "rssBytes": 2688450560,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 797.0905419999908,
+              "wallMs": 797.0905419999908
+            },
+            {
+              "heapUsedBytes": 1742284632,
+              "rssBytes": 2771845120,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 827.6624999999913,
+              "wallMs": 827.6624999999913
+            },
+            {
+              "heapUsedBytes": 1816197312,
+              "rssBytes": 2853568512,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 767.6238750000048,
+              "wallMs": 767.6238750000048
+            },
+            {
+              "heapUsedBytes": 1890087424,
+              "rssBytes": 2940895232,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 742.8016250000073,
+              "wallMs": 742.8016250000073
+            },
+            {
+              "heapUsedBytes": 1964024584,
+              "rssBytes": 3021455360,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 771.7425409999996,
+              "wallMs": 771.7425409999996
+            }
+          ],
+          "overBudget": true
+        },
+        {
+          "id": "native-page-template",
+          "samples": [
+            {
+              "heapUsedBytes": 1966467464,
+              "rssBytes": 3040165888,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 629.1768329999904,
+              "wallMs": 629.1768329999904
+            },
+            {
+              "heapUsedBytes": 1970069032,
+              "rssBytes": 3056369664,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 600.8179999999993,
+              "wallMs": 600.8179999999993
+            },
+            {
+              "heapUsedBytes": 1972613784,
+              "rssBytes": 3064561664,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 599.3087499999965,
+              "wallMs": 599.3087499999965
+            },
+            {
+              "heapUsedBytes": 1975038336,
+              "rssBytes": 3069444096,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 705.8038750000123,
+              "wallMs": 705.8038750000123
+            },
+            {
+              "heapUsedBytes": 1977493224,
+              "rssBytes": 3076800512,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 629.9048329999932,
+              "wallMs": 629.9048329999932
+            },
+            {
+              "heapUsedBytes": 1979848920,
+              "rssBytes": 3085680640,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 603.1939999999886,
+              "wallMs": 603.1939999999886
+            },
+            {
+              "heapUsedBytes": 1982247080,
+              "rssBytes": 3092627456,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 601.1154170000082,
+              "wallMs": 601.1154170000082
+            },
+            {
+              "heapUsedBytes": 1984693800,
+              "rssBytes": 3095969792,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 628.4727089999942,
+              "wallMs": 628.4727089999942
+            },
+            {
+              "heapUsedBytes": 1986993968,
+              "rssBytes": 3104030720,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 601.325874999995,
+              "wallMs": 601.325874999995
+            },
+            {
+              "heapUsedBytes": 1989492640,
+              "rssBytes": 3112075264,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 603.4400000000023,
+              "wallMs": 603.4400000000023
+            },
+            {
+              "heapUsedBytes": 1992037224,
+              "rssBytes": 3120005120,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 626.8519579999993,
+              "wallMs": 626.8519579999993
+            },
+            {
+              "heapUsedBytes": 1994393696,
+              "rssBytes": 3131604992,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 600.3783339999936,
+              "wallMs": 600.3783339999936
+            },
+            {
+              "heapUsedBytes": 1996758536,
+              "rssBytes": 3139944448,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 604.2432079999999,
+              "wallMs": 604.2432079999999
+            },
+            {
+              "heapUsedBytes": 1999234712,
+              "rssBytes": 3147595776,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 602.9625840000081,
+              "wallMs": 602.9625840000081
+            },
+            {
+              "heapUsedBytes": 2001569888,
+              "rssBytes": 3156918272,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 601.2432920000138,
+              "wallMs": 601.2432920000138
+            },
+            {
+              "heapUsedBytes": 2003952960,
+              "rssBytes": 3165454336,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 604.1154160000006,
+              "wallMs": 604.1154160000006
+            },
+            {
+              "heapUsedBytes": 2006413736,
+              "rssBytes": 3173711872,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 704.315208,
+              "wallMs": 704.315208
+            },
+            {
+              "heapUsedBytes": 2008836536,
+              "rssBytes": 3183411200,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 756.5928750000021,
+              "wallMs": 756.5928750000021
+            },
+            {
+              "heapUsedBytes": 2011254016,
+              "rssBytes": 3191422976,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 730.9599580000067,
+              "wallMs": 730.9599580000067
+            },
+            {
+              "heapUsedBytes": 2013617880,
+              "rssBytes": 3203137536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 754.812791999997,
+              "wallMs": 754.812791999997
+            }
+          ],
+          "overBudget": true
+        },
+        {
+          "id": "native-page-script",
+          "samples": [
+            {
+              "heapUsedBytes": 2014367648,
+              "rssBytes": 3208642560,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 202.32079199999862,
+              "wallMs": 202.32079199999862
+            },
+            {
+              "heapUsedBytes": 2015885112,
+              "rssBytes": 3213967360,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 314.7795419999893,
+              "wallMs": 314.7795419999893
+            },
+            {
+              "heapUsedBytes": 2017439376,
+              "rssBytes": 3216211968,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 170.0293329999986,
+              "wallMs": 170.0293329999986
+            },
+            {
+              "heapUsedBytes": 2018708280,
+              "rssBytes": 3219275776,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 103.23708299999998,
+              "wallMs": 103.23708299999998
+            },
+            {
+              "heapUsedBytes": 2020152880,
+              "rssBytes": 3223126016,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 100.55387499999779,
+              "wallMs": 100.55387499999779
+            },
+            {
+              "heapUsedBytes": 2021568440,
+              "rssBytes": 3226648576,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 105.48758300000918,
+              "wallMs": 105.48758300000918
+            },
+            {
+              "heapUsedBytes": 2023032168,
+              "rssBytes": 3229859840,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 100.02858300000662,
+              "wallMs": 100.02858300000662
+            },
+            {
+              "heapUsedBytes": 2024459368,
+              "rssBytes": 3233792000,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 107.2498329999944,
+              "wallMs": 107.2498329999944
+            },
+            {
+              "heapUsedBytes": 2025991776,
+              "rssBytes": 3238707200,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 93.23554200000945,
+              "wallMs": 93.23554200000945
+            },
+            {
+              "heapUsedBytes": 2027181680,
+              "rssBytes": 3242852352,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 104.41324999998324,
+              "wallMs": 104.41324999998324
+            },
+            {
+              "heapUsedBytes": 2028674464,
+              "rssBytes": 3248291840,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 107.15404199998011,
+              "wallMs": 107.15404199998011
+            },
+            {
+              "heapUsedBytes": 2029988200,
+              "rssBytes": 3249700864,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 103.7436250000028,
+              "wallMs": 103.7436250000028
+            },
+            {
+              "heapUsedBytes": 2032409192,
+              "rssBytes": 3260612608,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 250.63504199997988,
+              "wallMs": 250.63504199997988
+            },
+            {
+              "heapUsedBytes": 2034364496,
+              "rssBytes": 3273637888,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 262.3303329999908,
+              "wallMs": 262.3303329999908
+            },
+            {
+              "heapUsedBytes": 2035398720,
+              "rssBytes": 3275194368,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 104.3322090000147,
+              "wallMs": 104.3322090000147
+            },
+            {
+              "heapUsedBytes": 2036842520,
+              "rssBytes": 3277291520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 109.55087500001537,
+              "wallMs": 109.55087500001537
+            },
+            {
+              "heapUsedBytes": 2038306000,
+              "rssBytes": 3281076224,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 110.3646669999871,
+              "wallMs": 110.3646669999871
+            },
+            {
+              "heapUsedBytes": 2039607672,
+              "rssBytes": 3285106688,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 97.49583299999358,
+              "wallMs": 97.49583299999358
+            },
+            {
+              "heapUsedBytes": 2040932816,
+              "rssBytes": 3289907200,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 100.46787499997299,
+              "wallMs": 100.46787499997299
+            },
+            {
+              "heapUsedBytes": 2042333664,
+              "rssBytes": 3292102656,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 101.90654200001154,
+              "wallMs": 101.90654200001154
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "native-page-style",
+          "samples": [
+            {
+              "heapUsedBytes": 2045105656,
+              "rssBytes": 3500130304,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 659.5665419999859,
+              "wallMs": 659.5665419999859
+            },
+            {
+              "heapUsedBytes": 2047205984,
+              "rssBytes": 3504013312,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 608.2896249999758,
+              "wallMs": 608.2896249999758
+            },
+            {
+              "heapUsedBytes": 2049646048,
+              "rssBytes": 3509010432,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 609.4964169999876,
+              "wallMs": 609.4964169999876
+            },
+            {
+              "heapUsedBytes": 2052019840,
+              "rssBytes": 3516645376,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 611.5381669999915,
+              "wallMs": 611.5381669999915
+            },
+            {
+              "heapUsedBytes": 2054455912,
+              "rssBytes": 3522887680,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 715.9723750000121,
+              "wallMs": 715.9723750000121
+            },
+            {
+              "heapUsedBytes": 2057070552,
+              "rssBytes": 3527868416,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 607.4568750000035,
+              "wallMs": 607.4568750000035
+            },
+            {
+              "heapUsedBytes": 2059418152,
+              "rssBytes": 3535306752,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 609.6172500000102,
+              "wallMs": 609.6172500000102
+            },
+            {
+              "heapUsedBytes": 2061763328,
+              "rssBytes": 3540107264,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 612.7330829999992,
+              "wallMs": 612.7330829999992
+            },
+            {
+              "heapUsedBytes": 2064153080,
+              "rssBytes": 3545382912,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 609.4180829999968,
+              "wallMs": 609.4180829999968
+            },
+            {
+              "heapUsedBytes": 2066567448,
+              "rssBytes": 3550085120,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 609.6964579999913,
+              "wallMs": 609.6964579999913
+            },
+            {
+              "heapUsedBytes": 2069074296,
+              "rssBytes": 3554934784,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 605.6810830000031,
+              "wallMs": 605.6810830000031
+            },
+            {
+              "heapUsedBytes": 2071508560,
+              "rssBytes": 3560914944,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 606.4494999999879,
+              "wallMs": 606.4494999999879
+            },
+            {
+              "heapUsedBytes": 2073910808,
+              "rssBytes": 3565912064,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 605.7211669999815,
+              "wallMs": 605.7211669999815
+            },
+            {
+              "heapUsedBytes": 2076300400,
+              "rssBytes": 3571761152,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 717.6334170000046,
+              "wallMs": 717.6334170000046
+            },
+            {
+              "heapUsedBytes": 2078809352,
+              "rssBytes": 3578527744,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 716.847207999992,
+              "wallMs": 716.847207999992
+            },
+            {
+              "heapUsedBytes": 2081148968,
+              "rssBytes": 3584524288,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 608.888666999992,
+              "wallMs": 608.888666999992
+            },
+            {
+              "heapUsedBytes": 2083508192,
+              "rssBytes": 3590225920,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 605.574667000008,
+              "wallMs": 605.574667000008
+            },
+            {
+              "heapUsedBytes": 2085931792,
+              "rssBytes": 3595354112,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 607.4350829999894,
+              "wallMs": 607.4350829999894
+            },
+            {
+              "heapUsedBytes": 2088230880,
+              "rssBytes": 3602907136,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 609.64183399998,
+              "wallMs": 609.64183399998
+            },
+            {
+              "heapUsedBytes": 2090692264,
+              "rssBytes": 3609133056,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 717.3731670000125,
+              "wallMs": 717.3731670000125
+            }
+          ],
+          "overBudget": true
+        },
+        {
+          "id": "json-sitemap",
+          "samples": [
+            {
+              "heapUsedBytes": 2092975936,
+              "rssBytes": 3613245440,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 733.9477079999924,
+              "wallMs": 733.9477079999924
+            },
+            {
+              "heapUsedBytes": 2095284488,
+              "rssBytes": 3619373056,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 599.922499999986,
+              "wallMs": 599.922499999986
+            },
+            {
+              "heapUsedBytes": 2097656864,
+              "rssBytes": 3624828928,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 732.0818750000035,
+              "wallMs": 732.0818750000035
+            },
+            {
+              "heapUsedBytes": 2099967416,
+              "rssBytes": 3632447488,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 709.3245830000087,
+              "wallMs": 709.3245830000087
+            },
+            {
+              "heapUsedBytes": 2102316520,
+              "rssBytes": 3636084736,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 601.7584999999963,
+              "wallMs": 601.7584999999963
+            },
+            {
+              "heapUsedBytes": 2104669840,
+              "rssBytes": 3641982976,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 601.3447499999893,
+              "wallMs": 601.3447499999893
+            },
+            {
+              "heapUsedBytes": 2107120448,
+              "rssBytes": 3647422464,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 706.1723749999946,
+              "wallMs": 706.1723749999946
+            },
+            {
+              "heapUsedBytes": 2109362144,
+              "rssBytes": 3653320704,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 599.7502920000115,
+              "wallMs": 599.7502920000115
+            },
+            {
+              "heapUsedBytes": 2111720200,
+              "rssBytes": 3659530240,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 707.9294999999984,
+              "wallMs": 707.9294999999984
+            },
+            {
+              "heapUsedBytes": 2115643200,
+              "rssBytes": 3755212800,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1146.2134579999838,
+              "wallMs": 1146.2134579999838
+            },
+            {
+              "heapUsedBytes": 2117419184,
+              "rssBytes": 3758931968,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 733.1450830000103,
+              "wallMs": 733.1450830000103
+            },
+            {
+              "heapUsedBytes": 2119765392,
+              "rssBytes": 3763896320,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 708.0854999999865,
+              "wallMs": 708.0854999999865
+            },
+            {
+              "heapUsedBytes": 2122110360,
+              "rssBytes": 3768909824,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 705.463625000004,
+              "wallMs": 705.463625000004
+            },
+            {
+              "heapUsedBytes": 2124511560,
+              "rssBytes": 3773726720,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 707.8051249999844,
+              "wallMs": 707.8051249999844
+            },
+            {
+              "heapUsedBytes": 2126863544,
+              "rssBytes": 3779903488,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 602.0927919999813,
+              "wallMs": 602.0927919999813
+            },
+            {
+              "heapUsedBytes": 2129048664,
+              "rssBytes": 3786768384,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 681.5561250000028,
+              "wallMs": 681.5561250000028
+            },
+            {
+              "heapUsedBytes": 2131456632,
+              "rssBytes": 3792945152,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 706.4631669999799,
+              "wallMs": 706.4631669999799
+            },
+            {
+              "heapUsedBytes": 2133733104,
+              "rssBytes": 3797893120,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 630.1293750000186,
+              "wallMs": 630.1293750000186
+            },
+            {
+              "heapUsedBytes": 2136212368,
+              "rssBytes": 3804561408,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 603.7174170000071,
+              "wallMs": 603.7174170000071
+            },
+            {
+              "heapUsedBytes": 2138568720,
+              "rssBytes": 3814719488,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 707.8613750000077,
+              "wallMs": 707.8613750000077
+            }
+          ],
+          "overBudget": true
+        },
+        {
+          "id": "json-theme",
+          "samples": [
+            {
+              "heapUsedBytes": 2140860272,
+              "rssBytes": 3821830144,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 731.4215420000255,
+              "wallMs": 731.4215420000255
+            },
+            {
+              "heapUsedBytes": 2143203000,
+              "rssBytes": 3827646464,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 734.0685839999933,
+              "wallMs": 734.0685839999933
+            },
+            {
+              "heapUsedBytes": 2145589080,
+              "rssBytes": 3834527744,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 704.6694999999891,
+              "wallMs": 704.6694999999891
+            },
+            {
+              "heapUsedBytes": 2147886832,
+              "rssBytes": 3838492672,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 705.9955830000108,
+              "wallMs": 705.9955830000108
+            },
+            {
+              "heapUsedBytes": 2150215200,
+              "rssBytes": 3843883008,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 758.5683330000029,
+              "wallMs": 758.5683330000029
+            },
+            {
+              "heapUsedBytes": 2152539648,
+              "rssBytes": 3851534336,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 731.5551660000056,
+              "wallMs": 731.5551660000056
+            },
+            {
+              "heapUsedBytes": 2154838368,
+              "rssBytes": 3856990208,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 705.3222079999978,
+              "wallMs": 705.3222079999978
+            },
+            {
+              "heapUsedBytes": 2157231232,
+              "rssBytes": 3862347776,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 707.1610420000216,
+              "wallMs": 707.1610420000216
+            },
+            {
+              "heapUsedBytes": 2159585704,
+              "rssBytes": 3871981568,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 730.9152499999909,
+              "wallMs": 730.9152499999909
+            },
+            {
+              "heapUsedBytes": 2161884648,
+              "rssBytes": 3876929536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 705.9642919999897,
+              "wallMs": 705.9642919999897
+            },
+            {
+              "heapUsedBytes": 2164442864,
+              "rssBytes": 3883073536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 731.1730840000091,
+              "wallMs": 731.1730840000091
+            },
+            {
+              "heapUsedBytes": 2166951224,
+              "rssBytes": 3890970624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 729.9575419999892,
+              "wallMs": 729.9575419999892
+            },
+            {
+              "heapUsedBytes": 2169196672,
+              "rssBytes": 3898916864,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 732.963791999995,
+              "wallMs": 732.963791999995
+            },
+            {
+              "heapUsedBytes": 2171651608,
+              "rssBytes": 3904667648,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 704.9185830000206,
+              "wallMs": 704.9185830000206
+            },
+            {
+              "heapUsedBytes": 2174095904,
+              "rssBytes": 3909812224,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 730.7631249999977,
+              "wallMs": 730.7631249999977
+            },
+            {
+              "heapUsedBytes": 2176554584,
+              "rssBytes": 3918315520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 707.007249999966,
+              "wallMs": 707.007249999966
+            },
+            {
+              "heapUsedBytes": 2179094720,
+              "rssBytes": 3923771392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 727.8564999999944,
+              "wallMs": 727.8564999999944
+            },
+            {
+              "heapUsedBytes": 2181471576,
+              "rssBytes": 3930193920,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 706.5148749999935,
+              "wallMs": 706.5148749999935
+            },
+            {
+              "heapUsedBytes": 2183739528,
+              "rssBytes": 3936993280,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 733.5144999999902,
+              "wallMs": 733.5144999999902
+            },
+            {
+              "heapUsedBytes": 2186102120,
+              "rssBytes": 3943038976,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 736.1307079999824,
+              "wallMs": 736.1307079999824
+            }
+          ],
+          "overBudget": true
+        }
+      ]
+    },
+    {
+      "id": "weapp-vite-template",
+      "startupMs": 1387.801833000034,
+      "scenarios": [
+        {
+          "id": "app-json",
+          "samples": [
+            {
+              "heapUsedBytes": 109916144,
+              "rssBytes": 605896704,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 546.1921250000014,
+              "wallMs": 546.1921250000014
+            },
+            {
+              "heapUsedBytes": 112431352,
+              "rssBytes": 625311744,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 367.7051250000368,
+              "wallMs": 367.7051250000368
+            },
+            {
+              "heapUsedBytes": 114781832,
+              "rssBytes": 643596288,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 368.6651670000283,
+              "wallMs": 368.6651670000283
+            },
+            {
+              "heapUsedBytes": 118050096,
+              "rssBytes": 658669568,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 368.016958000022,
+              "wallMs": 368.016958000022
+            },
+            {
+              "heapUsedBytes": 120449384,
+              "rssBytes": 672251904,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 368.43249999999534,
+              "wallMs": 368.43249999999534
+            },
+            {
+              "heapUsedBytes": 122691160,
+              "rssBytes": 682835968,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 393.34162500000093,
+              "wallMs": 393.34162500000093
+            },
+            {
+              "heapUsedBytes": 124924952,
+              "rssBytes": 691093504,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 366.8359580000397,
+              "wallMs": 366.8359580000397
+            },
+            {
+              "heapUsedBytes": 127067072,
+              "rssBytes": 706494464,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 366.8138329999638,
+              "wallMs": 366.8138329999638
+            },
+            {
+              "heapUsedBytes": 129257416,
+              "rssBytes": 715964416,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 365.74379100004444,
+              "wallMs": 365.74379100004444
+            },
+            {
+              "heapUsedBytes": 131391600,
+              "rssBytes": 723140608,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 365.4172920000274,
+              "wallMs": 365.4172920000274
+            },
+            {
+              "heapUsedBytes": 133521608,
+              "rssBytes": 730431488,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 364.70483399997465,
+              "wallMs": 364.70483399997465
+            },
+            {
+              "heapUsedBytes": 135704112,
+              "rssBytes": 735117312,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 365.71462500002235,
+              "wallMs": 365.71462500002235
+            },
+            {
+              "heapUsedBytes": 137865032,
+              "rssBytes": 743473152,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 368.2083749999874,
+              "wallMs": 368.2083749999874
+            },
+            {
+              "heapUsedBytes": 139993928,
+              "rssBytes": 750927872,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 366.0785419999738,
+              "wallMs": 366.0785419999738
+            },
+            {
+              "heapUsedBytes": 142123032,
+              "rssBytes": 758464512,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 392.29166700004134,
+              "wallMs": 392.29166700004134
+            },
+            {
+              "heapUsedBytes": 144267736,
+              "rssBytes": 765542400,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 366.2525000000023,
+              "wallMs": 366.2525000000023
+            },
+            {
+              "heapUsedBytes": 146376264,
+              "rssBytes": 772702208,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 367.22133299999405,
+              "wallMs": 367.22133299999405
+            },
+            {
+              "heapUsedBytes": 148505232,
+              "rssBytes": 780238848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.24716599995736,
+              "wallMs": 375.24716599995736
+            },
+            {
+              "heapUsedBytes": 150628416,
+              "rssBytes": 789889024,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 402.71604199998546,
+              "wallMs": 402.71604199998546
+            },
+            {
+              "heapUsedBytes": 152723320,
+              "rssBytes": 800964608,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 400.4789999999921,
+              "wallMs": 400.4789999999921
+            }
+          ],
+          "overBudget": true
+        },
+        {
+          "id": "app-style",
+          "samples": [
+            {
+              "heapUsedBytes": 155109928,
+              "rssBytes": 807796736,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.91970799997216,
+              "wallMs": 379.91970799997216
+            },
+            {
+              "heapUsedBytes": 157227320,
+              "rssBytes": 812138496,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.1868339999928,
+              "wallMs": 376.1868339999928
+            },
+            {
+              "heapUsedBytes": 159439344,
+              "rssBytes": 818020352,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.0657079999801,
+              "wallMs": 378.0657079999801
+            },
+            {
+              "heapUsedBytes": 161607416,
+              "rssBytes": 824803328,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.89791599998716,
+              "wallMs": 379.89791599998716
+            },
+            {
+              "heapUsedBytes": 163684640,
+              "rssBytes": 831242240,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.9419160000398,
+              "wallMs": 377.9419160000398
+            },
+            {
+              "heapUsedBytes": 165759136,
+              "rssBytes": 836452352,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 406.6519579999731,
+              "wallMs": 406.6519579999731
+            },
+            {
+              "heapUsedBytes": 167850944,
+              "rssBytes": 846381056,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 383.6022499999963,
+              "wallMs": 383.6022499999963
+            },
+            {
+              "heapUsedBytes": 169969480,
+              "rssBytes": 854343680,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 407.8609590000124,
+              "wallMs": 407.8609590000124
+            },
+            {
+              "heapUsedBytes": 172024800,
+              "rssBytes": 859815936,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 407.3998750000028,
+              "wallMs": 407.3998750000028
+            },
+            {
+              "heapUsedBytes": 174133168,
+              "rssBytes": 868057088,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 352.03758300002664,
+              "wallMs": 352.03758300002664
+            },
+            {
+              "heapUsedBytes": 176272688,
+              "rssBytes": 875397120,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.47729199996684,
+              "wallMs": 379.47729199996684
+            },
+            {
+              "heapUsedBytes": 178365648,
+              "rssBytes": 884228096,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.93745900003705,
+              "wallMs": 378.93745900003705
+            },
+            {
+              "heapUsedBytes": 180445824,
+              "rssBytes": 895893504,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.11358299996937,
+              "wallMs": 376.11358299996937
+            },
+            {
+              "heapUsedBytes": 182457272,
+              "rssBytes": 904036352,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 352.564040999976,
+              "wallMs": 352.564040999976
+            },
+            {
+              "heapUsedBytes": 184617936,
+              "rssBytes": 913113088,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 406.866624999966,
+              "wallMs": 406.866624999966
+            },
+            {
+              "heapUsedBytes": 186721712,
+              "rssBytes": 920780800,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.2941250000149,
+              "wallMs": 378.2941250000149
+            },
+            {
+              "heapUsedBytes": 188882248,
+              "rssBytes": 927465472,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.32179100002395,
+              "wallMs": 378.32179100002395
+            },
+            {
+              "heapUsedBytes": 190877008,
+              "rssBytes": 936017920,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.7435000000405,
+              "wallMs": 349.7435000000405
+            },
+            {
+              "heapUsedBytes": 192963000,
+              "rssBytes": 943898624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 407.38991699996404,
+              "wallMs": 407.38991699996404
+            },
+            {
+              "heapUsedBytes": 195149288,
+              "rssBytes": 952745984,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.79441699996823,
+              "wallMs": 379.79441699996823
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "native-page-template",
+          "samples": [
+            {
+              "heapUsedBytes": 197249016,
+              "rssBytes": 962232320,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.62591599998996,
+              "wallMs": 348.62591599998996
+            },
+            {
+              "heapUsedBytes": 199364176,
+              "rssBytes": 972636160,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.2873330000439,
+              "wallMs": 376.2873330000439
+            },
+            {
+              "heapUsedBytes": 201599784,
+              "rssBytes": 980942848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 401.14045899995835,
+              "wallMs": 401.14045899995835
+            },
+            {
+              "heapUsedBytes": 203621000,
+              "rssBytes": 988250112,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.20549999998184,
+              "wallMs": 351.20549999998184
+            },
+            {
+              "heapUsedBytes": 205758776,
+              "rssBytes": 999112704,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.10129199997755,
+              "wallMs": 377.10129199997755
+            },
+            {
+              "heapUsedBytes": 207770688,
+              "rssBytes": 1008975872,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.0996670000022,
+              "wallMs": 378.0996670000022
+            },
+            {
+              "heapUsedBytes": 209847880,
+              "rssBytes": 1017184256,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.4449580000364,
+              "wallMs": 377.4449580000364
+            },
+            {
+              "heapUsedBytes": 211954824,
+              "rssBytes": 1023770624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.0674580000341,
+              "wallMs": 377.0674580000341
+            },
+            {
+              "heapUsedBytes": 214026232,
+              "rssBytes": 1032044544,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 352.1847499999567,
+              "wallMs": 352.1847499999567
+            },
+            {
+              "heapUsedBytes": 216123752,
+              "rssBytes": 1038467072,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.3170829999726,
+              "wallMs": 378.3170829999726
+            },
+            {
+              "heapUsedBytes": 218286176,
+              "rssBytes": 1045151744,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 346.48474999994505,
+              "wallMs": 346.48474999994505
+            },
+            {
+              "heapUsedBytes": 220344936,
+              "rssBytes": 1051541504,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.6252090000198,
+              "wallMs": 377.6252090000198
+            },
+            {
+              "heapUsedBytes": 222415760,
+              "rssBytes": 1059028992,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 382.04999999998836,
+              "wallMs": 382.04999999998836
+            },
+            {
+              "heapUsedBytes": 224470776,
+              "rssBytes": 1065451520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 402.91533300001174,
+              "wallMs": 402.91533300001174
+            },
+            {
+              "heapUsedBytes": 226585280,
+              "rssBytes": 1072218112,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 401.496959000011,
+              "wallMs": 401.496959000011
+            },
+            {
+              "heapUsedBytes": 228695448,
+              "rssBytes": 1078018048,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.92249999998603,
+              "wallMs": 377.92249999998603
+            },
+            {
+              "heapUsedBytes": 230840304,
+              "rssBytes": 1086210048,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.74429100001,
+              "wallMs": 379.74429100001
+            },
+            {
+              "heapUsedBytes": 232886152,
+              "rssBytes": 1095467008,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.7899580000085,
+              "wallMs": 377.7899580000085
+            },
+            {
+              "heapUsedBytes": 234912872,
+              "rssBytes": 1102446592,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.06104200001573,
+              "wallMs": 375.06104200001573
+            },
+            {
+              "heapUsedBytes": 236959072,
+              "rssBytes": 1111277568,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 371.27416699996684,
+              "wallMs": 371.27416699996684
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "native-page-script",
+          "samples": [
+            {
+              "heapUsedBytes": 237806192,
+              "rssBytes": 1116143616,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 122.74841700005345,
+              "wallMs": 122.74841700005345
+            },
+            {
+              "heapUsedBytes": 238148832,
+              "rssBytes": 1116962816,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 132.09433299995726,
+              "wallMs": 132.09433299995726
+            },
+            {
+              "heapUsedBytes": 238644816,
+              "rssBytes": 1117503488,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 128.6870409999974,
+              "wallMs": 128.6870409999974
+            },
+            {
+              "heapUsedBytes": 238966320,
+              "rssBytes": 1118044160,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 122.28929099999368,
+              "wallMs": 122.28929099999368
+            },
+            {
+              "heapUsedBytes": 239310280,
+              "rssBytes": 1118568448,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 115.53712500003166,
+              "wallMs": 115.53712500003166
+            },
+            {
+              "heapUsedBytes": 239629544,
+              "rssBytes": 1119158272,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 130.11720800003968,
+              "wallMs": 130.11720800003968
+            },
+            {
+              "heapUsedBytes": 239920536,
+              "rssBytes": 1119977472,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 134.71670799999265,
+              "wallMs": 134.71670799999265
+            },
+            {
+              "heapUsedBytes": 240227072,
+              "rssBytes": 1120780288,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 113.43195900000865,
+              "wallMs": 113.43195900000865
+            },
+            {
+              "heapUsedBytes": 240539336,
+              "rssBytes": 1121665024,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 130.78837500000373,
+              "wallMs": 130.78837500000373
+            },
+            {
+              "heapUsedBytes": 240839752,
+              "rssBytes": 1122336768,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 130.20683299994562,
+              "wallMs": 130.20683299994562
+            },
+            {
+              "heapUsedBytes": 241134336,
+              "rssBytes": 1122877440,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 116.89395900000818,
+              "wallMs": 116.89395900000818
+            },
+            {
+              "heapUsedBytes": 241460400,
+              "rssBytes": 1123483648,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 120.20458299998427,
+              "wallMs": 120.20458299998427
+            },
+            {
+              "heapUsedBytes": 241770520,
+              "rssBytes": 1124302848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 114.48595800000476,
+              "wallMs": 114.48595800000476
+            },
+            {
+              "heapUsedBytes": 242056240,
+              "rssBytes": 1124843520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 107.34787499997765,
+              "wallMs": 107.34787499997765
+            },
+            {
+              "heapUsedBytes": 242362320,
+              "rssBytes": 1125416960,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 121.50058400002308,
+              "wallMs": 121.50058400002308
+            },
+            {
+              "heapUsedBytes": 242663720,
+              "rssBytes": 1126268928,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 132.3466250000056,
+              "wallMs": 132.3466250000056
+            },
+            {
+              "heapUsedBytes": 242982552,
+              "rssBytes": 1127677952,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 114.46287500002654,
+              "wallMs": 114.46287500002654
+            },
+            {
+              "heapUsedBytes": 243281928,
+              "rssBytes": 1128398848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 121.89791699999478,
+              "wallMs": 121.89791699999478
+            },
+            {
+              "heapUsedBytes": 243573856,
+              "rssBytes": 1129332736,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 112.10962499998277,
+              "wallMs": 112.10962499998277
+            },
+            {
+              "heapUsedBytes": 243872848,
+              "rssBytes": 1130070016,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 122.3979999999865,
+              "wallMs": 122.3979999999865
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "native-page-style",
+          "samples": [
+            {
+              "heapUsedBytes": 245335752,
+              "rssBytes": 1135542272,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.0191669999622,
+              "wallMs": 375.0191669999622
+            },
+            {
+              "heapUsedBytes": 247542304,
+              "rssBytes": 1143914496,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.8249580000411,
+              "wallMs": 376.8249580000411
+            },
+            {
+              "heapUsedBytes": 249653808,
+              "rssBytes": 1151401984,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.25708299997495,
+              "wallMs": 350.25708299997495
+            },
+            {
+              "heapUsedBytes": 251705232,
+              "rssBytes": 1159708672,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.8124170000083,
+              "wallMs": 350.8124170000083
+            },
+            {
+              "heapUsedBytes": 253752656,
+              "rssBytes": 1167261696,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.3332909999881,
+              "wallMs": 378.3332909999881
+            },
+            {
+              "heapUsedBytes": 255732256,
+              "rssBytes": 1177665536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.7934580000001,
+              "wallMs": 377.7934580000001
+            },
+            {
+              "heapUsedBytes": 257783288,
+              "rssBytes": 1186119680,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.0460839999723,
+              "wallMs": 377.0460839999723
+            },
+            {
+              "heapUsedBytes": 259829152,
+              "rssBytes": 1192034304,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 382.91370900004404,
+              "wallMs": 382.91370900004404
+            },
+            {
+              "heapUsedBytes": 261925384,
+              "rssBytes": 1199718400,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.1364579999936,
+              "wallMs": 349.1364579999936
+            },
+            {
+              "heapUsedBytes": 264000056,
+              "rssBytes": 1212645376,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 374.46483299997635,
+              "wallMs": 374.46483299997635
+            },
+            {
+              "heapUsedBytes": 266033208,
+              "rssBytes": 1220837376,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.16191700001946,
+              "wallMs": 379.16191700001946
+            },
+            {
+              "heapUsedBytes": 268091936,
+              "rssBytes": 1228668928,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 381.1754170000204,
+              "wallMs": 381.1754170000204
+            },
+            {
+              "heapUsedBytes": 270163848,
+              "rssBytes": 1239105536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.0448750000214,
+              "wallMs": 379.0448750000214
+            },
+            {
+              "heapUsedBytes": 272177664,
+              "rssBytes": 1247461376,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.636416000023,
+              "wallMs": 350.636416000023
+            },
+            {
+              "heapUsedBytes": 274287824,
+              "rssBytes": 1256292352,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.4177919999929,
+              "wallMs": 378.4177919999929
+            },
+            {
+              "heapUsedBytes": 276376160,
+              "rssBytes": 1266089984,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.37529200001154,
+              "wallMs": 373.37529200001154
+            },
+            {
+              "heapUsedBytes": 278585928,
+              "rssBytes": 1274249216,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.3982500000275,
+              "wallMs": 379.3982500000275
+            },
+            {
+              "heapUsedBytes": 280679016,
+              "rssBytes": 1282539520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 374.2022500000312,
+              "wallMs": 374.2022500000312
+            },
+            {
+              "heapUsedBytes": 282837392,
+              "rssBytes": 1290993664,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.7262079999782,
+              "wallMs": 373.7262079999782
+            },
+            {
+              "heapUsedBytes": 284841288,
+              "rssBytes": 1297645568,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.57700000004843,
+              "wallMs": 373.57700000004843
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "json-sitemap",
+          "samples": [
+            {
+              "heapUsedBytes": 286855944,
+              "rssBytes": 1302921216,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 401.541790999996,
+              "wallMs": 401.541790999996
+            },
+            {
+              "heapUsedBytes": 288865696,
+              "rssBytes": 1314537472,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.3002919999999,
+              "wallMs": 351.3002919999999
+            },
+            {
+              "heapUsedBytes": 290942664,
+              "rssBytes": 1323384832,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.75304199999664,
+              "wallMs": 376.75304199999664
+            },
+            {
+              "heapUsedBytes": 293018360,
+              "rssBytes": 1330855936,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 347.53416700003436,
+              "wallMs": 347.53416700003436
+            },
+            {
+              "heapUsedBytes": 295183592,
+              "rssBytes": 1337704448,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.20054200000595,
+              "wallMs": 348.20054200000595
+            },
+            {
+              "heapUsedBytes": 297208008,
+              "rssBytes": 1344487424,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.52462500002,
+              "wallMs": 376.52462500002
+            },
+            {
+              "heapUsedBytes": 299290040,
+              "rssBytes": 1353908224,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.14695900003426,
+              "wallMs": 350.14695900003426
+            },
+            {
+              "heapUsedBytes": 301359680,
+              "rssBytes": 1361690624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 402.87649999995483,
+              "wallMs": 402.87649999995483
+            },
+            {
+              "heapUsedBytes": 303366536,
+              "rssBytes": 1370324992,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.7986669999664,
+              "wallMs": 377.7986669999664
+            },
+            {
+              "heapUsedBytes": 305407952,
+              "rssBytes": 1379352576,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 347.9949170000036,
+              "wallMs": 347.9949170000036
+            },
+            {
+              "heapUsedBytes": 307477608,
+              "rssBytes": 1387053056,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.65708299999824,
+              "wallMs": 377.65708299999824
+            },
+            {
+              "heapUsedBytes": 309486736,
+              "rssBytes": 1395113984,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.8227499999921,
+              "wallMs": 348.8227499999921
+            },
+            {
+              "heapUsedBytes": 311581304,
+              "rssBytes": 1401634816,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.57179100002395,
+              "wallMs": 349.57179100002395
+            },
+            {
+              "heapUsedBytes": 313629848,
+              "rssBytes": 1410662400,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.31166700000176,
+              "wallMs": 379.31166700000176
+            },
+            {
+              "heapUsedBytes": 315604288,
+              "rssBytes": 1419345920,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.8776250000228,
+              "wallMs": 348.8776250000228
+            },
+            {
+              "heapUsedBytes": 317735320,
+              "rssBytes": 1427259392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.06595899997046,
+              "wallMs": 350.06595899997046
+            },
+            {
+              "heapUsedBytes": 319730392,
+              "rssBytes": 1435107328,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.267165999976,
+              "wallMs": 377.267165999976
+            },
+            {
+              "heapUsedBytes": 321792296,
+              "rssBytes": 1443217408,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.4227499999688,
+              "wallMs": 375.4227499999688
+            },
+            {
+              "heapUsedBytes": 323779120,
+              "rssBytes": 1450262528,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 347.16533399996115,
+              "wallMs": 347.16533399996115
+            },
+            {
+              "heapUsedBytes": 325817448,
+              "rssBytes": 1456357376,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.7231660000398,
+              "wallMs": 350.7231660000398
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "json-theme",
+          "samples": [
+            {
+              "heapUsedBytes": 327828376,
+              "rssBytes": 1465532416,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.8399169999757,
+              "wallMs": 350.8399169999757
+            },
+            {
+              "heapUsedBytes": 329875296,
+              "rssBytes": 1473216512,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.021791999985,
+              "wallMs": 375.021791999985
+            },
+            {
+              "heapUsedBytes": 331929712,
+              "rssBytes": 1480654848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 352.31395799998427,
+              "wallMs": 352.31395799998427
+            },
+            {
+              "heapUsedBytes": 334003360,
+              "rssBytes": 1486831616,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 381.14837500004796,
+              "wallMs": 381.14837500004796
+            },
+            {
+              "heapUsedBytes": 336061584,
+              "rssBytes": 1493827584,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.4969169999822,
+              "wallMs": 373.4969169999822
+            },
+            {
+              "heapUsedBytes": 338088272,
+              "rssBytes": 1499758592,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.1916659999988,
+              "wallMs": 377.1916659999988
+            },
+            {
+              "heapUsedBytes": 340188184,
+              "rssBytes": 1512046592,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 352.04133400000865,
+              "wallMs": 352.04133400000865
+            },
+            {
+              "heapUsedBytes": 342218848,
+              "rssBytes": 1520254976,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 342.5977089999942,
+              "wallMs": 342.5977089999942
+            },
+            {
+              "heapUsedBytes": 344358136,
+              "rssBytes": 1525907456,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 456.13704200001666,
+              "wallMs": 456.13704200001666
+            },
+            {
+              "heapUsedBytes": 346377984,
+              "rssBytes": 1534001152,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.78175000002375,
+              "wallMs": 375.78175000002375
+            },
+            {
+              "heapUsedBytes": 348411776,
+              "rssBytes": 1544830976,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.01304200000595,
+              "wallMs": 373.01304200000595
+            },
+            {
+              "heapUsedBytes": 350553176,
+              "rssBytes": 1554825216,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.25520799995866,
+              "wallMs": 351.25520799995866
+            },
+            {
+              "heapUsedBytes": 352505376,
+              "rssBytes": 1562460160,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.0779169999878,
+              "wallMs": 348.0779169999878
+            },
+            {
+              "heapUsedBytes": 354545368,
+              "rssBytes": 1570193408,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.7583330000052,
+              "wallMs": 351.7583330000052
+            },
+            {
+              "heapUsedBytes": 356608136,
+              "rssBytes": 1579499520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 374.84037499997066,
+              "wallMs": 374.84037499997066
+            },
+            {
+              "heapUsedBytes": 358661016,
+              "rssBytes": 1590460416,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.3253750000149,
+              "wallMs": 350.3253750000149
+            },
+            {
+              "heapUsedBytes": 360691808,
+              "rssBytes": 1596751872,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 352.1916659999988,
+              "wallMs": 352.1916659999988
+            },
+            {
+              "heapUsedBytes": 362868784,
+              "rssBytes": 1604648960,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.45837500004563,
+              "wallMs": 351.45837500004563
+            },
+            {
+              "heapUsedBytes": 364878232,
+              "rssBytes": 1611186176,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 345.5023330000113,
+              "wallMs": 345.5023330000113
+            },
+            {
+              "heapUsedBytes": 366952056,
+              "rssBytes": 1618690048,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 345.2446249999921,
+              "wallMs": 345.2446249999921
+            }
+          ],
+          "overBudget": false
+        }
+      ]
+    },
+    {
+      "id": "weapp-vite-wevu-template",
+      "startupMs": 1318.5336249999818,
+      "scenarios": [
+        {
+          "id": "vue-page-json-macro",
+          "samples": [
+            {
+              "heapUsedBytes": 110095456,
+              "rssBytes": 618299392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 457.73320799996145,
+              "wallMs": 457.73320799996145
+            },
+            {
+              "heapUsedBytes": 112897280,
+              "rssBytes": 641122304,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.4661249999772,
+              "wallMs": 377.4661249999772
+            },
+            {
+              "heapUsedBytes": 115921856,
+              "rssBytes": 663044096,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.4413750000531,
+              "wallMs": 375.4413750000531
+            },
+            {
+              "heapUsedBytes": 119645016,
+              "rssBytes": 676118528,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.2336250000517,
+              "wallMs": 375.2336250000517
+            },
+            {
+              "heapUsedBytes": 122618984,
+              "rssBytes": 688848896,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 398.09570900001563,
+              "wallMs": 398.09570900001563
+            },
+            {
+              "heapUsedBytes": 125345592,
+              "rssBytes": 704299008,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.9084579999908,
+              "wallMs": 373.9084579999908
+            },
+            {
+              "heapUsedBytes": 127997872,
+              "rssBytes": 714014720,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.2364579999703,
+              "wallMs": 377.2364579999703
+            },
+            {
+              "heapUsedBytes": 130659856,
+              "rssBytes": 723615744,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.1624999999767,
+              "wallMs": 375.1624999999767
+            },
+            {
+              "heapUsedBytes": 133369608,
+              "rssBytes": 732315648,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.5454579999787,
+              "wallMs": 373.5454579999787
+            },
+            {
+              "heapUsedBytes": 136047112,
+              "rssBytes": 741310464,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 380.64595799997915,
+              "wallMs": 380.64595799997915
+            },
+            {
+              "heapUsedBytes": 138549352,
+              "rssBytes": 751386624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 380.73145800002385,
+              "wallMs": 380.73145800002385
+            },
+            {
+              "heapUsedBytes": 141160400,
+              "rssBytes": 758956032,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.63958400004776,
+              "wallMs": 373.63958400004776
+            },
+            {
+              "heapUsedBytes": 143669864,
+              "rssBytes": 766148608,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 380.2965420000255,
+              "wallMs": 380.2965420000255
+            },
+            {
+              "heapUsedBytes": 146209320,
+              "rssBytes": 774995968,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.16324999998324,
+              "wallMs": 377.16324999998324
+            },
+            {
+              "heapUsedBytes": 148822328,
+              "rssBytes": 781549568,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 374.7373329999973,
+              "wallMs": 374.7373329999973
+            },
+            {
+              "heapUsedBytes": 151506208,
+              "rssBytes": 795131904,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 405.5992499999702,
+              "wallMs": 405.5992499999702
+            },
+            {
+              "heapUsedBytes": 153883208,
+              "rssBytes": 804110336,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.2655420000083,
+              "wallMs": 379.2655420000083
+            },
+            {
+              "heapUsedBytes": 156637960,
+              "rssBytes": 811253760,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 399.91949999995995,
+              "wallMs": 399.91949999995995
+            },
+            {
+              "heapUsedBytes": 159103392,
+              "rssBytes": 820101120,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.75204200000735,
+              "wallMs": 376.75204200000735
+            },
+            {
+              "heapUsedBytes": 161762824,
+              "rssBytes": 828473344,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 372.4795419999864,
+              "wallMs": 372.4795419999864
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "vue-page-template",
+          "samples": [
+            {
+              "heapUsedBytes": 164338640,
+              "rssBytes": 837353472,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.6079160000081,
+              "wallMs": 375.6079160000081
+            },
+            {
+              "heapUsedBytes": 166897616,
+              "rssBytes": 844480512,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 374.491417000012,
+              "wallMs": 374.491417000012
+            },
+            {
+              "heapUsedBytes": 169474088,
+              "rssBytes": 852803584,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.93974999996135,
+              "wallMs": 373.93974999996135
+            },
+            {
+              "heapUsedBytes": 172052128,
+              "rssBytes": 859996160,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.4250830000383,
+              "wallMs": 376.4250830000383
+            },
+            {
+              "heapUsedBytes": 174722832,
+              "rssBytes": 871792640,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.14608299999963,
+              "wallMs": 378.14608299999963
+            },
+            {
+              "heapUsedBytes": 177274568,
+              "rssBytes": 882950144,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.53174999996554,
+              "wallMs": 377.53174999996554
+            },
+            {
+              "heapUsedBytes": 179835064,
+              "rssBytes": 891682816,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 374.0445419999887,
+              "wallMs": 374.0445419999887
+            },
+            {
+              "heapUsedBytes": 182413832,
+              "rssBytes": 902561792,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 404.4131669999915,
+              "wallMs": 404.4131669999915
+            },
+            {
+              "heapUsedBytes": 184943872,
+              "rssBytes": 915603456,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 396.99916700000176,
+              "wallMs": 396.99916700000176
+            },
+            {
+              "heapUsedBytes": 187659248,
+              "rssBytes": 927399936,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 374.3671670000185,
+              "wallMs": 374.3671670000185
+            },
+            {
+              "heapUsedBytes": 190261656,
+              "rssBytes": 934592512,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.1377499999944,
+              "wallMs": 376.1377499999944
+            },
+            {
+              "heapUsedBytes": 192863208,
+              "rssBytes": 947503104,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 352.0206669999752,
+              "wallMs": 352.0206669999752
+            },
+            {
+              "heapUsedBytes": 195418032,
+              "rssBytes": 961347584,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.60195799998473,
+              "wallMs": 378.60195799998473
+            },
+            {
+              "heapUsedBytes": 198007880,
+              "rssBytes": 969965568,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 398.5953340000124,
+              "wallMs": 398.5953340000124
+            },
+            {
+              "heapUsedBytes": 200680880,
+              "rssBytes": 977027072,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 401.6502079999773,
+              "wallMs": 401.6502079999773
+            },
+            {
+              "heapUsedBytes": 203318040,
+              "rssBytes": 983842816,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.0253340000054,
+              "wallMs": 375.0253340000054
+            },
+            {
+              "heapUsedBytes": 205847608,
+              "rssBytes": 993099776,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 347.5414999999921,
+              "wallMs": 347.5414999999921
+            },
+            {
+              "heapUsedBytes": 208394752,
+              "rssBytes": 1005355008,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.2465000000084,
+              "wallMs": 375.2465000000084
+            },
+            {
+              "heapUsedBytes": 211022704,
+              "rssBytes": 1014005760,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 344.359832999995,
+              "wallMs": 344.359832999995
+            },
+            {
+              "heapUsedBytes": 213772224,
+              "rssBytes": 1024081920,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.59204100002535,
+              "wallMs": 373.59204100002535
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "vue-page-script",
+          "samples": [
+            {
+              "heapUsedBytes": 215051096,
+              "rssBytes": 1029341184,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 86.9282499999972,
+              "wallMs": 86.9282499999972
+            },
+            {
+              "heapUsedBytes": 215622184,
+              "rssBytes": 1029636096,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 104.63141700002598,
+              "wallMs": 104.63141700002598
+            },
+            {
+              "heapUsedBytes": 216373816,
+              "rssBytes": 1029832704,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 119.26754099997925,
+              "wallMs": 119.26754099997925
+            },
+            {
+              "heapUsedBytes": 216864240,
+              "rssBytes": 1030340608,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 111.50587499997346,
+              "wallMs": 111.50587499997346
+            },
+            {
+              "heapUsedBytes": 217410768,
+              "rssBytes": 1031208960,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 106.74095800000941,
+              "wallMs": 106.74095800000941
+            },
+            {
+              "heapUsedBytes": 217952536,
+              "rssBytes": 1032224768,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 99.29508299997542,
+              "wallMs": 99.29508299997542
+            },
+            {
+              "heapUsedBytes": 218508608,
+              "rssBytes": 1033945088,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 104.73708300001454,
+              "wallMs": 104.73708300001454
+            },
+            {
+              "heapUsedBytes": 219015512,
+              "rssBytes": 1035993088,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 102.48204199998872,
+              "wallMs": 102.48204199998872
+            },
+            {
+              "heapUsedBytes": 219532624,
+              "rssBytes": 1037926400,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 106.46404099999927,
+              "wallMs": 106.46404099999927
+            },
+            {
+              "heapUsedBytes": 220058008,
+              "rssBytes": 1039499264,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 108.45841600000858,
+              "wallMs": 108.45841600000858
+            },
+            {
+              "heapUsedBytes": 220599656,
+              "rssBytes": 1040777216,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 111.8682919999701,
+              "wallMs": 111.8682919999701
+            },
+            {
+              "heapUsedBytes": 221150056,
+              "rssBytes": 1041448960,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 109.50258400000166,
+              "wallMs": 109.50258400000166
+            },
+            {
+              "heapUsedBytes": 221685952,
+              "rssBytes": 1042481152,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 97.80887499998789,
+              "wallMs": 97.80887499998789
+            },
+            {
+              "heapUsedBytes": 222222984,
+              "rssBytes": 1043349504,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 100.06891700002598,
+              "wallMs": 100.06891700002598
+            },
+            {
+              "heapUsedBytes": 222734040,
+              "rssBytes": 1044512768,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 116.96520799997961,
+              "wallMs": 116.96520799997961
+            },
+            {
+              "heapUsedBytes": 223266816,
+              "rssBytes": 1045512192,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 103.70850000000792,
+              "wallMs": 103.70850000000792
+            },
+            {
+              "heapUsedBytes": 223801960,
+              "rssBytes": 1046986752,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 99.90295799996238,
+              "wallMs": 99.90295799996238
+            },
+            {
+              "heapUsedBytes": 224367888,
+              "rssBytes": 1047986176,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 111.46058399998583,
+              "wallMs": 111.46058399998583
+            },
+            {
+              "heapUsedBytes": 224920456,
+              "rssBytes": 1048903680,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 112.1955420000013,
+              "wallMs": 112.1955420000013
+            },
+            {
+              "heapUsedBytes": 225461856,
+              "rssBytes": 1049640960,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 111.04641700000502,
+              "wallMs": 111.04641700000502
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "vue-page-style",
+          "samples": [
+            {
+              "heapUsedBytes": 227433568,
+              "rssBytes": 1057882112,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.8111670000362,
+              "wallMs": 351.8111670000362
+            },
+            {
+              "heapUsedBytes": 229943752,
+              "rssBytes": 1069121536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.9914160000044,
+              "wallMs": 351.9914160000044
+            },
+            {
+              "heapUsedBytes": 232481576,
+              "rssBytes": 1083162624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.24787500000093,
+              "wallMs": 376.24787500000093
+            },
+            {
+              "heapUsedBytes": 235006056,
+              "rssBytes": 1091780608,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.63495799998054,
+              "wallMs": 349.63495799998054
+            },
+            {
+              "heapUsedBytes": 237552360,
+              "rssBytes": 1101807616,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 355.4743329999619,
+              "wallMs": 355.4743329999619
+            },
+            {
+              "heapUsedBytes": 240219104,
+              "rssBytes": 1106984960,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.42920800001593,
+              "wallMs": 350.42920800001593
+            },
+            {
+              "heapUsedBytes": 242657000,
+              "rssBytes": 1120829440,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.1243329999852,
+              "wallMs": 376.1243329999852
+            },
+            {
+              "heapUsedBytes": 245327096,
+              "rssBytes": 1127137280,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 377.75512500002515,
+              "wallMs": 377.75512500002515
+            },
+            {
+              "heapUsedBytes": 247838712,
+              "rssBytes": 1133543424,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.1149579999619,
+              "wallMs": 378.1149579999619
+            },
+            {
+              "heapUsedBytes": 250410624,
+              "rssBytes": 1142161408,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 381.02041699999245,
+              "wallMs": 381.02041699999245
+            },
+            {
+              "heapUsedBytes": 252943088,
+              "rssBytes": 1154777088,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 375.97695800004294,
+              "wallMs": 375.97695800004294
+            },
+            {
+              "heapUsedBytes": 255458808,
+              "rssBytes": 1163214848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 353.89487499999814,
+              "wallMs": 353.89487499999814
+            },
+            {
+              "heapUsedBytes": 258004480,
+              "rssBytes": 1170391040,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.92566700000316,
+              "wallMs": 350.92566700000316
+            },
+            {
+              "heapUsedBytes": 260729192,
+              "rssBytes": 1177927680,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 378.73300000000745,
+              "wallMs": 378.73300000000745
+            },
+            {
+              "heapUsedBytes": 263135872,
+              "rssBytes": 1188986880,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 371.19349999999395,
+              "wallMs": 371.19349999999395
+            },
+            {
+              "heapUsedBytes": 265734872,
+              "rssBytes": 1199603712,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 376.7002499999944,
+              "wallMs": 376.7002499999944
+            },
+            {
+              "heapUsedBytes": 268285360,
+              "rssBytes": 1206943744,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.48783300002106,
+              "wallMs": 348.48783300002106
+            },
+            {
+              "heapUsedBytes": 270914168,
+              "rssBytes": 1212858368,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 353.0409579999978,
+              "wallMs": 353.0409579999978
+            },
+            {
+              "heapUsedBytes": 273404544,
+              "rssBytes": 1224654848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 379.2422079999815,
+              "wallMs": 379.2422079999815
+            },
+            {
+              "heapUsedBytes": 275961952,
+              "rssBytes": 1234305024,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 346.4067919999943,
+              "wallMs": 346.4067919999943
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "json-sitemap",
+          "samples": [
+            {
+              "heapUsedBytes": 278243472,
+              "rssBytes": 1240809472,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 373.93170899996767,
+              "wallMs": 373.93170899996767
+            },
+            {
+              "heapUsedBytes": 280497432,
+              "rssBytes": 1249312768,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 322.88495899998816,
+              "wallMs": 322.88495899998816
+            },
+            {
+              "heapUsedBytes": 282801768,
+              "rssBytes": 1259143168,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.04724999994505,
+              "wallMs": 350.04724999994505
+            },
+            {
+              "heapUsedBytes": 285183848,
+              "rssBytes": 1271234560,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 372.98191700002644,
+              "wallMs": 372.98191700002644
+            },
+            {
+              "heapUsedBytes": 287463968,
+              "rssBytes": 1281818624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 347.3537500000093,
+              "wallMs": 347.3537500000093
+            },
+            {
+              "heapUsedBytes": 289768288,
+              "rssBytes": 1289732096,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.33874999999534,
+              "wallMs": 349.33874999999534
+            },
+            {
+              "heapUsedBytes": 292086992,
+              "rssBytes": 1298235392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.1807909999625,
+              "wallMs": 348.1807909999625
+            },
+            {
+              "heapUsedBytes": 294485128,
+              "rssBytes": 1305755648,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.940166000044,
+              "wallMs": 348.940166000044
+            },
+            {
+              "heapUsedBytes": 296724888,
+              "rssBytes": 1314652160,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 353.76050000003306,
+              "wallMs": 353.76050000003306
+            },
+            {
+              "heapUsedBytes": 299015024,
+              "rssBytes": 1322909696,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 371.62220799998613,
+              "wallMs": 371.62220799998613
+            },
+            {
+              "heapUsedBytes": 301426632,
+              "rssBytes": 1331249152,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.36008299997775,
+              "wallMs": 351.36008299997775
+            },
+            {
+              "heapUsedBytes": 303632728,
+              "rssBytes": 1339342848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 347.87945799995214,
+              "wallMs": 347.87945799995214
+            },
+            {
+              "heapUsedBytes": 305955552,
+              "rssBytes": 1349206016,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 326.7833339999779,
+              "wallMs": 326.7833339999779
+            },
+            {
+              "heapUsedBytes": 308211128,
+              "rssBytes": 1358331904,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 347.1316250000382,
+              "wallMs": 347.1316250000382
+            },
+            {
+              "heapUsedBytes": 310634120,
+              "rssBytes": 1366261760,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 321.30462499998976,
+              "wallMs": 321.30462499998976
+            },
+            {
+              "heapUsedBytes": 312883032,
+              "rssBytes": 1374273536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.23387500003446,
+              "wallMs": 351.23387500003446
+            },
+            {
+              "heapUsedBytes": 315174608,
+              "rssBytes": 1382105088,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 353.1105830000015,
+              "wallMs": 353.1105830000015
+            },
+            {
+              "heapUsedBytes": 317509896,
+              "rssBytes": 1392115712,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 320.74016699998174,
+              "wallMs": 320.74016699998174
+            },
+            {
+              "heapUsedBytes": 319867480,
+              "rssBytes": 1399422976,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 351.6675840000389,
+              "wallMs": 351.6675840000389
+            },
+            {
+              "heapUsedBytes": 322155440,
+              "rssBytes": 1407598592,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.09050000004936,
+              "wallMs": 348.09050000004936
+            }
+          ],
+          "overBudget": false
+        },
+        {
+          "id": "json-theme",
+          "samples": [
+            {
+              "heapUsedBytes": 324427544,
+              "rssBytes": 1414430720,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 325.6903750000056,
+              "wallMs": 325.6903750000056
+            },
+            {
+              "heapUsedBytes": 326643992,
+              "rssBytes": 1421836288,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 372.1625420000637,
+              "wallMs": 372.1625420000637
+            },
+            {
+              "heapUsedBytes": 329054232,
+              "rssBytes": 1430945792,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 321.7874999999767,
+              "wallMs": 321.7874999999767
+            },
+            {
+              "heapUsedBytes": 331309952,
+              "rssBytes": 1442234368,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 346.7417079999577,
+              "wallMs": 346.7417079999577
+            },
+            {
+              "heapUsedBytes": 333731472,
+              "rssBytes": 1448951808,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 324.2047920000041,
+              "wallMs": 324.2047920000041
+            },
+            {
+              "heapUsedBytes": 336069464,
+              "rssBytes": 1456291840,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 324.56225000007544,
+              "wallMs": 324.56225000007544
+            },
+            {
+              "heapUsedBytes": 338383928,
+              "rssBytes": 1463926784,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.4187910000328,
+              "wallMs": 349.4187910000328
+            },
+            {
+              "heapUsedBytes": 340701152,
+              "rssBytes": 1472315392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 348.6064999999944,
+              "wallMs": 348.6064999999944
+            },
+            {
+              "heapUsedBytes": 342931056,
+              "rssBytes": 1479147520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 323.9521670000395,
+              "wallMs": 323.9521670000395
+            },
+            {
+              "heapUsedBytes": 345184696,
+              "rssBytes": 1487798272,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.44866599992383,
+              "wallMs": 350.44866599992383
+            },
+            {
+              "heapUsedBytes": 347538352,
+              "rssBytes": 1495154688,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 325.99762499995995,
+              "wallMs": 325.99762499995995
+            },
+            {
+              "heapUsedBytes": 349850792,
+              "rssBytes": 1503969280,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 327.1364160000812,
+              "wallMs": 327.1364160000812
+            },
+            {
+              "heapUsedBytes": 352143848,
+              "rssBytes": 1516257280,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.484832999995,
+              "wallMs": 349.484832999995
+            },
+            {
+              "heapUsedBytes": 354397728,
+              "rssBytes": 1525317632,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.65070800005924,
+              "wallMs": 349.65070800005924
+            },
+            {
+              "heapUsedBytes": 356677024,
+              "rssBytes": 1536720896,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 321.0546669999603,
+              "wallMs": 321.0546669999603
+            },
+            {
+              "heapUsedBytes": 358995728,
+              "rssBytes": 1548173312,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 322.1152080000611,
+              "wallMs": 322.1152080000611
+            },
+            {
+              "heapUsedBytes": 361291112,
+              "rssBytes": 1557069824,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 344.2432089999784,
+              "wallMs": 344.2432089999784
+            },
+            {
+              "heapUsedBytes": 363538088,
+              "rssBytes": 1564950528,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 349.66762500000186,
+              "wallMs": 349.66762500000186
+            },
+            {
+              "heapUsedBytes": 365853632,
+              "rssBytes": 1573306368,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 322.7062079999596,
+              "wallMs": 322.7062079999596
+            },
+            {
+              "heapUsedBytes": 368088064,
+              "rssBytes": 1584168960,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 483.21333300007973,
+              "wallMs": 483.21333300007973
+            }
+          ],
+          "overBudget": false
+        }
+      ]
+    }
+  ]
+}

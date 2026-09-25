@@ -70,6 +70,28 @@ describe('benchmark emitted HMR completion', () => {
     expect(update).not.toHaveBeenCalled()
   })
 
+  it('requires byte-for-byte restored output instead of just an absent marker', async () => {
+    const expectedOutput = await readFile(outputPath, 'utf8')
+    await writeFile(outputPath, `<view>${marker}</view>`)
+    await expect(measureFileMarkerUpdate({
+      outputPath,
+      marker,
+      expectedOutput,
+      timeoutMs: 50,
+      update: () => writeFile(outputPath, '<view>unrelated output</view>'),
+    })).rejects.toThrow('Timed out')
+    await expect(measureFileMarkerUpdate({
+      outputPath,
+      marker,
+      expectedOutput,
+      timeoutMs: 2000,
+      update: () => writeFile(outputPath, expectedOutput),
+    })).resolves.toBeGreaterThan(0)
+    const update = vi.fn(async () => {})
+    await expect(measureFileMarkerUpdate({ outputPath, marker, expectedOutput, update, timeoutMs: 50 })).rejects.toThrow('already restored')
+    expect(update).not.toHaveBeenCalled()
+  })
+
   it('accepts an atomic replacement after a temporary missing file', async () => {
     let pendingWrite: Promise<void> | undefined
     try {

@@ -1,0 +1,3 @@
+<view data-testid="native-component">keep-component-body</view>
+<button id="emit-ready" bindtap="emitReady">emit-ready</button>
+<text id="probe-value">[{{probe}}]</text>

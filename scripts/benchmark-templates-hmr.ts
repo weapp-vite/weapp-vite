@@ -11,13 +11,14 @@ import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import { execa } from 'execa'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils/dev-process'
-import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
+import { createBenchmarkDevEnv } from './benchmarkTemplatesHmr/environment'
 import { captureBenchmarkFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
 import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
+import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
 import { collectBenchmarkHmrProfile } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
@@ -97,6 +98,7 @@ interface ScenarioResult {
   outputFile: string
   overBudget: boolean
   samples: ScenarioSample[]
+  cycles?: Array<{ edit: ScenarioSample, restore: ScenarioSample }>
   sourceFile: string
   diagnostics?: {
     phase: string
@@ -162,6 +164,7 @@ const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MA
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
 const failOnError = process.env.TEMPLATES_HMR_FAIL_ON_ERROR === '1'
 const filter = parseFilterEnv(process.env.TEMPLATES_HMR_FILTER)
+const scenarioFilter = parseFilterEnv(process.env.TEMPLATES_HMR_SCENARIO_FILTER)
 const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
 const scenarioGroupPriority: ScenarioGroup[] = [
   'app-json',
@@ -185,11 +188,26 @@ export async function main() {
   const selectedTemplates = templates.filter((template) => {
     return matchesFilter(template.id, filter)
   })
+  if (process.env.TEMPLATES_HMR_PLAN_ONLY === '1') {
+    const manifest = []
+    for (const template of selectedTemplates) {
+      const discovered = await discoverScenarios(template)
+      const scenarios = selectScenarios(scenarioFilter.length ? discovered.filter(scenario => scenarioFilter.includes(scenario.id)) : discovered, maxScenariosPerTemplate)
+      manifest.push({ id: template.id, scenarios: scenarios.map(scenario => scenario.id) })
+    }
+    await writeFile(path.join(reportRoot, 'manifest.json'), JSON.stringify(manifest, null, 2))
+    return
+  }
   const results: TemplateResult[] = []
 
   for (const template of selectedTemplates) {
     process.stdout.write(`\n[templates-hmr] benchmarking ${template.id}\n`)
-    results.push(await benchmarkTemplate(template))
+    const result = await benchmarkTemplate(template)
+    results.push(result)
+    await writeFile(reportJsonPath, JSON.stringify(createReport(results)))
+    if (process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1' && (result.error || result.scenarios.some(scenario => scenario.error))) {
+      break
+    }
   }
 
   const report = createReport(results)
@@ -261,7 +279,8 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   const profilePath = path.join(template.workspaceRoot, '.weapp-vite/hmr-profile.jsonl')
   await rm(profilePath, { force: true }).catch(() => {})
 
-  const scenarios = selectScenarios(await discoverScenarios(workspace), maxScenariosPerTemplate)
+  const discovered = await discoverScenarios(workspace)
+  const scenarios = selectScenarios(scenarioFilter.length ? discovered.filter(scenario => scenarioFilter.includes(scenario.id)) : discovered, maxScenariosPerTemplate)
   result.scenarioCount = scenarios.length
   result.scenarios = scenarios.map(createPendingScenarioResult)
 
@@ -270,7 +289,12 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     return result
   }
 
+  const cpuProfileDir = process.env.TEMPLATES_HMR_CPU_PROFILE_DIR
+  if (cpuProfileDir) {
+    await mkdir(cpuProfileDir, { recursive: true })
+  }
   const dev = startDevProcess(process.execPath, [
+    ...(cpuProfileDir ? ['--cpu-prof', `--cpu-prof-dir=${cpuProfileDir}`] : []),
     cliPath,
     'dev',
     normalizePath(path.relative(repoRoot, template.workspaceRoot)),
@@ -279,10 +303,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   ], {
     cwd: repoRoot,
     env: {
-      ...createDevProcessEnv({
-        disableSidecarWatch: true,
-        nodeOptions: memoryNodeOptions,
-      }),
+      ...createBenchmarkDevEnv(memoryNodeOptions),
       WEAPP_VITE_HMR_PROFILE_JSON: '1',
     },
     stdout: 'pipe',
@@ -311,7 +332,11 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     const scenarioResults: ScenarioResult[] = []
     const statefulClient = new StatefulHmrAuditClient()
     for (const scenario of scenarios) {
-      scenarioResults.push(await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient))
+      const sample = await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient)
+      scenarioResults.push(sample)
+      if (sample.error && process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1') {
+        break
+      }
     }
     result.scenarios = scenarioResults
   }
@@ -351,6 +376,16 @@ async function prepareWorkspace(template: TemplateCase) {
     recursive: true,
     filter: source => !isIgnoredCopyPath(template.templateRoot, source),
   })
+
+  const runtime = process.env.TEMPLATES_HMR_RUNTIME
+  if (runtime) {
+    if (runtime !== 'classic' && runtime !== 'stateful-experimental') {
+      throw new Error(`Unknown benchmark runtime: ${runtime}`)
+    }
+    const filename = path.join(template.workspaceRoot, 'weapp-vite.config.ts')
+    await writeFile(path.join(template.workspaceRoot, 'benchmark-original.config.ts'), await readFile(filename, 'utf8'))
+    await writeFile(filename, `import original from './benchmark-original.config'\nexport default async (env) => {\n const config = await (typeof original === 'function' ? original(env) : original)\n return { ...config, weapp: { ...config.weapp, hmr: { ...config.weapp?.hmr, runtime: '${runtime}' } } }\n}\n`)
+  }
 
   const originalNodeModules = path.join(template.templateRoot, 'node_modules')
   if (await pathExists(originalNodeModules)) {
@@ -548,27 +583,6 @@ function createVueScenarios(template: TemplateCase, sourceFile: string, source: 
   return scenarios
 }
 
-function mutateJsonMarker(source: string, marker: string) {
-  const json = JSON.parse(source) as Record<string, unknown>
-  const windowOptions = json.window
-  if (
-    windowOptions
-    && typeof windowOptions === 'object'
-    && !Array.isArray(windowOptions)
-    && typeof (windowOptions as Record<string, unknown>).navigationBarTitleText === 'string'
-  ) {
-    const appWindow = windowOptions as Record<string, unknown>
-    appWindow.navigationBarTitleText = marker
-    return `${JSON.stringify(json, null, 2)}\n`
-  }
-  if (typeof json.sitemapLocation === 'string') {
-    json.sitemapLocation = marker
-    return `${JSON.stringify(json, null, 2)}\n`
-  }
-  json.__hmrMarker = marker
-  return `${JSON.stringify(json, null, 2)}\n`
-}
-
 function mutateNavigationBarTitleText(source: string, marker: string) {
   return source.replace(/navigationBarTitleText:\s*(['"`])[^'"`]*\1/, `navigationBarTitleText: '${marker}'`)
 }
@@ -589,18 +603,23 @@ async function benchmarkScenario(
 
   const original = await readFile(scenario.sourceFile, 'utf8')
   const samples: ScenarioSample[] = []
+  const cycles: Array<{ edit: ScenarioSample, restore: ScenarioSample }> = []
   const transport: Array<StatefulHmrAuditEvent & { phase: string }> = []
   let phase = 'prepare'
   let expectedMarker = ''
   let failure: ScenarioResult | undefined
-  const readOutput = scenario.group === 'native-script' || scenario.group === 'vue-script'
+  const isScript = scenario.group === 'native-script' || scenario.group === 'vue-script'
+  const readOutput = isScript
     ? createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))
     : scenario.group.endsWith('style')
       ? () => readEmittedStylesheet(scenario.outputFile)
       : () => readFile(scenario.outputFile, 'utf8')
   const controlPath = path.join(template.workspaceRoot, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
   const runtime = await pathExists(controlPath) ? 'stateful' : 'standard'
-  const usesStatefulScript = (scenario.group === 'native-script' || scenario.group === 'vue-script') && runtime === 'stateful'
+  const usesStatefulScript = isScript && runtime === 'stateful'
+  // 脚本含随 HMR 变化的版本/载荷；模板、样式和 JSON 则必须完整恢复原产物，
+  // 不能把 bundler 截断文件后暂时没有标记的空窗口当作更新完成。
+  const originalOutput = isScript ? undefined : await readOutput()
   const readControl = async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
   const waitForOutput = async (marker: string, absent = false) => {
     if (usesStatefulScript) {
@@ -618,7 +637,7 @@ async function benchmarkScenario(
         },
       })
     }
-    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs })
+    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined })
   }
 
   try {
@@ -655,6 +674,7 @@ async function benchmarkScenario(
       const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs))
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
+      cycles.push({ edit: editSample, restore: restoreSample })
       const sample = sampleMode === 'edit-only' ? editSample : selectBestScenarioSample(editSample, restoreSample)
       samples.push(sample)
       process.stdout.write(`[templates-hmr] ${template.id} ${scenario.id} ${index + 1}/${iterations} ${sample.phase ?? 'edit'} wall=${sample.wallMs.toFixed(2)}ms total=${formatMs(sample.totalMs)}\n`)
@@ -682,6 +702,7 @@ async function benchmarkScenario(
       ...createPendingScenarioResult(scenario),
       error: formatError(error),
       samples,
+      cycles,
       diagnostics,
     }
   }
@@ -719,6 +740,7 @@ async function benchmarkScenario(
     outputFile: formatReportPath(scenario.outputFile),
     overBudget: typeof maxMs === 'number' && maxMs > budgetMs,
     samples,
+    cycles,
     sourceFile: formatReportPath(scenario.sourceFile),
   }
 }
@@ -1072,9 +1094,7 @@ function createMarker(templateId: string, scenarioId: string, index: number) {
 async function runCli(args: string[]) {
   await execa(process.execPath, [cliPath, ...args], {
     cwd: repoRoot,
-    env: createDevProcessEnv({
-      disableSidecarWatch: true,
-    }),
+    env: createBenchmarkDevEnv(),
     stdio: 'inherit',
   })
 }

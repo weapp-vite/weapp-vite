@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "debug-panel": "/components/debug-panel/index",
+    "keep-card": "/components/keep-card/index"
+  }
+}

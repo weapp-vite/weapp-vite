@@ -597,6 +597,30 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it.each([true, false])('publishes current App dependencies and replaces stale paths (present=%s)', async (present) => {
+    const appEntry = {
+      type: 'app',
+      path: '/project/src/app.vue',
+      jsonPath: '/project/src/app.vue',
+      json: { pages: [] },
+      ...(present ? { sitemapJsonPath: '/project/src/new-sitemap.json', themeJsonPath: '/project/src/new-theme.json' } : {}),
+    }
+    const { loader, entriesMap } = createLoader()
+    entriesMap.set('app', {
+      ...appEntry,
+      sitemapJsonPath: '/project/src/old-sitemap.json',
+      themeJsonPath: '/project/src/old-theme.json',
+    })
+    mockExtractConfigFromVue.mockResolvedValue({ pages: [], sitemapLocation: 'new-sitemap.json', themeLocation: 'new-theme.json' })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => ({
+      path: present && (filepath.endsWith('new-sitemap.json') || filepath.endsWith('new-theme.json')) ? filepath : undefined,
+      predictions: [],
+    }))
+    await loader.call(createPluginContext(), appEntry.path, 'app')
+    expect(entriesMap.get('app')?.sitemapJsonPath).toBe(appEntry.sitemapJsonPath)
+    expect(entriesMap.get('app')?.themeJsonPath).toBe(appEntry.themeJsonPath)
+  })
+
   it('reuses cached entry json during direct script hmr', async () => {
     const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()

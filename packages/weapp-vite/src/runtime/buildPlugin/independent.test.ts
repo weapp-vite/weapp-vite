@@ -189,6 +189,14 @@ describe('runtime buildPlugin independent builder', () => {
     expect(builder.getIndependentOutput('packageA')).toBeUndefined()
   })
 
+  it('forces memory-only one-shot output even when config merging restores watch/write options', async () => {
+    const { builder, isolatedConfigService } = createBuilder()
+    isolatedConfigService.merge.mockReturnValue({ build: { write: true, watch: { include: ['**'] } } })
+    buildMock.mockResolvedValueOnce({ output: [] })
+    await builder.buildIndependentBundle('sub', { subPackage: { root: 'sub' } } as any)
+    expect(buildMock.mock.calls[0]?.[0].build).toMatchObject({ write: false, watch: null })
+  })
+
   it('initializes scoped auto imports inside the isolated context without output writes', async () => {
     const output = { output: [{ fileName: 'packageA/index.js' }] } as any
     const candidates = [

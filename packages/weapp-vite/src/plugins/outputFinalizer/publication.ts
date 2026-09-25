@@ -1,10 +1,14 @@
-import type { OutputBundle } from 'rolldown'
+import type { EmittedAsset, OutputBundle } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
+import type { WxmlDependencyCommit } from '../../wxml/processing/dependencies'
 import type { RewriteWevuInternalRuntimeImportsOptions } from '../core/helpers/bundle'
 import { Buffer } from 'node:buffer'
+import { createHmrProfileCheckpoint } from '../../utils/hmrProfile'
 import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
+import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/processing/dependencies'
+import { validateWxmlBundle } from '../../wxml/validate'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
 import { flushIndependentOutputs } from './independent'
 
@@ -103,14 +107,41 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
+        const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         const outputBundle = bundle as unknown as OutputBundle
-        pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
-          runtimeRewriteDone: true,
-          preserveCompleteBundle,
-        })
-        syncOutputChunkSourceMapAssets(outputBundle)
-        // 独立分包已完成自身的规范化、编译器转换与裁剪，不再进入主包编译器。
-        await flushIndependentOutputs(ctx, subPackageMeta, asset => this.emitFile(asset))
+        const partial = !preserveCompleteBundle
+          && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
+          && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+        let commitValidation: WxmlDependencyCommit | undefined
+        try {
+          commitValidation = await validateWxmlBundle(ctx, outputBundle, {
+            warn: message => this.warn(message),
+            addWatchFile: file => this.addWatchFile?.(file),
+            partial,
+          }, subPackageMeta?.subPackage.root)
+          checkpoint('publicationValidateMs')
+          // 先等待独立分包成功，失败时不能提前推进主包的 HMR 指纹。
+          // 子产物已完成自身校验与裁剪，在主包内不重复处理。
+          const independentAssets: EmittedAsset[] = []
+          await flushIndependentOutputs(ctx, subPackageMeta, asset => independentAssets.push(asset))
+          checkpoint('publicationIndependentMs')
+          pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
+            runtimeRewriteDone: true,
+            preserveCompleteBundle,
+          })
+          syncOutputChunkSourceMapAssets(outputBundle)
+          for (const asset of independentAssets) {
+            this.emitFile(asset)
+          }
+          commitWxmlDependencies(ctx)
+          commitValidation?.()
+          checkpoint('publicationPruneMs')
+        }
+        catch (error) {
+          failWxmlDependencies(ctx)
+          commitValidation?.fail()
+          throw error
+        }
       },
     },
   }

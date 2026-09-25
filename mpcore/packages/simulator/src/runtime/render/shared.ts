@@ -5,11 +5,10 @@ import path from 'node:path'
 import { collectNodeDataset, isDatasetAttribute, toDatasetKey } from '../../view/nodeDataset'
 import { resolveTemplateExpression } from '../../view/templateExpression'
 import { createImportedTemplateState } from '../../view/templateImports'
+import { isTemplateExpression } from '../../view/templateInterpolation'
 import { interpolateTemplateText } from '../../view/templateText'
 import { wxsScopeData } from '../../view/wxs'
 import { parseWxsTemplateDocument } from '../../view/wxsDocument'
-
-const TEMPLATE_INTERPOLATION_RE = /\{\{([^{}]+)\}\}/g
 
 export const LEADING_SLASH_RE = /^\/+/
 export const EVENT_BINDING_ATTRS = ['bindtap', 'bind:tap', 'catchtap', 'catch:tap']
@@ -19,8 +18,7 @@ export const CLASS_SPLIT_RE = /\s+/
 export const JS_FILE_RE = /\.js$/
 
 export function isMustacheOnly(value: string) {
-  const trimmed = value.trim()
-  return trimmed.startsWith('{{') && trimmed.endsWith('}}') && !trimmed.includes('{{', 2)
+  return isTemplateExpression(value)
 }
 
 export function collectDataset(node: DomNodeLike, source?: Record<string, unknown>) {
@@ -69,10 +67,7 @@ export function resolveRawValueByPath(source: Record<string, any>, expression: s
 }
 
 function interpolateTemplate(input: string, data: Record<string, any>) {
-  return input.replace(TEMPLATE_INTERPOLATION_RE, (_match, expression: string) => {
-    const value = resolveValueByPath(data, expression)
-    return typeof value === 'string' ? value : String(value)
-  })
+  return interpolateTemplateText(input, data, true)
 }
 
 export function readTemplateSource(artifactSource: ArtifactSource, filePath: string) {

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "watch-final-isolated-classic-default",
+    "exitCode": 0,
+    "complete": true,
+    "output": "watch-final-isolated-classic-default.json"
+  },
+  {
+    "name": "watch-final-isolated-stateful-experimental-default",
+    "exitCode": 0,
+    "complete": true,
+    "output": "watch-final-isolated-stateful-experimental-default.json"
+  },
+  {
+    "name": "watch-final-isolated-classic-enabled",
+    "exitCode": 0,
+    "complete": true,
+    "output": "watch-final-isolated-classic-enabled.json"
+  },
+  {
+    "name": "watch-final-isolated-stateful-experimental-enabled",
+    "exitCode": 0,
+    "complete": true,
+    "output": "watch-final-isolated-stateful-experimental-enabled.json"
+  }
+]

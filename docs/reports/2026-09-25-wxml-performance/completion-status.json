@@ -1,0 +1,30 @@
+[
+  {
+    "name": "micro-main-wxs-public",
+    "exitCode": 0
+  },
+  {
+    "name": "micro-before-wxs-public",
+    "exitCode": 0
+  },
+  {
+    "name": "micro-final-33c",
+    "exitCode": 0
+  },
+  {
+    "name": "paired-final-33c",
+    "exitCode": 0
+  },
+  {
+    "name": "watch-final-33c-default",
+    "exitCode": 0
+  },
+  {
+    "name": "watch-final-33c-enabled",
+    "exitCode": 0
+  },
+  {
+    "name": "build-final-33c",
+    "exitCode": 0
+  }
+]

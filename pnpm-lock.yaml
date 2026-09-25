@@ -4209,6 +4209,12 @@ importers:
         specifier: workspace:*
         version: link:../../../../packages/weapp-vite
 
+  test/fixture-projects/weapp-vite/wxml-remove:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../../../packages/weapp-vite
+
   test/fixture-projects/weapp-vite/wxs-project:
     devDependencies:
       miniprogram-api-typings:

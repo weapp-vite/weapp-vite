@@ -129,6 +129,7 @@ export function compileVueTemplateToWxml(
   try {
     // 使用 compiler-dom 解析模板，确保浏览器环境自带 decodeEntities 解析能力。
     const ast = parse(template, {
+      comments: options?.preserveComments ? true : undefined,
       isVoidTag: tag => HTML_VOID_TAGS.has(tag),
       onError: error => warn({ diagnostics, filename }, `模板解析失败：${error.message}`, error.loc, 'template', 'WV2001'),
     })
@@ -163,6 +164,7 @@ export function compileVueTemplateToWxml(
       objectLiteralBindMode: options?.objectLiteralBindMode ?? 'runtime',
       mustacheInterpolation: options?.mustacheInterpolation ?? 'compact',
       formatWxml: options?.formatWxml ?? false,
+      preserveComments: options?.preserveComments ?? false,
       classStyleBindings: [],
       classStyleWxs: false,
       classStyleWxsExtension: wxsExtension,

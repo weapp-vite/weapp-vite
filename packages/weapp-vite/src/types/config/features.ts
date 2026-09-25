@@ -15,6 +15,8 @@ import type {
   NpmSubPackageConfig,
   StyleConfigEntry,
 } from './foundation'
+import type { WxmlTransform } from './wxmlTransform'
+import type { WxmlValidate } from './wxmlValidate'
 import type { Resolver } from '@/auto-import-components/resolvers'
 
 export { type Resolver }
@@ -65,7 +67,29 @@ export interface WeappUniAppConfig {
   include: string[]
 }
 
-export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
+/** 最终模板中的标签限定属性删除规则，名称区分大小写并支持 `*`。 */
+export interface WxmlRemoveAttrRule {
+  tag: string | string[]
+  name: string | string[]
+}
+
+/** 最终模板的可选清理；对象形式只执行显式配置，不叠加预设。 */
+export interface WxmlRemoveOptions {
+  attr?: Array<string | WxmlRemoveAttrRule>
+  tag?: string[]
+  comment?: boolean
+}
+
+export type EnhanceWxmlOptions = ScanWxmlOptions & Omit<HandleWxmlOptions, 'removeComment'> & {
+  /** @deprecated 仅保留类型兼容，未接入编译流程；请使用 `weapp.wxml.remove.comment`。 */
+  removeComment?: boolean
+  /** `true` 删除四种测试属性及普通注释；环境由用户配置控制。 */
+  remove?: boolean | WxmlRemoveOptions
+  /** 在最终模板清理前按顺序执行同步或异步转换。 */
+  transform?: WxmlTransform | WxmlTransform[]
+  /** 在输出插件处理后、HMR 比较及发布前检查最终模板。 */
+  validate?: WxmlValidate | WxmlValidate[]
+}
 
 /**
  * @description WXML 扫描阶段配置
@@ -312,6 +336,7 @@ export interface WeappWorkerConfig {
  * @description Vue 模板编译配置
  */
 export interface WeappVueTemplateConfig {
+  /** @deprecated 仅保留类型兼容，未接入编译流程；请使用 `weapp.wxml.remove.comment`。 */
   removeComments?: boolean
   simplifyWhitespace?: boolean
   formatWxml?: boolean | 'auto'
