@@ -14,7 +14,7 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-it('selects a template before launching and retains its complete lifecycle configuration', async () => {
+it.each(['hmr:classic:weapp-vite-template', 'build'])('selects a template before launching %s and retains its complete lifecycle configuration', async (shard) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'shard-selection-'))
   const checkout: Checkout = { id: 'optimized', cwd: root, commit: 'a'.repeat(40), templates: policy.templates.map((t: { id: string }) => ({ id: t.id, root: path.join(root, t.id), packageName: t.id })) }
   try {
@@ -25,7 +25,7 @@ it('selects a template before launching and retains its complete lifecycle confi
       await writeFile(path.join(options.env!.PERFORMANCE_SAMPLE_DIR!, 'values.json'), JSON.stringify({ values: [], errors: [] }))
       return {} as never
     })
-    await collectSide(checkout, 'hmr:classic:weapp-vite-template', root, ['hmr:classic:weapp-vite-template:native-page-style:repeat:restore'])
+    await collectSide(checkout, shard, root, [shard === 'build' ? 'build:weapp-vite-template:first' : 'hmr:classic:weapp-vite-template:native-page-style:repeat:restore'])
     expect(runCollector).toHaveBeenCalledTimes(1)
   }
   finally {

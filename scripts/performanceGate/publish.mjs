@@ -3,14 +3,14 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { aggregatePlan } from './aggregate.mjs'
-import { assertSha, createMatrix, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
+import { assertSha, createMatrix, frozenManifest, needsSmoke, policy, statusContext, targetKey } from './contract.mjs'
 import { pages, request } from './github.mjs'
 import { verifySmoke } from './smokeReport.mjs'
 
 const marker = '<!-- performance-v2 -->'
 
 export function validatePlan(plan, run, repository) {
-  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.repository !== repository || String(plan.runId) !== String(run.id) || plan.driverSha !== run.head_sha || plan.samplingContract !== policy.samplingContract || !Array.isArray(plan.targets) || plan.targets.length > 2) {
+  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.repository !== repository || String(plan.runId) !== String(run.id) || plan.driverSha !== run.head_sha || plan.samplingContract !== policy.samplingContract || !Array.isArray(plan.targets) || plan.targets.length > 2 || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest())) {
     throw new Error('Untrusted performance plan provenance')
   }
   for (const target of plan.targets) {
@@ -24,7 +24,7 @@ export function validatePlan(plan, run, repository) {
   }
 }
 
-export async function publishComment(target, body, get = request) {
+export async function publishComment(target, body, get = request, smokeDescription = '') {
   if (!target.prNumber) {
     return false
   }
@@ -38,6 +38,10 @@ export async function publishComment(target, body, get = request) {
   const fresh = await get(`/pulls/${target.prNumber}`)
   if (fresh.head.sha !== target.headSha || fresh.state !== 'open') {
     return false
+  }
+  // 晚到的 smoke 只更新冒烟状态，保留同一 HEAD 已发布的完整明细。
+  if (smokeDescription && previous?.body.includes(`HEAD: \`${target.headSha}\``) && previous.body.includes('完整性能：已完成')) {
+    body = previous.body.replace(marker, '').trim().replace(/PR 正确性冒烟：[^\n]*/u, `PR 正确性冒烟：${smokeDescription}。`)
   }
   const text = `${marker}\n${body}`
   if (previous) {
@@ -104,11 +108,7 @@ async function main() {
     }
     const target = { prNumber: pull.number, headSha: run.head_sha, baselineSha: policy.baselineSha }
     const statuses = await pages(`/commits/${target.headSha}/statuses`)
-    const previous = statuses.find(s => s.context === statusContext(target))
-    // 已完成的完整报告优先；晚到的 smoke 不覆盖逐平台结论。
-    if (previous && previous.state !== 'pending') {
-      return
-    }
+    const previous = statuses.find(s => s.context === statusContext(target) && s.creator?.type === 'Bot')
     let description = '🔴 未通过'
     const jobs = await request(`/actions/runs/${run.id}/jobs?per_page=100`)
     const smoke = jobs.jobs.flatMap(j => j.steps ?? []).find(s => s.name === 'Run correctness smoke')
@@ -127,8 +127,8 @@ async function main() {
       }
       description = '✅ 正确性冒烟通过'
     }
-    const full = previous ? `[运行中](${previous.target_url})` : pull.labels.some(l => l.name === policy.label) ? '排队，等待 nightly' : '未运行'
-    await publishComment(target, `## 性能检查\n\nHEAD: \`${target.headSha}\`\n\nPR：${description}。\n\n完整性能：${full}。冒烟不计算 5% 门禁，也不代表性能验收通过。\n\n[冒烟运行记录](${run.html_url})`)
+    const full = previous ? previous.state === 'pending' ? `[运行中](${previous.target_url})` : `已完成，复用[已有验收记录](${previous.target_url})（${previous.state === 'success' ? '既有验收通过' : '🔴 未通过'}）` : pull.labels.some(l => l.name === policy.label) ? '排队，等待 nightly' : '未运行'
+    await publishComment(target, `## 性能检查\n\nHEAD: \`${target.headSha}\`\n\nPR 正确性冒烟：${description}。\n\n完整性能：${full}。冒烟不计算 5% 门禁，也不代表性能验收通过。\n\n[冒烟运行记录](${run.html_url})`, request, description)
   }
   else {
     throw new Error('Unexpected performance workflow')

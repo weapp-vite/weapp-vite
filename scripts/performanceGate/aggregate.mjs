@@ -2,7 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { metricsForShard, policy, shards } from './contract.mjs'
+import { frozenManifest, metricsForShard, policy, shards } from './contract.mjs'
 import { evaluateGate } from './evaluate.ts'
 
 function evidence(value) {
@@ -67,6 +67,9 @@ export function verifyShard(report, expected) {
       throw new Error(`Shard identity mismatch: ${key}`)
     }
   }
+  if (report.baseline?.commit !== expected.baselineSha || report.optimized?.commit !== expected.headSha) {
+    throw new Error('Measured checkout SHA mismatch')
+  }
   const ids = metricsForShard(expected.shard)
   if (JSON.stringify(report.manifest?.metrics) !== JSON.stringify(ids) || JSON.stringify(report.executionPlan?.metrics) !== JSON.stringify(ids)) {
     throw new Error('Shard manifest mismatch')
@@ -116,7 +119,7 @@ export function summarizeStatus(rows) {
 }
 
 export async function aggregatePlan(plan, root) {
-  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.samplingContract !== policy.samplingContract) {
+  if (plan.schemaVersion !== 2 || plan.purpose !== 'full' || plan.samplingContract !== policy.samplingContract || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest())) {
     throw new Error('Invalid full audit plan')
   }
   const targets = []

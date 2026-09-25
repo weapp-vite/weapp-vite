@@ -6,7 +6,7 @@ import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- 校验实际受测与驱动提交身份。
 import { execa } from 'execa'
 import { collectShardBatch } from './batch'
-import { assertSha, metricsForShard, policy } from './contract.mjs'
+import { assertSha, frozenManifest, metricsForShard, policy } from './contract.mjs'
 import { evaluateGate } from './evaluate'
 import { autoImportFeatureCosts, renderFeatureCosts } from './featureCosts'
 import { discoverManifest } from './manifest'
@@ -33,7 +33,7 @@ let checkouts: { baseline: Checkout, optimized: Checkout } | undefined
 try {
   const driverSha = (await execa('git', ['rev-parse', 'HEAD'])).stdout.trim()
   const platforms: Record<string, string> = { 'ubuntu-latest': 'linux', 'windows-latest': 'win32', 'macos-latest': 'darwin' }
-  if (driverSha !== plan.driverSha || process.platform !== platforms[os] || plan.samplingContract !== policy.samplingContract || target.baselineSha !== policy.baselineSha || (process.env.GITHUB_RUN_ATTEMPT && process.env.GITHUB_RUN_ATTEMPT !== '1')) {
+  if (driverSha !== plan.driverSha || process.platform !== platforms[os] || plan.samplingContract !== policy.samplingContract || target.baselineSha !== policy.baselineSha || JSON.stringify(plan.manifest) !== JSON.stringify(frozenManifest()) || (process.env.GITHUB_RUN_ATTEMPT && process.env.GITHUB_RUN_ATTEMPT !== '1')) {
     throw new Error('Driver, platform, approved contract or attempt identity mismatch')
   }
   await runCollector(process.execPath, ['--import', 'tsx', 'scripts/performanceGate/prepare.ts'], {

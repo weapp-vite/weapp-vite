@@ -71,3 +71,8 @@ export function needsSmoke(files) {
 export function smokeMetrics(shard) {
   return metricsForShard(shard).filter(id => !id.startsWith('auto-') || ['1', '69'].includes(id.split(':')[1]))
 }
+
+/** 计划显式保存场景顺序，后续不重新从移动分支生成清单。 */
+export function frozenManifest() {
+  return { templates: policy.templates, metrics: shards.flatMap(metricsForShard) }
+}

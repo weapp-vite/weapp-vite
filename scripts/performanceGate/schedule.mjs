@@ -1,7 +1,7 @@
 import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
-import { assertSha, createMatrix, policy, statusContext, targetKey } from './contract.mjs'
+import { assertSha, createMatrix, frozenManifest, policy, statusContext, targetKey } from './contract.mjs'
 import { pages, request } from './github.mjs'
 
 export async function resolveTarget(pr, get = request) {
@@ -75,7 +75,7 @@ async function main() {
     throw new Error('Invalid PR number')
   }
   const selection = await selectTargets({ prNumber: input ? Number(input) : undefined })
-  const plan = { schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha, repository: process.env.GITHUB_REPOSITORY, runId: process.env.GITHUB_RUN_ID, ...selection }
+  const plan = { manifest: frozenManifest(), schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha, repository: process.env.GITHUB_REPOSITORY, runId: process.env.GITHUB_RUN_ID, ...selection }
   plan.matrix = createMatrix(plan.targets)
   const url = `${process.env.GITHUB_SERVER_URL}/${plan.repository}/actions/runs/${plan.runId}`
   for (const reused of plan.reused) {

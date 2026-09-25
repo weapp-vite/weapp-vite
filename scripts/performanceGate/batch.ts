@@ -13,7 +13,12 @@ export function pairsForShard(shard: string) {
 /** 配置选择发生于子进程启动前，模板内部场景与自动导入生命周期不裁剪。 */
 export async function collectSide(checkout: Checkout, shard: string, directory: string, selected?: string[], timeoutMs = 15 * 60_000) {
   await mkdir(directory, { recursive: true })
-  const templates = shard.startsWith('hmr:') ? checkout.templates.filter(t => t.id === shard.split(':')[2]) : checkout.templates
+  const templates = checkout.templates.filter((template) => {
+    if (shard.startsWith('hmr:')) {
+      return template.id === shard.split(':')[2]
+    }
+    return shard !== 'build' || !selected || selected.some(id => id.split(':')[1] === template.id)
+  })
   const configurations = selected && shard.startsWith('auto-') ? confirmationConfigurations(selected).map((id: string) => id.split(':').slice(1).join(':')) : undefined
   await writeFile(path.join(directory, 'input.json'), JSON.stringify({ checkout: { ...checkout, templates }, shard, configurations }))
   const errors: string[] = []

@@ -6,17 +6,17 @@ import process from 'node:process'
 import { promisify } from 'node:util'
 import { expect, it } from 'vitest'
 import { aggregatePlan, verifyShard } from './aggregate.mjs'
-import { createMatrix, metricsForShard, policy, targetKey } from './contract.mjs'
+import { createMatrix, frozenManifest, metricsForShard, policy, targetKey } from './contract.mjs'
 import { publishComment, validatePlan } from './publish.mjs'
 
 const target = { id: 'pr-7', prNumber: 7, headSha: 'a'.repeat(40), headRepository: 'owner/repo', baselineSha: policy.baselineSha }
-const plan = { schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha: 'b'.repeat(40), repository: 'owner/repo', runId: '10', targets: [{ ...target, key: targetKey(target) }], reused: [], matrix: createMatrix([target]) }
+const plan = { manifest: frozenManifest(), schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha: 'b'.repeat(40), repository: 'owner/repo', runId: '10', targets: [{ ...target, key: targetKey(target) }], reused: [], matrix: createMatrix([target]) }
 function fixture(shard = 'hmr:classic:weapp-vite-template', os = 'ubuntu-latest') {
   const identity = { schemaVersion: 2, purpose: 'full', samplingContract: policy.samplingContract, driverSha: plan.driverSha, headSha: target.headSha, baselineSha: target.baselineSha, targetId: target.id, prNumber: 7, runId: '10', os, shard }
   const metrics: string[] = metricsForShard(shard)
   const count = shard === 'build' || shard === 'auto-build' ? 7 : 20
   const samples = Array.from({ length: count }, (_, round) => (round % 2 ? ['optimized', 'baseline'] : ['baseline', 'optimized']).map(side => ({ round, side, values: metrics.map(id => ({ id, ms: side === 'baseline' ? 100 : 102, output: { pageCount: 1, templateDigest: 'a'.repeat(64), configDigest: 'b'.repeat(64) } })) }))).flat()
-  return { identity, report: { ...identity, manifest: { metrics }, executionPlan: { metrics, confirmation: [] as string[] }, primary: { errors: [] as string[], samples }, gate: { status: 'passed' } } }
+  return { identity, report: { ...identity, baseline: { commit: target.baselineSha }, optimized: { commit: target.headSha }, manifest: { metrics }, executionPlan: { metrics, confirmation: [] as string[] }, primary: { errors: [] as string[], samples }, gate: { status: 'passed' } } }
 }
 
 it('recomputes performance from raw samples, rejects duplicate rounds, bad SHA and smoke evidence', () => {
@@ -24,6 +24,7 @@ it('recomputes performance from raw samples, rejects duplicate rounds, bad SHA a
   expect(verifyShard(report, identity).gate.status).toBe('passed')
   expect(() => verifyShard({ ...report, headSha: 'c'.repeat(40) }, identity)).toThrow('identity')
   expect(() => verifyShard({ ...report, purpose: 'smoke' }, identity)).toThrow('identity')
+  expect(() => verifyShard({ ...report, baseline: { commit: 'd'.repeat(40) } }, identity)).toThrow('SHA mismatch')
   report.primary.samples.push(report.primary.samples[0]!)
   expect(() => verifyShard(report, identity)).toThrow('Duplicate')
 })
@@ -88,4 +89,25 @@ it('rejects forged planner metadata and refuses to overwrite a newer PR HEAD', a
   }
   expect(await publishComment(target, 'do not publish', get)).toBe(false)
   expect(calls).toEqual(['/pulls/7'])
+})
+
+it('updates late smoke status without replacing completed full evidence', async () => {
+  let saved = ''
+  const get = async (endpoint: string, body?: { body: string }) => {
+    if (endpoint === '/pulls/7') {
+      return { state: 'open', head: { sha: target.headSha } }
+    }
+    if (endpoint.startsWith('/issues/7/comments')) {
+      return [{ id: 1, user: { type: 'Bot' }, body: `<!-- performance-v2 -->\nHEAD: \`${target.headSha}\`\nPR 正确性冒烟：运行中。\n完整性能：已完成，🔴 regression。\n| ubuntu | regression |` }]
+    }
+    if (endpoint === '/issues/comments/1') {
+      saved = body!.body
+      return {}
+    }
+    throw new Error(endpoint)
+  }
+  await publishComment(target, 'must not replace full evidence', get, '✅ 正确性冒烟通过')
+  expect(saved).toContain('PR 正确性冒烟：✅ 正确性冒烟通过。')
+  expect(saved).toContain('| ubuntu | regression |')
+  expect(saved).not.toContain('must not replace')
 })
