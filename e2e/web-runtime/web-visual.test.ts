@@ -10,6 +10,7 @@ import { execa } from 'execa'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { comparePngWithBaseline } from '../../packages/weapp-ide-cli/src/cli/imageDiff'
+import { isHttpServerReady } from '../utils/httpReadiness'
 import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -111,8 +112,7 @@ async function waitForWebServerReady(server: Subprocess, logs: { value: string }
       continue
     }
     try {
-      const response = await fetch(resolvedUrl)
-      if (response.ok) {
+      if (await isHttpServerReady(resolvedUrl, Math.min(2_000, Math.max(1, timeoutMs - (Date.now() - start))))) {
         return resolvedUrl
       }
     }

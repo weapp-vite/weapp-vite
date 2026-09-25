@@ -54,6 +54,20 @@
 
 ## 未解决事项
 
+### Web CI 网络基础设施修正
+
+产品提交 `b7a461c5a` 的 [Web E2E Baseline](https://github.com/weapp-vite/weapp-vite/actions/runs/36176611878/job/108208643794) 在 macOS / Node 24.20.0 下有 11 文件、83 条断言通过，但另有未捕获的 `setTypeOfService EINVAL`，检查仍为失败。堆栈进入 Node 内置 Undici 的 `writeH1`；该版本仍无条件调用 socket QoS 方法，与 [Undici #5544](https://github.com/nodejs/undici/issues/5544) 一致。
+
+独立 TCP 复现只创建本地临时端口，接受连接后立即 `resetAndDestroy()`，再循环调用 `fetch`。本机 Node 24.18.0 即使逐次 `try/catch` 仍因同一未捕获异常退出；复现不加载产品源码。改用新增 HTTP 就绪探针后，同样 2000 次连接重置全部通过 Promise 拒绝，进程正常结束。没有补丁修改全局 Socket 或忽略未捕获异常。
+
+四处 Web 启动检查统一用 Node HTTP/HTTPS 短连接探针：保留 GET、成功状态码与重定向语义，单次总期限最多 2 秒且不超过外层启动剩余时间，收到响应头后释放响应和连接；网络错误交由原有启动重试处理。不会改变浏览器页面、视觉或事件断言，也不修改 HMR 采样计时。
+
+- 就绪探针与服务器 URL 定向测试 14 例通过，覆盖状态码、30 次连接重置、拒绝连接、无响应、重定向上限及释放未结束响应体；新增两文件严格依赖闭包类型检查通过。
+- 原失败的 uView Plus 组件库及 Web demo / visual 三文件共 22 例通过；Firefox/WebKit 冒烟另 2 例串行通过。未更改视觉基线。
+- scoped ESLint 通过。此修正属于测试基础设施，无产品 API 或额外 changeset；新提交的 GitHub 检查仍需实际完成。
+
+### 性能与发布生命周期
+
 固定基线 `e7862e61dd83e3b9e356ac1e176267b31ab298af` 保持不变。历史回退、不稳定、基线 sitemap 缺陷与独立包生命周期不可比较项继续保留。main Nightly `36172401898` 测的是合并后的 main `d657d7b64bf2e5fb367862377255d513dab0ec07`，不包含本次优化，不能据其结果判断 #1085 的收益。
 
 stateful 混合临时文件事件导致完整重建的复现仍成立，本次没有实现文件事件过滤，也未证明该现象与所有发布超时或 #1081 同因。原生 DevEngine 的无 watcher 内存构建探针已验证：buildStart/load/transform/generateBundle 都可以登记不在模块图内的 `addWatchFile` 依赖；模块图成员关系不能替代完整监听归属。后续方案还须覆盖 native builtin 依赖及独立快照、自定义 compiler、WXML、copy/public 与目录拓扑。

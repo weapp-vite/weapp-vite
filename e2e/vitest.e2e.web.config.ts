@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     include: [
       path.resolve(import.meta.dirname, './utils/webDevServer.test.ts'),
+      path.resolve(import.meta.dirname, './utils/httpReadiness.test.ts'),
       path.resolve(import.meta.dirname, './web-runtime/*.test.ts'),
     ],
     exclude: [path.resolve(import.meta.dirname, './web-runtime/web-browser-smoke.test.ts'), ...excludedE2ETestPatterns()],
