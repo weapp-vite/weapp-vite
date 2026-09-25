@@ -8,7 +8,7 @@
 
 [main Nightly 36172401898 首批九分片](./nightly-main-36172401898-partial.md) 保留确认回退、不稳定、缺样本与固定基线缺陷；不是完整三平台验收。
 
-[后续十六分片](./nightly-main-36172401898-additional.md) 补齐 Ubuntu/Windows，并保留已完成的 macOS 证据；合计 25/27 分片，新增五项确认回退。冻结旧 main 不包含 #1085/#1086。
+[后续十八分片](./nightly-main-36172401898-additional.md) 补齐全部三平台证据；合计 27/27 分片，本轮全部结束，新增五项确认回退。最后 macOS stateful Wevu 分片因脚本发布超时仍为 incomplete，自动导入 HMR 有九项 unstable。冻结旧 main 不包含 #1085/#1086。
 
 ## 提交与驱动
 
