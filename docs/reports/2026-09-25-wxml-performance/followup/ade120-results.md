@@ -1,6 +1,8 @@
 # ade120 Ubuntu / macOS 门禁证据
 
-性能验收未完成。Ubuntu 和 macOS 均为 `regression`；不能将既有基线缺陷作为唯一阻塞，也不能用整体平均数覆盖确认回退。Windows 在本记录整理时仍运行，其本轮结果尚未纳入。
+标记：🔴 未通过或单批越过 5%（是否确认回退以文字结论为准）；🟢 本批耗时下降；阈值内的小幅增加保持中性。未通过项目优先标红，即使其中一次复核变快；绿色数值不代表整个 PR 通过验收。
+
+🔴 **性能验收未完成。**Ubuntu 和 macOS 均为 `regression`；不能将既有基线缺陷作为唯一阻塞，也不能用整体平均数覆盖确认回退。Windows 在本记录整理时仍运行，其本轮结果尚未纳入。
 
 - 固定基线：`e7862e61dd83e3b9e356ac1e176267b31ab298af`。
 - 被测提交：`ade120b76e7809198444aacabdac766861334f30`。
@@ -17,7 +19,7 @@
 | ubuntu | [完整 JSON（gzip）](./ci-ade-ubuntu.json.gz) | `f3fb96431fec46ebac8571d9e5447f322085b1bd6b496629b845e039943db96a` |
 | macos | [完整 JSON（gzip）](./ci-ade-macos.json.gz) | `3a1ca879ccff1145e76c53aa2e767e986929b1fd3cadc02b13e57eae7adaff9b` |
 
-| 平台 | passed | regression | unstable | incomplete |
+| 平台 | passed | 🔴 regression | 🔴 unstable | 🔴 incomplete |
 | --- | ---: | ---: | ---: | ---: |
 | ubuntu | 116 | 5 | 1 | 12 |
 | macos | 84 | 12 | 29 | 9 |
@@ -26,7 +28,7 @@
 
 自动导入的实际组件数量为 1/20/50/69，均包含基线/当前 × 手动/自动四组。两平台首批启用成本表中没有同时超过 25% 且 200 ms 的项目；这不抵消 main/PR 同配置比较的回退。
 
-## 确认回退
+## 🔴 确认回退
 
 每行两批均超过 5%。数值为各侧中位数的相对变化；P95、成对差值及原始轮次见完整 JSON。
 
@@ -34,65 +36,65 @@
 
 | 指标 ID | 首批 | 唯一确认 | 每批对数 |
 | --- | ---: | ---: | ---: |
-| `hmr:classic:weapp-vite-template:native-page-script:first:edit` | +5.06% | +6.72% | 20 |
-| `hmr:classic:weapp-vite-template:native-page-style:first:restore` | +8.42% | +5.99% | 20 |
-| `auto-hmr:20:automatic:repeat:edit` | +15.31% | +9.11% | 20 |
-| `auto-hmr:50:automatic:first:restore` | +15.48% | +17.42% | 20 |
-| `auto-hmr:69:manual:first:restore` | +16.75% | +8.80% | 20 |
+| `hmr:classic:weapp-vite-template:native-page-script:first:edit` | 🔴 +5.06% | 🔴 +6.72% | 20 |
+| `hmr:classic:weapp-vite-template:native-page-style:first:restore` | 🔴 +8.42% | 🔴 +5.99% | 20 |
+| `auto-hmr:20:automatic:repeat:edit` | 🔴 +15.31% | 🔴 +9.11% | 20 |
+| `auto-hmr:50:automatic:first:restore` | 🔴 +15.48% | 🔴 +17.42% | 20 |
+| `auto-hmr:69:manual:first:restore` | 🔴 +16.75% | 🔴 +8.80% | 20 |
 
 ### macos
 
 | 指标 ID | 首批 | 唯一确认 | 每批对数 |
 | --- | ---: | ---: | ---: |
-| `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:restore` | +6.28% | +6.41% | 20 |
-| `hmr:classic:weapp-vite-template:native-page-script:first:restore` | +11.05% | +11.18% | 20 |
-| `hmr:classic:weapp-vite-template:native-page-script:repeat:edit` | +5.38% | +13.98% | 20 |
-| `hmr:classic:weapp-vite-template:native-page-style:first:restore` | +25.53% | +9.54% | 20 |
-| `hmr:classic:weapp-vite-wevu-template:vue-page-script:first:restore` | +8.78% | +9.50% | 20 |
-| `hmr:classic:weapp-vite-wevu-template:vue-page-script:repeat:edit` | +17.92% | +6.06% | 20 |
-| `hmr:classic:weapp-vite-wevu-template:vue-page-script:repeat:restore` | +12.10% | +13.58% | 20 |
-| `hmr:classic:weapp-vite-wevu-template:vue-page-template:repeat:edit` | +15.68% | +9.92% | 20 |
-| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:restore` | +8.59% | +6.55% | 20 |
-| `hmr:stateful-experimental:weapp-vite-template:native-page-template:first:edit` | +5.63% | +20.17% | 20 |
-| `auto-build:69:manual:first` | +30.97% | +6.55% | 7 |
-| `auto-hmr:20:automatic:first:edit` | +6.78% | +5.53% | 20 |
+| `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:restore` | 🔴 +6.28% | 🔴 +6.41% | 20 |
+| `hmr:classic:weapp-vite-template:native-page-script:first:restore` | 🔴 +11.05% | 🔴 +11.18% | 20 |
+| `hmr:classic:weapp-vite-template:native-page-script:repeat:edit` | 🔴 +5.38% | 🔴 +13.98% | 20 |
+| `hmr:classic:weapp-vite-template:native-page-style:first:restore` | 🔴 +25.53% | 🔴 +9.54% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-script:first:restore` | 🔴 +8.78% | 🔴 +9.50% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-script:repeat:edit` | 🔴 +17.92% | 🔴 +6.06% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-script:repeat:restore` | 🔴 +12.10% | 🔴 +13.58% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-template:repeat:edit` | 🔴 +15.68% | 🔴 +9.92% | 20 |
+| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:restore` | 🔴 +8.59% | 🔴 +6.55% | 20 |
+| `hmr:stateful-experimental:weapp-vite-template:native-page-template:first:edit` | 🔴 +5.63% | 🔴 +20.17% | 20 |
+| `auto-build:69:manual:first` | 🔴 +30.97% | 🔴 +6.55% | 7 |
+| `auto-hmr:20:automatic:first:edit` | 🔴 +6.78% | 🔴 +5.53% | 20 |
 
-## 不稳定项目
+## 🔴 不稳定项目
 
 Ubuntu 1 项，macOS 29 项；按既定规则均不能通过，未执行第二次确认。
 
 | 平台 / 指标 ID | 首批 | 唯一确认 |
 | --- | ---: | ---: |
-| ubuntu / `auto-hmr:1:manual:first:restore` | +18.79% | +1.73% |
-| macos / `build:weapp-vite-template:first` | +11.29% | -6.00% |
-| macos / `build:weapp-vite-template:repeat` | +13.61% | -8.83% |
-| macos / `build:weapp-vite-wevu-template:first` | +6.75% | -11.62% |
-| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:restore` | +8.47% | -8.82% |
-| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit` | +9.03% | +1.89% |
-| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:restore` | +6.93% | -9.19% |
-| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:edit` | +5.59% | -1.25% |
-| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:restore` | +6.53% | -1.93% |
-| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:repeat:edit` | +13.70% | +0.15% |
-| macos / `hmr:classic:weapp-vite-template:native-page-template:first:restore` | +8.21% | -0.91% |
-| macos / `hmr:classic:weapp-vite-template:native-page-template:repeat:edit` | +12.60% | -0.54% |
-| macos / `hmr:classic:weapp-vite-template:native-page-style:first:edit` | +13.39% | -2.68% |
-| macos / `hmr:classic:weapp-vite-template:native-page-style:repeat:restore` | +6.28% | -0.24% |
-| macos / `hmr:classic:weapp-vite-wevu-template:vue-page-script:first:edit` | +15.56% | +3.18% |
-| macos / `hmr:classic:weapp-vite-wevu-template:vue-page-style:first:edit` | +6.59% | -5.89% |
-| macos / `hmr:classic:weapp-vite-wevu-template:vue-page-template:first:edit` | +8.01% | +4.64% |
-| macos / `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit` | +5.99% | -4.47% |
-| macos / `hmr:stateful-experimental:weapp-vite-template:native-page-script:first:edit` | +14.07% | -2.70% |
-| macos / `hmr:stateful-experimental:weapp-vite-template:native-page-template:repeat:edit` | +7.01% | +0.27% |
-| macos / `hmr:stateful-experimental:weapp-vite-template:native-page-style:repeat:edit` | +5.20% | +0.86% |
-| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-style:repeat:restore` | +6.25% | -6.16% |
-| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:first:edit` | +6.40% | -14.17% |
-| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:first:restore` | +13.76% | +1.93% |
-| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:repeat:restore` | +7.88% | +3.35% |
-| macos / `auto-build:1:manual:repeat` | +8.38% | +4.26% |
-| macos / `auto-build:20:automatic:repeat` | +6.28% | +2.07% |
-| macos / `auto-build:50:automatic:first` | +9.39% | +4.92% |
-| macos / `auto-build:50:automatic:repeat` | +9.55% | +1.21% |
-| macos / `auto-hmr:20:automatic:repeat:restore` | +21.00% | -0.85% |
+| ubuntu / `auto-hmr:1:manual:first:restore` | 🔴 +18.79% | 🔴 +1.73% |
+| macos / `build:weapp-vite-template:first` | 🔴 +11.29% | 🔴 -6.00% |
+| macos / `build:weapp-vite-template:repeat` | 🔴 +13.61% | 🔴 -8.83% |
+| macos / `build:weapp-vite-wevu-template:first` | 🔴 +6.75% | 🔴 -11.62% |
+| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:restore` | 🔴 +8.47% | 🔴 -8.82% |
+| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit` | 🔴 +9.03% | 🔴 +1.89% |
+| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:restore` | 🔴 +6.93% | 🔴 -9.19% |
+| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:edit` | 🔴 +5.59% | 🔴 -1.25% |
+| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:restore` | 🔴 +6.53% | 🔴 -1.93% |
+| macos / `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:repeat:edit` | 🔴 +13.70% | 🔴 +0.15% |
+| macos / `hmr:classic:weapp-vite-template:native-page-template:first:restore` | 🔴 +8.21% | 🔴 -0.91% |
+| macos / `hmr:classic:weapp-vite-template:native-page-template:repeat:edit` | 🔴 +12.60% | 🔴 -0.54% |
+| macos / `hmr:classic:weapp-vite-template:native-page-style:first:edit` | 🔴 +13.39% | 🔴 -2.68% |
+| macos / `hmr:classic:weapp-vite-template:native-page-style:repeat:restore` | 🔴 +6.28% | 🔴 -0.24% |
+| macos / `hmr:classic:weapp-vite-wevu-template:vue-page-script:first:edit` | 🔴 +15.56% | 🔴 +3.18% |
+| macos / `hmr:classic:weapp-vite-wevu-template:vue-page-style:first:edit` | 🔴 +6.59% | 🔴 -5.89% |
+| macos / `hmr:classic:weapp-vite-wevu-template:vue-page-template:first:edit` | 🔴 +8.01% | 🔴 +4.64% |
+| macos / `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit` | 🔴 +5.99% | 🔴 -4.47% |
+| macos / `hmr:stateful-experimental:weapp-vite-template:native-page-script:first:edit` | 🔴 +14.07% | 🔴 -2.70% |
+| macos / `hmr:stateful-experimental:weapp-vite-template:native-page-template:repeat:edit` | 🔴 +7.01% | 🔴 +0.27% |
+| macos / `hmr:stateful-experimental:weapp-vite-template:native-page-style:repeat:edit` | 🔴 +5.20% | 🔴 +0.86% |
+| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-style:repeat:restore` | 🔴 +6.25% | 🔴 -6.16% |
+| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:first:edit` | 🔴 +6.40% | 🔴 -14.17% |
+| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:first:restore` | 🔴 +13.76% | 🔴 +1.93% |
+| macos / `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:repeat:restore` | 🔴 +7.88% | 🔴 +3.35% |
+| macos / `auto-build:1:manual:repeat` | 🔴 +8.38% | 🔴 +4.26% |
+| macos / `auto-build:20:automatic:repeat` | 🔴 +6.28% | 🔴 +2.07% |
+| macos / `auto-build:50:automatic:first` | 🔴 +9.39% | 🔴 +4.92% |
+| macos / `auto-build:50:automatic:repeat` | 🔴 +9.55% | 🔴 +1.21% |
+| macos / `auto-hmr:20:automatic:repeat:restore` | 🔴 +21.00% | 🔴 -0.85% |
 
 ## 失败与根因边界
 
@@ -134,7 +136,7 @@ Ubuntu 1 项，macOS 29 项；按既定规则均不能通过，未执行第二�
 
 ## Windows：超时后保留的首批证据
 
-同一 ade120 提交的 Windows 任务 `107950927769` 于 11:02:50 UTC 中止采集，11:04:15 UTC 结束（cancelled）；job 配置上限为 360 分钟。artifact `10860511720` 已成功上传并完整下载，但没有最终 `report.json`，后续完整性检查因文件缺失失败。首批 checkpoint 不能冒充完整门禁报告，整个平台保持 incomplete。
+同一 ade120 提交的 Windows 任务 `107950927769` 于 11:02:50 UTC 中止采集，11:04:15 UTC 结束（cancelled）；job 配置上限为 360 分钟。artifact `10860511720` 已成功上传并完整下载，但没有最终 `report.json`，后续完整性检查因文件缺失失败。首批 checkpoint 不能冒充完整门禁报告，整个平台保持 🔴 incomplete。
 
 - 保留 105 个已完成的单侧采集记录：普通构建 14、classic/stateful HMR 各 40、自动导入构建 11。80 个 HMR 记录均带有已知缺项错误，保留其中成功阶段的真实样本。
 - 普通构建每项 7 对，最大 +2.22%；本提交 Windows Wevu 重复构建为 3664.46 → 3619.97ms（−1.21%）。这是当前提交首批数据，不是旧提交 +10.57% 的确认批次；旧异常不能据此改判通过。
@@ -145,14 +147,14 @@ Ubuntu 1 项，macOS 29 项；按既定规则均不能通过，未执行第二�
 
 | 场景 | 基线 P50 ms | 当前 P50 ms | 首批变化 | 样本对 |
 | --- | ---: | ---: | ---: | ---: |
-| `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:restore` | 1028.18 | 1084.21 | +5.45% | 20 |
-| `hmr:classic:weapp-vite-template:native-page-template:repeat:restore` | 898.99 | 971.73 | +8.09% | 20 |
-| `hmr:classic:weapp-vite-wevu-template:vue-page-template:first:edit` | 565.20 | 598.26 | +5.85% | 20 |
-| `hmr:classic:weapp-vite-wevu-template:vue-page-template:repeat:restore` | 515.73 | 545.09 | +5.69% | 20 |
-| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:edit` | 398.72 | 463.80 | +16.32% | 20 |
-| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:edit` | 419.56 | 441.48 | +5.22% | 20 |
-| `hmr:stateful-experimental:weapp-vite-template:native-page-style:repeat:restore` | 1032.00 | 1089.72 | +5.59% | 20 |
-| `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-script:first:restore` | 173.89 | 182.92 | +5.20% | 20 |
+| `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:restore` | 1028.18 | 1084.21 | 🔴 +5.45% | 20 |
+| `hmr:classic:weapp-vite-template:native-page-template:repeat:restore` | 898.99 | 971.73 | 🔴 +8.09% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-template:first:edit` | 565.20 | 598.26 | 🔴 +5.85% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-template:repeat:restore` | 515.73 | 545.09 | 🔴 +5.69% | 20 |
+| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:edit` | 398.72 | 463.80 | 🔴 +16.32% | 20 |
+| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:edit` | 419.56 | 441.48 | 🔴 +5.22% | 20 |
+| `hmr:stateful-experimental:weapp-vite-template:native-page-style:repeat:restore` | 1032.00 | 1089.72 | 🔴 +5.59% | 20 |
+| `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-script:first:restore` | 173.89 | 182.92 | 🔴 +5.20% | 20 |
 
 原始 checkpoint 无损压缩保存在 [ci-ade-windows-primary.json.gz](./ci-ade-windows-primary.json.gz)，解压内容与 artifact 的 `primary.json` 字节一致。SHA-256（未压缩）：`00e4311054c714d9cea90f18f99b480c83bb599c1c5a3ec4b486c1e62528be8c`。未生成或伪造缺失的最终 CI report。
 

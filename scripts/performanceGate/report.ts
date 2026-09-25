@@ -104,15 +104,26 @@ function format(value: number | null) {
   return value === null ? '不可用' : value.toFixed(2)
 }
 
+function formatStatus(status: GateSummary['status']) {
+  return status === 'passed' ? '✅ passed' : `🔴 ${status}`
+}
+
+function formatChange(value: number | null, status: GateSummary['status']) {
+  const marker = status !== 'passed' ? '🔴 ' : value !== null && value < 0 ? '🟢 ' : ''
+  return `${marker}${value === null ? '不可用' : `${format(value)}%`}`
+}
+
 export function renderGate(gate: GateSummary) {
   return [
     '# 成对性能门禁',
     '',
-    `结论：**${gate.status}**；阈值：${gate.thresholdPercent}%。正数表示当前提交更慢。`,
+    `结论：**${formatStatus(gate.status)}**；阈值：${gate.thresholdPercent}%。正数表示当前提交更慢。`,
+    '',
+    '标记：🔴 未通过（回退、不稳定或证据不完整，优先于单批下降）；🟢 已通过场景的耗时下降；✅ 门禁通过。阈值内的小幅增加保持中性，不标为性能提升。',
     '',
     '| 场景 | 基线 P50 / P95 | 当前 P50 / P95 | P50 增量 | 变化 | 样本对 | 复核变化 | 结论 |',
     '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
-    ...gate.scenarios.map(({ id, primary: p, confirmation: c, status }) => `| ${id} | ${format(p.baselineMedianMs)} / ${format(p.baselineP95Ms)} ms | ${format(p.currentMedianMs)} / ${format(p.currentP95Ms)} ms | ${format(p.currentMedianMs !== null && p.baselineMedianMs !== null ? p.currentMedianMs - p.baselineMedianMs : null)} ms | ${format(p.changePercent)}% | ${p.count} | ${c ? `${format(c.changePercent)}%` : '未执行'} | ${status} |`),
+    ...gate.scenarios.map(({ id, primary: p, confirmation: c, status }) => `| ${id} | ${format(p.baselineMedianMs)} / ${format(p.baselineP95Ms)} ms | ${format(p.currentMedianMs)} / ${format(p.currentP95Ms)} ms | ${format(p.currentMedianMs !== null && p.baselineMedianMs !== null ? p.currentMedianMs - p.baselineMedianMs : null)} ms | ${formatChange(p.changePercent, status)} | ${p.count} | ${c ? formatChange(c.changePercent, status) : '未执行'} | ${formatStatus(status)} |`),
     '',
     '首次构建指清理项目产物后的构建，重复构建保留前次产物；每次均启动新 CLI，不声称清空 OS 文件缓存。HMR 每对使用独立 dev 会话，编辑和恢复分别保留。编译 profile、内存和原始日志为诊断证据，不替代端到端产物确认。',
   ].join('\n')
