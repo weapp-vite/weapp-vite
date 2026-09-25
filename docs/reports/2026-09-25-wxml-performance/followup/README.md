@@ -75,3 +75,5 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - 既有 WXML provider-compatible suite：headless 2 项、真实 DevTools 2 项串行通过。
 - 新构建的 CLI 对 sitemap 连续两次编辑/恢复通过，恢复检查逐字匹配原产物；这是正确性冒烟，不作为成对性能验收。
 - 本次触及的入口加载器和现有单测超过 300 行；变更仅在已有 App 入口记录写入点传递附属路径，解析仍留在既有 `loadEntry/watch.ts`、`loadEntry/app.ts`，不为这次依赖修复重排整个加载器。新增回归独立成文件。
+
+- [8f78 Windows 六小时超时与部分确认原始证据](./8f78-windows-results.md)；合并后由 #1082 继续跟踪。
