@@ -20,7 +20,7 @@ import { createBuildService } from './service'
 const harness = vi.hoisted(() => ({
   build: vi.fn(),
   change: undefined as ((change: { event: 'update' | 'create', file: string }) => void) | undefined,
-  sidecar: undefined as EventEmitter | undefined,
+  sidecars: [] as EventEmitter[],
 }))
 vi.mock('vite', async importOriginal => ({ ...await importOriginal<typeof import('vite')>(), build: harness.build }))
 vi.mock('../../moduleGraph/devProvider', () => ({
@@ -29,7 +29,15 @@ vi.mock('../../moduleGraph/devProvider', () => ({
     return { close: vi.fn(async () => {}) }
   }),
 }))
-vi.mock('chokidar', () => ({ default: { watch: vi.fn(() => harness.sidecar) } }))
+vi.mock('chokidar', () => ({
+  default: {
+    watch: vi.fn(() => {
+      const watcher = Object.assign(new EventEmitter(), { add: vi.fn(), close: async () => {} })
+      harness.sidecars.push(watcher)
+      return watcher
+    }),
+  },
+}))
 vi.mock('../sharedBuildConfig', () => ({ createSharedBuildConfig: vi.fn(() => ({})) }))
 vi.mock('./workers', () => ({ checkWorkersOptions: vi.fn(() => ({ hasWorkersDir: false })) }))
 vi.mock('../../utils/projectConfig', () => ({ syncProjectConfigToOutput: vi.fn(async () => {}) }))
@@ -39,6 +47,7 @@ const cleanups: Array<() => Promise<void>> = []
 beforeEach(() => {
   harness.build.mockReset()
   harness.change = undefined
+  harness.sidecars = []
   vi.stubEnv('WEAPP_VITE_HMR_PROFILE_JSON', '')
 })
 afterEach(async () => {
@@ -141,12 +150,17 @@ async function createFixture() {
     state.hmrState.didEmitAllEntries = false
     return { output: Object.values(bundle) }
   })
-  const sidecar = Object.assign(new EventEmitter(), { add: vi.fn(), close: async () => {} })
-  harness.sidecar = sidecar
   const service = createBuildService(ctx)
   const startup = service.build({ skipNpm: true })
-  await Promise.race([startup, vi.waitFor(() => expect(sidecar.listenerCount('ready')).toBe(1))])
-  sidecar.emit('ready')
+  await Promise.race([startup, vi.waitFor(() => {
+    expect(harness.sidecars.length).toBeGreaterThan(0)
+    for (const sidecar of harness.sidecars) {
+      expect(sidecar.listenerCount('ready')).toBe(1)
+    }
+  })])
+  for (const sidecar of harness.sidecars) {
+    sidecar.emit('ready')
+  }
   const watcher = await startup as RolldownWatcher
   cleanups.push(async () => await watcher.close())
   const save = async (file: string, source: string) => {
@@ -163,7 +177,7 @@ async function createFixture() {
     await vi.waitFor(() => expect(bundles).toHaveLength(previousCount + 1))
     return bundles.at(-1)!
   }
-  return { ctx, files, absolute, save, update, bundles, nextBundle, sidecar, controls }
+  return { ctx, files, absolute, save, update, bundles, nextBundle, controls, sidecar: harness.sidecars[0]! }
 }
 
 describe('classic template snapshot source freshness', () => {
