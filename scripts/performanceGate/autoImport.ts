@@ -8,7 +8,7 @@ import { execa } from 'execa'
 
 export const autoImportCounts = [1, 20, 50, 69]
 const modes = ['manual', 'automatic'] as const
-interface RawBuild { durationMs: number, repeatDurationMs: number, rssPeakBytes?: number, repeatRssPeakBytes?: number, output: OutputEvidence, repeatOutput: OutputEvidence }
+interface RawBuild { cliBuildMs?: number | null, repeatCliBuildMs?: number | null, durationMs: number, repeatDurationMs: number, rssPeakBytes?: number, repeatRssPeakBytes?: number, output: OutputEvidence, repeatOutput: OutputEvidence }
 interface RawHmr { startupMs: number, cycles: Array<{ editMs: number, restoreMs: number }>, updateMemory?: { rss: number, heapUsed: number } }
 
 export function autoImportMetrics() {
@@ -50,7 +50,7 @@ export async function collectAutoImport(checkout: Checkout, driver: string, outp
     const value = values[0]!
     const template = `auto-import-${row.usedCount}`
     if (kind === 'build') {
-      return ['first', 'repeat'].map(phase => ({ id: `auto-build:${row.usedCount}:${mode}:${phase}`, template, phase, ms: phase === 'first' ? value.durationMs : value.repeatDurationMs, rssBytes: phase === 'first' ? value.rssPeakBytes : value.repeatRssPeakBytes, output: phase === 'first' ? value.output : value.repeatOutput }))
+      return ['first', 'repeat'].map(phase => ({ id: `auto-build:${row.usedCount}:${mode}:${phase}`, template, phase, ms: phase === 'first' ? value.durationMs : value.repeatDurationMs, cliMs: (phase === 'first' ? value.cliBuildMs : value.repeatCliBuildMs) ?? undefined, rssBytes: phase === 'first' ? value.rssPeakBytes : value.repeatRssPeakBytes, output: phase === 'first' ? value.output : value.repeatOutput }))
     }
     if (value.cycles.length !== 2) {
       throw new Error('Missing auto-import continuous update and restore')

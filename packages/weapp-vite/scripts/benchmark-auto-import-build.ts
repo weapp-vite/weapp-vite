@@ -1,17 +1,17 @@
 /* eslint-disable ts/no-use-before-define */
+import type { PeakRssSamplingStats } from '../../../scripts/benchmarkTemplatesPerformance/peakRssSampler'
 import type { OutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
-import { spawn } from 'node:child_process'
 import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile } from 'node:fs/promises'
-import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import path from 'pathe'
+import { runMeasuredBuild } from '../../../scripts/benchmarkTemplatesPerformance/measuredBuild'
 import { captureOutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
 import { patchProjectConfigFile } from './utils/config-file'
-import { createPeakRssSampler, formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
+import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
 
 const iterations = Number.parseInt(process.env.BENCH_ITERATIONS ?? '3', 10)
 const scenarioValues = parseScenarioValues(process.env.BENCH_SCENARIOS)
@@ -111,23 +111,28 @@ async function measureBuild(options: {
     await rm(path.join(project.tempDir, 'dist'), { recursive: true, force: true })
     await rm(path.join(project.tempDir, '.weapp-vite'), { recursive: true, force: true })
 
-    const start = performance.now()
     const memory = await runBuild(project.tempDir)
-    const durationMs = performance.now() - start
     const output = await captureOutputEvidence(project.tempDir)
     let repeatDurationMs: number | undefined
     let repeatRssPeakBytes: number | null | undefined
     let repeatOutput: OutputEvidence | undefined
+    let repeatCliBuildMs: number | null | undefined
+    let repeatRssSampling: PeakRssSamplingStats | undefined
     if (process.env.AUTO_IMPORT_BENCH_PAIRED === '1') {
-      const repeatStart = performance.now()
       const repeatMemory = await runBuild(project.tempDir)
-      repeatDurationMs = performance.now() - repeatStart
+      repeatDurationMs = repeatMemory.durationMs
       repeatRssPeakBytes = repeatMemory.rssPeakBytes
+      repeatCliBuildMs = repeatMemory.cliBuildMs
+      repeatRssSampling = repeatMemory.rssSampling
       repeatOutput = await captureOutputEvidence(project.tempDir)
     }
     return {
-      durationMs,
+      durationMs: memory.durationMs,
+      cliBuildMs: memory.cliBuildMs,
+      rssSampling: memory.rssSampling,
       repeatDurationMs,
+      repeatCliBuildMs,
+      repeatRssSampling,
       repeatRssPeakBytes,
       output,
       repeatOutput,
@@ -322,33 +327,9 @@ async function linkWorkspaceNodeModules(projectRoot: string) {
 async function runBuild(cwd: string) {
   const cliPath = path.join(workspaceWeappViteDir, 'bin/weapp-vite.js')
   const workspaceBinDir = path.join(workspaceRootNodeModulesDir, '.bin')
-  return await new Promise<{ rssPeakBytes: number | null }>((resolve, reject) => {
-    const child = spawn(process.execPath, [cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
-      cwd: workspaceRootDir,
-      env: {
-        ...process.env,
-        PATH: createBenchmarkPath(workspaceBinDir),
-      },
-      stdio: 'pipe',
-    })
-    const memorySampler = createPeakRssSampler(child.pid)
-    child.stdout.resume()
-
-    let stderr = ''
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString()
-    })
-
-    child.on('error', reject)
-    child.on('exit', (code) => {
-      void memorySampler.stop().then((memory) => {
-        if (code === 0) {
-          resolve(memory)
-          return
-        }
-        reject(new Error(`build failed with code ${code}\n${stderr}`))
-      }, reject)
-    })
+  return await runMeasuredBuild(process.execPath, [cliPath, 'build', cwd, '--platform', 'weapp', '--skipNpm'], {
+    cwd: workspaceRootDir,
+    env: { ...process.env, PATH: createBenchmarkPath(workspaceBinDir) },
   })
 }
 
@@ -454,6 +435,10 @@ function renderMarkdown(results: Array<Awaited<ReturnType<typeof runScenario>>>)
 }
 
 interface BuildSample {
+  cliBuildMs?: number | null
+  repeatCliBuildMs?: number | null
+  rssSampling?: PeakRssSamplingStats
+  repeatRssSampling?: PeakRssSamplingStats
   output: OutputEvidence
   repeatOutput?: OutputEvidence
   repeatDurationMs?: number

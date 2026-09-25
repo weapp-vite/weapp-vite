@@ -131,3 +131,39 @@ Ubuntu 1 项，macOS 29 项；按既定规则均不能通过，未执行第二�
 计时只在开发态存在 profile 时启用；保留原异步调用顺序，不额外包装任务。这些字段用于 JSON 诊断，未扩展 CLI 汇总表。本报告的 ade120 原始数据不含这些字段，也没有因此新增性能结论。每次插件调用内的区间连续且互不重复，但独立包与主包可能共享累计 profile，父级等待与子级处理可能重叠，因此不能相加作为互斥耗时，也不能一概视为单次 `writeMs` 的严格子集；其他插件、原生打包器和写盘工作仍未单列，门禁继续使用完整端到端时间。
 
 本次保留已有超过 300 行文件中的插件挂载点、profile 类型与序列化位置，避免诊断改动同时重组发布生命周期；计时辅助函数集中在现有短文件 `utils/hmrProfile.ts`。该诊断不改变构建产物或监听归属，尚需实际 CPU profile 确认回退根因。
+
+## Windows：超时后保留的首批证据
+
+同一 ade120 提交的 Windows 任务 `107950927769` 于 11:02:50 UTC 中止采集，11:04:15 UTC 结束（cancelled）；job 配置上限为 360 分钟。artifact `10860511720` 已成功上传并完整下载，但没有最终 `report.json`，后续完整性检查因文件缺失失败。首批 checkpoint 不能冒充完整门禁报告，整个平台保持 incomplete。
+
+- 保留 105 个已完成的单侧采集记录：普通构建 14、classic/stateful HMR 各 40、自动导入构建 11。80 个 HMR 记录均带有已知缺项错误，保留其中成功阶段的真实样本。
+- 普通构建每项 7 对，最大 +2.22%；本提交 Windows Wevu 重复构建为 3664.46 → 3619.97ms（−1.21%）。这是当前提交首批数据，不是旧提交 +10.57% 的确认批次；旧异常不能据此改判通过。
+- 自动导入构建只有 5 个完整配对，加第 6 对 optimized 单侧；第 6 对 baseline 在运行时中止，未补齐；auto-HMR 未开始，所有唯一确认均未执行。
+- 两侧 App JSON 缺样本和固定基线 sitemap 失败仍存在。Windows 已保全错误信息中未出现 batch-published 发布协议超时；这不推翻其他平台已有失败。
+
+下列 8 项首批各有完整 20 对且超过 5%，均缺唯一等量确认，结论只能为 incomplete，不能称为已确认回退或通过。
+
+| 场景 | 基线 P50 ms | 当前 P50 ms | 首批变化 | 样本对 |
+| --- | ---: | ---: | ---: | ---: |
+| `hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:restore` | 1028.18 | 1084.21 | +5.45% | 20 |
+| `hmr:classic:weapp-vite-template:native-page-template:repeat:restore` | 898.99 | 971.73 | +8.09% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-template:first:edit` | 565.20 | 598.26 | +5.85% | 20 |
+| `hmr:classic:weapp-vite-wevu-template:vue-page-template:repeat:restore` | 515.73 | 545.09 | +5.69% | 20 |
+| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:edit` | 398.72 | 463.80 | +16.32% | 20 |
+| `hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:edit` | 419.56 | 441.48 | +5.22% | 20 |
+| `hmr:stateful-experimental:weapp-vite-template:native-page-style:repeat:restore` | 1032.00 | 1089.72 | +5.59% | 20 |
+| `hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-script:first:restore` | 173.89 | 182.92 | +5.20% | 20 |
+
+原始 checkpoint 无损压缩保存在 [ci-ade-windows-primary.json.gz](./ci-ade-windows-primary.json.gz)，解压内容与 artifact 的 `primary.json` 字节一致。SHA-256（未压缩）：`00e4311054c714d9cea90f18f99b480c83bb599c1c5a3ec4b486c1e62528be8c`。未生成或伪造缺失的最终 CI report。
+
+### Windows 自动导入采样器诊断与修正
+
+启动链为 workflow → performanceGate → benchmark-auto-import-build → Node CLI。CLI 通过 Node 可执行文件直接启动，PATH 已按 Windows 分号拼接。Windows 单侧自动导入构建采集约 20 分钟，其中 16 次构建首个单侧批次单次约 63–96 秒；相同驱动在 Ubuntu/macOS 约 2 秒。记录不含足够的 CLI 内部耗时，不能把这些差值全部归因于产品构建。
+
+发现该入口残留另一份 RSS 采样器：每 100ms 启动一次 PowerShell CIM 进程查询，前一探针未结束也继续启动，无超时，stop 还新增一次探针，并将等待纳入构建时间。慢 Windows 探针的确定性测试在修正前一秒内观察到 11 次调用（期望 1），证明可累积并发；当前 CI 日志没有记录每个探针的运行时间，因此尚不能量化该缺陷对六小时超时的贡献。
+
+修正复用普通模板基准现有的串行采样器与有界查询：前次完成后再调度、停止只等待已有探针、失败/超时保持 RSS 不可用。自动导入的实际构建入口也统一使用此实现；从子进程启动至完成记录墙钟时间，再等待内存诊断收尾，同时保留 CLI 内部耗时和内存采样状态用于后续区分。此边界与普通模板构建一致，不扣除构建期间的正常工作。新增测试覆盖慢探针不重叠、停止清理、缺 PID，以及探针延迟不混入构建时间和构建失败时的收尾。
+
+这属于基准设施修正，不是产品性能优化；不修改 ade120 原始记录，不混合修正前后的样本，不改变固定源码基线、7/20 对、唯一确认次数或阈值。新驱动须对两侧应用相同规则，由下一次三平台 CI 验证实际效果。原有超过 300 行脚本仅保留调用及序列化，新进程生命周期逻辑放到独立的 `scripts/benchmarkTemplatesPerformance/measuredBuild.ts`。
+
+验证：7 个定向测试文件共 21 例通过，scoped ESLint 与改动入口依赖闭包的 TypeScript 检查通过。全 scripts typecheck 仍被未触及的 e2e/website/其他脚本错误阻塞，不能记为全量类型检查通过。本轮仅修正基准脚本，不修改产品源码，未启动本地基准或 runtime E2E。
