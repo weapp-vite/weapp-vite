@@ -732,7 +732,12 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const prepareStartedAt = performance.now()
     const ownerEntryKey = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(id))
     const ownerEntry = type === 'app'
-      ? { ...entriesMap.get(ownerEntryKey) }
+      ? {
+          ...entriesMap.get(ownerEntryKey),
+          // 附属 JSON 与本轮 App 配置同时解析，避免依赖过期的扫描记录或上轮入口。
+          sitemapJsonPath: appResult?.sitemapJsonPath,
+          themeJsonPath: appResult?.themeJsonPath,
+        }
       : {}
     entriesMap.set(ownerEntryKey, {
       ...ownerEntry,

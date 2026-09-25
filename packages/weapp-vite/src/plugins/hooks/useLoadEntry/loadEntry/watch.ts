@@ -95,12 +95,14 @@ export async function collectAppSideFiles(
       jsonPath,
       type: 'page',
     })
+    return jsonPath
   }
 
-  await Promise.all([
+  const [sitemapJsonPath, themeJsonPath] = await Promise.all([
     processSideJson(sitemapLocation),
     processSideJson(themeLocation),
   ])
+  return { sitemapJsonPath, themeJsonPath }
 }
 
 export async function collectMiniappConfigFile(
