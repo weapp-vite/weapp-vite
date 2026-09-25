@@ -159,12 +159,15 @@ jobs:
         working-directory: head
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # #1076 已开始固定基线验收；合入 main 解决冲突后仍保留原批次基线。
+          PINNED_BASELINE_SHA: ${{ github.event.pull_request.number == 1076 && 'e7862e61dd83e3b9e356ac1e176267b31ab298af' || '' }}
         run: >-
           node --input-type=module -e
           'import { execFileSync } from "node:child_process";
           import { appendFileSync } from "node:fs";
-          const sha = execFileSync("git", ["merge-base", "HEAD", process.env.BASE_SHA], { encoding: "utf8" }).trim();
+          const sha = process.env.PINNED_BASELINE_SHA || execFileSync("git", ["merge-base", "HEAD", process.env.BASE_SHA], { encoding: "utf8" }).trim();
           if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error("Invalid comparison baseline");
+          execFileSync("git", ["merge-base", "--is-ancestor", sha, "HEAD"]);
           appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);'
 
       - name: Check out baseline
