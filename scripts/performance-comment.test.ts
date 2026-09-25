@@ -41,11 +41,30 @@ describe('performance comment report', () => {
       artifacts: [{ name: 'templates-performance-report-ubuntu-latest', url: 'https://example.test/artifact' }],
     })
     expect(body).toContain(COMMENT_MARKER)
-    expect(body).toContain('Build raw')
+    expect(body).toContain('首次构建')
     expect(body).toContain('HMR update')
     expect(body).toContain('运行时体积')
     expect(body).toContain('20.0 ms')
     expect(body).toContain('artifact: templates-performance-report-ubuntu-latest')
+  })
+
+  it('keeps actual raw/wall/RSS values, exposes missing warm/core and does not pass a single sample', async () => {
+    const root = await createFixture()
+    const data = await collectPerformanceReports({ performanceRoot: root.performance, runtimeRoot: root.runtime, runtimeExpected: { repository: 'owner/repo', prNumber: 42, headSha: 'a'.repeat(40) } })
+    const body = renderPerformanceComment({ data, metadata: { prNumber: 42, headSha: 'a'.repeat(40), baseSha: 'b'.repeat(40) } })
+    expect(body).toContain('120.0 ms (+20.0 ms, +20.0%) | 不可用 | 110.0 ms')
+    expect(body).toContain('60.0 ms (+10.0 ms, +20.0%)')
+    expect(body).toContain('60.0 MiB (+10.0 MiB, +20.0%)')
+    expect(body).toContain('性能结论：未完成验收')
+    expect(body).toContain('自动导入启用成本')
+    expect(body).toContain('不是 main 与 PR')
+    expect(body).toContain('output-observation')
+    expect(body).toContain('a'.repeat(40))
+    expect(body).not.toContain('(+20.0 ms, -20.0%)')
+    const regressions = body.split('### 关键回归')[1]!
+    expect(regressions).toContain('20 组件 / HMR')
+    expect(regressions).toContain('+10.0 MiB')
+    expect(regressions).not.toContain('10485760.0 ms')
   })
 
   it('reports partial data and rejects mismatched runtime metadata', async () => {
@@ -104,13 +123,24 @@ async function createFixture() {
 }
 
 function createTemplatesReport() {
-  const build = (prefix: 'Baseline' | 'Optimized', value: number) => ({ [`totalAverage${prefix}Ms`]: value, [`cliAverage${prefix}Ms`]: value - 10, [`rssPeakAverage${prefix}Bytes`]: 90 * 1024 * 1024 })
-  const hmr = (prefix: 'Baseline' | 'Optimized', value: number) => ({ [`coreAverage${prefix}Ms`]: value, [`wallAverage${prefix}Ms`]: value + 5, [`heapUsedAverage${prefix}Bytes`]: 20 * 1024 * 1024, [`rssAverage${prefix}Bytes`]: 50 * 1024 * 1024 })
+  const side = (totalMs: number) => ({
+    commit: 'a'.repeat(40),
+    build: { samples: [{ iteration: 1, status: 0, totalMs }], raw: { totalAverageMs: totalMs, count: 1 }, warm: { totalAverageMs: null, count: 0 } },
+    hmr: { templates: [{ scenarios: [{ samples: [{ timingSource: 'output-observation' }] }] }] },
+  })
   return {
-    baseline: { build: { raw: { totalAverageMs: 100, cliAverageMs: 90, rssPeakAverageBytes: 90 * 1024 * 1024 }, warm: { totalAverageMs: 80 }, all: build('Baseline', 100) }, hmr: { all: hmr('Baseline', 50) } },
-    optimized: { build: { raw: { totalAverageMs: 120, cliAverageMs: 110, rssPeakAverageBytes: 100 * 1024 * 1024 }, warm: { totalAverageMs: 90 }, all: build('Optimized', 120) }, hmr: { all: hmr('Optimized', 60) } },
-    build: { all: {} },
-    hmr: { all: {} },
+    baseline: side(100),
+    optimized: side(120),
+    buildIterations: 1,
+    hmrIterations: 1,
+    build: {
+      all: { cliAverageBaselineMs: 90, cliAverageOptimizedMs: 110, rssPeakAverageBaselineBytes: 90 * 1024 * 1024, rssPeakAverageOptimizedBytes: 100 * 1024 * 1024 },
+      rows: [{ id: 'native', comparable: true, baseline: { totalMedianMs: 100, count: 1 }, optimized: { totalMedianMs: 120, count: 1 } }],
+    },
+    hmr: {
+      all: { coreAverageBaselineMs: null, coreAverageOptimizedMs: null, wallAverageBaselineMs: 50, wallAverageOptimizedMs: 60, rssAverageBaselineBytes: 50 * 1024 * 1024, rssAverageOptimizedBytes: 60 * 1024 * 1024 },
+      rows: [{ key: 'native:template', comparable: true, baseline: { averageWallMs: 50, wallSamples: [50], rssAverageBytes: 50 * 1024 * 1024 }, optimized: { averageWallMs: 60, wallSamples: [60], rssAverageBytes: 60 * 1024 * 1024 } }],
+    },
   }
 }
 
