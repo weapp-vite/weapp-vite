@@ -80,3 +80,4 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 
 - [8f78 Windows 六小时超时与部分确认原始证据](./8f78-windows-results.md)；合并后由 #1082 继续跟踪。
 - [Issue 1082 合并后 CPU 诊断与 stateful 混合事件复现](./issue1082-diagnosis.md)。
+- [Issue 1082 监听收窄方案的资产更新回归与真实 DevTools 复核失败](./issue1082-watch-boundary-diagnostic.md)；待修复方案尚未交付。
