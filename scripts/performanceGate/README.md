@@ -1,8 +1,26 @@
-# 成对性能验收
+# 性能 CI：PR 冒烟与 Nightly 验收
 
-PR 性能任务在同一 runner 上先准备两份 checkout，再使用当前提交中的同一个驱动串行交替采样。PR 的基线固定为目标分支与 HEAD 的 merge-base，并在报告中记录完整 SHA，避免 main 后续依赖升级混入本次改动。
+PR 的 `Performance Smoke` 仅验证当前 HEAD 的正确性，目标 10 分钟内完成，Ubuntu / Node 24 job 硬上限 15 分钟。它不准备基线、不计算统计回退、不触发确认。构建产物与 classic/stateful 的连续两次编辑/恢复覆盖原生、Wevu、Tailwind/TDesign 三个模板；自动导入只执行 1、69 个组件的手动/自动配置。启动、操作、完整恢复和 stateful 发布协议断言沿用正常 CLI 驱动，失败保存证据后立即结束。纯文档等无关路径返回“无需冒烟”，重命名同时检查原路径。
 
-已开始的 #1076 验收单独固定为 `e7862e61dd83e3b9e356ac1e176267b31ab298af`，合入 main 解决冲突也不切换基线。工作流验证基线为完整 SHA 且属于 HEAD 的祖先；其他 PR 继续使用 merge-base。该例外只约束比较对象，不修改固定基线源码或性能门禁。
+`Nightly Performance` 每天北京时间 03:35（UTC 19:35）运行，也可在 Actions 手动填写 `pr-number`。每次检查 main，再从带 `performance:nightly` 标签的开放 PR 中按标签等待时间选择一个尚未验收的 HEAD；手动输入替换标签队列选择。未选中的 PR 保留标签排队。普通功能、类型、runtime 和跨平台 CI 不变，Nightly 不作为普通 PR 的必需检查，本次不修改分支保护。
+
+## 固定基线与去重
+
+批准基线在 [policy.json](./policy.json) 中维护，初始为 `e7862e61dd83e3b9e356ac1e176267b31ab298af`，main 与所有 PR（包括 #1076）均使用它。禁止自动滚动到 merge-base、修改基线源码或删除失败场景。更新比较对象必须显式提交策略配置变更。
+
+可信 planner 一次性解析完整的 driver、baseline、HEAD SHA，按驱动版本中的固定场景清单生成 `performance-plan`。采集只 checkout 已冻结的 SHA，并核验实际 git HEAD 与 OS。驱动变更如果影响初始化方式、计时、样本或场景语义，必须更新 `samplingContract`，不能用版本号不变的驱动变更偷偷重新采样。
+
+持久去重键包含 HEAD、baseline、采样契约、模板场景、OS 和配置。planner 先在被测提交上登记 `Performance Nightly / <key>` 状态，再启动只读采集。成功、失败和未完成的旧尝试均复用原运行链接，不依赖会过期的 artifact；取消任务也不会自动重新采样。重新贴标签、下一次 schedule 或手动指定同一版本不重置确认次数，GitHub 的原运行 rerun 也不启动采集。只有提交、批准基线或采样契约改变才创建新尝试。旧 artifact 到期后保留运行记录，但不能把已丢失证据重新宣称为完整验收。
+
+## 分片与 deadline
+
+每个目标按三 OS × 九类任务产生 27 个分片：普通构建、三个模板各自的 classic/stateful HMR、自动导入构建、自动导入 HMR。一个工作流最多运行六个分片，不在同一 runner 并发跑成对样本。各分片独立准备两份 checkout，并在同一 runner、相同初始化方式下完成首批及所需的唯一确认；失败不取消其他分片。
+
+模板确认只重跑涉及的模板/runtime，保留该模板全部前置场景顺序；自动导入确认在启动子进程前筛选组件数/模式，保留首次、重复、编辑、恢复。内部多执行的前置阶段不成为新的确认候选，确认计划在确认批次启动前落盘。首批每轮交替 baseline→HEAD、HEAD→baseline，确认批次使用相同顺序。
+
+job 硬上限 180 分钟；准备子进程 20 分钟，采集器每侧最多 15 分钟，并受 165 分钟分片总 deadline 约束，为清理和上传留出时间。smoke 的准备最多 6 分钟，采集最多 5 分钟，单侧最多 2 分钟，另受 15 分钟 job 上限约束。这些是超时失败边界，不是缩短真实计时或采样数。进度立即输出目标、配置、轮次、当前侧、SHA 和已用时间，无输出时每 30 秒输出心跳。Windows 使用无 shell 的 `taskkill /T /F`，Unix 清理自有进程组；日志持续落盘，每侧保存 checkpoint。异常退出和缺失报告均保留为失败证据。
+
+## 完整验收不变
 
 - 每个模板的首次、重复构建分别采集 7 对。首次清理项目输出；重复保留输出，两次都新建 CLI 进程，不声称清空 OS 缓存。
 - classic 和 stateful 的每个 HMR 场景分别采集 20 对。每对新建 dev 会话，在会话中分别保留首次编辑、恢复、连续编辑和恢复；以真实可达产物确认完成，不选两者中的较快值。
@@ -20,12 +38,26 @@ PR 性能任务在同一 runner 上先准备两份 checkout，再使用当前提
 
 构建计时外记录每一轮的页面集合、模板内容和 app/页面配置摘要，跨提交不一致或缺少证据时标为不可比较，不能将少发页面/模板误判为变快。JSON 只忽略键顺序；模板不忽略内容或属性差异。JS 检查实际文件存在且非空，语义由既有构建/运行时回归保障，不绑定压缩变量名或 chunk hash。
 
-`TEMPLATES_PERF_DIAGNOSTIC_PAIRS` 只能缩短诊断轮次，完整性判据仍要求 7/20 对，因此诊断运行不得显示验收通过。`TEMPLATES_PERF_SKIP_PREPARE=1` 只用于复用已准备的诊断 checkout，必须保留 `preparation/prepared.json` 且 SHA 一致。
+## 报告与权限
+
+内部报告增加 `schemaVersion: 2` 与 `purpose: smoke | full`。smoke 明确写入 `fullAcceptance: not-run`，不含 `gate`；完整分片附带目标 PR、baseline/head/driver SHA、OS、分片、采样契约、场景清单、首批和唯一确认执行计划。既有历史报告格式与读取入口继续保留。
+
+最终汇总要求每个目标的 27 个预期分片齐全，逐项校验身份、场景、轮次唯一性、交替顺序和产物证据，并从原始样本重算门禁，不能信任上传的 `gate.status`。任一分片、SHA 或生命周期证据缺失均不能通过。报告按 OS 和场景逐行展示，🔴 标记回退、不稳定或不完整，🟢 标记已通过场景的耗时下降；同提交自动导入启用成本单列。
+
+所有执行被测代码的 job 只有 `contents: read`，checkout 不保留凭据，不注入写权限 token 或业务 secrets。planner 的提交状态登记和 `workflow_run` 评论分别在可信任务中完成；高权限报告任务只 checkout main，以 Node 24 直接执行只依赖核心模块的脚本，不安装/执行 PR 的报告代码。报告重新校验来源运行、冻结计划、可信状态登记和原始分片。发布 PR 评论前两次检查最新 HEAD，过期结果只留在历史提交状态和 artifact，不覆盖当前 PR。
+
+PR 评论明确区分正确性冒烟与完整性能“未运行 / 排队 / 运行中 / 已完成”；成功采集、smoke 通过或 GitHub 没有 required 元数据都不代表通过 5% 门禁。
+
+## 验证与迁移
 
 ```sh
-TEMPLATES_PERF_BASELINE_DIR=../baseline TEMPLATES_PERF_OPTIMIZED_DIR=. pnpm exec tsx scripts/performanceGate/index.ts
+pnpm exec vitest run scripts/performanceGate scripts/benchmarkTemplatesHmr scripts/benchmarkTemplatesPerformance/measuredBuild.test.ts scripts/performance-comment-workflow.test.ts
 ```
 
-在 Windows PowerShell 中使用对应的 `$env:` 语法设置变量。两个 checkout 的依赖先按各自锁文件安装，驱动再重建所需包。最终产物仍由各自的 Vite/Rolldown 构建写出。
+定向测试覆盖触发与权限边界、队列/去重、启动前配置过滤、交替串行顺序、重复/缺样本/错误身份、三 OS 缺分片、smoke 与完整结论隔离、进程 deadline/退出失败/Windows 清理以及过期 PR HEAD。此类编排测试不属于正式性能验收。新 Nightly 和高权限报告入口必须合入默认分支后才生效，不能为提前验证而执行未合并 PR 的高权限脚本。
 
-自动评论仍由 main 的可信脚本负责；本目录不改变高权限工作流的脚本来源。报告设施前置 PR 未合并期间，以本任务写入的 Actions 摘要和原始 artifact 为准。
+PR #1076 原有 Windows/macOS 唯一采集在结束并保全证据后才推送迁移，不能用新工作流取消它们。既有回退、不稳定和固定基线 Wevu sitemap 缺陷继续保留；迁移执行时机不代表 #1076 达到 5% 要求。
+
+旧诊断入口 `scripts/performanceGate/index.ts` 保留。其缩短轮次开关只能用于诊断，完整判据仍要求 7/20 对，不得把诊断结果作为 Nightly 验收。
+
+维护范围：新增编排按契约、调度、进程、采样、汇总与发布拆分，单个新增文件低于 300 行。既有超过 300 行的 `compare-templates-performance.ts`、`benchmark-templates-hmr.ts` 和两个自动导入脚本只增加准备导出、入口保护、配置筛选、fail-fast 与证据 checkpoint；沿用原初始化/生命周期实现，避免在迁移同时重写采集语义。本次不改产品 API，无产品 changeset 或脚手架联动。

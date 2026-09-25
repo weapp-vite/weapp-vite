@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import { access, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能对比需要调度两个 checkout 的命令并收集报告。 */
 import { execa } from 'execa'
@@ -33,11 +34,10 @@ const hmrSampleMode = process.env.TEMPLATES_PERF_HMR_SAMPLE_MODE === 'best-of-cy
 const reportJsonPath = path.join(reportRootDir, 'report.json')
 const reportMdPath = path.join(reportRootDir, 'report.md')
 
-if (!baselineDir) {
-  throw new Error('TEMPLATES_PERF_BASELINE_DIR is required.')
-}
-
 async function main() {
+  if (!baselineDir) {
+    throw new Error('TEMPLATES_PERF_BASELINE_DIR is required.')
+  }
   await rm(reportRootDir, { recursive: true, force: true })
   await mkdir(reportRootDir, { recursive: true })
 
@@ -67,13 +67,13 @@ async function main() {
   assertTemplatesPerformanceComplete(report)
 }
 
-async function prepareBenchmarkRunner() {
+export async function prepareBenchmarkRunner() {
   process.stdout.write('[templates-perf] runner: build benchmark helper dependency dist\n')
   const command = createBenchmarkRunnerPreparationCommand()
-  await run(command.command, command.args, optimizedDir)
+  await run(command.command, command.args, path.resolve(import.meta.dirname, '..'))
 }
 
-async function prepareCheckout(id: CheckoutId, cwd: string) {
+export async function prepareCheckout(id: CheckoutId, cwd: string) {
   const reportDir = path.join(reportRootDir, id)
   const hmrReportDir = path.join(reportDir, 'hmr')
   await mkdir(hmrReportDir, { recursive: true })
@@ -922,7 +922,9 @@ interface PerformanceReport {
   }
 }
 
-void main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    console.error(error)
+    process.exitCode = 1
+  })
+}

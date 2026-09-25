@@ -67,6 +67,7 @@ export async function collectBuilds(checkout: Checkout, logDir: string): Promise
       await rm(path.join(template.root, directory), { recursive: true, force: true })
     }
     for (const phase of ['first', 'repeat']) {
+      console.log(`[performance-build] ${checkout.id} ${template.id} ${phase}`)
       const start = performance.now()
       const child = execa('pnpm', ['--filter', template.packageName, 'build'], { cwd: checkout.cwd, reject: false })
       const sampler = createPeakRssSampler(() => child.pid ? sampleProcessTreeRssBytes(child.pid) : Promise.resolve(null))
@@ -87,9 +88,10 @@ export async function collectBuilds(checkout: Checkout, logDir: string): Promise
 /** 每对使用独立 dev 会话，分别记录首次编辑、连续编辑和恢复，禁止取较快阶段。 */
 export async function collectHmr(checkout: Checkout, driverRoot: string, logDir: string, runtime: string): Promise<AuditSample[]> {
   await mkdir(logDir, { recursive: true })
-  const result = await execa(process.execPath, ['--import', 'tsx', 'scripts/benchmark-templates-hmr.ts'], {
+  const child = execa(process.execPath, ['--import', 'tsx', 'scripts/benchmark-templates-hmr.ts'], {
     cwd: driverRoot,
     reject: false,
+    all: true,
     env: {
       TEMPLATES_HMR_REPO_ROOT: checkout.cwd,
       TEMPLATES_HMR_CLI_PATH: path.join(checkout.cwd, 'packages/weapp-vite/bin/weapp-vite.js'),
@@ -102,8 +104,11 @@ export async function collectHmr(checkout: Checkout, driverRoot: string, logDir:
       TEMPLATES_HMR_STARTUP_TIMEOUT_MS: '120000',
       // 产物/恢复失败由下方完整性检查阻断；既有 500ms 绝对预算另外记录，不改变它。
       TEMPLATES_HMR_FAIL_ON_ERROR: '0',
+      TEMPLATES_HMR_STOP_ON_ERROR: process.env.PERFORMANCE_PURPOSE === 'smoke' ? '1' : '0',
     },
   })
+  child.all?.on('data', chunk => process.stdout.write(chunk))
+  const result = await child
   await writeFile(path.join(logDir, 'runner.log'), `${result.stdout}\n${result.stderr}`.replaceAll(checkout.cwd, '<checkout>').replaceAll(driverRoot, '<driver>'))
   if (result.exitCode !== 0) {
     throw new Error(`${checkout.id} ${runtime} HMR process failed (${result.exitCode})`)

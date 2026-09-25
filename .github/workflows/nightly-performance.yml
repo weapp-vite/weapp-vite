@@ -1,0 +1,159 @@
+name: Nightly Performance
+
+on:
+  schedule:
+    - cron: '35 19 * * *'
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: Optional open PR number; empty selects main and the oldest pending labelled PR
+        type: string
+        required: false
+
+concurrency:
+  group: nightly-performance
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    name: Freeze performance targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      has_work: ${{ steps.plan.outputs.has_work }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - id: plan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr-number }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: node scripts/performanceGate/schedule.mjs
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: performance-plan
+          path: performance-plan
+          if-no-files-found: error
+          retention-days: 90
+
+  collect:
+    name: Full performance (${{ matrix.target }} / ${{ matrix.os }} / ${{ matrix.shard }})
+    needs: plan
+    if: needs.plan.outputs.has_work == 'true' && github.run_attempt == 1
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - name: Check out trusted driver
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: driver
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check out measured head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: head
+          repository: ${{ matrix.headRepository }}
+          ref: ${{ matrix.headSha }}
+          persist-credentials: false
+      - name: Check out approved baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: baseline
+          ref: ${{ matrix.baselineSha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: performance-plan
+          path: performance-plan
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+        with:
+          version: 11.16.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: driver/pnpm-lock.yaml
+      - name: Install trusted driver dependencies
+        working-directory: driver
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Install head dependencies
+        working-directory: head
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Install baseline dependencies
+        working-directory: baseline
+        run: pnpm install --frozen-lockfile --prefer-offline
+      - name: Collect paired shard
+        working-directory: driver
+        env:
+          PERFORMANCE_PURPOSE: full
+          PERFORMANCE_PLAN: ${{ github.workspace }}/performance-plan/plan.json
+          PERFORMANCE_TARGET: ${{ matrix.target }}
+          PERFORMANCE_SHARD: ${{ matrix.shard }}
+          PERFORMANCE_OS: ${{ matrix.os }}
+          TEMPLATES_PERF_BASELINE_DIR: ${{ github.workspace }}/baseline
+          TEMPLATES_PERF_OPTIMIZED_DIR: ${{ github.workspace }}/head
+          TEMPLATES_PERF_REPORT_DIR: ${{ runner.temp }}/performance-shard
+        run: pnpm exec tsx scripts/performanceGate/full.ts
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ runner.temp }}/performance-shard
+          if-no-files-found: error
+          retention-days: 90
+
+  summary:
+    name: Full performance verdict
+    needs: [plan, collect]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: performance-*
+          path: performance-artifacts
+      - name: Verify every planned shard
+        env:
+          PERFORMANCE_PLAN: performance-artifacts/performance-plan/plan.json
+          PERFORMANCE_ARTIFACTS: performance-artifacts
+        run: node scripts/performanceGate/aggregate.mjs
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: performance-nightly-summary
+          path: |
+            nightly-report.json
+            nightly-report.md
+          if-no-files-found: error
+          retention-days: 90

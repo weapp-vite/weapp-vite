@@ -202,7 +202,12 @@ export async function main() {
 
   for (const template of selectedTemplates) {
     process.stdout.write(`\n[templates-hmr] benchmarking ${template.id}\n`)
-    results.push(await benchmarkTemplate(template))
+    const result = await benchmarkTemplate(template)
+    results.push(result)
+    await writeFile(reportJsonPath, JSON.stringify(createReport(results)))
+    if (process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1' && (result.error || result.scenarios.some(scenario => scenario.error))) {
+      break
+    }
   }
 
   const report = createReport(results)
@@ -327,7 +332,11 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     const scenarioResults: ScenarioResult[] = []
     const statefulClient = new StatefulHmrAuditClient()
     for (const scenario of scenarios) {
-      scenarioResults.push(await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient))
+      const sample = await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient)
+      scenarioResults.push(sample)
+      if (sample.error && process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1') {
+        break
+      }
     }
     result.scenarios = scenarioResults
   }

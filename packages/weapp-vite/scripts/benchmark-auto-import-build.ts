@@ -9,6 +9,7 @@ import { runMeasuredBuild } from '../../../scripts/benchmarkTemplatesPerformance
 import { captureOutputEvidence } from '../../../scripts/performanceGate/outputEvidence'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
+import { benchmarkModeSelected, benchmarkReportResults } from './utils/benchmarkSelection'
 import { createBenchmarkPath, resolveBenchmarkTarget } from './utils/benchmarkTarget'
 import { patchProjectConfigFile } from './utils/config-file'
 import { formatMemoryMiB, summarizeOptionalMemory } from './utils/process-memory'
@@ -47,16 +48,20 @@ async function main() {
   for (const usedCount of scenarioValues) {
     const result = await runScenario(usedCount)
     results.push(result)
-    printScenario(result)
+    if (!process.env.BENCH_CONFIGURATIONS) {
+      printScenario(result)
+    }
+    await mkdir(reportDir, { recursive: true })
+    await writeFile(reportJsonPath, JSON.stringify({ iterations, results: benchmarkReportResults(results) }, null, 2))
   }
 
   await mkdir(reportDir, { recursive: true })
   await writeFile(reportJsonPath, JSON.stringify({
     iterations,
     generatedAt: new Date().toISOString(),
-    results,
+    results: benchmarkReportResults(results),
   }, null, 2))
-  await writeFile(reportMdPath, renderMarkdown(results), 'utf8')
+  await writeFile(reportMdPath, process.env.BENCH_CONFIGURATIONS ? '配置确认原始样本；未执行的配置不生成比较摘要。\n' : renderMarkdown(results), 'utf8')
 
   console.log(`[auto-import-build-bench] report.json -> ${reportJsonPath}`)
   console.log(`[auto-import-build-bench] report.md -> ${reportMdPath}`)
@@ -70,8 +75,14 @@ async function runScenario(usedCount: number) {
   const currentSamples: BuildSample[] = []
 
   for (let i = 0; i < iterations; i += 1) {
-    baselineSamples.push(await measureBuild({ usedTags, mode: 'baseline', iteration: i }))
-    currentSamples.push(await measureBuild({ usedTags, mode: 'current', iteration: i }))
+    if (benchmarkModeSelected(usedCount, 'manual')) {
+      console.log(`[auto-import-progress] ${usedCount}:manual ${i + 1}/${iterations}`)
+      baselineSamples.push(await measureBuild({ usedTags, mode: 'baseline', iteration: i }))
+    }
+    if (benchmarkModeSelected(usedCount, 'automatic')) {
+      console.log(`[auto-import-progress] ${usedCount}:automatic ${i + 1}/${iterations}`)
+      currentSamples.push(await measureBuild({ usedTags, mode: 'current', iteration: i }))
+    }
   }
 
   const baseline = summarizeNumbers(baselineSamples)
@@ -459,6 +470,7 @@ function formatTimestamp(date: Date) {
 
 void main().catch(async (error) => {
   console.error(error)
-  await rm(reportDir, { recursive: true, force: true }).catch(() => undefined)
+  await mkdir(reportDir, { recursive: true })
+  await writeFile(path.join(reportDir, 'error.txt'), String(error))
   process.exitCode = 1
 })

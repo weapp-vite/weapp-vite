@@ -19,30 +19,35 @@ export function autoImportMetrics() {
 }
 
 /** 交叉比较同配置提交回退；手动/自动开销保留为另一维度。 */
-export async function collectAutoImport(checkout: Checkout, driver: string, output: string, kind: 'build' | 'hmr'): Promise<AuditSample[]> {
+export async function collectAutoImport(checkout: Checkout, driver: string, output: string, kind: 'build' | 'hmr', configurations?: string[]): Promise<AuditSample[]> {
   await mkdir(output, { recursive: true })
-  const result = await execa(process.execPath, ['--import', 'tsx', `packages/weapp-vite/scripts/benchmark-auto-import-${kind}.ts`], {
+  const counts = configurations ? autoImportCounts.filter(n => configurations.some(c => c.startsWith(`${n}:`))) : autoImportCounts
+  const child = execa(process.execPath, ['--import', 'tsx', `packages/weapp-vite/scripts/benchmark-auto-import-${kind}.ts`], {
     cwd: driver,
     reject: false,
+    all: true,
     env: {
       AUTO_IMPORT_BENCH_TARGET_ROOT: checkout.cwd,
       AUTO_IMPORT_BENCH_PAIRED: '1',
       BENCH_ITERATIONS: '1',
-      BENCH_SCENARIOS: autoImportCounts.join(','),
+      BENCH_SCENARIOS: counts.join(','),
+      BENCH_CONFIGURATIONS: configurations ? JSON.stringify(configurations) : '',
       BENCH_REPORT_DIR: output,
       // 正常配置保留支持文件，不能继承诊断开关。
       BENCH_DISABLE_CURRENT_SUPPORT_OUTPUTS: '0',
     },
   })
+  child.all?.on('data', chunk => process.stdout.write(chunk))
+  const result = await child
   await writeFile(path.join(output, 'runner.log'), `${result.stdout}\n${result.stderr}`.replaceAll(checkout.cwd, '<checkout>').replaceAll(driver, '<driver>'))
   if (result.exitCode !== 0) {
     throw new Error(`${checkout.id} auto-import ${kind} failed (${result.exitCode})`)
   }
   const data = JSON.parse(await readFile(path.join(output, 'report.json'), 'utf8')) as { results: Array<{ usedCount: number, raw: Record<typeof modes[number], Array<RawBuild & RawHmr>> }> }
-  if (data.results.map(row => row.usedCount).join(',') !== autoImportCounts.join(',')) {
+  if (data.results.map(row => row.usedCount).join(',') !== counts.join(',')) {
     throw new Error('Missing auto-import component-count scenarios')
   }
-  return data.results.flatMap(row => modes.flatMap((mode): AuditSample[] => {
+  return data.results.flatMap(row => modes.filter(mode => !configurations || configurations.includes(`${row.usedCount}:${mode}`)).flatMap((mode): AuditSample[] => {
     const values = row.raw[mode]
     if (values.length !== 1) {
       throw new Error('Missing auto-import raw sample')

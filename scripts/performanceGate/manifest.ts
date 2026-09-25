@@ -2,8 +2,8 @@ import type { Checkout } from './collect'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
-// eslint-disable-next-line e18e/ban-dependencies -- 使用同一个驱动预先发现两侧测试集合。
-import { execa } from 'execa'
+
+import { runCollector } from './process'
 
 export interface ScenarioManifest {
   templates: Array<{ id: string, scenarios: string[] }>
@@ -15,7 +15,9 @@ export async function discoverManifest(checkouts: { baseline: Checkout, optimize
   const plans = []
   for (const checkout of [checkouts.baseline, checkouts.optimized]) {
     const reportDir = path.join(output, 'manifest', checkout.id)
-    await execa(process.execPath, ['--import', 'tsx', 'scripts/benchmark-templates-hmr.ts'], {
+    await runCollector(process.execPath, ['--import', 'tsx', 'scripts/benchmark-templates-hmr.ts'], {
+      logFile: path.join(reportDir, 'plan.log'),
+      timeoutMs: 120_000,
       cwd: driver,
       env: {
         TEMPLATES_HMR_REPO_ROOT: checkout.cwd,
