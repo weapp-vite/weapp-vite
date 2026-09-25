@@ -10,6 +10,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 import { createBenchmarkCheckoutPreparationCommands, createBenchmarkRunnerPreparationCommand, createBenchmarkTemplateDependenciesCommand } from './benchmark-checkout-preparation'
 import { assertBenchmarkPrepareCompleted, assertBenchmarkTypeScriptPrepared, createBenchmarkPrepareArgs, discoverBenchmarkTypeScriptProjects } from './benchmarkCheckoutPreparation/typescript'
+import { parseCliBuildMs } from './benchmarkTemplatesPerformance/cliTiming'
 import { createPeakRssSampler } from './benchmarkTemplatesPerformance/peakRssSampler'
 import { runRssSamplingCommand } from './benchmarkTemplatesPerformance/rssCommand'
 import { renderHmrTimingSources } from './benchmarkTemplatesPerformance/timing'
@@ -69,7 +70,7 @@ async function benchmarkCheckout(id: CheckoutId, cwd: string): Promise<CheckoutR
   const hmrReportDir = path.join(reportDir, 'hmr')
   await mkdir(hmrReportDir, { recursive: true })
 
-  const commit = (await execa('git', ['rev-parse', '--short=8', 'HEAD'], { cwd })).stdout.trim()
+  const commit = (await execa('git', ['rev-parse', 'HEAD'], { cwd })).stdout.trim()
   process.stdout.write(`[templates-perf] ${id} ${commit}: sync generated dependency sources\n`)
   for (const command of createBenchmarkCheckoutPreparationCommands()) {
     await run(command.command, command.args, cwd)
@@ -718,14 +719,6 @@ function fasterPercent(baseline: number | null, optimized: number | null) {
 
 function reducedPercent(baseline: number | null, optimized: number | null) {
   return fasterPercent(baseline, optimized)
-}
-
-function parseCliBuildMs(output: string) {
-  const match = output.match(/(?:built in\s*|耗时：)(?:(\d+(?:\.\d+)?)s|(\d+)ms)/)
-  if (!match) {
-    return null
-  }
-  return match[1] ? Number.parseFloat(match[1]) * 1000 : Number.parseInt(match[2]!, 10)
 }
 
 function readPositiveIntegerEnv(name: string, fallback: number) {
