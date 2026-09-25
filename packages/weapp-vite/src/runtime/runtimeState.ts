@@ -221,6 +221,12 @@ export interface RuntimeState {
         snapshotResolveMs?: number
         snapshotBuildMs?: number
         writeMs?: number
+        finalizePrepareMs?: number
+        finalizeTemplateMs?: number
+        finalizePublishMs?: number
+        publicationValidateMs?: number
+        publicationIndependentMs?: number
+        publicationPruneMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
@@ -279,6 +285,12 @@ export interface RuntimeState {
         snapshotResolveMs?: number
         snapshotBuildMs?: number
         writeMs?: number
+        finalizePrepareMs?: number
+        finalizeTemplateMs?: number
+        finalizePublishMs?: number
+        publicationValidateMs?: number
+        publicationIndependentMs?: number
+        publicationPruneMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number

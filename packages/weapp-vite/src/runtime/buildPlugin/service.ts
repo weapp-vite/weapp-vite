@@ -119,6 +119,12 @@ interface HmrProfileJsonSample {
   snapshotResolveMs?: number
   snapshotBuildMs?: number
   writeMs?: number
+  finalizePrepareMs?: number
+  finalizeTemplateMs?: number
+  finalizePublishMs?: number
+  publicationValidateMs?: number
+  publicationIndependentMs?: number
+  publicationPruneMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
@@ -518,6 +524,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       snapshotResolveMs: profile.snapshotResolveMs,
       snapshotBuildMs: profile.snapshotBuildMs,
       writeMs: profile.writeMs,
+      finalizePrepareMs: profile.finalizePrepareMs,
+      finalizeTemplateMs: profile.finalizeTemplateMs,
+      finalizePublishMs: profile.finalizePublishMs,
+      publicationValidateMs: profile.publicationValidateMs,
+      publicationIndependentMs: profile.publicationIndependentMs,
+      publicationPruneMs: profile.publicationPruneMs,
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,
       sharedChunkResolveMs: profile.sharedChunkResolveMs,

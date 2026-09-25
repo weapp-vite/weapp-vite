@@ -124,3 +124,32 @@ describe('final template validation publication boundary', () => {
     expect(ctx.runtimeState.wxmlProcessing.pending.size).toBe(0)
   })
 })
+
+it('measures completed async template and validation stages without changing publication', async () => {
+  let now = 100
+  const clock = vi.spyOn(performance, 'now').mockImplementation(() => now)
+  try {
+    const ctx = context(async () => {
+      await Promise.resolve()
+      now += 11
+    })
+    ctx.configService.weappViteConfig.wxml = {
+      ...ctx.configService.weappViteConfig.wxml as object,
+      transform: async (code) => {
+        await Promise.resolve()
+        now += 7
+        return code
+      },
+    }
+    const output = bundle('<view data-clean="gone"/>')
+    const hook = createOutputFinalizerPlugin(ctx).generateBundle
+    const handler = typeof hook === 'function' ? hook : hook?.handler
+    await handler?.call(pluginContext() as any, {} as any, output, false)
+    await publish(ctx, output)
+    expect(ctx.runtimeState.build.hmr.profile).toMatchObject({ finalizeTemplateMs: 7, publicationValidateMs: 11 })
+    expect(output['page.wxml']).toMatchObject({ source: '<view />' })
+  }
+  finally {
+    clock.mockRestore()
+  }
+})

@@ -114,3 +114,20 @@ Ubuntu 1 项，macOS 29 项；按既定规则均不能通过，未执行第二�
 | macOS / 确认 | +52.97 | +14.46 | +38.11 | +16.23 | −9.12 |
 
 `writeMs` 从普通 `generateBundle` 到 `writeBundle` 收尾，包含 post finalizer/publication 成本，不是纯 I/O。两平台持续增加只能缩小下一次 CPU profile 的调查范围，尚无证据认定 WXML 扫描或某个函数是根因。本轮没有在竞争负载下启动本地正式基准或 E2E，也没有重跑未修改的采样求绿。
+
+## 后续诊断分段（不代表新增采样）
+
+后续版本为 HMR JSON profile 增加六个连续区间：
+
+| 字段 | 区间 |
+| --- | --- |
+| `finalizePrepareMs` | finalizer 入口至输出准备、样式规范化完成 |
+| `finalizeTemplateMs` | 模板规范化、转换与属性移除 |
+| `finalizePublishMs` | 模板处理后的作用域样式处理与资产事务发布 |
+| `publicationValidateMs` | publication 入口至最终模板校验完成 |
+| `publicationIndependentMs` | 等待独立包输出 |
+| `publicationPruneMs` | 产物裁剪、sourcemap 同步、子产物 emit 与依赖提交 |
+
+计时只在开发态存在 profile 时启用；保留原异步调用顺序，不额外包装任务。这些字段用于 JSON 诊断，未扩展 CLI 汇总表。本报告的 ade120 原始数据不含这些字段，也没有因此新增性能结论。每次插件调用内的区间连续且互不重复，但独立包与主包可能共享累计 profile，父级等待与子级处理可能重叠，因此不能相加作为互斥耗时，也不能一概视为单次 `writeMs` 的严格子集；其他插件、原生打包器和写盘工作仍未单列，门禁继续使用完整端到端时间。
+
+本次保留已有超过 300 行文件中的插件挂载点、profile 类型与序列化位置，避免诊断改动同时重组发布生命周期；计时辅助函数集中在现有短文件 `utils/hmrProfile.ts`。该诊断不改变构建产物或监听归属，尚需实际 CPU profile 确认回退根因。

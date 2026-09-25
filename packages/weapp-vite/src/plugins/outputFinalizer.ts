@@ -8,6 +8,7 @@ import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
 import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
 import { parseSidecarModuleId } from '../moduleGraph/protocol'
 import { changeFileExtension } from '../utils'
+import { createHmrProfileCheckpoint } from '../utils/hmrProfile'
 import { deferWxmlDependencyCommit, observeWxmlDependencies } from '../wxml/processing/dependencies'
 import { hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
@@ -226,6 +227,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
+        const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         deferWxmlDependencyCommit(ctx)
         const assets = createOutputAssetTransaction(bundle as unknown as OutputBundle)
         const outputBundle = assets.bundle
@@ -253,16 +255,19 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
           ctx.configService.outputExtensions?.wxss,
           assets.stage,
         )
+        checkpoint('finalizePrepareMs')
         const commitDependencies = await normalizeTemplateAssetEntries(ctx, assetEntries.templateAssets, subPackageMeta, {
           addWatchFile: file => this.addWatchFile?.(file),
           warn: message => this.warn(message),
           partial,
         })
+        checkpoint('finalizeTemplateMs')
         deferWxmlDependencyCommit(ctx, commitDependencies)
         if (ctx.configService.platform === 'alipay' || ctx.configService.platform === 'tt') {
           normalizeClassScopedAssets(outputBundle, ctx.configService.outputExtensions)
         }
         assets.publish(asset => this.emitFile(asset))
+        checkpoint('finalizePublishMs')
       },
     },
   }

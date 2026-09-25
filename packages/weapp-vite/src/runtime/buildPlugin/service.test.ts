@@ -2162,6 +2162,12 @@ describe('runtime buildPlugin service', () => {
 
     ctx.runtimeState.build.hmr.profile = {
       eventId: 'hmr-event-1',
+      finalizePrepareMs: 0.1,
+      finalizeTemplateMs: 0.2,
+      finalizePublishMs: 0.3,
+      publicationValidateMs: 0.4,
+      publicationIndependentMs: 0.5,
+      publicationPruneMs: 0.6,
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       buildStartMs: 4,
@@ -2216,6 +2222,12 @@ describe('runtime buildPlugin service', () => {
     expect(payload.endsWith('\n')).toBe(true)
     expect(payload).toContain('"event":"update"')
     expect(payload).toContain('"eventId":"hmr-event-1"')
+    expect(payload).toContain('"finalizePrepareMs":0.1')
+    expect(payload).toContain('"finalizeTemplateMs":0.2')
+    expect(payload).toContain('"finalizePublishMs":0.3')
+    expect(payload).toContain('"publicationValidateMs":0.4')
+    expect(payload).toContain('"publicationIndependentMs":0.5')
+    expect(payload).toContain('"publicationPruneMs":0.6')
     expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
     expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
     expect(payload).toContain('"buildStartMs":4')
