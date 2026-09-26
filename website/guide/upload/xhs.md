@@ -168,7 +168,7 @@ pnpm exec wv preview -p xhs
 
 ## 6. 已启用 multiPlatform 的项目 {#multi-platform}
 
-多平台项目保留其他目标与原有编译配置，无需添加 `weapp.upload`；只演示小红书目标时，完整配置如下：
+推荐把多平台配置集中在 `projectConfigs`，不再分别维护 JSON。保留其他平台与原有框架插件，仅演示小红书时：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -178,25 +178,19 @@ export default defineConfig({
     platform: 'xhs',
     srcRoot: 'src',
     multiPlatform: {
-      enabled: true,
-      targets: ['xhs'],
+      projectConfigs: {
+        xhs: { appid: 'replace-with-xhs-app-id' },
+      },
     },
   },
 })
 ```
 
-把第 1 节的源码配置放到 `config/xhs/project.config.json`，仍使用 `"miniprogramRoot": "dist/"`。默认路径策略是：
+不用新建 `config/xhs/project.config.json`。默认生成 `dist/xhs/dist/project.config.json`，与 `app.json` 同级；SDK 项目目录为 `dist/xhs/dist`，生成配置的 `miniprogramRoot` 为 `.`。不要在输入对象里指定代码根或修改生成 JSON，自定义目录使用 `build.outDir`。公共项复用、多个 AppID 与 test/production 见[一份配置](../upload.md#batch)和[环境指南](./environments.md#appid)。
 
-| 内容                    | 路径                             |
-| ----------------------- | -------------------------------- |
-| 需要编辑的源码配置      | `config/xhs/project.config.json` |
-| 构建后复制的项目配置    | `dist/xhs/project.config.json`   |
-| 官方 SDK 接收的项目目录 | `dist/xhs`                       |
-| 本次小程序代码          | `dist/xhs/dist`                  |
+已有原生目录也可以继续使用：将 `multiPlatform` 设为 `{ projectConfigRoot: 'config', targets: ['xhs'] }`，源码配置放到 `config/xhs/project.config.json`，代码根仍为 `dist`；这时 SDK 项目目录是 `dist/xhs`，代码在 `dist/xhs/dist`。不要同时配置 `projectConfigs` 和 `projectConfigRoot`。
 
-构建器将 `config/xhs/` 内容复制到产物父目录 `dist/xhs/`，源配置中的 `dist/` 因而相对于生成项目目录定位到 `dist/xhs/dist/`。不要把该字段改成 `dist/xhs/dist/`，也不要修改生成的 `dist/xhs/project.config.json`；自定义目录布局则必须重新确认相同的根目录约束。
-
-凭据仍放源码项目根目录的 `.env.production.local`，不要放入 `config/xhs/` 随项目配置复制。启用 `multiPlatform` 后必须显式传 `-p xhs`，不要再使用 `--project-config`；上面的 dry-run、上传和预览命令无需更换。多个目标的串行执行与失败行为见[批量任务](../upload.md#batch)，CI Secrets 配置见[CI 上传](../upload.md#ci)。
+凭据仍放源码项目根目录的 `.env.production.local`，不放入项目配置或客户端。多平台仍显式传 `-p xhs`，不使用 `--project-config`；上面的 dry-run、上传、预览命令不变。批量与 CI 见[总览](../upload.md#batch)。
 
 ## 7. 小红书常见错误 {#troubleshooting}
 
@@ -204,7 +198,7 @@ export default defineConfig({
 | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `无法解析上传工具 xhs-mp-cli/dist/ci.js`              | 在执行命令的应用项目中运行 `pnpm add -D xhs-mp-cli`；检查 CI 安装阶段是否省略了开发依赖。全局安装不能替代本地依赖。                          |
 | `上传缺少环境变量 XHS_UPLOAD_TOKEN`                   | 检查 mode、环境文件目录和进程环境是否覆盖了本地值；必须提供代码上传秘钥内容，不是文件名或业务 `access_token`。                               |
-| `project.config.json 的 appid 必须与 XHS_APP_ID…一致` | 在源码配置中使用小写 `appid`，删除过期的 `XHS_APP_ID` 覆盖或将其改成同一个 AppID；多平台要改 `config/xhs/`，不是生成目录。                   |
+| `project.config.json 的 appid 必须与 XHS_APP_ID…一致` | 统一配置检查 `projectConfigs.xhs.appid`；原生文件检查源码 JSON。删除过期环境变量或改为同一 AppID，不修改生成文件。 |
 | `仅支持 Token 认证，禁止扫码登录`                     | 官方 SDK 试图进入登录流程，但本入口主动阻止了它。检查 Token 是否失效、是否属于该 AppID，以及账号授权；不要用 `xmc login` 掩盖 CI 凭据问题。  |
 | `代码目录与本次构建输出不一致` / 缺少 `app.json`      | 对照本页根目录映射检查 `miniprogramRoot`、`build.outDir` 和完整小程序入口；仅有 `srcMiniprogramRoot` 不能替代 SDK 读取的 `miniprogramRoot`。 |
 | `小红书预览未返回有效的预览链接`                      | 官方调用没有返回可用的 `qrcodeUrl`；检查官方工具版本、远端权限和平台响应，不要改用普通上传来冒充预览成功。                                   |

@@ -155,16 +155,11 @@ pnpm exec wv preview -p alipay
 
 ## 6. 改成 multiPlatform 项目
 
-保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['alipay'] }`。把源码侧 `mini.project.json` 移到 `config/alipay/mini.project.json`，其中 `miniprogramRoot` 仍填 `dist`。
+推荐将 `weapp.multiPlatform` 设为 `{ projectConfigs: { alipay: { appid: 'replace-with-alipay-appid' } } }`，其他平台放入同一映射。公共字段用对象展开复用，不需要新增 `config/alipay/mini.project.json`；完整配置与 test/production 见[统一配置](../upload.md#batch)和[环境指南](./environments.md#appid)。
 
-| 用途               | 默认路径                          |
-| ------------------ | --------------------------------- |
-| 需要编辑的源码配置 | `config/alipay/mini.project.json` |
-| 自动复制的项目配置 | `dist/alipay/mini.project.json`   |
-| minidev 的项目目录 | `dist/alipay/`                    |
-| 小程序代码根目录   | `dist/alipay/dist/`               |
+默认生成 `dist/alipay/dist/mini.project.json`，与 `app.json` 同级；minidev 项目目录为 `dist/alipay/dist`，生成代码根为 `.`。输入不指定代码根，自定义目录使用 `build.outDir`。密钥、环境文件仍在源码项目根，不放进映射，不修改生成 JSON。
 
-这里的平台配置目录会复制到代码产物的父目录，密钥不能放入 `config/alipay/`。不要修改生成的 `dist/alipay/mini.project.json`；环境文件与 `.keys/` 继续留在源码项目根目录。命令仍明确指定 `-p alipay`，扩展其他目标见[多平台与批量执行](../upload.md#batch)，自动化配置见[CI](../upload.md#ci)。
+原生文件方式仍可使用 `{ projectConfigRoot: 'config', targets: ['alipay'] }`：配置放在 `config/alipay/mini.project.json`，代码根为 `dist`，minidev 项目目录为 `dist/alipay`，代码在 `dist/alipay/dist`。不能与 `projectConfigs` 同时使用。命令仍显式传 `-p alipay`，CI 密钥方案见[总览](../upload.md#ci)。
 
 ## 淘宝：当前统一入口不支持 {#taobao}
 

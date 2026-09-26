@@ -410,7 +410,7 @@ wv mcp doctor codex
 
 从项目配置、AppID 和凭据开始的完整操作步骤见[小程序上传与预览指南](./upload.md)。可直接选择[小红书](./upload/xhs.md)、[抖音](./upload/tt.md)、[微信](./upload/weapp.md)、[支付宝](./upload/alipay.md)、[京东](./upload/jd.md)或[百度](./upload/swan.md)；[淘宝目前不支持](./upload/alipay.md#taobao)，不能用支付宝目标代替。
 
-可复制的 `.env.test` / `.env.production`、不同 AppID 以及自动版本/提交说明配置见[上传环境与自动版本](./upload/environments.md)。
+多个平台推荐在一份 `weapp.multiPlatform.projectConfigs` 中集中配置 AppID，不需要分别维护六份原生 JSON，见[统一项目配置](./upload.md#batch)。可复制的 `.env.test` / `.env.production`、不同 AppID 以及自动版本/提交说明见[上传环境与自动版本](./upload/environments.md)。
 
 ```bash
 # 京东、百度分别构建并上传

@@ -141,20 +141,13 @@ pnpm exec wv preview -p weapp --desc "首页真机预览"
 
 ## 6. 改成 multiPlatform 项目
 
-保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['weapp'] }`。
+推荐将 `weapp.multiPlatform` 设为 `{ projectConfigs: { weapp: { appid: 'replace-with-wechat-appid' } } }`，其他平台加入同一映射，公共字段用对象展开复用。无需新增 `config/weapp/project.config.json`；完整多端与多环境配置见[统一配置](../upload.md#batch)和[环境指南](./environments.md#appid)。
 
-将源码侧 `project.config.json` 移到 `config/weapp/project.config.json`，其中 `miniprogramRoot` 仍是 `dist`。在这个默认布局下：
+默认由打包器生成 `dist/weapp/dist/project.config.json`，与 `app.json` 同级，SDK/IDE 项目目录为 `dist/weapp/dist`，代码根为 `.`。输入对象不填写代码根字段；自定义目录使用 `build.outDir`，不要手改生成 JSON。密钥和环境文件仍留在源码项目根的 `.keys/`、`.env.production.local`，不得写入映射或客户端。
 
-| 用途                        | 路径                               |
-| --------------------------- | ---------------------------------- |
-| 需要修改的源码配置          | `config/weapp/project.config.json` |
-| 自动复制的 IDE/SDK 项目配置 | `dist/weapp/project.config.json`   |
-| SDK 项目目录                | `dist/weapp/`                      |
-| 小程序代码根目录            | `dist/weapp/dist/`                 |
+原生文件方式仍可使用 `{ projectConfigRoot: 'config', targets: ['weapp'] }`：源码配置为 `config/weapp/project.config.json`，代码根仍为 `dist`，生成配置与 SDK 项目目录位于 `dist/weapp`，代码在其 `dist/` 子目录。不能与 `projectConfigs` 同时配置。
 
-构建会复制平台配置目录到产物的父目录，**不要将密钥放进 `config/weapp/`**，不要手改生成的 `dist/weapp/project.config.json`。环境文件与 `.keys/` 仍留在源码项目根目录。以上上传/预览命令不变，并继续显式指定 `-p weapp`。
-
-多端目标、串行批量命令和失败处理见[多平台与批量执行](../upload.md#batch)；自动化密钥文件注入见[CI](../upload.md#ci)。
+上传和预览命令保持不变，显式使用 `-p weapp`；自动化密钥文件注入见[CI](../upload.md#ci)。
 
 ## 常见问题
 

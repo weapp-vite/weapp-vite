@@ -59,7 +59,42 @@ pnpm dev:weapp
 
 模板坚持单目标构建。`pnpm build:weapp` 只构建微信，`pnpm build:web` 只构建 Web，不提供会在一次命令里隐式遍历全部平台的脚本。
 
-## 目录与输出 {#template-directories}
+## 一份配置管理多个平台 {#unified-project-config}
+
+已有可构建源码时，推荐把各端 AppID 和差异集中到 `projectConfigs`，不需要创建 `config/<平台>/`。公共字段只写一次，使用普通 JavaScript 对象展开：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+const common = { projectname: 'my-app' }
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    multiPlatform: {
+      projectConfigs: {
+        weapp: { ...common, appid: 'replace-with-weapp-app-id' },
+        alipay: { ...common, appid: 'replace-with-alipay-app-id' },
+        tt: { ...common, appid: 'replace-with-douyin-app-id' },
+        xhs: { ...common, appid: 'replace-with-xhs-app-id' },
+        jd: { ...common, appid: 'replace-with-jd-app-id' },
+        swan: { ...common, appid: 'replace-with-swan-app-id' },
+      },
+    },
+  },
+})
+```
+
+- 保留已有框架插件；不写 `targets` 时从映射键推导允许列表。
+- `wv build -p xhs` 仍只构建一个目标；多端上传使用 `wv upload -p xhs,tt`。
+- 标准项目 JSON 由打包器生成在代码目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK/IDE 打开这个目录，生成配置的代码根为 `.`。
+- 输入不填写 `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot`，输出目录用 `build.outDir`；不手改生成文件。
+- 公共对象展开没有隐式深合并；密钥不放入映射。不同环境的 AppID 通过外层配置函数和 `.env.<mode>` 选择，见[test/production 示例](./upload/environments.md#appid)。
+- 原生项目文件仍受支持，但 `projectConfigs` 不能与 `projectConfigRoot` 混用。缺少选中平台时直接报错，不读取旧文件兜底。
+
+## 模板的原生文件目录与输出 {#template-directories}
+
+以下描述当前两个脚手架模板保留的原生文件方式；选择上面的统一配置后，无需维护 `config/` 目录，SDK/IDE 根也改为包含生成项目 JSON 的代码目录。
 
 ```text
 my-app/

@@ -114,32 +114,33 @@ pnpm exec wv preview -p xhs --desc "验收首页"
 
 成功时 CLI 明确区分“上传完成”和“预览已生成”，前者仍未提审、未正式发布。微信预览产生本地二维码图片；支付宝、京东返回二维码图片 URL；抖音、小红书、百度返回扫码目标或预览链接。工具不会自动打开浏览器或修改剪贴板。
 
-## 4. 多平台目录与批量上传 {#batch}
+## 4. 一份配置与批量上传 {#batch}
 
-单目标页面中的项目配置位于源码项目根目录。要在**同一个项目**上传多个平台，先配置多平台模式，并为每个平台提供独立 AppID 与项目配置。以下是完整配置示例：
+单平台可沿用分篇中的原生项目 JSON。多个平台推荐在 **一份 `vite.config.ts`** 中使用 `projectConfigs`，不必手工维护六个文件。公共字段用普通对象展开复用，各平台只填写自己的 AppID 和差异：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
+
+const common = { projectname: 'my-app' }
 
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
     multiPlatform: {
-      enabled: true,
-      targets: ['weapp', 'alipay', 'tt', 'xhs', 'jd', 'swan'],
+      projectConfigs: {
+        weapp: { ...common, appid: 'replace-with-weapp-app-id' },
+        alipay: { ...common, appid: 'replace-with-alipay-app-id' },
+        tt: { ...common, appid: 'replace-with-douyin-app-id' },
+        xhs: { ...common, appid: 'replace-with-xhs-app-id' },
+        jd: { ...common, appid: 'replace-with-jd-app-id' },
+        swan: { ...common, appid: 'replace-with-swan-app-id' },
+      },
     },
   },
 })
 ```
 
 ```text
-config/
-  weapp/project.config.json
-  alipay/mini.project.json
-  tt/project.config.json
-  xhs/project.config.json
-  jd/project.config.json
-  swan/project.swan.json
 src/
   app.json
   ...
@@ -147,17 +148,20 @@ vite.config.ts
 .env.production.local
 ```
 
-各平台配置内容见分步指南。将其放进对应的 `config/<平台>/`，不是把同一个平台的 AppID 复制给所有平台。源码代码根字段为 `dist` 时，默认结构如下：
+不写 `targets` 时从 `projectConfigs` 的平台键推导允许列表；只发布两端就只保留对应两项。公共对象展开是普通 JavaScript，平台字段覆盖前面的公共字段，不引入额外的深合并规则。多环境 AppID 从 `.env.test` / `.env.production` 读取，完整示例见[环境与自动版本](./upload/environments.md#appid)。
 
-| 对象                    | 示例路径                                                        |
-| ----------------------- | --------------------------------------------------------------- |
-| 小红书源码项目配置      | `config/xhs/project.config.json`                                |
-| 小红书生成项目配置      | `dist/xhs/project.config.json`                                  |
-| 小红书实际代码产物      | `dist/xhs/dist/app.json`                                        |
-| 百度源码 / 生成项目配置 | `config/swan/project.swan.json` / `dist/swan/project.swan.json` |
-| 百度实际代码产物        | `dist/swan/dist/app.json`                                       |
+构建器在代码输出目录内生成平台标准 JSON，与 `app.json` 放在一起：
 
-这是默认 `dist` 配置对应的布局，不是自定义输出目录的强制规则。单目标、自定义输出、嵌套项目配置都必须保证 SDK 代码根与本次 `build.outDir` 一致。`srcMiniprogramRoot` 不能替代 SDK 真正读取的 `miniprogramRoot`（百度为 `smartProgramRoot`）。不要修改生成目录修补配置；修改源码配置后重新构建。启用 `multiPlatform` 时不能使用 `--project-config`，应修改对应 `config/<平台>/` 文件。
+| 对象 | 默认路径 |
+| --- | --- |
+| 小红书生成项目配置 | `dist/xhs/dist/project.config.json` |
+| 小红书代码产物 | `dist/xhs/dist/app.json` |
+| 百度生成项目配置 | `dist/swan/dist/project.swan.json` |
+| 百度代码产物 | `dist/swan/dist/app.json` |
+
+生成 JSON 的代码根为 `.`（百度使用 `smartProgramRoot`，其余为 `miniprogramRoot`）。**不要在 `projectConfigs` 填写代码根字段，也不要修改生成 JSON**；自定义输出使用 `build.outDir`，上传和预览跟随本次实际写出的目录。Token、私钥等仍放环境变量，不能放进 `projectConfigs`。
+
+已有原生文件项目仍可使用 `multiPlatform: { projectConfigRoot: 'config', targets: ['xhs', 'tt'] }`，分别读取 `config/<平台>/` 下的原生 JSON。两种来源不能混用；统一配置缺少选中平台时直接报错，不回退到旧文件。启用多平台模式后不使用 `--project-config`。原生文件模式的 SDK 代码根仍须与实际输出一致，详见[多平台配置](./multi-platform.md)。
 
 ```bash
 # 单次构建上传一个平台；要求明确 -p

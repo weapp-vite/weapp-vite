@@ -24,6 +24,14 @@ export default defineConfig({
 
 适合希望用约定生成页面路由的项目。启用后要保持 pages 目录与输出约定稳定。
 
+### `multiPlatform.projectConfigs`
+
+在一份配置中按 `weapp` / `alipay` / `tt` / `xhs` / `jd` / `swan` 提供原生项目字段，公共项用普通对象展开。没有显式 `targets` 时从映射键推导；完整示例见[上传速查](./upload.md#多平台与输出校验)。
+
+标准项目 JSON 由打包器原生生成在代码目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK 代码根为 `.`；输入不能填写 `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot`，修改目录用 `build.outDir`。这里只管理 IDE/SDK 项目配置，不代替业务 `app.json`。
+
+不读取源码侧原生项目 JSON 或私有 JSON；缺少选中平台时直接报错，不回退到旧文件。不能同时指定 `projectConfigRoot` 或 `enabled: false`。独立插件仍使用原生文件模式；Web/组件库不生成项目 JSON。不写映射时保留原生文件模式。凭据始终走环境变量，不写入映射。
+
 ### `upload`
 
 `weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv build --upload` 和独立 `wv upload` 的默认参数，不是自动上传开关，也不支持凭据字段。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。

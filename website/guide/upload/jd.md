@@ -147,18 +147,13 @@ pnpm exec wv preview -p jd
 
 ## 7. 改成 multiPlatform 项目
 
-保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['jd'] }`。把源码项目配置移到 `config/jd/project.config.json`，其中 `miniprogramRoot` 仍是 `dist`。
+推荐将 `weapp.multiPlatform` 设为 `{ projectConfigs: { jd: { appid: 'replace-with-jd-appid' } } }`，其他平台放入同一映射，公共字段用对象展开。不需要新增 `config/jd/project.config.json`；完整配置和 test/production 见[统一配置](../upload.md#batch)与[环境指南](./environments.md#appid)。
 
-| 用途                                    | 默认路径                        |
-| --------------------------------------- | ------------------------------- |
-| 需要修改的源码配置                      | `config/jd/project.config.json` |
-| 自动复制的 IDE 项目配置                 | `dist/jd/project.config.json`   |
-| 项目配置所在目录                        | `dist/jd/`                      |
-| 小程序代码目录 / 最终 SDK `projectPath` | `dist/jd/dist/`                 |
+默认生成 `dist/jd/dist/project.config.json`，与 `app.json` 同级，代码根为 `.`，最终 SDK 的 `projectPath` 为 `dist/jd/dist`。自定义目录使用 `build.outDir`，输入对象不指定代码根，也不手改生成 JSON。密钥内容仍通过环境变量提供，不能写入映射或客户端。
 
-构建会把平台配置目录复制到代码产物父目录，不能把密钥放到 `config/jd/`；环境文件继续放在源码项目根目录。不要手工修改生成的 `dist/jd/project.config.json`。上传、预览命令不变，仍明确指定 `-p jd`。
+原生文件方式仍可使用 `{ projectConfigRoot: 'config', targets: ['jd'] }`：配置放在 `config/jd/project.config.json`，代码根为 `dist`，生成配置在 `dist/jd`，最终 SDK 代码目录仍是 `dist/jd/dist`。不能与 `projectConfigs` 同时使用。
 
-其他端与京东组合时，先阅读[多平台与批量执行](../upload.md#batch)；流水线凭据与同机串行策略见[CI](../upload.md#ci)。
+命令保持显式 `-p jd`；两种配置方式都不能规避前述 SDK 共享临时目录限制，流水线凭据与串行策略见[CI](../upload.md#ci)。
 
 ## 常见问题
 

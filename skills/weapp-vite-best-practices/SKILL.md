@@ -40,7 +40,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 2. 区分顶层 Vite 字段和小程序专属 `weapp.*`，先理顺基础项：
    - `weapp.srcRoot`
    - `weapp.platform`
-   - `weapp.multiPlatform`
+   - `weapp.multiPlatform`：多端推荐 `projectConfigs` 平台映射，公共字段用对象展开；未写 `targets` 时从映射键推导。无需手工维护六份 JSON，构建器在代码输出目录内原生生成标准项目文件，代码根固定为 `.`。输入不写代码根字段，目录用 `build.outDir`；原生文件方式仍用 `projectConfigRoot`，不能与映射混用。AppID 可在外层配置函数按 mode 读取，Token/私钥不进入映射。
    - 多平台始终单目标构建；显式选择微信、支付宝、抖音、百度、京东、小红书或 Web，不把一次构建描述成同时产出全部平台
    - `weapp.autoRoutes`
    - `weapp.autoImportComponents`

@@ -180,7 +180,7 @@ pnpm exec wv preview -p tt
 
 ## 6. 已启用 multiPlatform 的项目 {#multi-platform}
 
-多目标应用继续保留自己的 `targets` 与编译配置，无需添加 `weapp.upload`；仅演示抖音目标时的完整配置如下：
+推荐把多目标配置集中在 `projectConfigs`，不用分别维护 JSON。保留其他目标与框架插件，仅演示抖音时：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -190,25 +190,19 @@ export default defineConfig({
     platform: 'tt',
     srcRoot: 'src',
     multiPlatform: {
-      enabled: true,
-      targets: ['tt'],
+      projectConfigs: {
+        tt: { appid: 'replace-with-douyin-app-id' },
+      },
     },
   },
 })
 ```
 
-将第 1 节的项目配置放到 `config/tt/project.config.json`，仍保留 `"miniprogramRoot": "dist/"`。默认映射是：
+不用新建 `config/tt/project.config.json`。默认生成 `dist/tt/dist/project.config.json`，与 `app.json` 同级；SDK 项目目录为 `dist/tt/dist`，生成的 `miniprogramRoot` 为 `.`。输入对象不指定代码根，自定义目录使用 `build.outDir`，不修改生成 JSON。公共字段、多个 AppID 与 test/production 见[一份配置](../upload.md#batch)和[环境指南](./environments.md#appid)。
 
-| 内容                    | 路径                            |
-| ----------------------- | ------------------------------- |
-| 需要编辑的源码配置      | `config/tt/project.config.json` |
-| 构建后复制的项目配置    | `dist/tt/project.config.json`   |
-| 官方 SDK 接收的项目目录 | `dist/tt`                       |
-| 本次小程序代码          | `dist/tt/dist`                  |
+已有原生目录方式仍可使用 `{ projectConfigRoot: 'config', targets: ['tt'] }`：配置放在 `config/tt/project.config.json`，代码根为 `dist`，SDK 项目目录是 `dist/tt`，代码在 `dist/tt/dist`。不能与 `projectConfigs` 同时使用。
 
-构建器将 `config/tt/` 内容复制到代码产物的父目录 `dist/tt/`；生成项目配置中的 `dist/` 因而定位到 `dist/tt/dist/`。不要在源配置的 `miniprogramRoot` 中再写一遍 `dist/tt/dist/`，不要手改生成配置。自定义路径时，应按 SDK 的项目根目录重新核对映射，而不是假设所有输出布局都会被自动改写。
-
-凭据仍位于源码项目根目录的 `.env.production.local`，不要放进会被复制的 `config/tt/`。启用 `multiPlatform` 后必须传 `-p tt`，不再支持 `--project-config`；本页其他命令保持不变。多平台队列及失败停止行为见[批量任务](../upload.md#batch)，可信发布任务的 Secrets 注入见[CI 上传](../upload.md#ci)，并务必遵守本页的 SDK 本地存储限制。
+凭据仍位于源码项目根的 `.env.production.local`，不能放进项目配置或客户端。多平台仍显式传 `-p tt`，不使用 `--project-config`。其余命令不变；继续遵守本页 SDK 本地凭据存储限制，批量与 CI 见[总览](../upload.md#batch)。
 
 ## 7. 抖音常见错误 {#troubleshooting}
 
@@ -217,7 +211,7 @@ export default defineConfig({
 | `无法解析上传工具 tt-ide-cli`                        | 在应用项目中安装 `pnpm add -D tt-ide-cli`；CI 不能省略该开发依赖。全局 `tma` 安装不能替代项目依赖。                                 |
 | `上传缺少环境变量 TT_UPLOAD_TOKEN`                   | 检查 mode、环境目录和 CI Secrets 是否注入；官方 IDE 已登录不能代替这个变量，不要填业务 `access_token` 或文件路径。                  |
 | `抖音上传版本号必须为 x.y.z 格式`                    | 检查最终版本来源。常见原因是继承了 `package.json` 的预发布版本；使用 `--uv 1.2.3` 或修改上传默认值，不要传 `-v`。                   |
-| `project.config.json 的 appid 必须与 TT_APP_ID…一致` | 确认源码配置中是小写 `appid`，并清除过期的进程 `TT_APP_ID` 或将其改成相同值；多平台配置应修改 `config/tt/`。                        |
+| `project.config.json 的 appid 必须与 TT_APP_ID…一致` | 统一配置检查 `projectConfigs.tt.appid`；原生文件方式修改源 JSON 的小写 `appid`。清除过期进程 `TT_APP_ID` 或将其设为相同值，不要修改生成文件。 |
 | SDK 报 Token 失效、无权限或需要登录                  | 核对目标应用、Token 有效性与上传授权，更新受保护的凭据来源；本入口不发起手机、邮箱或扫码登录，不应依赖共享 runner 遗留的登录态。    |
 | SDK 写入本地配置失败                                 | 抖音 SDK 会持久化 Token，运行账号需有其配置目录的写权限。使用可信且可写的隔离环境；不要为解决权限错误切换到不可信共享账号。         |
 | `代码目录与本次构建输出不一致` / 缺少 `app.json`     | 对照根目录映射检查 `miniprogramRoot`、`build.outDir` 和完整小程序入口。`srcMiniprogramRoot` 不能代替 SDK 所需的 `miniprogramRoot`。 |

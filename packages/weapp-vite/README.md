@@ -338,6 +338,8 @@ wv upload --platform all --dry-run
 
 `build -p all --upload` 保持“小程序 + Web”语义，等两个后端都构建成功后只上传小程序；独立 `wv upload -p all` 才是六端逐一构建上传，首次失败停止。`--dry-run` 只构建并校验产物，不校验凭据、不调用 SDK。
 
+多个平台可用一份 `weapp.multiPlatform.projectConfigs` 映射集中配置 AppID，公共字段用对象展开复用，不必手工维护六份原生 JSON。构建器在代码输出目录内生成对应项目配置；原生文件方式仍可使用。完整配置见[一份配置与批量上传](https://vite.weapp.dev/guide/upload.html#batch)。
+
 官方工具按目标安装，凭据只使用环境变量，不在 `weapp.upload` 中配置。完整的项目配置、AppID、凭据获取与环境文件、上传、预览、批量操作、CI 与排障见[小程序上传与预览指南](https://vite.weapp.dev/guide/upload.html)：[小红书](https://vite.weapp.dev/guide/upload/xhs.html)、[抖音](https://vite.weapp.dev/guide/upload/tt.html)、[微信](https://vite.weapp.dev/guide/upload/weapp.html)、[支付宝与淘宝边界](https://vite.weapp.dev/guide/upload/alipay.html)、[京东](https://vite.weapp.dev/guide/upload/jd.html)、[百度](https://vite.weapp.dev/guide/upload/swan.html)。本地速查见 `dist/docs/upload.md`；淘宝暂不支持，不要用 `-p alipay` 替代。
 
 ## 六端构建并预览

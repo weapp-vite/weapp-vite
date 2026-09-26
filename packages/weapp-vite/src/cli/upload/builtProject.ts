@@ -36,9 +36,12 @@ export async function createUploadTarget(config: ConfigService, options: UploadC
     ? {}
     : await loadUploadEnv(config.cwd, config.mode, config.inlineConfig.root, config.inlineConfig.envDir)
   const { projectConfigFileName } = getProjectPlatformOptions(config.platform)
-  const projectPath = config.multiPlatform.enabled
-    ? path.dirname(config.outDir)
-    : path.dirname(config.projectConfigPath ?? path.join(config.cwd, projectConfigFileName))
+  const generatedProjectConfig = config.multiPlatform.projectConfigs !== undefined
+  const projectPath = generatedProjectConfig
+    ? config.outDir
+    : config.multiPlatform.enabled
+      ? path.dirname(config.outDir)
+      : path.dirname(config.projectConfigPath ?? path.join(config.cwd, projectConfigFileName))
   const appid: unknown = config.projectConfig.appid ?? config.projectConfig.appId
   const target: UploadTarget = {
     platform,
@@ -63,6 +66,9 @@ export async function createUploadTarget(config: ConfigService, options: UploadC
     writeBundle(output, bundle) {
       if (output.dir && Object.hasOwn(bundle, 'app.json')) {
         target.outDir = path.resolve(output.dir)
+        if (generatedProjectConfig) {
+          target.context.projectPath = target.outDir
+        }
       }
     },
   })

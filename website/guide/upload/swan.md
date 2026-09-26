@@ -159,16 +159,11 @@ pnpm exec wv preview -p swan
 
 ## 6. 改成 multiPlatform 项目
 
-保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['swan'] }`。把源码项目配置移到 `config/swan/project.swan.json`，其中 `smartProgramRoot` 仍为 `dist`，`appid` 与 `developType` 保持为该百度小程序的配置。
+推荐将 `weapp.multiPlatform` 设为 `{ projectConfigs: { swan: { appid: 'replace-with-swan-appid', developType: 'normal' } } }`，其他平台放入同一映射，公共字段用对象展开。不需要新增 `config/swan/project.swan.json`；完整配置和 test/production 见[统一配置](../upload.md#batch)与[环境指南](./environments.md#appid)。
 
-| 用途                | 默认路径                        |
-| ------------------- | ------------------------------- |
-| 需要修改的源码配置  | `config/swan/project.swan.json` |
-| 自动复制的项目配置  | `dist/swan/project.swan.json`   |
-| 官方 CLI 的项目目录 | `dist/swan/`                    |
-| 小程序代码根目录    | `dist/swan/dist/`               |
+默认生成 `dist/swan/dist/project.swan.json`，与 `app.json` 同级；官方 CLI 项目目录为 `dist/swan/dist`，`smartProgramRoot` 自动为 `.`。不要在输入中填写代码根字段，也不要修改生成 JSON；自定义目录使用 `build.outDir`。凭据仍留在源码项目根的环境文件或 CI Secrets，不写入映射。
 
-平台配置目录会复制到代码产物的父目录，不能将凭据放入 `config/swan/`；环境文件仍留在源码项目根目录。不要修改生成的 `dist/swan/project.swan.json`。命令仍显式指定 `-p swan`；更多目标组合见[多平台与批量执行](../upload.md#batch)，安全注入和 runner 要求见[CI](../upload.md#ci)。
+原生文件方式仍可使用 `{ projectConfigRoot: 'config', targets: ['swan'] }`：配置放在 `config/swan/project.swan.json`，`smartProgramRoot` 为 `dist`，CLI 项目目录为 `dist/swan`，代码在 `dist/swan/dist`。不能与 `projectConfigs` 同时使用。命令继续显式传 `-p swan`，安全注入见[CI](../upload.md#ci)。
 
 ## 常见问题
 

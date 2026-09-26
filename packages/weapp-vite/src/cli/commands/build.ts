@@ -267,7 +267,11 @@ export function registerBuildCommand(cli: CAC) {
               tags: ['ide', 'open'],
             },
           ])
-          await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot), {
+          const generatedProjectConfig = configService.multiPlatform.projectConfigs !== undefined
+          await openIde(configService.platform, resolveIdeProjectPath(
+            generatedProjectConfig ? configService.outDir : configService.mpDistRoot,
+            generatedProjectConfig,
+          ), {
             openRecovery: options.openRecovery,
             trustProject: options.trustProject,
             openStrategy: options.ideOpenStrategy,

@@ -17,7 +17,7 @@ keywords:
 | 需求 | 方案 |
 | --- | --- |
 | 同一 AppID，切换测试/正式接口与凭据 | [环境文件 + `--mode`](#env) |
-| 测试、正式使用不同 AppID | [按 mode 选择项目 JSON](#appid) |
+| 测试、正式使用不同 AppID | [一份配置读取各环境 AppID](#appid) |
 | 本地每次上传自动升版、取 Git 提交说明 | [一个脚本](#local-version) |
 | CI 自动版本、说明与环境凭据 | [GitHub Environments](#ci) |
 
@@ -90,42 +90,55 @@ pnpm exec wv preview -p xhs --mode production
 
 加载优先级由低到高：`.env` → `.env.local` → `.env.<mode>` → `.env.<mode>.local` → **进程环境变量**。不要把仅供 production 的凭据放入所有 mode 都加载的 `.env.local`。CI Secrets 或终端已有的同名变量会覆盖文件；不要使用保留的 `--mode local`。自定义 `root` / `envDir` 的路径规则见[总览](../upload.md#environment)。
 
-## 2. 不同 AppID：按 mode 选择项目 JSON {#appid}
+## 2. 不同 AppID：一份配置读取各环境变量 {#appid}
 
-只切 Token 不会切 AppID。推荐使用已有的多平台配置目录能力，即使只上传一个平台，也可只保留一个 target。
+不需要为“平台 × 环境”分别维护项目 JSON。使用 `projectConfigs`，在同一份 `vite.config.ts` 中按 mode 读取 AppID；构建器生成对应平台的标准项目文件。
+
+在前面的 `.env.test` 追加公开 AppID：
+
+```dotenv
+XHS_APP_ID=replace-with-test-xhs-app-id
+TT_APP_ID=replace-with-test-douyin-app-id
+```
+
+在 `.env.production` 追加：
+
+```dotenv
+XHS_APP_ID=replace-with-production-xhs-app-id
+TT_APP_ID=replace-with-production-douyin-app-id
+```
 
 完整 `vite.config.ts`（已有项目保留原框架插件）：
 
 ```ts
+import process from 'node:process'
+import { loadEnv } from 'vite'
 import { defineConfig } from 'weapp-vite/config'
+
+const common = { projectname: 'my-app' }
 
 export default defineConfig(({ mode }) => {
   if (mode !== 'test' && mode !== 'production') {
     throw new Error('请使用 --mode test 或 --mode production')
   }
+  const env = loadEnv(mode, process.cwd(), ['XHS_APP_ID', 'TT_APP_ID'])
   return {
     weapp: {
       srcRoot: 'src',
       multiPlatform: {
-        enabled: true,
-        targets: ['xhs', 'tt'],
-        projectConfigRoot: `config/${mode}`,
+        projectConfigs: {
+          xhs: { ...common, appid: env.XHS_APP_ID },
+          tt: { ...common, appid: env.TT_APP_ID },
+        },
       },
     },
   }
 })
 ```
 
-目录：
+只需保留这些源码文件，不需要 `config/test/`、`config/production/`：
 
 ```text
-config/
-  test/
-    xhs/project.config.json
-    tt/project.config.json
-  production/
-    xhs/project.config.json
-    tt/project.config.json
 src/
 vite.config.ts
 .env.test
@@ -134,35 +147,15 @@ vite.config.ts
 .env.production.local
 ```
 
-`config/test/xhs/project.config.json`：
+`projectConfigs` 省略 `targets` 时从平台键推导允许列表。公共字段只写在 `common`；各平台对象按普通 JavaScript 展开覆盖，不会隐式深合并。增加微信、支付宝、京东、百度时，在 `.env.<mode>` 定义各自 AppID，并在 `loadEnv` 前缀列表和 `projectConfigs` 中添加对应项。Token/私钥仍留在 `.env.<mode>.local` 或 CI Secrets，不能放进这个对象。
 
-```json
-{
-  "appid": "replace-with-test-xhs-app-id",
-  "compileType": "miniprogram",
-  "miniprogramRoot": "dist"
-}
-```
-
-`config/production/xhs/project.config.json`：
-
-```json
-{
-  "appid": "replace-with-production-xhs-app-id",
-  "compileType": "miniprogram",
-  "miniprogramRoot": "dist"
-}
-```
-
-两份抖音 JSON 使用相同字段，分别填写测试、正式的抖音 AppID；两个 `.env.<mode>.local` 中的 Token 必须授权给该 mode 下的应用。小红书/抖音可选的 `XHS_APP_ID` / `TT_APP_ID` 若设置，必须与 JSON 完全一致，不能用来覆盖另一应用。
-
-其他平台按分篇使用标准文件名：微信/京东 `project.config.json`、支付宝 `mini.project.json`、百度 `project.swan.json`；百度代码根字段为 `smartProgramRoot`。文件均放在 `config/<mode>/<平台>/`。
+同一 mode 的 Token 必须属于该 AppID。本例显式将 `XHS_APP_ID` / `TT_APP_ID` 写入生成配置，上传时二者一致；它们不会自动覆盖原生文件模式中的另一个 AppID。已有原生文件方案仍可按 mode 选择 `projectConfigRoot`，但不能与 `projectConfigs` 同时使用。
 
 ```sh
 # 本配置开发时也显式选 mode
 pnpm exec wv dev -p xhs --mode test
 
-# 单平台：同时选择该环境的 JSON、AppID、Token 和业务变量
+# 单平台：同时选择该环境的 AppID、Token 和业务变量
 pnpm exec wv build --upload -p xhs --mode test
 pnpm exec wv build --upload -p xhs --mode production
 
@@ -171,7 +164,7 @@ pnpm exec wv upload -p xhs,tt --mode test
 pnpm exec wv upload -p xhs,tt --mode production
 ```
 
-上述配置默认仍写入 `dist/<平台>/dist/`，并将本轮选中的项目 JSON 复制至 `dist/<平台>/`。**mode 不会自动生成 `dist/test`、`dist/production`**；切换环境会重建同一输出，不复用旧包。需要并行或同时保留两套产物时，使用独立工作区/CI job，并按环境命名归档。不要手改生成 JSON，也不要在同一工作区并发上传不同环境。启用多平台模式后不再使用 `--project-config`。
+上述配置默认仍写入 `dist/<平台>/dist/`，标准项目 JSON 与 `app.json` 位于同一目录，SDK 代码根自动为 `.`。**mode 不会自动生成 `dist/test`、`dist/production`**；切换环境会重新生成配置与代码，不复用旧包。需要并行或同时保留两套产物时，使用独立工作区/CI job，并按环境命名归档。不要手改生成 JSON，不要在同一工作区并发上传不同环境，也不要在 `projectConfigs` 中指定代码根字段。启用多平台模式后不使用 `--project-config`。
 
 ## 3. 本地：一条命令自动升版和取提交说明 {#local-version}
 
@@ -225,7 +218,7 @@ node scripts/upload.mjs test xhs --dry-run
 以业务项目位于仓库根目录的小红书上传为例：
 
 1. 在 GitHub 仓库创建 `test`、`production` 两个 **Environment**，各自添加同名 Secret `XHS_UPLOAD_TOKEN`，但值对应各自应用；给 production 设置审批规则。
-2. 提交上一节的 `config/test`、`config/production` 及公开 `.env.test`、`.env.production`；不提交 `.local` 和私钥。项目应已安装 `xhs-mp-cli`、提交锁文件，并在 `package.json.packageManager` 固定项目实际使用的 pnpm 版本；工作流从该字段安装，不另设冲突版本。
+2. 提交上一节的 `vite.config.ts` 和公开 `.env.test`、`.env.production`，各端 AppID 由这一份配置生成；不需要 `config/test`、`config/production` 目录，不提交 `.local` 和私钥。项目应已安装 `xhs-mp-cli`、提交锁文件，并在 `package.json.packageManager` 固定项目实际使用的 pnpm 版本；工作流从该字段安装，不另设冲突版本。
 3. 添加以下工作流。新 workflow run 自动使用 `1.0.<run_number>`；`1.0` 是示例主/次版本，首次接入时按已有版本规划调整，后续不用每次改配置。
 
 ```yaml

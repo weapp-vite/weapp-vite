@@ -26,7 +26,9 @@ keywords:
 
 ## 输出目录是怎么决定的
 
-默认情况下，`weapp-vite` 会优先从当前平台对应的 `project.config.*` 中读取：
+使用 `weapp.multiPlatform.projectConfigs` 时，无需原生输入 JSON；默认代码目录是 `dist/<平台>/dist/`，生成的项目 JSON 与 `app.json` 同级。显式 `build.outDir` 可改变这个目录。
+
+未提供 `projectConfigs` 时保留原生文件方式：`weapp-vite` 从当前平台对应的项目配置中读取：
 
 - `miniprogramRoot`
 - `pluginRoot`
@@ -39,7 +41,7 @@ keywords:
 如果你显式配置了顶层 `build.outDir`，则以你的 Vite 配置为准。
 
 > [!NOTE]
-> 当启用 `weapp.multiPlatform`，且多个平台共用相对 `miniprogramRoot` 时，建议明确检查最终产物目录，避免不同平台互相覆盖。
+> 原生文件方式启用 `weapp.multiPlatform` 后，若多个平台共用相对 `miniprogramRoot`，建议明确检查最终产物目录，避免不同平台互相覆盖。
 
 ## `weapp.upload` {#weapp-upload}
 
@@ -91,32 +93,44 @@ export default defineConfig({
 
 ## `weapp.multiPlatform` {#weapp-multiplatform}
 
-- **类型**：`boolean | { enabled?: boolean; projectConfigRoot?: string }`
+- **类型**：`boolean | MultiPlatformConfig`
 - **默认值**：`false`
 
-用于同仓库维护多套平台 `project.config.*`。
+同一业务构建多个平台时，推荐在一份配置中使用 `projectConfigs`，由打包器生成原生项目 JSON：
 
 ```ts
+import { defineConfig } from 'weapp-vite/config'
+
+const common = { projectname: 'my-app' }
+
 export default defineConfig({
   weapp: {
     multiPlatform: {
-      enabled: true,
-      projectConfigRoot: 'config',
+      projectConfigs: {
+        weapp: { ...common, appid: 'replace-with-weapp-app-id' },
+        alipay: { ...common, appid: 'replace-with-alipay-app-id' },
+      },
     },
   },
 })
 ```
 
-行为说明：
+| 字段 | 类型 / 说明 |
+| --- | --- |
+| `enabled` | 对象形式默认启用；不能同时设为 `false` 并提供 `projectConfigs` |
+| `projectConfigs` | 按 `weapp` / `alipay` / `tt` / `xhs` / `jd` / `swan` 配置原生项目字段；公共字段用普通对象展开 |
+| `targets` | `'all'` 或平台数组；省略时从 `projectConfigs` 的键推导，文件模式则默认六端 |
+| `projectConfigRoot` | 原生文件模式的配置目录，默认 `'config'`；不能与 `projectConfigs` 同时提供 |
 
-- `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`
-- 启用后会按平台读取 `${projectConfigRoot}/${platform}/...` 下的项目配置文件
-- 一般要配合命令行 `--platform` 使用，例如 `wv build --platform alipay`
+- `projectConfigs` 不读取原生项目文件或私有 JSON；缺少选中平台时报错，不回退到文件。
+- 标准项目 JSON 由打包器生成在代码输出目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK 代码根为 `.`，默认 `compileType` 为 `miniprogram`。
+- `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot` 由构建管理，不能出现在输入对象中；修改目录使用 `build.outDir`，不能手工修补生成 JSON。
+- 对象展开不做隐式深合并；Token、私钥等凭据不能写入 `projectConfigs`。
+- 统一项目配置用于完整小程序，独立插件仍使用原生文件方式；Web/组件库构建不生成小程序项目 JSON。
+- 已有文件模式保持兼容：`true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`，从 `${projectConfigRoot}/${platform}/` 读取原生配置。
+- 命令仍显式选择目标，例如 `wv build --platform alipay`；`upload -p all` 表示六端，不会缩减为已配置的平台子集。
 
-适用场景：
-
-- 同一业务同时维护微信、支付宝、抖音小程序
-- 平台间 `appid`、编译选项、输出目录策略不同
+六端完整示例见[批量上传](../guide/upload.md#batch)，不同 AppID 与 test/production 见[环境配置](../guide/upload/environments.md#appid)。
 
 ## `weapp.cleanOutputsInDev` {#weapp-cleanoutputsindev}
 

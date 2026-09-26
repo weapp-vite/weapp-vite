@@ -56,6 +56,8 @@ wv upload --platform all --dry-run
 
 `build -p all --upload` 是“小程序 + Web”，等两者都构建成功后只上传小程序，不等于独立 `upload -p all` 的六端批量上传。
 
+多个平台推荐使用一份 `weapp.multiPlatform.projectConfigs` 映射，公共字段用对象展开，各平台只提供 AppID 和差异；标准项目 JSON 由构建器生成，不必手工维护六份文件。原生文件方式仍可使用，完整示例见本地[上传速查](./upload.md#多平台与输出校验)。
+
 按目标安装官方工具，并通过未提交的 `.env.<mode>.local` 或 CI Secrets 提供凭据，不要在 `weapp.upload` 中添加凭据字段。先读本地 [六端上传与预览速查](./upload.md)，再按[分平台操作指南](https://vite.weapp.dev/guide/upload.html)配置 AppID、密钥或 Token。淘宝不在支持列表内；百度官方 CLI Token 会进入子进程参数，仅在可信隔离 runner 上运行。
 
 旧的微信 IDE 上传请改用 `wv ide upload --project <IDE项目根> -v 1.2.3 -d "release"`；该命令依赖 IDE 登录，不额外构建。
