@@ -85,3 +85,5 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - [Issue 1082 监听收窄方案的资产更新回归与真实 DevTools 复核失败](./issue1082-watch-boundary-diagnostic.md)；记录早期方案的失败，后续完整监听归属修复见 [#1086](https://github.com/weapp-vite/weapp-vite/pull/1086)，不据此抹除历史证据。
 
 - [PR #1085 Nightly 首批 10/27 分片](./nightly-pr1085-36198019403-partial.md)：Windows 确认回退，采集仍在继续。
+
+- [PR #1085 Nightly 新增 7 分片（累计 17/27）](./nightly-pr1085-36198019403-additional.md)：macOS 构建、Ubuntu 自动导入 HMR 新确认回退；保留 Windows 生命周期不完整项。
