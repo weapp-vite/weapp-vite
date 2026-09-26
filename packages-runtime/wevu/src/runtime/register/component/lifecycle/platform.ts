@@ -1,6 +1,7 @@
 import type { InternalRuntimeState } from '../../../types'
-import { WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY } from '@weapp-core/constants'
+import { WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY } from '@weapp-core/constants'
 import { callHookList } from '../../../hooks'
+import { runInPageScrollHook } from '../../../hooks/pageScroll'
 import {
   getCurrentMiniProgramGlobalObject,
   getCurrentMiniProgramPages,
@@ -22,26 +23,6 @@ export function bindCurrentPageInstance(target: InternalRuntimeState) {
 export function releaseCurrentPageInstance(target: InternalRuntimeState) {
   if (currentPageInstance === target) {
     currentPageInstance = undefined
-  }
-}
-
-export function runInPageScrollHook<T>(
-  target: InternalRuntimeState,
-  task: () => T,
-): T {
-  const currentDepth = Number((target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0)
-  ;(target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] = currentDepth + 1
-  try {
-    return task()
-  }
-  finally {
-    const nextDepth = Number((target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 1) - 1
-    if (nextDepth <= 0) {
-      delete (target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY]
-    }
-    else {
-      ;(target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] = nextDepth
-    }
   }
 }
 
@@ -80,13 +61,13 @@ export function ensureMiniProgramGlobalPatched() {
       }
     }
   }
-  if (supportsCurrentMiniProgramRuntimeCapability('pageScrollApi')) {
+  if (supportsCurrentMiniProgramRuntimeCapability('pageScrollApi') && miniProgramGlobal[WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY] !== 1) {
     const rawPageScrollTo = miniProgramGlobal.pageScrollTo as ((...args: any[]) => any) | undefined
     if (typeof rawPageScrollTo === 'function') {
       miniProgramGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
+        const pageInstance = currentPageInstance
         const result = rawPageScrollTo.apply(this, [options, ...rest])
-        if (currentPageInstance) {
-          const pageInstance = currentPageInstance
+        if (pageInstance) {
           runInPageScrollHook(pageInstance, () => {
             callHookList(pageInstance, 'onPageScroll', [options ?? {}])
           })

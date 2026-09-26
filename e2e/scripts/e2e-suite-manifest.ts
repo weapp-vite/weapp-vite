@@ -61,6 +61,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/github-issues.runtime.issue941.test.ts',
   'ide/github-issues.runtime.issue1011.test.ts',
   'ide/lifecycle-compare.test.ts',
+  'ide/github-issues.runtime.feature1087.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
   'ide/shared-styles.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
@@ -127,6 +128,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue941.test.ts',
   'ide/github-issues.runtime.issue1009.test.ts',
   'ide/github-issues.runtime.issue1049.test.ts',
+  'ide/github-issues.runtime.feature1087.test.ts',
   'ide/github-issues.runtime.issue1011.test.ts',
   'ide/github-issues.runtime.issue1012.test.ts',
   'ide/github-issues.runtime.issue852.test.ts',
@@ -235,6 +237,7 @@ const IDE_GATE_TESTS = [
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
+  'ide/github-issues.runtime.feature1087.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',

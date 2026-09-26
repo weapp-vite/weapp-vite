@@ -13,6 +13,7 @@ export function runInitialPageLifecycles(
   scheduler: RuntimeScheduler,
   isAlive: () => boolean,
   renderComponents?: () => void,
+  onReady?: () => void,
 ) {
   loadingPages.add(page)
   try {
@@ -39,6 +40,7 @@ export function runInitialPageLifecycles(
     page.onReady?.()
     if (isAlive()) {
       page.onRouteDone?.({})
+      onReady?.()
     }
   }, 0)
 }

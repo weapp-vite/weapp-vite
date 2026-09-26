@@ -1,3 +1,5 @@
+import type { WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY, WEVU_ROUTE_EVENT_CONTRACT_KEY } from '@weapp-core/constants'
+import type { HeadlessPageInstance } from '../../runtime/pageInstance'
 import type {
   HeadlessWxAnimation,
   HeadlessWxAnimationStepOption,
@@ -105,7 +107,34 @@ import type {
   HeadlessWxUploadFileOption,
 } from './media'
 
-export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities {
+/** 宿主已接受的一次路由操作；同一次操作的所有阶段共用事件标识。 */
+export interface HeadlessWxRouteEvent {
+  path: string
+  query: Record<string, string>
+  openType: 'appLaunch' | 'navigateTo' | 'redirectTo' | 'navigateBack' | 'switchTab' | 'reLaunch'
+  renderer: 'webview' | 'skyline' | 'xr-frame'
+  webviewId: number
+  routeEventId: string
+  timeStamp: number
+}
+
+/** 页面销毁前的原生实例，仍可同步读取页面数据。 */
+export interface HeadlessWxBeforePageUnloadEvent extends HeadlessWxRouteEvent {
+  page: HeadlessPageInstance
+}
+
+export interface HeadlessWxRouteListeners {
+  onBeforeAppRoute: (listener: (event: HeadlessWxRouteEvent) => void) => void
+  offBeforeAppRoute: (listener?: (event: HeadlessWxRouteEvent) => void) => void
+  onBeforePageUnload: (listener: (event: HeadlessWxBeforePageUnloadEvent) => void) => void
+  offBeforePageUnload: (listener?: (event: HeadlessWxBeforePageUnloadEvent) => void) => void
+  onAppRoute: (listener: (event: HeadlessWxRouteEvent) => void) => void
+  offAppRoute: (listener?: (event: HeadlessWxRouteEvent) => void) => void
+  onAppRouteDone: (listener: (event: HeadlessWxRouteEvent) => void) => void
+  offAppRouteDone: (listener?: (event: HeadlessWxRouteEvent) => void) => void
+}
+
+export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities, HeadlessWxRouteListeners {
   chooseImage: (option: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult
   chooseMessageFile: (option: HeadlessWxChooseMessageFileOption) => HeadlessWxChooseMessageFileResult
   chooseMedia: (option: HeadlessWxChooseMediaOption) => HeadlessWxChooseMediaResult
@@ -130,7 +159,9 @@ export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities {
   uploadFile: (option: HeadlessWxUploadFileOption) => HeadlessWxRequestTask
 }
 
-export interface HeadlessWx extends HeadlessUniEventBus {
+export interface HeadlessWx extends HeadlessUniEventBus, HeadlessWxRouteListeners {
+  [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1
+  [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1
   canIUse: (schema: string) => boolean
   chooseImage: (option?: HeadlessWxChooseImageOption) => HeadlessWxChooseImageResult | undefined
   chooseMessageFile: (option?: HeadlessWxChooseMessageFileOption) => HeadlessWxChooseMessageFileResult | undefined

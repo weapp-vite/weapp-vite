@@ -136,6 +136,12 @@ const router = useRouter()
 await router.isReady()
 ```
 
+### 按需启用滚动恢复
+
+需要重建页面后恢复位置时，在上述 App 初始化中紧接 `createRouter()` 调用一次 `createScrollRestoration({ router })`（从 `wevu/router` 导入），不要在每个页面中重复创建。随后在页面/组件同步 setup 中使用 `useScrollViewRestoration()`，解构并绑定 `scrollTop/scrollLeft/onScroll`；WebView 页面级滚动可用 `usePageScrollRestoration()`，Skyline 使用显式 `scroll-view`。
+
+默认按 `fullPath + id` 隔离会话内快照，不覆盖返回栈或 tab 中原生保留页的位置。异步内容设置 `manual: true`，业务内容稳定后再 `handle.scroll()`；低基础库缺少自动关联能力时也走手动路径。完整模板、平台要求和清理语义见 [滚动恢复指南](https://vite.weapp.dev/wevu/router#scroll-restoration) 及 [对齐矩阵](./router-vue-router-parity.md#滚动恢复的适配边界)。
+
 ## 2. 使用 currentRoute
 
 ```ts

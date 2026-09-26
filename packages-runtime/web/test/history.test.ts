@@ -113,7 +113,7 @@ describe('web runtime browser routing', () => {
       expect(fakeWindow.location.pathname).toBe('/mini/pages/detail/index')
       expect(fakeWindow.location.search).toBe('?sku=42')
       expect(getWebHistoryStack(fakeWindow.history.state)).toEqual([
-        { id: 'pages/detail/index', query: { sku: '42' } },
+        { id: 'pages/detail/index', query: { sku: '42' }, webviewId: expect.any(Number) },
       ])
       fakeWindow.listeners?.get('popstate')?.forEach(listener => listener())
       expect(onPopState).toHaveBeenCalledWith(

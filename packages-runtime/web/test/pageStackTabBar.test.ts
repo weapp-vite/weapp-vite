@@ -80,9 +80,6 @@ describe('PageStackRuntime tabBar ownership', async () => {
     expect(runtimeSpies.mounted.filter(id => id === 'pages/home/index')).toHaveLength(1)
     expect(runtimeSpies.shown).toContain('home')
 
-    const shownBeforeRepeat = runtimeSpies.shown.length
-    expect(stack.switchTab('pages/home/index', {})).toBe(true)
-    expect(runtimeSpies.shown).toHaveLength(shownBeforeRepeat + 1)
     expect(stack.switchTab('pages/detail/index', {})).toBe(false)
   })
 

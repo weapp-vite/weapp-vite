@@ -7,6 +7,7 @@ import {
 
 export const WE_VU_PAGE_HOOK_TO_FEATURE = {
   onPageScroll: 'enableOnPageScroll',
+  usePageScrollRestoration: 'enableOnPageScroll',
   onPullDownRefresh: 'enableOnPullDownRefresh',
   onReachBottom: 'enableOnReachBottom',
   onRouteDone: 'enableOnRouteDone',
@@ -78,6 +79,11 @@ export const WE_VU_RUNTIME_MODULE_IDS = [
  */
 export function isWevuRuntimeModuleId(moduleId: string) {
   return (WE_VU_RUNTIME_MODULE_IDS as readonly string[]).includes(moduleId)
+}
+
+/** 页面特性可由独立 router 入口的适配器启用，但该入口不提供组件工厂。 */
+export function isWevuPageFeatureModuleId(moduleId: string) {
+  return isWevuRuntimeModuleId(moduleId) || moduleId === 'wevu/router' || moduleId === 'wevu/dev/router'
 }
 
 /**

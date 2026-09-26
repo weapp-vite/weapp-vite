@@ -4,7 +4,7 @@ import {
   WEVU_ROUTE_DONE_IN_TICK_KEY,
 } from '@weapp-core/constants'
 import { callHookList, callHookReturn } from '../../../hooks'
-import { runInPageScrollHook } from './platform'
+import { callPageScrollHooks } from '../../../hooks/pageScroll'
 
 export interface OptionalPageLifecycleHookOptions {
   enableOnSaveExitState: boolean
@@ -85,12 +85,7 @@ export function attachOptionalPageLifecycleHooks(
   }
   if (enableOnPageScroll) {
     pageLifecycleHooks.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
-      return runInPageScrollHook(this, () => {
-        callHookList(this, 'onPageScroll', args)
-        if (!hasHook(this, 'onPageScroll')) {
-          return effectiveOnPageScroll.apply(this, args)
-        }
-      })
+      return callPageScrollHooks(this, args, hasHook(this, 'onPageScroll') ? undefined : effectiveOnPageScroll)
     }
   }
   if (enableOnRouteDone) {

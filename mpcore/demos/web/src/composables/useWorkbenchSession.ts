@@ -1,10 +1,12 @@
 import type { Ref } from 'vue'
 import type { BrowserDirectoryFileLike, BrowserHeadlessSession } from '../../../../packages/simulator/src/browser'
-import { computed, ref, shallowRef } from 'vue'
+import type { PreviewTapTarget } from '../components/devicePreview/constants'
+import { computed, nextTick, ref, shallowRef } from 'vue'
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFilesFromDirectory,
 } from '../../../../packages/simulator/src/browser'
+import { querySelectorAll } from '../../../../packages/simulator/src/view/selectors'
 import { collectCallableMethods, stringify } from '../lib/workbench'
 import { builtInScenarios } from '../scenarios'
 
@@ -115,23 +117,36 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
   function loadSession(label: string, files: BrowserHeadlessSession['files'], scenarioId?: string) {
     const nextSession = createBrowserHeadlessSession({
       files,
-      onRender: touch,
+      onRender() {
+        touch()
+        return nextTick()
+      },
     })
-    primeSession(nextSession)
+    let nextScopeId = ''
+    try {
+      primeSession(nextSession)
+      const firstRoute = nextSession.project.routes[0]?.route
+      if (firstRoute) {
+        const initialPage = nextSession.reLaunch(`/${firstRoute}`)
+        nextSession.triggerResize({
+          size: {
+            windowHeight: viewportSize.value.height,
+            windowWidth: viewportSize.value.width,
+          },
+        })
+        nextScopeId = `page:${initialPage.route}`
+      }
+      // 候选会话初始化成功后再关闭旧会话，避免旧提交确认新预览。
+      session.value?.close()
+    }
+    catch (error) {
+      nextSession.close()
+      throw error
+    }
     session.value = nextSession
     currentScenarioId.value = scenarioId ?? ''
     projectLabel.value = label
-    const firstRoute = nextSession.project.routes[0]?.route
-    if (firstRoute) {
-      const initialPage = nextSession.reLaunch(`/${firstRoute}`)
-      nextSession.triggerResize({
-        size: {
-          windowHeight: viewportSize.value.height,
-          windowWidth: viewportSize.value.width,
-        },
-      })
-      selectedScopeId.value = `page:${initialPage.route}`
-    }
+    selectedScopeId.value = nextScopeId
     touch()
   }
 
@@ -190,7 +205,6 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
       loadSession(files[0]?.webkitRelativePath?.split('/')[0] ?? '已导入目录', virtualFiles)
     }
     catch (error) {
-      session.value = null
       errorMessage.value = String((error as Error).message ?? error)
     }
     finally {
@@ -222,25 +236,20 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     })
   }
 
-  function handleDispatchTapChain(payload: {
-    activeScopeId: string
-    chain: Array<{
-      event: {
-        currentTarget: { dataset: Record<string, string>, id: string }
-        target: { dataset: Record<string, string>, id: string }
-      }
-      method: string
-      scopeId: string
-      stopAfter: boolean
-    }>
-  }) {
+  function handleDispatchTap(target: PreviewTapTarget) {
     run(() => {
-      selectedScopeId.value = payload.activeScopeId
-      for (const invocation of payload.chain) {
-        session.value?.callTapBindingWithEvent(invocation.scopeId, invocation.method, invocation.event)
-        if (invocation.stopAfter) {
-          break
-        }
+      const currentSession = session.value
+      if (!currentSession) {
+        return
+      }
+      selectedScopeId.value = target.scopeId
+      const root = currentSession.renderCurrentPage().root
+      const node = querySelectorAll(root, '[data-sim-node]').find(node =>
+        node.attribs?.['data-sim-node'] === target.nodeId
+        && node.attribs?.['data-sim-scope'] === target.scopeId,
+      )
+      if (node) {
+        currentSession.dispatchNativeNodeEvent(node, 'tap', {})
       }
     })
   }
@@ -276,7 +285,7 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     fileEntries,
     handleCallMethod,
     handleDirectoryChange,
-    handleDispatchTapChain,
+    handleDispatchTap,
     handleOpenRoute,
     handlePickScenario,
     handleSelectScope,

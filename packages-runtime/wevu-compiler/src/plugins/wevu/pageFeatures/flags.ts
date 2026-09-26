@@ -1,6 +1,6 @@
 import type { WevuPageFeatureFlag, WevuPageHookName } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
-import { isWevuRuntimeModuleId, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../constants'
+import { isWevuPageFeatureModuleId, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../constants'
 import { traverse } from '../../../utils/babel'
 import { buildInjectedFeaturesObject, getObjectMemberIndexByKey, getObjectPropertyByKey } from './astUtils'
 
@@ -19,7 +19,7 @@ export function collectWevuPageFeatureFlags(ast: t.File): Set<WevuPageFeatureFla
   const namespaceLocals = new Set<string>()
 
   for (const stmt of ast.program.body) {
-    if (!t.isImportDeclaration(stmt) || !isWevuRuntimeModuleId(stmt.source.value)) {
+    if (!t.isImportDeclaration(stmt) || !isWevuPageFeatureModuleId(stmt.source.value)) {
       continue
     }
     for (const specifier of stmt.specifiers) {

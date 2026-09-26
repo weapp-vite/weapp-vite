@@ -177,7 +177,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     }
   }
   if (isPage) {
-    const methodBridgeHookNames = ['onPullDownRefresh', 'onReachBottom', 'onShareAppMessage', 'onShareTimeline', 'onAddToFavorites']
+    const methodBridgeHookNames = ['onPageScroll', 'onPullDownRefresh', 'onReachBottom', 'onShareAppMessage', 'onShareTimeline', 'onAddToFavorites']
     for (const hookName of methodBridgeHookNames) {
       const pageHook = (pageLifecycleHooks as any)[hookName]
       if (typeof pageHook !== 'function') {

@@ -1,4 +1,5 @@
 import type { PageStackEntry } from './options'
+import { getEntryWebviewId } from './events'
 
 export type WebRoutingMode = 'memory' | 'history' | 'hash'
 
@@ -20,7 +21,7 @@ export interface WebRouteTarget {
 
 export interface WebRouteHistoryState {
   __weappWebRuntime?: {
-    stack: WebRouteTarget[]
+    stack: Array<WebRouteTarget & { webviewId?: number }>
   }
 }
 
@@ -160,6 +161,7 @@ function toHistoryState(entries: PageStackEntry[]): WebRouteHistoryState {
       stack: entries.map(entry => ({
         id: entry.id,
         query: { ...entry.query },
+        webviewId: getEntryWebviewId(entry),
       })),
     },
   }

@@ -9,7 +9,14 @@ import { importedTemplateFiles } from './helpers/importedTemplates'
 
 describe('imported template scope', () => {
   const tempDirs: string[] = []
-  afterEach(() => cleanupTempDirs(tempDirs))
+  const sessions: Array<{ close: () => void }> = []
+
+  afterEach(() => {
+    for (const session of sessions.splice(0)) {
+      session.close()
+    }
+    cleanupTempDirs(tempDirs)
+  })
 
   for (const provider of ['node', 'browser'] as const) {
     it(`renders direct imports with private dependencies in ${provider}`, () => {
@@ -23,6 +30,7 @@ describe('imported template scope', () => {
       const session = provider === 'node'
         ? createHeadlessSession({ projectPath })
         : createBrowserHeadlessSession({ files: createBrowserVirtualFiles(importedTemplateFiles) })
+      sessions.push(session)
       const page = session.reLaunch('/pages/index/index?source=router')
       expect(page.options).toEqual({ source: 'router' })
       expect(session.renderCurrentPage().wxml).toContain('router:router')
