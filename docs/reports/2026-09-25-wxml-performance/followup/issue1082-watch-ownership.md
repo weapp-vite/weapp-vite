@@ -175,3 +175,9 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 🔴 同一就绪修正下的真实 DevTools 静态 Wevu 首次更新仍失败，2/6 DOM；该修正未消除已知模板显示问题。原生 Component 条件节点控制已完成 headless 6/6，并额外断言条件节点初始存在、准备后消失；真实 IDE 控制尚未运行，临时夹具与探针已恢复。
 
 本轮仍为测试基础设施改动，无产品源码或 changeset 变化。[完整 CI 日志、先失败回归、Node 22 验证和真实失败](./issue1082-control-port-readiness.json.gz) 解压 1169688 字节，SHA256 `4c72bba4129e89a9be8539fa03b6bc4f8bd25f6fbc501704ed911da7d9b2c236`。PR 保持草稿，完整 runtime 与性能验收尚未完成。
+
+## 后续模板工厂观测
+
+`7e1ee064c` 的全部 CI 已完成（31 success / 10 skipped），三个 OS headless 门禁均通过。后续真实诊断确认：客户端版本已推进，磁盘持续保持新 WXML，计数的数据和原生元素文本均能正常更新，但 AppService 可见模板工厂仍不含新增节点。原生控制还存在更早的源 WXML 缓存失效事件，不能与 SFC 视为相同缓存条件。
+
+完整控制场景、写出 hash 与 IDE 事件时间线见 [模板工厂调查](./issue1082-ide-template-factory.md)。没有把诊断成功或 CI 全绿改写为真实 Wevu 验收通过，PR 继续草稿。
