@@ -21,6 +21,7 @@ import { statefulHmrCheckpoints } from './statefulHmrDom'
 import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { templateBindingCheckpoints } from './statefulHmrDom/templateBindings'
 import { templateCycleCheckpoints } from './statefulHmrDom/templates'
 import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
@@ -646,6 +647,44 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         expect(await fs.readFile(CONTROL_FILE, 'utf8')).toBe(control)
       },
     })
+  })
+
+  it('updates Wevu template-generated computations and event handlers without replacing page state', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateBindingCheckpoints())
+    const page = await relaunchStatefulRoute(WEVU_ROUTE)
+    const output = path.join(DIST_ROOT, 'pages/wevu/index.wxml')
+    try {
+      await dom.check('initial', miniProgram, page)
+      await prepareRuntimeState('template-bindings')
+      await triggerIncrement()
+      await triggerIncrement()
+      const expected = await waitForPatchedBehavior(2, page)
+      await dom.check('prepared', miniProgram, page)
+      const version = await readClientVersion()
+      const updated = originalWevuSource.replace('<input', '<view class="derived-count">{{ count * 10 + 1 }}</view>\n    <button class="derived-increment" @tap="count += 2">advance</button>\n    <input')
+      await replaceFileByRename(WEVU_SOURCE, updated)
+      await devProcess!.waitFor(waitForFileContains(output, 'derived-count'), 'generated binding template emitted')
+      await waitForClientVersion(version + 1)
+      await dom.check('edited', miniProgram, await miniProgram.currentPage())
+      expect(await readRuntimeState(page)).toEqual(expected)
+      const button = await page.$('.derived-increment', { fallback: false })
+      expect(button).toBeTruthy()
+      await button.tap()
+      await waitForPatchedBehavior(4, page)
+      await dom.check('clicked', miniProgram, await miniProgram.currentPage())
+      expect(await readRuntimeState(page)).toEqual({ ...expected, count: 4 })
+      const restoreVersion = await readClientVersion()
+      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await waitForClientVersion(restoreVersion + 1)
+      await dom.check('restored', miniProgram, await miniProgram.currentPage())
+      await triggerIncrement()
+      await waitForPatchedBehavior(5, page)
+      await dom.check('original-clicked', miniProgram, await miniProgram.currentPage())
+      expect(await readRuntimeState(page)).toEqual({ ...expected, count: 5 })
+    }
+    finally {
+      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+    }
   })
 
   for (const runtime of ['native', 'component', 'wevu'] as const) {

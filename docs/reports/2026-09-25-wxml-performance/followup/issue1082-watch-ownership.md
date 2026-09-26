@@ -120,3 +120,22 @@
 mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮结构更新和恢复，检查 Page/App 身份、路由、计数及后续方法调用；该文件 6 项通过，包级 typecheck、scoped ESLint、共享启动检查及 DOM 清单检查通过。清单为 111 个任务、284 个声明用例，无缺失计划。这里的 browser provider 单测不是独立真实浏览器 E2E，也不能替代 DevTools 的首次失败。本轮仅测试与证据变更，不新增行为 changeset。
 
 [四次完整命令日志、DOM 报告、测试源码 hash 与单测记录](./issue1082-template-cycles.json.gz) 保留成功和失败，脱敏路径、项目标识及回环端口。解压 439641 字节，SHA256 `d18b1e1581a8beadd56dd6029f8c92d2d08bb030d109d04aa2de68d988c6a5e5`。测试运行时工作树含上述未提交测试，未冒称远端 HEAD 的完整验收。PR 仍为草稿，原 Wevu 2/8 失败及全部历史证据保留，#1082 未完成。
+
+## 模板派生脚本的分类遗漏
+
+连接真实 HMR 客户端的修正前诊断再次得到首次模板节点缺失（2/6 DOM）。首次编辑前后比较全部产物字节，仅 Wevu WXML 改变；客户端版本保持 0，update.js 未变。下一次启动检查发现另一任务正在运行 E2E，但未取得它的启动时间，因此不宣称前次整个观测窗口具备独占条件，也不据此确认宿主根因。
+
+源码与纯编译对照进一步发现了可独立复现的分类问题：`isLocalAssetOnlyUpdate` 原先只检查 `<script>` 块是否变化，却把模板生成的 computed、事件表与 Binding Manifest 排除在判断外。三个回归分别覆盖 stateful 稳定 CSS 变量模式的静态节点新增、模板表达式新增、行内事件新增；编译结果的脚本均改变，但原分类仍返回仅资产更新。加上 watch 路由回归，修正前共 4 项失败。
+
+早先使用默认 `compileVueFile` 选项的诊断遗漏了 `stabilizeCssVarsRuntime`，不能代表实际 stateful 开发编译；在实际启用的选项下，静态节点新增也增加 computed 与绑定清单条目。保留默认选项的局部结果，并明确纠正其适用范围。
+
+本轮让模板块变化同时进入既有原生 JS 更新与资产快照流程，由真实模块图判断是否生成补丁；不再用原始 SFC 块名称推断最终生成脚本必然不变。沿用 `entry-mixed-asset` 路径，未修改客户端接受边界、`isSafeJavaScriptPatch` 或 Patch 安全规则，未手写产物。配置和纯样式仍保留各自已有分类。
+
+- 4 文件 128 项分类、watch、session 与 snapshot 测试通过；包级 typecheck、test:types、build 通过。
+- 最后产品源码修改后已重建 dist；原有 Wevu 静态模板往返 headless 1 项通过，6/6 DOM。
+- mpcore Node/browser provider 的模板更新回归补充新增表达式求值，6 项与包级 typecheck 通过。这里的 browser provider 单测不是独立浏览器 E2E。
+- 新增 provider-compatible 用例验证模板中的新计算结果、新事件处理、客户端版本、恢复后的旧事件和页面状态；DOM 清单同步为 285 个用例。该用例初版 headless 完成 3/6 检查点：版本与新增计算结果通过，但双语句事件被编译为原文 data 属性，没有生成事件表条目，点击未执行。失败记录保留；用例已改成会生成事件表函数的 `count += 2`，计数与恢复断言不变。更正后的用例尚未运行，其他 E2E 占用串行验证条件。现有静态模板及原完整 Wevu 断言均未替换。
+
+🔴 本轮修正后的真实 DevTools 尚未运行，原完整 Wevu 失败仍阻塞最终验收；不能断言该分类遗漏是 DOM 缺失的唯一原因，也没有通过性能门禁。PR 保持草稿。新的 DOM 计划独立成 helper；既有大型 watch 与共享会话 suite 只修改分类挂载和增加用例，未为此重排生命周期。行为 changeset 继续包含 weapp-vite / create-weapp-vite。
+
+[修正前后原始诊断、完整检查日志、DOM 报告与源码 hash](./issue1082-template-generated-script.json.gz) 解压 260760 字节，SHA256 `5e55ede4a4cbbe1924a2a2733db667eb437b4b555293ba8e137fc5b929640785`。产物观察归档只公开逐文件 hash 和相关 WXML，完整本地字节保留；路径、项目标识和回环端口已脱敏。

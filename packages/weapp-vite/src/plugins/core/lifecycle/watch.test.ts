@@ -802,7 +802,7 @@ const count = 1
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntryId, 'metadata')
     expect(invalidateSharedStyleCacheMock).toHaveBeenCalledTimes(1)
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual([
-      'entry-local-asset:1',
+      'entry-mixed-asset:1',
       'tailwind-content:2',
     ])
   })
@@ -969,7 +969,7 @@ const count = 1
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-json-only:1'])
   })
 
-  it('marks vue entry updates as metadata when only template content changed', async () => {
+  it('updates both generated script and assets when only the Vue template block changed', async () => {
     const entryId = '/project/src/pages/logs/index.vue'
     const previousSource = `<script setup lang="ts">
 definePageJson({ navigationBarTitleText: '首页' })
@@ -987,9 +987,9 @@ const count = 1
 
     await hook(entryId, { event: 'update' })
 
-    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'metadata')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
     expect(collectAffectedEntriesMock).toHaveBeenCalledWith(entryId)
-    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-local-asset:1'])
+    expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['entry-mixed-asset:1'])
   })
 
   it('keeps vue entry updates direct when runtime script content changed', async () => {

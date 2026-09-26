@@ -31,7 +31,7 @@ describe.each(['node', 'browser'] as const)('%s template file updates', (provide
       page.increment()
       const original = templateUpdateSource('HMR')
       for (const cycle of [0, 1]) {
-        const updated = original.replace('</view>', `<text id="template-cycle">cycle-${cycle}</text></view>`)
+        const updated = original.replace('</view>', `<text id="template-cycle">cycle-${cycle}:{{count * 10 + 1}}</text></view>`)
         for (const source of [updated, original]) {
           if (provider === 'browser') {
             files.set('pages/index/index.wxml', source)
@@ -42,6 +42,9 @@ describe.each(['node', 'browser'] as const)('%s template file updates', (provide
           const rendered = session.renderCurrentPage().wxml
           const document = parseDocument(rendered)
           expect(Boolean(selectOne('#template-cycle', document.children))).toBe(source === updated)
+          if (source === updated) {
+            expect(rendered).toContain(`cycle-${cycle}:${(cycle + 1) * 10 + 1}`)
+          }
           expect(rendered).toContain(`count: ${cycle + 1}`)
           expect(session.getCurrentPages()[0]).toBe(page)
           expect(session.getCurrentPages().map(current => current.route)).toEqual(['pages/index/index'])
