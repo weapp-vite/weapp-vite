@@ -89,3 +89,15 @@
 原始诊断与验证日志归档于 [issue1082-jsx-owner.json.gz](./issue1082-jsx-owner.json.gz)，解压 29369 字节，SHA256 `05310cae6fe53a07e680d0d98ea811d3ecca7931b0fac365c29724649a62afe2`。仅脱敏路径/本机端口并移除终端颜色，未更改结果。
 
 进一步只读调查发现：先前通过运行的 IDE 文件服务 `enableContentDiff=true`，失败运行为 false；失败轮日志没有 update.js 或模板的 change 事件，只有 add/unlink。已安装 IDE 的事件合并器忽略普通 change，仅把 contentChange 转为编译 change，而内容差异事件受上述开关控制。这解释了一个可能的事件断点，但尚未确定开关差异来源或用真实 IDE 完成因果验证；没有修改安装的 IDE、强制执行补丁、手写产物或据此将失败判为环境通过。
+
+## 显式项目类型后的受控 DevTools 诊断
+
+`c5da308a4` 的 GitHub 检查已全部结束：31 success / 10 skipped。以下本地诊断在相同产品源码及已重建 dist 上执行，仅在 stateful fixture 中显式声明标准 `compileType: "miniprogram"`，不再依赖 IDE 自动补写项目类型。未修改产品逻辑或断言，两项命令串行运行并均已退出。
+
+- 🟢 原生编辑器文件场景：1 项通过，6/6 DOM 检查点；两轮脚本编辑与恢复满足客户端版本、页面身份、计数、输入和路由断言。IDE 日志显示 `enableContentDiff=true`，存在 update.js 变更事件。单次恢复不足以证明此前监听开关变化的根因已经解决。
+- 🔴 Wevu 场景：1 项失败，仅完成 2/8 DOM 检查点。初始页面和准备状态通过；`template-b` 的 `.sfc-template` 期望 1 个，实际 0 个。产物内容检查已通过，但尚未到模板恢复及脚本补丁阶段。失败截图保留计数 2 和输入状态，未出现新增模板节点。
+- 两次运行均启用内容差异监听。Wevu 日志在 08:34:17.479（UTC+8）记录 `dist/pages/wevu/index.wxml` 的 change，说明不能再用“IDE 未收到文件变更”解释这次失败。其 `transWXMLToJS` 调用在 08:34:17.087 / .107，早于合并事件分发；缓存失效与模板重新编译时序是下一步调查线索，尚未证明因果关系。08:34:33 的第二组变更来自失败后的 finally 恢复，不是模板恢复检查通过。
+
+本次未修改已安装 IDE、强制应用补丁、手写构建输出或放宽 DOM 检查。Wevu 最终 runtime 验收仍未完成，PR 保持草稿；此前所有失败继续保留。项目类型属于测试夹具声明，本轮不新增产品 changeset，也不将正确性诊断当作正式性能验收。
+
+[完整命令日志、DOM 报告及 IDE 日志](./issue1082-explicit-project-type.json.gz) 仅脱敏机器路径、项目标识及回环端口，解压 779677 字节，SHA256 `f44d8fe8ee90316b5e9f1a6de23a940fce5daff57c7718a537bbd48332397ccb`。[Wevu 失败截图](./issue1082-wevu-template-b.png) 来自同次运行。
