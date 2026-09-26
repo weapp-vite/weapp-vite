@@ -1,6 +1,6 @@
 # 8f78b037 三平台门禁证据
 
-🔴 **性能验收未完成**。本轮 Ubuntu 为 134 项 passed、3 项 regression、8 项 unstable、5 项 incomplete。macOS 已完成，另有 12 项确认回退、16 项不稳定及 12 项不完整，详见后文。Windows 仍在采集，不能推送打断它的唯一确认。
+🔴 **性能验收未完成**。本轮 Ubuntu 为 134 项 passed、3 项 regression、8 项 unstable、5 项 incomplete。macOS 已完成，另有 12 项确认回退、16 项不稳定及 12 项不完整，详见后文。Windows 后续达到六小时上限，部分证据见 [Windows 最终记录](./8f78-windows-results.md)。下文交付时间点描述保留为历史状态。
 
 标记：🔴 未通过，优先于单批下降；🟢 已通过场景的耗时下降；阈值内的小幅增加保持中性。
 

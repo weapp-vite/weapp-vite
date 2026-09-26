@@ -1,0 +1,18 @@
+diff --git a/packages/weapp-vite/src/runtime/statefulHmr/session.snapshots.test.ts b/packages/weapp-vite/src/runtime/statefulHmr/session.snapshots.test.ts
+index 692c23136..de0d497ee 100644
+--- a/packages/weapp-vite/src/runtime/statefulHmr/session.snapshots.test.ts
++++ b/packages/weapp-vite/src/runtime/statefulHmr/session.snapshots.test.ts
+@@ -259,10 +259,12 @@ describe('stateful snapshot output transactions', () => {
+ 
+     const temporary = path.join(directory, '.atomic-save.tmp')
+     await writeFile(temporary, 'Component({ step: 1 })')
++    session.sourceChange(temporary, 'create')
+     await rename(temporary, component)
++    session.sourceChange(temporary, 'delete')
+     session.sourceChange(directory)
+     session.sourceChange(component)
+-    expect(harness.callbacks!.onPatch([directory, component], patch(1))).toBe(true)
++    expect(harness.callbacks!.onPatch([temporary, directory, component], patch(1))).toBe(true)
+     await vi.advanceTimersByTimeAsync(100)
+ 
+     expect(delta).toHaveBeenCalledTimes(2)
