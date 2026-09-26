@@ -136,7 +136,7 @@ describe('inline project config output ownership', { timeout: 60000 }, () => {
     }
     expect(await readdir(root)).not.toContain('project.config.json')
     const ide = await resolveIdeCommandContext({ cwd: root, platform: 'weapp', cliPlatform: 'weapp', mode: 'staging' })
-    expect(ide.projectPath).toBe(path.join(root, 'dist/weapp/dist'))
+    expect(path.resolve(ide.projectPath!)).toBe(path.join(root, 'dist/weapp/dist'))
     expect(JSON.parse(await readFile(path.join(ide.projectPath!, 'project.config.json'), 'utf8'))).toMatchObject({ appid: 'staging-weapp' })
   })
 
@@ -156,7 +156,7 @@ describe('inline project config output ownership', { timeout: 60000 }, () => {
     await writeInlineConfig(`build: { outDir: 'custom-output' },`)
     await runBuild()
     const ide = await resolveIdeCommandContext({ cwd: root, platform: 'xhs', cliPlatform: 'xhs', mode: 'production' })
-    expect(ide.projectPath).toBe(path.join(root, 'custom-output'))
+    expect(path.resolve(ide.projectPath!)).toBe(path.join(root, 'custom-output'))
     expect(JSON.parse(await readFile(path.join(ide.projectPath!, 'project.config.json'), 'utf8'))).toMatchObject({
       appid: 'production-xhs',
       miniprogramRoot: '.',
