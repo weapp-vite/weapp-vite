@@ -83,3 +83,5 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - [8f78 Windows 六小时超时与部分确认原始证据](./8f78-windows-results.md)；合并后由 #1082 继续跟踪。
 - [Issue 1082 合并后 CPU 诊断与 stateful 混合事件复现](./issue1082-diagnosis.md)。
 - [Issue 1082 监听收窄方案的资产更新回归与真实 DevTools 复核失败](./issue1082-watch-boundary-diagnostic.md)；记录早期方案的失败，后续完整监听归属修复见 [#1086](https://github.com/weapp-vite/weapp-vite/pull/1086)，不据此抹除历史证据。
+
+- [PR #1085 Nightly 首批 10/27 分片](./nightly-pr1085-36198019403-partial.md)：Windows 确认回退，采集仍在继续。
