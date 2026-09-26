@@ -334,11 +334,11 @@ wv upload --platform jd,swan
 wv upload --platform all --dry-run
 ```
 
-可通过 `weapp.upload: { version: '1.2.3', desc: '更新首页' }` 配置默认参数，CLI `--uv` / `--desc` 优先；版本未配置时读取 `package.json.version`。配置本身、普通 `build`、`dev/HMR` 不触发上传，也不读取这组参数；`preview` 不读取该配置。`build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用，不能与 `--watch` 或仅 Web 构建组合。
+可通过 `weapp.upload: { version: '1.2.3', desc: '更新首页' }` 配置默认参数，CLI `--uv` / `--desc` 优先；版本未配置时读取 `package.json.version`。配置本身、普通 `build`、`dev/HMR` 不触发上传，也不使用这组默认参数；`preview` 不使用该配置。配置文件本身仍正常加载与求值。`build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用，不能与 `--watch` 或仅 Web 构建组合。
 
 `build -p all --upload` 保持“小程序 + Web”语义，等两个后端都构建成功后只上传小程序；独立 `wv upload -p all` 才是六端逐一构建上传，首次失败停止。`--dry-run` 只构建并校验产物，不校验凭据、不调用 SDK。
 
-官方工具按目标安装，凭据只使用环境变量，不在 `weapp.upload` 中配置。AppID 来源、`.env.production.local` 完整示例、微信代码上传私钥、支付宝 JSON 身份密钥、各端 Token、京东密钥内容及 CI 注入方式见 [CLI 上传工具与凭据](https://vite.weapp.dev/guide/cli.html#上传工具与凭据)。`--mode` 同时选择构建和环境文件；百度还要求 `SWAN_MIN_VERSION`，其 Token 会出现在子进程参数中，请使用可信隔离 runner。
+官方工具按目标安装，凭据只使用环境变量，不在 `weapp.upload` 中配置。完整的项目配置、AppID、凭据获取与环境文件、上传、预览、批量操作、CI 与排障见[小程序上传与预览指南](https://vite.weapp.dev/guide/upload.html)：[小红书](https://vite.weapp.dev/guide/upload/xhs.html)、[抖音](https://vite.weapp.dev/guide/upload/tt.html)、[微信](https://vite.weapp.dev/guide/upload/weapp.html)、[支付宝与淘宝边界](https://vite.weapp.dev/guide/upload/alipay.html)、[京东](https://vite.weapp.dev/guide/upload/jd.html)、[百度](https://vite.weapp.dev/guide/upload/swan.html)。本地速查见 `dist/docs/upload.md`；淘宝暂不支持，不要用 `-p alipay` 替代。
 
 ## 六端构建并预览
 

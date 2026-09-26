@@ -65,7 +65,8 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `weapp-ide-cli` 只在 catalog 命中后透传
    - 原生命令包含 `dev` / `serve` / `build` / `upload` / `preview` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
    - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
-   - `wv upload/preview -p <weapp|alipay|tt|xhs|jd|swan>` 先构建再调用按需安装的官方工具；多目标用逗号分隔或显式 `all`，`--dry-run` 不调用 SDK。upload 只上传开发版本，preview 只生成官方预览结果；均不提审、不正式上线。旧微信 IDE 上传、预览使用 `wv ide upload/preview`。
+   - `wv build --upload -p <平台>` 复用本次构建并在产物校验通过后上传；普通 build/dev/HMR 不启用上传。`weapp.upload` 仅提供版本和说明，AppID 与凭据配置先读 `dist/docs/upload.md` 及[分平台上传指南](https://vite.weapp.dev/guide/upload.html)，不要把支付宝当作淘宝支持。
+   - `wv upload/preview -p <weapp|alipay|tt|xhs|jd|swan>` 自行构建后调用按需安装的官方工具；多目标用逗号分隔或显式 `all`，与 `build -p all` 的“小程序 + Web”含义不同。`--dry-run` 不调用 SDK；upload 只上传开发版本，preview 只生成官方预览结果，均不提审、不正式上线。旧微信 IDE 上传、预览使用 `wv ide upload/preview`。
    - `ide preview` / `ide upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定；原生上传入口用 `--uv`，不要沿用 IDE 的 `-v/-d/--project`。原生 preview 不要求上传版本。
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：

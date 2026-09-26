@@ -32,7 +32,7 @@ export default defineConfig({
 
 `build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、仅 Web 的 `-p web --upload` 会报错。`build -p all --upload` 是“小程序 + Web”，两者都构建成功后只上传小程序；独立 `upload -p all` 则保持六端逐一构建上传。
 
-CI 可在测试通过后显式执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。凭据仍通过环境变量提供；AppID、私钥路径、支付宝 JSON 身份密钥、各端 Token、`.env.production.local` 和 CI Secrets 的配置见 [CLI 上传工具与凭据](https://vite.weapp.dev/guide/cli.html#上传工具与凭据)。
+CI 可在测试通过后显式执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。凭据仍通过环境变量提供；先读本地[上传与预览速查](./upload.md)，完整的 AppID、私钥、支付宝 JSON 身份密钥、各端 Token、环境文件和 CI Secrets 示例见[分平台操作指南](https://vite.weapp.dev/guide/upload.html)。
 
 ### `buildScope`
 

@@ -139,12 +139,13 @@ pnpm build:web
 六个小程序目标可通过统一入口构建并上传，Web 不参与：
 
 ```sh
-pnpm exec wv upload --platform jd --uv 1.2.3
-pnpm exec wv upload --platform swan
-pnpm exec wv upload --platform all --dry-run
+pnpm exec wv build --upload -p xhs --dry-run
+pnpm exec wv build --upload -p xhs --uv 1.2.3 --desc "更新首页"
+pnpm exec wv upload -p xhs,tt --uv 1.2.3
+pnpm exec wv upload -p all --dry-run
 ```
 
-`upload` 按目标逐一执行完整生产构建，再调用各平台上传工具；不会改变 `build` 的单目标规则。多目标上传需显式传入逗号分隔的平台或 `all`，首次失败停止。请按 [CLI 上传文档](/guide/cli) 安装对应官方工具、设置平台 AppID 与凭据；百度还需显式设置最低基础库版本。`--dry-run` 只验证构建与产物目录，真实上传、IDE 编译和 Runtime 验收是不同门禁。
+`build --upload` 复用本次目标构建；独立 `upload` 按目标逐一构建、校验、上传。多个小程序平台用 `upload -p xhs,tt` 或 `upload -p all`，首次失败停止；`build -p all --upload` 仍是“小程序 + Web”，不等于六端批量。请按[完整上传指南](./upload.md)及[小红书](./upload/xhs.md)、[抖音](./upload/tt.md)、[微信](./upload/weapp.md)、[支付宝](./upload/alipay.md)、[京东](./upload/jd.md)、[百度](./upload/swan.md)分篇准备项目配置、AppID 和凭据；[淘宝暂不支持](./upload/alipay.md#taobao)。`--dry-run` 只验证构建与产物目录，不代替真实上传、IDE 编译和 Runtime 验收。
 
 预览使用相同的构建、目标选择和凭据，但调用官方 preview 接口，不上传开发版本：
 

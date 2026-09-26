@@ -57,7 +57,7 @@ wv build --upload -p weapp --uv 1.2.3 --desc "更新首页"
 
 `build` 的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、`-p web --upload` 会报错。`build -p all --upload` 仍是“小程序 + Web”，两者构建都成功后只上传小程序；独立 `wv upload -p all` 才表示六端逐一构建上传。`--dry-run` 不校验凭据、不调用 SDK。
 
-AppID 来自目标项目配置，凭据只通过环境变量提供。`.env.production.local`、私钥文件、支付宝 JSON 身份密钥和 CI Secrets 的具体设置见 [CLI 上传工具与凭据](../guide/cli.md#上传工具与凭据)；完整触发矩阵见[上传配置与触发时机](../guide/cli.md#上传配置与触发时机)。
+AppID 来自目标项目配置，凭据只通过环境变量提供。各平台完整配置、上传与预览、环境文件、密钥获取、批量操作及 CI 见[小程序上传与预览指南](../guide/upload.md)；完整触发矩阵见[上传配置与触发时机](../guide/cli.md#上传配置与触发时机)。淘宝目前不在统一上传支持列表内。
 
 ## `weapp.platform` {#weapp-platform}
 
