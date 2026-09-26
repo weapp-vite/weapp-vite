@@ -26,9 +26,13 @@ export default defineConfig({
 
 ### `upload`
 
-`weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv upload` 的默认参数，不是自动上传开关。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
+`weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv build --upload` 和独立 `wv upload` 的默认参数，不是自动上传开关，也不支持凭据字段。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
 
-只有显式上传命令在本次构建成功、产物校验通过后调用平台工具。普通 `build`、`dev/HMR` 不上传；`preview` 不使用该配置；`upload --dry-run` 不校验凭据、不调用工具。CI 应在测试通过后的显式步骤执行 `wv upload`，凭据仍通过环境变量提供，不提交私钥或 Token。
+普通 `build`、`dev/HMR` 不使用这组上传默认参数也不上传，`preview` 不使用该配置。配置文件本身仍会正常加载与合并，不保证其中的 JavaScript getter 延迟求值。`wv build --upload` 复用本次构建，等待所有选中的构建后端成功、产物校验通过后才调用平台工具；`wv build --upload --dry-run` 不校验凭据、不调用 SDK。
+
+`build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、仅 Web 的 `-p web --upload` 会报错。`build -p all --upload` 是“小程序 + Web”，两者都构建成功后只上传小程序；独立 `upload -p all` 则保持六端逐一构建上传。
+
+CI 可在测试通过后显式执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。凭据仍通过环境变量提供；AppID、私钥路径、支付宝 JSON 身份密钥、各端 Token、`.env.production.local` 和 CI Secrets 的配置见 [CLI 上传工具与凭据](https://vite.weapp.dev/guide/cli.html#上传工具与凭据)。
 
 ### `buildScope`
 

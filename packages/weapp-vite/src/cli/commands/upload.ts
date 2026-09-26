@@ -1,29 +1,18 @@
 import type { CAC } from 'cac'
-import type { GlobalCLIOptions } from '../types'
-import type { UploadAction, UploadContext, UploadPlatform } from '../upload/types'
-import { randomUUID } from 'node:crypto'
+import type { UploadCLIOptions } from '../upload/options'
+import type { UploadAction, UploadPlatform } from '../upload/types'
 import path from 'node:path'
 import process from 'node:process'
-import { parseArgs } from 'node:util'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
-import { getProjectPlatformOptions } from '../../platform'
 import { setCommandNodeEnv } from '../nodeEnv'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, resolveRuntimeTargets } from '../runtime'
-import { prepareUpload, resolveUploadPlatforms } from '../upload'
-import { loadUploadEnv } from '../upload/env'
-import { executeUpload } from '../upload/process'
-import { validateUploadProject } from '../upload/project'
-import { redactUploadSecrets } from '../upload/tools'
+import { resolveUploadPlatforms } from '../upload'
+import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
+import { readUploadMetadata } from '../upload/options'
 import { scheduleCompletedProductionBuildExit } from './build'
-
-interface UploadCLIOptions extends GlobalCLIOptions {
-  uv?: string
-  desc?: string
-  dryRun?: boolean
-}
 
 async function buildUploadTarget(cwd: string, platform: UploadPlatform | undefined, options: UploadCLIOptions, action: UploadAction) {
   const targets = resolveRuntimeTargets({ platform })
@@ -38,45 +27,10 @@ async function buildUploadTarget(cwd: string, platform: UploadPlatform | undefin
     preloadAppEntry: false,
   })
   try {
-    const config = ctx.configService
-    if (config.weappLibConfig?.enabled || config.pluginOnly) {
-      throw new Error(`${action} 仅支持完整小程序项目，不支持组件库或独立插件构建。`)
-    }
-    const resolvedPlatform = resolveUploadPlatforms(config.platform)[0]!
-    const uploadConfig = action === 'upload' ? config.weappViteConfig.upload : undefined
-    const version = (options.uv ?? uploadConfig?.version ?? config.packageJson.version)?.trim() ?? ''
-    if (action === 'upload' && !version) {
-      throw new Error('请通过 --uv、weapp.upload.version 或项目 package.json 的 version 指定上传版本。')
-    }
-    const desc = (options.desc ?? uploadConfig?.desc)?.trim() || `${config.packageJson.name ?? resolvedPlatform}${version ? `@${version}` : ''}`
-    const env = options.dryRun
-      ? {}
-      : await loadUploadEnv(config.cwd, config.mode, config.inlineConfig.root, config.inlineConfig.envDir)
-    const { projectConfigFileName } = getProjectPlatformOptions(config.platform)
-    const projectPath = config.multiPlatform.enabled
-      ? path.dirname(config.outDir)
-      : path.dirname(config.projectConfigPath ?? path.join(config.cwd, projectConfigFileName))
-    const appid: unknown = config.projectConfig.appid ?? config.projectConfig.appId
-    const context: UploadContext = {
-      cwd: config.cwd,
-      projectPath,
-      appid: typeof appid === 'string' ? appid : undefined,
-      version,
-      desc,
-      qrCodePath: action === 'preview' && !options.dryRun
-        ? path.join(config.cwd, '.weapp-vite', 'preview', `${resolvedPlatform}-${randomUUID()}.png`)
-        : undefined,
-      env: { ...process.env, ...env },
-    }
-    logger.info(`[${action}:${resolvedPlatform}] 构建${version ? ` ${version}` : ''}`)
+    const target = await createUploadTarget(ctx.configService, options, action)
+    logger.info(`[${action}:${target.platform}] 构建${target.context.version ? ` ${target.context.version}` : ''}`)
     await ctx.buildService.build({})
-    await validateUploadProject({
-      platform: resolvedPlatform,
-      projectPath,
-      outDir: config.outDir,
-      sourceConfigPath: config.projectConfigPath,
-    })
-    return { platform: resolvedPlatform, context }
+    return target
   }
   finally {
     ctx.watcherService.closeAll()
@@ -91,53 +45,7 @@ export async function runUploadCommand(root: string | undefined, options: Upload
   const cwd = path.resolve(root ?? process.cwd())
   for (const platform of platforms) {
     const target = await buildUploadTarget(cwd, platform, options, action)
-    if (options.dryRun) {
-      logger.success(`[${action}:${target.platform}] dry-run：构建完成，未校验凭据或调用平台工具。项目：${path.relative(cwd, target.context.projectPath) || '.'}`)
-      continue
-    }
-    const upload = await prepareUpload(target.platform, target.context, action)
-    const result = await executeUpload(target.platform, target.context, upload.secrets, action)
-    if (action === 'preview') {
-      if (!result) {
-        throw new Error('预览工具未返回二维码或预览链接。')
-      }
-      for (const [label, value] of [
-        ['二维码图片', result.qrCodeUrl],
-        ['预览链接', result.previewUrl],
-        ['二维码文件', result.qrCodeFile && path.relative(cwd, result.qrCodeFile)],
-      ]) {
-        if (value) {
-          logger.info(`[preview:${target.platform}] ${label}：${redactUploadSecrets(value, upload.secrets)}`)
-        }
-      }
-      logger.success(`[preview:${target.platform}] 预览已生成（未上传开发版本、未提审、未正式发布）。`)
-    }
-    else {
-      logger.success(`[upload:${target.platform}] ${target.context.version} 上传完成（未提审、未正式发布）。`)
-    }
-  }
-}
-
-function readUploadMetadata(cli: CAC) {
-  for (const name of ['uv', 'desc']) {
-    const value: unknown = cli.options[name]
-    if (typeof value === 'boolean' || (Array.isArray(value) && value.some(item => typeof item === 'boolean'))) {
-      throw new Error(`--${name} 需要指定字符串参数。`)
-    }
-  }
-  // CAC 会把数字形态与空白参数转成 number；从原始参数保留版本和说明的字符串语义。
-  const { values } = parseArgs({
-    args: cli.rawArgs.slice(2),
-    allowPositionals: true,
-    strict: false,
-    options: {
-      uv: { type: 'string' },
-      desc: { type: 'string' },
-    },
-  })
-  return {
-    uv: typeof values.uv === 'string' ? values.uv : undefined,
-    desc: typeof values.desc === 'string' ? values.desc : undefined,
+    await executeUploadTarget(target, options, action)
   }
 }
 

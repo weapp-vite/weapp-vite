@@ -42,16 +42,21 @@ weapp-vite build
 ### 构建并上传
 
 ```bash
-wv upload --platform jd --uv 1.2.3 --desc "release"
-wv upload --platform swan
+wv build --upload --dry-run
+wv build --upload -p weapp --uv 1.2.3 --desc "release"
+
+# 独立命令保留六端批量上传能力
+wv upload --platform jd,swan
 wv upload --platform all --dry-run
 ```
 
-六个平台为 `weapp/alipay/tt/xhs/jd/swan`，支持逗号分隔或显式 `all`。每个目标先构建再上传；失败后停止后续目标，不自动提审或正式上线。`--dry-run` 只执行构建和产物目录检查，不调用平台上传服务。
+`build --upload` 复用本次构建，构建成功并校验产物后才上传，不重复构建。六个平台为 `weapp/alipay/tt/xhs/jd/swan`；独立 `wv upload` 还支持逗号分隔或显式 `all`，每个目标先构建再上传，失败后停止后续目标。上传不自动提审或正式上线；`--dry-run` 只构建和检查产物，不校验凭据、不调用 SDK。
 
-可在 `vite.config.ts` 中用 `weapp.upload: { version: '1.2.3', desc: '更新首页' }` 设置默认参数，命令行 `--uv` / `--desc` 优先。版本未配置时读取 `package.json.version`。配置本身、普通 `build`、`dev/HMR` 不触发上传；必须显式执行 `wv upload`，并等待本次构建和产物校验成功。`preview` 不读取这组上传参数。
+可在 `vite.config.ts` 中用 `weapp.upload: { version: '1.2.3', desc: '更新首页' }` 设置默认参数，命令行 `--uv` / `--desc` 优先，版本未配置时读取 `package.json.version`。普通 `build`、`dev/HMR` 不读取这组参数也不上传；`preview` 不读取该配置。`build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、`-p web --upload` 会报错。
 
-工具需安装在当前项目：微信 `miniprogram-ci`、支付宝 `minidev`、抖音 `tt-ide-cli`、小红书 `xhs-mp-cli`、京东 `jd-miniprogram-ci`、百度 `swan-toolkit`。通过 CI Secrets 或未提交的 `.env.<mode>.local` 配置对应凭据，详情见 `README.md` 的“六端构建并上传”。百度还要求 `SWAN_MIN_VERSION`；官方 CLI Token 会进入子进程参数，仅在可信隔离 runner 上运行。
+`build -p all --upload` 是“小程序 + Web”，等两者都构建成功后只上传小程序，不等于独立 `upload -p all` 的六端批量上传。
+
+按目标安装官方工具，并通过未提交的 `.env.<mode>.local` 或 CI Secrets 提供凭据，不要在 `weapp.upload` 中添加凭据字段。AppID、微信私钥路径、支付宝 JSON 身份文件、Token、京东密钥内容和百度 `SWAN_MIN_VERSION` 的完整设置见 [CLI 上传工具与凭据](https://vite.weapp.dev/guide/cli.html#上传工具与凭据)。百度官方 CLI Token 会进入子进程参数，仅在可信隔离 runner 上运行。
 
 旧的微信 IDE 上传请改用 `wv ide upload --project <IDE项目根> -v 1.2.3 -d "release"`；该命令依赖 IDE 登录，不额外构建。
 

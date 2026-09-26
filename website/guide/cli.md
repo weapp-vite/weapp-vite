@@ -79,7 +79,7 @@ wv [root]
 
 ### 2) `build`
 
-用于生产构建（支持 watch）。
+用于生产构建（支持 watch）。普通 `build` 不上传；只有显式传入 `--upload` 才使用上传默认参数，并在构建成功后上传。
 
 ```bash
 wv build [root]
@@ -87,20 +87,35 @@ wv build [root]
 
 参数：
 
-| 参数                        | 说明                                           |
-| --------------------------- | ---------------------------------------------- |
-| `--target <target>`         | 构建目标（默认 `modules`）                     |
-| `--outDir <dir>`            | 输出目录（默认 `dist`）                        |
-| `-p, --platform <platform>` | 目标平台（`weapp` \| `web`）                   |
-| `--project-config <path>`   | 小程序 `project.config.json` 路径              |
-| `--sourcemap [output]`      | 产出 sourcemap（`true/inline/hidden`）         |
-| `--minify [minifier]`       | 代码压缩开关或压缩器（`false/terser/esbuild`） |
-| `--emptyOutDir`             | 当 outDir 在 root 外时强制清空                 |
-| `-w, --watch`               | 监听并增量重建                                 |
-| `--skipNpm`                 | 跳过 npm 构建                                  |
-| `-o, --open`                | 构建后尝试打开 IDE                             |
-| `--analyze`                 | 输出分包分析仪表盘（小程序场景）               |
-| `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`       |
+| 参数                        | 说明                                                     |
+| --------------------------- | -------------------------------------------------------- |
+| `--target <target>`         | 构建目标（默认 `modules`）                               |
+| `--outDir <dir>`            | 输出目录（默认 `dist`）                                  |
+| `-p, --platform <platform>` | 小程序平台、`web`，或 `all`（小程序 + Web）              |
+| `--project-config <path>`   | 小程序 `project.config.json` 路径                        |
+| `--sourcemap [output]`      | 产出 sourcemap（`true/inline/hidden`）                   |
+| `--minify [minifier]`       | 代码压缩开关或压缩器（`false/terser/esbuild`）           |
+| `--emptyOutDir`             | 当 outDir 在 root 外时强制清空                           |
+| `-w, --watch`               | 监听并增量重建                                           |
+| `--skipNpm`                 | 跳过 npm 构建                                            |
+| `-o, --open`                | 构建后尝试打开 IDE                                       |
+| `--analyze`                 | 输出分包分析仪表盘（小程序场景）                         |
+| `--scope <scope>`           | 局部构建范围，例如 `main,packages/order`                 |
+| `--upload`                  | 本次构建成功后上传小程序，不重复构建                     |
+| `--uv <version>`            | 上传版本，仅与 `--upload` 一起使用                       |
+| `--desc <text>`             | 上传说明，仅与 `--upload` 一起使用                       |
+| `--dry-run`                 | 上传演练，仅与 `--upload` 一起使用；不校验凭据或调用 SDK |
+
+显式上传示例：
+
+```bash
+wv build --upload --dry-run
+wv build --upload -p weapp --uv 1.2.3 --desc "更新首页"
+```
+
+`--watch --upload`、仅构建 Web 的 `-p web --upload` 都会报错。`build -p all --upload` 保持“小程序 + Web”的构建语义：等待两个后端都成功，再校验并上传本次小程序产物，不上传 Web，也不是依次上传六个平台。六端批量上传请使用下文的 `wv upload -p all`。
+
+版本、说明的优先级与[上传配置](#上传配置与触发时机)一致；私钥、Token 和 AppID 的设置见[上传工具与凭据](#上传工具与凭据)。`--dry-run` 仍执行本次构建与产物校验，但不验证凭据、不加载上传 SDK。
 
 局部构建示例：
 
@@ -430,17 +445,22 @@ export default defineConfig({
 })
 ```
 
-`weapp.upload` 只提供 `wv upload` 的默认参数，**不是构建完成自动上传的开关**。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。版本与说明会去除首尾空白；显式空版本报错，空说明使用自动生成的说明。
+`weapp.upload` 只提供 `wv build --upload` 和独立 `wv upload` 的默认参数，**不是构建完成自动上传的开关**，也不支持 `appid`、`identityKeyPath`、`token`、`privateKeyPath` 等凭据字段。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。CLI 按字符串读取版本与说明（例如 `001` 不会转成数字）；之后去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
 
 | 操作                             | 是否上传                                         |
 | -------------------------------- | ------------------------------------------------ |
 | 仅添加 `weapp.upload` 配置       | 否                                               |
-| `wv build` / `wv dev` / HMR 重建 | 否，即使 mode 是 `production`                    |
+| `wv build` / `wv dev` / HMR 重建 | 否，即使 mode 是 `production`，也不启用上传参数  |
+| `wv build --upload -p weapp`     | 是，复用本次构建，产物校验通过后调用平台工具     |
+| `wv build --upload -p all`       | 是，等小程序与 Web 构建都成功后，只上传小程序    |
+| `wv build --upload --dry-run`    | 否，不校验凭据、不调用平台工具                   |
 | `wv upload -p weapp`             | 是，仅在本次构建成功、产物校验通过后调用平台工具 |
 | `wv upload -p all --dry-run`     | 否，不校验凭据、不调用平台工具                   |
-| `wv preview`                     | 否，仅生成预览，且不读取 `weapp.upload` 的参数   |
+| `wv preview`                     | 否，仅生成预览，不使用 `weapp.upload` 的默认参数 |
 
-上传是有外部副作用的操作，不挂在 Vite `closeBundle` 或文件监听回调中，避免普通构建、HMR、分析构建重复上传。在 CI 中把 `wv upload` 放在测试通过后的显式步骤；该命令本身会重新构建，无需再串联一次 `wv build`。凭据继续通过环境变量提供，不写入可提交的配置文件。
+上传是有外部副作用的操作，不挂在 Vite `closeBundle` 或文件监听回调中，避免普通构建、HMR、分析构建重复上传。在 CI 中把 `wv build --upload` 放在测试通过后的显式步骤，它直接复用本次构建；独立 `wv upload` 则自行构建后上传，无需先串联一次 `wv build`。在 `build` 上单独传 `--uv`、`--desc` 或 `--dry-run` 而不传 `--upload` 会报错。
+
+配置文件仍会正常加载与合并；上传开关不控制配置文件代码或 JavaScript getter 的求值时机。不要在配置求值期间执行上传等外部副作用。
 
 #### 上传工具与凭据
 
@@ -455,11 +475,85 @@ export default defineConfig({
 | 京东 `jd`       | `pnpm add -D jd-miniprogram-ci` | `JD_PRIVATE_KEY`：代码上传密钥内容，不是文件路径                                                |
 | 百度 `swan`     | `pnpm add -D swan-toolkit`      | `SWAN_UPLOAD_TOKEN`：官方 CLI 登录 Token（BDUSS）；`SWAN_MIN_VERSION`：平台支持的最低基础库版本 |
 
-凭据可由 CI Secrets 注入环境变量，也可放在不提交 Git 的 `.env.production.local` 等文件中。环境文件目录相对于 Vite `root` 解析，遵循 `.env`、`.env.local`、`.env.<mode>`、`.env.<mode>.local` 的覆盖顺序并支持变量展开；进程环境变量优先。配置 `envDir: false` 时不额外加载环境文件。凭据加载不输出环境变量调试日志。私钥文件的相对路径以源码项目根目录为基准，不能用微信 `AppSecret` 替代上传私钥。
+##### 1. 设置 AppID 与凭据文件
 
-- AppID 默认来自目标项目配置。微信可用 `WEAPP_CI_APPID`、支付宝可用 `ALIPAY_APP_ID` 覆盖；抖音 `TT_APP_ID`、小红书 `XHS_APP_ID` 必须与生成项目配置中的 AppID 一致。
-- 微信可选 `WEAPP_CI_ROBOT=1` 到 `30`，并需在公众平台配置上传 IP 白名单。
+先从对应平台的小程序管理后台取得自己的 AppID，填写到**源码侧**目标项目配置中：微信、抖音、小红书、京东使用 `project.config.json`，支付宝使用 `mini.project.json`，百度使用 `project.swan.json`。建议统一填写小写 `appid`；抖音、小红书、百度会校验生成配置中的 `appid`，不能只配置 `appId`。启用 `weapp.multiPlatform` 时默认修改 `config/<平台>/` 下的配置，不要修改生成的 `dist` 配置。
+
+例如，将微信项目配置中已有的 `appid` 改为自己的值；以下只是字段片段，`wx0123456789abcdef` 是虚构示例，不可直接用于上传：
+
+```json
+{
+  "appid": "wx0123456789abcdef"
+}
+```
+
+- **微信 `privateKeyPath`**：在微信公众平台为目标小程序生成并下载**代码上传密钥**，保存为项目根目录的 `.keys/weapp-upload.key`，用 `WEAPP_CI_PRIVATE_KEY_PATH` 指向它。它不是 `AppSecret`，不能互相替代；还需配置上传机器的 IP 白名单。可选 `WEAPP_CI_ROBOT` 为 `1` 到 `30`。
+- **支付宝 `identityKeyPath`**：从支付宝开放平台获取供 minidev 使用的 **JSON 身份密钥文件**，原样保存为 `.keys/alipay-identity.json`，用 `ALIPAY_IDENTITY_KEY_PATH` 指向它。文件必须包含 `alipay.authentication`，不是 PEM/RSA 应用私钥；不要自行拼装 JSON。获取方式参见 [minidev 官方文档](https://opendocs.alipay.com/mini/02q17h)。
+- **抖音 / 小红书 `token`**：取得目标小程序的官方 CI 上传 Token，分别将 Token **内容**填入 `TT_UPLOAD_TOKEN` / `XHS_UPLOAD_TOKEN`，不是 Token 文件路径，也不是业务接口的 access token。
+- **京东 `privateKey`**：将官方代码上传密钥的**完整内容**填入 `JD_PRIVATE_KEY`；不提供 `privateKeyPath`，不能填 `.keys/xxx.key` 这样的路径。
+- **百度 `token`**：通过官方 CLI 的登录流程取得 BDUSS Token，填入 `SWAN_UPLOAD_TOKEN`；同时将项目所需的最低基础库版本填入 `SWAN_MIN_VERSION`，上传和预览都必填，不能用应用发布版本代替。
+
+##### 2. 创建本地环境文件
+
+默认在源码项目根目录创建 `.env.production.local`，只保留需要的平台。下面所有 AppID、Token、密钥内容都是**示例占位值**，必须替换；两个密钥文件需要按上一步实际保存：
+
+```dotenv
+# 微信：AppID 默认来自项目配置，以下覆盖项可省略
+WEAPP_CI_APPID=wx0123456789abcdef
+WEAPP_CI_PRIVATE_KEY_PATH=.keys/weapp-upload.key
+WEAPP_CI_ROBOT=1
+
+# 支付宝：AppID 覆盖项可省略；身份文件必须是官方 JSON
+ALIPAY_APP_ID=2021000000000000
+ALIPAY_IDENTITY_KEY_PATH=.keys/alipay-identity.json
+
+# 抖音 / 小红书：AppID 可省略；如设置，须与生成项目配置一致
+TT_APP_ID=tt0123456789abcdef
+TT_UPLOAD_TOKEN=replace-with-douyin-upload-token
+XHS_APP_ID=replace-with-xhs-app-id
+XHS_UPLOAD_TOKEN=replace-with-xhs-upload-token
+
+# 京东：替换为完整密钥内容，不是文件路径
+JD_PRIVATE_KEY="replace-with-jd-upload-key-contents"
+
+# 百度：3.100.0 仅为格式示例，按项目实际最低基础库版本设置
+SWAN_UPLOAD_TOKEN=replace-with-official-cli-bduss
+SWAN_MIN_VERSION=3.100.0
+```
+
+AppID 默认来自目标项目配置；`WEAPP_CI_APPID` / `ALIPAY_APP_ID` 可覆盖上传使用的 AppID，必须与各自密钥的授权应用对应。`TT_APP_ID` / `XHS_APP_ID` 不能用来切换到另一个应用：必须与生成的 `project.config.json` 中 `appid` 完全一致，否则拒绝上传。京东、百度不提供 AppID 环境变量覆盖项。
+
+`build --upload`、`upload`、`preview` 默认使用 `production` mode；`--mode test` 改为读取 `.env.test` / `.env.test.local` 等文件。加载顺序为 `.env` → `.env.local` → `.env.<mode>` → `.env.<mode>.local`，后者覆盖前者，支持变量展开，**已存在的进程环境变量优先级最高**。环境文件目录由 Vite `root` 与 `envDir` 决定，`envDir` 相对于 `root` 解析；顶层配置 `envDir: false` 时只读取进程环境，不加载这些文件。
+
+两个密钥文件的相对路径始终以**源码项目根目录**（命令的 `[root]`，省略时为当前目录）为基准，不相对于 `.env` 所在目录、Vite `root` 或构建输出目录。不要为凭据加 `VITE_` 前缀，也不要将它们写进 `weapp.upload` 或客户端代码。
+
+将以下规则加入项目 `.gitignore`，并把 `.keys/` 放在源码/静态资源目录之外；不要把密钥复制进构建产物：
+
+```text
+.env.local
+.env.*.local
+.keys/
+```
+
+然后先执行 `wv build --upload -p weapp --dry-run` 检查构建与产物路径。确认配置后去掉 `--dry-run` 才会真实上传；dry-run 不校验上述凭据、不调用平台工具，不能证明密钥有效。
+
+##### 3. 在 CI 中注入 Secrets
+
+以 GitHub Actions 的抖音上传步骤为例：在仓库或受保护环境的 Secrets 中保存 `TT_UPLOAD_TOKEN`，AppID 继续从已配置好的目标项目读取。以下步骤放在依赖安装、测试通过之后，仅允许可信发布任务运行，不向不可信 PR 暴露 Secrets：
+
+```yaml
+- name: 构建并上传抖音开发版本
+  env:
+    TT_UPLOAD_TOKEN: ${{ secrets.TT_UPLOAD_TOKEN }}
+  run: pnpm exec wv build --upload -p tt --uv 1.2.3 --desc "CI 构建"
+```
+
+微信和支付宝可由 CI 的安全文件功能提供密钥文件，再将对应的 `WEAPP_CI_PRIVATE_KEY_PATH` / `ALIPAY_IDENTITY_KEY_PATH` 环境变量设为其路径；京东直接把 Secret 内容注入 `JD_PRIVATE_KEY`。不要在命令行中展开或打印密钥；任务结束后销毁密钥文件和 runner 环境。
+
+##### 平台限制
+
 - 建议使用 `1.2.3` 这样的版本号；抖音、支付宝要求三段数字，百度接受二至四段数字。百度最低基础库版本必须由项目明确指定，不自动猜测。
+- 支付宝版本各段不能有前导零，且不得超过 `2147483647`；上传说明必须少于 200 个字符。
 - 工具接收的目录由构建配置推导。上传前会检查 SDK 配置的代码根目录与本次构建输出是否相同，不一致时拒绝上传；嵌套项目配置、自定义输出目录尤其需要确认此对应关系。京东适配器会进一步定位到包含 `app.json` 的目录。
 - SDK 在独立进程运行，输出过滤已知凭据及 URL 用户名密码后返回；异常退出或未确认完成都视为失败，不会因 SDK 提前 `exit(0)` 报成功。取消父进程会停止上传子进程，但无法撤回平台已经接收的版本。
 - **工具凭据限制**：抖音官方 SDK 会把 Token 写入自己的本地配置；百度官方 CLI 必须通过 `--token` 传递账号登录凭据 BDUSS，子进程参数可能被同机有权限的用户读取。请使用可信、隔离的 CI runner，并在任务完成后销毁其环境，不要在不可信的共享主机上执行。进程隔离不等于第三方依赖安全沙箱。

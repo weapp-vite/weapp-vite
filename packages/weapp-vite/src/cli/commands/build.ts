@@ -2,6 +2,7 @@ import type { CAC } from 'cac'
 import type { InlineConfig } from 'vite'
 import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
+import type { BuildUploadCLIOptions } from '../upload/options'
 import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
@@ -17,6 +18,8 @@ import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
+import { resolveBuildUploadOptions } from '../upload/options'
 
 function emitDashboardEvents(handle: AnalyzeDashboardHandle | undefined, events: DashboardRuntimeEventInput[]) {
   handle?.emitRuntimeEvents(events)
@@ -121,17 +124,26 @@ export function registerBuildCommand(cli: CAC) {
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)
-    .action(async (root: string, options: GlobalCLIOptions) => {
+    .option('--upload', '[boolean] upload the mini program after this build succeeds')
+    .option('--uv <version>', '[string] upload version override (requires --upload)')
+    .option('--desc <text>', '[string] upload description override (requires --upload)')
+    .option('--dry-run', '[boolean] validate upload output without credentials or SDK calls (requires --upload)')
+    .action(async (root: string, options: BuildUploadCLIOptions) => {
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
       let targets: ReturnType<typeof resolveRuntimeTargets> | undefined
       let buildCompleted = false
       try {
+        options = { ...options }
         filterDuplicateOptions(options)
+        const uploadOptions = resolveBuildUploadOptions(cli, options)
         setCommandNodeEnv('production')
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
         targets = resolveRuntimeTargets(options)
+        if (uploadOptions && !getBackendForCapability(targets, 'miniprogram', 'build')) {
+          throw new Error('--upload 仅支持包含小程序目标的构建，不能用于纯 Web 构建。')
+        }
         const inlineConfig = createInlineConfig(targets, {
           scope: options.scope,
           inlineConfig: createBuildInlineConfig(options),
@@ -147,6 +159,7 @@ export function registerBuildCommand(cli: CAC) {
           preloadAppEntry: false,
         })
         const { configService } = ctx
+        const uploadTarget = uploadOptions ? await createUploadTarget(configService, uploadOptions, 'upload') : undefined
         const miniBackend = getBackendForCapability(targets, 'miniprogram', 'build')
         const webBackend = getBackendForCapability(targets, 'web', 'build')
         logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
@@ -233,6 +246,9 @@ export function registerBuildCommand(cli: CAC) {
             logger.error(error)
             throw error
           }
+        }
+        if (uploadTarget && uploadOptions) {
+          await executeUploadTarget(uploadTarget, uploadOptions, 'upload')
         }
         if (miniBackend) {
           logBuildAppFinish(configService, undefined, { skipWeb: !webBackend })

@@ -34,7 +34,7 @@
     "build:jd": "wv build -p jd",
     "build:xhs": "wv build -p xhs",
     "build:web": "wv build -p web",
-    "upload": "wv upload",
+    "upload": "wv build --upload",
     "open": "wv open",
     "g": "wv generate",
     "postinstall": "wv prepare",

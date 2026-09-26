@@ -8,6 +8,8 @@
 
 顶层 `wv upload`、`wv preview` 现由六端构建入口接管；原有微信开发者工具操作请迁移为 `wv ide upload`、`wv ide preview`。上传使用简短的 `--uv` 指定业务版本，默认读取 package.json.version；预览无需上传版本。同步脚手架使用指引。
 
-支持通过 `weapp.upload.version` 与 `weapp.upload.desc` 配置上传默认参数，命令行参数优先。版本和说明保留字符串语义，避免纯数字、前导零或空白参数被错误转换。上传只在显式 `wv upload` 且本次构建与产物校验成功后触发；普通构建、开发重建、预览及 dry-run 不会触发上传。
+支持通过 `weapp.upload.version` 与 `weapp.upload.desc` 配置上传默认参数，命令行参数优先。版本和说明保留字符串语义，避免纯数字、前导零或空白参数被错误转换。构建时只有显式指定 `wv build --upload` 才启用上传，复用本次构建结果，不会重复编译；本次全部目标构建及小程序产物校验成功后才上传。独立 `wv upload` 仍可显式构建上传。普通构建、开发重建、预览及 dry-run 不会触发上传。
+
+补充六端 AppID、微信私钥路径、支付宝 JSON 身份密钥路径和各平台 Token 的本地环境文件与 CI Secrets 配置示例，说明环境优先级、路径基准和密钥防泄漏要求。
 
 修复日志包颜色工具导出声明泄漏 `picocolors/types` 内部路径的问题，NodeNext 类型检查使用正式包入口，无需额外配置依赖安装目录映射。
