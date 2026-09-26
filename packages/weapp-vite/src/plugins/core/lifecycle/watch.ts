@@ -635,7 +635,8 @@ async function processChangedFile(
     const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isStyleOnlyUpdate() : false)
     const changedVueBlocks = event === 'update' ? await vueEntryUpdateInspector?.getChangedBlocks() : undefined
-    const isMixedAssetVueEntryUpdate = changedVueBlocks?.includes('script') && changedVueBlocks.length > 1
+    const isMixedAssetVueEntryUpdate = changedVueBlocks?.includes('template')
+      || (changedVueBlocks?.includes('script') && changedVueBlocks.length > 1)
     const directDirtyReason = sidecarDirtyCause
       ? 'metadata'
       : (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct'

@@ -1,6 +1,6 @@
 import type { CorePluginState } from '../helpers'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { compileVueFile, resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
 
 function createState(filename: string, source: string) {
@@ -50,6 +50,25 @@ function createProviderNeutralState(filename: string, source: string) {
 }
 
 describe('createVueEntryUpdateInspector', () => {
+  it.each([
+    ['static node with stable CSS runtime', '<view class="new-node">new</view>', true],
+    ['computed template expression', '<view>{{ count + 1 }}</view>', false],
+    ['inline event', '<button @tap="count++">increment</button>', false],
+  ] as const)('keeps generated JavaScript in the update path for %s', async (_name, inserted, stabilizeCssVarsRuntime) => {
+    const filename = 'src/pages/index.vue'
+    const source = '<script setup>let count = 1</script><template><view>{{ count }}</view></template>'
+    const next = source.replace('</template>', `${inserted}</template>`)
+    const options = { stabilizeCssVarsRuntime }
+    const before = await compileVueFile(source, filename, options)
+    const after = await compileVueFile(next, filename, options)
+    expect(after.script).not.toBe(before.script)
+    const inspector = createVueEntryUpdateInspector(createState(filename, source), filename, {
+      readFile: async () => next,
+    })
+    await expect(inspector.getChangedBlocks()).resolves.toEqual(['template'])
+    await expect(inspector.isLocalAssetOnlyUpdate()).resolves.toBe(false)
+  })
+
   it('reads provider-neutral content signatures for compiler HMR', async () => {
     const filename = '/project/src/app.vue'
     const source = '<template><view class="page" /></template>'

@@ -79,6 +79,7 @@ describe('core logical entry lifecycle', () => {
       },
     } as any
     const pluginCtx = {
+      addWatchFile: vi.fn(),
       load: vi.fn(async () => ({ code: 'Page({})' })),
       resolve: vi.fn(async (source: string) => source === linkedComponent ? { id: linkedComponent } : null),
     } as any
@@ -87,6 +88,7 @@ describe('core logical entry lifecycle', () => {
       .call(pluginCtx, createLogicalEntryId(sourceId, 'page'))
     const code = result?.code ?? ''
 
+    expect(pluginCtx.addWatchFile).toHaveBeenCalledExactlyOnceWith(sourceId)
     expect(load).not.toHaveBeenCalled()
     expect(staleResolve).not.toHaveBeenCalled()
     expect(pluginCtx.resolve).toHaveBeenCalledWith(linkedComponent, sourceId)
@@ -138,7 +140,7 @@ describe('core logical entry lifecycle', () => {
     } as any
 
     const result = await createLogicalEntryLoadHook(state)
-      .call({} as any, createLogicalEntryId(sourceId, 'page'))
+      .call({ addWatchFile: vi.fn() } as any, createLogicalEntryId(sourceId, 'page'))
 
     expect(result?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, sourceId, 'script')))
   })
@@ -200,16 +202,17 @@ describe('core logical entry lifecycle', () => {
     for (const state of [createState(), createState()]) {
       const load = createLogicalEntryLoadHook(state as any)
       const id = createLogicalEntryId(sourceId, 'component')
-      const result = await load.call({} as any, id)
-      expect(result?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, dependencyId, 'jsx')))
+      const result = await load.call({ addWatchFile: vi.fn() } as any, id)
+      expect(result?.code).not.toContain(JSON.stringify(createSidecarModuleId(sourceId, dependencyId, 'jsx')))
+      expect(state.ctx.moduleGraphService.replaceEntryDependencies).not.toHaveBeenCalledWith(sourceId, 'jsx', expect.anything())
       expect([...state.resolvedEntryMap.keys()]).toEqual([sourceId])
       expect(state.resolvedEntryMap.get(sourceId)).toMatchObject({ id: sourceId })
       const resolved = { id: sourceId, meta: { registration: 'resolver' }, moduleSideEffects: false, external: false }
       state.resolvedEntryMap.set(sourceId, resolved)
-      await load.call({} as any, id)
+      await load.call({ addWatchFile: vi.fn() } as any, id)
       expect(state.resolvedEntryMap.get(sourceId)).toBe(resolved)
       expect(state.resolvedEntryMap.size).toBe(1)
-      await load.call({} as any, createSidecarModuleId(sourceId, dependencyId, 'jsx'))
+      await load.call({ addWatchFile: vi.fn() } as any, createSidecarModuleId(sourceId, dependencyId, 'jsx'))
       expect(state.resolvedEntryMap.size).toBe(1)
     }
 
@@ -217,7 +220,7 @@ describe('core logical entry lifecycle', () => {
     const error = new Error('component metadata failed')
     failedState.loadEntry.mockRejectedValue(error)
     await expect(createLogicalEntryLoadHook(failedState as any)
-      .call({} as any, createLogicalEntryId(sourceId, 'component'))).rejects.toBe(error)
+      .call({ addWatchFile: vi.fn() } as any, createLogicalEntryId(sourceId, 'component'))).rejects.toBe(error)
     expect(failedState.resolvedEntryMap.size).toBe(0)
   })
 })

@@ -4,6 +4,18 @@ import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logical
 import { createSidecarModuleId } from './protocol'
 
 describe('logical entry module source', () => {
+  it('keeps equivalent dependency sets stable across discovery order and duplicate edges', () => {
+    const entry = { sourceId: '/project/src/app.vue', type: 'app' as const }
+    const dependencies = [
+      { kind: 'script' as const, sourceId: entry.sourceId },
+      { kind: 'json' as const, sourceId: '/project/src/sitemap.json' },
+      { kind: 'style' as const, sourceId: '/project/src/app.wxss' },
+    ]
+    const initial = createLogicalEntryModuleCode(entry, dependencies)
+    expect(createLogicalEntryModuleCode(entry, [...dependencies].reverse().concat(dependencies))).toBe(initial)
+    expect(createLogicalEntryModuleCode(entry, dependencies.slice(1))).not.toBe(initial)
+  })
+
   it('expresses script and native sidecars as static module dependencies', () => {
     const sourceId = '/project/src/pages/home/index.ts'
     const code = createLogicalEntryModuleCode({ sourceId, type: 'page' }, [

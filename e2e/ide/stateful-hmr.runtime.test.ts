@@ -9,15 +9,22 @@ import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import {
+  parseStatefulHmrControlSource,
   replaceFileByRename,
   waitForFileContains,
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { relaunchPage } from './github-issues.runtime.shared'
 import { statefulHmrCheckpoints } from './statefulHmrDom'
+import { assetLifecycleCheckpoints, verifyAssetLifecycle } from './statefulHmrDom/assets'
+import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { templateBindingCheckpoints } from './statefulHmrDom/templateBindings'
+import { templateCycleCheckpoints } from './statefulHmrDom/templates'
+import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -55,6 +62,7 @@ let originalNativeStyle = ''
 let originalWevuSource = ''
 let previousPostConnectRefresh: string | undefined
 let sharedInfraUnavailableMessage = ''
+let headlessTransport: ReturnType<typeof installStatefulHmrTransport> | undefined
 
 class StatefulHmrDevtoolsTransportError extends Error {
   constructor(message: string) {
@@ -147,6 +155,7 @@ async function waitForClientVersion(expectedVersion: number, timeoutMs = 30_000)
   const start = Date.now()
   let latest = -1
   while (Date.now() - start < timeoutMs) {
+    headlessTransport?.assertHealthy()
     latest = await miniProgram.evaluate(() => {
       const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
       return typeof client?.getVersion === 'function' ? Number(client.getVersion()) : -1
@@ -160,7 +169,15 @@ async function waitForClientVersion(expectedVersion: number, timeoutMs = 30_000)
     await new Promise(resolve => setTimeout(resolve, 250))
   }
   const devOutput = devProcess?.getOutput().slice(-8_000) ?? ''
-  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}; devOutput=${devOutput}`)
+  const diagnostics = await miniProgram.evaluate(() => {
+    const client = (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__
+    return {
+      transport: client?.getTransportState?.(),
+      lastApply: client?.getLastApply?.(),
+    }
+  }).catch(() => null)
+  const runtimeLogs = miniProgram.__weappViteRuntimeLogMeta?.entries?.slice(-40) ?? []
+  throw new Error(`Timed out waiting for stateful HMR client version ${expectedVersion}; latest=${latest}; diagnostics=${JSON.stringify(diagnostics)}; logs=${JSON.stringify(runtimeLogs)}; devOutput=${devOutput}`)
 }
 
 async function readClientVersion(): Promise<number> {
@@ -200,7 +217,8 @@ async function waitForClientReady(timeoutMs = 30_000): Promise<void> {
     }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  throw new Error(`Timed out waiting for stateful HMR transport; latest=${JSON.stringify(latest)}`)
+  const publishedControl = await fs.readFile(CONTROL_FILE, 'utf8').then(parseStatefulHmrControlSource).catch(() => undefined)
+  throw new Error(`Timed out waiting for stateful HMR transport; expectedEndpoint=${headlessTransport?.endpoint}; publishedEndpoint=${publishedControl?.url}; latest=${JSON.stringify(latest)}`)
 }
 
 function skipIfStatefulHmrTransportUnavailable(ctx: { skip: (message?: string) => void }): boolean {
@@ -216,8 +234,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     previousPostConnectRefresh = process.env[POST_CONNECT_REFRESH_ENV]
     delete process.env[POST_CONNECT_REFRESH_ENV]
     await cleanupResidualDevProcesses()
-    await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
+    if (resolveRuntimeProviderName() === 'devtools') {
+      await cleanupResidualIdeProcesses()
+      await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
+    }
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
     originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
     originalVueChildSource = (await fs.readFile(VUE_CHILD_SOURCE, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')
@@ -250,6 +270,13 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await devProcess.waitFor(waitForStatefulHmrControl(CONTROL_FILE), 'stateful HMR control ready')
 
     miniProgram = await launchAutomator({
+      async configureHeadlessSession(session) {
+        const control = parseStatefulHmrControlSource(await fs.readFile(CONTROL_FILE, 'utf8'))
+        if (!control?.url) {
+          throw new Error('Missing current CLI HMR endpoint')
+        }
+        headlessTransport = installStatefulHmrTransport(session, control.url, UPDATE_FILE)
+      },
       bridgeProjectMode: 'direct',
       launchMode: 'bridge',
       projectPath: APP_ROOT,
@@ -279,8 +306,15 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
   }, 600_000)
 
   afterAll(async () => {
+    await headlessTransport?.close()
+    headlessTransport = undefined
     try {
-      await miniProgram?.disconnect?.()
+      if (resolveRuntimeProviderName() === 'headless') {
+        await miniProgram?.close?.()
+      }
+      else {
+        await miniProgram?.disconnect?.()
+      }
     }
     catch {}
     miniProgram = undefined
@@ -314,7 +348,9 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       process.env[POST_CONNECT_REFRESH_ENV] = previousPostConnectRefresh
     }
     await cleanupResidualDevProcesses()
-    await cleanupResidualIdeProcesses()
+    if (resolveRuntimeProviderName() === 'devtools') {
+      await cleanupResidualIdeProcesses()
+    }
   })
 
   it('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches', async (ctx) => {
@@ -375,6 +411,91 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await waitForPatchedBehavior(4, page)
     await dom.check('restored-updated', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'native-instance' })
+  })
+
+  it('preserves native page state during copied and public asset lifecycle updates', async (ctx) => {
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', assetLifecycleCheckpoints())
+    const page = await relaunchStatefulRoute(NATIVE_ROUTE)
+    await prepareRuntimeState('asset-lifecycle')
+    await triggerIncrement()
+    await triggerIncrement()
+    await waitForPatchedBehavior(2, page)
+    await verifyAssetLifecycle({
+      appRoot: APP_ROOT,
+      check: async (id) => {
+        const current = await miniProgram.currentPage()
+        expect(current.pageId).toBe(page.pageId)
+        await dom.check(id, miniProgram, current)
+        expect(await readRuntimeState(page)).toEqual({
+          count: id === 'incremented' ? 3 : 2,
+          identity: 'asset-lifecycle',
+          input: 'held-input',
+          route: 'pages/native/index',
+          source: 'e2e',
+        })
+      },
+      increment: async () => {
+        await triggerIncrement()
+        await waitForPatchedBehavior(3, page)
+      },
+    })
+  })
+
+  it('ignores unowned editor files while publishing consecutive native script edits and restorations', async (ctx) => {
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', editorFileCheckpoints())
+    const page = await relaunchStatefulRoute(NATIVE_ROUTE)
+    await waitForPatchedBehavior(0, page)
+    await dom.check('initial', miniProgram, page)
+    await prepareRuntimeState('editor-file-ownership')
+    const scratch = path.join(path.dirname(NATIVE_SOURCE), 'editor-buffer.note')
+    const hiddenScratch = path.join(path.dirname(NATIVE_SOURCE), '.editor-buffer')
+    const initialVersion = await readClientVersion()
+    let expectedCount = 0
+    try {
+      // 无关文件既覆盖普通文件名，也覆盖隐藏文件；不允许实现依赖临时文件名黑名单。
+      await fs.writeFile(scratch, 'unowned')
+      await fs.writeFile(hiddenScratch, 'unowned')
+      await new Promise(resolve => setTimeout(resolve, 500))
+      expect(await readClientVersion()).toBe(initialVersion)
+      expect(await readRuntimeState(page)).toMatchObject({ identity: 'editor-file-ownership', count: 0, input: 'held-input' })
+      await dom.check('ignored', miniProgram, page)
+      const updatedSource = originalNativeSource
+        .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
+        .replace('this.data.count + 1', 'this.data.count + 2')
+      for (let cycle = 0; cycle < 2; cycle += 1) {
+        for (const step of [2, 1]) {
+          const version = await readClientVersion()
+          await fs.writeFile(scratch, `cycle ${cycle}, step ${step}`)
+          await replaceFileByRename(NATIVE_SOURCE, step === 2 ? updatedSource : originalNativeSource)
+          await fs.remove(hiddenScratch)
+          await devProcess!.waitFor(waitForFileContains(UPDATE_FILE, `this.data.count + ${step}`), 'native editor-save patch published')
+          await waitForClientVersion(version + 1)
+          await triggerIncrement()
+          expectedCount += step
+          await waitForPatchedBehavior(expectedCount, page)
+          await dom.check(`cycle-${cycle}-step-${step}`, miniProgram, await miniProgram.currentPage())
+          expect(await readRuntimeState(page)).toEqual({
+            count: expectedCount,
+            identity: 'editor-file-ownership',
+            input: 'held-input',
+            route: 'pages/native/index',
+            source: 'e2e',
+          })
+          await fs.writeFile(hiddenScratch, `cycle ${cycle}, step ${step}`)
+        }
+      }
+    }
+    finally {
+      await fs.remove(scratch)
+      await fs.remove(hiddenScratch)
+      await replaceFileByRename(NATIVE_SOURCE, originalNativeSource)
+    }
   })
 
   // 微信开发者工具 2.02.2609082（基础库 3.17.3）在 component:true 的 Wevu 页面
@@ -564,4 +685,77 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       },
     })
   })
+
+  it('updates Wevu template-generated computations and event handlers without replacing page state', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateBindingCheckpoints())
+    const page = await relaunchStatefulRoute(WEVU_ROUTE)
+    const output = path.join(DIST_ROOT, 'pages/wevu/index.wxml')
+    try {
+      await dom.check('initial', miniProgram, page)
+      await prepareRuntimeState('template-bindings')
+      await triggerIncrement()
+      await triggerIncrement()
+      const expected = await waitForPatchedBehavior(2, page)
+      await dom.check('prepared', miniProgram, page)
+      const version = await readClientVersion()
+      const updated = originalWevuSource.replace('<input', '<view class="derived-count">{{ count * 10 + 1 }}</view>\n    <button class="derived-increment" @tap="count += 2">advance</button>\n    <input')
+      await replaceFileByRename(WEVU_SOURCE, updated)
+      await devProcess!.waitFor(waitForFileContains(output, 'derived-count'), 'generated binding template emitted')
+      await waitForClientVersion(version + 1)
+      await dom.check('edited', miniProgram, await miniProgram.currentPage())
+      expect(await readRuntimeState(page)).toEqual(expected)
+      const button = await page.$('.derived-increment', { fallback: false })
+      expect(button).toBeTruthy()
+      await button.tap()
+      await waitForPatchedBehavior(4, page)
+      await dom.check('clicked', miniProgram, await miniProgram.currentPage())
+      expect(await readRuntimeState(page)).toEqual({ ...expected, count: 4 })
+      const restoreVersion = await readClientVersion()
+      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await waitForClientVersion(restoreVersion + 1)
+      await dom.check('restored', miniProgram, await miniProgram.currentPage())
+      await triggerIncrement()
+      await waitForPatchedBehavior(5, page)
+      await dom.check('original-clicked', miniProgram, await miniProgram.currentPage())
+      expect(await readRuntimeState(page)).toEqual({ ...expected, count: 5 })
+    }
+    finally {
+      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+    }
+  })
+
+  for (const runtime of ['native', 'component', 'wevu'] as const) {
+    it(`preserves ${runtime} page state across two template edit and restore cycles`, async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateCycleCheckpoints(runtime))
+      const source = path.join(APP_ROOT, `src/pages/${runtime}/index.${runtime === 'wevu' ? 'vue' : 'wxml'}`)
+      const output = path.join(DIST_ROOT, `pages/${runtime}/index.wxml`)
+      const original = await fs.readFile(source, 'utf8')
+      const route = `/pages/${runtime}/index?source=e2e`
+      const page = await relaunchStatefulRoute(route)
+      try {
+        await dom.check('initial', miniProgram, page)
+        await prepareRuntimeState(`template-${runtime}`)
+        await triggerIncrement()
+        await triggerIncrement()
+        const expected = await waitForPatchedBehavior(2, page)
+        await dom.check('prepared', miniProgram, page)
+        expect(original).toContain('<input')
+        for (const cycle of [0, 1]) {
+          const marker = `TEMPLATE-CYCLE-${cycle}`
+          const updated = original.replace('<input', `<view class="template-cycle">${marker}</view>\n    <input`)
+          await replaceFileByRename(source, updated)
+          await devProcess!.waitFor(waitForFileContains(output, marker), 'template edit emitted')
+          await dom.check(`edit-${cycle}`, miniProgram, await miniProgram.currentPage())
+          expect(await readRuntimeState(page)).toEqual(expected)
+          await replaceFileByRename(source, original)
+          await devProcess!.waitFor(expect.poll(async () => (await fs.readFile(output, 'utf8')).includes(marker), { timeout: 90_000 }).toBe(false), 'template restore emitted')
+          await dom.check(`restore-${cycle}`, miniProgram, await miniProgram.currentPage())
+          expect(await readRuntimeState(page)).toEqual(expected)
+        }
+      }
+      finally {
+        await replaceFileByRename(source, original)
+      }
+    })
+  }
 })

@@ -1,8 +1,8 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
-import type { CopyGlobs } from '../types'
 import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import {
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
@@ -12,14 +12,13 @@ import {
   WEVU_SLOT_SCOPE_KEY,
 } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/fs'
-import { fdir as Fdir } from 'fdir'
-import path from 'pathe'
-import picomatch from 'picomatch'
-import { defaultAssetExtensions, defaultExcluded } from '../defaults'
 import { resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '../utils'
 import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTransformCode } from '../utils/outputChunk'
 import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
+import { pruneOwnedAssetFiles } from './asset/prune'
+import { createPublicAssetSourcePlan } from './asset/publicSources'
+import { createAssetSourcePlan } from './asset/sources'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
 import { injectNativeScopedSlotHostPropertiesInJs } from './vue/transform/injectNativeScopedSlotHostProperties'
 
@@ -28,10 +27,7 @@ interface AssetPluginState {
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
   pendingAssets?: Promise<string[]>
-}
-
-function normalizeCopyGlobs(globs?: CopyGlobs): string[] {
-  return Array.isArray(globs) ? globs : []
+  pendingPublicAssetNames?: Promise<string[]>
 }
 
 function stripQueryAndHash(value: string) {
@@ -41,25 +37,6 @@ function stripQueryAndHash(value: string) {
     .filter(index => index >= 0)
     .reduce((min, index) => Math.min(min, index), Number.POSITIVE_INFINITY)
   return Number.isFinite(endIndex) ? value.slice(0, endIndex) : value
-}
-
-function createPathMatcher(patterns: string[], options?: picomatch.PicomatchOptions) {
-  if (!patterns.length) {
-    return () => false
-  }
-
-  return picomatch(patterns.map(pattern => normalizePath(pattern)), options)
-}
-
-function createAssetPathVariants(file: string, roots: string[]) {
-  const variants = [file]
-  for (const root of roots) {
-    const relative = path.relative(root, file)
-    if (relative && !relative.startsWith('..') && !path.isAbsolute(relative)) {
-      variants.push(relative)
-    }
-  }
-  return variants.map(variant => normalizePath(variant))
 }
 
 function parseJsonBuffer(buffer: Buffer) {
@@ -353,66 +330,6 @@ export function resolvePendingAssetFiles(
   })
 }
 
-function scanAssetFiles(configService: CompilerContext['configService'], config: ResolvedConfig, buildTarget: BuildTarget) {
-  const weappViteConfig = configService.weappViteConfig
-  const include = normalizeCopyGlobs(weappViteConfig?.copy?.include)
-  const exclude = normalizeCopyGlobs(weappViteConfig?.copy?.exclude)
-  const filter = weappViteConfig?.copy?.filter ?? (() => true)
-
-  const ignore = [
-    ...defaultExcluded,
-    path.resolve(configService.cwd, `${config.build.outDir}/**/*`),
-    ...exclude,
-  ]
-
-  const patterns = [
-    `**/*.{${defaultAssetExtensions.join(',')}}`,
-    ...include,
-  ]
-  const includeMatcher = createPathMatcher(patterns, { dot: false })
-  const ignoreMatcher = createPathMatcher(ignore, { dot: true })
-
-  const roots = new Set<string>()
-  if (buildTarget !== 'plugin') {
-    roots.add(configService.absoluteSrcRoot)
-  }
-  if (configService.absolutePluginRoot && buildTarget === 'plugin') {
-    roots.add(configService.absolutePluginRoot)
-  }
-
-  if (!roots.size) {
-    return Promise.resolve([])
-  }
-
-  const crawlPromises = Array.from(roots).map((root) => {
-    return new Fdir({
-      includeDirs: false,
-      pathSeparator: '/',
-    })
-      .withFullPaths()
-      .crawl(root)
-      .withPromise()
-      .then((files) => {
-        return files.filter((file) => {
-          const variants = createAssetPathVariants(file, [root, configService.absoluteSrcRoot, configService.cwd])
-          return variants.some(variant => includeMatcher(variant))
-            && !variants.some(variant => ignoreMatcher(variant))
-        })
-      })
-  })
-
-  return Promise.all(crawlPromises)
-    .then((groups) => {
-      const files = new Set<string>()
-      for (const group of groups) {
-        for (const file of group) {
-          files.add(file)
-        }
-      }
-      return Array.from(files).filter(filter)
-    })
-}
-
 async function emitAssets(
   ctx: CompilerContext,
   pluginContext: { emitFile: (asset: { type: 'asset', fileName: string, source: Buffer | string }) => void },
@@ -456,6 +373,9 @@ async function emitAssets(
 function createAssetCollector(state: AssetPluginState): Plugin {
   const { ctx } = state
   const { configService } = ctx
+  let committedOwnedFiles = new Set<string>()
+  let nextOwnedFiles = new Set<string>()
+  let removedFiles: string[] = []
 
   return {
     name: 'weapp-vite:asset',
@@ -471,7 +391,16 @@ function createAssetCollector(state: AssetPluginState): Plugin {
         return
       }
 
-      state.pendingAssets = scanAssetFiles(configService, state.resolvedConfig, state.buildTarget)
+      const publicAssets = createPublicAssetSourcePlan(state.buildTarget === 'app'
+        ? {
+            publicDir: state.resolvedConfig.publicDir,
+            copyPublicDir: state.resolvedConfig.build.copyPublicDir,
+          }
+        : undefined, path.resolve(state.resolvedConfig.root, state.resolvedConfig.build.outDir))
+      state.pendingPublicAssetNames = configService.isDev && state.resolvedConfig.build.write !== false
+        ? publicAssets.scan().then(files => files.map(publicAssets.outputName))
+        : Promise.resolve([])
+      state.pendingAssets = createAssetSourcePlan(configService, state.resolvedConfig.build.outDir, state.buildTarget).scan()
     },
 
     async generateBundle(_options, bundle) {
@@ -479,6 +408,19 @@ function createAssetCollector(state: AssetPluginState): Plugin {
       const files = await state.pendingAssets
       const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds())
       await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
+      nextOwnedFiles = new Set([
+        ...pending.map(file => configService.relativeOutputPath(file)),
+        ...(await state.pendingPublicAssetNames ?? []).filter(file => !bundle[file]),
+      ])
+      removedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file) && !bundle[file])
+    },
+
+    async writeBundle() {
+      if (!state.resolvedConfig || !configService.isDev) {
+        return
+      }
+      await pruneOwnedAssetFiles(path.resolve(state.resolvedConfig.root, state.resolvedConfig.build.outDir), removedFiles)
+      committedOwnedFiles = nextOwnedFiles
     },
   }
 }

@@ -56,6 +56,10 @@ const createIndependentBuilderMock = vi.hoisted(() => vi.fn(() => ({
 })))
 const appendFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const mkdirMock = vi.hoisted(() => vi.fn(async () => {}))
+const watchAssetSourcesMock = vi.hoisted(() => vi.fn((_config: unknown, _options: Parameters<typeof import('../watch/assets').watchAssetSources>[1]) => ({
+  ready: Promise.resolve(),
+  close: vi.fn(async () => {}),
+})))
 const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
   add: vi.fn(),
   on: vi.fn(),
@@ -106,6 +110,8 @@ vi.mock('node:fs/promises', () => ({
 vi.mock('vite', () => ({
   build: buildMock,
 }))
+
+vi.mock('../watch/assets', () => ({ watchAssetSources: watchAssetSourcesMock }))
 
 vi.mock('chokidar', () => ({
   default: {
@@ -1776,6 +1782,29 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['create', 'update', 'delete'] as const)('routes copied asset %s through the normal snapshot build and closes its watcher', async (event) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValueOnce(watcher).mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set())
+    const buildPromise = createBuildService(ctx).build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    const result = await buildPromise
+    const [, options] = watchAssetSourcesMock.mock.calls.at(-1)!
+    const observer = watchAssetSourcesMock.mock.results.at(-1)!.value
+    options.onChange('/project/src/resources/icon.png', event)
+    await waitForMockCalls(buildMock, 2)
+    expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledWith('/project/src/resources/icon.png', event)
+    expect(resetEmittedOutputCachesMock).toHaveBeenCalled()
+    await result.close()
+    expect(observer.close).toHaveBeenCalledOnce()
   })
 
   it('closes snapshot sidecar watcher when main watcher closes directly', async () => {

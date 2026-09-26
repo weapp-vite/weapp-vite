@@ -1,6 +1,7 @@
 import type { OutputAsset, OutputChunk } from 'rolldown'
 import path from 'node:path'
 import { build } from 'vite'
+import { pruneOwnedAssetFiles } from '../../plugins/asset/prune'
 
 export type StatefulHmrOutputFile = Pick<OutputAsset, 'fileName' | 'source' | 'type'>
   | (Pick<OutputChunk, 'code' | 'fileName' | 'modules' | 'type'> & Partial<Pick<OutputChunk, 'isEntry' | 'imports'>>)
@@ -17,6 +18,7 @@ export async function writeStatefulHmrOutput(
   outDir: string,
   output: StatefulHmrOutputFile[],
   initialPublicAssets?: StatefulHmrInitialPublicAssets,
+  removedAssets: string[] = [],
 ): Promise<void> {
   const virtualEntry = '\0weapp-vite-stateful-hmr-output'
   await build({
@@ -50,6 +52,10 @@ export async function writeStatefulHmrOutput(
             source: item.type === 'chunk' ? item.code : item.source,
           })
         }
+      },
+      async writeBundle() {
+        const emitted = new Set(output.map(item => item.fileName))
+        await pruneOwnedAssetFiles(outDir, removedAssets.filter(file => !emitted.has(file)))
       },
       generateBundle(_options, bundle) {
         for (const [fileName, item] of Object.entries(bundle)) {

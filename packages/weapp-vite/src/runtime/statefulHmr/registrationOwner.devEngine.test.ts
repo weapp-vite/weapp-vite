@@ -40,6 +40,8 @@ describe('registration owners in actual DevEngine output', () => {
         },
         async load(id) {
           if (id === owner) {
+            // 入口元数据读取同一源文件时，原生引擎会同时失效逻辑包装模块。
+            this.addWatchFile(source)
             return createLogicalEntryModuleCode({ sourceId: kind === 'component' ? source : pageSource, type: kind }, [])
           }
           if (id === source) {

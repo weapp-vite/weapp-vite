@@ -458,6 +458,16 @@ function getHeadlessPatternTasks(patterns: string[]) {
   return patterns.map(filePath => createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, filePath)))
 }
 
+function getIdeDomHeadlessTasks() {
+  const stateful = createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'ide/stateful-hmr.runtime.test.ts'))
+  // 同一会话覆盖状态保持与模板生成脚本；计算样式断言仍留在完整真实 IDE suite。
+  stateful.args.push('-t', 'ignores unowned editor files|copied and public asset lifecycle|updates Wevu template-generated|two template edit and restore cycles')
+  return [...getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS), stateful].map(task => ({
+    ...task,
+    env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
+  }))
+}
+
 function createCommandTask(label: string, args: string[]): SuiteTask {
   return {
     label,
@@ -752,10 +762,7 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
   'ide-dom-headless': {
     name: 'ide-dom-headless',
     description: 'Strict rendered checkpoint gate for provider-compatible IDE scenarios',
-    tasks: () => getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS).map(task => ({
-      ...task,
-      env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
-    })),
+    tasks: getIdeDomHeadlessTasks,
   },
   'ide-full': {
     name: 'ide-full',
