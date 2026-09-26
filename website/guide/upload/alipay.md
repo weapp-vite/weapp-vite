@@ -16,6 +16,8 @@ keywords:
 
 以下从已经能运行的原生小程序开始，源码位于 `src/`，有完整应用入口、页面和应用配置。已有框架项目应保留插件和编译配置，只合并本页所需字段；组件库、独立插件与空目录不适用。环境准备见[开始使用](../upload.md#setup)。
 
+`test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](./environments.md)。
+
 ## 1. 在应用中安装工具
 
 在应用 `package.json` 所在目录局部安装：
@@ -37,15 +39,13 @@ export default defineConfig({
   weapp: {
     platform: 'alipay',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
 
-这些上传默认值只由 `build --upload` / `upload` 消费，不会让普通 `build`、`dev` 或 HMR 自动上传。配置文件代码仍正常求值，不要在配置里调用有外部副作用的上传逻辑。
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+
+上传默认值只由 `build --upload` / `upload` 消费，不会让普通 `build`、`dev` 或 HMR 自动上传。配置文件代码仍正常求值，不要在配置里调用有外部副作用的上传逻辑。
 
 在项目根目录创建或修改**源码侧** `mini.project.json`，保留已有 IDE 配置。本例所需字段如下；`replace-with-alipay-appid` 是占位值，请换成自己的支付宝小程序 AppID：
 
@@ -125,7 +125,7 @@ dry-run 不加载 minidev、不检查身份密钥、不验证远端权限，也�
 pnpm exec wv build --upload -p alipay
 ```
 
-本命令使用上面配置的 `1.2.3` 和“更新首页”。另一种等价入口是自行构建后上传，可覆盖默认值：
+本命令使用业务包版本和自动生成的说明。需要一次性覆盖时，可用独立入口自行构建后上传：
 
 ```sh
 pnpm exec wv upload -p alipay --uv 1.2.4 --desc "修复首页展示"
@@ -155,7 +155,7 @@ pnpm exec wv preview -p alipay
 
 ## 6. 改成 multiPlatform 项目
 
-保留上面的平台、源码和上传配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['alipay'] }`。把源码侧 `mini.project.json` 移到 `config/alipay/mini.project.json`，其中 `miniprogramRoot` 仍填 `dist`。
+保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['alipay'] }`。把源码侧 `mini.project.json` 移到 `config/alipay/mini.project.json`，其中 `miniprogramRoot` 仍填 `dist`。
 
 | 用途               | 默认路径                          |
 | ------------------ | --------------------------------- |

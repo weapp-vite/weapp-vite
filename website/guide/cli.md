@@ -410,6 +410,8 @@ wv mcp doctor codex
 
 从项目配置、AppID 和凭据开始的完整操作步骤见[小程序上传与预览指南](./upload.md)。可直接选择[小红书](./upload/xhs.md)、[抖音](./upload/tt.md)、[微信](./upload/weapp.md)、[支付宝](./upload/alipay.md)、[京东](./upload/jd.md)或[百度](./upload/swan.md)；[淘宝目前不支持](./upload/alipay.md#taobao)，不能用支付宝目标代替。
 
+可复制的 `.env.test` / `.env.production`、不同 AppID 以及自动版本/提交说明配置见[上传环境与自动版本](./upload/environments.md)。
+
 ```bash
 # 京东、百度分别构建并上传
 wv upload --platform jd --uv 1.2.3 --desc "更新首页"
@@ -436,6 +438,8 @@ wv upload --platform all --dry-run
 | `-c, --config <file>`       | 指定 Vite 配置                                                                                     |
 
 #### 上传配置与触发时机
+
+通常无需配置此项：版本默认来自 `package.json.version`，说明自动生成 `项目名@版本`。以下仅展示需要固定覆盖时的可选配置，不是每次上传前必填的步骤。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'

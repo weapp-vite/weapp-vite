@@ -15,6 +15,8 @@ keywords:
 
 所有命令在源码项目根目录执行，`wv` 与 `weapp-vite` 等价。这里上传的是开发版本，**不自动提审、不正式上线**；官方工具的其他提审、发布能力不会被本入口调用。
 
+`test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](./environments.md)。
+
 ## 1. 配置源码项目 {#config}
 
 以 `src/` 为源码目录的最小完整 `vite.config.ts`：
@@ -26,15 +28,13 @@ export default defineConfig({
   weapp: {
     platform: 'tt',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
 
-将这些字段合并到已有框架配置时，不要删除应用正常构建所需的插件。`weapp.upload` 只提供显式上传的默认版本和说明：普通 `wv build`、`wv dev` 和 HMR 不上传，`production` mode 本身也不会开启上传。配置文件 JavaScript 仍正常求值，不要在配置求值时执行上传等副作用，也不要把 Token 写进 `weapp.upload`。
+将这些字段合并到已有框架配置时，不要删除应用正常构建所需的插件。无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+
+普通 `wv build`、`wv dev` 和 HMR 不上传，`production` mode 本身也不会开启上传。配置文件 JavaScript 仍正常求值，不要在配置求值时执行上传等副作用，也不要把 Token 写进 `weapp.upload`。
 
 在源码根目录的 **`project.config.json`** 中设置这些字段，保留应用其他已有抖音配置。`replace-with-douyin-app-id` 是占位值，必须替换为自己的抖音小程序 AppID：
 
@@ -140,7 +140,7 @@ pnpm exec wv preview -p tt --dry-run
 pnpm exec wv build --upload -p tt
 ```
 
-它在本次构建和目录校验通过后调用抖音上传接口，默认版本是 `1.2.3`，说明是 `更新首页`。成功会报告 `[upload:tt] 1.2.3 上传完成（未提审、未正式发布）`。随后在目标小程序的平台版本管理中确认开发版本，提审和正式发布仍需另走平台流程。
+它在本次构建和目录校验通过后调用抖音上传接口，默认使用业务包版本和自动生成的说明。成功会报告该版本上传完成（未提审、未正式发布）。随后在目标小程序的平台版本管理中确认开发版本，提审和正式发布仍需另走平台流程。
 
 临时覆盖版本和说明：
 
@@ -160,7 +160,7 @@ pnpm exec wv upload -p tt --uv 1.2.4 --desc "修复首页展示"
 
 - 抖音适配器要求上传版本严格为三段数字 **`x.y.z`**，例如 `1.2.3`；`1.2`、`v1.2.3`、`1.2.3-beta.1` 都不满足本地校验。
 - 版本优先级是 `--uv` > `weapp.upload.version` > `package.json.version`。若包版本带预发布后缀，显式配置 `weapp.upload.version` 或传 `--uv`。
-- 最终说明不能为空。优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本生成的说明；空白说明使用生成值。
+- 最终说明不能为空。优先级为 `--desc` > `weapp.upload.desc` > 根据包名与最终版本生成的 `name@version`；空白说明使用生成值。
 - `--version` / `-v` 查询的是 CLI 版本，不是抖音上传版本。官方 `tma` 的 `--app-version`、`--app-changelog` 也不是 `wv` 参数。
 - `build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；上传不能与 `--watch` 组合。
 
@@ -180,7 +180,7 @@ pnpm exec wv preview -p tt
 
 ## 6. 已启用 multiPlatform 的项目 {#multi-platform}
 
-多目标应用继续保留自己的 `targets` 与编译配置，只合并上传字段；仅演示抖音目标时的完整配置如下：
+多目标应用继续保留自己的 `targets` 与编译配置，无需添加 `weapp.upload`；仅演示抖音目标时的完整配置如下：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -192,10 +192,6 @@ export default defineConfig({
     multiPlatform: {
       enabled: true,
       targets: ['tt'],
-    },
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
     },
   },
 })

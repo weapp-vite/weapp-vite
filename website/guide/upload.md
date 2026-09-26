@@ -14,6 +14,8 @@ keywords:
 
 本指南按“准备项目 → 配置目标平台 → dry-run → 上传或预览 → CI”展开。**上传开发版本不等于提审或正式上线**；审核、发布、体验成员权限和扫码有效期仍由各平台管理。
 
+配置 `.env.test` / `.env.production`、切换 AppID，或不想每次手改版本和说明，直接看[上传环境与自动版本](./upload/environments.md)。
+
 ## 选择平台
 
 | 目标   | CLI 平台值 | 安装到业务项目的官方工具 | 分步指南                                            |
@@ -32,7 +34,7 @@ Web、组件库和独立插件不在这个小程序上传入口的范围内。�
 
 前提是已有能够运行 `pnpm exec wv build -p <平台>` 的完整小程序项目。框架可以是原生或项目已经使用的框架，不要求为了上传改写页面。新项目先按[快速开始](/guide/)完成初始化；多平台源码适配见[多平台构建](./multi-platform.md)。
 
-下面是**完整 `vite.config.ts`** 的最小上传配置示例，以小红书单目标项目为例；已有项目保留原来的插件、框架及构建设置，只合并 `weapp.upload`：
+下面是小红书单目标项目的最小完整 `vite.config.ts`。**不用添加 `weapp.upload`**；已有项目保留原来的插件、框架及构建设置：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -41,15 +43,11 @@ export default defineConfig({
   weapp: {
     platform: 'xhs',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
 
-`weapp.upload` 只接受版本和说明，不接受 `appid`、`privateKeyPath`、`identityKeyPath` 或 `token`。凭据按对应平台指南放入环境变量或未提交的环境文件。
+默认读取业务 `package.json.version`，说明自动生成为 `项目名@版本`，无需每次修改配置；版本不会自动递增。[本地脚本或 CI](./upload/environments.md#local-version)可以自动升版并生成提交说明。`weapp.upload` 仅用于可选的版本/说明覆盖，不接受 AppID 或凭据。
 
 - 版本：`--uv` > `weapp.upload.version` > `package.json.version`。
 - 说明：`--desc` > `weapp.upload.desc` > 根据项目名称与最终版本生成的说明。
@@ -95,10 +93,10 @@ pnpm exec wv build -p xhs
 pnpm exec wv build --upload -p xhs --dry-run
 
 # 复用本次构建，校验产物后上传开发版本
-pnpm exec wv build --upload -p xhs --uv 1.2.3 --desc "更新首页"
+pnpm exec wv build --upload -p xhs
 
 # 独立上传入口也会先构建，不需要先执行一次 build
-pnpm exec wv upload -p xhs --uv 1.2.3 --desc "更新首页"
+pnpm exec wv upload -p xhs
 
 # 单独构建预览，不上传开发版本，也不接受 --uv
 pnpm exec wv preview -p xhs --desc "验收首页"
@@ -129,10 +127,6 @@ export default defineConfig({
     multiPlatform: {
       enabled: true,
       targets: ['weapp', 'alipay', 'tt', 'xhs', 'jd', 'swan'],
-    },
-    upload: {
-      version: '1.2.3',
-      desc: '多平台更新',
     },
   },
 })

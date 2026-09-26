@@ -147,6 +147,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/guide/upload',
         collapsed: true,
         items: [
+          { text: '环境与自动版本', link: '/guide/upload/environments' },
           { text: '微信', link: '/guide/upload/weapp' },
           { text: '小红书', link: '/guide/upload/xhs' },
           { text: '抖音', link: '/guide/upload/tt' },

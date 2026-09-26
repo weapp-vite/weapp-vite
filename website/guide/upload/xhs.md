@@ -15,6 +15,8 @@ keywords:
 
 所有命令都在源码项目根目录执行，`wv` 也可以写成 `weapp-vite`。上传只产生开发版本，**不自动提审、不正式上线**；预览是另一项远端操作，不等于上传开发版本。
 
+`test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](./environments.md)。
+
 ## 1. 配置源码项目 {#config}
 
 下面是以 `src/` 为源码目录的最小完整 `vite.config.ts`。已有框架项目将这些字段合并到原配置，不要移除维持应用运行所需的插件。
@@ -26,15 +28,13 @@ export default defineConfig({
   weapp: {
     platform: 'xhs',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
 
-`weapp.upload` 是显式上传命令的默认参数，不是自动上传开关。普通 `wv build`、`wv dev` 和 HMR 都不会上传；配置文件中的 JavaScript 仍会正常求值，不要在配置求值阶段调用上传接口。Token 也不能写进 `weapp.upload`。
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+
+`weapp.upload` 不是自动上传开关。普通 `wv build`、`wv dev` 和 HMR 都不会上传；配置文件中的 JavaScript 仍会正常求值，不要在配置求值阶段调用上传接口。Token 也不能写进 `weapp.upload`。
 
 在源码根目录的 **`project.config.json`** 中设置以下字段，其他已有小红书配置保持不变。`replace-with-xhs-app-id` 是占位值，必须换成自己的小红书小程序 AppID：
 
@@ -133,7 +133,7 @@ pnpm exec wv preview -p xhs --dry-run
 pnpm exec wv build --upload -p xhs
 ```
 
-本次构建成功、产物校验通过后，才调用小红书官方上传接口，默认使用配置中的 `1.2.3` / `更新首页`。成功会报告 `[upload:xhs] 1.2.3 上传完成（未提审、未正式发布）`；再到目标应用的平台版本管理中确认开发版本，后续提审、发布仍由平台流程处理。
+本次构建成功、产物校验通过后，才调用小红书官方上传接口，默认使用业务包版本和自动生成的说明。成功会报告该版本上传完成（未提审、未正式发布）；再到目标应用的平台版本管理中确认开发版本，后续提审、发布仍由平台流程处理。
 
 需要临时覆盖版本和说明时：
 
@@ -150,7 +150,7 @@ pnpm exec wv upload -p xhs --uv 1.2.4 --desc "修复首页展示"
 以上两种方式二选一，避免重复上传。参数优先级是：
 
 - 版本：`--uv` > `weapp.upload.version` > `package.json.version`。
-- 说明：`--desc` > `weapp.upload.desc` > 根据项目名称与最终版本生成的说明；空白说明会使用生成值。
+- 说明：`--desc` > `weapp.upload.desc` > 根据包名与最终版本生成的 `name@version`；空白说明会使用生成值。
 
 小红书适配器要求最终版本与说明非空，不在本地强制三段数字格式；建议采用官方 README 示例中的 `1.2.3` 形式，平台最终规则仍由官方服务校验。`--version` / `-v` 是查询 CLI 版本，**不是上传版本参数**。在 `build` 上使用 `--uv`、`--desc`、`--dry-run` 必须同时传 `--upload`，不能与 `--watch` 组合。更多选项见[公共命令说明](../upload.md#commands)。
 
@@ -168,7 +168,7 @@ pnpm exec wv preview -p xhs
 
 ## 6. 已启用 multiPlatform 的项目 {#multi-platform}
 
-多平台项目保留其他目标与原有编译配置，将上传默认值合并到现有配置；只演示小红书目标时，完整配置如下：
+多平台项目保留其他目标与原有编译配置，无需添加 `weapp.upload`；只演示小红书目标时，完整配置如下：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -180,10 +180,6 @@ export default defineConfig({
     multiPlatform: {
       enabled: true,
       targets: ['xhs'],
-    },
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
     },
   },
 })

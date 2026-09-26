@@ -16,6 +16,8 @@ keywords:
 
 下例面向原生小程序；已有框架应用请保留其插件和编译配置，仅合并本页所需字段。
 
+`test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](./environments.md)。
+
 ## 1. 在应用中安装工具
 
 在小程序应用的 `package.json` 所在目录局部安装：
@@ -37,13 +39,11 @@ export default defineConfig({
   weapp: {
     platform: 'swan',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
+
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
 
 `weapp.upload` 只提供 `build --upload` / `upload` 的默认值，普通 `build`、`dev` 和 HMR 不会自动上传。配置文件代码仍正常求值，不要把上传或其他外部副作用放在配置加载过程中。
 
@@ -126,13 +126,13 @@ pnpm exec wv build --upload -p swan --dry-run
 
 此时不要求真实 BDUSS 或最低基础库环境变量，不加载官方 CLI，不验证平台权限、基础库有效性或远端编译结果，也不会上传。成功不等于百度接受了该版本。
 
-凭据与最低基础库就绪后，显式上传配置中的 `1.2.3` 开发版本：
+凭据与最低基础库就绪后，使用业务包版本和自动说明上传开发版本：
 
 ```sh
 pnpm exec wv build --upload -p swan
 ```
 
-也可以选择独立入口自行构建、覆盖版本和说明后上传：
+需要一次性覆盖版本和说明时，也可以选择独立入口自行构建后上传：
 
 ```sh
 pnpm exec wv upload -p swan --uv 1.2.4 --desc "修复首页展示"
@@ -159,7 +159,7 @@ pnpm exec wv preview -p swan
 
 ## 6. 改成 multiPlatform 项目
 
-保留上面的平台、源码目录和上传配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['swan'] }`。把源码项目配置移到 `config/swan/project.swan.json`，其中 `smartProgramRoot` 仍为 `dist`，`appid` 与 `developType` 保持为该百度小程序的配置。
+保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['swan'] }`。把源码项目配置移到 `config/swan/project.swan.json`，其中 `smartProgramRoot` 仍为 `dist`，`appid` 与 `developType` 保持为该百度小程序的配置。
 
 | 用途                | 默认路径                        |
 | ------------------- | ------------------------------- |

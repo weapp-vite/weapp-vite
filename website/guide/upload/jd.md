@@ -13,7 +13,9 @@ keywords:
 
 本页使用 `jd` 目标和官方 `jd-miniprogram-ci`，从已有完整小程序出发：`src/` 内有应用入口、页面和应用配置，并且已经能在目标宿主运行。空目录、组件库和独立插件不适用；项目准备见[开始使用](../upload.md#setup)。
 
-以下配置适合原生小程序。已有框架项目请保留插件和编译配置，只合并本页的平台、源码目录和上传默认值。
+以下配置适合原生小程序。已有框架项目请保留插件和编译配置，只合并本页的平台和源码目录。
+
+`test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](./environments.md)。
 
 ## 1. 在应用中安装工具
 
@@ -36,13 +38,11 @@ export default defineConfig({
   weapp: {
     platform: 'jd',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
+
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
 
 `weapp.upload` 只给 `build --upload` / `upload` 提供默认参数；普通构建、开发和 HMR 不会自动上传。配置文件代码仍会正常求值，不要在配置加载时执行上传等外部副作用。
 
@@ -101,13 +101,13 @@ pnpm exec wv build --upload -p jd --dry-run
 
 这一步不要求真实密钥，也不会加载官方 SDK、校验远端权限或上传代码。成功只证明本次构建及代码目录校验通过，不证明京东接受了版本。
 
-确认密钥和目录后，上传配置中的 `1.2.3` 开发版本：
+确认密钥和目录后，使用业务包版本和自动说明上传开发版本：
 
 ```sh
 pnpm exec wv build --upload -p jd
 ```
 
-也可以用独立入口覆盖版本、说明，自行完成构建和上传：
+需要一次性覆盖版本和说明时，也可以用独立入口自行完成构建和上传：
 
 ```sh
 pnpm exec wv upload -p jd --uv 1.2.4 --desc "修复首页展示"
@@ -147,7 +147,7 @@ pnpm exec wv preview -p jd
 
 ## 7. 改成 multiPlatform 项目
 
-保留上面的平台、源码目录和上传配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['jd'] }`。把源码项目配置移到 `config/jd/project.config.json`，其中 `miniprogramRoot` 仍是 `dist`。
+保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['jd'] }`。把源码项目配置移到 `config/jd/project.config.json`，其中 `miniprogramRoot` 仍是 `dist`。
 
 | 用途                                    | 默认路径                        |
 | --------------------------------------- | ------------------------------- |

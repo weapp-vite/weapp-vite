@@ -2,6 +2,8 @@
 
 此文档随当前 `weapp-vite` 版本发布。面向已有可构建的小程序项目；完整分步教程见[上传与预览指南](https://vite.weapp.dev/guide/upload.html)。上传只产生开发版本，不自动提审或正式上线。
 
+`test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](https://vite.weapp.dev/guide/upload/environments.html)。
+
 ## 选择平台与凭据
 
 先在业务项目安装目标平台的工具，例如 `pnpm add -D xhs-mp-cli`。不要只全局安装，也不需要为单个平台安装六套工具。
@@ -30,10 +32,6 @@ export default defineConfig({
   weapp: {
     platform: 'xhs',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
@@ -57,11 +55,17 @@ XHS_UPLOAD_TOKEN=replace-with-official-code-upload-secret
 ```bash
 pnpm add -D xhs-mp-cli
 pnpm exec wv build --upload -p xhs --dry-run
-pnpm exec wv build --upload -p xhs --uv 1.2.3 --desc "更新首页"
+pnpm exec wv build --upload -p xhs
 pnpm exec wv preview -p xhs --desc "验收首页"
 ```
 
-版本优先级为 CLI `--uv` > `weapp.upload.version` > `package.json.version`，说明同理优先 CLI `--desc`，未提供时由项目名称与版本生成。去除首尾空白；显式空版本报错，空说明用默认说明。普通 `build`、`dev/HMR` 不启用上传，配置文件本身仍正常求值。`preview` 不使用 `weapp.upload` 默认参数，不需要版本也不接受 `--uv`。
+无需配置 `weapp.upload`：版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`，版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload.version` / `desc`；一次性覆盖可用 CLI：
+
+```bash
+pnpm exec wv build --upload -p xhs --uv 1.2.4 --desc "修复首页展示"
+```
+
+版本优先级为 CLI `--uv` > `weapp.upload.version` > `package.json.version`；说明为 CLI `--desc` > `weapp.upload.desc` > 自动生成值。去除首尾空白；显式空版本报错，空说明用自动生成值。普通 `build`、`dev/HMR` 不启用上传，配置文件本身仍正常求值。`preview` 不使用 `weapp.upload` 默认参数，不需要版本也不接受 `--uv`。
 
 `build --upload` 只编译一次，等本次所有后端构建成功、产物校验通过才上传。独立 `wv upload` 也会自行构建，不需要先执行 `build`。普通 build 不能单独带 `--uv` / `--desc` / `--dry-run`；上传不能与 `--watch` 或 Web-only 组合。
 
@@ -79,7 +83,7 @@ pnpm exec wv preview -p xhs --desc "验收首页"
 启用 `weapp.multiPlatform` 后，源配置位于 `config/<平台>/` 下，且必须显式传 `-p`。配置里的代码根为 `dist` 时，默认复制配置至 `dist/<平台>/`，代码产物在 `dist/<平台>/dist/`。此模式不能使用 `--project-config`；单目标可指定该参数，但文件名必须是目标平台的标准名称。
 
 ```bash
-pnpm exec wv upload -p xhs,tt --uv 1.2.3 --desc "同步开发版本"
+pnpm exec wv upload -p xhs,tt
 pnpm exec wv upload -p all --dry-run
 pnpm exec wv preview -p xhs,tt
 ```

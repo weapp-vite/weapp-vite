@@ -13,7 +13,9 @@ keywords:
 
 本页使用 `weapp` 目标和官方 `miniprogram-ci`。从一个已经能运行的完整小程序开始：源码在 `src/`，包含应用入口、页面和应用配置；不是组件库、独立插件或只有 `vite.config.ts` 的空目录。新项目准备见[开始使用](../upload.md#setup)。
 
-以下以原生小程序为例。已有框架项目应保留其插件、入口和编译配置，只合并平台、源码目录和上传默认值，不要直接覆盖整个配置。
+以下以原生小程序为例。已有框架项目应保留其插件、入口和编译配置，只合并平台和源码目录，不要直接覆盖整个配置。
+
+`test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](./environments.md)。
 
 ## 1. 在应用中安装工具
 
@@ -36,15 +38,13 @@ export default defineConfig({
   weapp: {
     platform: 'weapp',
     srcRoot: 'src',
-    upload: {
-      version: '1.2.3',
-      desc: '更新首页',
-    },
   },
 })
 ```
 
-`weapp.upload` 只是显式上传命令的默认值，不是自动上传开关。普通 `wv build`、`wv dev` 和 HMR 不上传；配置文件本身仍正常求值，不要在配置代码中执行上传副作用。
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+
+`weapp.upload` 不是自动上传开关。普通 `wv build`、`wv dev` 和 HMR 不上传；配置文件本身仍正常求值，不要在配置代码中执行上传副作用。
 
 在**源码项目根目录**创建或修改 `project.config.json`，保留已有 IDE 配置。下面展示本例所需字段，`replace-with-wechat-appid` 是占位值，必须替换为自己的微信 AppID：
 
@@ -110,13 +110,13 @@ pnpm exec wv build --upload -p weapp --dry-run
 
 此步骤会生成本次产物并检查代码根目录和 `app.json`，**不校验密钥、IP 白名单或机器人权限，不加载官方 SDK，不发起远端上传**。因此它可以在尚未配置凭据时执行，但成功不代表微信接受了版本。
 
-确认凭据与白名单后，显式上传配置中的 `1.2.3` 开发版本：
+确认凭据与白名单后，使用业务包版本和自动说明上传开发版本：
 
 ```sh
 pnpm exec wv build --upload -p weapp
 ```
 
-也可以单独调用构建上传入口，覆盖版本和说明：
+需要一次性覆盖版本和说明时，也可以单独调用构建上传入口：
 
 ```sh
 pnpm exec wv upload -p weapp --uv 1.2.4 --desc "修复首页展示"
@@ -141,7 +141,7 @@ pnpm exec wv preview -p weapp --desc "首页真机预览"
 
 ## 6. 改成 multiPlatform 项目
 
-保留上面的平台、源码目录和上传配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['weapp'] }`。
+保留上面的平台和源码目录配置，将 `weapp.multiPlatform` 设为 `{ enabled: true, targets: ['weapp'] }`。
 
 将源码侧 `project.config.json` 移到 `config/weapp/project.config.json`，其中 `miniprogramRoot` 仍是 `dist`。在这个默认布局下：
 
