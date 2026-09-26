@@ -26,7 +26,9 @@ keywords:
 
 ## 输出目录是怎么决定的
 
-默认情况下，`weapp-vite` 会优先从当前平台对应的 `project.config.*` 中读取：
+使用 `weapp.multiPlatform.projectConfigs` 时，无需原生输入 JSON；默认代码目录是 `dist/<平台>/dist/`，生成的项目 JSON 与 `app.json` 同级。显式 `build.outDir` 可改变这个目录。
+
+未提供 `projectConfigs` 时保留原生文件方式：`weapp-vite` 从当前平台对应的项目配置中读取：
 
 - `miniprogramRoot`
 - `pluginRoot`
@@ -39,7 +41,25 @@ keywords:
 如果你显式配置了顶层 `build.outDir`，则以你的 Vite 配置为准。
 
 > [!NOTE]
-> 当启用 `weapp.multiPlatform`，且多个平台共用相对 `miniprogramRoot` 时，建议明确检查最终产物目录，避免不同平台互相覆盖。
+> 原生文件方式启用 `weapp.multiPlatform` 后，若多个平台共用相对 `miniprogramRoot`，建议明确检查最终产物目录，避免不同平台互相覆盖。
+
+## `weapp.upload` {#weapp-upload}
+
+- **类型**：`{ version?: string; desc?: string }`
+- **默认值**：未配置
+
+为显式执行的 `wv build --upload` 或独立 `wv upload` 提供默认版本与说明。CLI 的 `--uv` / `--desc` 优先；版本未配置时读取 `package.json.version`，说明未配置时使用项目名称与最终版本。配置只支持 `version`、`desc`，不支持凭据字段。
+
+这不是自动上传开关：普通 `build`、`dev/HMR` 不使用这组上传默认参数，也不上传；`preview` 不使用该配置。配置文件本身仍会正常加载与合并，不保证其中的 JavaScript getter 延迟求值。`build --upload` 复用本次构建，等待所有选中的构建后端成功并校验小程序产物后才调用官方工具；独立 `upload` 自行构建后上传。
+
+```bash
+wv build --upload --dry-run
+wv build --upload -p weapp --uv 1.2.3 --desc "更新首页"
+```
+
+`build` 的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、`-p web --upload` 会报错。`build -p all --upload` 仍是“小程序 + Web”，两者构建都成功后只上传小程序；独立 `wv upload -p all` 才表示六端逐一构建上传。`--dry-run` 不校验凭据、不调用 SDK。
+
+AppID 来自目标项目配置，凭据只通过环境变量提供。各平台完整配置、上传与预览、环境文件、密钥获取、批量操作及 CI 见[小程序上传与预览指南](../guide/upload.md)；完整触发矩阵见[上传配置与触发时机](../guide/cli.md#上传配置与触发时机)。淘宝目前不在统一上传支持列表内。
 
 ## `weapp.platform` {#weapp-platform}
 
@@ -73,32 +93,47 @@ export default defineConfig({
 
 ## `weapp.multiPlatform` {#weapp-multiplatform}
 
-- **类型**：`boolean | { enabled?: boolean; projectConfigRoot?: string }`
+- **类型**：`boolean | MultiPlatformConfig`
 - **默认值**：`false`
 
-用于同仓库维护多套平台 `project.config.*`。
+同一业务构建多个平台时，推荐在一份配置中使用 `projectConfigs`，由打包器生成原生项目 JSON：
 
 ```ts
+import { defineConfig } from 'weapp-vite/config'
+
+const common = { projectname: 'my-app' }
+
 export default defineConfig({
   weapp: {
     multiPlatform: {
-      enabled: true,
-      projectConfigRoot: 'config',
+      projectConfigs: {
+        weapp: { ...common, appid: 'replace-with-weapp-app-id' },
+        alipay: { ...common, appid: 'replace-with-alipay-app-id' },
+      },
     },
   },
 })
 ```
 
-行为说明：
+| 字段 | 类型 / 说明 |
+| --- | --- |
+| `enabled` | 对象形式默认启用；不能同时设为 `false` 并提供 `projectConfigs` |
+| `projectConfigs` | 按六端提供原生字段与嵌套设置补全；公共字段用普通对象展开，未知原生扩展字段仍可传入 |
+| `targets` | `'all'` 或平台数组；省略时从 `projectConfigs` 的键推导，文件模式则默认六端 |
+| `projectConfigRoot` | 原生文件模式的配置目录，默认 `'config'`；平台目录直接位于项目根时用 `'.'`，不能与 `projectConfigs` 同时提供 |
 
-- `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`
-- 启用后会按平台读取 `${projectConfigRoot}/${platform}/...` 下的项目配置文件
-- 一般要配合命令行 `--platform` 使用，例如 `wv build --platform alipay`
+- `projectConfigs` 不读取原生项目文件或私有 JSON；缺少选中平台时报错，不回退到文件。
+- 标准项目 JSON 由打包器生成在代码输出目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK 代码根为 `.`，默认 `compileType` 为 `miniprogram`。
+- `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot` 由构建管理，不能出现在输入对象中；修改目录使用 `build.outDir`，不能手工修补生成 JSON。
+- 对象展开不做隐式深合并；Token、私钥等凭据不能写入 `projectConfigs`。
+- 智能提示采用开放的原生配置类型：未知字段可放在平台对象及嵌套设置中，字符串选项允许未来新增值，不需要 `as any`。已知字段类型、平台键和代码根限制仍保留。
+- 独立映射使用 `satisfies MultiPlatformProjectConfigs`，类型从 `weapp-vite/config` 或 `weapp-vite/types` 导入；不丢失扩展字段自身推导。示例见[智能提示与扩展字段](../guide/upload.md#native-types)。
+- `defineConfig` 的泛型不保证拒绝所有多余属性；静态检查平台名使用上述 `satisfies`，运行时仍拒绝不支持的平台。不要把原生字段扩展能力理解成支持新平台。
+- 统一项目配置用于完整小程序，独立插件仍使用原生文件方式；Web/组件库构建不生成小程序项目 JSON。
+- 已有文件模式保持兼容：`true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`，从 `${projectConfigRoot}/${platform}/` 读取原生配置。
+- 命令仍显式选择目标，例如 `wv build --platform alipay`；`upload -p all` 表示六端，不会缩减为已配置的平台子集。
 
-适用场景：
-
-- 同一业务同时维护微信、支付宝、抖音小程序
-- 平台间 `appid`、编译选项、输出目录策略不同
+六端完整示例见[批量上传](../guide/upload.md#batch)，不同 AppID 与 test/production 见[环境配置](../guide/upload/environments.md#appid)。
 
 ## `weapp.cleanOutputsInDev` {#weapp-cleanoutputsindev}
 

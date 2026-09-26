@@ -59,7 +59,42 @@ pnpm dev:weapp
 
 模板坚持单目标构建。`pnpm build:weapp` 只构建微信，`pnpm build:web` 只构建 Web，不提供会在一次命令里隐式遍历全部平台的脚本。
 
-## 目录与输出 {#template-directories}
+## 一份配置管理多个平台 {#unified-project-config}
+
+已有可构建源码时，推荐把各端 AppID 和差异集中到 `projectConfigs`，不需要创建 `config/<平台>/`。公共字段只写一次，使用普通 JavaScript 对象展开：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+const common = { projectname: 'my-app' }
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    multiPlatform: {
+      projectConfigs: {
+        weapp: { ...common, appid: 'replace-with-weapp-app-id' },
+        alipay: { ...common, appid: 'replace-with-alipay-app-id' },
+        tt: { ...common, appid: 'replace-with-douyin-app-id' },
+        xhs: { ...common, appid: 'replace-with-xhs-app-id' },
+        jd: { ...common, appid: 'replace-with-jd-app-id' },
+        swan: { ...common, appid: 'replace-with-swan-app-id' },
+      },
+    },
+  },
+})
+```
+
+- 保留已有框架插件；不写 `targets` 时从映射键推导允许列表。
+- `wv build -p xhs` 仍只构建一个目标；多端上传使用 `wv upload -p xhs,tt`。
+- 标准项目 JSON 由打包器生成在代码目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK/IDE 打开这个目录，生成配置的代码根为 `.`。
+- 输入不填写 `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot`，输出目录用 `build.outDir`；不手改生成文件。
+- 公共对象展开没有隐式深合并；密钥不放入映射。不同环境的 AppID 通过外层配置函数和 `.env.<mode>` 选择，见[test/production 示例](./upload/environments.md#appid)。
+- 原生项目文件仍受支持，但 `projectConfigs` 不能与 `projectConfigRoot` 混用。缺少选中平台时直接报错，不读取旧文件兜底。
+
+## 模板的原生文件目录与输出 {#template-directories}
+
+以下描述当前两个脚手架模板保留的原生文件方式；选择上面的统一配置后，无需维护 `config/` 目录，SDK/IDE 根也改为包含生成项目 JSON 的代码目录。
 
 ```text
 my-app/
@@ -135,6 +170,29 @@ pnpm build:web
 仓库维护者可以使用 `pnpm e2e:platform:build` 运行六端构建矩阵；真实 IDE E2E 必须全局串行，不能和其他 DevTools、E2E、dev server 或 watcher 重叠。
 
 <!-- tutorial-e2e:multi-platform:end -->
+
+## 构建并上传 {#upload}
+
+六个小程序目标可通过统一入口构建并上传，Web 不参与：
+
+```sh
+pnpm exec wv build --upload -p xhs --dry-run
+pnpm exec wv build --upload -p xhs --uv 1.2.3 --desc "更新首页"
+pnpm exec wv upload -p xhs,tt --uv 1.2.3
+pnpm exec wv upload -p all --dry-run
+```
+
+`build --upload` 复用本次目标构建；独立 `upload` 按目标逐一构建、校验、上传。多个小程序平台用 `upload -p xhs,tt` 或 `upload -p all`，首次失败停止；`build -p all --upload` 仍是“小程序 + Web”，不等于六端批量。请按[完整上传指南](./upload.md)及[小红书](./upload/xhs.md)、[抖音](./upload/tt.md)、[微信](./upload/weapp.md)、[支付宝](./upload/alipay.md)、[京东](./upload/jd.md)、[百度](./upload/swan.md)分篇准备项目配置、AppID 和凭据；[淘宝暂不支持](./upload/alipay.md#taobao)。`--dry-run` 只验证构建与产物目录，不代替真实上传、IDE 编译和 Runtime 验收。
+
+预览使用相同的构建、目标选择和凭据，但调用官方 preview 接口，不上传开发版本：
+
+```sh
+pnpm exec wv preview -p tt --mode test
+pnpm exec wv preview -p xhs,jd,swan --mode production
+pnpm exec wv preview -p all --dry-run
+```
+
+返回各平台的二维码图片或预览链接；`preview` 不要求上传版本。具体结果形式、扫码权限和旧 IDE 命令迁移见 [CLI 预览说明](/guide/cli)。
 
 ## 目标声明 {#targets}
 

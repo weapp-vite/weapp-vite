@@ -39,8 +39,8 @@ keywords:
 在当前版本里，`weapp-vite` 更像一整条“小程序研发工具链”，常见能力可以按这几层理解：
 
 - **项目创建**：`create-weapp-vite` 负责模板、依赖版本对齐、`AGENTS.md`、推荐 AI skills 安装。
-- **开发与构建**：`wv dev/build/prepare/analyze/open` 负责工程主链路。
-- **IDE 自动化**：通过 `weapp-ide-cli` 透传 `preview/upload/config/screenshot/compare` 等命令。
+- **开发、构建与上传**：`wv dev/build/prepare/analyze/open` 负责工程主链路，`wv upload/preview` 提供六端构建上传与预览（不含提审和正式发布）。
+- **IDE 自动化**：通过 `weapp-ide-cli` 透传 `config/screenshot/compare` 等命令；微信 IDE 上传、预览使用 `wv ide upload/preview`。
 - **AI 协作**：通过 `wv mcp`、`take_weapp_screenshot`、`compare_weapp_screenshot`、`wv ide logs --open` 把真实项目能力暴露给 AI。
 - **运行时**：`wevu` 负责响应式、生命周期、store 与最小化 `setData` 更新。
 

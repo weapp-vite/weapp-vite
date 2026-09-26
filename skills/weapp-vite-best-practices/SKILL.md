@@ -17,7 +17,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 用户要处理支付宝 `.axml/.acss`、抖音 `.ttml/.ttss`、`buildScope`、sourcemap 或自动 HMR 模式选择。
 - 用户要用 Vitest 对真实小程序编译产物进行页面或组件测试。
 - 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
-- 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、透传边界、`preview/upload/open/config` 这类 DevTools CLI 能力。
+- 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、六端构建上传与 `ide upload/preview/open/config` 等 IDE 能力边界。
 
 ## 不适用场景
 
@@ -40,7 +40,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 2. 区分顶层 Vite 字段和小程序专属 `weapp.*`，先理顺基础项：
    - `weapp.srcRoot`
    - `weapp.platform`
-   - `weapp.multiPlatform`
+   - `weapp.multiPlatform`：多端推荐 `projectConfigs` 平台映射，公共字段用对象展开；未写 `targets` 时从映射键推导。无需手工维护六份 JSON，构建器在代码输出目录内原生生成标准项目文件，代码根固定为 `.`。输入不写代码根字段，目录用 `build.outDir`；原生文件方式仍用 `projectConfigRoot`，不能与映射混用。AppID 可在外层配置函数按 mode 读取，Token/私钥不进入映射。
    - 多平台始终单目标构建；显式选择微信、支付宝、抖音、百度、京东、小红书或 Web，不把一次构建描述成同时产出全部平台
    - `weapp.autoRoutes`
    - `weapp.autoImportComponents`
@@ -63,9 +63,11 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 4. CLI 与 IDE 所有权保持清晰：
    - `weapp-vite` 原生命令优先
    - `weapp-ide-cli` 只在 catalog 命中后透传
-   - 原生命令包含 `dev` / `serve` / `build` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
+   - 原生命令包含 `dev` / `serve` / `build` / `upload` / `preview` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
    - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
-   - `preview` / `upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
+   - `wv build --upload -p <平台>` 复用本次构建并在产物校验通过后上传；普通 build/dev/HMR 不启用上传。`weapp.upload` 仅提供版本和说明，AppID 与凭据配置先读 `dist/docs/upload.md` 及[分平台上传指南](https://vite.weapp.dev/guide/upload.html)，不要把支付宝当作淘宝支持。
+   - `wv upload/preview -p <weapp|alipay|tt|xhs|jd|swan>` 自行构建后调用按需安装的官方工具；多目标用逗号分隔或显式 `all`，与 `build -p all` 的“小程序 + Web”含义不同。`--dry-run` 不调用 SDK；upload 只上传开发版本，preview 只生成官方预览结果，均不提审、不正式上线。旧微信 IDE 上传、预览使用 `wv ide upload/preview`。
+   - `ide preview` / `ide upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定；原生上传入口用 `--uv`，不要沿用 IDE 的 `-v/-d/--project`。原生 preview 不要求上传版本。
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
    - 输出路径不对：查 `srcRoot`、project config、`build.outDir`

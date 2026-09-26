@@ -11,6 +11,9 @@ export default defineConfig(
         },
         srcRoot: 'src',
         multiPlatform: true,
+        upload: {
+          desc: `多平台示例 ${mode}`,
+        },
         injectWeapi: {
           enabled: true,
           replaceWx: true,

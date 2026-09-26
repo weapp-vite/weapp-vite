@@ -294,8 +294,8 @@ wv ide setup .
 
 ```sh
 # 直接透传（推荐在脚本中使用）
-wv preview --project ./dist/build/mp-weixin
-wv upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+wv ide preview --project ./dist/build/mp-weixin
+wv ide upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 wv config lang en
 wv screenshot --project ./dist/build/mp-weixin --json
 wv compare --project ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-pixels 100 --json
@@ -307,7 +307,7 @@ wv ide setup .
 ```
 
 > [!WARNING]
-> `weapp-vite` 会优先执行自己的原生命令；只有未命中时，才会回退透传到 `weapp-ide-cli`。因此 `build/dev/open/analyze/generate/mcp/prepare` 这些命令不会被官方 IDE CLI 覆盖。
+> `weapp-vite` 会优先执行自己的原生命令；只有未命中时，才会回退透传到 `weapp-ide-cli`。因此 `build/dev/upload/preview/open/analyze/generate/mcp/prepare` 不会被官方 IDE CLI 覆盖。六端构建上传、预览使用 `wv upload/preview -p <platform>`，旧微信 IDE 上传、预览使用 `wv ide upload/preview`，详见 [CLI 文档](/guide/cli)。
 
 ## 下一步建议
 

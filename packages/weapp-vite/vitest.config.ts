@@ -77,6 +77,7 @@ const serialTestFiles = [
   'src/runtime/__tests__/buildService.test.ts',
   'src/cli/analyze/dashboard.test.ts',
   'src/cli/loadConfig.test.ts',
+  'src/cli/upload/builtProject.test.ts',
   'src/plugins/css/shared/preprocessor.test.ts',
   'src/runtime/buildPlugin/independent.test.ts',
   'src/runtime/buildPlugin/service.test.ts',

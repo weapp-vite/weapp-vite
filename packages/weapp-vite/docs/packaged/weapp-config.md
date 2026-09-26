@@ -24,6 +24,28 @@ export default defineConfig({
 
 适合希望用约定生成页面路由的项目。启用后要保持 pages 目录与输出约定稳定。
 
+### `multiPlatform.projectConfigs`
+
+在一份配置中按 `weapp` / `alipay` / `tt` / `xhs` / `jd` / `swan` 提供原生项目字段，公共项用普通对象展开。没有显式 `targets` 时从映射键推导；完整示例见[上传速查](./upload.md#多平台与输出校验)。
+
+各平台已知字段及嵌套设置提供智能提示；原生对象允许未知扩展字段，字符串选项允许新增取值，不需要 `as any`。独立映射推荐从 `weapp-vite/config` 导入 `MultiPlatformProjectConfigs` 并使用 `satisfies`，保留扩展字段推导。此开放能力不放宽平台名、AppID 类型和生成代码根限制。
+
+`defineConfig` 的泛型不保证拒绝所有多余属性；需要静态检查平台名拼写时使用 `satisfies MultiPlatformProjectConfigs`，构建时仍拒绝不支持的平台。
+
+标准项目 JSON 由打包器原生生成在代码目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK 代码根为 `.`；输入不能填写 `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot`，修改目录用 `build.outDir`。这里只管理 IDE/SDK 项目配置，不代替业务 `app.json`。
+
+不读取源码侧原生项目 JSON 或私有 JSON；缺少选中平台时直接报错，不回退到旧文件。不能同时指定 `projectConfigRoot` 或 `enabled: false`。独立插件仍使用原生文件模式；Web/组件库不生成项目 JSON。不写映射时保留原生文件模式。凭据始终走环境变量，不写入映射。
+
+### `upload`
+
+`weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv build --upload` 和独立 `wv upload` 的默认参数，不是自动上传开关，也不支持凭据字段。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
+
+普通 `build`、`dev/HMR` 不使用这组上传默认参数也不上传，`preview` 不使用该配置。配置文件本身仍会正常加载与合并，不保证其中的 JavaScript getter 延迟求值。`wv build --upload` 复用本次构建，等待所有选中的构建后端成功、产物校验通过后才调用平台工具；`wv build --upload --dry-run` 不校验凭据、不调用 SDK。
+
+`build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、仅 Web 的 `-p web --upload` 会报错。`build -p all --upload` 是“小程序 + Web”，两者都构建成功后只上传小程序；独立 `upload -p all` 则保持六端逐一构建上传。
+
+CI 可在测试通过后显式执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。凭据仍通过环境变量提供；先读本地[上传与预览速查](./upload.md)，完整的 AppID、私钥、支付宝 JSON 身份密钥、各端 Token、环境文件和 CI Secrets 示例见[分平台操作指南](https://vite.weapp.dev/guide/upload.html)。
+
 ### `buildScope`
 
 用于只构建主包和指定分包。常用在大项目里只调试某几个业务分包：
@@ -548,7 +570,7 @@ wv mcp doctor codex
 
 ```bash
 weapp-vite build
-weapp-vite preview --project ./dist/build/mp-weixin
+weapp-vite preview -p weapp --mode test
 weapp-vite ide preview --project ./dist/build/mp-weixin
 ```
 

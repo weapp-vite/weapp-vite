@@ -15,6 +15,7 @@ import type {
   NpmSubPackageConfig,
   StyleConfigEntry,
 } from './foundation'
+import type { MultiPlatformProjectConfigs } from './projectConfig'
 import type { WxmlTransform } from './wxmlTransform'
 import type { WxmlValidate } from './wxmlValidate'
 import type { Resolver } from '@/auto-import-components/resolvers'
@@ -128,7 +129,11 @@ export interface MultiPlatformConfig {
   enabled?: boolean
   projectConfigRoot?: string
   /**
-   * @description 多平台模式下允许参与构建/开发的目标平台集合
+   * @description 各平台的原生项目配置；不可与 `projectConfigRoot` 同时设置。
+   */
+  projectConfigs?: MultiPlatformProjectConfigs
+  /**
+   * @description 多平台模式下允许参与构建/开发的目标平台集合；省略时从 `projectConfigs` 的平台键推断。
    */
   targets?: 'all' | readonly MpPlatform[]
 }

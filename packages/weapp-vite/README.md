@@ -321,20 +321,53 @@ weapp-vite dev --open
 # o -> 重新打开当前 DevTools 项目
 ```
 
-## CLI 中调用 weapp-ide-cli
+## 六端构建并上传
 
-`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/close/open/init/generate/analyze/npm/prepare/mcp` 等原生命令外，其它 IDE 相关命令都可以直接调用：
+显式执行 `wv build --upload`，在本次构建成功并校验产物后上传，不重复构建。支持微信 `weapp`、支付宝 `alipay`、抖音 `tt`、小红书 `xhs`、京东 `jd`、百度 `swan`；只上传开发版本，不自动提审或正式上线。
 
 ```sh
-weapp-vite preview --project ./dist/build/mp-weixin
-weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+wv build --upload --dry-run
+wv build --upload -p weapp
+
+# 独立 upload 命令仍支持多个小程序目标；all 在此表示六端
+wv upload --platform jd,swan
+wv upload --platform all --dry-run
+```
+
+通常无需配置 `weapp.upload`：默认读取业务 `package.json.version`，说明自动生成 `项目名@版本`；不会自动递增版本。仅需覆盖时再用 `weapp.upload` 或 CLI `--uv` / `--desc`。`.env.test` / `.env.production`、不同 AppID、本地自动升版与 CI 方案见[上传环境与自动版本](https://vite.weapp.dev/guide/upload/environments.html)。普通 `build`、`dev/HMR` 不上传，`preview` 不使用上传默认参数；配置文件仍正常求值。`build` 的上传专属参数必须与 `--upload` 一起使用，不支持 `--watch` 或 Web-only。
+
+`build -p all --upload` 保持“小程序 + Web”语义，等两个后端都构建成功后只上传小程序；独立 `wv upload -p all` 才是六端逐一构建上传，首次失败停止。`--dry-run` 只构建并校验产物，不校验凭据、不调用 SDK。
+
+多个平台可用一份 `weapp.multiPlatform.projectConfigs` 映射集中配置 AppID，公共字段用对象展开复用，不必手工维护六份原生 JSON。构建器在代码输出目录内生成对应项目配置；原生文件方式仍可使用。完整配置见[一份配置与批量上传](https://vite.weapp.dev/guide/upload.html#batch)。
+
+官方工具按目标安装，凭据只使用环境变量，不在 `weapp.upload` 中配置。完整的项目配置、AppID、凭据获取与环境文件、上传、预览、批量操作、CI 与排障见[小程序上传与预览指南](https://vite.weapp.dev/guide/upload.html)：[小红书](https://vite.weapp.dev/guide/upload/xhs.html)、[抖音](https://vite.weapp.dev/guide/upload/tt.html)、[微信](https://vite.weapp.dev/guide/upload/weapp.html)、[支付宝与淘宝边界](https://vite.weapp.dev/guide/upload/alipay.html)、[京东](https://vite.weapp.dev/guide/upload/jd.html)、[百度](https://vite.weapp.dev/guide/upload/swan.html)。本地速查见 `dist/docs/upload.md`；淘宝暂不支持，不要用 `-p alipay` 替代。
+
+## 六端构建并预览
+
+```sh
+wv preview -p tt --mode test
+wv preview -p xhs,jd,swan --mode production
+wv preview -p all --dry-run
+```
+
+`preview` 复用上述六端构建与凭据，调用官方预览接口，不上传开发版本、不提审、不正式发布。微信返回 `.weapp-vite/preview/` 下本次生成的二维码图片；支付宝、京东返回二维码图片 URL；抖音、小红书、百度返回官方预览链接。默认 mode 为 `production`，不要求上传版本。百度预览也需要 `SWAN_MIN_VERSION`。
+
+`--dry-run` 只构建和校验产物，不调用 SDK、不生成预览结果。真实扫码权限与有效期依平台规则，详情见 [CLI 预览文档](https://vite.weapp.dev/guide/cli.html)。
+
+## CLI 中调用 weapp-ide-cli
+
+`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/upload/preview/close/open/init/generate/analyze/npm/prepare/mcp` 等原生命令外，其它 IDE 相关命令都可以直接调用。旧微信上传、预览使用显式 `ide upload`、`ide preview`：
+
+```sh
+weapp-vite ide preview --project ./dist/build/mp-weixin
+weapp-vite ide upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 weapp-vite cache --clean compile
 weapp-vite cache --clean all
 weapp-vite config lang zh
 weapp-vite config set autoTrustProject true
 weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
 # 等价写法
-wv preview --project ./dist/build/mp-weixin
+wv ide preview --project ./dist/build/mp-weixin
 wv cache --clean all
 ```
 

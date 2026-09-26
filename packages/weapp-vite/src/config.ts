@@ -49,18 +49,20 @@ export function defineConfig(config: UserConfigExport): UserConfigExport {
 }
 
 export type {
-  WeappI18nConfig,
-  WeappViteConfig,
-  WxmlRemoveAttrRule,
-  WxmlRemoveOptions,
-}
-export type {
   WeappCompilerPlugin,
   WeappCompilerPluginCapabilities,
   WeappCompilerPluginContext,
   WeappCompilerPluginController,
   WeappCompilerPluginOption,
 } from './types/compilerPlugin'
+
+export type {
+  WeappI18nConfig,
+  WeappViteConfig,
+  WxmlRemoveAttrRule,
+  WxmlRemoveOptions,
+}
+export type { MultiPlatformProjectConfig, MultiPlatformProjectConfigs } from './types/config/projectConfig'
 
 export type { WxmlAttribute, WxmlAttributeValue, WxmlElementInfo, WxmlSourceLocation, WxmlTransform, WxmlTransformContext, WxmlTransformNode, WxmlTransformResult, WxmlTransformVisitor } from './types/config/wxmlTransform'
 

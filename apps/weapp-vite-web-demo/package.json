@@ -8,7 +8,7 @@
     "dev:web": "wv dev -p web --host",
     "build": "wv build",
     "build:web": "wv build -p web",
-    "preview": "wv preview",
+    "preview": "wv ide preview",
     "postinstall": "wv prepare",
     "dev:ui": "wv dev --ui",
     "build:ui": "wv build --ui"

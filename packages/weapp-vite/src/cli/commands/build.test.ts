@@ -153,6 +153,7 @@ describe('build cli command', () => {
         mode: 'production',
         outDir: '/project/dist',
         mpDistRoot: '/project/dist',
+        multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         packageManager: { agent: 'pnpm' },
         weappViteConfig: {
           analyze: {

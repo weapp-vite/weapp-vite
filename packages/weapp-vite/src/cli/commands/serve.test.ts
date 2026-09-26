@@ -128,6 +128,7 @@ function createAnalyzeTestContext(): CompilerContext {
       cwd: '/project',
       mode: 'development',
       outDir: '/project/dist',
+      multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
       packageManager: { agent: 'pnpm' },
       weappViteConfig: {
         analyze: {
@@ -259,6 +260,7 @@ describe('serve cli command', () => {
           mode: 'development',
           outDir: '/project/dist',
           mpDistRoot: '/project/dist',
+          multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
           packageManager: { agent: 'pnpm' },
           weappViteConfig: {
             analyze: {
@@ -275,6 +277,7 @@ describe('serve cli command', () => {
         configService: {
           cwd: '/project',
           mode: 'development',
+          multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         },
       })
     analyzeSubpackagesMock.mockReset()
@@ -469,6 +472,7 @@ describe('serve cli command', () => {
         cwd,
         mode: 'development',
         outDir,
+        multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         packageManager: { agent: 'pnpm' },
         relativeCwd: (file: string) => path.relative(cwd, file),
         weappViteConfig: {
@@ -584,6 +588,7 @@ describe('serve cli command', () => {
           mode: 'development',
           outDir: '/project/dist',
           mpDistRoot: '/project/dist',
+          multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
           packageManager: { agent: 'pnpm' },
           weappViteConfig: {
             analyze: {
@@ -616,6 +621,7 @@ describe('serve cli command', () => {
         configService: {
           cwd: '/project',
           mode: 'development',
+          multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         },
       })
     startAnalyzeDashboardMock.mockResolvedValue({
@@ -878,6 +884,7 @@ describe('serve cli command', () => {
         mode: 'development',
         outDir: '/project/dist',
         mpDistRoot: '/project/dist',
+        multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         packageManager: { agent: 'pnpm' },
         weappViteConfig: {},
       },
@@ -926,6 +933,7 @@ describe('serve cli command', () => {
         platform: 'weapp',
         cwd: '/project',
         mpDistRoot: '/project/dist',
+        multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         weappViteConfig: {},
       },
     })
@@ -962,6 +970,7 @@ describe('serve cli command', () => {
         platform: 'weapp',
         cwd: '/project',
         mpDistRoot: '/project/dist',
+        multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         weappViteConfig: {},
       },
     })
@@ -1086,6 +1095,7 @@ describe('serve cli command', () => {
         mode: 'development',
         outDir: '/project/dist',
         mpDistRoot: '/project/dist/miniprogram',
+        multiPlatform: { enabled: false, projectConfigRoot: 'config', targets: ['weapp'] },
         packageManager: { agent: 'pnpm' },
         weappViteConfig: {
           analyze: {

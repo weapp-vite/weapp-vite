@@ -39,6 +39,39 @@ weapp-vite ide logs --open
 weapp-vite build
 ```
 
+### 构建并上传
+
+```bash
+wv build --upload --dry-run
+wv build --upload -p weapp
+
+# 独立命令保留六端批量上传能力
+wv upload --platform jd,swan
+wv upload --platform all --dry-run
+```
+
+`build --upload` 复用本次构建，构建成功并校验产物后才上传，不重复构建。六个平台为 `weapp/alipay/tt/xhs/jd/swan`；独立 `wv upload` 还支持逗号分隔或显式 `all`，每个目标先构建再上传，失败后停止后续目标。上传不自动提审或正式上线；`--dry-run` 只构建和检查产物，不校验凭据、不调用 SDK。
+
+通常无需添加 `weapp.upload`：默认读取业务 `package.json.version`，说明自动生成为 `项目名@版本`；不会自动递增版本。需要覆盖时再传 `--uv` / `--desc` 或配置 `weapp.upload`。完整 `.env.test` / `.env.production`、独立 AppID、本地自动升版与 CI 配置见[上传环境与自动版本](https://vite.weapp.dev/guide/upload/environments.html)。普通 `build`、`dev/HMR` 不上传；`preview` 不使用上传默认参数。配置仍正常求值；`build` 的上传专属参数必须与 `--upload` 一起使用，不能用于 watch 或 Web-only。
+
+`build -p all --upload` 是“小程序 + Web”，等两者都构建成功后只上传小程序，不等于独立 `upload -p all` 的六端批量上传。
+
+多个平台推荐使用一份 `weapp.multiPlatform.projectConfigs` 映射，公共字段用对象展开，各平台只提供 AppID 和差异；标准项目 JSON 由构建器生成，不必手工维护六份文件。原生文件方式仍可使用，完整示例见本地[上传速查](./upload.md#多平台与输出校验)。
+
+按目标安装官方工具，并通过未提交的 `.env.<mode>.local` 或 CI Secrets 提供凭据，不要在 `weapp.upload` 中添加凭据字段。先读本地 [六端上传与预览速查](./upload.md)，再按[分平台操作指南](https://vite.weapp.dev/guide/upload.html)配置 AppID、密钥或 Token。淘宝不在支持列表内；百度官方 CLI Token 会进入子进程参数，仅在可信隔离 runner 上运行。
+
+旧的微信 IDE 上传请改用 `wv ide upload --project <IDE项目根> -v 1.2.3 -d "release"`；该命令依赖 IDE 登录，不额外构建。
+
+### 构建并预览
+
+```bash
+wv preview -p tt --mode test
+wv preview -p xhs,jd,swan --mode production
+wv preview -p all --dry-run
+```
+
+使用同一套六端工具与凭据，先构建再调用官方预览接口，不上传开发版本、不提审、不正式发布。微信返回本次生成的本地二维码图片；支付宝、京东返回二维码图片 URL；抖音、小红书、百度返回预览链接。百度仍需 `SWAN_MIN_VERSION`，预览无需 `--uv`。旧微信 IDE 预览使用 `wv ide preview --project <IDE项目根>`，不额外构建。
+
 ### 4. 分包预下载审计
 
 微信小程序可以检查静态跨分包跳转，并把建议输出为 JSON：
@@ -90,7 +123,7 @@ weapp-vite build
 wv dev -p web --host
 wv build -p web
 weapp-vite open
-weapp-vite preview --project ./dist/build/mp-weixin
+weapp-vite preview -p weapp --mode test
 weapp-vite ide preview --project ./dist/build/mp-weixin
 weapp-vite ide logs --open
 weapp-vite screenshot --project ./dist/build/mp-weixin --page pages/index/index --output .tmp/acceptance.png --json
