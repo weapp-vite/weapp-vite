@@ -3,7 +3,7 @@ import path from 'node:path'
 import { build } from 'vite'
 
 export type StatefulHmrOutputFile = Pick<OutputAsset, 'fileName' | 'source' | 'type'>
-  | (Pick<OutputChunk, 'code' | 'fileName' | 'modules' | 'type'> & Partial<Pick<OutputChunk, 'isEntry' | 'imports'>>)
+  | (Pick<OutputChunk, 'code' | 'fileName' | 'modules' | 'type'> & Partial<Pick<OutputChunk, 'isEntry' | 'imports' | 'map' | 'sourcemapFileName'>>)
 
 export interface StatefulHmrInitialPublicAssets {
   publicDir: string | false

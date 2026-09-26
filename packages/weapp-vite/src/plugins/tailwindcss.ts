@@ -22,9 +22,12 @@ import { changeFileExtension } from '../utils'
 import { applyOutputChunkTransform } from '../utils/outputChunk'
 import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { labelSourceMapInput } from '../utils/sourcemap'
 import { markWeappCompilerPlugin } from './compilerPlugin'
+import { CompilerHmrResyncError, getCompilerHmrHost } from './compilerPlugin/hmr'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
+import { createTailwindHmrAdapter } from './tailwindcss/hmr'
 import { findManagedStyleImports } from './tailwindcss/imports'
 import { resolveVueStyleSource } from './tailwindcss/vueStyle'
 import {
@@ -222,7 +225,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   let resolvedConfig: ResolvedConfig | undefined
   let loaded = false
   let persistentWatch = false
+  let statefulCompiler = false
   let compilerDisposal: Promise<void> | undefined
+  let hmr: ReturnType<typeof createTailwindHmrAdapter>
 
   function getSourceSlot(id: string, entry: number) {
     const style = parseWeappVueStyleRequest(id)
@@ -304,7 +309,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     compilerSourceOptions.set(index, sourceOptions)
     const id = compilerRootIds.get(index) ?? createCompilerRootId(index, entry)
     compilerRootIds.set(index, id)
-    const generated = await compiler.generate({
+    const request: CompilerGenerateRequest = {
       id,
       sourceOptions,
       target: resolved.generatorTarget,
@@ -313,7 +318,11 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       styleOptions: typeof resolved.options.generator === 'object'
         ? resolved.options.generator.styleOptions
         : undefined,
-    })
+    }
+    const generated = await compiler.generate(request)
+    if (statefulCompiler) {
+      await hmr.rememberRoot(index, request, generated)
+    }
     compilerSnapshots.set(index, generated.snapshot)
     return generated
   }
@@ -374,15 +383,18 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
   }
 
-  async function transformBundle(this: any, bundle: OutputBundle) {
+  async function transformBundle(this: any, bundle: OutputBundle, pinned?: { entries: CompilerGenerateResult[], snapshot: CompilerSnapshot }) {
     if (resolved.autoDetected && resolved.cssEntries.length === 0) {
       return
     }
     const compiler = await getCompiler()
-    const generatedEntries = resolved.options.generator === false
+    if (statefulCompiler && !pinned) {
+      hmr.rememberBundle(bundle)
+    }
+    const generatedEntries = pinned?.entries ?? (resolved.options.generator === false
       ? []
       : await (generatedEntriesPromise ??= Promise.all(resolved.cssEntries.map((entry, index) =>
-          generateEntryCss(compiler, index, entry))))
+          generateEntryCss(compiler, index, entry)))))
     const snapshots = generatedEntries.length > 0
       ? generatedEntries.map((generated, index) => compilerSnapshots.get(index) ?? generated.snapshot)
       : [compiler.createSnapshot({
@@ -390,7 +402,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
           classSet: [],
           target: resolved.generatorTarget,
         })]
-    const snapshot = compiler.mergeSnapshots([...snapshots, ...Array.from(importedSources.values(), source => source.snapshot)])
+    for (const file of hmr.watchFiles) {
+      this.addWatchFile(file)
+    }
+    const snapshot = pinned?.snapshot ?? compiler.mergeSnapshots([...snapshots, ...Array.from(importedSources.values(), source => source.snapshot)])
     const seenEntries = new Set(Array.from(importedSources.values()).flatMap(source => source.entries))
     const styleExtension = ctx.configService.outputExtensions.wxss
     const templateExtension = ctx.configService.outputExtensions.wxml
@@ -491,7 +506,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (transformed.error) {
         throw transformed.error
       }
-      applyOutputChunkTransform(output as OutputChunk, transformed.code, transformed.map as any)
+      applyOutputChunkTransform(output as OutputChunk, transformed.code, labelSourceMapInput(transformed.map, output.fileName, output.code))
     }
   }
 
@@ -562,9 +577,19 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
   }
 
+  hmr = createTailwindHmrAdapter(ctx, {
+    compiler: getCompiler,
+    render: (bundle, entries, snapshot) => transformBundle.call({ addWatchFile() {} }, bundle, { entries, snapshot }),
+  })
+
   const managerPlugin: Plugin = {
     name: MANAGED_PLUGIN_NAME,
     enforce: 'pre',
+    configureServer(server) {
+      if (statefulCompiler) {
+        hmr.configureServer(server)
+      }
+    },
     generateBundle: {
       order: 'pre',
       handler(_options, bundle) {
@@ -591,6 +616,15 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       resolvedConfig = config
       // 开发语义的一次性快照没有 closeWatcher，资源寿命应由实际构建控制器决定。
       persistentWatch = config.command === 'serve' || Boolean(config.build?.watch)
+      statefulCompiler = config.command === 'serve' && ctx.configService.platform === 'weapp' && Boolean(config.experimental?.bundledDev)
+      if (statefulCompiler) {
+        getCompilerHmrHost(ctx).register(MANAGED_PLUGIN_NAME, (request) => {
+          if (importedSources.size) {
+            throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind 导入式样式尚未提供可固定的产物归属，需要完整重同步。')
+          }
+          return hmr.prepare(request)
+        })
+      }
     },
     async buildEnd(error) {
       if (error) {
@@ -719,6 +753,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
     },
     async watchChange(id, change) {
+      if (statefulCompiler) {
+        hmr.captureFile(id, change.event === 'delete')
+      }
       await invalidateCompilerForFile(id, change.event)
     },
     async handleHotUpdate({ file }) {

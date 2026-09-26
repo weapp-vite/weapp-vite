@@ -27,6 +27,7 @@ import {
 
   readCompilerOutputAsset,
 } from './helpers'
+import { getCompilerHmrHost } from './hmr'
 
 export {
   getWeappCompilerPluginMeta,
@@ -121,6 +122,20 @@ export function createCompilerPluginPlugins(ctx: CompilerContext): Plugin[] {
     recordsPromise ??= Promise.all(options.map(async (option) => {
       const provider = await createProvider(option, context)
       const controller = await provider.create(context)
+      if (provider.capabilities?.content || controller.prepareHmr) {
+        getCompilerHmrHost(ctx).register(provider.name, controller.prepareHmr
+          ? async (request) => {
+            const preparation = await controller.prepareHmr!(request)
+            for (const file of preparation.dependencies ?? []) {
+              context.addWatchFile(file)
+            }
+            for (const file of preparation.invalidated ?? []) {
+              context.invalidate(file)
+            }
+            return preparation
+          }
+          : undefined)
+      }
       return { provider, controller }
     })).then((resolved) => {
       const names = new Set<string>()

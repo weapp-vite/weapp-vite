@@ -42,6 +42,10 @@ class StatefulHmrSnapshotDiagnostics {
     this.emit = options.emit ?? (line => process.stdout.write(`${line}\n`))
   }
 
+  delivery(stage: string, revision: number, files: readonly string[]): void {
+    this.record(`delivery-${stage}`, { revision, files: files.map(file => this.label(file)) })
+  }
+
   private absolute(filename: string) {
     const normalized = filename.replaceAll('\\', '/')
     const root = this.options.root.replaceAll('\\', '/')

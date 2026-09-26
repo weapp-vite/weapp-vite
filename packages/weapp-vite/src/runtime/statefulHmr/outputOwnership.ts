@@ -8,6 +8,7 @@ export function isStatefulHmrSnapshotAsset(
   output: StatefulHmrOutputFile,
 ): output is Extract<StatefulHmrOutputFile, { type: 'asset' }> {
   return output.type === 'asset'
+    && !/\.js\.map$/.test(output.fileName)
     && output.fileName !== APP_PRELUDE_REQUIRE_FILE_BASENAME
     && !output.fileName.endsWith(preludeSuffix)
 }

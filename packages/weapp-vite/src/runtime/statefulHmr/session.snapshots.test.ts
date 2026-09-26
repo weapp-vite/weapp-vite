@@ -47,7 +47,10 @@ vi.mock('./viteAdapter', () => ({
     }
 
     install() {}
-    async registerBundleModules() { return 1 }
+    async registerBundleModules() {
+      return 1
+    }
+
     async registerPatchModules() {}
     async markPayloadDelivered() {}
     async rebuild(prepare?: () => void | Promise<void>) {
@@ -156,6 +159,24 @@ function writtenAssets() {
 }
 
 describe('stateful snapshot output transactions', () => {
+  it('issue #1081: does not publish a compiler patch before its stylesheet commits', async () => {
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const session = await start()
+    const commit = Promise.withResolvers<void>()
+    harness.writeOutput.mockImplementationOnce(() => commit.promise)
+    session.patch(['compiler-content:tailwind'])
+    await vi.advanceTimersByTimeAsync(50)
+    try {
+      expect(delta).not.toHaveBeenCalled()
+    }
+    finally {
+      commit.resolve()
+    }
+    await vi.advanceTimersByTimeAsync(1)
+    expect(delta).toHaveBeenCalledTimes(1)
+    delta.mockRestore()
+  })
+
   beforeEach(() => {
     vi.useFakeTimers()
     vi.clearAllMocks()
@@ -233,7 +254,7 @@ describe('stateful snapshot output transactions', () => {
       changedIds,
     })).toBe(true)
     await vi.advanceTimersByTimeAsync(100)
-    expect(delta).toHaveBeenCalledWith(expect.stringContaining('increment'), changedIds)
+    expect(delta).toHaveBeenCalledWith(expect.stringContaining('increment'), changedIds, expect.any(Function))
     expect(session.rebuild).not.toHaveBeenCalled()
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
@@ -244,7 +265,9 @@ describe('stateful snapshot output transactions', () => {
     temporaryDirectories.push(directory)
     const component = path.join(directory, 'index.js')
     const page = path.join(root, 'src/page.js')
-    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
     const session = await start(snapshot('red'), [component, page])
     const patch = (step: number) => ({
       type: 'Patch' as const,

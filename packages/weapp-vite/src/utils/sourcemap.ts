@@ -61,3 +61,16 @@ export function composeSourceMaps(
   }
   return null
 }
+
+/** 空来源名代表本轮转换输入；补齐身份和内容后再与上一层映射组合。 */
+export function labelSourceMapInput(value: unknown, fileName: string, code: string): EncodedSourceMapLike | null {
+  const map = normalizeEncodedSourceMapLike(value)
+  if (!map?.sources.includes('')) {
+    return map
+  }
+  return {
+    ...map,
+    sources: map.sources.map(source => source || fileName),
+    sourcesContent: map.sources.map((source, index) => map.sourcesContent?.[index] ?? (source === '' ? code : null)),
+  }
+}

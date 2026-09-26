@@ -11,8 +11,10 @@ import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { recordHmrProfileDuration } from '../../../../utils/hmrProfile'
 import { getMiniProgramPlatformGlobalKey } from '../../../../utils/miniProgramGlobals'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
+import { getCompilerHmrHostByConfig } from '../../../compilerPlugin/hmr'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
+import { getCompilerSourceSnapshot, readCompilerInput } from '../../../utils/sourceSnapshot'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import {
   injectRequestGlobalsIntoLoadResult,
@@ -134,8 +136,15 @@ export function createLoadHook(state: CorePluginState) {
         const parsed = parseRequest(id)
         if (parsed.query.wxss || parsed.query.nativeStyle) {
           const realPath = getCssRealPath(parsed)
+          if (getCompilerSourceSnapshot(configService)) {
+            return { code: await readCompilerInput(configService, realPath) }
+          }
           try {
             const css = await readFileCached(realPath, { checkMtime: configService.isDev })
+            const host = getCompilerHmrHostByConfig(configService)
+            if (host?.onDependencyChange) {
+              host.captureNative(realPath, css)
+            }
             return { code: css }
           }
           catch {}

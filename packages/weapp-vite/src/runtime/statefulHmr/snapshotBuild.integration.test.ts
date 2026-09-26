@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createLogicalEntryId } from '../../moduleGraph/protocol'
+import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { syncProjectSupportFiles } from '../supportFiles'
@@ -56,6 +57,24 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('compiles the pinned SFC instead of a newer disk save', async () => {
+    const root = await createProject()
+    const file = path.join(root, 'src/components/wevu-leaf/index.vue')
+    const original = await fs.readFile(file, 'utf8')
+    const pinned = `${original.replace('<view>', '<view>PINNED-BATCH')}\n<style src="./pinned.css" />`
+    const style = path.join(root, 'src/components/wevu-leaf/pinned.css')
+    await fs.writeFile(style, '.frozen { width: 71px; }')
+    await fs.writeFile(file, original.replace('<view>', '<view>FUTURE-BATCH'))
+    const result = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, undefined, undefined, new Map([[compilerSourceId(file), pinned], [compilerSourceId(style), '.frozen { width: 19px; }']]))
+    const outputs = Array.isArray(result.output) ? result.output.flatMap(item => item.output) : 'output' in result.output ? result.output.output : []
+    const template = outputs.find(item => item.fileName === 'components/wevu-leaf/index.wxml') as OutputAsset
+    expect(String(template.source)).toContain('PINNED-BATCH')
+    expect(String(template.source)).not.toContain('FUTURE-BATCH')
+    const stylesheet = outputs.find(item => item.fileName === 'components/wevu-leaf/index.wxss') as OutputAsset
+    expect(String(stylesheet.source)).toMatch(/width:\s*19px/)
+    expect(String(stylesheet.source)).not.toContain('71px')
+  })
+
   afterEach(async () => {
     await Promise.all(temporaryRoots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
   })

@@ -37,6 +37,16 @@ const compilerPlugin: WeappCompilerPlugin = {
     context.claimSource('src/app.css', 'example-compiler')
     return {
       transformCss: ({ code }) => ({ code }),
+      prepareHmr(request) {
+        expectType<number>(request.revision)
+        expectType<readonly string[]>(request.changedFiles)
+        expectType<ReadonlyMap<string, string | null>>(request.sources)
+        return {
+          assets: [{ fileName: 'app.wxss', code: '.utility { color: red }' }],
+          transformJavaScript: ({ code }) => ({ code }),
+          dispose() {},
+        }
+      },
     }
   },
 }
