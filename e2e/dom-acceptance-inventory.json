@@ -3794,14 +3794,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:354",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:355",
           "name": "stateful HMR in real WeChat DevTools > preserves native Page identity, data, input, route, and query across style updates and JavaScript patches",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('native')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:355"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:356"
             }
           ],
           "routes": [
@@ -3820,14 +3820,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:414",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:415",
           "name": "stateful HMR in real WeChat DevTools > ignores unowned editor files while publishing consecutive native script edits and restorations",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "editorFileCheckpoints()",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:418"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:419"
             }
           ],
           "routes": [
@@ -3843,14 +3843,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:471",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:472",
           "name": "stateful HMR in real WeChat DevTools > rehydrates wevu local and store refs while preserving the native page instance",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('wevu')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:480"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:481"
             }
           ],
           "routes": [
@@ -3870,14 +3870,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:571",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:572",
           "name": "stateful HMR in real WeChat DevTools > preserves native Component identity, data, input, route, and query across a JavaScript patch",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "statefulHmrCheckpoints('component')",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:572"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:573"
             }
           ],
           "routes": [
@@ -3893,14 +3893,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:611",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:612",
           "name": "stateful HMR in real WeChat DevTools > preserves parent and native child DOM state across a child script patch and restoration",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "nativeChildCheckpoints",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:612"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:613"
             }
           ],
           "routes": [],
@@ -3908,14 +3908,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:633",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:634",
           "name": "stateful HMR in real WeChat DevTools > preserves parent and Vue child DOM state across a child script patch and restoration",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "vueChildCheckpoints",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:634"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:635"
             }
           ],
           "routes": [],
@@ -3923,14 +3923,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:656",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:657",
           "name": "stateful HMR in real WeChat DevTools > updates Wevu template-generated computations and event handlers without replacing page state",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "templateBindingCheckpoints()",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:657"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:658"
             }
           ],
           "routes": [],
@@ -3946,14 +3946,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:695",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:696",
           "name": "stateful HMR in real WeChat DevTools > preserves native page state across two template edit and restore cycles",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "templateCycleCheckpoints(runtime)",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:696"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:697"
             }
           ],
           "routes": [],
@@ -3969,14 +3969,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:695",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:696",
           "name": "stateful HMR in real WeChat DevTools > preserves component page state across two template edit and restore cycles",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "templateCycleCheckpoints(runtime)",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:696"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:697"
             }
           ],
           "routes": [],
@@ -3992,14 +3992,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/stateful-hmr.runtime.test.ts:695",
+          "source": "e2e/ide/stateful-hmr.runtime.test.ts:696",
           "name": "stateful HMR in real WeChat DevTools > preserves wevu page state across two template edit and restore cycles",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "e2e-apps/stateful-hmr",
               "checkpoints": "templateCycleCheckpoints(runtime)",
-              "source": "e2e/ide/stateful-hmr.runtime.test.ts:696"
+              "source": "e2e/ide/stateful-hmr.runtime.test.ts:697"
             }
           ],
           "routes": [],
@@ -7711,7 +7711,7 @@
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
-      "sha256": "caa420a69625713ba10f2a3457dc7f034d60c26723eeb4de0d7bef3826e2be09"
+      "sha256": "ef1d64568695b3d6a27899bb3803a0bc93c20c6ed190142b85f34751ec4eb8b5"
     },
     {
       "file": "e2e/ide/statefulHmrDom/editorFiles.ts",
@@ -7739,7 +7739,7 @@
     },
     {
       "file": "e2e/ide/statefulHmrDom/transport.ts",
-      "sha256": "4bd9121f8d70d6fe216e93ad9e2ad70eb23c642d76c845710231ab28ed495690"
+      "sha256": "671ebda8e6592d8507784d14687cf824f8822bc23834b4b8e39cc1a9734b5960"
     },
     {
       "file": "e2e/ide/statefulHmrDom/vueChild.ts",
@@ -8195,7 +8195,7 @@
     },
     {
       "file": "e2e/utils/hmr-helpers.ts",
-      "sha256": "113616d6315471721979fb1eb9b20bca9de7628a3fe63f3b3439842f07f0026f"
+      "sha256": "17bcdddbc5789635c9d8d93516a79443485a7a77b249aff7ec10bd1337ede076"
     },
     {
       "file": "e2e/utils/hmrAtomicRename.ts",

@@ -71,6 +71,13 @@ async function fixture() {
 }
 
 describe('stateful HMR headless host transport', () => {
+  it('rejects a provisional zero port before replacing the mock-only host', () => {
+    const getWx = vi.fn()
+    const session = { getWx } as unknown as HeadlessSession
+    expect(() => installStatefulHmrTransport(session, 'http://localhost:0/__weapp_vite_stateful_hmr__', 'emitted-input.js')).toThrow()
+    expect(getWx).not.toHaveBeenCalled()
+  })
+
   it('executes emitted source only after a real batch-published response', async () => {
     const context = await fixture()
     await context.send()

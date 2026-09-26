@@ -216,7 +216,8 @@ async function waitForClientReady(timeoutMs = 30_000): Promise<void> {
     }
     await new Promise(resolve => setTimeout(resolve, 250))
   }
-  throw new Error(`Timed out waiting for stateful HMR transport; latest=${JSON.stringify(latest)}`)
+  const publishedControl = await fs.readFile(CONTROL_FILE, 'utf8').then(parseStatefulHmrControlSource).catch(() => undefined)
+  throw new Error(`Timed out waiting for stateful HMR transport; expectedEndpoint=${headlessTransport?.endpoint}; publishedEndpoint=${publishedControl?.url}; latest=${JSON.stringify(latest)}`)
 }
 
 function skipIfStatefulHmrTransportUnavailable(ctx: { skip: (message?: string) => void }): boolean {

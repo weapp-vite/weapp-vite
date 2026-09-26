@@ -7,7 +7,7 @@ import { createRequestTask } from '../../../mpcore/packages/simulator/src/runtim
 export function installStatefulHmrTransport(session: HeadlessSession, endpoint: string, updateFile: string) {
   const url = new URL(endpoint)
   if (url.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(url.hostname)
-    || !url.port || url.username || url.password || url.search || url.hash
+    || Number(url.port) <= 0 || url.username || url.password || url.search || url.hash
     || url.pathname !== '/__weapp_vite_stateful_hmr__') {
     throw new Error('Expected the current CLI loopback HMR endpoint')
   }
@@ -77,6 +77,7 @@ export function installStatefulHmrTransport(session: HeadlessSession, endpoint: 
     return task.task
   }
   return {
+    endpoint,
     assertHealthy() {
       if (publicationError) {
         throw publicationError

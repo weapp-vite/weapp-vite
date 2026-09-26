@@ -161,3 +161,17 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 🔴 随后真实 DevTools 单选新增计算/事件用例仍失败，2/6 DOM。此次明确通过了 `waitForClientVersion(previous + 1)`，失败发生在后续 `edited` 检查：`.derived-count` 期望 1 个，实际 0 个。因此该次没有停在补丁版本等待阶段，尚未进入新事件点击和恢复步骤；不能把它归为脚本未发布，也不能宣布最终验收通过。后续重点是已应用脚本与宿主模板编译/显示之间的断点。
 
 本轮没有产品源码变更，不新增 changeset。三个 CI job 的完整日志、拒绝 IDE 调用的测试配置、headless/DevTools 完整日志与 DOM 报告归档于 [issue1082-headless-provider-lifecycle.json.gz](./issue1082-headless-provider-lifecycle.json.gz)，解压 1142366 字节，SHA256 `8b4e3b175b5d30f3163021f53f3a0dcd8bbbfb6b74637aafaaf62c4b6c210f91`。原始 CI 日志 hash 另存于归档；仅脱敏机器路径、项目标识、邮箱及回环端口，保留所有失败。PR 继续草稿。
+
+## HMR 控制地址的就绪边界
+
+`89f8ea6b6` 的三个 OS 已越过 IDE 清理阶段，但在 HMR 注册阶段失败，仍未进入用例。Ubuntu/Windows 的请求落入 mock-only host，macOS 记录注册错误；这与上一轮的 IDE 依赖失败不同。
+
+检查启动顺序发现一个可证明的就绪漏洞：首轮完整产物可以在 HTTP 监听前写入控制文件，此时控制地址回退到配置中的端口 0；监听完成后才刷新为实际端口。原解析器使用 `!url.port` 检查，而字符串 `"0"` 为真，导致等待器可能提前返回。headless 传输安装器也接受该地址。现在两处均拒绝非正端口，继续按原轮询规则等待正式地址，不扩大 URL 匹配范围、不延长超时、不改变发布协议。
+
+4 项回归在修改前失败，包括 0 → 正式端口的连续读取以及安装器在修改 host 前拒绝端口 0；修改后两文件 17 项通过。原 `hmr-helpers.test.ts` 未在根测试项目清单中，本轮同时纳入 `e2e-hmr-infra`。第一次指定两文件的命令实际只执行了 transport 文件，完整的 4 项先失败证据来自补齐清单后的运行，没有把未执行的测试计为通过。
+
+🟢 Node 22.22.3、`CI=true`、禁止 IDE 清理调用的配置下，五项 headless 用例通过，30/30 DOM。CI 原日志没有记录安装器预期的 URL，因此不能反推所有注册失败必然来自端口 0；本轮还补充失败时的预期端点和当前发布端点，等待新 HEAD CI 确认剩余注册问题。
+
+🔴 同一就绪修正下的真实 DevTools 静态 Wevu 首次更新仍失败，2/6 DOM；该修正未消除已知模板显示问题。原生 Component 条件节点控制已完成 headless 6/6，并额外断言条件节点初始存在、准备后消失；真实 IDE 控制尚未运行，临时夹具与探针已恢复。
+
+本轮仍为测试基础设施改动，无产品源码或 changeset 变化。[完整 CI 日志、先失败回归、Node 22 验证和真实失败](./issue1082-control-port-readiness.json.gz) 解压 1169688 字节，SHA256 `4c72bba4129e89a9be8539fa03b6bc4f8bd25f6fbc501704ed911da7d9b2c236`。PR 保持草稿，完整 runtime 与性能验收尚未完成。
