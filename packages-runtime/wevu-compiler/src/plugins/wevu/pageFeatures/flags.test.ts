@@ -9,6 +9,22 @@ import * as moduleAnalysis from './moduleAnalysis'
 import { collectTargetOptionsObjects } from './optionsObjects'
 
 describe('pageFeatures flags', () => {
+  it.each(['babel', 'oxc'] as const)('opts page adapters into native scroll events with %s', (astEngine) => {
+    const enabled = collectWevuPageFeatureFlagsFromCode(`
+import { usePageScrollRestoration as useDocument } from 'wevu/router'
+import * as router from 'wevu/dev/router'
+useDocument()
+router.usePageScrollRestoration()
+    `, { astEngine })
+    expect([...enabled]).toEqual(['enableOnPageScroll'])
+
+    const unused = collectWevuPageFeatureFlagsFromCode(`
+import { usePageScrollRestoration, useScrollViewRestoration } from 'wevu/router'
+useScrollViewRestoration()
+    `, { astEngine })
+    expect([...unused]).toEqual([])
+  })
+
   it('collects flags from named and namespace hook calls', () => {
     const ast = parseJsLike(`
 import { onShareTimeline as onTimeline } from 'wevu'

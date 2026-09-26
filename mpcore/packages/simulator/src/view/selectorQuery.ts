@@ -1,12 +1,12 @@
 import type {
-  HeadlessWxSelectorQueryBoundingClientRectResult,
   HeadlessWxSelectorQueryFieldsOption,
   HeadlessWxSelectorQueryRequest,
-  HeadlessWxSelectorQueryScrollOffsetResult,
   HeadlessWxWindowInfoResult,
 } from '../host'
 import type { HeadlessPageInstance } from '../runtime'
+import { getNativeScrollOffset } from './nativeNode'
 import { collectNodeDataset } from './nodeDataset'
+import { parseStyleDeclarations, resolveRect } from './nodeGeometry'
 import { querySelectorAll } from './selectors'
 
 interface DomNodeLike {
@@ -28,7 +28,6 @@ export interface HeadlessSelectorQueryResolverOptions {
 
 const LEADING_MARK_PREFIX_RE = /^mark[:\-]?/
 const MARK_NAME_RE = /[:\-]([a-z])/g
-const NUMERIC_LIKE_VALUE_RE = /-?\d+(?:\.\d+)?/
 
 function toMarkKey(attributeName: string) {
   return attributeName
@@ -69,59 +68,6 @@ function findNodeByScopeId(root: DomNodeLike, scopeId: string): DomNodeLike | nu
   return null
 }
 
-function parseStyleDeclarations(styleValue?: string) {
-  const declarations: Record<string, string> = {}
-  if (!styleValue) {
-    return declarations
-  }
-
-  for (const declaration of styleValue.split(';')) {
-    const [rawProperty, ...rawValueParts] = declaration.split(':')
-    const property = rawProperty?.trim()
-    if (!property) {
-      continue
-    }
-    declarations[property] = rawValueParts.join(':').trim()
-  }
-
-  return declarations
-}
-
-function parseNumericLikeValue(value?: string) {
-  if (!value) {
-    return 0
-  }
-  const match = value.match(NUMERIC_LIKE_VALUE_RE)
-  return match ? Number(match[0]) : 0
-}
-
-function resolveRect(node: DomNodeLike, windowInfo?: HeadlessWxWindowInfoResult): HeadlessWxSelectorQueryBoundingClientRectResult {
-  const style = parseStyleDeclarations(node.attribs?.style)
-  const left = parseNumericLikeValue(node.attribs?.['data-sim-left'] ?? style.left)
-  const top = parseNumericLikeValue(node.attribs?.['data-sim-top'] ?? style.top)
-  const rawWidth = node.attribs?.['data-sim-width'] ?? style.width
-  const rawHeight = node.attribs?.['data-sim-height'] ?? style.height
-  const isTopLevelView = node.name === 'view' && node.parent?.name === 'page' && windowInfo?.windowWidth != null
-  const width = rawWidth != null
-    ? parseNumericLikeValue(rawWidth)
-    : isTopLevelView && windowInfo
-      ? windowInfo.windowWidth
-      : 0
-  const height = rawHeight != null
-    ? parseNumericLikeValue(rawHeight)
-    : isTopLevelView && windowInfo
-      ? windowInfo.windowHeight
-      : 0
-  return {
-    bottom: top + height,
-    height,
-    left,
-    right: left + width,
-    top,
-    width,
-  }
-}
-
 export function resolveSelectorScrollTop(root: DomNodeLike, selector?: string | null) {
   const normalizedSelector = selector?.trim()
   if (!normalizedSelector) {
@@ -130,13 +76,6 @@ export function resolveSelectorScrollTop(root: DomNodeLike, selector?: string | 
 
   const match = querySelectorAll(root, normalizedSelector)[0]
   return match ? resolveRect(match).top : null
-}
-
-function resolveScrollOffset(node: DomNodeLike): HeadlessWxSelectorQueryScrollOffsetResult {
-  return {
-    scrollLeft: parseNumericLikeValue(node.attribs?.['data-sim-scroll-left']),
-    scrollTop: parseNumericLikeValue(node.attribs?.['data-sim-scroll-top']),
-  }
 }
 
 function resolvePropertyValue(node: DomNodeLike, propertyName: string) {
@@ -201,7 +140,7 @@ function resolveFieldsResult(
     }
   }
   if (fields.scrollOffset) {
-    Object.assign(result, resolveScrollOffset(node))
+    Object.assign(result, getNativeScrollOffset(options.page, node))
   }
   if (Array.isArray(fields.properties) && fields.properties.length > 0) {
     Object.assign(result, pickProperties(node, fields.properties))

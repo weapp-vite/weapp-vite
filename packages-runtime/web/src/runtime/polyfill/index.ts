@@ -12,6 +12,7 @@ import type {
   SetBackgroundTextStyleOptions,
   UpdateManager,
 } from './types'
+import { WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY, WEVU_PAGE_SCROLL_RESTORATION_OWNER_KEY, WEVU_ROUTE_EVENT_CONTRACT_KEY } from '@weapp-core/constants'
 import { getDefaultMiniProgramRuntimeGlobalKey, getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 import { emitRuntimeWarning } from '../warning'
 import { createAnimation } from './animation'
@@ -55,6 +56,17 @@ import {
   switchTab,
 } from './routeRuntime'
 import {
+  offAppRoute,
+  offAppRouteDone,
+  offBeforeAppRoute,
+  offBeforePageUnload,
+  onAppRoute,
+  onAppRouteDone,
+  onBeforeAppRoute,
+  onBeforePageUnload,
+} from './routeRuntime/events'
+import { claimPageScrollRestoration } from './routeRuntime/scroll'
+import {
   canIUseBridge,
 } from './runtimeCapabilityApi'
 import * as runtimeDataApi from './runtimeDataApi'
@@ -83,6 +95,18 @@ export {
   reLaunch,
   switchTab,
 } from './routeRuntime'
+
+export {
+  offAppRoute,
+  offAppRouteDone,
+  offBeforeAppRoute,
+  offBeforePageUnload,
+  onAppRoute,
+  onAppRouteDone,
+  onBeforeAppRoute,
+  onBeforePageUnload,
+} from './routeRuntime/events'
+export type { AppRouteCallback, AppRouteEvent, AppRouteOpenType, BeforePageUnloadCallback, BeforePageUnloadEvent } from './routeRuntime/events'
 
 export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './routeRuntime/options'
 
@@ -194,6 +218,17 @@ export function installMiniProgramGlobals(): void {
     offAppShow,
     onAppHide,
     onAppShow,
+    offAppRoute,
+    offAppRouteDone,
+    offBeforeAppRoute,
+    offBeforePageUnload,
+    onAppRoute,
+    onAppRouteDone,
+    onBeforeAppRoute,
+    onBeforePageUnload,
+    [WEVU_PAGE_SCROLL_RESTORATION_OWNER_KEY]: claimPageScrollRestoration,
+    [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1,
+    [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1,
     ...runtimeDataApi,
     setNavigationBarTitle,
     setNavigationBarColor,

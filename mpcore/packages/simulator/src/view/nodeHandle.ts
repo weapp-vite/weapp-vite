@@ -1,4 +1,4 @@
-import { resolveMiniProgramEventBinding } from './eventBinding'
+import { createMiniProgramEventPayload, resolveMiniProgramEventBinding } from './eventBinding'
 import { collectNodeDataset } from './nodeDataset'
 import { querySelectorAll } from './selectors'
 import { queryXPathElements } from './xpath'
@@ -38,6 +38,7 @@ export interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEv
 interface HeadlessTestingNodeInteractionHandlers {
   assertActive?: () => void
   callMethod: (scopeId: string | null, methodName: string, event: Record<string, any>) => unknown
+  dispatchNativeEvent?: (node: DomNodeLike, eventName: string, event: HeadlessTestingNodeEventInit, onHandlerResult?: (result: unknown) => void) => boolean
   createScopeHandle: (scopeId: string | null) => { scopeId: string, snapshot: () => Promise<unknown> } | null
   createPageHandle: () => { data: (path?: string) => Promise<unknown> }
   ownerScopeId: (scopeId: string | null) => string | null
@@ -48,28 +49,6 @@ function escapeText(text: string) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
-}
-
-function createEventPayload(node: DomNodeLike, eventName: string, event: HeadlessTestingNodeEventInit) {
-  const dataset = collectNodeDataset(node)
-  const nodeId = node.attribs?.id ?? ''
-  return {
-    bubbles: false,
-    capturePhase: false,
-    composed: false,
-    currentTarget: {
-      dataset: event.currentTarget?.dataset ?? event.dataset ?? dataset,
-      id: event.currentTarget?.id ?? event.id ?? nodeId,
-    },
-    detail: event.detail,
-    mark: event.mark,
-    target: {
-      dataset: event.target?.dataset ?? event.dataset ?? dataset,
-      id: event.target?.id ?? event.id ?? nodeId,
-    },
-    timeStamp: Date.now(),
-    type: eventName,
-  }
 }
 
 function createValueEventDetail(value: string, detail?: HeadlessTestingNodeValueEventInit['detail']) {
@@ -240,16 +219,35 @@ export class HeadlessTestingNodeHandle {
       throw new Error('Event name must be a non-empty string in headless testing runtime.')
     }
 
+    let handlerResults: unknown[] | undefined
+    const nativeHandled = this.interactions.dispatchNativeEvent?.(
+      this.node,
+      normalizedEventName,
+      event,
+      normalizedEventName === 'tap'
+        ? (result) => {
+            handlerResults ??= []
+            handlerResults.push(result)
+          }
+        : undefined,
+    )
+    if (normalizedEventName === 'tap' && nativeHandled) {
+      return handlerResults ? (await Promise.all(handlerResults))[0] : undefined
+    }
     const binding = resolveMiniProgramEventBinding(this.node.attribs, normalizedEventName)
     if (!binding?.method) {
+      if (nativeHandled) {
+        return
+      }
       throw new Error(`No ${normalizedEventName} binding was found on <${this.node.name ?? 'unknown'}> in headless testing runtime.`)
     }
 
-    return await this.interactions.callMethod(
+    const result = this.interactions.callMethod(
       this.node.attribs?.['data-sim-scope'] ?? null,
       binding.method,
-      createEventPayload(this.node, normalizedEventName, event),
+      createMiniProgramEventPayload(this.node, normalizedEventName, event),
     )
+    return await result
   }
 
   async tap(event: HeadlessTestingNodeEventInit = {}) {

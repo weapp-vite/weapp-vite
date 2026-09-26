@@ -36,6 +36,11 @@ export interface PageStackEntry {
   element?: HTMLElement & ComponentPublicInstance
   instance?: ComponentPublicInstance
   scrollTop?: number
+  destroyed?: boolean
+  ready?: boolean
+  routeEventId?: string
+  onRouteMounted?: () => void
+  onRouteReady?: () => void
 }
 
 export interface RouteMeta {

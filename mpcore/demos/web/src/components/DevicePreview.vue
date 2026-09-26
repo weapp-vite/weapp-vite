@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DevicePresetValue, PreviewTapInvocation } from './devicePreview/constants'
+import type { DevicePresetValue, PreviewTapTarget } from './devicePreview/constants'
 import { reactive } from 'vue'
 import { DEVICE_PRESETS } from './devicePreview/constants'
 import { useDevicePreview } from './devicePreview/useDevicePreview'
@@ -14,7 +14,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   back: []
-  dispatchTapChain: [payload: { activeScopeId: string, chain: PreviewTapInvocation[] }]
+  dispatchTap: [payload: PreviewTapTarget]
   selectScope: [scopeId: string]
   updateViewport: [payload: { height: number, width: number }]
 }>()

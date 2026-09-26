@@ -11,16 +11,9 @@ export const DEVICE_PRESETS = [
 export type DevicePresetValue = typeof DEVICE_PRESETS[number]['value'] | 'custom'
 export type ZoomMode = 'fit' | 'custom'
 
-export interface PreviewTapEvent {
-  currentTarget: { dataset: Record<string, string>, id: string }
-  target: { dataset: Record<string, string>, id: string }
-}
-
-export interface PreviewTapInvocation {
-  event: PreviewTapEvent
-  method: string
+export interface PreviewTapTarget {
+  nodeId: string
   scopeId: string
-  stopAfter: boolean
 }
 
 export const PREVIEW_SHADOW_CSS = `

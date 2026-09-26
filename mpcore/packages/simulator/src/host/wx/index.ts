@@ -5,6 +5,7 @@ import type {
   HeadlessWxSelectorQueryNode,
   HeadlessWxSelectorQueryRequest,
 } from './core'
+import { WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY, WEVU_ROUTE_EVENT_CONTRACT_KEY } from '@weapp-core/constants'
 import { createHeadlessUniEventBus } from './eventBus'
 import { createHeadlessLogManager } from './logManager'
 import { runNavigationApi } from './startupNavigation'
@@ -103,6 +104,14 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     navigateBack: true,
     navigateTo: true,
     nextTick: true,
+    offBeforeAppRoute: true,
+    offBeforePageUnload: true,
+    offAppRoute: true,
+    offAppRouteDone: true,
+    onBeforeAppRoute: true,
+    onBeforePageUnload: true,
+    onAppRoute: true,
+    onAppRouteDone: true,
     offAppHide: true,
     offAppShow: true,
     offNetworkStatusChange: true,
@@ -151,6 +160,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
 
   return {
     ...eventBus,
+    [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1,
+    [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1,
     canIUse: schema => typeof schema === 'string' && schema.trim() !== '' && resolveCapabilityValue(capabilityTree, schema.trim()) != null,
     canvasToTempFilePath: option => invokeWxApi(() => driver.canvasToTempFilePath(option), option),
     chooseImage: option => invokeWxApi(() => driver.chooseImage(option ?? {}), option),
@@ -271,6 +282,14 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
       driver.navigateTo(deferred!)
     }, deferred)),
     nextTick: callback => driver.nextTick(callback),
+    offBeforeAppRoute: listener => driver.offBeforeAppRoute(listener),
+    offBeforePageUnload: listener => driver.offBeforePageUnload(listener),
+    offAppRoute: listener => driver.offAppRoute(listener),
+    offAppRouteDone: listener => driver.offAppRouteDone(listener),
+    onBeforeAppRoute: listener => driver.onBeforeAppRoute(listener),
+    onBeforePageUnload: listener => driver.onBeforePageUnload(listener),
+    onAppRoute: listener => driver.onAppRoute(listener),
+    onAppRouteDone: listener => driver.onAppRouteDone(listener),
     offAppHide: callback => driver.offAppHide(callback),
     offAppShow: callback => driver.offAppShow(callback),
     offNetworkStatusChange: callback => driver.offNetworkStatusChange(callback),

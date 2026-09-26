@@ -1,4 +1,4 @@
-import type { DevicePresetValue, PreviewTapInvocation, ZoomMode } from './constants'
+import type { DevicePresetValue, PreviewTapTarget, ZoomMode } from './constants'
 import { computed, onMounted, ref, toRef, watch } from 'vue'
 import {
   DEFAULT_STAGE_HEIGHT,
@@ -10,7 +10,7 @@ import {
 import { usePreviewShadow } from './usePreviewShadow'
 
 interface DevicePreviewEmit {
-  (event: 'dispatchTapChain', payload: { activeScopeId: string, chain: PreviewTapInvocation[] }): void
+  (event: 'dispatchTap', payload: PreviewTapTarget): void
   (event: 'selectScope', scopeId: string): void
   (event: 'updateViewport', payload: { height: number, width: number }): void
 }
@@ -129,7 +129,7 @@ export function useDevicePreview(
     toRef(props, 'viewportHeight'),
     toRef(props, 'viewportWidth'),
     scopeId => emit('selectScope', scopeId),
-    payload => emit('dispatchTapChain', payload),
+    payload => emit('dispatchTap', payload),
     (width, height) => {
       viewportWidthInput.value = String(width)
       viewportHeightInput.value = String(height)

@@ -4,6 +4,7 @@ import type {
   HeadlessWxAppHideOptions,
   HeadlessWxLaunchOptions,
   HeadlessWxNetworkType,
+  HeadlessWxRouteEvent,
   HeadlessWxSavedFileInfo,
 } from '../host'
 import type { RuntimeDiagnosticEntry } from '../kernel'
@@ -20,6 +21,7 @@ import type {
   HeadlessWxRequestMockDefinition,
   HeadlessWxUploadFileMockDefinition,
 } from '../runtime/wxState'
+import type { HeadlessNativeNode } from '../view/nativeNode'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
@@ -37,6 +39,7 @@ import { detachComponentRelations } from '../runtime/componentInstance/relations
 import { resolveNativeComponentSelection } from '../runtime/componentInstance/selection'
 import { createPageInstance } from '../runtime/pageInstance'
 import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
+import { HeadlessRouteEvents } from '../runtime/routeEvents'
 import {
   applyResizeToSystemInfo,
   createDefaultLocationResult,
@@ -53,6 +56,7 @@ import { createHeadlessCanvasContext } from '../view/canvasContext'
 import { customTabBarScopeId } from '../view/customTabBar'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
+import { dispatchNativeNodeEvent, syncNativeScrollViews } from '../view/nativeNode'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
@@ -64,7 +68,8 @@ import { readBrowserVirtualFile } from './virtualFiles'
 export interface BrowserHeadlessSessionOptions {
   files: BrowserVirtualFiles
   globals?: Record<string, unknown>
-  onRender?: () => void
+  /** 返回的 Promise 表示宿主 DOM 已提交；普通返回值按同步渲染处理。 */
+  onRender?: () => unknown
   project?: HeadlessProjectDescriptor
   strictHostMocks?: boolean
 }
@@ -73,6 +78,7 @@ interface ResolvedNavigationTarget {
   normalizedRoute: string
   query: Record<string, string>
   routeRecord: HeadlessRouteRecord
+  pageConfig?: Record<string, any>
 }
 
 interface HeadlessTabBarItem {
@@ -212,7 +218,7 @@ export class BrowserHeadlessSession {
   private appInstance: HeadlessAppInstance | null = null
   private readonly appLifecycle = new HeadlessAppLifecycle()
   private readonly moduleLoader
-  private readonly onRender?: () => void
+  private readonly onRender?: BrowserHeadlessSessionOptions['onRender']
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
@@ -225,6 +231,7 @@ export class BrowserHeadlessSession {
   }>()
 
   private renderRequestPending = false
+  private renderInProgress = false
   private readonly renderRequestCallbacks: Array<() => void> = []
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
@@ -238,6 +245,11 @@ export class BrowserHeadlessSession {
   private launchOptions = createAppLaunchOptions('', {})
   private readonly kernel = new RuntimeKernel()
   private readonly startupNavigation = new StartupNavigationQueue(this.kernel.scheduler)
+  private readonly routeEvents = new HeadlessRouteEvents(
+    callback => this.requestRender(callback),
+    page => this.currentPageInstance === page && !this.kernel.isClosed,
+  )
+
   private readonly wxState
   private pullDownRefreshState: HeadlessPullDownRefreshState = {
     active: false,
@@ -328,6 +340,14 @@ export class BrowserHeadlessSession {
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
         nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
+        offBeforeAppRoute: listener => this.routeEvents.off('beforeAppRoute', listener),
+        offBeforePageUnload: listener => this.routeEvents.off('beforePageUnload', listener),
+        offAppRoute: listener => this.routeEvents.off('appRoute', listener),
+        offAppRouteDone: listener => this.routeEvents.off('appRouteDone', listener),
+        onBeforeAppRoute: listener => this.routeEvents.on('beforeAppRoute', listener),
+        onBeforePageUnload: listener => this.routeEvents.on('beforePageUnload', listener),
+        onAppRoute: listener => this.routeEvents.on('appRoute', listener),
+        onAppRouteDone: listener => this.routeEvents.on('appRouteDone', listener),
         offAppHide: callback => this.appLifecycle.offAppHide(callback),
         offAppShow: callback => this.appLifecycle.offAppShow(callback),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
@@ -392,6 +412,7 @@ export class BrowserHeadlessSession {
     this.renderRequestCallbacks.length = 0
     this.renderRequestPending = false
     this.appLifecycle.close()
+    this.routeEvents.close()
     this.wxState.close()
     this.moduleLoader.close()
     this.kernel.close()
@@ -900,6 +921,13 @@ export class BrowserHeadlessSession {
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
     }, current)
+    syncNativeScrollViews(current, rendered.root, (scopeId, method, event) => {
+      this.kernel.scheduler.queueMicrotask(() => {
+        if (this.currentPageInstance === current) {
+          this.callScopeMethod(scopeId, method, event)
+        }
+      })
+    })
     current.__lastChangedKeys__ = []
     const componentScopePrefix = `page:${stripLeadingSlash(current.route)}`
     for (const [scopeId, instance] of this.componentCache.entries()) {
@@ -914,6 +942,14 @@ export class BrowserHeadlessSession {
     return rendered
   }
 
+  dispatchNativeNodeEvent(node: HeadlessNativeNode, eventName: string, event: { detail?: unknown }, onHandlerResult?: (result: unknown) => void) {
+    const current = this.requireCurrentPage('dispatchNativeNodeEvent()')
+    if (eventName === 'tap') {
+      this.renderCurrentPage()
+    }
+    return dispatchNativeNodeEvent(current, node, eventName, event, this.moduleLoader.wx, (scopeId, method) => this.resolveScopeMethod(current, scopeId, method), onHandlerResult)
+  }
+
   requestRender(callback?: () => void) {
     this.assertActive()
     if (callback) {
@@ -923,46 +959,75 @@ export class BrowserHeadlessSession {
       return
     }
     this.renderRequestPending = true
-    Promise.resolve().then(() => {
+    if (this.renderInProgress) {
+      return
+    }
+    Promise.resolve().then(async () => {
       if (this.kernel.isClosed) {
         return
       }
       this.renderRequestPending = false
+      this.renderInProgress = true
       const callbacks = this.renderRequestCallbacks.splice(0)
-      if (this.currentPageInstance) {
-        this.renderCurrentPage()
+      try {
+        if (this.currentPageInstance) {
+          this.renderCurrentPage()
+        }
+        const rendered = this.onRender?.()
+        if (rendered && typeof (rendered as PromiseLike<unknown>).then === 'function') {
+          await rendered
+        }
+        for (const cb of callbacks) {
+          if (this.kernel.isClosed) {
+            break
+          }
+          cb()
+        }
       }
-      callbacks.forEach(cb => cb())
-      this.onRender?.()
+      finally {
+        this.renderInProgress = false
+        if (this.renderRequestPending && !this.kernel.isClosed) {
+          this.renderRequestPending = false
+          this.requestRender()
+        }
+      }
     })
   }
 
   callScopeMethod(scopeId: string | null, methodName: string, event: Record<string, any>) {
     const current = this.requireCurrentPage(`scope method "${methodName}"`)
     this.renderCurrentPage()
+    return this.resolveScopeMethod(current, scopeId, methodName)(event)
+  }
 
+  /** 解析本次交互的实例，后续回调不随重渲染或导航切换所有者。 */
+  private resolveScopeMethod(current: HeadlessPageInstance, scopeId: string | null, methodName: string) {
     if (!scopeId || scopeId === `page:${stripLeadingSlash(current.route)}`) {
-      const method = current[methodName]
-      if (typeof method !== 'function') {
-        throw new TypeError(`Method "${methodName}" does not exist on browser simulator page ${current.route}.`)
+      return (event: Record<string, unknown>) => {
+        const method = current[methodName]
+        if (typeof method !== 'function') {
+          throw new TypeError(`Method "${methodName}" does not exist on browser simulator page ${current.route}.`)
+        }
+        return method.call(current, event)
       }
-      return method.call(current, event)
     }
 
     const instance = this.componentCache.get(scopeId)
     if (!instance) {
       throw new Error(`Unknown scope "${scopeId}" in browser simulator runtime.`)
     }
-    instance.__lastInteractionEvent__ = {
-      currentTarget: event.currentTarget,
-      mark: event.mark,
-      target: event.target,
+    return (event: Record<string, unknown>) => {
+      instance.__lastInteractionEvent__ = {
+        currentTarget: event.currentTarget,
+        mark: event.mark,
+        target: event.target,
+      }
+      const method = instance[methodName]
+      if (typeof method !== 'function') {
+        throw new TypeError(`Method "${methodName}" does not exist on browser simulator component scope "${scopeId}".`)
+      }
+      return method.call(instance, event)
     }
-    const method = instance[methodName]
-    if (typeof method !== 'function') {
-      throw new TypeError(`Method "${methodName}" does not exist on browser simulator component scope "${scopeId}".`)
-    }
-    return method.call(instance, event)
   }
 
   callScopeMethodDirect(scopeId: string, methodName: string, ...args: any[]) {
@@ -1099,11 +1164,13 @@ export class BrowserHeadlessSession {
     if (launchedPage) {
       return launchedPage
     }
-    this.unloadAllPages()
-    const pageInstance = this.createFreshPage(target)
+    const event = this.beginRoute(target, 'reLaunch')
+    this.unloadAllPages(event)
+    const pageInstance = this.createFreshPage(target, event)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
     this.runInitialPageLifecycles(pageInstance, target.query)
+    this.routeEvents.commit(pageInstance, event)
     return pageInstance
   }
 
@@ -1121,14 +1188,16 @@ export class BrowserHeadlessSession {
       throw new Error(`wx.navigateTo() cannot open a tabBar page in browser simulator runtime: ${url}`)
     }
 
+    const event = this.beginRoute(target, 'navigateTo')
     this.currentPageInstance?.onHide?.()
     if (this.currentPageInstance) {
       this.runPageComponentLifetime(this.currentPageInstance.route, 'hide')
     }
-    const pageInstance = this.createFreshPage(target)
+    const pageInstance = this.createFreshPage(target, event)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
     this.runInitialPageLifecycles(pageInstance, target.query)
+    this.routeEvents.commit(pageInstance, event)
     return pageInstance
   }
 
@@ -1142,16 +1211,18 @@ export class BrowserHeadlessSession {
       throw new Error(`wx.redirectTo() cannot open a tabBar page in browser simulator runtime: ${url}`)
     }
 
+    const event = this.beginRoute(target, 'redirectTo')
     const current = this.currentPageInstance
     if (current) {
+      this.unloadPage(current, event)
       this.pages.pop()
-      this.unloadPage(current)
     }
 
-    const pageInstance = this.createFreshPage(target)
+    const pageInstance = this.createFreshPage(target, event)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
     this.runInitialPageLifecycles(pageInstance, target.query)
+    this.routeEvents.commit(pageInstance, event)
     return pageInstance
   }
 
@@ -1166,17 +1237,20 @@ export class BrowserHeadlessSession {
 
     const normalizedDelta = Number.isFinite(delta) ? Math.max(1, Math.trunc(delta)) : 1
     const removableCount = Math.min(normalizedDelta, this.pages.length - 1)
-    const removedPages = this.pages.splice(this.pages.length - removableCount, removableCount)
-    for (const page of removedPages.reverse()) {
-      this.unloadPage(page)
+    const nextPage = this.pages[this.pages.length - removableCount - 1]!
+    const event = this.routeEvents.begin(nextPage.route, nextPage.options, 'navigateBack', undefined, nextPage)
+    this.routeEvents.attach(nextPage, event)
+    for (let index = 0; index < removableCount; index++) {
+      this.unloadPage(this.pages.at(-1)!, event)
+      this.pages.pop()
     }
 
-    const nextPage = this.pages.at(-1) ?? null
     this.currentPageInstance = nextPage
     nextPage?.onShow?.()
     if (nextPage) {
       this.runPageComponentLifetime(nextPage.route, 'show')
     }
+    this.routeEvents.commit(nextPage, event)
     return nextPage
   }
 
@@ -1210,6 +1284,10 @@ export class BrowserHeadlessSession {
       return () => {}
     }
 
+    const event = this.beginRoute(target, 'switchTab', cachedTarget ?? undefined)
+    if (cachedTarget) {
+      this.routeEvents.attach(cachedTarget, event)
+    }
     if (current && current !== cachedTarget) {
       current.onHide?.()
       this.runPageComponentLifetime(current.route, 'hide')
@@ -1225,7 +1303,7 @@ export class BrowserHeadlessSession {
     let nextPage = cachedTarget
     let shouldRunInitialLifecycles = false
     if (!nextPage) {
-      nextPage = this.createFreshPage(target)
+      nextPage = this.createFreshPage(target, event)
       this.tabPages.set(target.routeRecord.route, nextPage)
       shouldRunInitialLifecycles = true
     }
@@ -1243,8 +1321,9 @@ export class BrowserHeadlessSession {
 
     return () => {
       for (const page of pagesToUnload) {
-        this.unloadPage(page)
+        this.unloadPage(page, event)
       }
+      this.routeEvents.commit(nextPage, event)
     }
   }
 
@@ -1418,17 +1497,27 @@ export class BrowserHeadlessSession {
     })
   }
 
-  private createFreshPage(target: ResolvedNavigationTarget) {
+  private beginRoute(target: ResolvedNavigationTarget, openType: HeadlessWxRouteEvent['openType'], page?: HeadlessPageInstance) {
+    return this.routeEvents.begin(
+      target.normalizedRoute,
+      target.query,
+      openType,
+      target.pageConfig?.renderer ?? this.project.appConfig.renderer,
+      page,
+    )
+  }
+
+  private createFreshPage(target: ResolvedNavigationTarget, event: HeadlessWxRouteEvent) {
     const resourcePath = target.routeRecord.resourcePath ?? target.routeRecord.route
     const pageModulePath = join(this.project.miniprogramRootPath, `${resourcePath}.js`)
-    const pageConfigPath = join(this.project.miniprogramRootPath, `${resourcePath}.json`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
-    const pageConfig = readJsonObject(this.files, pageConfigPath)
+    const pageConfig = target.pageConfig
     const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query, {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
       requestRender: callback => this.requestRender(callback),
     })
+    this.routeEvents.attach(pageInstance, event)
     pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
     pageInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(this.selectComponent(selector))
@@ -1446,8 +1535,14 @@ export class BrowserHeadlessSession {
   }
 
   private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
-    runInitialPageLifecycles(pageInstance, query, this.kernel.scheduler, () =>
-      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance, () => this.renderCurrentPage())
+    runInitialPageLifecycles(
+      pageInstance,
+      query,
+      this.kernel.scheduler,
+      () => this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance,
+      () => this.renderCurrentPage(),
+      () => this.routeEvents.ready(pageInstance),
+    )
   }
 
   private isTabBarRoute(route: string) {
@@ -1480,6 +1575,7 @@ export class BrowserHeadlessSession {
       normalizedRoute,
       query,
       routeRecord,
+      pageConfig: readJsonObject(this.files, join(this.project.miniprogramRootPath, `${routeRecord.resourcePath ?? routeRecord.route}.json`)),
     }
   }
 
@@ -1492,13 +1588,13 @@ export class BrowserHeadlessSession {
     return item
   }
 
-  private unloadAllPages() {
+  private unloadAllPages(event?: HeadlessWxRouteEvent) {
     const pagesToUnload = new Set<HeadlessPageInstance>([
       ...this.pages,
       ...this.tabPages.values(),
     ])
     for (const page of [...pagesToUnload].reverse()) {
-      this.unloadPage(page)
+      this.unloadPage(page, event)
     }
     this.pages.length = 0
     this.tabPages.clear()
@@ -1508,7 +1604,8 @@ export class BrowserHeadlessSession {
     this.currentPageInstance = null
   }
 
-  private unloadPage(page: HeadlessPageInstance) {
+  private unloadPage(page: HeadlessPageInstance, event?: HeadlessWxRouteEvent) {
+    this.routeEvents.beforeUnload(page, event)
     page.onUnload?.()
     this.clearMediaQueryObservers(page)
     this.detachPageComponents(page.route)

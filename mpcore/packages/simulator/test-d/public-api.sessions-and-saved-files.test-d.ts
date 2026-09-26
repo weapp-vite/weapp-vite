@@ -1,4 +1,5 @@
 import type {
+  BrowserHeadlessSession,
   HeadlessPluginDescriptor,
   HeadlessTestingPageHandle,
   HeadlessTestingRenderedNodeSnapshot,
@@ -11,7 +12,7 @@ import type {
   HeadlessWxIntersectionObserver,
   HeadlessWxUploadFileMockDefinition,
 } from '..'
-import { expectType } from 'tsd'
+import { expectError, expectType } from 'tsd'
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFiles,
@@ -33,6 +34,19 @@ expectType<ReturnType<typeof createBrowserHeadlessSession>>(createBrowserHeadles
   onRender: () => {},
   strictHostMocks: true,
 }))
+expectType<BrowserHeadlessSession>(createBrowserHeadlessSession({
+  files: browserFiles,
+  onRender: () => Promise.resolve(),
+}))
+expectType<BrowserHeadlessSession>(createBrowserHeadlessSession({
+  files: browserFiles,
+  onRender: () => 1,
+}))
+expectType<BrowserHeadlessSession>(createBrowserHeadlessSession({
+  files: browserFiles,
+  onRender: () => true,
+}))
+expectError(createBrowserHeadlessSession({ files: browserFiles, onRender: Promise.resolve() }))
 expectType<ReturnType<typeof createHeadlessSession>>(createHeadlessSession({
   projectPath: '/project',
   strictHostMocks: true,

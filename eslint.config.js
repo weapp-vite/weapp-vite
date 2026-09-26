@@ -81,6 +81,8 @@ export default await defineEslintConfig({
         'apps/socket-io-chat/web/**/*.{js,ts,vue}',
         'website/**/*.{js,ts,vue}',
         'packages/weapp-vite/example/**/*.{js,ts,tsx,vue}',
+        'mpcore/demos/web/**/*.{js,ts,tsx,vue}',
+        'mpcore/packages/simulator/e2e/**/*.{js,ts,tsx,vue}',
       ],
       rules: {
         'wevu/no-risky-api': 'off',
