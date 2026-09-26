@@ -87,3 +87,5 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - [PR #1085 Nightly 首批 10/27 分片](./nightly-pr1085-36198019403-partial.md)：Windows 确认回退，采集仍在继续。
 
 - [PR #1085 Nightly 新增 7 分片（累计 17/27）](./nightly-pr1085-36198019403-additional.md)：macOS 构建、Ubuntu 自动导入 HMR 新确认回退；保留 Windows 生命周期不完整项。
+
+- [PR #1085 Nightly 新增 6 分片（累计 23/27）](./nightly-pr1085-36198019403-third.md)：三项确认回退及 stateful 前置发布失败，剩余采集继续。
