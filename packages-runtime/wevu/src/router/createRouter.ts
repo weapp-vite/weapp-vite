@@ -1,3 +1,4 @@
+import type { WevuNamedRouteMap } from '../router'
 import type { RouteResolveCodec } from '../routerInternal/shared'
 import type { NavigationRunResult } from './navigationResult'
 import type { RouteStateSyncPayload } from './routeSync'
@@ -16,6 +17,7 @@ import {
   cloneRouteMeta,
   cloneRouteParams,
   createNamedRouteLookup,
+  createNativeRouteUrl,
   createRouterOptionsSnapshot,
   mergeMatchedRouteMeta,
   normalizeRouteRecordMatched,
@@ -29,24 +31,30 @@ import {
   stringifyQuery,
   warnDuplicateRouteEntries,
 } from '../routerInternal/shared'
-import { getMiniProgramGlobalObject } from '../runtime/platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramTabBarPagePaths } from '../runtime/platform'
 import { resolveBackNavigationTarget, runBackNavigationGuards } from './backNavigation'
 import { DEFAULT_INITIAL_NAVIGATION_TIMEOUT, registerInitialNavigationRunner } from './initialNavigation'
 import { setActiveRouter } from './instance'
 import { createNavigationApi } from './navigationApi'
+import { createNavigationFailure, executeNavigationMethod } from './navigationCore'
 import { createNavigationResultController } from './navigationResult'
 import { navigateWithTarget } from './navigationTarget'
 import { resolveRouteLocation } from './resolve'
 import { createRouteRegistry } from './routeRegistry'
 import { installRouteStateSyncOnNativeRouter, notifyRouteStateSync } from './routeSync'
+import { NavigationFailureType } from './types'
 import { createRouteStateController, useNativeRouter } from './useRoute'
 
 /**
  * @description 创建高阶路由导航器（对齐 Vue Router 的 createRouter 心智）
  */
-export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
+export function createRouter<TRouteMap extends object = WevuNamedRouteMap>(
+  optionsInput: UseRouterOptions<NoInfer<TRouteMap>> = {},
+): RouterNavigation<TRouteMap> {
+  // 路由表泛型只约束公开类型；运行时继续使用同一套名称无关的导航引擎。
+  const options = optionsInput as unknown as UseRouterOptions
   const nativeRouter = useNativeRouter()
-  installRouteStateSyncOnNativeRouter(getMiniProgramGlobalObject())
+  installRouteStateSyncOnNativeRouter(getCurrentMiniProgramGlobalObject())
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
   const afterEachHooks = new Set<NavigationAfterEach>()
@@ -66,7 +74,8 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   const routeEntries = resolveRouteOptionEntries(options)
   warnDuplicateRouteEntries(routeEntries)
   const namedRouteLookup = createNamedRouteLookup(routeEntries)
-  const normalizedTabBarEntries = (options.tabBarEntries ?? [])
+  const tabBarEntrySource = options.tabBarEntries ?? getCurrentMiniProgramTabBarPagePaths()
+  const normalizedTabBarEntries = tabBarEntrySource
     .map(path => resolvePath(path, ''))
     .filter(Boolean)
   const tabBarPathSet = new Set(normalizedTabBarEntries)
@@ -176,9 +185,8 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
   })
   route = routeController.route
 
-  function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
-    return resolveWithCodec(to, route.path)
-  }
+  const resolve = (to: RouteLocationRaw): RouteLocationNormalizedLoaded =>
+    resolveWithCodec(to, route.path)
 
   const navigationResultController = createNavigationResultController({
     afterEachHooks,
@@ -267,6 +275,25 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
       if (!isActive()) {
         return undefined
       }
+      if (initialNavigationMode === 'blocking' && result.to && result.to.fullPath !== target.fullPath) {
+        const redirectedTarget = result.to
+        const isTabBarTarget = tabBarPathSet.has(redirectedTarget.path)
+        const method = isTabBarTarget ? nativeRouter.switchTab : nativeRouter.redirectTo
+        const nativeResult = await executeNavigationMethod(
+          method as (options: Record<string, any>) => unknown,
+          { url: createNativeRouteUrl(redirectedTarget, routeResolveCodec.stringifyQuery) },
+          redirectedTarget,
+          from,
+        )
+        if (nativeResult) {
+          return nativeResult
+        }
+        notifyRouteStateSync({
+          route: redirectedTarget,
+          source: 'router',
+        })
+        return createNavigationFailure(NavigationFailureType.cancelled, redirectedTarget, from)
+      }
       return navigationResultController.settleNavigationResult(result)
     })
   }
@@ -340,5 +367,6 @@ export function createRouter(options: UseRouterOptions = {}): RouterNavigation {
 
   setActiveRouter(router)
   registerInitialNavigationRunner(router, runInitialNavigation, initialNavigationTimeout, initialNavigationMode)
-  return router
+  const typedRouter = router as unknown as RouterNavigation<TRouteMap>
+  return typedRouter
 }

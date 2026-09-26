@@ -41,6 +41,8 @@ describe('main-package shared styles build e2e', { concurrent: false }, () => {
         })
         expect(result.exitCode, result.stderr || result.stdout).toBe(0)
 
+        expect(await fs.readJSON(path.join(outDir, 'packageB/pages/bar/index.json'))).toEqual({})
+
         const mainPageStyle = await fs.readFile(
           path.join(outDir, `pages/index/index.${styleExt}`),
           'utf8',
@@ -68,6 +70,8 @@ describe('main-package shared styles build e2e', { concurrent: false }, () => {
         expect(mainPageStyle).toContain(`@import '../../styles/pages.${styleExt}';`)
         expect(mainPageStyle).not.toContain(`styles/components.${styleExt}`)
         expect(mainPageStyle).not.toContain(`styles/manual.${styleExt}`)
+        expect(mainPageStyle).toMatch(/font-weight:\s*600/)
+        expect(mainPageStyle).not.toContain('nativeStyle=')
         expect(mainComponentStyle).toContain(`@import '../../styles/main.${styleExt}';`)
         expect(mainComponentStyle).toContain(`@import '../../styles/components.${styleExt}';`)
         expect(mainComponentStyle).not.toContain(`styles/pages.${styleExt}`)

@@ -435,6 +435,27 @@ function buildForExpression(
   level: number,
   helpers: ClassStyleHelperIds,
 ): t.Expression {
+  // eslint-disable-next-line ts/no-use-before-define
+  const expression = buildForExpressionBody(binding, forStack, level, helpers)
+  const conditions = binding.conditions?.filter(condition => condition.forDepth === level) ?? []
+  if (!conditions.length) {
+    return expression
+  }
+  const isProjectionBinding = binding.exp.startsWith('v-for :key ')
+  const condition = conditions.map(item => t.cloneNode(isProjectionBinding ? item.rawExpAst ?? item.expAst : item.expAst, true))
+    .reduce((left, right) => t.logicalExpression('&&', left, right))
+  const fallback = level < forStack.length
+    ? t.arrayExpression([])
+    : binding.type === 'bind' ? t.identifier('undefined') : t.stringLiteral('')
+  return t.conditionalExpression(condition, expression, fallback)
+}
+
+function buildForExpressionBody(
+  binding: ClassStyleBinding,
+  forStack: ForParseResult[],
+  level: number,
+  helpers: ClassStyleHelperIds,
+): t.Expression {
   if (level >= forStack.length) {
     return buildNormalizedExpression(binding, helpers)
   }
@@ -442,9 +463,9 @@ function buildForExpression(
   const info = forStack[level]
   const listId = t.identifier(`__wv_list_${level}`)
   const isProjectionBinding = binding.exp.startsWith('v-for :key ')
-  const listExpAst = !isProjectionBinding && info.projectedListExpAst
-    ? info.projectedListExpAst
-    : info.listExpAst
+  const listExpAst = isProjectionBinding
+    ? info.rawListExpAst ?? info.listExpAst
+    : info.projectedListExpAst ?? info.listExpAst
   const listExp = listExpAst ? t.cloneNode(listExpAst, true) : t.arrayExpression([])
   const unrefHelper = helpers.unref ? t.cloneNode(helpers.unref) : t.identifier('unref')
   const listUnrefExp = t.callExpression(unrefHelper, [listExp])

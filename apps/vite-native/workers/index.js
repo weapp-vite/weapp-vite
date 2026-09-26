@@ -1,3 +1,4 @@
+/* global worker */
 const utils = require('./utils')
 
 worker.onMessage((res) => {

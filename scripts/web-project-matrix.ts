@@ -1,6 +1,7 @@
 import type { Dirent } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { isExcludedE2EProject } from './e2eProjectScope'
 
 export type WebProjectExpectation = 'runtime' | 'shell' | 'startup-error'
 
@@ -66,7 +67,7 @@ export async function discoverWebProjects(root = path.resolve(import.meta.dirnam
         }
         throw error
       }
-      if (manifest.weappVite?.web === false) {
+      if (manifest.weappVite?.web === false || isExcludedE2EProject(relativeRoot)) {
         continue
       }
       projects.push({

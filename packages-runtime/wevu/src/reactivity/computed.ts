@@ -1,20 +1,34 @@
 import type { ReactiveEffect } from './core'
 import type { Ref } from './ref'
-import { effect, track, trigger } from './core'
+import { createComputedEffect, track, trigger } from './core'
+import { markRaw } from './reactive'
+import { ReactiveFlags } from './reactive/shared'
 import { markAsRef } from './ref'
 
 export type ComputedGetter<T> = () => T
 export type ComputedSetter<T> = (value: T) => void
+
+declare const computedBrand: unique symbol
+declare const writableComputedBrand: unique symbol
+
+const computedRefs = new WeakSet<object>()
+
+/** 识别计算来源，供 Store 将派生值与可持久化 state 分离。 */
+export function isComputedRef(value: unknown): value is ComputedRef | WritableComputedRef<any> {
+  return typeof value === 'object' && value !== null && computedRefs.has(value)
+}
 
 interface BaseComputedRef<T, S = T> extends Ref<T, S> {
   [key: symbol]: any
 }
 
 export interface ComputedRef<T = any> extends BaseComputedRef<T> {
+  readonly [computedBrand]: true
   readonly value: T
 }
 
 export interface WritableComputedRef<T, S = T> extends BaseComputedRef<T, S> {
+  readonly [writableComputedBrand]: true
   value: T
 }
 
@@ -58,7 +72,10 @@ export function computed<T>(
     },
   }
   markAsRef(obj)
-  runner = effect(getter, {
+  markRaw(obj)
+  computedRefs.add(obj)
+  Object.defineProperty(obj, ReactiveFlags.IS_READONLY, { value: onlyGetter })
+  runner = createComputedEffect(getter, {
     lazy: true,
     scheduler: () => {
       if (!dirty) {

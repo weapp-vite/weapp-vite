@@ -1,0 +1,249 @@
+import type { OutputAsset, OutputChunk } from 'rolldown'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'pathe'
+import { build } from 'vite'
+import { afterEach, describe, expect, it } from 'vitest'
+import { createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
+import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
+import { createLogicalEntryId } from '../../moduleGraph/protocol'
+import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
+import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { syncProjectSupportFiles } from '../supportFiles'
+import { buildStatefulHmrSnapshot } from './snapshotBuild'
+
+const temporaryRoots: string[] = []
+
+async function createProject(autoImport = false) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-component-'))
+  temporaryRoots.push(root)
+  const files = {
+    'package.json': JSON.stringify({ name: 'snapshot-component-regression', private: true, dependencies: { wevu: '*' } }),
+    'project.config.json': JSON.stringify({ appid: 'wx1234567890abcd', compileType: 'miniprogram', miniprogramRoot: 'dist/', srcMiniprogramRoot: 'src/' }),
+    'vite.config.ts': [
+      `import { defineConfig } from ${JSON.stringify(path.resolve(import.meta.dirname, '../../config.ts'))}`,
+      `export default defineConfig({ weapp: { srcRoot: "src", react: { renderMode: "auto", compiler: false }, ${autoImport ? 'autoImportComponents: { globs: ["components/**/*"], output: true, typedComponents: true, htmlCustomData: true, vueComponents: true }' : ''} } })`,
+    ].join('\n'),
+    'src/app.ts': 'App({})',
+    'src/app.json': JSON.stringify({ pages: ['pages/index/index'] }),
+    'src/pages/index/index.ts': 'Page({})',
+    'src/pages/index/index.json': JSON.stringify(autoImport ? {} : { usingComponents: { 'wevu-leaf': '/components/wevu-leaf/index' } }),
+    'src/pages/index/index.wxml': '<view><wevu-leaf /></view>',
+    'src/pages/index/index.wxss': '.page { color: red; }',
+    'src/components/wevu-leaf/index.vue': [
+      '<script setup lang="ts">',
+      'defineProps<{ label: string }>()',
+      'defineComponentJson({ options: { multipleSlots: true } })',
+      '</script>',
+      '<template><view><text>{{ label }}</text><slot /></view></template>',
+    ].join('\n'),
+  }
+  for (const [relative, content] of Object.entries(files)) {
+    const filename = path.join(root, relative)
+    await fs.mkdir(path.dirname(filename), { recursive: true })
+    await fs.writeFile(filename, content)
+  }
+  await fs.mkdir(path.join(root, 'node_modules'), { recursive: true })
+  await fs.symlink(path.resolve(import.meta.dirname, '../../..'), path.join(root, 'node_modules/weapp-vite'), 'junction')
+  await fs.symlink(path.resolve(import.meta.dirname, '../../../../../packages-runtime/wevu'), path.join(root, 'node_modules/wevu'), 'junction')
+  return root
+}
+
+function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
+  const output = outputs.find(item => item.fileName === 'components/wevu-leaf/index.json')
+  expect(output?.type).toBe('asset')
+  return JSON.parse(String((output as OutputAsset).source)) as unknown
+}
+
+describe('stateful snapshot component metadata', () => {
+  afterEach(async () => {
+    await Promise.all(temporaryRoots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
+  })
+
+  it('retains native page style metadata after asset-only snapshots discard script chunks', async () => {
+    const root = await createProject()
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-assets-only',
+        enforce: 'post',
+        generateBundle(_options, bundle) {
+          for (const [file, item] of Object.entries(bundle)) {
+            if (item.type === 'chunk') {
+              delete bundle[file]
+            }
+          }
+        },
+      }],
+    }))
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    expect(outputs.some(item => item.type === 'chunk')).toBe(false)
+    expect(snapshot.getGlobalStyleRoutes()).toEqual(['pages/index/index'])
+  })
+
+  it('publishes current asset findings after Glass configuration and source template fixes', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const buildSnapshot = () => buildStatefulHmrSnapshot(options, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-assets-only',
+        enforce: 'post',
+        generateBundle(_options, bundle) {
+          for (const [file, item] of Object.entries(bundle)) {
+            if (item.type === 'chunk') {
+              delete bundle[file]
+            }
+          }
+        },
+      }],
+    }))
+    const consumer = createCompilerContextInstance()
+    const consumeFacts = async () => {
+      const snapshot = await buildSnapshot()
+      const currentFacts = consumer.runtimeState.glassEasel.analysisByOwner
+      currentFacts.clear()
+      for (const [owner, fact] of snapshot.getGlassEaselAnalysisByOwner()) {
+        currentFacts.set(owner, fact)
+      }
+      return createGlassEaselAnalyzeResult(consumer)
+    }
+
+    await fs.writeFile(path.join(root, 'src/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+      glassEaselWebview: true,
+    }))
+    await fs.writeFile(
+      path.join(root, 'src/pages/index/index.wxml'),
+      '<view wx-if="{{ready}}"><wevu-leaf /></view>',
+    )
+    expect((await consumeFacts()).diagnostics.map(item => item.code).sort()).toEqual(['GE001', 'GE002'])
+
+    await fs.writeFile(path.join(root, 'src/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+      componentFramework: 'glass-easel',
+      glassEaselWebview: true,
+    }))
+    expect((await consumeFacts()).diagnostics.map(item => item.code)).toEqual(['GE002'])
+    await fs.writeFile(path.join(root, 'src/pages/index/index.wxml'), '<view wx:if="{{ready}}"><wevu-leaf /></view>')
+    expect(await consumeFacts()).toMatchObject({
+      detected: true,
+      diagnostics: [],
+      summary: { errors: 0, warnings: 0 },
+    })
+  })
+
+  it('leaves support files with their active owner across successful and failed snapshots', async () => {
+    const root = await createProject(true)
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const active = createCompilerContextInstance()
+    active.currentBuildTarget = 'app'
+    await active.configService.load(options)
+    await syncProjectSupportFiles(active)
+    const activeOwner = path.join(root, 'src/pages/active.ts')
+    const activeDependency = path.join(root, 'src/active-dependency.ts')
+    const activeLogical = createLogicalEntryId(activeOwner, 'page')
+    const activeScope = {}
+    active.moduleGraphService.bindBuildContext(activeScope, {
+      getModuleIds: () => [activeDependency, activeLogical],
+      getModuleInfo: id => id === activeDependency ? { importers: [activeLogical] } : {},
+    })
+    active.moduleGraphService.bindPluginContext(activeScope, {
+      resolve: async () => ({ id: activeDependency }),
+      load: async () => ({ exports: ['active'] }),
+    })
+    active.moduleGraphService.replaceEntryDependencies(activeOwner, 'template', [path.join(root, 'src/active.wxml')])
+    const supportFiles = ['auto-import-components.json', 'typed-components.d.ts', 'components.d.ts', 'mini-program.html-data.json']
+    const before = new Map<string, string>()
+    for (const name of supportFiles) {
+      const filename = path.join(root, '.weapp-vite', name)
+      before.set(name, await fs.readFile(filename, 'utf8'))
+      await fs.utimes(filename, 1, 1)
+    }
+
+    for (const fail of [false, true]) {
+      if (fail) {
+        await expect(buildStatefulHmrSnapshot(options, config => ({
+          ...config,
+          plugins: [...(config.plugins ?? []), {
+            name: 'snapshot-test-failure',
+            generateBundle() {
+              throw new Error('intentional snapshot failure')
+            },
+          }],
+        }))).rejects.toThrow('intentional snapshot failure')
+      }
+      else {
+        const { output: result } = await buildStatefulHmrSnapshot(options)
+        const outputs = Array.isArray(result) ? result.flatMap(item => item.output) : 'output' in result ? result.output : []
+        expect(readComponentJson(outputs)).toEqual({ component: true, options: { multipleSlots: true } })
+        const pageTemplate = outputs.find(item => item.fileName === 'pages/index/index.wxml') as OutputAsset
+        expect(String(pageTemplate.source)).toContain('<wevu-leaf')
+        const pageJson = outputs.find(item => item.fileName === 'pages/index/index.json') as OutputAsset
+        expect(JSON.parse(String(pageJson.source))).toMatchObject({ usingComponents: { 'wevu-leaf': '/components/wevu-leaf/index' } })
+      }
+      for (const name of supportFiles) {
+        const filename = path.join(root, '.weapp-vite', name)
+        expect(await fs.readFile(filename, 'utf8'), name).toBe(before.get(name))
+        expect((await fs.stat(filename)).mtimeMs, `${name} was rewritten`).toBe(1000)
+      }
+      expect(active.moduleGraphService.hasModule(activeDependency)).toBe(true)
+      expect(active.moduleGraphService.collectAffectedEntries(activeDependency)).toEqual(new Set([activeOwner]))
+      expect(active.moduleGraphService.collectAffectedEntries(path.join(root, 'src/active.wxml'))).toEqual(new Set([activeOwner]))
+      await expect(active.moduleGraphService.resolve('active')).resolves.toEqual({ id: activeDependency })
+      await expect(active.moduleGraphService.load({ id: activeDependency })).resolves.toEqual({ exports: ['active'] })
+    }
+
+    active.autoImportService.setSupportFileResolverComponents({ 'late-leaf': 'fixture-components/late-leaf' })
+    await active.autoImportService.awaitManifestWrites()
+    expect(await fs.readFile(path.join(root, '.weapp-vite/auto-import-components.json'), 'utf8')).toContain('late-leaf')
+    expect(await fs.readFile(path.join(root, '.weapp-vite/components.d.ts'), 'utf8')).toContain('LateLeaf')
+  })
+
+  it('retains the component declaration across fresh snapshot builds after a page style edit', async () => {
+    const root = await createProject()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    for (const color of ['red', 'blue']) {
+      await fs.writeFile(path.join(root, 'src/pages/index/index.wxss'), `.page { color: ${color}; }`)
+      const snapshot = await buildStatefulHmrSnapshot(options, config => ({
+        ...config,
+        plugins: [...(config.plugins ?? []), {
+          name: 'snapshot-assets-only',
+          enforce: 'post',
+          generateBundle(_options, bundle) {
+            for (const [name, output] of Object.entries(bundle)) {
+              if (output.type === 'chunk') {
+                delete bundle[name]
+              }
+            }
+          },
+        }],
+      }))
+      const result = snapshot.output
+      expect(snapshot.getDelegatedComponentEntryIds()).toEqual([
+        (await fs.realpath(path.join(root, 'src/components/wevu-leaf/index.vue'))).replaceAll('\\', '/'),
+      ])
+      const outputs = Array.isArray(result) ? result.flatMap(item => item.output) : 'output' in result ? result.output : []
+      expect(readComponentJson(outputs), color).toEqual({ component: true, options: { multipleSlots: true } })
+    }
+  })
+
+  it('retains component metadata after resetting the active build context for a full restart', async () => {
+    const root = await createProject()
+    const ctx = createCompilerContextInstance()
+    ctx.currentBuildTarget = 'app'
+    const loadOptions = { cwd: root, isDev: true, mode: 'development' }
+    for (let iteration = 0; iteration < 2; iteration++) {
+      resetRuntimeStateForFreshBuild(ctx.runtimeState)
+      ctx.moduleGraphService.resetSession()
+      await ctx.configService.load(loadOptions)
+      await ctx.scanService.loadAppEntry()
+      ctx.scanService.loadSubPackages()
+      const options = ctx.configService.merge(undefined, createSharedBuildConfig(ctx.configService, ctx.scanService))
+      options.build = { ...options.build, watch: undefined, write: false }
+      const result = await build(options)
+      const outputs = Array.isArray(result) ? result.flatMap(item => item.output) : 'output' in result ? result.output : []
+      expect(readComponentJson(outputs), `restart ${iteration}`).toEqual({ component: true, options: { multipleSlots: true } })
+    }
+  })
+})

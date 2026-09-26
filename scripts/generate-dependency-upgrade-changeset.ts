@@ -1,19 +1,16 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs/promises'
-import path from 'node:path'
 import process from 'node:process'
 /* eslint-disable e18e/ban-dependencies -- release automation scans workspace manifests with fast-glob, consistent with existing repository scripts. */
 import fg from 'fast-glob'
-import { extractChangesetPackages } from './changeset-utils'
+import { writeUniqueChangeset } from './changeset-utils'
 import {
   collectPublishableWorkspacePackages,
   isCurrentModuleEntry,
 } from './check-publishable-workspace-changeset'
 
-const CHANGESET_DIR = '.changeset'
-const CHANGESET_README = 'README.md'
-const AUTO_CHANGESET_FILE = path.resolve(CHANGESET_DIR, 'dependency-upgrade-auto-generated.md')
 const VALID_BUMP_TYPES = new Set(['patch', 'minor', 'major'])
+const AUTO_CHANGESET_PREFIX = 'dependency-upgrade'
 const DEPENDENCY_SECTIONS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'] as const
 
 type DependencySection = typeof DEPENDENCY_SECTIONS[number]
@@ -118,6 +115,23 @@ export function resolveDependencyUpgradeReleasePackages(options: {
   return [...packages].sort()
 }
 
+/**
+ * 仓库级依赖升级会改 lockfile / catalog，因此有实际变化时为全部可发布包补 patch。
+ */
+export function collectPublishableReleasePackageNames(packages: Array<{ name: string }>) {
+  return [...new Set(packages.map(pkg => pkg.name))].sort()
+}
+
+/**
+ * 本次 run 是否产生了需要写入 changeset 的依赖升级。
+ */
+export function shouldWriteDependencyUpgradeChangeset(options: {
+  changedPublishablePackages: string[]
+  templatePackageChanged: boolean
+}) {
+  return options.changedPublishablePackages.length > 0 || options.templatePackageChanged
+}
+
 function formatDependencyChangeSummary(changes: DependencySpecChange[]) {
   const maxItems = 6
   const items = changes
@@ -131,47 +145,18 @@ function formatDependencyChangeSummary(changes: DependencySpecChange[]) {
   return items.join('、')
 }
 
-function formatAutoChangeset(
-  packages: string[],
-  bumpType: string,
-  packageSummaries: Array<{ name: string, summary: string }>,
-) {
-  const frontmatter = packages
-    .map(pkg => `'${pkg}': ${bumpType}`)
-    .join('\n')
-
+/**
+ * 用中文摘要记录这一批实际发生变化的依赖，不把未改动的包写进正文。
+ */
+export function formatDependencyUpgradeBody(packageSummaries: Array<{ name: string, summary: string }>) {
   const summaryLines = packageSummaries
     .map(item => `- ${item.name}：${item.summary}`)
     .join('\n')
 
-  return `---
-${frontmatter}
----
-
-自动补充依赖升级发布记录。
+  return `自动补充依赖升级发布记录。
 涉及包：
 ${summaryLines}
 `
-}
-
-async function collectCurrentChangesetPackages() {
-  const files = await fg(`${CHANGESET_DIR}/*.md`, { dot: false, onlyFiles: true })
-  const changesetFiles = files.filter((file) => {
-    const filename = path.basename(file)
-    if (filename === CHANGESET_README) {
-      return false
-    }
-    return path.resolve(file) !== AUTO_CHANGESET_FILE
-  })
-
-  const packages = new Set<string>()
-  for (const file of changesetFiles) {
-    const content = await fs.readFile(path.resolve(file), 'utf8')
-    for (const pkg of extractChangesetPackages(content)) {
-      packages.add(pkg)
-    }
-  }
-  return packages
 }
 
 async function hasTemplateDependencyChanges(baseRef: string) {
@@ -217,45 +202,40 @@ async function main() {
   }
 
   const templatePackageChanged = await hasTemplateDependencyChanges(baseRef)
-  if (templatePackageChanged) {
+  if (templatePackageChanged && !packageSummaries.some(item => item.name === 'create-weapp-vite')) {
     packageSummaries.push({
       name: 'create-weapp-vite',
       summary: '模板 package.json 依赖版本已更新',
     })
   }
 
-  const releasePackages = resolveDependencyUpgradeReleasePackages({
+  if (!shouldWriteDependencyUpgradeChangeset({
     changedPublishablePackages,
     templatePackageChanged,
-  })
-
-  if (releasePackages.length === 0) {
-    await fs.rm(AUTO_CHANGESET_FILE, { force: true })
+  })) {
     return
   }
 
-  const existingChangesetPackages = await collectCurrentChangesetPackages()
-  const missingPackages = releasePackages.filter(pkg => !existingChangesetPackages.has(pkg))
-  if (missingPackages.length === 0) {
-    await fs.rm(AUTO_CHANGESET_FILE, { force: true })
-    return
-  }
-
-  const visibleSummaries = packageSummaries.filter(item => missingPackages.includes(item.name))
   if (
-    missingPackages.includes('create-weapp-vite')
-    && !visibleSummaries.some(item => item.name === 'create-weapp-vite')
+    (changedPublishablePackages.includes('weapp-vite')
+      || changedPublishablePackages.includes('wevu')
+      || templatePackageChanged)
+    && !packageSummaries.some(item => item.name === 'create-weapp-vite')
   ) {
-    visibleSummaries.push({
+    packageSummaries.push({
       name: 'create-weapp-vite',
       summary: '基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板',
     })
   }
 
-  const content = formatAutoChangeset(missingPackages, bumpType, visibleSummaries)
-  await fs.mkdir(path.dirname(AUTO_CHANGESET_FILE), { recursive: true })
-  await fs.writeFile(AUTO_CHANGESET_FILE, content, 'utf8')
-  console.log(`Generated ${AUTO_CHANGESET_FILE} for packages: ${missingPackages.join(', ')}`)
+  const releasePackages = collectPublishableReleasePackageNames(publishablePackages)
+  const writtenPath = await writeUniqueChangeset({
+    prefix: AUTO_CHANGESET_PREFIX,
+    packages: releasePackages,
+    bumpType,
+    body: formatDependencyUpgradeBody(packageSummaries),
+  })
+  console.log(`Generated ${writtenPath} for packages: ${releasePackages.join(', ')}`)
 }
 
 if (isCurrentModuleEntry(process.argv[1], import.meta.url)) {

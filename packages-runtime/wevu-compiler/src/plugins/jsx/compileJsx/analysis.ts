@@ -4,7 +4,6 @@ import type { JsxAutoComponentContext, JsxCompileContext } from './types'
 import {
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
-  getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
   resolveRenderExpressionFromComponentOptions,
 } from '@weapp-vite/ast'
@@ -13,6 +12,7 @@ import { collectJsxAutoComponentsFromCode } from '../../../ast/operations/jsxAut
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { RESERVED_VUE_COMPONENT_TAGS } from '../../../utils/vueTemplateTags'
 import { resolveComponentExpression } from '../../vue/transform/scriptComponent'
+import { collectSetupRefBindings, resolveSetupFunction } from './setupBindings'
 
 function resolveRenderExpression(componentExpr: Expression, context: JsxCompileContext): Expression | null {
   if (!t.isObjectExpression(componentExpr)) {
@@ -30,15 +30,16 @@ function resolveRenderExpression(componentExpr: Expression, context: JsxCompileC
     return null
   }
 
-  const setup = getObjectPropertyByKey(componentExpr, 'setup')
-  if (setup && (t.isObjectMethod(setup) || t.isObjectProperty(setup))) {
-    const body = t.isObjectMethod(setup) ? setup.body : setup.value
+  const setup = resolveSetupFunction(componentExpr)
+  if (setup) {
+    const body = setup.body
     if (t.isBlockStatement(body)) {
       for (const statement of body.body) {
         if (!t.isReturnStatement(statement) || !statement.argument) {
           continue
         }
         if (t.isArrowFunctionExpression(statement.argument) || t.isFunctionExpression(statement.argument)) {
+          context.setupRefBindings = collectSetupRefBindings(componentExpr, context)
           const renderBody = statement.argument.body
           if (t.isExpression(renderBody)) {
             return renderBody

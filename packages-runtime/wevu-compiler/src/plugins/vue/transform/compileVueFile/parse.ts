@@ -1,14 +1,18 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
-import type { parse } from 'vue/compiler-sfc'
+import type { parse, SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
 import type { JsonConfig } from '../../../../types/json'
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
 import * as t from '@weapp-vite/ast/babelTypes'
+import MagicString from 'magic-string'
+import { mayContainPageDeclaration, mayContainPageMeta, stripPageCompileTimeMacrosFromSfcDescriptor } from '../../../../pageDeclaration'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
+import { composeSourceMapForSource, composeSourceMaps } from '../../../../utils/sourcemap'
 import { normalizeLineEndings } from '../../../../utils/text'
-import { preprocessScriptSetupSrc, preprocessScriptSrc, readAndParseSfc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
+import { createSfcParseError, readAndParseSfc, resolveSfcBlockSrc } from '../../../utils/vueSfc'
 import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
-import { extractJsonMacroFromScriptSetup, mayContainJsonMacro } from '../jsonMacros'
+import { extractJsonMacroFromScriptSetupWithSourceMap, mayContainJsonMacro } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
 
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -18,9 +22,24 @@ const TEMPLATE_BLOCK_RE = /<template\b[\s\S]*?<\/template>/g
 const TEMPLATE_IMPORT_META_RE = /\bimport\.meta\b/g
 const TEMPLATE_IMPORT_META_PLACEHOLDER = '__im_meta__'
 
+function createIdentitySourceMap(
+  source: string,
+  originalSource: string,
+  filename: string,
+) {
+  const sourceMap = new MagicString(source).generateMap({
+    hires: true,
+    includeContent: false,
+    source: filename,
+  }) as EncodedSourceMapLike
+  sourceMap.sourcesContent = [originalSource]
+  return sourceMap
+}
+
 export interface ParsedVueFile {
   descriptor: ReturnType<typeof parse>['descriptor']
   descriptorForCompile: ReturnType<typeof parse>['descriptor']
+  scriptPreprocessMap?: EncodedSourceMapLike | null
   templateResolvedId?: string
   meta: {
     hasScriptSetup: boolean
@@ -54,6 +73,68 @@ function assertMatchingSfcScriptLang(
   throw new Error(
     `解析 ${filename} 失败：同一个 SFC 中 <script> 与 <script setup> 的 lang 必须一致，当前分别为 ${resolveSfcScriptLangLabel(scriptLang)} 与 ${resolveSfcScriptLangLabel(scriptSetupLang)}`,
   )
+}
+
+function resolveSourcePosition(source: string, offset: number) {
+  let line = 1
+  let lineStart = 0
+  for (let index = 0; index < offset; index += 1) {
+    const char = source.charCodeAt(index)
+    if (char === 10 || char === 0x2028 || char === 0x2029) {
+      line += 1
+      lineStart = index + 1
+    }
+    else if (char === 13) {
+      line += 1
+      if (source.charCodeAt(index + 1) === 10) {
+        index += 1
+      }
+      lineStart = index + 1
+    }
+  }
+  return { column: offset - lineStart + 1, line, offset }
+}
+
+function replaceScriptSetupContent(
+  descriptor: SFCDescriptor,
+  content: string,
+) {
+  const scriptSetup = descriptor.scriptSetup!
+  const startOffset = scriptSetup.loc.start.offset
+  const endOffset = scriptSetup.loc.end.offset
+  const nextSource = descriptor.source.slice(0, startOffset) + content + descriptor.source.slice(endOffset)
+  const delta = content.length - (endOffset - startOffset)
+  const updateBlock = (block: SFCScriptBlock | null) => {
+    if (!block) {
+      return null
+    }
+    const isSetup = block === scriptSetup
+    const nextStart = isSetup
+      ? startOffset
+      : block.loc.start.offset >= endOffset
+        ? block.loc.start.offset + delta
+        : block.loc.start.offset
+    const nextEnd = isSetup
+      ? startOffset + content.length
+      : block.loc.end.offset >= endOffset
+        ? block.loc.end.offset + delta
+        : block.loc.end.offset
+    return {
+      ...block,
+      content: isSetup ? content : block.content,
+      loc: {
+        source: isSetup ? content : block.loc.source,
+        start: resolveSourcePosition(nextSource, nextStart),
+        end: resolveSourcePosition(nextSource, nextEnd),
+      },
+    }
+  }
+  return {
+    ...descriptor,
+    source: nextSource,
+    script: updateBlock(descriptor.script),
+    scriptSetup: updateBlock(descriptor.scriptSetup),
+  }
 }
 
 function extractDefineOptionsHash(content: string) {
@@ -121,8 +202,8 @@ async function parseSfc(
   source: string,
   filename: string,
   ignoreEmpty: boolean,
+  preprocessedSource = preprocessTemplateImportMeta(source),
 ) {
-  const preprocessedSource = preprocessTemplateImportMeta(source)
   const parsed = await readAndParseSfc(filename, {
     source,
     preprocessedSource,
@@ -136,37 +217,110 @@ async function parseSfc(
   }
 }
 
+function resolvePreprocessSourceMap(
+  sourceMap: EncodedSourceMapLike | null,
+  transforms: Array<{ map?: EncodedSourceMapLike }> | undefined,
+) {
+  if (transforms) {
+    for (const transform of transforms) {
+      sourceMap = composeSourceMaps(transform.map, sourceMap)
+    }
+  }
+  return sourceMap
+}
+
 export async function parseVueFile(
   source: string,
   filename: string,
   options?: CompileVueFileOptions,
 ): Promise<ParsedVueFile> {
   const normalizedInputSource = normalizeLineEndings(source)
-  const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(normalizedInputSource))
+  let scriptPreprocessMap: EncodedSourceMapLike | null = null
+  let deferredPreprocessMaps: Array<{ map?: EncodedSourceMapLike }> | undefined
+  if (options?.sourceMap !== false && normalizedInputSource !== source) {
+    scriptPreprocessMap = createIdentitySourceMap(normalizedInputSource, source, filename)
+  }
+  const normalizedSource = normalizedInputSource
+  const parserSource = preprocessTemplateImportMeta(normalizedSource)
+  if (options?.sourceMap !== false && parserSource !== normalizedSource) {
+    scriptPreprocessMap = composeSourceMaps(
+      createIdentitySourceMap(parserSource, normalizedSource, filename),
+      scriptPreprocessMap,
+    )
+  }
   let descriptorForCompileSource = normalizedSource
-  const { descriptor, errors } = await parseSfc(normalizedSource, filename, normalizedSource === normalizedInputSource)
-  restoreScriptSetupSrc(descriptor)
-  restoreScriptSrc(descriptor)
+  const parsedSfc = await parseSfc(
+    normalizedSource,
+    filename,
+    true,
+    parserSource,
+  )
+  const descriptor = parsedSfc.descriptor
+  const { errors } = parsedSfc
 
   if (errors.length > 0) {
-    const error = errors[0]
-    throw new Error(`解析 ${filename} 失败：${error.message}`)
+    throw createSfcParseError(errors[0], {
+      filename,
+      source,
+      sourceMap: scriptPreprocessMap,
+    })
   }
-  assertMatchingSfcScriptLang(descriptor, filename)
-
   let resolvedDescriptor = descriptor
   let sfcSrcDeps: string[] | undefined
   let templateResolvedId: string | undefined
+  let scriptResolvedId: string | undefined
+  let scriptSetupResolvedId: string | undefined
   if (options?.sfcSrc) {
     const resolved = await resolveSfcBlockSrc(descriptor, filename, options.sfcSrc)
     resolvedDescriptor = resolved.descriptor
     templateResolvedId = resolved.templateResolvedId
+    scriptResolvedId = resolved.scriptResolvedId
+    scriptSetupResolvedId = resolved.scriptSetupResolvedId
     if (resolved.deps.length) {
       sfcSrcDeps = resolved.deps
     }
   }
 
   let descriptorForCompile = resolvedDescriptor
+  let usesExternalScriptCompileSource = false
+  if (options?.isPage === true && (
+    scriptResolvedId
+    || scriptSetupResolvedId
+    || mayContainPageDeclaration(normalizedSource)
+    || mayContainPageMeta(normalizedSource)
+  )) {
+    const stripped = stripPageCompileTimeMacrosFromSfcDescriptor(
+      normalizedSource,
+      filename,
+      resolvedDescriptor,
+      options?.sourceMap !== false,
+      { scriptResolvedId, scriptSetupResolvedId },
+    )
+    if (stripped) {
+      const mainSourcePreprocessMap = scriptPreprocessMap
+      resolvedDescriptor = stripped.descriptor
+      usesExternalScriptCompileSource = Boolean(stripped.descriptorForCompile)
+      descriptorForCompile = stripped.descriptorForCompile ?? stripped.descriptor
+      descriptorForCompileSource = stripped.descriptorForCompile?.source ?? stripped.code
+      const usesExternalNormalScriptCompileSource = Boolean(
+        resolvedDescriptor.script?.src && !resolvedDescriptor.scriptSetup,
+      )
+      if (usesExternalScriptCompileSource) {
+        scriptPreprocessMap = composeSourceMapForSource(
+          stripped.scriptMap,
+          mainSourcePreprocessMap,
+          filename,
+        )
+      }
+      else if (usesExternalNormalScriptCompileSource) {
+        scriptPreprocessMap = null
+      }
+      else {
+        scriptPreprocessMap = composeSourceMaps(stripped.map, mainSourcePreprocessMap)
+      }
+    }
+  }
+  assertMatchingSfcScriptLang(resolvedDescriptor, filename)
 
   const meta = {
     hasScriptSetup: !!resolvedDescriptor.scriptSetup,
@@ -183,9 +337,13 @@ export async function parseVueFile(
   const mergeJson = createJsonMerger(options?.json?.mergeStrategy, { filename, kind: jsonKind })
 
   const scriptSetup = resolvedDescriptor.scriptSetup
+  // 关闭输出 source map 时，仅在致命重解析错误分支读取宏变换的延迟 map。
   if (scriptSetup?.content) {
+    const scriptSetupForMap = usesExternalScriptCompileSource
+      ? descriptorForCompile.scriptSetup!
+      : scriptSetup
     if (mayContainJsonMacro(scriptSetup.content)) {
-      const extracted = await extractJsonMacroFromScriptSetup(
+      const extracted = await extractJsonMacroFromScriptSetupWithSourceMap(
         scriptSetup.content,
         filename,
         scriptSetup.lang,
@@ -193,9 +351,26 @@ export async function parseVueFile(
           merge: (target, source) => mergeJson(target, source, 'macro'),
           preambleContent: resolvedDescriptor.script?.content,
         },
+        (usesExternalScriptCompileSource || !scriptSetupForMap.src)
+          ? {
+              source: descriptorForCompileSource,
+              sourceFile: filename,
+              offset: scriptSetupForMap.loc.start.offset,
+            }
+          : undefined,
       )
       if (extracted.stripped !== scriptSetup.content) {
-        if (scriptSetup.src) {
+        if (options?.sourceMap === false) {
+          (deferredPreprocessMaps ??= []).push(extracted)
+        }
+        else {
+          scriptPreprocessMap = composeSourceMaps(extracted.map, scriptPreprocessMap)
+        }
+        if (usesExternalScriptCompileSource) {
+          descriptorForCompile = replaceScriptSetupContent(descriptorForCompile, extracted.stripped)
+          descriptorForCompileSource = descriptorForCompile.source
+        }
+        else if (scriptSetup.src) {
           descriptorForCompile = {
             ...descriptorForCompile,
             scriptSetup: {
@@ -210,12 +385,13 @@ export async function parseVueFile(
           const endOffset = setupLoc.end.offset
           const nextSource = descriptorForCompileSource.slice(0, startOffset) + extracted.stripped + descriptorForCompileSource.slice(endOffset)
           const { descriptor: nextDescriptor, errors: nextErrors } = await parseSfc(nextSource, filename, false)
-          restoreScriptSetupSrc(nextDescriptor)
-          restoreScriptSrc(nextDescriptor)
 
           if (nextErrors.length > 0) {
-            const error = nextErrors[0]
-            throw new Error(`解析 ${filename} 失败：${error.message}`)
+            throw createSfcParseError(nextErrors[0], {
+              filename,
+              source,
+              sourceMap: resolvePreprocessSourceMap(scriptPreprocessMap, deferredPreprocessMaps),
+            })
           }
           assertMatchingSfcScriptLang(nextDescriptor, filename)
 
@@ -248,9 +424,26 @@ export async function parseVueFile(
       compileScriptSetup.content,
       filename,
       compileScriptSetup.lang,
+      (usesExternalScriptCompileSource || !compileScriptSetup.src)
+        ? {
+            source: descriptorForCompileSource,
+            sourceFile: filename,
+            offset: compileScriptSetup.loc.start.offset,
+          }
+        : undefined,
     )
     if (inlined.code !== compileScriptSetup.content) {
-      if (compileScriptSetup.src) {
+      if (options?.sourceMap === false) {
+        (deferredPreprocessMaps ??= []).push(inlined)
+      }
+      else {
+        scriptPreprocessMap = composeSourceMaps(inlined.map, scriptPreprocessMap)
+      }
+      if (usesExternalScriptCompileSource) {
+        descriptorForCompile = replaceScriptSetupContent(descriptorForCompile, inlined.code)
+        descriptorForCompileSource = descriptorForCompile.source
+      }
+      else if (compileScriptSetup.src) {
         descriptorForCompile = {
           ...descriptorForCompile,
           scriptSetup: {
@@ -265,12 +458,13 @@ export async function parseVueFile(
         const endOffset = setupLoc.end.offset
         const nextSource = descriptorForCompileSource.slice(0, startOffset) + inlined.code + descriptorForCompileSource.slice(endOffset)
         const { descriptor: nextDescriptor, errors: nextErrors } = await parseSfc(nextSource, filename, false)
-        restoreScriptSetupSrc(nextDescriptor)
-        restoreScriptSrc(nextDescriptor)
 
         if (nextErrors.length > 0) {
-          const error = nextErrors[0]
-          throw new Error(`解析 ${filename} 失败：${error.message}`)
+          throw createSfcParseError(nextErrors[0], {
+            filename,
+            source,
+            sourceMap: resolvePreprocessSourceMap(scriptPreprocessMap, deferredPreprocessMaps),
+          })
         }
         assertMatchingSfcScriptLang(nextDescriptor, filename)
 
@@ -296,6 +490,7 @@ export async function parseVueFile(
   return {
     descriptor: resolvedDescriptor,
     descriptorForCompile,
+    scriptPreprocessMap,
     templateResolvedId,
     meta,
     scriptSetupMacroConfig,

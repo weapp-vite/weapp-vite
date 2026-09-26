@@ -7,14 +7,17 @@ import {
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_BASE,
   WEVU_SLOT_FALLBACK_VIRTUAL_HOST_TAG_NAME,
 } from '@weapp-core/constants'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../runtimeCapabilities'
 
 import { createBindingManifest, markBindingManifestIncomplete } from './template/bindingManifest'
 import { buildClassStyleWxsTag } from './template/classStyleRuntime'
+import { collectConditionalBranches } from './template/conditions'
 import { warn } from './template/diagnostics'
 import { formatWxml } from './template/format'
 import { resolveHtmlTagToWxmlMap } from './template/htmlTagMapping'
 import { transformNode } from './template/nodes'
 import { getMiniProgramTemplatePlatform } from './template/platforms'
+import { retainScopedSlotOwnerBindings } from './template/scopedSlotOwnerBindings'
 
 const HTML_VOID_TAGS = new Set([
   'area',
@@ -126,6 +129,7 @@ export function compileVueTemplateToWxml(
   try {
     // 使用 compiler-dom 解析模板，确保浏览器环境自带 decodeEntities 解析能力。
     const ast = parse(template, {
+      comments: options?.preserveComments ? true : undefined,
       isVoidTag: tag => HTML_VOID_TAGS.has(tag),
       onError: error => warn({ diagnostics, filename }, `模板解析失败：${error.message}`, error.loc, 'template', 'WV2001'),
     })
@@ -160,6 +164,7 @@ export function compileVueTemplateToWxml(
       objectLiteralBindMode: options?.objectLiteralBindMode ?? 'runtime',
       mustacheInterpolation: options?.mustacheInterpolation ?? 'compact',
       formatWxml: options?.formatWxml ?? false,
+      preserveComments: options?.preserveComments ?? false,
       classStyleBindings: [],
       classStyleWxs: false,
       classStyleWxsExtension: wxsExtension,
@@ -182,6 +187,7 @@ export function compileVueTemplateToWxml(
       cssVars: options?.cssVars,
     }
 
+    collectConditionalBranches(ast.children)
     // 转换 AST 到 WXML
     let wxml = ast.children
       .map(child => transformNode(child, context))
@@ -195,6 +201,8 @@ export function compileVueTemplateToWxml(
     if (context.formatWxml) {
       wxml = formatWxml(wxml)
     }
+
+    retainScopedSlotOwnerBindings(context.bindingManifest, context.scopedSlotComponents)
 
     const result: TemplateCompileResult = {
       code: wxml,
@@ -233,6 +241,9 @@ export function compileVueTemplateToWxml(
     if (context.hasSlotOutlet) {
       result.hasSlotOutlet = true
     }
+    result.runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(
+      context.bindingManifest,
+    )
 
     return result
   }

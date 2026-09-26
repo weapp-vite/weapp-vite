@@ -1,8 +1,8 @@
 <script lang="ts">
-import { storeToRefs } from 'wevu'
+import { defineComponent, storeToRefs } from 'wevu'
 import { useCounterStore } from '../../shared'
 
-export default {
+export default defineComponent({
   setup() {
     const counterStore = useCounterStore()
     const { count, doubleCount, displayName } = storeToRefs(counterStore)
@@ -37,7 +37,7 @@ export default {
       goToScenarioPage,
     }
   },
-}
+})
 </script>
 
 <template>

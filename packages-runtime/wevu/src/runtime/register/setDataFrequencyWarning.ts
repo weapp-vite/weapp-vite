@@ -1,5 +1,6 @@
+import type { HighFrequencyWarningMonitorOptions } from '../capabilities'
 import type { SetDataSnapshotOptions } from '../types'
-import { getCurrentMiniProgramHostConfig, getMiniProgramGlobalObject, getMiniProgramRuntimeConsoleWarn } from '../platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramHostConfig, getMiniProgramRuntimeConsoleWarn } from '../platform'
 
 interface ResolvedHighFrequencyWarningOptions {
   enabled: boolean
@@ -11,13 +12,7 @@ interface ResolvedHighFrequencyWarningOptions {
   pageScrollCoolDownMs: number
 }
 
-interface CreateHighFrequencyWarningMonitorOptions {
-  option: SetDataSnapshotOptions['highFrequencyWarning']
-  targetLabel: string
-  isInPageScrollHook?: () => boolean
-  now?: () => number
-  logger?: (message: string) => void
-}
+export type { HighFrequencyWarningMonitorOptions } from '../capabilities'
 
 function isObject(value: unknown): value is Record<string, any> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -84,7 +79,7 @@ export function isDevelopmentRuntime(): boolean {
     return true
   }
 
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   try {
     const envVersion = miniProgramGlobal?.getAccountInfoSync?.()?.miniProgram?.envVersion
     if (envVersion === 'develop') {
@@ -102,7 +97,7 @@ export function isDevelopmentRuntime(): boolean {
  * 创建 setData 高频调用告警监视器。
  */
 export function createSetDataHighFrequencyWarningMonitor(
-  options: CreateHighFrequencyWarningMonitorOptions,
+  options: HighFrequencyWarningMonitorOptions,
 ) {
   const resolved = resolveHighFrequencyWarningOptions(options.option)
   if (!resolved.enabled) {

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { cleanupResidualDevProcesses } from '../e2e/utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
+import { waitForEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 
 interface HmrProfileJsonSample {
@@ -391,7 +392,12 @@ function cssExpected(marker: string) {
 async function waitForTarget(target: WaitTarget, waitMs = timeoutMs) {
   if (target.kind === 'file') {
     const filePath = path.join(distRoot, target.distRel)
-    await waitForFileContains(filePath, target.marker, waitMs)
+    if (target.distRel === 'app.wxss') {
+      await waitForEmittedStylesheet(filePath, target.marker, { timeoutMs: waitMs, intervalMs: pollIntervalMs })
+    }
+    else {
+      await waitForFileContains(filePath, target.marker, waitMs)
+    }
     return target.distRel
   }
   return await waitForDistContains(target.marker, waitMs)

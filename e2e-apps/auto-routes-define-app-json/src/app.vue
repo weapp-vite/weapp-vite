@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AutoRoutesAppGlobalData, AutoRoutesAppInstance } from './types/auto-routes'
 import routes from 'weapp-vite/auto-routes'
+import { getCurrentInstance } from 'wevu'
 
 const globalData: AutoRoutesAppGlobalData = {
   __autoRoutesPages: routes.pages,
@@ -8,14 +9,12 @@ const globalData: AutoRoutesAppGlobalData = {
   __autoRoutesSubPackages: routes.subPackages,
 }
 
-defineAppSetup((app) => {
-  const runtimeApp = app as unknown as AutoRoutesAppInstance
-  runtimeApp.routes = routes
-  runtimeApp.globalData = {
-    ...(runtimeApp.globalData ?? {}),
-    ...globalData,
-  }
-})
+const app = getCurrentInstance() as unknown as AutoRoutesAppInstance
+app.routes = routes
+app.globalData = {
+  ...(app.globalData ?? {}),
+  ...globalData,
+}
 
 defineAppJson({
   pages: routes.pages,

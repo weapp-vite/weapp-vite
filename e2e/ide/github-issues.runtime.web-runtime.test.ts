@@ -1,11 +1,17 @@
+import { ok as assert } from 'node:assert'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
+  closeSharedMiniProgram,
   DIST_ROOT,
+  getSharedMiniProgram,
   PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT,
   prepareGithubIssuesBuild,
+  relaunchPage,
 } from './github-issues.runtime.shared'
+import { WEB_API_PLANS } from './githubIssuesDom/webApis'
 
 async function readDistFile(relativePath: string) {
   return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
@@ -16,7 +22,16 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
     await prepareGithubIssuesBuild()
   }, PREPARE_GITHUB_ISSUES_BUILD_TIMEOUT)
 
-  it('issue #448: compiles the next batch of web runtime globals for DevTools', async () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
+  it('issue #448: compiles the next batch of web runtime globals for DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', WEB_API_PLANS.issue448)
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const page = await relaunchPage(miniProgram, '/pages/issue-448/index')
+    assert(page, 'Expected issue-448 page')
+    await dom.check('initial', miniProgram, page)
     const pageWxml = await readDistFile('pages/issue-448/index.wxml')
     const pageJs = await readDistFile('pages/issue-448/index.js')
 
@@ -37,7 +52,12 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
     expect(pageJs).toContain('_runE2E')
   })
 
-  it('issue #459: compiles directly imported web-apis polyfills for DevTools', async () => {
+  it('issue #459: compiles directly imported web-apis polyfills for DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', WEB_API_PLANS.issue459)
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const page = await relaunchPage(miniProgram, '/pages/issue-459/index')
+    assert(page, 'Expected issue-459 page')
+    await dom.check('initial', miniProgram, page)
     const pageWxml = await readDistFile('pages/issue-459/index.wxml')
     const pageJs = await readDistFile('pages/issue-459/index.js')
 
@@ -53,7 +73,12 @@ describe('github-issues runtime web runtime globals', { concurrent: false }, () 
     expect(pageJs).toContain('_runE2E')
   })
 
-  it('issue #804: keeps web runtime platform exports available to custom components', async () => {
+  it('issue #804: keeps web runtime platform exports available to custom components', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', WEB_API_PLANS.issue804)
+    const miniProgram = await getSharedMiniProgram(ctx)
+    const page = await relaunchPage(miniProgram, '/pages/issue-804/index')
+    assert(page, 'Expected issue-804 page')
+    await dom.check('initial', miniProgram, page)
     const pageWxml = await readDistFile('pages/issue-804/index.wxml')
     const vendorRoot = path.join(DIST_ROOT, 'weapp-vendors')
     const vendorFiles = await fs.readdir(vendorRoot)

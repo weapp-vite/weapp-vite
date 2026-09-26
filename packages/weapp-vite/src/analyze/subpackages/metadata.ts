@@ -61,7 +61,12 @@ export function resolveAnalyzeHistoryMetadata(configService: ConfigService): Ana
 
 export function createAnalyzeMetadata(configService: ConfigService, now = new Date()): AnalyzeSubpackagesMetadata {
   const history = resolveAnalyzeHistoryMetadata(configService)
+  const packageName = configService.packageJson?.name
+  const projectName = typeof packageName === 'string' && packageName.trim()
+    ? packageName.trim()
+    : path.basename(configService.cwd)
   return {
+    projectName,
     generatedAt: now.toISOString(),
     budgets: resolveAnalyzeBudgets(configService),
     history: {

@@ -1,6 +1,8 @@
 import type { TestJsFormat } from '../utils/jsFormat'
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { GLOBALS_CHECKPOINTS, REQUEST_CHECKPOINTS } from './requestGlobalsDom'
 import { APP_ROOT, ensureWevuRuntimeDemoBuilt } from './wevu-runtime-demo.shared'
 
 const CASES = [
@@ -78,24 +80,6 @@ async function waitForTransportState(
   )
 }
 
-async function tapButtonAt(page: any, index: number) {
-  const buttons = await page.$$('button')
-  if (!Array.isArray(buttons) || !buttons[index]) {
-    throw new Error(`Failed to find button at index ${index}`)
-  }
-  await buttons[index].tap()
-}
-
-async function invokeOrTap(page: any, methodName: string, tapIndex: number, ...args: any[]) {
-  try {
-    return await page.callMethod(methodName, ...args)
-  }
-  catch {
-    await tapButtonAt(page, tapIndex)
-    return null
-  }
-}
-
 for (const jsFormat of JS_FORMATS) {
   describe(`wevu runtime demo request globals (weapp e2e) [${jsFormat}]`, { concurrent: false }, () => {
     let miniProgram: any
@@ -127,11 +111,13 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('exposes request globals from the app runtime and request-globals index page', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'apps/wevu-runtime-demo', GLOBALS_CHECKPOINTS)
       const miniProgram = await getMiniProgram(ctx)
       const page = await miniProgram.reLaunch('/pages/request-globals/index')
       if (!page) {
         throw new Error('Failed to launch /pages/request-globals/index')
       }
+      await dom.check('globals', miniProgram, page)
 
       const appProbe = await miniProgram.evaluate(() => {
         return {
@@ -177,6 +163,7 @@ for (const jsFormat of JS_FORMATS) {
     })
 
     it('supports fetch, graphql-request and axios in simulator runtime', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'apps/wevu-runtime-demo', REQUEST_CHECKPOINTS)
       const miniProgram = await getMiniProgram(ctx)
 
       for (const testCase of CASES) {
@@ -202,7 +189,10 @@ for (const jsFormat of JS_FORMATS) {
           expect(initialState.requestLog[0]).toContain(expectedTrace)
         }
 
-        await invokeOrTap(page, 'runChecks', 0)
+        await dom.check(`${testCase.title}-1`, miniProgram, page)
+        const buttons = await page.$$('#request-rerun', { fallback: false })
+        expect(buttons).toHaveLength(1)
+        await buttons[0].tap()
 
         const rerunState = await waitForTransportState(miniProgram, testCase.route, snapshot => (
           snapshot.pageStatus === '全部通过'
@@ -213,6 +203,7 @@ for (const jsFormat of JS_FORMATS) {
         ))
 
         expect(rerunState.payload).toContain(testCase.expectedPayload)
+        await dom.check(`${testCase.title}-2`, miniProgram, page)
         expect(rerunState.requestLog[0]).toContain(testCase.expectedRequestPath)
         for (const expectedTrace of testCase.expectedRequestTrace) {
           expect(rerunState.requestLog[0]).toContain(expectedTrace)

@@ -1,5 +1,172 @@
 # @weapp-vite/web
 
+## 1.5.6
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- 根据六类小程序与 Web 构建目标自动裁剪 Wevu 宿主适配，移除未使用的首航路由与 JSX island 实现，并避免 SFC 子组件注册重新引入完整兼容工厂。保留动态公开 API 和跨平台 adapter 行为，补充七端体积门禁与真实消费回归，同步脚手架随包指引。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.7
+  - @weapp-core/shared@3.2.6
+  - rolldown-require@2.0.33
+  - wevu@7.3.0
+
+## 1.5.5
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：tsx, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsx
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+
+- 新增职责独立的 `definePage({ name, meta })` 路由编译宏及 `wevu/router/auto-routes` 纯数据入口。路由声明要求应用内唯一的非空静态 `name`，可选 `meta` 必须是有限静态 JSON 对象；未声明该宏的页面保持未命名。该能力复用现有页面发现、分包、scope、缓存和更新链路生成稳定名称、最终路径及元信息，不恢复已移除的同名页面注册能力，也不解析 `PageMeta.route`；旧名 `definePageRoute` 不提供兼容别名。旧协议的持久化命名记录会随缓存 schema 自动失效并重新扫描，无需手动清理。
+
+  生成声明按路由名称关联并结构化拓宽 `meta`，贯穿导航、守卫、当前路由和动态记录类型，同时保留未命名页面及无生成映射项目的兼容行为。支持小程序和现有 Web 构建目标；路由 `meta.title` 与 `meta.layout` 只是业务数据，不会改变宿主标题或页面 layout。页面元信息与布局继续由 `definePageMeta` 负责，宿主 JSON 由 `definePageJson` 负责，组件选项由 `defineOptions` 负责。
+
+  支持全局无导入 `definePage`，以及从 `wevu/router` 导入（含别名）的宏调用，并正确处理绑定、遮蔽和支持路径中的源位置映射。宏在编译期移除，不提供运行时注册或兜底函数。自动导入声明为 Volar 和 vue-tsc 提供参数补全与类型诊断；公共路由声明类型独立于编译器 AST 依赖。外部 SFC 脚本、alias 和包导出继续保留相对模块引用。既有 `definePageMeta` 的 `layout`（包括 Vue SFC 的动态 `layout.props` 值）和其他字段保持原语义，不会进入路由 `meta`；模板表达式仍交给平台编译链路处理。仅修改路由元信息时同步更新原生增量产物与生成类型，并保留 JSON 元信息的自有键。
+
+  自动路由关闭时清理过期声明与缓存，并串行发布并发刷新结果，避免旧产物覆盖新版本。Web 开发模式在路由元信息或页面拓扑变化时重新加载应用入口，确保活动 Router 使用新快照；Web 扫描完成后原子发布状态，刷新期间和失败后保留完整的上一份虚拟模块。页面新增和删除在 Vite 结构性 HMR 前完成扫描，并在快照发布时同步失效 Web 入口、路由模块及扫描拥有的脚本、模板和 SFC 合成样式，避免入口引用已删除页面、模板保留已删除布局、脚本遗漏新增模板和样式或 SFC 样式缓存滞留。修复 Web 页面未保留原生 `options` 查询参数导致重定向后活动页面状态丢失的问题。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.6
+  - @weapp-core/shared@3.2.5
+  - rolldown-require@2.0.32
+  - wevu@7.2.0
+
+## 1.5.4
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.6，同步工作区默认依赖、固定版本回归环境及脚手架模板映射，使新建项目与仓库验证使用一致的 Tailwind 集成版本。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - weapp-vite：dependencies.@babel/preset-env
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 由 Web 运行时公开入口显式安装小程序全局 API，避免拆分发布模块经过生产摇树优化后丢失 `wx`、`getApp` 和 `getCurrentPages`，恢复原生与 Wevu 路由导航。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.5
+  - @weapp-core/shared@3.2.4
+  - rolldown-require@2.0.31
+  - wevu@7.1.4
+
+## 1.5.3
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.4
+  - @weapp-core/shared@3.2.3
+  - rolldown-require@2.0.30
+  - wevu@7.1.3
+
+## 1.5.2
+
+### Patch Changes
+
+- 修复 Web 生产构建错误移除运行时 polyfill 全局安装副作用的问题，确保 `wx`、`getApp` 和 `getCurrentPages` 在生产包中可用。
+
+- Updated dependencies:
+  - wevu@7.1.2
+
+## 1.5.1
+
+### Patch Changes
+
+- 修复 Web 运行时在生产构建 tree-shaking 后丢失 `wx`、`getApp` 和 `getCurrentPages` 全局安装的问题。
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.3
+  - @weapp-core/shared@3.2.2
+  - rolldown-require@2.0.29
+  - wevu@7.1.1
+
+## 1.5.0
+
+### Minor Changes
+
+- 新增独立的 `@wevu/query` 服务端状态管理包，提供类型关联查询键、共享请求与缓存、失效刷新、作用域隔离、mutation、分页查询，以及 Wevu 响应式和页面生命周期接入。应用前后台与网络状态通过显式微信宿主适配器驱动，不内置持久化或自动重试策略。
+
+  为 simulator 增加应用显示/隐藏监听和显式测试控制，并支持在执行小程序入口前等待 `configureSession` 配置完成。查询回归通过仅限指定回环源与查询路径的测试传输访问真实 HTTP 服务，默认 request mock 和 strict mock 策略保持不变。
+
+  应用事件分发对齐真实微信开发者工具：保留同一监听器的重复注册，按事件快照处理派发期间的增删，取消监听时移除全部同引用注册；冷启动保持 App 显示钩子先执行，后续恢复与隐藏则先执行 wx 监听器。
+
+  自定义 `HeadlessWxDriver` 实现需要补齐 `onAppShow`、`offAppShow`、`onAppHide`、`offAppHide` 四个方法；内置 Node 与 browser driver 已同步迁移。
+
+  Web runtime 同步支持 `wx.onAppShow`、`wx.offAppShow`、`wx.onAppHide`、`wx.offAppHide`，保持相同的监听快照、重复注册与回调顺序。浏览器隐藏事件向 wx 监听器与 App 钩子传递同一份 `{ reason: 3 }`，表示无法区分微信退出来源的“其他”原因；同时修正公开类型入口，使其指向实际生成的 `.d.mts` 声明文件。
+
+### Patch Changes
+
+- 修复 Web scroll-view 更新无关属性或重新连接时重放旧滚动位置的问题，保持横纵轴的独立输入同步。
+
+- 同步更新对 `@weapp-core/constants` 的依赖版本，使国际化、React、Web 运行时与测试工具使用本轮修复所需的公共运行时常量。
+
+- 修复 Vue 类型优先的可选、可空和联合类型 props 在微信原生属性层提前被转换的问题。启用空值传输兼容时使用无主类型约束的原生描述符，保留默认值和显式原生属性覆盖，并正确尊重 `allowNullPropInput: false`。
+
+  Web 注册入口不再应用小程序宿主的空值传输降级，保留 DOM 布尔、数字、对象和数组属性的解码类型，避免组件交互和视觉表现回归。
+
+- 修复响应式 `setData` 在宿主提交失败或乱序完成后仍沿用未提交快照的问题，确保 Web 适配器可重试同值渲染；导出的 `nextTick` 继续只等待 JavaScript 与响应式调度队列，Web Options API `$nextTick` 会额外等待当前 Lit 提交。
+
+  原生实例 `$nextTick` 现在等待宿主提交与模板 ref 完成，ref 或原始回调失败会拒绝本轮等待但不阻止后续恢复；隐藏缓冲保留最早失败，过期 selector 回调不能覆盖新 ref。Web 实例在属性更新或 HMR 恢复后改为等待当前渲染，不再复用已经失败的旧提交。
+
+- 修复 Web 嵌套 scroll-view 内层滚动重复触发外层监听的问题，滚动事件仅由实际滚动的视口派发。
+
+- 重构 Wevu 可选运行时能力的安装边界：编译产物会按模板元数据和应用选项显式安装所需能力，未使用 patch、模板 ref、内联事件、高频告警、作用域插槽或 layout 的小程序不再携带对应实现；公开 `wevu` 入口继续保留原有动态配置行为。
+
+  能力分析沿用配置初始化表达式所属的词法作用域，不再被调用位置的同名局部变量误导；提取后的作用域插槽组件也会依据自身 layout host 元数据安装 layout 能力。
+
+  按需 patch 与 diff 共用宿主提交跟踪，保证 setData 派发期间新增的 computed 变更不会丢失；清空模板 ref 绑定时会使旧异步查询失效，避免实例 `$nextTick` 读到已移除的引用。
+
+- 修复 Web 原生 input 未应用 bindinput 处理函数同步字符串返回值的问题，支持空字符串且不改写其他控件、自定义事件或异步返回值。
+
+- 修复 Web 原生组件自定义事件大小写在编译和监听桥中丢失的问题，支持同一节点上的大小写不同事件并保留原生事件别名。编译模板的运行时依赖由插件自身解析，无需应用直接安装 Web 运行时。
+
+- Updated dependencies:
+  - @weapp-core/constants@0.2.2
+  - wevu@7.1.0
+
 ## 1.4.21
 
 ### Patch Changes

@@ -2,6 +2,66 @@
 
 本文档提供一套可直接落地的最小配置，帮助你在小程序项目里快速使用 `wevu/router`。
 
+## 自动路由：页面路由声明与生成入口
+
+在 `weapp-vite.config.ts` 开启 `weapp.autoRoutes`，然后在被现有页面扫描识别的页面中分别声明 layout、命名路由和宿主页面配置：
+
+```vue
+<script setup lang="ts">
+definePageMeta({
+  layout: false,
+})
+
+definePage({
+  name: 'home',
+  meta: { title: '首页', requiresAuth: false },
+})
+
+definePageJson({
+  navigationBarTitleText: '宿主首页',
+})
+</script>
+```
+
+App 初始化时读取纯数据路由表：
+
+```ts
+import { createRouter, useRoute } from 'wevu/router'
+import { routes } from 'wevu/router/auto-routes'
+
+const router = createRouter({ routes })
+router.beforeEach((to) => {
+  if (to?.name === 'home') {
+    console.log(to.meta.title, to.meta.requiresAuth)
+  }
+})
+await router.push({ name: 'home' })
+
+// 在页面同步 setup 中读取。
+const route = useRoute()
+if (route.name === 'home') {
+  console.log(route.meta.title) // string，而不是固定的“首页”字面量
+}
+```
+
+运行 `weapp-vite prepare`，并把 `.weapp-vite/typed-router.d.ts` 纳入 TypeScript `include`。生成的 `WevuNamedRouteMap` 同时关联名称、最终路径与结构化拓宽的 `meta`；dev/build 复用同一声明生成链路。分包和 scope 仍由原配置控制，移动页面不需要修改按名称导航的调用。
+
+升级后，旧协议留下的持久化命名记录会随缓存 schema 自动失效并重新扫描；不需要手动清理缓存。
+
+`definePage()` 是专用于路由信息的 `<script setup>` 编译宏。全局、无导入调用是规范写法；需要显式导入时，从 `wevu/router` 具名导入，也可以使用别名。它必须作为页面脚本的顶层直接调用，每个页面最多一次；编译器会区分宏绑定与同名遮蔽，并在支持的编译路径中保留错误源位置。
+
+参数必须直接包含应用内唯一的非空静态 `name`；可选 `meta` 必须是有限静态 JSON 对象，省略时生成 `{}`。不接受导入常量、函数、展开、计算键、`undefined`、`path` 或顶层 `layout`。
+
+`definePageMeta()` 继续负责原有页面元信息和 layout；Vue SFC 的 `layout.props` 对象与键名需要静态可分析，但值可以保留响应式表达式。`definePageMeta({ route: ... })` 不会生成命名路由。`definePage()` 是预期使用的独立路由编译宏，与已移除的历史页面注册能力职责不同；旧名 `definePageRoute` 不提供兼容别名。`definePage({ name, meta })` 参数中的 `meta` 只是守卫和业务代码的数据：其中的 `title` 或 `layout` 不会设置宿主标题或页面壳；宿主页面 JSON 使用 `definePageJson()`，组件选项使用 `defineOptions()`。
+
+SFC 内联脚本和 `<script src>` / `<script setup src>` 的外部脚本均可声明 `definePage()`。外部脚本的声明仍属于引用它的页面；移动页面时名称不变，路径随页面最终注册位置更新。`src` 支持相对路径、`resolve.alias` 和包导出，`prepare` 也会解析；外部脚本内的相对模块引用仍以原脚本目录为准。
+
+未声明 `definePage()` 的页面仍按路径注册；初始路由及未命名路由的 `name/meta` 仍可能缺省。旧 `weapp-vite/auto-routes` 的 `pages/entries/subPackages` 保持不变。该功能也适用于 weapp-vite 的 Web 目标，不是通用 Vue Router 插件。
+
+Web 开发模式会在路由声明或页面拓扑变化时重新加载应用入口，更新挂载中的 Router 快照；此次更新不保留页面状态。普通源码修改若未改变路由声明，仍使用原有 HMR。
+
+有生成映射时，未知名称、混用名称与路径、不匹配的同名动态记录会被拒绝；不会推导精确 `params/query`。以下手写记录示例适用于没有生成命名映射的兼容模式。确需任意运行时名称时，显式使用 `createRouter<WevuBroadRouteMap>()`，并让 `useRouter/useRoute` 使用相同泛型，避免把动态路由误认为静态声明。
+
 ## 1. 初始化路由器
 
 ```ts
@@ -32,6 +92,8 @@ createRouter({
 const router = useRouter()
 ```
 
+在 `app.vue` 的 `<script setup>` 里调用一次 `createRouter()`，不要放进 `onLaunch`。App 没有页面级 `this.router` 时会用 `wx` / `my` / `tt`。未传 `tabBarEntries` 时读取宿主 tabBar，这些路径走 `switchTab`。
+
 ### 首屏导航模式
 
 `initialNavigationMode` 默认值为 `'eager'`。页面会先挂载并渲染，首屏守卫异步运行，不会因鉴权请求或其他慢操作造成白屏。若业务必须在页面挂载前完成鉴权、租户选择等判断，显式配置 `initialNavigationMode: 'blocking'`：
@@ -44,6 +106,8 @@ createRouter({
 ```
 
 `initialNavigationTimeout` 只控制 blocking 模式，默认 `10_000ms`，超时后放行页面并输出诊断 marker。数据预加载建议由页面显示 loading 或 skeleton，不要用 blocking 代替。
+
+blocking 首屏守卫返回重定向目标时，会解析命名路由与 query，并通过宿主 `redirectTo` 进入普通页面，或通过 `switchTab` 进入 tabBar 页面；原始页面不会挂载。该行为只作用于 blocking 首屏导航，eager 模式仍先挂载原页面。
 
 如果你希望沿用 Vue Router 的树状写法，也可以声明 `children`（会在内部展平为可匹配记录）：
 

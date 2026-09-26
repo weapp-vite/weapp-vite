@@ -240,7 +240,7 @@ export default defineComponent({
       style-conditional
     </view>
 
-    <text selectable class="details">
+    <text user-select class="details">
       {{ __e2eText }}
     </text>
   </view>

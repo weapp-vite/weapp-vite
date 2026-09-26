@@ -1,5 +1,97 @@
 # @weapp-vite/dashboard
 
+## 7.3.0
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+## 7.2.1
+
+## 7.2.0
+
+### Minor Changes
+
+- 将 `--ui` 调试链路迁移到 Devframe 分页只读 RPC 与服务端单向状态通知，显式启用 OTP 和 loopback Origin 门禁，支持断线重连、旧历史迁移以及按 revision 缓存并拒绝符号链接的受限文件读取；同时把 Dashboard 重构为面向构建、包体、运行事件和诊断的高密度 DevTools 工作台，新增基于 D3 的可缩放 Chunk 静态/动态依赖图，并修正 mixed vendor 稳定命名、增量模块身份归一化和 WXSS 中的 Vite 资源占位符替换，避免业务依赖被误归属到 `wevu-runtime` 产物、同一依赖因 workspace 与 pnpm 安装路径差异产生虚假增长，以及相对静态资源在最终产物中残留内部占位符。Dashboard 弹出式筛选器改用自有 listbox，统一悬停、选中和展开层视觉，让弹层按照真实视口自动选择上下方向、避让边缘并按选项内容扩展宽度，超长标签则完整换行显示。静态 analyze 模式优先提供已构建 Dashboard 产物，避免本地 dev root 的源码路由在导航时发生动态模块请求失败。
+
+  认证失败时完整释放 Devframe 客户端与事件订阅，避免自动重连残留；模块增量比较统一使用规范化标识，Chunk 图节点预算也会为手动选择的节点预留位置。
+
+  升级 Devframe 至 1.0.0，继续使用独立的 OTP/Origin 鉴权 bridge，保持 MCP 关闭并验证分页同步、断线恢复与未授权连接拒绝。合并新版构建链路时保留 Vite 定稿后的样式归属与 Tailwind HMR 行为，资源校验同时支持相对路径和小程序产物根路径。
+
+  源码对比为每个分析 revision 保留生成同一报告时采集的有界产物文本快照：完整分析捕获对应构建输出，开发模式 fallback 捕获同次 `dist` 扫描读取的字节。后续读取不再猜测当前开发 `dist` 中的同名文件，也不为界面补写 bundle。拒绝旧 revision 和过期异步响应，同路径的新 revision 也会刷新；同时修复编辑器宿主与可拖动面板的高度传递，避免宽窄屏切换后代码区域塌陷为空白。
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：tsx, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsx
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+
+## 7.1.4
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.6，同步工作区默认依赖、固定版本回归环境及脚手架模板映射，使新建项目与仓库验证使用一致的 Tailwind 集成版本。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - weapp-vite：dependencies.@babel/preset-env
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+## 7.1.3
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+## 7.1.2
+
+## 7.1.1
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+## 7.1.0
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.2，同步默认依赖与固定版本回归环境，纳入 CSS 导入解析、跨平台扫描路径及删除文件候选失效修复。保留现有 Core 编译器集成和单一 Tailwind CSS 生成入口。
+
+  同步脚手架模板 catalog 与初始化依赖解析的离线回退版本；注册表不可用时继续保留已有项目声明的版本。
+
 ## 7.0.4
 
 ## 7.0.3

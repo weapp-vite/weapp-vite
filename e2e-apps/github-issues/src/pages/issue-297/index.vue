@@ -207,6 +207,7 @@ function _runE2E() {
       >
         <view
           v-for="item in getRows()"
+          :id="`issue297-${item.id}`"
           :key="item.id"
           class="issue297-row"
           :data-hello="sayHello(1, item.label, dasd)"
@@ -239,10 +240,10 @@ function _runE2E() {
       <text class="issue297-case-code">
         三参数函数调用 + 激活项联动
       </text>
-      <text class="issue297-case-result">
+      <text id="issue297-active-label" class="issue297-case-result">
         {{ sayHello(1, activeRowLabel, dasd) }}
       </text>
-      <text class="issue297-case-result">
+      <text id="issue297-active-meta" class="issue297-case-result">
         {{ sayHello(1, `${activeRowId}-meta`, dasd) }}
       </text>
     </view>

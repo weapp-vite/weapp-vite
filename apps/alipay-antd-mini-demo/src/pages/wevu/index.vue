@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'wevu'
+import WevuCounter from '../../components/WevuCounter/index.vue'
 
 definePageJson({
   navigationBarTitleText: 'wevu SFC 示例',
@@ -9,7 +10,12 @@ definePageJson({
 })
 
 const count = ref(0)
+const showCounter = ref(true)
 const isOdd = computed(() => count.value % 2 === 1)
+
+function onCounterChange(value: number) {
+  count.value = value
+}
 
 function increase() {
   count.value += 1
@@ -27,6 +33,8 @@ function increase() {
     <ant-button type="primary" className="action-btn" @tap="increase">
       +1
     </ant-button>
+    <WevuCounter v-if="showCounter" :count="count" @change="onCounterChange" />
+    <button @tap="showCounter = !showCounter">切换子组件</button>
   </view>
 </template>
 

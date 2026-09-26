@@ -19,10 +19,13 @@ Page({
     scenarioId,
     title: 'shared chunk modes',
     tokens,
+    asyncToken: 'pending',
   },
   onLoad() {
     tokens.forEach(token => console.log(token))
-    void import('./async')
+    void import('./async').then((module) => {
+      this.setData({ asyncToken: module.ASYNC_MARKER })
+    })
   },
   _runE2E() {
     return {

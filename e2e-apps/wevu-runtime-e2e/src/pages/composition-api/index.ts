@@ -1,4 +1,5 @@
 import {
+  WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_ON_BEFORE_UPDATE_HOOK,
   WEVU_ON_UPDATED_HOOK,
 } from '@weapp-core/constants'
@@ -7,13 +8,13 @@ import {
   callHookList,
   callHookReturn,
   computed,
-  createStore,
   customRef,
   defineComponent,
   defineStore,
   effect,
   effectScope,
   endBatch,
+  getActivePinia,
   getCurrentInstance,
   getCurrentScope,
   getCurrentSetupContext,
@@ -116,6 +117,7 @@ export default defineComponent({
   },
   setup(_props, ctx) {
     const hookLogs = ref<string[]>([])
+    const beforeUnmountCallbacks = computed(() => hookLogs.value.filter(name => name === 'onBeforeUnmount').length)
     const setupInstance = getCurrentInstance()
     const setupContext = getCurrentSetupContext<any>()
     const attrs = useAttrs()
@@ -235,7 +237,7 @@ export default defineComponent({
     const normalizedClass = normalizeClass(['a', { b: true, c: false }])
     const normalizedStyle = normalizeStyle([{ fontSize: '24rpx' }, 'color:#111'])
 
-    const manager = createStore()
+    const manager = getActivePinia()!
     let pluginRuns = 0
     manager.use(() => {
       pluginRuns += 1
@@ -394,6 +396,8 @@ export default defineComponent({
       callHookList(target, 'onDeactivated', [])
       callHookList(target, WEVU_ON_BEFORE_UPDATE_HOOK, [])
       callHookList(target, WEVU_ON_UPDATED_HOOK, [])
+      // API 矩阵显式模拟派发；真正卸载时序由独立生命周期用例覆盖。
+      callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK, [])
       callHookList(target, 'onErrorCaptured', [new Error('api-matrix-error')])
       callHookList(target, 'onError', [new Error('api-matrix-error')])
 
@@ -476,7 +480,7 @@ export default defineComponent({
         mergeModels: Array.isArray(mergedArray) && mergedArray.length === 3 && (mergedObject as any).b === 2,
         normalizeClass: normalizedClass === 'a b',
         normalizeStyle: normalizedStyle.includes('font-size:24rpx') && normalizedStyle.includes('color:#111'),
-        defineStore: apiStore.doubled.value === 4,
+        defineStore: apiStore.doubled === 4,
         createStore: typeof manager.install === 'function',
         storeToRefs: apiStoreRefs.value.value === 2,
       }
@@ -504,6 +508,12 @@ export default defineComponent({
 
     return {
       runE2E,
+      reactiveState,
+      derived,
+      custom,
+      modelRef,
+      storeCount: apiStoreRefs.value,
+      beforeUnmountCallbacks,
     }
   },
 })

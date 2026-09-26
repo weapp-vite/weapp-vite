@@ -36,12 +36,12 @@ let lastSelectChoices: Array<{ name: string, value: unknown }> | undefined
 vi.mock('@inquirer/prompts', () => {
   return {
     input: async () => answers.name,
-    confirm: async (opts: { message?: string }) => {
+    confirm: async (opts: { message?: string, default?: boolean }) => {
       if (opts.message?.includes('覆盖')) {
         return answers.overwrite ?? false
       }
       if (opts.message?.includes('AI skills')) {
-        return answers.installSkills ?? true
+        return answers.installSkills ?? opts.default
       }
       return false
     },
@@ -89,9 +89,11 @@ async function listAll(root: string) {
 
 const tmpRoot = path.join(os.tmpdir(), 'weapp-vite-create-cli-tests')
 let originalArgv: string[] = []
+let originalExitCode: typeof process.exitCode
 const initialCwd = process.cwd()
 
 beforeEach(async () => {
+  originalExitCode = process.exitCode
   originalArgv = [...process.argv]
   process.argv = process.argv.slice(0, 2)
   initConfigMock.mockReset()
@@ -99,6 +101,8 @@ beforeEach(async () => {
   await fs.remove(tmpRoot)
   await fs.ensureDir(tmpRoot)
   answers.installSkills = false
+  const npm = await import('@/npm')
+  vi.spyOn(npm, 'getPackageVersionsFromNpm').mockResolvedValue([])
 })
 
 afterEach(async () => {
@@ -108,6 +112,7 @@ afterEach(async () => {
   lastSelectChoices = undefined
   vi.resetModules()
   process.argv = originalArgv
+  process.exitCode = originalExitCode
 })
 
 describe('create-weapp-vite CLI (mocked prompts)', () => {
@@ -215,7 +220,68 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
 
     expect(createProjectMock).toHaveBeenCalledWith(name, 'default', {
       installSkills: false,
+      dependencyVersionStrategy: 'bundled',
+      registry: undefined,
     })
+  })
+
+  it.each(['compatible', 'bundled'])('passes the %s dependency strategy to project creation', async (strategy) => {
+    process.chdir(tmpRoot)
+    process.argv = [...process.argv.slice(0, 2), 'app', 'default', `--dependency-versions=${strategy}`, '--no-install-skills']
+    const cli = await import('../src/cli')
+    await cli.runPromise
+    expect(createProjectMock).toHaveBeenCalledWith('app', 'default', {
+      installSkills: false,
+      dependencyVersionStrategy: strategy,
+      registry: undefined,
+    })
+    expect(await fs.pathExists(path.join(tmpRoot, 'app', 'package.json'))).toBe(true)
+  })
+
+  it.each(['--dependency-versions=latest', '--dependency-versions=', '--dependency-versions', '--registry=', '--registry'])(
+    'fails before writing project files for %s',
+    async (arg) => {
+      process.chdir(tmpRoot)
+      process.argv = [...process.argv.slice(0, 2), 'app', 'default', arg]
+      const cli = await import('../src/cli')
+      await cli.runPromise
+      expect(createProjectMock).not.toHaveBeenCalled()
+      expect(await fs.pathExists(path.join(tmpRoot, 'app'))).toBe(false)
+      expect(process.exitCode).toBe(1)
+    },
+  )
+
+  it('passes an explicit registry to creation', async () => {
+    process.chdir(tmpRoot)
+    process.argv = [...process.argv.slice(0, 2), 'app', 'default', '--registry=https://registry.npmmirror.com/']
+    const cli = await import('../src/cli')
+    await cli.runPromise
+    expect(createProjectMock).toHaveBeenCalledWith('app', 'default', {
+      installSkills: false,
+      dependencyVersionStrategy: 'bundled',
+      registry: 'https://registry.npmmirror.com/',
+    })
+  })
+
+  it('defaults to skipping skills in interactive mode', async () => {
+    process.chdir(tmpRoot)
+    answers.name = 'interactive-default'
+    answers.template = 'default' as TemplateName
+    answers.installSkills = undefined
+    const cli = await import('../src/cli')
+    await cli.runPromise
+    expect(createProjectMock).toHaveBeenCalledWith('interactive-default', 'default', expect.objectContaining({ installSkills: false }))
+  })
+
+  it('honors the explicit no-install-skills flag during interactive creation', async () => {
+    process.chdir(tmpRoot)
+    answers.name = 'interactive-no-skills'
+    answers.template = 'default' as TemplateName
+    answers.installSkills = true
+    process.argv = [...process.argv.slice(0, 2), '--no-install-skills']
+    const cli = await import('../src/cli')
+    await cli.runPromise
+    expect(createProjectMock).toHaveBeenCalledWith('interactive-no-skills', 'default', expect.objectContaining({ installSkills: false }))
   })
 
   it('routes init command to @weapp-core/init without creating a project', async () => {

@@ -1,3 +1,5 @@
+import { recordHostLifecycleHook } from '../../../shared/appLifecycle'
+
 export const APP_HOOKS = [
   'onLaunch',
   'onShow',
@@ -79,9 +81,10 @@ function updateState(data: AppLifecycleData, hook: string) {
 export function recordAppLifecycle(
   app: { globalData: AppLifecycleData },
   hook: string,
-  args: unknown,
+  args: unknown[],
   meta?: Pick<AppLifecycleEntry, 'source'>,
 ): AppLifecycleEntry {
+  recordHostLifecycleHook(hook, args)
   const data = ensureAppData(app)
   const order = nextOrder(data)
   const snapshotState = updateState(data, hook)

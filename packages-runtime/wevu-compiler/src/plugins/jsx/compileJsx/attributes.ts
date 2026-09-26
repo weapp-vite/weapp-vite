@@ -107,7 +107,7 @@ export function readJsxAttributeExpression(value: JSXAttribute['value']) {
   return unwrapTsExpression(value.expression as Expression)
 }
 
-export function extractJsxKeyExpression(node: JSXElement): string | null {
+export function extractJsxKeyExpression(node: JSXElement, context?: JsxCompileContext): string | null {
   for (const attr of node.openingElement.attributes) {
     if (!t.isJSXAttribute(attr) || !t.isJSXIdentifier(attr.name)) {
       continue
@@ -122,7 +122,7 @@ export function extractJsxKeyExpression(node: JSXElement): string | null {
     if (t.isStringLiteral(exp)) {
       return exp.value
     }
-    return normalizeInterpolationExpression(exp)
+    return normalizeInterpolationExpression(exp, context)
   }
   return null
 }
@@ -214,7 +214,7 @@ function compileNormalAttribute(
   if (isComponent && (t.isArrowFunctionExpression(exp) || t.isFunctionExpression(exp))) {
     context.bindingManifest.features.functionProps = true
   }
-  const normalizedExp = normalizeInterpolationExpression(exp)
+  const normalizedExp = normalizeInterpolationExpression(exp, context)
   return `${normalizedName}="${renderMustache(normalizedExp, context)}"`
 }
 

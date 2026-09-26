@@ -136,10 +136,10 @@ function assertNoUnexpectedNamedRouteParams(
 }
 
 export function resolveNamedRouteLocation(
-  to: Extract<RouteLocationRaw, Record<string, unknown>>,
+  to: Exclude<RouteLocationRaw, string>,
   lookup: NamedRouteLookup,
   paramsMode: RouteParamsMode,
-): Extract<RouteLocationRaw, Record<string, unknown>> {
+): Exclude<RouteLocationRaw, string> {
   const routeName = to.name
   if (typeof routeName !== 'string' || !routeName) {
     return to

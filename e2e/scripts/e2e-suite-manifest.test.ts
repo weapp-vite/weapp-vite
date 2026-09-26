@@ -1,9 +1,56 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
+import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it('runs external CSS file HMR in DevTools without advertising unsupported headless file watching', async () => {
+    const label = 'ide/issue-1015-css-hmr.runtime.test.ts'
+    expect((await getSuiteTasks('ide-full:github-issues')).filter(task => task.label === label)).toHaveLength(1)
+    expect((await getSuiteTasks('hmr-regression')).filter(task => task.label === label)).toHaveLength(1)
+    expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
+    expect((await getSuiteTasks('ide-headless-full')).some(task => task.label === label)).toBe(false)
+  })
+
+  it.each([
+    'ide/wevu-runtime.pruning.test.ts',
+    'ide/github-issues.runtime.issue1035.test.ts',
+    'ide/issue-963-plugin-es6.runtime.test.ts',
+    'ide/issue-998-tailwind.runtime.test.ts',
+    'ide/body-blob.runtime.test.ts',
+    'ide/stream-capability.runtime.test.ts',
+    'ide/app-lifecycle.test.ts',
+    'ide/github-issues.runtime.issue1015.test.ts',
+    'ide/issue-997-rebuild.runtime.test.ts',
+    'ide/issue-1029-auto-routes.runtime.test.ts',
+    'ide/wxml-transform.runtime.test.ts',
+    'ide/template-retail-checkout.runtime.test.ts',
+    'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
+    'ide/wevu-subpackage-placement.runtime.test.ts',
+  ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
+    const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)
+    expect(headless?.env).toMatchObject({
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
+    })
+    expect(getIdeExhaustiveTasks().filter(task => task.label === label)).toHaveLength(1)
+    expect((await getSuiteTasks('ide-headless-full')).filter(task => task.label === label)).toHaveLength(1)
+  })
+
+  it('keeps ordinary full within WeChat scope and only three optional Baidu tasks outside exhaustive', () => {
+    const full = getIdeTasks()
+    const exhaustive = getIdeExhaustiveTasks()
+    const optionalBaidu = [
+      'ide/swan-runtime.optional.test.ts',
+      'ide/template-multi-platform.swan.optional.test.ts',
+      'ide/template-multi-platform-sfc.swan.optional.test.ts',
+    ]
+    expect(full.length).toBeGreaterThan(0)
+    expect(full.every(task => !task.outOfScopeReason && !optionalBaidu.includes(task.label))).toBe(true)
+    expect(full.every(task => exhaustive.some(candidate => candidate.label === task.label))).toBe(true)
+    expect(exhaustive.filter(task => task.outOfScopeReason).map(task => task.label).sort()).toEqual(optionalBaidu.sort())
+  })
+
   it('routes every IDE full package script through the sleep-inhibited runner', () => {
     const packageJson = JSON.parse(
       fs.readFileSync(path.resolve(import.meta.dirname, '../../package.json'), 'utf8'),
@@ -42,6 +89,7 @@ describe('e2e suite manifest', () => {
     const labels = new Set(tasks.map(task => task.label))
 
     expect(aggregateTasks).toHaveLength(1)
+    expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS).toContain('ide/github-issues.runtime.issue1008.test.ts')
     expect(aggregateTasks.every(task => task.env?.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER === '1')).toBe(true)
     expect(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS.every(pattern => !labels.has(pattern))).toBe(true)
   })
@@ -54,6 +102,9 @@ describe('e2e suite manifest', () => {
     expect(prTasks.every(task => fullLabels.has(task.label))).toBe(true)
     expect(prTasks.some(task => task.label.startsWith('hmr-guard:'))).toBe(false)
     expect(prTasks.some(task => task.label === 'ci/issue-862-output-watch.test.ts')).toBe(true)
+    expect(prTasks.some(task => task.label === 'ci/github-issues.issue1035.build.test.ts')).toBe(true)
+    expect(prTasks.filter(task => task.label === 'ci/template-multi-platform-sfc.hmr.test.ts')).toHaveLength(1)
+    expect(prTasks.filter(task => task.label === 'ci/wevu-runtime.npm-platforms.test.ts')).toHaveLength(1)
     expect(await getSuiteTasks('ci-pr')).toEqual(await getCiPrTasks())
     expect(await getSuiteTasks('ci-full')).toEqual(await getCiFullTasks())
   })

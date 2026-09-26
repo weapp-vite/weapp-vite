@@ -2,10 +2,19 @@ import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelT
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../wevu/pageFeatures'
 import type { TransformResult, TransformScriptOptions, TransformState } from './utils'
-import { isWevuRuntimeModuleId, WE_VU_RUNTIME_APIS } from '../../../../constants'
+import * as t from '@weapp-vite/ast/babelTypes'
+import {
+  isWevuRuntimeModuleId,
+  WE_VU_RUNTIME_APIS,
+} from '../../../../constants'
+import {
+  createWevuRuntimeCapabilityMetadata,
+  mergeWevuRuntimeCapabilityMetadata,
+} from '../../../../runtimeCapabilities'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../../utils/babel'
 import { resolveWarnHandler } from '../../../../utils/warn'
 import { collectWevuPageFeatureFlags } from '../../../wevu/pageFeatures'
+import { resolveComponentExpression } from '../scriptComponent'
 import { pruneTemplateComponentMeta } from '../scriptTemplateMeta'
 import { vueSfcTransformPlugin } from '../scriptVueSfcTransform'
 import { createCollectVisitors } from './collect'
@@ -13,6 +22,12 @@ import { tryFastTransformCompiledScriptSetup } from './fastSetup'
 import { createImportVisitors } from './imports'
 import { createMacroVisitors } from './macros'
 import { rewriteDefaultExport, serializeWevuDefaults } from './rewrite'
+import {
+  analyzeWevuComponentOptions,
+  analyzeWevuDefaults,
+  analyzeWevuRuntimeCalls,
+  injectWevuRuntimeCapabilityInstallers,
+} from './runtimeCapabilities'
 
 export type { TransformResult, TransformScriptOptions } from './utils'
 
@@ -32,6 +47,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
   }
 
   const ast: BabelFile = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS)
+  const sourceRuntimeCapabilities = analyzeWevuRuntimeCalls(ast)
   const warn = resolveWarnHandler(options?.warn)
 
   const state: TransformState = {
@@ -54,7 +70,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
     : undefined
 
   const vueSfcVisitors = vueSfcTransformPlugin().visitor as Record<string, any>
-  const macroVisitors = createMacroVisitors(ast.program, state)
+  const macroVisitors = createMacroVisitors(ast, state)
   const importVisitors = createImportVisitors(ast.program, state)
   const collectVisitors = createCollectVisitors(state)
   const visitor = {
@@ -63,6 +79,10 @@ export function transformScript(source: string, options?: TransformScriptOptions
     ...importVisitors,
     ...collectVisitors,
     ImportDeclaration(path: any) {
+      runVisitor(macroVisitors.ImportDeclaration, path)
+      if (path.removed) {
+        return
+      }
       const source = path.node.source.value
       const canProvideUseSlots = source === 'vue' || isWevuRuntimeModuleId(source)
       for (const specifier of path.node.specifiers) {
@@ -94,6 +114,53 @@ export function transformScript(source: string, options?: TransformScriptOptions
   }
 
   traverse(ast, visitor as any)
+  const templateRuntimeCapabilities = createWevuRuntimeCapabilityMetadata([
+    ...(options?.templateRefs?.length || options?.layoutHosts?.length ? ['templateRefs'] as const : []),
+    ...(options?.inlineExpressions?.length ? ['inlineEvents'] as const : []),
+    ...(options?.layoutHosts?.length ? ['layout'] as const : []),
+  ])
+  const componentExpression = state.defaultExportPath
+    ? resolveComponentExpression(
+        state.defaultExportPath.node.declaration,
+        state.defineComponentDecls,
+        state.defineComponentAliases,
+      )
+    : null
+  const defaultDeclaration = state.defaultExportPath?.node.declaration
+  let componentCapabilityExpression = componentExpression
+  if (t.isIdentifier(defaultDeclaration)) {
+    componentCapabilityExpression = defaultDeclaration
+  }
+  else if (
+    t.isCallExpression(defaultDeclaration)
+    && t.isIdentifier(defaultDeclaration.callee)
+    && state.defineComponentAliases.has(defaultDeclaration.callee.name)
+  ) {
+    const firstArgument = defaultDeclaration.arguments[0]
+    if (firstArgument && !t.isSpreadElement(firstArgument) && t.isExpression(firstArgument)) {
+      componentCapabilityExpression = firstArgument
+    }
+  }
+  const defaultsBranch = options?.isApp
+    ? parsedWevuDefaults?.app
+    : parsedWevuDefaults?.component
+  const componentRuntimeCapabilities = componentCapabilityExpression
+    ? analyzeWevuComponentOptions({
+        expression: componentCapabilityExpression,
+        scope: state.defaultExportPath?.scope,
+        defaults: defaultsBranch as Record<string, unknown> | undefined,
+      })
+    : undefined
+  const defaultsRuntimeCapabilities = options?.isApp
+    ? analyzeWevuDefaults(parsedWevuDefaults)
+    : undefined
+  const runtimeCapabilities = mergeWevuRuntimeCapabilityMetadata(
+    options?.runtimeCapabilities,
+    templateRuntimeCapabilities,
+    sourceRuntimeCapabilities,
+    componentRuntimeCapabilities,
+    defaultsRuntimeCapabilities,
+  )
 
   // <script setup> 组件导入自动注册：移除仅供模板使用的 import 与自动返回 getter。
   if (options?.templateComponentMeta) {
@@ -111,11 +178,14 @@ export function transformScript(source: string, options?: TransformScriptOptions
     serializedWevuDefaults,
     parsedWevuDefaults,
   ) || state.transformed
+  state.transformed = injectWevuRuntimeCapabilityInstallers(ast.program, runtimeCapabilities) || state.transformed
 
   if (!state.transformed) {
     return {
       code: source,
       transformed: false,
+      ...(runtimeCapabilities ? { runtimeCapabilities } : {}),
+      ...(state.componentStyleOptions ? { componentStyleOptions: state.componentStyleOptions } : {}),
     }
   }
 
@@ -132,5 +202,7 @@ export function transformScript(source: string, options?: TransformScriptOptions
     code: generated.code,
     map: sourceMap ? generated.map as TransformResult['map'] : null,
     transformed: state.transformed,
+    ...(runtimeCapabilities ? { runtimeCapabilities } : {}),
+    ...(state.componentStyleOptions ? { componentStyleOptions: state.componentStyleOptions } : {}),
   }
 }

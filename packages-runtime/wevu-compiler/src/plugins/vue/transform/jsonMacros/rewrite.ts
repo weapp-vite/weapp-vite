@@ -1,4 +1,5 @@
 import type { File, Statement } from '@weapp-vite/ast/babelTypes'
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, parseJsLike, traverse } from '../../../../utils/babel'
@@ -11,8 +12,19 @@ export function stripScriptSetupMacroStatements(
   content: string,
   ast: { program?: { body?: Statement[] } },
   filename: string,
-) {
-  const ms = new MagicString(content)
+  sourceMap?: {
+    source: string
+    sourceFile: string
+    offset: number
+  },
+): {
+  stripped: string
+  macroStatementSources: string[]
+  map?: EncodedSourceMapLike
+} {
+  const ms = sourceMap
+    ? new MagicString(sourceMap.source, { offset: sourceMap.offset })
+    : new MagicString(content)
   const macroStatementSources: string[] = []
 
   const body: Statement[] = ast.program?.body ?? []
@@ -41,7 +53,23 @@ export function stripScriptSetupMacroStatements(
     }
   }
 
-  return { stripped: ms.toString(), macroStatementSources }
+  const stripped = sourceMap ? ms.slice(0, content.length) : ms.toString()
+  const result = { stripped, macroStatementSources }
+  if (!sourceMap || stripped === content) {
+    return result
+  }
+  const sourceFile = sourceMap.sourceFile
+  let map: EncodedSourceMapLike | undefined
+  return {
+    ...result,
+    get map() {
+      return map ??= ms.generateMap({
+        hires: true,
+        includeContent: true,
+        source: sourceFile,
+      }) as EncodedSourceMapLike
+    },
+  }
 }
 
 /**

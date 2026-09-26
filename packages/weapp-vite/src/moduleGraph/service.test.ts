@@ -10,6 +10,17 @@ import {
 import { createModuleGraphService } from './service'
 
 describe('module graph protocol', () => {
+  it('distinguishes inert style dependencies from CSS-producing requests', () => {
+    const request = createSidecarSourceSpecifier('C:/project/src/page.vue', 'C:/project/src/shared.css', 'style', true)
+    expect(parseSidecarSourceRequest(request)).toEqual({
+      kind: 'style',
+      ownerId: 'C:/project/src/page.vue',
+      sourceId: 'C:/project/src/shared.css',
+      dependencyOnly: true,
+    })
+    expect(parseSidecarSourceRequest(request.replace('lang.js', 'lang.css'))).toBeUndefined()
+  })
+
   it('round-trips logical entry and sidecar ids without exposing path separators', () => {
     const entryId = createLogicalEntryId('C:\\project\\src\\pages\\home\\index.ts', 'page')
     const sidecarId = createSidecarModuleId(
@@ -74,7 +85,6 @@ describe('ModuleGraphService', () => {
       getModuleIds: () => infos.keys(),
       getModuleInfo: id => infos.get(id),
     })
-    service.bindPluginContext({ resolve: vi.fn() })
 
     expect(service.collectAffectedEntries('/project/src/shared/static.ts')).toEqual(new Set([pageId]))
     expect(service.collectAffectedEntries('/project/src/shared/dynamic.ts')).toEqual(new Set([pageId]))
@@ -113,7 +123,6 @@ describe('ModuleGraphService', () => {
       [secondEntry, { importers: [secondLogical] }],
       [secondLogical, { importers: [], isEntry: true }],
     ])))
-    service.bindPluginContext({ resolve: vi.fn() })
 
     expect(service.collectAffectedEntries(firstDependency)).toEqual(new Set([firstEntry]))
     expect(service.collectAffectedEntries(secondDependency)).toEqual(new Set([secondEntry]))
@@ -258,7 +267,7 @@ describe('ModuleGraphService', () => {
     const resolve = vi.fn(async (source: string) => ({ id: `/resolved/${source}` }))
     const load = vi.fn(async ({ id }: { id: string }) => ({ code: `export default ${JSON.stringify(id)}` }))
     const service = createModuleGraphService()
-    service.bindPluginContext({ resolve, load })
+    service.bindPluginContext({}, { resolve, load })
 
     await expect(service.resolve('pkg', '/project/src/app.ts')).resolves.toEqual({ id: '/resolved/pkg' })
     await expect(service.load({ id: '/resolved/pkg' })).resolves.toEqual({ code: 'export default "/resolved/pkg"' })

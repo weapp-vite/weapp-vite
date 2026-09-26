@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import logger from '../../logger'
 import { getProjectPlatformOptions } from '../../platform'
+import { resolveWeappViteHostMeta } from '../../pluginHost'
 import { loadUploadEnv } from './env'
 import { prepareUpload, resolveUploadPlatforms } from './index'
 import { executeUpload } from './process'
@@ -15,7 +16,7 @@ import { redactUploadSecrets } from './tools'
 interface UploadTarget {
   platform: UploadPlatform
   context: UploadContext
-  outDir: string
+  outDir?: string
   sourceConfigPath?: string
 }
 
@@ -39,9 +40,8 @@ export async function createUploadTarget(config: ConfigService, options: UploadC
     ? path.dirname(config.outDir)
     : path.dirname(config.projectConfigPath ?? path.join(config.cwd, projectConfigFileName))
   const appid: unknown = config.projectConfig.appid ?? config.projectConfig.appId
-  return {
+  const target: UploadTarget = {
     platform,
-    outDir: config.outDir,
     sourceConfigPath: config.projectConfigPath,
     context: {
       cwd: config.cwd,
@@ -55,11 +55,26 @@ export async function createUploadTarget(config: ConfigService, options: UploadC
       env: { ...process.env, ...env },
     },
   }
+  // 项目配置目录不是实际输出目录；只接受本轮打包器真正写出的主应用。
+  const plugins = config.inlineConfig.plugins ??= []
+  plugins.push({
+    name: 'weapp-vite:upload-output',
+    apply: viteConfig => resolveWeappViteHostMeta(viteConfig)?.runtime === 'miniprogram',
+    writeBundle(output, bundle) {
+      if (output.dir && Object.hasOwn(bundle, 'app.json')) {
+        target.outDir = path.resolve(output.dir)
+      }
+    },
+  })
+  return target
 }
 
 /** 只消费本次构建的产物；产物校验通过前不会准备凭据或调用平台工具。 */
 export async function executeUploadTarget(target: UploadTarget, options: UploadCLIOptions, action: UploadAction) {
   const { platform, context } = target
+  if (!target.outDir) {
+    throw new Error('本次构建未写出 app.json，已阻止上传或预览旧产物。')
+  }
   await validateUploadProject({
     platform,
     projectPath: context.projectPath,

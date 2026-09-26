@@ -5,18 +5,30 @@
 ## 推荐基线
 
 - 优先使用 `<script setup lang="ts">`
-- 页面用 `definePageJson`
-- 组件用 `defineComponentJson`
-- 页面元信息用 `definePageMeta`
+- 宿主页面配置用 `definePageJson`
+- 组件配置用 `defineComponentJson`
+- 页面元信息和 layout 用 `definePageMeta`
+- 命名路由用 `definePage`
 
 ## 宏的职责划分
 
 - `defineAppJson`：应用级 JSON
-- `definePageJson`：页面级 JSON
+- `definePageJson`：页面级宿主 JSON
 - `defineComponentJson`：组件级 JSON
-- `definePageMeta`：页面元信息，例如 layout
+- `definePageMeta`：页面元信息和 layout
+- `definePage`：路由名称和业务 `meta`
 
-`definePageJson` 和 `definePageMeta` 可以同时存在，但职责不同。
+这些宏可以在同一个页面中各自声明，职责不会合并：
+
+```vue
+<script setup lang="ts">
+definePageMeta({ layout: 'default', custom: { section: 'orders' } })
+definePage({ name: 'orders', meta: { title: '订单业务标签' } })
+definePageJson({ navigationBarTitleText: '订单' })
+</script>
+```
+
+`definePage()` 的规范写法是顶层直接使用全局宏；显式导入或使用别名时只能来自 `wevu/router`。它是编译期声明，不存在可动态调用的运行时实现，旧名 `definePageRoute` 不提供兼容别名。`definePage({ name, meta })` 参数中的 `meta.title` 和 `meta.layout` 都只是路由业务数据，不会替代 `definePageJson()` 的宿主标题或 `definePageMeta()` 的 layout。
 
 ## `v-model`
 
@@ -58,6 +70,8 @@ const classes = useCssModule('theme')
 ```
 
 其他小程序平台使用相同编译实现，但在完成对应 IDE/真机验证前视为实验性。
+
+支付宝不支持 Vue 默认生成的 scoped 属性选择器。构建时会将模板作用域标记同步追加为 class，并将样式中的对应属性选择器转换为 class 选择器；保留原始 data 属性、动态 class 和选择器优先级，样式热更新也经过同一转换。无需移除 `<style scoped>`。
 
 ## `usingComponents`
 

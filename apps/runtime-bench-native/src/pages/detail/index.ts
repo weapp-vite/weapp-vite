@@ -1,12 +1,13 @@
+import type { BenchMetrics, SetDataCounter } from '../../utils/bench'
 import {
+
   createBenchCards,
   createEmptyMetrics,
   DETAIL_CARD_COUNT,
   now,
   patchSetData,
+
   summarizeBenchCards,
-  type BenchMetrics,
-  type SetDataCounter,
 } from '../../utils/bench'
 
 const setDataCounter: SetDataCounter = {

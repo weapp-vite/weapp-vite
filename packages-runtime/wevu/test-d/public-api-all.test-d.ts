@@ -1,6 +1,10 @@
 import type {
   AllowedComponentProps,
   AppConfig,
+  AsyncDerivation,
+  AsyncDerivationContext,
+  AsyncDerivationState,
+  AsyncDerivationStatus,
   ComponentCustomProps,
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -87,6 +91,7 @@ import type {
   SetupFunction,
   ShallowUnwrapRef,
   TriggerEventOptions,
+  UseAsyncDerivationOptions,
   UseAsyncPullDownRefreshOptions,
   VNode,
   VNodeProps,
@@ -107,7 +112,7 @@ import type {
 import type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicElements } from 'wevu/miniprogram/jsx-runtime'
 import type { TtIntrinsicElementBaseAttributes, TtIntrinsicElements } from 'wevu/tt/jsx-runtime'
 import type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicElements } from 'wevu/weapp/jsx-runtime'
-import { expectType } from 'tsd'
+import { expectAssignable, expectType } from 'tsd'
 
 type CompilerEntry = typeof import('wevu/compiler')
 type WevuJsxRuntime = typeof import('wevu/jsx-runtime')
@@ -225,6 +230,7 @@ type RuntimeApiName
     | 'triggerRef'
     | 'unref'
     | 'useAttrs'
+    | 'useAsyncDerivation'
     | 'useAsyncPullDownRefresh'
     | 'useBindModel'
     | 'useBoundingClientRect'
@@ -295,6 +301,10 @@ interface PublicApiNativePropsOptions extends NativePropsOptions {
 type _TypeCoverage = [
   AllowedComponentProps,
   AppConfig,
+  AsyncDerivation<unknown>,
+  AsyncDerivationContext,
+  AsyncDerivationState<unknown>,
+  AsyncDerivationStatus,
   ComponentCustomProps,
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -382,6 +392,7 @@ type _TypeCoverage = [
   ShallowUnwrapRef<any>,
   TriggerEventOptions,
   UseAsyncPullDownRefreshOptions,
+  UseAsyncDerivationOptions,
   VNode,
   VNodeProps,
   AlipayIntrinsicElementBaseAttributes,
@@ -404,3 +415,8 @@ type _TypeCoverage = [
 
 declare const typeCoverage: _TypeCoverage
 expectType<_TypeCoverage>(typeCoverage)
+
+declare const setDataDebugInfo: SetDataDebugInfo
+expectType<number | undefined>(setDataDebugInfo.revision)
+expectType<number | undefined>(setDataDebugInfo.committedRevision)
+expectAssignable<SetDataDebugInfo['reason']>('commitFailure')

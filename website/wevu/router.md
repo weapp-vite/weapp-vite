@@ -1,8 +1,9 @@
 ---
 title: wevu/router
-description: wevu/router 子路径文档，介绍路径式导航、守卫、失败分类与小程序环境下的边界。
+description: wevu/router 子路径文档，介绍命名路由编译宏、自动路由、守卫、失败分类与小程序环境下的边界。
 keywords:
   - wevu/router
+  - definePage
   - router
   - wevu
   - navigation
@@ -71,6 +72,8 @@ const router = createRouter({
 
 blocking 适合必须先完成的鉴权、租户选择或合规检查。默认超时为 `10_000ms`，超时后自动放行页面并输出稳定诊断 marker。普通网络数据预加载应在页面内使用 loading 或 skeleton 状态完成，不建议用 blocking 延迟首屏。
 
+blocking 首屏守卫返回重定向目标时，会解析命名路由与 query，并通过宿主 `redirectTo` 进入普通页面，或通过 `switchTab` 进入 tabBar 页面；原始页面不会挂载。该行为只作用于 blocking 首屏导航，eager 模式仍先挂载原页面。
+
 ## 3. 在 App 中注册
 
 推荐在应用入口或 App 级 `setup()` 中创建一次 router：
@@ -114,6 +117,64 @@ createRouter()
 - 不要放进 `onLaunch()`、`onShow()` 或其他 hook 里
 - 这样后续页面/组件里的 `useRouter()` 才能直接拿到默认实例
 
+### 3.2 从页面生成命名路由
+
+启用 `weapp.autoRoutes` 后，在已被页面发现机制识别的 Vue 页面中通过专用的 `definePage()` 声明稳定名称；路径仍由现有主包、分包和 scope 规则决定，不需要再维护一份路径表。页面元信息/layout、命名路由和宿主页面配置各有独立宏：
+
+```vue
+<script setup lang="ts">
+definePageMeta({
+  layout: false,
+  custom: { section: 'home' },
+})
+
+definePage({
+  name: 'home',
+  meta: { title: '首页', requiresAuth: false },
+})
+
+definePageJson({
+  navigationBarTitleText: '宿主首页',
+})
+</script>
+```
+
+在 App 初始化模块中使用生成的数据：
+
+```ts
+import { createRouter } from 'wevu/router'
+import { routes } from 'wevu/router/auto-routes'
+
+const router = createRouter({ routes })
+router.beforeEach((to, from) => {
+  if (to?.name === 'home') {
+    console.log(to.meta.title) // string
+    console.log(to.meta.requiresAuth) // boolean
+  }
+  // 初始状态和未声明名称的页面仍可能没有 name/meta。
+  console.log(from.name)
+})
+
+await router.push({ name: 'home' })
+```
+
+- `weapp-vite/auto-routes` 仍导出原有的 `pages / entries / subPackages`；新入口只导出具名 `routes`，不导入或执行页面模块。
+- 升级后，旧协议留下的持久化命名记录会随缓存 schema 自动失效并重新扫描；不需要手动删除缓存文件。
+- 全局、未绑定的 `definePage()` 是规范写法；需要显式绑定时，从 `wevu/router` 具名导入，也可以使用别名。它必须在页面脚本顶层直接调用，每个页面最多一次；编译后会被擦除，不存在可动态调用的运行时实现。
+- 参数必须包含应用内唯一的非空静态 `name`；`meta` 是可选的有限静态 JSON 对象，省略时生成 `{}`。不接受 `path` 或顶层 `layout`。
+- `definePageMeta()` 继续负责原有页面元信息和 layout。在 Vue SFC 中，`layout.props` 对象与键名需要静态可分析，值可以保留响应式表达式。它可以和 `definePage()` 各声明一次，互不覆盖。
+- `definePageMeta({ route: ... })` 不会生成命名路由。`definePage()` 是预期使用的独立路由声明，与已移除的历史页面注册能力职责不同；旧名 `definePageRoute` 不提供兼容别名。
+- `definePage({ name, meta })` 参数中的 `meta` 是守卫和业务代码读取的数据。它里面的 `title` 或 `layout` 不会设置宿主标题或选择页面壳；宿主 JSON 使用 `definePageJson()`，组件选项使用 `defineOptions()`。
+- 支持 SFC 内联脚本，以及 `<script src>` / `<script setup src>` 引用的外部脚本；声明属于引用脚本的页面，路由路径始终来自页面的最终注册位置，而不是外部脚本所在目录。`src` 可使用相对路径、`resolve.alias` 或包导出，`prepare` 同样解析；外部脚本中的相对模块引用仍以原脚本目录为准。
+- 启用 Web 目标时，同一路由的多个候选源文件如含 `definePage()` 声明，`name/meta` 必须一致；冲突会报告候选文件，而不会为两个目标猜选不同的命名映射。未声明的旧页面保持原有发现规则。
+- `meta` 支持字符串、有限数字、布尔值、`null`、数组和嵌套对象；不支持导入常量、变量引用、函数调用、展开、计算键、访问器或 `undefined`。重复名称及非法声明会报告源文件位置。
+- 运行 `weapp-vite prepare` 后，将 `.weapp-vite/typed-router.d.ts` 纳入项目 TypeScript 的 `include`。`dev/build` 使用同一生成链路；移动页面、增删 `definePage()` 和仅修改 `meta` 都会更新数据与类型。
+- Web 开发模式下，命名路由元信息或页面拓扑变化会重新加载应用入口，让挂载中的 Router 使用新快照；不会保留该次更新前的页面状态。未改变路由声明的普通源码修改仍走原有 HMR。
+- 生成的 `WevuNamedRouteMap` 让 `createRouter/useRouter/useRoute`、守卫和导航 API 按名称关联 `meta`；值会结构化拓宽，不固定为初始字面量。未知名称、混用 `name` 与 `path/fullPath`、同名动态替换时不匹配的路径或 `meta` 会产生类型错误；不推导页面精确 `params/query`。
+- 没有命名映射时保持原有宽类型。确需运行时任意名称时，在创建和读取 Router 时一致使用 `createRouter<WevuBroadRouteMap>()`、`useRouter<WevuBroadRouteMap>()`、`useRoute<WevuBroadRouteMap>()`；这会主动放弃名称与元信息收窄。
+
+同一声明和生成入口也适用于仓库的 Web 构建目标；这不是任意 Vue Router 工程可直接使用的插件。
+
 ## 4. 核心能力
 
 - `useRouter()`：获取当前已创建的路由实例
@@ -126,25 +187,24 @@ createRouter()
 
 ## 5. 常见心智
 
-### 5.1 路径优先
+### 5.1 路径与稳定名称
 
 ```ts
 await router.push('/pages/post/1/index?preview=0')
 ```
 
-在小程序里，页面物理路径本身就是分包、注册和跳转语义的一部分，所以文档更推荐你直接使用真实页面路径。
+真实页面路径仍决定分包、注册和宿主跳转。跨目录重构频繁的业务入口可以用上面的稳定名称导航；没有声明名称的页面继续使用路径。
 
 ### 5.2 守卫用于统一前置判断
 
 ```ts
 import { createRouter } from 'wevu/router'
 
-const router = createRouter({
-  beforeEach(to) {
-    if (to.path.startsWith('/pages/private/') && !isLoggedIn()) {
-      return '/pages/login/index'
-    }
-  },
+const router = createRouter()
+router.beforeEach((to) => {
+  if (to?.path.startsWith('/pages/private/') && !isLoggedIn()) {
+    return '/pages/login/index'
+  }
 })
 ```
 
@@ -162,7 +222,7 @@ const result = await router.forward()
 
 - 用 `resolve()` 提前检查 `href / matched / redirectedFrom`
 - 把业务里的零散跳转判断迁移到守卫，而不是继续散落在页面逻辑里
-- 优先保留小程序真实路径，不要过早抽象成重度命名路由体系
+- 自动名称用于解除业务调用与物理目录的耦合，不替代小程序真实路径和已有页面发现机制
 
 ## 7. 速查表
 

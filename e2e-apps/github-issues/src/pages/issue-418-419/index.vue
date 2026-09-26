@@ -93,13 +93,13 @@ defineExpose({
     <text class="issue418419-title">
       issue-418-419 template ref native component
     </text>
-    <text class="issue418419-state">
+    <text id="issue418419-mounted" class="issue418419-state">
       mounted: {{ mounted ? 'yes' : 'no' }}
     </text>
-    <text class="issue418419-state">
+    <text id="issue418419-ready" class="issue418419-state">
       native ref ready: {{ nativeButtonReady ? 'yes' : 'no' }}
     </text>
-    <text class="issue418419-state">
+    <text id="issue418419-label" class="issue418419-state">
       native label: {{ nativeButtonLabel || 'pending' }}
     </text>
     <native-ref-probe

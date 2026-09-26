@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resetAutomatorRuntimeLogs } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -36,6 +37,24 @@ describe('e2e app: github-issues / issue #829', { concurrent: false }, () => {
   })
 
   it('preserves function props for direct and nested scoped-slot components', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ['direct', 'nested'].map((kind) => {
+      const scope = [
+        ...(kind === 'nested' ? ['#issue829-card', { has: '#issue-829-nested-query' }] : []),
+        `#issue-829-${kind}-query`,
+        { has: `.issue829-${kind}-result` },
+      ]
+      return {
+        id: kind,
+        route: ISSUE_ROUTE,
+        action: `检查 ${kind} query 函数实际返回的 scoped-slot 列表`,
+        nodes: [
+          { selector: '.issue829-result-label', text: 'Result', scope },
+          { selector: `#issue829-${kind}-0`, text: 'foo', scope },
+          { selector: `#issue829-${kind}-1`, text: 'bar', scope },
+          { selector: '.issue829-result-item', count: 2, scope },
+        ],
+      }
+    }))
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       resetAutomatorRuntimeLogs(miniProgram)
@@ -73,6 +92,9 @@ describe('e2e app: github-issues / issue #829', { concurrent: false }, () => {
       const pageWxml = await readDistText('pages/issue-829/index.wxml')
       expect(pageWxml).toContain('query-fn="{{queryFn}}"')
       expect(await readScopedSlotWxml()).toContain('query-fn="{{__wvOwner.queryFn}}"')
+      const activeMiniProgram = await getSharedMiniProgram(ctx)
+      await dom.check('direct', activeMiniProgram, issuePage)
+      await dom.check('nested', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

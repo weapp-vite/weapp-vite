@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'wevu'
 
-definePageJson({
-  navigationBarTitleText: 'typecheck-errors',
-})
-
 const props = defineProps<{
   title: string
   retries: number
 }>()
+
+definePageJson({
+  navigationBarTitleText: 'typecheck-errors',
+})
 
 const badRef = ref<number>('oops')
 const badComputed = computed<number>(() => props.title)

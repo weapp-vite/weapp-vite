@@ -50,6 +50,9 @@ defineExpose({
     :data-issue627-custom-data-foo="props.customDataFoo"
   >
     issue-627 reserved props probe
+    <text id="issue627-dynamic-style">{{ props.style }}</text>
+    <text id="issue627-dynamic-custom-style">{{ props.customStyle }}</text>
+    <text id="issue627-dynamic-data">{{ props.dataFoo }}</text>
   </view>
 </template>
 

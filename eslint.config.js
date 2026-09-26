@@ -11,9 +11,18 @@ export default await defineEslintConfig({
   options: {
     miniProgram: true,
     vue: true,
+    // 禁用外部格式化器，遵循仓库仅使用 ESLint/Stylelint 的约定。
+    formatters: false,
     // tailwindcss: true,
     ignores: [
       '**/fixtures/**',
+      // 独立样式由 Stylelint 校验，生成的路由声明由构建器维护。
+      '**/*.{css,scss,less,wxss,acss,ttss,qss,jxss}',
+      '**/typed-router.d.ts',
+      'test/fixture-projects/**',
+      // 保留第三方 SDK 和官方对照示例的原始代码。
+      'apps/vite-native/utils/cos-wx-sdk-v5.js',
+      'apps/tdesign-miniprogram-starter-retail/**',
       'website/guide/npm.md',
       'website/guide/wxs.md',
       'website/guide/json-intelli-sense.md',
@@ -67,7 +76,12 @@ export default await defineEslintConfig({
         'vue/no-useless-template-attributes': 'off',
       },
     }, {
-      files: ['packages/dashboard/**/*.{js,ts,mjs,cjs,vue}'],
+      files: [
+        'packages/dashboard/**/*.{js,ts,mjs,cjs,vue}',
+        'apps/socket-io-chat/web/**/*.{js,ts,vue}',
+        'website/**/*.{js,ts,vue}',
+        'packages/weapp-vite/example/**/*.{js,ts,tsx,vue}',
+      ],
       rules: {
         'wevu/no-risky-api': 'off',
         'wevu/no-unsupported-api': 'off',
@@ -90,6 +104,7 @@ export default await defineEslintConfig({
         files: [
           'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/web-apis/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'e2e-apps/*/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
@@ -100,6 +115,7 @@ export default await defineEslintConfig({
       files: [
         'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+        'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
       ],
       ignores: [
@@ -217,9 +233,9 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
-      files: ['packages/weapp-vite/package.json'],
+      files: ['packages/weapp-vite/package.json', 'packages/create-weapp-vite/package.json'],
       rules: {
-        // weapp-vite 的版本兼容公开 API 直接依赖 semver。
+        // 构建器与脚手架统一使用 npm 的 semver caret、预发布版本兼容语义。
         'e18e/ban-dependencies': 'off',
       },
     }, {

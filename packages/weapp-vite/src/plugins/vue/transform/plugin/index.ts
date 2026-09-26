@@ -60,6 +60,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
   let appShell: ResolvedAppShell | undefined
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
   let scanDirtySynced = false
+  let isBundledDev = false
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
   const compileOptionsCache = new Map<string, CompileVueFileResolvedOptions>()
   const componentMetaCache: NonNullable<CompileVueFileResolvedOptions['componentMetaCache']> = new Map()
@@ -86,6 +87,10 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
+
+    configResolved(config) {
+      isBundledDev = config.command === 'serve' && Boolean(config.experimental.bundledDev)
+    },
 
     async buildStart() {
       scopedSlotModules.clear()
@@ -188,6 +193,7 @@ export function createVueTransformPlugin(ctx: CompilerContext, options: { react?
     async generateBundle(_options, bundle) {
       await emitVueBundleAssets(bundle as Record<string, any>, {
         ctx,
+        isBundledDev,
         pluginCtx: this,
         compilationCache,
         appShell,

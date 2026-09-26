@@ -40,6 +40,29 @@ describe('vitePluginWeapp plugin api', () => {
       .toBeLessThan(names.indexOf('weapp-vite:output-finalizer'))
     expect(names.indexOf('weapp-vite:tailwindcss:output'))
       .toBeGreaterThan(names.indexOf('weapp-vite:output-finalizer'))
+    expect(names.indexOf('weapp-vite:output-publication'))
+      .toBeGreaterThan(names.indexOf('weapp-vite:tailwindcss:output'))
+  })
+
+  it('places configured compiler phases around CSS and output finalization', () => {
+    const ctx = createCompilerContext('plugin-api:compiler-plugin')
+    ctx.configService.inlineConfig.weapp = {
+      compilerPlugins: {
+        name: 'fake-compiler',
+        create: () => ({}),
+      },
+    }
+
+    const names = vitePluginWeapp(ctx).map(plugin => plugin.name)
+
+    expect(names).toContain('weapp-vite:compiler:source')
+    expect(names).toContain('weapp-vite:compiler:output')
+    expect(names.indexOf('weapp-vite:compiler:source'))
+      .toBeLessThan(names.indexOf('weapp-vite:css'))
+    expect(names.indexOf('weapp-vite:compiler:output'))
+      .toBeGreaterThan(names.indexOf('weapp-vite:output-finalizer'))
+    expect(names.indexOf('weapp-vite:output-publication'))
+      .toBeGreaterThan(names.indexOf('weapp-vite:compiler:output'))
   })
 
   it('selects the native runtime provider when Vue compilation is disabled', () => {

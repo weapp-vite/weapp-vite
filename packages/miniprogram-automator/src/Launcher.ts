@@ -389,9 +389,27 @@ export default class Launcher {
     if (platform === 'swan') {
       return await new SwanLauncher().connect(options)
     }
-    const miniProgram = await this.connectTool(options)
-    await miniProgram.checkVersion(options.timeout)
-    return miniProgram
+    const timeout = options.timeout ?? DEFAULT_TIMEOUT
+    const deadlineAt = performance.now() + timeout
+    const miniProgram = await this.connectTool({ ...options, timeout })
+    try {
+      const remaining = Math.ceil(deadlineAt - performance.now())
+      if (remaining <= 0) {
+        throw new Error(`Timed out connecting to automator after ${timeout}ms`)
+      }
+      await miniProgram.checkVersion(remaining)
+      return miniProgram
+    }
+    catch (error) {
+      // 尚未交给调用方的连接由启动器释放，不关闭用户的 IDE 项目。
+      try {
+        miniProgram.disconnect()
+      }
+      catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], 'Automator connection and cleanup both failed', { cause: error })
+      }
+      throw error
+    }
   }
 
   private async extendProjectConfig(projectConfig: any, projectPath: string) {

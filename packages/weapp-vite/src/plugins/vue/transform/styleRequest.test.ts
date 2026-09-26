@@ -29,6 +29,17 @@ describe('styleRequest', () => {
     ])
   })
 
+  it.each([
+    'C:/project/src/pages/home/index.vue',
+    String.raw`C:\project\src\pages\home\index.vue`,
+  ])('normalizes Windows style ownership for %s before constructing resolved Vite IDs', (owner) => {
+    const request = buildWeappVueStyleRequest(owner, { lang: 'css' } as any, 0)
+    const parsed = parseWeappVueStyleRequest(request)!
+    expect(parsed).toEqual({ filename: 'C:/project/src/pages/home/index.vue', index: 0 })
+    const resolvedId = `${parsed.filename}${request.slice(request.indexOf('?'))}`
+    expect(parseWeappVueStyleRequest(resolvedId)).toEqual(parsed)
+  })
+
   it('keeps hmr token before lang marker in vue style requests', () => {
     const request = buildWeappVueStyleRequest('/project/src/pages/home/index.vue', {
       lang: 'scss',

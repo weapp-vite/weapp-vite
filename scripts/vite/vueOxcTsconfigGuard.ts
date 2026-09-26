@@ -4,7 +4,6 @@ interface VuePluginWithApi extends Plugin {
   api?: {
     options: {
       devServer?: ViteDevServer
-      [key: string]: unknown
     }
   }
 }

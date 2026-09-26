@@ -129,6 +129,7 @@ export async function emitSharedFallbackPageAssets(options: {
     outputExtensions,
     platformAssetOptions,
     jsonOptions: {
+      defaultConfig: {},
       mergeExistingAsset: true,
       mergeStrategy: jsonMergeStrategy,
       defaults: jsonDefaults,
@@ -356,8 +357,17 @@ export async function emitCompiledEntryBundleAssets(options: {
 }) {
   const isAppVue = APP_VUE_LIKE_FILE_RE.test(options.filename)
   const hmrState = options.ctx.runtimeState?.build?.hmr
+  if (hmrState && options.isPage) {
+    hmrState.componentPageStyleOptions ??= new Map()
+    if (options.result.meta?.componentStyleOptions) {
+      hmrState.componentPageStyleOptions.set(options.relativeBase, options.result.meta.componentStyleOptions)
+    }
+    else {
+      hmrState.componentPageStyleOptions.delete(options.relativeBase)
+    }
+  }
   const shouldEmitComponentJson = !isAppVue && !options.isPage
-  const shouldMergeJsonAsset = isAppVue
+  const shouldMergeJsonAsset = isAppVue || (options.isPage && !options.result.config)
   const jsonKind = isAppVue ? 'app' : options.isPage ? 'page' : 'component'
   const dirtyReasonSummary = hmrState?.profile?.dirtyReasonSummary
   const isStyleAssetHmr = dirtyReasonSummary?.some(item =>
@@ -411,10 +421,11 @@ export async function emitCompiledEntryBundleAssets(options: {
         buildScope: options.configService.weappViteConfig?.buildScope,
         platform: options.configService.platform,
         routeRules: options.configService.weappViteConfig?.routeRules,
+        subPackages: options.configService.weappViteConfig?.subPackages,
       })
     : undefined
 
-  if (options.result.config || shouldEmitComponentJson) {
+  if (options.result.config || shouldEmitComponentJson || options.isPage) {
     emitSharedVueEntryJsonAsset({
       bundle: options.bundle,
       pluginCtx: options.pluginCtx,
@@ -423,7 +434,7 @@ export async function emitCompiledEntryBundleAssets(options: {
       outputExtensions: options.outputExtensions,
       platformAssetOptions: options.platformAssetOptions,
       jsonOptions: {
-        defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
+        defaultConfig: shouldEmitComponentJson ? { component: true } : options.isPage ? {} : undefined,
         mergeExistingAsset: shouldMergeJsonAsset,
         mergeStrategy: jsonConfig?.mergeStrategy,
         defaults: jsonConfig?.defaults?.[jsonKind],

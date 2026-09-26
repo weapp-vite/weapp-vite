@@ -1,3 +1,4 @@
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import { createHash } from 'node:crypto'
 import { collectKeptStatementPaths } from './analyze'
 import { evaluateScriptSetupJsonMacro } from './execute'
@@ -5,14 +6,48 @@ import { assertSingleMacro, collectMacroCallPaths, findProgramPath, mayContainJs
 import { stripJsonMacroCallsFromCode, stripScriptSetupMacroStatements } from './rewrite'
 import { resolveStaticJsonMacroConfig } from './static'
 
+interface JsonMacroExtractionOptions {
+  merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
+  preambleContent?: string
+}
+
+interface JsonMacroExtractionResult {
+  stripped: string
+  config?: Record<string, any>
+  macroHash?: string
+  dependencies?: string[]
+}
+
+interface ScriptSetupSourceMapOptions {
+  source: string
+  sourceFile: string
+  offset: number
+}
+
+type JsonMacroExtractionResultWithMap = JsonMacroExtractionResult & {
+  map?: EncodedSourceMapLike
+}
+
+function withSourceMap(
+  result: JsonMacroExtractionResult,
+  rewrite: { map?: EncodedSourceMapLike },
+): JsonMacroExtractionResultWithMap {
+  if (!('map' in rewrite)) {
+    return result
+  }
+  return {
+    ...result,
+    get map() {
+      return rewrite.map
+    },
+  }
+}
+
 async function evaluateJsonMacroConfig(
   content: string,
   filename: string,
   lang?: string,
-  options?: {
-    merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
-    preambleContent?: string
-  },
+  options?: JsonMacroExtractionOptions,
 ): Promise<{ config?: Record<string, any>, dependencies: string[] } | undefined> {
   const contentForEval = options?.preambleContent
     ? `${options.preambleContent}\n${content}`
@@ -44,18 +79,13 @@ async function evaluateJsonMacroConfig(
   })
 }
 
-/**
- * 从 `<script setup>` 中提取 JSON 宏配置并返回剥离后的代码。
- */
-export async function extractJsonMacroFromScriptSetup(
+async function extractJsonMacroFromScriptSetupInternal(
   content: string,
   filename: string,
   lang?: string,
-  options?: {
-    merge?: (target: Record<string, any>, source: Record<string, any>) => Record<string, any> | void
-    preambleContent?: string
-  },
-): Promise<{ stripped: string, config?: Record<string, any>, macroHash?: string, dependencies?: string[] }> {
+  options?: JsonMacroExtractionOptions,
+  sourceMap?: ScriptSetupSourceMapOptions,
+): Promise<JsonMacroExtractionResultWithMap> {
   if (!mayContainJsonMacro(content)) {
     return { stripped: content }
   }
@@ -64,9 +94,15 @@ export async function extractJsonMacroFromScriptSetup(
   const { macroNames, macroStatements } = collectMacroCallPaths(ast, filename)
   assertSingleMacro(macroNames, filename)
 
-  const { stripped, macroStatementSources } = stripScriptSetupMacroStatements(content, ast, filename)
+  const rewrite = stripScriptSetupMacroStatements(
+    content,
+    ast,
+    filename,
+    sourceMap,
+  )
+  const { stripped, macroStatementSources } = rewrite
   if (macroNames.size === 0) {
-    return { stripped }
+    return withSourceMap({ stripped }, rewrite)
   }
 
   const macroHash = createHash('sha256')
@@ -76,13 +112,39 @@ export async function extractJsonMacroFromScriptSetup(
 
   const staticConfig = resolveStaticJsonMacroConfig(macroStatements, options)
   if (staticConfig) {
-    return { stripped, config: staticConfig, macroHash, dependencies: [] }
+    return withSourceMap({ stripped, config: staticConfig, macroHash, dependencies: [] }, rewrite)
   }
 
   const result = await evaluateJsonMacroConfig(content, filename, lang, options)
-  return result
-    ? { stripped, config: result.config, macroHash, dependencies: result.dependencies }
-    : { stripped, macroHash }
+  return withSourceMap(
+    result
+      ? { stripped, config: result.config, macroHash, dependencies: result.dependencies }
+      : { stripped, macroHash },
+    rewrite,
+  )
+}
+
+/**
+ * 从 `<script setup>` 中提取 JSON 宏配置并返回剥离后的代码。
+ */
+export async function extractJsonMacroFromScriptSetup(
+  content: string,
+  filename: string,
+  lang?: string,
+  options?: JsonMacroExtractionOptions,
+): Promise<JsonMacroExtractionResult> {
+  return await extractJsonMacroFromScriptSetupInternal(content, filename, lang, options)
+}
+
+/** @internal */
+export async function extractJsonMacroFromScriptSetupWithSourceMap(
+  content: string,
+  filename: string,
+  lang: string | undefined,
+  options: JsonMacroExtractionOptions | undefined,
+  sourceMap: ScriptSetupSourceMapOptions | undefined,
+) {
+  return await extractJsonMacroFromScriptSetupInternal(content, filename, lang, options, sourceMap)
 }
 
 export { stripJsonMacroCallsFromCode }

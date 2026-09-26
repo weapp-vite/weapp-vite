@@ -3,6 +3,7 @@ import type { JsxDynamicIslandMetadata } from './types'
 import { WEVU_JSX_ISLAND_DATA_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../utils/babel'
+import { ensureRuntimeImport } from '../../vue/transform/scriptRuntimeImport'
 import { toStaticObjectKey } from './ast'
 
 function parseIslandExpression(expression: string) {
@@ -118,12 +119,8 @@ export function injectDynamicIslandRuntime(source: string, islands: JsxDynamicIs
     return source
   }
 
-  ast.program.body.unshift(t.importDeclaration([
-    t.importSpecifier(t.identifier('__wevuNormalizeJsxIsland'), t.identifier('normalizeJsxIsland')),
-  ], t.stringLiteral('wevu')))
-  ast.program.body.unshift(t.importDeclaration([
-    t.importSpecifier(t.identifier('__wevuNormalizeClass'), t.identifier('normalizeClass')),
-    t.importSpecifier(t.identifier('__wevuNormalizeStyle'), t.identifier('normalizeStyle')),
-  ], t.stringLiteral('wevu/internal-template')))
+  ensureRuntimeImport(ast.program, 'normalizeJsxIsland', '__wevuNormalizeJsxIsland')
+  ensureRuntimeImport(ast.program, 'normalizeClass', '__wevuNormalizeClass')
+  ensureRuntimeImport(ast.program, 'normalizeStyle', '__wevuNormalizeStyle')
   return generate(ast).code
 }

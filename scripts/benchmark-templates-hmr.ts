@@ -1,16 +1,30 @@
 /* eslint-disable ts/no-use-before-define */
+import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { existsSync, statSync } from 'node:fs'
 import { access, cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能脚本需要跨平台运行一次性 CLI prepare。 */
 import { execa } from 'execa'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils/dev-process'
-import { createDevProcessEnv } from '../e2e/utils/dev-process-env'
+import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
+import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
+import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
+import { createBenchmarkDevEnv } from './benchmarkTemplatesHmr/environment'
+import { captureBenchmarkFailureEvidence } from './benchmarkTemplatesHmr/failureEvidence'
+import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
+import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
+import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
+import { collectBenchmarkHmrProfile } from './benchmarkTemplatesHmr/profile'
+import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
+import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
+import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
+import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
 type ScenarioGroup
   = | 'app-json'
@@ -64,6 +78,8 @@ interface ScenarioCase {
 }
 
 interface ScenarioSample extends HmrProfileJsonSample {
+  profileStatus: Awaited<ReturnType<typeof collectBenchmarkHmrProfile>>['status']
+  timingSource: 'compiler-profile' | 'output-observation'
   phase?: SamplePhase
   heapUsedBytes?: number
   rssBytes?: number
@@ -82,10 +98,22 @@ interface ScenarioResult {
   outputFile: string
   overBudget: boolean
   samples: ScenarioSample[]
+  cycles?: Array<{ edit: ScenarioSample, restore: ScenarioSample }>
   sourceFile: string
+  diagnostics?: {
+    phase: string
+    transport: Array<StatefulHmrAuditEvent & { phase: string }>
+    source?: { bytes: number, sha256: string, containsMarker: boolean }
+    sourceError?: string
+    output?: { bytes: number, sha256: string, containsMarker: boolean }
+    outputError?: string
+    artifact?: string
+    artifactError?: string
+  }
 }
 
 interface TemplateResult {
+  devLog?: string
   error?: string
   id: string
   project: {
@@ -136,6 +164,7 @@ const maxScenariosPerTemplate = readOptionalPositiveIntegerEnv('TEMPLATES_HMR_MA
 const keepWorkspace = process.env.TEMPLATES_HMR_KEEP_WORKSPACE === '1'
 const failOnError = process.env.TEMPLATES_HMR_FAIL_ON_ERROR === '1'
 const filter = parseFilterEnv(process.env.TEMPLATES_HMR_FILTER)
+const scenarioFilter = parseFilterEnv(process.env.TEMPLATES_HMR_SCENARIO_FILTER)
 const memoryNodeOptions = '--expose-gc --inspect=127.0.0.1:0'
 const scenarioGroupPriority: ScenarioGroup[] = [
   'app-json',
@@ -159,11 +188,26 @@ export async function main() {
   const selectedTemplates = templates.filter((template) => {
     return matchesFilter(template.id, filter)
   })
+  if (process.env.TEMPLATES_HMR_PLAN_ONLY === '1') {
+    const manifest = []
+    for (const template of selectedTemplates) {
+      const discovered = await discoverScenarios(template)
+      const scenarios = selectScenarios(scenarioFilter.length ? discovered.filter(scenario => scenarioFilter.includes(scenario.id)) : discovered, maxScenariosPerTemplate)
+      manifest.push({ id: template.id, scenarios: scenarios.map(scenario => scenario.id) })
+    }
+    await writeFile(path.join(reportRoot, 'manifest.json'), JSON.stringify(manifest, null, 2))
+    return
+  }
   const results: TemplateResult[] = []
 
   for (const template of selectedTemplates) {
     process.stdout.write(`\n[templates-hmr] benchmarking ${template.id}\n`)
-    results.push(await benchmarkTemplate(template))
+    const result = await benchmarkTemplate(template)
+    results.push(result)
+    await writeFile(reportJsonPath, JSON.stringify(createReport(results)))
+    if (process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1' && (result.error || result.scenarios.some(scenario => scenario.error))) {
+      break
+    }
   }
 
   const report = createReport(results)
@@ -235,7 +279,8 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   const profilePath = path.join(template.workspaceRoot, '.weapp-vite/hmr-profile.jsonl')
   await rm(profilePath, { force: true }).catch(() => {})
 
-  const scenarios = selectScenarios(await discoverScenarios(workspace), maxScenariosPerTemplate)
+  const discovered = await discoverScenarios(workspace)
+  const scenarios = selectScenarios(scenarioFilter.length ? discovered.filter(scenario => scenarioFilter.includes(scenario.id)) : discovered, maxScenariosPerTemplate)
   result.scenarioCount = scenarios.length
   result.scenarios = scenarios.map(createPendingScenarioResult)
 
@@ -244,20 +289,21 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     return result
   }
 
+  const cpuProfileDir = process.env.TEMPLATES_HMR_CPU_PROFILE_DIR
+  if (cpuProfileDir) {
+    await mkdir(cpuProfileDir, { recursive: true })
+  }
   const dev = startDevProcess(process.execPath, [
+    ...(cpuProfileDir ? ['--cpu-prof', `--cpu-prof-dir=${cpuProfileDir}`] : []),
     cliPath,
     'dev',
     normalizePath(path.relative(repoRoot, template.workspaceRoot)),
     '--platform',
     'weapp',
-    '--skipNpm',
   ], {
     cwd: repoRoot,
     env: {
-      ...createDevProcessEnv({
-        disableSidecarWatch: true,
-        nodeOptions: memoryNodeOptions,
-      }),
+      ...createBenchmarkDevEnv(memoryNodeOptions),
       WEAPP_VITE_HMR_PROFILE_JSON: '1',
     },
     stdout: 'pipe',
@@ -267,23 +313,30 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
 
   try {
     const startupStartedAt = performance.now()
-    await dev.waitFor(waitForFile(path.join(template.workspaceRoot, 'dist/app.json'), startupTimeoutMs), `${template.id} app.json generated`)
+    // 入口文件可能先于原生 npm 依赖写出，完整 CLI 构建结束后才能开始采样。
+    await dev.waitFor(Promise.all([
+      dev.waitForInitialBuild(startupTimeoutMs),
+      waitForBenchmarkInitialOutputs([
+        { filename: path.join(template.workspaceRoot, 'dist/app.json'), label: 'app.json' },
+        ...scenarios.map(scenario => ({ filename: scenario.outputFile, label: scenario.id })),
+      ], { timeoutMs: startupTimeoutMs }),
+    ]), `${template.id} initial outputs generated`)
+    for (const scenario of scenarios) {
+      if (scenario.group === 'native-script' || scenario.group === 'vue-script') {
+        await createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))()
+      }
+    }
     result.startupMs = performance.now() - startupStartedAt
     const inspectorUrl = await waitForInspectorUrl(dev.getOutput, `${template.id} dev inspector`)
 
-    const runnableScenarios = []
-    for (const scenario of scenarios) {
-      if (await pathExists(scenario.outputFile)) {
-        runnableScenarios.push(scenario)
-      }
-    }
-    if (!runnableScenarios.length) {
-      throw new Error('No discovered scenario produced an initial output.')
-    }
-
     const scenarioResults: ScenarioResult[] = []
-    for (const scenario of runnableScenarios) {
-      scenarioResults.push(await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl))
+    const statefulClient = new StatefulHmrAuditClient()
+    for (const scenario of scenarios) {
+      const sample = await benchmarkScenario(workspace, profilePath, scenario, inspectorUrl, statefulClient)
+      scenarioResults.push(sample)
+      if (sample.error && process.env.TEMPLATES_HMR_STOP_ON_ERROR === '1') {
+        break
+      }
     }
     result.scenarios = scenarioResults
   }
@@ -292,9 +345,17 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
   }
   finally {
     await dev.stop(5_000).catch(() => {})
-    await cleanupProcessesByCommandPatterns([template.workspaceRoot], 2_500).catch(() => {})
-    if (!keepWorkspace) {
-      await rm(template.workspaceRoot, { recursive: true, force: true }).catch(() => {})
+    try {
+      const devLog = path.join('logs', `${template.id}.dev.log`)
+      await mkdir(path.join(reportRoot, 'logs'), { recursive: true })
+      await writeFile(path.join(reportRoot, devLog), sanitizeBenchmarkDevLog(dev.getOutput(), repoRoot), 'utf8')
+      result.devLog = normalizePath(devLog)
+    }
+    finally {
+      await cleanupProcessesByCommandPatterns([template.workspaceRoot], 2_500).catch(() => {})
+      if (!keepWorkspace) {
+        await rm(template.workspaceRoot, { recursive: true, force: true }).catch(() => {})
+      }
     }
   }
 
@@ -315,6 +376,16 @@ async function prepareWorkspace(template: TemplateCase) {
     recursive: true,
     filter: source => !isIgnoredCopyPath(template.templateRoot, source),
   })
+
+  const runtime = process.env.TEMPLATES_HMR_RUNTIME
+  if (runtime) {
+    if (runtime !== 'classic' && runtime !== 'stateful-experimental') {
+      throw new Error(`Unknown benchmark runtime: ${runtime}`)
+    }
+    const filename = path.join(template.workspaceRoot, 'weapp-vite.config.ts')
+    await writeFile(path.join(template.workspaceRoot, 'benchmark-original.config.ts'), await readFile(filename, 'utf8'))
+    await writeFile(filename, `import original from './benchmark-original.config'\nexport default async (env) => {\n const config = await (typeof original === 'function' ? original(env) : original)\n return { ...config, weapp: { ...config.weapp, hmr: { ...config.weapp?.hmr, runtime: '${runtime}' } } }\n}\n`)
+  }
 
   const originalNodeModules = path.join(template.templateRoot, 'node_modules')
   if (await pathExists(originalNodeModules)) {
@@ -351,7 +422,8 @@ async function discoverScenarios(template: TemplateCase): Promise<ScenarioCase[]
   pushIfPresent(scenarios, await createFirstExistingStyleScenario(template, 'app-style', 'app-style', ['app.css', 'app.scss', 'app.less'], 'app.wxss'))
 
   pushIfPresent(scenarios, createNativeTemplateScenario(template, findPreferredSource(files, template.sourceRoot, isNativeTemplate)))
-  pushIfPresent(scenarios, createNativeScriptScenario(template, findPreferredSource(files, template.sourceRoot, isNativePageScript)))
+  const sourceFiles = new Set(files.map(normalizePath))
+  pushIfPresent(scenarios, createNativeScriptScenario(template, findPreferredSource(files, template.sourceRoot, file => isNativeBenchmarkScriptEntry(file, sourceFiles))))
   pushIfPresent(scenarios, createNativeStyleScenario(template, findPreferredSource(files, template.sourceRoot, isNativePageStyle)))
 
   pushIfPresent(deferredScenarios, await createJsonScenario(template, 'json-sitemap', 'json', 'sitemap.json', 'sitemap.json'))
@@ -504,32 +576,11 @@ function createVueScenarios(template: TemplateCase, sourceFile: string, source: 
       sourceFile,
       outputFile: `${outputBase}.wxss`,
       outputMarker: marker => toCssIdent(marker),
-      mutate: (content, marker) => insertBeforeClosingTag(content, 'style', `\n.hmr-bench-${toCssIdent(marker)} { color: #0f766e; }\n`),
+      mutate: (content, marker) => injectVueStyleRule(content, `.hmr-bench-${toCssIdent(marker)} { color: #0f766e; }`),
     })
   }
 
   return scenarios
-}
-
-function mutateJsonMarker(source: string, marker: string) {
-  const json = JSON.parse(source) as Record<string, unknown>
-  const windowOptions = json.window
-  if (
-    windowOptions
-    && typeof windowOptions === 'object'
-    && !Array.isArray(windowOptions)
-    && typeof (windowOptions as Record<string, unknown>).navigationBarTitleText === 'string'
-  ) {
-    const appWindow = windowOptions as Record<string, unknown>
-    appWindow.navigationBarTitleText = marker
-    return `${JSON.stringify(json, null, 2)}\n`
-  }
-  if (typeof json.sitemapLocation === 'string') {
-    json.sitemapLocation = marker
-    return `${JSON.stringify(json, null, 2)}\n`
-  }
-  json.__hmrMarker = marker
-  return `${JSON.stringify(json, null, 2)}\n`
 }
 
 function mutateNavigationBarTitleText(source: string, marker: string) {
@@ -541,6 +592,7 @@ async function benchmarkScenario(
   profilePath: string,
   scenario: ScenarioCase,
   inspectorUrl: string,
+  statefulClient: StatefulHmrAuditClient,
 ): Promise<ScenarioResult> {
   if (!(await pathExists(scenario.sourceFile))) {
     return {
@@ -551,35 +603,78 @@ async function benchmarkScenario(
 
   const original = await readFile(scenario.sourceFile, 'utf8')
   const samples: ScenarioSample[] = []
+  const cycles: Array<{ edit: ScenarioSample, restore: ScenarioSample }> = []
+  const transport: Array<StatefulHmrAuditEvent & { phase: string }> = []
+  let phase = 'prepare'
+  let expectedMarker = ''
+  let failure: ScenarioResult | undefined
+  const isScript = scenario.group === 'native-script' || scenario.group === 'vue-script'
+  const readOutput = isScript
+    ? createEmittedScriptReader(scenario.outputFile, path.join(template.workspaceRoot, 'dist'))
+    : scenario.group.endsWith('style')
+      ? () => readEmittedStylesheet(scenario.outputFile)
+      : () => readFile(scenario.outputFile, 'utf8')
+  const controlPath = path.join(template.workspaceRoot, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
+  const runtime = await pathExists(controlPath) ? 'stateful' : 'standard'
+  const usesStatefulScript = isScript && runtime === 'stateful'
+  // 脚本含随 HMR 变化的版本/载荷；模板、样式和 JSON 则必须完整恢复原产物，
+  // 不能把 bundler 截断文件后暂时没有标记的空窗口当作更新完成。
+  const originalOutput = isScript ? undefined : await readOutput()
+  const readControl = async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8'))
+  const waitForOutput = async (marker: string, absent = false) => {
+    if (usesStatefulScript) {
+      // 与真实宿主相同地注册和消费更新；服务端只有在 poll 后才发布载荷。
+      await waitForStatefulHmrAuditUpdate({
+        client: statefulClient,
+        readControl,
+        isCurrentUpdate: async () => (await readOutput()).includes(marker) !== absent,
+        timeoutMs,
+        onEvent(event) {
+          transport.push({ ...event, phase })
+          if (transport.length > 32) {
+            transport.shift()
+          }
+        },
+      })
+    }
+    await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined })
+  }
 
   try {
     for (let index = 0; index < iterations; index += 1) {
       const marker = createMarker(template.id, scenario.id, index)
-      const expectedMarker = scenario.outputMarker?.(marker) ?? marker
+      expectedMarker = scenario.outputMarker?.(marker) ?? marker
       const updated = scenario.mutate(original, marker)
       if (updated === original) {
         throw new Error(`Scenario ${scenario.id} did not mutate source.`)
       }
+      if ((await readOutput()).includes(expectedMarker)) {
+        throw new Error(`Scenario ${scenario.id} already contains the new output marker.`)
+      }
+      if (usesStatefulScript) {
+        await statefulClient.ensureRegistered(await readControl(), timeoutMs)
+      }
 
       const lineCount = await countJsonlLines(profilePath)
+      phase = 'edit'
       const startedAt = performance.now()
       await replaceFileByRename(scenario.sourceFile, updated)
-      await waitForFileContains(scenario.outputFile, expectedMarker, timeoutMs)
+      await waitForOutput(expectedMarker)
       const wallMs = performance.now() - startedAt
-      const profileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs)
-        .catch((): HmrProfileJsonSample => ({}))
+      const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs))
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample)
 
       const restoreLineCount = await countJsonlLines(profilePath)
+      phase = 'restore'
       const restoreStartedAt = performance.now()
       await replaceFileByRename(scenario.sourceFile, original)
-      await waitForFileNotContains(scenario.outputFile, expectedMarker, Math.min(timeoutMs, 2_000)).catch(() => {})
+      await waitForOutput(expectedMarker, true)
       const restoreWallMs = performance.now() - restoreStartedAt
-      const restoreProfileSample = await waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs)
-        .catch((): HmrProfileJsonSample => ({}))
+      const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs))
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
+      cycles.push({ edit: editSample, restore: restoreSample })
       const sample = sampleMode === 'edit-only' ? editSample : selectBestScenarioSample(editSample, restoreSample)
       samples.push(sample)
       process.stdout.write(`[templates-hmr] ${template.id} ${scenario.id} ${index + 1}/${iterations} ${sample.phase ?? 'edit'} wall=${sample.wallMs.toFixed(2)}ms total=${formatMs(sample.totalMs)}\n`)
@@ -588,16 +683,50 @@ async function benchmarkScenario(
     }
   }
   catch (error) {
-    return {
+    const diagnostics: NonNullable<ScenarioResult['diagnostics']> = { phase, transport: [...transport] }
+    try {
+      const artifact = `failures/${template.id}/${scenario.id}.json`
+      const evidence = await captureBenchmarkFailureEvidence({
+        readSource: () => readFile(scenario.sourceFile, 'utf8'),
+        readOutput,
+        marker: expectedMarker,
+        repoRoot,
+        artifactFile: path.join(reportRoot, artifact),
+      })
+      Object.assign(diagnostics, evidence, evidence.artifactError ? {} : { artifact })
+    }
+    catch (error) {
+      diagnostics.artifactError = sanitizeBenchmarkDevLog(formatError(error), repoRoot)
+    }
+    failure = {
       ...createPendingScenarioResult(scenario),
       error: formatError(error),
       samples,
+      cycles,
+      diagnostics,
     }
   }
   finally {
-    await writeFile(scenario.sourceFile, original, 'utf8').catch(() => {})
+    try {
+      phase = 'cleanup'
+      if (await restoreBenchmarkSource(scenario.sourceFile, original) && expectedMarker) {
+        await waitForOutput(expectedMarker, true)
+      }
+    }
+    catch (error) {
+      const message = `Failed to restore benchmark source/output: ${formatError(error)}`
+      if (!failure) {
+        failure = { ...createPendingScenarioResult(scenario), error: message, samples }
+      }
+      else {
+        failure.error = `${failure.error}\n${message}`
+      }
+    }
   }
 
+  if (failure) {
+    return failure
+  }
   const maxMs = maxOptional(samples.map(sample => sample.totalMs))
   const maxWallMs = maxOptional(samples.map(sample => sample.wallMs))
   return {
@@ -611,17 +740,19 @@ async function benchmarkScenario(
     outputFile: formatReportPath(scenario.outputFile),
     overBudget: typeof maxMs === 'number' && maxMs > budgetMs,
     samples,
+    cycles,
     sourceFile: formatReportPath(scenario.sourceFile),
   }
 }
 
 function createScenarioSample(
   scenario: ScenarioCase,
-  profileSample: HmrProfileJsonSample,
+  profileResult: { profile: HmrProfileJsonSample, status: ScenarioSample['profileStatus'] },
   wallMs: number,
   phase: SamplePhase,
   memorySample?: { heapUsed: number, rss: number },
 ): ScenarioSample {
+  const profileSample = profileResult.profile
   return {
     ...profileSample,
     file: formatReportPath(profileSample.file ?? scenario.sourceFile),
@@ -630,6 +761,8 @@ function createScenarioSample(
     rssBytes: memorySample?.rss,
     sourceRootFile: profileSample.sourceRootFile,
     phase,
+    profileStatus: profileResult.status,
+    timingSource: typeof profileSample.totalMs === 'number' ? 'compiler-profile' : 'output-observation',
     totalMs: profileSample.totalMs ?? wallMs,
     wallMs,
   }
@@ -781,44 +914,6 @@ async function readJsonlSamplesSince(filePath: string, startLineCount: number) {
     .filter((sample): sample is HmrProfileJsonSample => sample !== undefined)
 }
 
-async function waitForFile(filePath: string, waitMs: number) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < waitMs) {
-    if (await pathExists(filePath)) {
-      return
-    }
-    await sleep(100)
-  }
-  throw new Error(`Timed out waiting for file: ${formatReportPath(filePath)}`)
-}
-
-async function waitForFileContains(filePath: string, marker: string, waitMs: number) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < waitMs) {
-    if (await pathExists(filePath)) {
-      const content = await readFile(filePath, 'utf8')
-      if (content.includes(marker)) {
-        return
-      }
-    }
-    await sleep(100)
-  }
-  throw new Error(`Timed out waiting for ${formatReportPath(filePath)} to contain marker: ${marker}`)
-}
-
-async function waitForFileNotContains(filePath: string, marker: string, waitMs: number) {
-  const startedAt = Date.now()
-  while (Date.now() - startedAt < waitMs) {
-    if (await pathExists(filePath)) {
-      const content = await readFile(filePath, 'utf8')
-      if (!content.includes(marker)) {
-        return
-      }
-    }
-    await sleep(100)
-  }
-}
-
 async function listFiles(root: string) {
   if (!(await pathExists(root))) {
     return []
@@ -917,10 +1012,6 @@ function isNativeTemplate(filePath: string) {
   return filePath.endsWith('.wxml') || filePath.endsWith('.html')
 }
 
-function isNativePageScript(filePath: string) {
-  return !filePath.endsWith('.d.ts') && (filePath.endsWith('.ts') || filePath.endsWith('.js'))
-}
-
 function isNativePageStyle(filePath: string) {
   return filePath.endsWith('.wxss') || filePath.endsWith('.scss') || filePath.endsWith('.css') || filePath.endsWith('.less')
 }
@@ -1003,9 +1094,7 @@ function createMarker(templateId: string, scenarioId: string, index: number) {
 async function runCli(args: string[]) {
   await execa(process.execPath, [cliPath, ...args], {
     cwd: repoRoot,
-    env: createDevProcessEnv({
-      disableSidecarWatch: true,
-    }),
+    env: createBenchmarkDevEnv(),
     stdio: 'inherit',
   })
 }
@@ -1109,13 +1198,14 @@ function renderMarkdown(report: BenchmarkReport) {
     `- iterations: ${report.iterations}`,
     `- budget: ${report.budgetMs} ms`,
     `- timeout: ${report.timeoutMs} ms`,
-    `- max profile total: ${formatMs(report.summary.maxMs)}`,
+    `- max measured total: ${formatMs(report.summary.maxMs)}`,
+    '- total timing source: compiler-profile when available; otherwise output-observation. Each sample records timingSource and profileStatus.',
     `- max observed wall: ${formatMs(report.summary.maxWallMs)}`,
     `- over-budget scenarios: ${report.summary.overBudgetCount}/${report.summary.scenarioCount}`,
     `- failed templates: ${report.summary.failedTemplateCount}`,
     `- failed scenarios: ${report.summary.failedScenarioCount}`,
     '',
-    '| template | startup | scenarios | max profile | max wall | avg heap | avg rss | failures |',
+    '| template | startup | scenarios | max total | max wall | avg heap | avg rss | failures |',
     '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ]
 
@@ -1141,7 +1231,7 @@ function renderMarkdown(report: BenchmarkReport) {
     if (template.error) {
       lines.push(`- project error: ${template.error}`, '')
     }
-    lines.push('| group | scenario | avg profile | max profile | avg wall | max wall | avg heap | avg rss | pending | emitted | dirty reason | pending reason | status |')
+    lines.push('| group | scenario | avg total | max total | avg wall | max wall | avg heap | avg rss | pending | emitted | dirty reason | pending reason | status |')
     lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |')
     for (const scenario of template.scenarios) {
       const latestSample = scenario.samples[scenario.samples.length - 1]
@@ -1191,7 +1281,7 @@ function readOptionalPositiveIntegerEnv(name: string) {
 }
 
 function formatError(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+  return sanitizeBenchmarkDevLog(error instanceof Error ? error.message : String(error), repoRoot)
 }
 
 function sleep(ms: number) {

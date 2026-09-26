@@ -1,5 +1,5 @@
-import { describeIndependentSubpackage } from '@/subpackage-demos/independent-subpackage'
 import { getCrossSharedMessage } from '@/subpackage-demos/cross-subpackage-shared'
+import { describeIndependentSubpackage } from '@/subpackage-demos/independent-subpackage'
 import { formatSharedFlavor } from '@/subpackage-demos/main-and-sub-shared'
 
 const demos = [

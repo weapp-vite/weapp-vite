@@ -1,4 +1,6 @@
+import type { OutputBundle, OutputChunk } from 'rolldown'
 import path from 'node:path'
+import { createContext, runInContext } from 'node:vm'
 import { eachMapping, originalPositionFor, TraceMap } from '@jridgewell/trace-mapping'
 import {
   APP_PRELUDE_CHUNK_MARKER,
@@ -20,6 +22,7 @@ import {
 import MagicString from 'magic-string'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { FULL_REQUEST_GLOBAL_TARGETS } from '../../../runtime/config/internal/injectRequestGlobals'
+import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
 import { collectActiveHmrImportedChunkIds, createSubPackageMatcher, shouldWarmupBundleScriptAnalysis } from './emit/generate'
 import { resolveRequestGlobalsExportName, resolveRequestGlobalsInstallerName } from './emit/requestGlobals'
@@ -94,11 +97,7 @@ vi.mock('../../../logger', () => ({
 function createState(overrides: Record<string, any> = {}) {
   const state = {
     ctx: {
-      runtimeState: {
-        wxml: {
-          emittedCode: new Map(),
-        },
-      },
+      runtimeState: createRuntimeState(),
       scanService: {
         subPackageMap: new Map(),
       },
@@ -404,7 +403,10 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
   })
 
-  it('emits changed style sidecar assets during metadata-only hmr', async () => {
+  it.each([
+    { files: ['/project/src/pages/hmr/index.wxss', '/project/src/pages/other/index.css'] },
+    { files: [] },
+  ])('emits only the current style plan despite stale script diagnostics ($files)', async ({ files }) => {
     const state = createState({
       ctx: {
         configService: {
@@ -422,7 +424,7 @@ describe('core lifecycle emit hook extra branches', () => {
           build: {
             hmr: {
               profile: {
-                file: '/project/src/pages/hmr/index.wxss',
+                file: '/project/src/pages/hmr/index.ts',
                 dirtyReasonSummary: ['style-sidecar:1'],
               },
             },
@@ -433,6 +435,7 @@ describe('core lifecycle emit hook extra branches', () => {
         },
       },
       hmrState: {
+        styleSidecarFiles: new Set(files),
         hasBuiltOnce: true,
         didEmitAllEntries: false,
       },
@@ -443,13 +446,16 @@ describe('core lifecycle emit hook extra branches', () => {
 
     await hook.call({ emitFile }, {}, bundle)
 
-    expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
-      state.ctx,
-      expect.objectContaining({ emitFile }),
-      bundle,
-      '/project/src/pages/hmr/index.wxss',
-      undefined,
-    )
+    expect(emitStyleSidecarAssetMock).toHaveBeenCalledTimes(files.length)
+    for (const file of files) {
+      expect(emitStyleSidecarAssetMock).toHaveBeenCalledWith(
+        state.ctx,
+        expect.objectContaining({ emitFile }),
+        bundle,
+        file,
+        undefined,
+      )
+    }
   })
 
   it('returns early for plugin builds after filtering outputs', async () => {
@@ -706,6 +712,46 @@ describe('core lifecycle emit hook extra branches', () => {
 
     expect(bundle['weapp-vendors/wevu-src.js']).toBeDefined()
     expect(emittedChunkFileNames.has('weapp-vendors/wevu-src.js')).toBe(true)
+  })
+
+  it.each([
+    { bundledDev: false, metadataOnly: false },
+    { bundledDev: false, metadataOnly: true },
+    { bundledDev: true, metadataOnly: false },
+    { bundledDev: true, metadataOnly: true },
+  ].flatMap(options => [false, true].map(forceFullSharedChunkRefresh => ({
+    ...options,
+    forceFullSharedChunkRefresh,
+  }))))('uses native bundle ownership instead of classic event pruning ($bundledDev/$metadataOnly/$forceFullSharedChunkRefresh)', async ({ bundledDev, metadataOnly, forceFullSharedChunkRefresh }) => {
+    const state = createState({
+      subPackageMeta: undefined,
+      resolvedConfig: { experimental: { bundledDev } },
+      ctx: {
+        configService: { isDev: true },
+        runtimeState: { build: { hmr: {
+          forceFullSharedChunkRefresh,
+          profile: { event: 'update' },
+          lastEmittedChunkFileNames: new Set(['components/example.js']),
+        } } },
+      },
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set(['components/example.ts']),
+        skipSharedChunkRefresh: metadataOnly,
+      },
+    })
+    const bundle = Object.fromEntries(['app.js', 'components/example.js', 'common.js'].map(fileName => [fileName, {
+      type: 'chunk',
+      fileName,
+      code: 'exports.value = 1',
+      imports: [],
+      dynamicImports: [],
+    }])) as any
+    await createGenerateBundleHook(state, false).call({}, {}, bundle)
+    expect(Boolean(bundle['app.js'])).toBe(bundledDev)
+    expect(Boolean(bundle['common.js'])).toBe(bundledDev)
+    expect(Boolean(bundle['components/example.js'])).toBe(bundledDev || !metadataOnly)
   })
 
   it('keeps shared chunks during full-entry dev hmr refreshes', async () => {
@@ -2243,62 +2289,88 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(sharedCode).toContain('new URL(input, "https://request-globals.invalid")')
   })
 
-  it('collapses request globals support chunks back into weapp-vendors/request-globals-runtime.js for devtools-safe loading', async () => {
+  it.each([false, true])('keeps request globals consumers loadable after a page update (isDev=%s)', async (isDev) => {
+    const runtime = 'weapp-vendors/request-globals-runtime.js'
+    const support = 'weapp-vendors/request-globals-web-apis-shared.js'
+    const page = 'pages/index/index.js'
+    const appEntry = '/project/src/app.ts'
+    const pageEntry = '/project/src/pages/index/index.ts'
     const state = createState({
       subPackageMeta: null,
-      entriesMap: new Map([
-        ['app', { type: 'app', path: 'app' }],
+      resolvedEntryMap: new Map([[appEntry, {}], [pageEntry, {}]]),
+      entriesMap: new Map([['app', { type: 'app', path: 'app' }]]),
+      hmrSharedChunksMode: 'off',
+      hmrSharedChunkImporters: new Map([
+        [runtime, new Set([appEntry, pageEntry])],
+        [support, new Set([appEntry, pageEntry])],
       ]),
       ctx: {
         configService: {
-          packageJson: {
-            dependencies: {
-              axios: '^1.8.0',
-            },
-          },
-          weappViteConfig: {},
+          isDev,
+          weappViteConfig: { appPrelude: { webRuntime: true } },
         },
       },
     })
     const hook = createGenerateBundleHook(state, false)
-    const bundle = {
-      'weapp-vendors/request-globals-runtime.js': {
-        type: 'chunk',
-        fileName: 'weapp-vendors/request-globals-runtime.js',
-        code: [
-          'const require_common = require("./request-globals-web-apis-shared.js");',
-          'function installWebRuntimeGlobals(){return require_common}',
-          'Object.defineProperty(exports,`installWebRuntimeGlobals`,{enumerable:true,get:function(){return installWebRuntimeGlobals}})',
-        ].join(''),
-        imports: ['weapp-vendors/request-globals-web-apis-shared.js'],
-        dynamicImports: [],
-      },
-      'weapp-vendors/request-globals-web-apis-shared.js': {
-        type: 'chunk',
-        fileName: 'weapp-vendors/request-globals-web-apis-shared.js',
-        code: [
-          'var sharedRouteLabel = "shared-runtime";',
-          'Object.defineProperty(exports,`sharedRouteLabel`,{enumerable:true,get:function(){return sharedRouteLabel}})',
-        ].join(''),
-        imports: [],
-        dynamicImports: [],
-      },
-      'app.js': {
-        type: 'chunk',
-        fileName: 'app.js',
-        code: 'const shared = require("./weapp-vendors/request-globals-web-apis-shared.js");App({ sharedRouteLabel: shared.sharedRouteLabel })',
-        imports: ['weapp-vendors/request-globals-web-apis-shared.js'],
-        dynamicImports: [],
-      },
-    } as any
+    const published = new Map<string, string>()
+    const createChunk = (fileName: string, code: string, imports: string[] = [], facadeModuleId: string | null = null): OutputChunk => ({
+      type: 'chunk',
+      fileName,
+      code,
+      imports,
+      dynamicImports: [],
+      facadeModuleId,
+    } as unknown as OutputChunk)
 
-    await hook.call({}, {}, bundle)
+    for (const marker of ['initial', 'updated']) {
+      state.hmrState.didEmitAllEntries = !isDev || marker === 'initial'
+      state.hmrState.hasBuiltOnce = marker !== 'initial'
+      state.hmrState.lastEmittedEntryIds = new Set(marker === 'initial' ? [appEntry, pageEntry] : [pageEntry])
+      state.ctx.runtimeState.build.hmr.lastEmittedChunkFileNames = new Set([page])
+      state.ctx.runtimeState.build.hmr.profile = marker === 'initial' ? {} : { event: 'update' }
+      const bundle: OutputBundle = {
+        [runtime]: createChunk(runtime, [
+          'const shared = require("./request-globals-web-apis-shared.js");',
+          'function installWebRuntimeGlobals(){return {fetch:()=>shared.marker}}',
+          'Object.defineProperty(exports,"installWebRuntimeGlobals",{enumerable:true,get:()=>installWebRuntimeGlobals});',
+        ].join('\n'), [support]),
+        [support]: createChunk(support, 'exports.marker = "ready";'),
+        'app.js': createChunk('app.js', 'require("./weapp-vendors/request-globals-runtime.js");', [runtime], appEntry),
+        [page]: createChunk(page, [
+          'const runtime = require("../../weapp-vendors/request-globals-runtime.js");',
+          `exports.value = runtime.installWebRuntimeGlobals().fetch() + ":${marker}";`,
+        ].join('\n'), [runtime], pageEntry),
+      }
+      await hook.call({}, {}, bundle)
+      for (const output of Object.values(bundle)) {
+        if (output.type === 'chunk') {
+          published.set(output.fileName, output.code)
+        }
+      }
 
-    expect(bundle['weapp-vendors/request-globals-web-apis-shared.js']).toBeUndefined()
-    expect(bundle['weapp-vendors/request-globals-runtime.js'].code).toContain('const __wvRGS__ = (() => {')
-    expect(bundle['weapp-vendors/request-globals-runtime.js'].code).toContain('var sharedRouteLabel = "shared-runtime";')
-    expect(bundle['weapp-vendors/request-globals-runtime.js'].code).toContain('Object.defineProperty(exports, __wvRGK__')
-    expect(bundle['app.js'].code).toContain('require("./weapp-vendors/request-globals-runtime.js")')
+      const context = createContext({})
+      const modules = new Map<string, { exports: Record<string, unknown> }>()
+      const load = (fileName: string): Record<string, unknown> => {
+        const cached = modules.get(fileName)
+        if (cached) {
+          return cached.exports
+        }
+        const code = published.get(fileName)
+        if (code === undefined) {
+          throw new Error(`Missing emitted module: ${fileName}`)
+        }
+        const module = { exports: {} }
+        modules.set(fileName, module)
+        runInContext(`(function(module,exports,require){${code}\n})`, context)(
+          module,
+          module.exports,
+          (request: string) => load(path.posix.join(path.posix.dirname(fileName), request)),
+        )
+        return module.exports
+      }
+      load('app.js')
+      expect(load(page).value).toBe(`ready:${marker}`)
+    }
   })
 
   it('collapses hashed web-apis support chunks and rewrites runtime consumers', async () => {
@@ -2581,7 +2653,7 @@ describe('core lifecycle emit hook extra branches', () => {
               'socket.io-client': '^4.8.3',
             },
           },
-          weappViteConfig: {},
+          weappViteConfig: { injectRequestGlobals: { enabled: true, targets: ['Request', 'WebSocket'] } },
         },
       },
     })
@@ -2593,7 +2665,7 @@ describe('core lifecycle emit hook extra branches', () => {
         code: [
           'import { helper } from "../rolldown-runtime.js";',
           'function installSingleTarget(e={}){const t=e.targets??[`fetch`,`Headers`,`Request`,`Response`,`TextEncoder`,`TextDecoder`,`AbortController`,`AbortSignal`,`XMLHttpRequest`,`WebSocket`];return { URL: Date, fetch: Promise.resolve, Headers: Object, Request: Object, Response: Object, AbortController: Object, AbortSignal: Object, XMLHttpRequest: Object, WebSocket: Object, URLSearchParams: Object, Blob: Object, FormData: Object }}',
-          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}})',
+          'Object.defineProperty(exports,`At`,{enumerable:!0,get:function(){return installSingleTarget}});',
           'var Request = class Request { on() {} };',
           'function createPollingRequest(){ return new Request() }',
           'export { createPollingRequest, helper };',

@@ -25,7 +25,7 @@ interface OwnerRecord {
 }
 
 type RuntimeInstanceWithOwnerSnapshot = RuntimeInstance<any, any, any> & {
-  __wevu_cloneLatestSnapshot?: () => Record<string, any>
+  __wevu_cloneDispatchedSnapshot?: () => Record<string, any>
 }
 
 function getScopedSlotGlobalStore() {
@@ -109,7 +109,7 @@ export function getOwnerTarget(ownerId: string) {
 }
 
 export function resolveOwnerSnapshot(runtime: RuntimeInstance<any, any, any>) {
-  const fastSnapshot = (runtime as RuntimeInstanceWithOwnerSnapshot).__wevu_cloneLatestSnapshot
+  const fastSnapshot = (runtime as RuntimeInstanceWithOwnerSnapshot).__wevu_cloneDispatchedSnapshot
   if (typeof fastSnapshot === 'function') {
     return fastSnapshot()
   }

@@ -1,6 +1,8 @@
 import type { CompileVueFileOptions, ResolvedUsingComponentPath, VueTransformResult } from '../vue/transform/compileVueFile/types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { mayContainPageDeclaration, stripPageDeclaration } from '../../pageDeclaration'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../runtimeCapabilities'
 import { isAutoImportCandidateTag } from '../../utils/vueTemplateTags'
 import { getMiniProgramTemplatePlatform } from '../vue/compiler/template'
 import { applyCompilerTemplateWrappers, mergeCompilerLayoutUsingComponents } from '../vue/transform/compileVueFile/pageLayout'
@@ -37,6 +39,9 @@ export async function compileJsxFile(
   filename: string,
   options?: CompileVueFileOptions,
 ): Promise<VueTransformResult> {
+  if (options?.isPage && mayContainPageDeclaration(source)) {
+    source = stripPageDeclaration(source, filename)?.code ?? source
+  }
   const jsonKind = options?.json?.kind
     ?? (options?.isApp ? 'app' : options?.isPage ? 'page' : 'component')
   const jsonDefaults = options?.json?.defaults?.[jsonKind]
@@ -67,6 +72,7 @@ export async function compileJsxFile(
     warnings: templateWarnings,
     bindingManifest,
     inlineExpressions,
+    classStyleBindings,
     autoComponentContext,
     dynamicIslands,
     dependencies,
@@ -153,6 +159,7 @@ export async function compileJsxFile(
     dynamicIslands,
   )
   const vueJsxTransformed = transformVueJsxScript(normalizedScriptSource, filename, options?.sourceMap !== false)
+  const runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
   const transformedScript = transformScript(vueJsxTransformed.code, {
     skipComponentTransform: options?.skipComponentTransform ?? options?.isApp,
     isApp: options?.isApp,
@@ -162,10 +169,12 @@ export async function compileJsxFile(
     warn: options?.warn,
     wevuDefaults: options?.wevuDefaults,
     inlineExpressions,
+    classStyleBindings,
     bindingManifest: options?.isApp ? undefined : bindingManifest,
     autoSetDataPick: !options?.isApp && options?.autoSetDataPick,
     runtimeBindingManifest: options?.runtimeBindingManifest,
     pageLayout: options?.isApp ? undefined : options?.pageLayout,
+    runtimeCapabilities,
   })
 
   const diagnostics = templateWarnings.length
@@ -231,6 +240,10 @@ export async function compileJsxFile(
       hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
       jsxDynamicIslands: dynamicIslands,
+      ...(transformedScript.componentStyleOptions ? { componentStyleOptions: transformedScript.componentStyleOptions } : {}),
+      ...(transformedScript.runtimeCapabilities
+        ? { runtimeCapabilities: transformedScript.runtimeCapabilities }
+        : {}),
       jsxDependencies: dependencies,
     },
   }

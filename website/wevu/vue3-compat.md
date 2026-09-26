@@ -75,7 +75,7 @@ keywords:
 - `defineComponent()`：定义组件/页面（底层通过小程序 `Component()` 注册）
 - `createApp()`：创建应用实例
 - `getCurrentInstance()`：获取当前实例
-- `nextTick()`：在下一次更新后执行回调
+- `nextTick()`：等待当前 JavaScript/响应式调度队列排空，不等待 `setData` 回调或小程序视图提交
 
 ### 依赖注入（Dependency Injection）
 
@@ -89,35 +89,27 @@ keywords:
 
 ### Store（Pinia 风格）
 
-`wevu` 内置了 Pinia 风格 Store，并且可以做到“无需全局注册，直接使用”：
+`wevu` 内置 Pinia 风格 Store，以 Pinia 4.0.3 的命名和主要公开用法为参照。小程序从 `wevu` 或 `wevu/store` 导入，使用 wevu 响应式与小程序调度，不承诺 Web SSR、Pinia HMR、Vue Devtools 或所有第三方插件的兼容性。
 
-- `defineStore()`：定义 Store（Setup/Options 两种模式）
-- `storeToRefs()`：从 store 提取 refs
-- `createStore()`：可选的 store manager（可做插件入口）
-- `$patch`：批量更新 state
-- `$reset`：重置 state（仅 Options Store）
-- `$subscribe`：订阅 state 变更
-- `$onAction`：订阅 action 调用
+在 `app.vue` 中安装：
 
-**关键差异：不需要全局注册**
+```vue
+<script setup lang="ts">
+import { createPinia, use } from 'wevu'
 
-```ts
-// ❌ Pinia：需要全局注册
-import { createPinia } from 'pinia'
-
-// wevu：直接使用即可
-import { defineStore } from 'wevu'
-
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  return { count }
-})
-
-const pinia = createPinia()
-app.use(pinia) // Pinia 必须先注册
+use(createPinia())
+</script>
 ```
 
-更多 Store 细节见：[Store 文档](/wevu/store)。
+使用 `createApp()` 时改用 `app.use(pinia)`；组件外显式传入 `useStore(pinia)`。仅创建 manager 不会激活它。`createStore()` 仍是 `createPinia()` 的同函数别名，`StoreManager` 类型继续保留。
+
+- `defineStore()`：定义 Setup / Options Store，外部 state 自动解包。
+- `storeToRefs()`：提取响应式 state/getters；actions 直接从 Store 解构。
+- `$reset()`：Options 重跑 state 工厂，Setup 自行实现。
+- `$subscribe()` / `$onAction()`：注册监听并返回取消函数，普通监听随注册作用域卸载。
+- `$dispose()`：释放 Store 实例并保留 manager 中的状态。
+
+本次按 minor 发布，旧消费者仍需迁移。参见 [Store 文档](/wevu/store) 和 [PR 前后迁移指南](/wevu/store-migration)。
 
 ## 部分兼容 / 不同 API
 

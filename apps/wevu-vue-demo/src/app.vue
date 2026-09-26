@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onLaunch } from 'wevu'
+
 defineAppJson({
   $schema: 'https://vite.weapp.dev/app.json',
   pages: [
@@ -41,14 +43,12 @@ defineAppJson({
   },
   style: 'v2',
   componentFramework: 'glass-easel',
+  glassEaselWebview: true,
   sitemapLocation: 'sitemap.json',
 })
 
-App({
-  globalData: {},
-  onLaunch() {
-    console.log('[wevu-vue-demo] app launched from app.vue')
-  },
+onLaunch(() => {
+  console.log('[wevu-vue-demo] app launched from app.vue')
 })
 </script>
 

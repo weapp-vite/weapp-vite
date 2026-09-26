@@ -1,7 +1,8 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp } from '@/runtime/app'
+import { installPatchStrategy } from '@/runtime/features/patchStrategy'
 import { inject } from '@/runtime/provide'
 import { nextTick } from '@/scheduler'
 
@@ -16,6 +17,10 @@ function createAdapter() {
     },
   }
 }
+
+beforeAll(() => {
+  installPatchStrategy()
+})
 
 describe('runtime app - public instance and computed', () => {
   it('exposes computed, methods, and descriptors', () => {
@@ -243,25 +248,39 @@ describe('runtime app - merge sibling and payload sizing', () => {
     inst.unmount()
   })
 
-  it('falls back on maxPayloadBytes', async () => {
-    const { calls, adapter } = createAdapter()
-
+  it('keeps computed mutations made during a full-diff fallback dispatch', async () => {
+    const calls: Record<string, unknown>[] = []
+    let duringDispatch: (() => void) | undefined
     const app = createApp({
-      data: () => ({ big: 'x'.repeat(50) }),
-      setData: {
-        strategy: 'patch',
-        maxPayloadBytes: 10,
+      data: () => ({ count: 0, forceA: 0, forceB: 0 }),
+      computed: {
+        doubled(this: { count: number }) {
+          return this.count * 2
+        },
+      },
+      setData: { strategy: 'patch', includeComputed: true, maxPatchKeys: 2 },
+    })
+    const inst = app.mount({
+      setData(payload) {
+        calls.push(payload)
+        duringDispatch?.()
       },
     })
-
-    const inst = app.mount(adapter)
     calls.length = 0
-
-    inst.state.big = 'y'.repeat(50)
+    duringDispatch = () => {
+      duringDispatch = undefined
+      inst.state.count = 2
+    }
+    inst.state.count = 1
+    inst.state.forceA = 1
+    inst.state.forceB = 1
     await nextTick()
-
-    expect(calls.length).toBeGreaterThan(0)
     inst.unmount()
+
+    expect(calls).toEqual([
+      { count: 1, forceA: 1, forceB: 1, doubled: 2 },
+      { count: 2, doubled: 4 },
+    ])
   })
 })
 

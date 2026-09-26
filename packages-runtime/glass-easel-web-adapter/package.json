@@ -1,0 +1,63 @@
+{
+  "name": "@weapp-vite/glass-easel-web-adapter",
+  "type": "module",
+  "version": "0.1.4",
+  "description": "Experimental glass-easel component backend for weapp-vite Web runtime",
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages-runtime/glass-easel-web-adapter"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:browser": "pnpm build && tsx test/browser.e2e.ts",
+    "typecheck": "tsc --noEmit",
+    "test:types": "pnpm build && tsd --typings dist/index.d.mts --files test-d/public-api.test-d.ts"
+  },
+  "peerDependencies": {
+    "glass-easel": "^1.2.0",
+    "glass-easel-miniprogram-adapter": "^1.2.0"
+  },
+  "dependencies": {
+    "glass-easel-template-compiler": "1.2.0"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "tsd": "0.33.0",
+    "tsdown": "0.23.0",
+    "tsx": "4.23.15",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "~5.0.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

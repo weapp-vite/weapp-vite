@@ -1,9 +1,11 @@
+import type { Scope } from '@weapp-vite/ast/babelTraverse'
 import type {
   InlineExpressionAsset,
   InlineExpressionIndexBindingAsset,
   InlineExpressionScopeResolverAsset,
   TransformContext,
 } from '../types'
+import type { InlineExpressionParameterIdentifiers } from './inlineShared'
 import { WEVU_SLOT_PROPS_DATA_KEY } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { createInlineExpressionId } from '../../../../../inlineDataset'
@@ -11,8 +13,10 @@ import { traverse } from '../../../../../utils/babel'
 import { hasOwn } from '../../../../../utils/object'
 import { buildForItemResolverExpression } from './forItemResolver'
 import {
+  createInlineExpressionParameterIdentifiers,
   createMemberAccess,
   INLINE_GLOBALS,
+  isTemplateContextThis,
   replaceIdentifierWithExpression,
 } from './inlineShared'
 import { generateExpression, parseBabelExpressionFile } from './parse'
@@ -37,6 +41,7 @@ function resolveSlotPropBinding(slotProps: Record<string, string>, name: string)
 function rewriteExpressionAst(
   ast: t.File,
   locals: Set<string>,
+  parameterIdentifiers: InlineExpressionParameterIdentifiers,
   options?: {
     markLocal?: (name: string) => void
   },
@@ -47,27 +52,40 @@ function rewriteExpressionAst(
         return
       }
       const name = path.node.name
-      if (name === '$event') {
-        return
-      }
-      if (name === 'ctx' || name === 'scope') {
+      if (
+        name === parameterIdentifiers.context.name
+        || name === parameterIdentifiers.scope.name
+        || name === parameterIdentifiers.event.name
+      ) {
         return
       }
       if (path.scope.getBinding(name)) {
         return
       }
+      if (name === '$event') {
+        path.replaceWith(t.cloneNode(parameterIdentifiers.event))
+        return
+      }
       if (locals.has(name)) {
         options?.markLocal?.(name)
-        replaceIdentifierWithExpression(path, createMemberAccess('scope', name) as t.Expression)
+        replaceIdentifierWithExpression(
+          path,
+          createMemberAccess(parameterIdentifiers.scope.name, name) as t.Expression,
+        )
         return
       }
       if (INLINE_GLOBALS.has(name)) {
         return
       }
-      replaceIdentifierWithExpression(path, createMemberAccess('ctx', name) as t.Expression)
+      replaceIdentifierWithExpression(
+        path,
+        createMemberAccess(parameterIdentifiers.context.name, name) as t.Expression,
+      )
     },
     ThisExpression(path) {
-      path.replaceWith(t.identifier('ctx'))
+      if (isTemplateContextThis(path)) {
+        path.replaceWith(t.cloneNode(parameterIdentifiers.context))
+      }
     },
   })
 }
@@ -124,10 +142,14 @@ function isScriptSetupRefLikeBinding(context: TransformContext, name: string) {
   return bindingType ? SCRIPT_SETUP_REF_BINDINGS.has(bindingType) : false
 }
 
-function isRefLikeCtxMember(node: t.Node, context: TransformContext): node is t.MemberExpression {
+function isRefLikeCtxMember(
+  node: t.Node,
+  context: TransformContext,
+  contextIdentifierName: string,
+): node is t.MemberExpression {
   return (
     t.isMemberExpression(node)
-    && t.isIdentifier(node.object, { name: 'ctx' })
+    && t.isIdentifier(node.object, { name: contextIdentifierName })
     && t.isIdentifier(node.property)
     && !node.computed
     && isScriptSetupRefLikeBinding(context, node.property.name)
@@ -136,6 +158,98 @@ function isRefLikeCtxMember(node: t.Node, context: TransformContext): node is t.
 
 function buildCtxValueAccess(member: t.MemberExpression) {
   return t.memberExpression(t.cloneNode(member), t.identifier('value'))
+}
+
+function rewriteAssignmentPatternTarget(
+  target: t.PatternLike,
+  scope: Scope,
+  context: TransformContext,
+  parameterIdentifiers: InlineExpressionParameterIdentifiers,
+  locals: Set<string>,
+  markLocal?: (name: string) => void,
+): t.PatternLike {
+  if (t.isIdentifier(target)) {
+    const name = target.name
+    if (INLINE_GLOBALS.has(name) || scope.getBinding(name)) {
+      return target
+    }
+    if (name === '$event') {
+      return t.cloneNode(parameterIdentifiers.event)
+    }
+    if (locals.has(name)) {
+      markLocal?.(name)
+      return createMemberAccess(parameterIdentifiers.scope.name, name)
+    }
+    const member = createMemberAccess(parameterIdentifiers.context.name, name)
+    return isScriptSetupRefLikeBinding(context, name) ? buildCtxValueAccess(member) : member
+  }
+  if (t.isAssignmentPattern(target)) {
+    target.left = rewriteAssignmentPatternTarget(
+      target.left,
+      scope,
+      context,
+      parameterIdentifiers,
+      locals,
+      markLocal,
+    ) as t.AssignmentPattern['left']
+    return target
+  }
+  if (t.isRestElement(target)) {
+    target.argument = rewriteAssignmentPatternTarget(
+      target.argument,
+      scope,
+      context,
+      parameterIdentifiers,
+      locals,
+      markLocal,
+    ) as t.RestElement['argument']
+    return target
+  }
+  if (t.isArrayPattern(target)) {
+    for (let index = 0; index < target.elements.length; index += 1) {
+      const element = target.elements[index]
+      if (element) {
+        target.elements[index] = rewriteAssignmentPatternTarget(element, scope, context, parameterIdentifiers, locals, markLocal)
+      }
+    }
+    return target
+  }
+  if (t.isObjectPattern(target)) {
+    for (const property of target.properties) {
+      if (t.isRestElement(property)) {
+        property.argument = rewriteAssignmentPatternTarget(
+          property.argument,
+          scope,
+          context,
+          parameterIdentifiers,
+          locals,
+          markLocal,
+        ) as t.RestElement['argument']
+        continue
+      }
+      const value = property.value
+      if (!t.isPatternLike(value)) {
+        continue
+      }
+      property.value = rewriteAssignmentPatternTarget(value, scope, context, parameterIdentifiers, locals, markLocal)
+      if (
+        property.shorthand
+        && !(
+          t.isIdentifier(property.key)
+          && (
+            t.isIdentifier(property.value, { name: property.key.name })
+            || (
+              t.isAssignmentPattern(property.value)
+              && t.isIdentifier(property.value.left, { name: property.key.name })
+            )
+          )
+        )
+      ) {
+        property.shorthand = false
+      }
+    }
+  }
+  return target
 }
 
 function isValueMemberObject(node: t.MemberExpression, parent: t.Node | undefined) {
@@ -154,33 +268,54 @@ function isCallTarget(node: t.MemberExpression, parent: t.Node | undefined) {
   )
 }
 
-function rewriteTopLevelRefLikeAccess(ast: t.File, context: TransformContext) {
+function rewriteTopLevelRefLikeAccess(
+  ast: t.File,
+  context: TransformContext,
+  parameterIdentifiers: InlineExpressionParameterIdentifiers,
+  locals: Set<string>,
+  markLocal?: (name: string) => void,
+) {
+  const contextIdentifier = parameterIdentifiers.context
   traverse(ast, {
     AssignmentExpression(path) {
       const left = path.node.left
+      if (t.isIdentifier(left) && path.scope.getBinding(left.name)) {
+        return
+      }
+      if (t.isIdentifier(left) && left.name === '$event') {
+        path.node.left = t.cloneNode(parameterIdentifiers.event)
+        return
+      }
+      if (t.isObjectPattern(left) || t.isArrayPattern(left)) {
+        rewriteAssignmentPatternTarget(left, path.scope, context, parameterIdentifiers, locals, markLocal)
+        return
+      }
       if (t.isIdentifier(left) && isScriptSetupRefLikeBinding(context, left.name)) {
         path.node.left = buildCtxValueAccess(
-          t.memberExpression(t.identifier('ctx'), t.identifier(left.name)),
-        ) as any
+          t.memberExpression(t.cloneNode(contextIdentifier), t.identifier(left.name)),
+        )
       }
       else if (t.isIdentifier(left) && isScriptSetupBinding(context, left.name)) {
-        path.node.left = t.memberExpression(t.identifier('ctx'), t.identifier(left.name))
+        path.node.left = t.memberExpression(t.cloneNode(contextIdentifier), t.identifier(left.name))
       }
-      else if (isRefLikeCtxMember(left, context)) {
+      else if (isRefLikeCtxMember(left, context, contextIdentifier.name)) {
         path.node.left = buildCtxValueAccess(left)
       }
     },
     UpdateExpression(path) {
       const arg = path.node.argument
+      if (t.isIdentifier(arg) && path.scope.getBinding(arg.name)) {
+        return
+      }
       if (t.isIdentifier(arg) && isScriptSetupRefLikeBinding(context, arg.name)) {
         path.node.argument = buildCtxValueAccess(
-          t.memberExpression(t.identifier('ctx'), t.identifier(arg.name)),
+          t.memberExpression(t.cloneNode(contextIdentifier), t.identifier(arg.name)),
         )
       }
       else if (t.isIdentifier(arg) && isScriptSetupBinding(context, arg.name)) {
-        path.node.argument = t.memberExpression(t.identifier('ctx'), t.identifier(arg.name))
+        path.node.argument = t.memberExpression(t.cloneNode(contextIdentifier), t.identifier(arg.name))
       }
-      else if (isRefLikeCtxMember(arg, context)) {
+      else if (isRefLikeCtxMember(arg, context, contextIdentifier.name)) {
         path.node.argument = buildCtxValueAccess(arg)
       }
     },
@@ -188,7 +323,7 @@ function rewriteTopLevelRefLikeAccess(ast: t.File, context: TransformContext) {
 
   traverse(ast, {
     MemberExpression(path) {
-      if (!isRefLikeCtxMember(path.node, context)) {
+      if (!isRefLikeCtxMember(path.node, context, contextIdentifier.name)) {
         return
       }
       if (isValueMemberObject(path.node, path.parentPath?.node)) {
@@ -215,6 +350,23 @@ export function registerInlineExpression(exp: string, context: TransformContext)
     return null
   }
   const { ast } = parsed
+  const usedIdentifierNames = new Set<string>()
+  let programScope: Scope | undefined
+  traverse(ast, {
+    Program(path) {
+      programScope = path.scope
+    },
+    Identifier(path) {
+      usedIdentifierNames.add(path.node.name)
+    },
+  })
+  if (!programScope) {
+    throw new Error('无法为内联表达式创建程序作用域。')
+  }
+  const parameterIdentifiers = createInlineExpressionParameterIdentifiers(
+    programScope,
+    usedIdentifierNames,
+  )
   const locals = collectScopedSlotLocals(context)
   const slotProps = collectSlotPropMapping(context)
   for (const name of Object.keys(slotProps)) {
@@ -232,8 +384,8 @@ export function registerInlineExpression(exp: string, context: TransformContext)
     usedLocals.push(name)
   }
 
-  rewriteExpressionAst(ast, locals, { markLocal })
-  rewriteTopLevelRefLikeAccess(ast, context)
+  rewriteExpressionAst(ast, locals, parameterIdentifiers, { markLocal })
+  rewriteTopLevelRefLikeAccess(ast, context, parameterIdentifiers, locals, markLocal)
   const forAliases = collectForAliasMapping(context)
 
   const updatedStmt = ast.program.body[0]
@@ -257,6 +409,11 @@ export function registerInlineExpression(exp: string, context: TransformContext)
     id: createInlineExpressionId(context.inlineExpressionSeed++),
     expression: updatedExpression,
     scopeKeys: usedLocals,
+    parameterNames: {
+      context: parameterIdentifiers.context.name,
+      scope: parameterIdentifiers.scope.name,
+      event: parameterIdentifiers.event.name,
+    },
   }
   if (scopeResolvers.length) {
     asset.indexBindings = indexBindings

@@ -2,7 +2,11 @@
 import type { Options } from 'execa'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
+import { createDevProcessDiagnostics } from './devProcessDiagnostics'
+import { captureDevProcessOutput } from './devProcessStdio'
+import { resolveReportProjectPath } from './ideWarningReport'
 
 interface DevProcessExitInfo {
   exitCode: number | null | undefined
@@ -14,6 +18,7 @@ interface DevProcessController {
   pid: number | undefined
   waitFor: <T>(task: Promise<T>, description: string) => Promise<T>
   waitForOutput: (matcher: string | RegExp, description: string, timeoutMs?: number) => Promise<string>
+  waitForInitialBuild: (timeoutMs?: number) => Promise<string>
   getOutput: () => string
   stop: (forceKillDelayMs?: number) => Promise<void>
 }
@@ -239,9 +244,17 @@ export async function cleanupProcessesByCommandPatterns(
 ) {
   const processList = await listUnixProcesses()
   const matchedPidSet = new Set<number>()
+  const parentByPid = new Map(processList.map(entry => [entry.pid, entry.ppid]))
+  const protectedPids = new Set([process.pid])
+  let ancestorPid = process.ppid
+  // 启动 shell 的参数也可能包含目标路径，必须保护调用链，避免连带终止当前测试。
+  while (ancestorPid > 0 && !protectedPids.has(ancestorPid)) {
+    protectedPids.add(ancestorPid)
+    ancestorPid = parentByPid.get(ancestorPid) ?? 0
+  }
 
   for (const processEntry of processList) {
-    if (commandPatterns.some(pattern => matchesCommandPattern(processEntry.command, pattern))) {
+    if (!protectedPids.has(processEntry.pid) && commandPatterns.some(pattern => matchesCommandPattern(processEntry.command, pattern))) {
       matchedPidSet.add(processEntry.pid)
     }
   }
@@ -262,7 +275,7 @@ export function startDevProcess(
     cwd: options?.cwd,
   }
   const child = execa(command, args, {
-    ...options,
+    ...captureDevProcessOutput(options),
     env: options?.env ?? process.env,
     extendEnv: false,
   })
@@ -270,14 +283,18 @@ export function startDevProcess(
     TRACKED_DEV_PIDS.add(child.pid)
   }
   const outputChunks: string[] = []
+  const projectPath = options?.cwd instanceof URL ? fileURLToPath(options.cwd) : options?.cwd
+  const diagnostics = createDevProcessDiagnostics(resolveReportProjectPath(projectPath))
 
   const appendOutput = (chunk: unknown) => {
     if (typeof chunk === 'string') {
       outputChunks.push(chunk)
+      diagnostics.write(chunk)
       return
     }
     if (chunk instanceof Uint8Array) {
       outputChunks.push(Buffer.from(chunk).toString('utf8'))
+      diagnostics.write(chunk)
     }
   }
 
@@ -311,6 +328,7 @@ export function startDevProcess(
     })
 
   void settledExit.finally(() => {
+    diagnostics.flush()
     if (typeof child.pid === 'number') {
       TRACKED_DEV_PIDS.delete(child.pid)
     }
@@ -337,6 +355,9 @@ export function startDevProcess(
   }
 
   const waitForOutput = async (matcher: string | RegExp, description: string, timeoutMs = 90_000) => {
+    if (!child.all && !child.stdout && !child.stderr) {
+      throw new Error(appendRecentOutput(`Waiting for ${description} requires captured stdout or stderr; use pipe or inherit output`, outputChunks, spawnInfo))
+    }
     const start = Date.now()
     while (Date.now() - start < timeoutMs) {
       const output = outputChunks.join('')
@@ -371,6 +392,7 @@ export function startDevProcess(
     pid: child.pid,
     waitFor,
     waitForOutput,
+    waitForInitialBuild: (timeoutMs?: number) => waitForOutput('小程序初次构建完成', 'mini program initial build completion', timeoutMs),
     getOutput: () => outputChunks.join(''),
     stop,
   }

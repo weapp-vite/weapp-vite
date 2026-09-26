@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethod,
   closeSharedMiniProgram,
@@ -11,6 +12,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { SHELL_CHECKPOINTS } from './githubIssuesDom/hostAndIdentity'
 
 async function readDistWxml(relativePath: string) {
   return await fs.readFile(path.join(DIST_ROOT, relativePath), 'utf8')
@@ -49,6 +51,7 @@ describe('e2e app: github-issues / app shell runtime', { concurrent: false }, ()
   })
 
   it('issue #563: renders app.vue shell, page layout, and page content in real DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', SHELL_CHECKPOINTS.default)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, '/pages/issue-338/index', undefined, 45_000, {
@@ -59,6 +62,7 @@ describe('e2e app: github-issues / app shell runtime', { concurrent: false }, ()
         throw new Error('Failed to launch issue-338 page')
       }
       await waitForRenderedMarker(page, '#issue338-page', { e2eIssue: '338' })
+      await dom.check('initial', miniProgram, page)
 
       const pageWxml = await readDistWxml('pages/issue-338/index.wxml')
       const appShellIndex = pageWxml.indexOf('<weapp-app-shell')
@@ -78,6 +82,7 @@ describe('e2e app: github-issues / app shell runtime', { concurrent: false }, ()
   })
 
   it('issue #448/#563: keeps web runtime URL parsing and app shell when page layout is disabled', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', SHELL_CHECKPOINTS.disabled)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const page = await relaunchPage(miniProgram, '/pages/issue-448/index', undefined, 45_000, {
@@ -88,6 +93,7 @@ describe('e2e app: github-issues / app shell runtime', { concurrent: false }, ()
         throw new Error('Failed to launch issue-448 page')
       }
       await waitForRenderedMarker(page, '#issue448-page', { e2eIssue: '448' })
+      await dom.check('initial', miniProgram, page)
 
       const pageWxml = await readDistWxml('pages/issue-448/index.wxml')
       const activeMiniProgram = await getSharedMiniProgram(ctx)

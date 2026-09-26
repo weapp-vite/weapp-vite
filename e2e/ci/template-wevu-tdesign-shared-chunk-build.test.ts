@@ -8,7 +8,6 @@ const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-v
 const REGRESSION_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/template-wevu-tdesign-regression')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
 const REGRESSION_DIST_ROOT = path.join(REGRESSION_ROOT, 'dist')
-const WEVU_RUNTIME_VENDOR_PATH = path.join(DIST_ROOT, 'weapp-vendors/wevu-runtime.js')
 const REQUIRE_VENDOR_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
 const REQUIRE_VENDOR_MEMBER_RE = /require\("([^"]*weapp-vendors\/[^"]+\.js)"\)\.([A-Za-z_$][\w$]*)/g
 const VENDOR_MEMBER_RE = /const\s+([A-Za-z_$][\w$]*)\s*=\s*require\("([^"]*weapp-vendors\/[^"]+\.js)"\)/g
@@ -122,11 +121,16 @@ describe('template build: wevu tdesign shared chunks', { concurrent: false }, ()
     await buildTemplate(REGRESSION_ROOT, 'ci:template-wevu-tdesign-regression-runtime-mode')
   }, 120_000)
 
-  it('keeps the stable wevu runtime vendor chunk available for DevTools reloads', async () => {
-    expect(await fs.pathExists(WEVU_RUNTIME_VENDOR_PATH)).toBe(true)
-    expect(await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')).toContain(
-      'weapp-vendors/wevu-runtime.js',
-    )
+  it('keeps production runtime code and all emitted vendor dependencies available', async () => {
+    // 生产构建可合并 runtime；固定 vendor 文件名由 dev/HMR 场景单独验证。
+    const appScript = await fs.readFile(path.join(DIST_ROOT, 'app.js'), 'utf8')
+    expect([...appScript.matchAll(REQUIRE_VENDOR_RE)].length).toBeGreaterThan(0)
+    const scripts = await Promise.all((await collectDistJsFiles(DIST_ROOT)).map(jsPath => fs.readFile(jsPath, 'utf8')))
+    const runtimeScript = scripts.find(source => source.includes('__wevu_runtime') && source.includes('__wevu_options'))
+    expect(runtimeScript).toBeDefined()
+    expect(runtimeScript).toMatch(/(?:\.wx\b|typeof\s+wx\b)/)
+    expect(runtimeScript).not.toContain('didMount')
+    expect(runtimeScript).not.toContain('didUnmount')
 
     const missingByFile: Record<string, string[]> = {}
     for (const jsPath of await collectDistJsFiles(DIST_ROOT)) {

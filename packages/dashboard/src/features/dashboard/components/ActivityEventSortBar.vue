@@ -3,6 +3,7 @@ import type { ActivityEventSortMode, DashboardRuntimeEvent } from '../types'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { copyText } from '../utils/clipboard'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel } from '../utils/format'
+import AppSelect from './AppSelect.vue'
 
 const props = defineProps<{
   events: DashboardRuntimeEvent[]
@@ -11,6 +12,13 @@ const props = defineProps<{
 }>()
 
 const sortMode = defineModel<ActivityEventSortMode>({ required: true })
+
+const sortOptions = [
+  { label: '按时间', value: 'time' },
+  { label: '按耗时', value: 'duration' },
+  { label: '按等级', value: 'severity' },
+  { label: '按来源', value: 'source' },
+] satisfies Array<{ label: string, value: ActivityEventSortMode }>
 
 const actionStatus = ref('')
 let actionStatusTimer: ReturnType<typeof setTimeout> | null = null
@@ -102,23 +110,12 @@ onBeforeUnmount(() => {
       >
         导出 JSON
       </button>
-      <select
+      <AppSelect
         v-model="sortMode"
-        class="h-9 rounded-md border border-(--dashboard-border) bg-(--dashboard-panel) px-2.5 text-sm text-(--dashboard-text) outline-none transition focus:border-(--dashboard-accent)"
-      >
-        <option value="time">
-          按时间
-        </option>
-        <option value="duration">
-          按耗时
-        </option>
-        <option value="severity">
-          按等级
-        </option>
-        <option value="source">
-          按来源
-        </option>
-      </select>
+        class="w-28"
+        label="排序运行事件"
+        :options="sortOptions"
+      />
     </div>
   </div>
 </template>

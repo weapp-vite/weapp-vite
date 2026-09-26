@@ -1,7 +1,12 @@
 import path from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
-import { createIdeSuiteCleanupHooks, orderSuiteTasks, shouldCleanupIdeBeforeEachTask, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getSuiteTasks } from './e2e-suite-manifest'
+import { createIdeSuiteCleanupHooks, orderSuiteTasks, shouldStopIdeSuiteAfterTaskFailure } from './run-e2e-suite'
 import { createSleepInhibitedE2ECommand } from './run-sleep-inhibited-e2e-suite'
+import { isDevtoolsVitestTask } from './suiteRunner'
+
+beforeEach(() => vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'devtools'))
+afterEach(() => vi.unstubAllEnvs())
 
 describe('run-e2e-suite ide cleanup hooks', () => {
   it('wraps IDE full suites with caffeinate on macOS', () => {
@@ -62,42 +67,62 @@ describe('run-e2e-suite ide cleanup hooks', () => {
     ])
   })
 
-  it('enables cleanup hooks for devtools-backed ide suites', () => {
-    expect(shouldCleanupIdeBeforeEachTask('ide')).toBe(true)
-    expect(shouldCleanupIdeBeforeEachTask('ide-smoke')).toBe(true)
-    expect(shouldCleanupIdeBeforeEachTask('ide-gate')).toBe(true)
-    expect(shouldCleanupIdeBeforeEachTask('ide-full')).toBe(true)
-    expect(shouldCleanupIdeBeforeEachTask('ide-full:templates')).toBe(true)
-    expect(shouldCleanupIdeBeforeEachTask('hmr-regression')).toBe(true)
+  it.each(['ide', 'ide-smoke', 'ide-gate', 'ide-full', 'ide-full:templates', 'hmr-regression'])(
+    'enables cleanup for actual devtools tasks in %s',
+    async (mode) => {
+      const tasks = await getSuiteTasks(mode)
+      expect(tasks.some(isDevtoolsVitestTask)).toBe(true)
+      expect(createIdeSuiteCleanupHooks(tasks).beforeEachTask).toBeTypeOf('function')
+      expect(shouldStopIdeSuiteAfterTaskFailure(tasks)).toBe(true)
+    },
+  )
+
+  it('respects task-level and inherited provider selection before deciding to clean IDE state', () => {
+    const task = { label: 'runtime', command: 'pnpm', args: ['vitest', 'run', '-c', 'vitest.e2e.devtools.config.ts'] }
+    expect(isDevtoolsVitestTask(task)).toBe(true)
+    expect(isDevtoolsVitestTask({ ...task, env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless' } })).toBe(false)
+    vi.stubEnv('WEAPP_VITE_E2E_RUNTIME_PROVIDER', 'headless')
+    expect(isDevtoolsVitestTask(task)).toBe(false)
+    expect(isDevtoolsVitestTask({ ...task, env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'devtools' } })).toBe(true)
   })
 
   it('cleans processes and compile cache before every IDE task, then processes after the suite', async () => {
     const cleanup = vi.fn(async () => {})
     const cleanCompileCache = vi.fn(async () => {})
-    const hooks = createIdeSuiteCleanupHooks('ide-full', cleanup, cleanCompileCache)
+    const [task] = await getSuiteTasks('ide-full')
+    const hooks = createIdeSuiteCleanupHooks([task!], cleanup, cleanCompileCache)
 
-    await hooks.beforeEachTask?.()
-    await hooks.beforeEachTask?.()
+    await hooks.beforeEachTask?.(task!)
+    await hooks.beforeEachTask?.(task!)
     await hooks.afterAll?.()
 
     expect(cleanup).toHaveBeenCalledTimes(3)
     expect(cleanCompileCache).toHaveBeenCalledTimes(2)
   })
 
-  it('skips cleanup hooks for non-devtools or headless suites', () => {
-    expect(shouldCleanupIdeBeforeEachTask('ci')).toBe(false)
-    expect(shouldCleanupIdeBeforeEachTask('full')).toBe(false)
-    expect(shouldCleanupIdeBeforeEachTask('full-regression')).toBe(false)
-    expect(shouldCleanupIdeBeforeEachTask('ide-headless-smoke')).toBe(false)
-    expect(shouldCleanupIdeBeforeEachTask('ide-headless-gate')).toBe(false)
-    expect(shouldCleanupIdeBeforeEachTask('ide-headless-full')).toBe(false)
-  })
+  it.each(['ci', 'full', 'full-regression', 'ide-headless-smoke', 'ide-headless-gate', 'ide-headless-full', 'ide-dom-headless'])(
+    'does not touch DevTools for %s',
+    async (mode) => {
+      const tasks = await getSuiteTasks(mode)
+      expect(tasks.length).toBeGreaterThan(0)
+      expect(createIdeSuiteCleanupHooks(tasks)).toEqual({})
+      expect(shouldStopIdeSuiteAfterTaskFailure(tasks)).toBe(false)
+    },
+  )
 
-  it('stops devtools-backed ide suites after the first failed task', () => {
-    expect(shouldStopIdeSuiteAfterTaskFailure('ide-full')).toBe(true)
-    expect(shouldStopIdeSuiteAfterTaskFailure('ide-full:github-issues')).toBe(true)
-    expect(shouldStopIdeSuiteAfterTaskFailure('hmr-regression')).toBe(true)
-    expect(shouldStopIdeSuiteAfterTaskFailure('ide-headless-full')).toBe(false)
-    expect(shouldStopIdeSuiteAfterTaskFailure('ci')).toBe(false)
+  it('cleans only the devtools tasks within a mixed suite', async () => {
+    const cleanup = vi.fn(async () => {})
+    const cleanCompileCache = vi.fn(async () => {})
+    const [devtools] = await getSuiteTasks('ide-full')
+    const [headless] = await getSuiteTasks('ide-dom-headless')
+    const hooks = createIdeSuiteCleanupHooks([headless!, devtools!], cleanup, cleanCompileCache)
+    await hooks.beforeEachTask?.(headless!)
+    expect(cleanup).not.toHaveBeenCalled()
+    expect(cleanCompileCache).not.toHaveBeenCalled()
+    await hooks.beforeEachTask?.(devtools!)
+    expect(cleanup).toHaveBeenCalledOnce()
+    expect(cleanCompileCache).toHaveBeenCalledOnce()
+    await hooks.afterAll?.()
+    expect(cleanup).toHaveBeenCalledTimes(2)
   })
 })

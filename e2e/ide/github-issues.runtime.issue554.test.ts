@@ -1,6 +1,8 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
@@ -30,6 +32,16 @@ describe('e2e app: github-issues / issue #554', { concurrent: false }, () => {
   })
 
   it('renders default slot content from components with v-for in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'initial',
+      route: ISSUE_554_ROUTE,
+      action: '检查循环组件投影的图片节点和资源路径',
+      nodes: [{
+        selector: '.issue554-image',
+        attributes: { src: ISSUE_554_EXPECTED_IMAGE, mode: 'aspectFit' },
+        ...(resolveRuntimeProviderName() === 'devtools' ? { visible: true } : {}),
+      }],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_554_ROUTE, undefined, 45_000, {
@@ -69,6 +81,7 @@ describe('e2e app: github-issues / issue #554', { concurrent: false }, () => {
       expect(pageWxml).toContain('vue-slots="{{__wv_bind_0[__wv_index_1]}}"')
       expect(pageWxml).toContain('class="issue554-image"')
       expect(pageWxml).toContain(`src="{{__wv_item_0.src}}"`)
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

@@ -1,4 +1,4 @@
-import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared'
+import { getMiniProgramRuntimeGlobalKeys } from '@weapp-core/shared/platforms/runtime'
 
 const performanceTimeOrigin = Date.now()
 const PERFORMANCE_POLYFILL_MARKER = '__weappVitePerformancePolyfill'

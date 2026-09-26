@@ -1,0 +1,10 @@
+<view id="transform-root" data-testid="remove">
+  <text id="retained" data-testid="keep">retained</text>
+  <text id="renamed" data-use-view data-clean="remove">renamed</text>
+  <view id="subtree">
+    <text id="nested-child" data-use-view data-clean="remove">nested</text>
+    <view data-remove-subtree><text>removed-child</text></view>
+    <button id="tap" data-track="track" bindtap="tap">tap</button>
+  </view>
+  <view id="result">{{count}}:{{track}}</view>
+</view>

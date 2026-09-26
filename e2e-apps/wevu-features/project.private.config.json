@@ -29,6 +29,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/query-list/index",
+          "pathName": "pages/query-list/index",
+          "query": "filter=manual",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/query-detail/index",
+          "pathName": "pages/query-detail/index",
+          "query": "itemId=1",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/use-attrs/index",
           "pathName": "pages/use-attrs/index",
           "query": "",

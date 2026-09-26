@@ -1,12 +1,12 @@
 <script lang="ts">
-import { storeToRefs } from 'wevu'
+import { defineComponent, storeToRefs } from 'wevu'
 import {
   useCounterStore,
   usePluginDemoStore,
   useTodoStore,
 } from '../../stores/storeDemo'
 
-export default {
+export default defineComponent({
   setup() {
     // 复用同一份 counter store
     const counterStore = useCounterStore()
@@ -73,7 +73,7 @@ export default {
       resetSharedState,
     }
   },
-}
+})
 </script>
 
 <template>
@@ -139,7 +139,7 @@ export default {
           </button>
         </view>
       </view>
-      <view class="todo-row" wx:for="{{ visibleTodos }}" wx:key="id" wx:for-item="todo">
+      <view v-for="todo in visibleTodos" :key="todo.id" class="todo-row">
         <view class="todo-title {{ todo.done ? 'done' : '' }}">
           {{ todo.title }}
         </view>

@@ -6,6 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { cac } from 'cac'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { callWriteBundleHooks } from '../../../test/pluginHook'
 import { registerBuildCommand } from './build'
 
 const state = vi.hoisted(() => ({
@@ -69,6 +70,9 @@ beforeEach(async () => {
       await writeFile(path.join(path.dirname(outDir), 'project.config.json'), JSON.stringify({
         miniprogramRoot: path.basename(outDir),
       }))
+      await callWriteBundleHooks(inlineConfig.plugins ?? [], outDir, invalidOutput
+        ? {}
+        : { 'app.json': { type: 'asset', fileName: 'app.json', names: [], originalFileNames: [], source: '{}' } })
       events.push('mini:built')
       return { output: [] }
     })

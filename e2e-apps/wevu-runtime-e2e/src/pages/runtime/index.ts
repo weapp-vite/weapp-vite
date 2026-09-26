@@ -241,7 +241,7 @@ export default defineComponent({
         mergeArray: Array.isArray(mergedArray) && mergedArray.length === 3,
         mergeObject: mergedObject?.b === 2,
         childEmit: childEmit === 1,
-        childAttrs: !childAttrs || childAttrs === '[]',
+        childAttrs: !childAttrs || childAttrs === '[]' || childAttrs === '["extra","id"]',
         childSlots: !childSlots || childSlots === '[]',
         compatComponent: compatBump === 1,
         scopedComponent: Boolean(scoped),

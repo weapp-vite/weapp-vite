@@ -3,6 +3,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../utils/babel'
 import { JSON_MACROS } from '../../vue/transform/jsonMacros/parse'
 import { toStaticObjectKey } from './ast'
+import { resolveSetupFunction } from './setupBindings'
 
 export { injectDynamicIslandRuntime } from './islandScript'
 
@@ -43,28 +44,19 @@ function resolveReturnedJsxClosureExpression(expression: t.Expression) {
 }
 
 function rewriteSetupRenderClosure(node: ObjectExpression) {
-  const setup = node.properties.find((property) => {
-    if (!t.isObjectMethod(property) && !t.isObjectProperty(property)) {
-      return false
-    }
-    return toStaticObjectKey(property.key) === 'setup'
-  })
-  if (!setup || !t.isObjectMethod(setup)) {
+  const setup = resolveSetupFunction(node)
+  if (!setup || !t.isBlockStatement(setup.body)) {
     return false
   }
 
   const localNames = new Set<string>()
   for (const param of setup.params) {
-    if (t.isIdentifier(param)) {
-      localNames.add(param.name)
-    }
+    Object.keys(t.getBindingIdentifiers(param)).forEach(name => localNames.add(name))
   }
   for (const statement of setup.body.body) {
     if (t.isVariableDeclaration(statement)) {
       for (const declaration of statement.declarations) {
-        if (t.isIdentifier(declaration.id)) {
-          localNames.add(declaration.id.name)
-        }
+        Object.keys(t.getBindingIdentifiers(declaration.id)).forEach(name => localNames.add(name))
       }
     }
     else if (t.isFunctionDeclaration(statement) && statement.id) {

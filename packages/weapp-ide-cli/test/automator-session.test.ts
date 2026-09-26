@@ -4,6 +4,7 @@ const launchAutomatorMock = vi.hoisted(() => vi.fn())
 const connectOpenedAutomatorMock = vi.hoisted(() => vi.fn())
 const promptWechatIdeLoginRetryMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
+  debug: vi.fn(),
   error: vi.fn(),
   info: vi.fn(),
   warn: vi.fn(),
@@ -37,10 +38,24 @@ describe('automator session diagnostics', () => {
     connectOpenedAutomatorMock.mockReset()
     promptWechatIdeLoginRetryMock.mockReset()
     loggerMock.error.mockReset()
+    loggerMock.debug.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     connectOpenedAutomatorMock.mockRejectedValue(new Error('Failed connecting to ws://127.0.0.1:9420, check if target project window is opened with automation enabled'))
     promptWechatIdeLoginRetryMock.mockResolvedValue('cancel')
+  })
+
+  it('keeps background connection failures observable without premature terminal errors', async () => {
+    const { connectConsoleMiniProgram } = await import('../src/cli/automator-session')
+    const options = { projectPath: '/workspace/project', openedOnly: true }
+    await expect(connectConsoleMiniProgram(options)).rejects.toThrow('DEVTOOLS_WS_CONNECT_ERROR')
+    expect(loggerMock.debug).toHaveBeenCalledWith('无法连接到当前项目的微信开发者工具自动化 websocket。')
+    expect(loggerMock.error).not.toHaveBeenCalled()
+    expect(loggerMock.warn).not.toHaveBeenCalled()
+    const session = { disconnect: vi.fn() }
+    connectOpenedAutomatorMock.mockResolvedValueOnce(session)
+    await expect(connectConsoleMiniProgram(options)).resolves.toBe(session)
+    expect(launchAutomatorMock).not.toHaveBeenCalled()
   })
 
   it('maps websocket connect failures to a friendly diagnostic error', async () => {

@@ -80,8 +80,7 @@ export function transformNode(node: any, context: TransformContext): string {
       return transformInterpolation(node, context)
 
     case NodeTypes.COMMENT:
-      // 注释默认移除
-      return ''
+      return context.preserveComments ? `<!--${node.content}-->` : ''
 
     default:
       // 未知节点类型，返回空字符串

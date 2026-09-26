@@ -11,6 +11,7 @@ const ENGINE_BUILD_ERROR = 'ERROR'
 
 export interface WechatDevtoolsHttpCommandOptions {
   port?: number
+  signal?: AbortSignal
   timeoutMs?: number
 }
 
@@ -76,29 +77,34 @@ export async function requestWechatDevtoolsHttp(
   query: Record<string, string>,
   options: WechatDevtoolsHttpCommandOptions = {},
 ) {
-  const port = await resolveWechatDevtoolsHttpPort(options.port)
+  options.signal?.throwIfAborted()
+  const port = await resolveWechatDevtoolsHttpPort(options.port).catch((error: unknown) => {
+    options.signal?.throwIfAborted()
+    throw error
+  })
+  options.signal?.throwIfAborted()
   const url = createWechatDevtoolsHttpUrl(port, pathname, query)
 
   const controller = new AbortController()
+  const signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal
   const timeout = setTimeout(() => {
-    controller.abort()
+    controller.abort(createWechatDevtoolsHttpError('WECHAT_DEVTOOLS_HTTP_TIMEOUT', 'WECHAT_DEVTOOLS_HTTP_TIMEOUT'))
   }, options.timeoutMs ?? 10_000)
 
   try {
     const response = await fetch(url, {
       method: 'GET',
-      signal: controller.signal,
+      signal,
     })
     const body = await response.text()
+    signal.throwIfAborted()
     if (!response.ok) {
       throw createWechatDevtoolsHttpError(body || `HTTP ${response.status}`, 'WECHAT_DEVTOOLS_HTTP_REQUEST_FAILED')
     }
     return body
   }
   catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw createWechatDevtoolsHttpError('WECHAT_DEVTOOLS_HTTP_TIMEOUT', 'WECHAT_DEVTOOLS_HTTP_TIMEOUT')
-    }
+    signal.throwIfAborted()
     throw error
   }
   finally {

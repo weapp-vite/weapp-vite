@@ -2,6 +2,7 @@ import type { WritableComputedOptions } from '../../reactivity'
 import type { AppConfig, ComponentPublicInstance, ComputedDefinitions, ExtractMethods, MethodDefinitions } from '../types'
 import {
   WEVU_COMPONENT_NAME_KEY,
+  WEVU_HOST_COMMIT_PROMISE_KEY,
   WEVU_INLINE_MAP_KEY,
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PARENT_INSTANCE_KEY,
@@ -205,9 +206,22 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
           }
         }
         if (key === '$nextTick') {
-          return <T>(fn?: () => T) => fn
-            ? nextTick(() => fn.call(publicInstance))
-            : nextTick<T>()
+          return async <T>(fn?: () => T) => {
+            await nextTick()
+            const nativeInstance = resolveNativeInstance(target as object, receiver as object)
+            const hostCommit = nativeInstance && Reflect.get(nativeInstance, WEVU_HOST_COMMIT_PROMISE_KEY)
+            if (
+              hostCommit
+              && (typeof hostCommit === 'object' || typeof hostCommit === 'function')
+              && 'then' in hostCommit
+              && typeof hostCommit.then === 'function'
+            ) {
+              await hostCommit
+            }
+            if (fn) {
+              return fn.call(publicInstance)
+            }
+          }
         }
         if (key === '$set') {
           return (object: Record<PropertyKey, any>, property: PropertyKey, value: any) => {

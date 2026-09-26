@@ -35,6 +35,7 @@ export default defineComponent({
       enabled: computed(() => Boolean(baseUrl.value) && e2eStarted.value),
       queryKey,
       queryFn: async (): Promise<QueryPayload> => {
+        // eslint-disable-next-line mini-program/no-implicit-runtime-polyfill -- fixture 已启用 appPrelude.webRuntime，此处验证注入后的 fetch。
         const response = await fetch(
           `${baseUrl.value}/vue-query?tab=${selectedTab.value}&seed=${refreshSeed.value}`,
         )
@@ -61,6 +62,10 @@ export default defineComponent({
 
     const requestCountText = computed(() => query.data.value?.requestCount ?? 0)
     const generatedAtText = computed(() => query.data.value?.generatedAt ?? '--')
+    const payloadLabel = computed(() => query.data.value?.label ?? '--')
+    const payloadTab = computed(() => query.data.value?.tab ?? '--')
+    const payloadSeed = computed(() => query.data.value?.seed ?? -1)
+    const refetchCount = ref(0)
 
     async function waitForReady(tab = selectedTab.value, seed = refreshSeed.value, minRequestCount = 1) {
       const startedAt = Date.now()
@@ -82,6 +87,11 @@ export default defineComponent({
 
     async function refetchNow() {
       await query.refetch()
+      refetchCount.value += 1
+    }
+
+    function startQuery() {
+      e2eStarted.value = true
     }
 
     function switchTab(tab: 'overview' | 'detail') {
@@ -150,6 +160,13 @@ export default defineComponent({
       baseUrl,
       e2eStarted,
       generatedAtText,
+      payloadLabel,
+      payloadTab,
+      payloadSeed,
+      isPending: query.isPending,
+      isFetching: query.isFetching,
+      isSuccess: query.isSuccess,
+      refetchCount,
       queryKey,
       refetchNow,
       refreshSeed,
@@ -158,6 +175,7 @@ export default defineComponent({
       runE2E,
       selectedTab,
       statusText,
+      startQuery,
       switchTab,
     }
   },
@@ -178,16 +196,26 @@ export default defineComponent({
       <text id="vue-query-request-count" class="line">requestCount = {{ requestCountText }}</text>
       <text id="vue-query-generated-at" class="line">generatedAt = {{ generatedAtText }}</text>
       <text id="vue-query-key" class="line mono">queryKey = {{ JSON.stringify(queryKey) }}</text>
-      <button class="action primary" @tap="() => switchTab('overview')">
+      <text id="vue-query-label" class="line">label = {{ payloadLabel }}</text>
+      <text id="vue-query-payload-tab" class="line">tab = {{ payloadTab }}</text>
+      <text id="vue-query-payload-seed" class="line">seed = {{ payloadSeed }}</text>
+      <text id="vue-query-pending" class="line">isPending = {{ isPending }}</text>
+      <text id="vue-query-fetching" class="line">isFetching = {{ isFetching }}</text>
+      <text id="vue-query-success" class="line">isSuccess = {{ isSuccess }}</text>
+      <text id="vue-query-refetch-count" class="line">refetchCount = {{ refetchCount }}</text>
+      <button id="vue-query-start" class="action" @tap="startQuery">
+        开始查询
+      </button>
+      <button id="vue-query-overview" class="action primary" @tap="() => switchTab('overview')">
         切到 overview
       </button>
-      <button class="action primary" @tap="() => switchTab('detail')">
+      <button id="vue-query-detail" class="action primary" @tap="() => switchTab('detail')">
         切到 detail
       </button>
-      <button class="action" @tap="refetchNow">
+      <button id="vue-query-refetch" class="action" @tap="refetchNow">
         立即 refetch
       </button>
-      <button class="action" @tap="rotateKey">
+      <button id="vue-query-rotate" class="action" @tap="rotateKey">
         更换 queryKey
       </button>
     </view>

@@ -79,6 +79,7 @@ function _appendIssue581Rows(names: string[]) {
     </view>
     <view
       v-for="(value, idx) in back.state"
+      :id="`issue581-row-${idx}`"
       :key="idx"
       class="issue581-row"
       :data-issue581-name="value.name"

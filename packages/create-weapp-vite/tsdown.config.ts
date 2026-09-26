@@ -14,6 +14,6 @@ export default defineConfig({
       js: '.js',
     }
   },
-  target: 'node20',
+  target: 'node22',
   failOnWarn: false,
 })

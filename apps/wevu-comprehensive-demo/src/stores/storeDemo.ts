@@ -1,6 +1,7 @@
+import type { ActionContext, SubscriptionCallback } from 'wevu'
 import { computed, createStore, defineStore, ref } from 'wevu'
 
-// 全局 store manager（可选）：挂载插件用于演示 $onAction/$subscribe 扩展
+// 应用安装的 Pinia，挂载插件用于演示 $onAction/$subscribe。
 export const storeManager = createStore()
 storeManager.use(({ store }) => {
   if (store.$id !== 'plugin-demo') {
@@ -15,12 +16,12 @@ storeManager.use(({ store }) => {
   ;(store as any).$lastMutation = lastMutation
   ;(store as any).$lastAction = lastAction
 
-  store.$subscribe((mutation) => {
+  store.$subscribe((mutation: Parameters<SubscriptionCallback>[0]) => {
     pluginLog.value.unshift(`mutation: ${mutation.type}`)
     lastMutation.value = mutation.type
   })
 
-  store.$onAction(({ name, after, onError }) => {
+  store.$onAction(({ name, after, onError }: ActionContext) => {
     pluginLog.value.unshift(`action: ${name}`)
     after(() => {
       lastAction.value = name
@@ -194,9 +195,9 @@ export const usePluginDemoStore = defineStore('plugin-demo', {
     },
     clearStatus() {
       this.$reset()
-      const pluginLog = (this as any).$pluginLog as undefined | { value: string[] }
+      const pluginLog = (this as any).$pluginLog as undefined | string[]
       if (pluginLog) {
-        pluginLog.value.unshift('通过 $reset 回到初始状态')
+        pluginLog.unshift('通过 $reset 回到初始状态')
       }
     },
   },

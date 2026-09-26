@@ -26,6 +26,15 @@ describe('plugin-demo build e2e', { concurrent: false }, () => {
       label: 'ci:plugin-demo-build',
     })
 
+    const projectConfig = await fs.readJSON(path.join(APP_ROOT, 'project.config.json')) as { appid: string, compileType: string }
+    const appConfig = await fs.readJSON(path.join(DIST_ROOT, 'app.json')) as Record<string, unknown>
+    expect(projectConfig).toMatchObject({ compileType: 'plugin', setting: { es6: false } })
+    expect(appConfig).toMatchObject({
+      plugins: {
+        'hello-plugin': { version: 'dev', provider: projectConfig.appid },
+      },
+    })
+
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'miniprogram_npm/dayjs/index.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'miniprogram_npm/lodash/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.js'))).toBe(true)

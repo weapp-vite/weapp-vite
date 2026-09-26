@@ -12,6 +12,7 @@ const entry = {
   'api/vitest/setup': './src/apiVitestSetup',
   'fetch': './src/fetch',
   'router': './src/router',
+  'router/auto-routes': './src/router/auto-routes',
   'web-apis': './src/web-apis',
   'vue-demi': './src/vue-demi',
 }
@@ -28,8 +29,10 @@ const declarationEntry = {
 export default defineConfig([
   {
     entry: declarationEntry,
+    define: { 'process.env.NODE_ENV': JSON.stringify('production') },
     format: ['esm'],
-    target: 'es2018',
+    // 发布 ESM 保留平台宏的可选链，最终应用构建再按宿主 target 降级。
+    target: 'es2020',
     dts: true,
     // dts: {
     //   compilerOptions: {
@@ -52,9 +55,10 @@ export default defineConfig([
   },
   {
     entry,
+    define: { 'process.env.NODE_ENV': JSON.stringify('development') },
     outDir: './dist/dev',
     format: ['esm'],
-    target: 'es2018',
+    target: 'es2020',
     dts: false,
     clean: false,
     minify: false,

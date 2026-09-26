@@ -1,4 +1,5 @@
 import type { AppLifecycleData, AppLifecycleEntry } from '../../shared/lifecycle'
+import { getHostLifecycleInputRows } from '../../../../shared/appLifecycle'
 import { APP_HOOKS } from '../../shared/lifecycle'
 
 interface LifecycleSummary {
@@ -10,9 +11,11 @@ interface LifecycleSummary {
 }
 
 interface LifecyclePageData {
+  __hostInputs: ReturnType<typeof getHostLifecycleInputRows>
   message: string
   __e2eSummary: LifecycleSummary
   __e2ePreview: AppLifecycleEntry[]
+  __e2eHooks: Array<{ name: string, status: string }>
 }
 
 interface LifecyclePageInstance {
@@ -39,13 +42,19 @@ function refreshE2eState(page: LifecyclePageInstance) {
   const summary = buildSummary(appData)
   const preview = appData.__lifecycleLogs?.slice(-6) ?? []
   page.setData({
+    __hostInputs: getHostLifecycleInputRows(),
     __e2eSummary: summary,
     __e2ePreview: preview,
+    __e2eHooks: APP_HOOKS.map(name => ({
+      name,
+      status: appData.__lifecycleSeen?.[name] ? 'observed' : appData.__lifecycleLogs?.some(entry => entry.hook === name && entry.skipped) ? 'skipped' : 'pending',
+    })),
   })
 }
 
 Page({
   data: {
+    __hostInputs: [] as ReturnType<typeof getHostLifecycleInputRows>,
     message: 'App lifecycle native',
     __e2eSummary: {
       total: APP_HOOKS.length,
@@ -55,11 +64,15 @@ Page({
       lastHook: '',
     },
     __e2ePreview: [] as AppLifecycleEntry[],
+    __e2eHooks: [] as Array<{ name: string, status: string }>,
   },
   onReady() {
     refreshE2eState(this)
   },
   onShow() {
+    refreshE2eState(this)
+  },
+  refreshLifecycleSummary() {
     refreshE2eState(this)
   },
 })

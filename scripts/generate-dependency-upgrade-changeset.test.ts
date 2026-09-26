@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
 import {
   collectDependencySpecChanges,
+  collectPublishableReleasePackageNames,
+  formatDependencyUpgradeBody,
   resolveDependencyUpgradeReleasePackages,
+  shouldWriteDependencyUpgradeChangeset,
 } from './generate-dependency-upgrade-changeset'
 
 it('collectDependencySpecChanges detects changed, added and removed dependency specs', () => {
@@ -67,4 +73,63 @@ it('resolveDependencyUpgradeReleasePackages adds create-weapp-vite for weapp-vit
     }),
     ['@weapp-vite/vscode', 'create-weapp-vite'],
   )
+})
+
+it('collectPublishableReleasePackageNames includes every publishable package', () => {
+  assert.deepEqual(
+    collectPublishableReleasePackageNames([
+      { name: 'wevu' },
+      { name: 'weapp-vite' },
+      { name: 'wevu' },
+    ]),
+    ['weapp-vite', 'wevu'],
+  )
+})
+
+it('shouldWriteDependencyUpgradeChangeset only writes when this run has upgrades', () => {
+  assert.equal(
+    shouldWriteDependencyUpgradeChangeset({
+      changedPublishablePackages: [],
+      templatePackageChanged: false,
+    }),
+    false,
+  )
+  assert.equal(
+    shouldWriteDependencyUpgradeChangeset({
+      changedPublishablePackages: ['@weapp-vite/eslint'],
+      templatePackageChanged: false,
+    }),
+    true,
+  )
+  assert.equal(
+    shouldWriteDependencyUpgradeChangeset({
+      changedPublishablePackages: [],
+      templatePackageChanged: true,
+    }),
+    true,
+  )
+})
+
+it('formatDependencyUpgradeBody keeps this-run summaries in Chinese', () => {
+  assert.equal(
+    formatDependencyUpgradeBody([
+      { name: '@weapp-vite/eslint', summary: 'devDependencies.vitest' },
+    ]),
+    `自动补充依赖升级发布记录。
+涉及包：
+- @weapp-vite/eslint：devDependencies.vitest
+`,
+  )
+})
+
+it('dependency upgrade generator does not overwrite or delete a fixed changeset path', async () => {
+  const source = await fs.readFile(
+    path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'generate-dependency-upgrade-changeset.ts'),
+    'utf8',
+  )
+
+  assert.equal(source.includes('dependency-upgrade-auto-generated.md'), false)
+  assert.equal(source.includes('fs.rm'), false)
+  assert.match(source, /writeUniqueChangeset/)
+  assert.match(source, /collectPublishableReleasePackageNames/)
 })

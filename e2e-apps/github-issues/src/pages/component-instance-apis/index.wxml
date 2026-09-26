@@ -1,0 +1,11 @@
+<view id="component-api-page">
+  <text id="scope-node" data-scope="page">page scope</text>
+  <relation-parent id="relation-parent">
+    <view><relation-child wx:if="{{showChild}}" /></view>
+  </relation-parent>
+  <button id="snapshot" bindtap="snapshot">刷新事件记录</button>
+  <button id="remove-child" bindtap="removeChild">移除子组件</button>
+  <button id="restore-child" bindtap="restoreChild">恢复子组件</button>
+  <text id="relation-children">{{children}}</text>
+  <text id="relation-trace">{{trace}}</text>
+</view>

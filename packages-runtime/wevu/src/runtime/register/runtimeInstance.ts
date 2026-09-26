@@ -1,3 +1,4 @@
+import type { SetDataAdapterSettlement, SetDataAdapterSettler, SetDataPayload } from '../app/setData/commitTracker'
 import type {
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -7,34 +8,35 @@ import type {
   MethodDefinitions,
   RuntimeApp,
   RuntimeInstance,
+  SetDataSnapshotOptions,
 } from '../types'
 import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import {
+  WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
   WEVU_EFFECT_SCOPE_KEY,
   WEVU_EXPOSED_KEY,
   WEVU_HOOKS_KEY,
+  WEVU_HOST_COMMIT_PROMISE_KEY,
   WEVU_ON_BEFORE_UNMOUNT_HOOK,
-  WEVU_PAGE_LAYOUT_NAME_KEY,
-  WEVU_PAGE_LAYOUT_PROPS_KEY,
-  WEVU_PAGE_LAYOUT_SETTER_KEY,
   WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY,
   WEVU_PROPS_DERIVED_KEYS_KEY,
-  WEVU_PROPS_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
-  WEVU_RUNTIME_OWNER_ID_KEY,
   WEVU_SETUP_CONTEXT_INSTANCE_KEY,
   WEVU_SLOT_OWNER_ID_KEY,
-  WEVU_TEMPLATE_REFS_KEY,
   WEVU_WATCH_STOPS_KEY,
 } from '@weapp-core/constants'
-import { effectScope as createEffectScope, isRef } from '../../reactivity'
-import { isDeepEqualValue } from '../app/setData/snapshot'
+import { effectScope as createEffectScope, isReactive, isRef } from '../../reactivity'
+import { observeSetDataCompletion } from '../app/setData/commitTracker'
+import { applySnapshotUpdate, isDeepEqualValue } from '../app/setData/snapshot'
+import {
+  isSetDataHighFrequencyWarningRequested,
+  requireRuntimeCapability,
+  runtimeCapabilityRegistry,
+} from '../capabilities'
 import { callHookList } from '../hooks'
-import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
-import { allocateOwnerId, attachOwnerSnapshot, mergeOwnerSnapshotProps, removeOwner, resolveOwnerSnapshot, updateOwnerSnapshot } from '../scopedSlots'
+import { getMiniProgramRuntimeGlobalObject } from '../platform'
 import { runTeardownSteps } from '../teardown'
-import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import { attachRuntimeProvideParentContext } from './runtimeInstance/provideContext'
 import {
@@ -43,6 +45,7 @@ import {
   safeMarkNoSetData,
 } from './runtimeInstance/setupContext'
 import { runRuntimeSetupPhase } from './runtimeInstance/setupPhase'
+import { restoreReactiveSetupSnapshot } from './runtimeInstance/setupSnapshot'
 import {
   attachNativeInstanceRef,
   attachRuntimeInstance,
@@ -51,8 +54,9 @@ import {
   ensureRuntimeProps,
   resolveNativeSetData,
 } from './runtimeInstance/utils'
-import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
 import { registerWatches } from './watch'
+
+const initialReactiveSetupSnapshots = new WeakMap<object, Record<string, unknown>>()
 
 function cloneInitialSnapshotValue(value: unknown, cache = new WeakMap<object, unknown>()): unknown {
   if (!value || typeof value !== 'object') {
@@ -75,6 +79,41 @@ function cloneInitialSnapshotValue(value: unknown, cache = new WeakMap<object, u
     next[key] = cloneInitialSnapshotValue(child, cache)
   }
   return next
+}
+function mergeBufferedSetDataPayload(
+  buffered: SetDataPayload | undefined,
+  incoming: SetDataPayload,
+): SetDataPayload {
+  const merged = buffered ?? {}
+  for (const [path, value] of Object.entries(incoming)) {
+    let ancestorPath: string | undefined
+    for (const candidate of Object.keys(merged)) {
+      if (path.startsWith(`${candidate}.`)) {
+        ancestorPath = candidate
+        break
+      }
+    }
+    if (ancestorPath) {
+      const holder: Record<string, unknown> = { value: merged[ancestorPath] }
+      applySnapshotUpdate(
+        holder,
+        `value.${path.slice(ancestorPath.length + 1)}`,
+        value,
+        'set',
+        { cloneValue: false, clonedParents: new WeakSet<object>() },
+      )
+      merged[ancestorPath] = holder.value
+      continue
+    }
+    const descendantPrefix = `${path}.`
+    for (const candidate of Object.keys(merged)) {
+      if (candidate.startsWith(descendantPrefix)) {
+        delete merged[candidate]
+      }
+    }
+    merged[path] = value
+  }
+  return merged
 }
 
 function resolveInitialSnapshotFromNativeData(
@@ -128,24 +167,12 @@ type RuntimeInstanceWithSyncFlush<
   __wevu_flushSetupSnapshotSync?: () => void
   __wevu_touchSetupMethodsVersion?: () => void
   __wevu_trackSetupReactiveKey?: (key: string) => void
+  __wevu_cloneDispatchedSnapshot?: () => Record<string, any>
 }
 
-function attachPageLayoutSetter(target: InternalRuntimeState) {
-  if (typeof (target as any).route !== 'string' || !(target as any).route) {
-    return
-  }
-
-  target[WEVU_PAGE_LAYOUT_SETTER_KEY] = (layout: string | false, props?: Record<string, any>) => {
-    const runtimeState = target.__wevu?.state as Record<string, any> | undefined
-    if (!runtimeState || typeof runtimeState !== 'object') {
-      return
-    }
-
-    runtimeState[WEVU_PAGE_LAYOUT_NAME_KEY] = resolveRuntimePageLayoutName(layout)
-    const nextProps = layout === false ? {} : (props ?? {})
-    runtimeState[WEVU_PAGE_LAYOUT_PROPS_KEY] = nextProps
-    syncRuntimePageLayoutState(target as Record<string, any>, layout, nextProps)
-  }
+interface BufferedSetDataSettlement {
+  settle: SetDataAdapterSettler
+  next: BufferedSetDataSettlement | undefined
 }
 
 /**
@@ -162,169 +189,398 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   if (target.__wevu) {
     return target.__wevu as RuntimeInstance<D, C, M>
   }
+  const runtimeSetDataOptions = (
+    runtimeApp as typeof runtimeApp & { __wevuSetDataOptions?: SetDataSnapshotOptions }
+  ).__wevuSetDataOptions
+  const hasScopedSlotBindings = hasTemplateRuntimeBindings(runtimeApp)
+  const scopedSlotHooks = hasScopedSlotBindings
+    ? requireRuntimeCapability('scopedSlots', 'mountRuntimeInstance(scoped-slot bindings)')
+    : undefined
+  const scopedSlotState = scopedSlotHooks?.prepareMount(target)
+  const templateRefBindings = target.__wevuTemplateRefs
+  if (Array.isArray(templateRefBindings) && templateRefBindings.length) {
+    requireRuntimeCapability('templateRefs', 'mountRuntimeInstance(template refs)')
+  }
+  const highFrequencyWarningRequested = isSetDataHighFrequencyWarningRequested(
+    runtimeSetDataOptions?.highFrequencyWarning,
+  )
+  const highFrequencyWarningHooks = highFrequencyWarningRequested
+    ? requireRuntimeCapability('setDataHighFrequencyWarning', 'mountRuntimeInstance(setData.highFrequencyWarning)')
+    : undefined
   attachRuntimeProvideParentContext(target, runtimeApp as RuntimeApp<any, any, any>)
   safeMarkNoSetData(target)
-  const initialNativeOwnerId = (target as any).data?.[WEVU_SLOT_OWNER_ID_KEY]
-  const ownerId = typeof initialNativeOwnerId === 'string' && initialNativeOwnerId
-    ? initialNativeOwnerId
-    : allocateOwnerId()
-  const shouldFlushNativeOwnerId = typeof initialNativeOwnerId === 'string' && initialNativeOwnerId !== ownerId
-  const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
+  const suspendWhenHidden = Boolean(runtimeSetDataOptions?.suspendWhenHidden)
   const targetLabel = typeof (target as any).route === 'string' && (target as any).route
     ? `page:${(target as any).route}`
     : typeof (target as any).is === 'string' && (target as any).is
       ? `component:${(target as any).is}`
       : 'unknown-target'
-  const highFrequencyWarning = createSetDataHighFrequencyWarningMonitor({
-    option: (runtimeApp as any)?.__wevuSetDataOptions?.highFrequencyWarning,
+  const highFrequencyWarning = highFrequencyWarningHooks?.createMonitor({
+    option: runtimeSetDataOptions?.highFrequencyWarning,
     targetLabel,
     isInPageScrollHook: () => Number((target as any)[WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0) > 0,
   })
-  const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
-    let pending: Record<string, any> | undefined
-    let pendingCallbacks: Array<() => void> = []
-    let enabled = false
-    const adapter: AdapterWithSetData = {
-      setData(payload: Record<string, any>, callback?: () => void) {
-        if (!enabled) {
-          pending = {
-            ...(pending ?? {}),
-            ...payload,
-          }
-          if (callback) {
-            pendingCallbacks.push(callback)
-          }
-          return undefined
-        }
-        const setData = resolveNativeSetData(instance)
-        if (setData) {
-          return callNativeSetData(instance, setData, payload, callback)
-        }
-        return undefined
-      },
-    }
-    adapter.__wevu_enableSetData = (discardPending = false) => {
-      enabled = true
-      if (discardPending) {
-        pending = undefined
-        pendingCallbacks = []
-      }
-      const setData = resolveNativeSetData(instance)
-      if (pending && Object.keys(pending).length && setData) {
-        const payload = pending
-        const callbacks = pendingCallbacks
-        pending = undefined
-        pendingCallbacks = []
-        const callback = callbacks.length
-          ? () => callbacks.forEach(callback => callback())
-          : undefined
-        callNativeSetData(instance, setData, payload, callback)
-      }
-    }
-    return adapter
-  }
-
-  const baseAdapter: AdapterWithSetData = options?.deferSetData
-    ? createDeferredAdapter(target)
-    : {
-        setData(payload: Record<string, any>, callback?: () => void) {
-          const setData = resolveNativeSetData(target)
-          if (setData) {
-            return callNativeSetData(target, setData, payload, callback)
-          }
-          return undefined
-        },
-      }
-  let runtimeRef: RuntimeInstance<any, any, any> | undefined
   let visible = true
-  let hiddenPendingPayload: Record<string, any> | undefined
+  let enabled = !options?.deferSetData
+  let disposed = false
+  let dispatchGeneration = 0
+  let pendingPayload: SetDataPayload | undefined
+  let pendingSettlementHead: BufferedSetDataSettlement | undefined
+  let pendingSettlementTail: BufferedSetDataSettlement | undefined
+  let pendingRawCallbacks: Array<() => void> = []
+  const ownsHostCommit = !(WEVU_HOST_COMMIT_PROMISE_KEY in target)
+  let pendingHostCommits = 0
+  let hostCommitFailed = false
+  let hostCommitCause: unknown
+  let hostCommitPromise: Promise<void> | undefined
+  let resolveHostCommit: (() => void) | undefined
+  let rejectHostCommit: ((cause: unknown) => void) | undefined
 
-  const mergePendingPayload = (pending: Record<string, any> | undefined, payload: Record<string, any>) => ({
-    ...(pending ?? {}),
-    ...payload,
-  })
-  const refreshOwnerSnapshot = () => {
-    if (!runtimeRef) {
+  const resetHostCommitFailure = () => {
+    if (!pendingHostCommits && !pendingPayload && !hostCommitPromise) {
+      hostCommitFailed = false
+      hostCommitCause = undefined
+    }
+  }
+  const flushHostCommitWaiter = () => {
+    if (pendingHostCommits || pendingPayload) {
       return
     }
-    const snapshot = resolveOwnerSnapshot(runtimeRef)
-    const propsSource = (target as any)[WEVU_PROPS_KEY] ?? (target as any).properties
-    mergeOwnerSnapshotProps(snapshot, propsSource)
-    updateOwnerSnapshot(ownerId, snapshot, runtimeRef.proxy, target)
+    if (hostCommitFailed) {
+      rejectHostCommit?.(hostCommitCause)
+    }
+    else {
+      resolveHostCommit?.()
+    }
+    hostCommitPromise = undefined
+    resolveHostCommit = undefined
+    rejectHostCommit = undefined
+  }
+  const beginHostCommit = () => {
+    if (ownsHostCommit) {
+      pendingHostCommits += 1
+    }
+  }
+  const finishHostCommit = (settlement: SetDataAdapterSettlement = 'committed', cause?: unknown) => {
+    if (!ownsHostCommit || disposed) {
+      return
+    }
+    if (settlement === 'failed' && !hostCommitFailed) {
+      hostCommitFailed = true
+      hostCommitCause = cause
+    }
+    pendingHostCommits -= 1
+    flushHostCommitWaiter()
+  }
+  const failHostCommit = (cause: unknown) => finishHostCommit('failed', cause)
+  if (ownsHostCommit) {
+    Object.defineProperty(target, WEVU_HOST_COMMIT_PROMISE_KEY, {
+      configurable: true,
+      enumerable: false,
+      get: () => {
+        if (!pendingHostCommits && !pendingPayload) {
+          return hostCommitFailed ? Promise.reject(hostCommitCause) : undefined
+        }
+        // 只有实例 $nextTick 消费宿主屏障时才创建 Promise。
+        hostCommitPromise ??= new Promise<void>((resolve, reject) => {
+          resolveHostCommit = resolve
+          rejectHostCommit = reject
+        })
+        return hostCommitPromise
+      },
+    })
+  }
+
+  const refreshOwnerSnapshot = () => {
+    if (scopedSlotState) {
+      runtimeCapabilityRegistry.scopedSlots?.refresh(target, scopedSlotState)
+    }
+  }
+  const completeSuccessfulSetData = () => {
+    if (disposed) {
+      return
+    }
+    const bindings = target.__wevuTemplateRefs
+    if (!runtimeCapabilityRegistry.templateRefs && (!Array.isArray(bindings) || !bindings.length)) {
+      if (ownsHostCommit) {
+        finishHostCommit()
+      }
+      return
+    }
+    requireRuntimeCapability(
+      'templateRefs',
+      'mountRuntimeInstance(template ref completion)',
+    ).schedule(
+      target,
+      ownsHostCommit ? finishHostCommit : undefined,
+      target,
+      ownsHostCommit ? failHostCommit : undefined,
+    )
   }
   const syncNativeOwnerId = () => {
-    if (!shouldFlushNativeOwnerId) {
-      return
+    if (scopedSlotState) {
+      scopedSlotHooks?.syncNativeOwnerId(target, scopedSlotState)
     }
-    const nativeData = (target as any).data
-    try {
-      if (nativeData && typeof nativeData === 'object') {
-        nativeData[WEVU_SLOT_OWNER_ID_KEY] = ownerId
-      }
-    }
-    catch {
-      // 忽略直接写入失败，后续 setData 仍会尝试同步。
-    }
-    const setData = resolveNativeSetData(target)
-    if (!setData) {
-      return
-    }
-    callNativeSetData(target, setData, { [WEVU_SLOT_OWNER_ID_KEY]: ownerId })
   }
+  const appendPendingSettlement = (settle: SetDataAdapterSettler) => {
+    const record: BufferedSetDataSettlement = {
+      settle,
+      next: undefined,
+    }
+    if (pendingSettlementTail) {
+      pendingSettlementTail.next = record
+    }
+    else {
+      pendingSettlementHead = record
+    }
+    pendingSettlementTail = record
+  }
+  const settlePendingRecords = (
+    first: BufferedSetDataSettlement | undefined,
+    settlement: SetDataAdapterSettlement,
+    cause?: unknown,
+  ) => {
+    let current = first
+    let isFirst = true
+    while (current) {
+      const next = current.next
+      current.next = undefined
+      if (settlement === 'failed' && !isFirst) {
+        current.settle('abandoned')
+      }
+      else {
+        current.settle(settlement, cause)
+      }
+      current = next
+      isFirst = false
+    }
+  }
+  const dispatchPhysicalSetData = (
+    payload: SetDataPayload,
+    settle: SetDataAdapterSettler,
+  ) => {
+    const generation = dispatchGeneration
+    beginHostCommit()
+    refreshOwnerSnapshot()
+    observeSetDataCompletion({
+      invoke: (callback) => {
+        const setData = resolveNativeSetData(target)
+        if (!setData) {
+          callback()
+          return undefined
+        }
+        return callNativeSetData(target, setData, payload, callback)
+      },
+      completion: 'callback',
+      settle: (settlement, cause) => {
+        if (disposed || generation !== dispatchGeneration) {
+          return
+        }
+        if (settlement !== 'committed') {
+          finishHostCommit(settlement, cause)
+          settle(settlement, cause)
+          return
+        }
+        // 物理提交已成功，但实例屏障仍需等待原始回调；回调失败不能回滚快照账本。
+        try {
+          settle(settlement, cause)
+        }
+        catch (error) {
+          finishHostCommit('failed', error)
+          throw error
+        }
+        completeSuccessfulSetData()
+      },
+    })
+  }
+  const flushPendingSetData = () => {
+    if (!pendingPayload) {
+      return
+    }
+    const payload = pendingPayload
+    const settlements = pendingSettlementHead
+    const rawCallbacks = pendingRawCallbacks
+    pendingPayload = undefined
+    pendingSettlementHead = undefined
+    pendingSettlementTail = undefined
+    pendingRawCallbacks = []
+    dispatchPhysicalSetData(payload, (settlement, cause) => {
+      if (settlement === 'committed') {
+        try {
+          for (const callback of rawCallbacks) {
+            callback()
+          }
+        }
+        finally {
+          settlePendingRecords(settlements, settlement, cause)
+        }
+        return
+      }
+      settlePendingRecords(settlements, settlement, cause)
+    })
+  }
+  const abandonPendingSetData = () => {
+    const settlements = pendingSettlementHead
+    pendingPayload = undefined
+    pendingSettlementHead = undefined
+    pendingSettlementTail = undefined
+    pendingRawCallbacks = []
+    settlePendingRecords(settlements, 'abandoned')
+    flushHostCommitWaiter()
+  }
+  const bufferPayload = (payload: SetDataPayload) => {
+    resetHostCommitFailure()
+    pendingPayload = mergeBufferedSetDataPayload(pendingPayload, payload)
+  }
+
   const adapter: AdapterWithSetData = {
-    ...(baseAdapter as any),
-    setData(payload: Record<string, any>) {
+    setData(payload: Record<string, any>, callback?: () => void) {
       highFrequencyWarning?.()
-      if (suspendWhenHidden && !visible) {
-        hiddenPendingPayload = mergePendingPayload(hiddenPendingPayload, payload)
+      if (!enabled || (suspendWhenHidden && !visible)) {
+        bufferPayload(payload)
+        if (callback) {
+          pendingRawCallbacks.push(callback)
+        }
         refreshOwnerSnapshot()
-        scheduleTemplateRefUpdate(target)
         return undefined
       }
-      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
-        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
+
       refreshOwnerSnapshot()
-      if (hasTemplateRefs && resolveNativeSetData(target)) {
-        return new Promise<void>((resolve) => {
-          baseAdapter.setData(payload, () => {
-            refreshOwnerSnapshot()
-            scheduleTemplateRefUpdate(target)
-            resolve()
-          })
-        })
+      resetHostCommitFailure()
+      beginHostCommit()
+      const setData = resolveNativeSetData(target)
+      if (!setData) {
+        try {
+          callback?.()
+        }
+        catch (cause) {
+          finishHostCommit('failed', cause)
+          throw cause
+        }
+        completeSuccessfulSetData()
+        return undefined
       }
-      const result = baseAdapter.setData(payload)
-      scheduleTemplateRefUpdate(target)
+
+      let invoking = true
+      let callbackCalled = false
+      let returnIsAuthoritative = false
+      let successHandled = false
+      const handleFailure = (cause: unknown) => {
+        if (successHandled) {
+          return
+        }
+        successHandled = true
+        finishHostCommit('failed', cause)
+      }
+      const handleSuccess = () => {
+        if (successHandled) {
+          return
+        }
+        successHandled = true
+        completeSuccessfulSetData()
+      }
+      const nativeCallback = () => {
+        try {
+          callback?.()
+        }
+        catch (cause) {
+          handleFailure(cause)
+          throw cause
+        }
+        if (invoking) {
+          callbackCalled = true
+          return
+        }
+        if (!returnIsAuthoritative) {
+          handleSuccess()
+        }
+      }
+      let result: void | Promise<void>
+      try {
+        result = callNativeSetData(target, setData, payload, nativeCallback)
+      }
+      catch (cause) {
+        handleFailure(cause)
+        throw cause
+      }
+      invoking = false
+      returnIsAuthoritative = Boolean(result && typeof result.then === 'function')
+      if (result && typeof result.then === 'function') {
+        return result.then(
+          () => {
+            handleSuccess()
+          },
+          (cause) => {
+            handleFailure(cause)
+            throw cause
+          },
+        )
+      }
+      if (callbackCalled) {
+        handleSuccess()
+      }
       return result
+    },
+    __wevu_dispatchSetData(payload, settle) {
+      highFrequencyWarning?.()
+      if (disposed) {
+        settle('abandoned')
+        return
+      }
+      if (!enabled || (suspendWhenHidden && !visible)) {
+        bufferPayload(payload)
+        appendPendingSettlement(settle)
+        refreshOwnerSnapshot()
+        return
+      }
+      resetHostCommitFailure()
+      dispatchPhysicalSetData(payload, settle)
+    },
+    __wevu_enableSetData(discardPending = false) {
+      enabled = true
+      if (discardPending) {
+        abandonPendingSetData()
+        return
+      }
+      flushPendingSetData()
     },
     __wevu_setVisibility(nextVisible: boolean) {
       visible = nextVisible
-      if (!visible || !hiddenPendingPayload) {
-        return undefined
+      if (visible && enabled) {
+        flushPendingSetData()
       }
-      const payload = hiddenPendingPayload
-      hiddenPendingPayload = undefined
-      const hasTemplateRefs = Array.isArray((target as any)[WEVU_TEMPLATE_REFS_KEY])
-        && (target as any)[WEVU_TEMPLATE_REFS_KEY].length > 0
-      refreshOwnerSnapshot()
-      if (hasTemplateRefs && resolveNativeSetData(target)) {
-        return new Promise<void>((resolve) => {
-          baseAdapter.setData(payload, () => {
-            refreshOwnerSnapshot()
-            scheduleTemplateRefUpdate(target)
-            resolve()
-          })
-        })
+    },
+    __wevu_disposeSetData() {
+      if (disposed) {
+        return
       }
-      const result = baseAdapter.setData(payload)
-      scheduleTemplateRefUpdate(target)
-      return result
+      disposed = true
+      dispatchGeneration += 1
+      pendingPayload = undefined
+      pendingSettlementHead = undefined
+      pendingSettlementTail = undefined
+      pendingRawCallbacks = []
+      pendingHostCommits = 0
+      hostCommitFailed = false
+      hostCommitCause = undefined
+      flushHostCommitWaiter()
+      if (ownsHostCommit) {
+        Reflect.deleteProperty(target, WEVU_HOST_COMMIT_PROMISE_KEY)
+      }
     },
   }
 
   const baseMountAdapter = {
-    ...(adapter as any),
+    ...adapter,
   }
+  Object.defineProperty(baseMountAdapter, '__wevu_reportSetDataError', {
+    configurable: true,
+    enumerable: false,
+    value: (error: Error) => {
+      callHookList(target, 'onError', [error])
+    },
+    writable: false,
+  })
   Object.defineProperty(baseMountAdapter, '__wevu_targetLabel', {
     configurable: true,
     enumerable: false,
@@ -351,9 +607,6 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const initialSnapshot = resolveInitialSnapshotFromNativeData(
     target,
     options?.snapshotOmitKeys,
-    hasTemplateRuntimeBindings(runtimeApp)
-      ? undefined
-      : { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
   )
   if (initialSnapshot && Object.keys(initialSnapshot).length) {
     Object.defineProperty(baseMountAdapter, '__wevu_initialSnapshot', {
@@ -363,12 +616,14 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       writable: false,
     })
   }
-  Object.defineProperty(baseMountAdapter, '__wevu_initialState', {
-    configurable: true,
-    enumerable: false,
-    value: { [WEVU_SLOT_OWNER_ID_KEY]: ownerId },
-    writable: false,
-  })
+  if (scopedSlotState) {
+    Object.defineProperty(baseMountAdapter, '__wevu_initialState', {
+      configurable: true,
+      enumerable: false,
+      value: { [WEVU_SLOT_OWNER_ID_KEY]: scopedSlotState.ownerId },
+      writable: false,
+    })
+  }
   const shouldDeferInitialSnapshot = Boolean(options?.deferSetData)
     || Boolean(setup)
     || Boolean(targetProperties && typeof targetProperties === 'object' && Object.keys(targetProperties).length > 0)
@@ -381,7 +636,6 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     })
   }
   const runtime = runtimeApp.mount(baseMountAdapter)
-  runtimeRef = runtime
   attachRuntimeInstance(runtime as RuntimeInstance<any, any, any>, target)
   const runtimeProxy = runtime?.proxy ?? {}
   const runtimeState = runtime?.state ?? {}
@@ -426,6 +680,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     __wevu_flushSetupSnapshotSync: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync,
     __wevu_touchSetupMethodsVersion: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_touchSetupMethodsVersion,
     __wevu_trackSetupReactiveKey: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_trackSetupReactiveKey,
+    __wevu_cloneDispatchedSnapshot: (runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_cloneDispatchedSnapshot,
     [WEVU_PROPS_DERIVED_KEYS_KEY]: (runtime as any)[WEVU_PROPS_DERIVED_KEYS_KEY],
   }
   for (const [key, value] of Object.entries(internalRuntimeFields)) {
@@ -447,13 +702,12 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     writable: false,
   })
   target.__wevu = runtimeWithDefaults
-  attachPageLayoutSetter(target)
   const runtimeProps = ensureRuntimeProps(target, runtimeState as Record<string, any>)
   attachRuntimeSlots(runtimeState as Record<string, any>, runtimeProps)
 
-  attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId, {
-    deferSnapshot: options?.deferSetData,
-  })
+  if (scopedSlotState) {
+    scopedSlotHooks?.attachMount(target, runtimeWithDefaults, scopedSlotState, Boolean(options?.deferSetData))
+  }
   syncNativeOwnerId()
 
   const watchStops = watchMap
@@ -475,6 +729,15 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         runtimeProxy: runtimeProxy as Record<string, any>,
         setup,
       })
+      if (typeof getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]?.trackWevuComponent === 'function') {
+        const initialReactiveSetupSnapshot: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(runtimeWithDefaults.setupState ?? {})) {
+          if (isReactive(value)) {
+            initialReactiveSetupSnapshot[key] = cloneInitialSnapshotValue(value)
+          }
+        }
+        initialReactiveSetupSnapshots.set(runtimeWithDefaults, initialReactiveSetupSnapshot)
+      }
       if (!options?.deferSetData) {
         runtimeWithSyncFlush.__wevu_flushSetupSnapshotSync?.()
       }
@@ -543,6 +806,10 @@ function preserveRuntimeFacadeIdentity<D extends object, C extends ComputedDefin
     }
   }
   attachRuntimeRef(previousRuntime.state as Record<string, any>, previousRuntime)
+  const nextInitialSetupSnapshot = initialReactiveSetupSnapshots.get(nextRuntime)
+  if (nextInitialSetupSnapshot) {
+    initialReactiveSetupSnapshots.set(previousRuntime, nextInitialSetupSnapshot)
+  }
   target.__wevu = previousRuntime
   Object.defineProperty(target, WEVU_PUBLIC_RUNTIME_KEY, {
     value: previousRuntime,
@@ -566,7 +833,7 @@ function createRuntimeStateSnapshot(
       continue
     }
     const setupBinding = setupState?.[key]
-    if (setupState && Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding)) {
+    if (setupState && Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding) && !isReactive(setupBinding)) {
       continue
     }
     if (preferredState && Object.prototype.hasOwnProperty.call(preferredState, key)) {
@@ -578,23 +845,9 @@ function createRuntimeStateSnapshot(
   return snapshot
 }
 
-function collectPlainSetupSnapshotKeys(
-  runtime: RuntimeInstance<any, any, any>,
-  nativeData: Record<string, any> | undefined,
-) {
-  const setupState = runtime.setupState as Record<string, any> | undefined
-  if (!setupState || !nativeData || typeof nativeData !== 'object') {
-    return []
-  }
-  return Object.keys(nativeData).filter((key) => {
-    const setupBinding = setupState[key]
-    return Object.prototype.hasOwnProperty.call(setupState, key) && !isRef(setupBinding)
-  })
-}
-
 function syncRuntimeStateFromNativeData(
   target: InternalRuntimeState,
-  options?: { includeSetupState?: boolean, nativeData?: Record<string, any> },
+  options?: { includeSetupState?: boolean, nativeData?: Record<string, any>, initialSetupState?: Record<string, unknown> },
 ) {
   const runtime = target.__wevu
   const runtimeState = runtime?.state as Record<string, any> | undefined
@@ -612,8 +865,11 @@ function syncRuntimeStateFromNativeData(
       try {
         const setupBinding = setupState?.[key]
         const runtimeValue = cloneInitialSnapshotValue(value)
-        if (!options?.includeSetupState && setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
-          continue
+        if (setupState && Object.prototype.hasOwnProperty.call(setupState, key)) {
+          // 普通 setup 值来自当前代码；仅 ref/reactive 绑定承接宿主状态。
+          if (!options?.includeSetupState || (!isRef(setupBinding) && !isReactive(setupBinding))) {
+            continue
+          }
         }
         if (
           !options?.includeSetupState
@@ -634,6 +890,10 @@ function syncRuntimeStateFromNativeData(
           setupBinding.value = runtimeValue
           continue
         }
+        if (isReactive(setupBinding) && runtimeValue && typeof runtimeValue === 'object') {
+          restoreReactiveSetupSnapshot(setupBinding, runtimeValue, options?.initialSetupState?.[key])
+          continue
+        }
         runtimeState[key] = runtimeValue
       }
       catch {
@@ -647,21 +907,17 @@ export function enableDeferredSetData(
   target: InternalRuntimeState,
   options?: { rehydrateSetupState?: boolean },
 ) {
-  const adapter = (target as any).__wevu?.adapter
+  const adapter = target.__wevu?.adapter as AdapterWithSetData | undefined
   syncRuntimeStateFromNativeData(target, {
     includeSetupState: options?.rehydrateSetupState,
   })
-  if (adapter && typeof (adapter as any).__wevu_enableSetData === 'function') {
-    ;(adapter as any).__wevu_enableSetData(true)
-  }
+  adapter?.__wevu_enableSetData?.(true)
   ;(target as any).__wevu?.__wevu_flushSetupSnapshotSync?.()
 }
 
 export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visible: boolean) {
-  const adapter = (target as any).__wevu?.adapter
-  if (adapter && typeof (adapter as any).__wevu_setVisibility === 'function') {
-    ;(adapter as any).__wevu_setVisibility(visible)
-  }
+  const adapter = target.__wevu?.adapter as AdapterWithSetData | undefined
+  adapter?.__wevu_setVisibility?.(visible)
 }
 
 /**
@@ -670,8 +926,7 @@ export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visibl
  */
 export function teardownRuntimeInstance(target: InternalRuntimeState, options?: { skipHooks?: boolean }) {
   const runtime = target.__wevu
-  const ownerId = (target as any)[WEVU_RUNTIME_OWNER_ID_KEY]
-    ?? (target as any)[WEVU_SLOT_OWNER_ID_KEY]
+
   const stops = target[WEVU_WATCH_STOPS_KEY]
   const effectScope = target[WEVU_EFFECT_SCOPE_KEY]
 
@@ -690,12 +945,12 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
         }
       }
     },
+    () => runtimeCapabilityRegistry.scopedSlots?.teardown(target),
     () => {
-      if (ownerId) {
-        removeOwner(ownerId)
+      if (Array.isArray(target.__wevuTemplateRefs) && target.__wevuTemplateRefs.length > 0) {
+        requireRuntimeCapability('templateRefs', 'teardownRuntimeInstance(template refs)').clear(target)
       }
     },
-    () => clearTemplateRefs(target),
     () => {
       // 触发卸载钩子（仅在 teardown 首次执行时触发）
       if (!options?.skipHooks && runtime && target[WEVU_HOOKS_KEY]) {
@@ -731,6 +986,10 @@ export function teardownRuntimeInstance(target: InternalRuntimeState, options?: 
     },
     () => runtime?.unmount(),
     () => {
+      const adapter = runtime?.adapter as AdapterWithSetData | undefined
+      adapter?.__wevu_disposeSetData?.()
+    },
+    () => {
       delete (target as any)[WEVU_SETUP_CONTEXT_INSTANCE_KEY]
       delete (target as any)[WEVU_EXPOSED_KEY]
     },
@@ -757,28 +1016,27 @@ export function refreshRuntimeInstance<D extends object, C extends ComputedDefin
   options?: { snapshotOmitKeys?: string[], stateSnapshot?: Record<string, any> },
 ) {
   const previousRuntime = target.__wevu as RuntimeInstance<D, C, M> | undefined
+  const initialSetupState = previousRuntime ? initialReactiveSetupSnapshots.get(previousRuntime) : undefined
   const previousRuntimeState = previousRuntime
     ? createRuntimeStateSnapshot(previousRuntime, (target as any).data, options?.stateSnapshot)
     : undefined
-  const plainSetupSnapshotKeys = previousRuntime
-    ? collectPlainSetupSnapshotKeys(previousRuntime, (target as any).data)
-    : []
   teardownRuntimeInstance(target, { skipHooks: true })
   const nextRuntime = mountRuntimeInstance(target, runtimeApp, watchMap, setup, {
     deferSetData: true,
     snapshotOmitKeys: options?.snapshotOmitKeys,
   })
-  if (previousRuntimeState) {
+  const stateSnapshot = previousRuntimeState ?? (options?.stateSnapshot
+    ? createRuntimeStateSnapshot(nextRuntime, options.stateSnapshot, options.stateSnapshot)
+    : undefined)
+  if (stateSnapshot) {
     const nativeData = (target as any).data
     if (nativeData && typeof nativeData === 'object') {
-      for (const key of plainSetupSnapshotKeys) {
-        delete nativeData[key]
-      }
-      Object.assign(nativeData, cloneInitialSnapshotValue(previousRuntimeState))
+      Object.assign(nativeData, cloneInitialSnapshotValue(stateSnapshot))
     }
     syncRuntimeStateFromNativeData(target, {
       includeSetupState: true,
-      nativeData: previousRuntimeState,
+      nativeData: stateSnapshot,
+      initialSetupState,
     })
   }
   if (!previousRuntime || previousRuntime === nextRuntime) {

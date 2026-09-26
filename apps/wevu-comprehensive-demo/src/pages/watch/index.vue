@@ -1,5 +1,7 @@
 <script lang="ts">
-export default {
+import { defineComponent } from 'wevu'
+
+export default defineComponent({
   data() {
     return {
       keyword: '',
@@ -54,7 +56,7 @@ export default {
       this.logs = []
     },
   },
-}
+})
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { TodoFilter } from '../../stores/storeDemo'
-import { ref, storeToRefs } from 'wevu'
+import { defineComponent, ref, storeToRefs, toRef } from 'wevu'
 import {
 
   useCounterStore,
@@ -9,7 +9,7 @@ import {
   useUserStore,
 } from '../../stores/storeDemo'
 
-export default {
+export default defineComponent({
 
   setup() {
     // 使用 Setup Store
@@ -75,9 +75,9 @@ export default {
       statusText,
       requestCount,
     } = storeToRefs(pluginStore)
-    const pluginLog = (pluginStore as any).$pluginLog ?? ref<string[]>([])
-    const pluginLastMutation = (pluginStore as any).$lastMutation ?? ref('尚未触发')
-    const pluginLastAction = (pluginStore as any).$lastAction ?? ref('尚未调用')
+    const pluginLog = toRef(pluginStore as any, '$pluginLog')
+    const pluginLastMutation = toRef(pluginStore as any, '$lastMutation')
+    const pluginLastAction = toRef(pluginStore as any, '$lastAction')
 
     async function runPluginTask() {
       await pluginStore.runAsyncTask()
@@ -180,7 +180,7 @@ export default {
       userStore.$reset()
     },
   },
-}
+})
 </script>
 
 <template>
@@ -285,7 +285,7 @@ export default {
         </view>
       </view>
 
-      <view class="todo-row" wx:for="{{ visibleTodos }}" wx:key="id" wx:for-item="todo">
+      <view v-for="todo in visibleTodos" :key="todo.id" class="todo-row">
         <view class="todo-title {{ todo.done ? 'done' : '' }}">
           {{ todo.title }}
         </view>
@@ -324,7 +324,7 @@ export default {
         <view class="log-title">
           Mutation 记录（$subscribe）
         </view>
-        <view class="log-line" wx:for="{{ todoMutations }}" wx:key="index">
+        <view v-for="(item, index) in todoMutations" :key="index" class="log-line">
           {{ item }}
         </view>
       </view>
@@ -366,12 +366,12 @@ export default {
         <view class="log-title">
           插件注入的日志
         </view>
-        <view class="log-line" wx:for="{{ pluginLog }}" wx:key="index">
+        <view v-for="(item, index) in pluginLog" :key="index" class="log-line">
           {{ item }}
         </view>
       </view>
       <view class="tip-inline">
-        <text>通过 createStore().use() 按需挂载插件，无需全局注册也能观察 action/mutation。</text>
+        <text>通过 createStore().use() 按需挂载插件，安装到应用后观察 action/mutation。</text>
       </view>
     </view>
 

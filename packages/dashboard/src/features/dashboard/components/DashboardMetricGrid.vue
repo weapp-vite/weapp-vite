@@ -23,7 +23,7 @@ interface DashboardMetricCardRow extends DashboardMetricCard {
 function getMetricCardClassName(card: DashboardMetricCard): string[] {
   return [
     surfaceStyles({ padding: props.compact ? 'sm' : 'md' }),
-    'min-w-0',
+    'h-full min-w-0',
     card.wide ? 'xl:col-span-2' : 'xl:col-span-1',
   ]
 }
@@ -40,7 +40,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
 </script>
 
 <template>
-  <section :class="compact ? 'grid min-h-0 items-start gap-2 md:grid-cols-3 xl:grid-cols-6' : 'grid items-start gap-2.5 md:grid-cols-2 xl:grid-cols-6'">
+  <section :class="compact ? 'grid min-h-0 items-stretch gap-2 md:grid-cols-3 xl:grid-cols-6' : 'grid items-stretch gap-2.5 md:grid-cols-2 xl:grid-cols-6'">
     <article
       v-for="card in metricCardRows"
       :key="card.label"
@@ -48,7 +48,7 @@ const metricCardRows = computed<DashboardMetricCardRow[]>(() => props.cards.map(
     >
       <div :class="compact ? 'relative h-full min-w-0 pr-8' : 'flex h-full min-w-0 items-start justify-between gap-2'">
         <div class="min-w-0">
-          <p :class="compact ? 'whitespace-nowrap text-[11px] leading-4 text-(--dashboard-text-soft)' : 'text-[11px] uppercase tracking-[0.22em] text-(--dashboard-text-soft)'">
+          <p :class="compact ? 'truncate text-[11px] leading-4 text-(--dashboard-text-soft)' : 'text-[11px] uppercase tracking-[0.22em] text-(--dashboard-text-soft)'">
             {{ card.label }}
           </p>
           <p :class="compact ? 'mt-1 text-xl font-semibold leading-6' : 'mt-2 text-2xl font-semibold md:text-[1.65rem]'">

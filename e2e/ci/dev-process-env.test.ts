@@ -55,6 +55,7 @@ describe('dev process env isolation', () => {
 
   it('removes ci and vitest-specific env flags from child dev processes', async () => {
     vi.stubEnv('CI', 'true')
+    vi.stubEnv('TEST', 'true')
     vi.stubEnv('VITEST', 'true')
     vi.stubEnv('VITEST_MODE', 'run')
     vi.stubEnv('VITEST_POOL_ID', 'pool-1')
@@ -66,6 +67,7 @@ describe('dev process env isolation', () => {
     const env = createDevProcessEnv()
 
     expect(env.CI).toBeUndefined()
+    expect(env.TEST).toBeUndefined()
     expect(env.VITEST).toBeUndefined()
     expect(env.VITEST_MODE).toBeUndefined()
     expect(env.VITEST_POOL_ID).toBeUndefined()

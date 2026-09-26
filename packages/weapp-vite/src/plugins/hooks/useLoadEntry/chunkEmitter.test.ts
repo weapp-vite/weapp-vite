@@ -1,7 +1,45 @@
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createChunkEmitter } from './chunkEmitter'
 
 describe('createChunkEmitter', () => {
+  it('recognizes a root input resolved through a workspace junction as the same output owner', async () => {
+    const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-entry-owner-'))
+    try {
+      const project = path.join(temporaryRoot, 'project')
+      await mkdir(path.join(project, 'src/pages/index'), { recursive: true })
+      await writeFile(path.join(project, 'src/pages/index/index.vue'), '<template><view /></template>')
+      const workspace = path.join(temporaryRoot, 'workspace')
+      await symlink(project, workspace, 'junction')
+      const resolvedEntry = path.join(workspace, 'src/pages/index/index.vue')
+      const sourceEntry = path.normalize(await realpath(resolvedEntry))
+      const rootInputIds = new Set([sourceEntry])
+      const loadedEntrySet = new Set<string>()
+      const trackEntry = vi.fn()
+      const emitEntriesChunks = createChunkEmitter(
+        { relativeOutputPath: () => 'pages/index/index.vue' } as any,
+        loadedEntrySet,
+        undefined,
+        trackEntry,
+        undefined,
+        entryId => !rootInputIds.has(entryId),
+      )
+      const pluginCtx = { emitFile: vi.fn(), load: vi.fn(async () => null) }
+
+      const stats = await Promise.all(emitEntriesChunks.call(pluginCtx as any, [{ id: resolvedEntry } as any]))
+
+      expect(pluginCtx.emitFile).not.toHaveBeenCalled()
+      expect(stats[0]).toMatchObject({ chunkEmitCount: 0, loadCount: 1 })
+      expect(loadedEntrySet).toEqual(rootInputIds)
+      expect(trackEntry).toHaveBeenCalledWith(sourceEntry)
+    }
+    finally {
+      await rm(temporaryRoot, { recursive: true, force: true })
+    }
+  })
+
   it('tracks entries emitted during nested preload discovery', async () => {
     const loadedEntrySet = new Set<string>()
     const trackedEntryIds: string[] = []

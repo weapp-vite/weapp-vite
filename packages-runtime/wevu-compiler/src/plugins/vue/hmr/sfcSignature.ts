@@ -15,10 +15,18 @@ export type VueSfcBlockChanges = VueSfcBlockType[]
 
 export interface VueSfcHmrSignatures {
   readonly blockSignatures?: VueSfcBlockSignatures
+  /**
+   * 按 compiler provider 归属的内容签名，供宿主在不依赖具体 provider 名称的情况下维护 HMR 状态。
+   */
+  readonly contentSignatures?: Readonly<Record<string, string>>
   readonly hasTemplate?: boolean
   readonly nonJsonSignature?: string
   readonly scriptSignature?: string
   readonly styleIndependentSignature?: string
+  /** 按 provider 归属的模板内容签名。 */
+  readonly templateContentSignatures?: Readonly<Record<string, string>>
+  /** 按 provider 归属的脚本内容签名。 */
+  readonly scriptContentSignatures?: Readonly<Record<string, string>>
   readonly tailwindContentSignature?: string
   readonly tailwindScriptContentSignature?: string
   readonly tailwindTemplateContentSignature?: string
@@ -49,8 +57,14 @@ export function resolveVueSfcHmrSignatures(source: string, filename: string): Vu
     config: hashPayload(payload.config),
   } satisfies VueSfcBlockSignatures
 
+  const tailwindContentSignature = hashTailwindContentPayload(payload.tailwindContent)
+  const tailwindTemplateContentSignature = hashTailwindTemplateContentPayload(payload.tailwindContent)
+  const tailwindScriptContentSignature = hashTailwindScriptContentPayload(payload.tailwindContent)
   const signatures = {
     blockSignatures,
+    contentSignatures: {
+      tailwindcss: tailwindContentSignature,
+    },
     nonJsonSignature: hashPayload([
       blockSignatures.script,
       blockSignatures.template,
@@ -62,9 +76,15 @@ export function resolveVueSfcHmrSignatures(source: string, filename: string): Vu
       blockSignatures.template,
       blockSignatures.config,
     ]),
-    tailwindContentSignature: hashTailwindContentPayload(payload.tailwindContent),
-    tailwindTemplateContentSignature: hashTailwindTemplateContentPayload(payload.tailwindContent),
-    tailwindScriptContentSignature: hashTailwindScriptContentPayload(payload.tailwindContent),
+    scriptContentSignatures: {
+      tailwindcss: tailwindScriptContentSignature,
+    },
+    tailwindContentSignature,
+    tailwindScriptContentSignature,
+    tailwindTemplateContentSignature,
+    templateContentSignatures: {
+      tailwindcss: tailwindTemplateContentSignature,
+    },
     hasTemplate: payload.hasTemplate,
   } satisfies VueSfcHmrSignatures
   hmrSignaturesCache.set(payload, signatures)

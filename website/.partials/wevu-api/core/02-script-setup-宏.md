@@ -118,20 +118,30 @@ defineOptions({
 
 **类型签名：** `typeof import('wevu')['definePageMeta']`
 
-**运行时说明：** 这是 `<script setup>` 编译期宏，无需从 `wevu` 导入，也不能作为普通运行时函数动态调用。
+**运行时说明：** 这是 `<script setup>` 编译期宏，通常直接使用全局宏，无需导入；也可以从 `wevu` 具名导入（包括使用别名），不能作为普通运行时函数动态调用。
 
 **示例：** 见 [本组示例](/wevu/api/core#example-core-macros)。
 
 - 类型入口：`PageMeta` / `PageLayoutMeta`
-- 用途：在 `<script setup>` 中声明页面级元信息。
-- 说明：常用于声明页面 `layout`，与 Weapp-vite 的自动路由、`routeRules.layout` 和运行时 `setPageLayout()` 保持同一套页面壳心智。
+- 用途：在 `<script setup>` 中声明原有页面元信息和 layout。
+- `layout`：沿用既有页面壳语义；在 Vue SFC 中，`props` 对象与键名需要静态可分析，但值可以保留响应式表达式。
+- 其他顶层字段：继续作为原有 `PageMeta` 数据处理，不会成为 Router `meta`。
+- 职责边界：命名路由使用 `definePage()`；宿主标题、下拉刷新和 `usingComponents` 等使用 `definePageJson()`；组件注册选项使用 `defineOptions()`。
 
-示例：
+`definePageMeta({ route: ... })` 不会生成命名路由。`definePage()` 是预期使用的独立路由编译宏，与已移除的历史页面注册能力职责不同；旧名 `definePageRoute` 不提供兼容别名。
 
 ```vue
 <script setup lang="ts">
+import { computed } from 'wevu'
+
+const layoutTitle = computed(() => '首页壳')
+
 definePageMeta({
-  layout: 'default',
+  layout: {
+    name: 'default',
+    props: { title: layoutTitle.value },
+  },
+  custom: { section: 'home' },
 })
 </script>
 ```
@@ -168,7 +178,7 @@ definePageMeta({
 
 **类型签名：** `typeof import('weapp-vite/json')['definePageJson']`
 
-**运行时说明：** 在页面 SFC 中提取为页面 JSON，可与 `definePageMeta()` 分别声明宿主配置和布局元信息。
+**运行时说明：** 在页面 SFC 中提取为页面 JSON，可与 `definePageMeta()`、`definePage()` 分别声明宿主配置、页面元信息/layout 和命名路由信息。
 
 **示例：** 见 [本组示例](/wevu/api/core#example-json-macros)。
 
@@ -212,7 +222,7 @@ definePageMeta({
 
 ### 本组示例 {#example-json-macros}
 
-页面 SFC 中直接使用对应角色的 JSON 宏，无需保留额外 `<json>` 块。
+页面 SFC 中直接使用对应角色的宏，无需保留额外 `<json>` 块。三个声明彼此独立：
 
 ```vue
 <script setup lang="ts">
@@ -221,9 +231,16 @@ definePageJson({
   enablePullDownRefresh: true,
 })
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'default', custom: { section: 'orders' } })
+
+definePage({
+  name: 'orders',
+  meta: { title: '订单业务标签', requiresAuth: true },
+})
 </script>
 ```
+
+`definePage({ name, meta })` 参数中的 `meta.title` 是路由业务数据，不会覆盖 `definePageJson()` 的宿主标题。路由宏的完整约束见 [`wevu/router` API](/wevu/api/router#definepage)。
 
 ### `use()` {#use}
 

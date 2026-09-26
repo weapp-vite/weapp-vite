@@ -25,8 +25,8 @@ defineExpose({
     class="slot-fallback-off-page"
     data-e2e-route="slot-fallback-compiler-off"
   >
-    <PlainSlotFallbackCard class="slot-fallback-off-card-empty" />
-    <PlainSlotFallbackCard class="slot-fallback-off-card-provided">
+    <PlainSlotFallbackCard id="slot-off-empty" class="slot-fallback-off-card-empty" />
+    <PlainSlotFallbackCard id="slot-off-provided" class="slot-fallback-off-card-provided">
       <template #header>
         <text
           class="slot-fallback-off-provided-header"

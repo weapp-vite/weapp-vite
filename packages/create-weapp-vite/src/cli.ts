@@ -4,6 +4,7 @@ import { confirm, input, select } from '@inquirer/prompts'
 import { initConfig } from '@weapp-core/init'
 import logger from '@weapp-core/logger'
 import { fs } from '@weapp-core/shared/fs'
+import { validateDependencyVersionStrategy } from './dependencyVersions'
 import { createProject, TemplateName } from './index'
 import { RECOMMENDED_SKILLS_INSTALL_COMMAND } from './skills'
 
@@ -59,8 +60,27 @@ const TEMPLATE_CHOICES: Array<{ name: string, value: TemplateName }> = [
 function parseCliArgs(argv: string[]) {
   const positionals: string[] = []
   let installSkills: boolean | undefined
+  let dependencyVersionStrategy = 'bundled'
+  let registry: string | undefined
 
   for (const arg of argv) {
+    if (arg.startsWith('--registry=')) {
+      registry = arg.slice('--registry='.length)
+      if (!registry) {
+        throw new Error('请使用 --registry=<http(s) URL>')
+      }
+      continue
+    }
+    if (arg === '--registry') {
+      throw new Error('请使用 --registry=<http(s) URL>')
+    }
+    if (arg.startsWith('--dependency-versions=')) {
+      dependencyVersionStrategy = arg.slice('--dependency-versions='.length)
+      continue
+    }
+    if (arg === '--dependency-versions') {
+      throw new Error('请使用 --dependency-versions=compatible 或 --dependency-versions=bundled')
+    }
     if (arg === '--install-skills') {
       installSkills = true
       continue
@@ -72,11 +92,15 @@ function parseCliArgs(argv: string[]) {
     positionals.push(arg)
   }
 
+  validateDependencyVersionStrategy(dependencyVersionStrategy)
+
   return {
     command: positionals[0],
     targetDir: positionals[0],
     templateName: positionals[1] as TemplateName | undefined,
     installSkills,
+    dependencyVersionStrategy,
+    registry,
   }
 }
 
@@ -113,15 +137,17 @@ export async function run() {
         default: TemplateName.default,
       })
 
-  const installSkills = isArgMode
-    ? argInstallSkills ?? false
+  const installSkills = argInstallSkills ?? (isArgMode
+    ? false
     : await confirm({
         message: `是否安装推荐的 AI skills？将执行 \`${RECOMMENDED_SKILLS_INSTALL_COMMAND}\`，也可稍后手动执行`,
-        default: true,
-      })
+        default: false,
+      }))
 
   await createProject(targetDir, templateName, {
     installSkills,
+    dependencyVersionStrategy: parsedArgs.dependencyVersionStrategy,
+    registry: parsedArgs.registry,
   })
 }
 
@@ -136,5 +162,6 @@ export const runPromise = run().catch(
       return
     }
     logger.error('✗ 创建失败:', message)
+    process.exitCode = 1
   },
 )

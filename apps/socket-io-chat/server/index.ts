@@ -1,4 +1,5 @@
 import http from 'node:http'
+import process from 'node:process'
 import { createHttpApp } from './httpApp.js'
 import { attachSocketServer } from './socketServer.js'
 

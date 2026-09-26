@@ -26,7 +26,6 @@ const {
   copySummary,
   copyViewLink,
   copyWorkQueueReport,
-  diagnosticsLayoutItems,
   exportCsv,
   exportJson,
   exportMarkdown,
@@ -119,7 +118,6 @@ const {
       :can-use-selected-package-filter="canUseSelectedPackageFilter"
       :comparison-mode="comparisonMode"
       :copy-status="exportStatus"
-      :diagnostics-layout-items="diagnosticsLayoutItems"
       :filtered-duplicate-modules="filteredDuplicateModules"
       :filtered-largest-files="filteredLargestFiles"
       :history-snapshots="historySnapshots"
@@ -136,6 +134,7 @@ const {
       :pr-review-checklist="prReviewChecklist"
       :queued-action-keys="queuedActionKeys"
       :review-layout-items="reviewLayoutItems"
+      :result="resultRef"
       :selected-action-key="selectedActionKey"
       :selected-file-modules="selectedFileModules"
       :selected-treemap-focus-node-id="selectedTreemapFocusNodeId"

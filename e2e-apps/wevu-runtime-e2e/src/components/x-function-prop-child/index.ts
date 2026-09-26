@@ -1,11 +1,11 @@
 Component({
   properties: {
     callback: {
-      type: Function,
+      type: null,
       value: undefined,
     },
     handler: {
-      type: Function,
+      type: null,
       value: undefined,
     },
     metaTitle: {
@@ -20,6 +20,8 @@ Component({
   data: {
     callbackType: 'unset',
     handlerType: 'unset',
+    callbackValue: '',
+    handlerValue: '',
   },
   methods: {
     invokeCallback(this: any, payload = 'callback') {

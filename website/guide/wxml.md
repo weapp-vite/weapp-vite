@@ -56,4 +56,6 @@ keywords:
 
 ## 当前可配置的范围
 
-目前 `weapp.wxml` 仅影响 **扫描阶段**（`excludeComponent` / `platform`），模板处理阶段的 `transformEvent` / `removeComment` 等选项尚未接入，详见 [WXML 配置](/config/wxml.md#weapp-wxml)。
+`weapp.wxml.excludeComponent` 控制扫描阶段的组件识别；`weapp.wxml.remove` 在最终模板输出阶段统一清理属性、显式指定的节点及普通注释，原生 WXML 与 Vue 编译产物共用此入口。`transformEvent` 等历史处理字段仍未接入用户配置，详见 [WXML 配置](/config/wxml.md#weapp-wxml)。
+
+需要按运行环境或业务条件修改属性、改名标签时，可使用 [`weapp.wxml.transform`](/config/wxml#transform) 的同步／异步函数及 `ctx.edit` 工具。它处理最终模板，外部规则依赖通过 `ctx.addWatchFile` 显式注册。

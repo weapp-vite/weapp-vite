@@ -9,6 +9,11 @@ import { findWevuSemanticChunk } from '../utils/wevu-vendor'
 import { CLI_PATH } from '../wevu-runtime.utils'
 
 type DependencyMode = 'dependencies' | 'devDependencies'
+interface FixturePackageJson {
+  dependencies?: Record<string, string>
+  devDependencies?: Record<string, string>
+  [key: string]: unknown
+}
 
 const FIXTURE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-runtime-e2e')
 const TEMP_ROOT = path.resolve(import.meta.dirname, '../../.tmp')
@@ -28,7 +33,7 @@ async function createFixtureWithWevu(mode: DependencyMode) {
   await fs.copy(FIXTURE_ROOT, tempRoot)
 
   const packageJsonPath = path.join(tempRoot, 'package.json')
-  const packageJson = await fs.readJson(packageJsonPath)
+  const packageJson = await fs.readJson(packageJsonPath) as FixturePackageJson
   const dependencies = { ...(packageJson.dependencies ?? {}) } as Record<string, string>
   const devDependencies = { ...(packageJson.devDependencies ?? {}) } as Record<string, string>
 
@@ -67,7 +72,7 @@ async function runBuild(appRoot: string, platform: RuntimePlatform) {
 
   const runtimeScript = await findWevuSemanticChunk(
     distRoot,
-    code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
+    code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
     `${platform} platform runtime`,
   )
   expect(await fs.pathExists(runtimeScript.path)).toBe(true)
@@ -75,16 +80,11 @@ async function runBuild(appRoot: string, platform: RuntimePlatform) {
 }
 
 function assertPlatformTreeShaking(commonScript: string, platform: RuntimePlatform) {
-  expect(commonScript).toMatch(new RegExp(`["'\`]MP_PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
-  expect(commonScript).toMatch(new RegExp(`["'\`]PLATFORM["'\`]:\\s*["'\`]${platform}["'\`]`))
-
-  if (platform === 'tt') {
-    expect(commonScript).toMatch(/\?\.tt\b|\.tt\b|[`'"]tt[`'"]/)
-    return
-  }
-  if (platform === 'alipay') {
-    expect(commonScript).toMatch(/\?\.my\b|\.my\b|[`'"]my[`'"]/)
-  }
+  const globalKey = platform === 'alipay' ? 'my' : platform === 'tt' ? 'tt' : 'wx'
+  // 宏经过 DCE 后无需留下 env 对象；检查真正执行的宿主访问和注册语义。
+  expect(commonScript).toMatch(new RegExp(`(?:\\.${globalKey}\\b|typeof\\s+${globalKey}\\b)`))
+  expect(commonScript.includes('didMount')).toBe(platform === 'alipay')
+  expect(commonScript.includes('didUnmount')).toBe(platform === 'alipay')
 }
 
 describe('wevu runtime dependency modes (platform tree-shaking)', { concurrent: false }, () => {

@@ -35,6 +35,7 @@ export interface CompilationCacheEntry {
 
 export interface VueBundleState {
   ctx: CompilerContext
+  isBundledDev?: boolean
   pluginCtx: any
   compilationCache: Map<string, CompilationCacheEntry>
   appShell?: ResolvedAppShell

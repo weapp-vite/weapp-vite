@@ -2,6 +2,7 @@ import type { CorePluginState } from '../../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
+import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
@@ -12,6 +13,7 @@ import { getMiniProgramPlatformGlobalKey } from '../../../../utils/miniProgramGl
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../../utils/cache'
 import { getCssRealPath, parseRequest } from '../../../utils/parse'
+import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import {
   injectRequestGlobalsIntoLoadResult,
   resolvePassiveRequestGlobalsTargets,
@@ -49,6 +51,10 @@ export function createLoadHook(state: CorePluginState) {
   ) {
     const startedAt = performance.now()
     try {
+      // 自定义 load 返回源码时需显式监听；监听边只归属当前实际源码模块。
+      if (/\.(?:jsx|tsx)$/.test(sourceId)) {
+        addNormalizedWatchFile(pluginCtx, sourceId)
+      }
       return await loadEntry.call(pluginCtx, sourceId, type)
     }
     finally {
@@ -177,7 +183,7 @@ export function createLoadHook(state: CorePluginState) {
         // @ts-ignore Rolldown 的 PluginContext 类型不完整
         const result = await loadProfiledEntry(this, sourceId, 'app')
         if (configService.isDev && sourceId && !sourceId.startsWith('\0')) {
-          resolvedEntryMap.set(sourceId, { id: sourceId } as any)
+          resolvedEntryMap.set(normalizeSourceId(sourceId), { id: sourceId } as any)
         }
         const requestGlobalsTargets = resolveRequestGlobalsTargets(result, sourceId)
         const passiveRequestGlobalsTargets = resolvePassiveTargets(result, requestGlobalsTargets)

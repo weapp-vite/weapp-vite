@@ -6,10 +6,10 @@
 
   <view class="card">
     <text class="card-title">App request globals probe</text>
-    <text class="card-desc">fetchType = {{appProbe.fetchType}}</text>
-    <text class="card-desc">urlAvailable = {{appProbe.urlAvailable}}</text>
-    <text class="card-desc">xmlHttpRequestAvailable = {{appProbe.xmlHttpRequestAvailable}}</text>
-    <text class="card-desc">webSocketAvailable = {{appProbe.webSocketAvailable}}</text>
+    <text id="globals-fetch" class="card-desc">fetchType = {{appProbe.fetchType}}</text>
+    <text id="globals-url" class="card-desc">urlAvailable = {{appProbe.urlAvailable}}</text>
+    <text id="globals-xhr" class="card-desc">xmlHttpRequestAvailable = {{appProbe.xmlHttpRequestAvailable}}</text>
+    <text id="globals-websocket" class="card-desc">webSocketAvailable = {{appProbe.webSocketAvailable}}</text>
   </view>
 
   <navigator

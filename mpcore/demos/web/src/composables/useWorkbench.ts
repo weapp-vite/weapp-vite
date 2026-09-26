@@ -1,3 +1,4 @@
+import type { HeadlessWxAppHideOptions, HeadlessWxLaunchOptions } from '../../../../packages/simulator/src'
 import { computed, onMounted, ref } from 'vue'
 import { useWorkbenchDebug } from '../lib/workbenchDebug'
 import { builtInScenarios } from '../scenarios'
@@ -102,8 +103,10 @@ export function useWorkbench() {
         directorySnapshot: sessionState.session.value?.getDirectorySnapshot?.() ?? [],
         downloadFileLogs: sessionState.session.value?.getDownloadFileLogs?.() ?? [],
         deviceInfo: sessionState.session.value?.getDeviceInfo?.() ?? null,
+        enterOptions: sessionState.session.value?.getEnterOptions() ?? null,
         fileSnapshot: sessionState.session.value?.getFileSnapshot?.() ?? {},
         loading: sessionState.session.value?.getLoading?.() ?? null,
+        launchOptions: sessionState.session.value?.getLaunchOptions() ?? null,
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],
         networkType: sessionState.session.value?.getNetworkType?.() ?? null,
         openedDocument: sessionState.session.value?.getOpenedDocument?.() ?? null,
@@ -117,6 +120,8 @@ export function useWorkbench() {
         toast: sessionState.session.value?.getToast() ?? null,
         uploadFileLogs: sessionState.session.value?.getUploadFileLogs?.() ?? [],
       }),
+      triggerAppHide: (options: HeadlessWxAppHideOptions) => sessionState.run(() => sessionState.session.value?.triggerAppHide(options)),
+      triggerAppShow: (options?: HeadlessWxLaunchOptions) => sessionState.run(() => sessionState.session.value?.triggerAppShow(options)),
       triggerPullDownRefresh: () => sessionState.run(() => sessionState.session.value?.triggerPullDownRefresh()),
       triggerReachBottom: () => sessionState.run(() => sessionState.session.value?.triggerReachBottom()),
       triggerResize: (width: number, height: number) => {

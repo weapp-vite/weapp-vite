@@ -59,6 +59,21 @@ export default defineComponent({
     expect(result.script).not.toContain('createVNode')
   })
 
+  it('falls back parenthesized member access in compiled JSX templates', async () => {
+    const source = `
+import { defineComponent } from 'wevu'
+export default defineComponent({
+  render() {
+    return <view hidden={(following.data.value ?? []).length === 0}>草稿({(drafts.data.value ?? []).length})</view>
+  },
+})
+`
+    const result = await compileJsxFile(source, '/project/src/pages/issue-987/index.tsx', { isPage: true })
+    expect(result.template).not.toMatch(/\)\.length/)
+    expect(result.template).toMatch(/hidden="\{\{__wv_bind_\d+\}\}"/)
+    expect(result.script).toContain('__wv_bind_0')
+  })
+
   it('returns the typed binding manifest from the direct JSX compiler', async () => {
     const source = `
 import { defineComponent, ref } from 'wevu'
@@ -76,8 +91,8 @@ export default defineComponent({
       sourceFile: '/project/src/pages/manifest/index.tsx',
     })
     expect(result.bindingManifest?.bindings).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'attribute', outputPath: 'title.value' }),
-      expect.objectContaining({ kind: 'text', outputPath: 'title.value' }),
+      expect.objectContaining({ kind: 'attribute', outputPath: 'title' }),
+      expect.objectContaining({ kind: 'text', outputPath: 'title' }),
     ]))
     expect(result.script).toContain('__wevuBindingManifest')
   })
@@ -94,12 +109,12 @@ export default defineComponent({
 `
     const result = await compileJsxFile(source, '/project/src/pages/scopes/index.tsx')
     const binding = result.bindingManifest?.bindings.find((item) => {
-      return item.kind === 'text' && item.outputPath === 'rows.value'
+      return item.kind === 'text' && item.outputPath === 'rows'
     })
 
     expect(binding?.dependencies).toEqual([{
       root: 'rows',
-      path: 'rows.value',
+      path: 'rows',
       updateMode: 'exact-path',
     }])
     expect(binding?.scopes).toEqual([
@@ -130,12 +145,12 @@ export default defineComponent({
 `
     const result = await compileJsxFile(source, '/project/src/pages/nested-scopes/index.tsx')
     const binding = result.bindingManifest?.bindings.find((item) => {
-      return item.kind === 'text' && item.outputPath === 'items.value'
+      return item.kind === 'text' && item.outputPath === 'items'
     })
 
     expect(binding?.dependencies).toEqual([{
       root: 'items',
-      path: 'items.value',
+      path: 'items',
       updateMode: 'exact-path',
     }])
     expect(binding?.scopes).toEqual([
@@ -156,7 +171,7 @@ export default defineComponent({
 })
 `
     const result = await compileJsxFile(source, '/project/src/pages/setup-capture/index.tsx', { isPage: true })
-    expect(result.template).toContain('{{count.value}}')
+    expect(result.template).toContain('{{count}}')
     expect(result.script).toMatch(/return\s*\{\s*count\s*\}/)
     expect(result.script).not.toContain('createVNode')
   })
@@ -564,10 +579,13 @@ export default defineComponent({
     expect(result.template).toContain('bind:animation-finish="handleCamel"')
   })
 
-  it('extracts json macro config from tsx source', async () => {
+  it('erases page route declarations while extracting independent JSON macro config from tsx source', async () => {
     const source = `
 import { defineComponent } from 'wevu'
 import { definePageJson } from 'weapp-vite'
+import { definePage as page } from 'wevu/router'
+
+page({ name: 'jsx', meta: { title: 'JSX route' } })
 
 definePageJson({
   navigationBarTitleText: 'JSX 页面',
@@ -592,11 +610,13 @@ export default defineComponent({
     })
 
     expect(result.config).toBeTruthy()
-    const parsed = JSON.parse(result.config!)
+    const parsed = JSON.parse(result.config!) as Record<string, unknown>
     expect(parsed.navigationBarTitleText).toBe('JSX 页面')
     expect(parsed.enablePullDownRefresh).toBe(true)
     expect(result.script).not.toContain('definePageJson(')
     expect(result.script).not.toMatch(/from\s*['"]weapp-vite['"]/)
+    expect(result.script).not.toMatch(/from\s*['"]wevu\/router['"]/)
+    expect(result.script).not.toMatch(/\bpage\s*\(/)
     expect(result.script).toContain('virtual:weapp-vite/runtime')
     expect(result.meta?.jsonMacroHash).toBeTruthy()
   })

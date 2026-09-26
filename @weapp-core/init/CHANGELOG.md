@@ -1,5 +1,106 @@
 # @weapp-core/init
 
+## 6.0.23
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.7
+  - @weapp-core/shared@3.2.6
+
+## 6.0.22
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：tsx, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsx
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.6
+  - @weapp-core/shared@3.2.5
+
+## 6.0.21
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.6，同步工作区默认依赖、固定版本回归环境及脚手架模板映射，使新建项目与仓库验证使用一致的 Tailwind 集成版本。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - weapp-vite：dependencies.@babel/preset-env
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.5
+  - @weapp-core/shared@3.2.4
+
+## 6.0.20
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.4
+  - @weapp-core/shared@3.2.3
+
+## 6.0.19
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.3
+  - @weapp-core/shared@3.2.2
+
+## 6.0.18
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.2，同步默认依赖与固定版本回归环境，纳入 CSS 导入解析、跨平台扫描路径及删除文件候选失效修复。保留现有 Core 编译器集成和单一 Tailwind CSS 生成入口。
+
+  同步脚手架模板 catalog 与初始化依赖解析的离线回退版本；注册表不可用时继续保留已有项目声明的版本。
+
+- Updated dependencies:
+  - @weapp-core/logger@3.1.2
+
 ## 6.0.17
 
 ### Patch Changes

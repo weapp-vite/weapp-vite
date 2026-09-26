@@ -30,6 +30,10 @@ async function fail(message, details = []) {
     `- Reason: ${message}`,
     ...details.map(detail => `- ${detail}`),
   ])
+  if (message === 'DeepWiki requires login before refresh' || message === 'DeepWiki requires CAPTCHA verification') {
+    process.exitCode = 0
+    return
+  }
   throw new Error(message)
 }
 

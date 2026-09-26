@@ -10,6 +10,7 @@ import path from 'pathe'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { collectRuntimeVirtualModuleReferences, readJavaScriptOutput } from '../utils/runtimeProviderOutput'
+import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const WEB_DEMO_ROOT = path.resolve(ROOT, 'apps/weapp-vite-web-demo')
@@ -17,7 +18,7 @@ const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const WEB_DIST_ROOT = path.join(WEB_DEMO_ROOT, 'dist/web')
 const WEB_HOST = '127.0.0.1'
 const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_E2E_PORT ?? 5180)
-const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
+let webUrl: string
 
 const PLAYWRIGHT_EXECUTABLE = chromium.executablePath()
 const CHROMIUM_CHANNEL = process.env.WEAPP_VITE_WEB_E2E_CHANNEL
@@ -43,10 +44,15 @@ async function waitForWebServerReady(server: Subprocess, logsRef: { value: strin
         logsRef.value.trim(),
       ].join('\n'))
     }
+    const resolvedUrl = resolveWebDevServerUrl(logsRef.value)
+    if (!resolvedUrl) {
+      await sleep(300)
+      continue
+    }
     try {
-      const response = await fetch(WEB_URL)
+      const response = await fetch(resolvedUrl)
       if (response.ok) {
-        return
+        return resolvedUrl
       }
     }
     catch {
@@ -54,7 +60,7 @@ async function waitForWebServerReady(server: Subprocess, logsRef: { value: strin
     await sleep(300)
   }
   throw new Error([
-    `[web-e2e] Timeout waiting for ${WEB_URL}.`,
+    '[web-e2e] Timeout waiting for the resolved Web server URL.',
     logsRef.value.trim(),
   ].join('\n'))
 }
@@ -304,7 +310,7 @@ async function getLoadingState(page: Page): Promise<LoadingState> {
 }
 
 async function openHomePage(page: Page) {
-  await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
+  await page.goto(webUrl, { waitUntil: 'domcontentloaded' })
   await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
 }
 
@@ -352,8 +358,9 @@ describeWeb('web runtime browser baseline (weapp-vite-web-demo)', { concurrent: 
       WEB_HOST,
     ], {
       cwd: ROOT,
+      extendEnv: false,
       env: {
-        ...process.env,
+        ...createWebDevServerEnv(process.env),
         WEAPP_WEB_HOST: WEB_HOST,
         WEAPP_WEB_PORT: String(WEB_PORT),
         WEAPP_WEB_OPEN: 'false',
@@ -361,7 +368,7 @@ describeWeb('web runtime browser baseline (weapp-vite-web-demo)', { concurrent: 
     })
 
     const logsRef = createServerLogger(devServer)
-    await waitForWebServerReady(devServer, logsRef)
+    webUrl = await waitForWebServerReady(devServer, logsRef)
     const launchOptions = PLAYWRIGHT_BUNDLED_AVAILABLE || !CHROMIUM_CHANNEL
       ? { headless: true }
       : { headless: true, channel: CHROMIUM_CHANNEL as Parameters<typeof chromium.launch>[0]['channel'] }
@@ -408,7 +415,7 @@ describeWeb('web runtime browser baseline (weapp-vite-web-demo)', { concurrent: 
   it('restores a deep link and page stack on browser back', async () => {
     const page = await browser!.newPage()
     try {
-      await page.goto(`${WEB_URL}/pages/interactive/index?from=deep-link`, { waitUntil: 'domcontentloaded' })
+      await page.goto(`${webUrl}pages/interactive/index?from=deep-link`, { waitUntil: 'domcontentloaded' })
       await expect.poll(async () => {
         const snapshot = await readCurrentPageSnapshot(page)
         return snapshot?.route

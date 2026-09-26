@@ -1,5 +1,8 @@
+import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { CompileVueFileOptions, VueTransformResult } from './types'
 import { compileScript } from 'vue/compiler-sfc'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
+import { CompilerDiagnosticError } from '../../../../types/diagnostics'
 import { getMiniProgramTemplatePlatform } from '../../compiler/template'
 import { generateScopedId } from '../scopedId'
 import { collectComponentSourceInfo } from './componentSources'
@@ -37,6 +40,7 @@ export async function compileVueFile(
     meta: {
       ...parsed.meta,
       styleBlocks: parsed.descriptor.styles,
+      cssVars: parsed.descriptor.cssVars,
     },
   }
 
@@ -76,6 +80,7 @@ export async function compileVueFile(
     : undefined
 
   const styleCompiled = await compileStylePhase(parsed.descriptor, filename, result, options?.style)
+  const hasCssVarsRuntime = parsed.descriptor.cssVars.length > 0 || options?.stabilizeCssVarsRuntime === true
 
   const scopedId = parsed.descriptor.styles.some(style => style.scoped)
     ? `data-v-${sfcId}`
@@ -91,7 +96,7 @@ export async function compileVueFile(
         scopedSlotsRequireProps: true,
         scopeId: scopedId,
         slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
-        cssVars: parsed.descriptor.cssVars.length > 0,
+        cssVars: hasCssVarsRuntime,
       }
     : {
         ...options?.template,
@@ -102,7 +107,7 @@ export async function compileVueFile(
         scriptSetupBindings: scriptCompiled?.bindings as Record<string, unknown> | undefined,
         scopeId: scopedId,
         slottedScopeId: scopedId && styleCompiled.usesSlotted ? `${scopedId}-s` : undefined,
-        cssVars: parsed.descriptor.cssVars.length > 0,
+        cssVars: hasCssVarsRuntime,
       }
 
   const templateOptions = componentSourceInfo.wevuComponentTags.size
@@ -128,9 +133,16 @@ export async function compileVueFile(
     result,
     options?.bindingManifestSourceFile,
   )
-  if (templateCompiled?.diagnostics.length && options?.warn) {
+  if (templateCompiled?.diagnostics.length) {
+    let fatalDiagnostic: CompilerDiagnostic | undefined
     for (const diagnostic of templateCompiled.diagnostics) {
-      options.warn(diagnostic.message)
+      options?.warn?.(diagnostic.message)
+      if (diagnostic.severity === 'error') {
+        fatalDiagnostic ??= diagnostic
+      }
+    }
+    if (fatalDiagnostic) {
+      throw new CompilerDiagnosticError(fatalDiagnostic)
     }
   }
 
@@ -143,6 +155,9 @@ export async function compileVueFile(
       appShell: options.appShell,
     })
     templateCompiled.code = result.template
+    templateCompiled.runtimeCapabilities = createWevuRuntimeCapabilityMetadataFromBindingManifest(
+      templateCompiled.bindingManifest,
+    )
   }
   const scriptPhase = await compileScriptPhase(
     parsed.descriptor,
@@ -160,9 +175,16 @@ export async function compileVueFile(
       cssModules: result.cssModules,
     },
     source,
+    parsed.scriptPreprocessMap,
   )
   result.script = scriptPhase.script
   result.scriptMap = scriptPhase.scriptMap
+  if (scriptPhase.componentStyleOptions) {
+    result.meta!.componentStyleOptions = scriptPhase.componentStyleOptions
+  }
+  if (scriptPhase.runtimeCapabilities) {
+    result.meta!.runtimeCapabilities = scriptPhase.runtimeCapabilities
+  }
   if (scriptPhase.template) {
     result.template = scriptPhase.template
   }

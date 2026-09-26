@@ -412,11 +412,26 @@ defineExpose({
         title="写法 C: inline $event.title"
         @payload="onEmitMatrixPayloadTitle($event.title)"
       />
+      <text id="emit-record-count">{{ emitMatrixRecords.length }}</text>
       <view class="card-list">
-        <view v-for="(item, index) in emitMatrixRecords" :key="`emit-matrix-${index}`" class="card">
+        <view v-for="(item, index) in emitMatrixRecords" :id="`emit-record-${index}`" :key="`emit-matrix-${index}`" class="card emit-record">
           <text class="card-meta">
             {{ JSON.stringify(item) }}
           </text>
+          <text class="emit-label">{{ item.label }}</text>
+          <text class="emit-type">{{ item.payloadType }}</text>
+          <text class="emit-value">{{ item.value }}</text>
+          <text class="emit-kind">{{ item.kind }}</text>
+          <text class="emit-marker">{{ item.marker }}</text>
+          <text class="emit-source">{{ item.metaSource }}</text>
+          <text class="emit-title">{{ item.title }}</text>
+          <text class="emit-native">{{ item.nativeType }}</text>
+          <text class="emit-detail">{{ item.detailType }}</text>
+          <text class="emit-timestamp">{{ item.timeStampType }}</text>
+          <text class="emit-first">{{ item.first }}</text>
+          <text class="emit-second">{{ item.second }}</text>
+          <text class="emit-third">{{ item.thirdOk }}</text>
+          <text class="emit-length">{{ item.tupleLength }}</text>
         </view>
       </view>
     </view>

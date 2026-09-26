@@ -3,6 +3,8 @@ import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
+import { createAutoRoutesService } from './autoRoutesPlugin/service'
+import { createRuntimeState } from './runtimeState'
 import { syncProjectSupportFiles } from './supportFiles'
 import { createManagedTsconfigFiles, hasManagedTsconfigBootstrapCompleted, syncManagedTsconfigBootstrapFiles, syncManagedTsconfigFiles } from './tsconfigSupport'
 
@@ -80,7 +82,8 @@ describe('tsconfig support', () => {
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
-    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'wevu/weapp/jsx-runtime']))
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
+    expect(app.compilerOptions.types).not.toContain('wevu/weapp/jsx-runtime')
     expect(app.compilerOptions.types).not.toContain('vite/client')
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])
     expect(app.compilerOptions.jsx).toBe('preserve')
@@ -114,7 +117,7 @@ describe('tsconfig support', () => {
 
     expect(app.compilerOptions.jsx).toBe('preserve')
     expect(app.compilerOptions.jsxImportSource).toBe(jsxImportSource)
-    expect(app.compilerOptions.types).toContain(`${jsxImportSource}/jsx-runtime`)
+    expect(app.compilerOptions.types).not.toContain(`${jsxImportSource}/jsx-runtime`)
     if (jsxImportSource === 'wevu') {
       expect(platformBridge).toBe('export {}\n')
     }
@@ -148,7 +151,7 @@ describe('tsconfig support', () => {
 
     expect(app.compilerOptions.jsx).toBe('preserve')
     expect(app.compilerOptions.jsxImportSource).toBe('wevu/miniprogram')
-    expect(app.compilerOptions.types).toContain('wevu/miniprogram/jsx-runtime')
+    expect(app.compilerOptions.types).not.toContain('wevu/miniprogram/jsx-runtime')
     expect(platformBridge).toContain('wevu/miniprogram/jsx-runtime')
   })
 
@@ -176,6 +179,30 @@ describe('tsconfig support', () => {
     expect(app.compilerOptions.jsxImportSource).toBe('react')
     expect(app.compilerOptions.types).not.toContain('react/jsx-runtime')
     expect(platformBridge).toBe('export {}\n')
+  })
+
+  it('keeps Wevu JSX types on jsxImportSource instead of compilerOptions.types', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      packageJson: {
+        dependencies: {
+          wevu: '^1.0.0',
+        },
+      },
+      weappViteConfig: {
+        typescript: {
+          app: {
+            compilerOptions: {
+              types: ['custom-env', 'wevu/weapp/jsx-runtime'],
+            },
+          },
+        },
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.compilerOptions.jsxImportSource).toBe('wevu/weapp')
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'custom-env']))
+    expect(app.compilerOptions.types).not.toContain('wevu/weapp/jsx-runtime')
   })
 
   it('does not inject a JSX type source without a wevu dependency', async () => {
@@ -428,6 +455,50 @@ describe('tsconfig support', () => {
     expect(after.mtimeMs).toBe(before.mtimeMs)
   })
 
+  it('cleans disabled auto-routes outputs and stale named snapshots during support sync', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-support-auto-routes-disabled-'))
+    const pageSource = path.join(root, 'src/pages/stale/index.vue')
+    const externalSource = path.join(root, 'src/pageScripts/stale.ts')
+    const typedRouterPath = path.join(root, '.weapp-vite/typed-router.d.ts')
+    const persistentCachePath = path.join(root, '.weapp-vite/auto-routes.cache.json')
+    const ctx = createCtx({
+      cwd: root,
+      configFilePath: path.join(root, 'vite.config.ts'),
+      absoluteSrcRoot: path.join(root, 'src'),
+      srcRoot: 'src',
+      outDir: path.join(root, 'dist'),
+      weappViteConfig: {
+        autoImportComponents: false,
+        autoRoutes: false,
+      },
+    })
+    ctx.runtimeState = createRuntimeState()
+    ctx.runtimeState.autoRoutes.namedRoutes = [{
+      name: 'stale',
+      path: '/pages/stale/index',
+      meta: {},
+    }]
+    ctx.runtimeState.autoRoutes.namedModuleCode = 'export const routes = [{ name: "stale" }]'
+    ctx.runtimeState.autoRoutes.pageDeclarationDependencies.set(externalSource, new Set([pageSource]))
+    ctx.runtimeState.autoRoutes.pageSourceFiles.add(pageSource)
+    ctx.runtimeState.autoRoutes.namedRouteSourceFiles.add(pageSource)
+    ctx.runtimeState.autoRoutes.initialized = true
+    ctx.runtimeState.autoRoutes.dirty = false
+    ctx.autoRoutesService = createAutoRoutesService(ctx)
+
+    await fs.outputFile(typedRouterPath, 'type RouteName = "stale"\n', 'utf8')
+    await fs.outputJson(persistentCachePath, { namedRoutes: ['stale'] })
+
+    await syncProjectSupportFiles(ctx)
+
+    await expect(fs.pathExists(typedRouterPath)).resolves.toBe(false)
+    await expect(fs.pathExists(persistentCachePath)).resolves.toBe(false)
+    expect(ctx.autoRoutesService.getNamedModuleCode()).not.toContain('stale')
+
+    ctx.configService.weappViteConfig.autoRoutes = true
+    expect([...ctx.autoRoutesService.getPageDeclarationOwners(externalSource)]).toEqual([])
+  })
+
   it('warns and regenerates stale app tsconfig include after srcRoot changes', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-managed-tsconfig-srcroot-'))
     const ctx = {
@@ -441,7 +512,7 @@ describe('tsconfig support', () => {
         },
       },
       autoRoutesService: {
-        isEnabled: () => false,
+        ensureFresh: vi.fn(),
       },
     } as any
     const appTsconfigPath = path.join(root, '.weapp-vite', 'tsconfig.app.json')
@@ -500,7 +571,7 @@ describe('tsconfig support', () => {
         },
       },
       autoRoutesService: {
-        isEnabled: () => false,
+        ensureFresh: vi.fn(),
       },
       autoImportService: {
         runInBatch: async (task: () => Promise<void>) => {
@@ -559,7 +630,7 @@ describe('tsconfig support', () => {
         },
       },
       autoRoutesService: {
-        isEnabled: () => false,
+        ensureFresh: vi.fn(),
       },
       autoImportService: {
         runInBatch: async (task: () => Promise<void>) => {
@@ -603,7 +674,7 @@ describe('tsconfig support', () => {
         },
       },
       autoRoutesService: {
-        isEnabled: () => false,
+        ensureFresh: vi.fn(),
       },
     } as any
 
@@ -666,7 +737,7 @@ describe('tsconfig support', () => {
         },
       },
       autoRoutesService: {
-        isEnabled: () => false,
+        ensureFresh: vi.fn(),
       },
       autoImportService: {
         runInBatch: async (task: () => Promise<void>) => {
@@ -731,7 +802,6 @@ describe('tsconfig support', () => {
         },
       },
       autoRoutesService: {
-        isEnabled: () => true,
         ensureFresh: vi.fn(async () => {
           await autoRoutesBlocked
         }),

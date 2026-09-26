@@ -1,9 +1,17 @@
+import type { CompilerContext } from '../../context'
+import type { RuntimeTargets } from '../runtime'
 import { EventEmitter } from 'node:events'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
+import { createDevBuildWatcher } from '../../runtime/buildPlugin/devBuildWatcher'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
+import { readDashboardFileContent } from '../analyze/dashboardDevframe/content'
 import { registerServeCommand } from './serve'
+import { createAnalyzeController } from './serve/analyze'
 
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
@@ -110,6 +118,31 @@ async function waitForStartDevHotkeys() {
     await Promise.resolve()
   }
   return undefined
+}
+
+function createAnalyzeTestContext(): CompilerContext {
+  return {
+    configService: {
+      absolutePluginRoot: undefined,
+      absoluteSrcRoot: '/project/src',
+      cwd: '/project',
+      mode: 'development',
+      outDir: '/project/dist',
+      packageManager: { agent: 'pnpm' },
+      weappViteConfig: {
+        analyze: {
+          history: false,
+        },
+      },
+    },
+    runtimeState: {
+      build: {
+        hmr: {
+          recentProfiles: [],
+        },
+      },
+    },
+  } as unknown as CompilerContext
 }
 
 vi.mock('node:process', () => ({
@@ -244,6 +277,7 @@ describe('serve cli command', () => {
           mode: 'development',
         },
       })
+    analyzeSubpackagesMock.mockReset()
     analyzeSubpackagesMock
       .mockResolvedValueOnce({
         packages: [{ id: 'initial', label: 'initial', files: [] }],
@@ -303,11 +337,15 @@ describe('serve cli command', () => {
         durationMs: expect.any(Number),
       }),
     ])
-    expect(resolvedHandle?.update).toHaveBeenCalledWith({
-      packages: [{ id: 'refresh', label: 'refresh', files: [] }],
-      modules: [{ id: 'm1', source: 'src/a.ts', sourceType: 'src', packages: [] }],
-      subPackages: [],
-    }, null)
+    expect(resolvedHandle?.update).toHaveBeenCalledWith(
+      {
+        packages: [{ id: 'refresh', label: 'refresh', files: [] }],
+        modules: [{ id: 'm1', source: 'src/a.ts', sourceType: 'src', packages: [] }],
+        subPackages: [],
+      },
+      expect.any(Map),
+      null,
+    )
     expect(startDevHotkeysMock).toHaveBeenCalledWith({
       cwd: '/project',
       agentName: 'codex',
@@ -325,11 +363,167 @@ describe('serve cli command', () => {
       },
     })
     expect(devHotkeysRestoreMock).toHaveBeenCalledTimes(1)
-    expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('小程序初次构建完成，耗时：'))
     expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
       syncAutoImportSupportFiles: false,
     }))
     expect(syncSupportFileResolverComponentsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('shares one initial analyze update between a queued build END and the explicit startup update', async () => {
+    const controller = createAnalyzeController({
+      configFile: undefined,
+      ctx: createAnalyzeTestContext(),
+      options: {},
+      targets: resolveRuntimeTargetsMock() as unknown as RuntimeTargets,
+    })
+    await controller.startDashboard(startAnalyzeDashboard)
+    const buildEvents = createDevBuildWatcher()
+    buildEvents.emitEvent({ code: 'END' })
+
+    const watcherControl = controller.bindWatcher(buildEvents.watcher)
+    await watcherControl.runInitialUpdate()
+    const resolvedHandle = await vi.mocked(startAnalyzeDashboard).mock.results[0]?.value
+
+    expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(2)
+    expect(resolvedHandle?.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('runs one latest analyze refresh when another END arrives during an active refresh', async () => {
+    const activeRefresh = Promise.withResolvers<{
+      packages: Array<{ id: string, label: string, files: never[] }>
+      modules: never[]
+      subPackages: never[]
+    }>()
+    analyzeSubpackagesMock.mockReset()
+      .mockResolvedValueOnce({ packages: [{ id: 'dashboard', label: 'dashboard', files: [] }], modules: [], subPackages: [] })
+      .mockResolvedValueOnce({ packages: [{ id: 'initial', label: 'initial', files: [] }], modules: [], subPackages: [] })
+      .mockImplementationOnce(() => activeRefresh.promise)
+      .mockResolvedValueOnce({ packages: [{ id: 'latest', label: 'latest', files: [] }], modules: [], subPackages: [] })
+    const controller = createAnalyzeController({
+      configFile: undefined,
+      ctx: createAnalyzeTestContext(),
+      options: {},
+      targets: resolveRuntimeTargetsMock() as unknown as RuntimeTargets,
+    })
+    await controller.startDashboard(startAnalyzeDashboard)
+    const watcher = new MockWatcher()
+    const watcherControl = controller.bindWatcher(watcher)
+    await watcherControl.runInitialUpdate()
+    const resolvedHandle = await vi.mocked(startAnalyzeDashboard).mock.results[0]?.value
+
+    watcher.emit('event', { code: 'END' })
+    await vi.waitFor(() => expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(3))
+    watcher.emit('event', { code: 'END' })
+    activeRefresh.resolve({ packages: [{ id: 'active', label: 'active', files: [] }], modules: [], subPackages: [] })
+
+    await vi.waitFor(() => {
+      expect(analyzeSubpackagesMock).toHaveBeenCalledTimes(4)
+      expect(resolvedHandle?.update).toHaveBeenCalledTimes(3)
+    })
+    expect(resolvedHandle?.update).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        packages: [expect.objectContaining({ id: 'latest' })],
+      }),
+      expect.any(Map),
+      null,
+    )
+  })
+
+  it('reports watcher errors without replacing the last successful analyze result', async () => {
+    const controller = createAnalyzeController({
+      configFile: undefined,
+      ctx: createAnalyzeTestContext(),
+      options: {},
+      targets: resolveRuntimeTargetsMock() as unknown as RuntimeTargets,
+    })
+    await controller.startDashboard(startAnalyzeDashboard)
+    const watcher = new MockWatcher()
+    const watcherControl = controller.bindWatcher(watcher)
+    await watcherControl.runInitialUpdate()
+    const resolvedHandle = await vi.mocked(startAnalyzeDashboard).mock.results[0]?.value
+
+    watcher.emit('event', { code: 'ERROR', error: new Error('snapshot rebuild failed') })
+
+    expect(resolvedHandle?.emitRuntimeEvents).toHaveBeenCalledWith([
+      expect.objectContaining({
+        kind: 'diagnostic',
+        level: 'error',
+        title: 'mini hmr rebuild failed',
+        detail: 'snapshot rebuild failed',
+        tags: ['hmr', 'rebuild'],
+      }),
+    ])
+    expect(resolvedHandle?.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('discards partial full-analysis artifacts before capturing fallback files', async () => {
+    const cwd = await mkdtemp(path.join(tmpdir(), 'weapp-vite-serve-artifacts-'))
+    const outDir = path.join(cwd, 'dist')
+    await mkdir(outDir)
+    await writeFile(path.join(outDir, 'app.js'), 'fallback artifact')
+
+    const ctx = {
+      configService: {
+        absolutePluginRoot: undefined,
+        absoluteSrcRoot: path.join(cwd, 'src'),
+        cwd,
+        mode: 'development',
+        outDir,
+        packageManager: { agent: 'pnpm' },
+        relativeCwd: (file: string) => path.relative(cwd, file),
+        weappViteConfig: {
+          analyze: {
+            history: false,
+          },
+        },
+      },
+      runtimeState: {
+        glassEasel: {
+          analysisByOwner: new Map(),
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(),
+        loadSubPackages: vi.fn(() => []),
+      },
+    } as unknown as CompilerContext
+
+    createCompilerContextMock.mockReset()
+    createCompilerContextMock.mockResolvedValue({})
+    analyzeSubpackagesMock.mockReset()
+    analyzeSubpackagesMock.mockImplementationOnce(async (
+      _ctx: unknown,
+      options?: { onArtifact?: (fileName: string, content: string | Uint8Array) => void },
+    ) => {
+      options?.onArtifact?.('stale.js', 'partial artifact')
+      throw new Error('analysis failed')
+    })
+
+    try {
+      const controller = createAnalyzeController({
+        configFile: undefined,
+        ctx,
+        options: {},
+        targets: resolveRuntimeTargetsMock() as unknown as RuntimeTargets,
+      })
+      await controller.startDashboard(startAnalyzeDashboard)
+
+      const [report, options] = vi.mocked(startAnalyzeDashboard).mock.calls[0]!
+      expect(report.packages.flatMap(pkg => pkg.files.map(file => file.file))).toEqual(['app.js'])
+      expect(options.artifacts.has('stale.js')).toBe(false)
+      await rm(outDir, { recursive: true })
+      const artifact = await readDashboardFileContent(
+        { kind: 'artifact', path: 'app.js' },
+        { projectRoot: cwd },
+        report,
+        options.artifacts,
+      )
+      expect(artifact.content).toBe('fallback artifact')
+      expect(artifact.size).toBe(17)
+    }
+    finally {
+      await rm(cwd, { recursive: true, force: true })
+    }
   })
 
   it('forces mcp config for dev hotkeys with --mcp', async () => {
@@ -577,6 +771,42 @@ describe('serve cli command', () => {
     })
   })
 
+  it.each([false, true])('keeps the automator open owner exclusive when console connection fails=%s', async (connectionFails) => {
+    const action = createServeActionHandler()
+    if (connectionFails) {
+      maybeStartForwardConsoleMock.mockRejectedValueOnce(new Error('automator log connection failed'))
+    }
+    else {
+      maybeStartForwardConsoleMock.mockResolvedValueOnce(true)
+    }
+
+    await action('/project', {
+      platform: 'weapp',
+      open: true,
+      ideOpenStrategy: 'automator',
+    })
+
+    expect(openIdeMock).toHaveBeenCalledTimes(1)
+    expect(openIdeMock).toHaveBeenCalledWith('weapp', '/project/dist', expect.objectContaining({
+      openStrategy: 'automator',
+      prepareAutomatorSession: true,
+      useAutomatorOpen: true,
+    }))
+    expect(maybeStartForwardConsoleMock).toHaveBeenCalledTimes(1)
+    expect(maybeStartForwardConsoleMock).toHaveBeenCalledWith({
+      openedOnly: true,
+      preferOpenedSession: true,
+      platform: 'weapp',
+      mpDistRoot: '/project/dist',
+      cwd: '/project',
+      weappViteConfig: { analyze: { history: false } },
+    })
+    expect(openIdeMock.mock.invocationCallOrder[0]).toBeLessThan(maybeStartForwardConsoleMock.mock.invocationCallOrder[0])
+    if (connectionFails) {
+      expect(loggerWarnMock).toHaveBeenCalledWith('[forwardConsole] 后台启动失败：automator log connection failed')
+    }
+  })
+
   it('keeps dev hotkeys session alive until serve shutdown signal arrives', async () => {
     const action = createServeActionHandler()
 
@@ -594,6 +824,8 @@ describe('serve cli command', () => {
     expect(devHotkeysCloseMock).toHaveBeenCalledTimes(1)
     expect(closeActiveForwardConsoleMock).toHaveBeenCalledTimes(1)
     expect(watcherCloseAllMock).toHaveBeenCalledTimes(1)
+    expect(openIdeMock).not.toHaveBeenCalled()
+    expect(maybeStartForwardConsoleMock).not.toHaveBeenCalled()
   })
 
   it('uses process cwd when serve root argument is omitted', async () => {

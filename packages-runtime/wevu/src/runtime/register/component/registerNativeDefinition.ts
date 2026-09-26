@@ -1,71 +1,39 @@
-import type { InternalRuntimeState } from '../../types'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
 import { getMiniProgramRuntimeGlobalObject, resolveCurrentMiniProgramPlatform } from '../../platform'
+import { registerAlipayComponentDefinition } from './alipayRegistration'
 
-function createAlipayPageDefinition(componentDefinition: Record<string, any>) {
-  const {
-    lifetimes = {},
-    methods = {},
-    observers: _observers,
-    options: _options,
-    pageLifetimes = {},
-    properties: _properties,
-    ...pageDefinition
-  } = componentDefinition
+type ImportMetaWithEnv = ImportMeta & { env?: { PLATFORM?: string } }
+type RegisterComponentDefinition = (componentDefinition: Record<string, any>, isPage: boolean) => void
 
-  const pageOnLoad = pageDefinition.onLoad
-
-  return {
-    ...pageDefinition,
-    ...methods,
-    onLoad(this: InternalRuntimeState, ...args: any[]) {
-      lifetimes.created?.apply(this, args)
-      const result = pageOnLoad?.apply(this, args)
-      lifetimes.attached?.apply(this, args)
-      return result
-    },
-    onShow(this: InternalRuntimeState, ...args: any[]) {
-      return pageLifetimes.show?.apply(this, args)
-    },
-    onReady(this: InternalRuntimeState, ...args: any[]) {
-      return lifetimes.ready?.apply(this, args)
-    },
-    onHide(this: InternalRuntimeState, ...args: any[]) {
-      return pageLifetimes.hide?.apply(this, args)
-    },
-    onResize(this: InternalRuntimeState, ...args: any[]) {
-      return pageLifetimes.resize?.apply(this, args)
-    },
-    onUnload(this: InternalRuntimeState, ...args: any[]) {
-      return lifetimes.detached?.apply(this, args)
-    },
-    onError(this: InternalRuntimeState, ...args: any[]) {
-      return lifetimes.error?.apply(this, args)
-    },
-  }
-}
-
-/**
- * 根据当前宿主注册 wevu 原生定义。
- * 支付宝不支持使用 Component() 注册普通页面，需要转换为 Page() 契约。
- */
-export function registerNativeComponentDefinition(
-  componentDefinition: Record<string, any>,
-  isPage: boolean,
-) {
+function registerWechatCompatibleComponentDefinition(componentDefinition: Record<string, any>) {
   const statefulHmrBridge = getMiniProgramRuntimeGlobalObject()?.[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
-  if (isPage && resolveCurrentMiniProgramPlatform() === 'alipay') {
-    const pageDefinition = createAlipayPageDefinition(componentDefinition)
-    if (typeof statefulHmrBridge?.Page === 'function') {
-      statefulHmrBridge.Page(pageDefinition)
-      return
-    }
-    Page(pageDefinition)
-    return
-  }
   if (typeof statefulHmrBridge?.Component === 'function') {
     statefulHmrBridge.Component(componentDefinition)
     return
   }
   Component(componentDefinition)
 }
+
+function registerDetectedComponentDefinition(componentDefinition: Record<string, any>, isPage: boolean) {
+  if (resolveCurrentMiniProgramPlatform() === 'alipay') {
+    registerAlipayComponentDefinition(componentDefinition, isPage)
+    return
+  }
+  registerWechatCompatibleComponentDefinition(componentDefinition)
+}
+
+/**
+ * 按编译目标选择宿主注册器，未声明目标时保留运行时探测。
+ * 支付宝页面使用 Page 契约，Web 由自己的 Component bridge 接管。
+ */
+export const registerNativeComponentDefinition: RegisterComponentDefinition
+  = (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'alipay'
+    ? registerAlipayComponentDefinition
+    : (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'weapp'
+      || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'tt'
+      || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'swan'
+      || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'jd'
+      || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'xhs'
+      || (import.meta as ImportMetaWithEnv).env?.PLATFORM === 'web'
+        ? registerWechatCompatibleComponentDefinition
+        : registerDetectedComponentDefinition

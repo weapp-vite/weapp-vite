@@ -11,6 +11,34 @@ import { createBindingManifest } from './template/bindingManifest'
 import { alipayPlatform, ttPlatform, wechatPlatform } from './template/platforms'
 
 describe('binding manifest', () => {
+  it('keeps nested slot-only owner data in generated setData picks', async () => {
+    const result = await compileVueFile(`<script setup>
+const selected = ['a']
+const unused = 'not rendered'
+</script><template><Provider><Cell><Leaf :value="selected" /></Cell></Provider></template>`, '/src/components/slot-owner.vue', {
+      autoSetDataPick: true,
+      template: {
+        scopedSlotsCompiler: 'augmented',
+        wevuComponentTags: ['Provider', 'Cell', 'Leaf'],
+      },
+    })
+
+    const keys = resolveBindingManifestPickKeys(result.bindingManifest!, true)
+    expect(keys).toContain('selected')
+    expect(keys).not.toContain('unused')
+    expect(result.script).toMatch(/pick:\s*\[[^\]]*"selected"/)
+  })
+
+  it('disables automatic picks when slot owner dependencies are dynamic', () => {
+    const result = compileVueTemplateToWxml(
+      '<Provider><Cell :value="records[selected]" /></Provider>',
+      '/src/components/slot-owner.vue',
+      { scopedSlotsCompiler: 'augmented', wevuComponentTags: ['Provider', 'Cell'] },
+    )
+
+    expect(resolveBindingManifestPickKeys(result.bindingManifest, true)).toEqual([])
+  })
+
   it('collects stable Vue bindings with paths, modes and source locations', () => {
     const result = compileVueTemplateToWxml(
       '<view v-if="visible">{{ user.name }}{{ table[column] }}</view>',
@@ -275,7 +303,7 @@ const suffix = '!'
     expect(childAutoBindings.at(-1)?.outputPath).toBe('__wv_bind_200')
   })
 
-  it('disables automatic pick when manifest collection is incomplete', async () => {
+  it('disables automatic pick when manifest collection is incomplete', () => {
     const externallyConstructedManifest: WevuBindingManifestV1 = {
       version: 1,
       sourceFile: 'src/pages/external.vue',
@@ -304,28 +332,28 @@ const suffix = '!'
       updateMode: 'snapshot-fallback',
     })
     expect(resolveBindingManifestPickKeys(wildcardManifest, true)).toEqual([])
+  })
 
+  it('rejects failed template compilation instead of publishing fallback binding data', async () => {
     const failingPlatform = {
       ...wechatPlatform,
       wrapIf() {
         throw new Error('synthetic template failure')
       },
     }
-    const result = await compileVueFile(
+    await expect(compileVueFile(
       '<template><view v-if="ready">{{ ready }}</view></template><script setup>const ready = true</script>',
       '/src/pages/fallback.vue',
       {
         autoSetDataPick: true,
         template: { platform: failingPlatform },
       },
-    )
-
-    expect(result.bindingManifest?.bindings).toContainEqual(expect.objectContaining({
-      outputPath: '*',
-      updateMode: 'snapshot-fallback',
-    }))
-    expect(result.script).toContain(WEVU_BINDING_MANIFEST_KEY)
-    expect(result.script).not.toContain('setData')
+    )).rejects.toMatchObject({
+      code: 'WV2002',
+      severity: 'error',
+      source: 'template',
+      filename: '/src/pages/fallback.vue',
+    })
   })
 
   it('records every compiler-generated mustache dependency before automatic pick', async () => {
@@ -413,13 +441,13 @@ const themeColor = 'red'
     ]))
   })
 
-  it('declares slot host properties without bundler template inspection', async () => {
+  it('declares slot host properties without retaining scoped-slot runtime', async () => {
     const result = await compileVueFile(
       '<template><slot><text>fallback</text></slot></template>',
       '/src/components/SlotHost.vue',
     )
 
-    expect(result.bindingManifest?.features.scopedSlots).toBe(true)
+    expect(result.bindingManifest?.features.scopedSlots).toBeUndefined()
     expect(result.script).toContain('properties')
     expect(result.script).toContain(WEVU_SLOT_NAMES_PROP)
     expect(result.script).not.toContain('setData')
@@ -435,7 +463,7 @@ const themeColor = 'red'
       },
     )
 
-    expect(result.bindingManifest?.features.scopedSlots).toBe(true)
+    expect(result.bindingManifest?.features.scopedSlots).toBeUndefined()
     expect(result.script).not.toContain(WEVU_BINDING_MANIFEST_KEY)
     expect(result.script).not.toContain('setData')
   })

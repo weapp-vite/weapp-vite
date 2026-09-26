@@ -1,9 +1,12 @@
 <!-- eslint-disable perfectionist/sort-imports -->
 <script setup lang="ts">
+import { onError, onErrorCaptured, onHide, onShow, use } from 'wevu'
+import { storeManager } from './stores/storeDemo'
 import { appPages } from './app.config'
-import { onError, onErrorCaptured, onHide, onShow } from 'wevu'
 
 import { pushLifecycleLog } from './stores/lifecycleLogs'
+
+use(storeManager)
 
 defineAppJson({
   pages: appPages,
@@ -66,7 +69,6 @@ defineAppJson({
         'subpackages/normal-b',
       ],
       network: 'all',
-      timeout: 2000,
     },
   },
   style: 'v2',

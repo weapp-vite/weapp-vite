@@ -1,6 +1,8 @@
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import type { Plugin, ViteDevServer } from 'vite'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { createServer } from 'vite'
 import { describe, expect, it, vi } from 'vitest'
 import { weappWebPlugin } from '../src/plugin'
 import {
@@ -109,6 +111,168 @@ describe('weapp web plugin hook matrix', () => {
     expect(emitFile).not.toHaveBeenCalled()
   })
 
+  it('loads compiled templates when runtime packages are only plugin dependencies', async () => {
+    const { root } = await createPluginFixture()
+    let server: ViteDevServer | undefined
+    try {
+      const consumerAlias = join(root, 'consumer-runtime.js')
+      await writeFile(consumerAlias, 'export const consumer = true')
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        resolve: { alias: { '@weapp-vite/web': consumerAlias } },
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const result = await server.transformRequest('/src/pages/index/index.wxml?weapp-web-template')
+      expect(result?.code).toContain('export function render')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('refreshes cached Web entries before Vite handles page removal and re-addition', async () => {
+    const { root, srcRoot } = await createPluginFixture()
+    const keptPage = join(srcRoot, 'pages/kept/index.js')
+    await mkdir(dirname(keptPage), { recursive: true })
+    await writeFile(keptPage, 'Page({})')
+    await writeFile(join(srcRoot, 'app.json'), JSON.stringify({
+      pages: ['pages/index/index', 'pages/kept/index'],
+    }))
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const entryUrl = '/@weapp-vite/web/entry'
+      expect((await server.transformRequest(entryUrl))?.code).toContain('/src/pages/index/index.js')
+      expect((await server.transformRequest(AUTO_ROUTES_ID))?.code).toContain('pages/index/index')
+
+      const removedPage = join(server.config.root, 'src/pages/index/index.js')
+      await rm(removedPage)
+      // 经过 Vite 的真实 watchChange 调度，断言后续消费结果而非插件调用次数。
+      await server.environments.client!.pluginContainer.watchChange(removedPage, { event: 'delete' })
+      const entry = (await server.transformRequest(entryUrl))!.code
+      const routes = (await server.transformRequest(AUTO_ROUTES_ID))!.code
+      expect(entry).not.toContain('/src/pages/index/index.js')
+      expect(entry).toContain('/src/pages/kept/index.js')
+      expect(routes).not.toContain('pages/index/index')
+      expect(routes).toContain('pages/kept/index')
+
+      await writeFile(removedPage, 'Page({})')
+      await server.environments.client!.pluginContainer.watchChange(removedPage, { event: 'create' })
+      expect((await server.transformRequest(entryUrl))?.code).toContain('/src/pages/index/index.js')
+      expect((await server.transformRequest(AUTO_ROUTES_ID))?.code).toContain('pages/index/index')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('invalidates cached native page templates when a layout is removed', async () => {
+    const { root } = await createPluginFixture()
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const templateUrl = '/src/pages/index/index.wxml?weapp-web-template'
+      expect((await server.transformRequest(templateUrl))?.code).toContain('wv-component-layouts-default')
+
+      const removedLayout = join(server.config.root, 'src/layouts/default/index.js')
+      await rm(removedLayout)
+      await server.environments.client!.pluginContainer.watchChange(removedLayout, { event: 'delete' })
+      expect((await server.transformRequest(templateUrl))?.code).not.toContain('wv-component-layouts-default')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('refreshes cached native page imports when template and style resources appear', async () => {
+    const { root, pageDir } = await createPluginFixture()
+    await rm(join(pageDir, 'index.wxml'))
+    await rm(join(pageDir, 'index.wxss'))
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [weappWebPlugin() as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      const scriptUrl = '/src/pages/index/index.js'
+      const original = (await server.transformRequest(scriptUrl))!.code
+      expect(original).not.toContain('/src/pages/index/index.wxml')
+      expect(original).not.toContain('/src/pages/index/index.wxss')
+
+      const template = join(server.config.root, 'src/pages/index/index.wxml')
+      await writeFile(template, '<view>new template</view>')
+      await server.environments.client!.pluginContainer.watchChange(template, { event: 'create' })
+      expect((await server.transformRequest(scriptUrl))?.code).toContain('/src/pages/index/index.wxml')
+
+      const style = join(server.config.root, 'src/pages/index/index.wxss')
+      await writeFile(style, 'view { color: red; }')
+      await server.environments.client!.pluginContainer.watchChange(style, { event: 'create' })
+      expect((await server.transformRequest(scriptUrl))?.code).toContain('/src/pages/index/index.wxss')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('refreshes cached synthetic SFC styles after a source update', async () => {
+    const { root, pageDir } = await createSfcResolverFixture('<view>style</view>')
+    const source = '<template><view>style</view></template><style>view { font-size: 31px; }</style>'
+    await writeFile(join(pageDir, 'index.vue'), source)
+    const plugin = weappWebPlugin()
+    let server: ViteDevServer | undefined
+    try {
+      server = await createServer({
+        root,
+        configFile: false,
+        plugins: [plugin as Plugin],
+        optimizeDeps: { noDiscovery: true },
+        server: { hmr: false, middlewareMode: true, watch: null },
+        logLevel: 'silent',
+      })
+      await server.transformRequest('/src/pages/index/index.vue')
+      const styleUrl = '/src/pages/index/index.vue.css?weapp-web-sfc-style&inline'
+      expect((await server.transformRequest(styleUrl))?.code).toContain('31px')
+      const page = join(server.config.root, 'src/pages/index/index.vue')
+      await writeFile(page, source.replace('31px', '37px'))
+      await server.environments.client!.pluginContainer.watchChange(page, { event: 'update' })
+      server.environments.client!.moduleGraph.onFileChange(page)
+      await plugin.handleHotUpdate!.call({}, { file: page })
+      const style = (await server.transformRequest(styleUrl))!.code
+      expect(style).toContain('37px')
+      expect(style).not.toContain('31px')
+    }
+    finally {
+      await server?.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('resolves virtual, component, extensionless and SFC style module ids', async () => {
     const { root, srcRoot } = await createPluginFixture()
     const plugin = weappWebPlugin({ srcDir: 'src' })
@@ -122,6 +286,8 @@ describe('weapp web plugin hook matrix', () => {
     expect(await resolveId('/@weapp-vite/web/entry')).toBe(ENTRY_ID)
     expect(await resolveId('@weapp-vite/web/entry')).toBe(ENTRY_ID)
     expect(normalizePath(await resolveId('lit') as string)).toMatch(/\/lit\/index\.js$/)
+    expect(normalizePath(await resolveId('lit/async-directive.js') as string))
+      .toMatch(/\/lit\/async-directive\.js$/)
     expect(normalizePath(await resolveId('lit/directives/repeat.js') as string))
       .toMatch(/\/lit\/directives\/repeat\.js$/)
     expect(await resolveId(AUTO_ROUTES_ID)).toBe(RESOLVED_AUTO_ROUTES_ID)
@@ -186,20 +352,62 @@ describe('weapp web plugin hook matrix', () => {
     await expect(load.call(context, 'unknown:module')).resolves.toBeNull()
   })
 
-  it('rescans every supported HMR file class and ignores unrelated files', async () => {
-    const { pageDir, root } = await createPluginFixture()
-    const plugin = weappWebPlugin({ srcDir: 'src' })
-    const warn = vi.fn()
-    await plugin.configResolved?.call({ warn }, { root, command: 'serve' } as any)
-    for (const file of [
-      'index.json',
-      'index.wxml',
-      'logic.wxs',
-      'index.wxss',
-      'index.js',
-      'ignored.txt',
-    ]) {
-      await plugin.handleHotUpdate?.call({ warn }, { file: join(pageDir, file) })
+  it('keeps the last complete SFC snapshot during a rescan and recovers after a failed refresh', async () => {
+    const { pageDir, root } = await createSfcResolverFixture('<view>version-one</view>')
+    await writeFile(join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/index/index'] }))
+    const pagePath = join(pageDir, 'index.vue')
+    const templateId = `${pagePath}?weapp-web-sfc-template`
+    let releaseScan!: () => void
+    let reportStarted!: () => void
+    const blocked = new Promise<void>((resolve) => {
+      releaseScan = resolve
+    })
+    const started = new Promise<void>((resolve) => {
+      reportStarted = resolve
+    })
+    let blockNext = false
+    let failConfig = false
+    const plugin = weappWebPlugin({
+      srcDir: 'src',
+      async __resolveAppConfig() {
+        if (blockNext) {
+          blockNext = false
+          reportStarted()
+          await blocked
+        }
+        if (failConfig) {
+          throw new Error('configuration unavailable')
+        }
+        return { pages: ['pages/index/index'] }
+      },
+    })
+    try {
+      await plugin.configResolved!.call({}, { root, command: 'serve' })
+      blockNext = true
+      await writeFile(pagePath, '<template><view>version-two</view></template>')
+      const refresh = plugin.handleHotUpdate!.call({}, { file: pagePath })
+      try {
+        await started
+        await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-one')
+      }
+      finally {
+        releaseScan()
+        await refresh
+      }
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+
+      failConfig = true
+      await plugin.handleHotUpdate!.call({}, { file: join(root, '.weapp-vite/typed-router.d.ts') })
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+      await expect(plugin.handleHotUpdate!.call({}, { file: pagePath })).rejects.toThrow('configuration unavailable')
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+      failConfig = false
+      await writeFile(pagePath, '<template><view>version-three</view></template>')
+      await plugin.handleHotUpdate!.call({}, { file: pagePath })
+      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-three')
+    }
+    finally {
+      await rm(root, { recursive: true, force: true })
     }
   })
 

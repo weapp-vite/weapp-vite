@@ -181,6 +181,7 @@ describe('platform adapter registry', () => {
     })
     expect(shouldNormalizeWxmlComponentTagName('weapp')).toBe(false)
     expect(shouldNormalizeWxmlComponentTagName('alipay')).toBe(true)
+    expect(shouldNormalizeWxmlComponentTagName('tt')).toBe(true)
     expect(shouldNormalizeVueTemplateForPlatform('weapp')).toBe(false)
     expect(shouldNormalizeVueTemplateForPlatform('alipay')).toBe(true)
     expect(shouldEmitGenericPlaceholderAsset('weapp')).toBe(false)

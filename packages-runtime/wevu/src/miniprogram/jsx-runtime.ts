@@ -1,7 +1,8 @@
+import type { MiniProgramIntrinsicElements } from '@weapp-core/types/miniprogram'
 import type { JSX as WevuJSX, WevuJsxGlobalComponents } from 'wevu/jsx-runtime'
-import type { MiniProgramIntrinsicElements } from '../miniprogramIntrinsicElements'
 
-export type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicElements } from '../miniprogramIntrinsicElements'
+export type { MiniProgramIntrinsicElementBaseAttributes, MiniProgramIntrinsicElements } from '@weapp-core/types/miniprogram'
+
 export type {
   WevuJsxChild,
   WevuJsxElement,

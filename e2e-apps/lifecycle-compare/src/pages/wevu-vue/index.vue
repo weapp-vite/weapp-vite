@@ -106,7 +106,7 @@ export default defineComponent({
     items,
     __lifecycleLogs: [] as LifecycleEntry[],
     __lifecycleOrder: 0,
-    __lifecycleSeen: {},
+    __lifecycleSeen: {} as Record<string, number>,
     __lifecycleState: {
       tick: 0,
       lastHook: '',
@@ -141,6 +141,9 @@ export default defineComponent({
   <view id="lifecycle-wevu-vue-page" class="page" data-e2e-page="wevu-vue">
     <view class="title">
       WeVu Vue Page
+    </view>
+    <view class="panel">
+      <view v-for="hook in __lifecycleExpected" :id="`page-hook-${hook}`" :key="hook" class="hook-status">{{ hook }}: {{ __lifecycleSeen[hook] ? 'observed' : 'pending' }}</view>
     </view>
     <view class="state">
       Last: {{ __lifecycleState.lastHook }} ({{ __lifecycleState.tick }})

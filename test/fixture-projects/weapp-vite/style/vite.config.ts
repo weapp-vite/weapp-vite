@@ -14,6 +14,14 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    assetsInlineLimit: 0,
+    rolldownOptions: {
+      output: {
+        assetFileNames: 'assets/[name][extname]',
+      },
+    },
+  },
   css: {
     preprocessorOptions: {
       scss: {

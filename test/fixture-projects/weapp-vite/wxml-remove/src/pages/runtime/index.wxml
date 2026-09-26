@@ -1,0 +1,9 @@
+<!-- runtime-comment -->
+<view id="runtime-root" data-testid="runtime">
+  <view wx:if="{{label === \"legacy\"}}">
+    <text id="legacy-result" data-testid="\"legacy-result\"">legacy-ready</text>
+  </view>
+  <keep-card id="event-source" probe="{{ 'a\\'b' }}" bind_ready="recordReady" />
+  <text id="event-result">{{eventCount}}</text>
+</view>
+<!-- runtime-tail-comment -->

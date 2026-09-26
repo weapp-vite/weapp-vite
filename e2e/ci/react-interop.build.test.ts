@@ -43,6 +43,14 @@ async function assertNoRestrictedRuntimeBuiltins(root: string) {
 }
 
 async function assertInteropAppOutput() {
+  for (const route of ['pages/index/index', 'pages/static/index', 'pages/interop/index']) {
+    for (const extension of ['js', 'wxml', 'json']) {
+      expect(await fs.pathExists(path.join(APP_ROOT, 'dist', `${route}.${extension}`)), `${route}.${extension}`).toBe(true)
+    }
+  }
+  for (const route of ['pages/index/index', 'pages/static/index']) {
+    expect(await fs.readJson(path.join(APP_ROOT, 'dist', `${route}.json`))).toEqual({})
+  }
   const pageWxml = await readText(APP_ROOT, 'pages/interop/index.wxml')
   const pageJson = await fs.readJson(path.join(APP_ROOT, 'dist/pages/interop/index.json')) as {
     usingComponents?: Record<string, string>

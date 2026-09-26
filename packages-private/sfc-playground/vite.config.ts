@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
+import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard.js'
 
 const playgroundRoot = import.meta.dirname
 
@@ -13,7 +14,7 @@ export default defineConfig({
     'process.env.BABEL_TYPES_8_BREAKING': 'false',
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'development'),
   },
-  plugins: [vue()],
+  plugins: [vue(), createVueOxcTsconfigGuard()],
   optimizeDeps: {
     exclude: ['@vue/repl'],
   },

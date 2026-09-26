@@ -7,29 +7,42 @@ import {
   resolveInitialData,
   resolveInitialProperties,
 } from './properties'
-import { assignByPath, bindFunction, cloneValue, hasComponentPropertyValueChanged } from './shared'
+import { getComponentRelationNodes } from './relations'
+import { assignByPath, bindFunction, cloneValue, hasComponentPropertyValueChanged, parseDataPath } from './shared'
 
 export type { CreateComponentInstanceOptions, HeadlessComponentInstance } from './types'
 export { cloneValue, coerceComponentPropertyValue, hasComponentPropertyValueChanged, normalizeComponentPropertyValue, runComponentObservers }
 
 export function createComponentInstance(options: CreateComponentInstanceOptions): HeadlessComponentInstance {
   const definition = normalizeComponentDefinition(options.definition)
-  const properties = resolveInitialProperties(definition, options.properties ?? {})
+  const inputProperties = resolveInitialProperties(definition, options.properties ?? {})
+  const data = {
+    ...resolveInitialData(definition),
+    ...Object.fromEntries(Object.keys(definition.properties ?? {}).map(key => [key, inputProperties[key]])),
+  }
+  const properties = { ...data, ...inputProperties }
   const instance: HeadlessComponentInstance = {
     __definition__: definition,
-    data: {
-      ...resolveInitialData(definition),
-      ...properties,
-    },
+    data,
     __propertySnapshots__: {},
     properties,
+    getRelationNodes(key) {
+      return getComponentRelationNodes(instance, key)
+    },
     setData(patch, callback) {
       const changedKeys = Object.keys(patch)
+      const dataKeys = [...new Set(changedKeys.map(key => parseDataPath(key)[0]!))]
+      const propertyKeys = dataKeys
+        .filter(key => Object.hasOwn(definition.properties ?? {}, key))
+      const previousProperties = Object.fromEntries(propertyKeys.map(key => [key, cloneValue(instance.properties[key])]))
       for (const [key, value] of Object.entries(patch)) {
         assignByPath(instance.data, key, value)
       }
+      for (const key of dataKeys) {
+        instance.properties[key] = instance.data[key]
+      }
 
-      runComponentObservers(definition, instance, changedKeys)
+      runComponentObservers(definition, instance, changedKeys, previousProperties)
       if (options.requestRender) {
         options.requestRender(callback)
       }
@@ -52,6 +65,13 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
   for (const [key, value] of Object.entries(definition.methods ?? {})) {
     bindFunction(instance, key, value)
   }
+
+  Object.defineProperty(instance, '__data__', {
+    value: instance.data,
+    enumerable: true,
+    configurable: false,
+    writable: false,
+  })
 
   return instance
 }

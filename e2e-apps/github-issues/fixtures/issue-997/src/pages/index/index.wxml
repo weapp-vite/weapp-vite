@@ -1,0 +1,2 @@
+<view id="issue-997-page">output preserved</view>
+<button id="increment" bindtap="increment">{{count}}</button>

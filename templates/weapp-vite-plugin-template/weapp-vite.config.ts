@@ -6,6 +6,7 @@ export default defineConfig({
     pluginRoot: 'plugin',
     typescript: {
       app: {
+        include: ['../shared/**/*'],
         compilerOptions: {
           paths: {
             '@/*': ['./*'],

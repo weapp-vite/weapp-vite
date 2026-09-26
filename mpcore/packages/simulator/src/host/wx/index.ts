@@ -6,11 +6,14 @@ import type {
   HeadlessWxSelectorQueryRequest,
 } from './core'
 import { createHeadlessUniEventBus } from './eventBus'
+import { createHeadlessLogManager } from './logManager'
+import { runNavigationApi } from './startupNavigation'
 
 export * from './api'
 export * from './core'
 export * from './eventBus'
 export * from './fileSystem'
+export type { HeadlessWxGetLogManagerOption, HeadlessWxLogManager } from './logManager'
 export * from './media'
 
 function invokeWxApi<TOption extends HeadlessWxCallbackOption<TResult>, TResult>(
@@ -46,7 +49,7 @@ function resolveCapabilityValue(source: Record<string, any>, schema: string) {
   return current
 }
 
-export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
+export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<Console, 'debug' | 'info' | 'log' | 'warn'> = console): HeadlessWx {
   const eventBus = createHeadlessUniEventBus()
   const rpx2px = (value: number) => {
     const width = driver.getWindowInfoSync().windowWidth
@@ -70,6 +73,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getImageInfo: { return: { errMsg: true, height: true, orientation: true, path: true, type: true, width: true } },
     getLocation: { return: { accuracy: true, altitude: true, errMsg: true, horizontalAccuracy: true, latitude: true, longitude: true, speed: true, verticalAccuracy: true } },
     getLocale: true,
+    getLogManager: { return: { debug: true, info: true, log: true, warn: true } },
     getFileInfo: { return: { digest: true, errMsg: true, size: true } },
     openDocument: { return: { errMsg: true } },
     getVideoInfo: { return: { bitrate: true, duration: true, errMsg: true, fps: true, height: true, orientation: true, size: true, type: true, width: true } },
@@ -99,7 +103,11 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     navigateBack: true,
     navigateTo: true,
     nextTick: true,
+    offAppHide: true,
+    offAppShow: true,
     offNetworkStatusChange: true,
+    onAppHide: true,
+    onAppShow: true,
     onNetworkStatusChange: true,
     pageScrollTo: true,
     previewImage: true,
@@ -229,6 +237,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     },
     getVideoInfo: option => invokeWxApi(() => driver.getVideoInfo(option), option),
     getFileSystemManager: () => driver.getFileSystemManager(),
+    getLogManager: () => createHeadlessLogManager(runtimeConsole),
     getSavedFileInfo: option => invokeWxApi(() => driver.getSavedFileInfo(option), option),
     getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
@@ -255,26 +264,30 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     hideLoading: option => invokeWxApi(() => driver.hideLoading(), option),
     hideToast: () => driver.hideToast(),
     downloadFile: option => driver.downloadFile(option),
-    navigateBack: option => invokeWxApi(() => {
-      driver.navigateBack(option)
-    }, option),
-    navigateTo: option => invokeWxApi(() => {
-      driver.navigateTo(option)
-    }, option),
+    navigateBack: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.navigateBack(deferred)
+    }, deferred)),
+    navigateTo: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.navigateTo(deferred!)
+    }, deferred)),
     nextTick: callback => driver.nextTick(callback),
+    offAppHide: callback => driver.offAppHide(callback),
+    offAppShow: callback => driver.offAppShow(callback),
     offNetworkStatusChange: callback => driver.offNetworkStatusChange(callback),
+    onAppHide: callback => driver.onAppHide(callback),
+    onAppShow: callback => driver.onAppShow(callback),
     onNetworkStatusChange: callback => driver.onNetworkStatusChange(callback),
     openDocument: option => invokeWxApi(() => driver.openDocument(option), option),
     pageScrollTo: option => invokeWxApi(() => {
       driver.pageScrollTo(option)
     }, option),
     previewImage: option => invokeWxApi(() => driver.previewImage(option), option),
-    reLaunch: option => invokeWxApi(() => {
-      driver.reLaunch(option)
-    }, option),
-    redirectTo: option => invokeWxApi(() => {
-      driver.redirectTo(option)
-    }, option),
+    reLaunch: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.reLaunch(deferred!)
+    }, deferred)),
+    redirectTo: option => runNavigationApi(driver, option, deferred => invokeWxApi(() => {
+      driver.redirectTo(deferred!)
+    }, deferred)),
     removeSavedFile: option => invokeWxApi(() => driver.removeSavedFile(option), option),
     saveImageToPhotosAlbum: option => invokeWxApi(() => driver.saveImageToPhotosAlbum(option), option),
     saveVideoToPhotosAlbum: option => invokeWxApi(() => driver.saveVideoToPhotosAlbum(option), option),
@@ -310,7 +323,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
     startPullDownRefresh: option => invokeWxApi(() => driver.startPullDownRefresh(), option),
     stopPullDownRefresh: () => driver.stopPullDownRefresh(),
-    switchTab: option => driver.switchTab(option),
+    switchTab: option => runNavigationApi(driver, option, deferred => driver.switchTab(deferred!)),
     uploadFile: option => driver.uploadFile(option),
     removeTabBarBadge: option => invokeWxApi(() => driver.removeTabBarBadge(option), option),
     setTabBarBadge: option => invokeWxApi(() => driver.setTabBarBadge(option), option),

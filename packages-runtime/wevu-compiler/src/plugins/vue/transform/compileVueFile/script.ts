@@ -1,5 +1,7 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1 } from '../../../../types/bindingManifest'
+import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { TemplateCompileResult } from '../../compiler/template'
@@ -7,6 +9,7 @@ import type { ComponentSourceInfo } from './componentSources'
 import type { AutoUsingComponentsOptions, CompileVueFileOptions } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { compileScript } from 'vue/compiler-sfc'
+import { createWevuRuntimeCapabilityMetadataFromBindingManifest } from '../../../../runtimeCapabilities'
 import { parseJsLike, traverse } from '../../../../utils/babel'
 import { composeSourceMaps } from '../../../../utils/sourcemap'
 import { createJsxDiagnostics } from '../../../jsx/compileJsx/diagnostics'
@@ -31,6 +34,9 @@ export interface ScriptPhaseResult {
   diagnostics?: CompilerDiagnostic[]
   bindingManifest?: WevuBindingManifestV1
   inlineExpressions?: TemplateCompileResult['inlineExpressions']
+  /** @internal */
+  componentStyleOptions?: ComponentStyleOptions
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   autoUsingComponentsMap: Record<string, string>
   autoComponentMeta: Record<string, string>
 }
@@ -267,6 +273,7 @@ export async function compileScriptPhase(
   precompiledScript?: CompiledScript,
   precomputedScriptPhaseInfo?: PrecomputedScriptPhaseInfo,
   originalSource?: string,
+  scriptPreprocessMap?: EncodedSourceMapLike | null,
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = { ...(componentSourceInfo?.autoUsingComponentsMap ?? {}) }
   const autoComponentMeta: Record<string, string> = { ...(componentSourceInfo?.autoComponentMeta ?? {}) }
@@ -276,7 +283,6 @@ export async function compileScriptPhase(
   )
 
   let scriptCode: string | undefined
-  let compiledScriptForMap: CompiledScript | undefined
   let scriptMap: EncodedSourceMapLike | null = null
   let propsAliases = options?.template?.propsAliases
   let propsDerivedKeys: string[] | undefined
@@ -286,7 +292,6 @@ export async function compileScriptPhase(
       id: generateScopedId(filename),
       isProd: false,
     })
-    compiledScriptForMap = scriptCompiled
     warnReservedScriptSetupProps(descriptorForCompile.scriptSetup?.content, options?.warn, {
       filename,
       scriptSetupStart: descriptorForCompile.scriptSetup?.loc.start,
@@ -300,8 +305,11 @@ export async function compileScriptPhase(
     propsDerivedKeys = hasPrecomputedScriptPhaseInfo(precomputedScriptPhaseInfo, 'propsDerivedKeys')
       ? precomputedScriptPhaseInfo.propsDerivedKeys
       : resolveEffectivePropsDerivedKeys(scriptCompiled.bindings as Record<string, any> | undefined, scriptCode)
-    scriptMap = options?.sourceMap !== false && scriptCompiled.map && typeof scriptCompiled.map === 'object'
-      ? scriptCompiled.map
+    const compiledScriptMap = options?.sourceMap !== false && scriptCompiled.map && typeof scriptCompiled.map === 'object'
+      ? scriptCompiled.map as EncodedSourceMapLike
+      : null
+    scriptMap = compiledScriptMap
+      ? composeSourceMaps(compiledScriptMap, scriptPreprocessMap)
       : null
 
     if (
@@ -333,7 +341,7 @@ export async function compileScriptPhase(
           : undefined
       remapJsxBindingManifestLocations(
         jsxTemplate.bindingManifest,
-        compiledScriptForMap?.map,
+        scriptMap,
         externalScriptBlock?.content ?? originalSource,
         externalScriptBlock?.src,
       )
@@ -368,6 +376,12 @@ export async function compileScriptPhase(
     const bindingManifest = jsxTemplate?.template
       ? jsxTemplate.bindingManifest
       : templateCompiled?.bindingManifest
+    const effectiveInlineExpressions = jsxTemplate?.template
+      ? jsxTemplate.inlineExpressions
+      : templateCompiled?.inlineExpressions
+    const runtimeCapabilities = bindingManifest
+      ? createWevuRuntimeCapabilityMetadataFromBindingManifest(bindingManifest)
+      : templateCompiled?.runtimeCapabilities
     const transformed = transformScript(jsxTransformed.code, {
       isTypeScript: descriptor.script?.lang === 'ts'
         || descriptor.script?.lang === 'tsx'
@@ -385,15 +399,17 @@ export async function compileScriptPhase(
       classStyleBindings: templateCompiled?.classStyleBindings,
       templateRefs: templateCompiled?.templateRefs,
       layoutHosts: templateCompiled?.layoutHosts,
-      inlineExpressions: templateCompiled?.inlineExpressions,
+      inlineExpressions: effectiveInlineExpressions,
       bindingManifest: isAppFile ? undefined : bindingManifest,
       autoSetDataPick: !isAppFile && options?.autoSetDataPick,
       runtimeBindingManifest: options?.runtimeBindingManifest,
       pageLayout: isAppFile ? undefined : options?.pageLayout,
+      runtimeCapabilities,
       functionPropPaths: templateCompiled?.functionPropPaths,
       propsAliases,
       propsDerivedKeys,
       cssModules: precomputedScriptPhaseInfo?.cssModules,
+      stabilizeCssVarsRuntime: options?.stabilizeCssVarsRuntime,
       relaxStructuredTypeOnlyProps,
       scopedSlotHostProperties: !isAppFile
         && options?.isPage !== true
@@ -409,6 +425,8 @@ export async function compileScriptPhase(
       diagnostics: jsxDiagnostics,
       bindingManifest,
       inlineExpressions: jsxTemplate?.inlineExpressions,
+      runtimeCapabilities: transformed.runtimeCapabilities,
+      componentStyleOptions: transformed.componentStyleOptions,
       autoUsingComponentsMap,
       autoComponentMeta,
     }

@@ -1,0 +1,25 @@
+{
+  "libVersion": "3.17.2",
+  "projectname": "wxml-transform",
+  "setting": {
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "native",
+          "pathName": "pages/native/index",
+          "query": "",
+          "launchMode": "default"
+        },
+        {
+          "name": "vue",
+          "pathName": "pages/vue/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

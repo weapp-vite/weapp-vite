@@ -2,16 +2,14 @@ import type { InternalRuntimeState, MethodDefinitions } from '../../types'
 import {
   WEVU_INLINE_HANDLER,
   WEVU_INLINE_MAP_KEY,
-  WEVU_JSX_ISLAND_HANDLER,
   WEVU_MODEL_HANDLER,
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_OWNER_HANDLER,
   WEVU_RESERVED_METHOD_PREFIX,
   WEVU_RUNTIME_KEY,
 } from '@weapp-core/constants'
+import { requireRuntimeCapability, runtimeCapabilityRegistry } from '../../capabilities'
 import { parseModelEventValue } from '../../internal'
-import { runJsxIslandHandler } from '../../jsxIsland'
-import { runInlineExpression } from '../inline'
 
 export function createComponentMethods(options: {
   userMethods: Record<string, (...args: any[]) => any>
@@ -22,13 +20,17 @@ export function createComponentMethods(options: {
     ...userMethods,
   }
 
-  if (!finalMethods[WEVU_INLINE_HANDLER]) {
-    finalMethods[WEVU_INLINE_HANDLER] = function __weapp_vite_inline(this: InternalRuntimeState, event: any) {
-      const runtime = (this as any).__wevu
-      const ctx = runtime?.proxy ?? this
-      const inlineMap = runtime?.methods?.[WEVU_INLINE_MAP_KEY]
-      return runInlineExpression(ctx, undefined, event, inlineMap)
-    }
+  const runtimeMethodRecord = (runtimeMethods ?? {}) as Record<string, unknown>
+  const inlineMap = runtimeMethodRecord[WEVU_INLINE_MAP_KEY]
+  const requiresInlineEvents = Object.prototype.hasOwnProperty.call(runtimeMethodRecord, WEVU_INLINE_MAP_KEY)
+    && inlineMap
+    && typeof inlineMap === 'object'
+    && Object.keys(inlineMap).length > 0
+  const inlineEvents = requiresInlineEvents
+    ? requireRuntimeCapability('inlineEvents', 'createComponentMethods(inline event metadata)')
+    : runtimeCapabilityRegistry.inlineEvents
+  if (!finalMethods[WEVU_INLINE_HANDLER] && inlineEvents) {
+    finalMethods[WEVU_INLINE_HANDLER] = inlineEvents.handler
   }
 
   if (!finalMethods[WEVU_MODEL_HANDLER]) {
@@ -52,11 +54,7 @@ export function createComponentMethods(options: {
     }
   }
 
-  if (!finalMethods[WEVU_JSX_ISLAND_HANDLER]) {
-    finalMethods[WEVU_JSX_ISLAND_HANDLER] = function __weapp_vite_jsx_island(this: InternalRuntimeState, event: any) {
-      return runJsxIslandHandler(this, event)
-    }
-  }
+  runtimeCapabilityRegistry.jsxIslands?.attachMethods(finalMethods)
 
   if (!finalMethods[WEVU_OWNER_HANDLER] && typeof (runtimeMethods as any)?.[WEVU_OWNER_HANDLER] === 'function') {
     finalMethods[WEVU_OWNER_HANDLER] = (runtimeMethods as any)[WEVU_OWNER_HANDLER]

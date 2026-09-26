@@ -1,13 +1,25 @@
 import type { InternalRuntimeState } from '../types'
-import { WEVU_HOOKS_KEY } from '@weapp-core/constants'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
+import { WEVU_CURRENT_SETUP_STATE_KEY, WEVU_HOOKS_KEY } from '@weapp-core/constants'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramRuntimeCapabilities, getMiniProgramRuntimeGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../platform'
 
-// 仅供同步 setup() 调用期间使用的当前实例引用
-let __currentInstance: InternalRuntimeState | undefined
-let __currentSetupContext: any | undefined
+// 仅供同步 setup() 调用期间使用的当前实例引用。wevu 的根入口与
+// `wevu/router` 可能被打包成多个模块副本，必须通过宿主全局共享状态。
+interface CurrentSetupState {
+  instance?: InternalRuntimeState
+  context?: any
+}
+
+const currentSetupState: CurrentSetupState = (() => {
+  // Web 会在模块加载后安装宿主 API；可用时优先使用稳定的执行域全局，
+  // 防止不同入口因导入时机不同而持有两份 setup 状态。
+  const host = typeof globalThis !== 'undefined'
+    ? globalThis as Record<string, any>
+    : getMiniProgramRuntimeGlobalObject()
+  return host ? host[WEVU_CURRENT_SETUP_STATE_KEY] ??= {} : {}
+})()
 
 export function getCurrentInstance<T extends InternalRuntimeState = InternalRuntimeState>(): T | undefined {
-  return __currentInstance as T | undefined
+  return currentSetupState.instance as T | undefined
 }
 
 /**
@@ -15,11 +27,11 @@ export function getCurrentInstance<T extends InternalRuntimeState = InternalRunt
  * @internal
  */
 export function setCurrentInstance(inst: InternalRuntimeState | undefined) {
-  __currentInstance = inst
+  currentSetupState.instance = inst
 }
 
 export function getCurrentSetupContext<T = any>(): T | undefined {
-  return __currentSetupContext as T | undefined
+  return currentSetupState.context as T | undefined
 }
 
 /**
@@ -27,14 +39,14 @@ export function getCurrentSetupContext<T = any>(): T | undefined {
  * @internal
  */
 export function setCurrentSetupContext(ctx: any | undefined) {
-  __currentSetupContext = ctx
+  currentSetupState.context = ctx
 }
 
 export function assertInSetup(name: string): InternalRuntimeState {
-  if (!__currentInstance) {
+  if (!currentSetupState.instance) {
     throw new Error(`${name}() 必须在 setup() 的同步阶段调用`)
   }
-  return __currentInstance
+  return currentSetupState.instance
 }
 
 function ensureHookBucket(target: InternalRuntimeState): Record<string, any> {
@@ -156,7 +168,7 @@ export function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
   if (!supportsCurrentMiniProgramRuntimeCapability('pageShareMenu')) {
     return
   }
-  const miniProgramGlobal = getMiniProgramGlobalObject()
+  const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
   if (!miniProgramGlobal || typeof miniProgramGlobal.showShareMenu !== 'function') {
     return
   }

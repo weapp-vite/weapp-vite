@@ -1,12 +1,12 @@
 import type { WatchStopHandle } from '../../../reactivity'
 import type {
   InternalRuntimeState,
-  MiniProgramAdapter,
   MiniProgramIntersectionObserverOptions,
   RuntimeInstance,
   SetupContextNativeInstance,
   TriggerEventOptions,
 } from '../../types'
+import type { AdapterWithSetData } from './utils'
 import {
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PROPS_KEY,
@@ -17,14 +17,9 @@ import { toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { isNativeBridgeMethod, markNativeBridgeMethod } from '../../nativeBridge'
 import { markNoSetData } from '../../noSetData'
-import { getCurrentMiniProgramRuntimeCapabilities, getMiniProgramGlobalObject, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
+import { getCurrentMiniProgramGlobalObject, getCurrentMiniProgramRuntimeCapabilities, supportsCurrentMiniProgramRuntimeCapability } from '../../platform'
 
 export { normalizeEmitPayload } from '../../emit'
-
-type AdapterWithSetData = Required<MiniProgramAdapter> & {
-  __wevu_enableSetData?: () => void
-  __wevu_setVisibility?: (visible: boolean) => void
-}
 
 export type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData' | 'setUpdatePerformanceListener'
 
@@ -269,7 +264,7 @@ export function ensureSetupContextInstance(
       return (nativeOwner as any).createSelectorQuery()
     }
 
-    const miniProgramGlobal = getMiniProgramGlobalObject()
+    const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
     if (
       !supportsCurrentMiniProgramRuntimeCapability('globalCreateSelectorQuery')
       || !miniProgramGlobal
@@ -302,7 +297,7 @@ export function ensureSetupContextInstance(
         return (nativeOwner as any).createIntersectionObserver(options ?? {})
       }
 
-      const miniProgramGlobal = getMiniProgramGlobalObject()
+      const miniProgramGlobal = getCurrentMiniProgramGlobalObject()
       if (
         !supportsCurrentMiniProgramRuntimeCapability('globalCreateIntersectionObserver')
         || !miniProgramGlobal

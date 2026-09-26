@@ -1,15 +1,31 @@
 import type { MutableCompilerContext } from '../../context'
 import type { AutoRoutes } from '../../types/routes'
 import type { CandidateEntry } from './candidates'
+import type { ScanRoutesOptions } from './routes'
 import type { AutoRoutesFileEvent } from './watch'
+import { fs } from '@weapp-core/shared/fs'
+import { mayContainPageDeclaration } from 'wevu/compiler'
 import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { requireConfigService } from '../utils/requireConfigService'
 import { cloneCandidate, collectCandidates } from './candidates'
-import { cloneRoutes, scanRoutes, updateRoutesReference } from './routes'
-import { removePersistentCache, removeTypedRouterDefinition, restorePersistentCache, writePersistentCache, writeTypedRouterDefinition } from './service/persistence'
-import { resetAutoRoutesState, updateWatchTargets } from './service/shared'
+import { cloneRoutes, createAutoRoutesTopologyKey, scanRoutes, updateRoutesReference } from './routes'
+import {
+  removePersistentCache,
+  removeTypedRouterDefinition,
+  restorePersistentCache,
+  writePersistentCache,
+  writeTypedRouterDefinition,
+} from './service/persistence'
+import {
+  resetAutoRoutesState,
+  updatePageDeclarationDependencies,
+  updateWatchTargets,
+} from './service/shared'
 import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 import { matchesRouteFile, updateCandidateFromFile } from './watch'
+
+type PageDeclarationSourceResolver = NonNullable<ScanRoutesOptions['resolvePageDeclarationSource']>
 
 export interface AutoRoutesService {
   ensureFresh: () => Promise<void>
@@ -18,9 +34,17 @@ export interface AutoRoutesService {
   getReference: () => AutoRoutes
   getSignature: () => string
   getModuleCode: () => string
+  getNamedModuleCode: () => string
   getWatchFiles: () => Iterable<string>
   getWatchDirectories: () => Iterable<string>
+  /** 返回声明源对应的全部逻辑页面源文件。 */
+  getPageDeclarationOwners: (filePath: string) => Iterable<string>
   isRouteFile: (filePath: string) => boolean
+  isPageSource: (filePath: string) => boolean
+  /** 判断文件是否属于逻辑页面声明或其外部脚本依赖。 */
+  isPageDeclarationSource: (filePath: string) => boolean
+  /** 注册当前构建上下文已有的模块解析器。 */
+  setPageDeclarationSourceResolver: (resolve?: PageDeclarationSourceResolver) => void
   handleFileChange: (filePath: string, event?: AutoRoutesFileEvent) => Promise<boolean>
   isInitialized: () => boolean
   isEnabled: () => boolean
@@ -29,7 +53,9 @@ export interface AutoRoutesService {
 export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutesService {
   const state = ctx.runtimeState.autoRoutes
   let pendingScan: Promise<void> | undefined
+  let pendingRefresh: Promise<void> | undefined
   let lastWrittenTypedDefinition: string | undefined
+  let resolvePageDeclarationSource: PageDeclarationSourceResolver | undefined
   let mutationVersion = 0
 
   function flagDirty() {
@@ -57,6 +83,31 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
   function markNeedsFullRescan() {
     state.needsFullRescan = true
+  }
+
+  async function mayChangePageDeclaration(sourcePath: string) {
+    if (!state.pageSourceFiles.has(sourcePath)) {
+      return false
+    }
+    if (state.namedRouteSourceFiles.has(sourcePath)) {
+      return true
+    }
+    try {
+      const source = await fs.readFile(sourcePath, 'utf8')
+      return mayContainPageDeclaration(source)
+    }
+    catch {
+      return true
+    }
+  }
+
+  function getPageDeclarationOwners(filePath: string) {
+    const sourcePath = normalizeFsResolvedId(filePath)
+    const dependencyOwners = state.pageDeclarationDependencies.get(sourcePath)
+    if (dependencyOwners) {
+      return [...dependencyOwners]
+    }
+    return state.pageSourceFiles.has(sourcePath) ? [sourcePath] : []
   }
 
   async function ensureCandidateRegistry(): Promise<boolean> {
@@ -97,9 +148,16 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     return true
   }
 
-  async function ensureFresh() {
+  async function refresh() {
     if (!isEnabled()) {
-      if (state.dirty || !state.initialized || state.routes.pages.length > 0 || state.routes.entries.length > 0 || state.routes.subPackages.length > 0) {
+      if (
+        state.dirty
+        || !state.initialized
+        || state.routes.pages.length > 0
+        || state.routes.entries.length > 0
+        || state.routes.subPackages.length > 0
+        || state.namedRoutes.length > 0
+      ) {
         resetState()
       }
       const removed = await removeTypedRouterDefinition(ctx)
@@ -114,40 +172,94 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       await removePersistentCache(ctx)
     }
 
+    let registryUpdated = false
     if (!state.initialized && state.needsFullRescan) {
-      const restored = await restorePersistentCache(ctx, state)
-      if (restored) {
+      registryUpdated = await ensureCandidateRegistry()
+      const topologyKey = createAutoRoutesTopologyKey(
+        ctx,
+        state.candidates as Map<string, CandidateEntry>,
+      )
+      const restoreVersion = mutationVersion
+      const isRestoreCurrent = () => {
+        return mutationVersion === restoreVersion
+          && topologyKey === createAutoRoutesTopologyKey(
+            ctx,
+            state.candidates as Map<string, CandidateEntry>,
+          )
+      }
+      const restored = await restorePersistentCache(
+        ctx,
+        state,
+        topologyKey,
+        isRestoreCurrent,
+        Boolean(resolvePageDeclarationSource),
+      )
+      if (restored && isRestoreCurrent()) {
         lastWrittenTypedDefinition = await writeTypedRouterDefinition(ctx, state.typedDefinition, lastWrittenTypedDefinition)
-        return
+        if (isRestoreCurrent()) {
+          return
+        }
       }
     }
 
-    const registryUpdated = await ensureCandidateRegistry()
+    if (!registryUpdated) {
+      registryUpdated = await ensureCandidateRegistry()
+    }
     if (registryUpdated) {
       flagDirty()
     }
-
     if (!state.dirty) {
       await (pendingScan ?? Promise.resolve())
-      lastWrittenTypedDefinition = await writeTypedRouterDefinition(ctx, state.typedDefinition, lastWrittenTypedDefinition)
+      if (!state.dirty) {
+        lastWrittenTypedDefinition = await writeTypedRouterDefinition(
+          ctx,
+          state.typedDefinition,
+          lastWrittenTypedDefinition,
+        )
+      }
       return
     }
 
     while (state.dirty) {
       if (!pendingScan) {
         const versionSnapshot = mutationVersion
-        pendingScan = scanRoutes(ctx, state.candidates as Map<string, CandidateEntry>)
+        pendingScan = scanRoutes(
+          ctx,
+          state.candidates as Map<string, CandidateEntry>,
+          { resolvePageDeclarationSource },
+        )
           .then((result) => {
+            if (mutationVersion !== versionSnapshot) {
+              return
+            }
             updateRoutesReference(state.routes, result.snapshot)
+            state.namedRoutes = result.namedRoutes
             state.serialized = result.serialized
             state.moduleCode = result.moduleCode
+            state.namedModuleCode = result.namedModuleCode
+            state.signature = result.signature
             state.typedDefinition = result.typedDefinition
+            state.topologyKey = result.topologyKey
+            updatePageDeclarationDependencies(
+              state.pageDeclarationDependencies,
+              result.pageDeclarationDependencies,
+            )
+            state.pageDeclarationFingerprints.clear()
+            for (const [sourceFile, fingerprint] of result.pageDeclarationFingerprints) {
+              state.pageDeclarationFingerprints.set(sourceFile, fingerprint)
+            }
+            state.usesOpaquePageDeclarationResolver = result.usesOpaquePageDeclarationResolver
+            updateWatchTargets(state.pageSourceFiles, result.pageSourceFiles)
+            updateWatchTargets(state.namedRouteSourceFiles, result.namedRouteSourceFiles)
             updateWatchTargets(state.watchFiles, result.watchFiles)
             updateWatchTargets(state.watchDirs, result.watchDirs)
-            if (mutationVersion === versionSnapshot) {
-              state.dirty = false
-            }
+            state.dirty = false
             state.initialized = true
+          })
+          .catch((error: unknown) => {
+            if (mutationVersion === versionSnapshot) {
+              throw error
+            }
           })
           .finally(() => {
             pendingScan = undefined
@@ -155,9 +267,28 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       }
 
       await pendingScan
-      lastWrittenTypedDefinition = await writeTypedRouterDefinition(ctx, state.typedDefinition, lastWrittenTypedDefinition)
+    }
+    const publicationVersion = mutationVersion
+    if (!state.dirty) {
+      lastWrittenTypedDefinition = await writeTypedRouterDefinition(
+        ctx,
+        state.typedDefinition,
+        lastWrittenTypedDefinition,
+      )
+    }
+    if (!state.dirty && mutationVersion === publicationVersion) {
       await writePersistentCache(ctx, state)
     }
+  }
+
+  async function ensureFresh() {
+    do {
+      // 扫描与产物发布共用一个所有者；写入期间的新变更必须随后发布。
+      pendingRefresh ??= refresh().finally(() => {
+        pendingRefresh = undefined
+      })
+      await pendingRefresh
+    } while (state.dirty)
   }
 
   return {
@@ -179,11 +310,15 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     },
 
     getSignature() {
-      return state.serialized
+      return state.signature
     },
 
     getModuleCode() {
       return state.moduleCode
+    },
+
+    getNamedModuleCode() {
+      return state.namedModuleCode
     },
 
     getWatchFiles() {
@@ -194,15 +329,38 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return state.watchDirs.values()
     },
 
+    getPageDeclarationOwners(filePath: string) {
+      return isEnabled() ? getPageDeclarationOwners(filePath) : []
+    },
+
     isRouteFile(filePath: string) {
-      return isEnabled() && matchesRouteFile(ctx, filePath)
+      return isEnabled()
+        && (getPageDeclarationOwners(filePath).length > 0 || matchesRouteFile(ctx, filePath))
+    },
+
+    isPageSource(filePath: string) {
+      const sourcePath = normalizeFsResolvedId(filePath)
+      return isEnabled() && state.pageSourceFiles.has(sourcePath)
+    },
+
+    isPageDeclarationSource(filePath: string) {
+      return isEnabled() && getPageDeclarationOwners(filePath).length > 0
+    },
+
+    setPageDeclarationSourceResolver(resolve?: PageDeclarationSourceResolver) {
+      resolvePageDeclarationSource = resolve
     },
 
     async handleFileChange(filePath: string, event?: AutoRoutesFileEvent) {
       if (!isEnabled()) {
         return false
       }
-
+      const sourcePath = normalizeFsResolvedId(filePath)
+      if (state.pageDeclarationDependencies.has(sourcePath)) {
+        flagDirty()
+        await ensureFresh()
+        return true
+      }
       if (!matchesRouteFile(ctx, filePath)) {
         return false
       }
@@ -214,10 +372,14 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
         event,
         markNeedsFullRescan,
       )
-      if (!changed && !state.needsFullRescan) {
+      if (
+        !changed
+        && !state.needsFullRescan
+        && !state.dirty
+        && !await mayChangePageDeclaration(sourcePath)
+      ) {
         return false
       }
-
       flagDirty()
       await ensureFresh()
       return true

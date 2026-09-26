@@ -1,0 +1,16 @@
+{
+  "libVersion": "3.17.2",
+  "projectname": "issue-1029",
+  "setting": {
+    "urlCheck": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "Typed home", "pathName": "pages/home/index", "query": "", "launchMode": "default" },
+        { "name": "Named subpackage", "pathName": "subpackages/account/pages/profile/index", "query": "", "launchMode": "default" },
+        { "name": "Unannotated page", "pathName": "pages/legacy/index", "query": "", "launchMode": "default" }
+      ]
+    }
+  }
+}

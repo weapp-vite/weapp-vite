@@ -61,8 +61,7 @@ describe('platform build verification gate', { concurrent: false }, () => {
     }
   })
 
-  it.each(BUILD_VERIFICATION_CAPABILITIES)('emits the $id runtime marker for wevu', async ({
-    id,
+  it.each(BUILD_VERIFICATION_CAPABILITIES)('specializes the $id runtime for wevu', async ({
     expectation: { platform, runtimeGlobal, styleExt, templateExt },
   }) => {
     const outputRoot = path.join(WEVU_APP_ROOT, 'dist')
@@ -76,11 +75,12 @@ describe('platform build verification gate', { concurrent: false }, () => {
 
     const runtimeChunk = await findWevuSemanticChunk(
       outputRoot,
-      code => code.includes('"MP_PLATFORM"') && code.includes(`"${platform}"`),
+      code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
       `${platform} platform runtime`,
     )
-    expect(runtimeChunk.code).toMatch(new RegExp(`["']MP_PLATFORM["']:\\s*["']${id}["']`))
-    expect(runtimeChunk.code).toMatch(new RegExp(`\\.${runtimeGlobal}\\b|["']${runtimeGlobal}["']`))
+    expect(runtimeChunk.code).toMatch(new RegExp(`(?:\\.${runtimeGlobal}\\b|typeof\\s+${runtimeGlobal}\\b)`))
+    expect(runtimeChunk.code.includes('didMount')).toBe(platform === 'alipay')
+    expect(runtimeChunk.code.includes('didUnmount')).toBe(platform === 'alipay')
   })
 
   it('builds the Alipay native, Vue SFC, SJS, and antd-mini integration', async () => {
@@ -119,7 +119,20 @@ describe('platform build verification gate', { concurrent: false }, () => {
     }
     expect(vueTemplate).toContain('onTap="__weapp_vite_inline"')
     expect(vueTemplate).toContain('a:if=')
+    const vueStyle = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.acss'), 'utf8')
+    const scope = /\b(data-v-[\w-]+)=""/.exec(vueTemplate)?.[1]
+    expect(scope).toBeTruthy()
+    expect(vueTemplate).toContain(`class="page ${scope}"`)
+    expect(vueTemplate).toMatch(new RegExp(`class="[^"\\n]*\\}\\} ${scope}"`))
+    expect(vueStyle).toContain(`.page.${scope}`)
+    expect(vueStyle).toContain(`.panel.odd.${scope}`)
+    expect(vueStyle).not.toMatch(/\[data-v-/)
     expect(vueConfig.usingComponents?.['ant-button']).toBe('/node_modules/antd-mini/es/Button/index')
+    expect(vueConfig.usingComponents?.['wevu-counter']).toBeTruthy()
+    expect(vueTemplate).toContain('onChange="__weapp_vite_inline"')
+    for (const extension of ['axml', 'json', 'js']) {
+      expect(await fs.pathExists(path.join(outputRoot, `components/WevuCounter/index.${extension}`))).toBe(true)
+    }
 
     const antdButtonRoot = path.join(outputRoot, 'node_modules/antd-mini/es/Button')
     expect(await fs.pathExists(path.join(antdButtonRoot, 'index.axml'))).toBe(true)
@@ -128,11 +141,12 @@ describe('platform build verification gate', { concurrent: false }, () => {
 
     const runtimeChunk = await findWevuSemanticChunk(
       outputRoot,
-      code => code.includes('"MP_PLATFORM"') && code.includes('"alipay"'),
+      code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
       'alipay demo runtime',
     )
-    expect(runtimeChunk.code).toMatch(/["']MP_PLATFORM["']:\s*["']alipay["']/)
-    expect(runtimeChunk.code).toMatch(/\?\.my\b|\.my\b|["']my["']/)
+    expect(runtimeChunk.code).toMatch(/(?:\.my\b|typeof\s+my\b)/)
+    expect(runtimeChunk.code).toContain('didMount')
+    expect(runtimeChunk.code).toContain('didUnmount')
   })
 
   it('builds the Douyin native, Vue SFC, WXS, subpackage, and npm integration', async () => {
@@ -175,13 +189,21 @@ describe('platform build verification gate', { concurrent: false }, () => {
     const vueTemplate = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.ttml'), 'utf8')
     expect(vueTemplate).toMatch(/bind:?tap="__weapp_vite_inline"/)
     expect(vueTemplate).toMatch(/bind:?confirm="__weapp_vite_inline"/)
+    const vueStyle = await fs.readFile(path.join(outputRoot, 'pages/wevu/index.ttss'), 'utf8')
+    const scope = /\b(data-v-[\w-]+)=""/.exec(vueTemplate)?.[1]
+    expect(scope).toBeTruthy()
+    expect(vueTemplate).toContain(`class="page ${scope}"`)
+    expect(vueStyle).toContain(`.page.${scope}`)
+    expect(vueStyle).toContain(`.title.${scope}`)
+    expect(vueStyle).not.toMatch(/\[data-v-/)
 
     const runtimeChunk = await findWevuSemanticChunk(
       outputRoot,
-      code => code.includes('"MP_PLATFORM"') && code.includes('"tt"'),
+      code => code.includes('__wevu_runtime') && code.includes('__wevu_options'),
       'douyin demo runtime',
     )
-    expect(runtimeChunk.code).toMatch(/["']MP_PLATFORM["']:\s*["']tt["']/)
-    expect(runtimeChunk.code).toMatch(/\?\.tt\b|\.tt\b|["']tt["']/)
+    expect(runtimeChunk.code).toMatch(/(?:\.tt\b|typeof\s+tt\b)/)
+    expect(runtimeChunk.code).not.toContain('didMount')
+    expect(runtimeChunk.code).not.toContain('didUnmount')
   })
 })

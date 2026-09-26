@@ -1,6 +1,7 @@
 import type { TransformState } from './utils'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWevuInternalImportModuleId, WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from '../../../../constants'
+import { WE_VU_RUNTIME_CAPABILITY_INSTALLERS } from '../../../../runtimeCapabilities'
 import { ensureRuntimeImport } from '../scriptRuntimeImport'
 
 const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
@@ -12,6 +13,7 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'createApp',
   'createWevuComponent',
   'createWevuScopedSlotComponent',
+  ...Object.values(WE_VU_RUNTIME_CAPABILITY_INSTALLERS),
   'customRef',
   'defineAppSetup',
   'defineComponent',
@@ -126,6 +128,7 @@ const INTERNAL_RUNTIME_VALUE_EXPORTS = new Set([
   'useAttrs',
   'useCssModule',
   'useCssVars',
+  'useAsyncDerivation',
   'useAsyncPullDownRefresh',
   'useBindModel',
   'useBoundingClientRect',
@@ -240,6 +243,7 @@ export function createImportVisitors(program: t.Program, state: TransformState) 
           'mergeProps',
           'resolveComponent',
           'resolveDirective',
+          'unref',
           'useAttrs',
           'useCssModule',
           'useCssVars',
@@ -258,6 +262,7 @@ export function createImportVisitors(program: t.Program, state: TransformState) 
         // 将 Vue SFC 编译产物中的部分 Vue runtime API 迁移到 wevu：
         // - defineSlots() => useSlots()
         // - defineModel() => useModel()/mergeModels()
+        // - CSS v-bind() => useCssVars()/unref()
         // - useAttrs()/useSlots()（用户手动导入）
         const movedSpecifiers: Array<{ importedName: string, localName: string }> = []
 

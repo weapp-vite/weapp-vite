@@ -1,5 +1,12 @@
 <view class="page">
   <view id="api-ref" class="anchor">composition api anchor</view>
   <view class="title">wevu composition api e2e</view>
-  <text class="result">{{__e2eText}}</text>
+    <view id="composition-reactive">reactive: {{reactiveState.count}} / {{reactiveState.nested.value}}</view>
+    <view id="composition-derived">computed: {{derived}}</view>
+    <view id="composition-custom">custom: {{custom}}</view>
+    <view id="composition-form">form: {{form.title}}</view>
+    <view id="composition-model">model: {{modelRef}}</view>
+    <view id="composition-store">store: {{storeCount}}</view>
+    <view id="composition-lifecycle">beforeUnmount callbacks: {{beforeUnmountCallbacks}}</view>
+    <text class="result">{{__e2eText}}</text>
 </view>

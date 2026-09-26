@@ -49,7 +49,7 @@ export function mergeMatchedRouteMeta(matchedRecords: readonly RouteRecordNormal
       continue
     }
     if (!mergedRouteMeta) {
-      mergedRouteMeta = {}
+      mergedRouteMeta = Object.create(null) as RouteMeta
     }
     Object.assign(mergedRouteMeta, matchedRecord.meta)
   }

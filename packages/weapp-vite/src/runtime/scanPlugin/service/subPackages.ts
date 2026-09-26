@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../../context'
 import type { SubPackage, SubPackageMetaValue } from '../../../types'
 import { normalizeRoot } from '../../../utils/path'
+import { resolveSubPackageIndependent } from '../../appConfig'
 import { requireConfigService } from '../../utils/requireConfigService'
 import { normalizeMainPackageStyleEntries, normalizeSubPackageStyleEntries } from '../styleEntries'
 import { resolveSubPackageEntries } from '../subpackages'
@@ -31,7 +32,7 @@ export function loadSubPackages(ctx: MutableCompilerContext) {
         const normalizedRoot = subPackage.root ? normalizeRoot(subPackage.root) : undefined
         const subPackageConfig = normalizedRoot ? configService.weappViteConfig?.subPackages?.[normalizedRoot] : undefined
         const npmSubPackageConfig = normalizedRoot ? configService.weappViteConfig?.npm?.subPackages?.[normalizedRoot] : undefined
-        const independent = subPackage.independent ?? subPackageConfig?.independent
+        const independent = resolveSubPackageIndependent(subPackage, subPackageConfig)
         const resolvedSubPackage = {
           ...subPackage,
           ...(normalizedRoot ? { root: normalizedRoot } : {}),

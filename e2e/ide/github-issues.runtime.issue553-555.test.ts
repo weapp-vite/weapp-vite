@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callCurrentPageMethod,
   closeSharedMiniProgram,
@@ -12,6 +13,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { ISSUE553, ISSUE555 } from './githubIssuesDom/modelsAndSlots'
 
 async function readDistWxml(...segments: string[]) {
   return await fs.readFile(path.join(DIST_ROOT, ...segments), 'utf8')
@@ -49,6 +51,7 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
   })
 
   it('issue #553: keeps component v-model arguments separate in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE553)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-553/index', undefined, 20_000, {
@@ -80,8 +83,14 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
       expect(pageWxml).toContain('bind:update-modelvalue="__weapp_vite_inline"')
       expect(childWxml).toContain('child abc = {{abcModel}}')
       expect(childWxml).toContain('child model = {{defaultModel}}')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
 
-      expect(await callCurrentPageMethod(miniProgram, 'triggerChildAbcE2E')).toBe(true)
+      const probe = await issuePage.$('#issue553-probe', { fallback: false, timeout: 5_000 })
+      const updateAbc = await probe?.$('#issue553-update-abc', { timeout: 5_000 })
+      if (!updateAbc) {
+        throw new Error('Missing issue-553 child abc control')
+      }
+      await updateAbc.tap()
       expect(await waitForPageRuntime(miniProgram, {
         abc: 'abc-from-child',
         modelValue: 'model-seed',
@@ -89,8 +98,13 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
         abc: 'abc-from-child',
         modelValue: 'model-seed',
       })
+      await dom.check('abc', await getSharedMiniProgram(ctx), issuePage)
 
-      expect(await callCurrentPageMethod(miniProgram, 'triggerChildModelE2E')).toBe(true)
+      const updateModel = await probe?.$('#issue553-update-model', { timeout: 5_000 })
+      if (!updateModel) {
+        throw new Error('Missing issue-553 child default model control')
+      }
+      await updateModel.tap()
       expect(await waitForPageRuntime(miniProgram, {
         abc: 'abc-from-child',
         modelValue: 'model-from-child',
@@ -98,6 +112,7 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
         abc: 'abc-from-child',
         modelValue: 'model-from-child',
       })
+      await dom.check('model', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -105,6 +120,7 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
   })
 
   it('issue #555: renders and toggles v-if named slot content in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE555)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-555/index', undefined, 20_000, {
@@ -128,6 +144,7 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
       expect(pageWxml).toContain('wx:if="{{value}}"')
       expect(pageWxml).toContain('data-probe="conditional-text"')
       expect(pageWxml).toContain('slot="text"')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
 
       await callCurrentPageMethod(miniProgram, 'toggleValue')
       expect(await waitForPageRuntime(miniProgram, {
@@ -135,6 +152,7 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
       })).toMatchObject({
         value: '',
       })
+      await dom.check('hidden', await getSharedMiniProgram(ctx), issuePage)
 
       await callCurrentPageMethod(miniProgram, 'toggleValue')
       expect(await waitForPageRuntime(miniProgram, {
@@ -142,6 +160,7 @@ describe('e2e app: github-issues / issues #553 and #555', { concurrent: false },
       })).toMatchObject({
         value: 'issue-555 conditional slot text',
       })
+      await dom.check('restored', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

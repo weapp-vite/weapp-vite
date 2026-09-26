@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { Moment } from '../api/types'
 import { onMounted, ref } from 'vue'
 import { loadMomentsWithFetch } from '../api/fetch'
-import type { Moment } from '../api/types'
 
 const moments = ref<Moment[]>([])
 const refreshedAt = ref(0)

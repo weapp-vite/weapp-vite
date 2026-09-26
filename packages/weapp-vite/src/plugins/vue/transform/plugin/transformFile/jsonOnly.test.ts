@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createModuleGraphService } from '../../../../../moduleGraph'
+import { createRuntimeState } from '../../../../../runtime/runtimeState'
 import { transformVueLikeFile } from '../transformFile'
 import { tryRefreshJsonOnlyVueCompilation } from './jsonOnly'
 
@@ -61,7 +62,12 @@ definePageJson({ navigationBarTitleText: '旧标题' })
 </script>
 <template><view /></template>`
   const nextSource = previousSource.replace('旧标题', '新标题')
-  const dirtyVueEntryIds = new Set([filename])
+  const runtimeState = createRuntimeState()
+  runtimeState.scan.isDirty = false
+  const { dirtyVueEntryIds } = runtimeState.build.hmr
+  dirtyVueEntryIds.add(filename)
+  runtimeState.build.hmr.profile.eventId = 'hmr-json-1'
+  runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-json-only:1']
   const compilationCache = new Map<string, any>([
     [filename, {
       result: {
@@ -97,23 +103,7 @@ definePageJson({ navigationBarTitleText: '旧标题' })
           relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
           weappViteConfig: {},
         },
-        runtimeState: {
-          scan: { isDirty: false },
-          build: {
-            hmr: {
-              dirtyVueEntryIds,
-              vueEntryHasTemplate: new Map(),
-              vueEntrySfcSignatures: new Map(),
-              vueEntryTailwindContentSignatures: new Map(),
-              vueEntryTailwindTemplateContentSignatures: new Map(),
-              vueEntryTailwindScriptContentSignatures: new Map(),
-              profile: {
-                eventId: 'hmr-json-1',
-                dirtyReasonSummary: ['entry-json-only:1'],
-              },
-            },
-          },
-        },
+        runtimeState,
         autoImportService: { resolve: () => undefined },
       },
       pluginCtx: {

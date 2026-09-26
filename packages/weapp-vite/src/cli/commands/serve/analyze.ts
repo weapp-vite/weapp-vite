@@ -1,6 +1,8 @@
 import type { RolldownWatcher } from 'rolldown'
-import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { AnalyzeSubpackagesOptions, AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { CompilerContext } from '../../../context'
 import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput, DashboardRuntimeEventProfile, startAnalyzeDashboard } from '../../analyze/dashboard'
+import type { DashboardArtifactFiles } from '../../analyze/dashboardDevframe/artifacts'
 import type { RuntimeTargets } from '../../runtime'
 import type { GlobalCLIOptions } from '../../types'
 import fs from 'node:fs/promises'
@@ -13,6 +15,7 @@ import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '.
 import { createAnalyzeMetadata } from '../../../analyze/subpackages/metadata'
 import { createCompilerContext } from '../../../createContext'
 import logger from '../../../logger'
+import { createDashboardArtifactSnapshot } from '../../analyze/dashboardDevframe/artifacts'
 import { createInlineConfig } from '../../runtime'
 
 const REG_DIST_PAGE_ENTRY = /pages\/.+\/index\.js$/
@@ -81,13 +84,20 @@ function getCompressedSizes(content: Uint8Array) {
 
 export interface AnalyzeRunResult {
   result: AnalyzeSubpackagesResult
+  artifacts: DashboardArtifactFiles
   previousResult: AnalyzeSubpackagesResult | null
   durationMs: number
   mode: 'full' | 'fallback'
   fallbackReason?: string
 }
+interface AnalyzeUiFallbackOptions {
+  onArtifact?: AnalyzeSubpackagesOptions['onArtifact']
+}
 
-export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCompilerContext>>): Promise<AnalyzeSubpackagesResult> {
+export async function analyzeUiFallback(
+  ctx: CompilerContext,
+  options?: AnalyzeUiFallbackOptions,
+): Promise<AnalyzeSubpackagesResult> {
   const { configService, scanService } = ctx
   await scanService.loadAppEntry()
   const subPackageMetas = scanService.loadSubPackages()
@@ -135,18 +145,18 @@ export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCom
   for (const absoluteFile of absoluteFiles) {
     const relativeFile = path.relative(distRoot, absoluteFile).replace(REG_DIST_POSIX_SEP, '/')
     const packageInfo = classifyPackage(relativeFile)
-    const stat = await fs.stat(absoluteFile)
     const content = await fs.readFile(absoluteFile)
     const fileEntry = ensurePackage(packageInfo.id, packageInfo.type)
     fileEntry.files.push({
       file: relativeFile,
       type: relativeFile.endsWith('.js') ? 'chunk' : 'asset',
       from: packageInfo.type === 'independent' ? 'independent' : 'main',
-      size: stat.size,
+      size: content.byteLength,
       ...getCompressedSizes(content),
       isEntry: relativeFile === 'app.js' || REG_DIST_PAGE_ENTRY.test(relativeFile),
       source: relativeFile.endsWith('.js') ? undefined : relativeFile,
     })
+    options?.onArtifact?.(relativeFile, content)
   }
 
   return {
@@ -175,7 +185,7 @@ export async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCom
 
 export function createAnalyzeController(options: {
   configFile: string | undefined
-  ctx: Awaited<ReturnType<typeof createCompilerContext>>
+  ctx: CompilerContext
   options: GlobalCLIOptions
   targets: RuntimeTargets
 }) {
@@ -187,6 +197,20 @@ export function createAnalyzeController(options: {
   const runAnalyze = async (): Promise<AnalyzeRunResult> => {
     const startedAt = Date.now()
     const previousResult = await readLatestAnalyzeHistorySnapshot(configService)
+    const runFallback = async (fallbackReason: string): Promise<AnalyzeRunResult> => {
+      const artifactSnapshot = createDashboardArtifactSnapshot()
+      const result = await analyzeUiFallback(ctx, { onArtifact: artifactSnapshot.capture })
+      await writeAnalyzeHistorySnapshot(result, configService)
+      return {
+        result,
+        artifacts: artifactSnapshot.files,
+        previousResult,
+        durationMs: Date.now() - startedAt,
+        mode: 'fallback',
+        fallbackReason,
+      }
+    }
+
     try {
       const analyzeCtx = await createCompilerContext({
         key: `serve-ui-analyze:${process.pid}:${++analyzeRunId}`,
@@ -199,11 +223,13 @@ export function createAnalyzeController(options: {
         projectConfigPath: cliOptions.projectConfig,
         syncSupportFiles: false,
       })
-      const result = await analyzeSubpackages(analyzeCtx)
+      const artifactSnapshot = createDashboardArtifactSnapshot()
+      const result = await analyzeSubpackages(analyzeCtx, { onArtifact: artifactSnapshot.capture })
       if (hasAnalyzeData(result)) {
         await writeAnalyzeHistorySnapshot(result, configService)
         return {
           result,
+          artifacts: artifactSnapshot.files,
           previousResult,
           durationMs: Date.now() - startedAt,
           mode: 'full',
@@ -213,26 +239,10 @@ export function createAnalyzeController(options: {
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       logger.warn(`[ui] 完整分析失败，已回退到 dist 文件扫描：${message}`)
-      const result = await analyzeUiFallback(ctx)
-      await writeAnalyzeHistorySnapshot(result, configService)
-      return {
-        result,
-        previousResult,
-        durationMs: Date.now() - startedAt,
-        mode: 'fallback',
-        fallbackReason: message,
-      }
+      return runFallback(message)
     }
 
-    const result = await analyzeUiFallback(ctx)
-    await writeAnalyzeHistorySnapshot(result, configService)
-    return {
-      result,
-      previousResult,
-      durationMs: Date.now() - startedAt,
-      mode: 'fallback',
-      fallbackReason: '完整分析结果为空，已回退到 dist 文件扫描。',
-    }
+    return runFallback('完整分析结果为空，已回退到 dist 文件扫描。')
   }
 
   const triggerAnalyzeUpdate = async (reason: 'initial' | 'watch' = 'watch') => {
@@ -263,7 +273,7 @@ export function createAnalyzeController(options: {
         },
       ])
     }
-    await analyzeHandle.update(next.result, next.previousResult)
+    await analyzeHandle.update(next.result, next.artifacts, next.previousResult)
     emitDashboardEvents(analyzeHandle, [
       {
         kind: next.mode === 'fallback' ? 'diagnostic' : 'build',
@@ -281,11 +291,54 @@ export function createAnalyzeController(options: {
   }
 
   const bindWatcher = (buildResult: unknown) => {
-    let updating = false
+    // 首个 END 与显式初始化共用一次分析；忙时只保留一次读取最新状态的后续刷新。
+    let initialUpdatePromise: Promise<void> | undefined
+    let watchUpdatePending = false
+    let watchUpdatePromise: Promise<void> | undefined
+
+    const runInitialUpdate = () => {
+      initialUpdatePromise ??= triggerAnalyzeUpdate('initial')
+      return initialUpdatePromise
+    }
+    const runWatchUpdates = () => {
+      watchUpdatePending = true
+      if (!watchUpdatePromise) {
+        const running = (async () => {
+          await runInitialUpdate()
+          while (watchUpdatePending) {
+            watchUpdatePending = false
+            await triggerAnalyzeUpdate('watch')
+          }
+        })()
+        watchUpdatePromise = running
+        const releaseRunningUpdate = () => {
+          if (watchUpdatePromise !== running) {
+            return
+          }
+          watchUpdatePromise = undefined
+          if (watchUpdatePending) {
+            void runWatchUpdates()
+          }
+        }
+        void running.then(releaseRunningUpdate, releaseRunningUpdate)
+      }
+      return watchUpdatePromise
+    }
+
     if (analyzeHandle && buildResult && typeof (buildResult as RolldownWatcher).on === 'function') {
       const watcher = buildResult as RolldownWatcher
       watcher.on('event', (event) => {
-        if (event.code !== 'END' || updating) {
+        if (event.code === 'ERROR') {
+          emitDashboardEvents(analyzeHandle, [{
+            kind: 'diagnostic',
+            level: 'error',
+            title: 'mini hmr rebuild failed',
+            detail: event.error instanceof Error ? event.error.message : String(event.error),
+            tags: ['hmr', 'rebuild'],
+          }])
+          return
+        }
+        if (event.code !== 'END') {
           return
         }
         const recentProfiles = ctx.runtimeState.build.hmr.recentProfiles
@@ -293,20 +346,14 @@ export function createAnalyzeController(options: {
         if (hmrEvent) {
           emitDashboardEvents(analyzeHandle, [hmrEvent])
         }
-        updating = true
-        triggerAnalyzeUpdate('watch').finally(() => {
-          updating = false
-        })
+        if (!initialUpdatePromise) {
+          return runInitialUpdate()
+        }
+        return runWatchUpdates()
       })
     }
     return {
-      async runInitialUpdate() {
-        if (analyzeHandle) {
-          updating = true
-          await triggerAnalyzeUpdate('initial')
-          updating = false
-        }
-      },
+      runInitialUpdate,
     }
   }
 
@@ -318,9 +365,11 @@ export function createAnalyzeController(options: {
       const initialAnalyze = await runAnalyze()
       analyzeHandle = await startDashboard(initialAnalyze.result, {
         watch: true,
-        artifactRoot: configService.outDir,
+        artifacts: initialAnalyze.artifacts,
         cwd: configService.cwd,
         packageManagerAgent: configService.packageManager.agent,
+        pluginRoot: configService.absolutePluginRoot,
+        srcRoot: configService.absoluteSrcRoot,
         silentStartupLog: true,
         previousResult: initialAnalyze.previousResult,
         initialEvents: [

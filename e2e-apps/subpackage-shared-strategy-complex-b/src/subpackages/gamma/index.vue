@@ -15,7 +15,7 @@ onLoad(async () => {
 
 <template>
   <view id="complex-b-gamma">
-    <view>{{ gammaSummary }}</view>
-    <view>{{ lazySummary }}</view>
+    <view id="complex-b-gamma-sync">{{ gammaSummary }}</view>
+    <view id="complex-b-gamma-lazy">{{ lazySummary }}</view>
   </view>
 </template>

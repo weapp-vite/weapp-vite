@@ -1,10 +1,11 @@
 {
   "name": "@weapp-vite/dashboard",
   "type": "module",
-  "version": "7.0.4",
+  "version": "7.3.0",
   "description": "Optional analyze dashboard for weapp-vite",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -15,8 +16,13 @@
   },
   "keywords": [
     "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "analyze",
-    "dashboard"
+    "dashboard",
+    "vite"
   ],
   "weappViteDashboard": {
     "devRoot": ".",
@@ -49,7 +55,10 @@
   "devDependencies": {
     "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "catalog:",
+    "@types/d3": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "d3": "catalog:",
+    "devframe": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vite": "catalog:",

@@ -1,3 +1,4 @@
+/* global Behavior */
 module.exports = Behavior({
   data: {
     skylineRender: false,

@@ -1,5 +1,7 @@
 /* eslint-disable ts/no-use-before-define -- 递归表达式解释器的求值 helper 会互相调用。 */
 import { parseExpression } from '@babel/parser'
+import { isTemplateExpression } from './templateInterpolation'
+import { callWxsFunction } from './wxs'
 
 type ExpressionNode = Record<string, any>
 
@@ -7,14 +9,9 @@ const expressionCache = new Map<string, ExpressionNode | null>()
 const BLOCKED_MEMBER_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 const NUMERIC_DOT_PATH_RE = /\.(\d+)(?=[.[\s,}\]]|$)/g
 
-function isMustacheOnly(value: string) {
-  const trimmed = value.trim()
-  return trimmed.startsWith('{{') && trimmed.endsWith('}}') && !trimmed.includes('{{', 2)
-}
-
 function unwrapMustacheExpression(expression: string) {
   const normalized = expression.trim()
-  if (isMustacheOnly(normalized)) {
+  if (isTemplateExpression(normalized)) {
     return normalized.slice(2, -2).trim()
   }
   return normalized
@@ -181,6 +178,21 @@ function evaluateTemplateLiteral(node: ExpressionNode, source: Record<string, an
   return result
 }
 
+function evaluateCallExpression(node: ExpressionNode, source: Record<string, any>) {
+  const member = node.callee?.type === 'MemberExpression' || node.callee?.type === 'OptionalMemberExpression'
+  const receiver = member ? evaluateExpressionNode(node.callee.object, source) : undefined
+  const key = member ? resolveMemberKey(node.callee, source) : undefined
+  const fn = member
+    ? receiver != null && (typeof key === 'string' || typeof key === 'number') && !BLOCKED_MEMBER_KEYS.has(String(key))
+      ? receiver[key]
+      : undefined
+    : evaluateExpressionNode(node.callee, source)
+  const args = (node.arguments ?? []).flatMap((argument: ExpressionNode) => argument.type === 'SpreadElement'
+    ? evaluateExpressionNode(argument.argument, source)
+    : [evaluateExpressionNode(argument, source)])
+  return callWxsFunction(fn, receiver, args)
+}
+
 function evaluateExpressionNode(node: ExpressionNode | null | undefined, source: Record<string, any>): any {
   if (!node) {
     return undefined
@@ -197,6 +209,9 @@ function evaluateExpressionNode(node: ExpressionNode | null | undefined, source:
     case 'MemberExpression':
     case 'OptionalMemberExpression':
       return readMemberValue(node, source)
+    case 'CallExpression':
+    case 'OptionalCallExpression':
+      return evaluateCallExpression(node, source)
     case 'UnaryExpression':
       return evaluateUnaryExpression(node, source)
     case 'BinaryExpression':

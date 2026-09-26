@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
@@ -12,6 +13,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { ISSUE642_BUG8 } from './githubIssuesDom/scopedSlots'
 
 const ISSUE_642_BUG8_ROUTE = '/pages/issue-642-bug8/index'
 const ISSUE_642_BUG8_ROUTE_METHOD_OPTIONS = {
@@ -87,6 +89,7 @@ describe('e2e app: github-issues / issue #642 bug-8', { concurrent: false }, () 
   })
 
   it('keeps scoped slot owner id when scoped slot component is nested through another component', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', ISSUE642_BUG8)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_642_BUG8_ROUTE, undefined, 45_000, {
@@ -132,6 +135,7 @@ describe('e2e app: github-issues / issue #642 bug-8', { concurrent: false }, () 
       expect(runtime.wrap.child.dataSlotOwnerId).toBe(runtime.wrap.owner.dataOwnerId)
       expect(runtime.wrap.child.propsSlotOwnerId).toBe(runtime.wrap.owner.dataOwnerId)
       await expectIssue642Bug8DistWxmlContract()
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

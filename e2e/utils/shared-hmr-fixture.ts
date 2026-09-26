@@ -28,7 +28,7 @@ export function resolveSharedHmrRelativeImports() {
 }
 
 export function resolveSharedHmrScriptModuleExt(platform: 'weapp' | 'alipay' | 'tt') {
-  return platform === 'weapp' ? 'wxs' : 'sjs'
+  return platform === 'alipay' ? 'sjs' : 'wxs'
 }
 
 export function buildSharedImportTemplate(marker: string) {
@@ -64,7 +64,7 @@ export function buildSharedHmrPageWxml(importTemplatePath: string, includeTempla
     '  <view class="title">HMR</view>',
     '  <template is="hmrSharedCard" data="{{ label: hmrShared.label() }}" />',
     '  <view class="summary">ok: {{__e2e.ok}}</view>',
-    '  <text class="details" selectable>{{__e2eText}}</text>',
+    '  <text class="details" user-select>{{__e2eText}}</text>',
     '</view>',
     '',
   ].join('\n')
@@ -75,8 +75,10 @@ export function buildOriginalHmrPageWxml() {
     '<view class="page">',
     '  <e2e-template-probe marker="HMR" storage-key="__weapp_vite_core_hmr_template_probe__" />',
     '  <view class="title">HMR</view>',
+    '  <view id="hmr-count">count: {{count}}</view>',
+    '  <view id="hmr-script">script: {{scriptName}}</view>',
     '  <view class="summary">ok: {{__e2e.ok}}</view>',
-    '  <text class="details" selectable>{{__e2eText}}</text>',
+    '  <text class="details" user-select>{{__e2eText}}</text>',
     '</view>',
     '',
   ].join('\n')

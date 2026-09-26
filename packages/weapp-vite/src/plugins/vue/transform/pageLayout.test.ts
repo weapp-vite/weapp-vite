@@ -71,6 +71,67 @@ definePageMeta({
     expect(layoutName).toBe('admin-dashboard')
   })
 
+  it('erases unused native macro imports without dropping runtime or side-effect imports', () => {
+    const result = injectNativePageLayoutRuntime(`
+import 'wevu'
+import { definePageMeta as unused, ref } from 'wevu'
+Page({ data: { count: ref(1).value } })
+`, '/project/src/pages/native.ts', undefined)
+    expect(result).not.toContain('definePageMeta')
+    expect(result).not.toContain('unused')
+    expect(result).toMatch(/import ['"]wevu['"]/)
+    expect(result).toMatch(/import \{ ref \} from ['"]wevu['"]/)
+  })
+
+  it('resolves a layout through a macro alias imported in the other SFC block', () => {
+    const source = `<script lang="ts">
+import { definePageMeta as pageMeta } from 'wevu'
+export default {}
+</script>
+<script setup lang="ts">
+pageMeta({ layout: 'AdminDashboard', route: { name: 'home' } })
+</script>`
+    expect(extractPageLayoutName(source, '/project/src/pages/cross-block.vue')).toBe('admin-dashboard')
+  })
+
+  it('does not treat a foreign module binding in the other SFC block as a global macro', () => {
+    const source = `<script lang="ts">
+import { definePageMeta } from 'other-library'
+export default {}
+</script>
+<script setup lang="ts">
+definePageMeta({ layout: 'AdminDashboard' })
+definePage({ name: 'home', meta: { layout: 'business-value' } })
+</script>`
+    expect(extractPageLayoutName(source, '/project/src/pages/shadowed.vue')).toBeUndefined()
+  })
+
+  it('shares discovered layout sources without sharing output paths across independent builds', async () => {
+    const projectRoot = await createTempProject()
+    const absoluteSrcRoot = path.join(projectRoot, 'src')
+    const layoutFile = path.join(absoluteSrcRoot, 'layouts/default.vue')
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
+    await fs.writeFile(layoutFile, '<template><slot /></template>')
+    const source = '<script setup>definePageMeta({ layout: "default" })</script>'
+    const filename = path.join(absoluteSrcRoot, 'packageB/pages/home/index.vue')
+    const mainConfig = {
+      absoluteSrcRoot,
+      weappViteConfig: {},
+      relativeOutputPath: (file: string) => path.relative(absoluteSrcRoot, file),
+    }
+    const childConfig = {
+      ...mainConfig,
+      relativeOutputPath: (file: string) => path.join('packageB/weapp-shared', path.relative(absoluteSrcRoot, file)),
+    }
+    const mainPlan = await resolvePageLayoutPlan(source, filename, mainConfig)
+    const childPlan = await resolvePageLayoutPlan(source, filename, childConfig)
+    const mainAgain = await resolvePageLayoutPlan(source, filename, mainConfig)
+    expect(mainPlan?.layouts[0]?.importPath).toBe('/layouts/default')
+    expect(childPlan?.layouts[0]?.importPath).toBe('/packageB/weapp-shared/layouts/default')
+    expect(childPlan?.layouts[0]?.file).toBe(layoutFile)
+    expect(mainAgain?.layouts[0]?.importPath).toBe('/layouts/default')
+  })
+
   it('extracts layout object with props from definePageMeta', () => {
     const layoutMeta = extractPageLayoutMeta(`
 <script setup lang="ts">
@@ -85,6 +146,7 @@ definePageMeta({
       source: titleRef.value,
     },
   },
+  route: { name: 'home', meta: { layout: 'business-layout', title: 'Route title' } },
 })
 </script>
     `.trim(), '/project/src/pages/index/index.vue')
@@ -102,6 +164,22 @@ definePageMeta({
         },
       },
     })
+  })
+
+  it('keeps imported layout metadata independent of route declarations', () => {
+    expect(extractPageLayoutName(`
+<script setup lang="ts">
+import { definePageMeta as pageMeta } from 'wevu'
+definePage({ name: 'home', meta: { layout: 'business-value' } })
+pageMeta({ layout: 'AdminDashboard' })
+</script>
+`, '/project/src/pages/index/index.vue')).toBe('admin-dashboard')
+    expect(extractPageLayoutName(`
+<script setup lang="ts">
+import { definePageMeta } from 'other-library'
+definePageMeta({ layout: 'foreign-layout' })
+</script>
+`, '/project/src/pages/index/index.vue')).toBeUndefined()
   })
 
   it('detects setPageLayout usage inside page source', () => {
@@ -606,8 +684,11 @@ Page({
   it('strips definePageMeta from native runtime code even when dynamic switching is disabled', () => {
     const result = injectNativePageLayoutRuntime(
       `
-definePageMeta({
+import 'wevu'
+import { definePageMeta as pageMeta } from 'wevu'
+pageMeta({
   layout: 'default',
+  route: { name: 'native-home', meta: { title: 'Business title' } },
 })
 
 Page({
@@ -633,6 +714,8 @@ Page({
 
     expect(result).toContain('Page({')
     expect(result).not.toContain('definePageMeta')
+    expect(result).not.toContain('pageMeta')
+    expect(result).toMatch(/import ['"]wevu['"]/)
     expect(result).not.toContain('__wevuSetPageLayout')
   })
 

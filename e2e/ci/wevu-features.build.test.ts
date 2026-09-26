@@ -3,6 +3,7 @@ import { fs } from '@weapp-core/shared/node'
 import { execa } from 'execa'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-features')
@@ -39,6 +40,12 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     expect(await fs.pathExists(sfcStylesPageWxssPath)).toBe(true)
     expect(await fs.pathExists(sfcStylesPageJsPath)).toBe(true)
 
+    for (const route of ['pages/query-detail/index', 'pages/query-list/index']) {
+      for (const extension of ['js', 'json', 'wxml']) {
+        expect(await fs.pathExists(path.join(DIST_ROOT, `${route}.${extension}`))).toBe(true)
+      }
+    }
+
     const appJson = await fs.readJson(appJsonPath)
     const indexWxml = await fs.readFile(indexWxmlPath, 'utf8')
     const indexJs = await fs.readFile(indexJsPath, 'utf8')
@@ -52,6 +59,8 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     expect(appJson.pages).toEqual([
       'pages/index/index',
       'pages/native-uses-vue/index',
+      'pages/query-detail/index',
+      'pages/query-list/index',
       'pages/router-coverage/index',
       'pages/router-coverage/main-target/index',
       'pages/router-dynamic/index',
@@ -358,8 +367,10 @@ describe('e2e app: wevu-features (build)', { concurrent: false }, () => {
     expect(useStorePageWxml).toContain('id="store-options-ref-write"')
     expect(useStorePageWxml).toContain('bindtap="__weapp_vite_inline"')
     expect(useStorePageWxml).toContain('data-wi-tap=')
-    expect(useStorePageJs).toContain('featureSetupCounter')
-    expect(useStorePageJs).toContain('featureOptionsCounter')
+    // Store 由多个入口共享，定义可能被构建器移至共享 chunk。
+    const storeOutput = await readJavaScriptOutput(DIST_ROOT)
+    expect(storeOutput.code).toContain('featureSetupCounter')
+    expect(storeOutput.code).toContain('featureOptionsCounter')
     expect(useStorePageJs).toContain('setupInc')
     expect(useStorePageJs).toContain('setupPatchObject')
     expect(useStorePageJs).toContain('optionsPatchFunction')

@@ -96,6 +96,8 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 插件项目先确认 `weapp.pluginRoot`，结构变化必须同时检查主应用 `dist/` 和插件 `dist-plugin/`；不要只验证 host 产物。
 - 状态保持 HMR 仅适用于微信小程序 WebView：需要 DevTools 服务端口、热重载和 `setting.compileHotReLoad: true`。实际 bundle 检测到 Skyline renderer 时，即使显式选择 stateful 也会输出官方兼容性警告、关闭项目私有配置中的热重载并降级 classic；切回 WebView 后不自动重新开启。JS/Vue 安全补丁可保留实例状态；CSS、资源、JSON、配置、边界不兼容或补丁失败时应接受完整构建回退。
 - Web runtime 只验证 Web 语义，不把它当成小程序真机等价环境；请求 globals、URL 和平台 API 兼容问题要分别在目标 runtime 验证。
+- Wevu 平台分支使用编译期常量 `import.meta.env.PLATFORM`（`weapp/alipay/tt/swan/jd/xhs/web`），由现有 `--platform` / `weapp.platform` 自动注入。发布包保留表达式供消费构建替换并删除非目标分支；独立工具链未提供目标时保留动态宿主探测。
+- 平台分支裁剪与能力裁剪分开判断：具名导入支持移除未使用模块，没有创建 router 时不引入首航 guard 状态机；SFC/JSX 根据 Binding Manifest 安装 JSX island 等所需能力，无需额外开关。公开动态工厂保留兼容安装，已使用的 API/fetch 保留动态跨平台 adapter。
 - 小程序单测不使用 jsdom；`@mpcore/test` 只暴露逻辑 WXML 树。测试产物必须通过 `weapp-vite/test` 交给 Vite/Rolldown emit，不能由适配器手写 bundle。
 - uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。

@@ -42,6 +42,11 @@ export async function flushIndependentOutputs(
   if (!independentState) {
     return
   }
+  for (const root of independentState.watchFiles?.keys() ?? []) {
+    if (!ctx.scanService.independentSubPackageMap.has(root)) {
+      independentState.watchFiles.delete(root)
+    }
+  }
   const pendingOutputs = independentState.pendingOutputs
   if (pendingOutputs.length === 0) {
     return

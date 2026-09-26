@@ -2,6 +2,25 @@
 
 这个文档聚焦在 weapp-vite 项目里最常见的 wevu 编写约束。
 
+## 自动裁剪
+
+平台分支通过编译期常量 `import.meta.env.PLATFORM` 裁剪，取值为 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs` 或 `web`。沿用 `--platform` / `weapp.platform` 选择目标，weapp-vite 会自动注入对应值，无需额外裁剪配置。Wevu 发布包保留平台表达式，由消费构建替换常量并移除非目标分支。
+
+平台专属逻辑可直接判断该常量，例如构建支付宝目标时只保留下面的支付宝分支：
+
+```ts
+if (import.meta.env.PLATFORM === 'alipay') {
+  console.info('支付宝目标')
+}
+else if (import.meta.env.PLATFORM === 'web') {
+  console.info('Web 目标')
+}
+```
+
+能力裁剪取决于实际使用：从 `wevu` 使用具名导入，编译器根据 Binding Manifest 按需安装 JSX island、ref、插槽和 layout 能力；没有创建 router 时不加载首航 guard 状态机。这些能力无需额外用户开关，也不由平台常量决定是否启用。
+
+公开动态工厂保留保守兼容安装；独立工具链未提供平台时保留动态宿主探测。未使用 API/fetch 时可整体移除，使用后保留动态跨平台 adapter。Web 的宿主桥接不等同于 Vue DOM runtime，原生 App 渲染不在本期范围。
+
 ## 页面与组件
 
 优先保持小程序语义，不要默认把 Vue Web 习惯直接搬进来。
@@ -30,7 +49,7 @@
 - `storeToRefs`
 - 避免巨型跨页面全局 store
 
-`createStore()` 只设置全局活动 manager，插件必须在 Store 第一次创建前注册；`install()` 是 no-op，`useXxx()` 不接收 manager 参数。Wevu Store 不提供 Pinia SSR、HMR 或 devtools 契约。
+Store 日常用法以 Pinia 4.0.3 为参照。先通过 `use(createPinia())` / `app.use(pinia)` 安装，或调用 `useXxx(pinia)`；外部 state 自动解包。`storeToRefs` 只返回响应式 state/getters，action 从 Store 直接解构。Setup 自行提供 `$reset`；`$dispose` 保留 manager 状态。插件接收 `{ store, pinia, app, options }`。推荐 `createPinia`；`createStore` 保留为同一个函数的兼容别名，`StoreManager` 类型继续保留。不提供 Web SSR、Pinia HMR 或 Vue Devtools。本次按 minor 发布，旧消费者仍需按 [PR 前后迁移指南](https://vite.weapp.dev/wevu/store-migration) 检查初始化、外部 ref、reset、订阅与插件。
 
 ## router
 

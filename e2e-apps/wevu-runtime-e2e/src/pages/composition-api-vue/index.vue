@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  WEVU_ON_BEFORE_UNMOUNT_HOOK,
   WEVU_ON_BEFORE_UPDATE_HOOK,
   WEVU_ON_UPDATED_HOOK,
 } from '@weapp-core/constants'
@@ -8,12 +9,12 @@ import {
   callHookList,
   callHookReturn,
   computed,
-  createStore,
   customRef,
   defineStore,
   effect,
   effectScope,
   endBatch,
+  getActivePinia,
   getCurrentInstance,
   getCurrentScope,
   getCurrentSetupContext,
@@ -210,7 +211,7 @@ const mergedObject = mergeModels({ a: 1 }, { b: 2 })
 const normalizedClass = normalizeClass(['a', { b: true, c: false }])
 const normalizedStyle = normalizeStyle([{ fontSize: '24rpx' }, 'color:#111'])
 
-const manager = createStore()
+const manager = getActivePinia()!
 manager.use(() => {})
 
 const useApiVueStore = defineStore('composition-api-vue-store', () => {
@@ -228,8 +229,10 @@ const useApiVueStore = defineStore('composition-api-vue-store', () => {
 
 const apiStore = useApiVueStore()
 const apiStoreRefs = storeToRefs(apiStore)
+const storeCount = apiStoreRefs.value
 
 const hookLogs = ref<string[]>([])
+const beforeUnmountCallbacks = computed(() => hookLogs.value.filter(name => name === 'onBeforeUnmount').length)
 function addHook(name: string) {
   hookLogs.value.push(name)
 }
@@ -368,6 +371,8 @@ async function runE2E() {
   callHookList(target, 'onDeactivated', [])
   callHookList(target, WEVU_ON_BEFORE_UPDATE_HOOK, [])
   callHookList(target, WEVU_ON_UPDATED_HOOK, [])
+  // API 矩阵显式模拟派发；真正卸载时序由独立生命周期用例覆盖。
+  callHookList(target, WEVU_ON_BEFORE_UNMOUNT_HOOK, [])
   callHookList(target, 'onError', [new Error('api-matrix-error-vue')])
 
   const shareResult = callHookReturn(target, 'onShareAppMessage', [{}])
@@ -449,7 +454,7 @@ async function runE2E() {
     mergeModels: Array.isArray(mergedArray) && mergedArray.length === 3 && (mergedObject as any).b === 2,
     normalizeClass: normalizedClass === 'a b',
     normalizeStyle: normalizedStyle.includes('font-size:24rpx') && normalizedStyle.includes('color:#111'),
-    defineStore: apiStore.doubled.value === 4,
+    defineStore: apiStore.doubled === 4,
     createStore: typeof manager.install === 'function',
     storeToRefs: apiStoreRefs.value.value === 2,
   }
@@ -486,6 +491,13 @@ const _runE2E = runE2E
     <text class="bind-model-state">
       {{ form.title }}
     </text>
+    <view id="composition-reactive">reactive: {{ reactiveState.count }} / {{ reactiveState.nested.value }}</view>
+    <view id="composition-derived">computed: {{ derived }}</view>
+    <view id="composition-custom">custom: {{ custom }}</view>
+    <view id="composition-form">form: {{ form.title }}</view>
+    <view id="composition-model">model: {{ modelRef }}</view>
+    <view id="composition-store">store: {{ storeCount }}</view>
+    <view id="composition-lifecycle">beforeUnmount callbacks: {{ beforeUnmountCallbacks }}</view>
     <text class="result">
       {{ __e2eText }}
     </text>

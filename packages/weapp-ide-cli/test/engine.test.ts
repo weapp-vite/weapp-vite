@@ -138,6 +138,7 @@ describe('runWechatIdeEngineBuildByHttp', () => {
       '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
       ['engine', 'build', path.resolve('/workspace/demo-app')],
       {
+        killDescendants: true,
         reject: false,
         timeout: 120_000,
       },

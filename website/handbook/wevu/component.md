@@ -93,7 +93,9 @@ export default defineComponent({
 })
 ```
 
-底层走的是小程序的 `triggerEvent`。
+微信和抖音底层使用 `triggerEvent`；支付宝通过 `props.onXxx` 回调传递事件，并保留模板监听器需要的 `detail` 和数据集。支付宝回调不提供微信的冒泡、捕获和跨组件传播选项。
+
+支付宝组件的 `onInit`、`didMount`、`deriveDataFromProps` 和 `didUnmount` 会接入 Wevu 的挂载、props 同步与卸载清理流程。父级更新属性后，子组件的 computed 会随之更新；条件渲染重新创建组件时，本地响应式状态重新初始化。
 
 ## slots：插槽
 

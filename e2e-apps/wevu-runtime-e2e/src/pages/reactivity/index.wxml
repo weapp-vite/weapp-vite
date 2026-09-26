@@ -1,5 +1,9 @@
 <view class="page">
   <view class="title">Reactivity</view>
   <view class="summary">ok: {{__e2e.ok}}</view>
+  <view id="reactivity-count">count: {{__e2e.details.count}}</view>
+  <view id="reactivity-doubled">doubled: {{__e2e.details.doubled}}</view>
+  <view id="reactivity-watch">watch: {{__e2e.details.watchValues}}</view>
+  <view id="reactivity-shallow">shallow: {{__e2e.details.shallowTriggered}}</view>
   <text class="details" user-select>{{__e2eText}}</text>
 </view>

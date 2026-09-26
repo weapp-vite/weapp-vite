@@ -1,3 +1,4 @@
+import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import { createSidecarModuleId } from './protocol'
@@ -52,6 +53,8 @@ describe('logical entry module source', () => {
     const code = createLogicalEntryModuleCode(entry, [])
 
     expect(code).toContain('import { createWevuComponent')
+    expect(code).toContain(`from ${JSON.stringify(WEAPP_VITE_RUNTIME_VIRTUAL_ID)};`)
+    expect(code).not.toContain('from "wevu"')
     expect(code).toContain(`import __weappViteComponentOptions from ${JSON.stringify(entry.sourceId)};`)
     expect(code).toContain('__weappViteCreateWevuComponent(__weappViteComponentOptions);')
     expect(code).toContain('export default __weappViteComponentOptions;')
@@ -66,11 +69,11 @@ describe('logical entry module source', () => {
     )).toBe('import "/project/src/pages/home/index.wxml?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fpages%2Fhome%2Findex.ts&weapp-vite-sidecar=template&lang.js";\nexport default "/project/src/pages/home/index.wxml";\n')
   })
 
-  it('links style sidecars through the native CSS pipeline', () => {
+  it('tracks style sidecars without adding a second CSS contribution', () => {
     expect(createSidecarModuleCode(
       '/project/src/app.ts',
       '/project/src/app.css',
       'style',
-    )).toBe('import "/project/src/app.css?weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fapp.ts&weapp-vite-sidecar=style&lang.css";\nexport default "/project/src/app.css";\n')
+    )).toBe('import "/project/src/app.css?raw&weapp-vite-sidecar-owner=%2Fproject%2Fsrc%2Fapp.ts&weapp-vite-sidecar=style&lang.js";\nexport default "/project/src/app.css";\n')
   })
 })

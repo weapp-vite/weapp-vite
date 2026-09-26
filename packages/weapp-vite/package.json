@@ -1,7 +1,7 @@
 {
   "name": "weapp-vite",
   "type": "module",
-  "version": "7.0.4",
+  "version": "7.3.0",
   "description": "weapp-vite 一个现代化的小程序打包工具",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -15,13 +15,16 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "vite",
     "ts",
     "wxml",
     "wxss",
     "mp",
-    "miniprogram",
     "scss"
   ],
   "exports": {
@@ -90,7 +93,19 @@
       "types": "./client.d.ts"
     },
     "./package.json": "./package.json",
-    "./*": "./*"
+    "./*": "./*",
+    "./auto-import-presets": {
+      "types": "./dist/auto-import-presets.d.mts",
+      "import": "./dist/auto-import-presets.mjs"
+    },
+    "./auto-import-presets/wevu": {
+      "types": "./dist/auto-import-presets/wevu.d.mts",
+      "import": "./dist/auto-import-presets/wevu.mjs"
+    },
+    "./auto-import-presets/wevu-router": {
+      "types": "./dist/auto-import-presets/wevu-router.d.mts",
+      "import": "./dist/auto-import-presets/wevu-router.mjs"
+    }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
@@ -122,7 +137,7 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-routes-define-app-json && tsd && cd ../config-define-config && tsd && cd ../upload-config && tsd && cd ../i18n-public-types && tsd && cd ../internal-src-types && tsd && cd ../resolvers-public-types && tsd && cd ../runtime-public-types && tsd && cd ../test-artifact-public-types && tsd",
+    "test:types": "cd test-d/auto-import-presets && tsd --files \"**/*.test-d.ts\" && cd ../auto-routes-define-app-json && tsd --files \"**/*.test-d.ts\" && cd ../config-define-config && tsd --files \"**/*.test-d.ts\" && cd ../config-public-types && tsd --files \"**/*.test-d.ts\" && cd ../upload-config && tsd --files \"**/*.test-d.ts\" && cd ../i18n-public-types && tsd --files \"**/*.test-d.ts\" && cd ../internal-src-types && tsd --files \"**/*.test-d.ts\" && cd ../resolvers-public-types && tsd --files \"**/*.test-d.ts\" && cd ../runtime-public-types && tsd --files \"**/*.test-d.ts\" && cd ../test-artifact-public-types && tsd --files \"**/*.test-d.ts\"",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
@@ -132,7 +147,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@babel/preset-env": "^8.0.2",
+    "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
     "@jridgewell/remapping": "^2.3.5",
     "@vercel/detect-agent": "^1.2.5",
@@ -155,6 +170,7 @@
     "cac": "^7.0.0",
     "chokidar": "^5.0.0",
     "comment-json": "catalog:",
+    "devframe": "catalog:",
     "dotenv-expand": "^12.0.3",
     "fdir": "catalog:",
     "htmlparser2": "catalog:",
@@ -168,8 +184,10 @@
     "pathe": "catalog:",
     "picomatch": "^4.0.7",
     "postcss": "catalog:",
+    "postcss-selector-parser": "catalog:",
+    "postcss-value-parser": "4.2.0",
     "rolldown": "catalog:",
-    "rolldown-plugin-dts": "0.28.5",
+    "rolldown-plugin-dts": "0.28.6",
     "rolldown-require": "workspace:*",
     "semver": "^7.8.5",
     "typescript": "catalog:",
@@ -183,7 +201,7 @@
     "wevu": "workspace:*"
   },
   "optionalDependencies": {
-    "@swc/core": "^1.16.1"
+    "@swc/core": "^1.16.2"
   },
   "devDependencies": {
     "oxc-parser": "catalog:",

@@ -1,5 +1,6 @@
 import type { MutableCompilerContext } from '../../context'
 import type { LegacyManagedTypeScriptConfig } from './types'
+import path from 'pathe'
 import { getPlatformAppTypesPackage } from '../../platform'
 import { resolveBaseDir } from '../autoImport/config/base'
 import { requireConfigService } from '../utils/requireConfigService'
@@ -8,7 +9,7 @@ import {
   DEFAULT_NODE_INCLUDE,
   getManagedTypeScriptConfig,
   hasDependency,
-  isWevuJsxImportSource,
+  isWevuJsxRuntimeTypePackage,
   mergePaths,
   normalizeSrcRoot,
   rebaseManagedPaths,
@@ -31,7 +32,8 @@ export function resolveAppWevuJsxImportSource(
   legacyConfig?: LegacyManagedTypeScriptConfig,
 ) {
   const configService = requireConfigService(ctx, '解析 app JSX 类型入口前必须初始化 configService。')
-  if (!hasDependency(configService.packageJson, 'wevu')) {
+  const reactEnabled = Boolean(configService.weappViteConfig.react)
+  if (!reactEnabled && !hasDependency(configService.packageJson, 'wevu')) {
     return undefined
   }
   const configuredJsxImportSource = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.jsxImportSource
@@ -40,7 +42,7 @@ export function resolveAppWevuJsxImportSource(
     ? configuredJsxImportSource.trim()
     : typeof legacyJsxImportSource === 'string' && legacyJsxImportSource.trim()
       ? legacyJsxImportSource.trim()
-      : resolveWevuJsxImportSource(configService.weappViteConfig.platform)
+      : reactEnabled ? 'react' : resolveWevuJsxImportSource(configService.weappViteConfig.platform)
 }
 
 function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
@@ -54,10 +56,6 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
     'weapp-vite/client',
   ]
 
-  const jsxImportSource = resolveAppWevuJsxImportSource(ctx, legacyConfig)
-  if (isWevuJsxImportSource(jsxImportSource)) {
-    types.push(`${jsxImportSource}/jsx-runtime`)
-  }
   if (Array.isArray(legacyTypes) && legacyTypes.length > 0) {
     types.push(...legacyTypes)
   }
@@ -66,7 +64,7 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
     types.push(...userTypes)
   }
 
-  return unique(types)
+  return unique(types).filter(type => !isWevuJsxRuntimeTypePackage(type))
 }
 
 function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
@@ -151,6 +149,9 @@ export function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: Le
 
   const include = unique([
     ...createDefaultAppInclude(requireConfigService(ctx, '生成 app include 前必须初始化 configService。').srcRoot),
+    ...(configService.pluginRoot
+      ? [`${path.relative(resolveManagedDir(ctx), path.resolve(resolveBaseDir(configService), configService.pluginRoot))}/**/*`]
+      : []),
     ...(legacyConfig?.app?.include ?? []),
     ...(userConfig?.app?.include ?? []),
   ])

@@ -10,7 +10,9 @@ definePageJson(() => ({
 }))
 
 const show = ref(false)
-function open() { show.value = true }
+function open() {
+  show.value = true
+}
 </script>
 
 <template>

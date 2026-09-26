@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "$TURBO_EXTENDS$",
+        "$TURBO_ROOT$/packages/weapp-vite/package.json",
+        "$TURBO_ROOT$/packages-runtime/wevu/package.json",
+        "$TURBO_ROOT$/packages-runtime/react/package.json",
+        "$TURBO_ROOT$/packages/dashboard/package.json",
+        "$TURBO_ROOT$/packages/eslint/package.json",
+        "$TURBO_ROOT$/pnpm-workspace.yaml"
+      ]
+    }
+  }
+}

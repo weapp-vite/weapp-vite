@@ -13,9 +13,15 @@ import { collectBuildStartIds, collectDevStartNodes, normalizeSourceId } from '.
 const debug = createDebugger('weapp-vite:module-graph')
 
 export interface ModuleGraphService {
-  bindBuildContext: (scope: object, context: BuildGraphContext) => void
-  bindDevServer: (server: DevServerGraphHost | undefined) => void
-  bindPluginContext: (context: BuildGraphContext) => void
+  /** 只替换指定 scope；返回仅对应本次绑定的释放器。 */
+  bindBuildContext: (scope: object, context: BuildGraphContext) => () => void
+  /** 撤销 scope 的图和插件上下文；传入 context 时仅释放仍归该 context 所有的绑定。 */
+  unbindBuildContext: (scope: object, context?: BuildGraphContext) => void
+  /** 返回仅对应本次绑定的释放器，避免旧 server 的异步关闭解绑新 server。 */
+  bindDevServer: (server: DevServerGraphHost | undefined) => () => void
+  bindPluginContext: (scope: object, context: BuildGraphContext) => void
+  /** 仅用于整个会话关闭或替换，不用于普通增量构建或临时 snapshot。 */
+  resetSession: () => void
   collectAffectedEntries: (file: string) => Set<string>
   getPendingChanges: () => Array<{ event: string, file: string }>
   consumeTopologyRescan: () => TopologyRescanRequest | undefined
@@ -24,6 +30,8 @@ export interface ModuleGraphService {
   isLogicalLayoutEntry: (file: string) => boolean
   load: (options: { id: string, resolveDependencies?: boolean }) => Promise<BuildModuleInfo>
   replaceEntryDependencies: (ownerId: string, kind: SidecarModuleKind, sourceIds: Iterable<string>) => void
+  /** 释放 owner 自己的依赖声明；实际 import graph 的更新仍由构建引擎负责。 */
+  removeEntryDependencies: (ownerId: string) => void
   recordChangedFile: (file: string, event: string) => void
   clearPendingChanges: () => void
   requestTopologyRescan: (reason: string, file: string) => void
@@ -38,11 +46,53 @@ export interface ModuleGraphService {
 
 export function createModuleGraphService(): ModuleGraphService {
   const buildContexts = new Map<object, BuildGraphContext>()
+  const buildContextTokens = new Map<object, object>()
+  const pluginContexts = new Map<object, BuildGraphContext>()
+  const pluginContextTokens = new Map<object, object>()
   let pluginContext: BuildGraphContext | undefined
+  let devServerBinding: object | undefined
   let devServer: DevServerGraphHost | undefined
   let topologyRescan: TopologyRescanRequest | undefined
   const entryDependencies = new Map<string, Map<SidecarModuleKind, Set<string>>>()
   const pendingChanges = new Map<string, string>()
+  const usesUnbundledDevGraph = () => Boolean(devServer && !devServer.environments?.client?.bundledDev)
+
+  const releaseBuildContext = (scope: object, token: object) => {
+    if (buildContextTokens.get(scope) !== token) {
+      return
+    }
+    buildContextTokens.delete(scope)
+    buildContexts.delete(scope)
+    if (pluginContextTokens.get(scope) === token) {
+      pluginContextTokens.delete(scope)
+      if (pluginContexts.delete(scope)) {
+        pluginContext = undefined
+        for (const context of pluginContexts.values()) {
+          pluginContext = context
+        }
+      }
+    }
+  }
+
+  const unbindBuildContext = (scope: object, context?: BuildGraphContext) => {
+    const currentContext = buildContexts.get(scope)
+    if (context && currentContext !== context) {
+      return
+    }
+    const token = buildContextTokens.get(scope)
+    if (token) {
+      releaseBuildContext(scope, token)
+      return
+    }
+    buildContexts.delete(scope)
+    if (pluginContexts.delete(scope)) {
+      pluginContextTokens.delete(scope)
+      pluginContext = undefined
+      for (const boundContext of pluginContexts.values()) {
+        pluginContext = boundContext
+      }
+    }
+  }
 
   const hasRegisteredEntryDependency = (file: string) => {
     if (entryDependencies.has(file)) {
@@ -144,7 +194,7 @@ export function createModuleGraphService(): ModuleGraphService {
         }
       }
     }
-    if (devServer) {
+    if (usesUnbundledDevGraph()) {
       collectFromDevGraph(file, affected)
     }
     else {
@@ -153,30 +203,40 @@ export function createModuleGraphService(): ModuleGraphService {
     return affected
   }
 
-  const warmDevModule = async (id: string) => {
-    if (!devServer?.transformRequest) {
+  const warmDevModule = async (id: string, server: DevServerGraphHost, binding: object | undefined) => {
+    if (!server.transformRequest) {
       return
     }
-    const queue = [id]
+    // 依赖的 URL 不等于模块 id；保留节点才能继续展开传递依赖。
+    const queue: Array<string | DevModuleNode> = [id]
     const visited = new Set<string>()
     for (let index = 0; index < queue.length; index += 1) {
-      const request = queue[index]!
-      if (visited.has(request)) {
+      if (devServerBinding !== binding) {
+        return
+      }
+      const target = queue[index]!
+      const request = typeof target === 'string' ? target : target.url ?? target.id
+      if (!request || visited.has(request)) {
         continue
       }
       visited.add(request)
       try {
-        await devServer.transformRequest(request)
+        await server.transformRequest(request)
       }
       catch (error) {
         debug?.(`dev graph 预热跳过无法展开的 external 终点 ${request}: ${String(error)}`)
         continue
       }
-      const module = devServer.moduleGraph.getModuleById(request)
+      if (devServerBinding !== binding) {
+        return
+      }
+      const module = typeof target === 'string'
+        ? server.moduleGraph.getModuleById(request)
+        : target
       for (const dependency of module?.importedModules ?? []) {
         const dependencyRequest = dependency.url ?? dependency.id
         if (dependencyRequest && !visited.has(dependencyRequest)) {
-          queue.push(dependencyRequest)
+          queue.push(dependency)
         }
       }
     }
@@ -184,13 +244,42 @@ export function createModuleGraphService(): ModuleGraphService {
 
   return {
     bindBuildContext(scope, context) {
+      const token = {}
       buildContexts.set(scope, context)
+      buildContextTokens.set(scope, token)
+      return () => releaseBuildContext(scope, token)
     },
+    unbindBuildContext,
     bindDevServer(server) {
+      const binding = {}
+      devServerBinding = binding
       devServer = server
+      return () => {
+        if (devServerBinding === binding) {
+          devServerBinding = undefined
+          devServer = undefined
+        }
+      }
     },
-    bindPluginContext(context) {
+    bindPluginContext(scope, context) {
+      const buildToken = buildContextTokens.get(scope)
+      const token = buildContexts.get(scope) === context && buildToken ? buildToken : {}
+      pluginContexts.delete(scope)
+      pluginContextTokens.set(scope, token)
+      pluginContexts.set(scope, context)
       pluginContext = context
+    },
+    resetSession() {
+      buildContexts.clear()
+      buildContextTokens.clear()
+      pluginContexts.clear()
+      pluginContextTokens.clear()
+      pluginContext = undefined
+      devServer = undefined
+      devServerBinding = undefined
+      entryDependencies.clear()
+      pendingChanges.clear()
+      topologyRescan = undefined
     },
     collectAffectedEntries,
     getPendingChanges() {
@@ -206,16 +295,20 @@ export function createModuleGraphService(): ModuleGraphService {
       if (hasRegisteredEntryDependency(file)) {
         return true
       }
-      if (devServer) {
+      if (devServer && usesUnbundledDevGraph()) {
         return collectDevStartNodes(devServer, file).size > 0
       }
-      return Array.from(buildContexts.values())
-        .some(context => collectBuildStartIds(context, file).size > 0)
+      for (const context of buildContexts.values()) {
+        if (collectBuildStartIds(context, file).size > 0) {
+          return true
+        }
+      }
+      return false
     },
     invalidate(rawFile) {
       const file = normalizeSourceId(rawFile)
       const affected = collectAffectedEntries(file)
-      if (devServer) {
+      if (devServer && usesUnbundledDevGraph()) {
         for (const module of collectDevStartNodes(devServer, file)) {
           devServer.moduleGraph.invalidateModule(module)
         }
@@ -255,6 +348,9 @@ export function createModuleGraphService(): ModuleGraphService {
         entryDependencies.delete(ownerId)
       }
     },
+    removeEntryDependencies(rawOwnerId) {
+      entryDependencies.delete(normalizeSourceId(rawOwnerId))
+    },
     recordChangedFile(rawFile, event) {
       const file = normalizeSourceId(rawFile)
       pendingChanges.set(file, event)
@@ -277,11 +373,14 @@ export function createModuleGraphService(): ModuleGraphService {
       return await pluginContext.resolve(source, importer, options)
     },
     async syncDevGraph(context) {
-      if (!devServer || typeof context.getModuleIds !== 'function') {
+      // bundledDev 的模块图由 DevEngine 编译维护，不能在 buildEnd 再执行 unbundled transform。
+      const server = devServer
+      const binding = devServerBinding
+      if (!server || !usesUnbundledDevGraph() || typeof context.getModuleIds !== 'function') {
         return
       }
       const logicalEntryIds = Array.from(context.getModuleIds()).filter(id => parseLogicalEntryId(id))
-      await Promise.all(logicalEntryIds.map(warmDevModule))
+      await Promise.all(logicalEntryIds.map(id => warmDevModule(id, server, binding)))
     },
     getEntryDependencies(rawOwnerId) {
       const ownerId = normalizeSourceId(rawOwnerId)

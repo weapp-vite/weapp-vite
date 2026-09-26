@@ -1,6 +1,19 @@
 export { builtinComponentsSet, isBuiltinComponent } from './auto-import-components/builtin'
 export { createRuntimeBindingManifest } from './bindingManifest'
 export * from './constants'
+export {
+  collectPageMetaCallsFromPrograms,
+  extractPageDeclaration,
+  extractPageDeclarationWithDependencies,
+  mayContainPageDeclaration,
+  mayContainPageMeta,
+  stripPageDeclaration,
+} from './pageDeclaration'
+export type {
+  ExtractPageDeclarationWithDependenciesResult,
+  StaticPageDeclaration,
+  StaticRouteValue,
+} from './pageDeclaration'
 export { compileJsxFile } from './plugins/jsx/compileJsxFile'
 export { isUniAppCompatibilityFile, transformUniAppConditionalCode, transformUniAppSource } from './plugins/uniApp'
 export type { TransformUniAppSourceOptions, UniAppCompatibilityTarget } from './plugins/uniApp'
@@ -53,6 +66,7 @@ export {
   resolveClassStyleWxsLocation,
 } from './plugins/vue/compiler/template/classStyleRuntime'
 export type {
+  BindingCondition,
   ClassStyleBinding,
   ClassStyleRuntime,
   ForParseResult,
@@ -121,6 +135,8 @@ export type {
   WevuRuntimeBindingManifestV1,
   WevuRuntimeBindingRecordV1,
 } from './types/bindingManifest'
+export type { ComponentStyleOptions, ComponentStylePrimitive, StaticComponentStyleOption } from './types/componentStyleOptions'
+export { CompilerDiagnosticError } from './types/diagnostics'
 export type {
   CompilerDiagnostic,
   CompilerDiagnosticCode,
@@ -130,16 +146,16 @@ export type {
   SourceSpan,
 } from './types/diagnostics'
 export type { JsonConfig, JsonMergeContext, JsonMergeStage, JsonMergeStrategy } from './types/json'
+
 export type {
   CompilerAppShell,
   CompilerLayoutPropValue,
   CompilerPageLayout,
   CompilerPageLayoutPlan,
 } from './types/pageLayout'
-
 export type { MpPlatform } from './types/platform'
-export type { WevuDefaults } from './types/wevu'
 
+export type { WevuDefaults } from './types/wevu'
 export {
   collectVueTemplateTags,
   isAutoImportCandidateTag,
@@ -147,4 +163,5 @@ export {
   VUE_COMPONENT_TAG_RE,
 } from './utils/vueTemplateTags'
 export type { CollectVueTemplateTagsOptions } from './utils/vueTemplateTags'
+
 export type { AstEngineName } from '@weapp-vite/ast'

@@ -14,7 +14,9 @@ import {
 import {
   collectConstantsDependentReleaseIssues,
   collectPublishableWorkspaceChangesetIssues,
+  collectPublishableWorkspacePackages,
   isCurrentModuleEntry,
+  isPublishableWorkspaceManifestPath,
   isReleaseWorthyWorkspaceFile,
 } from './check-publishable-workspace-changeset'
 import { collectWorkspaceProtocolViolations } from './check-publishable-workspace-dependency-protocols'
@@ -95,6 +97,25 @@ it('isCurrentModuleEntry resolves relative argv paths without throwing', () => {
   assert.equal(isCurrentModuleEntry(entryArg, moduleUrl), true)
   assert.equal(isCurrentModuleEntry('scripts/other-script.ts', moduleUrl), false)
   assert.equal(isCurrentModuleEntry(undefined, moduleUrl), false)
+})
+
+it('isPublishableWorkspaceManifestPath keeps @mpcore/test and drops nested fixtures', () => {
+  assert.equal(isPublishableWorkspaceManifestPath('mpcore/packages/test/package.json'), true)
+  assert.equal(isPublishableWorkspaceManifestPath('packages/weapp-vite/package.json'), true)
+  assert.equal(
+    isPublishableWorkspaceManifestPath('packages/weapp-vite/test/fixtures/app/package.json'),
+    false,
+  )
+  assert.equal(
+    isPublishableWorkspaceManifestPath('extensions/vscode/scripts/fixtures/vscode-vsix-test-harness/package.json'),
+    false,
+  )
+})
+
+it('collectPublishableWorkspacePackages includes @mpcore/test and excludes vscode fixtures', async () => {
+  const names = (await collectPublishableWorkspacePackages()).map(pkg => pkg.name)
+  assert.equal(names.includes('@mpcore/test'), true)
+  assert.equal(names.includes('weapp-vite-vscode-vsix-test-harness'), false)
 })
 
 it('isReleaseWorthyWorkspaceFile ignores test and docs noise', () => {
@@ -229,6 +250,7 @@ it('repoctl release lifecycle keeps PR-only intent guards outside main push chec
   const releaseConfig = config.commands.release
 
   assert.deepEqual(releaseConfig.qualityScripts, [
+    'test:release',
     'check:changeset:frontmatter',
     'check:weapp-core-constants-dependency-range',
     'check:rolldown:single-version',

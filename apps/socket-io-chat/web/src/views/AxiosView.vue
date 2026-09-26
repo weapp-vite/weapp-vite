@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { ContactProfile } from '../api/types'
 import { onMounted, ref } from 'vue'
 import { loadContactProfileWithAxios } from '../api/axios'
-import type { ContactProfile } from '../api/types'
 
 const profile = ref<ContactProfile>()
 const loading = ref(true)

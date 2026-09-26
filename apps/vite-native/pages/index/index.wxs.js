@@ -1,5 +1,5 @@
 export const foo = '\'hello world\' from comm.wxs'
 
-export const bar = function (d) {
+export function bar(d) {
   return d
 }

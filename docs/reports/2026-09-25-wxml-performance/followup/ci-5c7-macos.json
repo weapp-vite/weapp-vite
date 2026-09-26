@@ -1,0 +1,5387 @@
+{
+  "benchmark": "templates-paired-performance",
+  "generatedAt": "2026-09-25T04:24:28.103Z",
+  "environment": {
+    "os": "darwin",
+    "release": "25.6.0",
+    "arch": "arm64",
+    "node": "v24.20.0",
+    "cpus": 3,
+    "driver": "same-checkout",
+    "order": "alternating-by-pair",
+    "buildLifecycle": "fresh CLI each time; repeat retains previous build output",
+    "hmrLifecycle": "fresh dev session per pair; first and repeat edits separated",
+    "memory": "build: sampled process-tree peak RSS; HMR: dev process after GC; RSS and heap are distinct"
+  },
+  "buildIterations": 7,
+  "hmrIterations": 20,
+  "baseline": {
+    "commit": "e7862e61dd83e3b9e356ac1e176267b31ab298af",
+    "packageManager": "12.5.1",
+    "lockfileSha256": "ea666f4130479605957a0e949d513ed72fe46af0613fee23f81cdc852129639e",
+    "build": {
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 9606.073334000015,
+          "cliMs": 7213,
+          "rssBytes": 825720832,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 68,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 9606.073334000015,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 5797.629790999985,
+          "cliMs": 3973,
+          "rssBytes": 686587904,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 38,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 5797.629790999985,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 3287.8400830000173,
+          "cliMs": 1318,
+          "rssBytes": 393838592,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 21,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3287.8400830000173,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 3517.664584000013,
+          "cliMs": 1375,
+          "rssBytes": 398393344,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 23,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3517.664584000013,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 3576.313124999986,
+          "cliMs": 1433,
+          "rssBytes": 394280960,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 24,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3576.313124999986,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 2845.7235419999924,
+          "cliMs": 1112,
+          "rssBytes": 395984896,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2845.7235419999924,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 7643.106250000012,
+          "cliMs": 5896,
+          "rssBytes": 798507008,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 49,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 7643.106250000012,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 6525.509083000012,
+          "cliMs": 4474,
+          "rssBytes": 714014720,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 41,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6525.509083000012,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 3196.754541000002,
+          "cliMs": 1150,
+          "rssBytes": 399753216,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 22,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3196.754541000002,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2769.2579999999725,
+          "cliMs": 969,
+          "rssBytes": 385925120,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2769.2579999999725,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 2887.133291999984,
+          "cliMs": 885,
+          "rssBytes": 396574720,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2887.133291999984,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 2432.75670800003,
+          "cliMs": 922,
+          "rssBytes": 403865600,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 19,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2432.75670800003,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 8647.620291,
+          "cliMs": 6493,
+          "rssBytes": 802504704,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 56,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 8647.620291,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 6131.453207999992,
+          "cliMs": 3918,
+          "rssBytes": 709754880,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 40,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6131.453207999992,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 3219.8906669999706,
+          "cliMs": 977,
+          "rssBytes": 400850944,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 22,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3219.8906669999706,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2763.666041999997,
+          "cliMs": 922,
+          "rssBytes": 393576448,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2763.666041999997,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 2541.7077079999726,
+          "cliMs": 947,
+          "rssBytes": 407715840,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 19,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2541.7077079999726,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 2806.5189169999794,
+          "cliMs": 1157,
+          "rssBytes": 403193856,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 21,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2806.5189169999794,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 6358.4820840000175,
+          "cliMs": 5186,
+          "rssBytes": 817561600,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 44,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6358.4820840000175,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 5263.552666999982,
+          "cliMs": 3508,
+          "rssBytes": 688914432,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 33,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 5263.552666999982,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 2183.3739580000984,
+          "cliMs": 755,
+          "rssBytes": 391380992,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 16,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2183.3739580000984,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2142.4576670000097,
+          "cliMs": 871,
+          "rssBytes": 397508608,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 16,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2142.4576670000097,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 2461.4945420000004,
+          "cliMs": 944,
+          "rssBytes": 395771904,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 18,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2461.4945420000004,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 1775.6808750000782,
+          "cliMs": 682,
+          "rssBytes": 395952128,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 15,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 1775.6808750000782,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 6324.4850829999195,
+          "cliMs": 4922,
+          "rssBytes": 802406400,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 45,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6324.4850829999195,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 5376.684875000035,
+          "cliMs": 3628,
+          "rssBytes": 678150144,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 38,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 5376.684875000035,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 1967.6937080000062,
+          "cliMs": 644,
+          "rssBytes": 387629056,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 15,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 1967.6937080000062,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 1905.0528750000522,
+          "cliMs": 735,
+          "rssBytes": 393330688,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 15,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 1905.0528750000522,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 1885.541041999939,
+          "cliMs": 722,
+          "rssBytes": 400998400,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 15,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 1885.541041999939,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 1972.2299590000184,
+          "cliMs": 827,
+          "rssBytes": 407535616,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 16,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 1972.2299590000184,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 7167.63274999999,
+          "cliMs": 5596,
+          "rssBytes": 818135040,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 46,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 7167.63274999999,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 6472.234124999959,
+          "cliMs": 4497,
+          "rssBytes": 699596800,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 42,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6472.234124999959,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 3635.2542080000276,
+          "cliMs": 1276,
+          "rssBytes": 398704640,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 24,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3635.2542080000276,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 3660.357958000037,
+          "cliMs": 1223,
+          "rssBytes": 389578752,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 24,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3660.357958000037,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 3319.8791249999776,
+          "cliMs": 1032,
+          "rssBytes": 404766720,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 22,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3319.8791249999776,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 3013.1705000000075,
+          "cliMs": 1008,
+          "rssBytes": 401833984,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 22,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3013.1705000000075,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 8483.424875000026,
+          "cliMs": 6293,
+          "rssBytes": 805715968,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 52,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 8483.424875000026,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 8333.396375000011,
+          "cliMs": 5991,
+          "rssBytes": 720093184,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 47,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 8333.396375000011,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 3529.643332999898,
+          "cliMs": 1070,
+          "rssBytes": 406208512,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 24,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3529.643332999898,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2760.461500000092,
+          "cliMs": 1022,
+          "rssBytes": 394526720,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 19,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2760.461500000092,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 2890.5926660000114,
+          "cliMs": 1107,
+          "rssBytes": 396640256,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 21,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2890.5926660000114,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 3524.8059169999324,
+          "cliMs": 1333,
+          "rssBytes": 402046976,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 25,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3524.8059169999324,
+          "iteration": 2,
+          "status": 0
+        }
+      ],
+      "raw": {
+        "totalAverageMs": 4514.949364999994,
+        "count": 21
+      },
+      "warm": {
+        "totalAverageMs": 3894.7745318095326,
+        "count": 21
+      }
+    },
+    "hmr": {
+      "templates": []
+    }
+  },
+  "optimized": {
+    "commit": "5c7a535785eeecb79bf2adfa3f828c7c15ef70a4",
+    "packageManager": "12.5.1",
+    "lockfileSha256": "6ed3592232474470be6b998f0064f5919e3f92efa45503262de6d51779f9e3df",
+    "build": {
+      "samples": [
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 9106.082209000015,
+          "cliMs": 7088,
+          "rssBytes": 789446656,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 59,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 9106.082209000015,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 7095.075291000016,
+          "cliMs": 4248,
+          "rssBytes": 691453952,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 47,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 7095.075291000016,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 3342.2122499999823,
+          "cliMs": 1312,
+          "rssBytes": 393789440,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 22,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3342.2122499999823,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 3117.8133329999982,
+          "cliMs": 1319,
+          "rssBytes": 397672448,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 21,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3117.8133329999982,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 3272.5725000000093,
+          "cliMs": 1342,
+          "rssBytes": 404013056,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 22,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3272.5725000000093,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 3617.534875000012,
+          "cliMs": 1501,
+          "rssBytes": 402259968,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 24,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3617.534875000012,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 7851.270082999952,
+          "cliMs": 6017,
+          "rssBytes": 800735232,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 52,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 7851.270082999952,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 6127.744791999983,
+          "cliMs": 3845,
+          "rssBytes": 686555136,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 41,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6127.744791999983,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 2759.3850000000093,
+          "cliMs": 991,
+          "rssBytes": 399933440,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2759.3850000000093,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2731.04904100002,
+          "cliMs": 994,
+          "rssBytes": 396247040,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 19,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2731.04904100002,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 3264.8660420000087,
+          "cliMs": 1333,
+          "rssBytes": 395034624,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 22,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3264.8660420000087,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 2518.322709000029,
+          "cliMs": 966,
+          "rssBytes": 405045248,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 18,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2518.322709000029,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 8236.426749999926,
+          "cliMs": 6337,
+          "rssBytes": 795639808,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 54,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 8236.426749999926,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 5990.895583000034,
+          "cliMs": 3755,
+          "rssBytes": 687210496,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 42,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 5990.895583000034,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 2838.6732090000296,
+          "cliMs": 1148,
+          "rssBytes": 398606336,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2838.6732090000296,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2716.0422910000198,
+          "cliMs": 1000,
+          "rssBytes": 397672448,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2716.0422910000198,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 2915.1442080000415,
+          "cliMs": 927,
+          "rssBytes": 402800640,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 21,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2915.1442080000415,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 2361.6116659999825,
+          "cliMs": 826,
+          "rssBytes": 403832832,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 18,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2361.6116659999825,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 7443.3477910000365,
+          "cliMs": 5984,
+          "rssBytes": 805388288,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 47,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 7443.3477910000365,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 6127.5010000000475,
+          "cliMs": 4350,
+          "rssBytes": 688619520,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 39,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6127.5010000000475,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 2352.0261669999454,
+          "cliMs": 925,
+          "rssBytes": 404979712,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 17,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2352.0261669999454,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2373.562333000009,
+          "cliMs": 702,
+          "rssBytes": 393510912,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 18,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2373.562333000009,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 1993.130416000029,
+          "cliMs": 786,
+          "rssBytes": 397410304,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 16,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 1993.130416000029,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 1903.092249999987,
+          "cliMs": 778,
+          "rssBytes": 396869632,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 16,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 1903.092249999987,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 6378.268374999985,
+          "cliMs": 4726,
+          "rssBytes": 829374464,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 43,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6378.268374999985,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 4865.036957999924,
+          "cliMs": 3080,
+          "rssBytes": 707182592,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 34,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 4865.036957999924,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 2541.672917000018,
+          "cliMs": 1051,
+          "rssBytes": 404553728,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 19,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2541.672917000018,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2030.515999999945,
+          "cliMs": 747,
+          "rssBytes": 380649472,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 16,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2030.515999999945,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 2008.1821250000503,
+          "cliMs": 829,
+          "rssBytes": 397082624,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 16,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2008.1821250000503,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 1817.2508749999106,
+          "cliMs": 740,
+          "rssBytes": 414973952,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 15,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 1817.2508749999106,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 6406.181832999922,
+          "cliMs": 5277,
+          "rssBytes": 806535168,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 45,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 6406.181832999922,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 5361.398749999935,
+          "cliMs": 3569,
+          "rssBytes": 693649408,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 38,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 5361.398749999935,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 2232.7023749999935,
+          "cliMs": 853,
+          "rssBytes": 378863616,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 17,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2232.7023749999935,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 3027.2250830000266,
+          "cliMs": 1213,
+          "rssBytes": 388907008,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 21,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3027.2250830000266,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 2267.928916999954,
+          "cliMs": 667,
+          "rssBytes": 395657216,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 18,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2267.928916999954,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 2535.715582999983,
+          "cliMs": 1061,
+          "rssBytes": 403406848,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 18,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2535.715582999983,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "first",
+          "ms": 9586.979541999986,
+          "cliMs": 7629,
+          "rssBytes": 803520512,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 57,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 9586.979541999986,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+          "template": "weapp-vite-tailwindcss-tdesign-template",
+          "phase": "repeat",
+          "ms": 7025.254416999989,
+          "cliMs": 4272,
+          "rssBytes": 703479808,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 43,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+            "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+          },
+          "totalMs": 7025.254416999989,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:first",
+          "template": "weapp-vite-template",
+          "phase": "first",
+          "ms": 3631.3693330000388,
+          "cliMs": 1123,
+          "rssBytes": 396197888,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 23,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 3631.3693330000388,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-template:repeat",
+          "template": "weapp-vite-template",
+          "phase": "repeat",
+          "ms": 2958.585375000024,
+          "cliMs": 1364,
+          "rssBytes": 395575296,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 21,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+            "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+          },
+          "totalMs": 2958.585375000024,
+          "iteration": 2,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:first",
+          "template": "weapp-vite-wevu-template",
+          "phase": "first",
+          "ms": 3649.1394169999985,
+          "cliMs": 1232,
+          "rssBytes": 398114816,
+          "rssSampling": {
+            "status": "partial",
+            "completedSampleCount": 24,
+            "unavailableSampleCount": 1
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 3649.1394169999985,
+          "iteration": 1,
+          "status": 0
+        },
+        {
+          "id": "build:weapp-vite-wevu-template:repeat",
+          "template": "weapp-vite-wevu-template",
+          "phase": "repeat",
+          "ms": 2739.017499999958,
+          "cliMs": 1081,
+          "rssBytes": 395083776,
+          "rssSampling": {
+            "status": "available",
+            "completedSampleCount": 20,
+            "unavailableSampleCount": 0
+          },
+          "output": {
+            "pageCount": 2,
+            "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+            "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+          },
+          "totalMs": 2739.017499999958,
+          "iteration": 2,
+          "status": 0
+        }
+      ],
+      "raw": {
+        "totalAverageMs": 4479.883878999996,
+        "count": 21
+      },
+      "warm": {
+        "totalAverageMs": 3763.821224047611,
+        "count": 21
+      }
+    },
+    "hmr": {
+      "templates": []
+    }
+  },
+  "build": {
+    "all": {
+      "totalAverageBaselineMs": 4204.861948404763,
+      "wallAverageBaselineMs": 4204.861948404763,
+      "cliAverageBaselineMs": 2381.095238095238,
+      "coreAverageBaselineMs": null,
+      "rssPeakAverageBaselineBytes": 516810264.38095236,
+      "rssAverageBaselineBytes": 516810264.38095236,
+      "heapUsedAverageBaselineBytes": null,
+      "totalAverageOptimizedMs": 4121.852551523804,
+      "wallAverageOptimizedMs": 4121.852551523804,
+      "cliAverageOptimizedMs": 2356.8571428571427,
+      "coreAverageOptimizedMs": null,
+      "rssPeakAverageOptimizedBytes": 514941318.0952381,
+      "rssAverageOptimizedBytes": 514941318.0952381,
+      "heapUsedAverageOptimizedBytes": null
+    },
+    "rows": [
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+        "key": "build:weapp-vite-tailwindcss-tdesign-template:first",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 7747.260666714283,
+          "totalMedianMs": 7643.106250000012,
+          "p95Ms": 9606.073334000015,
+          "averageWallMs": 7747.260666714283,
+          "wallSamples": [
+            9606.073334000015,
+            7643.106250000012,
+            8647.620291,
+            6358.4820840000175,
+            6324.4850829999195,
+            7167.63274999999,
+            8483.424875000026
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 5942.714285714285,
+            "median": 5896,
+            "p95": 7213,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1804.546380999997,
+            "median": 1747.1062500000116,
+            "p95": 2393.073334000015,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 810078793.1428572,
+          "rssAverageBytes": 810078793.1428572
+        },
+        "optimized": {
+          "totalAverageMs": 7858.3652261428315,
+          "totalMedianMs": 7851.270082999952,
+          "p95Ms": 9586.979541999986,
+          "averageWallMs": 7858.3652261428315,
+          "wallSamples": [
+            9106.082209000015,
+            7851.270082999952,
+            8236.426749999926,
+            7443.3477910000365,
+            6378.268374999985,
+            6406.181832999922,
+            9586.979541999986
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 6151.142857142857,
+            "median": 6017,
+            "p95": 7629,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1707.2223689999748,
+            "median": 1834.2700829999521,
+            "p95": 2018.0822090000147,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 804377161.1428572,
+          "rssAverageBytes": 804377161.1428572
+        }
+      },
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+        "key": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 6271.494303428568,
+          "totalMedianMs": 6131.453207999992,
+          "p95Ms": 8333.396375000011,
+          "averageWallMs": 6271.494303428568,
+          "wallSamples": [
+            5797.629790999985,
+            6525.509083000012,
+            6131.453207999992,
+            5263.552666999982,
+            5376.684875000035,
+            6472.234124999959,
+            8333.396375000011
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 4284.142857142857,
+            "median": 3973,
+            "p95": 5991,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1987.3514462857108,
+            "median": 1975.234124999959,
+            "p95": 2342.396375000011,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 699587437.7142857,
+          "rssAverageBytes": 699587437.7142857
+        },
+        "optimized": {
+          "totalAverageMs": 6084.700970142847,
+          "totalMedianMs": 6127.5010000000475,
+          "p95Ms": 7095.075291000016,
+          "averageWallMs": 6084.700970142847,
+          "wallSamples": [
+            7095.075291000016,
+            6127.744791999983,
+            5990.895583000034,
+            6127.5010000000475,
+            4865.036957999924,
+            5361.398749999935,
+            7025.254416999989
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 3874.1428571428573,
+            "median": 3845,
+            "p95": 4350,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 2210.5581129999896,
+            "median": 2235.895583000034,
+            "p95": 2847.0752910000156,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 694021558.8571428,
+          "rssAverageBytes": 694021558.8571428
+        }
+      },
+      {
+        "id": "build:weapp-vite-template:first",
+        "key": "build:weapp-vite-template:first",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 3002.9214997142885,
+          "totalMedianMs": 3219.8906669999706,
+          "p95Ms": 3635.2542080000276,
+          "averageWallMs": 3002.9214997142885,
+          "wallSamples": [
+            3287.8400830000173,
+            3196.754541000002,
+            3219.8906669999706,
+            2183.3739580000984,
+            1967.6937080000062,
+            3635.2542080000276,
+            3529.643332999898
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1027.142857142857,
+            "median": 1070,
+            "p95": 1318,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1975.7786425714314,
+            "median": 2046.754541000002,
+            "p95": 2459.643332999898,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 396909421.71428573,
+          "rssAverageBytes": 396909421.71428573
+        },
+        "optimized": {
+          "totalAverageMs": 2814.0058930000023,
+          "totalMedianMs": 2759.3850000000093,
+          "p95Ms": 3631.3693330000388,
+          "averageWallMs": 2814.0058930000023,
+          "wallSamples": [
+            3342.2122499999823,
+            2759.3850000000093,
+            2838.6732090000296,
+            2352.0261669999454,
+            2541.672917000018,
+            2232.7023749999935,
+            3631.3693330000388
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1057.5714285714287,
+            "median": 1051,
+            "p95": 1312,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1756.4344644285738,
+            "median": 1690.6732090000296,
+            "p95": 2508.3693330000388,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 396703451.4285714,
+          "rssAverageBytes": 396703451.4285714
+        }
+      },
+      {
+        "id": "build:weapp-vite-template:repeat",
+        "key": "build:weapp-vite-template:repeat",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 2788.4169465714535,
+          "totalMedianMs": 2763.666041999997,
+          "p95Ms": 3660.357958000037,
+          "averageWallMs": 2788.4169465714535,
+          "wallSamples": [
+            3517.664584000013,
+            2769.2579999999725,
+            2763.666041999997,
+            2142.4576670000097,
+            1905.0528750000522,
+            3660.357958000037,
+            2760.461500000092
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1016.7142857142857,
+            "median": 969,
+            "p95": 1375,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1771.7026608571675,
+            "median": 1800.2579999999725,
+            "p95": 2437.357958000037,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 393262811.4285714,
+          "rssAverageBytes": 393262811.4285714
+        },
+        "optimized": {
+          "totalAverageMs": 2707.8276365714346,
+          "totalMedianMs": 2731.04904100002,
+          "p95Ms": 3117.8133329999982,
+          "averageWallMs": 2707.8276365714346,
+          "wallSamples": [
+            3117.8133329999982,
+            2731.04904100002,
+            2716.0422910000198,
+            2373.562333000009,
+            2030.515999999945,
+            3027.2250830000266,
+            2958.585375000024
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1048.4285714285713,
+            "median": 1000,
+            "p95": 1364,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1659.3990651428633,
+            "median": 1716.0422910000198,
+            "p95": 1814.2250830000266,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 392890660.5714286,
+          "rssAverageBytes": 392890660.5714286
+        }
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:first",
+        "key": "build:weapp-vite-wevu-template:first",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 2794.66592857141,
+          "totalMedianMs": 2887.133291999984,
+          "p95Ms": 3576.313124999986,
+          "averageWallMs": 2794.66592857141,
+          "wallSamples": [
+            3576.313124999986,
+            2887.133291999984,
+            2541.7077079999726,
+            2461.4945420000004,
+            1885.541041999939,
+            3319.8791249999776,
+            2890.5926660000114
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1010,
+            "median": 947,
+            "p95": 1433,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1784.6659285714102,
+            "median": 1783.5926660000114,
+            "p95": 2287.8791249999776,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 399535542.85714287,
+          "rssAverageBytes": 399535542.85714287
+        },
+        "optimized": {
+          "totalAverageMs": 2767.2805178571557,
+          "totalMedianMs": 2915.1442080000415,
+          "p95Ms": 3649.1394169999985,
+          "averageWallMs": 2767.2805178571557,
+          "wallSamples": [
+            3272.5725000000093,
+            3264.8660420000087,
+            2915.1442080000415,
+            1993.130416000029,
+            2008.1821250000503,
+            2267.928916999954,
+            3649.1394169999985
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1016.5714285714286,
+            "median": 927,
+            "p95": 1342,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1750.7090892857273,
+            "median": 1930.5725000000093,
+            "p95": 2417.1394169999985,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 398587611.4285714,
+          "rssAverageBytes": 398587611.4285714
+        }
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:repeat",
+        "key": "build:weapp-vite-wevu-template:repeat",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 2624.412345428577,
+          "totalMedianMs": 2806.5189169999794,
+          "p95Ms": 3524.8059169999324,
+          "averageWallMs": 2624.412345428577,
+          "wallSamples": [
+            2845.7235419999924,
+            2432.75670800003,
+            2806.5189169999794,
+            1775.6808750000782,
+            1972.2299590000184,
+            3013.1705000000075,
+            3524.8059169999324
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1005.8571428571429,
+            "median": 1008,
+            "p95": 1333,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1618.555202571434,
+            "median": 1649.5189169999794,
+            "p95": 2191.8059169999324,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 401487579.4285714,
+          "rssAverageBytes": 401487579.4285714
+        },
+        "optimized": {
+          "totalAverageMs": 2498.9350654285518,
+          "totalMedianMs": 2518.322709000029,
+          "p95Ms": 3617.534875000012,
+          "averageWallMs": 2498.9350654285518,
+          "wallSamples": [
+            3617.534875000012,
+            2518.322709000029,
+            2361.6116659999825,
+            1903.092249999987,
+            1817.2508749999106,
+            2535.715582999983,
+            2739.017499999958
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 993.2857142857143,
+            "median": 966,
+            "p95": 1501,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1505.6493511428375,
+            "median": 1535.6116659999825,
+            "p95": 2116.534875000012,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 403067465.14285713,
+          "rssAverageBytes": 403067465.14285713
+        }
+      }
+    ],
+    "failed": [
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+        "key": "build:weapp-vite-tailwindcss-tdesign-template:first",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 7747.260666714283,
+          "totalMedianMs": 7643.106250000012,
+          "p95Ms": 9606.073334000015,
+          "averageWallMs": 7747.260666714283,
+          "wallSamples": [
+            9606.073334000015,
+            7643.106250000012,
+            8647.620291,
+            6358.4820840000175,
+            6324.4850829999195,
+            7167.63274999999,
+            8483.424875000026
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 5942.714285714285,
+            "median": 5896,
+            "p95": 7213,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1804.546380999997,
+            "median": 1747.1062500000116,
+            "p95": 2393.073334000015,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 810078793.1428572,
+          "rssAverageBytes": 810078793.1428572
+        },
+        "optimized": {
+          "totalAverageMs": 7858.3652261428315,
+          "totalMedianMs": 7851.270082999952,
+          "p95Ms": 9586.979541999986,
+          "averageWallMs": 7858.3652261428315,
+          "wallSamples": [
+            9106.082209000015,
+            7851.270082999952,
+            8236.426749999926,
+            7443.3477910000365,
+            6378.268374999985,
+            6406.181832999922,
+            9586.979541999986
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 6151.142857142857,
+            "median": 6017,
+            "p95": 7629,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1707.2223689999748,
+            "median": 1834.2700829999521,
+            "p95": 2018.0822090000147,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 804377161.1428572,
+          "rssAverageBytes": 804377161.1428572
+        }
+      },
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+        "key": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 6271.494303428568,
+          "totalMedianMs": 6131.453207999992,
+          "p95Ms": 8333.396375000011,
+          "averageWallMs": 6271.494303428568,
+          "wallSamples": [
+            5797.629790999985,
+            6525.509083000012,
+            6131.453207999992,
+            5263.552666999982,
+            5376.684875000035,
+            6472.234124999959,
+            8333.396375000011
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 4284.142857142857,
+            "median": 3973,
+            "p95": 5991,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1987.3514462857108,
+            "median": 1975.234124999959,
+            "p95": 2342.396375000011,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 699587437.7142857,
+          "rssAverageBytes": 699587437.7142857
+        },
+        "optimized": {
+          "totalAverageMs": 6084.700970142847,
+          "totalMedianMs": 6127.5010000000475,
+          "p95Ms": 7095.075291000016,
+          "averageWallMs": 6084.700970142847,
+          "wallSamples": [
+            7095.075291000016,
+            6127.744791999983,
+            5990.895583000034,
+            6127.5010000000475,
+            4865.036957999924,
+            5361.398749999935,
+            7025.254416999989
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 3874.1428571428573,
+            "median": 3845,
+            "p95": 4350,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 2210.5581129999896,
+            "median": 2235.895583000034,
+            "p95": 2847.0752910000156,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 694021558.8571428,
+          "rssAverageBytes": 694021558.8571428
+        }
+      },
+      {
+        "id": "build:weapp-vite-template:first",
+        "key": "build:weapp-vite-template:first",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 3002.9214997142885,
+          "totalMedianMs": 3219.8906669999706,
+          "p95Ms": 3635.2542080000276,
+          "averageWallMs": 3002.9214997142885,
+          "wallSamples": [
+            3287.8400830000173,
+            3196.754541000002,
+            3219.8906669999706,
+            2183.3739580000984,
+            1967.6937080000062,
+            3635.2542080000276,
+            3529.643332999898
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1027.142857142857,
+            "median": 1070,
+            "p95": 1318,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1975.7786425714314,
+            "median": 2046.754541000002,
+            "p95": 2459.643332999898,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 396909421.71428573,
+          "rssAverageBytes": 396909421.71428573
+        },
+        "optimized": {
+          "totalAverageMs": 2814.0058930000023,
+          "totalMedianMs": 2759.3850000000093,
+          "p95Ms": 3631.3693330000388,
+          "averageWallMs": 2814.0058930000023,
+          "wallSamples": [
+            3342.2122499999823,
+            2759.3850000000093,
+            2838.6732090000296,
+            2352.0261669999454,
+            2541.672917000018,
+            2232.7023749999935,
+            3631.3693330000388
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1057.5714285714287,
+            "median": 1051,
+            "p95": 1312,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1756.4344644285738,
+            "median": 1690.6732090000296,
+            "p95": 2508.3693330000388,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 396703451.4285714,
+          "rssAverageBytes": 396703451.4285714
+        }
+      },
+      {
+        "id": "build:weapp-vite-template:repeat",
+        "key": "build:weapp-vite-template:repeat",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 2788.4169465714535,
+          "totalMedianMs": 2763.666041999997,
+          "p95Ms": 3660.357958000037,
+          "averageWallMs": 2788.4169465714535,
+          "wallSamples": [
+            3517.664584000013,
+            2769.2579999999725,
+            2763.666041999997,
+            2142.4576670000097,
+            1905.0528750000522,
+            3660.357958000037,
+            2760.461500000092
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1016.7142857142857,
+            "median": 969,
+            "p95": 1375,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1771.7026608571675,
+            "median": 1800.2579999999725,
+            "p95": 2437.357958000037,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 393262811.4285714,
+          "rssAverageBytes": 393262811.4285714
+        },
+        "optimized": {
+          "totalAverageMs": 2707.8276365714346,
+          "totalMedianMs": 2731.04904100002,
+          "p95Ms": 3117.8133329999982,
+          "averageWallMs": 2707.8276365714346,
+          "wallSamples": [
+            3117.8133329999982,
+            2731.04904100002,
+            2716.0422910000198,
+            2373.562333000009,
+            2030.515999999945,
+            3027.2250830000266,
+            2958.585375000024
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1048.4285714285713,
+            "median": 1000,
+            "p95": 1364,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1659.3990651428633,
+            "median": 1716.0422910000198,
+            "p95": 1814.2250830000266,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 392890660.5714286,
+          "rssAverageBytes": 392890660.5714286
+        }
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:first",
+        "key": "build:weapp-vite-wevu-template:first",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 2794.66592857141,
+          "totalMedianMs": 2887.133291999984,
+          "p95Ms": 3576.313124999986,
+          "averageWallMs": 2794.66592857141,
+          "wallSamples": [
+            3576.313124999986,
+            2887.133291999984,
+            2541.7077079999726,
+            2461.4945420000004,
+            1885.541041999939,
+            3319.8791249999776,
+            2890.5926660000114
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1010,
+            "median": 947,
+            "p95": 1433,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1784.6659285714102,
+            "median": 1783.5926660000114,
+            "p95": 2287.8791249999776,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 399535542.85714287,
+          "rssAverageBytes": 399535542.85714287
+        },
+        "optimized": {
+          "totalAverageMs": 2767.2805178571557,
+          "totalMedianMs": 2915.1442080000415,
+          "p95Ms": 3649.1394169999985,
+          "averageWallMs": 2767.2805178571557,
+          "wallSamples": [
+            3272.5725000000093,
+            3264.8660420000087,
+            2915.1442080000415,
+            1993.130416000029,
+            2008.1821250000503,
+            2267.928916999954,
+            3649.1394169999985
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1016.5714285714286,
+            "median": 927,
+            "p95": 1342,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1750.7090892857273,
+            "median": 1930.5725000000093,
+            "p95": 2417.1394169999985,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 398587611.4285714,
+          "rssAverageBytes": 398587611.4285714
+        }
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:repeat",
+        "key": "build:weapp-vite-wevu-template:repeat",
+        "comparable": false,
+        "baseline": {
+          "totalAverageMs": 2624.412345428577,
+          "totalMedianMs": 2806.5189169999794,
+          "p95Ms": 3524.8059169999324,
+          "averageWallMs": 2624.412345428577,
+          "wallSamples": [
+            2845.7235419999924,
+            2432.75670800003,
+            2806.5189169999794,
+            1775.6808750000782,
+            1972.2299590000184,
+            3013.1705000000075,
+            3524.8059169999324
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 1005.8571428571429,
+            "median": 1008,
+            "p95": 1333,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1618.555202571434,
+            "median": 1649.5189169999794,
+            "p95": 2191.8059169999324,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 401487579.4285714,
+          "rssAverageBytes": 401487579.4285714
+        },
+        "optimized": {
+          "totalAverageMs": 2498.9350654285518,
+          "totalMedianMs": 2518.322709000029,
+          "p95Ms": 3617.534875000012,
+          "averageWallMs": 2498.9350654285518,
+          "wallSamples": [
+            3617.534875000012,
+            2518.322709000029,
+            2361.6116659999825,
+            1903.092249999987,
+            1817.2508749999106,
+            2535.715582999983,
+            2739.017499999958
+          ],
+          "count": 7,
+          "cli": {
+            "mean": 993.2857142857143,
+            "median": 966,
+            "p95": 1501,
+            "count": 7
+          },
+          "outsideCli": {
+            "mean": 1505.6493511428375,
+            "median": 1535.6116659999825,
+            "p95": 2116.534875000012,
+            "count": 7
+          },
+          "core": {
+            "mean": null,
+            "median": null,
+            "p95": null,
+            "count": 0
+          },
+          "rssPeakAverageBytes": 403067465.14285713,
+          "rssAverageBytes": 403067465.14285713
+        }
+      }
+    ]
+  },
+  "hmr": {
+    "all": {
+      "totalAverageBaselineMs": null,
+      "wallAverageBaselineMs": null,
+      "cliAverageBaselineMs": null,
+      "coreAverageBaselineMs": null,
+      "rssPeakAverageBaselineBytes": null,
+      "rssAverageBaselineBytes": null,
+      "heapUsedAverageBaselineBytes": null,
+      "totalAverageOptimizedMs": null,
+      "wallAverageOptimizedMs": null,
+      "cliAverageOptimizedMs": null,
+      "coreAverageOptimizedMs": null,
+      "rssPeakAverageOptimizedBytes": null,
+      "rssAverageOptimizedBytes": null,
+      "heapUsedAverageOptimizedBytes": null
+    },
+    "rows": [],
+    "failed": []
+  },
+  "gate": {
+    "status": "incomplete",
+    "thresholdPercent": 5,
+    "scenarios": [
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+        "status": "incomplete",
+        "primary": {
+          "count": 7,
+          "baselineMedianMs": 7643.106250000012,
+          "currentMedianMs": 7851.270082999952,
+          "baselineP95Ms": 9606.073334000015,
+          "currentP95Ms": 9586.979541999986,
+          "pairedDeltaMedianMs": 53.78329200006556,
+          "changePercent": 2.7235501665300044
+        },
+        "error": "primary hmr:classic: pair 1 baseline: Error: weapp-vite-wevu-template/json-sitemap: Timed out waiting for reachable emitted output to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TEMPLATE_JSON_SITEMAP_1_mugghjq2; Error: Missing or unexpected performance scenario evidence"
+      },
+      {
+        "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+        "status": "incomplete",
+        "primary": {
+          "count": 7,
+          "baselineMedianMs": 6131.453207999992,
+          "currentMedianMs": 6127.5010000000475,
+          "baselineP95Ms": 8333.396375000011,
+          "currentP95Ms": 7095.075291000016,
+          "pairedDeltaMedianMs": -397.7642910000286,
+          "changePercent": -0.06445793298703792
+        },
+        "error": "primary hmr:classic: pair 1 baseline: Error: weapp-vite-wevu-template/json-sitemap: Timed out waiting for reachable emitted output to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TEMPLATE_JSON_SITEMAP_1_mugghjq2; Error: Missing or unexpected performance scenario evidence"
+      },
+      {
+        "id": "build:weapp-vite-template:first",
+        "status": "incomplete",
+        "primary": {
+          "count": 7,
+          "baselineMedianMs": 3219.8906669999706,
+          "currentMedianMs": 2759.3850000000093,
+          "baselineP95Ms": 3635.2542080000276,
+          "currentP95Ms": 3631.3693330000388,
+          "pairedDeltaMedianMs": 54.372166999964975,
+          "changePercent": -14.301903841630207
+        },
+        "error": "primary hmr:classic: pair 1 baseline: Error: weapp-vite-wevu-template/json-sitemap: Timed out waiting for reachable emitted output to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TEMPLATE_JSON_SITEMAP_1_mugghjq2; Error: Missing or unexpected performance scenario evidence"
+      },
+      {
+        "id": "build:weapp-vite-template:repeat",
+        "status": "incomplete",
+        "primary": {
+          "count": 7,
+          "baselineMedianMs": 2763.666041999997,
+          "currentMedianMs": 2731.04904100002,
+          "baselineP95Ms": 3660.357958000037,
+          "currentP95Ms": 3117.8133329999982,
+          "pairedDeltaMedianMs": -38.2089589999523,
+          "changePercent": -1.1802077568088785
+        },
+        "error": "primary hmr:classic: pair 1 baseline: Error: weapp-vite-wevu-template/json-sitemap: Timed out waiting for reachable emitted output to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TEMPLATE_JSON_SITEMAP_1_mugghjq2; Error: Missing or unexpected performance scenario evidence"
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:first",
+        "status": "incomplete",
+        "primary": {
+          "count": 7,
+          "baselineMedianMs": 2887.133291999984,
+          "currentMedianMs": 2915.1442080000415,
+          "baselineP95Ms": 3576.313124999986,
+          "currentP95Ms": 3649.1394169999985,
+          "pairedDeltaMedianMs": 122.6410830001114,
+          "changePercent": 0.9701982266517966
+        },
+        "error": "primary hmr:classic: pair 1 baseline: Error: weapp-vite-wevu-template/json-sitemap: Timed out waiting for reachable emitted output to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TEMPLATE_JSON_SITEMAP_1_mugghjq2; Error: Missing or unexpected performance scenario evidence"
+      },
+      {
+        "id": "build:weapp-vite-wevu-template:repeat",
+        "status": "incomplete",
+        "primary": {
+          "count": 7,
+          "baselineMedianMs": 2806.5189169999794,
+          "currentMedianMs": 2518.322709000029,
+          "baselineP95Ms": 3524.8059169999324,
+          "currentP95Ms": 3617.534875000012,
+          "pairedDeltaMedianMs": -154.97908400010783,
+          "changePercent": -10.268814019184193
+        },
+        "error": "primary hmr:classic: pair 1 baseline: Error: weapp-vite-wevu-template/json-sitemap: Timed out waiting for reachable emitted output to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TEMPLATE_JSON_SITEMAP_1_mugghjq2; Error: Missing or unexpected performance scenario evidence"
+      }
+    ]
+  },
+  "primary": {
+    "samples": [
+      {
+        "round": 0,
+        "side": "baseline",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 9606.073334000015,
+            "cliMs": 7213,
+            "rssBytes": 825720832,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 68,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 5797.629790999985,
+            "cliMs": 3973,
+            "rssBytes": 686587904,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 38,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 3287.8400830000173,
+            "cliMs": 1318,
+            "rssBytes": 393838592,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 21,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 3517.664584000013,
+            "cliMs": 1375,
+            "rssBytes": 398393344,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 23,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 3576.313124999986,
+            "cliMs": 1433,
+            "rssBytes": 394280960,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 24,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 2845.7235419999924,
+            "cliMs": 1112,
+            "rssBytes": 395984896,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 0,
+        "side": "optimized",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 9106.082209000015,
+            "cliMs": 7088,
+            "rssBytes": 789446656,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 59,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 7095.075291000016,
+            "cliMs": 4248,
+            "rssBytes": 691453952,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 47,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 3342.2122499999823,
+            "cliMs": 1312,
+            "rssBytes": 393789440,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 22,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 3117.8133329999982,
+            "cliMs": 1319,
+            "rssBytes": 397672448,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 21,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 3272.5725000000093,
+            "cliMs": 1342,
+            "rssBytes": 404013056,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 22,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 3617.534875000012,
+            "cliMs": 1501,
+            "rssBytes": 402259968,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 24,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 1,
+        "side": "optimized",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 7851.270082999952,
+            "cliMs": 6017,
+            "rssBytes": 800735232,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 52,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 6127.744791999983,
+            "cliMs": 3845,
+            "rssBytes": 686555136,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 41,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 2759.3850000000093,
+            "cliMs": 991,
+            "rssBytes": 399933440,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2731.04904100002,
+            "cliMs": 994,
+            "rssBytes": 396247040,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 19,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 3264.8660420000087,
+            "cliMs": 1333,
+            "rssBytes": 395034624,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 22,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 2518.322709000029,
+            "cliMs": 966,
+            "rssBytes": 405045248,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 18,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 1,
+        "side": "baseline",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 7643.106250000012,
+            "cliMs": 5896,
+            "rssBytes": 798507008,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 49,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 6525.509083000012,
+            "cliMs": 4474,
+            "rssBytes": 714014720,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 41,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 3196.754541000002,
+            "cliMs": 1150,
+            "rssBytes": 399753216,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 22,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2769.2579999999725,
+            "cliMs": 969,
+            "rssBytes": 385925120,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 2887.133291999984,
+            "cliMs": 885,
+            "rssBytes": 396574720,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 2432.75670800003,
+            "cliMs": 922,
+            "rssBytes": 403865600,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 19,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 2,
+        "side": "baseline",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 8647.620291,
+            "cliMs": 6493,
+            "rssBytes": 802504704,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 56,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 6131.453207999992,
+            "cliMs": 3918,
+            "rssBytes": 709754880,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 40,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 3219.8906669999706,
+            "cliMs": 977,
+            "rssBytes": 400850944,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 22,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2763.666041999997,
+            "cliMs": 922,
+            "rssBytes": 393576448,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 2541.7077079999726,
+            "cliMs": 947,
+            "rssBytes": 407715840,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 19,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 2806.5189169999794,
+            "cliMs": 1157,
+            "rssBytes": 403193856,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 21,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 2,
+        "side": "optimized",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 8236.426749999926,
+            "cliMs": 6337,
+            "rssBytes": 795639808,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 54,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 5990.895583000034,
+            "cliMs": 3755,
+            "rssBytes": 687210496,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 42,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 2838.6732090000296,
+            "cliMs": 1148,
+            "rssBytes": 398606336,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2716.0422910000198,
+            "cliMs": 1000,
+            "rssBytes": 397672448,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 2915.1442080000415,
+            "cliMs": 927,
+            "rssBytes": 402800640,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 21,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 2361.6116659999825,
+            "cliMs": 826,
+            "rssBytes": 403832832,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 18,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 3,
+        "side": "optimized",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 7443.3477910000365,
+            "cliMs": 5984,
+            "rssBytes": 805388288,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 47,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 6127.5010000000475,
+            "cliMs": 4350,
+            "rssBytes": 688619520,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 39,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 2352.0261669999454,
+            "cliMs": 925,
+            "rssBytes": 404979712,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 17,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2373.562333000009,
+            "cliMs": 702,
+            "rssBytes": 393510912,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 18,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 1993.130416000029,
+            "cliMs": 786,
+            "rssBytes": 397410304,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 16,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 1903.092249999987,
+            "cliMs": 778,
+            "rssBytes": 396869632,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 16,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 3,
+        "side": "baseline",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 6358.4820840000175,
+            "cliMs": 5186,
+            "rssBytes": 817561600,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 44,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 5263.552666999982,
+            "cliMs": 3508,
+            "rssBytes": 688914432,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 33,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 2183.3739580000984,
+            "cliMs": 755,
+            "rssBytes": 391380992,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 16,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2142.4576670000097,
+            "cliMs": 871,
+            "rssBytes": 397508608,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 16,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 2461.4945420000004,
+            "cliMs": 944,
+            "rssBytes": 395771904,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 18,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 1775.6808750000782,
+            "cliMs": 682,
+            "rssBytes": 395952128,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 15,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 4,
+        "side": "baseline",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 6324.4850829999195,
+            "cliMs": 4922,
+            "rssBytes": 802406400,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 45,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 5376.684875000035,
+            "cliMs": 3628,
+            "rssBytes": 678150144,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 38,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 1967.6937080000062,
+            "cliMs": 644,
+            "rssBytes": 387629056,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 15,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 1905.0528750000522,
+            "cliMs": 735,
+            "rssBytes": 393330688,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 15,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 1885.541041999939,
+            "cliMs": 722,
+            "rssBytes": 400998400,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 15,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 1972.2299590000184,
+            "cliMs": 827,
+            "rssBytes": 407535616,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 16,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 4,
+        "side": "optimized",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 6378.268374999985,
+            "cliMs": 4726,
+            "rssBytes": 829374464,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 43,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 4865.036957999924,
+            "cliMs": 3080,
+            "rssBytes": 707182592,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 34,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 2541.672917000018,
+            "cliMs": 1051,
+            "rssBytes": 404553728,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 19,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2030.515999999945,
+            "cliMs": 747,
+            "rssBytes": 380649472,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 16,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 2008.1821250000503,
+            "cliMs": 829,
+            "rssBytes": 397082624,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 16,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 1817.2508749999106,
+            "cliMs": 740,
+            "rssBytes": 414973952,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 15,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 5,
+        "side": "optimized",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 6406.181832999922,
+            "cliMs": 5277,
+            "rssBytes": 806535168,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 45,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 5361.398749999935,
+            "cliMs": 3569,
+            "rssBytes": 693649408,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 38,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 2232.7023749999935,
+            "cliMs": 853,
+            "rssBytes": 378863616,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 17,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 3027.2250830000266,
+            "cliMs": 1213,
+            "rssBytes": 388907008,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 21,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 2267.928916999954,
+            "cliMs": 667,
+            "rssBytes": 395657216,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 18,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 2535.715582999983,
+            "cliMs": 1061,
+            "rssBytes": 403406848,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 18,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 5,
+        "side": "baseline",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 7167.63274999999,
+            "cliMs": 5596,
+            "rssBytes": 818135040,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 46,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 6472.234124999959,
+            "cliMs": 4497,
+            "rssBytes": 699596800,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 42,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 3635.2542080000276,
+            "cliMs": 1276,
+            "rssBytes": 398704640,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 24,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 3660.357958000037,
+            "cliMs": 1223,
+            "rssBytes": 389578752,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 24,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 3319.8791249999776,
+            "cliMs": 1032,
+            "rssBytes": 404766720,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 22,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 3013.1705000000075,
+            "cliMs": 1008,
+            "rssBytes": 401833984,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 22,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 6,
+        "side": "baseline",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 8483.424875000026,
+            "cliMs": 6293,
+            "rssBytes": 805715968,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 52,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 8333.396375000011,
+            "cliMs": 5991,
+            "rssBytes": 720093184,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 47,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 3529.643332999898,
+            "cliMs": 1070,
+            "rssBytes": 406208512,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 24,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2760.461500000092,
+            "cliMs": 1022,
+            "rssBytes": 394526720,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 19,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 2890.5926660000114,
+            "cliMs": 1107,
+            "rssBytes": 396640256,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 21,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 3524.8059169999324,
+            "cliMs": 1333,
+            "rssBytes": 402046976,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 25,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      },
+      {
+        "round": 6,
+        "side": "optimized",
+        "values": [
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:first",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "first",
+            "ms": 9586.979541999986,
+            "cliMs": 7629,
+            "rssBytes": 803520512,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 57,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+            "template": "weapp-vite-tailwindcss-tdesign-template",
+            "phase": "repeat",
+            "ms": 7025.254416999989,
+            "cliMs": 4272,
+            "rssBytes": 703479808,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 43,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "79c3cd3509152386ffc30a3aa1f880e43da5739459c8acb8fa6038a0384a3908",
+              "configDigest": "0f33a0d2f1d408cdd8c96348176c825018133e1a758ba98cd7d5c07b4dd75c61"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:first",
+            "template": "weapp-vite-template",
+            "phase": "first",
+            "ms": 3631.3693330000388,
+            "cliMs": 1123,
+            "rssBytes": 396197888,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 23,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-template:repeat",
+            "template": "weapp-vite-template",
+            "phase": "repeat",
+            "ms": 2958.585375000024,
+            "cliMs": 1364,
+            "rssBytes": 395575296,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 21,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "84be8b44584d9b3c2a5a24e5384598fc54f597c670c56bb8d94d6e79a108970b",
+              "configDigest": "fc5592f699a1a4c09b10dfd8c5700ac39faf9dea3cb8063011ad2f9211d9fb37"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:first",
+            "template": "weapp-vite-wevu-template",
+            "phase": "first",
+            "ms": 3649.1394169999985,
+            "cliMs": 1232,
+            "rssBytes": 398114816,
+            "rssSampling": {
+              "status": "partial",
+              "completedSampleCount": 24,
+              "unavailableSampleCount": 1
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          },
+          {
+            "id": "build:weapp-vite-wevu-template:repeat",
+            "template": "weapp-vite-wevu-template",
+            "phase": "repeat",
+            "ms": 2739.017499999958,
+            "cliMs": 1081,
+            "rssBytes": 395083776,
+            "rssSampling": {
+              "status": "available",
+              "completedSampleCount": 20,
+              "unavailableSampleCount": 0
+            },
+            "output": {
+              "pageCount": 2,
+              "templateDigest": "fc2c62817b42a38bbd903e947eb873a7d510c27167997960ca6a2ba84c453819",
+              "configDigest": "49ece609d395b91a50555ddab2af2b28c314695f4b81d9b38ce3ed20da406c95"
+            }
+          }
+        ]
+      }
+    ],
+    "errors": [
+      "primary hmr:classic: pair 1 baseline: Error: weapp-vite-wevu-template/json-sitemap: Timed out waiting for reachable emitted output to contain marker: HMR_BENCH_WEAPP_VITE_WEVU_TEMPLATE_JSON_SITEMAP_1_mugghjq2",
+      "Error: Missing or unexpected performance scenario evidence"
+    ]
+  },
+  "manifest": {
+    "templates": [
+      {
+        "id": "weapp-vite-tailwindcss-tdesign-template",
+        "scenarios": [
+          "app-json",
+          "native-page-script",
+          "native-page-template",
+          "native-page-style"
+        ]
+      },
+      {
+        "id": "weapp-vite-template",
+        "scenarios": [
+          "app-json",
+          "native-page-script",
+          "native-page-template",
+          "native-page-style"
+        ]
+      },
+      {
+        "id": "weapp-vite-wevu-template",
+        "scenarios": [
+          "vue-page-script",
+          "vue-page-style",
+          "vue-page-template",
+          "json-sitemap"
+        ]
+      }
+    ],
+    "metrics": [
+      "build:weapp-vite-tailwindcss-tdesign-template:first",
+      "build:weapp-vite-tailwindcss-tdesign-template:repeat",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:app-json:first:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:app-json:first:restore",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:app-json:repeat:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:app-json:repeat:restore",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:restore",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:restore",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:restore",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:restore",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:restore",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:repeat:edit",
+      "hmr:classic:weapp-vite-tailwindcss-tdesign-template:native-page-style:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:app-json:first:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:app-json:first:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:app-json:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:app-json:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:first:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-script:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:first:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-template:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-style:first:restore",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-style:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-tailwindcss-tdesign-template:native-page-style:repeat:restore",
+      "build:weapp-vite-template:first",
+      "build:weapp-vite-template:repeat",
+      "hmr:classic:weapp-vite-template:app-json:first:edit",
+      "hmr:classic:weapp-vite-template:app-json:first:restore",
+      "hmr:classic:weapp-vite-template:app-json:repeat:edit",
+      "hmr:classic:weapp-vite-template:app-json:repeat:restore",
+      "hmr:classic:weapp-vite-template:native-page-script:first:edit",
+      "hmr:classic:weapp-vite-template:native-page-script:first:restore",
+      "hmr:classic:weapp-vite-template:native-page-script:repeat:edit",
+      "hmr:classic:weapp-vite-template:native-page-script:repeat:restore",
+      "hmr:classic:weapp-vite-template:native-page-template:first:edit",
+      "hmr:classic:weapp-vite-template:native-page-template:first:restore",
+      "hmr:classic:weapp-vite-template:native-page-template:repeat:edit",
+      "hmr:classic:weapp-vite-template:native-page-template:repeat:restore",
+      "hmr:classic:weapp-vite-template:native-page-style:first:edit",
+      "hmr:classic:weapp-vite-template:native-page-style:first:restore",
+      "hmr:classic:weapp-vite-template:native-page-style:repeat:edit",
+      "hmr:classic:weapp-vite-template:native-page-style:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-template:app-json:first:edit",
+      "hmr:stateful-experimental:weapp-vite-template:app-json:first:restore",
+      "hmr:stateful-experimental:weapp-vite-template:app-json:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-template:app-json:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-script:first:edit",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-script:first:restore",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-script:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-script:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-template:first:edit",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-template:first:restore",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-template:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-template:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-style:first:edit",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-style:first:restore",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-style:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-template:native-page-style:repeat:restore",
+      "build:weapp-vite-wevu-template:first",
+      "build:weapp-vite-wevu-template:repeat",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-script:first:edit",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-script:first:restore",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-script:repeat:edit",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-script:repeat:restore",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-style:first:edit",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-style:first:restore",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-style:repeat:edit",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-style:repeat:restore",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-template:first:edit",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-template:first:restore",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-template:repeat:edit",
+      "hmr:classic:weapp-vite-wevu-template:vue-page-template:repeat:restore",
+      "hmr:classic:weapp-vite-wevu-template:json-sitemap:first:edit",
+      "hmr:classic:weapp-vite-wevu-template:json-sitemap:first:restore",
+      "hmr:classic:weapp-vite-wevu-template:json-sitemap:repeat:edit",
+      "hmr:classic:weapp-vite-wevu-template:json-sitemap:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-script:first:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-script:first:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-script:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-script:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-style:first:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-style:first:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-style:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-style:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:first:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:first:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:vue-page-template:repeat:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:json-sitemap:first:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:json-sitemap:first:restore",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:json-sitemap:repeat:edit",
+      "hmr:stateful-experimental:weapp-vite-wevu-template:json-sitemap:repeat:restore",
+      "auto-build:1:manual:first",
+      "auto-build:1:manual:repeat",
+      "auto-hmr:1:manual:first:edit",
+      "auto-hmr:1:manual:first:restore",
+      "auto-hmr:1:manual:repeat:edit",
+      "auto-hmr:1:manual:repeat:restore",
+      "auto-build:1:automatic:first",
+      "auto-build:1:automatic:repeat",
+      "auto-hmr:1:automatic:first:edit",
+      "auto-hmr:1:automatic:first:restore",
+      "auto-hmr:1:automatic:repeat:edit",
+      "auto-hmr:1:automatic:repeat:restore",
+      "auto-build:20:manual:first",
+      "auto-build:20:manual:repeat",
+      "auto-hmr:20:manual:first:edit",
+      "auto-hmr:20:manual:first:restore",
+      "auto-hmr:20:manual:repeat:edit",
+      "auto-hmr:20:manual:repeat:restore",
+      "auto-build:20:automatic:first",
+      "auto-build:20:automatic:repeat",
+      "auto-hmr:20:automatic:first:edit",
+      "auto-hmr:20:automatic:first:restore",
+      "auto-hmr:20:automatic:repeat:edit",
+      "auto-hmr:20:automatic:repeat:restore",
+      "auto-build:50:manual:first",
+      "auto-build:50:manual:repeat",
+      "auto-hmr:50:manual:first:edit",
+      "auto-hmr:50:manual:first:restore",
+      "auto-hmr:50:manual:repeat:edit",
+      "auto-hmr:50:manual:repeat:restore",
+      "auto-build:50:automatic:first",
+      "auto-build:50:automatic:repeat",
+      "auto-hmr:50:automatic:first:edit",
+      "auto-hmr:50:automatic:first:restore",
+      "auto-hmr:50:automatic:repeat:edit",
+      "auto-hmr:50:automatic:repeat:restore",
+      "auto-build:69:manual:first",
+      "auto-build:69:manual:repeat",
+      "auto-hmr:69:manual:first:edit",
+      "auto-hmr:69:manual:first:restore",
+      "auto-hmr:69:manual:repeat:edit",
+      "auto-hmr:69:manual:repeat:restore",
+      "auto-build:69:automatic:first",
+      "auto-build:69:automatic:repeat",
+      "auto-hmr:69:automatic:first:edit",
+      "auto-hmr:69:automatic:first:restore",
+      "auto-hmr:69:automatic:repeat:edit",
+      "auto-hmr:69:automatic:repeat:restore"
+    ]
+  },
+  "featureCosts": [
+    {
+      "side": "baseline",
+      "count": 1,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 1,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 20,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 20,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 50,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 50,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 69,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 69,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "baseline",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 1,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 1,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 1,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 20,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 20,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 20,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 50,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 50,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 50,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 69,
+      "kind": "auto-build",
+      "phase": "first",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 69,
+      "kind": "auto-build",
+      "phase": "repeat",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "first:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "first:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "repeat:edit",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    },
+    {
+      "side": "optimized",
+      "count": 69,
+      "kind": "auto-hmr",
+      "phase": "repeat:restore",
+      "samples": {
+        "manual": 0,
+        "automatic": 0
+      },
+      "manualMedianMs": null,
+      "automaticMedianMs": null,
+      "extraMs": null,
+      "extraPercent": null,
+      "overFeatureBudget": null
+    }
+  ]
+}

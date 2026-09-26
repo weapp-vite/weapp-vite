@@ -4,11 +4,11 @@ Vue 3 风格的小程序运行时，复用同款响应式与调度器，通过�
 
 ## 特性
 
-- `ref`/`reactive`/`computed`/`watch` 与 `nextTick` 同源于 Vue 3 的响应式核心
+- `ref`/`reactive`/`computed`/`watch` 与 `nextTick` 同源于 Vue 3 的响应式核心，并提供面向静态 WXML 的 `useAsyncDerivation`
 - `defineComponent` + `setup` 生命周期钩子（onShow/onPageScroll/onShareAppMessage 等）自动注册微信小程序 `Component`（在微信中可用于页面/组件）
 - 快照 diff + 去重调度，最小化 `setData` 体积，支持 `bindModel` / `useBindModel` 的双向绑定语法
 - 插件、`app.config.globalProperties` 及小程序原生选项可自由组合
-- 内置 `defineStore`/`storeToRefs`/`createStore`，支持 getters、actions、订阅与补丁
+- 内置 `defineStore`/`storeToRefs`/`createPinia`，支持 getters、actions、订阅与补丁
 - TypeScript first，输出 ESM/CJS/types
 
 ## 安装
@@ -53,7 +53,7 @@ defineComponent({
     const local = ref(0)
 
     onMounted(() => {
-      nextTick(() => console.log('page ready'))
+      nextTick(() => console.log('reactive queue flushed'))
     })
     onPageScroll((e) => {
       console.log('scrollTop', e?.scrollTop)
@@ -71,12 +71,42 @@ defineComponent({
 - 分享/朋友圈/收藏是否触发由微信官方机制决定（例如右上角菜单/`open-type="share"`；朋友圈通常需配合 `wx.showShareMenu()` 开启菜单项）。
 - 组件场景使用 `defineComponent`，SFC 构建产物可调用 `createWevuComponent`。
 
-## 状态管理
+## 异步派生状态
+
+`useAsyncDerivation()` 把异步结果表示为静态模板可读取的 `status/value/error`，默认立即加载：
 
 ```ts
-import { createStore, defineStore, storeToRefs } from 'wevu'
+import { useAsyncDerivation } from 'wevu'
 
-createStore() // 在小程序入口只需要调用一次，注入插件可选
+const users = useAsyncDerivation(({ signal }) => fetchUsers({ signal }))
+```
+
+- `initial-pending` 表示首次加载，`refreshing` 保留最近一次成功值。
+- 首次失败的 `value` 为 `undefined`；刷新失败保留旧值。加载错误进入 `status/error`，`refresh()` 本身正常完成。
+- 连续刷新只允许最新任务提交，新刷新会通过 `signal` 取消旧任务；旧任务不响应取消也不会阻塞等待。
+- 返回值自动跟随当前 effect scope 清理，也可幂等调用 `dispose()`。模板数据只包含可枚举的 `status/value/error`，继续经过现有序列化链路。
+- 加载函数不会自动追踪响应式依赖；它不是 Promise 版 `computed()`，依赖变化后需要显式 `refresh()`。
+
+## 状态管理
+
+旧项目升级前请阅读 [Store 迁移指南](https://vite.weapp.dev/wevu/store-migration)。本次按 minor 发布，初始化、Setup 状态访问、重置和订阅行为仍需按指南迁移。
+
+新代码推荐 `createPinia()`；旧名称 `createStore()` 为同一个函数，`StoreManager` 类型继续保留。只创建实例不会激活它。
+
+在 `app.vue` 中安装一次 manager：
+
+```vue
+<script setup lang="ts">
+import { createPinia, use } from 'wevu'
+
+use(createPinia())
+</script>
+```
+
+使用 `createApp()` 时调用 `app.use(pinia)`；`use()` 只能在 app setup 中调用。定义 Store 并在安装后的页面/组件中使用：
+
+```ts
+import { defineStore, storeToRefs } from 'wevu'
 
 export const useCounter = defineStore('counter', {
   state: () => ({ count: 0 }),
@@ -90,7 +120,7 @@ export const useCounter = defineStore('counter', {
   },
 })
 
-// 在页面/组件内使用
+// 在已安装 manager 的页面/组件内使用
 const counter = useCounter()
 const { count, doubled } = storeToRefs(counter)
 counter.$subscribe(({ type }) => console.log('mutation', type))
@@ -99,7 +129,7 @@ counter.inc()
 
 ## 事件派发（emit）
 
-在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层直接调用小程序 `triggerEvent`。
+在 `setup(props, ctx)` 中可使用 `ctx.emit(eventName, detail?, options?)`，底层调用宿主事件能力。微信和抖音使用 `triggerEvent`；支付宝通过 `props.onXxx` 回调传递事件，并保留模板监听器需要的 `detail` 和数据集。支付宝回调不提供微信的冒泡、捕获和跨组件传播选项。
 
 组件边界遵循 Vue 的大小写约定：camelCase prop 与事件会统一映射为小程序 kebab-case 宿主名称，例如 `maxQuantity` 映射为 `max-quantity`，`emit('quantityChange')` 可由父组件的 `@quantity-change` 监听。`update:modelValue` 等带冒号事件继续沿用既有的 `update-modelvalue` 映射。
 
@@ -148,11 +178,17 @@ const onActiveChange = bindModel.model<boolean>('isActive').onChange
 
 ## 调度与适配
 
-- 更新被批量加入微任务队列，`nextTick` 与 Vue 3 行为一致。
-- 对状态做快照 diff，只把变更路径传给 `setData`，避免大对象全量下发。
+- 更新被批量加入微任务队列；`nextTick` 只等待当前 JavaScript/响应式任务队列排空，不等待小程序 `setData` 回调或视图提交。
+- 对状态做快照 diff，只把变更路径传给 `setData`；宿主提交失败时，下一次响应式更新会发送完整恢复快照。
 - 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`getCurrentScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，`setup()` 同步阶段内创建的副作用会自动归属到实例级 scope，便于避免泄漏。
 
 ## 开发产物与源码调试
+
+使用 weapp-vite 构建时，现有 `--platform` / `weapp.platform` 会自动注入编译期常量 `import.meta.env.PLATFORM`，取值为 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs` 或 `web`。Wevu 发布包保留平台表达式，消费构建替换后即可移除非目标平台分支及构建、IDE 等元数据，无需额外裁剪配置。
+
+能力裁剪取决于实际使用：继续从 `wevu` 使用具名导入，未使用的 Store、router 和 API/fetch 不会因根入口导出而强制进入产物。SFC / JSX 编译器根据 Binding Manifest 安装所需能力；普通 SFC 不依赖 JSX island 处理器，没有创建 router 时不加载首航 guard 状态机。公开动态工厂仍保留兼容能力安装，不能把编译器精简入口的测量值当成任意动态工厂的体积承诺。
+
+直接在其他工具链中使用时，未提供构建目标会保留宿主探测；显式使用 API/fetch 后，其动态跨平台 adapter 仍保留。Web 继续使用自己的宿主桥接，不等同于 Vue DOM runtime，也不表示已支持原生 App 渲染。
 
 `wevu` 默认导出压缩后的生产产物，用于降低小程序包体积。包内同时提供未压缩并带 sourcemap 的开发产物：
 

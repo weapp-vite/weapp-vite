@@ -3,6 +3,7 @@ import type { SuiteTask } from './suiteRunner'
 import path from 'node:path'
 import process from 'node:process'
 import fg from 'fast-glob'
+import { TEMPLATE_DEV_OPEN_CASES } from '../ide/template-dev-open-cases'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import { HMR_GUARD_ALL_TESTS, HMR_GUARD_SPECIAL_CASES, HMR_GUARD_UTILITY_TESTS } from './hmr-guard-manifest'
 
@@ -18,10 +19,16 @@ const TEMPLATE_DEV_OPEN_RUNNER_LABELS = new Set([
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABEL = 'ide/github-issues.runtime.aggregate.test.ts'
+export const IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS = new Set([
+  'ide/swan-runtime.optional.test.ts',
+  'ide/template-multi-platform.swan.optional.test.ts',
+  'ide/template-multi-platform-sfc.swan.optional.test.ts',
+])
 export const IDE_GITHUB_ISSUES_AGGREGATE_LABELS = [
   IDE_GITHUB_ISSUES_AGGREGATE_LABEL,
 ] as const
 const IDE_TASK_TIMEOUT_MS_BY_LABEL = new Map([
+  ['ide/issue-1015-css-hmr.runtime.test.ts', '900000'],
   ['ide/devtools-cli-workflow.runtime.test.ts', '900000'],
   ['ide/github-issues.runtime.aggregate.test.ts', '3600000'],
   ['ide/github-issues.runtime.lifecycle.test.ts', '600000'],
@@ -46,11 +53,13 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/automator-bridge-wrapper-hmr.runtime.test.ts',
   'ide/automator-concurrent-sessions.runtime.test.ts',
   'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue1015.test.ts',
   'ide/github-issues.runtime.issue547.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/github-issues.runtime.issue911.test.ts',
   'ide/github-issues.runtime.issue941.test.ts',
+  'ide/github-issues.runtime.issue1011.test.ts',
   'ide/lifecycle-compare.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
   'ide/shared-styles.runtime.test.ts',
@@ -59,8 +68,11 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
+  'ide/wevu-runtime.core-hmr.test.ts',
+  'ide/wevu-runtime.layout-shared-template-wxs.hmr.test.ts',
 ])
 export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
+  'ide/github-issues.runtime.issue1008.test.ts',
   'ide/github-issues.runtime.app-shell.test.ts',
   'ide/github-issues.runtime.import-meta.test.ts',
   'ide/github-issues.runtime.issue289.test.ts',
@@ -76,6 +88,8 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
   'ide/github-issues.runtime.issue706.test.ts',
   'ide/github-issues.runtime.issue829.test.ts',
   'ide/github-issues.runtime.issue930.test.ts',
+  'ide/github-issues.runtime.issue1013.test.ts',
+  'ide/github-issues.runtime.issue1014.test.ts',
   'ide/github-issues.runtime.lifecycle.test.ts',
   'ide/github-issues.runtime.miniprogram-computed.test.ts',
   'ide/github-issues.runtime.props.test.ts',
@@ -84,6 +98,16 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 ] as const
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
+  'ide/wxml-transform.runtime.test.ts',
+  'ide/wevu-runtime.pruning.test.ts',
+  'ide/github-issues.runtime.issue1035.test.ts',
+  'ide/issue-963-plugin-es6.runtime.test.ts',
+  'ide/issue-997-rebuild.runtime.test.ts',
+  'ide/issue-998-tailwind.runtime.test.ts',
+  'ide/issue-1015-css-hmr.runtime.test.ts',
+  'ide/issue-1029-auto-routes.runtime.test.ts',
+  'ide/github-issues.runtime.component-instance-apis.test.ts',
+  'ide/github-issues.runtime.issue1015.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   // wx.downloadFile 的域名校验依赖完整独立项目，不能复用聚合目标的裁剪构建。
   'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
@@ -91,6 +115,9 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue558.test.ts',
   'ide/github-issues.runtime.issue615.test.ts',
   'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue1010.test.ts',
+  // 预处理器使用独立构建配置，不能合入默认 github-issues 聚合会话。
+  'ide/github-issues.runtime.issue779.test.ts',
   'ide/github-issues.runtime.issue826.test.ts',
   'ide/github-issues.runtime.issue642-bug7-default.test.ts',
   'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
@@ -98,6 +125,10 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.require-async.test.ts',
   'ide/github-issues.runtime.issue911.test.ts',
   'ide/github-issues.runtime.issue941.test.ts',
+  'ide/github-issues.runtime.issue1009.test.ts',
+  'ide/github-issues.runtime.issue1049.test.ts',
+  'ide/github-issues.runtime.issue1011.test.ts',
+  'ide/github-issues.runtime.issue1012.test.ts',
   'ide/github-issues.runtime.issue852.test.ts',
   'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
   'ide/github-issues.runtime.subpackage-item.test.ts',
@@ -113,9 +144,11 @@ const IDE_WEVU_FEATURES_PATTERNS = [
   'ide/wevu-features.runtime.behavior.test.ts',
   'ide/wevu-features.runtime.router.test.ts',
   'ide/wevu-features.runtime.subpath.test.ts',
+  'ide/wevu-query.runtime.test.ts',
   'ide/wevu-router-hmr.runtime.test.ts',
 ]
 const IDE_TEMPLATES_PATTERNS = [
+  'ide/template-retail-checkout.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
   'ide/mcp-runtime-tools.runtime.test.ts',
   'ide/template-dev-open-all.runtime.test.ts',
@@ -140,6 +173,7 @@ const IDE_TEMPLATES_PATTERNS = [
   'ide/template-wevu-features-app.test.ts',
 ]
 const IDE_HMR_PATTERNS = [
+  'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
   'ide/template-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
@@ -151,6 +185,8 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/devtools-cli-workflow.runtime.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
   'ide/github-issues.runtime.issue621.test.ts',
+  'ide/github-issues.runtime.issue1010.test.ts',
+  'ide/github-issues.runtime.issue779.test.ts',
   'ide/github-issues.runtime.issue852.test.ts',
   'ide/github-issues.runtime.subpackage-item.test.ts',
   'ide/github-issues.runtime.subpackage-user.test.ts',
@@ -163,6 +199,7 @@ const IDE_FULL_CORE_PATTERNS = [
   'ide/template-tailwindcss-dev-open-multi.runtime.test.ts',
   'ide/template-wevu-tailwindcss-tdesign-hmr.runtime.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
+  'ide/wevu-query.runtime.test.ts',
   'ide/wevu-runtime.weapp.test.ts',
 ]
 const IDE_WEVU_JSX_PATTERNS = [
@@ -194,23 +231,68 @@ const IDE_GATE_TESTS = [
   'ide/lifecycle-compare.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',
 ].map(testPath => path.resolve(ROOT, testPath))
-const IDE_HEADLESS_FULL_TESTS = [
+// #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
+const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/wevu-runtime.pruning.test.ts',
+  'ide/github-issues.runtime.issue1035.test.ts',
+  'ide/issue-963-plugin-es6.runtime.test.ts',
+  'ide/issue-997-rebuild.runtime.test.ts',
+  'ide/issue-998-tailwind.runtime.test.ts',
+  'ide/body-blob.runtime.test.ts',
+  'ide/stream-capability.runtime.test.ts',
+  'ide/app-lifecycle.test.ts',
+  'ide/github-issues.runtime.component-instance-apis.test.ts',
+  'ide/github-issues.runtime.issue1010.test.ts',
+  'ide/github-issues.runtime.issue1011.test.ts',
+  'ide/github-issues.runtime.issue1012.test.ts',
+  'ide/github-issues.runtime.issue1015.test.ts',
+  'ide/issue-1029-auto-routes.runtime.test.ts',
+  'ide/template-retail-checkout.runtime.test.ts',
+  'ide/app-prelude-native.runtime.test.ts',
+  'ide/wxml-transform.runtime.test.ts',
+  'ide/auto-routes-define-app-json.runtime.test.ts',
+  'ide/react-runtime-spike.runtime.test.ts',
+  'ide/wevu-features.runtime.behavior.test.ts',
+  'ide/wevu-features.runtime.router.test.ts',
+  'ide/template-weapp-vite-template.test.ts',
+  'ide/template-weapp-vite-wevu-template.test.ts',
+  'ide/template-weapp-vite-multi-platform-template.test.ts',
+  'ide/template-weapp-vite-multi-platform-sfc-template.test.ts',
+  'ide/template-weapp-vite-wevu-template.layouts.runtime.test.ts',
+  'ide/chunk-modes.runtime.duplicate.test.ts',
+  'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
+  'ide/chunk-modes.runtime.hoist.test.ts',
+  'ide/chunk-modes.runtime.extras.test.ts',
+  'ide/subpackage-shared-strategy-complex.runtime.test.ts',
+  'ide/tdesign-dialog-import.runtime.test.ts',
+  'ide/wevu-vue-demo.script-setup.emit.runtime.test.ts',
+  'ide/wevu-comprehensive.runtime.test.ts',
+  'ide/wevu-subpackage-placement.runtime.test.ts',
+]
+const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,
+  ...IDE_DOM_HEADLESS_PATTERNS.map(filePath => path.resolve(ROOT, filePath)),
   path.resolve(ROOT, 'ide/github-issues.runtime.issue705.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.issue826.test.ts'),
   path.resolve(ROOT, 'ide/github-issues.runtime.require-async.test.ts'),
+  path.resolve(ROOT, 'ide/github-issues.runtime.issue1009.test.ts'),
+  path.resolve(ROOT, 'ide/github-issues.runtime.issue1049.test.ts'),
   path.resolve(ROOT, 'ide/shared-styles.runtime.test.ts'),
   path.resolve(ROOT, 'ide/wevu-jsx-tsx.runtime.test.ts'),
-]
+  path.resolve(ROOT, 'ide/wevu-query.runtime.test.ts'),
+])]
 
 // PR 只验证最能代表构建、运行时、路由和平台契约的短路径；完整清单由 nightly 执行。
 const CI_PR_PATTERNS = [
+  'ci/wevu-runtime.pruning.test.ts',
   'ci/app-prelude-native.build.test.ts',
   'ci/auto-routes-define-app-json.test.ts',
   'ci/config-merge.e2e.test.ts',
   'ci/github-issues-runtime-shared.test.ts',
   'ci/github-issues.build.test.ts',
+  'ci/github-issues.issue1035.build.test.ts',
   'ci/issue-862-output-watch.test.ts',
+  'ci/issue-1029-auto-routes.test.ts',
   'ci/headless-automator-provider.test.ts',
   'ci/platform-build.test.ts',
   'ci/platform-matrix.test.ts',
@@ -218,8 +300,10 @@ const CI_PR_PATTERNS = [
   'ci/runtime-provider.test.ts',
   'ci/shared-styles.build.test.ts',
   'ci/template-e2e.utils.test.ts',
+  'ci/template-multi-platform-sfc.hmr.test.ts',
   'ci/wevu-features.build.test.ts',
   'ci/wevu-jsx-tsx.build.test.ts',
+  'ci/wevu-runtime.npm-platforms.test.ts',
   'ci/wevu-runtime.platform-dependency-modes.test.ts',
   'ci/wevu-runtime.platforms.test.ts',
   'ci/wevu-runtime.utils.test.ts',
@@ -328,6 +412,14 @@ function createIdeVitestTask(filePath: string) {
   if (TEMPLATE_DEV_OPEN_RUNNER_LABELS.has(task.label)) {
     task.command = 'node'
     task.args = ['--import', 'tsx', path.resolve(ROOT, 'scripts/run-template-dev-open-suite.ts')]
+    const isMultiTemplate = task.label === 'ide/template-tailwindcss-dev-open-multi.runtime.test.ts'
+    task.acceptanceTemplates = TEMPLATE_DEV_OPEN_CASES
+      .filter(item => !isMultiTemplate || [
+        'weapp-vite-tailwindcss-template',
+        'weapp-vite-tailwindcss-vant-template',
+        'weapp-vite-tailwindcss-tdesign-template',
+      ].includes(item.name))
+      .map(item => item.name)
   }
   const taskTimeoutMs = IDE_TASK_TIMEOUT_MS_BY_LABEL.get(task.label)
   if (taskTimeoutMs) {
@@ -441,7 +533,13 @@ export function getIdeExhaustiveTasks() {
     .filter(filePath => !IDE_MANUAL_DEVTOOLS_TEST_PATTERNS.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET.has(toRelativeLabel(filePath)))
     .filter(filePath => !IDE_COMPONENT_LIBRARY_PATTERN_SET.has(toRelativeLabel(filePath)))
-    .map(filePath => createIdeVitestTask(filePath))
+    .map((filePath) => {
+      const task = createIdeVitestTask(filePath)
+      if (IDE_EXHAUSTIVE_OUT_OF_SCOPE_LABELS.has(task.label)) {
+        task.outOfScopeReason = 'Optional Baidu host runtime is outside WeChat DOM acceptance'
+      }
+      return task
+    })
 
   return tasks.sort((left, right) => {
     const leftIsChunkModes = IDE_CHUNK_MODES_PATTERNS.includes(left.label)
@@ -650,6 +748,14 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-headless-full',
     description: 'Largest provider-compatible IDE suite backed by the headless runtime',
     tasks: getIdeHeadlessTasks,
+  },
+  'ide-dom-headless': {
+    name: 'ide-dom-headless',
+    description: 'Strict rendered checkpoint gate for provider-compatible IDE scenarios',
+    tasks: () => getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS).map(task => ({
+      ...task,
+      env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
+    })),
   },
   'ide-full': {
     name: 'ide-full',

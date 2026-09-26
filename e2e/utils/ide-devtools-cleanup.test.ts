@@ -111,7 +111,7 @@ describe('ide devtools cleanup', () => {
 
     const { cleanDevtoolsCache } = await import('./ide-devtools-cleanup')
 
-    const task = cleanDevtoolsCache('all', { platform: 'darwin' })
+    const task = cleanDevtoolsCache('compile', { platform: 'darwin' })
     await vi.runAllTimersAsync()
     await task
 
@@ -128,7 +128,7 @@ describe('ide devtools cleanup', () => {
   it('stops the DevTools maintenance process after cache cleanup', async () => {
     const { cleanDevtoolsCacheAndStop } = await import('./ide-devtools-cleanup')
 
-    const task = cleanDevtoolsCacheAndStop('all', { platform: 'darwin' })
+    const task = cleanDevtoolsCacheAndStop('compile', { platform: 'darwin' })
     await vi.runAllTimersAsync()
     await task
 
@@ -149,5 +149,17 @@ describe('ide devtools cleanup', () => {
     expect(cleanupResidualDevProcessesMock).toHaveBeenCalledTimes(1)
     expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledTimes(1)
     expect(fsRmMock).toHaveBeenCalledTimes(2)
+  })
+
+  it.each(['all', 'auth', 'session', 'storage', 'file', 'network'])('rejects automatic %s cache cleanup before invoking DevTools', async (cleanType) => {
+    const { cleanDevtoolsCache, cleanDevtoolsCacheAndStop } = await import('./ide-devtools-cleanup')
+
+    for (const clean of [cleanDevtoolsCache, cleanDevtoolsCacheAndStop]) {
+      await expect(clean(cleanType as 'compile', { platform: 'darwin' })).rejects.toThrow('only compile cache')
+    }
+
+    expect(execaMock).not.toHaveBeenCalled()
+    expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
+    expect(fsRmMock).not.toHaveBeenCalled()
   })
 })

@@ -1,7 +1,7 @@
 {
   "name": "@wevu/compiler",
   "type": "module",
-  "version": "7.0.4",
+  "version": "7.3.0",
   "description": "wevu 编译器基础包，面向小程序模板的编译与转换",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -15,9 +15,11 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
-    "mini-program",
     "wechat",
+    "mini-program",
+    "miniprogram",
     "wevu",
     "compiler",
     "vue3",
@@ -32,20 +34,37 @@
         "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       }
+    },
+    "./page-route": {
+      "types": "./dist/pageDeclaration/public.d.mts",
+      "import": {
+        "types": "./dist/pageDeclaration/public.d.mts",
+        "default": "./dist/pageDeclaration/public.mjs"
+      }
     }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "typesVersions": {
+    "*": {
+      "page-route": [
+        "dist/pageDeclaration/public.d.mts"
+      ]
+    }
+  },
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
-    "test:types": "pnpm build && tsd",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",

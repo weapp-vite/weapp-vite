@@ -11,6 +11,7 @@ import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createAutoImportAugmenter } from './autoImport'
 import { createChunkEmitter } from './chunkEmitter'
+import { ENTRY_GRAPH_CHANGE_REASON, EntryChunkLifecycle } from './entryChunkLifecycle'
 import { createExtendedLibManager } from './extendedLib'
 import { createJsonEmitManager } from './jsonEmit'
 import { createEntryLoader } from './loadEntry'
@@ -98,6 +99,7 @@ function isSharedChunkSourceRepresentativeRefresh(dirtyReasonSummary?: string[])
     && dirtyReasonSummary.some(item => item.startsWith('shared-chunk-source:'))
     && dirtyReasonSummary.every(item =>
       item.startsWith('shared-chunk-source:')
+      || item.startsWith('compiler-content:')
       || item.startsWith('tailwind-content:'),
     ),
   )
@@ -438,6 +440,12 @@ export function useLoadEntry(
   const metadataEntryIds = new Set<string>()
   const rootInputIds = options?.hmr?.rootInputIds
   const chunkEmitStats = createChunkEmitStatsSummary()
+  const entryChunkLifecycle = new EntryChunkLifecycle((entryId) => {
+    if (!ctx.onStatefulHmrSourceChange) {
+      throw new Error('Cannot register a new mini-program entry outside a full build scan')
+    }
+    ctx.onStatefulHmrSourceChange(entryId, [ENTRY_GRAPH_CHANGE_REASON])
+  })
   const addLastEmittedChunkFileName = (entryId: string) => {
     lastEmittedChunkFileNames.add(changeFileExtension(ctx.configService.relativeOutputPath(entryId), '.js'))
     if (rootInputIds?.has(entryId)) {
@@ -503,6 +511,7 @@ export function useLoadEntry(
             : 'component'
       return createLogicalEntryId(entryId, entryType)
     },
+    entryChunkLifecycle,
   )
   const applyAutoImports = createAutoImportAugmenter(
     ctx.autoImportService,
@@ -547,6 +556,7 @@ export function useLoadEntry(
     dirtyEntrySet,
     resolvedEntryMap,
     jsonEmitFilesMap: jsonEmitManager.map,
+    entryChunkLifecycle,
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
       dirtyEntrySet.add(entryId)
@@ -561,6 +571,8 @@ export function useLoadEntry(
       loadedEntrySet.delete(entryId)
     },
     async emitDirtyEntries(this: PluginContext) {
+      entryChunkLifecycle.beginBuild()
+      ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = false
       if (!dirtyEntrySet.size) {
         options?.hmr?.setDidEmitAllEntries?.(false)
         options?.hmr?.setLastEmittedEntries?.(new Set())
@@ -598,6 +610,8 @@ export function useLoadEntry(
         rootInputIds,
       })
       const pendingEntryIds = pendingResolution.pending
+      // 发射集合还会包含元数据扫描发现的已有组件；仅脚本失效才需要重写内容未变的入口。
+      ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = [...pendingEntryIds].some(entryId => dirtyEntryReasons.get(entryId) !== 'metadata')
       const pending: ResolvedId[] = []
       chunkEmitStats.chunkEmitCount = 0
       chunkEmitStats.emitFileMs = 0

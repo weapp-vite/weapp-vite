@@ -7,6 +7,7 @@ import {
   resolveControlAttributeValue,
 } from '../../shared/wxml'
 import {
+  encodeEventAttributeName,
   MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX,
   MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX,
 } from '../component/constants'
@@ -25,6 +26,23 @@ const EVENT_PREFIX_FLAGS: Record<string, { catch?: boolean, capture?: boolean }>
   'mut-bind': {},
   'capture-bind': { capture: true },
   'capture-catch': { capture: true, catch: true },
+}
+
+function parseEventAttribute(name: string) {
+  const separatorIndex = name.indexOf(':')
+  if (separatorIndex >= 0) {
+    const prefix = name.slice(0, separatorIndex)
+    const rawEvent = name.slice(separatorIndex + 1)
+    if (rawEvent && prefix in EVENT_PREFIX_FLAGS) {
+      return { prefix, rawEvent }
+    }
+    return undefined
+  }
+  const match = EVENT_PREFIX_RE.exec(name)
+  if (!match) {
+    return undefined
+  }
+  return { prefix: match[1]!, rawEvent: match[2]! }
 }
 
 export function extractFor(attribs: Record<string, string>): ExtractForResult {
@@ -62,23 +80,24 @@ export function buildAttributeString(
       continue
     }
 
-    const eventMatch = EVENT_PREFIX_RE.exec(name)
-    if (eventMatch) {
-      const [, prefix, rawEvent] = eventMatch
-      const event = rawEvent.toLowerCase()
+    const eventInfo = parseEventAttribute(name)
+    if (eventInfo) {
+      const normalizedEvent = eventInfo.rawEvent.toLowerCase()
+      const aliasedEvent = EVENT_KIND_ALIAS[normalizedEvent]
+      const runtimeEvent = aliasedEvent ?? eventInfo.rawEvent
+      const encodedEvent = encodeEventAttributeName(runtimeEvent)
       const handlerName = resolveAttributeValue(rawValue, scope).trim()
       if (!handlerName) {
         continue
       }
-      const runtimeEvent = EVENT_KIND_ALIAS[event] || event
-      const flags = EVENT_PREFIX_FLAGS[prefix]!
-      result += ` ${MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX}${runtimeEvent}="${escapeAttribute(handlerName)}"`
+      const flags = EVENT_PREFIX_FLAGS[eventInfo.prefix]!
+      result += ` ${MINI_PROGRAM_EVENT_ATTRIBUTE_PREFIX}${encodedEvent}="${escapeAttribute(handlerName)}"`
       const flagTokens = [
         flags.capture ? 'capture' : '',
         flags.catch ? 'catch' : '',
       ].filter(Boolean)
       if (flagTokens.length) {
-        result += ` ${MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX}${runtimeEvent}="${flagTokens.join(',')}"`
+        result += ` ${MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX}${encodedEvent}="${flagTokens.join(',')}"`
       }
       continue
     }

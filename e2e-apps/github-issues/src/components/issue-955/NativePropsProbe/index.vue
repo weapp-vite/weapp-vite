@@ -42,6 +42,9 @@ defineExpose({
 
 <template>
   <view class="issue955-probe" :data-summary="currentSummary">
+    <view class="issue955-probe__summary">{{ currentSummary }}</view>
+    <view class="issue955-probe__nullable-type">{{ describeValue(props.nullable) }}</view>
+    <view class="issue955-probe__initial">{{ initialSummary }}</view>
     <text class="issue955-probe__content">
       {{ props.content }}
     </text>

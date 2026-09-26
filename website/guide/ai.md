@@ -22,7 +22,7 @@ keywords:
 npx skills add sonofmagic/skills
 ```
 
-如果项目是通过 `create-weapp-vite` 初始化的，交互模式默认会直接询问你是否安装推荐的 AI skills；即使你当时跳过，也可以后续手动执行同一条命令。
+如果项目是通过 `create-weapp-vite` 初始化的，交互模式会询问你是否安装推荐的 AI skills（默认跳过）；即使你当时跳过，也可以后续手动执行同一条命令。
 
 公开 skills（`skills/*`）里当前常用的有：
 

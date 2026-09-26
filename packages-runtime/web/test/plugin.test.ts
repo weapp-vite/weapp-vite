@@ -241,7 +241,7 @@ describe('weappWebPlugin', () => {
     expect(transformed.code).toContain('ComponentWithComputed({ data: {} })')
   })
 
-  it('discovers pages without app json and registers aliased Wevu defineComponent calls', async () => {
+  it('discovers pages without app json and preserves aliased Wevu defineComponent calls', async () => {
     const root = await mkdtemp(join(tmpdir(), 'weapp-web-native-wevu-'))
     const srcRoot = join(root, 'src')
     const pageDir = join(srcRoot, 'pages/index')
@@ -265,7 +265,9 @@ describe('weappWebPlugin', () => {
     expect(entryCode).toContain('initializePageRoutes(["pages/index/index"]')
 
     const transformed = await (plugin.transform as ((...args: any[]) => any)).call({}, pageSource, pagePath)
-    expect(transformed.code).toContain('registerWebWevuComponent')
+    expect(transformed.code).toContain('installWebModuleRegistration')
+    expect(transformed.code).toContain('registerWebWevuComponentFactory(defineWevuComponent, { id: "pages/index/index"')
+    expect(transformed.code).not.toContain('registerWebWevuComponent(')
     expect(transformed.code).toContain('kind: "page"')
   })
 

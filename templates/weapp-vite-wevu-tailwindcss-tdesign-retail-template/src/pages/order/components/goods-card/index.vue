@@ -46,7 +46,7 @@ defineOptions({
 
 const props = withDefaults(defineProps<{
   hidden?: boolean | null
-  id?: string
+  cardId?: string
   data?: InputGoodsCardData | null
   layout?: string
   thumbMode?: string
@@ -67,7 +67,7 @@ const props = withDefaults(defineProps<{
   addCartIcon?: string
 }>(), {
   hidden: false,
-  id: '',
+  cardId: '',
   data: () => ({ id: '' }),
   layout: 'horizontal',
   thumbMode: 'aspectFill',
@@ -122,7 +122,7 @@ const goods = ref<GoodsCardData>({
   quantity: 0,
 })
 const hiddenInData = ref(false)
-const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}`)
+const independentID = ref(props.cardId || `goods-card-${~~(Math.random() * 10 ** 8)}`)
 const isValidityLinePrice = ref(false)
 
 const { layout, centered, thumbMode, lazyLoad, pricePrefix, currency, priceFill } = toRefs(props)
@@ -217,14 +217,14 @@ watch(() => props.data, (currentGoods) => {
   deep: true,
 })
 
-watch(() => props.id, (id) => {
+watch(() => props.cardId, (id) => {
   genIndependentID(id || '')
 })
 
 watch(() => props.thumbWidth, () => {})
 watch(() => props.thumbHeight, () => {})
 
-genIndependentID(props.id || '')
+genIndependentID(props.cardId || '')
 
 defineExpose({
   goods,

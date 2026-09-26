@@ -1,10 +1,11 @@
 {
   "name": "@weapp-core/shared",
   "type": "module",
-  "version": "3.2.1",
-  "description": "@weapp-core/shared",
+  "version": "3.2.6",
+  "description": "Shared runtime-safe utilities and platform contracts for the weapp-vite ecosystem.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -13,8 +14,22 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
+    "vite",
+    "runtime"
+  ],
   "sideEffects": false,
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext"
+    }
+  },
   "weapp-vite-dev": {
     "exports": {
       ".": {
@@ -32,6 +47,10 @@
       "./platforms": {
         "types": "./src/platforms/index.ts",
         "default": "./src/platforms/index.ts"
+      },
+      "./platforms/runtime": {
+        "types": "./src/platforms/runtime/index.ts",
+        "default": "./src/platforms/runtime/index.ts"
       }
     },
     "main": "./src/index.ts",
@@ -54,6 +73,10 @@
     "./platforms": {
       "types": "./dist/platforms/index.d.ts",
       "import": "./dist/platforms/index.js"
+    },
+    "./platforms/runtime": {
+      "types": "./dist/platforms/runtime/index.d.ts",
+      "import": "./dist/platforms/runtime/index.js"
     }
   },
   "main": "./dist/index.js",
@@ -70,6 +93,7 @@
     "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
+    "test:types": "tsd --files \"test-d/**/*.test-d.ts\"",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
@@ -93,10 +117,16 @@
       "./platforms": {
         "types": "./dist/platforms/index.d.ts",
         "import": "./dist/platforms/index.js"
+      },
+      "./platforms/runtime": {
+        "types": "./dist/platforms/runtime/index.d.ts",
+        "import": "./dist/platforms/runtime/index.js"
       }
     },
     "main": "./dist/index.js",
     "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "types": "./dist/index.d.ts",
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }

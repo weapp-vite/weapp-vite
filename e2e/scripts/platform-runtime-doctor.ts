@@ -35,25 +35,33 @@ async function pathExists(filePath: string) {
   }
 }
 
-async function commandExists(command: string) {
+async function commandExists(command: string, args: string[]) {
+  const searchPath = process.env.WEAPP_VITE_PLATFORM_DOCTOR_PATH
+  const env = searchPath == null
+    ? process.env
+    : {
+        ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toUpperCase() !== 'PATH')),
+        PATH: searchPath,
+        NoDefaultCurrentDirectoryInExePath: '1',
+      }
   try {
-    const result = await execa(command, ['--version'], {
-      env: process.env.WEAPP_VITE_PLATFORM_DOCTOR_PATH == null
-        ? undefined
-        : { PATH: process.env.WEAPP_VITE_PLATFORM_DOCTOR_PATH },
+    const result = await execa(command, args, {
+      env,
+      extendEnv: false,
       reject: false,
       timeout: 10_000,
       stdio: 'ignore',
     })
-    return typeof result.exitCode === 'number'
+    // Windows 未找到命令时可能由 cmd.exe 返回非零退出码，并不一定抛出 ENOENT。
+    return result.exitCode === 0
   }
-  catch (error) {
-    return Boolean(error && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT')
+  catch {
+    return false
   }
 }
 
 async function findCli(platform: string) {
-  if (platform === 'alipay' && await commandExists('minidev')) {
+  if (platform === 'alipay' && await commandExists('minidev', ['--vers'])) {
     return 'minidev'
   }
   if (process.env.WEAPP_VITE_PLATFORM_DOCTOR_SKIP_DEFAULT_PATHS === '1') {

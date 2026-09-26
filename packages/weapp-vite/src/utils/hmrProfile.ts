@@ -6,6 +6,12 @@ export const HMR_PROFILE_JSON_ENV = 'WEAPP_VITE_HMR_PROFILE_JSON'
 export type HmrProfileDurationKey
   = | 'transformMs'
     | 'writeMs'
+    | 'finalizePrepareMs'
+    | 'finalizeTemplateMs'
+    | 'finalizePublishMs'
+    | 'publicationValidateMs'
+    | 'publicationIndependentMs'
+    | 'publicationPruneMs'
     | 'buildStartMs'
     | 'pluginResolveMs'
     | 'coreTransformMs'
@@ -135,4 +141,19 @@ export function recordHmrProfileOperation(
     return
   }
   profile[key] = (profile[key] ?? 0) + count
+}
+
+/** 连续记录同一插件内已完成的阶段；停用时不读取时钟，不引入额外异步调度。 */
+export function createHmrProfileCheckpoint(
+  profile: Partial<Record<HmrProfileDurationKey, number | undefined>> | undefined,
+) {
+  let previous = profile ? performance.now() : 0
+  return (key: HmrProfileDurationKey) => {
+    if (!profile) {
+      return
+    }
+    const now = performance.now()
+    recordHmrProfileDuration(profile, key, now - previous)
+    previous = now
+  }
 }

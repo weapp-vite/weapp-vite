@@ -1,6 +1,7 @@
 import type { TestJsFormat } from '../utils/jsFormat'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   APP_ROOT,
   filterSnapshotPages,
@@ -8,6 +9,7 @@ import {
   resolvePages,
   runBuild,
 } from '../wevu-runtime.utils'
+import { RUNTIME_ALL_PAGE_CHECKPOINTS, RUNTIME_LAYOUT_CHECKPOINTS, RUNTIME_SCROLL_CHECKPOINTS } from './wevuRuntimeDom/allPages'
 
 const JS_FORMATS: TestJsFormat[] = ['esm', 'cjs']
 const RUNTIME_READY_ROUTE = '/pages/reactivity/index'
@@ -180,9 +182,11 @@ for (const jsFormat of JS_FORMATS) {
       await closeSharedMiniProgram()
     })
 
-    it('runs all pages and snapshots WXML', async () => {
+    it('runs all pages and snapshots WXML', async (context) => {
+      const dom = createDomAcceptance(context, 'e2e-apps/wevu-runtime-e2e', RUNTIME_ALL_PAGE_CHECKPOINTS)
       const config = await loadAppConfig()
       const pages = getPageOrder(resolvePages(config))
+      expect(pages.map(page => `/${page}`)).toEqual([...new Set(RUNTIME_ALL_PAGE_CHECKPOINTS.map(item => item.route))])
 
       const miniProgram = await getSharedMiniProgram()
 
@@ -195,6 +199,8 @@ for (const jsFormat of JS_FORMATS) {
           }
 
           await expect(waitForRenderedPage(page, route)).resolves.toBeTruthy()
+          const name = pagePath.split('/')[1]
+          await dom.check(`${name}:initial`, miniProgram, page)
 
           const result = await runPageE2E(page)
           if (result != null) {
@@ -205,6 +211,9 @@ for (const jsFormat of JS_FORMATS) {
           }
 
           await expect(waitForRenderedPage(page, route)).resolves.toBeTruthy()
+          if (RUNTIME_ALL_PAGE_CHECKPOINTS.some(item => item.id === `${name}:result`)) {
+            await dom.check(`${name}:result`, miniProgram, page)
+          }
         }
       }
       finally {
@@ -212,7 +221,8 @@ for (const jsFormat of JS_FORMATS) {
       }
     })
 
-    it('triggers page scroll and prints debug console logs', async () => {
+    it('triggers page scroll and prints debug console logs', async (context) => {
+      const dom = createDomAcceptance(context, 'e2e-apps/wevu-runtime-e2e', RUNTIME_SCROLL_CHECKPOINTS)
       const miniProgram = await getSharedMiniProgram()
 
       const consoleEntries: string[] = []
@@ -231,6 +241,7 @@ for (const jsFormat of JS_FORMATS) {
         }
 
         await page.waitFor(200)
+        await dom.check('scroll:initial', miniProgram, page)
         await miniProgram.pageScrollTo(1200)
         await page.waitFor(180)
         await miniProgram.pageScrollTo(1800)
@@ -258,6 +269,7 @@ for (const jsFormat of JS_FORMATS) {
         })
         expect(consoleMatches).not.toBeNull()
         expect(consoleMatches?.some(item => item.includes('[runtime-scroll-debug]'))).toBe(true)
+        await dom.check('scroll:observed', miniProgram, page)
       }
       finally {
         miniProgram.removeListener('console', onConsole)
@@ -265,7 +277,8 @@ for (const jsFormat of JS_FORMATS) {
       }
     })
 
-    it('switches native page layouts between default/admin/none at runtime', async () => {
+    it('switches native page layouts between default/admin/none at runtime', async (context) => {
+      const dom = createDomAcceptance(context, 'e2e-apps/wevu-runtime-e2e', RUNTIME_LAYOUT_CHECKPOINTS)
       const miniProgram = await getSharedMiniProgram()
 
       try {
@@ -277,6 +290,7 @@ for (const jsFormat of JS_FORMATS) {
         await page.waitFor(200)
         await waitForRenderedPage(page, '/pages/layouts/index')
         expect(await page.data('currentLayout')).toBe('default')
+        await dom.check('layout:0:default', miniProgram, page)
 
         await page.callMethodWithOptions('applyAdminLayout', { routeOnly: true })
         await page.waitFor(160)
@@ -287,6 +301,7 @@ for (const jsFormat of JS_FORMATS) {
           title: 'LAYOUTS-ADMIN-TITLE-BASE',
           subtitle: 'LAYOUTS-ADMIN-SUBTITLE-BASE',
         })
+        await dom.check('layout:1:admin', miniProgram, page)
 
         await page.callMethodWithOptions('clearLayout', { routeOnly: true })
         await page.waitFor(160)
@@ -294,6 +309,7 @@ for (const jsFormat of JS_FORMATS) {
 
         expect(await page.data('currentLayout')).toBe('none')
         expect(await page.data('__wv_page_layout_props')).toEqual({})
+        await dom.check('layout:2:none', miniProgram, page)
 
         await page.callMethodWithOptions('applyDefaultLayout', { routeOnly: true })
         await page.waitFor(160)
@@ -301,6 +317,7 @@ for (const jsFormat of JS_FORMATS) {
 
         expect(await page.data('currentLayout')).toBe('default')
         expect(await page.data('__wv_page_layout_props')).toEqual({})
+        await dom.check('layout:3:default', miniProgram, page)
       }
       finally {
         await releaseSharedMiniProgram(miniProgram)

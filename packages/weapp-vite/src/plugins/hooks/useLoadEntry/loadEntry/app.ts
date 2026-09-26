@@ -13,6 +13,8 @@ import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
 import { collectAppSideFiles, collectMiniappConfigFile } from './watch'
 
 export interface AppEntryResult {
+  sitemapJsonPath?: string
+  themeJsonPath?: string
   entries: string[]
   appJson?: any
   pluginResolvedRecords?: ResolvedEntryRecord[]
@@ -89,10 +91,11 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   let pluginJsonForRegistration: any
   let pluginSignature: string | undefined
   let appJson: any
+  let sideJsonPaths: Pick<AppEntryResult, 'sitemapJsonPath' | 'themeJsonPath'> = {}
 
   if (!isPluginBuild) {
     extendedLibManager.syncFromAppJson(json)
-    await Promise.all([
+    ;[sideJsonPaths] = await Promise.all([
       collectAppSideFiles(
         pluginCtx,
         id,
@@ -134,6 +137,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
     const pluginSignatureMatches = cached.pluginSignature === pluginSignature
     if (cached.appSignature === appSignature && pluginPathMatches && pluginSignatureMatches) {
       return {
+        ...sideJsonPaths,
         entries: cached.entries,
         appJson: cached.appJson,
         pluginResolvedRecords: cached.pluginResolvedRecords,
@@ -153,6 +157,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
       buildScope: configService.weappViteConfig.buildScope,
       platform: configService.platform,
       routeRules: configService.weappViteConfig.routeRules,
+      subPackages: configService.weappViteConfig.subPackages,
     })
     entries.push(...analyzeAppJson(appJson))
   }
@@ -207,6 +212,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   }
 
   return {
+    ...sideJsonPaths,
     entries,
     appJson,
     pluginResolvedRecords,

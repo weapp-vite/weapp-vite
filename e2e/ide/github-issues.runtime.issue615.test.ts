@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import process from 'node:process'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callCurrentPageMethod,
   closeSharedMiniProgram,
@@ -37,6 +38,23 @@ describe('e2e app: github-issues / issue #615', { concurrent: false }, () => {
   })
 
   it('renders scoped slot v-for owner list in DevTools without owner initialization errors', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [{
+      id: 'initial',
+      route: '/pages/issue-615/index',
+      action: '检查 scoped-slot v-for 三个实际标签及数量',
+      nodes: [
+        ...['issue-615-tab-1', 'issue-615-tab-2', 'issue-615-tab-3'].map(label => ({
+          selector: `#${label}`,
+          text: label,
+          scope: [
+            '#issue615-tabbar',
+            { has: '#issue615-item-issue-615-tab-1' },
+            // text 声明在泛型组件中，不能从接收原生 slot 的 TabbarItem 查询。
+          ],
+        })),
+        { selector: 'component', scope: ['#issue615-tabbar', { has: '#issue615-item-issue-615-tab-1' }], count: 3 },
+      ],
+    }])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, '/pages/issue-615/index', undefined, 20_000, {
@@ -58,6 +76,7 @@ describe('e2e app: github-issues / issue #615', { concurrent: false }, () => {
       expect(renderedWxml).toContain('generic:scoped-slots-default=')
       expect(renderedWxml).toContain('data-issue615-label="{{item.label}}"')
       expect(renderedWxml).toContain('data-issue615-slot-ready="{{__wvSlotPropsData?\'ready\':\'missing\'}}"')
+      await dom.check('initial', await getSharedMiniProgram(ctx), issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

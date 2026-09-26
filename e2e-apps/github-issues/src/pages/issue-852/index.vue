@@ -16,4 +16,9 @@ import Count from '@/components/issue-852/Count.vue'
     {{ 0x123456789ABCDEF }}
   </view>
   <Count id="issue-852-count-component" :value="1_000_000" />
+  <view id="issue852-decimal">decimal: {{ 1_000_000_000_000 }}</view>
+  <view id="issue852-fraction">fraction: {{ 1_050.95 }}</view>
+  <view id="issue852-binary">binary: {{ 0b1010_0001_1000_0101 }}</view>
+  <view id="issue852-octal">octal: {{ 0o2_2_5_6 }}</view>
+  <view id="issue852-hex">hex: {{ 0xA0_B0_C0 }}</view>
 </template>

@@ -126,6 +126,8 @@ function normalizeWechatDevtoolsSecuritySettings(value: unknown) {
 function shouldPreferServicePortCandidate(
   current: DetectedWechatDevtoolsServicePortSettings,
   next: DetectedWechatDevtoolsServicePortSettings,
+  currentUpdatedAt: number,
+  nextUpdatedAt: number,
 ) {
   if (current.enabled === undefined && current.port === undefined) {
     return true
@@ -139,7 +141,9 @@ function shouldPreferServicePortCandidate(
     return true
   }
 
-  return false
+  return next.enabled === current.enabled
+    && (next.port !== undefined) === (current.port !== undefined)
+    && nextUpdatedAt > currentUpdatedAt
 }
 
 function createResolvedWechatDevtoolsContext(
@@ -236,26 +240,13 @@ async function resolveWechatDevtoolsInstanceDirs(baseDir: string) {
   }
 }
 
-async function syncHashKeyMap(localDataDir: string, key: string) {
-  const hash = createStorageHash(key)
-  const hashKeyMapPath = path.join(localDataDir, 'hash_key_map_2.json')
-  const current = await readJsonObject(hashKeyMapPath)
-
-  if (current[hash] !== key) {
-    current[hash] = key
-    await writeJsonObject(hashKeyMapPath, current)
-  }
-
-  return hash
-}
-
 async function detectWechatDevtoolsSecuritySettings(localDataDir: string) {
   for (const fileName of SETTINGS_STORAGE_FILE_NAMES) {
     const filePath = path.join(localDataDir, fileName)
     const current = await readJsonObject(filePath)
     const security = normalizeWechatDevtoolsSecuritySettings(current.security)
     if (security) {
-      return security
+      return { ...security, updatedAt: (await fs.stat(filePath)).mtimeMs }
     }
   }
 
@@ -265,27 +256,34 @@ async function detectWechatDevtoolsSecuritySettings(localDataDir: string) {
 async function trustWechatDevtoolsProject(localDataDir: string, projectPath: string) {
   const normalizedProjectPath = path.resolve(projectPath)
   const projectKey = `project2_${normalizedProjectPath}`
-  const projectHash = await syncHashKeyMap(localDataDir, projectKey)
+  const projectHash = createStorageHash(projectKey)
   const fileNames = [
     `localstorage_${projectHash}.json`,
     `ls_${projectHash}.json`,
   ]
 
+  let trusted = false
   for (const fileName of fileNames) {
     const projectFilePath = path.join(localDataDir, fileName)
     const current = await readJsonObject(projectFilePath)
 
+    // 首次导入必须由 IDE 初始化完整能力；预建信任记录会令 attr.setting 缺失。
+    if (current.projectid !== normalizedProjectPath
+      || current.projectpath !== normalizedProjectPath
+      || typeof current.appid !== 'string'
+      || !current.appid
+      || !isRecord(current.attr)
+      || !isRecord(current.attr.setting)) {
+      continue
+    }
+
     await writeJsonObject(projectFilePath, {
       ...current,
-      projectid: typeof current.projectid === 'string' && current.projectid.length > 0
-        ? current.projectid
-        : normalizedProjectPath,
-      projectpath: typeof current.projectpath === 'string' && current.projectpath.length > 0
-        ? current.projectpath
-        : normalizedProjectPath,
       isTrusted: true,
     })
+    trusted = true
   }
+  return trusted
 }
 
 async function scanWechatDevtoolsServicePort(
@@ -294,6 +292,7 @@ async function scanWechatDevtoolsServicePort(
   const instanceDirs = await resolveWechatDevtoolsInstanceDirs(context.baseDir)
   let detectedSecurityCount = 0
   let detectedServicePort: DetectedWechatDevtoolsServicePortSettings = {}
+  let detectedUpdatedAt = -Infinity
 
   for (const instanceDir of instanceDirs) {
     const localDataDir = path.join(instanceDir, 'WeappLocalData')
@@ -308,8 +307,10 @@ async function scanWechatDevtoolsServicePort(
       enabled: security.enableServicePort,
       port: security.port,
     }
-    if (shouldPreferServicePortCandidate(detectedServicePort, candidate)) {
+    // 多版本安装会保留旧实例；同等有效的配置以最近写入者为准，不能依赖目录排序。
+    if (shouldPreferServicePortCandidate(detectedServicePort, candidate, detectedUpdatedAt, security.updatedAt)) {
       detectedServicePort = candidate
+      detectedUpdatedAt = security.updatedAt
     }
   }
 
@@ -372,8 +373,9 @@ export async function bootstrapWechatDevtoolsSettings(
     const localDataDir = path.join(instanceDir, 'WeappLocalData')
 
     if (options.projectPath && options.trustProject !== false) {
-      await trustWechatDevtoolsProject(localDataDir, options.projectPath)
-      trustedProjectCount += 1
+      if (await trustWechatDevtoolsProject(localDataDir, options.projectPath)) {
+        trustedProjectCount += 1
+      }
     }
   }
 

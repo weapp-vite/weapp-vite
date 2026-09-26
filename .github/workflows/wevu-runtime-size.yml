@@ -31,7 +31,7 @@ jobs:
           path: baseline
           ref: ${{ github.event.pull_request.base.sha }}
 
-      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
         with:
           version: 11.18.0
 
@@ -60,6 +60,7 @@ jobs:
         working-directory: baseline
         run: pnpm --filter '@weapp-vite/web...' build
 
+      # 主线可信评论脚本升级前仍读取 v2 投影；完整矩阵保留在独立 artifact 与 job summary。
       - name: Measure head and baseline
         working-directory: head
         env:
@@ -69,21 +70,21 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           pnpm exec tsx scripts/report-wevu-runtime-size.ts \
-            --root=. \
-            --output-json=../runtime-size-artifact/head.json
-          pnpm exec tsx scripts/report-wevu-runtime-size.ts \
             --root=../baseline \
             --output-json=../runtime-size-artifact/baseline.json
           pnpm exec tsx scripts/report-wevu-runtime-size.ts \
-            --current-json=../runtime-size-artifact/head.json \
+            --root=. \
             --baseline-json=../runtime-size-artifact/baseline.json \
+            --output-json=../runtime-size-artifact/head.json \
             --output-markdown=../runtime-size-artifact/report.md \
-            --artifact-json=../runtime-size-artifact/report.json \
+            --artifact-json=../runtime-size-artifact/report-full.json \
+            --legacy-artifact-json=../runtime-size-artifact/report.json \
             --repository="$REPOSITORY" \
             --pr-number="$PR_NUMBER" \
             --head-sha="$HEAD_SHA" \
             --base-sha="$BASE_SHA" \
-            --github-summary
+            --github-summary \
+            --check
 
       - name: Upload runtime size report
         if: always()
@@ -91,4 +92,14 @@ jobs:
         with:
           name: wevu-runtime-size-report
           path: runtime-size-artifact
-          if-no-files-found: warn
+          if-no-files-found: error
+
+      - name: Upload complete runtime size report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wevu-runtime-size-report-full
+          path: |
+            runtime-size-artifact/report-full.json
+            runtime-size-artifact/report.md
+          if-no-files-found: error

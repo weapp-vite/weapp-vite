@@ -13,6 +13,22 @@ export function normalizeSourceId(id: string) {
   }
 }
 
+/** 逻辑入口与源码按同一真实路径比较，避免 junction 或原生分隔符制造第二个输出归属。 */
+export function isLogicalEntrySource(id: string, importers: Iterable<string> = []) {
+  let normalizedSource: string | undefined
+  for (const importer of importers) {
+    const logicalEntry = parseLogicalEntryId(importer)
+    if (!logicalEntry) {
+      continue
+    }
+    normalizedSource ??= normalizeSourceId(id)
+    if (logicalEntry.sourceId === normalizedSource) {
+      return true
+    }
+  }
+  return false
+}
+
 function moduleIdMatchesFile(id: string, file: string) {
   const sidecarSource = parseSidecarSourceRequest(id)
   if (sidecarSource) {

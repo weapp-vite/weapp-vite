@@ -18,6 +18,9 @@ function filterTempE2eAppFiles(files) {
 }
 
 export default {
+  '{e2e/ide/**/*.{ts,tsx},e2e/scripts/e2e-suite-manifest.ts,e2e/scripts/domAcceptanceReport/**/*.{ts,tsx}}': [
+    'node scripts/sync-dom-acceptance-inventory.mjs',
+  ],
   '**/project{,.private}.config.json': (files) => {
     const projectConfigFiles = files.filter(isWechatDevtoolsProjectConfig)
 
@@ -34,7 +37,7 @@ export default {
   '!(apps)/**/*.{js,jsx,mjs,ts,tsx,mts,vue}': [
     'eslint --fix --max-warnings=0 --no-warn-ignored',
   ],
-  '!(apps)/**/*.{css,scss,vue}': (files) => {
+  '!(apps)/**/*.{css,scss,less,wxss,acss,ttss,qss,jxss,vue}': (files) => {
     const lintableFiles = filterTempE2eAppFiles(files)
 
     if (lintableFiles.length === 0) {

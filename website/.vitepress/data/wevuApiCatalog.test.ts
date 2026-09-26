@@ -89,9 +89,15 @@ describe('wevu API catalog', () => {
     expect(new Set(identifiers).size).toBe(identifiers.length)
 
     const names = new Set(wevuApiCatalog.map(item => item.name))
-    for (const macro of ['defineProps()', 'withDefaults()', 'defineEmits()', 'defineSlots()', 'defineExpose()', 'defineModel()', 'defineOptions()', 'definePageMeta()', 'defineAppSetup()', 'defineAppJson()', 'definePageJson()', 'defineComponentJson()', 'defineSitemapJson()', 'defineThemeJson()']) {
+    for (const macro of ['defineProps()', 'withDefaults()', 'defineEmits()', 'defineSlots()', 'defineExpose()', 'defineModel()', 'defineOptions()', 'definePageMeta()', 'definePage()', 'defineAppSetup()', 'defineAppJson()', 'definePageJson()', 'defineComponentJson()', 'defineSitemapJson()', 'defineThemeJson()']) {
       expect(names, `missing macro ${macro}`).toContain(macro)
     }
+    expect(wevuApiCatalog.find(item => item.name === 'definePage()')).toMatchObject({
+      entry: 'wevu/router',
+      kind: 'macro',
+      phase: 'compile',
+    })
+    expect(names).toContain('useAsyncDerivation()')
     for (const option of ['props', 'emits', 'data', 'setup', 'computed', 'methods', 'watch', 'properties', 'lifetimes', 'pageLifetimes', 'features', 'setData', 'setupLifecycle']) {
       expect(names, `missing option ${option}`).toContain(option)
     }
@@ -182,12 +188,16 @@ describe('wevu API catalog', () => {
     const expectedNames = [
       'defineStore()',
       'createPinia()',
+      'setActivePinia()',
+      'getActivePinia()',
+      'disposePinia()',
       'createStore()',
       'storeToRefs()',
       '$id',
       '$state',
       '$patch()',
       '$reset()',
+      '$dispose()',
       '$subscribe()',
       '$onAction()',
       'manager.install()',
@@ -233,9 +243,10 @@ describe('wevu API catalog', () => {
     }
   })
 
-  it('covers the complete public Router surface', () => {
+  it('covers the cataloged Router surface, including its compile-time macro', () => {
     const routerNames = new Set(wevuApiCatalog.filter(item => item.entry === 'wevu/router').map(item => item.name))
     const expectedNames = [
+      'definePage()',
       'createRouter()',
       '<RouterLink>',
       '<router-link>',
@@ -269,6 +280,18 @@ describe('wevu API catalog', () => {
       'router.beforeResolve()',
       'router.afterEach()',
       'router.onError()',
+      'WevuNamedRouteMap',
+      'WevuBroadRouteMap',
+      'WevuNamedRouteDefinition',
+      'WevuRouteName',
+      'WevuNamedRoutePath',
+      'WevuNamedRouteMeta',
+      'WevuAutoRoute',
+      'RouteLocationNamedRaw',
+      'RouteLocationNormalizedByName',
+      'RouterResolve',
+      'StaticPageDeclaration',
+      'StaticRouteValue',
       'RouterNavigation',
       'UseRouterOptions',
       'AddRoute',

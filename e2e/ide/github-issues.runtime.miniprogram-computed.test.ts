@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
@@ -9,6 +11,7 @@ import {
   releaseSharedMiniProgram,
   waitForCurrentPagePath,
 } from './github-issues.runtime.shared'
+import { allDialogSteps, dialogCheckpoints } from './githubIssuesDom/dialogs'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const ROUTE = '/subpackages/issue-466-computed/index'
@@ -114,6 +117,18 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
   })
 
   it('keeps build-npm cjs package miniprogram-computed working in DevTools runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [
+      { id: 'initial', route: ROUTE, action: '首屏检查 computed sum 和 summary', nodes: [
+        { selector: '#computed-sum', scope: ['#issue466-computed-probe'], text: 'sum = 3' },
+        { selector: '#computed-summary', scope: ['#issue466-computed-probe'], text: 'summary = 1+2=3' },
+      ] },
+      { id: 'updated', route: ROUTE, action: '更新组件 props 后检查计算结果与 watch 轨迹', nodes: [
+        { selector: '#computed-sum', scope: ['#issue466-computed-probe'], text: 'sum = 7' },
+        { selector: '#computed-summary', scope: ['#issue466-computed-probe'], text: 'summary = 3+4=7' },
+        { selector: '#computed-watch', scope: ['#issue466-computed-probe'], text: 'lastWatch = 1:2->3:4' },
+      ] },
+      ...dialogCheckpoints(ROUTE, '#issue466-computed-dialog', allDialogSteps(true), resolveRuntimeProviderName()),
+    ])
     let miniProgram = await getSharedMiniProgram(ctx)
     let collector: ReturnType<typeof attachRuntimeErrorCollector> | undefined
 
@@ -145,6 +160,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         },
       })
       expect(collector.getSince(initialMarker)).toEqual([])
+      await dom.check('initial', miniProgram, page)
 
       await callCurrentComputedPageMethod(miniProgram, 'applyNextE2E')
       const updatedMarker = collector.mark()
@@ -164,6 +180,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
       })
       expect(updatedRuntime.probe.watchCount).toBeGreaterThanOrEqual(1)
       expect(collector.getSince(updatedMarker)).toEqual([])
+      await dom.check('updated', miniProgram, page)
 
       const dialogResetMarker = collector.mark()
       const dialogReset = await callCurrentComputedPageMethod(miniProgram, '_resetDialogE2E')
@@ -186,6 +203,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: false,
       })
       expect(collector.getSince(dialogResetMarker)).toEqual([])
+      await dom.check('reset', miniProgram, page)
 
       const alertOpenMarker = collector.mark()
       const alertOpened = await callCurrentComputedPageMethod(miniProgram, '_openAlertE2E')
@@ -203,6 +221,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: true,
       })
       expect(collector.getSince(alertOpenMarker)).toEqual([])
+      await dom.check('alertOpened', miniProgram, page)
 
       const alertConfirmMarker = collector.mark()
       const alertConfirmed = await callCurrentComputedPageMethod(miniProgram, '_confirmDialogE2E')
@@ -220,6 +239,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: true,
       })
       expect(collector.getSince(alertConfirmMarker)).toEqual([])
+      await dom.check('alertConfirmed', miniProgram, page)
 
       const confirmOpenMarker = collector.mark()
       const confirmOpened = await callCurrentComputedPageMethod(miniProgram, '_openConfirmE2E')
@@ -237,6 +257,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: true,
       })
       expect(collector.getSince(confirmOpenMarker)).toEqual([])
+      await dom.check('confirmOpened', miniProgram, page)
 
       const confirmCancelMarker = collector.mark()
       const cancelled = await callCurrentComputedPageMethod(miniProgram, '_cancelDialogE2E')
@@ -254,6 +275,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: true,
       })
       expect(collector.getSince(confirmCancelMarker)).toEqual([])
+      await dom.check('cancelled', miniProgram, page)
 
       const actionOpenMarker = collector.mark()
       const actionOpened = await callCurrentComputedPageMethod(miniProgram, '_openActionE2E')
@@ -271,6 +293,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: true,
       })
       expect(collector.getSince(actionOpenMarker)).toEqual([])
+      await dom.check('actionOpened', miniProgram, page)
 
       const actionSelectMarker = collector.mark()
       const selected = await callCurrentComputedPageMethod(miniProgram, '_selectSecondActionE2E')
@@ -288,6 +311,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: true,
       })
       expect(collector.getSince(actionSelectMarker)).toEqual([])
+      await dom.check('selected', miniProgram, page)
 
       const closePrepareMarker = collector.mark()
       const closePrepared = await callCurrentComputedPageMethod(miniProgram, '_prepareCloseHostE2E')
@@ -305,6 +329,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: false,
       })
       expect(collector.getSince(closePrepareMarker)).toEqual([])
+      await dom.check('closePrepared', miniProgram, page)
 
       const closeMarker = collector.mark()
       const closed = await callCurrentComputedPageMethod(miniProgram, '_closeDialogE2E')
@@ -322,6 +347,7 @@ describe('github-issues runtime miniprogram-computed', { concurrent: false }, ()
         lastReturnedPromise: true,
       })
       expect(collector.getSince(closeMarker)).toEqual([])
+      await dom.check('closed', miniProgram, page)
     }
     finally {
       collector?.dispose()

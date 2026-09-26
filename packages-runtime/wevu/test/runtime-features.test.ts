@@ -34,6 +34,7 @@ beforeEach(() => {
 afterEach(() => {
   delete (globalThis as any).Component
   delete (globalThis as any).App
+  vi.unstubAllGlobals()
 })
 
 describe('runtime: features & hooks', () => {
@@ -233,9 +234,7 @@ describe('runtime: features & hooks', () => {
 
   it('does not treat alipay host object as page share menu capability source', () => {
     const showShareMenu = vi.fn()
-    ;(globalThis as any).my = {
-      showShareMenu,
-    }
+    vi.stubGlobal('my', { showShareMenu })
 
     defineComponent({
       setup() {
@@ -245,12 +244,13 @@ describe('runtime: features & hooks', () => {
 
     expect(registeredComponents).toHaveLength(1)
     const componentOptions = registeredComponents[0]
-    const pageInst: any = {}
-    componentOptions.lifetimes.attached.call(pageInst)
+    const pageInst: any = { props: {} }
+    componentOptions.onInit.call(pageInst)
+    componentOptions.didMount.call(pageInst)
 
     expect(showShareMenu).not.toHaveBeenCalled()
 
-    delete (globalThis as any).my
+    componentOptions.didUnmount.call(pageInst)
   })
 
   it('auto shows share menu when page share features are enabled', () => {

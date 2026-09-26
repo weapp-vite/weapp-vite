@@ -2,8 +2,10 @@ import type { InlineConfig, PluginOption } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import type { SubPackageMetaValue } from '../../../../types'
 import { vitePluginWeapp, WEAPP_VITE_CONTEXT_PLUGIN_NAME } from '../../../../plugins'
+import { isWeappCompilerPlugin } from '../../../../plugins/compilerPlugin'
 
 const WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME = 'weapp-vite:output-finalizer'
+const WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME = 'weapp-vite:output-publication'
 
 export function normalizePluginOptions(option: PluginOption | PluginOption[] | undefined): PluginOption[] {
   const normalized: PluginOption[] = []
@@ -34,6 +36,10 @@ export function arrangePlugins(
   const tsconfigPlugins: PluginOption[] = []
   const others: PluginOption[] = []
   const finalizers: PluginOption[] = []
+  const publishers: PluginOption[] = []
+  const sourceCompilers: PluginOption[] = []
+  const outputCompilers: PluginOption[] = []
+  const cssPlugins: PluginOption[] = []
 
   for (const entry of internal) {
     if (!entry) {
@@ -41,6 +47,23 @@ export function arrangePlugins(
     }
     if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)) {
       finalizers.push(entry)
+      continue
+    }
+    if (isNamedPlugin(entry, WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME)) {
+      publishers.push(entry)
+      continue
+    }
+    if (isWeappCompilerPlugin(entry, 'source')) {
+      // 保持 source compiler 在用户插件之后、Vite CSS 之前消费内存源码。
+      sourceCompilers.push(entry)
+      continue
+    }
+    if (isWeappCompilerPlugin(entry, 'output')) {
+      outputCompilers.push(entry)
+      continue
+    }
+    if (isNamedPlugin(entry, 'weapp-vite:css')) {
+      cssPlugins.push(entry)
       continue
     }
     others.push(entry)
@@ -57,11 +80,12 @@ export function arrangePlugins(
     if (
       isNamedPlugin(entry, WEAPP_VITE_CONTEXT_PLUGIN_NAME)
       || isNamedPlugin(entry, WEAPP_VITE_OUTPUT_FINALIZER_PLUGIN_NAME)
+      || isNamedPlugin(entry, WEAPP_VITE_OUTPUT_PUBLICATION_PLUGIN_NAME)
     ) {
       continue
     }
     others.push(entry)
   }
 
-  config.plugins = [...others, ...tsconfigPlugins, ...finalizers]
+  config.plugins = [...others, ...tsconfigPlugins, ...sourceCompilers, ...cssPlugins, ...finalizers, ...outputCompilers, ...publishers]
 }

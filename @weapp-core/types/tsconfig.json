@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "moduleResolution": "Bundler", "paths": { "@/*": ["./src/*"], "@weapp-core/types": ["./src/index.ts"], "@weapp-core/types/weapp": ["./src/weappIntrinsicElements.ts"], "@weapp-core/types/alipay": ["./src/alipayIntrinsicElements.ts"], "@weapp-core/types/tt": ["./src/ttIntrinsicElements.ts"], "@weapp-core/types/miniprogram": ["./src/miniprogramIntrinsicElements.ts"], "@weapp-core/types/*": ["./src/*"] } },
+  "include": ["src", "test-d"]
+}

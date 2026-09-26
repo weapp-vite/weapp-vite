@@ -183,9 +183,7 @@ async function syncManagedTsconfigSupportFiles(ctx: MutableCompilerContext) {
 }
 
 async function syncAutoRoutesSupportFiles(ctx: MutableCompilerContext) {
-  if (ctx.autoRoutesService?.isEnabled()) {
-    await ctx.autoRoutesService.ensureFresh()
-  }
+  await ctx.autoRoutesService?.ensureFresh()
 }
 
 async function syncAutoImportSupportFiles(

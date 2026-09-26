@@ -4,9 +4,6 @@ import { NodeTypes } from '@vue/compiler-core'
 
 import { recordBindingExpression } from '../bindingManifest'
 import { warn } from '../diagnostics'
-import { normalizeWxmlExpressionWithContext } from '../expression'
-import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
-import { renderMustache } from '../mustache'
 import { transformNormalElement } from './tag-normal'
 import { transformForElement, transformIfElement } from './tag-structural'
 
@@ -36,13 +33,6 @@ function recordTemplateAttributeBindings(
   }
 }
 
-function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
-  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExpValue, context.templateSafeCallNames))
-    ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
-    : null
-  return runtimeExp ?? normalizeWxmlExpressionWithContext(rawExpValue, context)
-}
-
 export function transformTransitionElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
   warn(context, '<transition> 组件：过渡效果需要动画库或运行时支持，仅渲染子节点。', node.loc)
 
@@ -68,7 +58,6 @@ export function transformKeepAliveElement(node: ElementNode, context: TransformC
 }
 
 export function transformTemplateElement(node: ElementNode, context: TransformContext, transformNode: TransformNode): string {
-  const renderTemplateMustache = (exp: string) => renderMustache(exp, context)
   let nameAttr = ''
   let isAttr = ''
   let dataAttr = ''
@@ -100,49 +89,17 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
     }
   }
 
-  const children = node.children
-    .map(child => transformNode(child, context))
-    .join('')
-
   if (!nameAttr && !isAttr && !dataAttr) {
     if (structuralDirective?.name === 'for') {
       return transformForElement({ ...node, tag: 'block' } as ElementNode, context, transformNode)
     }
-    if (structuralDirective && (structuralDirective.name === 'if' || structuralDirective.name === 'else-if' || structuralDirective.name === 'else')) {
-      const dir = structuralDirective
-      const base = node.props.filter(prop => prop !== dir)
-      const fakeNode: ElementNode = { ...node, tag: 'block', props: base }
-      if (dir.name === 'if' && dir.exp) {
-        const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-        const expValue = resolveConditionExpression(rawExpValue, context, 'template v-if')
-        recordBindingExpression(context, {
-          kind: 'if',
-          expression: rawExpValue,
-          outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
-          sourceLocation: dir.exp.loc,
-        })
-        return context.platform.wrapIf(expValue, children, renderTemplateMustache)
-      }
-      if (dir.name === 'else-if' && dir.exp) {
-        const rawExpValue = dir.exp.type === NodeTypes.SIMPLE_EXPRESSION ? dir.exp.content : ''
-        const expValue = resolveConditionExpression(rawExpValue, context, 'template v-else-if')
-        recordBindingExpression(context, {
-          kind: 'if',
-          expression: rawExpValue,
-          outputPath: expValue.startsWith('__wv_bind_') ? expValue.split('[')[0] : undefined,
-          sourceLocation: dir.exp.loc,
-        })
-        return context.platform.wrapElseIf(expValue, children, renderTemplateMustache)
-      }
-      if (dir.name === 'else') {
-        return context.platform.wrapElse(children)
-      }
-      return transformIfElement(fakeNode, context, transformNode)
+    if (structuralDirective && ['if', 'else-if', 'else'].includes(structuralDirective.name)) {
+      return transformIfElement(node, context, transformNode)
     }
     if (hasOtherDirective) {
       return transformNormalElement(node, context, transformNode).replace(TEMPLATE_OPEN_RE, '<block').replace(TEMPLATE_CLOSE_RE, '</block>')
     }
-    return children
+    return node.children.map(child => transformNode(child, context)).join('')
   }
 
   const attrs: string[] = []
@@ -157,5 +114,6 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
   }
 
   const attrString = attrs.length ? ` ${attrs.join(' ')}` : ''
+  const children = node.children.map(child => transformNode(child, context)).join('')
   return `<template${attrString}>${children}</template>`
 }

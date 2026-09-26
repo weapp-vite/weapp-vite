@@ -19,6 +19,11 @@ const ROOT_RUNTIME_EXPORTS = [
   'computed',
   'createApp',
   'createStore',
+  'createPinia',
+  'getActivePinia',
+  'setActivePinia',
+  'disposePinia',
+  'MutationType',
   'createWevuComponent',
   'createWevuScopedSlotComponent',
   'customRef',
@@ -133,6 +138,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'unregisterRuntimeLayoutHosts',
   'use',
   'useAsyncPullDownRefresh',
+  'useAsyncDerivation',
   'useAttrs',
   'useBindModel',
   'useCssModule',
@@ -185,6 +191,7 @@ describe('export barrels', () => {
       useRouter: expect.any(Function),
     })
     expect(reactivity).toBeTruthy()
+    expect(reactivity.useAsyncDerivation).toBe(root.useAsyncDerivation)
     expect(runtime).toBeTruthy()
     expect(store).toBeTruthy()
     expect(root).toBeTruthy()

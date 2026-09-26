@@ -1,10 +1,10 @@
 import { chunkMatrixCases, selectIdeRuntimeChunkMatrixCases } from '../chunk-modes.matrix'
-import { createChunkModesRuntimeSuite, withIdeSmokeRoutes } from './chunk-modes.runtime.shared'
+import { createChunkModesRuntimeSuite, withBaseRoutes } from './chunk-modes.runtime.shared'
 
 const hoistCases = selectIdeRuntimeChunkMatrixCases(chunkMatrixCases)
   .filter(item => item.strategy === 'hoist')
 
 createChunkModesRuntimeSuite(
   'e2e app: chunk-modes runtime hoist matrix',
-  withIdeSmokeRoutes(hoistCases),
+  withBaseRoutes(hoistCases),
 )

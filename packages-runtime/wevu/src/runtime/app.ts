@@ -7,13 +7,20 @@ import type {
   RuntimeApp,
   WevuPlugin,
 } from './types'
-import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
+import {
+  WEVU_BINDING_MANIFEST_KEY,
+  WEVU_INLINE_HANDLER,
+  WEVU_INLINE_MAP_KEY,
+  WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
+  WEVU_SLOT_OWNER_ID_KEY,
+} from '@weapp-core/constants'
 import { version } from '../version'
 import { createRuntimeMount } from './app/mount'
 import { setPendingRuntimeAppRegistration } from './app/pending'
 import { resolveBindingManifest } from './bindingManifest'
+import { isSetDataHighFrequencyWarningRequested, requireRuntimeCapability } from './capabilities'
 import { applyWevuAppDefaults, INTERNAL_DEFAULTS_SCOPE_KEY } from './defaults'
-import { getMiniProgramGlobalObject } from './platform'
+import { getCurrentMiniProgramGlobalObject } from './platform'
 import { ensureRuntimeAppProvides, setRuntimeAppProvidedValue } from './provideContext'
 import { registerApp } from './register'
 
@@ -27,6 +34,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   const {
     [INTERNAL_DEFAULTS_SCOPE_KEY]: _ignoredDefaultsScope,
     [WEVU_BINDING_MANIFEST_KEY]: rawBindingManifest,
+    [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: scopedSlotOwnerRequired,
     data,
     computed: computedOptions,
     methods,
@@ -34,10 +42,34 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
     watch: appWatch,
     setup: appSetup,
     ...mpOptions
-  } = resolvedOptions
+  } = resolvedOptions as typeof resolvedOptions & { [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]?: boolean }
   const bindingManifest: WevuRuntimeBindingManifestV1 | undefined = resolveBindingManifest(rawBindingManifest)
   const resolvedMethods = methods ?? ({} as M)
   const resolvedComputed = computedOptions ?? ({} as C)
+  const hasScopedSlotBindings = scopedSlotOwnerRequired === true
+    || (Array.isArray(setDataOptions?.pick) && setDataOptions.pick.includes(WEVU_SLOT_OWNER_ID_KEY))
+  const methodRecord = resolvedMethods as unknown as Record<string, unknown>
+  const inlineMap = methodRecord[WEVU_INLINE_MAP_KEY]
+  const hasInlineMetadata = Object.prototype.hasOwnProperty.call(methodRecord, WEVU_INLINE_MAP_KEY)
+    && inlineMap
+    && typeof inlineMap === 'object'
+    && Object.keys(inlineMap).length > 0
+  if (
+    hasInlineMetadata
+    && typeof methodRecord[WEVU_INLINE_HANDLER] !== 'function'
+    && typeof (mpOptions as Record<string, unknown>)[WEVU_INLINE_HANDLER] !== 'function'
+  ) {
+    requireRuntimeCapability('inlineEvents', 'createApp(inline event metadata)')
+  }
+  if (setDataOptions?.strategy === 'patch') {
+    requireRuntimeCapability('patchStrategy', 'createApp(setData.strategy="patch")')
+  }
+  if (isSetDataHighFrequencyWarningRequested(setDataOptions?.highFrequencyWarning)) {
+    requireRuntimeCapability('setDataHighFrequencyWarning', 'createApp(setData.highFrequencyWarning)')
+  }
+  if (hasScopedSlotBindings) {
+    requireRuntimeCapability('scopedSlots', 'createApp(scoped-slot bindings)')
+  }
 
   const installedPlugins = new Set<WevuPlugin>()
   const appUnmountCleanups = new Set<() => void>()
@@ -110,7 +142,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
       writable: false,
     })
     Object.defineProperty(runtimeApp as Record<string, any>, '__wevuHasTemplateRuntimeBindings', {
-      value: Object.keys(resolvedComputed as Record<string, unknown>).some(key => key.startsWith('__wv_bind_')),
+      value: hasScopedSlotBindings,
       configurable: true,
       enumerable: false,
       writable: false,
@@ -118,12 +150,11 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   }
   catch {
     ;(runtimeApp as any).__wevuSetDataOptions = setDataOptions
-    ;(runtimeApp as any).__wevuHasTemplateRuntimeBindings = Object.keys(resolvedComputed as Record<string, unknown>)
-      .some(key => key.startsWith('__wv_bind_'))
+    ;(runtimeApp as any).__wevuHasTemplateRuntimeBindings = hasScopedSlotBindings
   }
 
   const registerRuntimeApp = () => {
-    const globalObject = getMiniProgramGlobalObject()
+    const globalObject = getCurrentMiniProgramGlobalObject()
     const appRegisterKey = '__wevuAppRegistered'
     const hasRegistered = globalObject ? Boolean(globalObject[appRegisterKey]) : false
     // 开发者工具/HMR 可能重复执行入口，避免多次 App() 导致 AppService 事件监听累积。

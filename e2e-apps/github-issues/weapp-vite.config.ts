@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer'
 import path from 'node:path'
 import process from 'node:process'
 import { defineConfig } from 'weapp-vite'
+import { isIssue779CssContentRequest } from './config/issue779CssPre'
 
 const issue393ChunkModeEnabled = process.env.WEAPP_GITHUB_ISSUE_393 === 'true'
 const issue510AugmentedEnabled = process.env.WEAPP_GITHUB_ISSUE_510_AUGMENTED === 'true'
@@ -16,6 +17,7 @@ const issue642ScopedBuildEnabled = process.env.WEAPP_GITHUB_ISSUE_642_SCOPED ===
 const issue724ProbeEnabled = process.env.WEAPP_GITHUB_ISSUE_724_PROBE === 'true'
 const issue779CssPreEnabled = process.env.WEAPP_GITHUB_ISSUE_779_CSS_PRE === 'true'
 const e2eTargetFile = process.env.WEAPP_VITE_E2E_TARGET_FILE?.replaceAll('\\', '/') ?? ''
+const issue1015HmrRuntime = process.env.WEAPP_GITHUB_ISSUE_1015_HMR_RUNTIME
 const issue826PreserveEnabled = process.env.WEAPP_GITHUB_ISSUE_826_PRESERVE === 'true'
   || e2eTargetFile.endsWith('github-issues.runtime.issue826.test.ts')
 const issue845I18nEnabled = process.env.WEAPP_GITHUB_ISSUE_845_I18N === 'true'
@@ -32,6 +34,7 @@ const issue642Bug7DefaultEnabled = e2eTargetFile.endsWith('github-issues.runtime
 const issue642Bug7PerformanceEnabled = e2eTargetFile.endsWith('github-issues.runtime.issue642-bug7-performance.test.ts')
 const githubIssuesAggregateTargets = {
   'github-issues.runtime.aggregate.test.ts': [
+    'github-issues.runtime.issue1008.test.ts',
     'github-issues.runtime.app-shell.test.ts',
     'github-issues.runtime.issue289.test.ts',
     'github-issues.runtime.issue297-302.test.ts',
@@ -48,10 +51,12 @@ const githubIssuesAggregateTargets = {
     'github-issues.runtime.issue706.test.ts',
     'github-issues.runtime.issue829.test.ts',
     'github-issues.runtime.issue930.test.ts',
+    'github-issues.runtime.issue1013.test.ts',
     'github-issues.runtime.lifecycle.test.ts',
     'github-issues.runtime.miniprogram-computed.test.ts',
     'github-issues.runtime.props.test.ts',
     'github-issues.runtime.slot-fallback.test.ts',
+    'github-issues.runtime.issue1014.test.ts',
   ],
 } as const
 const issue547AugmentedEnabled = issue547AugmentedEnvEnabled || e2eTargetFile.endsWith('github-issues.runtime.issue547.test.ts')
@@ -61,6 +66,14 @@ const issue615AugmentedEnabled = issue615AugmentedEnvEnabled || e2eTargetFile.en
 const issue804WebRuntimeEnabled = e2eTargetFile.endsWith('github-issues.runtime.web-runtime.test.ts')
 const githubIssuesWarmupRoutes = ['pages/block-slot/**']
 const githubIssuesRouteGroups: Record<string, string[]> = {
+  'github-issues.runtime.issue1035.test.ts': ['pages/issue-1035/**', 'pages/issue-1035-next/**'],
+  'github-issues.runtime.issue1008.test.ts': [
+    'pages/issue-1008/**',
+  ],
+  'github-issues.runtime.issue1049.test.ts': ['pages/issue-1049/**'],
+  'github-issues.runtime.issue1009.test.ts': ['pages/issue-1009/**'],
+  'github-issues.runtime.issue1014.test.ts': ['pages/issue-1014/**'],
+  'github-issues.runtime.issue779.test.ts': ['pages/issue-779/**'],
   'github-issues.runtime.app-shell.test.ts': [
     'pages/issue-338/**',
     'pages/issue-448/**',
@@ -142,10 +155,34 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   ],
   'github-issues.runtime.issue930.test.ts': [
     'pages/issue-930/**',
+    'pages/css-nested-vars/**',
     'components/issue-930/**',
+  ],
+  'github-issues.runtime.issue1010.test.ts': [
+    'pages/issue-1010/**',
+  ],
+  'github-issues.runtime.issue1015.test.ts': [
+    'pages/issue-1015/**',
   ],
   'github-issues.runtime.issue852.test.ts': [
     'pages/issue-852/**',
+  ],
+  'github-issues.runtime.issue868.test.ts': [
+    'pages/issue-868/**',
+    'components/issue-868/**',
+  ],
+  'github-issues.runtime.issue941.test.ts': [
+    'pages/issue-941/**',
+  ],
+  'github-issues.runtime.issue1013.test.ts': [
+    'pages/issue-1013/**',
+    'components/issue-1013-child/**',
+  ],
+  'github-issues.runtime.issue1011.test.ts': [
+    'pages/issue-1011/**',
+  ],
+  'github-issues.runtime.issue1012.test.ts': [
+    'pages/issue-1012/**',
   ],
   'github-issues.runtime.issue826.test.ts': [
     'pages/issue-826/**',
@@ -158,7 +195,13 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
   'github-issues.runtime.issue911.test.ts': [
     'pages/issue-550/**',
     'pages/issue-911/**',
+    'pages/issue-911-result/**',
     'shared/issue911.ts',
+  ],
+  'github-issues.runtime.component-instance-apis.test.ts': [
+    'pages/component-instance-apis/**',
+    'pages/component-instance-apis-baseline/**',
+    'components/component-instance-apis/**',
   ],
   'github-issues.runtime.issue581.test.ts': [
     'pages/issue-581/**',
@@ -341,10 +384,15 @@ function resolveGithubIssuesAutoRoutes() {
     : undefined
 
   if (!matchedRoutes) {
+    const targetName = e2eTargetFile.split('/').at(-1) ?? ''
+    if (/^github-issues\.runtime\..+\.test\.ts$/.test(targetName)) {
+      throw new Error(`Missing github-issues runtime route group: ${targetName}`)
+    }
     return true
   }
 
-  if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue627.test.ts') {
+  if (matchedGithubIssuesTestFile === 'github-issues.runtime.issue627.test.ts'
+    || matchedGithubIssuesTestFile === 'github-issues.runtime.issue1035.test.ts') {
     return {
       include: matchedRoutes,
     }
@@ -524,18 +572,18 @@ const issue779CssPrePlugin = issue779CssPreEnabled
         name: 'github-issues:issue-779-css-pre',
         enforce: 'pre' as const,
         transform(_code: string, id: string) {
-          const normalizedId = id.replaceAll('\\', '/')
-          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+          if (!isIssue779CssContentRequest(id)) {
             return null
           }
-          return `@import "tailwindcss";\n.issue-779-pre-marker { color: rgb(1, 2, 3); }`
+          return `@import "tailwindcss" source(none);\n.issue-779-pre-marker { @apply p-[13px]; color: rgb(1, 2, 3); }`
         },
       },
       {
         name: 'github-issues:issue-779-css-pipeline-probe',
+        enforce: 'pre' as const,
         transform(code: string, id: string) {
           const normalizedId = id.replaceAll('\\', '/')
-          if (!normalizedId.includes('/src/pages/issue-779/') || !id.includes('weapp-vite-sidecar=style')) {
+          if (!isIssue779CssContentRequest(id)) {
             return null
           }
           if (
@@ -646,6 +694,9 @@ function resolveGithubIssuesBuildConfig() {
 }
 
 const githubIssuesBuildConfig = resolveGithubIssuesBuildConfig()
+const githubIssuesAutoRoutes = resolveGithubIssuesAutoRoutes()
+// 完整示例包含使用 i18n behavior 的页面，必须同步启用对应运行时。
+const githubIssuesI18nEnabled = issue845I18nEnabled || githubIssuesAutoRoutes === true
 
 export default defineConfig({
   plugins: [
@@ -658,7 +709,7 @@ export default defineConfig({
     'import.meta.env.ISSUE_484_FLAG': '123456',
   },
   weapp: {
-    ...(issue845I18nEnabled
+    ...(githubIssuesI18nEnabled
       ? {
           i18n: {
             defaultLocale: 'zh-CN',
@@ -667,11 +718,14 @@ export default defineConfig({
         }
       : {}),
     hmr: {
+      runtime: issue1015HmrRuntime === 'classic' || issue1015HmrRuntime === 'stateful-experimental'
+        ? issue1015HmrRuntime
+        : undefined,
       logLevel: 'verbose',
       profileJson: true,
     },
     srcRoot: 'src',
-    autoRoutes: resolveGithubIssuesAutoRoutes(),
+    autoRoutes: githubIssuesAutoRoutes,
     subPackages: issue850OutputReplayEnabled
       ? {
           'subpackages/issue-850': {

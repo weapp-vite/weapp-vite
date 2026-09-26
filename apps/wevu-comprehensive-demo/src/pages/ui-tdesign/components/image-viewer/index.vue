@@ -11,7 +11,9 @@ definePageJson(() => ({
 
 const visible = ref(false)
 const images = ref(['https://dummyimage.com/300x200/4facfe/ffffff.png&text=1', 'https://dummyimage.com/300x200/764ba2/ffffff.png&text=2'])
-function open() { visible.value = true }
+function open() {
+  visible.value = true
+}
 </script>
 
 <template>

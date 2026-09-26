@@ -2,6 +2,7 @@ import type { SuiteTask } from './suiteRunner'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
 import {
@@ -18,6 +19,17 @@ import {
   getTaskSpawnOptions,
   runTaskSuite,
 } from './suiteRunner'
+
+function terminateTestChild(pid: number) {
+  try {
+    process.kill(pid)
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
+      throw error
+    }
+  }
+}
 
 describe('suiteRunner', () => {
   it('formats failure summary with failed tasks', () => {
@@ -169,14 +181,24 @@ describe('suiteRunner', () => {
     process.exitCode = undefined
 
     const leakStdoutScriptPath = path.join(tempRoot, 'leak-stdio.cjs')
+    const descendantScriptPath = path.join(tempRoot, 'descendant.cjs')
+    fs.writeFileSync(descendantScriptPath, `
+      require('node:fs').writeFileSync(process.argv[2], String(process.pid));
+      setTimeout(() => {}, 10000);
+      process.send('ready');
+    `)
     fs.writeFileSync(leakStdoutScriptPath, `
-      const fs = require('node:fs');
       const { spawn } = require('node:child_process');
-      const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 3000)'], {
-        stdio: ['ignore', 1, 2],
+      const child = spawn(process.execPath, [${JSON.stringify(descendantScriptPath)}, ${JSON.stringify(pidFile)}], {
+        detached: true,
+        windowsHide: true,
+        stdio: ['ignore', 1, 2, 'ipc'],
       });
-      fs.writeFileSync(${JSON.stringify(pidFile)}, String(child.pid));
-      process.exit(0);
+      child.once('message', () => {
+        child.disconnect();
+        child.unref();
+        process.exit(0);
+      });
     `)
 
     try {
@@ -194,16 +216,13 @@ describe('suiteRunner', () => {
       ])
 
       expect(result).toBe(0)
+      expect(() => process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 0)).not.toThrow()
     }
     finally {
       if (fs.existsSync(pidFile)) {
         const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
         if (Number.isInteger(childPid) && childPid > 0) {
-          try {
-            process.kill(childPid)
-          }
-          catch {
-          }
+          terminateTestChild(childPid)
         }
       }
 
@@ -212,35 +231,221 @@ describe('suiteRunner', () => {
     }
   })
 
-  it('fails a task that exceeds the configured task timeout', async () => {
+  it.each(['default', 'graceful'] as const)('fails a %s task that exceeds the configured task timeout', async (termination) => {
     const previousExitCode = process.exitCode
-    const previousTimeout = process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-timeout-'))
+    const startedFile = path.join(tempRoot, 'started')
     process.exitCode = undefined
-    process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS = '200'
 
     try {
       const exitCode = await runTaskSuite('e2e:test', [
         {
           label: 'timeout-task',
           command: process.execPath,
-          args: ['-e', 'setTimeout(() => {}, 5000)'],
+          args: ['-e', `
+            const fs = require('node:fs');
+            if (${JSON.stringify(termination)} === 'graceful') {
+              process.on('SIGTERM', () => process.exit(0));
+            }
+            fs.writeFileSync(process.argv[1], 'started');
+            setInterval(() => {}, 5000);
+          `, startedFile],
+          env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' },
         },
       ], {
         writeReport: false,
       })
 
       expect(exitCode).toBe(1)
+      expect(fs.readFileSync(startedFile, 'utf8')).toBe('started')
+      expect(consoleError).toHaveBeenCalledWith('[e2e] task timeout after 1.0s: timeout-task')
     }
     finally {
-      if (previousTimeout == null) {
-        delete process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS
-      }
-      else {
-        process.env.WEAPP_VITE_E2E_TASK_TIMEOUT_MS = previousTimeout
-      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      consoleError.mockRestore()
+      process.exitCode = previousExitCode
+    }
+  }, 15_000)
+
+  it.each(['node', 'pnpm'] as const)('preserves argument boundaries through %s', async (command) => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite runner arguments '))
+    const scriptPath = path.join(tempRoot, 'check arguments.cjs')
+    const resultPath = path.join(tempRoot, 'result.json')
+    const args = ['space separated', 'parentheses (kept)', 'quote "kept"', 'ampersand & pipe | redirect >', '', 'backslash\\']
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    fs.writeFileSync(scriptPath, 'require("node:fs").writeFileSync(process.argv[2], JSON.stringify(process.argv.slice(3)))')
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: `${command}-arguments`,
+        command: command === 'node' ? process.execPath : command,
+        args: [...(command === 'pnpm' ? ['exec', 'node'] : []), scriptPath, resultPath, ...args],
+      }], { writeReport: false })
+
+      expect(exitCode).toBe(0)
+      expect(JSON.parse(fs.readFileSync(resultPath, 'utf8'))).toEqual(args)
+    }
+    finally {
+      fs.rmSync(tempRoot, { recursive: true, force: true })
       process.exitCode = previousExitCode
     }
   })
+
+  it('force kills a timed out task that ignores graceful termination', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-force-kill-'))
+    const pidFile = path.join(tempRoot, 'child.pid')
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: 'force-kill-task',
+        command: process.execPath,
+        args: ['-e', `
+          process.on('SIGTERM', () => {});
+          require('node:fs').writeFileSync(process.argv[1], String(process.pid));
+          setInterval(() => {}, 5000);
+        `, pidFile],
+        env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '1000' },
+      }], { writeReport: false })
+
+      const childPid = Number(fs.readFileSync(pidFile, 'utf8'))
+      expect(exitCode).toBe(1)
+      await expect.poll(() => {
+        try {
+          process.kill(childPid, 0)
+          return false
+        }
+        catch (error) {
+          return (error as NodeJS.ErrnoException).code === 'ESRCH'
+        }
+      }, { timeout: 1000 }).toBe(true)
+    }
+    finally {
+      if (fs.existsSync(pidFile)) {
+        try {
+          process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 'SIGKILL')
+        }
+        catch {
+        }
+      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      process.exitCode = previousExitCode
+    }
+  }, 15_000)
+
+  it('cleans up a timed out process tree after its entry process exits gracefully', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-process-tree-'))
+    const parentPidFile = path.join(tempRoot, 'parent.pid')
+    const childPidFile = path.join(tempRoot, 'child.pid')
+    const childScript = path.join(tempRoot, 'child.cjs')
+    const parentScript = path.join(tempRoot, 'parent.cjs')
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    fs.writeFileSync(childScript, `
+      process.on('SIGTERM', () => {});
+      require('node:fs').writeFileSync(process.argv[2], String(process.pid));
+      setInterval(() => {}, 5000);
+    `)
+    fs.writeFileSync(parentScript, `
+      const fs = require('node:fs');
+      const { spawn } = require('node:child_process');
+      process.on('SIGTERM', () => process.exit(0));
+      fs.writeFileSync(process.argv[2], String(process.pid));
+      spawn(process.execPath, [process.argv[3], process.argv[4]], { stdio: 'ignore' });
+    `)
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: 'process-tree-timeout',
+        command: process.execPath,
+        args: [parentScript, parentPidFile, childScript, childPidFile],
+        env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '2000' },
+      }], { writeReport: false })
+
+      expect(exitCode).toBe(1)
+      for (const pidFile of [parentPidFile, childPidFile]) {
+        const pid = Number(fs.readFileSync(pidFile, 'utf8'))
+        await expect.poll(() => {
+          try {
+            process.kill(pid, 0)
+            return false
+          }
+          catch (error) {
+            return (error as NodeJS.ErrnoException).code === 'ESRCH'
+          }
+        }, { timeout: 2000 }).toBe(true)
+      }
+    }
+    finally {
+      for (const pidFile of [parentPidFile, childPidFile]) {
+        if (fs.existsSync(pidFile)) {
+          try {
+            process.kill(Number(fs.readFileSync(pidFile, 'utf8')), 'SIGKILL')
+          }
+          catch {
+          }
+        }
+      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      process.exitCode = previousExitCode
+    }
+  }, 20_000)
+
+  it('cleans up a task that ignores SIGTERM when its runner exits', async () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-runner-exit-cleanup-'))
+    const childPidFile = path.join(tempRoot, 'child.pid')
+    const runnerScript = path.join(tempRoot, 'runner.mjs')
+    const suiteRunnerUrl = pathToFileURL(path.resolve(import.meta.dirname, 'suiteRunner.ts')).href
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+    fs.writeFileSync(runnerScript, `
+      import fs from 'node:fs';
+      import { runTaskSuite } from ${JSON.stringify(suiteRunnerUrl)};
+      const pidFile = process.argv[2];
+      void runTaskSuite('e2e:test', [{
+        label: 'ignores-termination',
+        command: process.execPath,
+        args: ['-e', 'process.on("SIGTERM", () => {}); require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 5000)', pidFile],
+      }], { writeReport: false });
+      setInterval(() => {
+        if (fs.existsSync(pidFile)) process.exit(0);
+      }, 10);
+    `)
+
+    try {
+      const exitCode = await runTaskSuite('e2e:test', [{
+        label: 'exiting-runner',
+        command: process.execPath,
+        args: ['--import', 'tsx', runnerScript, childPidFile],
+        env: { WEAPP_VITE_E2E_TASK_TIMEOUT_MS: '5000' },
+      }], { writeReport: false })
+      expect(exitCode).toBe(0)
+      const childPid = Number(fs.readFileSync(childPidFile, 'utf8'))
+      await expect.poll(() => {
+        try {
+          process.kill(childPid, 0)
+          return false
+        }
+        catch (error) {
+          return (error as NodeJS.ErrnoException).code === 'ESRCH'
+        }
+      }, { timeout: 2000 }).toBe(true)
+    }
+    finally {
+      if (fs.existsSync(childPidFile)) {
+        try {
+          process.kill(Number(fs.readFileSync(childPidFile, 'utf8')), 'SIGKILL')
+        }
+        catch {
+        }
+      }
+      fs.rmSync(tempRoot, { recursive: true, force: true })
+      process.exitCode = previousExitCode
+    }
+  }, 15_000)
 
   it('keeps ide gate smaller than ide full and includes core runtime coverage', async () => {
     const ideSmokeTasks = await getSuiteTasks('ide-smoke')
@@ -253,6 +458,7 @@ describe('suiteRunner', () => {
     const ideChunkModesTasks = await getSuiteTasks('ide-full:chunk-modes')
     const ideGithubIssuesTasks = await getSuiteTasks('ide-full:github-issues')
     const ideWevuJsxTasks = await getSuiteTasks('ide-full:wevu-jsx')
+    const ideWevuFeaturesTasks = await getSuiteTasks('ide-full:wevu-features')
     const ideComponentLibraryTasks = await getSuiteTasks('ide-component-libraries')
     const ideComponentLibraryVisualTasks = await getSuiteTasks('ide-component-libraries:visual')
     const ideComponentLibraryVisualFullTasks = await getSuiteTasks('ide-component-libraries:visual-full')
@@ -266,6 +472,7 @@ describe('suiteRunner', () => {
     const ideChunkModesLabels = ideChunkModesTasks.map(task => task.label)
     const ideGithubIssuesLabels = ideGithubIssuesTasks.map(task => task.label)
     const ideWevuJsxLabels = ideWevuJsxTasks.map(task => task.label)
+    const ideWevuFeaturesLabels = ideWevuFeaturesTasks.map(task => task.label)
     const appLifecycleTask = ideFullTasks.find(task => task.label === 'ide/app-lifecycle.test.ts')
     const autoRoutesDefineAppJsonTask = ideFullTasks.find(task => task.label === 'ide/auto-routes-define-app-json.runtime.test.ts')
     const coreHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-runtime.core-hmr.test.ts')
@@ -283,6 +490,7 @@ describe('suiteRunner', () => {
     const wevuRuntimeTask = ideFullTasks.find(task => task.label === 'ide/wevu-runtime.weapp.test.ts')
     const wevuJsxHmrTask = ideExhaustiveTasks.find(task => task.label === 'ide/wevu-jsx-tsx.hmr.runtime.test.ts')
     const wotUiCompatTask = ideComponentLibraryTasks.find(task => task.label === 'ide/wot-ui-compat.runtime.test.ts')
+    const headlessQueryTask = ideHeadlessFullTasks.find(task => task.label === 'ide/wevu-query.runtime.test.ts')
 
     expect(ideSmokeTasks.length).toBeLessThan(ideGateTasks.length)
     expect(ideGateTasks.length).toBeLessThan(ideFullTasks.length)
@@ -294,9 +502,15 @@ describe('suiteRunner', () => {
     expect(ideGateLabels).toContain('ide/index.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideGateLabels).toContain('ide/wevu-features.runtime.behavior.test.ts')
+    expect(ideFullLabels).toContain('ide/wevu-query.runtime.test.ts')
+    expect(ideExhaustiveLabels).toContain('ide/wevu-runtime.pruning.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/wevu-query.runtime.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/wevu-runtime.pruning.test.ts')
+    expect(ideWevuFeaturesLabels).toContain('ide/wevu-query.runtime.test.ts')
     expect(ideFullLabels).toContain('ide/devtools-cli-workflow.runtime.test.ts')
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideFullLabels).toContain('ide/template-dev-open-all.runtime.test.ts')
+    expect(ideFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
     expect(ideFullLabels).toContain('ide/stateful-hmr.runtime.test.ts')
     expect(ideFullLabels).not.toContain('ide/chunk-modes.runtime.duplicate.test.ts')
     expect(ideExhaustiveLabels).not.toContain('ide/runtimeErrors.test.ts')
@@ -308,6 +522,7 @@ describe('suiteRunner', () => {
     ])
     expect(ideComponentLibraryVisualTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual', 'visual'])
     expect(ideComponentLibraryVisualFullTasks.map(task => task.env?.WEAPP_VITE_COMPONENT_LIBRARY_MODE)).toEqual(['visual-full', 'visual-full'])
+    expect(headlessQueryTask?.env?.WEAPP_VITE_E2E_RUNTIME_PROVIDER).toBe('headless')
     expect(devtoolsCliWorkflowTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
     expect(githubIssuesAggregateTasks.map(task => task.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS)).toEqual(['3600000'])
     expect(statefulHmrTask?.env?.WEAPP_VITE_E2E_TASK_TIMEOUT_MS).toBe('900000')
@@ -343,7 +558,11 @@ describe('suiteRunner', () => {
     expect(ideHeadlessGateLabels).toContain('ide/wevu-runtime.weapp.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/lifecycle-compare.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue705.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1009.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/github-issues.runtime.issue1012.test.ts')
     expect(ideHeadlessFullLabels).toContain('ide/wevu-jsx-tsx.runtime.test.ts')
+    expect(ideHeadlessFullLabels).toContain('ide/wevu-comprehensive.runtime.test.ts')
     expect(ideWevuJsxLabels).toEqual([
       'ide/wevu-jsx-tsx.runtime.test.ts',
       'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
@@ -398,12 +617,24 @@ describe('suiteRunner', () => {
     })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
     expect(ideGithubIssuesLabels).toEqual([
+      'ide/wxml-transform.runtime.test.ts',
+      'ide/wevu-runtime.pruning.test.ts',
+      'ide/github-issues.runtime.issue1035.test.ts',
+      'ide/issue-963-plugin-es6.runtime.test.ts',
+      'ide/issue-997-rebuild.runtime.test.ts',
+      'ide/issue-998-tailwind.runtime.test.ts',
+      'ide/issue-1015-css-hmr.runtime.test.ts',
+      'ide/issue-1029-auto-routes.runtime.test.ts',
+      'ide/github-issues.runtime.component-instance-apis.test.ts',
+      'ide/github-issues.runtime.issue1015.test.ts',
       ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
       'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
       'ide/github-issues.runtime.issue547.test.ts',
       'ide/github-issues.runtime.issue558.test.ts',
       'ide/github-issues.runtime.issue615.test.ts',
       'ide/github-issues.runtime.issue621.test.ts',
+      'ide/github-issues.runtime.issue1010.test.ts',
+      'ide/github-issues.runtime.issue779.test.ts',
       'ide/github-issues.runtime.issue826.test.ts',
       'ide/github-issues.runtime.issue642-bug7-default.test.ts',
       'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
@@ -411,6 +642,10 @@ describe('suiteRunner', () => {
       'ide/github-issues.runtime.require-async.test.ts',
       'ide/github-issues.runtime.issue911.test.ts',
       'ide/github-issues.runtime.issue941.test.ts',
+      'ide/github-issues.runtime.issue1009.test.ts',
+      'ide/github-issues.runtime.issue1049.test.ts',
+      'ide/github-issues.runtime.issue1011.test.ts',
+      'ide/github-issues.runtime.issue1012.test.ts',
       'ide/github-issues.runtime.issue852.test.ts',
       'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
       'ide/github-issues.runtime.subpackage-item.test.ts',
@@ -523,7 +758,7 @@ describe('suiteRunner', () => {
     expect(JSON.parse(json).reportDir).toBe(path.relative(process.cwd(), report.reportDir).replaceAll('\\', '/'))
   })
 
-  it('enables shell mode for Windows task commands so pnpm resolves correctly', () => {
+  it('keeps Windows task arguments out of shell command strings', () => {
     const options = getTaskSpawnOptions({
       label: 'ci/task',
       command: 'pnpm',
@@ -531,9 +766,11 @@ describe('suiteRunner', () => {
       env: {
         E2E_PLATFORM: 'weapp',
       },
-    }, 'win32')
+    })
 
-    expect(options.shell).toBe(true)
+    expect(options.shell).toBe(false)
+    expect(options.killDescendants).toBe(true)
+    expect(options.killSignal).toBe('SIGKILL')
     expect(options.env).toMatchObject({
       E2E_PLATFORM: 'weapp',
       WEAPP_VITE_E2E_REPORT_MARKERS: '1',
@@ -619,7 +856,7 @@ describe('suiteRunner', () => {
     ]
     const observedEnv = vi.fn<(task: SuiteTask) => void>()
 
-    await runTaskSuite('e2e:ide-full', tasks, {
+    await runTaskSuite('e2e:ide-companion-unit', tasks, {
       beforeEachTask: observedEnv,
       runTask: vi.fn().mockResolvedValue(0),
       writeReport: false,
@@ -631,7 +868,7 @@ describe('suiteRunner', () => {
     const secondSentinel = secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL
 
     expect(firstTask?.label).toBe('ide/first.test.ts')
-    expect(firstSentinel?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-full.passed')
+    expect(firstSentinel?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-companion-unit.passed')
     expect(secondSentinel).toBe(firstSentinel)
     expect(secondTask).toMatchObject({
       env: {
@@ -657,7 +894,7 @@ describe('suiteRunner', () => {
     ]
     const observedEnv = vi.fn<(task: SuiteTask) => void>()
 
-    await runTaskSuite('e2e:ide-full', tasks, {
+    await runTaskSuite('e2e:ide-companion-unit', tasks, {
       beforeEachTask: observedEnv,
       runTask: vi
         .fn<(task: SuiteTask) => Promise<number>>()
@@ -674,7 +911,7 @@ describe('suiteRunner', () => {
 
     expect(tasks[0]?.devtoolsLaunchSkipped).toBe(true)
     expect(secondTask?.label).toBe('ide/second.test.ts')
-    expect(secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-full.passed')
+    expect(secondTask?.env?.WEAPP_VITE_E2E_IDE_HMR_COMPANION_SENTINEL?.replaceAll('\\', '/')).toContain('.tmp/e2e-ide-hmr-companion/e2e_ide-companion-unit.passed')
     expect(secondTask?.env?.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK).toBeUndefined()
   })
 })

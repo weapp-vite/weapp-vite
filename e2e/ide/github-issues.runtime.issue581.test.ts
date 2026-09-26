@@ -1,6 +1,7 @@
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethodWithOptions,
   closeSharedMiniProgram,
@@ -12,6 +13,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { arrayFlushCheckpoint } from './githubIssuesDom/reactivity'
 
 const ISSUE_581_ROUTE = '/pages/issue-581/index'
 const ISSUE_581_RENDER_TIMEOUT = 8_000
@@ -98,6 +100,7 @@ describe('e2e app: github-issues / issue #581', { concurrent: false }, () => {
   })
 
   it('renders reactive array pushes after a sibling setup ref flushes first in DevTools', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [arrayFlushCheckpoint('initial', ['init', '123', '456'])])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_581_ROUTE, undefined, 45_000, {
@@ -118,6 +121,7 @@ describe('e2e app: github-issues / issue #581', { concurrent: false }, () => {
         rows: ISSUE_581_EXPECTED_ROWS,
       })
       await expectIssue581DistWxmlContract()
+      await dom.check('initial', activeMiniProgram, issuePage)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
@@ -125,6 +129,11 @@ describe('e2e app: github-issues / issue #581', { concurrent: false }, () => {
   })
 
   it('keeps repeated setup object requeues visible across multiple DevTools flushes', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', [
+      arrayFlushCheckpoint('initial', ['init', '123', '456']),
+      arrayFlushCheckpoint('second', ['init', '123', '456', '789', '999']),
+      arrayFlushCheckpoint('third', ['init', '123', '456', '789', '999', 'abc']),
+    ])
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       const issuePage = await relaunchPage(miniProgram, ISSUE_581_ROUTE, undefined, 45_000, {
@@ -136,6 +145,7 @@ describe('e2e app: github-issues / issue #581', { concurrent: false }, () => {
       const activeMiniProgram = await getSharedMiniProgram(ctx)
 
       await waitForIssue581Rows(activeMiniProgram)
+      await dom.check('initial', activeMiniProgram, issuePage)
 
       await appendIssue581Rows(activeMiniProgram, ['789', '999'])
       const secondRows = [...ISSUE_581_EXPECTED_ROWS, '789', '999']
@@ -147,6 +157,7 @@ describe('e2e app: github-issues / issue #581', { concurrent: false }, () => {
         flushCount: 2,
         rows: secondRows,
       })
+      await dom.check('second', activeMiniProgram, issuePage)
 
       await appendIssue581Rows(activeMiniProgram, ['abc'])
       const thirdRows = [...secondRows, 'abc']
@@ -158,6 +169,7 @@ describe('e2e app: github-issues / issue #581', { concurrent: false }, () => {
         flushCount: 3,
         rows: thirdRows,
       })
+      await dom.check('third', activeMiniProgram, issuePage)
       await expectIssue581DistWxmlContract()
     }
     finally {

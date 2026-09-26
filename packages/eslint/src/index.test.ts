@@ -24,14 +24,11 @@ describe('wevu compatibility ESLint rules', () => {
   tester.run('wevu/no-unsupported-api', unsupportedRule, {
     valid: [
       `import { ref } from 'vue'`,
+      `import { createPinia as createManager } from 'pinia'`,
       `import type { RouterLink } from 'vue-router'`,
       `import { RouterLink } from './components/RouterLink'`,
     ],
     invalid: [
-      {
-        code: `import { createPinia as createManager } from 'pinia'`,
-        errors: [{ message: /createPinia.*createStore/ }],
-      },
       {
         code: `import * as Router from 'vue-router'; Router.createWebHistory()`,
         errors: [{ message: /createWebHistory.*createRouter/ }],
@@ -40,15 +37,11 @@ describe('wevu compatibility ESLint rules', () => {
   })
 
   tester.run('wevu/no-risky-api', riskyRule, {
-    valid: [`import { ref } from 'vue'`],
+    valid: [`import { ref } from 'vue'`, `import * as Pinia from 'pinia'; type Refs = typeof Pinia.storeToRefs`],
     invalid: [
       {
         code: `import type { ComponentPublicInstance as Instance } from 'vue'`,
         errors: [{ message: /ComponentPublicInstance.*语义不同/ }],
-      },
-      {
-        code: `import * as Pinia from 'pinia'; type Refs = typeof Pinia.storeToRefs`,
-        errors: [{ message: /storeToRefs.*语义不同/ }],
       },
     ],
   })

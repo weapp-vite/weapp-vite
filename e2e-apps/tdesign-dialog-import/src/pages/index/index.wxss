@@ -1,8 +1,8 @@
 .page {
+  box-sizing: border-box;
   min-height: 100vh;
   padding: 32rpx;
   background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 100%);
-  box-sizing: border-box;
 }
 
 .hero {
@@ -35,9 +35,9 @@
   flex-direction: column;
   gap: 10rpx;
   padding: 24rpx;
+  background: #fff;
   border-radius: 24rpx;
-  background: #ffffff;
-  box-shadow: 0 18rpx 40rpx rgb(15 23 42 / 0.08);
+  box-shadow: 0 18rpx 40rpx rgb(15 23 42 / 8%);
 }
 
 .card-title {

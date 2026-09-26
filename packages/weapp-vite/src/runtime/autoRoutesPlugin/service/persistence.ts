@@ -1,14 +1,92 @@
 import type { MutableCompilerContext } from '../../../context'
 import type { RuntimeState } from '../../runtimeState'
 import type { AutoRoutesPersistentCache } from './shared'
+import { isObject } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../../autoRoutesConfig'
 import { logger } from '../../../context/shared'
-import { applyPersistentCache, AUTO_ROUTES_CACHE_FILE, createPersistentCachePayload, resolvePersistentCacheBaseDir, resolveTypedRouterOutputPath, TYPED_ROUTER_OUTPUT_FILE } from './shared'
+import {
+  applyPersistentCache,
+  AUTO_ROUTES_CACHE_FILE,
+  createAutoRoutesSourceFingerprint,
+  createPersistentCachePayload,
+  resolvePersistentCacheBaseDir,
+  resolveTypedRouterOutputPath,
+  TYPED_ROUTER_OUTPUT_FILE,
+} from './shared'
 
 function getResolvedConfig(ctx: MutableCompilerContext) {
   return resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes)
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string')
+}
+
+function isStringArrayRecord(value: unknown): value is Record<string, string[]> {
+  return isObject(value)
+    && !Array.isArray(value)
+    && Object.values(value).every(isStringArray)
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return isObject(value)
+    && !Array.isArray(value)
+    && Object.values(value).every(item => typeof item === 'string')
+}
+
+function isPersistentCache(value: unknown, topologyKey: string): value is AutoRoutesPersistentCache {
+  if (
+    !isObject(value)
+    || Array.isArray(value)
+    || !isObject(value.snapshot)
+    || Array.isArray(value.snapshot)
+    || !isObject(value.fileMtims)
+    || Array.isArray(value.fileMtims)
+    || !isStringArrayRecord(value.pageDeclarationDependencies)
+    || !isStringRecord(value.pageDeclarationFingerprints)
+  ) {
+    return false
+  }
+  const subPackages = value.snapshot.subPackages
+  const namedRoutes = value.namedRoutes
+  const pageSourceFiles = value.pageSourceFiles
+  const dependencyEntries = Object.entries(value.pageDeclarationDependencies)
+  const fingerprints = value.pageDeclarationFingerprints
+  return value.version === 6
+    && value.topologyKey === topologyKey
+    && typeof value.usesOpaquePageDeclarationResolver === 'boolean'
+    && isStringArray(value.snapshot.pages)
+    && isStringArray(value.snapshot.entries)
+    && Array.isArray(subPackages)
+    && subPackages.every(pkg =>
+      isObject(pkg)
+      && !Array.isArray(pkg)
+      && typeof pkg.root === 'string'
+      && isStringArray(pkg.pages),
+    )
+    && Array.isArray(namedRoutes)
+    && namedRoutes.every(route =>
+      isObject(route)
+      && !Array.isArray(route)
+      && typeof route.name === 'string'
+      && typeof route.path === 'string'
+      && isObject(route.meta)
+      && !Array.isArray(route.meta),
+    )
+    && isStringArray(pageSourceFiles)
+    && isStringArray(value.namedRouteSourceFiles)
+    && isStringArray(value.watchFiles)
+    && isStringArray(value.watchDirs)
+    && dependencyEntries.every(([, owners]) => isStringArray(owners))
+    && Object.values(fingerprints).every(fingerprint => typeof fingerprint === 'string')
+    && pageSourceFiles.every(sourceFile => Object.hasOwn(fingerprints, sourceFile))
+    && dependencyEntries.every(([dependency, owners]) =>
+      Object.hasOwn(fingerprints, dependency)
+      && owners.every(owner => pageSourceFiles.includes(owner)),
+    )
+    && Object.values(value.fileMtims).every(mtime => typeof mtime === 'number' && Number.isFinite(mtime))
 }
 
 function resolvePersistentCachePath(ctx: MutableCompilerContext) {
@@ -53,7 +131,7 @@ async function hasSamePersistentCachePayload(filePath: string, payload: AutoRout
     if (!await fs.pathExists(filePath)) {
       return false
     }
-    const current = await fs.readJson(filePath) as AutoRoutesPersistentCache
+    const current: unknown = await fs.readJson(filePath)
     return JSON.stringify(current) === JSON.stringify(payload)
   }
   catch {
@@ -70,7 +148,13 @@ async function collectWatchFileMtims(watchFiles: Iterable<string>) {
   return Object.fromEntries(entries) as Record<string, number>
 }
 
-export async function restorePersistentCache(ctx: MutableCompilerContext, state: RuntimeState['autoRoutes']) {
+export async function restorePersistentCache(
+  ctx: MutableCompilerContext,
+  state: RuntimeState['autoRoutes'],
+  topologyKey: string,
+  isCurrent: () => boolean = () => true,
+  hasOpaquePageDeclarationSourceResolver = false,
+) {
   if (!getResolvedConfig(ctx).persistentCache) {
     return false
   }
@@ -80,19 +164,22 @@ export async function restorePersistentCache(ctx: MutableCompilerContext, state:
   }
 
   try {
-    const cache = await fs.readJson(cachePath) as AutoRoutesPersistentCache
-    if (cache?.version !== 1) {
+    const cached: unknown = await fs.readJson(cachePath)
+    if (!isPersistentCache(cached, topologyKey)) {
       return false
     }
-    const watchFiles = Array.isArray(cache.watchFiles) ? cache.watchFiles : []
+    const cache = cached
+    if (
+      Object.keys(cache.pageDeclarationDependencies).length > 0
+      && (cache.usesOpaquePageDeclarationResolver || hasOpaquePageDeclarationSourceResolver)
+    ) {
+      return false
+    }
+    const watchFiles = cache.watchFiles
     if (watchFiles.length === 0) {
       return false
     }
-
     const cachedMtims = cache.fileMtims
-    if (!cachedMtims) {
-      return false
-    }
     const fileMtims = await collectWatchFileMtims(watchFiles)
     for (const filePath of watchFiles) {
       const expectedMtime = cachedMtims[filePath]
@@ -103,6 +190,15 @@ export async function restorePersistentCache(ctx: MutableCompilerContext, state:
       ) {
         return false
       }
+    }
+    const sourceEntries = await Promise.all(
+      Object.entries(cache.pageDeclarationFingerprints).map(async ([sourceFile, expectedFingerprint]) => {
+        const source = await fs.readFile(sourceFile, 'utf8')
+        return [expectedFingerprint, createAutoRoutesSourceFingerprint(source)] as const
+      }),
+    )
+    if (sourceEntries.some(([expected, current]) => expected !== current) || !isCurrent()) {
+      return false
     }
 
     applyPersistentCache(state, cache)
@@ -119,16 +215,15 @@ export async function writePersistentCache(ctx: MutableCompilerContext, state: R
     return
   }
 
-  let fileMtims: Record<string, number>
+  const payload = createPersistentCachePayload(state, {})
   try {
-    fileMtims = await collectWatchFileMtims(state.watchFiles)
+    payload.fileMtims = await collectWatchFileMtims(payload.watchFiles)
   }
   catch {
     return
   }
 
   try {
-    const payload = createPersistentCachePayload(state, fileMtims)
     if (await hasSamePersistentCachePayload(cachePath, payload)) {
       return
     }

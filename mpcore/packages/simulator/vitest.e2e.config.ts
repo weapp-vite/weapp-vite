@@ -4,6 +4,18 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
+import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
+import { createRuntimePruningFiles } from './test/helpers/runtimePruning'
+import { createRuntimePublicFactoryFiles } from './test/helpers/runtimePublicFactory'
+import { createRuntimeValueSnapshotFiles } from './test/helpers/runtimeValueSnapshot'
+import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
+import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
+import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
+import { createStatefulStoreBindingFiles } from './test/helpers/statefulStoreBindings'
+import { createStatefulVueComponentFiles } from './test/helpers/statefulVueComponent'
+import { createStoreDefinitionReloadFiles } from './test/helpers/storeDefinitionReload'
+import { createStoreHmrFiles } from './test/helpers/storeHmr'
+import { createStoreLifecycleFiles } from './test/helpers/storeLifecycle'
 
 const simulatorRoot = import.meta.dirname
 const demoWebRoot = path.resolve(simulatorRoot, '../../demos/web')
@@ -14,14 +26,76 @@ export default defineConfig({
   oxc: {
     tsconfig: false,
   },
-  plugins: [vue(), tailwindcss()],
+  optimizeDeps: {
+    rolldownOptions: {
+      // Vite 的依赖扫描不继承 oxc 配置，避免扫描无关应用的 solution references。
+      tsconfig: false,
+    },
+  },
+  plugins: [vue(), tailwindcss(), {
+    name: 'stateful-native-component-fixture',
+    resolveId(id) {
+      if (id === 'virtual:runtime-pruning-fixture') {
+        return `\0${id}`
+      }
+      if (id === 'virtual:store-definition-reload-fixture') {
+        return `\0${id}`
+      }
+      if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture' || id === 'virtual:runtime-value-snapshot-fixture') {
+        return `\0${id}`
+      }
+      if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
+        return `\0${id}`
+      }
+    },
+    async load(id) {
+      if (id === '\0virtual:runtime-pruning-fixture') {
+        const [pruned, publicFactory] = await Promise.all([createRuntimePruningFiles(), createRuntimePublicFactoryFiles()])
+        return `export default ${JSON.stringify(pruned)}; export const publicFactorySources = ${JSON.stringify(publicFactory)}`
+      }
+      if (id === '\0virtual:store-definition-reload-fixture') {
+        return `export default ${JSON.stringify(await createStoreDefinitionReloadFiles())}`
+      }
+      if (id === '\0virtual:runtime-value-snapshot-fixture') {
+        return `export default ${JSON.stringify(await createRuntimeValueSnapshotFiles())}`
+      }
+      if (id === '\0virtual:stateful-store-binding-fixture') {
+        return `export default ${JSON.stringify(await createStatefulStoreBindingFiles())}`
+      }
+      if (id === '\0virtual:store-hmr-fixture') {
+        return `export default ${JSON.stringify(await createStoreHmrFiles())}`
+      }
+      if (id === '\0virtual:store-lifecycle-fixture') {
+        return `export default ${JSON.stringify(await createStoreLifecycleFiles())}`
+      }
+      if (id === '\0virtual:router-bootstrap-fixture') {
+        return `export default ${JSON.stringify(await createRouterBootstrapFiles())}`
+      }
+      if (id === '\0virtual:stateful-app-bootstrap-fixture') {
+        return `export default ${JSON.stringify(await createStatefulAppBootstrapFiles())}`
+      }
+      if (id === '\0virtual:stateful-native-component-fixture') {
+        return `export default ${JSON.stringify(createStatefulNativeComponentFiles())}`
+      }
+      if (id === '\0virtual:stateful-native-page-fixture') {
+        return `export default ${JSON.stringify(createStatefulNativePageFiles())}`
+      }
+      if (id === '\0virtual:stateful-vue-component-fixture') {
+        return `export default ${JSON.stringify(await createStatefulVueComponentFiles())}`
+      }
+    },
+  }],
   server: {
     fs: {
-      allow: [mpcoreRoot],
+      allow: [mpcoreRoot, path.resolve(simulatorRoot, '../../../e2e/utils/requestClientsRealWebSocketProbe.ts'), path.resolve(simulatorRoot, '../../../e2e-apps/github-issues/src/pages/css-nested-vars')],
+    },
+    warmup: {
+      clientFiles: [path.resolve(simulatorRoot, './e2e/statefulVueComponent.e2e.test.ts')],
     },
   },
   test: {
-    include: [path.resolve(simulatorRoot, './e2e/browser.e2e.test.ts')],
+    attachmentsDir: path.resolve(simulatorRoot, '../../../docs/reports/simulator-browser'),
+    include: [path.resolve(simulatorRoot, './e2e/**/*.e2e.test.ts').replaceAll('\\', '/')],
     testTimeout: 180_000,
     hookTimeout: 180_000,
     globals: true,

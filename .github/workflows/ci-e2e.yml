@@ -6,15 +6,107 @@ on:
   schedule:
     - cron: '50 1 * * *'
   workflow_dispatch:
+    inputs:
+      hmr-diagnostic:
+        description: 限定 Windows shared-layout 诊断；默认保留完整矩阵
+        type: choice
+        required: false
+        default: full
+        options:
+          - full
+          - shared-layout-windows
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.hmr-diagnostic || 'full' }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  shared-layout-windows-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.hmr-diagnostic == 'shared-layout-windows'
+    name: Shared Layout HMR Diagnostic (Windows / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: windows-latest
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci:windows
+      main_command: pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/hmr-layout-shared-template-wxs.test.ts
+      e2e_platform: weapp
+    secrets: inherit
+
+  simulator-browser:
+    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    name: Simulator Browser E2E (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 20
+      consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
+      install_playwright: true
+      main_command: pnpm --filter @mpcore/simulator test:e2e
+      artifact_name: simulator-browser-${{ matrix.os }}-node-${{ matrix.node-version }}
+      artifact_path: docs/reports/simulator-browser/**
+    secrets: inherit
+
+  ide-dom-headless:
+    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    name: IDE DOM Headless (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 30
+      consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
+      main_command: node --import tsx e2e/scripts/run-e2e-suite.ts ide-dom-headless
+      artifact_name: ide-dom-headless-${{ matrix.os }}-node-${{ matrix.node-version }}
+      artifact_path: |
+        docs/reports/dom-acceptance/**
+        docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
+    secrets: inherit
+
+  ide-dom-acceptance-internal:
+    if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
+    needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]
+    name: IDE DOM Acceptance Contracts (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ${{ fromJSON(github.event_name == 'pull_request' && '[22]' || '[22,24]') }}
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '${{ matrix.node-version }}'
+      timeout_minutes: 15
+      consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
+      main_command: |
+        node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp
+        node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp
+        node --import tsx scripts/check-e2e-ide-shared-launch.ts
+        node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --check
+        pnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism
+    secrets: inherit
+
   miniapp-platform-build-gate:
     if: github.event_name == 'pull_request'
     name: Miniapp Platform Build Gate (Ubuntu / Node 22)
@@ -78,6 +170,8 @@ jobs:
       e2e_platform: weapp
       increase_ulimit: true
       consume_build_artifact: miniapp-${{ matrix.os }}-node-22-weapp-build
+      artifact_name: miniapp-e2e-ci-pr-${{ matrix.os }}-node-22
+      artifact_path: docs/reports/*-e2e-ci-pr-*-suite-report/**
     secrets: inherit
 
   miniapp-hmr-ci-pr:
@@ -104,7 +198,7 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-build-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
     name: Miniapp Nightly Build Artifact (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)
     strategy:
       fail-fast: false
@@ -145,7 +239,7 @@ jobs:
     secrets: inherit
 
   miniapp-e2e-ci-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
     needs: miniapp-e2e-build-full
     name: Miniapp E2E Nightly (${{ matrix.os }} / Node ${{ matrix.node-version }} / shard ${{ matrix.shard }})
     strategy:
@@ -164,10 +258,12 @@ jobs:
       e2e_platform: weapp
       increase_ulimit: true
       consume_build_artifact: miniapp-${{ matrix.os }}-node-${{ matrix.node-version }}-weapp-build
+      artifact_name: miniapp-e2e-ci-full-${{ matrix.os }}-node-${{ matrix.node-version }}-shard-${{ matrix.shard }}
+      artifact_path: docs/reports/*-e2e-ci-full-*-suite-report/**
     secrets: inherit
 
   miniapp-hmr-ci-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
     needs: miniapp-e2e-build-full
     name: Miniapp HMR Guard (${{ matrix.os }} / Node ${{ matrix.node-version }} / weapp)
     strategy:
@@ -230,6 +326,7 @@ jobs:
     secrets: inherit
 
   web-project-builds:
+    if: inputs.hmr-diagnostic != 'shared-layout-windows'
     name: Web Project Builds (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -241,6 +338,7 @@ jobs:
     secrets: inherit
 
   web-browser-smoke:
+    if: inputs.hmr-diagnostic != 'shared-layout-windows'
     name: Web Browser Smoke (Firefox / WebKit / Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -270,7 +368,7 @@ jobs:
     secrets: inherit
 
   workspace-hmr-nightly:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
     name: Workspace HMR Nightly Full (Node 24)
     uses: ./.github/workflows/reusable-node-command.yml
     with:
@@ -286,7 +384,7 @@ jobs:
     secrets: inherit
 
   web-e2e-baseline-full:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && inputs.hmr-diagnostic != 'shared-layout-windows'
     name: Web E2E Baseline (Node ${{ matrix.node-version }})
     strategy:
       fail-fast: false

@@ -10,6 +10,10 @@ const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes
 const AUTO_ROUTES_NAMED_IMPORT_ALIAS_RE = /\bas\b/g
 const AUTO_ROUTES_DEFAULT_AND_NAMED_IMPORT_RE = /^([A-Z_$][\w$]*)\s*,\s*(\{[^}]+\})$/i
 
+export function hasAutoRoutesMacroImport(source: string) {
+  return source.includes(AUTO_ROUTES_ID) || source.includes(AUTO_ROUTES_VIRTUAL_ID)
+}
+
 export interface AutoRoutesInlineSnapshot {
   pages: string[]
   entries: string[]
@@ -115,6 +119,9 @@ export function inlineAutoRoutesImports(
   source: string,
   inlineRoutes: AutoRoutesInlineSnapshot,
 ) {
+  if (!hasAutoRoutesMacroImport(source)) {
+    return source
+  }
   let importReplacementIndex = 0
   const sourceWithStaticImportsInlined = source
     .split('\n')

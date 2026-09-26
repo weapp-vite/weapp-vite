@@ -110,7 +110,7 @@ const _runE2E = runE2E
       last action = {{ sharedState.lastAction }}
     </view>
 
-    <UseProvideInjectFeature title="组件内 inject()" />
+    <UseProvideInjectFeature id="inject-feature" title="组件内 inject()" />
   </view>
 </template>
 

@@ -1,31 +1,34 @@
 import { resolveMiniProgramEventBinding } from './eventBinding'
+import { collectNodeDataset } from './nodeDataset'
 import { querySelectorAll } from './selectors'
+import { queryXPathElements } from './xpath'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
 }
 
-interface HeadlessTestingNodeEventInit {
+export interface HeadlessTestingNodeEventInit {
   currentTarget?: {
-    dataset?: Record<string, string>
+    dataset?: Record<string, unknown>
     id?: string
   }
-  dataset?: Record<string, string>
+  dataset?: Record<string, unknown>
   detail?: unknown
   id?: string
   mark?: Record<string, unknown>
   target?: {
-    dataset?: Record<string, string>
+    dataset?: Record<string, unknown>
     id?: string
   }
 }
 
-interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit {
+export interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit {
   detail?: {
     value?: string
     [key: string]: unknown
@@ -40,8 +43,6 @@ interface HeadlessTestingNodeInteractionHandlers {
   ownerScopeId: (scopeId: string | null) => string | null
 }
 
-const DATASET_NAME_RE = /-([a-z])/g
-
 function escapeText(text: string) {
   return text
     .replaceAll('&', '&amp;')
@@ -49,25 +50,8 @@ function escapeText(text: string) {
     .replaceAll('>', '&gt;')
 }
 
-function toDatasetKey(attributeName: string) {
-  return attributeName
-    .slice('data-'.length)
-    .replace(DATASET_NAME_RE, (_match, char: string) => char.toUpperCase())
-}
-
-function collectDataset(node: DomNodeLike) {
-  const dataset: Record<string, string> = {}
-  for (const [key, value] of Object.entries(node.attribs ?? {})) {
-    if (!key.startsWith('data-') || key.startsWith('data-sim-')) {
-      continue
-    }
-    dataset[toDatasetKey(key)] = value
-  }
-  return dataset
-}
-
 function createEventPayload(node: DomNodeLike, eventName: string, event: HeadlessTestingNodeEventInit) {
-  const dataset = collectDataset(node)
+  const dataset = collectNodeDataset(node)
   const nodeId = node.attribs?.id ?? ''
   return {
     bubbles: false,
@@ -83,6 +67,7 @@ function createEventPayload(node: DomNodeLike, eventName: string, event: Headles
       dataset: event.target?.dataset ?? event.dataset ?? dataset,
       id: event.target?.id ?? event.id ?? nodeId,
     },
+    timeStamp: Date.now(),
     type: eventName,
   }
 }
@@ -154,15 +139,33 @@ export class HeadlessTestingNodeHandle {
     this.interactions?.assertActive?.()
   }
 
+  private query(selector: string) {
+    const nodes = querySelectorAll(this.node, selector)
+    const scope = this.node.attribs?.['data-sim-scope']
+    if (!scope || !this.interactions) {
+      return nodes
+    }
+    return nodes.filter((node) => {
+      const nodeScope = node.attribs?.['data-sim-scope']
+      return nodeScope === scope || (node.attribs?.['data-sim-component']
+        && (this.interactions!.ownerScopeId(nodeScope ?? null) ?? resolvePageScopeId(nodeScope)) === scope)
+    })
+  }
+
   async $(selector: string) {
     this.assertActive()
-    const match = querySelectorAll(this.node, selector)[0]
+    const match = this.query(selector)[0]
     return match ? new HeadlessTestingNodeHandle(match, this.interactions) : null
   }
 
   async $$(selector: string) {
     this.assertActive()
-    return querySelectorAll(this.node, selector).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
+    return this.query(selector).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
+  }
+
+  async getElementsByXpath(expression: string) {
+    this.assertActive()
+    return queryXPathElements(this.node, expression).map(node => new HeadlessTestingNodeHandle(node, this.interactions))
   }
 
   async attr(name: string) {
@@ -172,7 +175,7 @@ export class HeadlessTestingNodeHandle {
 
   async dataset() {
     this.assertActive()
-    return collectDataset(this.node)
+    return collectNodeDataset(this.node)
   }
 
   async scope() {

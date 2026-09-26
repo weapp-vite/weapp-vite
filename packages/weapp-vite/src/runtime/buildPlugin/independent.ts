@@ -7,8 +7,10 @@ import { createCompilerContextInstance } from '../../context/createCompilerConte
 import { logger } from '../../context/shared'
 import { findAutoImportCandidates } from '../../plugins/autoImport'
 import { pickImportMetaEnvDefineEntries } from '../../utils/importMeta'
+import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { getAutoImportConfig } from '../autoImport/config'
 import { createIndependentBuildError } from '../independentError'
+import { collectIndependentWatchFiles } from './independentWatch'
 
 interface IndependentBuilderState {
   buildIndependentBundle: (root: string, meta: SubPackageMetaValue) => Promise<RolldownOutput>
@@ -32,6 +34,7 @@ function syncImportMetaEnvDefineOverride(
 export function createIndependentBuilder(
   configService: NonNullable<MutableCompilerContext['configService']>,
   buildState: MutableCompilerContext['runtimeState']['build'],
+  owner?: Pick<MutableCompilerContext, 'runtimeState'>,
 ): IndependentBuilderState {
   const independentState = buildState.independent
   const independentBuildTasks = new Map<string, Promise<RolldownOutput>>()
@@ -58,68 +61,79 @@ export function createIndependentBuilder(
       try {
         const chunkRoot = meta.subPackage.root ?? root
         const isolatedCtx = createCompilerContextInstance()
-        await isolatedCtx.configService.load({
-          cwd: configService.cwd,
-          isDev: configService.isDev,
-          mode: configService.mode,
-          configFile: configService.configFilePath,
-          cliPlatform: configService.platform,
-          inlineConfig: {
-            weapp: {
-              platform: configService.platform,
-            },
-          },
-          projectConfigPath: configService.projectConfigPath,
-        })
-        const isolatedConfigService = isolatedCtx.configService
-        isolatedConfigService.options = {
-          ...isolatedConfigService.options,
-          currentSubPackageRoot: chunkRoot,
+        if (owner) {
+          shareWxmlDependencies(owner, isolatedCtx)
         }
-        const inlineConfig = isolatedConfigService.merge(meta, meta.subPackage.inlineConfig, {
-          build: {
-            write: false,
-            watch: null,
-            rolldownOptions: {
-              output: {
-                chunkFileNames() {
-                  return `${chunkRoot}/[name].js`
+        return await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
+          await isolatedCtx.configService.load({
+            cwd: configService.cwd,
+            isDev: configService.isDev,
+            mode: configService.mode,
+            configFile: configService.configFilePath,
+            cliPlatform: configService.platform,
+            inlineConfig: {
+              weapp: {
+                platform: configService.platform,
+              },
+            },
+            projectConfigPath: configService.projectConfigPath,
+          })
+          const isolatedConfigService = isolatedCtx.configService
+          isolatedConfigService.options = {
+            ...isolatedConfigService.options,
+            currentSubPackageRoot: chunkRoot,
+          }
+          const inlineConfig = isolatedConfigService.merge(meta, meta.subPackage.inlineConfig, {
+            build: {
+              write: false,
+              watch: null,
+              rolldownOptions: {
+                output: {
+                  chunkFileNames() {
+                    return `${chunkRoot}/[name].js`
+                  },
                 },
               },
             },
-          },
-        })
-        const autoImportGlobs = getAutoImportConfig(isolatedConfigService)?.globs
-        if (autoImportGlobs?.length) {
-          const candidates = await findAutoImportCandidates({
-            ctx: isolatedCtx,
-            resolvedConfig: {
-              build: {
-                outDir: isolatedConfigService.outDir,
-              },
-            } as ResolvedConfig,
-          }, autoImportGlobs)
-          await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
-            await Promise.all(candidates.map(candidate => isolatedCtx.autoImportService.registerPotentialComponent(candidate)))
           })
-        }
-        const restoreDefineEnv = syncImportMetaEnvDefineOverride(isolatedConfigService, inlineConfig.define as Record<string, unknown> | undefined)
-        let result: RolldownOutput | RolldownOutput[]
-        try {
-          result = await build(
-            inlineConfig,
-          ) as RolldownOutput | RolldownOutput[]
-        }
-        finally {
-          restoreDefineEnv()
-        }
+          // 独立构建只返回内存产物，由主构建统一发布；defu 会丢弃 null，
+          // 因此必须在配置合并后关闭 watch，避免子 watcher 绕过主包校验写盘。
+          inlineConfig.build = { ...inlineConfig.build, write: false, watch: null }
+          const autoImportGlobs = getAutoImportConfig(isolatedConfigService)?.globs
+          if (autoImportGlobs?.length) {
+            const candidates = await findAutoImportCandidates({
+              ctx: isolatedCtx,
+              resolvedConfig: {
+                build: {
+                  outDir: isolatedConfigService.outDir,
+                },
+              } as ResolvedConfig,
+            }, autoImportGlobs)
+            await Promise.all(candidates.map(candidate => isolatedCtx.autoImportService.registerPotentialComponent(candidate)))
+          }
+          const watch = configService.isDev ? collectIndependentWatchFiles(independentState.watchFiles, root, source => isolatedCtx.moduleGraphService.getEntryDependencies(source).map(dependency => dependency.sourceId), independentState.watchListeners) : undefined
+          if (watch) {
+            inlineConfig.plugins = [...inlineConfig.plugins ?? [], watch.plugin]
+          }
+          const restoreDefineEnv = syncImportMetaEnvDefineOverride(isolatedConfigService, inlineConfig.define as Record<string, unknown> | undefined)
+          let result: RolldownOutput | RolldownOutput[]
+          try {
+            result = await build(
+              inlineConfig,
+            ) as RolldownOutput | RolldownOutput[]
+          }
+          finally {
+            restoreDefineEnv()
+          }
 
-        const output = Array.isArray(result) ? result[0] : result
-        if (!output) {
-          throw new Error(`独立分包 ${root} 未产生输出`)
-        }
-        storeIndependentOutput(root, output)
-        return output
+          const output = Array.isArray(result) ? result[0] : result
+          if (!output) {
+            throw new Error(`独立分包 ${root} 未产生输出`)
+          }
+          watch?.commit()
+          storeIndependentOutput(root, output)
+          return output
+        })
       }
       catch (error) {
         const normalized = createIndependentBuildError(root, error)

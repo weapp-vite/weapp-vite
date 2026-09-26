@@ -1,6 +1,6 @@
 import type { CompilerContext } from '../../../../context'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
+import { resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, getVueBundlePageLayoutPlan, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
@@ -320,6 +320,31 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
+  it('emits empty page json while preserving sidecar configuration', async () => {
+    await emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {} as any,
+      filename: '/project/src/pages/home/index.vue',
+      relativeBase: 'pages/home/index',
+      result: { template: '<view />', scopedSlotComponents: [] } as any,
+      isPage: true,
+      configService: { weappViteConfig: {} } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      outputExtensions: {},
+      platformAssetOptions: { platform: 'weapp', templateExtension: 'wxml' },
+    })
+
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/home/index',
+      expect.anything(),
+      expect.objectContaining({ defaultConfig: {}, mergeExistingAsset: true, kind: 'page' }),
+    )
+  })
+
   it('emits compiled component entry assets with default component json config', async () => {
     const result = await emitCompiledEntryBundleAssets({
       bundle: {},
@@ -546,6 +571,9 @@ describe('emitSharedVueEntryAssets', () => {
           buildScope: {
             include: ['subs'],
           },
+          subPackages: {
+            subs: { independent: true },
+          },
           json: {
             defaults: {
               app: {
@@ -635,6 +663,7 @@ describe('emitSharedVueEntryAssets', () => {
         {
           root: 'subs',
           pages: ['issue-793/index'],
+          independent: true,
         },
       ],
       tabBar: {
@@ -1213,7 +1242,14 @@ describe('emitSharedVueEntryAssets', () => {
     const previousSource = '<template><view /></template><style>.page{color:red}</style>'
     const nextSource = '<template><view /></template><style>.page{color:blue}</style>'
     const cached = {
-      result: { script: 'Page({ cached: true })', style: '.page{color:red}' },
+      result: {
+        script: 'Page({ cached: true })',
+        style: '.page{color:red}',
+        meta: {
+          cssVars: [],
+          styleBlocks: [],
+        },
+      },
       source: previousSource,
       isPage: true,
       refreshToken: 1,
@@ -1281,6 +1317,7 @@ describe('emitSharedVueEntryAssets', () => {
       refreshToken: 1,
     } as any
     const dirtyVueEntryIds = new Set(['D:\\project\\src\\app.vue'])
+    const vueEntrySfcSignatures = new Map()
     readFileMock.mockResolvedValue(appSource)
     compileVueFileMock.mockResolvedValue({
       template: '<view />',
@@ -1296,7 +1333,7 @@ describe('emitSharedVueEntryAssets', () => {
             hmr: {
               dirtyVueEntryIds,
               vueEntryHasTemplate: new Map(),
-              vueEntrySfcSignatures: new Map(),
+              vueEntrySfcSignatures,
               vueEntryTailwindContentSignatures: new Map(),
               vueEntryTailwindTemplateContentSignatures: new Map(),
               vueEntryTailwindScriptContentSignatures: new Map(),
@@ -1336,6 +1373,7 @@ describe('emitSharedVueEntryAssets', () => {
       expect.anything(),
     )
     expect(cached.autoRoutesSignature).toBe('current-routes')
+    expect(vueEntrySfcSignatures.get('D:/project/src/app.vue')).toEqual(resolveVueSfcHmrSignatures(appSource, 'D:/project/src/app.vue').blockSignatures)
     expect(cached.refreshToken).toBe(0)
     expect(dirtyVueEntryIds.size).toBe(0)
     expect((result as any).script).toBe('App({ refreshed: true })')
@@ -1642,6 +1680,7 @@ describe('emitSharedVueEntryAssets', () => {
       'pages/index/index',
       { config: '{"component":true}' },
       {
+        defaultConfig: {},
         mergeExistingAsset: true,
         mergeStrategy: 'override',
         defaults: { navigationStyle: 'default' },
@@ -1815,6 +1854,7 @@ describe('emitSharedVueEntryAssets', () => {
       'pages/index/index',
       { config: '{"component":true}' },
       {
+        defaultConfig: {},
         mergeExistingAsset: true,
         mergeStrategy: 'override',
         defaults: { navigationStyle: 'default' },

@@ -82,7 +82,7 @@ describe('bootstrapWechatDevtoolsSettings', () => {
     })
   })
 
-  it('creates trusted project storage when project trust is enabled', async () => {
+  it.each(['missing', 'malformed', 'partial'])('does not register %s project metadata before the IDE imports it', async (state) => {
     const homeDir = await createTempHomeDir()
     tempDirs.push(homeDir)
     const localDataDir = path.join(
@@ -96,14 +96,16 @@ describe('bootstrapWechatDevtoolsSettings', () => {
     await fs.mkdir(localDataDir, { recursive: true })
     await fs.writeFile(path.join(localDataDir, 'hash_key_map_2.json'), '{}\n', 'utf8')
 
-    const projectPath = '/Users/tester/Projects/demo-app'
+    const projectPath = path.join(homeDir, 'demo-app')
     const normalizedProjectPath = path.resolve(projectPath)
     const trustedProjectHash = createStorageHash(`project2_${normalizedProjectPath}`)
-    await fs.writeFile(
-      path.join(localDataDir, `localstorage_${trustedProjectHash}.json`),
-      `project2_${normalizedProjectPath}`,
-      'utf8',
-    )
+    const projectFile = path.join(localDataDir, `localstorage_${trustedProjectHash}.json`)
+    const original = state === 'malformed'
+      ? `project2_${normalizedProjectPath}`
+      : JSON.stringify({ projectid: normalizedProjectPath, projectpath: normalizedProjectPath, attr: {} })
+    if (state !== 'missing') {
+      await fs.writeFile(projectFile, original, 'utf8')
+    }
 
     const result = await bootstrapWechatDevtoolsSettings({
       homeDir,
@@ -116,28 +118,20 @@ describe('bootstrapWechatDevtoolsSettings', () => {
       touchedInstanceCount: 1,
       detectedSecurityCount: 0,
       updatedSecurityCount: 0,
-      trustedProjectCount: 1,
+      trustedProjectCount: 0,
       servicePort: undefined,
       servicePortEnabled: undefined,
     })
 
     const hashKeyMap = await readJson(path.join(localDataDir, 'hash_key_map_2.json'))
-    expect(hashKeyMap).toMatchObject({
-      [trustedProjectHash]: `project2_${normalizedProjectPath}`,
-    })
-
-    const trustedProject = await readJson(path.join(localDataDir, `localstorage_${trustedProjectHash}.json`))
-    const trustedProjectLs = await readJson(path.join(localDataDir, `ls_${trustedProjectHash}.json`))
-    expect(trustedProject).toMatchObject({
-      projectid: normalizedProjectPath,
-      projectpath: normalizedProjectPath,
-      isTrusted: true,
-    })
-    expect(trustedProjectLs).toMatchObject({
-      projectid: normalizedProjectPath,
-      projectpath: normalizedProjectPath,
-      isTrusted: true,
-    })
+    expect(hashKeyMap).toEqual({})
+    if (state === 'missing') {
+      await expect(fs.readFile(projectFile, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    }
+    else {
+      expect(await fs.readFile(projectFile, 'utf8')).toBe(original)
+    }
+    await expect(fs.readFile(path.join(localDataDir, `ls_${trustedProjectHash}.json`))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
   it('supports Windows User Data root storage layout and keeps detected port', async () => {
@@ -165,6 +159,17 @@ describe('bootstrapWechatDevtoolsSettings', () => {
 
     const projectPath = 'C:/workspace/demo-app'
     const normalizedProjectPath = path.resolve(projectPath)
+    const trustedProjectHash = createStorageHash(`project2_${normalizedProjectPath}`)
+    const metadata = {
+      projectid: normalizedProjectPath,
+      projectpath: normalizedProjectPath,
+      appid: 'wx-existing-project',
+      attr: { setting: { MaxSubPackageLimit: 100 } },
+      runtimeAttr: { setting: { MaxSubPackageLimit: 100 } },
+      isTrusted: false,
+    }
+    const projectFile = path.join(localDataDir, `ls_${trustedProjectHash}.json`)
+    await fs.writeFile(projectFile, JSON.stringify(metadata), 'utf8')
     const result = await bootstrapWechatDevtoolsSettings({
       homeDir,
       localAppDataDir,
@@ -188,19 +193,12 @@ describe('bootstrapWechatDevtoolsSettings', () => {
       port: 21992,
     })
 
-    const trustedProjectHash = createStorageHash(`project2_${normalizedProjectPath}`)
-    const trustedProject = await readJson(path.join(localDataDir, `localstorage_${trustedProjectHash}.json`))
-    const trustedProjectLs = await readJson(path.join(localDataDir, `ls_${trustedProjectHash}.json`))
-    expect(trustedProject).toMatchObject({
-      projectid: normalizedProjectPath,
-      projectpath: normalizedProjectPath,
+    expect(await readJson(projectFile)).toEqual({
+      ...metadata,
       isTrusted: true,
     })
-    expect(trustedProjectLs).toMatchObject({
-      projectid: normalizedProjectPath,
-      projectpath: normalizedProjectPath,
-      isTrusted: true,
-    })
+    await expect(fs.readFile(path.join(localDataDir, `localstorage_${trustedProjectHash}.json`))).rejects.toMatchObject({ code: 'ENOENT' })
+    expect(await readJson(path.join(localDataDir, 'hash_key_map_2.json'))).toEqual({})
   })
 
   it('skips unsupported platforms without touching any files', async () => {
@@ -230,6 +228,38 @@ describe('detectWechatDevtoolsServicePort', () => {
 
   afterEach(async () => {
     await Promise.all(tempDirs.splice(0).map(async tempDir => fs.rm(tempDir, { recursive: true, force: true })))
+  })
+
+  it.each(['darwin', 'win32'] as const)('prefers recent enabled settings over an obsolete instance on %s', async (platform) => {
+    const homeDir = await createTempHomeDir()
+    tempDirs.push(homeDir)
+    const localAppDataDir = path.join(homeDir, 'AppData', 'Local')
+    const baseDir = platform === 'darwin'
+      ? path.join(homeDir, 'Library', 'Application Support', '微信开发者工具')
+      : path.join(localAppDataDir, '微信开发者工具', 'User Data')
+    for (const [instance, port, updatedAt] of [
+      ['instance-a', 21001, 1000],
+      ['instance-b', 21002, 2000],
+    ] as const) {
+      const localDataDir = path.join(baseDir, instance, 'WeappLocalData')
+      await fs.mkdir(localDataDir, { recursive: true })
+      const file = path.join(localDataDir, 'localstorage_b72da75d79277d2f5f9c30c9177be57e.json')
+      await fs.writeFile(file, JSON.stringify({ security: { enableServicePort: true, port } }))
+      await fs.utimes(file, updatedAt, updatedAt)
+    }
+
+    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform })).toMatchObject({
+      touchedInstanceCount: 2,
+      detectedSecurityCount: 2,
+      servicePort: 21002,
+      servicePortEnabled: true,
+    })
+    const firstInstanceSettings = path.join(baseDir, 'instance-a', 'WeappLocalData', 'localstorage_b72da75d79277d2f5f9c30c9177be57e.json')
+    await fs.utimes(firstInstanceSettings, 3000, 3000)
+    expect(await detectWechatDevtoolsServicePort({ homeDir, localAppDataDir, platform })).toMatchObject({
+      servicePort: 21001,
+      servicePortEnabled: true,
+    })
   })
 
   it('prefers an enabled service-port instance when multiple instances exist', async () => {

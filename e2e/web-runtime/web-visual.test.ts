@@ -10,6 +10,7 @@ import { execa } from 'execa'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { comparePngWithBaseline } from '../../packages/weapp-ide-cli/src/cli/imageDiff'
+import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const WEB_DEMO_ROOT = path.join(ROOT, 'apps/weapp-vite-web-demo')
@@ -18,7 +19,7 @@ const BASELINE_ROOT = path.join(ROOT, 'e2e/web-runtime/baselines/weapp')
 const OUTPUT_ROOT = path.join(ROOT, '.tmp/web-runtime-visual')
 const WEB_HOST = '127.0.0.1'
 const WEB_PORT = Number(process.env.WEAPP_VITE_WEB_VISUAL_E2E_PORT ?? 5181)
-const WEB_URL = `http://${WEB_HOST}:${WEB_PORT}`
+let webUrl: string
 
 interface VisualCase {
   id: string
@@ -104,16 +105,21 @@ async function waitForWebServerReady(server: Subprocess, logs: { value: string }
     if (server.nodeChildProcess.exitCode !== null) {
       throw new Error(`[web-visual] dev server exited early\n${logs.value}`)
     }
+    const resolvedUrl = resolveWebDevServerUrl(logs.value)
+    if (!resolvedUrl) {
+      await sleep(300)
+      continue
+    }
     try {
-      const response = await fetch(WEB_URL)
+      const response = await fetch(resolvedUrl)
       if (response.ok) {
-        return
+        return resolvedUrl
       }
     }
     catch {}
     await sleep(300)
   }
-  throw new Error(`[web-visual] timeout waiting for ${WEB_URL}\n${logs.value}`)
+  throw new Error(`[web-visual] timeout waiting for the resolved Web server URL\n${logs.value}`)
 }
 
 async function stopWebServer(server?: Subprocess) {
@@ -136,7 +142,7 @@ async function stopWebServer(server?: Subprocess) {
 }
 
 async function navigateToVisualCase(page: Page, route: string) {
-  await page.goto(WEB_URL, { waitUntil: 'domcontentloaded' })
+  await page.goto(webUrl, { waitUntil: 'domcontentloaded' })
   await expect.poll(async () => {
     return await page.evaluate(() => typeof (window as any).wx?.reLaunch === 'function')
   }, { timeout: 45_000 }).toBe(true)
@@ -208,8 +214,9 @@ describeWeb('web runtime visual parity', { concurrent: false }, () => {
       WEB_HOST,
     ], {
       cwd: ROOT,
+      extendEnv: false,
       env: {
-        ...process.env,
+        ...createWebDevServerEnv(process.env),
         WEAPP_WEB_HOST: WEB_HOST,
         WEAPP_WEB_PORT: String(WEB_PORT),
         WEAPP_WEB_OPEN: 'false',
@@ -218,7 +225,7 @@ describeWeb('web runtime visual parity', { concurrent: false }, () => {
     const logs = { value: '' }
     devServer.stdout?.on('data', chunk => logs.value += String(chunk))
     devServer.stderr?.on('data', chunk => logs.value += String(chunk))
-    await waitForWebServerReady(devServer, logs)
+    webUrl = await waitForWebServerReady(devServer, logs)
     const launchOptions = PLAYWRIGHT_BUNDLED_AVAILABLE || !CHROMIUM_CHANNEL
       ? { headless: true }
       : { headless: true, channel: CHROMIUM_CHANNEL as Parameters<typeof chromium.launch>[0]['channel'] }

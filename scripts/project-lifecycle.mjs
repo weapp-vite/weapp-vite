@@ -1,7 +1,6 @@
-/* eslint-disable e18e/ban-dependencies -- tutorial and smoke orchestration need execa for cross-platform process control. */
+import { spawn } from 'node:child_process'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
-import { execa } from 'execa'
 
 const NEWLINE_RE = /\r?\n/
 
@@ -15,11 +14,11 @@ export function tail(text, maxLines = 80) {
 }
 
 export function createChildProcess(command, args, options = {}) {
-  return execa(command, args, {
+  const child = spawn(command, args, {
     ...options,
-    reject: false,
     windowsHide: true,
   })
+  return child
 }
 
 export async function terminateProcess(child) {
@@ -28,11 +27,11 @@ export async function terminateProcess(child) {
   }
 
   if (process.platform === 'win32') {
-    await execa('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
-      reject: false,
+    const killer = spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
       stdio: 'ignore',
       windowsHide: true,
     })
+    await new Promise(resolve => killer.once('close', resolve))
     return
   }
 
@@ -44,7 +43,7 @@ export async function terminateProcess(child) {
   }
 
   const settled = await Promise.race([
-    child.then(() => true, () => true),
+    new Promise(resolve => child.once('close', resolve)),
     delay(10_000).then(() => false),
   ])
   if (!settled) {
@@ -77,7 +76,10 @@ export async function waitForChildClose(child, timeoutMs = 10_000) {
   }
 
   return await Promise.race([
-    child.then(() => true, () => true),
+    new Promise((resolve) => {
+      child.once('close', () => resolve(true))
+      child.once('error', () => resolve(true))
+    }),
     delay(timeoutMs).then(() => false),
   ])
 }

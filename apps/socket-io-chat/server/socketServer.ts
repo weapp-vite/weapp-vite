@@ -1,10 +1,11 @@
 import type http from 'node:http'
+import type { ChatMessage } from './data.js'
 import { Server } from 'socket.io'
 import {
+
   historyLimit,
   messages,
   roomName,
-  type ChatMessage,
 } from './data.js'
 
 export function attachSocketServer(server: http.Server) {
@@ -16,7 +17,7 @@ export function attachSocketServer(server: http.Server) {
   })
 
   io.on('connection', (socket) => {
-    socket.on('join', (payload: { room?: string; userName?: string } = {}) => {
+    socket.on('join', (payload: { room?: string, userName?: string } = {}) => {
       const room = normalizeRoom(payload.room)
       socket.join(room)
       socket.data.room = room

@@ -8,16 +8,16 @@ import {
   onShow,
   onThemeChange,
   onUnhandledRejection,
+  use,
 } from 'wevu'
 import { initStoreManager } from './shared/store'
-
-initStoreManager()
 
 createApp({
   data: () => ({
     __appHooks: [] as string[],
   }),
   setup() {
+    use(initStoreManager())
     const app = getCurrentInstance() as { globalData?: { __appHooks?: string[] } } | undefined
     const logs: string[] = []
     const push = (name: string) => {

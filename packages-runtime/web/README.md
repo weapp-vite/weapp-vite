@@ -135,7 +135,7 @@ setWebRuntimeHost({
 
 ## 页面栈与生命周期
 
-- 首次挂载页面前依次触发 `App.onLaunch` / `App.onShow`；浏览器 `visibilitychange` 会驱动去重的 `App.onHide` / `App.onShow`。`getLaunchOptionsSync()` 保留初始入口，`getEnterOptionsSync()` 在重新进入前台时更新为当前页面。
+- 首次挂载页面前依次触发 `App.onLaunch` / `App.onShow`；浏览器 `visibilitychange` 会驱动去重的 `App.onHide` / `App.onShow`。支持 `wx.onAppShow` / `wx.offAppShow` / `wx.onAppHide` / `wx.offAppHide`：冷启动先执行 App 显示钩子，再执行 wx 监听器；后续恢复与隐藏先执行 wx 监听器，再执行 App 钩子。浏览器无法区分微信退出来源，隐藏时统一向监听器和 App 钩子传递同一份 `{ reason: 3 }`（其他原因）。`getLaunchOptionsSync()` 保留初始入口，`getEnterOptionsSync()` 在重新进入前台时更新为当前页面。
 - `navigateTo` 会保留原页面 DOM、实例和数据，并依次触发原页面 `onHide` 与新页面 `onLoad` / `onShow`。
 - `navigateBack` 只卸载出栈页面，恢复目标页面的同一实例、`onShow` 和页面容器滚动位置，不会重新触发 `onLoad`。当前页持续拥有 `#app` 的滚动状态，用户滚动与 `pageScrollTo` 都会写回对应栈项。
 - `redirectTo` 只替换并卸载当前页面；`reLaunch` 会从栈顶开始卸载全部旧页面后挂载目标页面。

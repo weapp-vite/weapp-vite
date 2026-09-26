@@ -1,0 +1,7 @@
+<view id="vars-root" class="vars-root {{override ? 'override' : 'baseline'}}">
+  <view id="vars-state" class="vars-block">{{state}}</view>
+  <view id="vars-nested" class="vars-block vars-nested">Nested fallback</view>
+  <view id="vars-flat" class="vars-block vars-flat">Flat reference</view>
+  <view id="vars-gradient" class="vars-block vars-gradient">Gradient fallback</view>
+  <button id="vars-toggle" bindtap="toggle">Toggle</button>
+</view>

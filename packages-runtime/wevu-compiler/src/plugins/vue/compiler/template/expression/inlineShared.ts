@@ -1,4 +1,4 @@
-import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import type { NodePath, Scope } from '@weapp-vite/ast/babelTraverse'
 import {
   WEVU_CLASS_STYLE_RUNTIME_MODULE,
 } from '@weapp-core/constants'
@@ -48,16 +48,85 @@ export const INLINE_GLOBALS = new Set([
   'requirePlugin',
   'getApp',
   'getCurrentPages',
-  'ctx',
-  'scope',
   ...getMiniProgramRuntimeGlobalKeys(),
 ])
+
+export interface InlineExpressionParameterIdentifiers {
+  context: t.Identifier
+  scope: t.Identifier
+  event: t.Identifier
+}
+
+/**
+ * 按 Babel 命名规则生成不会与用户标识符重名的参数。
+ */
+export function createInlineExpressionParameterIdentifiers(
+  scope: Scope,
+  usedNames: ReadonlySet<string>,
+): InlineExpressionParameterIdentifiers {
+  const generatedNames = new Set<string>()
+
+  const createIdentifier = (name: string) => {
+    let identifier = scope.generateUidIdentifier(name)
+    while (usedNames.has(identifier.name) || generatedNames.has(identifier.name)) {
+      identifier = scope.generateUidIdentifier(name)
+    }
+    generatedNames.add(identifier.name)
+    return identifier
+  }
+
+  return {
+    context: createIdentifier('ctx'),
+    scope: createIdentifier('scope'),
+    event: createIdentifier('event'),
+  }
+}
 
 export function createMemberAccess(target: string, prop: string) {
   if (IDENTIFIER_RE.test(prop)) {
     return t.memberExpression(t.identifier(target), t.identifier(prop))
   }
   return t.memberExpression(t.identifier(target), t.stringLiteral(prop), true)
+}
+
+/**
+ * 判断 `this` 是否继承自模板表达式上下文。
+ *
+ * 普通函数与方法拥有动态 `this`；箭头函数继续向外查找。类字段初始化器与
+ * 静态块也拥有类实例或类本身的 `this`，而计算属性名仍在外层上下文求值。
+ */
+export function isTemplateContextThis(path: NodePath<t.ThisExpression>) {
+  let childPath: NodePath<t.Node> = path
+  let parentPath: NodePath<t.Node> | null = path.parentPath
+  while (parentPath) {
+    if (
+      (parentPath.isObjectMethod() || parentPath.isClassMethod())
+      && (childPath.key === 'key' || childPath.listKey === 'decorators')
+    ) {
+      childPath = parentPath
+      parentPath = parentPath.parentPath
+      continue
+    }
+    if (parentPath.isFunction() && !parentPath.isArrowFunctionExpression()) {
+      return false
+    }
+    if (
+      (
+        parentPath.isClassProperty()
+        || parentPath.isClassPrivateProperty()
+        || parentPath.isClassAccessorProperty()
+      )
+      && childPath.key === 'value'
+    ) {
+      return false
+    }
+    if (parentPath.isStaticBlock()) {
+      return false
+    }
+    childPath = parentPath
+    parentPath = parentPath.parentPath
+  }
+  return true
 }
 
 export function replaceIdentifierWithExpression(path: NodePath<t.Identifier>, replacement: t.Expression) {

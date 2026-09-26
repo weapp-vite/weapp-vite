@@ -3,6 +3,7 @@ import {
   getMiniProgramRuntimeGlobalKeys,
 } from '@weapp-core/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import packageJson from '../package.json'
 
 const runtimeKeys = getMiniProgramRuntimeGlobalKeys()
 const trackedKeys = [...runtimeKeys, 'getApp', 'getCurrentPages']
@@ -11,6 +12,10 @@ const originalDescriptors = new Map(
 )
 
 describe('polyfill entry installation contract', () => {
+  it('declares the polyfill output as side-effectful for production treeshaking', () => {
+    expect(packageJson.sideEffects).toContain('dist/runtime/index.mjs')
+  })
+
   afterEach(() => {
     for (const key of trackedKeys) {
       const descriptor = originalDescriptors.get(key)
@@ -38,14 +43,22 @@ describe('polyfill entry installation contract', () => {
       getCurrentPages,
     })
 
-    const api = await import('../src/runtime/polyfill')
+    const api = await import('../src/runtime')
 
     for (const key of runtimeKeys) {
       expect((globalThis as Record<string, unknown>)[key]).toBe(bridge)
     }
+    const { installMiniProgramGlobals } = await import('../src/runtime/polyfill')
+    installMiniProgramGlobals()
+    expect((globalThis as Record<string, unknown>)[defaultKey]).toBe(bridge)
+    expect(bridge.existing).toBe(true)
     expect(bridge.env.USER_DATA_PATH).toBe('/existing/user-data')
     expect((globalThis as Record<string, unknown>).getApp).toBe(getApp)
     expect((globalThis as Record<string, unknown>).getCurrentPages).toBe(getCurrentPages)
+    expect(api.canIUse('wx.onAppShow')).toBe(true)
+    expect(api.canIUse('wx.offAppShow')).toBe(true)
+    expect(api.canIUse('wx.onAppHide')).toBe(true)
+    expect(api.canIUse('wx.offAppHide')).toBe(true)
 
     await expect(api.setNavigationBarTitle({ title: 'Title' })).resolves.toBeUndefined()
     await expect(api.setNavigationBarColor({ backgroundColor: '#fff' })).resolves.toBeUndefined()

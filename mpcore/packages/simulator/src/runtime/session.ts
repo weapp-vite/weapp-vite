@@ -1,4 +1,11 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
+import type {
+  HeadlessAppDefinition,
+  HeadlessHostRegistries,
+  HeadlessWxAppHideOptions,
+  HeadlessWxLaunchOptions,
+  HeadlessWxNetworkType,
+  HeadlessWxSavedFileInfo,
+} from '../host'
 import type { RuntimeDiagnosticEntry } from '../kernel'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
@@ -15,22 +22,31 @@ import type {
 } from './wxState'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
+import { cloneAppLaunchOptions, createAppLaunchOptions } from '../host/appLaunchOptions'
 import { invokePreparedNavigationApi } from '../host/wx/navigation'
+import { bindStartupNavigation, StartupNavigationQueue } from '../host/wx/startupNavigation'
 import { RuntimeKernel } from '../kernel'
 import { loadProject } from '../project'
+import { createMiniProgramHostConfig } from '../project/hostConfig'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { resolvePluginRequest } from '../project/plugins'
 import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createHeadlessAnimation } from '../view/animation'
 import { createHeadlessCanvasContext } from '../view/canvasContext'
+import { customTabBarScopeId } from '../view/customTabBar'
 import { createHeadlessIntersectionObserver } from '../view/intersectionObserver'
 import { createHeadlessMediaQueryObserver } from '../view/mediaQueryObserver'
 import { resolveSelectorScrollTop } from '../view/selectorQuery'
 import { resolveSelectorQueryNativeScope, resolveSelectorQueryScopeId, resolveSelectorQueryScopeSnapshot } from '../view/selectorQueryScope'
 import { createHeadlessVideoContext } from '../view/videoContext'
 import { createAppInstance } from './appInstance'
+import { HeadlessAppLifecycle } from './appLifecycle'
+import { runComponentLifecycle } from './componentInstance'
+import { detachComponentRelations } from './componentInstance/relations'
+import { resolveNativeComponentSelection } from './componentInstance/selection'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
+import { runInitialPageLifecycles } from './pageLifecycle'
 import { renderRuntimePageTree } from './render'
 import {
   applyResizeToSystemInfo,
@@ -118,7 +134,7 @@ function parseCompoundSelector(selector: string) {
 }
 
 function matchesComponentSelector(
-  scope: { alias: string, classList?: string[], dataset?: Record<string, string>, id?: string },
+  scope: { alias: string, classList?: string[], dataset?: Record<string, unknown>, id?: string },
   selector: string,
 ) {
   const parts = parseCompoundSelector(selector)
@@ -138,7 +154,9 @@ function matchesComponentSelector(
     if (dataAttrMatch) {
       const [, key, value] = dataAttrMatch
       const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
-      return scope.dataset?.[datasetKey] === value
+      return scope.dataset != null
+        && Object.hasOwn(scope.dataset, datasetKey)
+        && String(scope.dataset[datasetKey] ?? '') === value
     }
 
     return scope.alias === part
@@ -147,18 +165,6 @@ function matchesComponentSelector(
 
 function normalizeSelectorParts(selector: string) {
   return selector.trim().split(WHITESPACE_RE).filter(Boolean)
-}
-
-function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessWxLaunchOptions {
-  return {
-    path: stripLeadingSlash(pathname),
-    query: { ...query },
-    referrerInfo: {
-      appId: '',
-      extraData: {},
-    },
-    scene: 1001,
-  }
 }
 
 function readJsonObject(project: HeadlessProjectDescriptor, filePath: string) {
@@ -194,9 +200,11 @@ function resolveNavigationPath(targetPath: string, baseRoute?: string) {
 export class HeadlessSession {
   readonly project: HeadlessProjectDescriptor
   private readonly kernel = new RuntimeKernel()
+  private readonly startupNavigation = new StartupNavigationQueue(this.kernel.scheduler)
 
   private appDefinition: HeadlessAppDefinition | null = null
   private appInstance: HeadlessAppInstance | null = null
+  private readonly appLifecycle = new HeadlessAppLifecycle()
   private readonly moduleLoader
   private readonly eventListeners = new Map<string, Set<(...args: any[]) => void>>()
   private readonly registries: HeadlessHostRegistries
@@ -268,7 +276,7 @@ export class HeadlessSession {
       this.registries,
       () => this.pages.slice(),
       () => this.getApp(),
-      {
+      bindStartupNavigation({
         chooseImage: option => this.wxState.chooseImage(option ?? {}),
         chooseMessageFile: option => this.wxState.chooseMessageFile(option ?? {}),
         chooseMedia: option => this.wxState.chooseMedia(option ?? {}),
@@ -286,10 +294,10 @@ export class HeadlessSession {
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
         getSavedFileInfo: option => this.wxState.getSavedFileInfo(option),
         getSavedFileList: () => this.wxState.getSavedFileList(),
-        getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
+        getEnterOptionsSync: () => this.getEnterOptions(),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getDeviceInfo: () => deriveDeviceInfo(this.systemInfo),
-        getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
+        getLaunchOptionsSync: () => this.getLaunchOptions(),
         getClipboardData: () => this.wxState.getClipboardData(),
         getLocation: () => createDefaultLocationResult(),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
@@ -312,7 +320,11 @@ export class HeadlessSession {
         saveImageToPhotosAlbum: option => this.wxState.saveImageToPhotosAlbum(option),
         saveVideoToPhotosAlbum: option => this.wxState.saveVideoToPhotosAlbum(option),
         nextTick: callback => this.kernel.scheduler.queueMicrotask(() => callback?.()),
+        offAppHide: callback => this.appLifecycle.offAppHide(callback),
+        offAppShow: callback => this.appLifecycle.offAppShow(callback),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
+        onAppHide: callback => this.appLifecycle.onAppHide(callback),
+        onAppShow: callback => this.appLifecycle.onAppShow(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         previewImage: option => this.wxState.previewImage(option),
@@ -346,10 +358,13 @@ export class HeadlessSession {
         removeTabBarBadge: option => this.removeTabBarBadge(option.index),
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
-      },
+      }, this.startupNavigation),
       {
         artifactSource: this.project.artifactSource,
-        globals: options.globals,
+        globals: {
+          ...options.globals,
+          __wxConfig: createMiniProgramHostConfig(this.project.appConfig, options.globals?.__wxConfig),
+        },
         kernel: this.kernel,
         miniprogramRootPath: this.project.miniprogramRootPath,
         onConsole: entry => this.emit('console', entry),
@@ -370,6 +385,7 @@ export class HeadlessSession {
     this.canvasContexts.clear()
     this.renderRequestCallbacks.length = 0
     this.renderRequestPending = false
+    this.appLifecycle.close()
     this.wxState.close()
     this.moduleLoader.close()
     this.eventListeners.clear()
@@ -420,6 +436,12 @@ export class HeadlessSession {
   getWx() {
     this.assertActive()
     return this.moduleLoader.wx
+  }
+
+  /** 在当前小程序实例的上下文执行测试函数，复用应用全局对象与调度器。 */
+  evaluateRuntime<T = unknown>(source: string, args: any[] = []): T {
+    this.assertActive()
+    return this.moduleLoader.evaluate<T>(source, args)
   }
 
   callWxMethod(methodName: string, ...args: any[]) {
@@ -726,25 +748,11 @@ export class HeadlessSession {
   }
 
   getLaunchOptions() {
-    return {
-      ...this.launchOptions,
-      query: { ...this.launchOptions.query },
-      referrerInfo: {
-        ...this.launchOptions.referrerInfo,
-        extraData: { ...this.launchOptions.referrerInfo.extraData },
-      },
-    }
+    return cloneAppLaunchOptions(this.launchOptions)
   }
 
   getEnterOptions() {
-    return {
-      ...this.enterOptions,
-      query: { ...this.enterOptions.query },
-      referrerInfo: {
-        ...this.enterOptions.referrerInfo,
-        extraData: { ...this.enterOptions.referrerInfo.extraData },
-      },
-    }
+    return cloneAppLaunchOptions(this.enterOptions)
   }
 
   getMenuButtonBoundingClientRect() {
@@ -976,14 +984,14 @@ export class HeadlessSession {
       return this.appInstance
     }
 
-    this.launchOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
-    this.enterOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
+    this.launchOptions = cloneAppLaunchOptions(launchOptions)
+    this.enterOptions = cloneAppLaunchOptions(launchOptions)
     const appModulePath = path.resolve(this.project.miniprogramRootPath, 'app.js')
     this.appDefinition = this.moduleLoader.executeAppModule(appModulePath)
     this.appInstance = createAppInstance(this.appDefinition)
     this.appInstance.onLaunch?.(launchOptions)
     this.syncRuntimeAppState()
-    this.appInstance.onShow?.(launchOptions)
+    this.appLifecycle.triggerAppShow(this.appInstance, launchOptions)
     return this.appInstance
   }
 
@@ -1003,9 +1011,27 @@ export class HeadlessSession {
     }
   }
 
+  private bootstrapNavigation(launchOptions = createAppLaunchOptions('', {})): HeadlessPageInstance | null {
+    if (this.appInstance) {
+      return null
+    }
+    this.startupNavigation.capture(() => {
+      this.bootstrap(launchOptions)
+    })
+    if (launchOptions.path) {
+      const query = new URLSearchParams(launchOptions.query).toString()
+      this.reLaunch(`/${launchOptions.path}${query ? `?${query}` : ''}`)
+    }
+    this.startupNavigation.flush()
+    return this.currentPageInstance
+  }
+
   reLaunch(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     this.unloadAllPages()
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
@@ -1016,7 +1042,10 @@ export class HeadlessSession {
 
   navigateTo(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.pages.length >= PAGE_STACK_LIMIT) {
       throw new Error(`Cannot navigateTo() beyond a ${PAGE_STACK_LIMIT}-page stack in headless runtime.`)
     }
@@ -1038,7 +1067,10 @@ export class HeadlessSession {
 
   redirectTo(url: string) {
     const target = this.resolveNavigationTarget(url)
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.isTabBarRoute(target.routeRecord.route)) {
       throw new Error(`wx.redirectTo() cannot open a tabBar page in headless runtime: ${url}`)
     }
@@ -1057,7 +1089,10 @@ export class HeadlessSession {
   }
 
   navigateBack(delta = 1) {
-    this.bootstrap()
+    const launchedPage = this.bootstrapNavigation()
+    if (launchedPage) {
+      return launchedPage
+    }
     if (this.pages.length <= 1) {
       return this.currentPageInstance
     }
@@ -1092,7 +1127,10 @@ export class HeadlessSession {
     if (!this.isTabBarRoute(target.routeRecord.route)) {
       throw new Error(`wx.switchTab() can only open a tabBar page in headless runtime: ${url}`)
     }
-    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    const launchedPage = this.bootstrapNavigation(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (launchedPage) {
+      return () => () => {}
+    }
 
     return () => this.commitSwitchTab(target)
   }
@@ -1158,6 +1196,26 @@ export class HeadlessSession {
     current.onPageScroll?.({
       scrollTop: current.__scrollTop__,
     })
+  }
+
+  triggerAppHide(options: HeadlessWxAppHideOptions) {
+    this.assertActive()
+    const app = this.appInstance ?? this.bootstrap()
+    this.appLifecycle.triggerAppHide(app, options)
+  }
+
+  triggerAppShow(options?: HeadlessWxLaunchOptions) {
+    this.assertActive()
+    if (!this.appInstance) {
+      this.bootstrap(options)
+      return
+    }
+
+    const nextOptions = options ?? cloneAppLaunchOptions(this.enterOptions)
+    if (options) {
+      this.enterOptions = cloneAppLaunchOptions(options)
+    }
+    this.appLifecycle.triggerAppShow(this.appInstance, nextOptions)
   }
 
   triggerPullDownRefresh() {
@@ -1275,11 +1333,18 @@ export class HeadlessSession {
     const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
+      requestRender: callback => this.requestRender(callback),
     })
     pageInstance.createIntersectionObserver = (options?: Record<string, any>) => this.createIntersectionObserver(pageInstance, options)
     pageInstance.createMediaQueryObserver = () => this.createMediaQueryObserver(pageInstance)
-    pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
-    pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
+    pageInstance.selectComponent = (selector: string) => resolveNativeComponentSelection(this.selectComponent(selector))
+    pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector).map(resolveNativeComponentSelection)
+    pageInstance.getTabBar = () => {
+      if (this.currentPageInstance === pageInstance) {
+        this.renderCurrentPage()
+      }
+      return this.componentCache.get(customTabBarScopeId(pageInstance.route)) ?? null
+    }
     if (this.isTabBarRoute(target.routeRecord.route)) {
       this.tabPages.set(target.routeRecord.route, pageInstance)
     }
@@ -1287,10 +1352,8 @@ export class HeadlessSession {
   }
 
   private runInitialPageLifecycles(pageInstance: HeadlessPageInstance, query: Record<string, string>) {
-    pageInstance.onLoad?.(query)
-    pageInstance.onShow?.()
-    pageInstance.onReady?.()
-    pageInstance.onRouteDone?.({})
+    runInitialPageLifecycles(pageInstance, query, this.kernel.scheduler, () =>
+      this.pages.includes(pageInstance) || this.tabPages.get(pageInstance.route) === pageInstance, () => this.renderCurrentPage())
   }
 
   private isTabBarRoute(route: string) {
@@ -1420,11 +1483,12 @@ export class HeadlessSession {
 
   private detachPageComponents(route: string) {
     const prefix = `page:${stripLeadingSlash(route)}`
-    for (const [scopeId, instance] of [...this.componentCache.entries()]) {
-      if (!scopeId.startsWith(prefix)) {
-        continue
-      }
-      instance.__definition__?.lifetimes?.detached?.call(instance)
+    const removed = [...this.componentCache].filter(([scopeId]) => scopeId.startsWith(prefix))
+    for (const [, instance] of removed) {
+      runComponentLifecycle(instance, 'detached')
+    }
+    detachComponentRelations(removed.map(([, instance]) => instance))
+    for (const [scopeId] of removed) {
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
     }
@@ -1455,7 +1519,7 @@ export class HeadlessSession {
   ) {
     const prefix = `page:${stripLeadingSlash(route)}`
     for (const [scopeId, instance] of this.componentCache.entries()) {
-      if (!scopeId.startsWith(prefix)) {
+      if (!scopeId.startsWith(prefix) || scopeId === customTabBarScopeId(route)) {
         continue
       }
       instance.__definition__?.pageLifetimes?.[lifetimeName]?.call(instance, payload)

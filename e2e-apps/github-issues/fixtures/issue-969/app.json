@@ -1,0 +1,10 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/login/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "issue #969"
+  },
+  "subPackages": []
+}

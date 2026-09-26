@@ -1,8 +1,21 @@
-import { describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, reactive, ref } from '@/reactivity'
-import { createStore, defineStore, storeToRefs } from '@/store'
+import type { InternalRuntimeState } from '@/runtime/types'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { batch, computed, effect, effectScope, ref, watch } from '@/reactivity'
+import { createApp } from '@/runtime/app'
+import { mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register/runtimeInstance'
+import { nextTick } from '@/scheduler'
+import { createPinia, defineStore, disposePinia, setActivePinia, storeToRefs } from '@/store'
 
-describe('store (setup)', () => {
+let pinia: ReturnType<typeof createPinia>
+beforeEach(() => {
+  pinia = setActivePinia(createPinia())
+})
+afterEach(() => {
+  disposePinia(pinia)
+  setActivePinia(undefined)
+})
+
+describe('store runtime integration', () => {
   it('defines setup store and reacts', () => {
     const useCounter = defineStore('counter', () => {
       const count = ref(0)
@@ -21,78 +34,6 @@ describe('store (setup)', () => {
     expect(double.value).toBe(2)
   })
 
-  it('$subscribe triggers on direct setup mutations', () => {
-    const useCounter = defineStore('counter-direct', () => {
-      const count = ref(0)
-      function inc() {
-        count.value += 1
-      }
-      return { count, inc }
-    })
-    const s = useCounter()
-    const calls: any[] = []
-    const unsub = s.$subscribe((m) => {
-      calls.push(m.type)
-    })
-    s.count.value += 1
-    s.inc()
-    unsub()
-    expect(calls).toEqual(['direct', 'direct'])
-  })
-
-  it('$reset restores setup store state', () => {
-    const useCounter = defineStore('counter-reset', () => {
-      const count = ref(0)
-      const info = reactive({ name: 'a', tags: ['x'] })
-      const double = computed(() => count.value * 2)
-      const plain = 1
-      return { count, double, info, plain }
-    })
-    const s = useCounter()
-    const calls: string[] = []
-    s.$subscribe((m) => {
-      calls.push(m.type)
-    })
-    s.count.value = 2
-    s.info.name = 'b'
-    s.info.tags.push('y')
-    s.plain = 3
-    s.$reset()
-    expect(s.count.value).toBe(0)
-    expect(s.double.value).toBe(0)
-    expect(s.info.name).toBe('a')
-    expect(s.info.tags).toEqual(['x'])
-    expect(s.plain).toBe(1)
-    expect(calls.at(-1)).toBe('patch object')
-  })
-
-  it('$onAction supports after/onError for sync/async', async () => {
-    const useOps = defineStore('ops', () => {
-      const v = ref(0)
-      function add(n: number) {
-        v.value += n
-        return v.value
-      }
-      async function fail() {
-        throw new Error('x')
-      }
-      return { v, add, fail }
-    })
-    const s = useOps()
-    const afterCb = vi.fn()
-    const onErrorCb = vi.fn()
-    const stop = s.$onAction(({ name: _name, after, onError }) => {
-      after(afterCb)
-      onError(onErrorCb)
-    })
-    const r = s.add(3)
-    expect(r).toBe(3)
-    expect(afterCb).toHaveBeenCalledTimes(1)
-    await expect(s.fail()).rejects.toThrow()
-    expect(onErrorCb).toHaveBeenCalledTimes(1)
-    stop()
-  })
-
   it('keeps setup store computed reactive after the creating scope is stopped', () => {
     const useCounter = defineStore('counter-scope-detached', () => {
       const count = ref(1)
@@ -108,87 +49,127 @@ describe('store (setup)', () => {
     expect(store).toBeTruthy()
 
     // 先读一次 computed，确保它已经建立缓存并订阅到创建时的作用域。
-    expect(store!.double.value).toBe(2)
+    expect(store!.double).toBe(2)
 
     pageScope.stop()
     store!.inc()
 
-    expect(store!.count.value).toBe(2)
-    expect(store!.double.value).toBe(4)
+    expect(store!.count).toBe(2)
+    expect(store!.double).toBe(4)
   })
-})
 
-describe('store (options)', () => {
-  it('options store state/getters/actions + $patch/$reset/$state/$subscribe', async () => {
-    const useUser = defineStore('user', {
-      state: () => ({ name: 'a', age: 1 }),
+  it('$patch and $reset notify effects for each write but group subscriptions', () => {
+    const useProfile = defineStore('options-patch-reset-batch', {
+      state: () => ({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
+    })
+    const store = useProfile()
+    const mutations: string[] = []
+    let effectRuns = 0
+    let fullName = ''
+    effect(() => {
+      effectRuns++
+      fullName = `${store.firstName} ${store.lastName}`
+    })
+    store.$subscribe(mutation => mutations.push(mutation.type))
+
+    store.$patch({
+      firstName: 'Grace',
+      lastName: 'Hopper',
+    })
+
+    expect(effectRuns).toBe(3)
+    expect(fullName).toBe('Grace Hopper')
+    expect(mutations).toEqual(['patch object'])
+
+    store.$patch((state) => {
+      state.firstName = 'Katherine'
+      state.lastName = 'Johnson'
+    })
+
+    expect(effectRuns).toBe(5)
+    expect(fullName).toBe('Katherine Johnson')
+
+    expect(mutations).toEqual(['patch object', 'patch function'])
+
+    mutations.length = 0
+    effectRuns = 0
+    store.$reset()
+
+    expect(effectRuns).toBe(2)
+    expect(fullName).toBe('Ada Lovelace')
+    expect(mutations).toEqual(['patch function'])
+  })
+
+  it('$patch callbacks and nested actions read fresh cached getters', () => {
+    const useCounter = defineStore('options-patch-cached-getter', {
+      state: () => ({ n: 1, saved: 0 }),
       getters: {
-        label(state: any) {
-          return `${state.name}:${state.age}`
-        },
+        doubled: state => state.n * 2,
       },
       actions: {
-        grow() {
-          this.age++
+        saveDoubled() {
+          this.saved = this.doubled
         },
       },
     })
-    const s = useUser()
-    const calls: any[] = []
-    const unsub = s.$subscribe((m: any, state: any) => {
-      calls.push([m.type, state.age])
+    const store = useCounter()
+    const snapshots: string[] = []
+    watch(() => store.saved, saved => snapshots.push(`${saved}:${store.doubled}`), { flush: 'sync', immediate: true })
+
+    store.$patch((state) => {
+      state.n = 2
+      state.saved = store.doubled
+      expect(state.saved).toBe(4)
+      state.n = 3
+      store.saveDoubled()
+      expect(state.saved).toBe(6)
+      expect(snapshots).toEqual(['0:2', '4:4', '6:6'])
     })
-    expect(s.$id).toBe('user')
-    expect(s.label).toBe('a:1')
-    s.grow()
-    // 直接赋值会触发 $subscribe（direct）
-    s.$patch({ age: 10 })
-    s.$patch((state: any) => {
-      state.age = 20
-    })
-    s.$state = { name: 'b', age: 2 }
-    s.$reset()
-    unsub()
-    expect(calls).toEqual([
-      ['direct', 2],
-      ['patch object', 10],
-      ['patch function', 20],
-      ['patch object', 2],
-      ['patch object', 1], // reset to initial snapshot
-    ])
+
+    expect(snapshots).toEqual(['0:2', '4:4', '6:6'])
   })
 
-  it('createStore().use(plugin) extends store on create', () => {
-    createStore().use(({ store }) => {
-      ;(store as any).$extra = 123
+  it.each([false, true])('$patch produces one runtime setData dispatch (batch: %s)', async (batched) => {
+    const useProfile = defineStore('store-set-data-batch', {
+      state: () => ({
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      }),
     })
-    const useX = defineStore('x', () => ({ n: ref(0) }))
-    const s = useX() as any
-    expect(s.$extra).toBe(123)
-  })
+    const store = useProfile()
+    const app = createApp({})
+    const data: Record<string, unknown> = {
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+    }
+    const setData = vi.fn((payload: Record<string, unknown>) => {
+      Object.assign(data, payload)
+    })
+    const target = { data, setData } as unknown as InternalRuntimeState
+    mountRuntimeInstance(target, app, undefined, () => storeToRefs(store))
+    await nextTick()
+    setData.mockClear()
 
-  it('plugin errors are swallowed (do not break store creation)', () => {
-    createStore().use(() => {
-      throw new Error('plugin error')
+    const patch = () => store.$patch({
+      firstName: 'Grace',
+      lastName: 'Hopper',
     })
-    const useX = defineStore('y', () => ({ n: ref(0) }))
-    const s = useX()
-    expect(s.n.value).toBe(0)
-  })
+    if (batched) {
+      batch(patch)
+    }
+    else {
+      patch()
+    }
+    await nextTick()
 
-  it('options store also runs plugins and storeToRefs setters write back', () => {
-    createStore().use(({ store }) => {
-      ;(store as any).$plugged = true
+    expect(setData).toHaveBeenCalledTimes(1)
+    expect(setData.mock.calls[0]?.[0]).toEqual({
+      firstName: 'Grace',
+      lastName: 'Hopper',
     })
-    const useU = defineStore('u', {
-      state: () => ({ a: 1 }),
-      actions: {},
-      getters: {},
-    })
-    const s = useU() as any
-    expect(s.$plugged).toBe(true)
-    const { a } = storeToRefs(s)
-    a.value = 5
-    expect(s.a).toBe(5)
+    teardownRuntimeInstance(target)
   })
 })

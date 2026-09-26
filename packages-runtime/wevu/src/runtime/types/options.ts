@@ -1,9 +1,12 @@
-import type { ComputedDefinitions, MethodDefinitions } from './core'
+import type { ShallowUnwrapRef } from '../../vue-types'
+import type { ComponentPublicInstance, ComputedDefinitions, MethodDefinitions } from './core'
 import type { MiniProgramAppOptions, MiniProgramComponentOptions, MiniProgramPageLifetimes } from './miniprogram'
-import type { ComponentPropsOptions, SetupContext, SetupFunction } from './props'
+import type { ComponentPropsOptions, InferProps, SetupContext, SetupFunction } from './props'
 import type { SetDataSnapshotOptions } from './setData'
 
 export type DataOption<D extends object> = D | (() => D)
+
+type SetupThis<S> = [Exclude<S, void>] extends [never] ? Record<never, never> : ShallowUnwrapRef<Exclude<S, void>>
 
 export interface DefineComponentOptions<
   P extends ComponentPropsOptions = ComponentPropsOptions,
@@ -61,7 +64,7 @@ export interface DefineComponentOptions<
   /**
    * 组件 computed（会参与快照 diff）。
    */
-  computed?: C
+  computed?: C & ThisType<ComponentPublicInstance<D, C, M, InferProps<P>> & SetupThis<S>>
 
   /**
    * setData 快照控制选项（用于优化性能与 payload）。
@@ -71,7 +74,7 @@ export interface DefineComponentOptions<
   /**
    * 组件 methods（会绑定到 public instance 上）。
    */
-  methods?: M
+  methods?: M & ThisType<ComponentPublicInstance<D, C, M, InferProps<P>> & SetupThis<S>>
 
   /**
    * 透传/扩展字段：允许携带其他小程序原生 Component 选项或自定义字段。

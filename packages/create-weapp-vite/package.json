@@ -1,10 +1,11 @@
 {
   "name": "create-weapp-vite",
   "type": "module",
-  "version": "2.8.12",
-  "description": "create-weapp-vite",
+  "version": "3.0.0",
+  "description": "create-weapp-vite tools and runtime components for modern WeChat and multi-platform mini-program development.",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
@@ -15,8 +16,12 @@
   },
   "keywords": [
     "weapp-vite",
+    "weapp",
+    "wechat",
+    "mini-program",
+    "miniprogram",
     "vite",
-    "weapp"
+    "runtime"
   ],
   "sideEffects": false,
   "weapp-vite-dev": {
@@ -44,7 +49,7 @@
     "templates"
   ],
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "scripts": {
     "catalog:sync": "node --import tsx scripts/generate-template-catalog.ts",
@@ -70,14 +75,26 @@
     "main": "./dist/index.js",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "bin": "./bin/create-weapp-vite.js"
+    "bin": "./bin/create-weapp-vite.js",
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.7.1",
+    "@inquirer/prompts": "^8.7.2",
+    "@npmcli/config": "^11.1.0",
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "execa": "^10.0.1",
+    "make-fetch-happen": "^16.0.1",
+    "npm-registry-fetch": "^20.0.1",
     "pathe": "catalog:",
-    "pkg-types": "catalog:"
+    "pkg-types": "catalog:",
+    "semver": "^7.8.5"
+  },
+  "devDependencies": {
+    "@types/make-fetch-happen": "^10.0.4",
+    "@types/npm-registry-fetch": "^8.0.9",
+    "@types/npmcli__config": "^6.0.4"
   }
 }

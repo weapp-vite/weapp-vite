@@ -1,63 +1,30 @@
-import type {
-  ActionSubscriber,
-  DefineStoreOptions,
-  StoreGetters,
-  StoreManager,
-  StoreSubscribeOptions,
-  SubscriptionCallback,
-} from './types'
-import { effectScope } from '../reactivity'
-import { createOptionsStyleStore } from './define/optionsStyle'
-import { createSetupStyleStore } from './define/setupStyle'
-import { createStore } from './manager'
+import type { DefineStoreOptions, OptionsStore, Pinia, SetupStore, StoreDefinition, StoreSetupOptions } from './types'
+import { createStoreInstance } from './define/create'
+import { getActivePinia, setActivePinia } from './manager'
 
-type SetupDefinition<T> = () => T
-
-type ActionResult<A> = Awaited<ReturnType<Extract<A[keyof A], (...args: any[]) => any>>>
-type OptionsStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>> = S & StoreGetters<G> & A & {
-  $id: string
-  $state: S
-  $patch: (patch: Partial<S> | ((state: S) => void)) => void
-  $reset: () => void
-  $subscribe: (cb: SubscriptionCallback<S>, opts?: StoreSubscribeOptions) => () => void
-  $onAction: (cb: ActionSubscriber<OptionsStore<S, G, A>, ActionResult<A>>) => () => void
-}
-
-/**
- * @description 定义一个 setup 风格的 store
- */
-export function defineStore<T extends Record<string, any>>(id: string, setup: SetupDefinition<T>): () => T & {
-  $id: string
-  $patch: (patch: Record<string, any> | ((state: any) => void)) => void
-  $reset: () => void
-  $subscribe: (cb: SubscriptionCallback<any>, opts?: StoreSubscribeOptions) => () => void
-  $onAction: (cb: ActionSubscriber<any>) => () => void
-}
-/**
- * @description 定义一个 options 风格的 store
- */
-export function defineStore<S extends Record<string, any>, G extends Record<string, any>, A extends Record<string, any>>(
-  id: string,
+/** 定义 Setup Store，返回值在实例上自动解包 ref。 */
+export function defineStore<Id extends string, T extends Record<string, any>>(
+  id: Id,
+  setup: () => T,
+  options?: StoreSetupOptions,
+): StoreDefinition<Id, SetupStore<Id, T>>
+/** 定义 Options Store，共享 state/getters/actions 的 this 类型。 */
+export function defineStore<Id extends string, S extends Record<string, any> = Record<never, never>, G extends Record<string, any> = Record<never, never>, A extends Record<string, any> = Record<never, never>>(
+  id: Id,
   options: DefineStoreOptions<S, G, A>,
-): () => OptionsStore<S, G, A>
-export function defineStore(id: string, setupOrOptions: any) {
-  let instance: any
-  let created = false
-  const manager = (createStore as any)._instance as StoreManager | undefined
-
-  return function useStore(): any {
-    if (created && instance) {
-      return instance
+): StoreDefinition<Id, OptionsStore<S, G, A, Id>>
+export function defineStore(id: string, setupOrOptions: any, options?: StoreSetupOptions) {
+  const useStore = (pinia?: Pinia | null) => {
+    const owner = pinia ?? getActivePinia()
+    if (!owner) {
+      throw new Error('没有活动的 Pinia，请先调用 app.use(createPinia()) 或显式传入 Pinia')
     }
-    created = true
-
-    const storeScope = effectScope(true)
-    instance = storeScope.run(() => {
-      return typeof setupOrOptions === 'function'
-        ? createSetupStyleStore(id, setupOrOptions, manager)
-        : createOptionsStyleStore(id, setupOrOptions as DefineStoreOptions<any, any, any>, manager)
-    })
-
-    return instance
+    setActivePinia(owner)
+    if (!owner._s.has(id)) {
+      createStoreInstance(id, setupOrOptions, owner, options)
+    }
+    return owner._s.get(id)
   }
+  useStore.$id = id
+  return useStore
 }

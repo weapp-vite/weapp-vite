@@ -15,6 +15,8 @@ describe('router api', () => {
     clearActiveRouter()
     bindCurrentPageInstance(undefined as any)
     delete (globalThis as any).getCurrentPages
+    delete (globalThis as any).wx
+    delete (globalThis as any).__wxConfig
   })
 
   it('parseQuery parses repeated keys, empty value, and flags', () => {
@@ -95,10 +97,17 @@ describe('router api', () => {
     })
   })
 
-  it('useRoute requires setup context', () => {
+  it('useRoute can initialize from the current page stack without setup context', () => {
     setCurrentInstance({ __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any)
     setCurrentSetupContext(undefined)
-    expect(() => useRoute()).toThrow('useRoute() 必须在 setup() 的同步阶段调用')
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/login/index',
+        options: {},
+      },
+    ])
+
+    expect(useRoute().path).toBe('pages/login/index')
   })
 
   it('useRouter requires an existing router instance when called without options', () => {
@@ -127,6 +136,52 @@ describe('router api', () => {
     ;(globalThis as any).getCurrentPages = vi.fn(() => [
       {
         route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const createdRouter = createRouter()
+
+    expect(useRouter()).toBe(createdRouter)
+  })
+
+  it('createRouter uses the host global router when App setup has no native router', () => {
+    const wx = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+    ;(globalThis as any).wx = wx
+    const instance = { __wevu: {}, [WEVU_HOOKS_KEY]: {} } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/login/index',
+        options: {},
+      },
+    ])
+
+    const createdRouter = createRouter()
+
+    expect(useRouter()).toBe(createdRouter)
+    expect(createdRouter.nativeRouter.navigateTo).toBeTypeOf('function')
+  })
+
+  it('createRouter uses the host global router when called without a page setup context', () => {
+    const wx = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+    ;(globalThis as any).wx = wx
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/login/index',
         options: {},
       },
     ])

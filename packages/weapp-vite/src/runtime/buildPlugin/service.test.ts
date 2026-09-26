@@ -1,9 +1,20 @@
+import type { OutputBundle, OutputChunk, RolldownWatcher } from 'rolldown'
+import type { InlineConfig, Plugin } from 'vite'
+import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
+import type { CompilerContext } from '../../context'
+import type { CorePluginState } from '../../plugins/core/helpers'
+import type { DevBuildWatcherController } from './devBuildWatcher'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createModuleGraphService } from '../../moduleGraph/service'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
+import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/generate'
+import { registerManagedTailwindcssEntries } from '../../plugins/tailwindcssMarker'
 
+import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createRuntimeState } from '../runtimeState'
 import { StatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
+import { createWatcherServicePlugin } from '../watcherPlugin'
 import { createBuildService } from './service'
 
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
@@ -26,7 +37,6 @@ const disableProjectPrivateConfigHotReloadMock = vi.hoisted(() => vi.fn(async ()
 const syncProjectConfigToOutputMock = vi.hoisted(() => vi.fn(async () => {}))
 const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createSharedBuildConfigMock = vi.hoisted(() => vi.fn(() => ({ shared: true })))
-const resolveTouchAppWxssEnabledMock = vi.hoisted(() => vi.fn(() => true))
 const touchMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkWorkersOptionsMock = vi.hoisted(() => vi.fn())
 const devWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -47,6 +57,7 @@ const createIndependentBuilderMock = vi.hoisted(() => vi.fn(() => ({
 const appendFileMock = vi.hoisted(() => vi.fn(async () => {}))
 const mkdirMock = vi.hoisted(() => vi.fn(async () => {}))
 const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
+  add: vi.fn(),
   on: vi.fn(),
   close: vi.fn(),
 })))
@@ -55,6 +66,13 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigWarnings: [],
 })))
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
+const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
+  options: { build: {}, plugins: [] as Plugin[] },
+  getGlobalStyleRoutes: () => [],
+  getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+  getEntryIds: () => new Set<string>(),
+  getDelegatedComponentEntryIds: () => new Set<string>(),
+})))
 const devBuildWatcherQueue = vi.hoisted(() => [] as Array<{
   watcher: any
   emitEvent: ReturnType<typeof vi.fn>
@@ -95,7 +113,8 @@ vi.mock('chokidar', () => ({
   },
 }))
 
-vi.mock('./outputs', () => ({
+vi.mock('./outputs', async importOriginal => ({
+  ...await importOriginal<typeof import('./outputs')>(),
   cleanOutputs: cleanOutputsMock,
   isOutputRootInsideOutDir: isOutputRootInsideOutDirMock,
   resetEmittedOutputCaches: resetEmittedOutputCachesMock,
@@ -118,6 +137,15 @@ vi.mock('../statefulHmr/session', () => ({
   runStatefulHmrDev: runStatefulHmrDevMock,
 }))
 
+vi.mock('../statefulHmr/snapshotBuild', () => ({
+  buildStatefulHmrSnapshot: async (loadOptions: unknown, configure: (options: InlineConfig) => InlineConfig) => {
+    const snapshot = await createStatefulHmrSnapshotOptionsMock(loadOptions)
+    const options = configure(snapshot.options)
+    options.build = { ...options.build, watch: undefined, write: false }
+    return { ...snapshot, output: await buildMock(options) }
+  },
+}))
+
 vi.mock('../../moduleGraph/devProvider', () => ({
   createDevModuleGraphProvider: createDevModuleGraphProviderMock,
 }))
@@ -134,8 +162,9 @@ vi.mock('../sharedBuildConfig', () => ({
   createSharedBuildConfig: createSharedBuildConfigMock,
 }))
 
-vi.mock('./touchAppWxss', () => ({
-  resolveTouchAppWxssEnabled: resolveTouchAppWxssEnabledMock,
+vi.mock('./touchAppWxss', async importOriginal => ({
+  ...await importOriginal<typeof import('./touchAppWxss')>(),
+  touchExistingAppStyle: touchMock,
 }))
 
 vi.mock('./workers', () => ({
@@ -143,10 +172,6 @@ vi.mock('./workers', () => ({
   devWorkers: devWorkersMock,
   watchWorkers: watchWorkersMock,
   buildWorkers: buildWorkersMock,
-}))
-
-vi.mock('../../utils/file', () => ({
-  touch: touchMock,
 }))
 
 vi.mock('../../context/shared', () => ({
@@ -217,6 +242,7 @@ function createManualWatcher() {
 function createManualSidecarWatcher() {
   let allCallback: ((event: string, id?: string) => void) | undefined
   const watcher: any = {
+    add: vi.fn(),
     on: vi.fn((event: string, callback: (event: string, id?: string) => void) => {
       if (event === 'all') {
         allCallback = callback
@@ -238,6 +264,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
   const ctx = {
     runtimeState,
     configService: {
+      inlineConfig: {},
       weappViteConfig: {},
       weappLibConfig: undefined,
       loadOptions: {
@@ -270,6 +297,7 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
     watcherService: {
       rollupWatcherMap,
       sidecarWatcherMap,
+      closeAll: vi.fn(async () => {}),
       setRollupWatcher: vi.fn((watcher: any, root: string = '/') => {
         rollupWatcherMap.set(root, watcher)
       }),
@@ -279,11 +307,17 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
       checkDependenciesCacheOutdate: vi.fn(async () => true),
     },
     scanService: {
+      subPackageMap: new Map(),
       workersDir: undefined,
       loadAppEntry: vi.fn(async () => {}),
       loadSubPackages: vi.fn(() => []),
     },
     moduleGraphService: {
+      bindBuildContext: vi.fn(),
+      bindPluginContext: vi.fn(),
+      clearPendingChanges: vi.fn(),
+      resetSession: vi.fn(),
+      removeEntryDependencies: vi.fn(),
       collectAffectedEntries: vi.fn(() => new Set<string>()),
       hasModule: vi.fn(() => true),
       isLogicalLayoutEntry: vi.fn(() => false),
@@ -296,6 +330,93 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
   }
 
   return ctx
+}
+
+const HMR_PAGE_ID = '/project/src/pages/logs/index.ts'
+const HMR_OTHER_PAGE_ID = '/project/src/pages/about/index.ts'
+const HMR_INCREMENTAL_OUTPUTS = ['pages/logs/index.js', 'pages/logs/index.wxml']
+const HMR_FULL_OUTPUTS = [...HMR_INCREMENTAL_OUTPUTS, 'shared-dependency.js', 'shared-logic.js']
+
+async function emitSharedChunkSnapshot(
+  ctx: CompilerContext,
+  options: { metadataOnly?: boolean, affectedSharedChunks?: boolean } = {},
+): Promise<string[]> {
+  const sharedChunkIds = ['shared-logic.js', 'shared-dependency.js']
+  // 旧图包含另一个页面；完整 snapshot 重建图，增量构建必须保留未参与页面的边。
+  const state = {
+    ctx,
+    entriesMap: new Map(),
+    resolvedEntryMap: new Map([
+      [HMR_PAGE_ID, { id: HMR_PAGE_ID }],
+      [HMR_OTHER_PAGE_ID, { id: HMR_OTHER_PAGE_ID }],
+    ]),
+    hmrState: {
+      hasBuiltOnce: true,
+      didEmitAllEntries: false,
+      lastEmittedEntryIds: new Set([HMR_PAGE_ID]),
+      skipSharedChunkRefresh: options.metadataOnly,
+      affectedSharedChunkIds: new Set(options.affectedSharedChunks ? sharedChunkIds : []),
+    },
+    hmrSharedChunksMode: 'auto',
+    hmrSharedChunkImporters: new Map(sharedChunkIds.map(id => [id, new Set([HMR_PAGE_ID, HMR_OTHER_PAGE_ID])])),
+    hmrSharedChunksByEntry: new Map([
+      [HMR_PAGE_ID, new Set(sharedChunkIds)],
+      [HMR_OTHER_PAGE_ID, new Set(sharedChunkIds)],
+    ]),
+    hmrSharedChunkDependencies: new Map([['shared-logic.js', new Set(['shared-dependency.js'])]]),
+    outputChunksByModule: new Map(),
+    hmrSourceSharedChunks: new Set(),
+    watchFilesSnapshot: [],
+  } as CorePluginState
+  const chunk = (fileName: string, code: string, imports: string[], facadeModuleId: string | null = null): OutputChunk => ({
+    type: 'chunk',
+    fileName,
+    code,
+    imports,
+    dynamicImports: [],
+    facadeModuleId,
+    isEntry: facadeModuleId !== null,
+    moduleIds: facadeModuleId ? [facadeModuleId] : [],
+    modules: {},
+    exports: ['value'],
+    map: null,
+  } as OutputChunk)
+  const bundle: OutputBundle = {
+    'pages/logs/index.js': chunk('pages/logs/index.js', 'exports.value = require("../../shared-logic.js").value', ['../../shared-logic.js'], HMR_PAGE_ID),
+    'shared-logic.js': chunk('shared-logic.js', 'exports.value = require("./shared-dependency.js").value', ['./shared-dependency.js']),
+    'shared-dependency.js': chunk('shared-dependency.js', 'exports.value = 42', []),
+    'pages/logs/index.wxml': {
+      type: 'asset',
+      fileName: 'pages/logs/index.wxml',
+      names: [],
+      originalFileNames: [],
+      source: '<view>updated</view>',
+    },
+  }
+  ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.clear()
+  ctx.runtimeState.build.hmr.lastEmittedChunkFileNames.add('pages/logs/index.js')
+  await createGenerateBundleHook(state, false).call({}, {}, bundle)
+  return Object.keys(bundle).sort()
+}
+
+async function startClassicSnapshotContext() {
+  const watcher = createManualWatcher()
+  const sidecarWatcher = createManualSidecarWatcher()
+  const ctx = createMockContext()
+  ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+  ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+  chokidarWatchMock.mockReturnValueOnce(sidecarWatcher)
+  buildMock.mockResolvedValueOnce({ output: [] })
+  const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+  await watcher.subscribed
+  watcher.emit('START')
+  watcher.emit('END')
+  await firstBuild
+  const onChange = moduleGraphProviderChange.handler
+  if (!onChange) {
+    throw new Error('Classic HMR graph provider did not subscribe')
+  }
+  return { ctx, watcher, onChange }
 }
 
 async function flushAsyncTasks() {
@@ -327,6 +448,13 @@ describe('runtime buildPlugin service', () => {
     disableProjectPrivateConfigHotReloadMock.mockReset()
     disableProjectPrivateConfigHotReloadMock.mockResolvedValue(true)
     runStatefulHmrDevMock.mockReset()
+    createStatefulHmrSnapshotOptionsMock.mockReset().mockImplementation(async () => ({
+      options: { build: {}, plugins: [] },
+      getGlobalStyleRoutes: () => [],
+      getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+      getEntryIds: () => new Set<string>(),
+      getDelegatedComponentEntryIds: () => new Set<string>(),
+    }))
     resetEmittedOutputCachesMock.mockReset()
     isOutputRootInsideOutDirMock.mockImplementation((outDir: string, pluginOutputRoot: string) => {
       return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
@@ -342,7 +470,6 @@ describe('runtime buildPlugin service', () => {
       managedTsconfigWarnings: [],
     })
     chokidarWatchMock.mockClear()
-    delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
     delete process.env.WEAPP_VITE_HMR_PROFILE_JSON
   })
 
@@ -373,61 +500,342 @@ describe('runtime buildPlugin service', () => {
     expect(() => createBuildService({ runtimeState } as any)).toThrow('构建服务需要先初始化 config、watcher、npm 和 scan 服务。')
   })
 
-  it('seeds complete outputs and reloads independent plugin graphs for stateful dev', async () => {
-    const firstWatcher = { close: vi.fn(async () => {}) }
-    const secondWatcher = { close: vi.fn(async () => {}) }
-    buildMock.mockResolvedValue({ output: [] })
-    runStatefulHmrDevMock
-      .mockResolvedValueOnce(firstWatcher)
-      .mockResolvedValueOnce(secondWatcher)
+  it('holds real classic controller resources across snapshots and failure until pending work finishes on close', async () => {
+    const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controller = createDevBuildWatcher()
+    devBuildWatcherQueue.push(controller as any)
     const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
-    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/index.ts', {
-      id: '/project/src/pages/index.ts',
+    const plugin = createWatcherServicePlugin(ctx)
+    const sidecarClose = vi.fn(async () => {})
+    let failure = false
+    let pending: Promise<void> | undefined
+    buildMock.mockImplementation(async () => {
+      await pending
+      plugin.configResolved?.({ command: 'build', build: {} } as any)
+      if (failure) {
+        await plugin.buildEnd?.(new Error('recoverable snapshot error'))
+      }
+      await plugin.closeBundle?.()
+      if (failure) {
+        throw new Error('recoverable snapshot error')
+      }
+      return { output: [] }
     })
-    const service = createBuildService(ctx)
-
-    await service.build({ skipNpm: true })
-
-    expect(buildMock).toHaveBeenCalledTimes(1)
-    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
-    expect(ctx.configService.load).toHaveBeenCalledTimes(1)
-    expect(ctx.configService.load).toHaveBeenCalledWith(ctx.configService.loadOptions)
-    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
-    const restart = runStatefulHmrDevMock.mock.calls[0]![2]
-    expect(runStatefulHmrDevMock.mock.calls[0]![3].entryIds).toEqual(new Set([
-      '/project/src/pages/index.ts',
-    ]))
-
-    await restart()
-
-    expect(firstWatcher.close).toHaveBeenCalledOnce()
-    expect(buildMock).toHaveBeenCalledTimes(2)
-    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(2)
-    expect(ctx.configService.load).toHaveBeenCalledTimes(3)
-    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(3)
-    expect(ctx.watcherService.setRollupWatcher).toHaveBeenLastCalledWith(secondWatcher, '/')
-    expect(loggerInfoMock.mock.calls.filter(([message]) => String(message).startsWith('HMR 模式：'))).toEqual([
-      ['HMR 模式：stateful-experimental（显式配置）'],
-    ])
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as typeof controller.watcher
+    ctx.watcherService.sidecarWatcherMap.set('auto-import', { close: sidecarClose })
+    const change = () => moduleGraphProviderChange.handler!({ event: 'update', file: '/project/src/pages/index.ts' })
+    change()
+    await waitForMockCalls(buildMock, 2)
+    expect(sidecarClose).not.toHaveBeenCalled()
+    failure = true
+    change()
+    await waitForMockCalls(buildMock, 3)
+    await waitForMockCalls(loggerErrorMock, 1)
+    expect(ctx.watcherService.rollupWatcherMap.get('/')).toBe(watcher)
+    expect(sidecarClose).not.toHaveBeenCalled()
+    failure = false
+    let finish!: () => void
+    pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    change()
+    await waitForMockCalls(buildMock, 4)
+    let closed = false
+    const close = Promise.resolve(watcher.close()).then(() => {
+      closed = true
+    })
+    await flushAsyncTasks()
+    expect(closed).toBe(false)
+    expect(sidecarClose).not.toHaveBeenCalled()
+    finish()
+    await close
+    expect(sidecarClose).toHaveBeenCalledTimes(1)
+    expect(ctx.watcherService.rollupWatcherMap.size).toBe(0)
+    expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
   })
 
-  it('selects stateful dev for auto runtime when WeChat hot reload is enabled', async () => {
+  it.each(['snapshot', 'worker'] as const)('releases classic resources after %s startup failure even when the graph provider cannot close', async (kind) => {
+    const ctx = createMockContext()
+    const plugin = createWatcherServicePlugin(ctx)
+    const sidecarClose = vi.fn(async () => {})
+    ctx.watcherService.sidecarWatcherMap.set('auto-import', { close: sidecarClose })
+    const startupError = new Error(`${kind} startup failed`)
+    const closeError = new Error('graph close failed')
+    createDevModuleGraphProviderMock.mockResolvedValueOnce({ close: vi.fn(async () => {
+      throw closeError
+    }) })
+    buildMock.mockImplementation(async () => {
+      plugin.configResolved?.({ command: 'build', build: {} } as any)
+      if (kind === 'snapshot') {
+        await plugin.buildEnd?.(startupError)
+        throw startupError
+      }
+      await plugin.closeBundle?.()
+      return { output: [] }
+    })
+    if (kind === 'worker') {
+      checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: '/project/src/workers' })
+      devWorkersMock.mockRejectedValueOnce(startupError)
+    }
+    await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toMatchObject({
+      errors: [startupError, closeError],
+    })
+    expect(sidecarClose).toHaveBeenCalledTimes(1)
+    const laterClose = vi.fn(async () => {})
+    ctx.watcherService.sidecarWatcherMap.set('later-build', { close: laterClose })
+    plugin.configResolved?.({ command: 'build', build: {} } as any)
+    await plugin.closeBundle?.()
+    expect(laterClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('takes initial and restarted component assets and entry metadata from independent snapshot contexts', async () => {
     const watcher = { close: vi.fn(async () => {}) }
-    buildMock.mockResolvedValue({ output: [] })
+    const isolatedPlugin = { name: 'independent-snapshot-compiler' }
+    const snapshotEntry = '/project/src/components/leaf/index.vue'
+    createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
+      options: { build: {}, plugins: [isolatedPlugin] },
+      getGlobalStyleRoutes: () => [],
+      getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+      getEntryIds: () => new Set([snapshotEntry]),
+      getDelegatedComponentEntryIds: () => new Set<string>(),
+    }).mockResolvedValueOnce({
+      options: { build: {}, plugins: [isolatedPlugin] },
+      getGlobalStyleRoutes: () => [],
+      getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
+      getEntryIds: () => new Set([snapshotEntry]),
+      getDelegatedComponentEntryIds: () => new Set<string>(),
+    })
+    buildMock.mockImplementation(async options => ({
+      output: [{
+        type: 'asset',
+        fileName: 'components/leaf/index.json',
+        source: JSON.stringify(options.plugins.includes(isolatedPlugin)
+          ? { component: true, options: { multipleSlots: true } }
+          : { options: { multipleSlots: true } }),
+      }],
+    }))
     runStatefulHmrDevMock.mockResolvedValue(watcher)
     const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'auto' }
-    ctx.configService.projectPrivateConfig = {
-      setting: { compileHotReLoad: true },
-    }
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/stale.ts', { id: '/project/src/stale.ts' })
 
     await createBuildService(ctx).build({ skipNpm: true })
+    await runStatefulHmrDevMock.mock.calls[0]![2]()
 
-    expect(runStatefulHmrDevMock).toHaveBeenCalledOnce()
-    expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(watcher, '/')
-    expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：stateful-experimental（自动检测：微信开发者工具热重载已开启）')
-    expect(loggerInfoMock).toHaveBeenCalledWith(expect.stringContaining('HMR 切换：关闭微信开发者工具“热重载”后重启 wv dev'))
+    for (const [, , , snapshots] of runStatefulHmrDevMock.mock.calls) {
+      expect(snapshots.entryIds).toEqual(new Set([snapshotEntry]))
+      expect(JSON.parse(snapshots.initial.output[0].source)).toEqual({ component: true, options: { multipleSlots: true } })
+    }
+    expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('replaces stateful session graphs and releases the replacement through the original public close handle', async () => {
+    const graph = createModuleGraphService()
+    const closed: string[] = []
+    const entries = ['/project/src/pages/old.ts', '/project/src/pages/current.ts']
+    const watchers = entries.map(entry => ({ close: async () => {
+      closed.push(entry)
+    } }))
+    let sessionIndex = 0
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockImplementation(async () => {
+      const entry = entries[sessionIndex]!
+      const watcher = watchers[sessionIndex++]!
+      const scope = {}
+      const context = {
+        getModuleInfo: (id: string) => id === entry ? { isEntry: true } : null,
+        resolve: async () => ({ id: entry }),
+      }
+      graph.bindBuildContext(scope, context)
+      graph.bindPluginContext(scope, context)
+      graph.replaceEntryDependencies(entry, 'template', [`${entry}.wxml`])
+      return watcher
+    })
+    const ctx = createMockContext({ moduleGraphService: graph })
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const service = createBuildService(ctx)
+
+    const watcher = await service.build({ skipNpm: true }) as RolldownWatcher
+    const closeOriginalWatcher = watcher.close.bind(watcher)
+    expect(graph.hasModule(entries[0]!)).toBe(true)
+    expect(graph.collectAffectedEntries(`${entries[0]}.wxml`)).toEqual(new Set([entries[0]]))
+    await runStatefulHmrDevMock.mock.calls[0]![2]()
+
+    expect(closed).toEqual([entries[0]])
+    expect(graph.hasModule(entries[0]!)).toBe(false)
+    expect(graph.collectAffectedEntries(`${entries[0]}.wxml`)).toEqual(new Set())
+    expect(graph.hasModule(entries[1]!)).toBe(true)
+    expect(await graph.resolve('./page')).toEqual({ id: entries[1] })
+
+    await closeOriginalWatcher()
+    expect(closed).toEqual(entries)
+    expect(graph.hasModule(entries[1]!)).toBe(false)
+    expect(graph.collectAffectedEntries(`${entries[1]}.wxml`)).toEqual(new Set())
+  })
+
+  it('releases graph inputs registered after the original watcher closes during native restart', async () => {
+    const graph = createModuleGraphService()
+    const ctx = createMockContext({ moduleGraphService: graph })
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const entered = Promise.withResolvers<void>()
+    const ready = Promise.withResolvers<void>()
+    const dependency = '/project/src/shared.wxml'
+    const closed: number[] = []
+    let generation = 0
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockImplementation(async () => {
+      const current = ++generation
+      if (current === 2) {
+        entered.resolve()
+        await ready.promise
+      }
+      graph.replaceEntryDependencies(`/project/src/page-${current}.ts`, 'template', [dependency])
+      return { close: async () => {
+        closed.push(current)
+      } }
+    })
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const closeOriginalWatcher = watcher.close.bind(watcher)
+    const restarting = runStatefulHmrDevMock.mock.calls[0]![2]()
+    await entered.promise
+    const closing = closeOriginalWatcher()
+    ready.resolve()
+    await Promise.all([restarting, closing])
+
+    expect(closed).toEqual([1, 2])
+    expect(graph.hasModule('/project/src/page-2.ts')).toBe(false)
+    expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
+  })
+
+  it('drains and releases an opened stateful session when worker startup and server close fail', async () => {
+    const graph = createModuleGraphService()
+    const ctx = createMockContext({ moduleGraphService: graph })
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const entry = '/project/src/pages/index.ts'
+    const dependency = '/project/src/shared.wxml'
+    const started = Promise.withResolvers<void>()
+    const ready = Promise.withResolvers<void>()
+    const startupError = new Error('worker startup failed')
+    const closeError = new Error('stateful server close failed')
+    let closed = false
+    checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: '/project/src/workers' })
+    devWorkersMock.mockRejectedValueOnce(startupError)
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockImplementationOnce(async () => {
+      graph.replaceEntryDependencies(entry, 'template', [dependency])
+      started.resolve()
+      await ready.promise
+      return {
+        close: async () => {
+          closed = true
+          throw closeError
+        },
+      }
+    })
+    const rejected = expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toMatchObject({
+      errors: [startupError, closeError],
+    })
+    await started.promise
+    expect(graph.collectAffectedEntries(dependency)).toEqual(new Set([entry]))
+    expect(closed).toBe(false)
+    ready.resolve()
+    await rejected
+    expect(closed).toBe(true)
+    expect(graph.hasModule(dependency)).toBe(false)
+    expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
+  })
+
+  it('waits for an in-flight native restart snapshot before close returns', async () => {
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue({ close: vi.fn(async () => {}) })
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const reached = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    buildMock.mockImplementationOnce(async () => {
+      reached.resolve()
+      await release.promise
+      return { output: [] }
+    })
+    const restarting = runStatefulHmrDevMock.mock.calls[0]![2]()
+    await reached.promise
+    let closed = false
+    const closing = watcher.close().then(() => {
+      closed = true
+    })
+    try {
+      await new Promise(resolve => setImmediate(resolve))
+      expect(closed).toBe(false)
+    }
+    finally {
+      release.resolve()
+      await Promise.all([restarting, closing])
+    }
+    expect(closed).toBe(true)
+    expect(runStatefulHmrDevMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([false, true])('keeps original native subscribers and releases sessions when closing during restart=%s', async (closeDuringRestart) => {
+    const { createDevBuildWatcher } = await vi.importActual<typeof import('./devBuildWatcher')>('./devBuildWatcher')
+    const controller = createDevBuildWatcher()
+    devBuildWatcherQueue.push({ watcher: controller.watcher, emitEvent: vi.fn(controller.emitEvent) })
+    const liveSessions = new Set<number>()
+    const observedSessions: number[][] = []
+    let generation = 0
+    let restart!: () => Promise<void>
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockImplementation(async (
+      _ctx: unknown,
+      _options: unknown,
+      restartSession: () => Promise<void>,
+      _snapshots: unknown,
+      events: DevBuildWatcherController,
+    ) => {
+      const id = ++generation
+      liveSessions.add(id)
+      restart = restartSession
+      events.emitEvent({ code: 'END' })
+      return {
+        close: async () => {
+          liveSessions.delete(id)
+        },
+      }
+    })
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    await createBuildService(ctx).build({ skipNpm: true })
+    const watcher: RolldownWatcher = ctx.watcherService.rollupWatcherMap.get('/')
+    watcher.on('event', (event) => {
+      if (event.code === 'END') {
+        observedSessions.push([...liveSessions])
+      }
+    })
+    await restart()
+    expect(observedSessions).toEqual([[1], [2]])
+    if (closeDuringRestart) {
+      let release!: () => void
+      let entered!: () => void
+      const pending = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const reached = new Promise<void>((resolve) => {
+        entered = resolve
+      })
+      ctx.configService.load.mockImplementationOnce(async () => {
+        entered()
+        await pending
+      })
+      const restarting = restart()
+      await reached
+      const closing = watcher.close()
+      release()
+      await Promise.all([restarting, closing])
+    }
+    else {
+      await watcher.close()
+    }
+    expect([...liveSessions]).toEqual([])
   })
 
   it.each([
@@ -497,39 +905,6 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：Skyline 暂不支持微信开发者工具热重载）')
   })
 
-  it('keeps stateful snapshot builds in memory until the session writer commits them', async () => {
-    const watcher = { close: vi.fn(async () => {}) }
-    buildMock
-      .mockResolvedValueOnce({ output: [{ fileName: 'app.wxss', source: '.initial{}', type: 'asset' }] })
-      .mockResolvedValueOnce({ output: [{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }] })
-    runStatefulHmrDevMock.mockResolvedValue(watcher)
-    const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
-
-    await createBuildService(ctx).build({ skipNpm: true })
-
-    const initialOptions = buildMock.mock.calls[0]![0]
-    const snapshots = runStatefulHmrDevMock.mock.calls[0]![3]
-    expect(initialOptions).toEqual(expect.objectContaining({
-      build: expect.objectContaining({
-        watch: undefined,
-        write: false,
-      }),
-    }))
-
-    const output = await snapshots.rebuild(['/project/src/pages/index.css'])
-    const refreshOptions = buildMock.mock.calls[1]![0]
-    expect(refreshOptions).toEqual(expect.objectContaining({
-      build: expect.objectContaining({
-        emptyOutDir: false,
-        watch: undefined,
-        write: false,
-      }),
-    }))
-    expect(resetEmittedOutputCachesMock).toHaveBeenCalledTimes(2)
-    expect(output).toEqual([{ fileName: 'app.wxss', source: '.updated{}', type: 'asset' }])
-  })
-
   it('keeps explicit classic runtime when WeChat hot reload is enabled', async () => {
     const watcher = createManualWatcher()
     buildMock.mockResolvedValueOnce(watcher)
@@ -572,7 +947,7 @@ describe('runtime buildPlugin service', () => {
     expect(loggerInfoMock).toHaveBeenCalledWith('HMR 模式：classic（自动降级：stateful HMR 运行时兼容性检查失败）')
   })
 
-  it('runs dev app build with workers and caches touchAppWxss auto decision', async () => {
+  it('runs dev app build with workers without a global refresh for local style updates', async () => {
     process.env.VITEST = 'false'
     delete process.env.NODE_ENV
 
@@ -581,7 +956,6 @@ describe('runtime buildPlugin service', () => {
       hasWorkersDir: true,
       workersDir: 'workers',
     })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     buildMock
       .mockResolvedValueOnce(watcher)
     const ctx = createMockContext()
@@ -596,7 +970,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('START')
     ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['style-sidecar:1']
     watcher.emit('END')
-    await waitForMockCalls(touchMock, 1)
+    await flushAsyncTasks()
 
     expect(process.env.NODE_ENV).toBe('development')
     expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
@@ -610,18 +984,19 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.npmBuilt).toBe(true)
     expect(devWorkersMock).toHaveBeenCalledWith(ctx.configService, ctx.watcherService, 'workers')
     expect(watchWorkersMock).toHaveBeenCalledTimes(1)
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
-    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+    expect(touchMock).not.toHaveBeenCalled()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
 
-  it('touches app wxss for Tailwind content hmr updates', async () => {
+  it.each([false, true])('keeps one Tailwind output refresh owner when managed=%s', async (managed) => {
     const watcher = createManualWatcher()
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
+    if (managed) {
+      registerManagedTailwindcssEntries(ctx, ['app.css'])
+    }
     const service = createBuildService(ctx)
 
     const buildPromise = service.build({ skipNpm: true })
@@ -633,10 +1008,34 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['tailwind-content:1']
     watcher.emit('START')
     watcher.emit('END')
-    await waitForMockCalls(touchMock, 1)
+    await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).toHaveBeenCalledTimes(1)
-    expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
+    expect(touchMock).toHaveBeenCalledTimes(managed ? 0 : 1)
+    ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-style-only:1']
+    watcher.emit('START')
+    watcher.emit('END')
+    await flushAsyncTasks()
+    expect(touchMock).toHaveBeenCalledTimes(managed ? 0 : 1)
+  })
+
+  it('reports a requested refresh failure instead of silently discarding it', async () => {
+    const watcher = createManualWatcher()
+    buildMock.mockResolvedValueOnce(watcher)
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { touchAppWxss: true }
+    const service = createBuildService(ctx)
+    const buildPromise = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await buildPromise
+
+    const failure = Object.assign(new Error('app style metadata denied'), { code: 'EACCES' })
+    touchMock.mockRejectedValueOnce(failure)
+    watcher.emit('START')
+    watcher.emit('END')
+    await waitForMockCalls(loggerErrorMock, 1)
+    expect(loggerErrorMock).toHaveBeenCalledWith(failure)
   })
 
   it('does not touch app wxss for shared css importer hmr updates in auto mode', async () => {
@@ -644,7 +1043,6 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -659,7 +1057,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 
@@ -668,7 +1065,6 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockResolvedValueOnce({ output: [] })
-    resolveTouchAppWxssEnabledMock.mockReturnValue(true)
     const ctx = createMockContext()
     const service = createBuildService(ctx)
 
@@ -683,7 +1079,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
   })
 
@@ -711,7 +1106,6 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await waitForMockCalls(touchMock, 1)
 
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).toHaveBeenCalledWith('/project/dist/app.wxss')
   })
 
@@ -784,17 +1178,194 @@ describe('runtime buildPlugin service', () => {
     nowSpy.mockRestore()
   })
 
+  it('preserves shared dependency propagation for affected ordinary HMR chunks', async () => {
+    const ctx = createMockContext()
+
+    expect(await emitSharedChunkSnapshot(ctx)).toEqual(HMR_INCREMENTAL_OUTPUTS)
+    expect(await emitSharedChunkSnapshot(ctx, { affectedSharedChunks: true })).toEqual(HMR_FULL_OUTPUTS)
+    expect(await emitSharedChunkSnapshot(ctx, { metadataOnly: true })).toEqual(['pages/logs/index.wxml'])
+  })
+
+  it('keeps incremental context B output unchanged while context A holds a full snapshot', async () => {
+    const a = await startClassicSnapshotContext()
+    const b = await startClassicSnapshotContext()
+    const aEntered = Promise.withResolvers<void>()
+    const releaseA = Promise.withResolvers<void>()
+    const aEmitted = Promise.withResolvers<string[]>()
+    const bEmitted = Promise.withResolvers<string[]>()
+    const isolatedIncremental = await emitSharedChunkSnapshot(b.ctx)
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      buildMock
+        .mockImplementationOnce(async () => {
+          aEntered.resolve()
+          await releaseA.promise
+          aEmitted.resolve(emitSharedChunkSnapshot(a.ctx))
+          await aEmitted.promise
+          return { output: [] }
+        })
+        .mockImplementationOnce(async () => {
+          bEmitted.resolve(emitSharedChunkSnapshot(b.ctx))
+          await bEmitted.promise
+          return { output: [] }
+        })
+
+      a.onChange({ event: 'create', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      await aEntered.promise
+      b.onChange({ event: 'update', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+
+      expect(await bEmitted.promise).toEqual(isolatedIncremental)
+      expect(isolatedIncremental).toEqual(HMR_INCREMENTAL_OUTPUTS)
+      releaseA.resolve()
+      expect(await aEmitted.promise).toEqual(HMR_FULL_OUTPUTS)
+      await a.watcher.close()
+      expect(await emitSharedChunkSnapshot(a.ctx)).toEqual(HMR_INCREMENTAL_OUTPUTS)
+    }
+    finally {
+      releaseA.resolve()
+      await Promise.all([a.watcher.close(), b.watcher.close()])
+      vi.useRealTimers()
+    }
+  })
+
+  it.each(['success', 'failure'] as const)('keeps context B full output after context A finishes with %s', async (outcome) => {
+    const a = await startClassicSnapshotContext()
+    const b = await startClassicSnapshotContext()
+    const aEntered = Promise.withResolvers<void>()
+    const bEntered = Promise.withResolvers<void>()
+    const releaseA = Promise.withResolvers<void>()
+    const releaseB = Promise.withResolvers<void>()
+    const bEmitted = Promise.withResolvers<string[]>()
+    let aEmitted: string[] | undefined
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      buildMock
+        .mockImplementationOnce(async () => {
+          aEntered.resolve()
+          await releaseA.promise
+          if (outcome === 'failure') {
+            throw new Error('context A snapshot failed')
+          }
+          aEmitted = await emitSharedChunkSnapshot(a.ctx)
+          return { output: [] }
+        })
+        .mockImplementationOnce(async () => {
+          bEntered.resolve()
+          await releaseB.promise
+          bEmitted.resolve(emitSharedChunkSnapshot(b.ctx))
+          await bEmitted.promise
+          return { output: [] }
+        })
+
+      a.onChange({ event: 'create', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      await aEntered.promise
+      b.onChange({ event: 'create', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      await bEntered.promise
+      releaseA.resolve()
+      await a.watcher.close()
+
+      expect(await emitSharedChunkSnapshot(a.ctx)).toEqual(HMR_INCREMENTAL_OUTPUTS)
+      if (outcome === 'success') {
+        expect(aEmitted).toEqual(HMR_FULL_OUTPUTS)
+      }
+      releaseB.resolve()
+      expect(await bEmitted.promise).toEqual(HMR_FULL_OUTPUTS)
+    }
+    finally {
+      releaseA.resolve()
+      releaseB.resolve()
+      await Promise.all([a.watcher.close(), b.watcher.close()])
+      vi.useRealTimers()
+    }
+  })
+
+  it('releases failed full intent before recovery and the next ordinary snapshot', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    const failed = Promise.withResolvers<void>()
+    const recovered = Promise.withResolvers<string[]>()
+    const incremental = Promise.withResolvers<string[]>()
+    loggerErrorMock.mockImplementationOnce(() => failed.resolve())
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      buildMock
+        .mockRejectedValueOnce(new Error('full snapshot failed'))
+        .mockImplementationOnce(async () => {
+          recovered.resolve(emitSharedChunkSnapshot(ctx))
+          await recovered.promise
+          return { output: [] }
+        })
+        .mockImplementationOnce(async () => {
+          incremental.resolve(emitSharedChunkSnapshot(ctx))
+          await incremental.promise
+          return { output: [] }
+        })
+
+      onChange({ event: 'create', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      await failed.promise
+      expect(await emitSharedChunkSnapshot(ctx)).toEqual(HMR_INCREMENTAL_OUTPUTS)
+
+      // 失败的 topology 事件会并入下一轮，恢复成功之后才回到普通增量。
+      onChange({ event: 'update', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      expect(await recovered.promise).toEqual(HMR_FULL_OUTPUTS)
+      onChange({ event: 'update', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      expect(await incremental.promise).toEqual(HMR_INCREMENTAL_OUTPUTS)
+    }
+    finally {
+      await watcher.close()
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not let an old snapshot finally clear a replacement runtime state', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    const entered = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      buildMock.mockImplementationOnce(async () => {
+        entered.resolve()
+        await release.promise
+        return { output: [] }
+      })
+      onChange({ event: 'create', file: HMR_PAGE_ID })
+      await vi.runOnlyPendingTimersAsync()
+      await entered.promise
+
+      resetRuntimeStateForFreshBuild(ctx.runtimeState)
+      expect(await emitSharedChunkSnapshot(ctx)).toEqual(HMR_INCREMENTAL_OUTPUTS)
+      ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh = true
+      release.resolve()
+      await watcher.close()
+
+      expect(await emitSharedChunkSnapshot(ctx)).toEqual(HMR_FULL_OUTPUTS)
+    }
+    finally {
+      release.resolve()
+      await watcher.close()
+      ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh = false
+      vi.useRealTimers()
+    }
+  })
+
   it('runs a stable narrow metadata snapshot build for direct sidecar updates', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
-    const forceFullValues: Array<string | undefined> = []
+    const emitted = Promise.withResolvers<string[]>()
     const dirtySummaries: Array<string[] | undefined> = []
     const ctx = createMockContext()
     chokidarWatchMock.mockReturnValue(sidecarWatcher)
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockImplementation(async () => {
-        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        emitted.resolve(emitSharedChunkSnapshot(ctx, { metadataOnly: true }))
+        await emitted.promise
         dirtySummaries.push(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
         return { output: [] }
       })
@@ -820,6 +1391,7 @@ describe('runtime buildPlugin service', () => {
 
     moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     await waitForMockCalls(buildMock, 2)
+    expect(await emitted.promise).toEqual(['pages/logs/index.wxml'])
 
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
@@ -831,8 +1403,43 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/logs/index.ts')).toBe(false)
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.has('/project/src/pages/about/index.ts')).toBe(true)
     expect(touchMock).not.toHaveBeenCalled()
-    expect(loggerSuccessMock).toHaveBeenCalled()
-    expect(forceFullValues).toEqual([undefined])
+  })
+
+  it.each([false, true])('publishes independent updates without invalidating unrelated main entries (shared=%s)', async (shared) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    const file = '/project/src/independent/index.wxml'
+    const entry = '/project/src/pages/main/index.ts'
+    const unrelated = '/project/src/pages/other/index.ts'
+    ctx.scanService.markIndependentDirty = vi.fn()
+    ctx.runtimeState.build.independent.watchFiles.set('independent', new Set([file]))
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set(shared ? [entry] : []))
+    for (const id of [entry, unrelated]) {
+      ctx.runtimeState.build.hmr.resolvedEntryMap.set(id, { id })
+      ctx.runtimeState.build.hmr.loadedEntrySet.add(id)
+    }
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValueOnce(watcher).mockResolvedValue({ output: [] })
+    const service = createBuildService(ctx)
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+
+    sidecarWatcher.emit('change', file)
+    await waitForMockCalls(buildMock, 2)
+    expect(independentInvalidateMock).toHaveBeenCalledWith('independent')
+    expect(ctx.scanService.markIndependentDirty).toHaveBeenCalledWith('independent')
+    expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set(shared ? [entry] : []))
+    expect(ctx.runtimeState.build.hmr.loadedEntrySet.has(unrelated)).toBe(true)
+    expect(ctx.runtimeState.build.hmr.forceFullSharedChunkRefresh).not.toBe(true)
+    expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      build: expect.objectContaining({ emptyOutDir: false }),
+    }))
+    await watcher.close()
   })
 
   it('classifies imported style changes through their graph-owned entry', async () => {
@@ -869,7 +1476,7 @@ describe('runtime buildPlugin service', () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const dirtySummaries: Array<string[] | undefined> = []
-    const forceFullValues: Array<string | undefined> = []
+    const emitted = Promise.withResolvers<string[]>()
     chokidarWatchMock.mockReturnValue(sidecarWatcher)
     const ctx = createMockContext()
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
@@ -889,7 +1496,8 @@ describe('runtime buildPlugin service', () => {
       .mockResolvedValueOnce(watcher)
       .mockImplementation(async () => {
         dirtySummaries.push(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)
-        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        emitted.resolve(emitSharedChunkSnapshot(ctx, { metadataOnly: true }))
+        await emitted.promise
         return { output: [] }
       })
     const service = createBuildService(ctx)
@@ -903,6 +1511,7 @@ describe('runtime buildPlugin service', () => {
     moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/logs/index.wxml' })
     moduleGraphProviderChange.handler?.({ event: 'update', file: '/project/src/pages/about/index.wxss' })
     await waitForMockCalls(buildMock, 2)
+    expect(await emitted.promise).toEqual(['pages/logs/index.wxml'])
 
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([
@@ -910,22 +1519,21 @@ describe('runtime buildPlugin service', () => {
       '/project/src/pages/about/index.ts',
     ]))
     expect(dirtySummaries).toEqual([['sidecar-direct:1', 'style-sidecar:1']])
-    expect(forceFullValues).toEqual([undefined])
-    expect(loggerSuccessMock).toHaveBeenCalledTimes(1)
   })
 
   it('keeps full snapshot fallback for sidecar topology changes', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
-    const forceFullValues: Array<string | undefined> = []
+    const emitted = Promise.withResolvers<string[]>()
+    const ctx = createMockContext()
     chokidarWatchMock.mockReturnValue(sidecarWatcher)
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockImplementation(async () => {
-        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        emitted.resolve(emitSharedChunkSnapshot(ctx))
+        await emitted.promise
         return { output: [] }
       })
-    const ctx = createMockContext()
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.vue', {
       id: '/project/src/pages/logs/index.vue',
     })
@@ -948,6 +1556,7 @@ describe('runtime buildPlugin service', () => {
 
     sidecarWatcher.emit('add', '/project/src/pages/logs/index.wxml')
     await waitForMockCalls(buildMock, 2)
+    expect(await emitted.promise).toEqual(HMR_FULL_OUTPUTS)
 
     expect(ctx.runtimeState.build.hmr.dirtyEntrySet).toEqual(new Set([
       '/project/src/pages/logs/index.vue',
@@ -957,24 +1566,25 @@ describe('runtime buildPlugin service', () => {
       '/project/src/pages/logs/index.vue',
     ]))
     expect(ctx.runtimeState.build.hmr.loadedEntrySet.size).toBe(0)
-    expect(forceFullValues).toEqual(['1'])
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
       build: expect.objectContaining({ emptyOutDir: true }),
     }))
   })
 
-  it('routes known atomic creates through the module graph provider only once', async () => {
+  it.each([undefined, false])('routes atomic creates once and respects emptyOutDir=%s', async (emptyOutDir) => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
-    const forceFullValues: Array<string | undefined> = []
+    const emitted = Promise.withResolvers<string[]>()
+    const ctx = createMockContext()
     chokidarWatchMock.mockReturnValue(sidecarWatcher)
     buildMock
       .mockResolvedValueOnce(watcher)
       .mockImplementation(async () => {
-        forceFullValues.push(process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS)
+        emitted.resolve(emitSharedChunkSnapshot(ctx))
+        await emitted.promise
         return { output: [] }
       })
-    const ctx = createMockContext()
+    ctx.configService.inlineConfig.build = { emptyOutDir }
     const file = '/project/src/pages/logs/index.wxml'
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/pages/logs/index.ts', {
       id: '/project/src/pages/logs/index.ts',
@@ -990,13 +1600,13 @@ describe('runtime buildPlugin service', () => {
     moduleGraphProviderChange.handler?.({ event: 'create', file })
     sidecarWatcher.emit('add', file)
     await waitForMockCalls(buildMock, 2)
+    expect(await emitted.promise).toEqual(HMR_FULL_OUTPUTS)
 
     expect(buildMock).toHaveBeenCalledTimes(2)
     expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledOnce()
     expect(ctx.moduleGraphService.recordChangedFile).toHaveBeenCalledWith(file, 'create')
-    expect(forceFullValues).toEqual(['1'])
     expect(buildMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      build: expect.objectContaining({ emptyOutDir: true }),
+      build: expect.objectContaining({ emptyOutDir: emptyOutDir !== false }),
     }))
   })
 
@@ -1552,6 +2162,12 @@ describe('runtime buildPlugin service', () => {
 
     ctx.runtimeState.build.hmr.profile = {
       eventId: 'hmr-event-1',
+      finalizePrepareMs: 0.1,
+      finalizeTemplateMs: 0.2,
+      finalizePublishMs: 0.3,
+      publicationValidateMs: 0.4,
+      publicationIndependentMs: 0.5,
+      publicationPruneMs: 0.6,
       file: '/project/src/pages/logs/index.vue',
       event: 'update',
       buildStartMs: 4,
@@ -1606,6 +2222,12 @@ describe('runtime buildPlugin service', () => {
     expect(payload.endsWith('\n')).toBe(true)
     expect(payload).toContain('"event":"update"')
     expect(payload).toContain('"eventId":"hmr-event-1"')
+    expect(payload).toContain('"finalizePrepareMs":0.1')
+    expect(payload).toContain('"finalizeTemplateMs":0.2')
+    expect(payload).toContain('"finalizePublishMs":0.3')
+    expect(payload).toContain('"publicationValidateMs":0.4')
+    expect(payload).toContain('"publicationIndependentMs":0.5')
+    expect(payload).toContain('"publicationPruneMs":0.6')
     expect(payload).toContain('"relativeFile":"src/pages/logs/index.vue"')
     expect(payload).toContain('"sourceRootFile":"pages/logs/index.vue"')
     expect(payload).toContain('"buildStartMs":4')
@@ -1940,8 +2562,33 @@ describe('runtime buildPlugin service', () => {
     await service.build({ skipNpm: true })
 
     expect(ctx.npmService.build).not.toHaveBeenCalled()
-    expect(resolveTouchAppWxssEnabledMock).not.toHaveBeenCalled()
     expect(touchMock).not.toHaveBeenCalled()
+  })
+
+  it.each([true, false])('preserves startup output and caches with emptyOutDir=false in dev=%s', async (isDev) => {
+    buildMock.mockResolvedValue(isDev ? createWatcher(['START', 'END']) : { output: [] })
+    const ctx = createMockContext()
+    ctx.configService.isDev = isDev
+    ctx.configService.inlineConfig = { build: { emptyOutDir: false } }
+    ctx.configService.weappViteConfig.cleanOutputsInDev = true
+    await createBuildService(ctx).build({ skipNpm: true })
+    expect(cleanOutputsMock).not.toHaveBeenCalled()
+    expect(resetEmittedOutputCachesMock).not.toHaveBeenCalled()
+  })
+
+  it('passes explicit output preservation into isolated plugin builds', async () => {
+    buildMock.mockResolvedValue({ output: [] })
+    const ctx = createMockContext()
+    Object.assign(ctx.configService, {
+      isDev: false,
+      inlineConfig: { build: { emptyOutDir: false } },
+      absolutePluginRoot: '/project/plugin',
+      absolutePluginOutputRoot: '/project/dist-plugin',
+    })
+    await createBuildService(ctx).build({ skipNpm: true })
+    expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
+      inlineConfig: { build: { outDir: '/project/dist-plugin', emptyOutDir: false } },
+    }))
   })
 
   it('skips output cleanup in dev when cleanOutputsInDev is false', async () => {

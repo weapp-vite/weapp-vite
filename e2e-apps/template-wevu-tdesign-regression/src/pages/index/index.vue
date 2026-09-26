@@ -238,7 +238,7 @@ async function onQuickAction(action: QuickActionItem) {
 <template>
   <view class="min-h-screen bg-[#f6f7fb] px-[28rpx] pb-[88rpx] pt-[32rpx] text-[#1c1c3c]">
     <view class="rounded-[28rpx] bg-linear-to-br from-[#2f2b5f] via-[#3b3573] to-[#5a48c5] p-[24rpx] text-white shadow-[0_24rpx_48rpx_rgba(47,43,95,0.35)]">
-      <text class="text-[38rpx] font-semibold">
+      <text id="dashboard-title" class="text-[38rpx] font-semibold">
         Weapp Studio
       </text>
       <text class="mt-[8rpx] block text-[22rpx] text-white/80">
@@ -280,7 +280,7 @@ async function onQuickAction(action: QuickActionItem) {
             :data-kpi-board-scope-card="card.key"
           >
             <view class="flex items-center justify-between">
-              <text class="text-[22rpx] text-[#51517c]" :data-kpi-board-scope-label="card.key">
+              <text :id="`kpi-label-${card.key}`" class="text-[22rpx] text-[#51517c]" :data-kpi-board-scope-label="card.key">
                 {{ card.item.label }}
               </text>
               <t-tag v-if="card.isLeading" size="small" theme="warning" variant="light">
@@ -289,7 +289,7 @@ async function onQuickAction(action: QuickActionItem) {
             </view>
             <view class="mt-[12rpx] flex items-end justify-between">
               <view class="flex items-baseline gap-[6rpx]">
-                <text class="text-[32rpx] font-semibold text-[#1f1a3f]">
+                <text :id="`kpi-value-${card.key}`" class="text-[32rpx] font-semibold text-[#1f1a3f]">
                   {{ card.item.value }}
                 </text>
                 <text v-if="card.item.unit" class="text-[20rpx] text-[#7a7aa0]">

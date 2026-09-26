@@ -13,9 +13,8 @@ describe('wevuCompatibilityCatalog', () => {
       diagnostic: 'off',
     })
     expect(findWevuCompatibilityEntry('pinia', 'createPinia', 'runtime')).toMatchObject({
-      compatibility: 'unsupported',
-      diagnostic: 'error',
-      replacement: expect.stringContaining('createStore'),
+      compatibility: 'supported',
+      diagnostic: 'off',
     })
     expect(findWevuCompatibilityEntry('vue-router', '<router-link>', 'template')).toMatchObject({
       compatibility: 'unsupported',

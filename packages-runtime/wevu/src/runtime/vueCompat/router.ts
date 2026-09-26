@@ -34,7 +34,7 @@ function resolveBasePathCandidate(candidate: unknown): string | undefined {
 }
 
 function resolveRouterBasePath(
-  nativeInstance: Record<string, any>,
+  nativeInstance: Record<string, unknown>,
   accessor: RuntimeRouterAccessor,
 ): string | undefined {
   const candidates = accessor === 'pageRouter'
@@ -113,37 +113,46 @@ function useRuntimeRouterByAccessor(
   fallbackAccessor: RuntimeRouterAccessor,
   helperName: 'useNativeRouter' | 'useNativePageRouter',
 ): RuntimeRouter {
-  const ctx = getCurrentSetupContext<any>()
-  if (!ctx?.instance) {
-    throw new Error(`${helperName}() 必须在 setup() 的同步阶段调用`)
-  }
+  const ctx = getCurrentSetupContext<Record<string, unknown>>()
+  const nativeInstance = ctx?.instance && typeof ctx.instance === 'object'
+    ? ctx.instance as Record<string, unknown>
+    : undefined
 
-  const nativeInstance = ctx.instance as Record<string, any>
-  const basePath = resolveRouterBasePath(nativeInstance, primaryAccessor)
-  const primaryRouter = nativeInstance[primaryAccessor]
-  if (isRuntimeRouter(primaryRouter)) {
-    return createScopedRuntimeRouter(primaryRouter, basePath)
-  }
+  if (nativeInstance) {
+    const basePath = resolveRouterBasePath(nativeInstance, primaryAccessor)
+    const primaryRouter = nativeInstance[primaryAccessor]
+    if (isRuntimeRouter(primaryRouter)) {
+      return createScopedRuntimeRouter(primaryRouter, basePath)
+    }
 
-  const fallbackRouter = nativeInstance[fallbackAccessor]
-  if (isRuntimeRouter(fallbackRouter)) {
-    return createScopedRuntimeRouter(fallbackRouter, basePath)
+    const fallbackRouter = nativeInstance[fallbackAccessor]
+    if (isRuntimeRouter(fallbackRouter)) {
+      return createScopedRuntimeRouter(fallbackRouter, basePath)
+    }
+
+    const globalFallbackRouter = createGlobalRouterFallback()
+    if (globalFallbackRouter) {
+      return createScopedRuntimeRouter(globalFallbackRouter, basePath)
+    }
+
+    throw new Error('当前运行环境不支持 Router，请升级宿主基础库或检查平台路由能力')
   }
 
   const globalFallbackRouter = createGlobalRouterFallback()
   if (globalFallbackRouter) {
-    return createScopedRuntimeRouter(globalFallbackRouter, basePath)
+    return createScopedRuntimeRouter(globalFallbackRouter)
   }
 
-  throw new Error('当前运行环境不支持 Router，请升级宿主基础库或检查平台路由能力')
+  throw new Error(`${helperName}() 必须在 setup() 的同步阶段调用`)
 }
 
 /**
- * 在 setup 中获取与当前组件路径语义一致的原生 Router 对象。
+ * 获取与当前组件路径语义一致的原生 Router 对象。
  *
  * - 优先使用实例上的 `this.router`（组件路径语义）。
  * - 不可用时回退到 `this.pageRouter`。
- * - 低版本基础库再回退到宿主全局路由方法。
+ * - App setup 或低版本基础库再回退到宿主全局路由方法。
+ * - 无 setup 上下文且宿主全局路由可用时，仍可创建应用级路由器。
  *
  * 如需更贴近 Vue Router 的高阶能力（导航守卫、失败类型、统一解析），
  * 推荐改用 `wevu/router` 子入口的 `useRouter()`。
@@ -153,11 +162,11 @@ export function useNativeRouter(): RuntimeRouter {
 }
 
 /**
- * 在 setup 中获取与当前页面路径语义一致的原生 Router 对象。
+ * 获取与当前页面路径语义一致的原生 Router 对象。
  *
  * - 优先使用实例上的 `this.pageRouter`（页面路径语义）。
  * - 不可用时回退到 `this.router`。
- * - 低版本基础库再回退到宿主全局路由方法。
+ * - App setup 或低版本基础库再回退到宿主全局路由方法。
  *
  * 如需更贴近 Vue Router 的高阶能力（导航守卫、失败类型、统一解析），
  * 推荐改用 `wevu/router` 子入口的 `useRouter()`。

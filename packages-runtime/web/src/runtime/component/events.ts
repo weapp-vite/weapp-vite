@@ -1,5 +1,7 @@
 import type { ComponentPublicInstance } from './types'
+import { invokeMiniProgramEventHandler } from '../inputHandlerResult'
 import {
+  decodeEventAttributeName,
   EVENT_ATTRIBUTE_PREFIXES,
   EVENT_FLAG_ATTRIBUTE_PREFIXES,
 } from './constants'
@@ -40,9 +42,10 @@ export function bindRuntimeEvents(
       if (!handler) {
         continue
       }
-      const eventName = attribute.slice(matchedPrefix.length)
+      const encodedEventName = attribute.slice(matchedPrefix.length)
+      const eventName = decodeEventAttributeName(encodedEventName)
       const flagAttributeValue = EVENT_FLAG_ATTRIBUTE_PREFIXES
-        .map(prefix => element.getAttribute(`${prefix}${eventName}`))
+        .map(prefix => element.getAttribute(`${prefix}${encodedEventName}`))
         .find(value => value !== null) ?? null
       const flags = parseEventFlags(flagAttributeValue)
       element.addEventListener(eventName, (nativeEvent) => {
@@ -62,7 +65,7 @@ export function bindRuntimeEvents(
           },
           originalEvent: nativeEvent,
         }
-        handler.call(instance, syntheticEvent)
+        invokeMiniProgramEventHandler(handler, instance, syntheticEvent, nativeEvent)
       }, flags.capture)
     }
   }

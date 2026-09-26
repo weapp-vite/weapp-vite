@@ -1,33 +1,9 @@
 <script lang="ts">
-import {
-  callHookList,
-  getCurrentInstance,
-  onActivated,
-  onAddToFavorites,
-  onBeforeMount,
-  onBeforeUnmount,
-  onBeforeUpdate,
-  onDeactivated,
-  onHide,
-  onMounted,
-  onPageScroll,
-  onReady,
-  onRouteDone,
-  onSaveExitState,
-  onServerPrefetch,
-  onShareAppMessage,
-  onShareTimeline,
-  onShow,
-  onTabItemTap,
-  onUnload,
-  onUnmounted,
-  onUpdated,
-  ref,
-} from 'wevu'
+import { callHookList, defineComponent, getCurrentInstance, onActivated, onAddToFavorites, onBeforeMount, onBeforeUnmount, onBeforeUpdate, onDeactivated, onHide, onMounted, onPageScroll, onReady, onRouteDone, onSaveExitState, onServerPrefetch, onShareAppMessage, onShareTimeline, onShow, onTabItemTap, onUnload, onUnmounted, onUpdated, ref } from 'wevu'
 
 import { clearLifecycleLogs, lifecycleLogs, pushLifecycleLog } from '../../stores/lifecycleLogs'
 
-export default {
+export default defineComponent({
   setup() {
     const instance = getCurrentInstance()
     const shareTitle = ref('wevu 生命周期示例')
@@ -79,9 +55,11 @@ export default {
       savedAt.value = at
       addLog('onSaveExitState', `保存退出状态：${at}`)
       return {
-        savedAt: at,
-        shareTitle: shareTitle.value,
-        sharePath: sharePath.value,
+        data: {
+          savedAt: at,
+          shareTitle: shareTitle.value,
+          sharePath: sharePath.value,
+        },
       }
     })
 
@@ -225,7 +203,7 @@ export default {
       query: this.favoritesQuery,
     }
   },
-}
+})
 </script>
 
 <template>

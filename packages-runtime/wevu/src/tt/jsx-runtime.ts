@@ -1,7 +1,8 @@
+import type { TtIntrinsicElements } from '@weapp-core/types/tt'
 import type { JSX as WevuJSX, WevuJsxGlobalComponents } from 'wevu/jsx-runtime'
-import type { TtIntrinsicElements } from '../ttIntrinsicElements'
 
-export type { TtIntrinsicElementBaseAttributes, TtIntrinsicElements } from '../ttIntrinsicElements'
+export type { TtIntrinsicElementBaseAttributes, TtIntrinsicElements } from '@weapp-core/types/tt'
+
 export type {
   WevuJsxChild,
   WevuJsxElement,

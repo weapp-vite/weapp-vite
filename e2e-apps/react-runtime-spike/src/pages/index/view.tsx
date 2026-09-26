@@ -27,7 +27,7 @@ function CounterPanel() {
         <Text id="greeting">{`hello ${name}`}</Text>
       </View>
       <View className="panel">
-        {items.map(item => <Text key={item} className="item">{item}</Text>)}
+        {items.map(item => <Text key={item} id={`item-${item}`} className="item">{item}</Text>)}
         <Button id="append" onTap={() => setItems(previous => [...previous, `item-${previous.length}`])}>append</Button>
       </View>
     </View>

@@ -1,6 +1,6 @@
-<view>{{title}}</view>
-<view>{{route}}</view>
-<view>{{scenarioId}}</view>
+<view id="chunk-title">{{title}}</view>
+<view id="chunk-route">{{route}}</view>
+<view id="chunk-scenario">{{scenarioId}}</view>
 <view wx:for="{{tokens}}" wx:key="*this">
-  <text>{{item}}</text>
+  <text id="chunk-token-{{index}}" class="chunk-token">{{item}}</text>
 </view>

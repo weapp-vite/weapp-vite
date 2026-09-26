@@ -15,7 +15,8 @@ type WevuJsxDatasetAttributes = {
 export type WevuJsxChild = WevuJsxElement | WevuJsxElement[]
 export type WevuJsxElement = WevuJsxVNode | boolean | null | number | string | undefined
 export type WevuJsxEventHandler<TReturn = unknown> = {
-  bivarianceHack: (...args: unknown[]) => TReturn
+  // eslint-disable-next-line ts/method-signature-style -- 方法签名用于保留事件回调参数双变，函数属性会退化为逆变。
+  bivarianceHack(...args: unknown[]): TReturn
 }['bivarianceHack']
 export type WevuJsxHostAttributes = {
   id?: number | string

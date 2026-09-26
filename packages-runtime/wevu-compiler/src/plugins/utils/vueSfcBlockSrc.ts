@@ -1,5 +1,6 @@
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 import path from 'pathe'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../utils/resolvedId'
 import { readFile as readFileCached } from './cache'
 
@@ -36,6 +37,50 @@ const TEMPLATE_LANG_EXT = new Map([
   ['.pug', 'pug'],
   ['.jade', 'pug'],
 ])
+const CSS_VARS_CLOSE_TAG_SENTINEL_PREFIX = '__WEVU_SFC_CSS_VARS_CLOSE_'
+
+function createCssVarsCloseTagSentinel(styles: SFCDescriptor['styles']) {
+  let index = 0
+  while (styles.some(style => style.content.includes(`${CSS_VARS_CLOSE_TAG_SENTINEL_PREFIX}${index}_`))) {
+    index++
+  }
+  return `${CSS_VARS_CLOSE_TAG_SENTINEL_PREFIX}${index}_`
+}
+
+function resolveDescriptorCssVars(styles: SFCDescriptor['styles'], filename: string) {
+  const sentinel = createCssVarsCloseTagSentinel(styles)
+  const closeTagRestorations: Array<[token: string, source: string]> = []
+  let closeTagIndex = 0
+  const styleSource = styles.map((style) => {
+    const content = style.content.replace(/<\/style/gi, (source) => {
+      const token = `${sentinel}${closeTagIndex++}__`
+      closeTagRestorations.push([token, source])
+      return token
+    })
+    return `<style>${content}</style>`
+  }).join('\n')
+  const parsed = parseSfc(`<template></template>\n${styleSource}`, {
+    filename,
+    sourceMap: false,
+  })
+  if (parsed.errors.length) {
+    const error = parsed.errors[0]
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`解析 ${filename} 失败：无法重建外部样式 CSS 变量元数据：${message}`)
+  }
+
+  const cssVars: string[] = []
+  for (const expression of parsed.descriptor.cssVars) {
+    let restored = expression
+    for (const [token, source] of closeTagRestorations) {
+      restored = restored.replaceAll(token, source)
+    }
+    if (!cssVars.includes(restored)) {
+      cssVars.push(restored)
+    }
+  }
+  return cssVars
+}
 
 function inferLangFromSrc(src: string, kind: SfcBlockKind) {
   const ext = path.extname(src).toLowerCase()
@@ -117,13 +162,22 @@ export async function resolveSfcBlockSrc(
   descriptor: SFCDescriptor,
   filename: string,
   options?: ResolveSfcBlockSrcOptions,
-): Promise<{ descriptor: SFCDescriptor, deps: string[], templateResolvedId?: string }> {
+): Promise<{
+  descriptor: SFCDescriptor
+  deps: string[]
+  scriptResolvedId?: string
+  scriptSetupResolvedId?: string
+  templateResolvedId?: string
+}> {
   if (!options) {
     return { descriptor, deps: [] }
   }
 
   const deps = new Set<string>()
   let templateResolvedId: string | undefined
+  let scriptResolvedId: string | undefined
+  let scriptSetupResolvedId: string | undefined
+  let hasResolvedStyleSrc = false
   const nextDescriptor: SFCDescriptor = {
     ...descriptor,
     styles: descriptor.styles.slice(),
@@ -145,7 +199,16 @@ export async function resolveSfcBlockSrc(
     if (kind === 'template') {
       templateResolvedId = resolvedId
     }
+    else if (kind === 'script') {
+      scriptResolvedId = resolvedId
+    }
+    else if (kind === 'script setup') {
+      scriptSetupResolvedId = resolvedId
+    }
     const content = await readBlockContent(resolvedId, filename, options)
+    if (kind === 'style') {
+      hasResolvedStyleSrc = true
+    }
     deps.add(resolvedId)
     const inferredLang = block.lang ?? inferLangFromSrc(resolvedId, kind)
 
@@ -164,6 +227,16 @@ export async function resolveSfcBlockSrc(
       nextDescriptor.styles.map(style => resolveBlock(style, 'style') as Promise<typeof style>),
     )
   }
+  if (hasResolvedStyleSrc) {
+    // 外部样式内容在初次解析后才可用；复用 Vue 公开解析器重建唯一的 descriptor.cssVars 元数据。
+    nextDescriptor.cssVars = resolveDescriptorCssVars(nextDescriptor.styles, filename)
+  }
 
-  return { descriptor: nextDescriptor, deps: [...deps], templateResolvedId }
+  return {
+    descriptor: nextDescriptor,
+    deps: [...deps],
+    scriptResolvedId,
+    scriptSetupResolvedId,
+    templateResolvedId,
+  }
 }

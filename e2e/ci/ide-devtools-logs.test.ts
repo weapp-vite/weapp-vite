@@ -160,11 +160,11 @@ describe('ide devtools logs', () => {
     expect(issues[0]?.line).toContain('simulator not found s2')
   })
 
-  it('reports a simulator launch error even when the appservice subsequently launches successfully', () => {
+  it.each(['', ' stack'])('reports a simulator launch error even when the appservice subsequently launches successfully (suffix=%j)', (suffix) => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
     writeLog(sandboxRoot, [
-      `[${timestamp}][ERROR] [appservice] simulator launch catch error Error: [summer-compiler] Couldn't found weapp_vite_internal/slot-wrapper/index.json`,
+      `[${timestamp}][ERROR] [appservice] simulator launch catch error${suffix} Error: [summer-compiler] Couldn't found weapp_vite_internal/slot-wrapper/index.json`,
       `[${timestamp}][INFO] [appservice] simulator launch success, set src dist/app-service.js`,
     ].join('\n'))
 
@@ -177,11 +177,11 @@ describe('ide devtools logs', () => {
     expect(issues[0]?.line).toContain('slot-wrapper/index.json')
   })
 
-  it('ignores a recovered generic launch failure from the same simulator', () => {
+  it.each(['', ' stack'])('ignores a recovered generic launch failure from the same simulator (suffix=%j)', (suffix) => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
     writeLog(sandboxRoot, [
-      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error Error: simulator launch failed`,
+      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error${suffix} Error: simulator launch failed`,
       `[${timestamp}][INFO][rt:0,win:s0] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s0/mainframe`,
     ].join('\n'))
 
@@ -191,11 +191,11 @@ describe('ide devtools logs', () => {
     })).toEqual([])
   })
 
-  it('reports a generic launch failure when only another simulator succeeds', () => {
+  it.each(['', ' stack'])('reports a generic launch failure when only another simulator succeeds (suffix=%j)', (suffix) => {
     const startedAt = Date.now() - 1_000
     const timestamp = formatDevtoolsLogTimestamp(new Date())
     writeLog(sandboxRoot, [
-      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error Error: simulator launch failed`,
+      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error${suffix} Error: simulator launch failed`,
       `[${timestamp}][INFO][rt:0,win:s1] [appservice] simulator launch success, set src http://127.0.0.1/appservice/s1/mainframe`,
     ].join('\n'))
 
@@ -206,6 +206,20 @@ describe('ide devtools logs', () => {
 
     expect(issues).toHaveLength(1)
     expect(issues[0]?.line).toContain('simulator launch failed')
+  })
+
+  it.each(['', ' stack'])('reports an unrecovered generic launch failure (suffix=%j)', (suffix) => {
+    const startedAt = Date.now() - 1_000
+    const timestamp = formatDevtoolsLogTimestamp(new Date())
+    writeLog(sandboxRoot, [
+      `[${timestamp}][INFO][rt:0,win:s0] [appservice] simulator launch success`,
+      `[${timestamp}][ERROR][rt:0,win:s0] [appservice] simulator launch catch error${suffix} Error: simulator launch failed`,
+    ].join('\n'))
+
+    expect(scanRecentDevtoolsSimulatorBootIssues({
+      rootDir: sandboxRoot,
+      sinceMs: startedAt,
+    })).toHaveLength(1)
   })
 
   it('reports a missing runtime id even when the appservice subsequently launches successfully', () => {

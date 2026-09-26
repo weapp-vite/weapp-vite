@@ -7,13 +7,14 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { execa } from 'execa'
 import { firefox, webkit } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.resolve(ROOT, 'apps/weapp-vite-web-demo')
 const CLI_PATH = path.resolve(ROOT, 'packages/weapp-vite/dist/cli.mjs')
 const HOST = '127.0.0.1'
 const PORT = Number(process.env.WEAPP_VITE_WEB_BROWSER_SMOKE_PORT ?? 5190)
-const URL = `http://${HOST}:${PORT}`
+let webUrl: string
 const STARTUP_TIMEOUT = 60_000
 const TRANSIENT_NAVIGATION_ERROR_RE = /Execution context was destroyed|Cannot find context with specified id|Inspected target navigated or closed/
 
@@ -33,22 +34,27 @@ if (selectedBrowserTypes.length === 0) {
   throw new Error(`Unknown Web smoke browser: ${requestedBrowser}`)
 }
 
-async function waitForServer(server: Subprocess) {
+async function waitForServer(server: Subprocess, logs: { value: string }) {
   const startedAt = Date.now()
   while (Date.now() - startedAt < STARTUP_TIMEOUT) {
     if (server.nodeChildProcess.exitCode !== null) {
       throw new Error(`Web browser smoke server exited with ${server.nodeChildProcess.exitCode}`)
     }
+    const resolvedUrl = resolveWebDevServerUrl(logs.value)
+    if (!resolvedUrl) {
+      await sleep(200)
+      continue
+    }
     try {
-      if ((await fetch(URL)).ok) {
-        return
+      if ((await fetch(resolvedUrl)).ok) {
+        return resolvedUrl
       }
     }
     catch {
     }
     await sleep(200)
   }
-  throw new Error(`Timed out waiting for ${URL}`)
+  throw new Error(`Timed out waiting for the Web server URL.\n${logs.value}`)
 }
 
 async function expectRuntime(page: Page, route: string) {
@@ -83,15 +89,19 @@ describe('web runtime compatibility browser smoke', { concurrent: false }, () =>
   beforeAll(async () => {
     server = execa(process.execPath, [CLI_PATH, APP_ROOT, '--platform', 'web', '--host', HOST], {
       cwd: ROOT,
+      extendEnv: false,
       env: {
-        ...process.env,
+        ...createWebDevServerEnv(process.env),
         WEAPP_WEB_HOST: HOST,
         WEAPP_WEB_PORT: String(PORT),
         WEAPP_WEB_OPEN: 'false',
         BROWSER: 'none',
       },
     })
-    await waitForServer(server)
+    const logs = { value: '' }
+    server.stdout?.on('data', chunk => logs.value += String(chunk))
+    server.stderr?.on('data', chunk => logs.value += String(chunk))
+    webUrl = await waitForServer(server, logs)
     for (const [, browserType] of selectedBrowserTypes) {
       browsers.push(await browserType.launch({ headless: true }))
     }
@@ -109,7 +119,7 @@ describe('web runtime compatibility browser smoke', { concurrent: false }, () =>
     const index = selectedBrowserTypes.findIndex(([browserName]) => browserName === name)
     const page = await browsers[index]!.newPage()
     try {
-      await page.goto(`${URL}/pages/index/index`, { waitUntil: 'domcontentloaded' })
+      await page.goto(`${webUrl}pages/index/index`, { waitUntil: 'domcontentloaded' })
       await expectRuntime(page, 'pages/index/index')
       await navigateTo(page, 'pages/form-parity/index')
       await expectRuntime(page, 'pages/form-parity/index')

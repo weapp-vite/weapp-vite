@@ -115,19 +115,28 @@ export function applySnapshotUpdate(
   path: string,
   value: any,
   op: 'set' | 'delete',
-  options?: { cloneValue?: boolean },
+  options?: { cloneValue?: boolean, clonedParents?: WeakSet<object> },
 ) {
   const cloneValue = options?.cloneValue ?? true
+  const clonedParents = options?.clonedParents
   const segments = path.split('.').filter(Boolean)
   if (!segments.length) {
     return
   }
+  clonedParents?.add(snapshot)
   let current: any = snapshot
   for (let i = 0; i < segments.length - 1; i++) {
     const key = segments[i]
-    if (!hasOwn(current, key) || current[key] == null || typeof current[key] !== 'object') {
-      // 中间节点同样会被同步到最新快照并可能参与视图层更新，必须保持普通对象原型。
+    const child = current[key]
+    if (child == null || typeof child !== 'object') {
+      // 中间节点同样会被同步到已派发快照并可能参与视图层更新，必须保持普通对象原型。
       current[key] = {}
+      clonedParents?.add(current[key])
+    }
+    else if (clonedParents && !clonedParents.has(child)) {
+      const clonedChild = Array.isArray(child) ? child.slice() : { ...child }
+      current[key] = clonedChild
+      clonedParents.add(clonedChild)
     }
     current = current[key]
   }

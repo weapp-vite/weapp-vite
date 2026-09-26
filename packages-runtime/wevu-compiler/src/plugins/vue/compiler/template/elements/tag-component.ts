@@ -10,9 +10,10 @@ import {
   WEVU_SLOT_SCOPE_ATTR,
 } from '@weapp-core/constants'
 import { recordBindingExpression } from '../bindingManifest'
+import { resolveConditionalBranch } from '../conditions'
 import { warn } from '../diagnostics'
-import { normalizeWxmlExpressionWithContext } from '../expression'
-import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from '../expression/runtimeBinding'
+import { omitUnsupportedDynamicDirectiveNames } from '../directives'
+import { registerRuntimeBindingExpression } from '../expression/runtimeBinding'
 import { resolveTemplateTagName } from '../htmlTagMapping'
 import { renderMustache } from '../mustache'
 import { collectElementAttributes, isBuiltinTag } from './attrs'
@@ -187,6 +188,7 @@ function shouldAugmentPlainSlot(
 function resolveTemplateSlotCondition(node: ElementNode, context: TransformContext): {
   conditionKind?: 'if' | 'else-if' | 'else'
   condition?: string
+  bindingCondition?: string
 } {
   const directive = node.props.find(
     (prop): prop is DirectiveNode =>
@@ -197,26 +199,7 @@ function resolveTemplateSlotCondition(node: ElementNode, context: TransformConte
   if (!directive) {
     return {}
   }
-  if (directive.name === 'else') {
-    return { conditionKind: 'else' }
-  }
-  const rawExp = directive.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? directive.exp.content : ''
-  const conditionKind = directive.name === 'else-if' ? 'else-if' : 'if'
-  const runtimeExp = (context.rewriteScopedSlot || shouldFallbackToRuntimeBinding(rawExp, context.templateSafeCallNames))
-    ? registerRuntimeBindingExpression(rawExp, context, { hint: `template v-${conditionKind}` })
-    : null
-  if (rawExp) {
-    recordBindingExpression(context, {
-      kind: 'if',
-      expression: rawExp,
-      outputPath: runtimeExp?.split('[')[0],
-      sourceLocation: directive.exp?.loc,
-    })
-  }
-  return {
-    conditionKind,
-    condition: runtimeExp ?? (rawExp ? normalizeWxmlExpressionWithContext(rawExp, context) : undefined),
-  }
+  return resolveConditionalBranch(directive, context)
 }
 
 function resolveInlineStaticSlotName(name: string): string | null {
@@ -431,7 +414,7 @@ function renderPlainSlotContentInSourceOrder(
             })
           : ''
       }
-      return shouldRenderImplicitDefault
+      return shouldRenderImplicitDefault || (!implicitDefaultDeclaration && item.child.type === NodeTypes.COMMENT)
         ? transformNode(item.child, context)
         : ''
     })
@@ -470,22 +453,25 @@ export function transformComponentWithSlots(
   const nonTemplateChildren: any[] = []
   const renderItems: SlotContentRenderItem[] = []
   for (const child of node.children) {
-    if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
-      const templateSlot = findSlotDirective(child as ElementNode)
+    const compatibleChild = child.type === NodeTypes.ELEMENT
+      ? omitUnsupportedDynamicDirectiveNames(child as ElementNode, context)
+      : child
+    if (compatibleChild.type === NodeTypes.ELEMENT && compatibleChild.tag === 'template') {
+      const templateSlot = findSlotDirective(compatibleChild as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
-        const templateSlotCondition = resolveTemplateSlotCondition(child as ElementNode, context)
+        const templateSlotCondition = resolveTemplateSlotCondition(compatibleChild as ElementNode, context)
         const declaration = buildSlotDeclaration(
           slotName,
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
-          (child as ElementNode).children,
+          (compatibleChild as ElementNode).children,
           context,
           {
             ...templateSlotCondition,
             location: templateSlot.loc,
             wrapper: mergeLocalSlotFallbackWrapperConfig(
               resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
-              resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
+              resolveLocalSlotFallbackWrapperConfig(compatibleChild as ElementNode, context),
             ),
           },
         )
@@ -494,13 +480,14 @@ export function transformComponentWithSlots(
         continue
       }
     }
-    nonTemplateChildren.push(child)
-    if (isRenderableSlotChild(child)) {
-      renderItems.push({ type: 'default-child', child })
+    nonTemplateChildren.push(compatibleChild)
+    if (isRenderableSlotChild(compatibleChild) || (context.preserveComments && compatibleChild.type === NodeTypes.COMMENT)) {
+      renderItems.push({ type: 'default-child', child: compatibleChild })
     }
   }
 
   const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+  const defaultSlotContent = context.preserveComments ? nonTemplateChildren : defaultSlotChildren
   let implicitDefaultDeclaration: ScopedSlotDeclaration | undefined
 
   if (slotDirective) {
@@ -524,12 +511,12 @@ export function transformComponentWithSlots(
       warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
-      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
+      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotContent, context, { implicitDefault: true })
       slotDeclarations.push(implicitDefaultDeclaration)
     }
   }
   else if (!slotDeclarations.length && defaultSlotChildren.length && !context.scopedSlotsRequireProps && !hasLegacySlotAttribute(defaultSlotChildren)) {
-    implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context, { implicitDefault: true })
+    implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotContent, context, { implicitDefault: true })
     slotDeclarations.push(implicitDefaultDeclaration)
   }
 
@@ -576,6 +563,7 @@ export function transformComponentWithSlots(
     const slotKey = resolveSlotKey(context, decl.name)
     const { componentName } = createScopedSlotComponent(context, slotKey, decl.props, decl.children, transformNode, {
       hostComponentName: resolveTemplateTagName(node.tag, context),
+      bindingCondition: decl.bindingCondition,
     })
     slotNames.push({ name: stringifySlotName(decl.name, context), condition: decl.condition })
     slotGenericAttrs.push(`generic:scoped-slots-${slotKey}="${componentName}"`)
@@ -651,22 +639,25 @@ export function transformComponentWithSlotsFallback(
   const renderItems: SlotContentRenderItem[] = []
 
   for (const child of node.children) {
-    if (child.type === NodeTypes.ELEMENT && child.tag === 'template') {
-      const templateSlot = findSlotDirective(child as ElementNode)
+    const compatibleChild = child.type === NodeTypes.ELEMENT
+      ? omitUnsupportedDynamicDirectiveNames(child as ElementNode, context)
+      : child
+    if (compatibleChild.type === NodeTypes.ELEMENT && compatibleChild.tag === 'template') {
+      const templateSlot = findSlotDirective(compatibleChild as ElementNode)
       if (templateSlot) {
         const slotName = resolveSlotNameFromDirective(templateSlot)
-        const templateSlotCondition = resolveTemplateSlotCondition(child as ElementNode, context)
+        const templateSlotCondition = resolveTemplateSlotCondition(compatibleChild as ElementNode, context)
         const declaration = buildSlotDeclaration(
           slotName,
           templateSlot.exp?.type === NodeTypes.SIMPLE_EXPRESSION ? templateSlot.exp.content : undefined,
-          (child as ElementNode).children,
+          (compatibleChild as ElementNode).children,
           context,
           {
             ...templateSlotCondition,
             location: templateSlot.loc,
             wrapper: mergeLocalSlotFallbackWrapperConfig(
               resolveLocalSlotFallbackWrapperConfig(node, context, slotName.type === 'static' ? slotName.value : undefined),
-              resolveLocalSlotFallbackWrapperConfig(child as ElementNode, context),
+              resolveLocalSlotFallbackWrapperConfig(compatibleChild as ElementNode, context),
             ),
           },
         )
@@ -675,13 +666,14 @@ export function transformComponentWithSlotsFallback(
         continue
       }
     }
-    nonTemplateChildren.push(child)
-    if (isRenderableSlotChild(child)) {
-      renderItems.push({ type: 'default-child', child })
+    nonTemplateChildren.push(compatibleChild)
+    if (isRenderableSlotChild(compatibleChild) || (context.preserveComments && compatibleChild.type === NodeTypes.COMMENT)) {
+      renderItems.push({ type: 'default-child', child: compatibleChild })
     }
   }
 
   const defaultSlotChildren = nonTemplateChildren.filter(isRenderableSlotChild)
+  const defaultSlotContent = context.preserveComments ? nonTemplateChildren : defaultSlotChildren
   let implicitDefaultDeclaration: ScopedSlotDeclaration | undefined
 
   if (slotDirective) {
@@ -705,7 +697,7 @@ export function transformComponentWithSlotsFallback(
       warn(context, '存在显式的 v-slot:default，默认插槽内容将被忽略。', node.loc)
     }
     else {
-      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotChildren, context)
+      implicitDefaultDeclaration = buildSlotDeclaration({ type: 'default' }, undefined, defaultSlotContent, context)
       slotDeclarations.push(implicitDefaultDeclaration)
     }
   }

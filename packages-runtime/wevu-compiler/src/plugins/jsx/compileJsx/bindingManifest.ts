@@ -32,7 +32,7 @@ export function recordJsxBinding(
   kind: WevuBindingKind,
   outputPath?: string,
 ) {
-  const expression = normalizeInterpolationExpression(node)
+  const expression = normalizeInterpolationExpression(node, context)
   const sourceFile = resolveBindingSourceFile(context, node.loc?.filename)
   const sourceLocation = node.loc && node.start != null && node.end != null
     ? {

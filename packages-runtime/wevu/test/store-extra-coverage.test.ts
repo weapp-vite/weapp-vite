@@ -1,177 +1,135 @@
-import { describe, expect, it, vi } from 'vitest'
-import { reactive, ref } from '@/reactivity'
-import { createStore, defineStore, storeToRefs } from '@/store'
-import { wrapAction } from '@/store/actions'
-import { createBaseApi } from '@/store/base'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope, onScopeDispose, ref, watch } from '@/reactivity'
+import { nextTick } from '@/scheduler'
+import { createPinia, createStore, defineStore, disposePinia, getActivePinia, setActivePinia } from '@/store'
 
-describe('store base and actions', () => {
-  it('supports base api patches and reset', () => {
-    const notify = vi.fn()
-    const state = reactive({ count: 0 }) as any
-    const { api } = createBaseApi('id', state, notify, () => {
-      state.count = 1
-    })
-
-    api.$state = { count: 2 }
-    expect(state.count).toBe(2)
-
-    api.$patch({ count: 3 })
-    expect(state.count).toBe(3)
-
-    api.$patch((s: any) => {
-      s.count = 4
-    })
-    expect(state.count).toBe(4)
-
-    api.$reset()
-    expect(state.count).toBe(1)
-
-    const { api: looseApi } = createBaseApi('id2', undefined, notify)
-    looseApi.$patch({ a: 1 })
-    looseApi.$patch((s: any) => {
-      s.a = 2
-    })
-  })
-
-  it('wraps actions with subscribers and errors', async () => {
-    const store = { count: 0 }
-    const subs = new Set<any>()
-
-    const action = wrapAction(store, 'boom', () => {
-      throw new Error('boom')
-    }, subs)
-
-    const errSpy = vi.fn()
-    subs.add(({ onError }: any) => {
-      onError(errSpy)
-    })
-
-    expect(() => action()).toThrow('boom')
-    expect(errSpy).toHaveBeenCalledTimes(1)
-
-    const asyncAction = wrapAction(store, 'async', () => Promise.resolve('ok'), subs)
-    await expect(asyncAction()).resolves.toBe('ok')
-  })
+let pinia: ReturnType<typeof createStore>
+beforeEach(() => {
+  pinia = setActivePinia(createStore())
+})
+afterEach(() => {
+  disposePinia(pinia)
+  setActivePinia(undefined)
 })
 
-describe('defineStore and storeToRefs', () => {
-  it('createStore keeps manager instance stable and ignores non-function plugins', () => {
-    const manager = createStore()
-
-    expect((createStore as any)._instance).toBe(manager)
-    expect(manager.install({})).toBeUndefined()
-    expect(manager.use(null as any)).toBe(manager)
-    expect(manager._plugins).toEqual([])
-  })
-
-  it('reuses setup store instance and handles subscriber errors', () => {
-    createStore()
-    const useCounter = defineStore('counter', () => ({
-      count: 0,
-      inc() {
-        this.count += 1
-      },
-    }))
-
-    const store = useCounter()
-    const again = useCounter()
-    expect(again).toBe(store)
-
-    const unsubscribe = store.$subscribe(() => {
-      throw new Error('ignore')
-    })
-    store.$patch({ count: 2 })
-    unsubscribe()
-  })
-
-  it('prevents re-entrant subscribe loops when callback mutates state', () => {
-    createStore()
-    const useCounter = defineStore('counter-reentrant', () => ({
-      count: ref(0),
-      inc() {
-        this.count.value += 1
-      },
-    }))
-
-    const store = useCounter()
-    const mutationTypes: string[] = []
-
-    store.$subscribe((mutation) => {
-      mutationTypes.push(mutation.type)
-      if (mutation.type === 'direct' && mutationTypes.length < 2) {
-        store.inc()
+describe('store ownership and failure recovery', () => {
+  it('disposes failed plugin subscriptions before retrying initialization', async () => {
+    const events: number[] = []
+    let shouldFail = true
+    let failedStore: any
+    pinia.use(({ store }) => {
+      store.$subscribe((_mutation: unknown, state: { n: number }) => events.push(state.n), { flush: 'sync' })
+      store.n = 1
+      if (shouldFail) {
+        failedStore = store
+        throw new Error('plugin failed')
       }
     })
-
-    store.inc()
-
-    expect(store.count.value).toBe(2)
-    expect(mutationTypes).toEqual(['direct'])
-  })
-
-  it('prevents re-entrant notify loops in options store subscriptions', () => {
-    createStore()
-    const useCounter = defineStore('counter-options-reentrant', {
-      state: () => ({
-        count: 0,
-      }),
-    })
-
+    pinia.install({ provide() {}, config: { globalProperties: {} } })
+    const useCounter = defineStore('plugin-retry', { state: () => ({ n: 0 }) })
+    expect(() => useCounter()).toThrow('plugin failed')
+    expect(pinia._s.has('plugin-retry')).toBe(false)
+    expect(pinia.state.value['plugin-retry']).toBeUndefined()
+    expect(events).toEqual([])
+    shouldFail = false
     const store = useCounter()
-    const mutationTypes: string[] = []
+    failedStore.n = 9
+    store.n = 2
+    await nextTick()
+    expect(events).toEqual([2])
+  })
 
-    store.$subscribe((mutation) => {
-      mutationTypes.push(mutation.type)
-      if (mutation.type === 'direct' && mutationTypes.length < 2) {
-        store.count += 1
+  it('requires an installed or explicit manager and keeps the legacy name as an alias', () => {
+    expect(createStore).toBe(createPinia)
+    setActivePinia(undefined)
+    const useCounter = defineStore('counter', () => ({ n: ref(0) }))
+    expect(() => useCounter()).toThrow('Pinia')
+    expect(useCounter(pinia).n).toBe(0)
+    expect(getActivePinia()).toBe(pinia)
+  })
+
+  it('releases a failed initialization and retries without partial state', () => {
+    const cleanup = vi.fn()
+    let shouldFail = true
+    const failure = new Error('setup failed')
+    const useCounter = defineStore('retry', () => {
+      onScopeDispose(cleanup)
+      onScopeDispose(() => {
+        throw new Error('cleanup failed')
+      })
+      if (shouldFail) {
+        throw failure
       }
+      return { n: ref(2) }
     })
-
-    store.count += 1
-
-    expect(store.count).toBe(2)
-    expect(mutationTypes).toEqual(['direct'])
+    expect(() => useCounter()).toThrow(failure)
+    expect(cleanup).toHaveBeenCalledTimes(1)
+    expect(pinia.state.value.retry).toBeUndefined()
+    shouldFail = false
+    expect(useCounter().n).toBe(2)
+    expect(() => useCounter().$dispose()).toThrow('cleanup failed')
   })
 
-  it('supports options stores and storeToRefs', () => {
-    createStore().use(() => {})
-
-    const useOptions = defineStore('options', {
-      state: () => ({ count: 1 }),
-      getters: {
-        double(state) {
-          return state.count * 2
-        },
-      },
-      actions: {
-        inc() {
-          this.count += 1
-        },
-      },
+  it('finishes all cleanup and never deletes a new instance on repeated disposal', () => {
+    const calls: string[] = []
+    const useCounter = defineStore('cleanup', () => {
+      onScopeDispose(() => {
+        calls.push('first')
+        throw new Error('cleanup')
+      })
+      onScopeDispose(() => calls.push('second'))
+      return { n: ref(1) }
     })
-
-    const store = useOptions()
-    store.inc()
-    expect(store.double).toBe(4)
-
-    const refs = storeToRefs(store as any)
-    refs.count.value = 10
-    expect(store.count).toBe(10)
-
-    const withRef = { value: ref(1), action() {} }
-    const refResult = storeToRefs(withRef as any)
-    expect(refResult.value).toBe(withRef.value)
-    expect(refResult.action).toBe(withRef.action)
+    const old = useCounter()
+    old.n = 3
+    expect(() => old.$dispose()).toThrow('cleanup')
+    expect(calls).toEqual(['first', 'second'])
+    const current = useCounter()
+    expect(current).not.toBe(old)
+    expect(current.n).toBe(3)
+    old.$dispose()
+    expect(useCounter()).toBe(current)
+    expect(() => current.$dispose()).toThrow('cleanup')
   })
 
-  it('allows plugin chaining on the returned manager', () => {
-    const first = vi.fn()
-    const second = vi.fn()
+  it('stops store watchers and detached subscriptions while retaining shared state', async () => {
+    const events: number[] = []
+    const source = ref(1)
+    const useCounter = defineStore('watchers', () => {
+      watch(source, value => events.push(value))
+      const n = ref(1)
+      return { n, doubled: computed(() => n.value * 2) }
+    })
+    const store = useCounter()
+    const notify = vi.fn()
+    store.$subscribe(notify, { detached: true })
+    source.value++
+    store.n++
+    await nextTick()
+    expect(events).toEqual([2])
+    expect(notify).toHaveBeenCalledTimes(1)
+    store.$dispose()
+    source.value++
+    store.n++
+    await nextTick()
+    expect(events).toEqual([2])
+    expect(notify).toHaveBeenCalledTimes(1)
+    expect(pinia.state.value.watchers.n).toBe(3)
+  })
 
-    const manager = createStore()
-      .use(first)
-      .use(second)
-
-    expect(manager._plugins).toEqual([first, second])
+  it('unsubscribing one page leaves the other page reactive', async () => {
+    const store = defineStore('pages', () => ({ n: ref(0) }))()
+    const first = effectScope()
+    const second = effectScope()
+    const firstCallback = vi.fn()
+    const secondCallback = vi.fn()
+    first.run(() => store.$subscribe(firstCallback))
+    second.run(() => store.$subscribe(secondCallback))
+    first.stop()
+    store.n++
+    await nextTick()
+    expect(firstCallback).not.toHaveBeenCalled()
+    expect(secondCallback).toHaveBeenCalledTimes(1)
+    second.stop()
   })
 })

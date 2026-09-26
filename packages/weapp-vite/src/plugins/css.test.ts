@@ -1,6 +1,7 @@
 import type { ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import type { SubPackageStyleEntry } from '../types'
+import { win32 } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname, relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -719,6 +720,25 @@ describe('css plugin shared style injection', () => {
     expect(cssAsset?.source).toContain('.root{color:red}')
   })
 
+  it('recovers a logical owner from Windows cross-drive Vite asset metadata after chunks are removed', async () => {
+    const sourceId = resolve(absoluteSrcRoot, 'pages/index/index.ts')
+    const logicalId = createLogicalEntryId(sourceId, 'page')
+    // Vite 按工作目录解析虚拟 facade，再对项目根执行 relative，跨盘时仍返回绝对路径。
+    const originalFileName = win32.relative('C:\\project', win32.resolve('D:\\runner', logicalId)).replaceAll('\\', '/').replaceAll('\0', '')
+    const bundle: Record<string, any> = {
+      'index.css': {
+        type: 'asset',
+        fileName: 'index.css',
+        originalFileNames: [originalFileName],
+        source: '.page{color:blue}',
+      },
+    }
+    const plugin = css(ctx)[0]
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+    expect(emitted).toEqual(expect.arrayContaining([expect.objectContaining({ fileName: 'pages/index/index.wxss', source: '.page{color:blue}' })]))
+  })
+
   it('merges multiple app style src assets into one app wxss output', async () => {
     const appEntry = resolve(absoluteSrcRoot, 'app.vue')
     const plugin = css(ctx)[0]
@@ -763,7 +783,7 @@ describe('css plugin shared style injection', () => {
     expect(appStyles[0]?.source).toContain('.text-red-500{color:red}')
   })
 
-  it('only keeps author styles before the generator placeholder', async () => {
+  it.each([false, true])('keeps author styles and independent native sidecars before the generator placeholder: %s', async (nativeSidecar) => {
     const appEntry = resolve(absoluteSrcRoot, 'app.vue')
     const plugin = css(ctx)[0]
     const bundle: Record<string, any> = {
@@ -803,11 +823,14 @@ describe('css plugin shared style injection', () => {
       },
     }
 
+    if (nativeSidecar) {
+      ;(ctx as any).runtimeState.css.sidecarImports.add(resolve(absoluteSrcRoot, 'app.wxss'))
+    }
     await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
     await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
 
     const pending = consumePendingOwnerStyleSources(ctx)?.get('app.wxss')
-    expect(pending).toEqual(['.author{color:#893a6d}'])
+    expect(pending).toEqual([nativeSidecar ? '.sidecar{color:red}\n.author{color:#893a6d}' : '.author{color:#893a6d}'])
     expect(pending?.join('\n')).not.toMatch(/@(plugin|source)\b/)
     expect(pending?.join('\n')).not.toContain('page { background: #f6f7fb; }')
   })
@@ -858,7 +881,7 @@ describe('css plugin shared style injection', () => {
     expect(bundle['app-shadow.css']).toBeUndefined()
     expect(appWxss).toContain('.flex{display:flex}')
     expect(appWxss).not.toContain('@plugin')
-    expect(appWxss).not.toContain('managed-tailwindcss-output')
+    expect(appWxss).toContain(createManagedTailwindcssOutputMarker(0))
   })
 
   it('reuses processed css asset source for multiple chunk owners', async () => {

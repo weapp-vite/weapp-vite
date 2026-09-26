@@ -1,10 +1,11 @@
 /* eslint-disable style/max-statements-per-line */
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { collectRegressions, performanceVerdict, renderTemplateRows } from './performanceReport/metrics.mjs'
+import { validateArtifact } from './runtime-size-schema.mjs'
 
 export const COMMENT_MARKER = '<!-- weapp-vite-performance-report -->'
 const MAX_ERRORS = 20
-const MAX_REGRESSIONS = 8
 
 export async function collectPerformanceReports({ performanceRoot, runtimeRoot, runtimeExpected }) {
   const result = {
@@ -22,7 +23,12 @@ export async function collectPerformanceReports({ performanceRoot, runtimeRoot, 
       continue
     }
     if (isTemplatesReport(value)) {
-      result.platforms.push(normalizeTemplates(value, platformFromPath(file)))
+      try {
+        result.platforms.push(normalizeTemplates(value, platformFromPath(file)))
+      }
+      catch (error) {
+        result.errors.push(`templates: ${error.message}`)
+      }
     }
   }
 
@@ -30,8 +36,10 @@ export async function collectPerformanceReports({ performanceRoot, runtimeRoot, 
     const value = await readJson(file, result.errors)
     if (!value || value.kind !== 'wevu-runtime-size-pr-report') { continue }
     try {
-      validateRuntimeArtifact(value, runtimeExpected)
-      result.runtimeSize = normalizeRuntimeSize(value)
+      validateArtifact(value, runtimeExpected)
+      if (!result.runtimeSize || value.version >= result.runtimeSize.current.version) {
+        result.runtimeSize = normalizeRuntimeSize(value)
+      }
     }
     catch (error) {
       result.errors.push(`runtime-size: ${error instanceof Error ? error.message : String(error)}`)
@@ -58,13 +66,14 @@ export function renderPerformanceComment({ data, metadata, runs = [], artifacts 
     COMMENT_MARKER,
     '## weapp-vite PR 性能基准报告',
     '',
-    `**状态：${statusLabel(status)}**`,
+    `**采集状态：${statusLabel(status)}**`,
+    `**性能结论：${performanceVerdict(data)}**`,
     '',
     '| 项目 | 值 |',
     '| --- | --- |',
     `| PR | #${metadata.prNumber} |`,
-    `| head | \`${shortSha(metadata.headSha)}\` |`,
-    `| base | \`${shortSha(metadata.baseSha)}\` |`,
+    `| head | \`${metadata.headSha ?? 'unknown'}\` |`,
+    `| base | \`${metadata.baseSha ?? 'unknown'}\` |`,
     `| 生成时间 | \`${metadata.generatedAt ?? new Date().toISOString()}\` |`,
   ]
 
@@ -73,23 +82,17 @@ export function renderPerformanceComment({ data, metadata, runs = [], artifacts 
   }
 
   if (data.platforms.length) {
-    lines.push('', '### 构建与 HMR', '', '| 平台 | Build raw | Warm build | CLI build | 峰值 RSS | HMR core | HMR wall | HMR heap | HMR RSS |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |')
-    for (const platform of data.platforms.sort((a, b) => a.platform.localeCompare(b.platform))) {
-      const build = platform.optimized.build?.all ?? {}
-      const baseBuild = platform.baseline.build?.all ?? {}
-      const hmr = platform.optimized.hmr?.all ?? {}
-      const baseHmr = platform.baseline.hmr?.all ?? {}
-      lines.push(`| ${escapeText(platform.platform)} | ${formatPair(baseBuild.totalAverageBaselineMs, build.totalAverageOptimizedMs, 'ms', true)} | ${formatPair(platform.baselineWarmMs, platform.optimizedWarmMs, 'ms', true)} | ${formatPair(baseBuild.cliAverageBaselineMs, build.cliAverageOptimizedMs, 'ms', true)} | ${formatPair(baseBuild.rssPeakAverageBaselineBytes, build.rssPeakAverageOptimizedBytes, 'bytes', false)} | ${formatPair(baseHmr.coreAverageBaselineMs, hmr.coreAverageOptimizedMs, 'ms', true)} | ${formatPair(baseHmr.wallAverageBaselineMs, hmr.wallAverageOptimizedMs, 'ms', true)} | ${formatPair(baseHmr.heapUsedAverageBaselineBytes, hmr.heapUsedAverageOptimizedBytes, 'bytes', false)} | ${formatPair(baseHmr.rssAverageBaselineBytes, hmr.rssAverageOptimizedBytes, 'bytes', false)} |`)
-    }
+    lines.push('', '### 构建与 HMR', '', '| 平台 | 首次构建 | 重复构建 | CLI build | 峰值 RSS | HMR core | HMR wall | HMR heap | HMR RSS |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |')
+    lines.push(...renderTemplateRows(data.platforms, formatPair))
   }
 
   if (data.autoImport) {
-    lines.push('', '### 自动导入', '', '| 类型 | 场景 | 基线 | 当前 | 变化 | 内存 |', '| --- | ---: | ---: | ---: | ---: | --- |')
+    lines.push('', '### 自动导入启用成本（同一提交）', '', '关闭自动导入并手动注册，与开启自动导入比较；不是 main 与 PR 的跨提交回退。', '', '| 类型 | 场景 | 手动注册 | 自动导入 | 启用成本 | 内存 |', '| --- | ---: | ---: | ---: | ---: | --- |')
     for (const result of data.autoImport.build?.results ?? []) {
-      lines.push(`| Build | ${result.usedCount} 组件 | ${formatMs(result.baseline?.mean)} | ${formatMs(result.current?.mean)} | ${formatDelta(result.delta?.extraMs, result.delta?.extraPercent)} | ${formatPair(memoryMean(result.baselineMemory), memoryMean(result.currentMemory), 'bytes', false)} |`)
+      lines.push(`| Build | ${result.usedCount} 组件 | ${formatMs(result.baseline?.mean)} | ${formatMs(result.current?.mean)} | ${formatDelta(result.delta?.extraMs, result.delta?.extraPercent)} | ${formatPair(memoryMean(result.baselineMemory), memoryMean(result.currentMemory), 'bytes')} |`)
     }
     for (const result of data.autoImport.hmr?.results ?? []) {
-      lines.push(`| HMR update | ${result.usedCount} 组件 | ${formatMs(result.update?.baseline?.mean)} | ${formatMs(result.update?.current?.mean)} | ${formatDelta(result.update?.delta?.extraMs, result.update?.delta?.extraPercent)} | heap ${formatPair(memoryMean(result.update?.baselineMemory, 'heapUsed'), memoryMean(result.update?.currentMemory, 'heapUsed'), 'bytes', false)} / RSS ${formatPair(memoryMean(result.update?.baselineMemory, 'rss'), memoryMean(result.update?.currentMemory, 'rss'), 'bytes', false)} |`)
+      lines.push(`| HMR update | ${result.usedCount} 组件 | ${formatMs(result.update?.baseline?.mean)} | ${formatMs(result.update?.current?.mean)} | ${formatDelta(result.update?.delta?.extraMs, result.update?.delta?.extraPercent)} | heap ${formatPair(memoryMean(result.update?.baselineMemory, 'heapUsed'), memoryMean(result.update?.currentMemory, 'heapUsed'), 'bytes')} / RSS ${formatPair(memoryMean(result.update?.baselineMemory, 'rss'), memoryMean(result.update?.currentMemory, 'rss'), 'bytes')} |`)
     }
   }
 
@@ -99,17 +102,17 @@ export function renderPerformanceComment({ data, metadata, runs = [], artifacts 
       const baseline = data.runtimeSize.baseline.targets.find(item => item.id === target.id)
       const currentTier = target.tiers.at(-1)
       const baselineTier = baseline?.tiers.at(-1)
-      lines.push(`| ${escapeText(target.label ?? target.id)} | ${formatPair(baselineTier?.production?.bytes, currentTier?.production?.bytes, 'bytes', false)} | ${currentTier?.production?.gzipBytes == null ? '不适用' : formatPair(baselineTier?.production?.gzipBytes, currentTier.production.gzipBytes, 'bytes', false)} |`)
+      lines.push(`| ${escapeText(target.label ?? target.id)} | ${formatPair(baselineTier?.production?.bytes, currentTier?.production?.bytes, 'bytes')} | ${currentTier?.production?.gzipBytes == null ? '不适用' : formatPair(baselineTier?.production?.gzipBytes, currentTier.production.gzipBytes, 'bytes')} |`)
     }
   }
 
   const regressions = collectRegressions(data)
   lines.push('', '### 关键回归', '')
   if (regressions.length === 0) {
-    lines.push('- 未发现可比较的正向回归项。')
+    lines.push('- 已采集指标中没有成本增加项；缺失或不足的样本不代表性能通过。')
   }
   else {
-    for (const item of regressions) { lines.push(`- **${escapeText(item.area)} / ${escapeText(item.metric)}**：${formatDelta(item.delta, item.percent)}。`) }
+    for (const item of regressions) { lines.push(`- **${escapeText(item.area)} / ${escapeText(item.metric)}**：${formatDelta(item.delta, item.percent, item.unit)}。`) }
   }
 
   if (data.errors.length) {
@@ -118,15 +121,15 @@ export function renderPerformanceComment({ data, metadata, runs = [], artifacts 
 
   if (artifacts.length || runs.length) {
     lines.push('', '<details>', '<summary>运行环境与完整报告</summary>', '')
-    if (metadata.os) { lines.push(`- runner：${escapeText(metadata.os)}`) }
-    if (metadata.node) { lines.push(`- Node：${escapeText(metadata.node)}`) }
+    if (metadata.os) { lines.push(`- 评论生成 runner（非采样环境）：${escapeText(metadata.os)}`) }
+    if (metadata.node) { lines.push(`- 评论生成 Node（非采样版本）：${escapeText(metadata.node)}`) }
     if (metadata.pnpm) { lines.push(`- pnpm：${escapeText(metadata.pnpm)}`) }
     for (const artifact of artifacts) { lines.push(`- [artifact: ${escapeText(artifact.name)}](${artifact.url})`) }
     for (const run of runs) { lines.push(`- [Actions 运行记录：${escapeText(run.name)}](${run.url})`) }
     lines.push('', '</details>')
   }
 
-  lines.push('', '_本报告为信息性基准，runner 噪声可能影响单次结果；完整原始数据见 artifacts。_')
+  lines.push('', '_变化统一为当前减基线，正数表示耗时、内存或体积增加。单轮样本只作异常线索；性能门禁与采集完成分别判定，完整原始数据见 artifacts。_')
   return lines.join('\n')
 }
 
@@ -139,33 +142,18 @@ function isTemplatesReport(value) {
 }
 
 function normalizeAutoImport(value) {
-  return { build: value.build, hmr: value.hmr }
+  return { ...value }
 }
 
 function normalizeTemplates(value, platform) {
-  const baselineWarm = value.baseline.build.warm?.totalAverageMs ?? value.baseline.build.raw?.totalAverageMs
-  const optimizedWarm = value.optimized.build.warm?.totalAverageMs ?? value.optimized.build.raw?.totalAverageMs
-  return { platform, baseline: value.baseline, optimized: value.optimized, baselineWarmMs: baselineWarm, optimizedWarmMs: optimizedWarm }
+  if (!isObject(value.baseline.build) || !isObject(value.optimized.build) || !isObject(value.baseline.hmr) || !isObject(value.optimized.hmr) || !Array.isArray(value.build.rows) || !Array.isArray(value.hmr.rows)) {
+    throw new Error('invalid build/HMR sample structure')
+  }
+  return { platform, ...value }
 }
 
 function normalizeRuntimeSize(value) {
   return { baseline: value.baseline, current: value.current }
-}
-
-function validateRuntimeArtifact(value, expected = {}) {
-  if (value.version !== 2 || !isObject(value.current) || !isObject(value.baseline)) { throw new Error('unsupported runtime-size artifact') }
-  if (expected.repository && value.repository !== expected.repository) { throw new Error('repository does not match') }
-  if (expected.prNumber != null && value.prNumber !== expected.prNumber) { throw new Error('PR number does not match') }
-  if (expected.headSha && value.headSha !== expected.headSha) { throw new Error('head SHA does not match') }
-  for (const report of [value.current, value.baseline]) {
-    if (report.version !== 2 || !Array.isArray(report.targets) || report.targets.length !== 2) { throw new Error('invalid runtime-size report') }
-    for (const target of report.targets) {
-      if (!Array.isArray(target.tiers) || target.tiers.length !== 5) { throw new Error('invalid runtime-size tiers') }
-      for (const tier of target.tiers) {
-        if (!Number.isSafeInteger(tier.dev?.bytes) || !Number.isSafeInteger(tier.production?.bytes)) { throw new TypeError('invalid runtime-size bytes') }
-      }
-    }
-  }
 }
 
 async function findJsonFiles(root) {
@@ -178,7 +166,7 @@ async function findJsonFiles(root) {
     for (const entry of entries) {
       const target = path.join(dir, entry.name)
       if (entry.isDirectory()) { await visit(target) }
-      else if (entry.isFile() && entry.name === 'report.json') { files.push(target) }
+      else if (entry.isFile() && ['report.json', 'report-full.json'].includes(entry.name)) { files.push(target) }
     }
   }
   await visit(root)
@@ -198,43 +186,18 @@ function platformFromPath(file) {
   return match?.[1] ?? 'unknown'
 }
 
-function collectRegressions(data) {
-  const values = []
-  for (const platform of data.platforms) {
-    const build = platform.optimized.build?.all ?? {}
-    const baseBuild = platform.baseline.build?.all ?? {}
-    const hmr = platform.optimized.hmr?.all ?? {}
-    const baseHmr = platform.baseline.hmr?.all ?? {}
-    addRegression(values, platform.platform, 'build raw', build.totalAverageOptimizedMs, baseBuild.totalAverageBaselineMs)
-    addRegression(values, platform.platform, 'warm build', platform.optimizedWarmMs, platform.baselineWarmMs)
-    addRegression(values, platform.platform, 'build RSS', build.rssPeakAverageOptimizedBytes, baseBuild.rssPeakAverageBaselineBytes, true)
-    addRegression(values, platform.platform, 'HMR core', hmr.coreAverageOptimizedMs, baseHmr.coreAverageBaselineMs)
-    addRegression(values, platform.platform, 'HMR wall', hmr.wallAverageOptimizedMs ?? hmr.wallAverageMs, baseHmr.wallAverageBaselineMs ?? baseHmr.wallAverageMs)
-    addRegression(values, platform.platform, 'HMR RSS', hmr.rssAverageOptimizedBytes, baseHmr.rssAverageBaselineBytes, true)
-  }
-  values.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-  return values.slice(0, MAX_REGRESSIONS)
-}
-
-function addRegression(values, area, metric, current, baseline, raw = false) {
-  if (!Number.isFinite(current) || !Number.isFinite(baseline)) { return }
+function formatPair(baseline, current, unit) {
+  if (!Number.isFinite(baseline) || !Number.isFinite(current)) { return '不可用' }
   const delta = current - baseline
-  if (delta <= 0) { return }
-  values.push({ area, metric, delta: raw ? delta : delta, percent: baseline === 0 ? undefined : delta / baseline * 100 })
-}
-
-function formatPair(baseline, current, unit, lowerIsBetter) {
-  if (!Number.isFinite(baseline) || !Number.isFinite(current)) { return '-' }
-  const delta = current - baseline
-  const percent = baseline === 0 ? undefined : (lowerIsBetter ? (baseline - current) / baseline : (baseline - current) / baseline) * 100
+  const percent = baseline === 0 ? undefined : (current - baseline) / baseline * 100
   const sign = delta > 0 ? '+' : ''
   return `${formatValue(current, unit)} (${sign}${formatValue(delta, unit)}, ${percent == null ? 'n/a' : `${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%`})`
 }
 
-function formatDelta(delta, percent) {
+function formatDelta(delta, percent, unit = 'ms') {
   if (!Number.isFinite(delta)) { return '-' }
   const sign = delta > 0 ? '+' : ''
-  return `${sign}${formatMs(delta)}${Number.isFinite(percent) ? ` (${sign}${percent.toFixed(1)}%)` : ''}`
+  return `${sign}${formatValue(delta, unit)}${Number.isFinite(percent) ? ` (${sign}${percent.toFixed(1)}%)` : ''}`
 }
 
 function formatValue(value, unit) {
@@ -259,7 +222,6 @@ function memoryMean(memory, field = 'mean') {
 }
 
 function formatDuration(value) { return Number.isFinite(value) ? `(${(value / 1000).toFixed(1)}s)` : '' }
-function shortSha(value) { return typeof value === 'string' ? value.slice(0, 12) : 'unknown' }
-function statusLabel(status) { return ({ passed: '通过', partial: '部分完成', pending: '等待基准', failed: '采集失败' })[status] ?? status }
+function statusLabel(status) { return ({ passed: '已完成', partial: '部分完成', pending: '等待基准', failed: '采集失败' })[status] ?? status }
 function escapeText(value) { return String(value).replaceAll('|', '\\|').replaceAll('`', '\\`').replaceAll('\n', ' ') }
 function isObject(value) { return !!value && typeof value === 'object' && !Array.isArray(value) }

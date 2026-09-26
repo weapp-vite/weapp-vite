@@ -2,6 +2,7 @@ import type { MiniProgramPageLike } from '../routerInternal/shared'
 import type { InitialNavigationMode, LocationQueryRaw, NavigationFailure } from './types'
 import { WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER } from '@weapp-core/constants'
 import { queueMicrotaskPolyfill } from '@wevu/web-apis'
+import { registerInitialNavigationLifecycle } from '../runtime/navigationLifecycle'
 import { getActiveRouter } from './instance'
 
 export const DEFAULT_INITIAL_NAVIGATION_TIMEOUT = 10_000
@@ -57,19 +58,6 @@ function snapshotQuery(query: LocationQueryRaw | undefined): LocationQueryRaw | 
     snapshot[key] = Array.isArray(value) ? [...value] : value
   }
   return snapshot
-}
-
-export function registerInitialNavigationRunner(
-  router: object,
-  runner: InitialNavigationRunner,
-  timeoutMs = DEFAULT_INITIAL_NAVIGATION_TIMEOUT,
-  mode: InitialNavigationMode = 'blocking',
-) {
-  initialNavigationRunners.set(router, {
-    runner,
-    mode,
-    timeoutMs: normalizeTimeout(timeoutMs),
-  })
 }
 
 export function getInitialNavigationRunner(): InitialNavigationRunner | undefined {
@@ -232,4 +220,18 @@ export function ensureInitialNavigation(
 
 export function cancelInitialNavigation(instance: MiniProgramPageLike) {
   initialNavigationControllers.get(instance as object)?.cancel()
+}
+
+export function registerInitialNavigationRunner(
+  router: object,
+  runner: InitialNavigationRunner,
+  timeoutMs = DEFAULT_INITIAL_NAVIGATION_TIMEOUT,
+  mode: InitialNavigationMode = 'blocking',
+) {
+  registerInitialNavigationLifecycle({ ensure: ensureInitialNavigation, cancel: cancelInitialNavigation })
+  initialNavigationRunners.set(router, {
+    runner,
+    mode,
+    timeoutMs: normalizeTimeout(timeoutMs),
+  })
 }

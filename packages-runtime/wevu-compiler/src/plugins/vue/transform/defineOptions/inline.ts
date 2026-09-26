@@ -1,3 +1,4 @@
+import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import vm from 'node:vm'
 import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
@@ -261,7 +262,16 @@ export async function inlineScriptSetupDefineOptionsArgs(
   content: string,
   filename: string,
   lang?: string,
-) {
+  sourceMap?: {
+    source: string
+    sourceFile: string
+    offset: number
+  },
+): Promise<{
+  code: string
+  dependencies: string[]
+  map?: EncodedSourceMapLike
+}> {
   const { statements } = collectDefineOptionsStatements(content, filename)
   if (!statements.length) {
     return {
@@ -304,7 +314,9 @@ export async function inlineScriptSetupDefineOptionsArgs(
     }
   }
 
-  const ms = new MagicString(content)
+  const ms = sourceMap
+    ? new MagicString(sourceMap.source, { offset: sourceMap.offset })
+    : new MagicString(content)
   for (let index = 0; index < statements.length; index += 1) {
     const statement = statements[index]
     const argNode = statement.argPath?.node
@@ -316,8 +328,21 @@ export async function inlineScriptSetupDefineOptionsArgs(
     ms.overwrite(argNode.start, argNode.end, literal)
   }
 
+  const code = sourceMap ? ms.slice(0, content.length) : ms.toString()
+  const result = { code, dependencies: dependencies.filter(Boolean) }
+  if (!sourceMap || code === content) {
+    return result
+  }
+  const sourceFile = sourceMap.sourceFile
+  let map: EncodedSourceMapLike | undefined
   return {
-    code: ms.toString(),
-    dependencies: dependencies.filter(Boolean),
+    ...result,
+    get map() {
+      return map ??= ms.generateMap({
+        hires: true,
+        includeContent: true,
+        source: sourceFile,
+      }) as EncodedSourceMapLike
+    },
   }
 }

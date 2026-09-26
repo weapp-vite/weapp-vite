@@ -24,6 +24,11 @@ export class StatefulHmrAuditClient {
     this.sessionId = createSessionId()
   }
 
+  /** 返回已确认的批次版本，供修改前绑定验收边界。 */
+  get acknowledgedVersion() {
+    return this.version
+  }
+
   async ensureRegistered(control: StatefulHmrAuditControl, timeoutMs: number) {
     this.syncControl(control)
     if (this.registered) {

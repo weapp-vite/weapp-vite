@@ -101,6 +101,7 @@ const _runNullGuardE2E = runNullGuardE2E
     </view>
 
     <UseModelFeature
+      id="model-feature"
       v-model:title="childTitle"
       v-model="modelValue"
     />

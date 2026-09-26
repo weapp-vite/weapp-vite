@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "Component instance API parity",
+  "usingComponents": {
+    "relation-parent": "../../components/component-instance-apis/parent/index",
+    "relation-child": "../../components/component-instance-apis/child/index"
+  }
+}

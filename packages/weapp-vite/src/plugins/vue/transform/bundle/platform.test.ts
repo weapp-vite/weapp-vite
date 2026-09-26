@@ -18,7 +18,6 @@ import {
   shouldEmitAlipayGenericPlaceholder,
   shouldEmitWeappScopedSlotGenericPlaceholder,
   trackPlatformTemplateAnalysis,
-  transformVueTemplateForPlatform,
 } from './platform'
 
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
@@ -252,27 +251,6 @@ describe('bundle platform helpers', () => {
       },
       alipayNpmMode: 'node_modules',
     })).toBe('{')
-  })
-
-  it('transforms vue template through shared platform wxml pipeline', () => {
-    expect(transformVueTemplateForPlatform('<view />', {
-      platform: 'alipay',
-      templateExtension: 'axml',
-      scriptModuleExtension: 'sjs',
-      scriptModuleTag: 'import-sjs',
-    })).toBe('normalized:<view />')
-
-    expect(scanWxmlMock).toHaveBeenCalledWith('<view />', {
-      platform: 'alipay',
-    })
-    expect(handleWxmlMock).toHaveBeenCalledWith(
-      { template: '<view />' },
-      {
-        templateExtension: 'axml',
-        scriptModuleExtension: 'sjs',
-        scriptModuleTag: 'import-sjs',
-      },
-    )
   })
 
   it('normalizes vue template only for platforms that require template transforms', () => {

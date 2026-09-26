@@ -415,6 +415,7 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '运行时与生命周期', link: '/wevu/runtime' },
       { text: 'defineComponent（组件）', link: '/wevu/component' },
       { text: 'Store（状态管理）', link: '/wevu/store' },
+      { text: 'Store 迁移指南', link: '/wevu/store-migration' },
       {
         text: 'API 参考',
         link: '/wevu/api/',
@@ -552,6 +553,7 @@ const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '响应式和生命周期', link: '/handbook/wevu/runtime' },
       { text: '组件通信', link: '/handbook/wevu/component' },
       { text: '状态管理', link: '/handbook/wevu/store' },
+      { text: 'Store 迁移指南', link: '/wevu/store-migration' },
       { text: '表单和双向绑定', link: '/handbook/wevu/bind-model' },
     ],
   },

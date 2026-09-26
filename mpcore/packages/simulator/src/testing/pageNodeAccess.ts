@@ -9,6 +9,7 @@ export interface HeadlessTestingPageNodeAccessOptions {
   page: HeadlessPageInstance
   project: HeadlessProjectDescriptor
   session?: HeadlessSession
+  includeHostRoots?: boolean
 }
 
 export function createPageRootNodeHandle(options: HeadlessTestingPageNodeAccessOptions) {
@@ -16,7 +17,7 @@ export function createPageRootNodeHandle(options: HeadlessTestingPageNodeAccessO
   const tree = session?.getCurrentPages().includes(page)
     ? session.renderCurrentPage()
     : renderPageTree(project, page)
-  const rootNode = tree.root.type === 'root'
+  const rootNode = tree.root.type === 'root' && !options.includeHostRoots
     ? (tree.root.children?.[0] ?? tree.root)
     : tree.root
 

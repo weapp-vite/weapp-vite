@@ -20,6 +20,7 @@ async function runCase() {
   state.value = createRunningState(state.value)
 
   try {
+    // eslint-disable-next-line mini-program/no-implicit-runtime-polyfill -- fixture 已启用 appPrelude.webRuntime，此处验证注入后的 fetch。
     const response = await fetch(`${baseUrl.value}/fetch`, {
       method: 'POST',
       headers: {
@@ -73,6 +74,11 @@ onLoad((query) => {
       <text id="fetch-http-status" class="line">httpStatus = {{ state.httpStatus }}</text>
       <text id="fetch-request-count" class="line">requestCount = {{ state.requestCount }}</text>
       <text id="fetch-request-path" class="line">requestPath = {{ state.requestPath }}</text>
+      <text id="fetch-response-client" class="line">client = {{ state.response.client }}</text>
+      <text id="fetch-response-transport" class="line">transport = {{ state.response.transport }}</text>
+      <text id="fetch-response-method" class="line">method = {{ state.response.method }}</text>
+      <text id="fetch-response-operationName" class="line">operationName = {{ state.response.operationName }}</text>
+      <text id="fetch-response-event" class="line">event = {{ state.response.event }}</text>
       <button class="action" @tap="runCase">
         重新执行 fetch 校验
       </button>

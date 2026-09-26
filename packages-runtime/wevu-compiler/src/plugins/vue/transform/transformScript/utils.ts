@@ -1,5 +1,7 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilities'
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
+import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -14,6 +16,10 @@ export interface TransformResult {
   code: string
   transformed: boolean
   map?: EncodedSourceMapLike | null
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
+  /** @internal */
+  componentStyleOptions?: ComponentStyleOptions
 }
 
 export interface TransformScriptOptions {
@@ -93,6 +99,8 @@ export interface TransformScriptOptions {
    * 当前页面的编译期布局计划。
    */
   pageLayout?: CompilerPageLayoutPlan
+  /** @internal */
+  runtimeCapabilities?: WevuRuntimeCapabilityMetadata
   /**
    * 模板中作为组件 prop 传递的函数候选路径。
    */
@@ -118,9 +126,16 @@ export interface TransformScriptOptions {
    * 当前 SFC 的 CSS Modules 映射。
    */
   cssModules?: Record<string, Record<string, string>>
+  /**
+   * 注入空 CSS 变量注册，保持开发期运行时模块图稳定。
+   *
+   * @internal
+   */
+  stabilizeCssVarsRuntime?: boolean
 }
 
 export interface TransformState {
+  componentStyleOptions?: ComponentStyleOptions
   transformed: boolean
   defineComponentAliases: Set<string>
   defineComponentDecls: Map<string, t.ObjectExpression>
@@ -128,8 +143,6 @@ export interface TransformState {
   usesSlots: boolean
   defaultExportPath: NodePath<t.ExportDefaultDeclaration> | null
 }
-
-export const PAGE_META_MACRO_NAME = 'definePageMeta'
 
 export function isPlainRecord(value: unknown): value is Record<string, any> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {

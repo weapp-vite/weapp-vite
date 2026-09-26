@@ -31,6 +31,16 @@ export function createWxmlScanner(
     }
     catch (error: any) {
       if (error && error.code === 'ENOENT') {
+        const baseName = removeExtensionDeep(filepath)
+        state.tokenMap.delete(filepath)
+        state.cache.delete(filepath)
+        state.componentsMap.delete(baseName)
+        state.autoImportComponentsMap.delete(baseName)
+        state.templatePathMap.delete(baseName)
+        invalidateAggregatedComponents(state, filepath, state.aggregatedComponentsMap)
+        invalidateAggregatedComponents(state, filepath, state.aggregatedAutoImportComponentsMap)
+        // 移除已经不存在的 outgoing 依赖，保留其他模板对该路径的引用以跟踪恢复。
+        await options.setTokenDeps(filepath, [])
         logger.warn(`引用模板 \`${configService.relativeCwd(filepath)}\` 不存在!`)
         return
       }

@@ -1,5 +1,110 @@
 # @weapp-vite/miniprogram-automator
 
+## 1.2.22
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, magic-string, rolldown, sass, sass-embedded, tdesign-miniprogram。命名 catalog 变更键：tdesign-miniprogram-fixed(tdesign-miniprogram)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.7
+
+## 1.2.21
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：tsx, weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：oxc-parser。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：devDependencies.tsx
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.6
+
+## 1.2.20
+
+### Patch Changes
+
+- 升级 weapp-tailwindcss 至 5.5.6，同步工作区默认依赖、固定版本回归环境及脚手架模板映射，使新建项目与仓库验证使用一致的 Tailwind 集成版本。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@babel/core, @babel/generator, @babel/parser, @babel/traverse, @babel/types, @types/node, eslint, lru-cache。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/ast-native：devDependencies.@napi-rs/cli
+  - weapp-vite：dependencies.@babel/preset-env
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.5
+
+## 1.2.19
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：@icebreakers/eslint-config, @icebreakers/stylelint-config, @vue/compiler-core, @vue/compiler-dom, vue。命名 catalog 变更键：无。
+
+- 自动补充依赖升级发布记录。
+  `pnpm up:pkg` 改为按次追加 changeset，不再覆盖或删除既有自动生成文件。本文件为当前发布周期内全部可发布包补上 patch，覆盖仓库级依赖与 catalog 刷新。
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.4
+
+## 1.2.18
+
+### Patch Changes
+
+- 统一可发布包的 npm SEO 元数据、公开发布配置与入口一致性检查，提升 npm 搜索与发布可靠性。
+
+- Updated dependencies:
+  - @weapp-vite/qr@1.1.3
+
+## 1.2.17
+
+### Patch Changes
+
+- 连接开发者工具时，WebSocket 建立与基础库版本检查共用一次超时预算；版本检查失败或预算耗尽时释放尚未交付的连接，避免遗留连接与后续重试重叠。
+
+- 修复新版微信基础库中控制台日志转发依赖 IDE Console 面板开启的问题。日志初始化主动启用 Runtime 日志域，并保留旧版基础库的 console 包装兼容路径；合并并发初始化，保留超时预算与失败后的重试能力。
+
+- 允许页面就绪探针显式关闭页面栈回退，配合单次尝试与协议超时，避免冷启动期间的页面元数据暂缺触发额外请求并超出调用方的就绪预算。
+
+- 修复新版微信基础库 XPath 多节点查询直接返回数组时的协议解析，兼容旧版 elements 包装格式，并继续对缺失或异常响应报错。单节点查询正确保留新版基础库的未匹配 null 结果。
+
+- 修复 DevTools 自动化查询选项跨执行上下文传递时的对象克隆错误，保留节点几何信息、dataset 和计算样式查询。
+
+- 修复新版微信开发者工具 `/auto` 返回不透明 token 时被误判为失败的问题：成功响应使用请求的自动化端口建立连接，保留旧版响应兼容，并避免错误信息泄露响应 token。
+
+- 为测试页面提供只读的 `pageId`，重新查询同一页面时保持稳定，同路由重新创建页面时生成独立身份，防止验收工具把旧页面的渲染结果归入新页面。
+
+- 增加可选结构化日志采集，使用 CDP 数据描述符读取 Error 的非枚举消息和堆栈，避免 SDK 序列化后丢失为普通空对象。保留启动失败和断开连接前的错误证据，并按原始顺序发布单一来源日志；默认日志格式保持兼容。
+
 ## 1.2.16
 
 ### Patch Changes

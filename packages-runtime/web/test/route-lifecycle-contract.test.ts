@@ -64,6 +64,10 @@ describe('route page lifecycle contract', () => {
   it('runs augmented page hooks, layout setters, visibility, and entry cleanup', () => {
     const calls: string[] = []
     const record = createRecord()
+    const visibleQueries: string[] = []
+    record.hooks.onShow.mockImplementation(function (this: { options?: Record<string, string> }) {
+      visibleQueries.push(this.options?.id ?? 'missing')
+    })
     const component = augmentPageComponentOptions({
       lifetimes: {
         attached() {
@@ -117,6 +121,7 @@ describe('route page lifecycle contract', () => {
     showPageInstance(instance, record as any)
     expect(record.hooks.onHide).toHaveBeenCalledTimes(1)
     expect(record.hooks.onShow).toHaveBeenCalledTimes(3)
+    expect(visibleQueries).toEqual(['7', '7', '7'])
 
     component.lifetimes!.detached!.call(instance)
     expect(entry.instance).toBeUndefined()

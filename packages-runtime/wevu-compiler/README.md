@@ -41,7 +41,7 @@ console.log(result.template)
 
 ### 编译诊断
 
-`compileTemplate` 始终返回 `diagnostics`，`compileSfc` / `compileJsxFile` 在存在模板或 JSX 诊断时返回 `diagnostics`。每条诊断包含稳定的 `code`、`severity`、`filename`、`source` 和可选 `loc`：
+`compileTemplate` 始终返回 `diagnostics`，供调用方检查错误和警告。`compileSfc`（`compileVueFile`）遇到 error 级模板诊断或 SFC 解析错误时，会抛出公开的 `CompilerDiagnosticError`，不会返回静默降级的产物；warning 仍随成功结果返回。`compileJsxFile` 在存在 JSX 诊断时返回 `diagnostics`。每条诊断以及 `CompilerDiagnosticError` 均包含稳定的 `code`、`severity`、`message`、`filename`、`source` 和可选 `loc`。
 
 这是一次 clean cutover：原有 `warnings: string[]` 字段已移除，调用方应改读 `diagnostics`，需要展示文本时使用 `diagnostic.message`。
 
@@ -60,9 +60,9 @@ for (const diagnostic of result.diagnostics) {
 }
 ```
 
-稳定 code：`WV1001`（模板转换警告）、`WV1002`（模板表达式警告）、`WV1003`（JSX 警告）、`WV2001`（模板解析错误）、`WV2002`（模板编译错误）。
+稳定 code：`WV1001`（模板转换警告）、`WV1002`（模板表达式警告）、`WV1003`（JSX 警告）、`WV2001`（模板解析错误，含非法 `v-for`）、`WV2002`（模板编译错误）、`WV2003`（SFC 解析错误）。SFC 解析错误通过 `cause` 保留原始 Vue 错误及其数值 code，不将其混入稳定的 `WV*` code。
 
-`loc.start` / `loc.end` 使用半开区间；`offset` 从 0 开始，`line` / `column` 从 1 开始。`compileSfc` 会将内联 `<template>` 位置映射到完整 SFC 源码；外部 `<template src>` 则使用解析后的外部文件名和其自身位置。模板与 JSX 自有诊断会按 `diagnostic.message` 原样、仅一次地适配到 `warn` 回调，结构化消费应使用结果中的 `diagnostics`。
+`loc.start` / `loc.end` 使用半开区间；`offset` 从 0 开始，`line` / `column` 从 1 开始。`compileSfc` 会将内联 `<template>` 位置映射到完整 SFC 源码；外部 `<template src>` 则使用解析后的外部文件名和其自身位置。内置 `<json>` 和 `defineOptions` 改写后的 SFC 重解析错误也映射回输入源码，不依赖 `sourceMap` 开关。模板与 JSX 自有诊断会按 `diagnostic.message` 原样、仅一次地适配到 `warn` 回调；结构化消费应检查返回的 `diagnostics`，并捕获 `CompilerDiagnosticError`。
 
 使用页面特性工具：
 

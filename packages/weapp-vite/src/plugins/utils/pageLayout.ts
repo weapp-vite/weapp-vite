@@ -43,6 +43,10 @@ export async function registerResolvedPageLayoutDependencies(
       transitiveDependencies.add(dependency)
     }
   }
+  // 异步解析全部成功后同步发布输出映射与完整依赖，失败时保留上一版入口身份。
+  for (const layout of layouts) {
+    ctx.runtimeState?.build?.hmr?.externalComponentEntryMap?.set(layout.importPath.replace(/^\/+/, ''), layout.file)
+  }
   ctx.moduleGraphService.replaceEntryDependencies(
     ownerId,
     'layout',

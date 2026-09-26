@@ -21,8 +21,8 @@ defineExpose({
 
 <template>
   <view class="issue528-page">
-    <Issue528SlotFallbackCard class="issue528-card-empty" />
-    <Issue528SlotFallbackCard class="issue528-card-provided">
+    <Issue528SlotFallbackCard id="issue528-empty" class="issue528-card-empty" />
+    <Issue528SlotFallbackCard id="issue528-provided" class="issue528-card-provided">
       <template #header>
         <text class="issue528-provided-header">issue-528 provided header</text>
       </template>

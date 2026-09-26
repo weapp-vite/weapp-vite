@@ -1,7 +1,7 @@
 {
   "name": "wevu",
   "type": "module",
-  "version": "7.0.4",
+  "version": "7.3.0",
   "description": "Vue 3 风格的小程序运行时，包含响应式、diff+setData 与轻量状态管理",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
@@ -15,19 +15,24 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "weapp-vite",
     "weapp",
-    "mini-program",
     "wechat",
+    "mini-program",
+    "miniprogram",
     "vue3",
     "runtime",
     "reactivity",
     "setData",
     "pinia",
-    "state-management"
+    "state-management",
+    "vue"
   ],
   "sideEffects": [
     "./dist/api/vitest/setup.mjs",
-    "./dist/dev/api/vitest/setup.mjs"
+    "./dist/dev/api/vitest/setup.mjs",
+    "./dist/router/auto-routes.mjs",
+    "./dist/dev/router/auto-routes.mjs"
   ],
   "exports": {
     ".": {
@@ -141,6 +146,14 @@
         "default": "./dist/router.mjs"
       }
     },
+    "./router/auto-routes": {
+      "types": "./dist/router/auto-routes.d.mts",
+      "import": {
+        "types": "./dist/router/auto-routes.d.mts",
+        "development": "./dist/dev/router/auto-routes.mjs",
+        "default": "./dist/router/auto-routes.mjs"
+      }
+    },
     "./vue-demi": {
       "types": "./dist/vue-demi.d.mts",
       "import": {
@@ -233,6 +246,13 @@
         "default": "./dist/dev/router.mjs"
       }
     },
+    "./dev/router/auto-routes": {
+      "types": "./dist/router/auto-routes.d.mts",
+      "import": {
+        "types": "./dist/router/auto-routes.d.mts",
+        "default": "./dist/dev/router/auto-routes.mjs"
+      }
+    },
     "./dev/vue-demi": {
       "types": "./dist/vue-demi.d.mts",
       "import": {
@@ -260,7 +280,7 @@
     "build:types": "tsdown --dts",
     "test": "vitest run",
     "test:dev": "vitest",
-    "test:types": "pnpm build:types && tsd --files \"test-d/**/*.test-d.{ts,tsx}\"",
+    "test:types": "pnpm build:types && tsd --files \"test-d/**/*.test-d.{ts,tsx}\" && tsd --files \"test-d/router-named-map.test-types.ts\"",
     "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
@@ -285,9 +305,13 @@
   "dependencies": {
     "@weapp-core/constants": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-core/types": "workspace:*",
     "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
     "@wevu/web-apis": "workspace:*",
     "vue": "catalog:"
+  },
+  "devDependencies": {
+    "pinia": "4.0.3"
   }
 }

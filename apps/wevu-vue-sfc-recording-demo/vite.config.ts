@@ -1,9 +1,11 @@
-import path from 'node:path'
-import { WeappTailwindcss } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig(() => ({
   weapp: {
+    tailwindcss: {
+      rem2rpx: true,
+      cssEntries: ['src/app.css'],
+    },
     hmr: {
       logLevel: 'verbose',
       profileJson: true,
@@ -16,11 +18,5 @@ export default defineConfig(() => ({
       vueComponentsModule: 'wevu',
     },
   },
-  plugins: [
-    WeappTailwindcss({
-      rem2rpx: true,
-      cssEntries: [path.resolve(import.meta.dirname, 'src/app.css')],
-    }),
-  ],
   // weapp-vite 内置了 Vue SFC 支持
 }))

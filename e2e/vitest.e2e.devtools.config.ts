@@ -1,16 +1,22 @@
 import path from 'node:path'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
+import { excludedE2ETestPatterns } from '../scripts/e2eProjectScope.ts'
 import { ensureIdeWarningReportEnv } from './utils/ideWarningReport.ts'
 import { resolveE2EMaxWorkers } from './utils/max-workers.ts'
 import { resolveVitestIncludePatterns } from './utils/vitestTargetFile.ts'
 
 const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
 const DEVTOOLS_SETUP_FILE = path.resolve(import.meta.dirname, './vitest.e2e.ide.setup.ts')
+const DOM_SETUP_FILE = path.resolve(import.meta.dirname, './vitest.e2e.dom.setup.ts')
+const DOM_REPORTER = path.resolve(import.meta.dirname, './scripts/domAcceptanceReport/reporter.ts')
 
 ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {
+    exclude: [...configDefaults.exclude, ...excludedE2ETestPatterns()],
+    // 参数化标题是 DOM 验收清单的 case 身份，必须保留完整名称。
+    taskTitleValueFormatTruncate: Number.POSITIVE_INFINITY,
     include: resolveVitestIncludePatterns(import.meta.dirname, [
       path.resolve(import.meta.dirname, './ide/**/*.test.ts'),
     ]),
@@ -20,6 +26,7 @@ export default defineConfig({
     maxWorkers: resolveE2EMaxWorkers(),
     fileParallelism: false,
     globalSetup: [DEVTOOLS_GLOBAL_SETUP],
-    setupFiles: [DEVTOOLS_SETUP_FILE],
+    setupFiles: [DOM_SETUP_FILE, DEVTOOLS_SETUP_FILE],
+    reporters: ['default', DOM_REPORTER],
   },
 })

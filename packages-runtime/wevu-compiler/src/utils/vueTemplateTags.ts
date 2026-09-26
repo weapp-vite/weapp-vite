@@ -1,3 +1,4 @@
+import type { TemplateChildNode } from '@vue/compiler-core'
 import { NodeTypes, baseParse as parseTemplate } from '@vue/compiler-core'
 import { isBuiltinComponent } from '../auto-import-components/builtin'
 
@@ -34,6 +35,57 @@ export interface CollectVueTemplateTagsOptions {
   shouldCollect: (tag: string) => boolean
 }
 
+interface VueTemplateTagAnalysis {
+  tags: Set<string>
+  errorMessage?: string
+}
+
+/**
+ * 仅在本次分析内持有 AST，保留标签顺序及自定义筛选器的逐节点语义。
+ */
+export function analyzeVueTemplateTags(
+  template: string,
+  options?: Pick<CollectVueTemplateTagsOptions, 'shouldCollect'>,
+): VueTemplateTagAnalysis {
+  const tags = new Set<string>()
+  try {
+    const ast = parseTemplate(template, { onError: () => {} })
+    const visit = (node: TemplateChildNode) => {
+      // baseParse 尚未执行结构指令转换，分支和循环仍是元素节点。
+      if (node.type === NodeTypes.ELEMENT) {
+        const tag = node.tag
+        if ((!options || options.shouldCollect(tag)) && !RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
+          tags.add(tag)
+        }
+        node.children.forEach(visit)
+      }
+    }
+    ast.children.forEach(visit)
+    return { tags }
+  }
+  catch (error) {
+    return {
+      tags,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
+/**
+ * 为标签分析的各个消费视图保留原有告警上下文。
+ */
+export function warnVueTemplateTagAnalysis(
+  errorMessage: string | undefined,
+  options: Pick<CollectVueTemplateTagsOptions, 'filename' | 'warnLabel' | 'warn'>,
+) {
+  if (errorMessage !== undefined) {
+    const warn = options.warn
+    const warnLabel = options.warnLabel || '模板标签收集'
+    const filename = options.filename || '<未知文件>'
+    warn?.(`[Vue 模板] 解析失败：${warnLabel}（${filename}）：${errorMessage}`)
+  }
+}
+
 /**
  * 收集 Vue 模板中的自定义组件标签。
  */
@@ -41,49 +93,10 @@ export function collectVueTemplateTags(
   template: string,
   options: CollectVueTemplateTagsOptions,
 ) {
-  const tags = new Set<string>()
-
-  const warn = options.warn
-  const warnLabel = options.warnLabel || '模板标签收集'
-  const filename = options.filename || '<未知文件>'
-
-  try {
-    const ast = parseTemplate(template, { onError: () => {} })
-    const visit = (node: any) => {
-      if (!node) {
-        return
-      }
-      if (Array.isArray(node)) {
-        node.forEach(visit)
-        return
-      }
-      if (node.type === NodeTypes.ELEMENT) {
-        const tag = node.tag
-        if (typeof tag === 'string' && options.shouldCollect(tag)) {
-          if (!RESERVED_VUE_COMPONENT_TAGS.has(tag) && !isBuiltinComponent(tag)) {
-            tags.add(tag)
-          }
-        }
-      }
-      if (node.children) {
-        visit(node.children)
-      }
-      if (node.branches) {
-        visit(node.branches)
-      }
-      if (node.consequent) {
-        visit(node.consequent)
-      }
-      if (node.alternate) {
-        visit(node.alternate)
-      }
-    }
-    visit(ast.children)
+  const { warn, warnLabel, filename } = options
+  const analysis = analyzeVueTemplateTags(template, options)
+  if (analysis.errorMessage !== undefined) {
+    warnVueTemplateTagAnalysis(analysis.errorMessage, { warn, warnLabel, filename })
   }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    warn?.(`[Vue 模板] 解析失败：${warnLabel}（${filename}）：${message}`)
-  }
-
-  return tags
+  return analysis.tags
 }

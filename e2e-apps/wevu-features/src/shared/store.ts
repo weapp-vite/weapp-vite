@@ -1,11 +1,11 @@
 import { computed, createStore, defineStore, reactive, ref } from 'wevu'
 
 const pluginRecords: string[] = []
-let storeManagerReady = false
+let storeManager: ReturnType<typeof createStore> | undefined
 
 export function initFeatureStoreManager() {
-  if (storeManagerReady) {
-    return
+  if (storeManager) {
+    return storeManager
   }
 
   const manager = createStore()
@@ -15,14 +15,13 @@ export function initFeatureStoreManager() {
     ;(store as any).__featurePluginTouched = true
   })
 
-  storeManagerReady = true
+  storeManager = manager
+  return manager
 }
 
 export function getFeaturePluginRecords() {
   return pluginRecords.slice()
 }
-
-initFeatureStoreManager()
 
 export const useSetupFeatureStore = defineStore('featureSetupCounter', () => {
   const count = ref(0)
@@ -54,6 +53,11 @@ export const useSetupFeatureStore = defineStore('featureSetupCounter', () => {
     inc,
     visit,
     rename,
+    $reset() {
+      count.value = 0
+      label.value = 'init'
+      meta.visits = 0
+    },
   }
 })
 

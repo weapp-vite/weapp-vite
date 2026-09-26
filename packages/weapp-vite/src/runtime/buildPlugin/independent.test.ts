@@ -111,6 +111,44 @@ describe('runtime buildPlugin independent builder', () => {
     getAutoImportConfigMock.mockReturnValue(undefined)
   })
 
+  it.each([false, true])('suppresses support writes from config loading through build completion (failure=%s)', async (fail) => {
+    const { builder, isolatedConfigService, runWithoutOutputWrites } = createBuilder()
+    let writesSuppressed = false
+    const stages: string[] = []
+    runWithoutOutputWrites.mockImplementation(async (task) => {
+      writesSuppressed = true
+      try {
+        return await task()
+      }
+      finally {
+        writesSuppressed = false
+      }
+    })
+    isolatedConfigService.load.mockImplementation(async () => {
+      await Promise.resolve()
+      expect(writesSuppressed).toBe(true)
+      stages.push('config')
+    })
+    buildMock.mockImplementationOnce(async () => {
+      await Promise.resolve()
+      expect(writesSuppressed).toBe(true)
+      stages.push('build')
+      if (fail) {
+        throw new Error('isolated build failed')
+      }
+      return { output: [] }
+    })
+    const result = builder.buildIndependentBundle('packageA', { subPackage: { root: 'packageA' } } as any)
+    if (fail) {
+      await expect(result).rejects.toThrow('isolated build failed')
+    }
+    else {
+      await result
+    }
+    expect(stages).toEqual(['config', 'build'])
+    expect(writesSuppressed).toBe(false)
+  })
+
   it('builds and stores independent output with subpackage chunk root', async () => {
     const output = { output: [{ fileName: 'pkg/common.js' }] } as any
     buildMock.mockResolvedValueOnce(output)
@@ -149,6 +187,14 @@ describe('runtime buildPlugin independent builder', () => {
     expect(configService.merge).not.toHaveBeenCalled()
     builder.invalidateIndependentOutput('packageA')
     expect(builder.getIndependentOutput('packageA')).toBeUndefined()
+  })
+
+  it('forces memory-only one-shot output even when config merging restores watch/write options', async () => {
+    const { builder, isolatedConfigService } = createBuilder()
+    isolatedConfigService.merge.mockReturnValue({ build: { write: true, watch: { include: ['**'] } } })
+    buildMock.mockResolvedValueOnce({ output: [] })
+    await builder.buildIndependentBundle('sub', { subPackage: { root: 'sub' } } as any)
+    expect(buildMock.mock.calls[0]?.[0].build).toMatchObject({ write: false, watch: null })
   })
 
   it('initializes scoped auto imports inside the isolated context without output writes', async () => {

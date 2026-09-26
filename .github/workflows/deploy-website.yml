@@ -1,0 +1,99 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: website-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || (github.ref == 'refs/heads/main' && 'production' || github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out code with page history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+
+      - name: Build and refresh website dependencies
+        uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm exec turbo run build --filter='website-weapp-vite^...'
+
+      - name: Test website
+        run: pnpm --filter website-weapp-vite test
+
+      # Direct execution avoids Turbo's generic inputs missing Markdown and .vitepress changes.
+      - name: Build website and SEO assets
+        run: pnpm --filter website-weapp-vite build
+
+      - name: Verify website artifacts
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readdirSync, statSync } from 'node:fs'
+          for (const file of ['index.html', 'guide/index.html', '404.html', 'sitemap.xml', 'llms.txt', 'llms-index.json', 'seo-quality-report.json', '_headers']) {
+            assert(statSync(`website/dist/${file}`).size > 0, `Missing or empty website artifact: ${file}`)
+          }
+          const assets = readdirSync('website/dist/assets', { recursive: true })
+          assert(assets.some(file => file.endsWith('.js')), 'Missing JavaScript assets')
+          assert(assets.some(file => file.endsWith('.css')), 'Missing CSS assets')
+          NODE
+
+      - name: Validate Cloudflare deployment without credentials
+        run: pnpm --filter website-weapp-vite deploy:dry-run
+
+      - name: Upload website artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: website-${{ github.sha }}-${{ github.run_attempt }}
+          path: website/dist
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Check production revision
+        id: production
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          if [ "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA" ]; then
+            echo 'deploy=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'deploy=false' >> "$GITHUB_OUTPUT"
+            echo 'Production deployment skipped: this commit is no longer the latest main revision.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Deploy website to Cloudflare
+        if: steps.production.outputs.deploy == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo '::error::Configure CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets before deploying.'
+            exit 1
+          fi
+          pnpm --filter website-weapp-vite run deploy
+          {
+            echo '### Website deployed'
+            echo "Commit: $GITHUB_SHA"
+            echo '- https://vite.weapp.dev'
+            echo '- https://vite.icebreaker.top'
+            echo 'The Cloudflare deployment version is recorded in the Wrangler log above.'
+          } >> "$GITHUB_STEP_SUMMARY"

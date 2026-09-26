@@ -15,6 +15,8 @@ import type {
   NpmSubPackageConfig,
   StyleConfigEntry,
 } from './foundation'
+import type { WxmlTransform } from './wxmlTransform'
+import type { WxmlValidate } from './wxmlValidate'
 import type { Resolver } from '@/auto-import-components/resolvers'
 
 export { type Resolver }
@@ -65,7 +67,29 @@ export interface WeappUniAppConfig {
   include: string[]
 }
 
-export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
+/** 最终模板中的标签限定属性删除规则，名称区分大小写并支持 `*`。 */
+export interface WxmlRemoveAttrRule {
+  tag: string | string[]
+  name: string | string[]
+}
+
+/** 最终模板的可选清理；对象形式只执行显式配置，不叠加预设。 */
+export interface WxmlRemoveOptions {
+  attr?: Array<string | WxmlRemoveAttrRule>
+  tag?: string[]
+  comment?: boolean
+}
+
+export type EnhanceWxmlOptions = ScanWxmlOptions & Omit<HandleWxmlOptions, 'removeComment'> & {
+  /** @deprecated 仅保留类型兼容，未接入编译流程；请使用 `weapp.wxml.remove.comment`。 */
+  removeComment?: boolean
+  /** `true` 删除四种测试属性及普通注释；环境由用户配置控制。 */
+  remove?: boolean | WxmlRemoveOptions
+  /** 在最终模板清理前按顺序执行同步或异步转换。 */
+  transform?: WxmlTransform | WxmlTransform[]
+  /** 在输出插件处理后、HMR 比较及发布前检查最终模板。 */
+  validate?: WxmlValidate | WxmlValidate[]
+}
 
 /**
  * @description WXML 扫描阶段配置
@@ -287,6 +311,9 @@ export interface WeappHmrConfig {
    */
   runtime?: 'auto' | 'classic' | 'stateful-experimental'
   sharedChunks?: 'full' | 'auto' | 'off'
+  /**
+   * @description 额外刷新已存在的全局样式；auto 仅用于非内置 Tailwind 的实际内容失效，内置集成由原生输出刷新。false 不影响样式编译。
+   */
   touchAppWxss?: boolean | 'auto'
   /**
    * @description HMR 终端日志档位：默认仅输出总耗时，显式开启 concise/verbose 后再展示阶段诊断。
@@ -309,6 +336,7 @@ export interface WeappWorkerConfig {
  * @description Vue 模板编译配置
  */
 export interface WeappVueTemplateConfig {
+  /** @deprecated 仅保留类型兼容，未接入编译流程；请使用 `weapp.wxml.remove.comment`。 */
   removeComments?: boolean
   simplifyWhitespace?: boolean
   formatWxml?: boolean | 'auto'

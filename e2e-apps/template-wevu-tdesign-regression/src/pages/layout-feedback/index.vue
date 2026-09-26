@@ -15,6 +15,7 @@ const pageInstance = getCurrentInstance<any>()
 const { showToast } = useToast({ duration: 1400 })
 const { alert, confirm } = useDialog()
 const actionSeed = ref(0)
+const latestAction = ref('')
 const actionLogs = ref<string[]>([
   '页面与子组件都会直接调用 useToast() / useDialog()，由 layout 统一承载宿主。',
 ])
@@ -40,6 +41,7 @@ const bridgeStatus = computed(() => {
 })
 
 function pushLog(message: string) {
+  latestAction.value = message
   actionLogs.value = [`${new Date().toLocaleTimeString()} ${message}`, ...actionLogs.value].slice(0, 8)
 }
 
@@ -120,6 +122,7 @@ function resetLayoutFeedbackE2E() {
   }
   actionSeed.value = 0
   actionLogs.value = []
+  latestAction.value = ''
 }
 
 function runDialogHostConfirmE2E() {
@@ -207,6 +210,9 @@ defineExpose({
 
     <view class="mt-[18rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
       <SectionTitle title="通信日志" subtitle="观察页面与子组件调用 layout 宿主后的反馈结果" />
+      <text id="layout-feedback-latest-action" class="mt-[12rpx] block text-[22rpx] text-[#4c4b6c]">
+        {{ latestAction || '暂无操作' }}
+      </text>
       <view class="mt-[16rpx] flex flex-col gap-[10rpx]">
         <view
           v-for="(item, index) in actionLogs"

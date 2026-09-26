@@ -3,6 +3,28 @@ import { generate, parseJsLike, traverse } from '../../../../utils/babel'
 import { createImportVisitors } from './imports'
 
 describe('createImportVisitors', () => {
+  it('moves CSS variable helpers to Wevu without rewriting unrelated Vue imports', () => {
+    const ast = parseJsLike(`
+import { useCssVars as registerVars, unref as unwrap, ref as vueRef } from 'vue'
+registerVars(() => ({ color: unwrap(color) }))
+const count = vueRef(1)
+    `.trim())
+    const state: any = {
+      transformed: false,
+      defineComponentAliases: new Set<string>(),
+      defineComponentDecls: new Map(),
+      defaultExportPath: null,
+    }
+
+    traverse(ast, createImportVisitors(ast.program, state) as any)
+    const code = generate(ast).code
+
+    expect(code).toContain('import { unref as unwrap } from "virtual:weapp-vite/runtime/reactivity"')
+    expect(code).toContain('useCssVars as registerVars')
+    expect(code).toContain('import { ref as vueRef } from \'vue\'')
+    expect(code).toContain('unwrap(color)')
+  })
+
   it('moves selected vue imports to wevu and strips type-only imports', () => {
     const ast = parseJsLike(`
 import { defineComponent, useSlots, useAttrs, type Ref } from 'vue'
@@ -32,7 +54,7 @@ const value = 1
 
   it('moves known wevu value imports to scoped internal entries and keeps unknown imports', () => {
     const ast = parseJsLike(`
-import { ref, onLoad, fetch, type Ref } from 'wevu'
+import { ref, useAsyncDerivation as derive, onLoad, fetch, type Ref } from 'wevu'
 const value = ref(1)
     `.trim())
 
@@ -50,6 +72,7 @@ const value = ref(1)
     expect(code).toContain('virtual:weapp-vite/runtime/reactivity')
     expect(code).toContain('virtual:weapp-vite/runtime')
     expect(code).toContain('ref')
+    expect(code).toContain('useAsyncDerivation as derive')
     expect(code).toContain('onLoad')
     expect(code).toContain(`import { fetch } from 'wevu'`)
     expect(code).not.toContain('type Ref')

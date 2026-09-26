@@ -1,14 +1,26 @@
 import { afterAll, describe, expect, it } from 'vitest'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   callRoutePageMethod,
   closeSharedMiniProgram,
   launchIsolatedMiniProgram,
-  readPageWxml,
-  relaunchPage,
   ROUTER_NAVIGATION_SETTLE_TIMEOUT,
   waitForCurrentPagePath,
-  waitForRenderedSelector,
 } from './wevu-features.runtime.shared'
+import {
+  DYNAMIC_ROUTE,
+  dynamicNodes,
+  ROUTER_COMPONENT_TARGET,
+  ROUTER_INDEX_ROUTE,
+  ROUTER_PAGE_TARGET,
+  ROUTER_SUB_ROUTE,
+  routerCheckpoint,
+  routerIndexNodes,
+  routerSubNodes,
+  routerTargetNodes,
+  SHOWCASE_ROUTE,
+  showcaseNodes,
+} from './wevuFeaturesDom/router'
 
 const ROUTER_SUB_READY_STORAGE_KEY = '__weapp_vite_router_sub_ready__'
 const ROUTER_TARGET_STORAGE_KEY = '__weapp_vite_router_target__'
@@ -19,201 +31,40 @@ async function waitForRouterSubReady(miniProgram: any, timeoutMs = 6_000) {
   while (Date.now() - start <= timeoutMs) {
     latest = await miniProgram.callWxMethodWithOptions('getStorageSync', {
       timeout: 2_500,
-    }, ROUTER_SUB_READY_STORAGE_KEY).catch(() => null)
+    }, ROUTER_SUB_READY_STORAGE_KEY)
     if (latest?.route === 'pages/router-stability/sub/index' && latest?.componentReady === true) {
-      return latest
+      return
     }
     await new Promise(resolve => setTimeout(resolve, 220))
   }
   throw new Error(`Failed to confirm router-stability sub page ready: ${JSON.stringify(latest)}`)
 }
 
-async function waitForRouterTarget(miniProgram: any, expectedPath: string, expectedSource: string, timeoutMs = ROUTER_NAVIGATION_SETTLE_TIMEOUT) {
-  const normalizedExpectedPath = expectedPath.replace(/^\/+/, '')
-  const start = Date.now()
-  let latest: any = null
-  while (Date.now() - start <= timeoutMs) {
-    latest = await miniProgram.callWxMethodWithOptions('getStorageSync', {
-      timeout: 2_500,
-    }, ROUTER_TARGET_STORAGE_KEY).catch(() => null)
-    if (latest?.route === normalizedExpectedPath && latest?.source === expectedSource) {
-      return latest
-    }
-    await new Promise(resolve => setTimeout(resolve, 220))
-  }
-  return null
+async function waitForPage(miniProgram: any, route: string) {
+  const page = await waitForCurrentPagePath(miniProgram, route, ROUTER_NAVIGATION_SETTLE_TIMEOUT)
+  expect(page, `Navigation did not reach ${route}`).toBeTruthy()
+  return page
 }
 
-async function enterRouterSubPage(miniProgram: any) {
-  const indexPage = await relaunchPage(miniProgram, '/pages/router-stability/index', 'router stability (page context)')
-  if (!indexPage) {
-    throw new Error('Failed to launch router-stability index page')
-  }
-
-  await miniProgram.callWxMethodWithOptions('removeStorageSync', {
+async function assertTargetSource(miniProgram: any, page: any, route: string, source: string) {
+  expect(page.query?.source).toBe(source)
+  const probe = await miniProgram.callWxMethodWithOptions('getStorageSync', {
     timeout: 2_500,
-  }, ROUTER_SUB_READY_STORAGE_KEY).catch(() => {})
-  await callRoutePageMethod(
-    miniProgram,
-    indexPage,
-    '/pages/router-stability/index',
-    '_openSubPage',
-  )
-  const subPage = await waitForCurrentPagePath(
-    miniProgram,
-    '/pages/router-stability/sub/index',
-    ROUTER_NAVIGATION_SETTLE_TIMEOUT,
-  )
-  if (!subPage) {
-    throw new Error('Failed to confirm router-stability sub page readiness')
-  }
-  await waitForRouterSubReady(miniProgram)
-  return await miniProgram.currentPage({
-    retries: 2,
-    timeout: 5_000,
-  }).catch(() => subPage)
+  }, ROUTER_TARGET_STORAGE_KEY)
+  expect(probe).toMatchObject({ route: route.slice(1), source })
 }
 
-async function assertRouterActionRoute(
-  miniProgram: any,
-  actionId: string,
-  actionSelector: string,
-  actionMethod: string,
-  expectedPath: string,
-  expectedSource: string,
-) {
-  async function runStep<T>(label: string, task: () => Promise<T>) {
-    try {
-      return await task()
-    }
-    catch (error) {
-      const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
-      throw new Error(`[router-assert:${actionId}:${label}] ${reason}`)
-    }
-  }
-
-  async function readCurrentRouteDebug() {
-    try {
-      const currentPage = await miniProgram.currentPage()
-      const currentPath = String(currentPage?.path ?? '').replace(/^\/+/, '')
-      const currentWxml = currentPage ? await readPageWxml(currentPage) : ''
-      return ` actual=${currentPath} wxml=${currentWxml.slice(0, 400)}`
-    }
-    catch {
-      return ''
-    }
-  }
-
-  const subPage = await runStep('enter-sub', () => enterRouterSubPage(miniProgram))
-  const rendered = await runStep('wait-action-rendered', () => waitForRenderedSelector(subPage, actionSelector, 8_000))
-  await runStep('clear-target-probe', () => miniProgram.callWxMethodWithOptions('removeStorageSync', {
-    timeout: 2_500,
-  }, ROUTER_TARGET_STORAGE_KEY).catch(() => {}))
-  let targetProbe: any = null
-  let navigatedPage: any = null
-  const triggerMode = 'page-method'
-  async function checkNavigated(timeoutMs = 800) {
-    targetProbe = await waitForRouterTarget(
-      miniProgram,
-      expectedPath,
-      expectedSource,
-      timeoutMs,
-    )
-    if (targetProbe) {
-      return true
-    }
-    navigatedPage = await waitForCurrentPagePath(
-      miniProgram,
-      expectedPath,
-      timeoutMs,
-    )
-    return Boolean(navigatedPage)
-  }
-  if (!rendered) {
-    throw new Error(`[router-assert:${actionId}:dom-missing] selector=${actionSelector}`)
-  }
-  const currentSubPage = await runStep('refresh-action-page', async () => {
-    return await miniProgram.currentPage({
-      retries: 2,
-      timeout: 5_000,
-    }).catch(() => subPage)
-  })
-  let methodResult = await runStep('call-action', () => callRoutePageMethod(
-    miniProgram,
-    currentSubPage,
-    '/pages/router-stability/sub/index',
-    actionMethod,
-  ))
-  let invoked = await checkNavigated(ROUTER_NAVIGATION_SETTLE_TIMEOUT)
-  if (!invoked) {
-    process.stdout.write(`[wevu-features:router-action-retry] id=${actionId} reason=navigation-not-observed attempt=2/2\n`)
-    const retrySubPage = await runStep('retry-enter-sub', () => enterRouterSubPage(miniProgram))
-    const retryRendered = await runStep('retry-wait-action-rendered', () => waitForRenderedSelector(retrySubPage, actionSelector, 8_000))
-    if (!retryRendered) {
-      throw new Error(`[router-assert:${actionId}:retry-dom-missing] selector=${actionSelector}`)
-    }
-    await runStep('retry-clear-target-probe', () => miniProgram.callWxMethodWithOptions('removeStorageSync', {
-      timeout: 2_500,
-    }, ROUTER_TARGET_STORAGE_KEY).catch(() => {}))
-    const currentRetryPage = await runStep('retry-refresh-action-page', async () => {
-      return await miniProgram.currentPage({
-        retries: 2,
-        timeout: 5_000,
-      }).catch(() => retrySubPage)
-    })
-    methodResult = await runStep('retry-call-action', () => callRoutePageMethod(
-      miniProgram,
-      currentRetryPage,
-      '/pages/router-stability/sub/index',
-      actionMethod,
-    ))
-    invoked = await checkNavigated(ROUTER_NAVIGATION_SETTLE_TIMEOUT)
-  }
-  if (!invoked && methodResult !== true && methodResult?.ok !== true) {
-    throw new Error(`[router-assert:${actionId}:call-failed] method=${actionMethod} result=${JSON.stringify(methodResult)} rendered=${rendered}`)
-  }
-  if (!invoked) {
-    const debug = await readCurrentRouteDebug()
-    throw new Error(`[router-assert:${actionId}:trigger-failed] selector=${actionSelector} method=${actionMethod} rendered=${rendered}${debug}`)
-  }
-  if (targetProbe) {
-    expect(targetProbe.source).toBe(expectedSource)
-    process.stdout.write(`[wevu-features:router-action-ready] id=${actionId} trigger=${triggerMode} route=${targetProbe.route} source=${targetProbe.source}\n`)
-    return
-  }
-  navigatedPage ??= await runStep('wait-action-route', () => waitForCurrentPagePath(
-    miniProgram,
-    expectedPath,
-    ROUTER_NAVIGATION_SETTLE_TIMEOUT,
-  ))
-
-  if (!navigatedPage) {
-    const debug = await readCurrentRouteDebug()
-    throw new Error(`[router-assert:${actionId}:navigation-timeout] expected=${expectedPath.replace(/^\/+/, '')}${debug}`)
-  }
-
-  expect(navigatedPage.query?.source).toBe(expectedSource)
-  process.stdout.write(`[wevu-features:router-action-ready] id=${actionId} trigger=${triggerMode} route=${navigatedPage.path} source=${navigatedPage.query?.source}\n`)
+async function clearProbe(miniProgram: any, key: string) {
+  await miniProgram.callWxMethodWithOptions('removeStorageSync', { timeout: 2_500 }, key)
 }
 
 let routerMiniProgram: any = null
 
 async function getRouterMiniProgram() {
   if (!routerMiniProgram) {
+    // 原生 Router 上下文不能沿用其他 suite 的导航历史；本 suite 冷启动一次，后续页面复用会话。
     routerMiniProgram = await launchIsolatedMiniProgram()
   }
-  return routerMiniProgram
-}
-
-async function restartRouterMiniProgram() {
-  if (routerMiniProgram) {
-    const miniProgram = routerMiniProgram
-    routerMiniProgram = null
-    await miniProgram.close().catch(() => {})
-  }
-  await closeSharedMiniProgram()
-  routerMiniProgram = await launchIsolatedMiniProgram()
-  process.stdout.write('[wevu-features:router-session-ready] isolated=true reason=reset-native-router-context\n')
   return routerMiniProgram
 }
 
@@ -227,105 +78,95 @@ describe('e2e app: wevu-features / router', { concurrent: false }, () => {
     await closeSharedMiniProgram()
   })
 
-  it('covers advanced wevu/router showcase and dynamic pages', async () => {
+  it('resolves component this.router.navigateTo relative route using component base path', async (context) => {
+    const acceptance = createDomAcceptance(context, 'e2e-apps/wevu-features', [
+      routerCheckpoint('index', ROUTER_INDEX_ROUTE, '首屏显示进入 sub 页的操作', routerIndexNodes),
+      routerCheckpoint('sub', ROUTER_SUB_ROUTE, '进入 sub 页并渲染 RouterOriginProbe 组件', routerSubNodes),
+      routerCheckpoint('component-target', ROUTER_COMPONENT_TARGET, '组件相对导航后渲染组件目录目标路径和来源', routerTargetNodes('component')),
+    ])
     const miniProgram = await getRouterMiniProgram()
-
-    const showcasePage = await relaunchPage(miniProgram, '/pages/router-showcase/index', 'wevu/router 能力展示 (showcase)')
-    if (!showcasePage) {
-      throw new Error('Failed to launch router-showcase page')
-    }
-
-    const showcaseResult = await callRoutePageMethod(
-      miniProgram,
-      showcasePage,
-      '/pages/router-showcase/index',
-      'runE2E',
-    )
-    expect(showcaseResult?.ok, JSON.stringify(showcaseResult)).toBe(true)
-    expect(showcaseResult?.checks?.parseOk).toBe(true)
-    expect(showcaseResult?.checks?.stringifyOk).toBe(true)
-    expect(showcaseResult?.checks?.namedOk).toBe(true)
-    expect(showcaseResult?.checks?.aliasOk).toBe(true)
-    expect(showcaseResult?.checks?.relativeOk).toBe(true)
-    expect(showcaseResult?.checks?.hashOnlyOk).toBe(true)
-    expect(showcaseResult?.checks?.forwardOk).toBe(true)
-    expect(showcaseResult?.checks?.goOk).toBe(true)
-    expect(showcaseResult?.checks?.readyOk).toBe(true)
-    expect(showcaseResult?.details?.namedRouteSummary).toContain('/pages/router-showcase/profile/12/detail/logs?from=named')
-    expect(showcaseResult?.details?.aliasSummary).toContain('/router-profile/9/detail-alias/trace')
-    expect(showcaseResult?.details?.runSummary).toBe('ok')
-
-    const dynamicPage = await relaunchPage(miniProgram, '/pages/router-dynamic/index', 'wevu/router 能力展示 (dynamic + guards)')
-    if (!dynamicPage) {
-      throw new Error('Failed to launch router-dynamic page')
-    }
-
-    const dynamicResult = await callRoutePageMethod(
-      miniProgram,
-      dynamicPage,
-      '/pages/router-dynamic/index',
-      'runE2E',
-    )
-    expect(dynamicResult?.ok, JSON.stringify(dynamicResult)).toBe(true)
-    expect(dynamicResult?.checks?.baseRoutesOk).toBe(true)
-    expect(dynamicResult?.checks?.addRemoveOk).toBe(true)
-    expect(dynamicResult?.checks?.clearOk).toBe(true)
-    expect(dynamicResult?.checks?.optionsOk).toBe(true)
-    expect(dynamicResult?.checks?.guardOk).toBe(true)
-    expect(dynamicResult?.checks?.errorOk).toBe(true)
-    expect(dynamicResult?.details?.addRemoveSummary).toContain('/router-dynamic/parent/5/child/metrics?from=dynamic')
-    expect(dynamicResult?.details?.clearSummary).toContain('->0')
-    expect(dynamicResult?.details?.guardSummary).toContain('after=2')
-    expect(dynamicResult?.details?.errorSummary).toContain('guard-fail-intentional')
-    expect(dynamicResult?.details?.runSummary).toBe('ok')
-  })
-
-  it('resolves pageRouter.navigateTo relative route using page base path', async () => {
-    const miniProgram = await getRouterMiniProgram()
-    const indexPage = await relaunchPage(miniProgram, '/pages/router-stability/index', 'router stability (page context)')
-    if (!indexPage) {
-      throw new Error('Failed to launch router-stability index page')
-    }
-    await miniProgram.callWxMethodWithOptions('removeStorageSync', {
-      timeout: 2_500,
-    }, ROUTER_TARGET_STORAGE_KEY).catch(() => {})
-    const invoked = await callRoutePageMethod(
-      miniProgram,
-      indexPage,
-      '/pages/router-stability/index',
-      'triggerPageRouterRelativeFromIndex',
-    )
+    const indexPage = await miniProgram.reLaunch(ROUTER_INDEX_ROUTE)
+    await acceptance.check('index', miniProgram, indexPage)
+    await clearProbe(miniProgram, ROUTER_SUB_READY_STORAGE_KEY)
+    await callRoutePageMethod(miniProgram, indexPage, ROUTER_INDEX_ROUTE, '_openSubPage')
+    const subPage = await waitForPage(miniProgram, ROUTER_SUB_ROUTE)
+    await acceptance.check('sub', miniProgram, subPage)
+    await waitForRouterSubReady(miniProgram)
+    await clearProbe(miniProgram, ROUTER_TARGET_STORAGE_KEY)
+    const invoked = await callRoutePageMethod(miniProgram, subPage, ROUTER_SUB_ROUTE, '_runComponentRouterFromProbe')
     expect(invoked).toBe(true)
-    const targetProbe = await waitForRouterTarget(
-      miniProgram,
-      '/pages/router-stability/target/index',
-      'page-router-from-index',
-    )
-    if (targetProbe) {
-      expect(targetProbe.source).toBe('page-router-from-index')
-      return
-    }
-    const navigatedPage = await waitForCurrentPagePath(
-      miniProgram,
-      '/pages/router-stability/target/index',
-      ROUTER_NAVIGATION_SETTLE_TIMEOUT,
-    )
-    if (!navigatedPage) {
-      throw new Error('[router-assert:router-index-page-router:navigation-timeout] expected=pages/router-stability/target/index')
-    }
-    expect(navigatedPage.query?.source).toBe('page-router-from-index')
+    const targetPage = await waitForPage(miniProgram, ROUTER_COMPONENT_TARGET)
+    await acceptance.check('component-target', miniProgram, targetPage)
+    await assertTargetSource(miniProgram, targetPage, ROUTER_COMPONENT_TARGET, 'component-router')
   })
 
-  it('resolves component this.router.navigateTo relative route using component base path', async () => {
-    // 连续 reLaunch 后当前 DevTools 版本可能保留失效的原生 Router 上下文，此场景需隔离启动后再验证组件相对路由。
-    const miniProgram = await restartRouterMiniProgram()
-    await assertRouterActionRoute(
-      miniProgram,
-      'cmp-router-nav',
-      '#router-sub-call-component-router',
-      '_runComponentRouterFromProbe',
-      '/components/router-origin-probe/target/index',
-      'component-router',
-    )
+  it('resolves pageRouter.navigateTo relative route using page base path', async (context) => {
+    const acceptance = createDomAcceptance(context, 'e2e-apps/wevu-features', [
+      routerCheckpoint('index', ROUTER_INDEX_ROUTE, '首屏显示 pageRouter 相对导航操作', routerIndexNodes),
+      routerCheckpoint('page-target', ROUTER_PAGE_TARGET, '相对导航后渲染页面目录目标路径和来源', routerTargetNodes('page')),
+    ])
+    const miniProgram = await getRouterMiniProgram()
+    const indexPage = await miniProgram.reLaunch(ROUTER_INDEX_ROUTE)
+    await acceptance.check('index', miniProgram, indexPage)
+    await clearProbe(miniProgram, ROUTER_TARGET_STORAGE_KEY)
+    const invoked = await callRoutePageMethod(miniProgram, indexPage, ROUTER_INDEX_ROUTE, 'triggerPageRouterRelativeFromIndex')
+    expect(invoked).toBe(true)
+    const targetPage = await waitForPage(miniProgram, ROUTER_PAGE_TARGET)
+    await acceptance.check('page-target', miniProgram, targetPage)
+    await assertTargetSource(miniProgram, targetPage, ROUTER_PAGE_TARGET, 'page-router-from-index')
+  })
+
+  it('renders router query, resolved paths and aborted navigation results', async (context) => {
+    const acceptance = createDomAcceptance(context, 'e2e-apps/wevu-features', [
+      routerCheckpoint('initial', SHOWCASE_ROUTE, '首屏展示未执行的 router showcase 结果', showcaseNodes(false)),
+      routerCheckpoint('resolved', SHOWCASE_ROUTE, '执行 query、路由解析和不支持的导航后渲染每项结果', showcaseNodes(true)),
+    ])
+    const miniProgram = await getRouterMiniProgram()
+    const page = await miniProgram.reLaunch(SHOWCASE_ROUTE)
+    await acceptance.check('initial', miniProgram, page)
+    const result = await callRoutePageMethod(miniProgram, page, SHOWCASE_ROUTE, 'runE2E')
+    expect(result?.ok, JSON.stringify(result)).toBe(true)
+    expect(result.checks).toEqual({
+      parseOk: true,
+      stringifyOk: true,
+      namedOk: true,
+      aliasOk: true,
+      relativeOk: true,
+      hashOnlyOk: true,
+      forwardOk: true,
+      goOk: true,
+      readyOk: true,
+    })
+    expect(result.details.namedRouteSummary).toContain('/pages/router-showcase/profile/12/detail/logs?from=named')
+    expect(result.details.aliasSummary).toContain('/router-profile/9/detail-alias/trace')
+    expect(result.details.runSummary).toBe('ok')
+    await acceptance.check('resolved', miniProgram, page)
+  })
+
+  it('renders dynamic route removal, options snapshot and guard failure results', async (context) => {
+    // clearRoutes 改变应用级 router，放在 suite 最后，避免污染其他导航场景。
+    const acceptance = createDomAcceptance(context, 'e2e-apps/wevu-features', [
+      routerCheckpoint('initial', DYNAMIC_ROUTE, '首屏展示未执行的 dynamic router 结果', dynamicNodes(false)),
+      routerCheckpoint('completed', DYNAMIC_ROUTE, '动态路由增删和 guard 失败后渲染路径、计数及错误', dynamicNodes(true)),
+    ])
+    const miniProgram = await getRouterMiniProgram()
+    const page = await miniProgram.reLaunch(DYNAMIC_ROUTE)
+    await acceptance.check('initial', miniProgram, page)
+    const result = await callRoutePageMethod(miniProgram, page, DYNAMIC_ROUTE, 'runE2E')
+    expect(result?.ok, JSON.stringify(result)).toBe(true)
+    expect(result.checks).toEqual({
+      baseRoutesOk: true,
+      addRemoveOk: true,
+      clearOk: true,
+      optionsOk: true,
+      guardOk: true,
+      errorOk: true,
+    })
+    expect(result.details.addRemoveSummary).toContain('/router-dynamic/parent/5/child/metrics?from=dynamic')
+    expect(result.details.clearSummary).toContain('->0')
+    expect(result.details.guardSummary).toContain('after=2')
+    expect(result.details.errorSummary).toContain('guard-fail-intentional')
+    expect(result.details.runSummary).toBe('ok')
+    await acceptance.check('completed', miniProgram, page)
   })
 })

@@ -162,10 +162,11 @@ export const wevuApiCatalog: WevuApiItem[] = [
     entry: 'wevu' as const,
     keywords: ['JSON', 'weapp-vite', '配置宏'],
   })),
-  api('definePageMeta()', '/wevu/api/core#definepagemeta', 'Script Setup 宏', 'macro', 'wevu-extension'),
+  api('definePageMeta()', '/wevu/api/core#definepagemeta', 'Script Setup 宏', 'macro', 'wevu-extension', { entry: 'wevu', keywords: ['layout', 'route', 'name', 'meta', 'auto-routes', '命名路由'] }),
   api('defineAppSetup()', '/wevu/api/core#defineappsetup', 'Script Setup 宏', 'macro', 'wevu-extension'),
   ...['ref', 'customRef', 'reactive', 'shallowRef', 'shallowReactive', 'readonly', 'shallowReadonly', 'computed', 'watch', 'watchEffect', 'watchPostEffect', 'watchSyncEffect', 'effectScope', 'getCurrentScope', 'onScopeDispose', 'toRef', 'toRefs', 'unref', 'toValue', 'triggerRef', 'toRaw', 'markRaw', 'isRef', 'isReactive', 'isShallowRef', 'isShallowReactive', 'isRaw', 'isReadonly', 'isProxy', 'nextTick']
     .map(name => reactivity(name)),
+  reactivity('useAsyncDerivation', 'wevu-extension'),
   ...['effect', 'stop', 'batch', 'startBatch', 'endBatch', 'traverse']
     .map(name => reactivity(name, 'wevu-extension')),
   ...[
@@ -239,10 +240,12 @@ export const wevuApiCatalog: WevuApiItem[] = [
     'sfc-style',
   )),
   api('defineStore()', '/wevu/api/store#definestore', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '定义'] }),
-  compatibilityApi('pinia', 'createPinia', 'createPinia()', '/wevu/api/store#createpinia', 'Store 入口', 'store', { entry: 'wevu/store', keywords: ['Pinia', '不支持'] }, 'runtime'),
   api('createStore()', '/wevu/api/store#createstore', 'Store 入口', 'store', 'wevu-extension', { entry: 'wevu/store', keywords: ['Manager', '隔离'] }),
+  compatibilityApi('pinia', 'createPinia', 'createPinia()', '/wevu/api/store#createpinia', 'Store 入口', 'store', { entry: 'wevu/store', keywords: ['Pinia', '安装', '隔离'] }, 'runtime'),
+  ...['setActivePinia', 'getActivePinia', 'disposePinia'].map(name => api(`${name}()`, `/wevu/api/store#${name.toLowerCase()}`, 'Store 入口', 'store', 'vue-compatible', { entry: 'wevu/store', keywords: ['Pinia'] })),
   api('storeToRefs()', '/wevu/api/store#storetorefs', 'Store 入口', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['Pinia', '解构', '响应式'] }),
   ...[
+    ['$dispose()', 'store-dispose', ['释放', '生命周期']],
     ['$id', 'store-id', ['标识', 'id']],
     ['$state', 'store-state', ['状态', 'Options Store']],
     ['$patch()', 'store-patch', ['批量更新', 'mutation']],
@@ -250,7 +253,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
     ['$subscribe()', 'store-subscribe', ['订阅', 'mutation']],
     ['$onAction()', 'store-onaction', ['Action', '订阅']],
   ].map(([name, anchor, keywords]) => api(name as string, `/wevu/api/store#${anchor}`, 'Store 实例', 'store', 'vue-different', { entry: 'wevu/store', keywords: keywords as string[] })),
-  api('manager.install()', '/wevu/api/store#storemanager-install', 'Store Manager', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['安装', 'app.use', 'no-op'] }),
+  api('manager.install()', '/wevu/api/store#storemanager-install', 'Store Manager', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['安装', 'app.use', 'use'] }),
   api('manager.use()', '/wevu/api/store#storemanager-use', 'Store Manager', 'store', 'vue-different', { entry: 'wevu/store', keywords: ['插件', 'plugin'] }),
   ...[
     ['state', 'options-state', ['状态', 'Options Store']],
@@ -267,6 +270,7 @@ export const wevuApiCatalog: WevuApiItem[] = [
     ['StoreSubscribeOptions', 'storesubscribeoptions'],
     ['MutationType', 'mutationtype'],
   ].map(([name, anchor]) => api(name, `/wevu/api/store#${anchor}`, 'Store 类型', 'type', 'wevu-extension', { entry: 'wevu/store', keywords: ['TypeScript', '类型'] })),
+  routerApi('definePage()', 'definepage', 'Router 编译宏', 'macro', 'wevu-extension', ['name', 'meta', 'auto-routes', '命名路由', '编译期']),
   ...[
     ['createRouter()', 'createrouter'],
     ['useRouter()', 'userouter'],
@@ -300,6 +304,20 @@ export const wevuApiCatalog: WevuApiItem[] = [
     .map(name => routerApi(`router.${name}()`, `router-${name.toLowerCase()}`, '动态路由', 'runtime', 'vue-different', ['路由记录', 'route record', '动态'])),
   ...['beforeEach', 'beforeResolve', 'afterEach', 'onError']
     .map(name => routerApi(`router.${name}()`, `router-${name.toLowerCase()}`, '导航守卫', 'runtime', 'vue-different', ['守卫', 'guard', '错误处理'])),
+  ...[
+    'WevuNamedRouteMap',
+    'WevuBroadRouteMap',
+    'WevuNamedRouteDefinition',
+    'WevuRouteName',
+    'WevuNamedRoutePath',
+    'WevuNamedRouteMeta',
+    'WevuAutoRoute',
+    'RouteLocationNamedRaw',
+    'RouteLocationNormalizedByName',
+    'RouterResolve',
+    'StaticPageDeclaration',
+    'StaticRouteValue',
+  ].map(name => routerType(name, '命名路由类型', 'wevu-extension', ['TypeScript', 'definePage', 'meta', 'auto-routes'])),
   ...[
     'RouterNavigation',
     'UseRouterOptions',

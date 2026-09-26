@@ -119,11 +119,9 @@ import { defineConfig } from 'weapp-vite'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    wxml: { remove: { comment: true } },
     vue: {
       enable: true,
-      template: {
-        removeComments: true,
-      },
     },
   },
 })

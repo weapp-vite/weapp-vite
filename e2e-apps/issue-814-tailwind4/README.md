@@ -1,6 +1,6 @@
 # issue-814-tailwind4
 
-用于对照 [weapp-tailwindcss#814](https://github.com/sonofmagic/weapp-tailwindcss/issues/814) 的 TailwindCSS 4.2.0 场景。
+用于验证 [weapp-tailwindcss#814](https://github.com/sonofmagic/weapp-tailwindcss/issues/814) 的 Vue 动态 class 场景，使用 Tailwind CSS 4 与 weapp-vite 内置 Tailwind Core 集成，无需运行 patch 命令。配置统一位于 `vite.config.ts`。
 
 ## 运行
 
@@ -12,7 +12,8 @@ node ../../packages/weapp-vite/bin/weapp-vite.js build . --platform weapp --skip
 
 ## 关键检查点
 
-- `dist/pages/index/index.wxml` 中静态 class 被转义为 `gap-_b20px_B`
-- `dist/pages/index/index.js` 中动态 `:class` 也被转义为 `gap-_b20px_B`
+- WXML 中静态 `gap-[24px]` 转义为 `gap-_b24px_B`，动态节点保留数据绑定。
+- 输出 JavaScript 中的动态 `gap-[17px]` 转义为 `gap-_b17px_B`。
+- `app.wxss` 生成两个匹配的选择器，以及 `gap: 24px`、`gap: 17px`，证明真实候选进入 Core 编译。
 
-说明当前仓库下该最小案例的 TailwindCSS 4 表现为动态 class 已转义。
+CI 回归入口为 `e2e/ci/issue-814-tailwind-dynamic-class.e2e.test.ts`；构建断言不替代真实 IDE 的 DOM 验收。

@@ -9,15 +9,19 @@ import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
+import type { DevBuildWatcherController } from './devBuildWatcher'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
+import { hasManagedCompilerEntries } from '../../plugins/compilerPluginRegistry'
+import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
 import { invalidateFileCache } from '../../plugins/utils/cache'
 import {
   configSuffixes,
@@ -30,24 +34,27 @@ import {
   watchedTemplateSuffixes,
 } from '../../plugins/utils/invalidateEntry/shared'
 import { isLayoutSourcePath } from '../../plugins/utils/layoutSourcePath'
-import { touch } from '../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJsonEnvOption, resolveHmrProfileJsonPath as resolveHmrProfileJsonOutputPath } from '../../utils/hmrProfile'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { getWxmlWatchFiles, isWxmlDependency, observeWxmlDependencies } from '../../wxml/processing/dependencies'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { runStatefulHmrDev } from '../statefulHmr/session'
+import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
 import { createSidecarWatchOptions } from '../watch/options'
+import { retainWatcherService } from '../watcherPlugin'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
-import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches } from './outputs'
-import { resolveTouchAppWxssEnabled } from './touchAppWxss'
+import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
+import { refreshSnapshotSources } from './snapshotSources'
+import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
 export interface BuildOptions {
@@ -112,6 +119,12 @@ interface HmrProfileJsonSample {
   snapshotResolveMs?: number
   snapshotBuildMs?: number
   writeMs?: number
+  finalizePrepareMs?: number
+  finalizeTemplateMs?: number
+  finalizePublishMs?: number
+  publicationValidateMs?: number
+  publicationIndependentMs?: number
+  publicationPruneMs?: number
   watchToDirtyMs?: number
   emitMs?: number
   sharedChunkResolveMs?: number
@@ -179,11 +192,17 @@ interface SnapshotBuildReason {
   event?: ChangeEvent
   file?: string
   forceFullRescan?: boolean
+  independentOutput?: boolean
 }
 
 interface SnapshotBuildBatch {
   reasons: SnapshotBuildReason[]
   startedAt: number
+}
+
+interface DevWatcherCleanup {
+  releaseSession: () => void
+  closePromise?: Promise<void>
 }
 
 function toStatefulHmrOutput(output: RolldownOutput | RolldownOutput[] | RolldownWatcher): StatefulHmrOutputFile[] {
@@ -374,6 +393,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let devHmrDecision: HmrRuntimeDecision | undefined
   let devHmrRuntimeNoticeLogged = false
   let skylineHmrFallbackApplied = false
+  let activeDevSession: object | undefined
+  const devWatcherCleanups = new WeakMap<RolldownWatcher, DevWatcherCleanup>()
 
   const SKYLINE_HMR_COMPATIBILITY_URL = 'https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98'
 
@@ -503,6 +524,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       snapshotResolveMs: profile.snapshotResolveMs,
       snapshotBuildMs: profile.snapshotBuildMs,
       writeMs: profile.writeMs,
+      finalizePrepareMs: profile.finalizePrepareMs,
+      finalizeTemplateMs: profile.finalizeTemplateMs,
+      finalizePublishMs: profile.finalizePublishMs,
+      publicationValidateMs: profile.publicationValidateMs,
+      publicationIndependentMs: profile.publicationIndependentMs,
+      publicationPruneMs: profile.publicationPruneMs,
       watchToDirtyMs: profile.watchToDirtyMs,
       emitMs: profile.emitMs,
       sharedChunkResolveMs: profile.sharedChunkResolveMs,
@@ -1166,6 +1193,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     sidecarRoot: string
     waitForPendingSnapshotBuilds: () => Promise<unknown>
     markClosed: () => void
+    releaseResources?: () => Promise<void>
   }) {
     const { watcher, watcherRoot, sidecarRoot, waitForPendingSnapshotBuilds, markClosed } = options
     const originalClose = watcher.close.bind(watcher)
@@ -1182,7 +1210,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             await Promise.resolve(sidecarWatcher.close()).catch(() => {})
           }
           watcherService.rollupWatcherMap.delete(watcherRoot)
-          await originalClose()
+          try {
+            await originalClose()
+          }
+          finally {
+            await options.releaseResources?.()
+          }
         })()
       }
       return closePromise
@@ -1191,45 +1224,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   const buildState = ctx.runtimeState.build
   const { queue } = buildState
   const requestedConfigRestartBuilds = new Set<BuildTarget>()
-  let autoTouchResolved = false
-  let autoTouchChecked = false
-
-  function hasAutoTouchAppWxssReason() {
-    const dirtyReasonSummary = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary ?? []
-    return dirtyReasonSummary.some((reason) => {
-      return reason.startsWith('tailwind-content:')
-        || reason.startsWith('style-sidecar:')
-        || reason.startsWith('entry-style-only:')
-    })
-  }
-
   const {
     buildIndependentBundle,
     getIndependentOutput,
     invalidateIndependentOutput,
-  } = createIndependentBuilder(configService, buildState)
+  } = createIndependentBuilder(configService, buildState, ctx)
 
   function shouldTouchAppWxss() {
-    const option = configService.weappViteConfig.hmr?.touchAppWxss ?? 'auto'
-    if (option === true) {
-      return true
-    }
-    if (option === false) {
-      return false
-    }
-    if (!hasAutoTouchAppWxssReason()) {
-      return false
-    }
-    if (!autoTouchChecked) {
-      autoTouchChecked = true
-      autoTouchResolved = resolveTouchAppWxssEnabled({
-        option,
-        platform: configService.platform,
-        packageJson: configService.packageJson,
-        cwd: configService.cwd,
-      })
-    }
-    return autoTouchResolved
+    return resolveTouchAppWxssEnabled({
+      option: configService.weappViteConfig.hmr?.touchAppWxss,
+      platform: configService.platform,
+      dirtyReasonSummary: ctx.runtimeState.build.hmr.profile.dirtyReasonSummary,
+      managedCompiler: hasManagedCompilerEntries(ctx as any),
+    })
   }
 
   function isDevOutputFile(filePath: string) {
@@ -1245,7 +1252,60 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     return requestedConfigRestartBuilds.delete(target)
   }
 
-  async function runDev(target: BuildTarget) {
+  // 外部消费者只订阅首次返回的 watcher；重启只替换其背后的原生会话与服务器。
+  let activeStatefulWatcher: RolldownWatcher | undefined
+  let statefulBuildEvents: DevBuildWatcherController | undefined
+  let statefulWatcherClosed = false
+  const statefulRestartTasks = new Set<Promise<void>>()
+  let stopStatefulWatcher: (() => Promise<void>) | undefined
+
+  async function trackStatefulRestart(restart: () => Promise<void>) {
+    const task = restart()
+    statefulRestartTasks.add(task)
+    try {
+      await task
+    }
+    finally {
+      statefulRestartTasks.delete(task)
+    }
+  }
+
+  function getStatefulBuildEvents() {
+    if (statefulBuildEvents) {
+      return statefulBuildEvents
+    }
+    const buildEvents = createDevBuildWatcher()
+    const closeEvents = buildEvents.watcher.close.bind(buildEvents.watcher)
+    let stopPromise: Promise<void> | undefined
+    stopStatefulWatcher = () => {
+      statefulWatcherClosed = true
+      stopPromise ??= (async () => {
+        const activeWatcher = activeStatefulWatcher
+        activeStatefulWatcher = undefined
+        try {
+          await activeWatcher?.close()
+        }
+        finally {
+          await closeEvents()
+        }
+      })()
+      return stopPromise
+    }
+    let closePromise: Promise<void> | undefined
+    buildEvents.watcher.close = () => closePromise ??= (async () => {
+      try {
+        await stopStatefulWatcher!()
+      }
+      finally {
+        // 重启期间 active watcher 暂为空，仍须等待快照和新服务器退出，才能允许删除输出目录。
+        await Promise.allSettled([...statefulRestartTasks])
+      }
+    })()
+    statefulBuildEvents = buildEvents
+    return buildEvents
+  }
+
+  async function startDev(target: BuildTarget, restartDev: (target: BuildTarget) => Promise<RolldownWatcher>): Promise<RolldownWatcher> {
     if (process.env.NODE_ENV === undefined) {
       process.env.NODE_ENV = 'development'
     }
@@ -1305,18 +1365,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       logHmrRuntimeDecision(hmrDecision)
     }
     if (target === 'app' && hmrDecision.runtime === 'stateful-experimental') {
+      const nativeBuildEvents = getStatefulBuildEvents()
+      nativeBuildEvents.emitEvent({ code: 'START' })
       try {
-        const snapshotBuildOptions: InlineConfig = {
-          ...buildOptions,
-          build: {
-            ...(buildOptions.build ?? {}),
-            watch: undefined,
-            write: false,
-          },
-        }
-        const initialSnapshot = toStatefulHmrOutput(await build(snapshotBuildOptions))
+        const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx)
+        const initialSnapshot = toStatefulHmrOutput(snapshot.output)
+        const initialGlobalStyleRoutes = snapshot.getGlobalStyleRoutes()
         const initialEntryIds = collectStatefulHmrEntryIds(
-          ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+          snapshot.getEntryIds(),
         )
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
@@ -1327,14 +1383,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           })
         }
         if (devHmrDecision?.runtime === 'classic') {
+          ctx.moduleGraphService.resetSession()
           resetRuntimeStateForFreshBuild(ctx.runtimeState)
           await configService.load(configService.loadOptions)
           await scanService.loadAppEntry()
           scanService.loadSubPackages()
-          return await runDev(target)
+          return await restartDev(target)
         }
         logHmrRuntimeDecision(hmrDecision)
         await configService.load(configService.loadOptions)
+        ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await scanService.loadAppEntry()
         scanService.loadSubPackages()
@@ -1343,64 +1401,114 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ...(buildOptions.build ?? {}),
           write: true,
         }
+        if (statefulWatcherClosed) {
+          return nativeBuildEvents.watcher
+        }
         const workerPromise = hasWorkersDir && workersDir
           ? devWorkers(configService, watcherService, workersDir)
           : Promise.resolve()
-        let statefulWatcher: RolldownWatcher | undefined
-        const [watcher] = await Promise.all([
-          runStatefulHmrDev(ctx, buildOptions, async () => {
-            await statefulWatcher?.close()
+        const startup = await Promise.allSettled([
+          runStatefulHmrDev(ctx, buildOptions, () => trackStatefulRestart(async () => {
+            const activeWatcher = activeStatefulWatcher
+            activeStatefulWatcher = undefined
+            await activeWatcher?.close()
+            if (statefulWatcherClosed) {
+              return
+            }
             logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
+            ctx.moduleGraphService.resetSession()
             resetRuntimeStateForFreshBuild(ctx.runtimeState)
             await configService.load(configService.loadOptions)
             await scanService.loadAppEntry()
             scanService.loadSubPackages()
-            await runDev(target)
-            logger.success('微信状态保持 HMR 构建已完成完整重载。')
-          }, {
+            if (statefulWatcherClosed) {
+              return
+            }
+            await restartDev(target)
+            if (!statefulWatcherClosed) {
+              logger.success('微信状态保持 HMR 构建已完成完整重载。')
+            }
+          }), {
             entryIds: initialEntryIds,
-            initial: initialSnapshot,
+            delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
+            initial: {
+              output: initialSnapshot,
+              componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
+              glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+            },
             rebuild: async (files) => {
               for (const file of files) {
                 invalidateFileCache(file)
               }
-              resetRuntimeStateForFreshBuild(ctx.runtimeState)
-              resetEmittedOutputCaches(ctx.runtimeState)
-              await configService.load(configService.loadOptions)
-              await scanService.loadAppEntry()
-              scanService.loadSubPackages()
-              const snapshotOptions = createDevBuildOptions()
-              snapshotOptions.build = {
-                ...(snapshotOptions.build ?? {}),
-                emptyOutDir: false,
-                watch: undefined,
-                write: false,
-              }
-              snapshotOptions.plugins = [
-                ...(snapshotOptions.plugins ?? []),
-                {
-                  name: 'weapp-vite:stateful-hmr-snapshot-assets',
-                  enforce: 'post',
-                  generateBundle(_options, bundle) {
-                    for (const [fileName, item] of Object.entries(bundle)) {
-                      if (item.type === 'chunk') {
-                        delete bundle[fileName]
+              const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
+                const snapshotOptions = appendHmrMetricsPlugin(options)
+                snapshotOptions.build = { ...(snapshotOptions.build ?? {}), emptyOutDir: false }
+                snapshotOptions.plugins = [
+                  ...(snapshotOptions.plugins ?? []),
+                  {
+                    name: 'weapp-vite:stateful-hmr-snapshot-assets',
+                    enforce: 'post',
+                    generateBundle(_options, bundle) {
+                      for (const [fileName, item] of Object.entries(bundle)) {
+                        if (item.type === 'chunk') {
+                          delete bundle[fileName]
+                        }
                       }
-                    }
+                    },
                   },
-                },
-              ]
-              return toStatefulHmrOutput(await build(snapshotOptions))
+                ]
+                return snapshotOptions
+              }, ctx)
+              const output = toStatefulHmrOutput(snapshot.output)
+              return {
+                output,
+                entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
+                delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
+                componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
+                glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+              }
             },
-          }),
+          }, nativeBuildEvents),
           workerPromise,
         ])
-        statefulWatcher = watcher
-        watcherService.setRollupWatcher(watcher, '/')
-        return watcher
+        const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+        if (startupErrors.length > 0) {
+          if (startup[0].status === 'fulfilled') {
+            try {
+              await startup[0].value.close()
+            }
+            catch (error) {
+              startupErrors.push(error)
+            }
+          }
+          throw startupErrors.length === 1 ? startupErrors[0] : new AggregateError(startupErrors, 'Stateful development watcher startup failed')
+        }
+        const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
+        if (statefulWatcherClosed) {
+          await watcher.close()
+          return nativeBuildEvents.watcher
+        }
+        activeStatefulWatcher = watcher
+        const facade = nativeBuildEvents.watcher
+        if (watcherService.rollupWatcherMap.get('/') !== facade) {
+          watcherService.setRollupWatcher(facade, '/')
+        }
+        return facade
       }
       catch (error) {
-        if (hmrDecision.configured !== 'auto' || !isStatefulHmrRuntimeCompatibilityError(error)) {
+        if (statefulWatcherClosed) {
+          return nativeBuildEvents.watcher
+        }
+        const useClassicFallback = hmrDecision.configured === 'auto'
+          && isStatefulHmrRuntimeCompatibilityError(error)
+        if (!useClassicFallback) {
+          nativeBuildEvents.emitEvent({
+            code: 'ERROR',
+            error: error instanceof Error ? error : new Error(String(error)),
+            result: undefined as never,
+          })
+          // 失败可能发生在被 close 等待的重启任务内部，停止资源时不能反向等待自身。
+          await stopStatefulWatcher!()
           throw error
         }
         devHmrDecision = {
@@ -1410,11 +1518,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         logger.warn(`微信状态保持 HMR 运行时不可用，已自动降级为 classic：${error instanceof Error ? error.message : String(error)}`)
         logger.info(formatHmrRuntimeStartupMessages(devHmrDecision)[0])
+        ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await configService.load(configService.loadOptions)
         await scanService.loadAppEntry()
         scanService.loadSubPackages()
-        return await runDev(target)
+        return await restartDev(target)
       }
     }
     const snapshotBuildOptions: InlineConfig = {
@@ -1429,8 +1538,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let snapshotBuildChain: Promise<'snapshot' | 'closed' | undefined> = Promise.resolve(undefined)
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
+    let failedSnapshotReasons: SnapshotBuildReason[] = []
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
-    const devBuildWatcher = target === 'app' ? createDevBuildWatcher() : undefined
+    // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
+    let emittedAutoRoutesSignature: string | undefined
+    const devBuildWatcher = target === 'app' ? (statefulBuildEvents ?? createDevBuildWatcher()) : undefined
 
     function markSnapshotEntriesFullDirty() {
       for (const entryId of ctx.runtimeState.build.hmr.resolvedEntryMap.keys()) {
@@ -1490,10 +1602,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (devWatcherClosed) {
           return
         }
-        if (reason?.event || reason?.file) {
-          if (reason.file) {
-            invalidateFileCache(reason.file)
+        if (failedSnapshotReasons.length) {
+          batchReasons = [...failedSnapshotReasons, ...batchReasons]
+          failedSnapshotReasons = []
+          // 上次写入可能未完成，重放时不能依赖已生成阶段的输出去重缓存。
+          resetEmittedOutputCaches(ctx.runtimeState)
+        }
+        // 当前串行构建独占 graph pending；后续事件继续留在本地批次队列。
+        for (const batchReason of batchReasons) {
+          if (batchReason.file) {
+            ctx.moduleGraphService.recordChangedFile(batchReason.file, batchReason.event ?? 'update')
+            if (batchReason.event === 'delete' && !await fs.pathExists(batchReason.file)) {
+              ctx.moduleGraphService.removeEntryDependencies(batchReason.file)
+            }
           }
+        }
+        if (reason?.event || reason?.file) {
           ctx.runtimeState.build.hmr.profile = {
             ...ctx.runtimeState.build.hmr.profile,
             eventId: createHmrProfileEventId(),
@@ -1523,14 +1647,37 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
-        if (!requiresFullRescan && graphAffectedEntries.size) {
+        const { routeSignature, routeDependentEntries } = await refreshSnapshotSources(
+          ctx,
+          batchReasons.filter((batchReason): batchReason is SnapshotBuildReason & { file: string } => Boolean(batchReason.file)),
+          emittedAutoRoutesSignature,
+        )
+        for (const entryId of graphAffectedEntries) {
+          routeDependentEntries.delete(entryId)
+        }
+        for (const entryId of routeDependentEntries) {
+          graphAffectedEntries.add(entryId)
+        }
+        const styleScriptChanges = new Set<string>()
+        for (const batchReason of batchReasons) {
+          if (!batchReason.file) {
+            continue
+          }
+          for (const entryId of await collectVueStyleScriptChanges(ctx, batchReason.file, configService)) {
+            styleScriptChanges.add(entryId)
+            graphAffectedEntries.add(entryId)
+          }
+        }
+        // 独立包失效也需要主 bundler 发布，但不因此重新编译未受影响的主包入口。
+        const hasIndependentOutput = batchReasons.some(batchReason => batchReason.independentOutput)
+        if (!requiresFullRescan && (graphAffectedEntries.size || hasIndependentOutput)) {
           const dirtyReasons = batchReasons.map(resolveSnapshotDirtyReason)
           const dirtyReason = dirtyReasons.includes('direct')
             ? 'direct'
             : dirtyReasons.includes('dependency') ? 'dependency' : 'metadata'
           for (const entryId of graphAffectedEntries) {
             if (ctx.runtimeState.build.hmr.resolvedEntryMap.has(entryId)) {
-              markSnapshotEntryDirty(entryId, reason, dirtyReason)
+              markSnapshotEntryDirty(entryId, reason, styleScriptChanges.has(entryId) ? 'direct' : routeDependentEntries.has(entryId) ? 'dependency' : dirtyReason)
             }
           }
           const summaryCounts = new Map<string, number>()
@@ -1544,6 +1691,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             ).replace(/:\d+$/, '')
             summaryCounts.set(summary, (summaryCounts.get(summary) ?? 0) + 1)
           }
+          if (styleScriptChanges.size) {
+            summaryCounts.set('entry-mixed-asset', styleScriptChanges.size)
+          }
           ctx.runtimeState.build.hmr.profile.dirtyReasonSummary = Array.from(
             summaryCounts,
             ([summary, count]) => `${summary}:${count}`,
@@ -1551,6 +1701,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           try {
             devBuildWatcher?.emitEvent({ code: 'START' })
             await build(snapshotBuildOptions)
+            emittedAutoRoutesSignature = routeSignature
             devBuildWatcher?.emitEvent({ code: 'END' })
           }
           catch (error) {
@@ -1570,16 +1721,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         markSnapshotEntriesFullDirty()
-        process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS = '1'
+        // 完整 snapshot 必须重新输出所有资源；是否清空目录仍服从用户配置。
+        resetEmittedOutputCaches(ctx.runtimeState)
+        const hmr = ctx.runtimeState.build.hmr
+        hmr.forceFullSharedChunkRefresh = true
         try {
           devBuildWatcher?.emitEvent({ code: 'START' })
           await build({
             ...snapshotBuildOptions,
             build: {
               ...(snapshotBuildOptions.build ?? {}),
-              emptyOutDir: true,
+              emptyOutDir: shouldCleanOutputs(configService, 'rebuild'),
             },
           })
+          emittedAutoRoutesSignature = routeSignature
           devBuildWatcher?.emitEvent({ code: 'END' })
           return 'snapshot'
         }
@@ -1593,10 +1748,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         finally {
           recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
-          delete process.env.WEAPP_VITE_FORCE_FULL_HMR_SHARED_CHUNKS
+          hmr.forceFullSharedChunkRefresh = false
         }
       })
-      snapshotBuildChain = currentSnapshotBuild.catch(() => undefined)
+      snapshotBuildChain = currentSnapshotBuild.catch(() => {
+        failedSnapshotReasons.push(...batchReasons)
+        return undefined
+      })
       return currentSnapshotBuild
     }
 
@@ -1617,9 +1775,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     function scheduleSnapshotBuild(reason: SnapshotBuildReason, startedAt: number) {
       if (devWatcherClosed) {
         return
-      }
-      if (reason.file) {
-        ctx.moduleGraphService?.recordChangedFile(reason.file, reason.event ?? 'update')
       }
       if (pendingSnapshotBatch) {
         pendingSnapshotBatch.reasons.push(reason)
@@ -1664,11 +1819,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })
       : undefined
 
+    // classic 的多轮一次性构建共用控制器资源，必须保留到正在执行的快照结束后再释放。
+    const releaseWatcherResources = devBuildWatcher ? retainWatcherService(watcherService) : undefined
     const watcherPromise = target === 'app'
       ? (async () => {
           devBuildWatcher!.emitEvent({ code: 'START' })
           try {
+            await ctx.autoRoutesService?.ensureFresh()
+            const routeSignature = ctx.autoRoutesService?.getSignature()
             await build(snapshotBuildOptions)
+            emittedAutoRoutesSignature = routeSignature
             devBuildWatcher!.emitEvent({ code: 'END' })
             return devBuildWatcher!.watcher
           }
@@ -1678,7 +1838,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               error: error instanceof Error ? error : new Error(String(error)),
               result: undefined as never,
             })
-            await moduleGraphProvider?.close()
             throw error
           }
         })()
@@ -1686,7 +1845,19 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const workerPromise = target === 'app' && hasWorkersDir && workersDir
       ? devWorkers(configService, watcherService, workersDir)
       : Promise.resolve()
-    const [watcher] = await Promise.all([watcherPromise, workerPromise])
+    const startup = await Promise.allSettled([watcherPromise, workerPromise])
+    const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
+    if (startupErrors.length > 0) {
+      // 等初次构建与 worker 启动都结束再回收；一个关闭失败不能遗留控制器租约。
+      const cleanup = await Promise.allSettled([
+        async () => await moduleGraphProvider?.close(),
+        async () => await devBuildWatcher?.watcher.close(),
+        async () => await releaseWatcherResources?.(),
+      ].map(async close => await close()))
+      const errors = [...startupErrors, ...cleanup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])]
+      throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher startup failed')
+    }
+    const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
     const isTestEnv = process.env.VITEST === 'true'
       || process.env.NODE_ENV === 'test'
 
@@ -1727,6 +1898,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (shouldRestart) {
             await watcher.close()
             logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
+            ctx.moduleGraphService.resetSession()
             resetRuntimeStateForFreshBuild(ctx.runtimeState)
             await configService.load(configService.loadOptions)
             try {
@@ -1741,7 +1913,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             }
             await scanService.loadAppEntry()
             scanService.loadSubPackages()
-            await runDev(target)
+            await restartDev(target)
             logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
             resolveWatcher(e)
             return
@@ -1756,7 +1928,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             logger.success(formatHmrLogLine(durationMs))
             shouldLogSlowHmrTip()
             if (appWxssPath && shouldTouchAppWxss()) {
-              void touch(appWxssPath).catch(() => {})
+              await touchExistingAppStyle(appWxssPath)
             }
           }
           else {
@@ -1766,6 +1938,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           resolveWatcher(e)
         })().catch((error) => {
           resetHmrProfile()
+          logger.error(error)
           rejectWatcher(error)
         })
       }
@@ -1785,13 +1958,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        createSnapshotSidecarWatchPatterns(configService, buildOptions),
+        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...getWxmlWatchFiles(ctx)],
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
           ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
+      const unobserveWxml = observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
+      const independentWatch = ctx.runtimeState.build.independent
+      const observeIndependent = (files: string[]) => {
+        snapshotWatcher.add(files)
+      }
+      independentWatch.watchListeners.add(observeIndependent)
+      for (const files of independentWatch.watchFiles.values()) {
+        snapshotWatcher.add([...files])
+      }
       snapshotWatcher.on('all', (event, id) => {
         if (!id) {
           return
@@ -1799,20 +1981,46 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (isDevOutputFile(id)) {
           return
         }
-        if (!shouldHandleSnapshotSidecarFile(id, ctx)) {
+        const normalizedId = normalizeFsResolvedId(id)
+        const independentRoots: string[] = []
+        for (const [root, files] of independentWatch.watchFiles) {
+          if (files.has(normalizedId)) {
+            independentRoots.push(root)
+          }
+        }
+        const independentSource = independentRoots.length > 0 && !ctx.moduleGraphService.hasModule(id)
+        if (!independentSource && !isWxmlDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
-        const normalizedId = normalizeFsResolvedId(id)
+        const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
+        if (event === 'unlink' && (isWxmlDependencyFile || independentSource)) {
+          // Chokidar 删除单文件监听后不总是监听其父目录；关闭旧句柄后重新登记缺失文件，才能观察恢复。
+          queueMicrotask(() => {
+            if (!devWatcherClosed) {
+              snapshotWatcher.add(normalizedId)
+            }
+          })
+        }
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency) {
+        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isWxmlDependencyFile && !independentSource) {
           return
         }
-        if (event.startsWith('add') && !isConfigDependency && ctx.moduleGraphService.hasModule(id)) {
+        if (event.startsWith('add') && !isConfigDependency && !isWxmlDependencyFile && ctx.moduleGraphService.hasModule(id)) {
           return
         }
         if (isConfigDependency) {
           requestedConfigRestartBuilds.add(target)
+        }
+        for (const root of independentRoots) {
+          invalidateIndependentOutput(root)
+          scanService.markIndependentDirty(root)
+        }
+        if (isWxmlDependencyFile) {
+          for (const root of scanService.independentSubPackageMap.keys()) {
+            invalidateIndependentOutput(root)
+            scanService.markIndependentDirty(root)
+          }
         }
         const sidecarStartedAt = performance.now()
         const normalizedEvent = event.startsWith('unlink')
@@ -1823,13 +2031,20 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         scheduleSnapshotBuild({
           event: normalizedEvent,
           file: id,
-          forceFullRescan: true,
+          independentOutput: independentRoots.length > 0,
+          forceFullRescan: !independentSource || isConfigDependency || isWxmlDependencyFile,
         }, sidecarStartedAt)
       })
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
-          await snapshotWatcher.close()
-          await moduleGraphProvider?.close()
+          try {
+            unobserveWxml()
+            independentWatch.watchListeners.delete(observeIndependent)
+            await snapshotWatcher.close()
+          }
+          finally {
+            await moduleGraphProvider?.close()
+          }
         },
       })
       attachSidecarWatcherToWatcherClose({
@@ -1840,11 +2055,59 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         markClosed: () => {
           devWatcherClosed = true
         },
+        releaseResources: releaseWatcherResources,
       })
-      await waitForSidecarWatcherReady(snapshotWatcher)
+      try {
+        await waitForSidecarWatcherReady(snapshotWatcher)
+      }
+      catch (error) {
+        await watcher.close()
+        throw error
+      }
     }
-    watcherService.setRollupWatcher(watcher, watcherRoot)
+    if (watcherService.rollupWatcherMap.get(watcherRoot) !== watcher) {
+      watcherService.setRollupWatcher(watcher, watcherRoot)
+    }
     return watcher
+  }
+  async function runDev(target: BuildTarget): Promise<RolldownWatcher> {
+    const session = {}
+    activeDevSession = session
+    const releaseSession = () => {
+      if (activeDevSession === session) {
+        activeDevSession = undefined
+        ctx.moduleGraphService.resetSession()
+      }
+    }
+    try {
+      const watcher = await startDev(target, runDev)
+      // 递归降级或重启已经把所有权交给新会话，旧关闭回调不能清空新图。
+      if (activeDevSession !== session) {
+        return watcher
+      }
+      const existingCleanup = devWatcherCleanups.get(watcher)
+      if (existingCleanup) {
+        // native 重启复用公共 watcher；已保存的 close 也必须释放当前会话。
+        existingCleanup.releaseSession = releaseSession
+        if (existingCleanup.closePromise) {
+          // 原生启动已在关闭标记下释放新资源；公共 close 正在等待本轮重启，不在这里形成循环等待。
+          releaseSession()
+        }
+        return watcher
+      }
+      const cleanup: DevWatcherCleanup = { releaseSession }
+      devWatcherCleanups.set(watcher, cleanup)
+      const close = watcher.close.bind(watcher)
+      watcher.close = () => {
+        cleanup.closePromise ??= close().finally(() => cleanup.releaseSession())
+        return cleanup.closePromise
+      }
+      return watcher
+    }
+    catch (error) {
+      releaseSession()
+      throw error
+    }
   }
 
   async function runProd(target: BuildTarget) {
@@ -1948,6 +2211,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         outDir: pluginOutputRoot,
       },
     }
+    const emptyOutDir = configService.inlineConfig.build?.emptyOutDir
+    if (typeof emptyOutDir === 'boolean') {
+      inlineConfig.build!.emptyOutDir = emptyOutDir
+    }
     const isolatedKey = `plugin-build:${configService.cwd}`
     const isolatedCtx = await createCompilerContext({
       key: isolatedKey,
@@ -1980,8 +2247,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
-    const shouldCleanOutputs = !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
-    if (shouldCleanOutputs) {
+    if (shouldCleanOutputs(configService, 'startup')) {
       await cleanOutputs(configService)
       resetEmittedOutputCaches(ctx.runtimeState)
     }

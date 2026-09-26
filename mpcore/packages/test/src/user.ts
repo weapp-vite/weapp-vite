@@ -9,11 +9,16 @@ export class MiniProgramUser {
   ) {}
 
   private async nodeHandle(node: MiniProgramNode) {
-    const handle = await this.page.$(`[data-sim-node="${node.nodeId}"]`)
-    if (!handle) {
-      throw new Error('The mini-program node is no longer available for interaction.')
+    const scopes: Pick<HeadlessTestingPageHandle, '$' | '$$'>[] = [this.page]
+    // 屏幕查询覆盖完整渲染树，交互仍逐层进入组件声明作用域。
+    for (const scope of scopes) {
+      const handle = await scope.$(`[data-sim-node="${node.nodeId}"]`)
+      if (handle) {
+        return handle
+      }
+      scopes.push(...await scope.$$('component'))
     }
-    return handle
+    throw new Error('The mini-program node is no longer available for interaction.')
   }
 
   private async finish() {

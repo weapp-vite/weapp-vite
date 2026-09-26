@@ -6,6 +6,9 @@ import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+// eslint-disable-next-line e18e/ban-dependencies
+import { execa, getCancelSignal } from 'execa'
+import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 
 interface AutomatorCliBridgePayload {
   projectPath?: string
@@ -30,13 +33,15 @@ interface WaitForSocketReadyResult {
 
 interface WaitForSocketReadyOptions {
   child?: ChildProcessWithoutNullStreams
-  onSuccessfulCliExit?: (servicePort: number) => Promise<number | undefined>
+  onSuccessfulCliExit?: (servicePort: number, signal: AbortSignal) => Promise<number | undefined>
+  signal?: AbortSignal
   timeoutMs: number
   port: number
   successfulCliExitSettleMs?: number
 }
 
 interface EnableAutomatorViaHttpOptions {
+  signal?: AbortSignal
   args?: string[]
   autoPort: number
   projectPath: string
@@ -167,6 +172,7 @@ export async function enableAutomatorViaHttp(options: EnableAutomatorViaHttpOpti
 
   const response = await fetch(endpoint, {
     redirect: 'follow',
+    signal: options.signal,
   })
   const body = await response.text()
   if (!response.ok) {
@@ -229,12 +235,24 @@ function isMissingProcessError(error: unknown) {
   return error instanceof Error && 'code' in error && error.code === 'ESRCH'
 }
 
-async function terminateCliProcessTree(cliPid?: number) {
+export async function terminateCliProcessTree(cliPid?: number) {
   if (!cliPid || cliPid <= 0) {
     return
   }
 
-  const signalTarget = process.platform === 'win32' ? cliPid : -cliPid
+  if (process.platform === 'win32') {
+    // Windows 没有 Unix 进程组，终止 cmd.exe 时必须连同它启动的 CLI 子树一起清理。
+    const result = await execa('taskkill', ['/PID', String(cliPid), '/T', '/F'], {
+      reject: false,
+      timeout: 5_000,
+      windowsHide: true,
+    })
+    if (result.exitCode !== 0 && result.exitCode !== 128) {
+      throw new Error(`Failed to terminate automator CLI process tree: exit=${result.exitCode}`)
+    }
+    return
+  }
+  const signalTarget = -cliPid
   try {
     process.kill(signalTarget, 'SIGTERM')
   }
@@ -381,7 +399,7 @@ async function reserveLoopbackPort() {
   })
 }
 
-export async function waitForSocketReady(options: WaitForSocketReadyOptions): Promise<WaitForSocketReadyResult> {
+async function pollForSocketReady(options: WaitForSocketReadyOptions, lifecycle: AutomatorLaunchLifecycle): Promise<WaitForSocketReadyResult> {
   const { child, onSuccessfulCliExit, timeoutMs, port, successfulCliExitSettleMs = 0 } = options
   const startedAt = Date.now()
   let lastError: unknown
@@ -391,11 +409,18 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
   const stdoutChunks: Buffer[] = []
   const stderrChunks: Buffer[] = []
 
+  function collectStdout(chunk: Buffer) {
+    stdoutChunks.push(Buffer.from(chunk))
+  }
+  function collectStderr(chunk: Buffer) {
+    stderrChunks.push(Buffer.from(chunk))
+  }
+
   if (child?.stdout) {
-    child.stdout.on('data', chunk => stdoutChunks.push(Buffer.from(chunk)))
+    child.stdout.on('data', collectStdout)
   }
   if (child?.stderr) {
-    child.stderr.on('data', chunk => stderrChunks.push(Buffer.from(chunk)))
+    child.stderr.on('data', collectStderr)
   }
 
   const getStdout = () => Buffer.concat(stdoutChunks).toString('utf8')
@@ -412,6 +437,7 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
   }
 
   while (Date.now() - startedAt <= timeoutMs) {
+    lifecycle.throwIfAborted()
     if (childSpawnError) {
       throw new Error(`Failed to spawn WeChat DevTools CLI: ${child.spawnfile}`, {
         cause: childSpawnError,
@@ -438,11 +464,29 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
           host: '127.0.0.1',
           port: targetPort,
         })
-        socket.once('connect', () => {
-          socket.end()
-          resolve()
-        })
-        socket.once('error', reject)
+        let onAbort = () => {}
+        const finish = (error?: unknown) => {
+          lifecycle.signal.removeEventListener('abort', onAbort)
+          socket.removeAllListeners('connect')
+          socket.removeAllListeners('error')
+          socket.destroy()
+          if (error) {
+            reject(error)
+          }
+          else {
+            resolve()
+          }
+        }
+        onAbort = () => finish(lifecycle.signal.reason)
+        function onConnect() {
+          finish()
+        }
+        function onError(error: Error) {
+          finish(error)
+        }
+        lifecycle.signal.addEventListener('abort', onAbort, { once: true })
+        socket.once('connect', onConnect)
+        socket.once('error', onError)
       })
       return {
         port: targetPort,
@@ -450,6 +494,7 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
       }
     }
     catch (error) {
+      lifecycle.throwIfAborted()
       lastError = error
     }
 
@@ -463,16 +508,16 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
       if (servicePort) {
         const settleRemaining = successfulCliExitSettleMs - (Date.now() - childExit.at)
         if (settleRemaining > 0) {
-          await sleep(Math.min(400, settleRemaining))
+          await lifecycle.pause(Math.min(400, settleRemaining))
           continue
         }
         successfulExitHandled = true
-        targetPort = await onSuccessfulCliExit(servicePort) ?? targetPort
+        targetPort = await lifecycle.step(() => onSuccessfulCliExit(servicePort, lifecycle.signal)) ?? targetPort
         continue
       }
     }
 
-    await sleep(400)
+    await lifecycle.pause(400)
   }
 
   if (childSpawnError) {
@@ -500,6 +545,27 @@ export async function waitForSocketReady(options: WaitForSocketReadyOptions): Pr
   throw new Error(`Timed out waiting for automator socket 127.0.0.1:${targetPort}`, {
     cause: lastError as Error,
   })
+}
+
+export async function waitForSocketReady(options: WaitForSocketReadyOptions): Promise<WaitForSocketReadyResult> {
+  const lifecycle = new AutomatorLaunchLifecycle(options.timeoutMs, `automator socket 127.0.0.1:${options.port}`)
+  const onAbort = () => lifecycle.controller.abort(options.signal?.reason)
+  options.signal?.addEventListener('abort', onAbort, { once: true })
+  if (options.signal?.aborted) {
+    onAbort()
+  }
+  try {
+    return await lifecycle.run(() => pollForSocketReady(options, lifecycle))
+  }
+  catch (error) {
+    if (lifecycle.timedOut) {
+      throw new Error(`Timed out waiting for automator socket 127.0.0.1:${options.port}`, { cause: error })
+    }
+    throw error
+  }
+  finally {
+    options.signal?.removeEventListener('abort', onAbort)
+  }
 }
 
 export async function extendProjectConfig(projectPath: string, projectConfig?: Record<string, any>) {
@@ -541,6 +607,16 @@ async function main() {
   const cliPath = resolveCliPath(payload.cliPath)
   const args = resolveBootstrapCliArgs(payload.args || [])
 
+  const cancellation = new AbortController()
+  const cancelSignal = process.send ? await getCancelSignal() : undefined
+  const onCancel = () => cancellation.abort(cancelSignal?.reason ?? new Error('Automator cli bridge canceled'))
+  cancelSignal?.addEventListener('abort', onCancel, { once: true })
+  if (cancelSignal?.aborted) {
+    onCancel()
+  }
+  process.once('SIGTERM', onCancel)
+  process.once('SIGINT', onCancel)
+  cancellation.signal.throwIfAborted()
   const spawnOptions = resolveCliSpawnOptions(cliPath, args, payload.cwd)
   const child = spawn(spawnOptions.command, spawnOptions.args, spawnOptions.options)
   child.unref()
@@ -551,7 +627,9 @@ async function main() {
       child,
       port: autoPort,
       timeoutMs: payload.timeout ?? 30_000,
-      onSuccessfulCliExit: async servicePort => await enableAutomatorViaHttp({
+      signal: cancellation.signal,
+      onSuccessfulCliExit: async (servicePort, signal) => await enableAutomatorViaHttp({
+        signal,
         args: payload.args,
         autoPort,
         projectPath: resolvedProjectPath,
@@ -559,10 +637,16 @@ async function main() {
         trustProject: payload.trustProject,
       }),
     })
+    cancellation.signal.throwIfAborted()
   }
   catch (error) {
     await terminateCliProcessTree(child.pid).catch(() => {})
     throw error
+  }
+  finally {
+    cancelSignal?.removeEventListener('abort', onCancel)
+    process.removeListener('SIGTERM', onCancel)
+    process.removeListener('SIGINT', onCancel)
   }
 
   const result: AutomatorCliBridgeResult = {

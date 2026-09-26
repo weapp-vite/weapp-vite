@@ -47,6 +47,10 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
    - navigation 路径：`onHide/onUnload` 是否阻塞
    - resource / memory：图片尺寸、缓存、监听与定时器是否清理
 7. store 以小 domain 为先，解构 state/getters 用 `storeToRefs`，避免巨大跨页 store。
+   - 平台分支直接判断编译期常量 `import.meta.env.PLATFORM`（`weapp/alipay/tt/swan/jd/xhs/web`）；现有 `--platform` / `weapp.platform` 自动注入目标值，无需额外裁剪配置。
+   - Wevu 发布包保留平台表达式供消费构建替换并删除非目标分支；独立工具链未提供目标时保留动态宿主探测。
+   - 能力裁剪取决于实际使用与具名导入，不新增能力开关；SFC/JSX 由 Binding Manifest 安装所需能力，没有创建 router 时不引入首航 guard 状态机。
+   - 区分编译器精简入口与公开动态工厂的保守兼容安装；未使用 API/fetch 时可整体移除，使用后仍保留动态跨平台 adapter。
 8. 写法同时对照项目根 `AGENTS.md` 和本地 `dist/docs/wevu-authoring.md`。
 9. JSX/TSX 中保持小程序事件、class 和组件 tag 语义；编译后的自定义组件标签应为 kebab-case，可选链/空值合并不得残留为目标模板不支持的表达式。
 10. Wevu 项目通过共享 ESLint 配置统一启用 `@weapp-vite/eslint` 的 `wevuCompatibilityRecommended` 与 `miniProgramRuntimeRecommended`，模板不要单独增加 workspace 依赖；后者限制 DOM/Node 全局、现代内建和隐式 polyfill。不要假定微信 runtime 存在 `queueMicrotask`，新增宿主 API 前先在目标真实 IDE AppService 中探测。旧项目可继续从 `weapp-vite/eslint` 兼容入口导入。
@@ -67,7 +71,7 @@ Router 选择和迁移见 `references/router-runtime-matrix.md`。
 
 - 不要在 `await` 后注册 hooks。
 - 不要直接解构 store 丢失响应性。
-- 不要调用 `createPinia()` 或向 `useStore()` 传 manager；`createStore()` 是全局时序敏感的可选插件入口，`install()` 不执行额外逻辑。
+- Store 以 Pinia 4.0.3 为参照：用 `use(createPinia())` / `app.use(pinia)` 安装，或显式 `useStore(pinia)`；外部 state 自动解包，Setup 自行提供 `$reset`，`$dispose` 保留 manager 状态。`createStore` 是 `createPinia` 的同函数别名，`StoreManager` 继续保留；本次 minor 仍需按 [PR 前后迁移指南](https://vite.weapp.dev/wevu/store-migration) 升级旧消费者。
 - 不要返回不可序列化原生实例到模板状态。
 - 不要把浏览器 Vue 行为当成 wevu 默认行为。
 - 不要在没有基线时同时修改性能、运行时和业务逻辑三类变量。

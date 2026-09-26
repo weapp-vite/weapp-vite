@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { resetAutomatorRuntimeLogs } from '../utils/automator'
+import { createDomAcceptance } from '../utils/domAcceptance'
 import {
   closeSharedMiniProgram,
   DIST_ROOT,
@@ -11,6 +12,7 @@ import {
   relaunchPage,
   releaseSharedMiniProgram,
 } from './github-issues.runtime.shared'
+import { IDENTITY_CHECKPOINTS } from './githubIssuesDom/hostAndIdentity'
 
 const ISSUE_ROUTE = '/pages/issue-868/index'
 
@@ -34,6 +36,7 @@ describe('e2e app: github-issues / issue #868', { concurrent: false }, () => {
   })
 
   it('renders projected keys and restores source identity in real runtime', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/github-issues', IDENTITY_CHECKPOINTS)
     const miniProgram = await getSharedMiniProgram(ctx)
     try {
       resetAutomatorRuntimeLogs(miniProgram)
@@ -48,6 +51,7 @@ describe('e2e app: github-issues / issue #868', { concurrent: false }, () => {
       }
 
       const status = await issuePage.$('#issue-868-status', { timeout: 5_000 })
+      await dom.check('initial', miniProgram, issuePage)
       expect(status).not.toBeNull()
       expect((await status?.text())?.replaceAll(/\s/g, '')).toBe('alpha|0')
 
@@ -71,6 +75,7 @@ describe('e2e app: github-issues / issue #868', { concurrent: false }, () => {
       })
 
       const primitiveItems = await issuePage.$$('.issue-868-primitive')
+      await dom.check('updated', miniProgram, issuePage)
       expect(await Promise.all(primitiveItems.map(item => item.text()))).toEqual([
         'primitive-a',
         'primitive-b',

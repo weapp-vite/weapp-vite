@@ -19,6 +19,8 @@ keywords:
 
 `weapp-vite` 内置了多端适配能力：在开发/构建命令后追加 `--platform <id>`（或短写 `-p <id>`），即可输出目标平台所需的文件后缀与目录结构。
 
+Wevu 同时根据当前目标自动裁剪运行时：六类小程序和 Web 各自保留所需的宿主注册适配，未使用的可选能力由编译器和 tree shaking 排除，无需额外配置。公开动态工厂与 API adapter 的兼容边界见 [Wevu 运行时](/wevu/runtime#按平台与使用能力裁剪)。
+
 下面示例假设你在 `package.json` 脚本里使用的是 `wv dev` / `wv build`：
 
 > [!WARNING]
@@ -184,6 +186,41 @@ export default defineConfig({
 
 `multiPlatform` 不会一次构建所有平台。`wv build -p weapp`、`wv build -p alipay`、`wv build -p web` 都是独立的单目标构建。`multiPlatform.targets` 是小程序平台 allowlist；上面的显式声明与 `multi-platform`、`multi-platform-sfc` 两个模板一致。
 
+## 平台环境变量与条件裁剪 {#platform-env}
+
+weapp-vite 会把当前构建目标注入 `import.meta.env.PLATFORM`，`import.meta.env.MP_PLATFORM` 具有相同值。无需新增 `.env` 配置或裁剪开关：
+
+| 构建目标 | `import.meta.env.PLATFORM` |
+| --- | --- |
+| 微信小程序 | `'weapp'` |
+| 支付宝小程序 | `'alipay'` |
+| 抖音小程序 | `'tt'` |
+| 百度智能小程序 | `'swan'` |
+| 京东小程序 | `'jd'` |
+| 小红书小程序 | `'xhs'` |
+| Web | `'web'` |
+
+在源码中直接比较平台值，可以让构建器静态判断分支：
+
+```ts
+if (import.meta.env.PLATFORM === 'web') {
+  console.info('Web 目标')
+}
+else {
+  console.info('小程序目标')
+}
+```
+
+执行 `wv build -p web` 时，变量替换为字面量 `'web'`，条件 `'web' === 'web'` 恒为真。生产优化后的代码等价于：
+
+```js
+console.info('Web 目标')
+```
+
+选择 `wv build -p weapp` 时则只保留小程序分支。变量表示本次构建的目标，不会随着运行设备改变；平台专属初始化也应放在对应分支内，避免无条件导入具有初始化副作用的模块。
+
+Wevu 内部使用相同的编译期变量选择宿主实现，发布包保留判断表达式供应用构建替换；未注入目标时保留动态探测。router、JSX 等同平台内的可选能力根据实际导入与编译结果裁剪，详见 [Wevu 运行时](/wevu/runtime#按平台与使用能力裁剪)。
+
 ## 支付宝小程序 {#platform-alipay}
 
 ```sh
@@ -201,6 +238,8 @@ pnpm exec wv open --platform alipay
 - 同一个项目可以保留原生 `Page()` / `Component()` 页面、组件和分包，同时逐页加入 Vue SFC。
 - 在支付宝 IDE 中导入 `dist/` 目录即可预览。
 - `open --platform alipay` 会自动通过 `minidev ide` 打开支付宝开发者工具（需先安装 `minidev`）。
+
+支付宝和抖音 Vue SFC 的 `<style scoped>` 使用 class 作用域标记，以兼容宿主不支持 Vue 属性选择器的限制；动态 class 和样式热更新保留相同的作用域隔离，无需改成全局样式。
 
 支付宝构建会按平台选择同名 sidecar。模板优先级为 `.axml`、`.wxml`、`.html`，样式优先级为 `.acss`、`.wxss`、`.css` 和预处理器。因此迁移现有支付宝项目时，可以保留原生目录：
 

@@ -91,6 +91,25 @@ describe('runtime platform', () => {
     })
   })
 
+  it('reads tabBar page paths from host app config', async () => {
+    ;(globalThis as Record<string, unknown>).wx = { name: 'wx-runtime' }
+    ;(globalThis as Record<string, unknown>)[getMiniProgramRuntimeHostConfigKey('weapp')] = {
+      tabBar: {
+        list: [
+          { pagePath: 'pages/index/index', text: '首页' },
+          { pagePath: '/pages/mine/index', text: '我的' },
+          { text: 'missing' },
+        ],
+      },
+    }
+
+    const { getCurrentMiniProgramTabBarPagePaths } = await loadPlatformModule()
+    expect(getCurrentMiniProgramTabBarPagePaths()).toEqual([
+      'pages/index/index',
+      '/pages/mine/index',
+    ])
+  })
+
   it('creates current global router wrapper from runtime global object', async () => {
     const calls: Array<{ method: string, context: any, args: any[] }> = []
     ;(globalThis as any).wx = {

@@ -29,6 +29,7 @@ defineExpose({
   <Issue642Bug8Cell id="issue642-bug8-wrapped-cell">
     <template #default="{ io }">
       <text
+        id="issue642-bug8-wrapped"
         data-issue642-bug8-case="wrapped"
         :data-issue642-bug8-value="io"
       >

@@ -524,7 +524,7 @@ describe('emitCompiledEntry helpers', () => {
     )
   })
 
-  it('replaces app script assets during direct app entry refreshes', async () => {
+  it.each([false, true])('respects bundled dev ownership during app entry refreshes (bundled dev: %s)', async (isBundledDev) => {
     const bundle = {
       'app.js': {
         type: 'chunk',
@@ -533,6 +533,7 @@ describe('emitCompiledEntry helpers', () => {
       },
     }
     const state = {
+      isBundledDev,
       ctx: {
         configService: {
           isDev: true,
@@ -577,6 +578,11 @@ describe('emitCompiledEntry helpers', () => {
       platformAssetOptions: DEFAULT_PLATFORM_ASSET_OPTIONS,
     })
 
+    if (isBundledDev) {
+      expect(emitSfcScriptAssetReplacingBundleEntryMock).not.toHaveBeenCalled()
+      expect(bundle['app.js'].code).toBe('App({ old: true })')
+      return
+    }
     expect(emitSfcScriptAssetReplacingBundleEntryMock).toHaveBeenCalledWith(
       state.pluginCtx,
       bundle,

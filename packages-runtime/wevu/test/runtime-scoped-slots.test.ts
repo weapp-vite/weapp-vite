@@ -3,6 +3,8 @@ import {
   WEVU_BINDING_MANIFEST_KEY,
   WEVU_INLINE_HANDLER,
   WEVU_PUBLIC_RUNTIME_KEY,
+  WEVU_SCOPED_SLOT_CREATOR_KEY,
+  WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY,
   WEVU_SLOT_FUNCTION_TOKEN,
   WEVU_SLOT_OWNER_ID_KEY,
   WEVU_SLOT_OWNER_ID_PROP,
@@ -179,7 +181,7 @@ describe('runtime: scoped slots', () => {
 
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
     expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
       [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
     }))
@@ -190,6 +192,7 @@ describe('runtime: scoped slots', () => {
 
   it('keeps regular component owner id available for template runtime bindings', async () => {
     defineComponent({
+      [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
       data: () => ({
         title: 'slot owner host',
       }),
@@ -211,10 +214,10 @@ describe('runtime: scoped slots', () => {
 
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       [WEVU_SLOT_OWNER_ID_KEY]: expect.any(String),
-    }))
+    }), expect.any(Function))
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: { default: true },
-    }))
+    }), expect.any(Function))
   })
 
   it('flushes owner id and template slot bindings over native placeholder data in patch mode', async () => {
@@ -294,10 +297,10 @@ describe('runtime: scoped slots', () => {
     expect(first.data[WEVU_SLOT_OWNER_ID_KEY]).not.toBe(second.data[WEVU_SLOT_OWNER_ID_KEY])
     expect(first.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_KEY]: first.data[WEVU_SLOT_OWNER_ID_KEY],
-    })
+    }, expect.any(Function))
     expect(second.setData).toHaveBeenCalledWith({
       [WEVU_SLOT_OWNER_ID_KEY]: second.data[WEVU_SLOT_OWNER_ID_KEY],
-    })
+    }, expect.any(Function))
   })
 
   it('declares page owner data from the binding manifest without exposing compiler metadata', () => {
@@ -449,7 +452,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvOwner: { text: '123456789' } })
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
     expect(inst.setData).not.toHaveBeenCalledWith(expect.objectContaining({
       [WEVU_SLOT_OWNER_PROXY_KEY]: proxy,
     }))
@@ -488,7 +491,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.__wevu.state[WEVU_SLOT_OWNER_PROXY_KEY]).toEqual(proxy)
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
   })
 
   it('binds owner-proxy computed bindings from dedicated owner id prop', () => {
@@ -525,7 +528,7 @@ describe('runtime: scoped slots', () => {
 
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: '987654321',
-    }))
+    }), expect.any(Function))
   })
 
   it('does not register the legacy raw owner id attribute as a property', () => {
@@ -752,7 +755,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.__wevu.state.__wvSlotPropsData).toEqual({ label: 'alpha' })
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: 'alpha',
-    }))
+    }), expect.any(Function))
 
     inst.setData.mockClear()
     opts.properties.__wvSlotProps.observer.call(inst, ['label', 'beta'])
@@ -761,7 +764,7 @@ describe('runtime: scoped slots', () => {
     expect(inst.setData).toHaveBeenCalledWith({ __wvSlotPropsData: { label: 'beta' } })
     expect(inst.setData).toHaveBeenCalledWith(expect.objectContaining({
       __wv_bind_0: 'beta',
-    }))
+    }), expect.any(Function))
   })
 
   it('keeps slot props readable for computed bindings before attach', () => {
@@ -940,14 +943,23 @@ describe('runtime: scoped slots', () => {
     }
   })
 
-  it('exposes createWevuScopedSlotComponent on global', () => {
-    const globalObject = globalThis as any
-    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+  it('exposes a callable scoped slot creator on global', () => {
+    createWevuScopedSlotComponent()
+    const globalCreator = Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
+    const registeredCount = registeredComponents.length
+
+    expect(typeof globalCreator).toBe('function')
+    if (typeof globalCreator !== 'function') {
+      throw new TypeError('expected scoped slot creator')
+    }
+    globalCreator()
+    expect(registeredComponents).toHaveLength(registeredCount + 1)
   })
 
   it('reinstates global scoped slot creator when missing', () => {
-    const globalObject = globalThis as any
-    delete globalObject.__weapp_vite_createScopedSlotComponent
+    createWevuScopedSlotComponent()
+    const expectedCreator = Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
+    Reflect.deleteProperty(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
 
     defineComponent({
       setup() {
@@ -955,12 +967,13 @@ describe('runtime: scoped slots', () => {
       },
     })
 
-    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+    expect(Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)).toBe(expectedCreator)
   })
 
   it('refreshes stale global scoped slot creator', () => {
-    const globalObject = globalThis as any
-    globalObject.__weapp_vite_createScopedSlotComponent = vi.fn()
+    createWevuScopedSlotComponent()
+    const expectedCreator = Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)
+    Reflect.set(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY, vi.fn())
 
     defineComponent({
       setup() {
@@ -968,7 +981,7 @@ describe('runtime: scoped slots', () => {
       },
     })
 
-    expect(globalObject.__weapp_vite_createScopedSlotComponent).toBe(createWevuScopedSlotComponent)
+    expect(Reflect.get(globalThis, WEVU_SCOPED_SLOT_CREATOR_KEY)).toBe(expectedCreator)
   })
 
   it('forwards events to owner handlers', () => {
@@ -1059,6 +1072,7 @@ describe('runtime: scoped slots', () => {
 
   it('refreshes owner snapshot on prop changes', () => {
     defineComponent({
+      [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
       props: {
         title: { type: String, default: '' },
       } as any,
@@ -1086,6 +1100,7 @@ describe('runtime: scoped slots', () => {
 
   it('stores owner snapshots as plain objects for view-layer compatibility', () => {
     defineComponent({
+      [WEVU_SCOPED_SLOT_OWNER_REQUIRED_KEY]: true,
       props: {
         title: { type: String, default: '' },
       } as any,

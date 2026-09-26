@@ -9,7 +9,7 @@ import { compileWxml } from '../compiler/wxml'
 import { transformWxsToEsm } from '../compiler/wxs'
 import { createWxssPostcssPlugin, transformWxssToCss } from '../css/wxss'
 import { createWebAssetMiddleware, emitWebAssets } from './assets'
-import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WEB_COMPONENT_PREFIX, WEB_COMPONENT_QUERY, WXS_EXTS } from './constants'
+import { AUTO_ROUTES_ID, ENTRY_ID, RESOLVED_AUTO_ROUTES_ID, RUNTIME_ID, SCRIPT_EXTS, SFC_STYLE_QUERY, SFC_TEMPLATE_QUERY, STYLE_EXTS, STYLE_QUERY, TEMPLATE_EXTS, TEMPLATE_QUERY, TRANSFORM_STYLE_EXTS, WEB_COMPONENT_PREFIX, WEB_COMPONENT_QUERY, WXS_EXTS } from './constants'
 import { collectExternalComponentOptimizeDeps } from './dependencyScan'
 import { generateAutoRoutesModule, generateEntryModule } from './entry'
 import { wrapPageTemplate } from './layout'
@@ -65,6 +65,11 @@ interface WebDevServer {
   middlewares: {
     use: (middleware: ReturnType<typeof createWebAssetMiddleware>) => void
   }
+  moduleGraph?: {
+    getModuleById: (id: string) => object | undefined
+    getModulesByFile: (file: string) => Set<object> | undefined
+    invalidateModule: (module: object) => void
+  }
 }
 
 interface WeappWebVitePlugin {
@@ -76,6 +81,11 @@ interface WeappWebVitePlugin {
   buildStart?: (this: WebPluginContext) => void | Promise<void>
   resolveId?: (id: string, importer?: string) => string | null | Promise<string | null>
   load?: (id: string) => string | null | Promise<string | null>
+  watchChange?: {
+    order: 'post'
+    sequential: true
+    handler: (this: WebPluginContext, id: string, change: { event: 'create' | 'update' | 'delete' }) => Promise<void>
+  }
   handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void>
   transform?: (
     this: WebPluginContext,
@@ -86,8 +96,11 @@ interface WeappWebVitePlugin {
 
 const WEB_RUNTIME_MODULE_IDS = [
   'lit',
+  'lit/async-directive.js',
   'lit/directives/repeat.js',
 ] as const
+
+const SCAN_VIRTUAL_MODULE_IDS = [ENTRY_ID, RESOLVED_AUTO_ROUTES_ID] as const
 
 function isTemplateFile(id: string) {
   const lower = id.toLowerCase()
@@ -172,14 +185,16 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
   let root = process.cwd()
   let srcRoot = resolve(root, options.srcDir ?? 'src')
   let enableHmr = false
+  let devServer: WebDevServer | undefined
   let resolveWebModuleId: ResolveWebModuleId | undefined
   let resolveMiniProgramModuleId: ResolveWebModuleId | undefined
   let resolveWebAutoImportTag: ResolveWebAutoImportTag | undefined
   const webRuntimeModules = new Map<string, string>()
   let stylePreprocessOptions: WebStylePreprocessOptions | undefined
-  const componentImportIdMap = new Map<string, string>()
+  let componentImportIdMap = new Map<string, string>()
 
-  const state = createEmptyScanState()
+  let state = createEmptyScanState()
+  let scanQueue: Promise<void> = Promise.resolve()
   const wxssOptions = options.wxss
   const runtimeProvider = options.__runtimeProvider
   const hmrAcceptCode = runtimeProvider
@@ -231,22 +246,74 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     }
   }
 
-  const scan = async (context: WebPluginContext) => {
-    await scanProject({
-      srcRoot,
-      warn: context.warn?.bind(context),
-      state,
-      resolveId: resolveWebModuleId,
-      resolveAutoImportTag: resolveWebAutoImportTag,
-      resolveAppConfig: options.__resolveAppConfig,
-      uniApp: options.__uniApp,
-      stylePreprocessOptions,
-    })
-    componentImportIdMap.clear()
-    for (const component of state.scanResult.components) {
-      if (component.importId) {
-        componentImportIdMap.set(component.importId, component.script)
+  const scan = (context: WebPluginContext) => {
+    const result = scanQueue.then(async () => {
+      const nextState = createEmptyScanState()
+      await scanProject({
+        srcRoot,
+        warn: context.warn?.bind(context),
+        state: nextState,
+        resolveId: resolveWebModuleId,
+        resolveAutoImportTag: resolveWebAutoImportTag,
+        resolveAppConfig: options.__resolveAppConfig,
+        uniApp: options.__uniApp,
+        stylePreprocessOptions,
+      })
+      const nextComponentImportIdMap = new Map<string, string>()
+      for (const component of nextState.scanResult.components) {
+        if (component.importId) {
+          nextComponentImportIdMap.set(component.importId, component.script)
+        }
       }
+      const graph = devServer?.moduleGraph
+      const files = graph ? new Set<string>() : undefined
+      if (files) {
+        for (const snapshot of [state, nextState]) {
+          for (const file of snapshot.moduleMeta.keys()) {
+            files.add(file)
+          }
+          for (const file of snapshot.templatePathSet) {
+            files.add(file)
+          }
+          for (const [file, result] of snapshot.sfcResults) {
+            files.add(`${file}.${resolveWebVueSfcStyleLanguage(result, file)}`)
+          }
+        }
+      }
+      // 虚拟模块始终读取最后一次完整快照，不暴露扫描过程中的空映射。
+      state = nextState
+      componentImportIdMap = nextComponentImportIdMap
+      if (graph && files) {
+        for (const id of SCAN_VIRTUAL_MODULE_IDS) {
+          const module = graph.getModuleById(id)
+          if (module) {
+            graph.invalidateModule(module)
+          }
+        }
+        // 入口失效不会向下传播；脚本、模板和合成样式同样属于扫描快照。
+        for (const file of files) {
+          const modules = graph.getModulesByFile(file)
+          if (modules) {
+            for (const module of modules) {
+              graph.invalidateModule(module)
+            }
+          }
+        }
+      }
+    })
+    // 调用方仍接收原始错误；队尾只负责允许下一次文件变更恢复扫描。
+    scanQueue = result.catch(() => {})
+    return result
+  }
+
+  const scanChangedFile = async (context: WebPluginContext, file: string) => {
+    const clean = cleanUrl(file)
+    const normalized = normalizePath(clean)
+    if (!isInsideDir(clean, srcRoot) && !state.moduleMeta.has(normalized) && !state.templatePathSet.has(normalized)) {
+      return
+    }
+    if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
+      await scan(context)
     }
   }
 
@@ -265,6 +332,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       for (const id of WEB_RUNTIME_MODULE_IDS) {
         webRuntimeModules.set(id, requireFromWebRuntime.resolve(id))
       }
+      webRuntimeModules.set(RUNTIME_ID, resolveRuntimePolyfillPath())
       resolveMiniProgramModuleId = createMiniProgramPackageResolver(requireFromProject.resolve)
       srcRoot = resolve(root, options.srcDir ?? 'src')
       stylePreprocessOptions = resolveStylePreprocessOptions(config.css?.preprocessorOptions, root)
@@ -293,6 +361,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       ])).filter(dependency => !isUniAppDependency(dependency, uniAppIncludes))
     },
     configureServer(server: WebDevServer) {
+      devServer = server
       server.middlewares.use(createWebAssetMiddleware(srcRoot))
     },
     async buildStart(this: WebPluginContext) {
@@ -440,11 +509,18 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       }
       return null
     },
+    watchChange: {
+      order: 'post',
+      sequential: true,
+      async handler(this: WebPluginContext, id, change) {
+        // Vite 的 handleHotUpdate 不处理增删；必须在结构性 HMR 前发布完整入口。
+        if (enableHmr && change.event !== 'update') {
+          await scanChangedFile(this, id)
+        }
+      },
+    },
     async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
-      const clean = cleanUrl(ctx.file)
-      if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
-        await scan(this)
-      }
+      await scanChangedFile(this, ctx.file)
     },
     async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)

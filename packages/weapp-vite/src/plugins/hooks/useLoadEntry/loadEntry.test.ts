@@ -1,8 +1,11 @@
 import type { PluginContext } from 'rolldown'
 import type { Mock } from 'vitest'
+import { realpathSync } from 'node:fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import logger from '../../../logger'
+import { createModuleGraphService } from '../../../moduleGraph/service'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { toPosixPath } from '../../../utils/path'
@@ -418,6 +421,19 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it.each(['jsx', 'tsx'])('discovers a %s page without attaching its source watch to the app loader', async (extension) => {
+    const { loader, emitEntriesChunks } = createLoader({ isDev: true })
+    const pluginCtx = createPluginContext()
+    const sourceId = `/project/src/pages/index.${extension}`
+    existsMock.mockImplementation(async (id: string) => id === sourceId)
+    mockExtractConfigFromVue.mockResolvedValue({ pages: [`pages/index.${extension}`] })
+
+    await loader.call(pluginCtx, '/project/src/app.vue', 'app')
+
+    expect(emitEntriesChunks).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ id: sourceId })]))
+    expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith(sourceId)
+  })
+
   it('emits route-rule preload configuration in the final app json asset', async () => {
     const { loader, jsonService, registerJsonAsset, configService } = createLoader({
       weappViteConfig: {
@@ -581,6 +597,30 @@ describe('createEntryLoader', () => {
     })
   })
 
+  it.each([true, false])('publishes current App dependencies and replaces stale paths (present=%s)', async (present) => {
+    const appEntry = {
+      type: 'app',
+      path: '/project/src/app.vue',
+      jsonPath: '/project/src/app.vue',
+      json: { pages: [] },
+      ...(present ? { sitemapJsonPath: '/project/src/new-sitemap.json', themeJsonPath: '/project/src/new-theme.json' } : {}),
+    }
+    const { loader, entriesMap } = createLoader()
+    entriesMap.set('app', {
+      ...appEntry,
+      sitemapJsonPath: '/project/src/old-sitemap.json',
+      themeJsonPath: '/project/src/old-theme.json',
+    })
+    mockExtractConfigFromVue.mockResolvedValue({ pages: [], sitemapLocation: 'new-sitemap.json', themeLocation: 'new-theme.json' })
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => ({
+      path: present && (filepath.endsWith('new-sitemap.json') || filepath.endsWith('new-theme.json')) ? filepath : undefined,
+      predictions: [],
+    }))
+    await loader.call(createPluginContext(), appEntry.path, 'app')
+    expect(entriesMap.get('app')?.sitemapJsonPath).toBe(appEntry.sitemapJsonPath)
+    expect(entriesMap.get('app')?.themeJsonPath).toBe(appEntry.themeJsonPath)
+  })
+
   it('reuses cached entry json during direct script hmr', async () => {
     const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
@@ -697,6 +737,21 @@ describe('createEntryLoader', () => {
 
     expect(mockFindJsonEntry).not.toHaveBeenCalled()
     expect(mockFindVueEntry).not.toHaveBeenCalled()
+  })
+
+  it.each([undefined, { component: true }])('uses one physical Vue source version for HMR signatures and emitted code with config %j', async (config) => {
+    const { loader, runtimeState } = createLoader({ isDev: true })
+    const entryPath = '/project/src/pages/home/index.vue'
+    const source = '<script setup>const count = 1</script><template><view>A {{ count }}</view></template>'
+    const newerSource = source.replace('count = 1', 'count = 2')
+    readFileMock.mockResolvedValue(newerSource).mockResolvedValueOnce(source)
+    mockExtractConfigFromVue.mockResolvedValue(config)
+
+    const result = await loader.call(createPluginContext(), entryPath, 'page')
+
+    expect(result?.code).toBe(source)
+    expect(runtimeState.build.hmr.vueEntrySfcSignatures.get(entryPath)).toEqual(resolveVueSfcHmrSignatures(source, entryPath).blockSignatures)
+    expect(readFileMock.mock.calls.filter(([file]) => file === entryPath)).toHaveLength(1)
   })
 
   it('reuses cached vue json block config during direct script hmr', async () => {
@@ -1740,6 +1795,33 @@ describe('createEntryLoader', () => {
     const addWatchFile = pluginCtx.addWatchFile as Mock
     const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
     expect(watched).not.toContain('/project/src/components/hello/index.vue')
+  })
+
+  it.each([false, true])('stores Windows short-name component resolutions under their canonical source identity (loaded: %s)', async (alreadyLoaded) => {
+    const shortId = 'C:/WORKSP~1/project/src/components/Card.vue'
+    const longId = 'C:/workspace/project/src/components/Card.vue'
+    const originalRealpath = realpathSync.native
+    const realpathSpy = vi.spyOn(realpathSync, 'native').mockImplementation(((id: string) => {
+      return id === shortId || id === longId ? longId : originalRealpath(id)
+    }) as typeof realpathSync.native)
+    try {
+      mockFindJsonEntry.mockResolvedValue({ path: '/project/src/pages/home.json', predictions: [] })
+      existsMock.mockImplementation(async (id: string) => id === shortId)
+      const { loader, jsonService, resolvedEntryMap, loadedEntrySet, emitEntriesChunks } = createLoader({ isDev: true })
+      if (alreadyLoaded) {
+        loadedEntrySet.add(longId)
+      }
+      jsonService.read.mockResolvedValue({ usingComponents: { card: 'components/Card.vue' } })
+      const pluginCtx = createPluginContext()
+      pluginCtx.resolve = vi.fn(async () => ({ id: shortId })) as PluginContext['resolve']
+      await loader.call(pluginCtx, '/project/src/pages/home.js', 'page')
+      expect([...resolvedEntryMap.keys()]).toEqual([longId])
+      expect(resolvedEntryMap.get(longId)?.id).toBe(shortId)
+      expect(emitEntriesChunks).toHaveBeenCalledTimes(alreadyLoaded ? 0 : 1)
+    }
+    finally {
+      realpathSpy.mockRestore()
+    }
   })
 
   it('merges pending auto-import entries for the current importer once', async () => {
@@ -2967,7 +3049,7 @@ import { VueCard } from '../../components'
       return 'console.log("noop")'
     })
 
-    const { loader, jsonService, registerJsonAsset, replaceLayoutDependencies } = createLoader()
+    const { loader, jsonService, registerJsonAsset, replaceLayoutDependencies, replaceEntryDependencies } = createLoader()
     jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
     const pluginCtx = createPluginContext()
 
@@ -2992,10 +3074,10 @@ import { VueCard } from '../../components'
       },
       type: 'component',
     })
-    expect(replaceLayoutDependencies).toHaveBeenNthCalledWith(1, '/project/src/pages/index/index.ts', [])
-    expect(replaceLayoutDependencies).toHaveBeenNthCalledWith(
-      2,
+    expect(replaceLayoutDependencies).not.toHaveBeenCalled()
+    expect(replaceEntryDependencies).toHaveBeenCalledWith(
       '/project/src/pages/index/index.ts',
+      'layout',
       new Set([
         '/project/src/layouts/default/index.json',
         '/project/src/layouts/default/index.wxml',
@@ -3019,6 +3101,62 @@ import { VueCard } from '../../components'
       type: 'asset',
       fileName: 'layouts/default/index.js',
     }))
+  })
+
+  it.each(['retain', 'replace', 'remove', 'resolve-error', 'assets-error'] as const)('publishes native layout dependencies atomically (%s)', async (outcome) => {
+    const page = '/project/src/pages/index/index.ts'
+    const layout = '/project/src/layouts/default/index.ts'
+    const nextLayout = '/project/src/layouts/admin/index.ts'
+    const graph = createModuleGraphService()
+    graph.replaceEntryDependencies(page, 'layout', [layout])
+    mockFindJsonEntry.mockResolvedValue({ path: '/project/src/pages/index/index.json', predictions: [] })
+    mockFindTemplateEntry.mockResolvedValue({ path: '/project/src/pages/index/index.wxml', predictions: [] })
+    readFileMock.mockResolvedValue('Page({})')
+    const { loader, jsonService, replaceLayoutDependencies, replaceEntryDependencies } = createLoader({ isDev: true })
+    jsonService.read.mockResolvedValue({})
+    replaceLayoutDependencies.mockImplementation((owner: string, dependencies: Iterable<string>) => {
+      graph.replaceEntryDependencies(owner, 'layout', dependencies)
+    })
+    replaceEntryDependencies.mockImplementation(graph.replaceEntryDependencies)
+    const failure = new Error('layout resolution failed')
+    mockResolvePageLayoutPlan.mockImplementation(async () => {
+      // 并发模块加载在异步解析期间仍须查询到已登记的布局类型，不能临时切换为 component ID。
+      expect(graph.isLogicalLayoutEntry(layout)).toBe(true)
+      if (outcome === 'resolve-error') {
+        throw failure
+      }
+      if (outcome === 'remove') {
+        return undefined
+      }
+      return {
+        layouts: [{
+          kind: 'native',
+          file: '/project/src/layouts/admin/index',
+          importPath: '/layouts/admin/index',
+        }],
+      }
+    })
+    mockCollectNativeLayoutAssets.mockImplementation(async () => {
+      const published = replaceEntryDependencies.mock.calls.some(([, kind]) => kind === 'layout')
+      expect(graph.isLogicalLayoutEntry(layout)).toBe(!published || outcome === 'retain')
+      if (outcome === 'assets-error') {
+        throw failure
+      }
+      return { script: outcome === 'retain' ? layout : nextLayout }
+    })
+
+    const loading = loader.call(createPluginContext(), page, 'page')
+    if (outcome === 'resolve-error' || outcome === 'assets-error') {
+      await expect(loading).rejects.toThrow(failure)
+      expect(graph.isLogicalLayoutEntry(layout)).toBe(true)
+      expect(replaceLayoutDependencies).not.toHaveBeenCalled()
+      expect(replaceEntryDependencies).not.toHaveBeenCalled()
+      return
+    }
+    await loading
+
+    expect(graph.isLogicalLayoutEntry(layout)).toBe(outcome === 'retain')
+    expect(graph.isLogicalLayoutEntry(nextLayout)).toBe(outcome === 'replace')
   })
 
   it('reuses static native page layout plan during direct script hmr', async () => {
@@ -3285,7 +3423,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )
@@ -3347,7 +3485,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )
@@ -3407,7 +3545,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )
@@ -3469,7 +3607,7 @@ import { VueCard } from '../../components'
     expect(emittedResolvedIds).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: '/project/src/layouts/default',
+          id: '/project/src/layouts/default.vue',
         }),
       ]),
     )

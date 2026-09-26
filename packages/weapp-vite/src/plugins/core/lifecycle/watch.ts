@@ -4,19 +4,22 @@ import type { CorePluginState } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { invalidateGlassEaselSource } from '../../../analyze/glassEasel'
 import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
-import { resolveTouchAppWxssEnabled } from '../../../runtime/buildPlugin/touchAppWxss'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { getWxmlWatchFiles, isWxmlDependency } from '../../../wxml/processing/dependencies'
+import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
 import { invalidateSharedStyleCache } from '../../css/shared/preprocessor'
 import { isReactStaticTemplateSource } from '../../react'
+import { isManagedTailwindcssEntry } from '../../tailwindcssMarker'
 import { invalidateFileCache } from '../../utils/cache'
 import { ensureSidecarWatcher, invalidateEntryForSidecar } from '../../utils/invalidateEntry'
 import { extractCssImportDependencies } from '../../utils/invalidateEntry/cssGraph'
@@ -27,10 +30,23 @@ import { isAppVueFile } from '../../vue/transform/appShell'
 import { collectAffectedSharedChunkEntriesAndChunks } from '../helpers'
 import { markAppEntryForAutoRoutesTopology as markAppEntryForAutoRoutesTopologyDirty } from './autoRoutesTopology'
 import { createVueEntryUpdateInspector } from './vueEntryUpdate'
+import { collectVueStyleScriptChanges } from './vueStyleDependency'
 
 const ATOMIC_SAVE_RECHECK_DELAYS_MS = [20, 60]
-const tailwindContentExtensions = new Set(['.vue', '.wxml', '.axml', '.js', '.jsx', '.ts', '.tsx', '.mts', '.cts', '.mjs', '.cjs'])
-const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|weapp-tailwindcss|tailwindcss\/vite/
+const compilerContentExtensions = new Set([
+  '.vue',
+  ...watchedTemplateExts,
+  ...watchedScriptModuleSuffixes,
+  '.js',
+  '.jsx',
+  '.ts',
+  '.tsx',
+  '.mts',
+  '.cts',
+  '.mjs',
+  '.cjs',
+])
+const TAILWIND_APP_STYLE_RE = /@import\s+['"]tailwindcss['"]|@tailwind\s+(?:base|components|utilities)\b|weapp-tailwindcss|tailwindcss\/vite/
 
 interface WatchPathKind {
   configSuffix?: string
@@ -111,16 +127,6 @@ function isAutoRoutesPagesRelatedChange(state: CorePluginState, normalizedId: st
 function isConfigFileDependencyChange(state: CorePluginState, normalizedId: string) {
   return state.ctx.configService.configFileDependencies
     .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-}
-
-function shouldRefreshAppStyleForTailwindContent(state: CorePluginState) {
-  const configService = state.ctx.configService
-  return resolveTouchAppWxssEnabled({
-    option: configService.weappViteConfig?.hmr?.touchAppWxss,
-    platform: configService.platform,
-    packageJson: configService.packageJson ?? {},
-    cwd: configService.cwd,
-  })
 }
 
 async function isTailwindAppStyleSource(stylePath: string) {
@@ -214,7 +220,7 @@ export function createBuildStartHook(state: CorePluginState) {
     const startedAt = performance.now()
     try {
       ctx.moduleGraphService?.bindBuildContext(state, this)
-      ctx.moduleGraphService?.bindPluginContext(this)
+      ctx.moduleGraphService?.bindPluginContext(state, this)
       resetTakeImportRegistry({ preserveSharedChunkNameCache: configService.isDev })
       if (configService.isDev) {
         let sharedChunkAffectedEntryCount = 0
@@ -236,7 +242,7 @@ export function createBuildStartHook(state: CorePluginState) {
             `shared-chunk-source:${sharedChunkAffectedEntryCount}`,
           ]
         }
-        addNormalizedWatchFiles(this, configService.configFileDependencies)
+        addNormalizedWatchFiles(this, [...configService.configFileDependencies, ...getWxmlWatchFiles(ctx)])
         if (isPluginBuild) {
           if (configService.absolutePluginRoot) {
             ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
@@ -292,11 +298,16 @@ async function processChangedFile(
   const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
   const affectedLayoutEntryIds = new Set<string>()
   const dirtyReasonStats = new Map<string, number>()
+  let styleScriptChanges: Set<string> | undefined
   const markEntryDirtyWithCause = (
     entryId: string,
     reason: 'direct' | 'dependency' | 'metadata',
     cause: string,
   ) => {
+    if (styleScriptChanges?.has(entryId)) {
+      reason = 'direct'
+      cause = 'entry-mixed-asset'
+    }
     state.markEntryDirty(entryId, reason)
     const isJsxTemplateDependency = reason === 'dependency' && /\.(?:jsx|tsx)$/.test(normalizedId)
     if (/\.(?:vue|jsx|tsx)$/.test(entryId) && (reason !== 'dependency' || isJsxTemplateDependency)) {
@@ -308,8 +319,17 @@ async function processChangedFile(
   }
   const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
+  if (isDeletedMissingSelf) {
+    ctx.moduleGraphService.removeEntryDependencies(normalizedId)
+  }
   const isAutoRouteFile = Boolean(ctx.autoRoutesService?.isRouteFile(normalizedId))
   const pathKind = resolveWatchPathKind(normalizedId)
+  if (pathKind.isStyle) {
+    styleScriptChanges = await collectVueStyleScriptChanges(ctx, normalizedId, configService)
+    for (const entryId of styleScriptChanges) {
+      importerGraphAffectedEntryIds.add(entryId)
+    }
+  }
   const isReactStaticTemplateUpdate = event === 'update'
     && isReactStaticTemplateSource(configService.weappViteConfig?.react, normalizedId)
   const isScriptModuleSidecar = pathKind.isScriptModuleSidecar
@@ -374,14 +394,24 @@ async function processChangedFile(
     })
   }
   const markAppEntryForTailwindContent = async () => {
-    if (event !== 'update' || pathKind.isStyle || pathKind.configSuffix || !tailwindContentExtensions.has(pathKind.extension)) {
+    if (event !== 'update' || pathKind.isStyle || pathKind.configSuffix || !compilerContentExtensions.has(pathKind.extension)) {
       return false
     }
-    if (vueEntryUpdateInspector && !await vueEntryUpdateInspector.isTailwindContentUpdate()) {
-      return false
-    }
-    if (!shouldRefreshAppStyleForTailwindContent(state)) {
-      return false
+    if (vueEntryUpdateInspector) {
+      const genericProviders = Object.keys(
+        ctx.runtimeState.build.hmr.vueEntryContentSignatures?.get(normalizedId) ?? {},
+      ).filter(provider => provider !== 'tailwindcss')
+      if (genericProviders.length > 0) {
+        const compilerContentChanged = await Promise.all(
+          genericProviders.map(provider => vueEntryUpdateInspector.isCompilerContentUpdate(provider)),
+        )
+        if (!compilerContentChanged.some(Boolean)) {
+          return false
+        }
+      }
+      else if (!await vueEntryUpdateInspector.isTailwindContentUpdate()) {
+        return false
+      }
     }
     const appEntryId = scanService.appEntry?.path
       ? normalizeFsResolvedId(scanService.appEntry.path)
@@ -393,26 +423,38 @@ async function processChangedFile(
     if (!styleEntry.path) {
       return false
     }
-    if (!await isTailwindAppStyleSource(styleEntry.path)) {
+    const isManagedTailwindcssStyle = isManagedTailwindcssEntry(ctx, styleEntry.path)
+    const isTailwindStyle = await isTailwindAppStyleSource(styleEntry.path)
+    if (!isManagedCompilerEntry(ctx, styleEntry.path) && !isTailwindStyle) {
       return false
     }
+    const contentReason = isManagedTailwindcssStyle || isTailwindStyle ? 'tailwind-content' : 'compiler-content'
     if (
       concreteChangedEntryId !== appEntryId
       && (loadedEntrySet.has(concreteChangedEntryId) || resolvedEntryMap.has(concreteChangedEntryId))
     ) {
-      markEntryDirtyWithCause(concreteChangedEntryId, 'direct', 'tailwind-content')
+      markEntryDirtyWithCause(concreteChangedEntryId, 'direct', contentReason)
     }
-    markEntryDirtyWithCause(appEntryId, 'metadata', 'tailwind-content')
+    markEntryDirtyWithCause(appEntryId, 'metadata', contentReason)
     invalidateSharedStyleCache()
     return true
   }
 
   if (isDeletedMissingSelf) {
+    resolvedEntryMap.delete(normalizedId)
+    loadedEntrySet.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryHasTemplate.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntrySfcSignatures.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryStyleBindings.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryContentSignatures?.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryTemplateContentSignatures?.delete(normalizedId)
+    ctx.runtimeState.build.hmr.vueEntryScriptContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindTemplateContentSignatures?.delete(normalizedId)
     ctx.runtimeState.build.hmr.vueEntryTailwindScriptContentSignatures?.delete(normalizedId)
+    // 仅在原子保存复查后确认真实删除时撤销 source/output 双重归属。
+    ctx.runtimeState.wxml.tokenMap.delete(normalizedId)
+    invalidateGlassEaselSource(ctx, normalizedId)
   }
 
   if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
@@ -592,6 +634,8 @@ async function processChangedFile(
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isLocalAssetOnlyUpdate() : false)
     const isStyleOnlyVueEntryUpdate = isLocalAssetOnlyVueEntryUpdate
       && (vueEntryUpdateInspector ? await vueEntryUpdateInspector.isStyleOnlyUpdate() : false)
+    const changedVueBlocks = event === 'update' ? await vueEntryUpdateInspector?.getChangedBlocks() : undefined
+    const isMixedAssetVueEntryUpdate = changedVueBlocks?.includes('script') && changedVueBlocks.length > 1
     const directDirtyReason = sidecarDirtyCause
       ? 'metadata'
       : (isJsonOnlyVueEntryUpdate && !isAutoRoutesStaleAppEntry) || isLocalAssetOnlyVueEntryUpdate ? 'metadata' : 'direct'
@@ -604,7 +648,9 @@ async function processChangedFile(
             ? 'entry-direct'
             : isLocalAssetOnlyVueEntryUpdate
               ? isStyleOnlyVueEntryUpdate ? 'entry-style-only' : 'entry-local-asset'
-              : 'entry-direct')
+              : isMixedAssetVueEntryUpdate
+                ? changedVueBlocks?.includes('config') ? 'entry-mixed-config' : 'entry-mixed-asset'
+                : 'entry-direct')
     markChangedEntryDirty(
       directDirtyReason,
       directDirtyCause,
@@ -632,13 +678,22 @@ async function processChangedFile(
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
   const isConfigDependency = isConfigFileDependencyChange(state, normalizedId)
+  const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
 
-  if (isConfigDependency) {
+  if (isConfigDependency || isWxmlDependencyFile) {
     ;(loadEntry as any)?.invalidateResolveCache?.()
     scanService.markDirty()
-    buildService.requestConfigRestart?.(state.buildTarget)
+    if (isConfigDependency) {
+      buildService.requestConfigRestart?.(state.buildTarget)
+    }
+    if (isWxmlDependencyFile) {
+      for (const root of scanService.independentSubPackageMap.keys()) {
+        buildService.invalidateIndependentOutput(root)
+        scanService.markIndependentDirty(root)
+      }
+    }
     for (const entryId of resolvedEntryMap.keys()) {
-      markEntryDirtyWithCause(entryId, 'direct', 'config-restart')
+      markEntryDirtyWithCause(entryId, 'direct', isWxmlDependencyFile ? 'wxml-transform-dependency' : 'config-restart')
     }
   }
 
@@ -661,6 +716,13 @@ async function processChangedFile(
 
     if (!isConfigDependency && (relativeSrc === 'app.json' || shouldMarkProjectConfigDirty)) {
       scanService.markDirty()
+    }
+
+    for (const [root, files] of ctx.runtimeState.build.independent?.watchFiles ?? []) {
+      if (files.has(normalizedId)) {
+        buildService.invalidateIndependentOutput(root)
+        scanService.markIndependentDirty(root)
+      }
     }
 
     let independentRoot: string | undefined
@@ -700,7 +762,7 @@ export function createWatchChangeHook(state: CorePluginState) {
     const startedAt = performance.now()
     const eventId = createHmrProfileEventId()
     const normalizedId = normalizeFsResolvedId(id)
-    state.ctx.moduleGraphService?.bindPluginContext(this)
+    state.ctx.moduleGraphService?.bindPluginContext(state, this)
     state.ctx.moduleGraphService?.recordChangedFile?.(normalizedId, change.event)
     if (isSkippableResolvedId(normalizedId)) {
       return

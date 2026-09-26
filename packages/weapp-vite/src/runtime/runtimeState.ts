@@ -2,12 +2,14 @@ import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
 import type { ResolvedId, RolldownOutput } from 'rolldown'
-import type { VueSfcBlockSignatures } from 'wevu/compiler'
-import type { GlassEaselDiagnostic } from '../analyze/glassEasel/types'
+import type { ComponentStyleOptions, VueSfcBlockSignatures } from 'wevu/compiler'
+import type { GlassEaselAnalysisFact } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
 import type { ScanWxmlResult } from '../wxml'
+import type { WxmlDependencyRegistry } from '../wxml/processing/registry'
 import type { LocalAutoImportMatch } from './autoImport/types'
+import type { NamedAutoRoute } from './autoRoutesPlugin/types'
 import type { LoadConfigResult, PackageInfo } from './config/types'
 import type { SidecarWatcher, WatcherInstance } from './watcher/types'
 import process from 'node:process'
@@ -24,6 +26,11 @@ interface AutoRoutesCandidateState {
   hasScript: boolean
   hasTemplate: boolean
   jsonPath?: string
+}
+
+interface VueEntryStyleBindings {
+  sources: string[]
+  expressions?: string[]
 }
 
 interface LibEntryState {
@@ -86,17 +93,26 @@ function createDefaultPackageManager(): DetectResult {
 }
 
 export interface RuntimeState {
+  wxmlProcessing: WxmlDependencyRegistry
   glassEasel: {
-    detected: boolean
-    diagnostics: Map<string, GlassEaselDiagnostic>
+    analysisByOwner: Map<string, GlassEaselAnalysisFact>
     warnedDiagnostics: Set<string>
     silent: boolean
   }
   autoRoutes: {
     routes: AutoRoutes
+    namedRoutes: NamedAutoRoute[]
     serialized: string
     moduleCode: string
+    namedModuleCode: string
+    signature: string
+    topologyKey: string
     typedDefinition: string
+    pageDeclarationDependencies: Map<string, Set<string>>
+    pageDeclarationFingerprints: Map<string, string>
+    usesOpaquePageDeclarationResolver: boolean
+    pageSourceFiles: Set<string>
+    namedRouteSourceFiles: Set<string>
     watchFiles: Set<string>
     watchDirs: Set<string>
     dirty: boolean
@@ -120,6 +136,8 @@ export interface RuntimeState {
     npmBuilt: boolean
     independent: {
       outputs: Map<string, RolldownOutput>
+      watchFiles: Map<string, Set<string>>
+      watchListeners: Set<(files: string[]) => void>
       pendingOutputs: Promise<RolldownOutput>[]
     }
     output: {
@@ -128,6 +146,7 @@ export interface RuntimeState {
       wevuInternalRuntimeFileNames?: Map<string, string>
     }
     hmr: {
+      componentPageStyleOptions: Map<string, ComponentStyleOptions>
       loadedEntrySet: Set<string>
       dirtyEntrySet: Set<string>
       dirtyEntryReasons: Map<string, 'direct' | 'dependency' | 'metadata'>
@@ -136,6 +155,11 @@ export interface RuntimeState {
       entriesMap: Map<string, Entry | undefined>
       vueEntryHasTemplate: Map<string, boolean>
       vueEntrySfcSignatures: Map<string, VueSfcBlockSignatures>
+      vueEntryStyleBindings: Map<string, VueEntryStyleBindings>
+      /** 编译 provider 内容签名；key 为入口，value 的 key 为 provider 名称。 */
+      vueEntryContentSignatures?: Map<string, Readonly<Record<string, string>>>
+      vueEntryTemplateContentSignatures?: Map<string, Readonly<Record<string, string>>>
+      vueEntryScriptContentSignatures?: Map<string, Readonly<Record<string, string>>>
       vueEntryTailwindContentSignatures: Map<string, string>
       vueEntryTailwindTemplateContentSignatures: Map<string, string>
       vueEntryTailwindScriptContentSignatures: Map<string, string>
@@ -145,6 +169,8 @@ export interface RuntimeState {
       lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>
       lastEmittedChunkFileNames: Set<string>
+      forceEmitUnchangedChunks: boolean
+      forceFullSharedChunkRefresh: boolean
       sharedChunkSourceModuleIds: Set<string>
       recentProfiles: Array<{
         timestamp?: string
@@ -195,6 +221,12 @@ export interface RuntimeState {
         snapshotResolveMs?: number
         snapshotBuildMs?: number
         writeMs?: number
+        finalizePrepareMs?: number
+        finalizeTemplateMs?: number
+        finalizePublishMs?: number
+        publicationValidateMs?: number
+        publicationIndependentMs?: number
+        publicationPruneMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
@@ -253,6 +285,12 @@ export interface RuntimeState {
         snapshotResolveMs?: number
         snapshotBuildMs?: number
         writeMs?: number
+        finalizePrepareMs?: number
+        finalizeTemplateMs?: number
+        finalizePublishMs?: number
+        publicationValidateMs?: number
+        publicationIndependentMs?: number
+        publicationPruneMs?: number
         watchToDirtyMs?: number
         emitMs?: number
         sharedChunkResolveMs?: number
@@ -327,17 +365,26 @@ export function createRuntimeState(): RuntimeState {
   const emptyAutoRoutesSnapshot = createEmptyAutoRoutesSnapshot()
   const emptyAutoRoutesArtifacts = createAutoRoutesArtifacts(emptyAutoRoutesSnapshot)
   return {
+    wxmlProcessing: { dependencies: new Map(), pending: new Map(), failed: new Map(), references: new Map(), listeners: new Set() },
     glassEasel: {
-      detected: false,
-      diagnostics: new Map<string, GlassEaselDiagnostic>(),
+      analysisByOwner: new Map<string, GlassEaselAnalysisFact>(),
       warnedDiagnostics: new Set<string>(),
       silent: false,
     },
     autoRoutes: {
       routes: emptyAutoRoutesSnapshot,
+      namedRoutes: [],
       serialized: emptyAutoRoutesArtifacts.serialized,
       moduleCode: emptyAutoRoutesArtifacts.moduleCode,
+      namedModuleCode: emptyAutoRoutesArtifacts.namedModuleCode,
+      signature: emptyAutoRoutesArtifacts.signature,
+      topologyKey: '',
       typedDefinition: '',
+      pageDeclarationDependencies: new Map<string, Set<string>>(),
+      pageDeclarationFingerprints: new Map<string, string>(),
+      usesOpaquePageDeclarationResolver: false,
+      pageSourceFiles: new Set<string>(),
+      namedRouteSourceFiles: new Set<string>(),
       watchFiles: new Set<string>(),
       watchDirs: new Set<string>(),
       dirty: true,
@@ -360,6 +407,8 @@ export function createRuntimeState(): RuntimeState {
       npmBuilt: false,
       independent: {
         outputs: new Map<string, RolldownOutput>(),
+        watchFiles: new Map<string, Set<string>>(),
+        watchListeners: new Set<(files: string[]) => void>(),
         pendingOutputs: [],
       },
       output: {
@@ -368,6 +417,7 @@ export function createRuntimeState(): RuntimeState {
         wevuInternalRuntimeFileNames: new Map<string, string>(),
       },
       hmr: {
+        componentPageStyleOptions: new Map<string, ComponentStyleOptions>(),
         loadedEntrySet: new Set<string>(),
         dirtyEntrySet: new Set<string>(),
         dirtyEntryReasons: new Map<string, 'direct' | 'dependency' | 'metadata'>(),
@@ -376,6 +426,10 @@ export function createRuntimeState(): RuntimeState {
         entriesMap: new Map<string, Entry | undefined>(),
         vueEntryHasTemplate: new Map<string, boolean>(),
         vueEntrySfcSignatures: new Map<string, VueSfcBlockSignatures>(),
+        vueEntryStyleBindings: new Map<string, VueEntryStyleBindings>(),
+        vueEntryContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
+        vueEntryTemplateContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
+        vueEntryScriptContentSignatures: new Map<string, Readonly<Record<string, string>>>(),
         vueEntryTailwindContentSignatures: new Map<string, string>(),
         vueEntryTailwindTemplateContentSignatures: new Map<string, string>(),
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),
@@ -385,6 +439,8 @@ export function createRuntimeState(): RuntimeState {
         lastHmrEntryIds: new Set<string>(),
         lastEmittedEntryIds: new Set<string>(),
         lastEmittedChunkFileNames: new Set<string>(),
+        forceEmitUnchangedChunks: true,
+        forceFullSharedChunkRefresh: false,
         sharedChunkSourceModuleIds: new Set<string>(),
         recentProfiles: [],
         profile: {},

@@ -1,0 +1,5 @@
+<view>
+  <text id="scope-node" data-scope="parent">parent scope</text>
+  <text id="parent-query">{{queryResult}}</text>
+  <slot />
+</view>

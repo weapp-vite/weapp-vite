@@ -2,23 +2,27 @@ import type { HeadlessComponentDefinition } from '../../host'
 import type { HeadlessProjectDescriptor } from '../../project/createProjectDescriptor'
 import type { HeadlessComponentInstance } from '../../runtime/componentInstance'
 import type { TemplateRenderState } from '../../view/templateRuntime'
+import type { WxsModuleBindings } from '../../view/wxs'
 import type { BrowserModuleLoader } from '../moduleLoader'
+import type { BrowserPageStyles } from '../styles'
 import type { BrowserVirtualFiles } from '../virtualFiles'
 
 export interface DomNodeLike {
   attribs?: Record<string, string>
   children?: DomNodeLike[]
   data?: string
+  dataset?: Record<string, unknown>
   name?: string
   parent?: DomNodeLike | null
   type?: string
 }
 
 export interface BrowserRenderScope {
+  wxs?: WxsModuleBindings
   alias?: string
   classList?: string[]
   data: Record<string, any>
-  dataset?: Record<string, string>
+  dataset?: Record<string, unknown>
   eventBindings?: Map<string, { method: string, stopAfter: boolean }>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
@@ -47,6 +51,7 @@ export interface BrowserComponentRegistryEntry {
 
 export interface BrowserRenderedPageTree {
   root: DomNodeLike
+  styles: BrowserPageStyles
   wxml: string
 }
 

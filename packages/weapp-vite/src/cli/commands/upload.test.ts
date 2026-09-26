@@ -1,3 +1,4 @@
+import type { InlineConfig } from 'vite'
 import type { WeappUploadConfig } from '../../types'
 import type * as UploadModule from '../upload'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
@@ -5,6 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { cac } from 'cac'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { callWriteBundleHooks } from '../../../test/pluginHook'
 import { registerPreviewCommand, registerUploadCommand, runUploadCommand } from './upload'
 
 const state = vi.hoisted(() => ({
@@ -38,6 +40,7 @@ beforeEach(async () => {
     const platform = cliPlatform ?? 'jd'
     const outDir = path.join(root, 'dist', platform, 'dist')
     const projectPath = path.dirname(outDir)
+    const inlineConfig: InlineConfig = {}
     return {
       configService: {
         cwd: root,
@@ -46,7 +49,7 @@ beforeEach(async () => {
         mpDistRoot: path.relative(root, outDir),
         multiPlatform: { enabled: true },
         packageJson: { name: 'upload-fixture', version: '1.0.0' },
-        inlineConfig: {},
+        inlineConfig,
         weappViteConfig: { upload: uploadConfig },
         projectConfig: { appid: 'fixture-app' },
         mode: 'production',
@@ -62,6 +65,9 @@ beforeEach(async () => {
             await writeFile(path.join(outDir, 'app.json'), '{}')
           }
           await writeFile(path.join(projectPath, 'project.config.json'), JSON.stringify({ miniprogramRoot: 'dist' }))
+          await callWriteBundleHooks(inlineConfig.plugins ?? [], outDir, invalidOutput
+            ? {}
+            : { 'app.json': { type: 'asset', fileName: 'app.json', names: [], originalFileNames: [], source: '{}' } })
         },
       },
       watcherService: { closeAll: () => events.push(`close:${platform}`) },

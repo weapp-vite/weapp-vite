@@ -98,17 +98,17 @@ onUnload(() => {
     <view class="panel">
       <view class="row">
         <text class="label">pageStatus</text>
-        <text class="value">{{ state.pageStatus }}</text>
+        <text id="request-page-status" class="value">{{ state.pageStatus }}</text>
       </view>
       <view class="row">
         <text class="label">status</text>
-        <text class="value">{{ state.status }}</text>
+        <text id="request-status" class="value">{{ state.status }}</text>
       </view>
       <view class="row">
         <text class="label">runCount</text>
-        <text class="value mono">{{ state.runCount }}</text>
+        <text id="request-run-count" class="value mono">{{ state.runCount }}</text>
       </view>
-      <button class="action" @tap="runChecks">
+      <button id="request-rerun" class="action" @tap="runChecks">
         重新执行校验
       </button>
     </view>
@@ -118,13 +118,15 @@ onUnload(() => {
         payload
       </view>
       <text class="payload mono">{{ state.payload }}</text>
+      <text id="response-client" class="payload mono">{{ state.responseClient }}</text>
+      <text id="response-source" class="payload mono">{{ state.responseSource }}</text>
     </view>
 
     <view class="panel">
       <view class="panel-title">
         requestLog
       </view>
-      <text class="payload mono">{{ JSON.stringify(state.requestLog) }}</text>
+      <text id="request-log" class="payload mono">{{ JSON.stringify(state.requestLog) }}</text>
     </view>
   </view>
 </template>

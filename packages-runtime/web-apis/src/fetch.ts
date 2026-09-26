@@ -7,7 +7,8 @@ import type { RequestGlobalsMiniProgramOptions } from './networkDefaults'
 import type { URLPolyfill } from './url'
 import { wpi } from '@wevu/api'
 import { isUrlInstance, isUrlSearchParamsInstance } from './constructors'
-import { getRequestBodyValue, HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
+import { HeadersPolyfill, RequestPolyfill, ResponsePolyfill } from './http'
+import { consumeBodyValue } from './http/body'
 import { encodeMultipartFormData } from './multipart'
 import { resolveRequestMiniProgramOptions } from './networkDefaults'
 import { cloneArrayBuffer, cloneArrayBufferView, isArrayBufferLike, isBlobLike, normalizeHeaderName } from './shared'
@@ -171,7 +172,14 @@ async function extractRequestBodyFromInput(input: RequestLikeInput | undefined) 
     throw new TypeError('Failed to execute fetch: request body is already used')
   }
   if (input instanceof RequestPolyfill) {
-    return getRequestBodyValue(input)
+    return consumeBodyValue(input)
+  }
+  const body = input as RequestLikeInput & { arrayBuffer?: () => Promise<ArrayBuffer>, text?: () => Promise<string> }
+  if (body.arrayBuffer) {
+    return body.arrayBuffer()
+  }
+  if (body.text) {
+    return body.text()
   }
   const cloned = input.clone()
   if (cloned?.arrayBuffer) {

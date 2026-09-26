@@ -129,7 +129,9 @@ describe('@mpcore/test', () => {
 
     expect(result.screen.getByText('计数器')).toBeDefined()
     expect(result.screen.within(result.screen.getByTestId('counter')).getByText('1')).toBeDefined()
+    expect(await result.page.$('button')).toBeNull()
     await result.user.tap(result.screen.getByRole('button', { name: '增加' }))
+    expect(result.screen.within(result.screen.getByTestId('counter')).getByText('2')).toBeDefined()
     expect(result.emitted('change')).toEqual([{ value: 2 }])
     expect(listener).toHaveBeenCalledWith({ value: 2 }, expect.any(Object))
 
