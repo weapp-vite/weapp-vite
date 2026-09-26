@@ -91,3 +91,5 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - [PR #1085 Nightly 新增 6 分片（累计 23/27）](./nightly-pr1085-36198019403-third.md)：三项确认回退及 stateful 前置发布失败，剩余采集继续。
 
 - [PR #1085 Nightly 新增 3 分片（累计 26/27）](./nightly-pr1085-36198019403-fourth.md)：macOS stateful Wevu 模板确认回退，最后 auto-HMR 仍在运行。
+
+- [PR #1085 Nightly 全部 27 分片与最终汇总](./nightly-pr1085-36198019403-final.md)：450 指标收齐，三 OS 均 regression；最后 macOS auto-HMR 新增四项确认回退，未通过完整门禁。
