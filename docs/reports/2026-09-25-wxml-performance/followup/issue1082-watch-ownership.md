@@ -181,3 +181,5 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 `7e1ee064c` 的全部 CI 已完成（31 success / 10 skipped），三个 OS headless 门禁均通过。后续真实诊断确认：客户端版本已推进，磁盘持续保持新 WXML，计数的数据和原生元素文本均能正常更新，但 AppService 可见模板工厂仍不含新增节点。原生控制还存在更早的源 WXML 缓存失效事件，不能与 SFC 视为相同缓存条件。
 
 完整控制场景、写出 hash 与 IDE 事件时间线见 [模板工厂调查](./issue1082-ide-template-factory.md)。没有把诊断成功或 CI 全绿改写为真实 Wevu 验收通过，PR 继续草稿。
+
+进一步控制已在无 Wevu 应用运行时的纯原生项目复现相同现象，且 classic 产物没有 stateful 客户端时仍为首次更新 2/6 失败，headless 对照均为 6/6。详情见 [纯原生模板缓存调查](./issue1082-native-template-cache.md)。这避免继续将故障限定到 Wevu/stateful，但仍不能替代对 IDE 内部缓存对象及修复效果的验证。
