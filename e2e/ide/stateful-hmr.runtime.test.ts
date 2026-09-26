@@ -18,6 +18,7 @@ import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-de
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { relaunchPage } from './github-issues.runtime.shared'
 import { statefulHmrCheckpoints } from './statefulHmrDom'
+import { assetLifecycleCheckpoints, verifyAssetLifecycle } from './statefulHmrDom/assets'
 import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
@@ -410,6 +411,37 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await waitForPatchedBehavior(4, page)
     await dom.check('restored-updated', miniProgram, await miniProgram.currentPage())
     expect(await readRuntimeState(page)).toMatchObject({ count: 4, input: 'held-input', identity: 'native-instance' })
+  })
+
+  it('preserves native page state during copied and public asset lifecycle updates', async (ctx) => {
+    if (skipIfStatefulHmrTransportUnavailable(ctx)) {
+      return
+    }
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', assetLifecycleCheckpoints())
+    const page = await relaunchStatefulRoute(NATIVE_ROUTE)
+    await prepareRuntimeState('asset-lifecycle')
+    await triggerIncrement()
+    await triggerIncrement()
+    await waitForPatchedBehavior(2, page)
+    await verifyAssetLifecycle({
+      appRoot: APP_ROOT,
+      check: async (id) => {
+        const current = await miniProgram.currentPage()
+        expect(current.pageId).toBe(page.pageId)
+        await dom.check(id, miniProgram, current)
+        expect(await readRuntimeState(page)).toEqual({
+          count: id === 'incremented' ? 3 : 2,
+          identity: 'asset-lifecycle',
+          input: 'held-input',
+          route: 'pages/native/index',
+          source: 'e2e',
+        })
+      },
+      increment: async () => {
+        await triggerIncrement()
+        await waitForPatchedBehavior(3, page)
+      },
+    })
   })
 
   it('ignores unowned editor files while publishing consecutive native script edits and restorations', async (ctx) => {

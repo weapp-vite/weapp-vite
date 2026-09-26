@@ -6,6 +6,7 @@ import type {
 } from 'rolldown'
 import type { InlineConfig } from 'vite'
 import type { BuildTarget, MutableCompilerContext } from '../../context'
+import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
@@ -1319,6 +1320,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       configured: configuredHmrRuntime,
       compileHotReLoad,
     })
+    let publicAssets: PublicAssetOptions | undefined
     const createDevBuildOptions = () => {
       // eslint-disable-next-line ts/no-use-before-define
       const options = applyTargetBuildOverride(configService.merge(
@@ -1354,6 +1356,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           },
         ]
       }
+      options.plugins = [...(options.plugins ?? []), {
+        name: 'weapp-vite:public-asset-watch-config',
+        configResolved(config) {
+          publicAssets = { publicDir: config.publicDir, copyPublicDir: config.build.copyPublicDir }
+        },
+      }]
       return appendHmrMetricsPlugin(options)
     }
     let buildOptions = createDevBuildOptions()
@@ -2037,6 +2045,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }, sidecarStartedAt)
       })
       const assetWatcher = watchAssetSources(configService, {
+        publicAssets,
         isModule: file => ctx.moduleGraphService.hasModule(file),
         onChange: (file, event) => scheduleSnapshotBuild({ file, event, forceFullRescan: true }, performance.now()),
         onError: (error) => {

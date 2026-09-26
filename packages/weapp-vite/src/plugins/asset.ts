@@ -2,6 +2,7 @@ import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../context'
 import { Buffer } from 'node:buffer'
+import path from 'node:path'
 import {
   WEVU_SLOT_NAMES_PROP,
   WEVU_SLOT_OWNER_ID_ATTR,
@@ -15,6 +16,8 @@ import { resolveJson, WEAPP_SCOPED_SLOT_GENERIC_COMPONENT_PLACEHOLDER } from '..
 import { applyOutputChunkTransform, replaceOutputChunkCode, resolveOutputChunkTransformCode } from '../utils/outputChunk'
 import { normalizePath, toPosixPath } from '../utils/path'
 import { normalizeEncodedSourceMapLike } from '../utils/sourcemap'
+import { pruneOwnedAssetFiles } from './asset/prune'
+import { createPublicAssetSourcePlan } from './asset/publicSources'
 import { createAssetSourcePlan } from './asset/sources'
 import { emitAlipayGenericPlaceholderAssetsByBase, resolveWeappScopedSlotGenericPlaceholderBase } from './vue/transform/bundle/platform'
 import { injectNativeScopedSlotHostPropertiesInJs } from './vue/transform/injectNativeScopedSlotHostProperties'
@@ -24,6 +27,7 @@ interface AssetPluginState {
   buildTarget: BuildTarget
   resolvedConfig?: ResolvedConfig
   pendingAssets?: Promise<string[]>
+  pendingPublicAssetNames?: Promise<string[]>
 }
 
 function stripQueryAndHash(value: string) {
@@ -369,6 +373,9 @@ async function emitAssets(
 function createAssetCollector(state: AssetPluginState): Plugin {
   const { ctx } = state
   const { configService } = ctx
+  let committedOwnedFiles = new Set<string>()
+  let nextOwnedFiles = new Set<string>()
+  let removedFiles: string[] = []
 
   return {
     name: 'weapp-vite:asset',
@@ -384,6 +391,15 @@ function createAssetCollector(state: AssetPluginState): Plugin {
         return
       }
 
+      const publicAssets = createPublicAssetSourcePlan(state.buildTarget === 'app'
+        ? {
+            publicDir: state.resolvedConfig.publicDir,
+            copyPublicDir: state.resolvedConfig.build.copyPublicDir,
+          }
+        : undefined, path.resolve(state.resolvedConfig.root, state.resolvedConfig.build.outDir))
+      state.pendingPublicAssetNames = configService.isDev && state.resolvedConfig.build.write !== false
+        ? publicAssets.scan().then(files => files.map(publicAssets.outputName))
+        : Promise.resolve([])
       state.pendingAssets = createAssetSourcePlan(configService, state.resolvedConfig.build.outDir, state.buildTarget).scan()
     },
 
@@ -392,6 +408,19 @@ function createAssetCollector(state: AssetPluginState): Plugin {
       const files = await state.pendingAssets
       const pending = resolvePendingAssetFiles(files, bundle as OutputBundle, () => this.getModuleIds())
       await emitAssets(ctx, this, bundle as Record<string, any>, pending, 8)
+      nextOwnedFiles = new Set([
+        ...pending.map(file => configService.relativeOutputPath(file)),
+        ...(await state.pendingPublicAssetNames ?? []).filter(file => !bundle[file]),
+      ])
+      removedFiles = [...committedOwnedFiles].filter(file => !nextOwnedFiles.has(file) && !bundle[file])
+    },
+
+    async writeBundle() {
+      if (!state.resolvedConfig || !configService.isDev) {
+        return
+      }
+      await pruneOwnedAssetFiles(path.resolve(state.resolvedConfig.root, state.resolvedConfig.build.outDir), removedFiles)
+      committedOwnedFiles = nextOwnedFiles
     },
   }
 }

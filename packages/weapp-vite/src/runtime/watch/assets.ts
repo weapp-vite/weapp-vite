@@ -1,14 +1,17 @@
 import type { BuildTarget, CompilerContext } from '../../context'
+import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent } from '../../types'
 import { existsSync } from 'node:fs'
 import chokidar from 'chokidar'
 import path from 'pathe'
+import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { createAssetSourcePlan } from '../../plugins/asset/sources'
 import { normalizePath } from '../../utils/path'
 import { createSidecarWatchOptions } from './options'
 
 interface AssetWatchOptions {
   target?: BuildTarget
+  publicAssets?: PublicAssetOptions
   isModule?: (file: string) => boolean
   onChange: (file: string, event: ChangeEvent) => void
   onError: (error: Error) => void
@@ -16,7 +19,14 @@ interface AssetWatchOptions {
 
 /** 复制资产由过滤后的侧车发现，不把整个目录登记为原生引擎隐式依赖。 */
 export function watchAssetSources(config: CompilerContext['configService'], options: AssetWatchOptions) {
-  const plan = createAssetSourcePlan(config, config.outDir, options.target ?? 'app')
+  const copied = createAssetSourcePlan(config, config.outDir, options.target ?? 'app')
+  const publicAssets = createPublicAssetSourcePlan(options.publicAssets, config.outDir)
+  const plan = {
+    roots: [...new Set([...copied.roots, ...publicAssets.roots])],
+    matchesPath: (file: string) => copied.matchesPath(file) || publicAssets.matchesPath(file),
+    ignoresDirectory: (file: string) => copied.ignoresDirectory(file) && !publicAssets.matchesPath(file),
+    scan: async () => [...new Set([...(await copied.scan()), ...(await publicAssets.scan())])],
+  }
   const contains = (root: string, file: string) => {
     const relative = path.relative(root, file)
     return relative === '' || (relative !== '..' && !relative.startsWith('../') && !path.isAbsolute(relative))
@@ -83,7 +93,7 @@ export function watchAssetSources(config: CompilerContext['configService'], opti
       }
       watched = next
       for (const [file, event] of changed) {
-        if (!options.isModule?.(file)) {
+        if (publicAssets.matchesPath(file) || !options.isModule?.(file)) {
           options.onChange(file, event)
         }
       }

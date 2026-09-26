@@ -183,3 +183,6 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 完整控制场景、写出 hash 与 IDE 事件时间线见 [模板工厂调查](./issue1082-ide-template-factory.md)。没有把诊断成功或 CI 全绿改写为真实 Wevu 验收通过，PR 继续草稿。
 
 进一步控制已在无 Wevu 应用运行时的纯原生项目复现相同现象，且 classic 产物没有 stateful 客户端时仍为首次更新 2/6 失败，headless 对照均为 6/6。详情见 [纯原生模板缓存调查](./issue1082-native-template-cache.md)。这避免继续将故障限定到 Wevu/stateful，但仍不能替代对 IDE 内部缓存对象及修复效果的验证。
+
+
+后续 [public 更新与资产删除生命周期](./issue1082-asset-lifecycle.md) 已补齐：六项 CLI、最终 headless 六场景 37/37 DOM、真实 DevTools 资产/编辑器两场景 13/13 DOM 通过。保留最初失败、部分写出事务与 prelude 归属回归；原 Wevu 首次模板及完整性能验收仍未完成。

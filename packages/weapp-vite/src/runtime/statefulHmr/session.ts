@@ -22,6 +22,7 @@ import { isNativeScriptAnalysisOwner, refreshGlassEaselNativeScripts } from '../
 import { isGlassEaselDetected } from '../../analyze/glassEasel/state'
 import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
+import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
@@ -172,6 +173,9 @@ export async function runStatefulHmrDev(
 }
 
 class StatefulHmrSession {
+  private readonly publicAssetSources: ReturnType<typeof createPublicAssetSourcePlan>
+  private readonly uncommittedSnapshotAssetNames = new Set<string>()
+  private snapshotAssetsReliable = true
   private assetWatcher?: ReturnType<typeof watchAssetSources>
   private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
@@ -206,6 +210,10 @@ class StatefulHmrSession {
   ) {
     // DevEngine 可能先交付失败输出、随后才等待首轮就绪；保留拒绝结果但提前订阅。
     void this.initialBundle.promise.catch(() => {})
+    this.publicAssetSources = createPublicAssetSourcePlan({
+      publicDir: server.config.publicDir,
+      copyPublicDir: server.config.build.copyPublicDir,
+    }, ctx.configService.outDir)
     this.diagnostics = createStatefulHmrSnapshotDiagnostics({ root: server.config.root, outDir: ctx.configService!.outDir })
     this.directoryUpdates = new StatefulHmrDirectoryUpdates(server.config.root)
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
@@ -306,6 +314,10 @@ class StatefulHmrSession {
       return
     }
     this.sourceDirtyReasons.set(normalizedFile, { reasons: [...dirtyReasonSummary] })
+    if (this.publicAssetSources.matchesPath(normalizedFile)) {
+      this.requestSnapshotRefresh([normalizedFile])
+      return
+    }
     if (shouldRestartStatefulHmrServer(
       [normalizedFile],
       this.ctx.configService?.configFileDependencies,
@@ -371,6 +383,14 @@ class StatefulHmrSession {
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, 'void 0;\n')
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE, 'void 0;\n')
       }
+      if (fullBuild) {
+        for (const item of snapshotOutput ?? this.snapshotAssets.values()) {
+          if (isStatefulHmrSnapshotAsset(item)) {
+            this.uncommittedSnapshotAssetNames.add(item.fileName)
+          }
+        }
+      }
+      const currentOutputFiles = new Set(compatibleOutput.map(item => item.fileName))
       await this.writeOutput(
         fullBuild ? 'full' : 'additional',
         fullBuild
@@ -380,6 +400,7 @@ class StatefulHmrSession {
           ? { publicDir: this.server.config.publicDir, copyPublicDir: this.server.config.build.copyPublicDir }
           : undefined,
         snapshotBatch?.traceBatchId,
+        fullBuild ? [...new Set([...this.snapshotAssets.keys(), ...this.uncommittedSnapshotAssetNames])].filter(file => !currentOutputFiles.has(file)) : [],
       )
       if (buildId) {
         this.transport.commitFullBuild(buildId)
@@ -543,9 +564,15 @@ class StatefulHmrSession {
     output: StatefulHmrOutputFile[],
     initialPublicAssets?: StatefulHmrInitialPublicAssets,
     batchId?: number,
+    removedAssets: string[] = [],
   ): Promise<void> {
-    const write = () => writeStatefulHmrOutput(this.ctx.configService!.outDir, output, initialPublicAssets)
-    return this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
+    const write = () => writeStatefulHmrOutput(this.ctx.configService!.outDir, output, initialPublicAssets, removedAssets)
+    const pending = this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
+    return pending.catch((error) => {
+      // 原生写盘失败可能已有部分输出落盘，不能继续用旧字节快照省略下一次写入。
+      this.snapshotAssetsReliable = false
+      throw error
+    })
   }
 
   private async executeSnapshotBatch(batch: {
@@ -633,13 +660,25 @@ class StatefulHmrSession {
         return
       }
       const output = this.createSnapshotAssets(snapshot)
-      const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
+      const changedOutput = this.snapshotAssetsReliable
+        ? getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
+        : output
       this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changedOutput, batch.isSuperseded())
-      await this.writeOutput('refresh', changedOutput, undefined, traceBatchId)
+      const currentNames = new Set(output.map(item => item.fileName))
+      const removedAssets = [...new Set([...this.snapshotAssets.keys(), ...this.uncommittedSnapshotAssetNames])]
+        .filter(file => !currentNames.has(file))
+      // 写盘可能只完成一部分；成功提交前保留所有可能落盘的归属，后续快照负责撤销。
+      for (const item of changedOutput) {
+        if (isStatefulHmrSnapshotAsset(item)) {
+          this.uncommittedSnapshotAssetNames.add(item.fileName)
+        }
+      }
+      await this.writeOutput('refresh', changedOutput, undefined, traceBatchId, removedAssets)
+      // 写盘期间到达的新事件仍须以实际落盘内容为基线；分析事实只提交未被取代的批次。
+      this.adoptSnapshot(snapshot, output)
       if (batch.isSuperseded()) {
         return
       }
-      this.adoptSnapshot(snapshot, output)
       this.commitGlassEaselAnalysis(snapshot, 'refresh')
       this.buildEvents.emitEvent({ code: 'END' })
     })
@@ -680,10 +719,12 @@ class StatefulHmrSession {
   }
 
   private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
+    this.snapshotAssetsReliable = true
+    this.uncommittedSnapshotAssetNames.clear()
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
     this.snapshotAssets = new Map(
       output
-        .filter(item => item.type === 'asset')
+        .filter(isStatefulHmrSnapshotAsset)
         .map(item => [item.fileName, item]),
     )
   }
