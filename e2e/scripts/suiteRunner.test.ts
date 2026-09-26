@@ -32,6 +32,32 @@ function terminateTestChild(pid: number) {
 }
 
 describe('suiteRunner', () => {
+  it('includes generated Vue bindings and template cycles in the strict headless DOM gate', async () => {
+    const tasks = await getSuiteTasks('ide-dom-headless')
+    const statefulTasks = tasks.filter(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
+    expect(statefulTasks).toHaveLength(1)
+    const task = statefulTasks[0]!
+    expect(task.env).toMatchObject({
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
+    })
+    const filterIndex = task.args.indexOf('-t')
+    expect(filterIndex).toBeGreaterThanOrEqual(0)
+    const filter = new RegExp(task.args[filterIndex + 1]!)
+    const inventory = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../dom-acceptance-inventory.json'), 'utf8')) as {
+      tasks: Array<{ task: string, cases: Array<{ name: string }> }>
+    }
+    const cases = inventory.tasks.find(item => item.task === task.label)!.cases
+    const selected = cases.filter(item => filter.test(item.name)).map(item => item.name)
+    expect(selected).toHaveLength(5)
+    expect(selected.some(name => name.includes('template-generated computations and event handlers'))).toBe(true)
+    expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
+    for (const runtime of ['native', 'component', 'wevu']) {
+      expect(selected.some(name => name.includes(`preserves ${runtime} page state across two template`))).toBe(true)
+    }
+    expect(selected.some(name => name.includes('style updates') || name.includes('local and store refs'))).toBe(false)
+  })
+
   it('formats failure summary with failed tasks', () => {
     const summary = formatSuiteSummary('e2e:ci', [
       { label: 'task-a', exitCode: 0, durationMs: 1200, artifacts: [] },

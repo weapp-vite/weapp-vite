@@ -139,3 +139,15 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 🔴 本轮修正后的真实 DevTools 尚未运行，原完整 Wevu 失败仍阻塞最终验收；不能断言该分类遗漏是 DOM 缺失的唯一原因，也没有通过性能门禁。PR 保持草稿。新的 DOM 计划独立成 helper；既有大型 watch 与共享会话 suite 只修改分类挂载和增加用例，未为此重排生命周期。行为 changeset 继续包含 weapp-vite / create-weapp-vite。
 
 [修正前后原始诊断、完整检查日志、DOM 报告与源码 hash](./issue1082-template-generated-script.json.gz) 解压 260760 字节，SHA256 `5e55ede4a4cbbe1924a2a2733db667eb437b4b555293ba8e137fc5b929640785`。产物观察归档只公开逐文件 hash 和相关 WXML，完整本地字节保留；路径、项目标识和回环端口已脱敏。
+
+## 补齐 headless CI 覆盖与真实 IDE 再验证
+
+核对工作流发现，既有 `IDE DOM Headless` 清单没有包含 stateful HMR 文件，先前该检查通过不能证明本文件的新用例通过。本轮在原门禁加入一个按用例名称筛选的任务：同一共享会话执行编辑器文件归属、新增模板计算/事件，以及原生 Page、Component、Wevu 的模板往返，共 5 项。计算样式等其他原有断言继续保留在完整真实 IDE suite，没有替换或放宽。
+
+- 🟢 使用实际门禁任务配置在本机执行，5 项全部通过，30/30 DOM 检查点。更正后的赋值事件从计数 2 更新到 4，模板计算从 21 更新到 41；恢复后旧事件将计数更新到 5，版本、身份、输入和路由均满足断言。
+- 🔴 随后在真实 DevTools 单独运行旧 Wevu 静态模板用例，仍在首次 `edit-0` 缺失 `.template-cycle`，仅 2/6 DOM。没有用前序成功用例预热，也未强制应用补丁。分类修正尚未消除真实 IDE 的首次模板显示失败，PR 继续草稿。
+- 两次启动前进程检查均没有其他 E2E。真实运行于 03:49:51 UTC 结束；下一次发现的外部预检进程始于 03:50:06 UTC，晚于该次运行结束。之后遵守全局串行要求，没有再启动真实 IDE 用例。
+
+门禁复用现有跨平台 pnpm 任务启动方式与 headless 配置，不增加 shell 拼接、固定端口或机器路径。只读清单断言确认选中实际 inventory 中的 5 项且启用严格 DOM；新增 suiteRunner 回归约束这一覆盖范围。清单仍为 111 个任务声明、285 个用例，headless DOM 门禁实际任务数增加至 36。本轮仅门禁和证据变更，不新增产品 changeset。
+
+[门禁完整运行与真实 DevTools 失败归档](./issue1082-headless-stateful-gate.json.gz) 解压 261805 字节，SHA256 `00ee370d2c882bd7fc69ff946fa69935eee23ccf4f3de99d702ee85050c016fc`。被测产品为 `9db20cb0f`；之后只调整测试任务清单。后续需取得真实客户端补丁应用与宿主模板显示之间的证据，仍不能宣称最终 runtime 或性能验收完成。
