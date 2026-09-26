@@ -2100,50 +2100,60 @@ Page({
 Page({
   data: {
     afterSummary: '',
-    beforeSummary: ''
+    beforeSummary: '',
+    content: ''
   },
-  runSavedRenameOverwriteCreateTimeLab() {
+  saveSource() {
     const fsManager = wx.getFileSystemManager()
     fsManager.writeFileSync('headless://temp/source.txt', 'alpha-beta')
-    fsManager.writeFileSync('headless://temp/target.txt', 'x')
     wx.saveFile({
       tempFilePath: 'headless://temp/source.txt',
-      filePath: 'headless://saved/source.txt',
+      filePath: 'headless://saved/source.txt'
+    })
+  },
+  saveTarget() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/target.txt',
+      filePath: 'headless://saved/target.txt',
       success: () => {
-        wx.saveFile({
-          tempFilePath: 'headless://temp/target.txt',
-          filePath: 'headless://saved/target.txt',
-          success: () => {
-            this.setData({
-              beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
-            })
-            fsManager.renameSync('headless://saved/source.txt', 'headless://saved/target.txt')
-            this.setData({
-              afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
-            })
-          }
+        this.setData({
+          beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
         })
       }
+    })
+  },
+  overwriteTarget() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.renameSync('headless://saved/source.txt', 'headless://saved/target.txt')
+    this.setData({
+      afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' })),
+      content: fsManager.readFileSync('headless://saved/target.txt', 'utf8')
     })
   }
 })
 `)
     writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-rename-createtime</view>')
 
-    vi.spyOn(Date, 'now')
-      .mockReturnValueOnce(101)
-      .mockReturnValueOnce(202)
-      .mockReturnValue(303)
+    const clock = vi.spyOn(Date, 'now')
+    clock.mockReturnValue(101)
 
     const session = createHeadlessSession({ projectPath: root })
     const page = session.reLaunch('/pages/index/index')
-    page.runSavedRenameOverwriteCreateTimeLab()
+    page.saveSource()
+    clock.mockReturnValue(202)
+    page.saveTarget()
+    clock.mockReturnValue(303)
+    page.overwriteTarget()
 
     const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
     const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
     expect(beforeInfo.createTime).toBe(202)
+    expect(beforeInfo.size).toBe(1)
     expect(afterInfo.createTime).toBe(beforeInfo.createTime)
     expect(afterInfo.size).toBe(10)
+    expect(page.data.content).toBe('alpha-beta')
   })
 
   it('preserves target createTime when saveFile overwrites an existing saved path', () => {
@@ -2162,12 +2172,12 @@ Page({
 Page({
   data: {
     afterSummary: '',
-    beforeSummary: ''
+    beforeSummary: '',
+    content: ''
   },
-  runSavedSaveFileOverwriteCreateTimeLab() {
+  saveTarget() {
     const fsManager = wx.getFileSystemManager()
     fsManager.writeFileSync('headless://temp/first.txt', 'x')
-    fsManager.writeFileSync('headless://temp/second.txt', 'alpha-beta')
     wx.saveFile({
       tempFilePath: 'headless://temp/first.txt',
       filePath: 'headless://saved/target.txt',
@@ -2175,14 +2185,19 @@ Page({
         this.setData({
           beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
         })
-        wx.saveFile({
-          tempFilePath: 'headless://temp/second.txt',
-          filePath: 'headless://saved/target.txt',
-          success: () => {
-            this.setData({
-              afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
-            })
-          }
+      }
+    })
+  },
+  overwriteTarget() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/second.txt', 'alpha-beta')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/second.txt',
+      filePath: 'headless://saved/target.txt',
+      success: () => {
+        this.setData({
+          afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' })),
+          content: fsManager.readFileSync('headless://saved/target.txt', 'utf8')
         })
       }
     })
@@ -2191,20 +2206,22 @@ Page({
 `)
     writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-savefile-createtime</view>')
 
-    vi.spyOn(Date, 'now')
-      .mockReturnValueOnce(111)
-      .mockReturnValueOnce(222)
-      .mockReturnValue(333)
+    const clock = vi.spyOn(Date, 'now')
+    clock.mockReturnValue(111)
 
     const session = createHeadlessSession({ projectPath: root })
     const page = session.reLaunch('/pages/index/index')
-    page.runSavedSaveFileOverwriteCreateTimeLab()
+    page.saveTarget()
+    clock.mockReturnValue(222)
+    page.overwriteTarget()
 
     const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
     const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
     expect(beforeInfo.createTime).toBe(111)
+    expect(beforeInfo.size).toBe(1)
     expect(afterInfo.createTime).toBe(beforeInfo.createTime)
     expect(afterInfo.size).toBe(10)
+    expect(page.data.content).toBe('alpha-beta')
   })
 
   it('reports stat sizes and fs manager failures through callbacks', () => {

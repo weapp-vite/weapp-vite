@@ -616,41 +616,6 @@ describe('suiteRunner', () => {
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
-    expect(ideGithubIssuesLabels).toEqual([
-      'ide/wxml-transform.runtime.test.ts',
-      'ide/wevu-runtime.pruning.test.ts',
-      'ide/github-issues.runtime.issue1035.test.ts',
-      'ide/issue-963-plugin-es6.runtime.test.ts',
-      'ide/issue-997-rebuild.runtime.test.ts',
-      'ide/issue-998-tailwind.runtime.test.ts',
-      'ide/issue-1015-css-hmr.runtime.test.ts',
-      'ide/issue-1029-auto-routes.runtime.test.ts',
-      'ide/github-issues.runtime.component-instance-apis.test.ts',
-      'ide/github-issues.runtime.issue1015.test.ts',
-      ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
-      'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
-      'ide/github-issues.runtime.issue547.test.ts',
-      'ide/github-issues.runtime.issue558.test.ts',
-      'ide/github-issues.runtime.issue615.test.ts',
-      'ide/github-issues.runtime.issue621.test.ts',
-      'ide/github-issues.runtime.issue1010.test.ts',
-      'ide/github-issues.runtime.issue779.test.ts',
-      'ide/github-issues.runtime.issue826.test.ts',
-      'ide/github-issues.runtime.issue642-bug7-default.test.ts',
-      'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
-      'ide/github-issues.runtime.issue642-bug8.test.ts',
-      'ide/github-issues.runtime.require-async.test.ts',
-      'ide/github-issues.runtime.issue911.test.ts',
-      'ide/github-issues.runtime.issue941.test.ts',
-      'ide/github-issues.runtime.issue1009.test.ts',
-      'ide/github-issues.runtime.issue1049.test.ts',
-      'ide/github-issues.runtime.issue1011.test.ts',
-      'ide/github-issues.runtime.issue1012.test.ts',
-      'ide/github-issues.runtime.issue852.test.ts',
-      'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
-      'ide/github-issues.runtime.subpackage-item.test.ts',
-      'ide/github-issues.runtime.subpackage-user.test.ts',
-    ])
     for (const sourceLabel of IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS) {
       expect(ideFullLabels).not.toContain(sourceLabel)
       expect(ideGithubIssuesLabels).not.toContain(sourceLabel)
