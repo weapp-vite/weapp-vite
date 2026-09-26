@@ -21,6 +21,7 @@ import { statefulHmrCheckpoints } from './statefulHmrDom'
 import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { templateCycleCheckpoints } from './statefulHmrDom/templates'
 import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
@@ -646,4 +647,39 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       },
     })
   })
+
+  for (const runtime of ['native', 'component', 'wevu'] as const) {
+    it(`preserves ${runtime} page state across two template edit and restore cycles`, async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', templateCycleCheckpoints(runtime))
+      const source = path.join(APP_ROOT, `src/pages/${runtime}/index.${runtime === 'wevu' ? 'vue' : 'wxml'}`)
+      const output = path.join(DIST_ROOT, `pages/${runtime}/index.wxml`)
+      const original = await fs.readFile(source, 'utf8')
+      const route = `/pages/${runtime}/index?source=e2e`
+      const page = await relaunchStatefulRoute(route)
+      try {
+        await dom.check('initial', miniProgram, page)
+        await prepareRuntimeState(`template-${runtime}`)
+        await triggerIncrement()
+        await triggerIncrement()
+        const expected = await waitForPatchedBehavior(2, page)
+        await dom.check('prepared', miniProgram, page)
+        expect(original).toContain('<input')
+        for (const cycle of [0, 1]) {
+          const marker = `TEMPLATE-CYCLE-${cycle}`
+          const updated = original.replace('<input', `<view class="template-cycle">${marker}</view>\n    <input`)
+          await replaceFileByRename(source, updated)
+          await devProcess!.waitFor(waitForFileContains(output, marker), 'template edit emitted')
+          await dom.check(`edit-${cycle}`, miniProgram, await miniProgram.currentPage())
+          expect(await readRuntimeState(page)).toEqual(expected)
+          await replaceFileByRename(source, original)
+          await devProcess!.waitFor(expect.poll(async () => (await fs.readFile(output, 'utf8')).includes(marker), { timeout: 90_000 }).toBe(false), 'template restore emitted')
+          await dom.check(`restore-${cycle}`, miniProgram, await miniProgram.currentPage())
+          expect(await readRuntimeState(page)).toEqual(expected)
+        }
+      }
+      finally {
+        await replaceFileByRename(source, original)
+      }
+    })
+  }
 })

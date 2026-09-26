@@ -101,3 +101,22 @@
 本次未修改已安装 IDE、强制应用补丁、手写构建输出或放宽 DOM 检查。Wevu 最终 runtime 验收仍未完成，PR 保持草稿；此前所有失败继续保留。项目类型属于测试夹具声明，本轮不新增产品 changeset，也不将正确性诊断当作正式性能验收。
 
 [完整命令日志、DOM 报告及 IDE 日志](./issue1082-explicit-project-type.json.gz) 仅脱敏机器路径、项目标识及回环端口，解压 779677 字节，SHA256 `f44d8fe8ee90316b5e9f1a6de23a940fce5daff57c7718a537bbd48332397ccb`。[Wevu 失败截图](./issue1082-wevu-template-b.png) 来自同次运行。
+
+## 模板独立往返与首个场景对照
+
+在 `d4e573e20` 上增加测试，产品源码与 dist 未变。原生 Page、Component 页面和 Wevu 页面复用已有 fixture、共享 automator 会话，各进行两轮模板节点新增与恢复，并检查计数、输入、页面身份和路由。DOM 计划拆到独立 helper，不涉及样式能力，也不替代原 Wevu 场景的样式、store 和脚本断言。既有大型 suite 只增加共享会话用例，避免为对照引入独立启动流程。
+
+| 运行方式 | 结果 | DOM 检查点 |
+| --- | --- | --- |
+| headless，依次运行原生 / Component / Wevu | 🟢 3 项通过 | 18/18 |
+| DevTools，相同顺序 | 🟢 3 项通过 | 18/18 |
+| DevTools，仅选择新的 Wevu 模板用例 | 🔴 首次模板新增失败 | 2/6 |
+| headless，仅选择相同 Wevu 用例 | 🟢 1 项通过 | 6/6 |
+
+四次运行全局串行，均已退出。单独选择 Wevu 时仍执行相同的 suite 初始化及原生页面预热；失败时初始 DOM 和准备状态通过，产物 marker 已存在，但 `edit-0` 的 `.template-cycle` 期望 1，实际 0。没有通过重试、任意等待或强制注入将它改为通过。
+
+这个对照表明模板更新并非始终失败，也不是原场景的样式/store 检查才触发失败。前序模板操作、启动就绪、经过时间和宿主状态仍同时变化，尚不能从一次顺序对照确定因果。下一步需要观察首个模板编译返回内容及宿主注入目标/结果；保留首次失败，不把顺序运行的成功作为最终验收。
+
+mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮结构更新和恢复，检查 Page/App 身份、路由、计数及后续方法调用；该文件 6 项通过，包级 typecheck、scoped ESLint、共享启动检查及 DOM 清单检查通过。清单为 111 个任务、284 个声明用例，无缺失计划。这里的 browser provider 单测不是独立真实浏览器 E2E，也不能替代 DevTools 的首次失败。本轮仅测试与证据变更，不新增行为 changeset。
+
+[四次完整命令日志、DOM 报告、测试源码 hash 与单测记录](./issue1082-template-cycles.json.gz) 保留成功和失败，脱敏路径、项目标识及回环端口。解压 439641 字节，SHA256 `d18b1e1581a8beadd56dd6029f8c92d2d08bb030d109d04aa2de68d988c6a5e5`。测试运行时工作树含上述未提交测试，未冒称远端 HEAD 的完整验收。PR 仍为草稿，原 Wevu 2/8 失败及全部历史证据保留，#1082 未完成。
