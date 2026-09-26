@@ -116,7 +116,11 @@ pnpm exec wv preview -p xhs --desc "验收首页"
 
 ## 4. 一份配置与批量上传 {#batch}
 
-单平台可沿用分篇中的原生项目 JSON。多个平台推荐在 **一份 `vite.config.ts`** 中使用 `projectConfigs`，不必手工维护六个文件。公共字段用普通对象展开复用，各平台只填写自己的 AppID 和差异：
+三种配置方式都保留，不强制迁移：单平台使用根目录原生 JSON，多平台使用各端独立 JSON，或者在一份 Vite 配置中自动生成 JSON。它们都可以使用上传与预览命令，按项目维护习惯选择即可。
+
+### 方式一：一份 Vite 配置自动生成
+
+多个平台可以在 **一份 `vite.config.ts`** 中使用 `projectConfigs`，不必手工维护六个文件。公共字段用普通对象展开复用，各平台只填写自己的 AppID 和差异：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -161,7 +165,80 @@ vite.config.ts
 
 生成 JSON 的代码根为 `.`（百度使用 `smartProgramRoot`，其余为 `miniprogramRoot`）。**不要在 `projectConfigs` 填写代码根字段，也不要修改生成 JSON**；自定义输出使用 `build.outDir`，上传和预览跟随本次实际写出的目录。Token、私钥等仍放环境变量，不能放进 `projectConfigs`。
 
-已有原生文件项目仍可使用 `multiPlatform: { projectConfigRoot: 'config', targets: ['xhs', 'tt'] }`，分别读取 `config/<平台>/` 下的原生 JSON。两种来源不能混用；统一配置缺少选中平台时直接报错，不回退到旧文件。启用多平台模式后不使用 `--project-config`。原生文件模式的 SDK 代码根仍须与实际输出一致，详见[多平台配置](./multi-platform.md)。
+#### 智能提示与扩展字段 {#native-types}
+
+已知字段按平台补全，例如微信 `setting`、支付宝 `compileOptions`、百度 `compilation-args.common`，不会把一端的设置套到其他端。**原生配置对象及其嵌套设置允许新增未知字段**，已知字符串选项也保留后续新增取值，不需要 `as any`；最终是否支持这些字段仍由该端原生工具决定。京东未建立可靠 schema 的设置保持透传，不伪造补全。
+
+如果把映射提取为独立变量，可以使用公开的 `MultiPlatformProjectConfigs` 配合 `satisfies`：既保留平台字段提示，也保留扩展字段自身的类型推导。下面的 `futureNativeOption` 仅演示未来扩展字段，不代表现有原生工具已支持该开关：
+
+```ts
+import type { MultiPlatformProjectConfigs } from 'weapp-vite/config'
+import { defineConfig } from 'weapp-vite/config'
+
+const projectConfigs = {
+  weapp: {
+    appid: 'replace-with-weapp-app-id',
+    setting: {
+      es6: false,
+      futureNativeOption: { enabled: true },
+    },
+  },
+  alipay: {
+    appid: 'replace-with-alipay-app-id',
+    format: 2,
+    compileType: 'mini',
+    compileOptions: { typescript: false },
+  },
+} satisfies MultiPlatformProjectConfigs
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    multiPlatform: { projectConfigs },
+  },
+})
+```
+
+扩展能力不等于关闭所有检查：平台名仍限于支持的六端，AppID 仍为字符串，已知布尔字段不能写成字符串；由构建器管理的三个代码根字段仍禁止写入。
+
+`defineConfig` 保留 Vite 配置的泛型推导，不是精确对象校验器；混合了正确与错误平台键的内联对象可能通过 TypeScript 检查。需要静态检查平台名拼写时，使用上面的 `satisfies MultiPlatformProjectConfigs`；构建时仍校验平台键并拒绝不支持的平台。
+
+### 方式二：保留各端独立原生 JSON
+
+已有原生项目配置不需要改写成 TypeScript 对象。下面这种布局同样支持多端批量上传：
+
+```text
+vite.config.ts
+weapp/project.config.json
+alipay/mini.project.json
+tt/project.config.json
+xhs/project.config.json
+jd/project.config.json
+swan/project.swan.json
+```
+
+这些平台目录位于业务项目根时，设置 `projectConfigRoot: '.'`：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    multiPlatform: {
+      projectConfigRoot: '.',
+    },
+  },
+})
+```
+
+如果平台目录位于 `config/` 下，设置 `projectConfigRoot: 'config'`；这也是 `multiPlatform: true` 的默认位置。只维护部分平台时可加 `targets: ['weapp', 'xhs']`，仅选择已有配置的平台执行，不要求补齐其他四端文件。
+
+每个 JSON 独立维护该端 AppID 和原生设置；代码根通常为 `miniprogramRoot: 'dist'`，百度使用 `smartProgramRoot: 'dist'`。这种方式默认将项目 JSON 放到 `dist/<平台>/`，代码放到 `dist/<平台>/dist/`。单平台项目不启用多平台模式时，仍读取源码项目根的原生 JSON，详见各平台分篇。
+
+两种多平台来源不能同时配置；统一配置缺少选中平台时直接报错，不回退到旧文件，避免意外使用另一套 AppID。启用多平台模式后不使用 `--project-config`。原生文件模式的 SDK 代码根仍须与实际输出一致，详见[多平台配置](./multi-platform.md)。
+
+### 两种多平台方式共用的命令
 
 ```bash
 # 单次构建上传一个平台；要求明确 -p

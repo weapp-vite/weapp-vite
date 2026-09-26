@@ -15,6 +15,7 @@ import type {
   NpmSubPackageConfig,
   StyleConfigEntry,
 } from './foundation'
+import type { MultiPlatformProjectConfigs } from './projectConfig'
 import type { WxmlTransform } from './wxmlTransform'
 import type { WxmlValidate } from './wxmlValidate'
 import type { Resolver } from '@/auto-import-components/resolvers'
@@ -122,19 +123,6 @@ export interface EnhanceOptions {
 }
 
 /**
- * @description 内联原生项目配置；其他平台字段按原样保留，公共设置可通过对象展开复用。
- */
-export interface MultiPlatformProjectConfig {
-  [key: string]: unknown
-  appid?: string
-  appId?: string
-  /** 代码输出目录由构建器管理，请使用 `build.outDir`。 */
-  miniprogramRoot?: never
-  srcMiniprogramRoot?: never
-  smartProgramRoot?: never
-}
-
-/**
  * @description 多平台 project.config 配置
  */
 export interface MultiPlatformConfig {
@@ -143,7 +131,7 @@ export interface MultiPlatformConfig {
   /**
    * @description 各平台的原生项目配置；不可与 `projectConfigRoot` 同时设置。
    */
-  projectConfigs?: Partial<Record<MpPlatform, MultiPlatformProjectConfig>>
+  projectConfigs?: MultiPlatformProjectConfigs
   /**
    * @description 多平台模式下允许参与构建/开发的目标平台集合；省略时从 `projectConfigs` 的平台键推断。
    */

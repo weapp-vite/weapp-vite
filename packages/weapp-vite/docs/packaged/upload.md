@@ -80,7 +80,7 @@ pnpm exec wv build --upload -p xhs --uv 1.2.4 --desc "修复首页展示"
 
 ## 多平台与输出校验
 
-多个平台推荐在一份 `vite.config.ts` 中使用 `weapp.multiPlatform.projectConfigs`，不用分别维护原生项目 JSON：
+单平台根目录原生 JSON、多平台各端独立 JSON、统一 `projectConfigs` 三种入口都保留，不强制迁移。想减少重复文件时，可以在一份 `vite.config.ts` 中使用 `weapp.multiPlatform.projectConfigs`：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -102,7 +102,13 @@ export default defineConfig({
 
 省略 `targets` 时从平台键推导允许列表；公共字段用普通对象展开，平台字段覆盖公共字段，不做隐式深合并。标准项目 JSON 由打包器生成在代码目录内，默认 `dist/<平台>/dist/`，SDK 代码根为 `.`。不要在输入对象中写 `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot`，自定义目录使用 `build.outDir`。不读原生或私有项目 JSON；缺少选中平台直接报错，不回退到旧文件。
 
-原生文件模式仍可使用 `projectConfigRoot`：源配置位于 `config/<平台>/` 下；代码根为 `dist` 时，配置复制至 `dist/<平台>/`，代码在 `dist/<平台>/dist/`。两种来源不能同时配置。多平台仍显式传 `-p`，不能使用 `--project-config`；单平台原生文件可指定该参数，但文件名必须是目标平台的标准名称。Token/私钥始终留在环境变量，不写入项目配置。
+平台字段和嵌套设置提供智能提示，同时保留未知原生扩展字段及新增字符串取值，不需要 `as any`。独立映射可从 `weapp-vite/config` 导入 `MultiPlatformProjectConfigs`，使用 `satisfies MultiPlatformProjectConfigs` 保留补全和扩展字段推导。已知字段类型、六端平台键和生成代码根限制仍生效；未知字段是否可用由原生工具决定。
+
+`defineConfig` 保持通用泛型推导，不做精确对象校验；混合正确与错误平台键时，TypeScript 可能不报错。需要静态检查平台名拼写时用上述 `satisfies`，构建时仍拒绝不支持的平台。
+
+原生文件模式仍支持各端独立维护：默认 `projectConfigRoot: 'config'` 从 `config/<平台>/` 读取 JSON；若使用 `weapp/project.config.json`、`alipay/mini.project.json`、`tt/project.config.json`、`xhs/project.config.json`、`jd/project.config.json`、`swan/project.swan.json` 这些项目根下的平台目录，设为 `projectConfigRoot: '.'` 即可。只维护部分平台时显式选择这些平台，不需要补齐其余文件。
+
+原生代码根为 `dist` 时，配置复制至 `dist/<平台>/`，代码在 `dist/<平台>/dist/`。两种多平台来源不能同时配置。多平台仍显式传 `-p`，不能使用 `--project-config`；单平台不启用 multiPlatform 时仍读取根目录原生 JSON，也可指定该参数，但文件名必须是目标平台的标准名称。Token/私钥始终留在环境变量，不写入项目配置。
 
 ```bash
 pnpm exec wv upload -p xhs,tt

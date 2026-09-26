@@ -118,14 +118,17 @@ export default defineConfig({
 | 字段 | 类型 / 说明 |
 | --- | --- |
 | `enabled` | 对象形式默认启用；不能同时设为 `false` 并提供 `projectConfigs` |
-| `projectConfigs` | 按 `weapp` / `alipay` / `tt` / `xhs` / `jd` / `swan` 配置原生项目字段；公共字段用普通对象展开 |
+| `projectConfigs` | 按六端提供原生字段与嵌套设置补全；公共字段用普通对象展开，未知原生扩展字段仍可传入 |
 | `targets` | `'all'` 或平台数组；省略时从 `projectConfigs` 的键推导，文件模式则默认六端 |
-| `projectConfigRoot` | 原生文件模式的配置目录，默认 `'config'`；不能与 `projectConfigs` 同时提供 |
+| `projectConfigRoot` | 原生文件模式的配置目录，默认 `'config'`；平台目录直接位于项目根时用 `'.'`，不能与 `projectConfigs` 同时提供 |
 
 - `projectConfigs` 不读取原生项目文件或私有 JSON；缺少选中平台时报错，不回退到文件。
 - 标准项目 JSON 由打包器生成在代码输出目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK 代码根为 `.`，默认 `compileType` 为 `miniprogram`。
 - `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot` 由构建管理，不能出现在输入对象中；修改目录使用 `build.outDir`，不能手工修补生成 JSON。
 - 对象展开不做隐式深合并；Token、私钥等凭据不能写入 `projectConfigs`。
+- 智能提示采用开放的原生配置类型：未知字段可放在平台对象及嵌套设置中，字符串选项允许未来新增值，不需要 `as any`。已知字段类型、平台键和代码根限制仍保留。
+- 独立映射使用 `satisfies MultiPlatformProjectConfigs`，类型从 `weapp-vite/config` 或 `weapp-vite/types` 导入；不丢失扩展字段自身推导。示例见[智能提示与扩展字段](../guide/upload.md#native-types)。
+- `defineConfig` 的泛型不保证拒绝所有多余属性；静态检查平台名使用上述 `satisfies`，运行时仍拒绝不支持的平台。不要把原生字段扩展能力理解成支持新平台。
 - 统一项目配置用于完整小程序，独立插件仍使用原生文件方式；Web/组件库构建不生成小程序项目 JSON。
 - 已有文件模式保持兼容：`true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`，从 `${projectConfigRoot}/${platform}/` 读取原生配置。
 - 命令仍显式选择目标，例如 `wv build --platform alipay`；`upload -p all` 表示六端，不会缩减为已配置的平台子集。

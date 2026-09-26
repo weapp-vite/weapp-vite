@@ -28,6 +28,10 @@ export default defineConfig({
 
 在一份配置中按 `weapp` / `alipay` / `tt` / `xhs` / `jd` / `swan` 提供原生项目字段，公共项用普通对象展开。没有显式 `targets` 时从映射键推导；完整示例见[上传速查](./upload.md#多平台与输出校验)。
 
+各平台已知字段及嵌套设置提供智能提示；原生对象允许未知扩展字段，字符串选项允许新增取值，不需要 `as any`。独立映射推荐从 `weapp-vite/config` 导入 `MultiPlatformProjectConfigs` 并使用 `satisfies`，保留扩展字段推导。此开放能力不放宽平台名、AppID 类型和生成代码根限制。
+
+`defineConfig` 的泛型不保证拒绝所有多余属性；需要静态检查平台名拼写时使用 `satisfies MultiPlatformProjectConfigs`，构建时仍拒绝不支持的平台。
+
 标准项目 JSON 由打包器原生生成在代码目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK 代码根为 `.`；输入不能填写 `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot`，修改目录用 `build.outDir`。这里只管理 IDE/SDK 项目配置，不代替业务 `app.json`。
 
 不读取源码侧原生项目 JSON 或私有 JSON；缺少选中平台时直接报错，不回退到旧文件。不能同时指定 `projectConfigRoot` 或 `enabled: false`。独立插件仍使用原生文件模式；Web/组件库不生成项目 JSON。不写映射时保留原生文件模式。凭据始终走环境变量，不写入映射。

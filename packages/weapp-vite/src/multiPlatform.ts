@@ -1,4 +1,4 @@
-import type { MpPlatform, MultiPlatformConfig, MultiPlatformProjectConfig } from './types'
+import type { MpPlatform, MultiPlatformConfig, MultiPlatformProjectConfigs } from './types'
 import path from 'pathe'
 import { getSupportedMiniProgramPlatforms, resolveMiniPlatform } from './platform'
 
@@ -8,7 +8,7 @@ export interface ResolvedMultiPlatformConfig {
   enabled: boolean
   projectConfigRoot: string
   targets: readonly MpPlatform[]
-  projectConfigs?: Partial<Record<MpPlatform, MultiPlatformProjectConfig>>
+  projectConfigs?: MultiPlatformProjectConfigs
 }
 
 function normalizeMultiPlatformProjectConfigRoot(input: unknown) {
@@ -64,7 +64,7 @@ function isProjectConfigRecord(value: unknown): value is Record<string, unknown>
 }
 
 /** 校验原生配置映射，避免拼错平台或把输出目录交给原生字段管理。 */
-function resolveProjectConfigs(value: unknown): Partial<Record<MpPlatform, MultiPlatformProjectConfig>> {
+function resolveProjectConfigs(value: unknown): MultiPlatformProjectConfigs {
   if (!isProjectConfigRecord(value) || Object.keys(value).length === 0) {
     throw new TypeError('`weapp.multiPlatform.projectConfigs` 必须是非空的平台配置对象。')
   }

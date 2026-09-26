@@ -28,8 +28,8 @@ describe('inline multi-platform project configs', () => {
     expect(() => resolveMultiPlatformConfig({ projectConfigs: value })).toThrow(TypeError)
   })
 
-  it.each(['wechat', 'mp-weixin', 'WEAPP', ' weapp ', 'web', 'all', 'unknown'])('rejects noncanonical map key %s', (platform) => {
-    expect(() => resolveMultiPlatformConfig({ projectConfigs: { [platform]: {} } })).toThrow(/projectConfigs/)
+  it.each(['wechat', 'mp-weixin', 'WEAPP', ' weapp ', 'web', 'all', 'unknown'])('rejects noncanonical map key %s alongside a supported key', (platform) => {
+    expect(() => resolveMultiPlatformConfig({ projectConfigs: { weapp: { appid: 'wx-app' }, [platform]: {} } })).toThrow(/projectConfigs/)
   })
 
   it.each([null, undefined, [], 'app-id', 123, () => ({}), new Date(0)].map(entry => ({ entry })))('rejects an invalid native entry: $entry', ({ entry }) => {
