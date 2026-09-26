@@ -232,8 +232,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     previousPostConnectRefresh = process.env[POST_CONNECT_REFRESH_ENV]
     delete process.env[POST_CONNECT_REFRESH_ENV]
     await cleanupResidualDevProcesses()
-    await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
+    if (resolveRuntimeProviderName() === 'devtools') {
+      await cleanupResidualIdeProcesses()
+      await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
+    }
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
     originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')
     originalVueChildSource = (await fs.readFile(VUE_CHILD_SOURCE, 'utf8')).replace('count.value += 2', 'count.value += 1').replace('step:2', 'step:1')
@@ -344,7 +346,9 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       process.env[POST_CONNECT_REFRESH_ENV] = previousPostConnectRefresh
     }
     await cleanupResidualDevProcesses()
-    await cleanupResidualIdeProcesses()
+    if (resolveRuntimeProviderName() === 'devtools') {
+      await cleanupResidualIdeProcesses()
+    }
   })
 
   it('preserves native Page identity, data, input, route, and query across style updates and JavaScript patches', async (ctx) => {

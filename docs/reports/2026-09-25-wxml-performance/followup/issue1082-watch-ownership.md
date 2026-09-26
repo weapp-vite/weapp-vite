@@ -151,3 +151,13 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 门禁复用现有跨平台 pnpm 任务启动方式与 headless 配置，不增加 shell 拼接、固定端口或机器路径。只读清单断言确认选中实际 inventory 中的 5 项且启用严格 DOM；新增 suiteRunner 回归约束这一覆盖范围。清单仍为 111 个任务声明、285 个用例，headless DOM 门禁实际任务数增加至 36。本轮仅门禁和证据变更，不新增产品 changeset。
 
 [门禁完整运行与真实 DevTools 失败归档](./issue1082-headless-stateful-gate.json.gz) 解压 261805 字节，SHA256 `00ee370d2c882bd7fc69ff946fa69935eee23ccf4f3de99d702ee85050c016fc`。被测产品为 `9db20cb0f`；之后只调整测试任务清单。后续需取得真实客户端补丁应用与宿主模板显示之间的证据，仍不能宣称最终 runtime 或性能验收完成。
+
+## CI 暴露的 provider 生命周期依赖与后续定位
+
+`49567d21d` 的三个 OS headless 门禁均在 suite 初始化失败，没有执行用例：测试无条件调用微信 IDE 的编译缓存清理，CI 未安装该 IDE。本机已安装 IDE，所以此前本地门禁成功掩盖了错误依赖。Ubuntu/macOS 报缓存清理失败，Windows 报找不到路径，但断点均为同一调用，不是 Windows 独有产品回退。
+
+初始化和退出时的 IDE 进程/缓存清理现仅在 devtools provider 执行；两种 provider 仍清理本套件的编译进程。真实 IDE 的准备步骤与原有 runtime 断言不变。使用一份临时 setup 将两个 IDE 清理 API 替换为必抛错函数，随后执行同样五项 headless 用例，全部通过，30/30 DOM；这证明本机安装的 IDE 不再是该 suite 的隐含前提。门禁覆盖契约的 Vitest 回归也已执行，1 项通过。
+
+🔴 随后真实 DevTools 单选新增计算/事件用例仍失败，2/6 DOM。此次明确通过了 `waitForClientVersion(previous + 1)`，失败发生在后续 `edited` 检查：`.derived-count` 期望 1 个，实际 0 个。因此该次没有停在补丁版本等待阶段，尚未进入新事件点击和恢复步骤；不能把它归为脚本未发布，也不能宣布最终验收通过。后续重点是已应用脚本与宿主模板编译/显示之间的断点。
+
+本轮没有产品源码变更，不新增 changeset。三个 CI job 的完整日志、拒绝 IDE 调用的测试配置、headless/DevTools 完整日志与 DOM 报告归档于 [issue1082-headless-provider-lifecycle.json.gz](./issue1082-headless-provider-lifecycle.json.gz)，解压 1142366 字节，SHA256 `8b4e3b175b5d30f3163021f53f3a0dcd8bbbfb6b74637aafaaf62c4b6c210f91`。原始 CI 日志 hash 另存于归档；仅脱敏机器路径、项目标识、邮箱及回环端口，保留所有失败。PR 继续草稿。
