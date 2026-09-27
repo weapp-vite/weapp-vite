@@ -28,7 +28,8 @@ import { matchesRouteFile, updateCandidateFromFile } from './watch'
 type PageDeclarationSourceResolver = NonNullable<ScanRoutesOptions['resolvePageDeclarationSource']>
 
 export interface AutoRoutesService {
-  ensureFresh: () => Promise<void>
+  /** 活动构建解析器只参与本次刷新，不替换服务持有的长期解析器。 */
+  ensureFresh: (resolve?: PageDeclarationSourceResolver) => Promise<void>
   markDirty: () => void
   getSnapshot: () => AutoRoutes
   getReference: () => AutoRoutes
@@ -43,7 +44,7 @@ export interface AutoRoutesService {
   isPageSource: (filePath: string) => boolean
   /** 判断文件是否属于逻辑页面声明或其外部脚本依赖。 */
   isPageDeclarationSource: (filePath: string) => boolean
-  /** 注册当前构建上下文已有的模块解析器。 */
+  /** 注册服务持有的长期解析器；构建钩子通过 ensureFresh 参数提供临时解析器。 */
   setPageDeclarationSourceResolver: (resolve?: PageDeclarationSourceResolver) => void
   handleFileChange: (filePath: string, event?: AutoRoutesFileEvent) => Promise<boolean>
   isInitialized: () => boolean
@@ -148,7 +149,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     return true
   }
 
-  async function refresh() {
+  async function refresh(pageDeclarationResolver = resolvePageDeclarationSource) {
     if (!isEnabled()) {
       if (
         state.dirty
@@ -192,7 +193,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
         state,
         topologyKey,
         isRestoreCurrent,
-        Boolean(resolvePageDeclarationSource),
+        Boolean(pageDeclarationResolver),
       )
       if (restored && isRestoreCurrent()) {
         lastWrittenTypedDefinition = await writeTypedRouterDefinition(ctx, state.typedDefinition, lastWrittenTypedDefinition)
@@ -226,7 +227,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
         pendingScan = scanRoutes(
           ctx,
           state.candidates as Map<string, CandidateEntry>,
-          { resolvePageDeclarationSource },
+          { resolvePageDeclarationSource: pageDeclarationResolver },
         )
           .then((result) => {
             if (mutationVersion !== versionSnapshot) {
@@ -281,10 +282,10 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
   }
 
-  async function ensureFresh() {
+  async function ensureFresh(pageDeclarationResolver = resolvePageDeclarationSource) {
     do {
       // 扫描与产物发布共用一个所有者；写入期间的新变更必须随后发布。
-      pendingRefresh ??= refresh().finally(() => {
+      pendingRefresh ??= refresh(pageDeclarationResolver).finally(() => {
         pendingRefresh = undefined
       })
       await pendingRefresh
@@ -292,8 +293,8 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
   }
 
   return {
-    async ensureFresh() {
-      await ensureFresh()
+    async ensureFresh(resolve?: PageDeclarationSourceResolver) {
+      await ensureFresh(resolve)
     },
 
     markDirty() {

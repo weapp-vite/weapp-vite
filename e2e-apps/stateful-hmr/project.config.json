@@ -1,6 +1,7 @@
 {
   "appid": "wxb3d842a4a7e3440d",
   "miniprogramRoot": "dist",
+  "compileType": "miniprogram",
   "setting": {
     "es6": true,
     "minifyWXML": true,

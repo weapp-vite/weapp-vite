@@ -2,7 +2,7 @@
 
 ## 状态
 
-**实现草稿，未完成最终验收。** 改动位于隔离分支 `codex/issue-1081-batch-hmr`。不能将 issue 标记为已修复，也不能将这份记录当作合并通过证明。
+**实现与整合验证已完成，已合入最终 main，等待本次 HEAD 普通 CI。已证实的 IDE 样式限制按维护者授权记录接受。** 改动位于隔离分支 `codex/issue-1081-batch-hmr`。不能将 issue 标记为已修复，也不能将这份记录当作合并通过证明。
 
 ## 已落地的边界
 
@@ -33,7 +33,7 @@
 
 官方微信开发者工具 `2.02.2609231`、基础库 `3.17.3` 已实际进入用例。初始颜色检查通过；首次更新后，页面 class 与 emitted CSS selector 一致，交互计数保留，但背景计算值为 `rgba(0, 0, 0, 0)`，预期为 `rgb(219, 234, 254)`。失败断言保留，没有增加 skip 或用完整重载掩盖失败。
 
-该现象与 `docs/plans/2026-09-20-devtools-style-hmr-diagnostic.md` 中的宿主样式更新丢失相似，但本轮尚未建立新版本的文件级因果链，不能直接认定为同一根因。Computer Use 的应用发现被 macOS 锁屏阻断，自动解锁失败，真实 UI 复核尚未完成。
+该现象与 `docs/plans/2026-09-20-devtools-style-hmr-diagnostic.md` 中的宿主样式更新丢失相似，但本轮尚未建立新版本的文件级因果链，不能直接认定为同一根因。此前 Computer Use 曾被锁屏阻断；本轮已在解锁 Mac 完成无框架原生对照，见下文最新报告。
 
 ## 尚未关闭的验收项
 
@@ -61,3 +61,9 @@
 大文件仍负责共享入口/会话生命周期，本次仅接入统一源码读取与批次判定；新增转换回归单独放置，避免重复读取与额外输出写入者。最终普通 CI 和真实 IDE 验收仍须按最新 HEAD 完成，Issue #1081/#1082 不因本轮修正自动关闭。
 
 [本轮完整脱敏验证与失败记录](../reports/2026-09-25-wxml-performance/followup/issue1081-batch-delivery-ci-fixes.json.gz)：48 份记录，解压 189144 bytes，SHA256 `a364a5edb2e8f2d31ad3ac0687cfeb70b619afad6d4a83d3f7f1692f9ab3a4cc`。原件 SHA 与被测源码 hash 单列；实际父提交和本地候选身份清晰区分。
+
+## 原生宿主对照与组合验收
+
+[原生样式交付与 #1086 整合记录](../reports/2026-09-25-wxml-performance/followup/issue1081-native-style-delivery.md)记录无框架原生 WXSS 首次新增规则同样变透明、普通编译使用相同文件恢复，以及批次写入→发布→执行确认的完整 trace。原失败不改成通过，Nightly 非阻断；最终 HEAD 普通 CI 仍须全绿，#1081/#1082 保持开放。
+
+已普通 merge #1086 的 squash main `002413456c0577484b474ffe483f812e39c64bec`，最终源文件 hash 与已完成两 provider 验证的整合候选一致。

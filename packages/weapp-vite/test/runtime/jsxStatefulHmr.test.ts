@@ -163,6 +163,22 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     }, { timeout: 30_000 }).toBeGreaterThan(sharedVersion)
     expect(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8')).toContain('this.count += 2')
     runtime.assertHealthy()
+    // 源码 transform 继续拥有共享 JSX；恢复也必须由实际客户端执行并确认。
+    expect(ctx.moduleGraphService.getEntryDependencies(source)).toContainEqual({ kind: 'jsx', sourceId: shared })
+    let version = runtime.getVersion()
+    for (const [file, content, marker] of [
+      [shared, 'export const sharedFragment=<text>restored-shared</text>;export const createDynamicBlock=(factory)=>factory()', 'restored-shared'],
+      [source, page, 'initial-page'],
+    ]) {
+      await fs.writeFile(file, content)
+      await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain(marker)
+      await expect.poll(() => {
+        runtime.assertHealthy()
+        return runtime.getVersion()
+      }, { timeout: 30_000 }).toBeGreaterThan(version)
+      version = runtime.getVersion()
+      expect(ctx.runtimeState.build.hmr).toBe(hmrState)
+    }
     await new Promise(resolve => setTimeout(resolve, 2_000))
     expect(createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')).toBe(controlHash)
     expect(errors).toEqual([])

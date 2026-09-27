@@ -30,7 +30,7 @@ const harness = vi.hoisted(() => ({
   callbacks: undefined as AdapterCallbacks | undefined,
   nativeOutput: [] as StatefulHmrOutputFile[],
   createServer: vi.fn(),
-  writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets) => Promise<void>>(),
+  writeOutput: vi.fn<(outDir: string, output: StatefulHmrOutputFile[], initialPublicAssets?: StatefulHmrInitialPublicAssets, removedAssets?: string[]) => Promise<void>>(),
   fullBuild: vi.fn<() => Promise<void>>(),
   beforeInitialReady: vi.fn<() => Promise<void>>(),
   beforeFullPrepare: vi.fn<() => Promise<void>>(),
@@ -182,6 +182,47 @@ describe('stateful snapshot output transactions', () => {
     expect(session.rebuild).toHaveBeenCalledWith([file], expect.any(Map))
     expect(writtenAssets().findLast(asset => asset.fileName === fileName)?.source).toContain(source)
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('retires assets removed by a compiler-owned native snapshot batch', async () => {
+    const removed = { type: 'asset' as const, fileName: 'resources/deleted.txt', source: 'old' }
+    const initial = snapshot('red', [])
+    initial.output.push(removed)
+    const session = await start(initial)
+    const file = path.join(root, 'src/page.wxml')
+    const compiler = getCompilerHmrHost(session.ctx)
+    compiler.register('scan-only-provider', async () => ({}))
+    compiler.seed(file, '<view>before</view>')
+    compiler.capture(file, '<view>after</view>')
+    session.rebuild.mockResolvedValue(snapshot('blue', []))
+    harness.writeOutput.mockClear()
+    session.sourceChange(file, 'update', ['entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])).toContain(removed.fileName)
+  })
+
+  it('restores unchanged bytes after a compiler batch partially writes and fails', async () => {
+    const initial = snapshot('red', [])
+    const session = await start(initial)
+    const file = path.join(root, 'src/page.wxml')
+    const compiler = getCompilerHmrHost(session.ctx)
+    compiler.register('scan-only-provider', async () => ({}))
+    compiler.seed(file, '<view>before</view>')
+    compiler.capture(file, '<view>after</view>')
+    const partial = snapshot('blue', [])
+    partial.output.push({ type: 'asset', fileName: 'resources/partial.txt', source: 'partial' })
+    session.rebuild.mockResolvedValueOnce(partial).mockResolvedValue(initial)
+    harness.writeOutput.mockClear().mockRejectedValueOnce(new Error('partial batch write'))
+    session.sourceChange(file, 'update', ['entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    harness.writeOutput.mockClear()
+    // 新源事件以完整重同步恢复；不得用失败前的字节快照省略真实写回。
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(100)
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: red; }' }))
+    expect(harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])).toContain('resources/partial.txt')
   })
 
   it('issue #1081: does not publish a compiler patch before its stylesheet commits', async () => {
@@ -381,6 +422,28 @@ describe('stateful snapshot output transactions', () => {
     }))
     expect(delta).toHaveBeenCalledTimes(1)
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it.each(['running', 'written'] as const)('builds one mixed snapshot at the native patch boundary (%s)', async (phase) => {
+    const session = await start()
+    const file = path.join(root, 'src/page.vue')
+    const ready = Promise.withResolvers<StatefulHmrSnapshot>()
+    session.rebuild.mockImplementationOnce(async () => ready.promise)
+    session.sourceChange(file, 'update', ['entry-mixed-asset:1'])
+    await vi.advanceTimersByTimeAsync(50)
+    expect(session.rebuild).not.toHaveBeenCalled()
+    expect(harness.callbacks!.onPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(50)
+    expect(session.rebuild).toHaveBeenCalledTimes(1)
+    if (phase === 'written') {
+      ready.resolve(snapshot('blue'))
+      await vi.advanceTimersByTimeAsync(50)
+    }
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(false)
+    ready.resolve(snapshot('blue'))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledTimes(1)
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
   })
 
   it('keeps source classifications across unrelated profile writes and consumes only the delivered files', async () => {
@@ -675,6 +738,87 @@ describe('stateful snapshot output transactions', () => {
     await vi.advanceTimersByTimeAsync(50)
     expect(writtenAssets()).toContainEqual({ type: 'asset', fileName: `${route}.wxss`, source: '' })
     expect(writtenAssets()).not.toContainEqual(expect.objectContaining({ fileName: 'app.wxss' }))
+  })
+
+  it('does not retire native-owned preludes missing from an asset refresh', async () => {
+    const initial = snapshot('red', [])
+    initial.output.push(
+      { type: 'asset', fileName: 'app.prelude.js', source: 'native prelude' },
+      { type: 'asset', fileName: 'package/app.prelude.js', source: 'native package prelude' },
+    )
+    const session = await start(initial)
+    session.rebuild.mockResolvedValue(snapshot('red', []))
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    const retired = harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])
+    expect(retired).not.toContain('app.prelude.js')
+    expect(retired).not.toContain('package/app.prelude.js')
+  })
+
+  it('retires copied assets and republishes identical bytes after restoration', async () => {
+    const copied = { type: 'asset' as const, fileName: 'resources/copied.txt', source: 'original' }
+    const initial = snapshot('red', [])
+    initial.output.push(copied)
+    const session = await start(initial)
+    session.rebuild.mockResolvedValue(snapshot('red', []))
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.writeOutput.mock.calls.at(-1)?.[3]).toContain(copied.fileName)
+    session.rebuild.mockResolvedValue(initial)
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(writtenAssets()).toContainEqual(copied)
+  })
+
+  it('restores original bytes when deletion is superseded during native write', async () => {
+    const copied = { type: 'asset' as const, fileName: 'resources/copied.txt', source: 'original' }
+    const initial = snapshot('red', [])
+    initial.output.push(copied)
+    const session = await start(initial)
+    session.rebuild.mockResolvedValueOnce(snapshot('red', [])).mockResolvedValue(initial)
+    const blocked = Promise.withResolvers<void>()
+    harness.writeOutput.mockClear().mockImplementationOnce(async () => blocked.promise)
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.writeOutput.mock.calls.at(-1)?.[3]).toContain(copied.fileName)
+    session.refresh()
+    blocked.resolve()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(writtenAssets()).toContainEqual(copied)
+  })
+
+  it.each(['refresh', 'full'] as const)('retires newly written assets from a failed %s when the next snapshot omits them', async (mode) => {
+    const initial = snapshot('red', [])
+    const added = { type: 'asset' as const, fileName: 'resources/transient.txt', source: 'partial write' }
+    const failed = snapshot('red', [])
+    failed.output.push(added)
+    const session = await start(initial)
+    session.rebuild.mockResolvedValueOnce(failed).mockResolvedValue(initial)
+    harness.writeOutput.mockClear().mockRejectedValueOnce(new Error('write failed after adding a file'))
+    session[mode]()
+    await vi.advanceTimersByTimeAsync(50)
+    harness.writeOutput.mockClear()
+    session[mode]()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.writeOutput.mock.calls.at(-1)?.[3]).toContain(added.fileName)
+  })
+
+  it('rewrites original bytes after a deletion write reports partial failure', async () => {
+    const copied = { type: 'asset' as const, fileName: 'resources/copied.txt', source: 'original' }
+    const initial = snapshot('red', [])
+    initial.output.push(copied)
+    const session = await start(initial)
+    session.rebuild.mockResolvedValueOnce(snapshot('red', [])).mockResolvedValue(initial)
+    harness.writeOutput.mockClear().mockRejectedValueOnce(new Error('partial deletion failed'))
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    harness.writeOutput.mockClear()
+    session.refresh()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(writtenAssets()).toContainEqual(copied)
   })
 
   it('retries the complete asset diff after a failed refresh instead of adopting unwritten styles', async () => {

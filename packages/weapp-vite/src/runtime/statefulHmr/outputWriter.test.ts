@@ -97,6 +97,36 @@ describe('stateful hmr output writer', () => {
     await expect(fs.readFile(path.join(outDir, 'pages/index/index.wxss'), 'utf8')).resolves.toBe('view { color: red; }')
   })
 
+  it('prunes only retired owned files after writing and preserves an emitted replacement', async () => {
+    const root = await fs.mkdtemp(path.join(process.cwd(), '.tmp-stateful-hmr-writer-'))
+    tempRoots.push(root)
+    const outDir = path.join(root, 'dist')
+    await fs.outputFile(path.join(outDir, 'retired.txt'), 'retired')
+    await fs.outputFile(path.join(outDir, 'keep.txt'), 'unowned')
+    await fs.outputFile(path.join(outDir, 'replacement.txt'), 'previous')
+    await writeStatefulHmrOutput(outDir, [
+      { type: 'asset', fileName: 'replacement.txt', source: 'new owner' },
+    ], undefined, ['retired.txt', 'replacement.txt'])
+    await expect(fs.pathExists(path.join(outDir, 'retired.txt'))).resolves.toBe(false)
+    await expect(fs.readFile(path.join(outDir, 'keep.txt'), 'utf8')).resolves.toBe('unowned')
+    await expect(fs.readFile(path.join(outDir, 'replacement.txt'), 'utf8')).resolves.toBe('new owner')
+  })
+
+  it('preserves prepared script and binary bytes without publishing the virtual entry', async () => {
+    const root = await fs.mkdtemp(path.join(process.cwd(), '.tmp-stateful-hmr-writer-'))
+    tempRoots.push(root)
+    const outDir = path.join(root, 'dist')
+    const script = '/* final compiler output */\nrequire("./dependency.js");\n'
+    const binary = new Uint8Array([0, 255, 128, 13, 10, 0])
+    await writeStatefulHmrOutput(outDir, [
+      { type: 'chunk', fileName: 'app.js', code: script, modules: {} },
+      { type: 'asset', fileName: 'data.bin', source: binary },
+    ])
+    await expect(fs.readFile(path.join(outDir, 'app.js'), 'utf8')).resolves.toBe(script)
+    await expect(fs.readFile(path.join(outDir, 'data.bin'))).resolves.toEqual(Buffer.from(binary))
+    expect((await fs.readdir(outDir)).sort()).toEqual(['app.js', 'data.bin'])
+  })
+
   it('persists generated files through Vite write without deleting partial output', async () => {
     const root = await fs.mkdtemp(path.join(process.cwd(), '.tmp-stateful-hmr-writer-'))
     tempRoots.push(root)
