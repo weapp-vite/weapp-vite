@@ -1,0 +1,19 @@
+{
+  "projectname": "wevu-json-render-demo",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "\u552e\u540e\u670d\u52a1",
+          "pathName": "pages/index/index",
+          "query": ""
+        },
+        {
+          "name": "\u7a7a\u767d\u9875",
+          "pathName": "pages/blank/index",
+          "query": ""
+        }
+      ]
+    }
+  }
+}

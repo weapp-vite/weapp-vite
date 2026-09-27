@@ -223,9 +223,11 @@ export function syncComponentProperties(
     const previousSnapshot = instance.__propertySnapshots?.[key]
     if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
       previousProperties[key] = instance.properties[key]
-      instance.properties[key] = nextValue
+      // 属性跨组件边界传递时必须隔离引用，否则父级深层 patch 会提前改写子级旧值。
+      const deliveredValue = cloneValue(nextValue)
+      instance.properties[key] = deliveredValue
       if (Object.hasOwn(definition.properties ?? {}, key)) {
-        instance.data[key] = nextValue
+        instance.data[key] = deliveredValue
       }
       changedRootKeys.push(key)
     }

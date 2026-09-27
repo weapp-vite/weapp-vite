@@ -1,0 +1,12 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/blank/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "\u552e\u540e\u670d\u52a1",
+    "navigationBarBackgroundColor": "#f5f4ef",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f4ef"
+  }
+}

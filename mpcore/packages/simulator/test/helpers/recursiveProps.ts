@@ -1,0 +1,27 @@
+export const recursivePropsFiles: Array<[string, string]> = [
+  ['project.config.json', '{"miniprogramRoot":"."}'],
+  ['app.json', '{"pages":["pages/index/index"]}'],
+  ['app.js', 'App({})'],
+  ['pages/index/index.json', '{"usingComponents":{"tree-node":"/components/node"}}'],
+  ['pages/index/index.js', `Page({
+    data: { tree: { id: 'root', children: [{ id: 'leaf', text: 'initial', children: [] }] }, lastInput: '' },
+    update() { this.setData({ 'tree.children[0].text': 'updated' }) },
+    receive(event) { this.setData({ lastInput: event.detail.value }) },
+  })`],
+  ['pages/index/index.wxml', '<tree-node node="{{tree}}" bind:edit="receive"/><text id="input-result">{{lastInput}}</text>'],
+  ['components/node.json', '{"component":true,"usingComponents":{"tree-node":"/components/node"}}'],
+  ['components/node.js', `Component({
+    properties: { node: { type: Object, observer: 'project' } },
+    data: { view: null },
+    methods: {
+      project(node) {
+        if (this.lastNode === node) return
+        this.lastNode = node
+        this.setData({ view: JSON.parse(JSON.stringify(node)) })
+      },
+      forward(event) { this.triggerEvent('edit', event.detail) },
+      input(event) { this.triggerEvent('edit', { id: this.properties.node.id, value: event.detail.value }) },
+    },
+  })`],
+  ['components/node.wxml', '<view wx:if="{{view}}"><text id="{{view.id}}">{{view.text}}</text><input wx:if="{{view.id === \'leaf\'}}" id="leaf-input" value="{{view.text}}" bindinput="input"/><tree-node wx:for="{{view.children}}" wx:key="id" node="{{item}}" bind:edit="forward"/></view>'],
+]

@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：113；微信：110；范围外：3。
-- 展开的 case 声明：300；已接入计划：300；缺计划：0。
+- 任务：114；微信：111；范围外：3。
+- 展开的 case 声明：303；已接入计划：303；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -108,6 +108,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/wevu-features.runtime.behavior.test.ts | devtools, headless | 9 | 9 | 0 | wechat |
 | ide/wevu-features.runtime.router.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/wevu-features.runtime.subpath.test.ts | devtools | 1 | 1 | 0 | wechat |
+| ide/wevu-json-render.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
 | ide/wevu-jsx-tsx.hmr.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/wevu-jsx-tsx.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
 | ide/wevu-query.runtime.test.ts | devtools, headless | 3 | 3 | 0 | wechat |
@@ -2348,6 +2349,33 @@ Optional Baidu host runtime is outside WeChat DOM acceptance
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/wevu-features`; checkpoints: `[ { id: 'subpath:initial', route: SUBPATH_ROUTE, action: '检查子路径页面初始结果', nodes: [ { selector: '.subpath-entries-page__title', text: SUBPATH_READY_TEXT }, { selector: '#subpath-store-summary', text: 'store count/label = 0 / init' }, { selecto`; source: `e2e/ide/wevu-features.runtime.subpath.test.ts:20`
 - Operations: `check(subpath:initial)`, `check(subpath:result)`
+
+
+## ide/wevu-json-render.runtime.test.ts
+
+### Wevu json-render runtime > renders recursive cards and forwards real input/tap events through Wevu components
+
+- Source: `e2e/ide/wevu-json-render.runtime.test.ts:60`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-json-render-demo`; checkpoints: `[{ id: 'ready', route, action: '首次渲染售后卡片', nodes: [ { selector: '.heading', text: '让每一次购物都有回应。' }, { selector: '//text[@id="hint"]', query: 'xpath', text: '请描述商品问题，方便我们为你处理。' }, { selector: '//input[@id="reason"]', query: 'xpath', count: 1 `; source: `e2e/ide/wevu-json-render.runtime.test.ts:61`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(ready)`, `tap(<missing>)`, `check(submitted)`
+
+### Wevu json-render runtime > preserves input across streamed patches and recovers from an invalid update
+
+- Source: `e2e/ide/wevu-json-render.runtime.test.ts:94`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-json-render-demo`; checkpoints: `[{ id: 'streamed', route, action: '流式更新后保持页面', nodes: [ { selector: '//text[@id="progress"]', query: 'xpath', text: '预计 24 小时内处理，我们会及时通知你。' }, { selector: '//text[@id="hint"]', query: 'xpath', count: 0 }, ], }]`; source: `e2e/ide/wevu-json-render.runtime.test.ts:95`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `tap(<missing>)`, `check(streamed)`, `callMethod(readMetrics)`
+
+### Wevu json-render runtime > supports failure/retry and cancels in-flight work when the page unloads
+
+- Source: `e2e/ide/wevu-json-render.runtime.test.ts:126`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `apps/wevu-json-render-demo`; checkpoints: `[{ id: 'returned', route, action: '卸载后重新打开干净页面', nodes: [ { selector: '//text[@id="status"]', query: 'xpath', text: '填写原因后提交申请' }, { selector: '//text[@id="hint"]', query: 'xpath', count: 1 }, ], }]`; source: `e2e/ide/wevu-json-render.runtime.test.ts:127`
+- Routes: `/pages/index/index`, `/pages/blank/index`
+- Operations: `reLaunch(/pages/index/index)`, `tap(<missing>)`, `reLaunch(/pages/blank/index)`, `callMethod(readMetrics)`, `check(returned)`
 
 
 ## ide/wevu-jsx-tsx.hmr.runtime.test.ts
