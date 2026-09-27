@@ -45,3 +45,15 @@ Computer Use 操作微信开发者工具 2.02.2609231，运行时实际 SDK 3.17
 ## 正式 main 整合
 
 #1086 已在最终 HEAD `d38c3b2bd` 普通 CI 31 success / 10 skipped、转正式新增 Runtime Size 通过后 squash 合入 `002413456c0577484b474ffe483f812e39c64bec`。本分支普通 merge 该 main；归档七个产品、回归和 changeset 文件的 SHA 与预演逐项完全一致，随后重新构建对应 dist。新增的共享编译夹具导出修正由 main 原样保留。最终 PR 仍以本次提交的普通 CI 为准，未使用旧 HEAD 绿灯。
+
+## Smoke 模板伴随补丁的消费修正
+
+正式组合 HEAD `52a742636` 的 Performance Smoke 在 Wevu 模板恢复失败：源码已移除 marker，WXML 仍保留 marker。CI artifact 原件 SHA 为 `e22f21e9562487d2f8f3206fb9ef85096d4d264a3100c7420b8a79c71c9ffaa9`。本地使用相同 Wevu 收集入口复现。模板新增节点经 #1086 的正确分类生成绑定脚本，但审计只消费 script 类场景；资产被观察到后尚未确认的补丁挡住下一批恢复。
+
+共用审计 helper 在原产物 wall-time 记录之后消费新增 Vue 节点伴随的脚本并显式确认，Workspace 的测量、预热及恢复共用此边界。脚本计时、资产计时、轮询间隔、超时、样本数、阈值均未放宽。旧服务器不声明 explicit-v1 时不新增 poll/ack。实际宿主客户端不变，产物消费仍不冒充 JS 执行。
+
+修正后 Wevu 四场景16条编辑/恢复完整收齐，Workspace Wevu 三场景通过；原超限保留。13文件54项相关回归、审计 helper 的 scoped TypeScript、lint 通过。额外广域 scripts typecheck 在基底与修改后均有既存错误；对照未引入新诊断，并补齐触碰的 Vue 场景数组上下文类型，不声称全 scripts 类型检查通过。
+
+本轮仅审计/测试/报告变化，产品源码和 dist 与52a一致，不新增 changeset。两个既有大型审计驱动仅接入共用消费 helper，不各自实现传输循环。复用的本地 runner 的候选描述保留了旧预演标签，实际基底52a及新增驱动源码 hash 另行记录，不据该标签宣称最终HEAD正式性能通过。
+
+[CI失败、局部前后验证和类型对照归档](./issue1081-template-audit-acknowledgement.json.gz)：42份记录，解压 1044542 bytes，SHA256 `12ad792ae439ce1cf8e112f1fa8a256ff4716879aef5da63bc46f938ddb009bf`。

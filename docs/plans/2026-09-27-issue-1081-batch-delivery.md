@@ -67,3 +67,5 @@
 [原生样式交付与 #1086 整合记录](../reports/2026-09-25-wxml-performance/followup/issue1081-native-style-delivery.md)记录无框架原生 WXSS 首次新增规则同样变透明、普通编译使用相同文件恢复，以及批次写入→发布→执行确认的完整 trace。原失败不改成通过，Nightly 非阻断；最终 HEAD 普通 CI 仍须全绿，#1081/#1082 保持开放。
 
 已普通 merge #1086 的 squash main `002413456c0577484b474ffe483f812e39c64bec`，最终源文件 hash 与已完成两 provider 验证的整合候选一致。
+
+最终组合 Smoke 暴露的 Vue 模板伴随脚本未消费问题已在审计驱动修正，保持原资产计时边界与旧基线兼容。局部完整16条收集、Workspace三场景和54项回归通过，完整失败保留在最新样式与整合报告；等待新提交普通CI。

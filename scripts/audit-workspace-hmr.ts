@@ -39,7 +39,7 @@ import {
 } from './workspace-hmr/scenarios'
 import { assertWorkspaceHmrSelection, resolveWorkspaceHmrSelection } from './workspace-hmr/selection'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
-import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
+import { acknowledgeStatefulTemplateArtifact, waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
 const execFile = promisify(execFileCallback)
 
@@ -79,6 +79,7 @@ interface ScenarioCase {
   expectedMarker?: (marker: string) => string
   mutate: (source: string, marker: string) => string
   statefulClient?: boolean
+  statefulTemplate?: boolean
   dynamicReactEntry?: string
 }
 
@@ -691,6 +692,7 @@ async function warmupProjectHmr(
   try {
     await writeScenarioSource(scenario.sourcePath, updated)
     delivery = await waitForScenarioMutation(project, scenario, mutation, expectedMarker, true)
+    await acknowledgeScenarioArtifact(project, scenario, expectedMarker, true)
     if (project.hmrRuntime === 'standard') {
       await waitForHmrProfileSample(project, profilePath, profileLineCount, scenario.sourcePath, 5_000).catch(() => {})
     }
@@ -764,9 +766,7 @@ async function auditScenario(
       result.output = formatProjectPath(path.join(project.distRoot, delivery.output))
     }
     result.observedMs = performance.now() - startedAt
-    if (scenario.statefulClient) {
-      await statefulHmrAuditClients.get(project.root)!.acknowledgePublished(scenarioTimeoutMs)
-    }
+    await acknowledgeScenarioArtifact(project, scenario, expectedMarker, true)
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
     if (project.hmrRuntime === 'standard') {
@@ -913,10 +913,11 @@ function createVueScenarios(project: ProjectCase, sourcePath: string, source: st
   const templateOutput = resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].template)
   const scriptOutput = resolveHmrScriptOutputPath(project, sourcePath)
   const styleOutput = resolveOutputPath(project, sourcePath, PLATFORM_EXT[project.platform].style)
-  return [
+  const scenarios: ScenarioCase[] = [
     {
       id: 'vue-template',
       label: 'Vue SFC template',
+      statefulTemplate: project.hmrRuntime === 'stateful',
       sourcePath,
       outputPath: templateOutput,
       mutate: (source, marker) => source.replace('</template>', `<view hidden>${marker}</view>\n</template>`),
@@ -937,7 +938,8 @@ function createVueScenarios(project: ProjectCase, sourcePath: string, source: st
       expectedMarker: marker => toCssIdent(marker),
       mutate: (source, marker) => injectVueStyleRule(source, `.hmr-audit-${toCssIdent(marker)} { color: #0f766e; }`),
     },
-  ].filter((scenario) => {
+  ]
+  return scenarios.filter((scenario) => {
     if (scenario.id === 'vue-template') {
       return source.includes('</template>')
     }
@@ -990,7 +992,7 @@ async function prepareScenarioMutation(project: ProjectCase, scenario: ScenarioC
       timeoutMs: scenarioTimeoutMs,
     })
   }
-  if (scenario.statefulClient) {
+  if (scenario.statefulClient || scenario.statefulTemplate) {
     await prepareStatefulHmrAuditClient(project)
   }
 }
@@ -1020,6 +1022,21 @@ async function waitForScenarioMutation(
   }
 }
 
+async function acknowledgeScenarioArtifact(project: ProjectCase, scenario: ScenarioCase, marker: string, contains: boolean) {
+  if (scenario.statefulTemplate) {
+    const client = await prepareStatefulHmrAuditClient(project)
+    await acknowledgeStatefulTemplateArtifact({
+      client,
+      readControl: async () => parseStatefulHmrControlSource(await readFile(path.join(project.distRoot, '__weapp_vite_hmr/control.js'), 'utf8')),
+      isCurrentUpdate: async () => (await readFile(scenario.outputPath, 'utf8')).includes(marker) === contains,
+      timeoutMs: scenarioTimeoutMs,
+    })
+  }
+  else if (scenario.statefulClient) {
+    await statefulHmrAuditClients.get(project.root)!.acknowledgePublished(scenarioTimeoutMs)
+  }
+}
+
 async function restoreScenarioMutation(project: ProjectCase, scenario: ScenarioCase, source: string, marker: string) {
   let preparationError: unknown
   const mutation = await prepareScenarioMutation(project, scenario).catch((error) => {
@@ -1032,9 +1049,7 @@ async function restoreScenarioMutation(project: ProjectCase, scenario: ScenarioC
     throw preparationError
   }
   const delivery = await waitForScenarioMutation(project, scenario, mutation, marker, false)
-  if (scenario.statefulClient) {
-    await statefulHmrAuditClients.get(project.root)!.acknowledgePublished(scenarioTimeoutMs)
-  }
+  await acknowledgeScenarioArtifact(project, scenario, marker, false)
   return delivery
 }
 

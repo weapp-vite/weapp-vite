@@ -32,6 +32,11 @@ export class StatefulHmrAuditClient {
     return this.version
   }
 
+  /** 是否支持产物消费后显式确认；旧基线不进入新批次协议。 */
+  get supportsExplicitAcknowledgement() {
+    return this.explicitAcknowledgement
+  }
+
   async ensureRegistered(control: StatefulHmrAuditControl, timeoutMs: number) {
     this.syncControl(control)
     if (this.registered) {
