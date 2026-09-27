@@ -195,3 +195,6 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 
 
 42a 的两项普通 CI 失败已在 [exposed 卸载视图与资产测试事件边界](./issue1082-ci-exposed-lifecycle.md) 中复现并修正：Wot 全部 99 组件两视口行为、Wevu 子组件 headless/真实 IDE 各 6/6 DOM 通过。远端新 HEAD 仍需独立验证。
+
+
+[增量原生 writer](./issue1082-native-incremental-writer.md) 去掉已编译资产发布时的重复 Vite 配置解析，首轮 public 语义保持。15 项 writer/删除边界、六项 CLI、headless 37/37 和真实 IDE 26/26 DOM 通过；局部写出对照不替代正式性能门禁。

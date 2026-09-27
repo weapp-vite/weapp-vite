@@ -1,5 +1,6 @@
-import type { OutputAsset, OutputChunk } from 'rolldown'
+import type { OutputAsset, OutputChunk, Plugin } from 'rolldown'
 import path from 'node:path'
+import { rolldown } from 'rolldown'
 import { build } from 'vite'
 import { pruneOwnedAssetFiles } from '../../plugins/asset/prune'
 
@@ -12,7 +13,7 @@ export interface StatefulHmrInitialPublicAssets {
 }
 
 /**
- * @description 通过独立的 Vite write 阶段持久化 DevEngine 已生成的文件，不重新解析业务源码。
+ * @description 通过原生 write 持久化已编译文件；首轮保留 Vite public 复制，增量不重复解析构建配置。
  */
 export async function writeStatefulHmrOutput(
   outDir: string,
@@ -21,6 +22,49 @@ export async function writeStatefulHmrOutput(
   removedAssets: string[] = [],
 ): Promise<void> {
   const virtualEntry = '\0weapp-vite-stateful-hmr-output'
+  const writerPlugin: Plugin = {
+    name: 'weapp-vite:stateful-hmr-output-writer',
+    resolveId(id) {
+      return id === virtualEntry ? virtualEntry : undefined
+    },
+    load(id) {
+      return id === virtualEntry ? 'export {}' : undefined
+    },
+    buildStart() {
+      for (const item of output) {
+        this.emitFile({
+          type: 'asset',
+          fileName: item.fileName.replaceAll('\\', '/'),
+          source: item.type === 'chunk' ? item.code : item.source,
+        })
+      }
+    },
+    async writeBundle() {
+      const emitted = new Set(output.map(item => item.fileName))
+      await pruneOwnedAssetFiles(outDir, removedAssets.filter(file => !emitted.has(file)))
+    },
+    generateBundle(_options, bundle) {
+      for (const [fileName, item] of Object.entries(bundle)) {
+        if (item.type === 'chunk' && item.facadeModuleId === virtualEntry) {
+          delete bundle[fileName]
+        }
+      }
+    },
+  }
+  if (!initialPublicAssets) {
+    const bundle = await rolldown({
+      input: virtualEntry,
+      logLevel: 'silent',
+      plugins: [writerPlugin],
+    })
+    try {
+      await bundle.write({ dir: outDir, format: 'es', minify: false })
+    }
+    finally {
+      await bundle.close()
+    }
+    return
+  }
   await build({
     configFile: false,
     logLevel: 'silent',
@@ -36,35 +80,7 @@ export async function writeStatefulHmrOutput(
       },
       write: true,
     },
-    plugins: [{
-      name: 'weapp-vite:stateful-hmr-output-writer',
-      resolveId(id) {
-        return id === virtualEntry ? virtualEntry : undefined
-      },
-      load(id) {
-        return id === virtualEntry ? 'export {}' : undefined
-      },
-      buildStart() {
-        for (const item of output) {
-          this.emitFile({
-            type: 'asset',
-            fileName: item.fileName.replaceAll('\\', '/'),
-            source: item.type === 'chunk' ? item.code : item.source,
-          })
-        }
-      },
-      async writeBundle() {
-        const emitted = new Set(output.map(item => item.fileName))
-        await pruneOwnedAssetFiles(outDir, removedAssets.filter(file => !emitted.has(file)))
-      },
-      generateBundle(_options, bundle) {
-        for (const [fileName, item] of Object.entries(bundle)) {
-          if (item.type === 'chunk' && item.facadeModuleId === virtualEntry) {
-            delete bundle[fileName]
-          }
-        }
-      },
-    }],
+    plugins: [writerPlugin],
     root: path.dirname(outDir),
   })
 }
