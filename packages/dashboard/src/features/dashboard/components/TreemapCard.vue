@@ -66,13 +66,9 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
       <h2 class="mr-auto text-sm font-semibold">
         体积地图 <span class="ml-1 font-mono text-xs font-normal text-(--dashboard-text-muted)">{{ formatBytes(visibleBytes) }}</span>
       </h2>
-      <div class="flex min-w-0 items-center gap-2">
-        <span class="shrink-0 text-xs text-(--dashboard-text-muted)">显示</span>
-        <AppSelect :model-value="filterMode" :options="filters" label="筛选节点" size="sm" @update:model-value="emit('updateFilterMode', $event)" />
-      </div>
-      <div class="flex min-w-0 items-center gap-2">
-        <span class="shrink-0 text-xs text-(--dashboard-text-muted)">着色</span>
-        <AppSelect :model-value="colorMode" :options="colorOptions" label="着色方式" size="sm" @update:model-value="emit('updateColorMode', $event)" />
+      <div class="flex min-w-0 flex-wrap items-center gap-1">
+        <AppSelect :model-value="filterMode" :options="filters" label="显示" size="sm" variant="toolbar" @update:model-value="emit('updateFilterMode', $event)" />
+        <AppSelect :model-value="colorMode" :options="colorOptions" label="着色" size="sm" variant="toolbar" @update:model-value="emit('updateColorMode', $event)" />
       </div>
       <div class="flex items-center gap-1" aria-label="分析问题">
         <button type="button" :class="buttonClass" @click="emit('inspectProblem', 'duplicates')">
