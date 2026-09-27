@@ -33,3 +33,9 @@ headless gate 新增该场景并锁定覆盖清单，原完整 Wevu 和首次模
 [三系统失败、真实源事件 trace 与修正后完整记录](./issue1082-shared-session-cleanup.json.gz)：解压 1819839 bytes，SHA256 `ae94a8410fddc994c392c989c84b5a5e2c7b94b2330c4de61068ec4456b78ade`。
 
 清理修正后再以正式 devtools 配置运行原生 Page/Component 模板往返及 Wevu 独立脚本三场景：3 PASS、18/18 DOM。此对照未包含已记录宿主限制的 Wevu 首次模板场景，不替代或删除其历史失败。
+
+## 静态编译测试夹具补齐
+
+`27cdbabcd` 三系统 headless 已通过，但 Ubuntu 全量单测在共享运行时 helper 的独立测试中失败：本轮新增 store 导出后，测试构造的最小源码树缺少对应 index.ts。与生产代码或平台路径差异无关，本地同样稳定复现。补齐夹具所需四个导出后，静态编译、真实 Vue/store 三文件四项测试，以及 simulator typecheck、scoped lint 通过；产品源码未变化。
+
+[CI 原始日志摘要与本地前后验证](./issue1082-shared-runtime-fixture.json.gz)：解压 12435 bytes，SHA256 `f2f7543e67aeba88baaf944c70327dc2abc4511c74952c79f70b1ffffe73c32a`。完整 CI 原件保留本地，归档包含完整原件 SHA。
