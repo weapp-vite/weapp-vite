@@ -23,6 +23,9 @@ export function createPageRootNodeHandle(options: HeadlessTestingPageNodeAccessO
 
   return new HeadlessTestingNodeHandle(rootNode, {
     assertActive: options.assertActive,
+    dispatchNativeEvent: (node, eventName, event, onHandlerResult) => session?.getCurrentPages().at(-1) === page
+      ? session.dispatchNativeNodeEvent(node, eventName, event, onHandlerResult)
+      : false,
     callMethod: (scopeId, methodName, event) => {
       if (session?.getCurrentPages().includes(page)) {
         return session.callScopeMethod(scopeId, methodName, event)

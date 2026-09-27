@@ -418,8 +418,12 @@ function expectStructurallyStableObjectProperty(page: Record<string, any>) {
 
 describe('component compatibility', () => {
   const tempDirs: string[] = []
+  const sessions: Array<{ close: () => void }> = []
 
   afterEach(() => {
+    for (const session of sessions.splice(0)) {
+      session.close()
+    }
     cleanupTempDirs(tempDirs)
   })
 
@@ -427,6 +431,7 @@ describe('component compatibility', () => {
     const projectPath = createFilesystemProject()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
+    sessions.push(session)
     const page = session.reLaunch('/pages/index/index')
 
     expect(page.selectComponent?.('#boolean-target')?.properties.enabled).toBe(true)
@@ -450,6 +455,7 @@ describe('component compatibility', () => {
   it('supports exported definitions, component generics and proxy selector scopes in the browser runtime', async () => {
     const files = createBrowserVirtualFiles(projectFiles)
     const session = createBrowserHeadlessSession({ files })
+    sessions.push(session)
     const page = session.reLaunch('/pages/index/index')
 
     expect(page.selectComponent?.('#boolean-target')?.properties.enabled).toBe(true)

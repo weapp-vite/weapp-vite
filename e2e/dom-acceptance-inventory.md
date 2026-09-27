@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：111；微信：108；范围外：3。
-- 展开的 case 声明：280；已接入计划：280；缺计划：0。
+- 任务：112；微信：109；范围外：3。
+- 展开的 case 声明：292；已接入计划：292；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -27,6 +27,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/forward-console-demo.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.aggregate.test.ts | devtools | 68 | 68 | 0 | wechat |
 | ide/github-issues.runtime.component-instance-apis.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/github-issues.runtime.feature1087.test.ts | devtools, headless | 12 | 12 | 0 | wechat |
 | ide/github-issues.runtime.issue1009.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1010.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/github-issues.runtime.issue1011.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
@@ -733,6 +734,98 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[ { id: 'baseline', route: BASELINE_ROUTE, action: '离开上轮组件后显式清空事件，检查独立准备页', nodes: [{ selector: '#baseline-title', text: '准备组件关系验收' }] }, ...stages.map(stage => ({ id: stage.id, route: ROUTE, action: stage.action, nodes: [ { selector: '#rel`; source: `e2e/ide/github-issues.runtime.component-instance-apis.test.ts:31`
 - Operations: `act(baseline)`, `check(baseline)`, `act(initial)`, `act(stage.id)`, `callMethod(snapshot)`, `check(stage.id)`
+
+
+## ide/github-issues.runtime.feature1087.test.ts
+
+### e2e app: github-issues / feature #1087 scroll restoration > reports native route capabilities and restores WebView page coordinates after native destruction
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:74`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'restored-page', route: DOCUMENT, action: '原生 redirectTo 销毁后 reLaunch 恢复真实页面滚动位置', nodes: [{ selector: '#feature1087-page text', text: 'WebView document scrolling' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:108`
+- Operations: `navigateTo(DOCUMENT)`, `callMethodWithOptions(_setPosition)`, `reLaunch(DOCUMENT)`, `callMethodWithOptions(_restore)`, `check(restored-page)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > isolates both axes and container ids by query and restores only after recreated content renders
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:117`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'isolated', route: LIST, action: '只清除 primary 容器，保留同查询的 secondary 与业务快照', nodes: [{ selector: '#feature1087-marker', text: 'saved:420:80:610' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:141`
+- Operations: `reLaunch(feedA)`, `reLaunch(feedB)`, `callMethod(_invalidate)`, `check(isolated)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > restores actual Skyline scroll-view coordinates without using page scrolling
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:150`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'skyline', route: SKYLINE, action: 'Skyline 重新创建后恢复实际列表坐标', nodes: [{ selector: '#feature1087-marker', text: 'saved:350:0:570' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:163`
+- Operations: `reLaunch(SKYLINE)`, `reLaunch(NATIVE)`, `check(skyline)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > does not replay stale snapshots onto retained pages when navigating back
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:172`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'retained', route: LIST, action: '返回保留页面，较新的业务内容未被旧快照覆盖', nodes: [{ selector: '#feature1087-marker', text: 'saved:500:60:700' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:189`
+- Operations: `reLaunch(LIST)`, `callMethod(_deferPosition)`, `navigateTo(NATIVE)`, `callMethod(_release)`, `check(retained)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > does not replay a cached tab snapshot over newer retained tab content
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:198`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'retained-tab', route: TAB, action: '切换回来时保留 tab 的较新业务状态', nodes: [{ selector: '#feature1087-marker', text: 'saved:620:75:810' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:214`
+- Operations: `switchTab(TAB)`, `callMethod(_deferPosition)`, `switchTab(TAB_PEER)`, `callMethod(_release)`, `check(retained-tab)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > waits for explicit business content readiness and supports repeated manual restoration
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:223`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'manual-content', route: LIST, action: '业务完成内容加载后显式恢复两容器坐标及自定义快照', nodes: [{ selector: '#feature1087-marker', text: 'saved:480:90:660' }, { selector: '#feature1087-content', count: 1 }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:242`
+- Operations: `reLaunch(route)`, `callMethodWithOptions(_loadContent)`, `reLaunch(NATIVE)`, `callMethodWithOptions(_restore)`, `check(manual-content)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > does not capture rejected navigation and captures only the accepted guard redirect
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:251`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'guarded', route: LIST, action: '取消导航不采集，接受重定向后才能保存并恢复源页面', nodes: [{ selector: '#feature1087-marker', text: 'saved:390:65:520' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:279`
+- Operations: `reLaunch(source)`, `callMethod(_navigate)`, `check(guarded)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > clears one route key without discarding another and releases destroyed registrations across repeated visits
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:304`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'cleared', route: LIST, action: '清除全部快照后，重新创建的列表保持初始业务状态', nodes: [{ selector: '#feature1087-marker', text: 'fresh' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:336`
+- Routes: `${LIST}?manual=1`
+- Operations: `reLaunch(${LIST}?manual=1)`, `reLaunch(NATIVE)`, `callMethod(_clear)`, `reLaunch(feedA)`, `reLaunch(feedB)`, `check(cleared)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > cancels a deferred custom restore when its page is destroyed before content completion
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:345`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'destroyed', route: NATIVE, action: '旧异步恢复完成后仍保持原生目标页', nodes: [{ selector: '#feature1087-native', text: 'Native navigation and controller lifetime probe' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:353`
+- Routes: `${LIST}?manual=1`
+- Operations: `reLaunch(${LIST}?manual=1)`, `callMethodWithOptions(_loadContent)`, `reLaunch(NATIVE)`, `callMethod(_beginDeferredRestore)`, `callMethod(_release)`, `check(destroyed)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > stops a registration while its async restore is pending without applying the old snapshot
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:362`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'stopped', route: LIST, action: '停止业务注册，保留独立滚动容器的显式恢复能力', nodes: [{ selector: '#feature1087-marker', text: 'waiting' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:370`
+- Routes: `${LIST}?manual=1`
+- Operations: `reLaunch(${LIST}?manual=1)`, `callMethodWithOptions(_loadContent)`, `reLaunch(NATIVE)`, `callMethod(_beginDeferredRestore)`, `callMethod(_invalidate)`, `callMethod(_release)`, `callMethodWithOptions(_restore)`, `check(stopped)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > invalidates a pending restore on clear without preventing independent container restores
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:379`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'invalidated', route: LIST, action: '清除业务快照使旧恢复失效，其他容器仍可恢复', nodes: [{ selector: '#feature1087-marker', text: 'waiting' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:387`
+- Routes: `${LIST}?manual=1`
+- Operations: `reLaunch(${LIST}?manual=1)`, `callMethodWithOptions(_loadContent)`, `reLaunch(NATIVE)`, `callMethod(_beginDeferredRestore)`, `callMethod(_invalidate)`, `callMethod(_release)`, `callMethodWithOptions(_restore)`, `check(invalidated)`
+
+### e2e app: github-issues / feature #1087 scroll restoration > disposes the controller with pending work and prevents later route capture or scroll side effects
+
+- Source: `e2e/ide/github-issues.runtime.feature1087.test.ts:396`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues`; checkpoints: `[{ id: 'disposed', route: LIST, action: '释放 controller 后没有迟到的业务状态或滚动写入', nodes: [{ selector: '#feature1087-marker', text: 'waiting' }], }]`; source: `e2e/ide/github-issues.runtime.feature1087.test.ts:404`
+- Routes: `${LIST}?manual=1`
+- Operations: `reLaunch(${LIST}?manual=1)`, `callMethodWithOptions(_loadContent)`, `reLaunch(NATIVE)`, `callMethod(_beginDeferredRestore)`, `callMethod(_invalidate)`, `callMethod(_release)`, `callMethodWithOptions(_restore)`, `check(disposed)`
 
 
 ## ide/github-issues.runtime.issue1009.test.ts

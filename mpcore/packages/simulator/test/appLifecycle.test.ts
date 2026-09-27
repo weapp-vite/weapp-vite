@@ -1,12 +1,28 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { createHeadlessSession } from '../src/runtime'
-import { launch } from '../src/testing'
+import { createHeadlessSession as createRuntimeSession } from '../src/runtime'
+import { launch as launchRuntime } from '../src/testing'
 import { cleanupTempDirs, createAppLifecycleFixture } from './helpers'
 
 describe('app lifecycle alignment', () => {
   const tempDirs: string[] = []
+  const sessions: Array<{ close: () => void | Promise<void> }> = []
 
-  afterEach(() => {
+  function createHeadlessSession(options: Parameters<typeof createRuntimeSession>[0]) {
+    const session = createRuntimeSession(options)
+    sessions.push(session)
+    return session
+  }
+
+  async function launch(options: Parameters<typeof launchRuntime>[0]) {
+    const session = await launchRuntime(options)
+    sessions.push(session)
+    return session
+  }
+
+  afterEach(async () => {
+    for (const session of sessions.splice(0)) {
+      await session.close()
+    }
     cleanupTempDirs(tempDirs)
   })
 
