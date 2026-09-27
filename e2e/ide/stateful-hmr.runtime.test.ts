@@ -721,7 +721,9 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       expect(await readRuntimeState(page)).toEqual({ ...expected, count: 5 })
     }
     finally {
-      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      if (await fs.readFile(WEVU_SOURCE, 'utf8') !== originalWevuSource) {
+        await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      }
     }
   })
 
@@ -755,7 +757,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         }
       }
       finally {
-        await replaceFileByRename(source, original)
+        // 成功路径已恢复并验收；再次原子替换会把无变化的 WXML 带入下一场景的补丁批次。
+        if (await fs.readFile(source, 'utf8') !== original) {
+          await replaceFileByRename(source, original)
+        }
       }
     })
   }

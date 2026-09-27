@@ -23,3 +23,13 @@ headless gate 新增该场景并锁定覆盖清单，原完整 Wevu 和首次模
 按用户已确认的“Nightly 非阻断、产品修复后合并、已证实宿主限制可记录接受”处理。TDesign 完整默认 layout 的脚本/主题/颜色交互及原生页面栈镜像对照见[前份报告](./issue1082-native-context-and-startup.md)。冷启动延迟已定位在产品入口执行之前；普通编译使用完全相同产物恢复，具体宿主触发条件仍保留在 #1082 跟踪。当前记录不宣称所有真实 IDE suite 全绿，也不关闭 #1081/#1082。最终合并仍须本次最终 HEAD 普通 CI 全绿。
 
 [完整脱敏归档](./issue1082-native-template-and-script-state.json.gz)：17 份记录，解压 216043 bytes，SHA256 `6b1ccdc38b72742ad59d6b1b271c5de93982e3a7cacc6e7f07272934240499d0`。原始 SHA 单列；原件继续保留本地。
+
+## 最终 CI 的共享会话清理回归
+
+`71371b19a` 三系统 headless 均在新增脚本场景失败：此前模板用例通过，客户端却停在旧版本、服务端返回 rebuilding。完整本地七场景顺序稳定复现。trace 显示 Component 模板已经恢复并验收后，finally 再次原子替换相同 WXML；多余事件与下一次 Vue 更新合批，按既有非脚本安全边界触发 full build。模板 DOM 仍能继续刷新，直到新增脚本场景等待客户端版本才暴露旧会话。
+
+清理改为只在源文件尚未恢复时执行；没有调整产品安全判断、等待时间或 DOM 断言。相同顺序修正后 7 cases PASS、43/43 DOM，22.66s。临时失败日志观察器已经恢复。此前单选两 provider 的通过仍成立，不能替代这次完整共享会话回归。
+
+[三系统失败、真实源事件 trace 与修正后完整记录](./issue1082-shared-session-cleanup.json.gz)：解压 1819839 bytes，SHA256 `ae94a8410fddc994c392c989c84b5a5e2c7b94b2330c4de61068ec4456b78ade`。
+
+清理修正后再以正式 devtools 配置运行原生 Page/Component 模板往返及 Wevu 独立脚本三场景：3 PASS、18/18 DOM。此对照未包含已记录宿主限制的 Wevu 首次模板场景，不替代或删除其历史失败。

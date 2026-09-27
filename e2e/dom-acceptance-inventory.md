@@ -1592,30 +1592,30 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 
 ### stateful HMR in real WeChat DevTools > preserves native page state across two template edit and restore cycles
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:729`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:731`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `templateCycleCheckpoints(runtime)`; source: `e2e/ide/stateful-hmr.runtime.test.ts:730`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `templateCycleCheckpoints(runtime)`; source: `e2e/ide/stateful-hmr.runtime.test.ts:732`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(edit-0)`, `check(restore-0)`, `check(edit-1)`, `check(restore-1)`
 
 ### stateful HMR in real WeChat DevTools > preserves component page state across two template edit and restore cycles
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:729`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:731`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `templateCycleCheckpoints(runtime)`; source: `e2e/ide/stateful-hmr.runtime.test.ts:730`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `templateCycleCheckpoints(runtime)`; source: `e2e/ide/stateful-hmr.runtime.test.ts:732`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(edit-0)`, `check(restore-0)`, `check(edit-1)`, `check(restore-1)`
 
 ### stateful HMR in real WeChat DevTools > preserves wevu page state across two template edit and restore cycles
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:729`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:731`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `templateCycleCheckpoints(runtime)`; source: `e2e/ide/stateful-hmr.runtime.test.ts:730`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `templateCycleCheckpoints(runtime)`; source: `e2e/ide/stateful-hmr.runtime.test.ts:732`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(edit-0)`, `check(restore-0)`, `check(edit-1)`, `check(restore-1)`
 
 ### stateful HMR in real WeChat DevTools > preserves Wevu local and store state across isolated script updates and restoration
 
-- Source: `e2e/ide/stateful-hmr.runtime.test.ts:764`
+- Source: `e2e/ide/stateful-hmr.runtime.test.ts:769`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `scriptStateCheckpoints()`; source: `e2e/ide/stateful-hmr.runtime.test.ts:765`
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/stateful-hmr`; checkpoints: `scriptStateCheckpoints()`; source: `e2e/ide/stateful-hmr.runtime.test.ts:770`
 - Routes: `pages/wevu/index`
 - Operations: `check(initial)`, `tap(<missing>)`, `check(prepared)`, `check(patched)`, `check(clicked)`, `check(restored)`, `check(restored-clicked)`
 
