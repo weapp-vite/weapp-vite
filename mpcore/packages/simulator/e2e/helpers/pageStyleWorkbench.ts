@@ -1,6 +1,6 @@
 import type { PageStyleSource } from '../../test/helpers/pageStyleImports'
 import { expect } from 'vitest'
-// eslint-disable-next-line wevu/no-unsupported-api -- 此处挂载浏览器 Vue 宿主，不进入小程序 Wevu 运行时。
+
 import { createApp, defineComponent, h, ref } from 'vue'
 import DevicePreview from '../../../../demos/web/src/components/DevicePreview.vue'
 import { useWorkbenchSession } from '../../../../demos/web/src/composables/useWorkbenchSession'
@@ -22,7 +22,7 @@ export function mountPageStyleWorkbench(source: PageStyleSource = 'imported', ov
         route: workbench.currentRoute.value,
         viewportWidth: viewport.value.width,
         viewportHeight: viewport.value.height,
-        onDispatchTapChain: workbench.handleDispatchTapChain,
+        onDispatchTap: workbench.handleDispatchTap,
         onSelectScope: workbench.handleSelectScope,
         onUpdateViewport: workbench.handleUpdateViewport,
       })

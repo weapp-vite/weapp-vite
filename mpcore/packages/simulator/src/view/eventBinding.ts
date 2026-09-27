@@ -1,3 +1,6 @@
+import type { HeadlessTestingNodeEventInit } from './nodeHandle'
+import { collectNodeDataset } from './nodeDataset'
+
 export interface MiniProgramEventBinding {
   method: string
   stopAfter: boolean
@@ -55,4 +58,33 @@ export function resolveMiniProgramEventBinding(
   eventName: string,
 ) {
   return collectMiniProgramEventBindings(attributes).get(eventName) ?? null
+}
+
+/** 冒泡时保留原始 target，currentTarget 则属于当前执行绑定的节点。 */
+export function createMiniProgramEventPayload(
+  node: { attribs?: Record<string, string>, dataset?: Record<string, unknown> },
+  eventName: string,
+  event: HeadlessTestingNodeEventInit,
+  origin = node,
+) {
+  const dataset = collectNodeDataset(node)
+  const nodeId = node.attribs?.id ?? ''
+  const isOrigin = node === origin
+  return {
+    bubbles: false,
+    capturePhase: false,
+    composed: false,
+    currentTarget: {
+      dataset: isOrigin ? event.currentTarget?.dataset ?? event.dataset ?? dataset : dataset,
+      id: isOrigin ? event.currentTarget?.id ?? event.id ?? nodeId : nodeId,
+    },
+    detail: event.detail,
+    mark: event.mark,
+    target: {
+      dataset: event.target?.dataset ?? event.dataset ?? (isOrigin ? dataset : collectNodeDataset(origin)),
+      id: event.target?.id ?? event.id ?? origin.attribs?.id ?? '',
+    },
+    timeStamp: Date.now(),
+    type: eventName,
+  }
 }

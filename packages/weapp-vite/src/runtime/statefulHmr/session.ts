@@ -91,7 +91,10 @@ export async function runStatefulHmrDev(
     name: 'weapp-vite:hmr-input',
     enforce: 'pre',
     transform(code, id) {
-      getCompilerHmrHost(compilerContext).captureNative(id, code)
+      // 受管入口的 load 会注入配置与依赖；原始内容由入口读取器封存。
+      if (!entryIds.has(normalizeFsResolvedId(id))) {
+        getCompilerHmrHost(compilerContext).captureNative(id, code)
+      }
     },
     watchChange(id, change) {
       if (change.event === 'delete') {
@@ -448,7 +451,7 @@ class StatefulHmrSession {
 
   private handleBatch(batch: StatefulHmrDevEngineBatch): boolean {
     this.diagnostics?.delivery('received', 0, batch.changedFiles)
-    let files = batch.changedFiles
+    let files = batch.changedFiles.map(file => normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file)))
     const updates = batch.updates.filter(item => item.update.type !== 'Noop')
     const output = updates[0]?.update ?? { type: 'Noop' as const }
     files = this.directoryUpdates.consume(files)
@@ -471,6 +474,7 @@ class StatefulHmrSession {
       return false
     }
     const input = getCompilerHmrHost(this.ctx).freeze(files)
+    this.diagnostics?.input(input)
 
     const allowCompilerContentPatch = dirtyReasonSummary.some(isCompilerContentDirtyReason)
     if (!compilerOnly && !updates.every(({ update }) => isSafeJavaScriptPatch(
@@ -507,7 +511,8 @@ class StatefulHmrSession {
       return false
     }
     this.diagnostics?.delivery('captured', input.revision, files)
-    const needsSnapshot = files.some(file => /\.(?:jsx|tsx)$/.test(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
+    // 编译器扫描依赖不代表接管了原生资产写出；非脚本资源仍走固定输入快照。
+    const needsSnapshot = files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
       && (!getCompilerHmrHost(this.ctx).enabled || getCompilerHmrHost(this.ctx).hasVisualChanges(files, input)))
     const patches = (compilerOnly && !files.some(file => /\.module\.[^.]+$/.test(file)) ? [] : updates).filter(item => item.update.type === 'Patch').map(item => ({ ...item, update: { ...item.update } }))
     let scriptFacts: ReturnType<StatefulHmrViteAdapter['captureGlassEaselScriptUpdates']> | undefined

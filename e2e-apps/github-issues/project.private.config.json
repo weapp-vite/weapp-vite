@@ -22,6 +22,48 @@
     "miniprogram": {
       "list": [
         {
+          "name": "feature 1087 WebView scroll views",
+          "pathName": "pages/feature-1087/index",
+          "query": "feed=a",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "feature 1087 Skyline scroll views",
+          "pathName": "pages/feature-1087/skyline/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "feature 1087 WebView page scroll",
+          "pathName": "pages/feature-1087/page/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "feature 1087 native transition",
+          "pathName": "pages/feature-1087/native/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "feature 1087 retained tab",
+          "pathName": "pages/feature-1087/tab/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "feature 1087 peer tab",
+          "pathName": "pages/feature-1087/tab-peer/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "issue 1035 router cold start",
           "pathName": "pages/issue-1035/index",
           "query": "",

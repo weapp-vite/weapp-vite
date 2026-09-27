@@ -22,6 +22,32 @@ function fixture() {
   return { transport, write, report, rebuild }
 }
 
+it('confirms a consumed batch without holding another poll open', async () => {
+  const { transport, report, write } = fixture()
+  const delivered = vi.fn(async () => {})
+  try {
+    const registered = await report('register')
+    expect(JSON.parse(registered.end.mock.calls[0]![0])).toMatchObject({ acknowledgement: 'explicit-v1' })
+    const completed = transport.addDelta('first()', [], delivered)
+    expect((await report('ack', 1)).statusCode).toBe(409)
+    expect(delivered).not.toHaveBeenCalled()
+    await report('poll')
+    expect((await report('ack', 1, { sessionId: 'retired' })).statusCode).toBe(409)
+    expect((await report('ack', 2)).statusCode).toBe(409)
+    expect(delivered).not.toHaveBeenCalled()
+    const acknowledged = await report('ack', 1)
+    expect(acknowledged.statusCode).toBe(200)
+    expect(JSON.parse(acknowledged.end.mock.calls[0]![0])).toEqual({ type: 'acknowledged', version: 1 })
+    await completed
+    expect((await report('ack', 1)).statusCode).toBe(200)
+    expect(delivered).toHaveBeenCalledOnce()
+    expect(write).toHaveBeenCalledOnce()
+  }
+  finally {
+    transport.close()
+  }
+})
+
 it('acknowledges execution once, after successful publication and a valid client report', async () => {
   const { transport, report, write } = fixture()
   const delivered = vi.fn(async () => {})
@@ -46,7 +72,7 @@ it('acknowledges execution once, after successful publication and a valid client
   }
 })
 
-it('retries publication and confirmation without adding another delta', async () => {
+it.each(['poll', 'ack'])('retries publication and %s confirmation without adding another delta', async (confirmation) => {
   const { transport, report, write } = fixture()
   const delivered = vi.fn().mockRejectedValueOnce(new Error('engine unavailable')).mockResolvedValue(undefined)
   try {
@@ -56,8 +82,8 @@ it('retries publication and confirmation without adding another delta', async ()
     expect((await report('poll')).statusCode).toBe(500)
     expect(delivered).not.toHaveBeenCalled()
     expect((await report('poll')).statusCode).toBe(200)
-    expect((await report('poll', 1)).statusCode).toBe(500)
-    await report('poll', 1)
+    expect((await report(confirmation, 1)).statusCode).toBe(500)
+    await report(confirmation, 1)
     await executed
     expect(transport.retainedDeltaCount).toBe(1)
     expect(delivered).toHaveBeenCalledTimes(2)

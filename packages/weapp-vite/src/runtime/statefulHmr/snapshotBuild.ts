@@ -6,6 +6,7 @@ import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
@@ -52,6 +53,12 @@ export async function buildStatefulHmrSnapshot(
           order: 'pre',
           handler(id) {
             if (id.startsWith('\0') || id.includes('?')) {
+              return null
+            }
+            const sourceId = normalizeFsResolvedId(id)
+            const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
+            if (sourceId.endsWith('.vue') || (nativeEntry?.path && normalizeFsResolvedId(nativeEntry.path) === sourceId)
+              || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
               return null
             }
             const source = sources.get(compilerSourceId(id))

@@ -23,7 +23,7 @@ describe('performance reporting workflows', () => {
     expect(Object.keys(workflow.on).sort()).toEqual(['schedule', 'workflow_dispatch'])
     expect(workflow.on.schedule[0].cron).toBe('35 19 * * *')
     expect(workflow.jobs.plan.if).toContain('github.event.repository.default_branch')
-    expect(workflow.jobs.collect.strategy).toMatchObject({ 'fail-fast': false, 'max-parallel': 6 })
+    expect(workflow.jobs.collect.strategy).toMatchObject({ 'fail-fast': false, 'max-parallel': 27 })
     expect(workflow.jobs.collect['timeout-minutes']).toBe(180)
     expect(workflow.jobs.collect.permissions).toEqual({ contents: 'read' })
     const steps = workflow.jobs.collect.steps

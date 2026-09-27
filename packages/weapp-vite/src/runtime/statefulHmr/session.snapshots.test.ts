@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeGlassEaselBundle, createGlassEaselAnalyzeResult } from '../../analyze/glassEasel'
 import { refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
 import { createSidecarSourceSpecifier } from '../../moduleGraph/protocol'
+import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { createDevBuildWatcher } from '../buildPlugin/devBuildWatcher'
 import { createRuntimeState } from '../runtimeState'
 import { runStatefulHmrDev } from './session'
@@ -159,6 +160,30 @@ function writtenAssets() {
 }
 
 describe('stateful snapshot output transactions', () => {
+  it.each([
+    ['app.json', '{"window":{"navigationBarTitleText":"updated"}}'],
+    ['pages/shared/index.wxml', '<view>updated</view>'],
+    ['pages/shared/index.wxss', '.native-updated { color: blue; }'],
+  ])('keeps native %s output when a compiler also scans that source', async (fileName, source) => {
+    const session = await start()
+    const file = path.join(root, 'src', fileName)
+    const compiler = getCompilerHmrHost(session.ctx)
+    compiler.register('scan-only-provider', async () => ({}))
+    compiler.seed(file, 'before')
+    compiler.capture(file, source)
+    session.rebuild.mockResolvedValueOnce({
+      ...snapshot('blue'),
+      output: [...snapshot('blue').output, { type: 'asset', fileName, source }],
+    })
+    session.sourceChange(file, 'update', ['entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([path.relative(root, file)], { type: 'Noop' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledTimes(1)
+    expect(session.rebuild).toHaveBeenCalledWith([file], expect.any(Map))
+    expect(writtenAssets().findLast(asset => asset.fileName === fileName)?.source).toContain(source)
+    expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
   it('issue #1081: does not publish a compiler patch before its stylesheet commits', async () => {
     const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
     const session = await start()

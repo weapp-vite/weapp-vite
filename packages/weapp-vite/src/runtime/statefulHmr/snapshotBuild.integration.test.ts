@@ -57,6 +57,44 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs', async () => {
+    const root = await createProject()
+    const inputs = new Map<string, string>([
+      ['src/app.ts', 'App({})'],
+      ['src/app.json', JSON.stringify({ pages: ['pages/index/index'], window: { navigationBarTitleText: 'PINNED-CONFIG' } })],
+      ['src/pages/index/index.ts', 'Page({ data: { marker: "PINNED-SCRIPT" } })'],
+      ['src/pages/index/index.wxml', '<view>PINNED-TEMPLATE<wevu-leaf /></view>'],
+      ['src/pages/index/index.wxss', '.pinned { width: 19px; }'],
+      ['src/layouts/default/index.ts', 'Component({})'],
+      ['src/layouts/default/index.json', '{"component":true}'],
+      ['src/layouts/default/index.wxml', '<view><slot /></view>'],
+      ['src/layouts/default/index.wxss', '.layout { min-height: 100%; }'],
+    ])
+    const sources = new Map<string, string>()
+    for (const [file, source] of inputs) {
+      const absolute = path.join(root, file)
+      await fs.mkdir(path.dirname(absolute), { recursive: true })
+      sources.set(compilerSourceId(absolute), source)
+      await fs.writeFile(absolute, source.replaceAll('PINNED', 'FUTURE').replace('19px', '71px'))
+    }
+    const result = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, undefined, undefined, sources)
+    const outputs = Array.isArray(result.output) ? result.output.flatMap(item => item.output) : 'output' in result.output ? result.output.output : []
+    const app = outputs.find(item => item.fileName === 'app.json') as OutputAsset
+    expect(JSON.parse(String(app.source))).toMatchObject({ window: { navigationBarTitleText: 'PINNED-CONFIG' } })
+    const script = outputs.find(item => item.fileName === 'pages/index/index.js') as OutputChunk
+    expect(script.code).toContain('PINNED-SCRIPT')
+    expect(script.code).not.toContain('FUTURE-SCRIPT')
+    const template = outputs.find(item => item.fileName === 'pages/index/index.wxml') as OutputAsset
+    expect(String(template.source)).toContain('PINNED-TEMPLATE')
+    expect(String(template.source)).not.toContain('FUTURE-TEMPLATE')
+    expect(String(template.source)).toContain('<weapp-layout-default')
+    const pageConfig = outputs.find(item => item.fileName === 'pages/index/index.json') as OutputAsset
+    expect(JSON.parse(String(pageConfig.source))).toMatchObject({ usingComponents: { 'weapp-layout-default': '/layouts/default/index' } })
+    const style = outputs.find(item => item.fileName === 'pages/index/index.wxss') as OutputAsset
+    expect(String(style.source)).toContain('19px')
+    expect(String(style.source)).not.toContain('71px')
+  })
+
   it('compiles the pinned SFC instead of a newer disk save', async () => {
     const root = await createProject()
     const file = path.join(root, 'src/components/wevu-leaf/index.vue')

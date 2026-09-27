@@ -6,6 +6,8 @@ export interface StatefulHmrAuditControl {
 
 interface StatefulHmrAuditResponse {
   targetVersion?: number
+  version?: number
+  acknowledgement?: string
   type?: string
 }
 
@@ -16,6 +18,7 @@ export class StatefulHmrAuditClient {
   private registered = false
   private readonly sessionId: string
   private version = 0
+  private explicitAcknowledgement = false
 
   constructor(
     private readonly request: StatefulHmrAuditRequest = fetch,
@@ -34,7 +37,8 @@ export class StatefulHmrAuditClient {
     if (this.registered) {
       return
     }
-    await this.report('register', timeoutMs)
+    const response = await this.report('register', timeoutMs)
+    this.explicitAcknowledgement = response.acknowledgement === 'explicit-v1'
     this.registered = true
   }
 
@@ -53,7 +57,19 @@ export class StatefulHmrAuditClient {
     return response
   }
 
-  private async report(action: 'poll' | 'register', timeoutMs: number) {
+  /** 产物验收完成后确认消费；不作为真实宿主执行证明，也不改变轮询节奏。 */
+  async acknowledgePublished(timeoutMs: number) {
+    if (!this.explicitAcknowledgement || this.version === 0) {
+      return
+    }
+    const version = this.version
+    const response = await this.report('ack', timeoutMs)
+    if (response.type !== 'acknowledged' || response.version !== version) {
+      throw new Error('Stateful HMR audit acknowledgement did not confirm the consumed version.')
+    }
+  }
+
+  private async report(action: 'ack' | 'poll' | 'register', timeoutMs: number) {
     if (!this.control) {
       throw new Error('Stateful HMR audit client has no active control.')
     }
@@ -86,5 +102,6 @@ export class StatefulHmrAuditClient {
     this.control = control
     this.registered = false
     this.version = 0
+    this.explicitAcknowledgement = false
   }
 }

@@ -4,10 +4,50 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { createCompiler } from 'weapp-tailwindcss/core'
 import { CompilerHmrResyncError, getCompilerHmrHost } from '../compilerPlugin/hmr'
 import { createTailwindHmrAdapter } from './hmr'
+
+it('allows unchanged CSS without an emitted owner but resynchronizes actual style changes', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tailwind-owner-'))
+  const require = createRequire(import.meta.url)
+  await mkdir(path.join(root, 'node_modules'))
+  await symlink(path.dirname(require.resolve('tailwindcss/package.json')), path.join(root, 'node_modules/tailwindcss'), 'junction')
+  const source = path.join(root, 'page.ts')
+  const entry = path.join(root, 'app.css')
+  await writeFile(source, 'export const utility = "w-[37px]"')
+  await writeFile(entry, '@import "tailwindcss/utilities" source(none); @source "./page.ts";')
+  const compiler = createCompiler({ tailwindcssBasedir: root, appType: 'weapp-vite' })
+  const ctx = { configService: { cwd: root } } as CompilerContext
+  const host = getCompilerHmrHost(ctx)
+  const adapter = createTailwindHmrAdapter(ctx, {
+    compiler: async () => compiler,
+    render: async () => {},
+  })
+  try {
+    const request: CompilerGenerateRequest = {
+      id: 'root',
+      sourceOptions: { projectRoot: root, cssEntries: [entry], packageName: 'tailwindcss' },
+      scanSources: true,
+      target: 'weapp',
+    }
+    await adapter.rememberRoot(0, request, await compiler.generate(request))
+    host.capture(source, 'export const utility = "w-[37px]"; console.log("script-only")')
+    const unchanged = await adapter.prepare(host.freeze([source]))
+    expect(unchanged.assets).toEqual([])
+    const transformed = await unchanged.transformJavaScript?.({ fileName: 'patch.js', code: 'const utility = "w-[37px]"' })
+    expect(transformed?.code).not.toContain('w-[37px]')
+    host.capture(source, 'export const utility = "w-[53px]"')
+    await expect(adapter.prepare(host.freeze([source]))).rejects.toBeInstanceOf(CompilerHmrResyncError)
+    host.capture(source, '')
+    await expect(adapter.prepare(host.freeze([source]))).rejects.toBeInstanceOf(CompilerHmrResyncError)
+  }
+  finally {
+    await compiler.dispose()
+    await rm(root, { recursive: true, force: true })
+  }
+})
 
 it.each([false, true])('generates from fixed sources and preserves preprocessing (memory CSS: %s)', async (memoryCss) => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'tailwind-batch-'))
@@ -29,13 +69,17 @@ it.each([false, true])('generates from fixed sources and preserves preprocessing
   }
   const ctx = { configService: { cwd: root } } as CompilerContext
   const host = getCompilerHmrHost(ctx)
+  const getCompiler = vi.fn(async () => compiler)
   const adapter = createTailwindHmrAdapter(ctx, {
-    compiler: async () => compiler,
+    compiler: getCompiler,
     render: async (bundle, entries) => {
       bundle['app.wxss'] = { type: 'asset', fileName: 'app.wxss', names: [], originalFileNames: [], source: entries[0]!.css }
     },
   })
   try {
+    const beforeRoot = host.freeze([source])
+    expect(await adapter.prepare(beforeRoot)).toEqual({})
+    expect(getCompiler).not.toHaveBeenCalled()
     if (memoryCss) {
       request.sourceOptions = {
         projectRoot: root,
@@ -45,6 +89,8 @@ it.each([false, true])('generates from fixed sources and preserves preprocessing
     }
     const initial = await compiler.generate(request)
     await adapter.rememberRoot(0, request, initial)
+    expect(await adapter.prepare(beforeRoot)).toEqual({})
+    expect(getCompiler).not.toHaveBeenCalled()
     const first = host.freeze([source])
     host.capture(source, 'export const utility = "w-[53px]"')
     const second = host.freeze([source])

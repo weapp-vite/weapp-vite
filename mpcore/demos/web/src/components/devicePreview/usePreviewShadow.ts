@@ -1,8 +1,8 @@
 import type { ComputedRef, Ref } from 'vue'
-import type { PreviewTapInvocation } from './constants'
+import type { PreviewTapTarget } from './constants'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { PREVIEW_PAGE_CSS, PREVIEW_SHADOW_CSS } from './constants'
-import { resolveTapChain } from './previewEvents'
+import { resolveTapTarget } from './previewEvents'
 
 export function usePreviewShadow(
   markup: Ref<string>,
@@ -12,7 +12,7 @@ export function usePreviewShadow(
   viewportHeight: Ref<number>,
   viewportWidth: Ref<number>,
   onSelectScope: (scopeId: string) => void,
-  onDispatchTapChain: (payload: { activeScopeId: string, chain: PreviewTapInvocation[] }) => void,
+  onDispatchTap: (payload: PreviewTapTarget) => void,
   onViewportInput: (width: number, height: number) => void,
 ) {
   const previewHost = ref<HTMLDivElement | null>(null)
@@ -28,15 +28,12 @@ export function usePreviewShadow(
   let stopPointer = () => {}
 
   function handleScreenClick(event: Event) {
-    const payload = resolveTapChain(event.target)
-    if (!payload?.activeScopeId) {
+    const target = resolveTapTarget(event.target)
+    if (!target) {
       return
     }
-    onSelectScope(payload.activeScopeId)
-    if (payload.chain.length === 0) {
-      return
-    }
-    onDispatchTapChain(payload)
+    onSelectScope(target.scopeId)
+    onDispatchTap(target)
   }
 
   function renderPreviewMarkup(nextMarkup: string) {

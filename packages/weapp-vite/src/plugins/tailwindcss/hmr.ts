@@ -147,6 +147,10 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       input = { roots: new Map(roots), bundle: originalBundle }
       captured.set(request, input)
     }
+    // 本批没有受管入口时保持休眠；后续入口属于新的输入版本。
+    if (input.roots.size === 0) {
+      return {}
+    }
     const compiler = await options.compiler()
     const entries: CompilerGenerateResult[] = []
     for (const [index, root] of input.roots) {
@@ -245,7 +249,8 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     const assets = Object.values(bundle).flatMap(output => output.type === 'asset' && (ownedStyles.has(output.fileName) || canonicalStyles.has(output.fileName))
       ? [{ fileName: output.fileName, code: typeof output.source === 'string' ? output.source : new TextDecoder().decode(output.source) }]
       : [])
-    if (!assets.length && entries.some(entry => entry.css.trim().length > 0)) {
+    // 无样式变化的脚本批次无需提交 CSS；变更或清空样式仍必须具备输出归属。
+    if (!assets.length && entries.some((entry, index) => entry.css !== input.roots.get(index)?.result.css)) {
       throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind HMR 没有可提交的样式归属，需要完整重同步。')
     }
     return {

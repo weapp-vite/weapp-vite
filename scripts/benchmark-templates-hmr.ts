@@ -661,6 +661,9 @@ async function benchmarkScenario(
       await replaceFileByRename(scenario.sourceFile, updated)
       await waitForOutput(expectedMarker)
       const wallMs = performance.now() - startedAt
+      if (usesStatefulScript) {
+        await statefulClient.acknowledgePublished(timeoutMs)
+      }
       const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs))
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample)
@@ -671,6 +674,9 @@ async function benchmarkScenario(
       await replaceFileByRename(scenario.sourceFile, original)
       await waitForOutput(expectedMarker, true)
       const restoreWallMs = performance.now() - restoreStartedAt
+      if (usesStatefulScript) {
+        await statefulClient.acknowledgePublished(timeoutMs)
+      }
       const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs))
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
@@ -711,6 +717,9 @@ async function benchmarkScenario(
       phase = 'cleanup'
       if (await restoreBenchmarkSource(scenario.sourceFile, original) && expectedMarker) {
         await waitForOutput(expectedMarker, true)
+        if (usesStatefulScript) {
+          await statefulClient.acknowledgePublished(timeoutMs)
+        }
       }
     }
     catch (error) {

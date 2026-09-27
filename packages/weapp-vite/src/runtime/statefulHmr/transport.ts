@@ -11,7 +11,7 @@ const endpointPath = '/__weapp_vite_stateful_hmr__'
 const pollTimeout = 25_000
 
 interface ClientReport {
-  action: 'poll' | 'rebuild' | 'register'
+  action: 'ack' | 'poll' | 'rebuild' | 'register'
   buildId: string
   sessionId: string
   token: string
@@ -213,8 +213,14 @@ export class StatefulHmrTransport {
       }
       respond(response, 200, {
         type: 'registered',
+        acknowledgement: 'explicit-v1',
         ...(body.initialReady !== undefined ? { ready: this.initializedSessions.has(body.sessionId) } : {}),
       })
+      return
+    }
+    if (body.action === 'ack' && (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId
+      || !Number.isInteger(body.version) || body.version < 0 || body.version > this.publishedVersion)) {
+      respond(response, 409, { type: 'confirmation-failed' })
       return
     }
     try {
@@ -227,6 +233,14 @@ export class StatefulHmrTransport {
     }
     catch {
       respond(response, 500, { type: 'confirmation-failed' })
+      return
+    }
+    if (body.action === 'ack') {
+      if (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId || body.version > this.executedVersion) {
+        respond(response, 409, { type: 'confirmation-failed' })
+        return
+      }
+      respond(response, 200, { type: 'acknowledged', version: body.version })
       return
     }
     if (body.initialReady === false && body.buildId === this.state.buildId && body.sessionId === this.state.activeSessionId && this.initializedSessions.has(body.sessionId)) {
@@ -338,7 +352,7 @@ function isClientReport(value: unknown): value is ClientReport {
     return false
   }
   const candidate = value as Partial<ClientReport>
-  return (candidate.action === 'poll' || candidate.action === 'rebuild' || candidate.action === 'register')
+  return (candidate.action === 'ack' || candidate.action === 'poll' || candidate.action === 'rebuild' || candidate.action === 'register')
     && typeof candidate.buildId === 'string'
     && typeof candidate.sessionId === 'string'
     && typeof candidate.token === 'string'

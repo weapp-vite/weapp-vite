@@ -1,15 +1,25 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { launch } from '../src/testing'
+import { launch as launchRuntime } from '../src/testing'
 import { cleanupTempDirs, createAsyncComponentFixture, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
 
 declare const wx: unknown
 
 describe('headless testing bridge', () => {
   const tempDirs: string[] = []
+  const sessions: Array<{ close: () => Promise<void> }> = []
 
-  afterEach(() => {
+  async function launch(options: Parameters<typeof launchRuntime>[0]) {
+    const session = await launchRuntime(options)
+    sessions.push(session)
+    return session
+  }
+
+  afterEach(async () => {
+    for (const session of sessions.splice(0)) {
+      await session.close()
+    }
     cleanupTempDirs(tempDirs)
   })
 

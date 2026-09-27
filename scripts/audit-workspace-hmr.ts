@@ -764,6 +764,9 @@ async function auditScenario(
       result.output = formatProjectPath(path.join(project.distRoot, delivery.output))
     }
     result.observedMs = performance.now() - startedAt
+    if (scenario.statefulClient) {
+      await statefulHmrAuditClients.get(project.root)!.acknowledgePublished(scenarioTimeoutMs)
+    }
     await sleep(settleMs)
     const after = await snapshotDist(distRoot)
     if (project.hmrRuntime === 'standard') {
@@ -1028,7 +1031,11 @@ async function restoreScenarioMutation(project: ProjectCase, scenario: ScenarioC
   if (preparationError) {
     throw preparationError
   }
-  return await waitForScenarioMutation(project, scenario, mutation, marker, false)
+  const delivery = await waitForScenarioMutation(project, scenario, mutation, marker, false)
+  if (scenario.statefulClient) {
+    await statefulHmrAuditClients.get(project.root)!.acknowledgePublished(scenarioTimeoutMs)
+  }
+  return delivery
 }
 
 async function publishStatefulHmrUpdate(

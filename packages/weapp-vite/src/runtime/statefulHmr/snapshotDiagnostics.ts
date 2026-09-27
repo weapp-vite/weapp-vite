@@ -1,3 +1,4 @@
+import type { WeappCompilerHmrRequest } from '../../types/compilerPlugin'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrSnapshotBatch, StatefulHmrSnapshotMode } from './snapshotScheduler'
 import { Buffer } from 'node:buffer'
@@ -43,7 +44,20 @@ class StatefulHmrSnapshotDiagnostics {
   }
 
   delivery(stage: string, revision: number, files: readonly string[]): void {
-    this.record(`delivery-${stage}`, { revision, files: files.map(file => this.label(file)) })
+    this.record(`delivery-${stage}`, { revision, files: files.map(file => this.label(file)), absolute: files.map(file => path.isAbsolute(file)) })
+  }
+
+  input(input: WeappCompilerHmrRequest): void {
+    this.record('input-captured', {
+      revision: input.revision,
+      sources: input.changedFiles.map((file) => {
+        const source = input.sources.get(this.absolute(file))
+        return {
+          file: this.label(file),
+          ...(source === undefined ? { missing: true } : source === null ? { deleted: true } : summarize(source)),
+        }
+      }),
+    })
   }
 
   private absolute(filename: string) {

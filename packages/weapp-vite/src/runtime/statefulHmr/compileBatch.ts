@@ -32,7 +32,9 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
   }
   try {
     const compilerAssets = preparations.flatMap(preparation => preparation.assets ?? [])
-    const snapshot = needsSnapshot ? await (input.sources.size ? rebuild(files, input.sources) : rebuild(files)) : undefined
+    const builtSnapshot = needsSnapshot ? await (input.sources.size ? rebuild(files, input.sources) : rebuild(files)) : undefined
+    // 原生输出可能仅暴露 getter；批次转换使用自己的容器，保留构建器快照。
+    const snapshot = builtSnapshot ? { ...builtSnapshot, output: [...builtSnapshot.output] } : undefined
     if (snapshot && compilerAssets.length) {
       const styleExtension = resolveOutputExtensions(ctx.configService.outputExtensions).styleExtension
       const styles = compilerAssets.filter(asset => asset.fileName.endsWith(`.${styleExtension}`))
@@ -43,7 +45,7 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
     }
     if (snapshot) {
       const extension = resolveOutputExtensions(ctx.configService.outputExtensions).templateExtension
-      for (const asset of snapshot.output) {
+      for (const [index, asset] of snapshot.output.entries()) {
         if (asset.type !== 'asset' || !asset.fileName.endsWith(`.${extension}`)) {
           continue
         }
@@ -54,7 +56,7 @@ export async function compileHmrBatch(options: CompileHmrBatchOptions) {
             code = result.code
           }
         }
-        asset.source = code
+        snapshot.output[index] = { ...asset, type: 'asset', fileName: asset.fileName, source: code }
       }
     }
     const transformed: Awaited<ReturnType<typeof prepareHmrPatch>>[] = []

@@ -1,5 +1,5 @@
 import { fs } from '@weapp-core/shared/fs'
-import { compilerSourceId } from '../compilerPlugin/hmr'
+import { compilerSourceId, getCompilerHmrHostByConfig } from '../compilerPlugin/hmr'
 
 const snapshots = new WeakMap<object, ReadonlyMap<string, string | null>>()
 
@@ -20,6 +20,15 @@ export function readCompilerSourceSnapshot(sources: ReadonlyMap<string, string |
   return source
 }
 
-export async function readCompilerInput(owner: object, id: string): Promise<string> {
-  return readCompilerSourceSnapshot(snapshots.get(owner), id) ?? await fs.readFile(id, 'utf8')
+export async function readCompilerInput(owner: object, id: string, read?: (file: string) => Promise<string>): Promise<string> {
+  const pinned = readCompilerSourceSnapshot(snapshots.get(owner), id)
+  if (pinned !== undefined) {
+    return pinned
+  }
+  const source = await (read ? read(id) : fs.readFile(id, 'utf8'))
+  const host = getCompilerHmrHostByConfig(owner)
+  if (host?.onDependencyChange) {
+    host.captureNative(id, source)
+  }
+  return source
 }

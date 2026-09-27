@@ -2,6 +2,32 @@ import { describe, expect, it, vi } from 'vitest'
 import { StatefulHmrAuditClient } from './statefulAuditClient'
 
 describe('StatefulHmrAuditClient', () => {
+  it('explicitly confirms validated artifacts only when the server supports it', async () => {
+    const requests: Array<Record<string, unknown>> = []
+    const request = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+      requests.push(body)
+      const response = body.action === 'register'
+        ? { type: 'registered', acknowledgement: 'explicit-v1' }
+        : body.action === 'ack'
+          ? { type: 'acknowledged', version: body.version }
+          : { type: 'batch-published', targetVersion: 1 }
+      return new Response(JSON.stringify(response))
+    })
+    const client = new StatefulHmrAuditClient(request, () => 'audit-session')
+    await client.ensureRegistered({ buildId: 'build', token: 'token', url: 'http://localhost/control' }, 1_000)
+    await client.poll(1_000)
+    expect(requests.map(item => item.action)).toEqual(['register', 'poll'])
+    await client.acknowledgePublished(1_000)
+    expect(requests.at(-1)).toMatchObject({ action: 'ack', version: 1 })
+
+    const legacyRequest = vi.fn(async () => new Response(JSON.stringify({ type: 'registered' })))
+    const legacy = new StatefulHmrAuditClient(legacyRequest)
+    await legacy.ensureRegistered({ buildId: 'baseline', token: 'token', url: 'http://localhost/control' }, 1_000)
+    await legacy.acknowledgePublished(1_000)
+    expect(legacyRequest).toHaveBeenCalledOnce()
+  })
+
   it('reuses one session and advances the version between published batches', async () => {
     const responses = [
       { type: 'registered' },

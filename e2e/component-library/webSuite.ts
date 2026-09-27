@@ -11,6 +11,7 @@ import { execa } from 'execa'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { comparePngWithBaseline } from '../../packages/weapp-ide-cli/src/cli/imageDiff'
+import { isHttpServerReady } from '../utils/httpReadiness'
 import {
   assertNonBlankPng,
   captureStableScreenshot,
@@ -62,7 +63,7 @@ async function waitForServer(server: Subprocess, logs: { value: string }, webUrl
       throw new Error(`[${label}] dev server 提前退出\n${logs.value}`)
     }
     try {
-      if ((await fetch(webUrl)).ok) {
+      if (await isHttpServerReady(webUrl, Math.min(2_000, Math.max(1, deadline - Date.now())))) {
         return
       }
     }
