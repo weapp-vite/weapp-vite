@@ -45,6 +45,30 @@ Wevu 首屏导航默认采用 `initialNavigationMode: 'eager'`，生命周期和
 - 小程序不支持 hash 导航，hash-only 变化会返回 `NavigationFailureType.aborted`。
 - `switchTab` 不支持 query，命中 tabBar 且带 query 会返回 `aborted`。
 - 前进栈语义不可用，`forward/go(>0)` 不会成功推进历史栈。
+- 滚动恢复是 `wevu/router` 的显式扩展，不复刻浏览器 viewport、DOM/history、`scrollBehavior` 或 `savedPosition`。
+
+### 滚动恢复的适配边界
+
+| 需求 | Vue Router 4 | wevu/router |
+| --- | --- | --- |
+| 启用滚动策略 | Router 配置 `scrollBehavior` | App 初始化时创建一次 `createScrollRestoration({ router })`，页面/组件同步 setup 注册适配器 |
+| 页面级滚动 | 浏览器文档滚动 | `usePageScrollRestoration()` 只面向 WebView，缓存 `onPageScroll` 并调用 `pageScrollTo` |
+| 独立滚动区 | DOM 元素或业务逻辑 | `useScrollViewRestoration()` 显式绑定 `scrollTop/scrollLeft/onScroll`，支持 WebView/Skyline `scroll-view` |
+| 自定义位置/异步内容 | 返回滚动位置或 Promise | `useScrollRestoration<T>()` 同步捕获独立快照；异步 `restore` 每次 await 后检查 `context.isActive()` |
+| 延迟恢复 | 由浏览器滚动策略处理 | `manual: true`，业务内容稳定后调用 `handle.scroll()`；仍等待 ready、首屏守卫结算及实际宿主提交 |
+| 返回到保留页面 | 可使用历史项的 `savedPosition` | 自动恢复只面向新建实例；返回保留页、切回保留 tab、前台唤醒不回放快照，位置归原生宿主管理 |
+
+默认按包含 query 的 `fullPath` 和 `id`（默认 `'default'`）保存快照；同一路径不同 query 隔离。同一原生页面内重复 `key/id` 会报错，跨实例相同索引则共享快照，必须使用相同格式。缓存只存在 controller 会话内存中，可跨原生页面销毁和同会话 `reLaunch`，不跨冷启动、应用重载或 `dispose()`。
+
+微信原生自动关联要求基础库 3.5.5+、`BeforeAppRoute/AppRoute/AppRouteDone/BeforePageUnload` 四组完整 `on/off` API 和字符串 `routeEventId`。自动恢复还会等待路由完成、页面/组件 ready、首屏守卫结算和实际宿主提交；`onShow` 不等于路由完成。低基础库或缺少能力时 `automatic` 为 `false`，仍可使用手动恢复。仓库 Web/headless 宿主通过显式事件契约接入，不伪造微信 SDK 版本。
+
+原生同路径 `reLaunch` 的 `AppRouteDone` 可能返回空 `routeEventId`；只在目标是已确认的新页面、且 `webviewId`、路径、导航类型全部匹配时关联，保留前置路由 ID 作为恢复上下文。旧页面、保留页和不同非空 ID 不走此兼容路径。
+
+`scroll-view` 必须有明确容器和内容尺寸，不能同时由优先级更高的 `scroll-into-view` 控制。内置适配器只在恢复时提交位置，滚动事件仅更新普通缓存；位置超出当前内容时由宿主裁剪，不会重试等待内容增长。
+
+清理分三个层次：`handle.clear()` 清除当前 `key/id`，`controller.clear(key?)` 清除指定 key 的全部 id 或整个会话，两者不注销且后续生命周期仍可捕获；`handle.stop()` 注销而不额外捕获，保留已有快照，`clear(); stop()` 不会重新填回；`controller.dispose()` 移除监听、注销全部注册并清空内存。以上操作会使相关待完成恢复失效，正常生命周期销毁则在停止前捕获。
+
+完整接入、手动恢复和快照所有权示例见 [滚动恢复指南](https://vite.weapp.dev/wevu/router#scroll-restoration) 与 [API 参考](https://vite.weapp.dev/wevu/api/router#scroll-restoration)。
 
 ## 4. 迁移建议
 

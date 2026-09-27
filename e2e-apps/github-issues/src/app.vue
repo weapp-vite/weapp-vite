@@ -2,10 +2,13 @@
 import routes from 'weapp-vite/auto-routes'
 import { createStore, onLaunch, use } from 'wevu'
 import { ensureGithubIssuesRouter } from './shared/appRouter'
+import { initializeFeature1087, installFeature1087Guards, observeFeature1087Routes } from './shared/feature1087'
 import { ensureIssue911Guard } from './shared/issue911'
 import { initializeIssue1035Router } from './shared/issue1035'
 
 const issue1035Enabled = routes.pages.length === 2 && routes.pages.includes('pages/issue-1035/index')
+const feature1087Enabled = routes.pages.includes('pages/feature-1087/index')
+const feature1087Scoped = feature1087Enabled && routes.pages.every(page => page.startsWith('pages/feature-1087/') || page === 'pages/block-slot/index')
 
 use(createStore())
 
@@ -71,7 +74,12 @@ const tabBarList = issue793BuildScopeEnabled
         text: 'issue-793-subpackage',
       },
     ]
-  : defaultTabBarList
+  : feature1087Scoped
+    ? [
+        { pagePath: 'pages/feature-1087/tab/index', text: 'Scroll tab' },
+        { pagePath: 'pages/feature-1087/tab-peer/index', text: 'Peer tab' },
+      ]
+    : defaultTabBarList
 
 defineAppJson({
   pages: issue1035Enabled ? ['pages/issue-1035/index', 'pages/issue-1035-next/index'] : routes.pages,
@@ -80,6 +88,12 @@ defineAppJson({
     ? { style: 'v2', componentFramework: 'glass-easel' }
     : {}),
   subpackages: appSubPackages,
+  ...(routes.pages.includes('pages/feature-1087/skyline/index')
+    ? { lazyCodeLoading: 'requiredComponents' }
+    : {}),
+  ...(feature1087Scoped
+    ? { style: 'v2', componentFramework: 'glass-easel' }
+    : {}),
   ...(issue793BuildScopeEnabled
     ? {
         entryPagePath: 'pages/issue-793/index',
@@ -111,6 +125,11 @@ if (issue1035Enabled) {
 }
 else {
   ensureGithubIssuesRouter()
+  if (feature1087Enabled) {
+    initializeFeature1087()
+    installFeature1087Guards()
+    observeFeature1087Routes()
+  }
 }
 ensureIssue911Guard()
 

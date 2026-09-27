@@ -1,8 +1,11 @@
 import fs from 'node:fs'
+import { tmpdir } from 'node:os'
 import process from 'node:process'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
+import { createAdvancedChunkNameResolver } from '../advancedChunks'
+import { resetTakeImportRegistry } from '../chunkStrategy'
 import { createConfigService } from './createConfigService'
 
 const ALL_MP_PLATFORMS = [...getSupportedMiniProgramPlatforms()]
@@ -185,6 +188,35 @@ describe('createConfigService', () => {
       aliasEntries: [],
       relativeSrcRoot: (p: string) => path.relative('/work/src', p) || '.',
     })
+  })
+
+  it('resolves source roots once per chunk decision and refreshes them for the next decision', () => {
+    const root = fs.mkdtempSync(path.join(tmpdir(), 'chunk-paths-'))
+    const src = path.join(root, 'src')
+    fs.mkdirSync(src)
+    const file = path.join(src, 'shared.ts')
+    fs.writeFileSync(file, 'export const shared = 1')
+    const service = createConfigService(createCtx({ cwd: root }))
+    const resolve = createAdvancedChunkNameResolver({
+      vendorsMatchers: [],
+      relativeAbsoluteSrcRoot: id => service.relativeAbsoluteSrcRoot(id),
+      getSubPackageRoots: () => [],
+      strategy: 'hoist',
+    })
+    const graph = { getModuleInfo: () => ({ importers: [path.join(src, 'a.ts'), path.join(src, 'b.ts')] }) }
+    const native = vi.spyOn(fs.realpathSync, 'native')
+    resetTakeImportRegistry()
+    try {
+      expect(resolve(file, graph)).toBe('common')
+      expect(native.mock.calls.filter(([input]) => input === src)).toHaveLength(1)
+      expect(resolve(file, graph)).toBe('common')
+      expect(native.mock.calls.filter(([input]) => input === src)).toHaveLength(2)
+    }
+    finally {
+      native.mockRestore()
+      resetTakeImportRegistry()
+      fs.rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it.each([

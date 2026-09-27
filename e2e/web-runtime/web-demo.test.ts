@@ -9,6 +9,7 @@ import { execa } from 'execa'
 import path from 'pathe'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { isHttpServerReady } from '../utils/httpReadiness'
 import { collectRuntimeVirtualModuleReferences, readJavaScriptOutput } from '../utils/runtimeProviderOutput'
 import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
@@ -50,8 +51,7 @@ async function waitForWebServerReady(server: Subprocess, logsRef: { value: strin
       continue
     }
     try {
-      const response = await fetch(resolvedUrl)
-      if (response.ok) {
+      if (await isHttpServerReady(resolvedUrl, Math.min(2_000, Math.max(1, timeoutMs - (Date.now() - start))))) {
         return resolvedUrl
       }
     }

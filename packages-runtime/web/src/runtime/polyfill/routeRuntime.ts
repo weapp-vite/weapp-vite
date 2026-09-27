@@ -23,6 +23,7 @@ import { setupWebViewport } from '../viewport'
 import { setRuntimeWarningOptions } from '../warning'
 import { resolveCurrentPages } from './appState'
 import { AppLifecycleRuntime } from './routeRuntime/appLifecycle'
+import { getEntryWebviewId } from './routeRuntime/events'
 import {
   configureWebRouting,
   getWebHistoryStack,
@@ -66,32 +67,63 @@ function syncCurrentWebRoute(operation: 'push' | 'replace') {
 }
 
 function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHistoryState | undefined) {
-  const currentIds = pageStack.entries.map(entry => entry.id)
+  const currentEntries = pageStack.entries
   const historyStack = getWebHistoryStack(state)
   if (historyStack?.length) {
-    const desiredIds = historyStack.map(entry => entry.id)
-    const sharedLength = Math.min(desiredIds.length, currentIds.length)
-    const samePrefix = desiredIds
-      .slice(0, sharedLength)
-      .every((id, index) => currentIds[index] === id)
-    if (samePrefix && desiredIds.length < currentIds.length) {
-      pageStack.back(currentIds.length - desiredIds.length)
+    if (historyStack.some(entry => !pageRegistry.has(entry.id))) {
+      return
     }
-    else if (samePrefix && desiredIds.length > currentIds.length) {
-      for (const entry of historyStack.slice(currentIds.length)) {
-        pageStack.push(entry.id, { ...entry.query })
+    const sharedLength = Math.min(historyStack.length, currentEntries.length)
+    const samePrefix = historyStack.slice(0, sharedLength).every((entry, index) => {
+      const current = currentEntries[index]!
+      return entry.id === current.id
+        && (entry.webviewId === undefined || entry.webviewId === getEntryWebviewId(current))
+        && Object.keys(entry.query).length === Object.keys(current.query).length
+        && Object.entries(entry.query).every(([key, value]) => current.query[key] === value)
+    })
+    if (samePrefix && historyStack.length === currentEntries.length) {
+      return
+    }
+    if (samePrefix && historyStack.length < currentEntries.length) {
+      pageStack.back(currentEntries.length - historyStack.length)
+    }
+    else if (samePrefix && historyStack.length > currentEntries.length) {
+      const added = historyStack.slice(currentEntries.length)
+      if (added.length === 1) {
+        pageStack.push(added[0]!.id, { ...added[0]!.query })
+      }
+      else {
+        pageStack.forward(added)
       }
     }
     else {
       const last = historyStack[historyStack.length - 1]!
-      pageStack.relaunch(last.id, { ...last.query })
+      if (getTabBarPagePaths().has(last.id)) {
+        pageStack.switchTab(last.id, { ...last.query })
+      }
+      else {
+        pageStack.relaunch(last.id, { ...last.query })
+      }
     }
+    syncWebRouting(pageStack.entries, 'replace')
     syncTabBarRoute(pageStack.entries[pageStack.entries.length - 1]?.id ?? '')
     syncCurrentWebDocument()
     return
   }
   if (target && pageRegistry.has(target.id)) {
-    pageStack.relaunch(target.id, { ...target.query })
+    const current = currentEntries[currentEntries.length - 1]
+    if (current?.id === target.id
+      && Object.keys(current.query).length === Object.keys(target.query).length
+      && Object.entries(target.query).every(([key, value]) => current.query[key] === value)) {
+      return
+    }
+    if (getTabBarPagePaths().has(target.id)) {
+      pageStack.switchTab(target.id, { ...target.query })
+    }
+    else {
+      pageStack.relaunch(target.id, { ...target.query })
+    }
+    syncWebRouting(pageStack.entries, 'replace')
     syncTabBarRoute(target.id)
     syncCurrentWebDocument()
   }
@@ -99,8 +131,10 @@ function reconcileWebRoute(target: WebRouteTarget | undefined, state: WebRouteHi
 
 function performSwitchTab(options: RouteOptions) {
   const { id, query } = parsePageUrl(options?.url ?? '')
+  const previousLength = pageStack.entries.length
+  const previousEntry = pageStack.entries[previousLength - 1]
   const succeeded = pageStack.switchTab(id, query)
-  if (succeeded) {
+  if (succeeded && (pageStack.entries.length !== previousLength || pageStack.entries.at(-1) !== previousEntry)) {
     syncTabBarRoute(id)
     syncCurrentWebRoute('push')
   }
@@ -173,7 +207,7 @@ export function initializePageRoutes(
     const initialTarget = readWebRouteTarget(pageOrder)
     const initialId = initialTarget?.id ?? pageOrder[0]
     const initialQuery = initialTarget?.query ?? {}
-    if (pageStack.push(initialId, initialQuery)) {
+    if (pageStack.push(initialId, initialQuery, 'appLaunch')) {
       syncTabBarRoute(initialId)
       syncCurrentWebRoute('replace')
     }

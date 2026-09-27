@@ -1,6 +1,7 @@
 import type { ComponentOptions, ComponentPublicInstance } from '../../component'
 import type { PageRecord, RouteMeta } from './options'
 import { WEVU_PAGE_LAYOUT_NAME_KEY, WEVU_PAGE_LAYOUT_PROPS_KEY, WEVU_PAGE_LAYOUT_SETTER_KEY } from '@weapp-core/constants'
+import { getEntryWebviewId } from './events'
 
 const ROUTE_META_SYMBOL = Symbol('@weapp-vite/web:route-meta')
 const PAGE_STATE_SYMBOL = Symbol('@weapp-vite/web:page-state')
@@ -9,6 +10,9 @@ interface RouteMetaCarrier {
   [ROUTE_META_SYMBOL]?: RouteMeta
   route?: string
   options?: Record<string, string>
+  webviewId?: number
+  __wxWebviewId__?: number
+  renderer?: 'webview'
 }
 
 interface PageInstanceState {
@@ -81,6 +85,9 @@ export function attachRouteMeta(
   carrier[ROUTE_META_SYMBOL] = meta
   carrier.route = meta.id
   carrier.options = meta.query
+  carrier.webviewId = getEntryWebviewId(meta.entry)
+  carrier.__wxWebviewId__ = carrier.webviewId
+  carrier.renderer = 'webview'
 }
 
 export function hidePageInstance(instance: ComponentPublicInstance, record: PageRecord) {
@@ -147,6 +154,11 @@ export function augmentPageComponentOptions(component: ComponentOptions, record:
         record.hooks.onReady?.call(this)
         if (getPageState(this).visible) {
           dispatchPageLifetimeToComponents(this, 'show')
+        }
+        const entry = getRouteMeta(this)?.entry
+        if (entry) {
+          entry.ready = true
+          entry.onRouteReady?.()
         }
       },
       detached(this: ComponentPublicInstance) {

@@ -9,7 +9,14 @@ import { conditionalSlotFiles } from './helpers/conditionalSlots'
 
 describe('conditional slot projection', () => {
   const tempDirs: string[] = []
-  afterEach(() => cleanupTempDirs(tempDirs))
+  const sessions: Array<{ close: () => void }> = []
+
+  afterEach(() => {
+    for (const session of sessions.splice(0)) {
+      session.close()
+    }
+    cleanupTempDirs(tempDirs)
+  })
 
   for (const provider of ['node', 'browser'] as const) {
     it(`updates named and default slot branches in ${provider}`, () => {
@@ -23,6 +30,7 @@ describe('conditional slot projection', () => {
       const session = provider === 'node'
         ? createHeadlessSession({ projectPath })
         : createBrowserHeadlessSession({ files: createBrowserVirtualFiles(conditionalSlotFiles) })
+      sessions.push(session)
       const page = session.reLaunch('/pages/index/index')
       expect(session.renderCurrentPage().wxml).toContain('first-initial')
       expect(session.renderCurrentPage().wxml).toContain('header-initial')

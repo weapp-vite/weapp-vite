@@ -198,3 +198,8 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 
 
 [增量原生 writer](./issue1082-native-incremental-writer.md) 去掉已编译资产发布时的重复 Vite 配置解析，首轮 public 语义保持。15 项 writer/删除边界、六项 CLI、headless 37/37 和真实 IDE 26/26 DOM 通过；局部写出对照不替代正式性能门禁。
+
+
+## 按顺序合并后的 main 同步
+
+[#1083、#1085 已合并及 #1086 同步验证](./issue1082-ordered-main-sync.md)记录最新父提交、生成清单、140 tests、37/37 headless DOM 与所有未通过记录。完整真实 TDesign/Wevu 验收仍未完成，保持草稿。
