@@ -5,8 +5,8 @@
     "taskCount": 114,
     "wechatTaskCount": 111,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 303,
-    "casesWithPlan": 303,
+    "expandedCaseDeclarations": 304,
+    "casesWithPlan": 304,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -6484,13 +6484,31 @@
       "cases": [
         {
           "source": "e2e/ide/wevu-json-render.runtime.test.ts:60",
+          "name": "Wevu json-render runtime > renders a public-package basic catalog without a custom business component",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "apps/wevu-json-render-demo",
+              "checkpoints": "[{ id: 'basic', route: basicRoute, action: '仅使用包内基础组件', nodes: [{ selector: '//text[@id=\"label\"]', query: 'xpath', text: '基础组件无需业务适配' }], }]",
+              "source": "e2e/ide/wevu-json-render.runtime.test.ts:62"
+            }
+          ],
+          "routes": [],
+          "operations": [
+            "reLaunch(basicRoute)",
+            "check(basic)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/wevu-json-render.runtime.test.ts:72",
           "name": "Wevu json-render runtime > renders recursive cards and forwards real input/tap events through Wevu components",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-json-render-demo",
               "checkpoints": "[{ id: 'ready', route, action: '首次渲染售后卡片', nodes: [ { selector: '.heading', text: '让每一次购物都有回应。' }, { selector: '//text[@id=\"hint\"]', query: 'xpath', text: '请描述商品问题，方便我们为你处理。' }, { selector: '//input[@id=\"reason\"]', query: 'xpath', count: 1 ",
-              "source": "e2e/ide/wevu-json-render.runtime.test.ts:61"
+              "source": "e2e/ide/wevu-json-render.runtime.test.ts:73"
             }
           ],
           "routes": [
@@ -6505,14 +6523,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-json-render.runtime.test.ts:94",
+          "source": "e2e/ide/wevu-json-render.runtime.test.ts:109",
           "name": "Wevu json-render runtime > preserves input across streamed patches and recovers from an invalid update",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-json-render-demo",
               "checkpoints": "[{ id: 'streamed', route, action: '流式更新后保持页面', nodes: [ { selector: '//text[@id=\"progress\"]', query: 'xpath', text: '预计 24 小时内处理，我们会及时通知你。' }, { selector: '//text[@id=\"hint\"]', query: 'xpath', count: 0 }, ], }]",
-              "source": "e2e/ide/wevu-json-render.runtime.test.ts:95"
+              "source": "e2e/ide/wevu-json-render.runtime.test.ts:110"
             }
           ],
           "routes": [
@@ -6527,14 +6545,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/wevu-json-render.runtime.test.ts:126",
+          "source": "e2e/ide/wevu-json-render.runtime.test.ts:141",
           "name": "Wevu json-render runtime > supports failure/retry and cancels in-flight work when the page unloads",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "apps/wevu-json-render-demo",
               "checkpoints": "[{ id: 'returned', route, action: '卸载后重新打开干净页面', nodes: [ { selector: '//text[@id=\"status\"]', query: 'xpath', text: '填写原因后提交申请' }, { selector: '//text[@id=\"hint\"]', query: 'xpath', count: 1 }, ], }]",
-              "source": "e2e/ide/wevu-json-render.runtime.test.ts:127"
+              "source": "e2e/ide/wevu-json-render.runtime.test.ts:142"
             }
           ],
           "routes": [
@@ -8398,7 +8416,7 @@
     },
     {
       "file": "e2e/ide/wevu-json-render.runtime.test.ts",
-      "sha256": "8a9d4dba4391f291d96ad424833d9229ccfc265183108749435173a6190fa2b0"
+      "sha256": "f49f560859c3c7d9d917de2433d7e9ae1b117bb735547e688888a18885851c1e"
     },
     {
       "file": "e2e/ide/wevu-jsx-tsx.hmr.runtime.test.ts",

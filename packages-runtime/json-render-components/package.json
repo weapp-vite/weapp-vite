@@ -1,0 +1,64 @@
+{
+  "name": "@wevu/json-render-components",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Precompiled mini-program components for @wevu/json-render",
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages-runtime/json-render-components"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "sideEffects": true,
+  "miniprogram": "dist/miniprogram",
+  "exports": {
+    "./types": {
+      "types": "./dist/types.d.mts"
+    },
+    "./renderer/*": "./dist/miniprogram/renderer/*",
+    "./fallback/*": "./dist/miniprogram/fallback/*",
+    ".": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/types.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/types.mjs",
+  "types": "./dist/types.d.mts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "build": "tsdown && wv build --config weapp-vite.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "wevu": "workspace:*"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:",
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
+  }
+}

@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import type { NodeEvent } from '../../runtime/projection'
-import { computed, onUnload } from 'wevu'
+import type { RendererEvent } from '@wevu/json-render'
+import { onUnload } from 'wevu'
 import { readMetrics as readRuntimeMetrics, resetMetrics, trackSetData } from '../../runtime/metrics'
-import { projectSpec } from '../../runtime/projection'
 import { createDemoSession } from '../../runtime/session'
 
-definePageJson({ usingComponents: { 'spec-node': '/components/spec-node/index' } })
+definePageJson({
+  usingComponents: {
+    'business-node': '/components/business-node/index',
+  },
+})
 resetMetrics()
 trackSetData()
 function readMetrics() {
@@ -14,9 +17,9 @@ function readMetrics() {
 defineExpose({ readMetrics })
 const session = createDemoSession()
 const model = session.model
-const tree = computed(() => projectSpec(model.spec, model.state))
-function onNodeEvent(event: NodeEvent) {
-  session.receive(event)
+const tree = session.tree
+function onNodeEvent(event: RendererEvent) {
+  void session.receive(event)
 }
 function load() {
   session.load()
@@ -38,7 +41,7 @@ onUnload(() => session.dispose())
     <text class="kicker">售后服务 · 演示订单</text>
     <text class="heading">让每一次购物都有回应。</text>
     <text class="intro">填写商品问题，我们会为你安排后续处理。</text>
-    <spec-node v-if="tree" :node="tree" @node-event="onNodeEvent" />
+    <json-renderer v-if="tree" generic:custom-node="business-node" :node="tree" @node-event="onNodeEvent" />
     <view class="demo-controls">
       <text class="demo-title">演示控制</text>
       <view class="buttons">

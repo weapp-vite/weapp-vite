@@ -4,16 +4,24 @@
     "miniprogram": {
       "list": [
         {
-          "name": "\u552e\u540e\u670d\u52a1",
+          "name": "售后服务",
           "pathName": "pages/index/index",
           "query": ""
         },
         {
-          "name": "\u7a7a\u767d\u9875",
+          "name": "空白页",
           "pathName": "pages/blank/index",
+          "query": ""
+        },
+        {
+          "name": "基础目录",
+          "pathName": "pages/basic/index",
           "query": ""
         }
       ]
     }
+  },
+  "setting": {
+    "urlCheck": false
   }
 }

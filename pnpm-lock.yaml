@@ -1558,9 +1558,12 @@ importers:
 
   apps/wevu-json-render-demo:
     dependencies:
-      '@json-render/core':
-        specifier: 0.21.0
-        version: 0.21.0(zod@4.6.5)
+      '@wevu/json-render':
+        specifier: workspace:*
+        version: link:../../packages-runtime/json-render
+      '@wevu/json-render-components':
+        specifier: workspace:*
+        version: link:../../packages-runtime/json-render-components
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
@@ -2606,6 +2609,37 @@ importers:
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.2.3
+
+  packages-runtime/json-render:
+    dependencies:
+      '@json-render/core':
+        specifier: 0.21.0
+        version: 0.21.0(zod@4.6.5)
+      '@wevu/json-render-components':
+        specifier: workspace:*
+        version: link:../json-render-components
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
+
+  packages-runtime/json-render-components:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
 
   packages-runtime/react:
     dependencies:

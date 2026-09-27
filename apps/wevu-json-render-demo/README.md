@@ -1,112 +1,73 @@
-# Wevu × json-render 原型
+# Wevu × json-render 示例
 
-使用 `@json-render/core@0.21.0` 驱动 Wevu 微信小程序中的售后表单。所有组件预先编译为小程序组件；运行时只解释 JSON 数据，不生成或执行代码，不依赖 React、Vue Web renderer 或模型服务。
+本应用消费独立的 `@wevu/json-render` workspace 包，验证 JSON 描述经 Wevu 渲染、输入绑定、自定义组件事件和 SpecStream 更新的完整闭环。适配包直接依赖 `@json-render/core@0.21.0`；应用保留组件目录、订单数据和售后业务动作，不再维护独立的通用 renderer。
+
+包的完整 API 与协议范围见 [@wevu/json-render README](../../packages-runtime/json-render/README.md)。当前包尚未发布到 npm。
 
 ## 运行
 
-在仓库根目录执行：
-
 ```sh
 pnpm install
-pnpm --filter wevu-json-render-demo prepare:weapp
+pnpm --filter @wevu/json-render-components build
+pnpm --filter @wevu/json-render build
+pnpm --filter wevu-json-render-demo build
 pnpm --filter wevu-json-render-demo dev
 pnpm --filter wevu-json-render-demo open
 ```
 
-微信开发者工具需要启用服务端口。应用沿用仓库演示项目的真实 AppID；部署到自己的账号时替换项目配置。
+开发者工具需开启服务端口。应用沿用仓库演示 AppID；部署到自己的账号时替换项目配置。修改包源码后必须重建包，再验证应用。
 
-## 演示流程
+## 代码分工
 
-1. 填写售后原因，条件提示消失；提交时按钮禁用，模拟服务在 600 ms 后返回。
-2. 原因包含“失败”时模拟失败，修改后可重试。实际提交不请求任何业务服务。
-3. 点击“播放增量更新”，录制的 JSONL 分块到达，新增服务说明、更新标题、删除提示节点，已输入内容保留。
-4. 点击“验证异常恢复”，尝试把组件类型改为未知值，显示错误并保留上一版有效界面。
-5. “加载完整 JSON”和“重置”重新加载初始结构、清空业务状态，并取消待处理任务。
+- `vite.config.ts`：使用包的 `JsonRendererResolver()` 注册包内预编译组件。
+- `src/catalog.ts`：在 `standardComponents` 上扩展 `OrderSummary`，声明 `submit` / `inspect` 动作及 schema。
+- `src/fixtures/afterSales.ts`：完整 spec 和录制的 JSONL Patch。
+- `src/state.ts`：售后业务初始状态。
+- `src/runtime/session.ts`：通过 `createJsonRenderer` 提交业务状态，管理模拟提交、录制流播放和重置。
+- `src/components/business-node`：以静态分支把通用 `RenderNode` 映射为订单组件，发送 `RendererEvent`。
+- `src/pages/index/index.vue`：把 `renderer.tree` 交给包的 `<json-renderer>`，注册业务泛型组件和页面卸载清理。
 
-## 协议边界
+## 演示路径
 
-`src/fixtures/afterSales.ts` 保存完整描述和录制的 SpecStream。原型使用上游 `root/elements/children` 格式，例如：
-
-```json
-{
-  "root": "card",
-  "elements": {
-    "card": {
-      "type": "Card",
-      "props": { "title": "售后进度" },
-      "children": ["status"]
-    },
-    "status": {
-      "type": "Text",
-      "props": { "text": { "$state": "/status" } },
-      "children": []
-    }
-  }
-}
-```
-
-| 能力 | 本原型支持范围 |
-| --- | --- |
-| 组件 | `Stack`、`Card`、`Text`、`Input`、`Button`、`OrderSummary` |
-| children | 仅容器 `Stack`、`Card`；节点 ID 唯一引用，最多 200 个节点、8 层 |
-| `$state` | 字符串属性读取 `/form/reason`、`/status`、`/error`；布尔属性读取 `/busy`、`/submitted` |
-| `$bindState` | `Input.value` 绑定 `/form/reason` |
-| visible | 布尔值，或 `$state` 配合可选的 `eq`、`not: true` |
-| on | `Button.on.press` 映射到本地 `submit` 动作 |
-| SpecStream | `add`、`replace`、`remove`，只允许更新 `/root`、`/elements` |
-
-其他表达式、repeat、slots、watch、任意样式、动作参数和动态组件类型均不支持，校验时明确拒绝。业务初始状态由应用单独创建，本版本不接受 spec 的 `state` 字段或服务端状态 Patch。
-
-## 实现分层
-
-- `src/runtime/schema.ts`：严格子集校验、引用和深度检查。流式暂缺引用时等待，结束时仍缺失则报错。
-- `src/runtime/core.ts`：统一 Core 入口。先执行 `compat.ts` 的 Zod `jitless` 配置；本次解析版本为 Zod 4.6.5。
-- `src/runtime/stream.ts`：按批事务化应用 Core Patch；候选描述与可见描述隔离，非法更新停止当前流。逐行新建编译器，避免上游按文本去重吞掉合法的重复数组操作。
-- `src/runtime/session.ts`：唯一的响应式业务状态、输入回写、动作去重、播放和卸载清理。
-- `src/runtime/projection.ts`：复用 Core 的属性、绑定和可见性解析，投影成可序列化的 Wevu 节点树。
-- `src/components/spec-node`：显式自注册的递归 SFC，通过静态分支分发组件。自定义事件接收 Wevu 解包后的载荷；原生 input 接收宿主事件。
-- `src/runtime/metrics.ts`：仅用于原型验收，统计页面和组件的 `setData` 调用及 JSON UTF-8 字节数，不参与渲染逻辑。
-
-这是应用内适配实验，尚未形成通用 renderer API。Vue SFC 在这里是编译输入，不意味着支持 Vue Web 的 VNode、`h()` 或 `<component :is>`。
+1. 点击“查看订单信息”，业务节点事件经包内递归组件抵达 `inspect` 动作，更新状态文案。
+2. 输入售后原因，条件提示消失；提交时去重，600 ms 后模拟成功。
+3. 原因包含“失败”时模拟服务失败，修改后可重试。
+4. 播放录制流：补充服务说明、替换标题、移除提示，保留输入；可以重新播放。
+5. “验证异常恢复”注入未知组件类型，界面保留上一版；重置后清空业务状态和错误。
+6. 页面卸载同时停止播放计时器和 renderer；异步提交通过动作清理回调取消，并阻止过期状态写回。
 
 ## 验证
 
 ```sh
+pnpm --filter @wevu/json-render test
+pnpm --filter @wevu/json-render typecheck
+pnpm --filter @wevu/json-render test:types
 pnpm --filter wevu-json-render-demo test
 pnpm --filter wevu-json-render-demo typecheck
-pnpm exec eslint apps/wevu-json-render-demo
-pnpm exec stylelint 'apps/wevu-json-render-demo/src/**/*.vue'
-pnpm --filter wevu-json-render-demo build
-node --import tsx scripts/check-e2e-ide-shared-launch.ts
+pnpm exec eslint packages-runtime/json-render apps/wevu-json-render-demo
+pnpm exec stylelint 'packages-runtime/json-render/components/**/*.vue' 'apps/wevu-json-render-demo/src/**/*.vue'
 ```
 
-以下 E2E 必须串行运行，开始前确认没有残留的 E2E、automator 或 dev-watch 进程：
+以下命令全局串行执行，先确认没有残留 E2E、automator 或 dev-watch 进程：
 
 ```sh
 pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/wevu-json-render.runtime.test.ts
 pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/wevu-json-render.runtime.test.ts
 ```
 
-suite 只启动一次 automator，通过 `reLaunch` 切换场景。可见文本、输入值、业务状态、失败重试和卸载清理分别断言。测试从页面 `readMetrics` 方法读取观测值；真实 IDE 首屏截图输出到 `docs/reports/json-render/after-sales.png`，生成证据不进入提交。
+同一 suite 共享一个 automator，按路由 `reLaunch` 验证。源码和构建后的包均有测试：应用的 noEval 检查从公共入口打包，显式拦截 `Function` / `eval` 并验证初始化、校验、投影、Patch 全程没有动态求值尝试。
 
-2026-09-28 本地验证结果：
+2026-09-28 抽包后验证：包级单测 12 项、应用单测 5 项；headless 与真实微信 DevTools 各 4 项，覆盖基础目录、自定义组件和售后交互场景。自定义订单节点的渲染和事件转发有可见结果断言。simulator 同步补充 Node/browser 泛型递归透传及浏览器回归。
 
-- 应用单测 12 项通过，包含构建后的隔离执行检查：显式拦截 `Function`/`eval`，断言初始化、校验、解析和 Patch 全程没有动态求值尝试。
-- headless 与真实微信 DevTools 各 3 个场景通过，运行时无 warning/error/exception。
-- simulator 的递归属性、事件、属性观察器相关单测 16 项通过；新增浏览器回归 1 项通过；包级 typecheck 和 test:types 通过。
-- E2E suite manifest 27 项通过，共享 automator 启动检查通过。
+`src/runtime/metrics.ts` 仅统计当前应用页面和订单组件的 `setData`；包内组件不注入业务测量逻辑，因此不能与抽包前的全树计数直接比较。准确计数随批处理时序变化，runtime suite 输出本次产物总字节数、测量范围内的调用次数和 JSON UTF-8 字节数，并检查卸载后没有写入与遗留任务。
 
-| 固定场景基线 | headless | DevTools |
-| --- | --- | --- |
-| 应用 dist 总字节数 | 389782 | 389782 |
-| 首次渲染、输入、完整流式播放的 setData 次数 | 26 | 24–25 |
-| 对应累计 JSON UTF-8 字节数 | 13283 | 13126–13127 |
-| 卸载后 setData / 遗留任务 | 0 / 0 | 0 / 0 |
+当前固定场景 dist 总量为 509055 字节（约 497 KiB，包含配套原生组件）。应用测量范围内，headless 为 9 次 setData / 10866 字节，DevTools 为 8 次 / 10865 字节；两端卸载后写入和遗留任务均为 0，最终 runtime 日志无 warning/error/exception。
 
-这些数值是当前依赖和固定场景的观测值，不是跨版本性能保证；调度批次可以不同，验收要求两端的可见状态和事件结果一致。未验证真机、其他小程序平台、网络分块传输或真实 AI 输出。
+真实 IDE 截图输出到 `docs/reports/json-render/after-sales.png`，生成证据不提交。尚未验证真机、其他小程序平台、真实网络分块或 AI 输出。
 
-## 验证中修复的 simulator 边界
+## 验证发现的宿主差异
 
-真实 DevTools 能更新递归子组件，而 simulator 曾保留初始文案。最小复现证明父子组件共享对象属性引用，父级深层 patch 提前改变子级持有的旧对象，使依赖引用变化的投影失效。
+- simulator 曾共享父子组件对象属性引用，导致深层修改不触发递归投影；已在属性传递边界隔离引用。
+- simulator 曾只查 `usingComponents`，未继承父级已解析的泛型映射；现在递归节点继续传递泛型，保持真实微信行为。
 
-本次在 Node 和 browser 的属性传递边界隔离对象引用，补充 `recursiveProps` 单测、浏览器回归及 simulator patch changeset。未改 Wevu 编译或运行时，也不需要联动 `create-weapp-vite` 发版。两个既有 render/component 文件超过 300 行；本次保持其原有平台分层，仅修正属性所有权，不将无关拆分混入原型。
+这些修复分别有最小回归和 simulator changeset。既有 render/component 与 render/index 文件超过 300 行，本次沿用 Node/browser 分层，仅修正所有权和映射传递，不混入无关拆分。另修复 weapp-vite lib 模式对递归 SFC 生成重复注册入口的问题，组件仍由逻辑入口统一注册，包含编译选项单测和本应用 runtime 回归。

@@ -1,10 +1,10 @@
-import type { DemoSpec } from '../runtime/schema'
+import type { DemoSpec } from '../catalog'
 
 export const afterSalesSpec: DemoSpec = {
   root: 'root',
   elements: {
     root: { type: 'Stack', props: {}, children: ['order', 'form', 'status'] },
-    order: { type: 'OrderSummary', props: { number: 'DEMO-2026-001', product: '日常随行杯 · 雾白', amount: '129.00' }, children: [] },
+    order: { type: 'OrderSummary', props: { number: 'DEMO-2026-001', product: '日常随行杯 · 雾白', amount: '129.00' }, on: { inspect: { action: 'inspect' } }, children: [] },
     form: { type: 'Card', props: { title: '申请售后' }, children: ['reason', 'hint', 'submit', 'error'] },
     reason: { type: 'Input', props: { label: '遇到了什么问题？', placeholder: '例如：收到的杯盖有划痕', value: { $bindState: '/form/reason' } }, children: [] },
     hint: { type: 'Text', props: { text: '请描述商品问题，方便我们为你处理。' }, visible: { $state: '/form/reason', eq: '' }, children: [] },

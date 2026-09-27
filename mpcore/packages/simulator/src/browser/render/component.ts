@@ -108,6 +108,7 @@ export function resolveComponentGenerics(
   ownerJsonPath: string,
   ownerFilePath: string,
   componentFilePath: string,
+  ownerGenerics?: Map<string, string>,
 ) {
   const componentJsonPath = join(context.project.miniprogramRootPath, `${componentFilePath.replace(JS_FILE_RE, '')}.json`)
   const componentGenerics = readComponentConfig(context.files, componentJsonPath).componentGenerics
@@ -119,7 +120,7 @@ export function resolveComponentGenerics(
   const resolved = new Map<string, string>()
   for (const [genericName, definition] of Object.entries(componentGenerics)) {
     const selectedAlias = hostNode.attribs?.[`generic:${genericName}`]
-    const selectedPath = selectedAlias ? ownerComponents.get(selectedAlias) : undefined
+    const selectedPath = selectedAlias ? ownerGenerics?.get(selectedAlias) ?? ownerComponents.get(selectedAlias) : undefined
     if (selectedPath) {
       resolved.set(genericName, selectedPath)
       continue

@@ -13,7 +13,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@json-render/core": "0.21.0",
+    "@wevu/json-render": "workspace:*",
+    "@wevu/json-render-components": "workspace:*",
     "wevu": "workspace:*",
     "zod": "catalog:"
   },

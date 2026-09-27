@@ -1,11 +1,12 @@
+import { createJsonRenderer } from '@wevu/json-render'
+import { catalog } from '../src/catalog'
 import { afterSalesSpec } from '../src/fixtures/afterSales'
-import { initialState, projectSpec } from '../src/runtime/projection'
-import { validateSpec } from '../src/runtime/schema'
-import { createDemoStream } from '../src/runtime/stream'
+import { initialState } from '../src/state'
 
 export function probe() {
-  const spec = validateSpec(afterSalesSpec).spec
-  const stream = createDemoStream(spec)
-  const updated = stream.push('{"op":"replace","path":"/elements/form/props/title","value":"兼容检查"}\n')!
-  return projectSpec(updated, initialState())?.children[1]?.props.title
+  const renderer = createJsonRenderer({ catalog, spec: afterSalesSpec, initialState: initialState(), actions: { submit() {}, inspect() {} } })
+  renderer.createStream().push('{"op":"replace","path":"/elements/form/props/title","value":"兼容检查"}\n')
+  const title = renderer.tree.value?.children[1]?.props.title
+  renderer.dispose()
+  return title
 }

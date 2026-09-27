@@ -57,6 +57,18 @@ describe('Wevu json-render runtime', { concurrent: false }, () => {
     await miniProgram?.close()
   })
 
+  it('renders a public-package basic catalog without a custom business component', async (ctx) => {
+    const basicRoute = '/pages/basic/index'
+    const dom = createDomAcceptance(ctx, 'apps/wevu-json-render-demo', [{
+      id: 'basic',
+      route: basicRoute,
+      action: '仅使用包内基础组件',
+      nodes: [{ selector: '//text[@id="label"]', query: 'xpath', text: '基础组件无需业务适配' }],
+    }])
+    const page = await miniProgram.reLaunch(basicRoute)
+    await dom.check('basic', miniProgram, page)
+  })
+
   it('renders recursive cards and forwards real input/tap events through Wevu components', async (ctx) => {
     const dom = createDomAcceptance(ctx, 'apps/wevu-json-render-demo', [{
       id: 'ready',
@@ -66,6 +78,7 @@ describe('Wevu json-render runtime', { concurrent: false }, () => {
         { selector: '.heading', text: '让每一次购物都有回应。' },
         { selector: '//text[@id="hint"]', query: 'xpath', text: '请描述商品问题，方便我们为你处理。' },
         { selector: '//input[@id="reason"]', query: 'xpath', count: 1 },
+        { selector: '//text[contains(@class,"product")]', query: 'xpath', text: '日常随行杯 · 雾白' },
       ],
     }, {
       id: 'submitted',
@@ -80,6 +93,8 @@ describe('Wevu json-render runtime', { concurrent: false }, () => {
       await mkdir(reportDir, { recursive: true })
       await miniProgram.screenshot({ path: path.join(reportDir, 'after-sales.png') })
     }
+    await (await element(page, 'button', 'inspect-order')).tap()
+    await expect.poll(async () => (await element(page, 'text', 'status')).text()).toBe('演示订单：DEMO-2026-001，实付 ¥129.00')
     await inputReason(page, '杯盖有划痕')
     await expect.poll(() => page.data('model.state.form.reason')).toBe('杯盖有划痕')
     const submit = await element(page, 'button', 'submit')
