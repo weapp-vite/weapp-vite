@@ -49,10 +49,11 @@ describe('suiteRunner', () => {
     }
     const cases = inventory.tasks.find(item => item.task === task.label)!.cases
     const selected = cases.filter(item => filter.test(item.name)).map(item => item.name)
-    expect(selected).toHaveLength(6)
+    expect(selected).toHaveLength(7)
     expect(selected.some(name => name.includes('template-generated computations and event handlers'))).toBe(true)
     expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
     expect(selected.some(name => name.includes('copied and public asset lifecycle'))).toBe(true)
+    expect(selected.some(name => name.includes('isolated script updates and restoration'))).toBe(true)
     for (const runtime of ['native', 'component', 'wevu']) {
       expect(selected.some(name => name.includes(`preserves ${runtime} page state across two template`))).toBe(true)
     }

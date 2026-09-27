@@ -22,6 +22,7 @@ import { assetLifecycleCheckpoints, verifyAssetLifecycle } from './statefulHmrDo
 import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { scriptStateCheckpoints } from './statefulHmrDom/scriptState'
 import { templateBindingCheckpoints } from './statefulHmrDom/templateBindings'
 import { templateCycleCheckpoints } from './statefulHmrDom/templates'
 import { installStatefulHmrTransport } from './statefulHmrDom/transport'
@@ -758,4 +759,54 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       }
     })
   }
+
+  // 放在首次模板用例之后；单选执行也不依赖任何模板预热。
+  it('preserves Wevu local and store state across isolated script updates and restoration', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', scriptStateCheckpoints())
+    const page = await relaunchStatefulRoute(WEVU_ROUTE)
+    const storeCount = async () => Number(await (await (await miniProgram.currentPage()).$('.store-count', { fallback: false })).text())
+    const initialStoreCount = await storeCount()
+    const check = async (id: string, count: number) => {
+      await dom.check(id, miniProgram, await miniProgram.currentPage())
+      await expect.poll(storeCount).toBe(initialStoreCount + count)
+      expect(await readRuntimeState(page)).toMatchObject({
+        count,
+        input: 'held-input',
+        identity: 'isolated-script',
+        route: 'pages/wevu/index',
+        source: 'e2e',
+      })
+    }
+    try {
+      await dom.check('initial', miniProgram, page)
+      await prepareRuntimeState('isolated-script')
+      await triggerIncrement()
+      await triggerIncrement()
+      await waitForPatchedBehavior(2, page)
+      await check('prepared', 2)
+      const version = await readClientVersion()
+      const patched = originalWevuSource
+        .replace('STATEFUL-WEVU-BASE', 'STATEFUL-WEVU-PATCHED')
+        .replace('count.value += 1', 'count.value += 2')
+        .replace('store.increment(1)', 'store.increment(2)')
+      await replaceFileByRename(WEVU_SOURCE, patched)
+      await waitForClientVersion(version + 1)
+      await check('patched', 2)
+      await triggerIncrement()
+      await waitForPatchedBehavior(4, page)
+      await check('clicked', 4)
+      const restoreVersion = await readClientVersion()
+      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await waitForClientVersion(restoreVersion + 1)
+      await check('restored', 4)
+      await triggerIncrement()
+      await waitForPatchedBehavior(5, page)
+      await check('restored-clicked', 5)
+    }
+    finally {
+      if (await fs.readFile(WEVU_SOURCE, 'utf8') !== originalWevuSource) {
+        await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      }
+    }
+  })
 })

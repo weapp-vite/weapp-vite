@@ -208,3 +208,7 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 ## 原生页面镜像与启动入口对照
 
 [本轮独立原生对照及失败记录](./issue1082-native-context-and-startup.md)确认 SDK 3.17.3 脚本热重载的页面栈镜像差异，并把首次启动延迟定位到产品入口执行之前。Wevu 模板仍未通过，全部临时探针已恢复，保持草稿。
+
+## 原生模板限制及独立脚本恢复补验
+
+[完整原生文件对照与独立脚本状态验收](./issue1082-native-template-and-script-state.md)补齐 SDK 3.16.3 宿主模板限制证据。真实 IDE 与 headless 独立脚本用例各 6/6；原模板失败保留。合并按已授权的宿主限制接受口径，仍以最终 HEAD 普通 CI 为准，Issue 保持开放。
