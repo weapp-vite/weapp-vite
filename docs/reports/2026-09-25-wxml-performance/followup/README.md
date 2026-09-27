@@ -93,3 +93,7 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - [PR #1085 Nightly 新增 3 分片（累计 26/27）](./nightly-pr1085-36198019403-fourth.md)：macOS stateful Wevu 模板确认回退，最后 auto-HMR 仍在运行。
 
 - [PR #1085 Nightly 全部 27 分片与最终汇总](./nightly-pr1085-36198019403-final.md)：450 指标收齐，三 OS 均 regression；最后 macOS auto-HMR 新增四项确认回退，未通过完整门禁。
+
+- [PR #1086 旧 e080 Nightly 最终汇总](./nightly-pr1086-36275298244-final.md)：27/27 分片已归档，完整门禁失败，不包含后续产品修正。
+- [PR #1086 新 42a 性能运行首批八片](./nightly-pr1086-36290038049-partial.md)与[后续十片](./nightly-pr1086-36290038049-additional.md)：累计 18/27 分片、274 指标；不包含后续 exposed 生命周期与 native writer 修正。
+- [TDesign 启动对照与验收限制](./issue1082-tdesign-startup-controls.md)：八项临时诊断均未完成 DOM 验收，源码和正式测试已恢复，不据此宣称产品通过。
