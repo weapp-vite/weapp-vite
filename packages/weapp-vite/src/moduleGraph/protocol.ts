@@ -1,4 +1,3 @@
-import { realpathSync } from 'node:fs'
 import {
   WEAPP_VITE_LOGICAL_ENTRY_RESOLVED_PREFIX,
   WEAPP_VITE_LOGICAL_ENTRY_VIRTUAL_PREFIX,
@@ -8,6 +7,7 @@ import {
   WEAPP_VITE_SIDECAR_VIRTUAL_PREFIX,
 } from '@weapp-core/constants'
 import path from 'pathe'
+import { resolveRealpath } from '../utils/realpathScope'
 
 export type LogicalEntryType = 'app' | 'page' | 'component' | 'layout'
 
@@ -49,7 +49,7 @@ function normalizeProtocolPath(id: string) {
     return normalized
   }
   try {
-    return path.normalize(realpathSync.native(normalized))
+    return path.normalize(resolveRealpath(normalized))
   }
   catch {
     return normalized
