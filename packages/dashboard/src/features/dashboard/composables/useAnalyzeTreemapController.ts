@@ -12,14 +12,17 @@ import type {
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
+import { LabelLayout } from 'echarts/features'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, shallowRef } from 'vue'
-import { createTreemapFileNodeId, createTreemapPackageNodeId } from '../utils/treemap'
+import { createTreemapFileNodeId, createTreemapModuleNodeId, createTreemapPackageNodeId } from '../utils/treemap'
 import { filterLargestFilesByTreemapState } from '../utils/treemapFilters'
+import { findTreemapNodePath } from '../utils/treemapNavigation'
 import { createSelectedFileModules } from '../utils/treemapSelection'
 import { useAnalyzeTreemapFilters } from './useAnalyzeTreemapFilters'
 import { useTreemapChartInstance } from './useTreemapChartInstance'
 import { useTreemapData } from './useTreemapData'
+import { useTreemapNavigation } from './useTreemapNavigation'
 import 'echarts/theme/dark.js'
 
 echarts.use([
@@ -28,11 +31,13 @@ echarts.use([
   TitleComponent,
   VisualMapComponent,
   CanvasRenderer,
+  LabelLayout,
 ])
 
 export function useAnalyzeTreemapController(options: {
   activeTab: Ref<DashboardTab>
   resultRef: Ref<Parameters<typeof useTreemapData>[0]['value']>
+  comparisonResultRef: Ref<Parameters<typeof useTreemapData>[0]['value']>
   resolvedTheme: Ref<ResolvedTheme>
   largestFiles: Ref<LargestFileEntry[]>
   duplicateModules: Ref<DuplicateModuleEntry[]>
@@ -42,11 +47,16 @@ export function useAnalyzeTreemapController(options: {
   const selectedTreemapMeta = shallowRef<TreemapNodeMeta | null>(null)
   const selectedLargestFile = shallowRef<LargestFileEntry | null>(null)
   const selectedBudgetWarning = shallowRef<PackageBudgetWarning | null>(null)
+  const hasTreemapComparison = computed(() => options.comparisonResultRef.value !== null)
   const {
     canUseSelectedPackageFilter,
     duplicateModuleIds,
     growthModuleIds,
+    handleInspectTreemapProblem,
+    handleUpdateTreemapColorMode,
     handleUpdateTreemapFilterMode,
+    setTreemapFilterMode,
+    treemapColorMode,
     treemapFilterMode,
     treemapFilterState,
   } = useAnalyzeTreemapFilters({
@@ -55,17 +65,15 @@ export function useAnalyzeTreemapController(options: {
     selectedBudgetWarning,
     selectedLargestFile,
     selectedTreemapMeta,
+    hasComparison: hasTreemapComparison,
   })
-  const { treemapOption, treemapNodes } = useTreemapData(options.resultRef, options.resolvedTheme, treemapFilterState)
+  const { treemapOption, treemapNodes, treemapLegend, treemapColorDescription } = useTreemapData(
+    options.resultRef,
+    options.resolvedTheme,
+    treemapFilterState,
+    { mode: treemapColorMode, comparisonResult: options.comparisonResultRef },
+  )
   const isTreemapEmpty = computed(() => options.resultRef.value !== null && treemapNodes.value.length === 0)
-
-  const filteredDuplicateModules = computed(() => {
-    const meta = selectedTreemapMeta.value
-    if (meta?.kind !== 'module') {
-      return options.duplicateModules.value
-    }
-    return options.duplicateModules.value.filter(module => module.source === meta.source)
-  })
   const filteredLargestFiles = computed(() => filterLargestFilesByTreemapState({
     files: options.largestFiles.value,
     filterState: treemapFilterState.value,
@@ -80,7 +88,10 @@ export function useAnalyzeTreemapController(options: {
     if (selectedLargestFile.value) {
       return createTreemapFileNodeId(selectedLargestFile.value.packageId, selectedLargestFile.value.file)
     }
-    return selectedTreemapMeta.value?.nodeId ?? null
+    const meta = selectedTreemapMeta.value
+    return meta && (meta.kind === 'module' || meta.kind === 'asset')
+      ? createTreemapFileNodeId(meta.packageId, meta.fileName)
+      : meta?.nodeId ?? null
   })
   const selectedFileEntry = computed(() => {
     if (selectedLargestFile.value) {
@@ -92,6 +103,15 @@ export function useAnalyzeTreemapController(options: {
     }
     return options.largestFiles.value.find(file => file.packageId === meta.packageId && file.file === meta.fileName) ?? null
   })
+  const filteredDuplicateModules = computed(() => {
+    const meta = selectedTreemapMeta.value
+    if (meta?.kind !== 'module') {
+      return options.duplicateModules.value
+    }
+    return options.duplicateModules.value.filter(module =>
+      createTreemapModuleNodeId(meta.packageId, meta.fileName, module.id) === meta.nodeId,
+    )
+  })
   const selectedFileModules = computed(() => createSelectedFileModules({
     modules: selectedFileEntry.value?.modules ?? [],
     mode: treemapFilterMode.value,
@@ -100,24 +120,36 @@ export function useAnalyzeTreemapController(options: {
     duplicateModules: options.duplicateModules.value,
   }))
 
+  const navigation = useTreemapNavigation({
+    activeTab: options.activeTab,
+    nodes: treemapNodes,
+    largestFiles: options.largestFiles,
+    selectedMeta: selectedTreemapMeta,
+    selectedFile: selectedLargestFile,
+    selectedWarning: selectedBudgetWarning,
+    filterMode: treemapFilterMode,
+    setFilterMode: setTreemapFilterMode,
+  })
   function handleChartClick(params: unknown) {
-    selectedTreemapMeta.value = (params as { data?: { meta?: TreemapNodeMeta } | null }).data?.meta ?? null
-    selectedLargestFile.value = null
-    selectedBudgetWarning.value = null
+    if (!params || typeof params !== 'object' || !('data' in params)) {
+      return
+    }
+    const data = params.data
+    if (!data || typeof data !== 'object' || !('id' in data) || typeof data.id !== 'string') {
+      return
+    }
+    const meta = findTreemapNodePath(treemapNodes.value, data.id).at(-1)?.meta
+    if (meta) {
+      navigation.handleSelectTreemapNode(meta)
+    }
   }
 
-  const {
-    bindChartRef,
-    destroyChart,
-    ensureChart,
-    focusTreemapNode,
-    handleResize,
-    resetTreemapFocus,
-  } = useTreemapChartInstance({
+  const { bindChartRef, destroyChart, ensureChart, handleResize } = useTreemapChartInstance({
     activeTab: options.activeTab,
     resolvedTheme: options.resolvedTheme,
     treemapOption,
     handleChartClick,
+    focusNodeId: selectedTreemapFocusNodeId,
   })
 
   function handleSelectLargestFile(file: LargestFileEntry) {
@@ -179,17 +211,6 @@ export function useAnalyzeTreemapController(options: {
     treemapFilterMode.value = 'selected-package'
   }
 
-  function handleFocusTreemapSelection() {
-    if (!selectedTreemapFocusNodeId.value) {
-      return
-    }
-    focusTreemapNode(selectedTreemapFocusNodeId.value)
-  }
-
-  function handleResetTreemapFocus() {
-    resetTreemapFocus()
-  }
-
   function resetTreemapSelection() {
     selectedTreemapMeta.value = null
     selectedLargestFile.value = null
@@ -197,6 +218,7 @@ export function useAnalyzeTreemapController(options: {
   }
 
   return {
+    ...navigation,
     activeLargestFileKey,
     bindChartRef,
     canUseSelectedPackageFilter,
@@ -204,20 +226,24 @@ export function useAnalyzeTreemapController(options: {
     ensureChart,
     filteredDuplicateModules,
     filteredLargestFiles,
-    handleFocusTreemapSelection,
-    handleResetTreemapFocus,
     handleResize,
+    handleInspectTreemapProblem,
     handleSelectBudgetWarning,
     handleSelectLargestFile,
     handleSelectPackageInsight,
+    handleUpdateTreemapColorMode,
+    hasTreemapComparison,
     handleUpdateTreemapFilterMode,
     isTreemapEmpty,
     resetTreemapSelection,
     selectedBudgetWarning,
     selectedFileModules,
     selectedLargestFile,
-    selectedTreemapFocusNodeId,
     selectedTreemapMeta,
+    treemapColorMode,
+    treemapColorDescription,
+    treemapLegend,
+    treemapNodes,
     treemapFilterMode,
     visibleLargestFiles,
   }

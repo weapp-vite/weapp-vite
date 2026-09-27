@@ -35,7 +35,8 @@ export function useAnalyzeDashboardData(
   }))
   const packageTypeSummary = computed(() => createPackageTypeSummary(resultRef.value))
   const packageInsights = computed(() => createPackageInsights(resultRef.value, previousMaps.value))
-  const largestFiles = computed(() => createLargestFiles(resultRef.value, previousMaps.value.fileBytes))
+  const artifactFiles = computed(() => createLargestFiles(resultRef.value, previousMaps.value.fileBytes))
+  const largestFiles = computed(() => artifactFiles.value.slice(0, 18))
   const duplicateModules = computed(() => createDuplicateModules({
     result: resultRef.value,
     moduleInfoMap: moduleInfoMap.value,
@@ -45,6 +46,7 @@ export function useAnalyzeDashboardData(
   const moduleSourceSummary = computed(() => createModuleSourceSummaries(resultRef.value, moduleInfoMap.value))
 
   return {
+    artifactFiles,
     summary,
     packageTypeSummary,
     packageInsights,

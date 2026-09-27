@@ -1,6 +1,13 @@
 import type { PackageFileEntry } from './analyze'
 import type { BuildOrigin, ModuleSourceType, PackageType } from './base'
 
+export type AnalyzeTreemapColorMode = 'package' | 'source' | 'duplicates' | 'delta'
+
+export interface TreemapLegendItem {
+  label: string
+  color: string
+}
+
 export interface TreemapNodeMetaBase {
   kind: 'package' | 'file' | 'module' | 'asset'
   nodeId: string
@@ -8,6 +15,8 @@ export interface TreemapNodeMetaBase {
   totalBytes?: number
   packageId: string
   packageLabel: string
+  colorLabel?: string
+  deltaBytes?: number
 }
 
 export interface TreemapPackageNodeMeta extends TreemapNodeMetaBase {

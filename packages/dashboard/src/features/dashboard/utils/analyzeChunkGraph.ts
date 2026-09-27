@@ -30,7 +30,7 @@ export interface AnalyzeChunkGraphModel {
   unresolvedImportCount: number
 }
 
-function normalizeChunkPath(value: string) {
+export function normalizeChunkPath(value: string) {
   return value
     .replaceAll('\\', '/')
     .replace(/^\.\//, '')
@@ -38,7 +38,7 @@ function normalizeChunkPath(value: string) {
     .split(/[?#]/, 1)[0] ?? ''
 }
 
-function resolveChunkImport(fromFile: string, importedFile: string) {
+export function resolveChunkImport(fromFile: string, importedFile: string) {
   const normalizedImport = normalizeChunkPath(importedFile)
   if (!importedFile.startsWith('.')) {
     return normalizedImport

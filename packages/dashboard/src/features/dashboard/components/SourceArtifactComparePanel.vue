@@ -14,6 +14,7 @@ const props = defineProps<{
   activeFileKey: string | null
   files: LargestFileEntry[]
   theme: 'light' | 'dark'
+  initialSourcePath: string | null
 }>()
 
 const emit = defineEmits<{
@@ -40,6 +41,7 @@ const {
   activeFileKey,
   files,
   theme,
+  initialSourcePath: props.initialSourcePath,
   onSelectFile(file) {
     emit('selectFile', file)
   },

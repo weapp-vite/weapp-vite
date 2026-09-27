@@ -1,4 +1,4 @@
-import type { TreemapNodeMeta } from '../types'
+import type { TreemapNode, TreemapNodeMeta } from '../types'
 import { formatBytes, formatModuleIdentifier, formatSourceType } from './format'
 
 const nodeIdDelimiter = '\u0000'
@@ -6,12 +6,12 @@ const nodeIdDelimiter = '\u0000'
 export const TREEMAP_LEVELS = [
   {
     itemStyle: {
-      borderWidth: 3,
-      gapWidth: 3,
+      borderWidth: 1,
+      gapWidth: 1,
     },
     upperLabel: {
       show: true,
-      height: 28,
+      height: 24,
       fontSize: 12,
       fontWeight: 650,
       lineHeight: 17,
@@ -21,12 +21,12 @@ export const TREEMAP_LEVELS = [
   },
   {
     itemStyle: {
-      borderWidth: 1.5,
-      gapWidth: 1.5,
+      borderWidth: 1,
+      gapWidth: 1,
     },
     upperLabel: {
       show: true,
-      height: 24,
+      height: 22,
       fontSize: 11,
       fontWeight: 600,
       lineHeight: 15,
@@ -80,6 +80,20 @@ export function formatTreemapNodeLabel(value: string) {
   return segments.join('/')
 }
 
+function formatTreemapBytes(bytes: number | undefined) {
+  return bytes === undefined || !Number.isFinite(bytes) || bytes < 0 ? '未知' : bytes === 0 ? '0 B' : formatBytes(bytes)
+}
+
+export function formatTreemapLabel({ data }: { data?: Pick<TreemapNode, 'name'> & { meta?: TreemapNodeMeta } }) {
+  // ECharts 的合成根节点没有业务元数据，不占用图内标题空间。
+  if (!data?.meta) {
+    return ''
+  }
+  const meta = data.meta
+  const bytes = meta.kind === 'package' ? meta.totalBytes : meta.kind === 'module' ? meta.bytes ?? meta.originalBytes : meta.bytes
+  return `${data.name}\n${formatTreemapBytes(bytes)}`
+}
+
 function escapeTreemapTooltipValue(value: string | number) {
   return String(value).replace(/[&<>"']/g, character => ({
     '&': '&amp;',
@@ -94,7 +108,7 @@ function createTooltipHeading(value: string) {
   const label = formatTreemapNodeLabel(value)
   const lines = [`<strong>${escapeTreemapTooltipValue(label)}</strong>`]
   if (label !== value) {
-    lines.push('<span style="color:#94a3b8">完整路径</span>')
+    lines.push('<span>完整路径</span>')
     lines.push(`<span style="font-family:monospace;word-break:break-all">${escapeTreemapTooltipValue(value)}</span>`)
   }
   return lines
@@ -111,15 +125,13 @@ export function formatTreemapTooltip(meta: TreemapNodeMeta | undefined) {
     lines.push(`<strong>${escapeTreemapTooltipValue(meta.packageLabel)}</strong>`)
     lines.push(`类型：${escapeTreemapTooltipValue(meta.packageType)}`)
     lines.push(`产物数量：${escapeTreemapTooltipValue(meta.fileCount)}`)
-    if (meta.totalBytes) {
-      lines.push(`累计体积：${formatBytes(meta.totalBytes)}`)
-    }
+    lines.push(`累计体积：${formatTreemapBytes(meta.totalBytes)}`)
   }
   else if (meta.kind === 'file') {
     lines.push(...createTooltipHeading(meta.fileName))
     lines.push(`所属：${escapeTreemapTooltipValue(meta.packageLabel)}`)
     lines.push(`类型：${meta.type === 'chunk' ? '代码 chunk' : '资源'} · 来源：${escapeTreemapTooltipValue(meta.from)}`)
-    lines.push(`体积：${formatBytes(meta.bytes)}`)
+    lines.push(`体积：${formatTreemapBytes(meta.bytes)}`)
     if (meta.childCount > 0) {
       lines.push(`模块数量：${escapeTreemapTooltipValue(meta.childCount)}`)
     }
@@ -128,15 +140,23 @@ export function formatTreemapTooltip(meta: TreemapNodeMeta | undefined) {
     lines.push(...createTooltipHeading(meta.source))
     lines.push(`所属：${escapeTreemapTooltipValue(meta.packageLabel)} → ${escapeTreemapTooltipValue(meta.fileName)}`)
     lines.push(`源码类型：${escapeTreemapTooltipValue(formatSourceType(meta.sourceType))}`)
-    lines.push(`模块体积：${formatBytes(meta.bytes ?? meta.originalBytes)}`)
+    lines.push(`${meta.bytes === undefined ? '源码体积' : '模块体积'}：${formatTreemapBytes(meta.bytes ?? meta.originalBytes)}`)
     if (meta.packageCount > 1) {
-      lines.push(`跨包复用：${escapeTreemapTooltipValue(meta.packageCount)} 次`)
+      lines.push(`产出分包：${escapeTreemapTooltipValue(meta.packageCount)} 个`)
     }
   }
   else if (meta.kind === 'asset') {
     lines.push(...createTooltipHeading(meta.source))
     lines.push(`所属：${escapeTreemapTooltipValue(meta.packageLabel)} → ${escapeTreemapTooltipValue(meta.fileName)}`)
-    lines.push(`资源体积：${formatBytes(meta.bytes)}`)
+    lines.push(`资源体积：${formatTreemapBytes(meta.bytes)}`)
+  }
+
+  if (meta.colorLabel) {
+    lines.push(`颜色：${escapeTreemapTooltipValue(meta.colorLabel)}`)
+  }
+  if (meta.deltaBytes !== undefined) {
+    const sign = meta.deltaBytes > 0 ? '+' : meta.deltaBytes < 0 ? '−' : ''
+    lines.push(`体积变化：${sign}${formatTreemapBytes(Math.abs(meta.deltaBytes))}（${sign}${Math.abs(meta.deltaBytes)} B）`)
   }
 
   return lines.join('<br/>')

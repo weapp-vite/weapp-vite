@@ -6,7 +6,6 @@ import {
   createPackageTreemapNode,
   sumTreemapNodeValues,
 } from './treemapNodeFactories'
-import { createBudgetRiskScore, getPackageLimitBytes } from './treemapRisk'
 
 export interface TreemapFilterState {
   mode: AnalyzeTreemapFilterMode
@@ -72,31 +71,19 @@ export function createTreemapNodes(options: {
   moduleUsageCount: Map<string, number>
   filter: TreemapFilterState
 }): TreemapNode[] {
-  const packageBudgetScores = new Map(options.result.packages.map((pkg) => {
-    const totalBytes = pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0)
-    const limitBytes = getPackageLimitBytes(pkg, options.result.metadata?.budgets)
-    return [pkg.id, createBudgetRiskScore(totalBytes, limitBytes, options.result.metadata?.budgets?.warningRatio)]
-  }))
-  const packageTotalBytes = new Map(options.result.packages.map(pkg => [
-    pkg.id,
-    pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0),
-  ]))
-
   return options.result.packages.flatMap((pkg) => {
     if (options.filter.mode === 'selected-package' && (!options.filter.selectedPackageId || pkg.id !== options.filter.selectedPackageId)) {
       return []
     }
 
     const fileNodes = pkg.files.flatMap((file) => {
-      const rawPackageBytes = packageTotalBytes.get(pkg.id) ?? 0
       const fileHasGrowth = options.filter.mode === 'growth' && options.filter.growthFileKeys.has(createFileKey(pkg.id, file.file))
-      const fileBytes = Math.max(file.size ?? 1, 1)
       const moduleNodes = file.type === 'chunk'
         ? filterModules(options.filter, file.modules ?? []).map(module =>
-            createModuleTreemapNode(pkg.id, pkg.label, file.file, fileBytes, options.moduleUsageCount, module),
+            createModuleTreemapNode(pkg.id, pkg.label, file.file, options.moduleUsageCount, module),
           )
         : shouldIncludeAsset(pkg.id, file, options.filter)
-          ? [createAssetTreemapNode(pkg.id, pkg.label, file.file, file, rawPackageBytes)]
+          ? [createAssetTreemapNode(pkg.id, pkg.label, file.file, file)]
           : []
 
       if (options.filter.mode !== 'all' && options.filter.mode !== 'selected-package' && moduleNodes.length === 0 && !fileHasGrowth) {
@@ -114,8 +101,6 @@ export function createTreemapNodes(options: {
         file,
         moduleNodes,
         filteredValue,
-        rawPackageBytes,
-        packageBudgetScores.get(pkg.id) ?? 0,
       )]
     })
 
@@ -127,6 +112,6 @@ export function createTreemapNodes(options: {
       ? pkg.files.reduce((sum, file) => sum + (file.size ?? 0), 0)
       : sumTreemapNodeValues(fileNodes)
 
-    return [createPackageTreemapNode(pkg, totalBytes, fileNodes, packageBudgetScores.get(pkg.id) ?? 0)]
+    return [createPackageTreemapNode(pkg, totalBytes, fileNodes)]
   })
 }

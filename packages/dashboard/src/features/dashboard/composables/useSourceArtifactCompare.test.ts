@@ -112,6 +112,7 @@ function mountComparison() {
         activeFileKey: shallowRef<string | null>(null),
         files: shallowRef<LargestFileEntry[]>([file]),
         theme: shallowRef<'light' | 'dark'>('light'),
+        initialSourcePath: null,
         onSelectFile: () => {},
       })
       return () => null
