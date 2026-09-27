@@ -51,7 +51,7 @@ weapp-vite dev --analyze
 
 `weapp-vite` 会在运行时检查当前项目中是否安装了 `@weapp-vite/dashboard`。如果存在，就读取本包 `dist/` 中的静态资源并启动本地 DevTools 页面。
 
-Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe 1.0 bridge 连接 CLI（[上游迁移说明](https://github.com/devframes/devframe/blob/v1.0.0/docs/content/7.migrations/1.migration-0.10.md)）：
+Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe 1.1 bridge 连接 CLI（[上游更新日志](https://github.com/devframes/devframe/releases/tag/v1.1.0)、[1.0 迁移说明](https://github.com/devframes/devframe/blob/v1.1.0/docs/content/7.migrations/0.migration-1.0.md)）：
 
 - Analyze 数据通过带 revision、SHA-256 描述符和固定页上限的只读 RPC 分页获取
 - revision 与最近运行事件通过服务端单向通知同步；WebSocket 断开后会重连并重新查询权威状态
@@ -61,6 +61,8 @@ Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe 1.0 bridge 连接 CLI
 - Devframe 显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
 - 页面不再依赖 HTML 全局变量、业务 SSE 或 Vite HMR 作为业务数据通道
 - bridge 保持 `mcp: false`，不加载可选的 `@devframes/agentic`；仓库现有 MCP 服务不经由这个 bridge 提供
+
+从 1.0.0 升级到 1.1.0 无需改写当前 `initDevframe`、`connectDevframe`、scoped RPC 和 OTP 调用。新版 `devframe connect --base` 用于 MCP connector 的非根路径探测，不是 Dashboard 的 `base` / `baseURL` 配置替代品；当前 bridge 仍禁用 MCP。Hub 的 Windows 进程清理、面板主题与快捷键修复属于上游 Hub 层，不代表当前独立工作台新增了这些能力。
 
 微信开发者工具继续负责模拟器、原生调试和真机能力；Dashboard 是构建、HMR、包体、诊断和自动化状态的伴随 DevTools。
 
@@ -89,7 +91,7 @@ Web/H5 backend 和 Donut 的多端小程序配置不等于已有通用原生 App
 
 - 协议携带 target identity、协议版本、capabilities 和会话状态；构建 revision 与运行时事件序列分开，文件读取继续受 target/project allowlist 约束。
 - 当前独立 bridge 覆盖了 Devframe 通用 shared-state set/patch 并拒绝写入。这是单工具的只读策略，不能原样放进共享 Hub，否则会阻止其他 Devframe 的 shared-state 写入；需要隔离 bridge 或改为本工具范围内的权限边界。
-- 工作台直接依赖已升级至 Devframe 1.0；`@vitejs/devtools-kit` 的传递依赖仍使用自己的 Devframe/Hub 0.8。当前 bridge 独立运行，不强制覆盖上游 peer 版本；未来接入其 Hub 前需要先统一兼容契约。
+- 工作台直接依赖已升级至 Devframe 1.1；`@vitejs/devtools-kit` 的传递依赖仍使用自己的 Devframe/Hub 0.8。当前 bridge 独立运行，不强制覆盖上游 peer 版本；未来接入其 Hub 前需要先统一兼容契约。
 - 复用 automator 时区分释放引用与真正断开连接；日志订阅、缓存和清理必须归属具体 target。当前 MCP 日志池不是多 target 隔离协议，不能直接用作统一事件流。
 
 ## 项目结构

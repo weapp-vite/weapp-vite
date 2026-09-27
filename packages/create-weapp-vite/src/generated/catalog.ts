@@ -58,7 +58,7 @@ export const TEMPLATE_CATALOG = {
   clsx: '^2.1.1',
   d3: '^7.9.0',
   dayjs: '^1.11.23',
-  devframe: '1.0.0',
+  devframe: '1.1.0',
   echarts: '^6.1.0',
   esbuild: '^0.28.2',
   eslint: '^10.11.0',
