@@ -1,7 +1,7 @@
 import type { InlineConfig } from 'vite'
 import type { WeappUploadConfig } from '../../types'
 import type * as UploadModule from '../upload'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { cac } from 'cac'
@@ -174,6 +174,8 @@ describe('upload metadata CLI parsing', () => {
     { action: 'upload', option: 'uv', args: ['--uv', '1.2.3', '--uv', '--desc', 'release'] },
     { action: 'upload', option: 'uv', args: ['--uv', '--uv', '1.2.3'] },
     { action: 'upload', option: 'desc', args: ['--desc', 'release', '--desc'] },
+    { action: 'upload', option: 'bump', args: ['--bump', 'patch', '--bump'] },
+    { action: 'upload', option: 'bump', args: ['--bump', '--bump', 'patch'] },
     { action: 'preview', option: 'desc', args: ['--desc', 'release', '--desc', '--dry-run'] },
   ])('rejects missing repeated $option values before $action can build', async ({ action, option, args }) => {
     const cli = cac()
@@ -191,6 +193,68 @@ describe('upload metadata CLI parsing', () => {
     cli.parse(['node', 'wv', 'upload', root, '-p', 'jd', '--uv', '   '], { run: false })
     await expect(cli.runMatchedCommand()).rejects.toThrow('weapp.upload.version')
     expect(events).toEqual(['close:jd'])
+    expect(state.execute).not.toHaveBeenCalled()
+  })
+})
+
+describe('automatic upload version transitions', () => {
+  let manifestPath: string
+  let originalManifest: string
+
+  beforeEach(async () => {
+    manifestPath = path.join(root, 'package.json')
+    originalManifest = `${JSON.stringify({ name: 'upload-fixture', version: '1.0.0' })}\n`
+    await writeFile(manifestPath, originalManifest)
+  })
+
+  it('bumps once for a batch and overrides configured versions for every target', async () => {
+    const cli = cac()
+    registerUploadCommand(cli)
+    cli.parse(['node', 'wv', 'upload', root, '-p', 'jd,tt', '--bump=patch'], { run: false })
+    await cli.runMatchedCommand()
+
+    expect(JSON.parse(await readFile(manifestPath, 'utf8'))).toMatchObject({ version: '1.0.1' })
+    expect(state.execute.mock.calls.map(([platform, context]) => [platform, context.version])).toEqual([
+      ['jd', '1.0.1'],
+      ['tt', '1.0.1'],
+    ])
+    expect(events).toEqual(['build:jd', 'close:jd', 'upload:jd', 'build:tt', 'close:tt', 'upload:tt'])
+  })
+
+  it('keeps the applied version after failure and does not start later targets', async () => {
+    failBuild = true
+    await expect(runUploadCommand(root, { platform: 'jd,tt', bump: 'patch' })).rejects.toThrow('compiler rejected source')
+
+    expect(JSON.parse(await readFile(manifestPath, 'utf8'))).toMatchObject({ version: '1.0.1' })
+    expect(events).toEqual(['build:jd', 'close:jd'])
+    expect(state.execute).not.toHaveBeenCalled()
+
+    failBuild = false
+    await runUploadCommand(root, { platform: 'jd,tt', uv: '1.0.1' })
+    expect(JSON.parse(await readFile(manifestPath, 'utf8'))).toMatchObject({ version: '1.0.1' })
+    expect(state.execute.mock.calls.map(([platform, context]) => [platform, context.version])).toEqual([
+      ['jd', '1.0.1'],
+      ['tt', '1.0.1'],
+    ])
+  })
+
+  it('builds a dry-run batch without changing the source manifest or reaching credentials', async () => {
+    await runUploadCommand(root, { platform: 'jd,tt', bump: 'patch', dryRun: true })
+
+    expect(await readFile(manifestPath, 'utf8')).toBe(originalManifest)
+    expect(events).toEqual(['build:jd', 'close:jd', 'build:tt', 'close:tt'])
+    expect(state.prepare).not.toHaveBeenCalled()
+    expect(state.execute).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { platform: 'web', bump: 'patch' },
+    { platform: 'jd', bump: 'patch', uv: '2.0.0' },
+    { platform: 'jd', bump: 'patch', gitDesc: true, desc: 'explicit' },
+  ])('rejects incompatible automatic metadata before changing files: %j', async (options) => {
+    await expect(runUploadCommand(root, options)).rejects.toThrow()
+    expect(await readFile(manifestPath, 'utf8')).toBe(originalManifest)
+    expect(state.createContext).not.toHaveBeenCalled()
     expect(state.execute).not.toHaveBeenCalled()
   })
 })

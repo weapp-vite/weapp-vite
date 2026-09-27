@@ -32,7 +32,7 @@ export default defineConfig({
 })
 ```
 
-将这些字段合并到已有框架配置时，不要删除应用正常构建所需的插件。无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+将这些字段合并到已有框架配置时，不要删除应用正常构建所需的插件。无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；默认不升版、不读取 Git、不运行 npm。需要固定覆盖时设置 `weapp.upload`，一次性覆盖可用下文 CLI；本地自动升版和提交标题使用内置 `--bump` / `--git-desc`，不写入 Vite 配置。
 
 普通 `wv build`、`wv dev` 和 HMR 不上传，`production` mode 本身也不会开启上传。配置文件 JavaScript 仍正常求值，不要在配置求值时执行上传等副作用，也不要把 Token 写进 `weapp.upload`。
 
@@ -156,13 +156,15 @@ pnpm exec wv upload -p tt --uv 1.2.4 --desc "修复首页展示"
 
 两种方式二选一，不要为了同一个版本重复执行。
 
+需要本地升版并使用最新 Git 提交标题时，改用 `pnpm exec wv upload -p tt --bump patch --git-desc`；可先加 `--dry-run`，不修改版本或锁文件。`--bump` 支持 `patch` / `minor` / `major`，与 `--uv` 冲突；`--git-desc` 与 `--desc` 冲突。生成值覆盖配置默认值，批量只准备一次；真实升版后失败不回滚，重试去掉 `--bump` 并复用原版本。应用根目录、npm/Git 前提及演练中的源版本差异见[本地自动版本](./environments.md#local-version)。
+
 ### 版本与参数限制
 
 - 抖音适配器要求上传版本严格为三段数字 **`x.y.z`**，例如 `1.2.3`；`1.2`、`v1.2.3`、`1.2.3-beta.1` 都不满足本地校验。
-- 版本优先级是 `--uv` > `weapp.upload.version` > `package.json.version`。若包版本带预发布后缀，显式配置 `weapp.upload.version` 或传 `--uv`。
-- 最终说明不能为空。优先级为 `--desc` > `weapp.upload.desc` > 根据包名与最终版本生成的 `name@version`；空白说明使用生成值。
-- `--version` / `-v` 查询的是 CLI 版本，不是抖音上传版本。官方 `tma` 的 `--app-version`、`--app-changelog` 也不是 `wv` 参数。
-- `build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；上传不能与 `--watch` 组合。
+- 版本优先级是 CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`。若包版本带预发布后缀且不升版，显式配置 `weapp.upload.version` 或传 `--uv`。
+- 最终说明不能为空。优先级为 CLI `--desc` 或 `--git-desc` 生成值 > `weapp.upload.desc` > 根据包名与最终版本生成的 `name@version`；空白说明使用生成值。
+- 抖音 SDK 上传版本使用 `--uv`；顶层 `upload` 的 `--version/-v` 是旧微信 IDE 标记，不能代替抖音版本参数。查询工具自身版本使用 `wv --version`。官方 `tma` 的 `--app-version`、`--app-changelog` 也不是 `wv` 参数。
+- `build` 上的 `--uv`、`--desc`、`--bump`、`--git-desc`、`--dry-run` 必须与 `--upload` 一起使用；上传不能与 `--watch` 组合。
 
 抖音服务端仍可能根据应用权限、包内容及平台规则拒绝请求，本地校验不替代官方接受结果。完整命令与模式说明见[公共命令说明](../upload.md#commands)。
 
@@ -172,7 +174,7 @@ pnpm exec wv upload -p tt --uv 1.2.4 --desc "修复首页展示"
 pnpm exec wv preview -p tt
 ```
 
-它重新构建，使用同一组 AppID 和 Token 调用官方 `preview`，不调用开发版本上传、提审或发布接口。预览不消费 `weapp.upload` 的默认版本与说明，**不接收 `--uv`**，因此无需为预览提供上传版本。
+它重新构建，使用同一组 AppID 和 Token 调用官方 `preview`，不调用开发版本上传、提审或发布接口。预览不消费 `weapp.upload` 的默认版本与说明，**不接收 `--uv`、`--bump` 或 `--git-desc`**，因此无需为预览提供上传版本。
 
 成功结果是 **预览链接（preview link）**：官方 SDK 的 `shortUrl`，CLI 以 `[preview:tt] 预览链接：…` 输出。它是二维码承载的预览短链，**不是二维码图片 URL**。本入口不生成本地二维码图片、不自动打开浏览器，也不修改剪贴板；不要把该链接当作图片地址使用。
 

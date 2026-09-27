@@ -111,7 +111,10 @@ try {
       await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
     }
     cli.parse(process.argv, { run: false })
-    await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+    // 仅为未显式命名的默认入口预启动；dev/serve 自管生命周期，其他命令不得提前求值配置。
+    if (cli.matchedCommand?.name === '' && cli.matchedCommandName === undefined) {
+      await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+    }
     await cli.runMatchedCommand()
   }
 }

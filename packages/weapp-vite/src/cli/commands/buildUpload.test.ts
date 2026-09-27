@@ -1,7 +1,7 @@
 import type { InlineConfig } from 'vite'
 import type { WeappUploadConfig } from '../../types'
 import type * as UploadModule from '../upload/index'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { cac } from 'cac'
@@ -237,8 +237,19 @@ describe('build upload CLI guards', () => {
     { args: ['--desc', 'release'] },
     { args: ['--dry-run'] },
     { args: ['--no-upload', '--dry-run'] },
+    { args: ['--bump', 'patch'] },
+    { args: ['--git-desc'] },
+    { args: ['--no-upload', '--bump', 'patch'] },
+    { args: ['--upload', '--watch', '--bump', 'patch'] },
+    { args: ['--upload', '-p', 'web', '--bump', 'patch'] },
+    { args: ['--upload', '--bump', 'patch', '--uv', '2.0.0'] },
+    { args: ['--upload', '--bump', 'patch', '--git-desc', '--desc', 'explicit'] },
   ])('rejects incompatible flags before creating a context: $args', async ({ args }) => {
+    const manifestPath = path.join(root, 'package.json')
+    const originalManifest = JSON.stringify({ name: 'build-upload-fixture', version: '1.0.0' })
+    await writeFile(manifestPath, originalManifest)
     await expect(runBuild(...args)).rejects.toThrow()
+    expect(await readFile(manifestPath, 'utf8')).toBe(originalManifest)
 
     expect(state.createContext).not.toHaveBeenCalled()
     expect(state.prepare).not.toHaveBeenCalled()
@@ -248,6 +259,7 @@ describe('build upload CLI guards', () => {
   it.each([
     { option: 'uv', args: ['--uv', '--uv', '00123'] },
     { option: 'desc', args: ['--desc', 'release', '--desc', '--dry-run'] },
+    { option: 'bump', args: ['--bump', '--bump', 'patch'] },
   ])('rejects a missing repeated --$option value before creating a context', async ({ option, args }) => {
     await expect(runBuild('--upload', ...args)).rejects.toThrow(`--${option}`)
 

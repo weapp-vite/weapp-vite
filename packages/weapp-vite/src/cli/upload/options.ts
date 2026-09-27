@@ -5,6 +5,8 @@ import { parseArgs } from 'node:util'
 export interface UploadCLIOptions extends GlobalCLIOptions {
   uv?: string
   desc?: string
+  bump?: string
+  gitDesc?: boolean
   dryRun?: boolean
 }
 
@@ -13,7 +15,7 @@ export interface BuildUploadCLIOptions extends UploadCLIOptions {
 }
 
 export function readUploadMetadata(cli: CAC) {
-  for (const name of ['uv', 'desc']) {
+  for (const name of ['uv', 'desc', 'bump']) {
     const value: unknown = cli.options[name]
     if (typeof value === 'boolean' || (Array.isArray(value) && value.some(item => typeof item === 'boolean'))) {
       throw new Error(`--${name} 需要指定字符串参数。`)
@@ -27,19 +29,21 @@ export function readUploadMetadata(cli: CAC) {
     options: {
       uv: { type: 'string' },
       desc: { type: 'string' },
+      bump: { type: 'string' },
     },
   })
   return {
     uv: typeof values.uv === 'string' ? values.uv : undefined,
     desc: typeof values.desc === 'string' ? values.desc : undefined,
+    bump: typeof values.bump === 'string' ? values.bump : undefined,
   }
 }
 
 /** 普通构建不读取上传元数据；上传必须是显式的一次性构建操作。 */
 export function resolveBuildUploadOptions(cli: CAC, options: BuildUploadCLIOptions): UploadCLIOptions | undefined {
   if (options.upload !== true) {
-    if (options.uv !== undefined || options.desc !== undefined || options.dryRun !== undefined) {
-      throw new Error('--uv、--desc 和 --dry-run 仅能与 --upload 一起使用。')
+    if (options.uv !== undefined || options.desc !== undefined || options.bump !== undefined || options.gitDesc !== undefined || options.dryRun !== undefined) {
+      throw new Error('--uv、--desc、--bump、--git-desc 和 --dry-run 仅能与 --upload 一起使用。')
     }
     return undefined
   }

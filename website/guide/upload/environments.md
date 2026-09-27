@@ -1,6 +1,6 @@
 ---
 title: 上传环境与自动版本
-description: 配置 .env.test 和 .env.production，切换业务接口、上传凭据与 AppID，并用本地脚本或 CI 自动生成上传版本和说明。
+description: 配置 .env.test 和 .env.production，切换业务接口、上传凭据与 AppID，并用内置 --bump、--git-desc 或 CI 自动生成上传版本和说明。
 keywords:
   - env
   - test
@@ -12,13 +12,13 @@ keywords:
 
 # 上传环境与自动版本
 
-**通常不需要配置 `weapp.upload`。** 不传 `--uv` 时读取业务项目的 `package.json.version`；不传 `--desc` 时自动生成 `项目名@版本`。它不会自动递增版本，也不要求每次上传都手改 `vite.config.ts`。
+**通常不需要配置 `weapp.upload`。** 未覆盖版本和说明时，读取业务项目的 `package.json.version` 并生成 `项目名@版本`。默认不升版、不读取 Git、不运行 npm；需要本地自动化时显式传 `--bump` / `--git-desc`，不必每次修改 `vite.config.ts`。
 
 | 需求 | 方案 |
 | --- | --- |
 | 同一 AppID，切换测试/正式接口与凭据 | [环境文件 + `--mode`](#env) |
 | 测试、正式使用不同 AppID | [一份配置读取各环境 AppID](#appid) |
-| 本地每次上传自动升版、取 Git 提交说明 | [一个脚本](#local-version) |
+| 本地每次上传自动升版、取 Git 提交说明 | [内置 `--bump` / `--git-desc`](#local-version) |
 | CI 自动版本、说明与环境凭据 | [GitHub Environments](#ci) |
 
 ## 1. 同一 AppID：环境文件与命令 {#env}
@@ -168,50 +168,46 @@ pnpm exec wv upload -p xhs,tt --mode production
 
 ## 3. 本地：一条命令自动升版和取提交说明 {#local-version}
 
-如果不要求每次上传都升版，直接使用前面的命令即可。需要自动递增时，在业务项目安装 `tinyexec`（本例使用 1.3.1+，包含 Windows 命令解析与参数转义）：
+使用内置选项即可，不需要安装额外辅助依赖或编写上传脚本。以下命令在**业务应用根目录**执行，沿用前两节的环境和平台配置：
 
 ```sh
-pnpm add -D tinyexec@^1.3.1
+# 先演练：计算下一版本和 Git 说明，构建但不修改版本文件、不上传
+pnpm exec wv upload -p xhs,tt --mode test --bump patch --git-desc --dry-run
+
+# 确认后执行：整批只升版一次，再依次构建上传小红书、抖音
+pnpm exec wv upload -p xhs,tt --mode test --bump patch --git-desc
+
+# 单目标等价入口；与上面的真实上传二选一，不要重复执行
+pnpm exec wv build --upload -p xhs --mode test --bump patch --git-desc
 ```
 
-创建 `scripts/upload.mjs`，需要 Node/npm 和已有提交的 Git 仓库：
+### 选项与前提
 
-```js
-import { x } from 'tinyexec'
+- `--bump <release>` 仅接受 `patch`、`minor`、`major`，按语义化版本递增命令根目录的 `package.json.version`。例如 `1.2.3` 分别变为 `1.2.4`、`1.3.0`、`2.0.0`；必须有合法的当前版本。
+- `--git-desc` 使用当前 Git 仓库最新一次提交的 **subject（标题）** 作为上传说明，不使用提交正文。只有启用它才要求本机可执行 Git、命令目录位于已有提交的 Git 仓库。
+- 两个选项可以独立使用。真实 `--bump` 要求本机可执行 npm；没有 `--git-desc` 时不要求 Git。pnpm 项目同样可以使用，不会运行 `npm install`。
+- 它们只用于 `upload` 和 `build --upload`，是 **CLI 显式启用的操作，不是 `weapp.upload` 配置字段**。普通 `build`、`dev/HMR` 不受影响；`preview` 不接受这两个选项。
+- `--bump` 与显式 `--uv` 冲突，`--git-desc` 与显式 `--desc` 冲突。生成的版本和说明会覆盖 `weapp.upload.version` / `desc` 默认值，不需要修改配置。
 
-const [mode = 'test', platform = 'xhs', ...extra] = process.argv.slice(2)
-const { stdout } = await x('git', ['log', '-1', '--pretty=%s'], { throwOnError: true })
+### 根目录与执行时机
 
-await x('npm', [
-  'version',
-  'patch',
-  '--no-git-tag-version',
-  '--ignore-scripts',
-], { throwOnError: true, nodeOptions: { stdio: 'inherit' } })
+升版只读取、修改命令 `[root]` **直接包含的 `package.json`**；省略 `[root]` 时就是当前工作目录，不会向父目录查找。Monorepo 中应进入实际应用目录，或使用 `wv upload ./apps/my-app ...` 指定它；Vite 的 `root` / `envDir` 不会改变升版目标。
 
-await x('pnpm', [
-  'exec',
-  'wv',
-  'build',
-  '--upload',
-  '-p',
-  platform,
-  '--mode',
-  mode,
-  `--desc=${stdout.trim()}`,
-  ...extra,
-], { throwOnError: true, nodeOptions: { stdio: 'inherit' } })
-```
+在第一次编译器初始化与配置求值前，CLI 读取一次 Git subject、计算一次新版本，并在非 dry-run 时完成一次升版。多平台整批共用相同版本和说明，不会每个平台再升一次；真实构建中导入该 `package.json` 的代码可读取新版本。
+
+实际升版交给 npm 标准 `version` 操作，按 npm 规则更新应用 `package.json` 及适用的 npm 锁文件；不会替你同步 `pnpm-lock.yaml`。命令使用 `--no-git-tag-version --ignore-scripts --workspaces=false`，并将 `--prefix` 和工作目录都限定到应用根目录，避免修改外层 workspace 根包。**不会创建 commit/tag、push，也不会执行 npm version 生命周期钩子。**
+
+### dry-run 与失败重试
+
+`--dry-run` 仍计算将上传的版本和说明、构建并校验产物，但**不运行 `npm version`，不修改 `package.json` 或锁文件，也不调用上传 SDK**。因此演练不要求 npm；启用 `--git-desc` 时仍需 Git。由于没有改写源文件，构建代码中直接导入 `package.json.version` 仍读到原始版本，不是演练输出中的预计上传版本。
+
+参数冲突、无效的 release / 当前版本、Git 读取失败都会在修改版本文件前报错。**升版一旦完成，后续配置、构建、产物校验或上传失败都不会自动回滚。** 排除问题后复用该版本，仅重试未完成的平台，去掉 `--bump`；必要时显式传原批次版本和说明，避免配置默认值或新的 Git 提交改变重试元数据：
 
 ```sh
-node scripts/upload.mjs test xhs
-node scripts/upload.mjs production tt
-
-# 验证脚本：仍会本地升版，但不会调用上传 SDK
-node scripts/upload.mjs test xhs --dry-run
+# 假设上一批已从 1.2.3 升到 1.2.4，小红书成功、抖音失败
+# 说明应填写上一批实际使用的 Git subject，不再升版
+pnpm exec wv upload -p tt --mode test --uv 1.2.4 --desc "上一批实际使用的提交标题"
 ```
-
-例如 `package.json.version` 从 `1.2.3` 变为 `1.2.4`，CLI 自动读新版本；说明取最后一次 Git commit 的 subject。脚本只构建一次，不修改 `vite.config.ts`，不创建 commit/tag、不 push。**它会修改业务版本文件；后续上传失败不自动回滚。** 本例禁用 npm version 生命周期脚本；pnpm 项目也可以使用此本地版本操作，不执行 `npm install`。
 
 ## 4. CI：环境凭据、版本和说明都自动注入 {#ci}
 
@@ -257,5 +253,7 @@ jobs:
 ```
 
 `UPLOAD_MODE` / `UPLOAD_VERSION` / `UPLOAD_DESC` 是这份工作流自己的变量，**不是框架自动读取的内置配置**，因此通过 CLI 显式传入。说明包含环境与提交 SHA；重新运行同一次 workflow 会复用其 run number。三段数字适合跨平台版本格式，但仍需符合平台现有版本的递增/受理规则。
+
+这条 CI 路径保留显式 `--uv` / `--desc`，不需要 `--bump` / `--git-desc`，也不修改业务版本或锁文件；不要把两组冲突选项叠加使用。
 
 抖音使用 `TT_UPLOAD_TOKEN` 并改为 `-p tt`；其他平台按前面的变量表注入。微信/支付宝私钥需从 Secret 安全写入临时文件，设置对应路径变量并清理，完整步骤见[CI 密钥文件示例](../upload.md#ci)。CI 进程变量优先于 `.env` 文件；只向可信任务提供 Secrets，第三方 SDK 凭据存储随一次性 runner 一起销毁。

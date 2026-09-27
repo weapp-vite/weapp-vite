@@ -43,7 +43,7 @@ export default defineConfig({
 })
 ```
 
-无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；默认不升版、不读取 Git、不运行 npm。需要固定覆盖时设置 `weapp.upload`，一次性覆盖可用下文 CLI；本地自动升版和提交标题使用内置 `--bump` / `--git-desc`，不写入 Vite 配置。
 
 `weapp.upload` 只提供 `build --upload` / `upload` 的默认值，普通 `build`、`dev` 和 HMR 不会自动上传。配置文件代码仍正常求值，不要把上传或其他外部副作用放在配置加载过程中。
 
@@ -138,7 +138,9 @@ pnpm exec wv build --upload -p swan
 pnpm exec wv upload -p swan --uv 1.2.4 --desc "修复首页展示"
 ```
 
-两种方式二选一即可，独立 `upload` 不需要预先再执行一次 `build`。上传版本优先级为 `--uv` → `weapp.upload.version` → `package.json.version`；查询 CLI 版本的 `--version` / `-v` 不能替代 `--uv`。
+两种方式二选一即可，独立 `upload` 不需要预先再执行一次 `build`。上传版本优先级为 CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`。SDK 上传使用 `--uv`；顶层 `upload` 的 `--version/-v` 是旧微信 IDE 标记，不要混入百度 SDK 命令。查询工具自身版本使用 `wv --version`。
+
+需要本地升版并使用最新 Git 提交标题时，改用 `pnpm exec wv upload -p swan --bump patch --git-desc`；可先加 `--dry-run`，不修改版本或锁文件。`--bump` 支持 `patch` / `minor` / `major`，与 `--uv` 冲突；`--git-desc` 与 `--desc` 冲突。生成值覆盖配置默认值，批量只准备一次；真实升版后失败不回滚，重试去掉 `--bump` 并复用原版本。应用根目录、npm/Git 前提及演练中的源版本差异见[本地自动版本](./environments.md#local-version)。
 
 百度上传版本必须由 **2 至 4 段数字**组成，例如 `1.0`、`1.2.3`、`1.2.3.4`；`1`、`1.2.3-beta.1` 不合法。这条规则与最低基础库版本的有效列表无关。
 
@@ -155,7 +157,7 @@ pnpm exec wv preview -p swan
 
 结果是**官方扫码目标 / 预览链接**，CLI 以“预览链接”打印。它是二维码内容，不是二维码图片 URL，也不是本地图片文件。可按平台要求将该扫码目标用于二维码展示并用百度宿主验证；不要直接当作图片地址使用。若官方同时返回低版本与默认基础库两个预览码，统一入口返回默认版本的预览链接。
 
-`preview` 不使用 `weapp.upload` 默认值，不要求应用上传版本，也不接受 `--uv`。它不会调用开发版本上传、提审或正式发布，CLI 不自动打开浏览器或修改剪贴板。二维码有效期、扫码者权限与宿主可用性由百度决定；构建成功不能代替真机验收。
+`preview` 不使用 `weapp.upload` 默认值，不要求应用上传版本，也不接受 `--uv`、`--bump` 或 `--git-desc`。它不会调用开发版本上传、提审或正式发布，CLI 不自动打开浏览器或修改剪贴板。二维码有效期、扫码者权限与宿主可用性由百度决定；构建成功不能代替真机验收。
 
 ## 6. 改成 multiPlatform 项目
 

@@ -38,11 +38,13 @@ export default defineConfig({
 
 ### `upload`
 
-`weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv build --upload` 和独立 `wv upload` 的默认参数，不是自动上传开关，也不支持凭据字段。版本优先级为 `--uv` > `weapp.upload.version` > `package.json.version`；说明优先级为 `--desc` > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
+`weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv build --upload` 和独立 `wv upload` 的默认参数，不是自动上传开关，也不支持凭据字段或 `bump`、`gitDesc`。版本优先级为 CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`；说明优先级为 CLI `--desc` 或 `--git-desc` 生成值 > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
 
 普通 `build`、`dev/HMR` 不使用这组上传默认参数也不上传，`preview` 不使用该配置。配置文件本身仍会正常加载与合并，不保证其中的 JavaScript getter 延迟求值。`wv build --upload` 复用本次构建，等待所有选中的构建后端成功、产物校验通过后才调用平台工具；`wv build --upload --dry-run` 不校验凭据、不调用 SDK。
 
-`build` 上的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、仅 Web 的 `-p web --upload` 会报错。`build -p all --upload` 是“小程序 + Web”，两者都构建成功后只上传小程序；独立 `upload -p all` 则保持六端逐一构建上传。
+`build` 上的 `--uv`、`--desc`、`--bump`、`--git-desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、仅 Web 的 `-p web --upload` 会报错。`build -p all --upload` 是“小程序 + Web”，两者都构建成功后只上传小程序；独立 `upload -p all` 则保持六端逐一构建上传。
+
+默认不执行 Git 或 npm 版本操作。需要时显式使用 `wv upload -p xhs,tt --bump patch --git-desc`：`--bump patch|minor|major` 与 `--uv` 冲突，`--git-desc` 与 `--desc` 冲突，`preview` 不接受这两个选项。真实升版需要本机 npm；只有 Git 说明要求已有提交的 Git 仓库。版本只取命令根目录的应用清单，不向父目录查找；首次配置求值前准备一次，批量共用，不运行生命周期钩子、不 commit/tag/push。dry-run 不运行 npm、不修改版本或锁文件，直接导入清单的构建代码仍看到原始版本。升版后的失败不回滚，重试去掉 `--bump` 并复用同一版本。详见[内置本地自动版本](./upload.md#内置本地自动版本)。
 
 CI 可在测试通过后显式执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。凭据仍通过环境变量提供；先读本地[上传与预览速查](./upload.md)，完整的 AppID、私钥、支付宝 JSON 身份密钥、各端 Token、环境文件和 CI Secrets 示例见[分平台操作指南](https://vite.weapp.dev/guide/upload.html)。
 

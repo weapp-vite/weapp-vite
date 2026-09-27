@@ -233,9 +233,13 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
-      files: ['packages/weapp-vite/package.json', 'packages/create-weapp-vite/package.json'],
+      files: [
+        'packages/weapp-vite/package.json',
+        'packages/create-weapp-vite/package.json',
+        'packages/weapp-vite/src/cli/upload/autoMetadata.ts',
+      ],
       rules: {
-        // 构建器与脚手架统一使用 npm 的 semver caret、预发布版本兼容语义。
+        // 构建器、脚手架与上传升版复用 npm 的 semver caret、预发布和版本递增语义。
         'e18e/ban-dependencies': 'off',
       },
     }, {

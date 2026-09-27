@@ -40,7 +40,7 @@ keywords:
 
 - **项目创建**：`create-weapp-vite` 负责模板、依赖版本对齐、`AGENTS.md`、推荐 AI skills 安装。
 - **开发、构建与上传**：`wv dev/build/prepare/analyze/open` 负责工程主链路，`wv upload/preview` 提供六端构建上传与预览（不含提审和正式发布）。
-- **IDE 自动化**：通过 `weapp-ide-cli` 透传 `config/screenshot/compare` 等命令；微信 IDE 上传、预览使用 `wv ide upload/preview`。
+- **IDE 自动化**：通过 `weapp-ide-cli` 透传 `config/screenshot/compare` 等命令；稳定的微信 IDE 上传、预览入口是 `wv ide upload/preview`，不弃用。带旧参数的顶层 `wv upload` 仍按原行为执行，只提示未来弃用；顶层 `preview` 不在兼容范围内，详见[旧上传兼容与迁移](/guide/cli#legacy-upload)。
 - **AI 协作**：通过 `wv mcp`、`take_weapp_screenshot`、`compare_weapp_screenshot`、`wv ide logs --open` 把真实项目能力暴露给 AI。
 - **运行时**：`wevu` 负责响应式、生命周期、store 与最小化 `setData` 更新。
 

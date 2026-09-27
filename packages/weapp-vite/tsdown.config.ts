@@ -65,6 +65,7 @@ export default defineConfig({
       'postcss',
       'rimraf',
       'semver/functions/gte.js',
+      'semver/functions/inc.js',
       'semver/functions/satisfies.js',
       'semver/functions/valid.js',
       'vue/compiler-sfc',

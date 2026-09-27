@@ -43,7 +43,7 @@ export default defineConfig({
 })
 ```
 
-无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；默认不升版、不读取 Git、不运行 npm。需要固定覆盖时设置 `weapp.upload`，一次性覆盖可用下文 CLI；本地自动升版和提交标题使用内置 `--bump` / `--git-desc`，不写入 Vite 配置。
 
 上传默认值只由 `build --upload` / `upload` 消费，不会让普通 `build`、`dev` 或 HMR 自动上传。配置文件代码仍正常求值，不要在配置里调用有外部副作用的上传逻辑。
 
@@ -131,7 +131,9 @@ pnpm exec wv build --upload -p alipay
 pnpm exec wv upload -p alipay --uv 1.2.4 --desc "修复首页展示"
 ```
 
-两种入口二选一，不需要先单独构建再调用 `upload`。版本取值顺序为 `--uv` → `weapp.upload.version` → `package.json.version`；`-v` / `--version` 只查询 CLI 版本。
+两种入口二选一，不需要先单独构建再调用 `upload`。版本优先级为 CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`。SDK 上传使用 `--uv`；顶层 `upload` 的 `--version/-v` 是旧微信 IDE 标记，不要混入支付宝 SDK 命令。查询工具自身版本使用 `wv --version`。
+
+需要本地升版并使用最新 Git 提交标题时，改用 `pnpm exec wv upload -p alipay --bump patch --git-desc`；可先加 `--dry-run`，不修改版本或锁文件。`--bump` 支持 `patch` / `minor` / `major`，与 `--uv` 冲突；`--git-desc` 与 `--desc` 冲突。生成值覆盖配置默认值，批量只准备一次；真实升版后失败不回滚，重试去掉 `--bump` 并复用原版本。应用根目录、npm/Git 前提及演练中的源版本差异见[本地自动版本](./environments.md#local-version)。
 
 支付宝上传有以下严格限制：
 
@@ -151,7 +153,7 @@ pnpm exec wv preview -p alipay
 
 第一条只做构建与目录检查；第二条重新构建并调用 `minidev.preview`，仍需同一份 JSON 身份文件和 AppID。返回的是**官方二维码图片 URL**，CLI 以“二维码图片”打印；打开该图片，用有权限的支付宝账号扫码。
 
-它不是本地图片路径，不自动打开浏览器、不修改剪贴板，也不调用开发版本上传。预览不使用 `weapp.upload` 的默认值，不需要版本号，**不能传 `--uv`**。二维码有效期、扫码权限及实际真机运行以支付宝规则为准；未返回有效二维码地址时会报失败。
+它不是本地图片路径，不自动打开浏览器、不修改剪贴板，也不调用开发版本上传。预览不使用 `weapp.upload` 的默认值，不需要版本号，**不能传 `--uv`、`--bump` 或 `--git-desc`**。二维码有效期、扫码权限及实际真机运行以支付宝规则为准；未返回有效二维码地址时会报失败。
 
 ## 6. 改成 multiPlatform 项目
 

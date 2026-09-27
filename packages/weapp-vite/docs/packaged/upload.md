@@ -4,6 +4,8 @@
 
 `test` / `production`、不同 AppID 与自动版本/提交说明见[多环境上传](https://vite.weapp.dev/guide/upload/environments.html)。
 
+下文的构建、环境凭据、dry-run 与自动版本规则只适用于 SDK 入口；原有微信 IDE 顶层上传保留原参数行为，见[旧上传兼容与迁移](#旧上传兼容与迁移)。
+
 ## 选择平台与凭据
 
 先在业务项目安装目标平台的工具，例如 `pnpm add -D xhs-mp-cli`。不要只全局安装，也不需要为单个平台安装六套工具。
@@ -59,15 +61,38 @@ pnpm exec wv build --upload -p xhs
 pnpm exec wv preview -p xhs --desc "验收首页"
 ```
 
-无需配置 `weapp.upload`：版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`，版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload.version` / `desc`；一次性覆盖可用 CLI：
+无需配置 `weapp.upload`：版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；默认不升版、不读取 Git、不运行 npm。仅需固定覆盖时才设置 `weapp.upload.version` / `desc`；一次性覆盖可用 CLI：
 
 ```bash
 pnpm exec wv build --upload -p xhs --uv 1.2.4 --desc "修复首页展示"
 ```
 
-版本优先级为 CLI `--uv` > `weapp.upload.version` > `package.json.version`；说明为 CLI `--desc` > `weapp.upload.desc` > 自动生成值。去除首尾空白；显式空版本报错，空说明用自动生成值。普通 `build`、`dev/HMR` 不启用上传，配置文件本身仍正常求值。`preview` 不使用 `weapp.upload` 默认参数，不需要版本也不接受 `--uv`。
+版本优先级为 CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`；说明为 CLI `--desc` 或 `--git-desc` 生成值 > `weapp.upload.desc` > 自动生成值。去除首尾空白；显式空版本报错，空说明用自动生成值。普通 `build`、`dev/HMR` 不启用上传，配置文件本身仍正常求值。`preview` 不使用 `weapp.upload` 默认参数，不需要版本，也不接受 `--uv`、`--bump` 或 `--git-desc`。
 
-`build --upload` 只编译一次，等本次所有后端构建成功、产物校验通过才上传。独立 `wv upload` 也会自行构建，不需要先执行 `build`。普通 build 不能单独带 `--uv` / `--desc` / `--dry-run`；上传不能与 `--watch` 或 Web-only 组合。
+`build --upload` 只编译一次，等本次所有后端构建成功、产物校验通过才上传。SDK `wv upload` 也会自行构建，不需要先执行 `build`。普通 build 不能单独带 `--uv` / `--desc` / `--bump` / `--git-desc` / `--dry-run`；上传不能与 `--watch` 或 Web-only 组合。
+
+## 内置本地自动版本
+
+不需要辅助脚本或额外依赖；沿用已配置的应用与平台，从应用根目录执行：
+
+```sh
+# 计算下一版本和说明，构建但不修改版本文件、不上传
+pnpm exec wv upload -p xhs,tt --mode test --bump patch --git-desc --dry-run
+
+# 确认后选择批量或单目标入口，不要重复执行两条真实上传命令
+pnpm exec wv upload -p xhs,tt --mode test --bump patch --git-desc
+pnpm exec wv build --upload -p xhs --mode test --bump patch --git-desc
+```
+
+- `--bump <release>` 只接受 `patch`、`minor`、`major`，要求应用有合法的 SemVer 版本；与显式 `--uv` 冲突。
+- `--git-desc` 读取最新 Git 提交的 subject，不读取正文；与显式 `--desc` 冲突。生成的版本和说明覆盖 `weapp.upload` 默认值。
+- 两个选项可独立启用，只用于 `upload` / `build --upload`，不能放进 Vite 上传配置。真实升版需要本机 npm；只有 `--git-desc` 要求 Git 可执行且仓库已有提交。
+- 只处理命令 `[root]` 直接包含的 `package.json`；省略 root 即当前目录，不向父目录查找，Vite `root` / `envDir` 不改变目标。首次编译器初始化、配置求值前只准备一次，整批共用版本与说明。
+- 真实升版由 npm 标准 `version` 操作更新应用版本与适用的 npm 锁文件，不同步 `pnpm-lock.yaml`。`--prefix`、工作目录均限定为应用根，传入 `--no-git-tag-version --ignore-scripts --workspaces=false`，不修改外层 workspace 根包，不运行生命周期钩子、不 commit/tag/push。
+- dry-run 不运行 `npm version`，不修改版本或锁文件；直接导入 `package.json` 的构建代码仍读取原始版本，而不是预计上传版本。演练不要求 npm，启用 `--git-desc` 时仍要求 Git。
+- 参数冲突、无效 release / 当前版本、Git 失败都在文件修改前报错。升版完成后构建或上传失败不回滚；只重试未完成的平台，去掉 `--bump`，必要时用 `--uv` / `--desc` 显式复用上一批版本与说明。
+
+CI 可继续按 `run_number` 生成版本并显式传 `--uv` / `--desc`，不需要改写应用版本文件。完整工作流见[多环境上传](https://vite.weapp.dev/guide/upload/environments.html#ci)。
 
 ## 环境与密钥安全
 
@@ -141,4 +166,24 @@ pnpm exec wv preview -p xhs,tt
 - [百度](https://vite.weapp.dev/guide/upload/swan.html)
 - [批量操作](https://vite.weapp.dev/guide/upload.html#batch)、[CI 示例](https://vite.weapp.dev/guide/upload.html#ci)、[排障](https://vite.weapp.dev/guide/upload.html#troubleshooting)
 
-旧微信 IDE 参数应迁移为 `wv ide upload --project <IDE项目根> -v 1.2.3 -d "说明"` / `wv ide preview --project <IDE项目根>`。这些显式 IDE 命令依赖登录，不额外构建；新命令不会隐式回退到它们。
+## 旧上传兼容与迁移
+
+原有微信 IDE 上传的长、短参数保持不变，无需立即改写脚本：
+
+```bash
+wv upload --project ./dist --version 1.2.3 --desc "release"
+wv upload -p ./dist -v 1.2.3 -d "release"
+wv upload --project=./dist --version=1.2.3 --desc="release"
+```
+
+旧入口保留版本、说明和项目定位的原始语义。上述 `./dist` 仅是 IDE 工程路径示例，应替换为包含 `project.config.json` 的实际工程根；省略 `--project/-p` 或 `--appid` 时仍保持透传，不会自动补 `dist`，由官方 CLI 处理。顶层旧语法每次调用只警告一次，提示未来将移除；稳定的 `wv ide upload -p ./dist -v 1.2.3 -d "release"` 不弃用、不警告。两者沿用 IDE 登录和已有项目，不额外运行 weapp-vite 构建。
+
+普通 SDK 上传直接执行 `wv upload -p weapp`，无需 `--project`：框架自动依据项目配置与本轮实际写出目录定位产物。多平台默认代码目录是 `dist/<平台>/dist/`，也支持自定义输出；不是固定上传 `./dist`。
+
+SDK 迁移不是等价换名：回到包含 `package.json`、Vite 配置和源码的项目根，安装 `miniprogram-ci` 并配置 AppID、上传私钥和 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。不要把旧 `--project` 的构建产物目录当作 SDK `[root]`；SDK 需要新凭据，不复用 IDE 登录。
+
+- 旧标记为 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 标记为长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`。混用在 IDE、编译或版本修改前报错；SDK 标记的 `--no-*` 形式也不能混入旧调用。dry-run、自动升版与 Git 说明不适用于 IDE。
+- `-p` 仅在有旧标记时表示 IDE 项目目录，否则表示原生平台；不根据路径存在与否或值是否像平台名猜测。`--desc` 共用，`-d` 仅在旧调用中是说明，原生命令中仍是 debug。
+- 参数支持分开和 `=` 形式；必填值只是数据，仅在选项位置遇到 `--` 后停止扫描。
+- `wv upload --help` 查看 SDK 帮助；`wv help upload` 保留旧 IDE 帮助并警告未来弃用；`wv ide help upload` 保持显式 IDE 帮助、不警告。工具自身版本查询用 `wv --version`。
+- 兼容只覆盖顶层旧上传，不包含顶层预览。`wv preview` 仍走 SDK；IDE 预览继续用 `wv ide preview --project ./dist`。

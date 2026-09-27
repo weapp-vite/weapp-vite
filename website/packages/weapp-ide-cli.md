@@ -19,7 +19,18 @@ keywords:
 - 提供可持久化配置（`~/.weapp-ide-cli/config.json`）
 - 默认中文提示，支持切换英文
 
-在 `weapp-vite` 项目里，你通常不必单独记忆两套命令。`weapp-vite` 会在未命中自身命令时自动透传到 `weapp-ide-cli`，所以 `preview`、`upload`、`automator` 等能力也可以直接从 `weapp-vite` 入口调用。
+在 `weapp-vite` 项目里，你通常不必单独记忆两套命令。`weapp-vite` 会将未命中原生命令且在 IDE catalog 中的命令（如 `automator`）透传到 `weapp-ide-cli`。顶层 `wv upload/preview` 默认是六端 SDK 构建入口；稳定的 IDE 入口是 `wv ide upload/preview`，不弃用。兼容例外是带明确旧参数的顶层上传，以下命令仍按原始参数执行，不额外触发 weapp-vite 构建，但每次会警告一次未来弃用：
+
+```bash
+wv upload --project ./dist --version 1.2.3 --desc "release"
+wv upload -p ./dist -v 1.2.3 -d "release"
+```
+
+要保留 IDE 行为，只需增加 `ide`，例如 `wv ide upload -p ./dist -v 1.2.3 -d "release"`。要迁移 SDK，则从源码项目根安装 `miniprogram-ci`，配置 AppID、上传私钥和 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`；这不是等价替换，不复用 IDE 登录，也不能把旧 `--project` 产物目录直接当作 SDK `[root]`。
+
+`-p` 仅在存在 `--version/-v`、`--project`、`--appid`、`--ext-appid` 或 `--info-output/-i` 等明确旧标记时表示 IDE 项目目录，否则是原生平台，不按路径猜测。旧标记不能与 SDK 的长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`（包括其 `--no-*` 形式）混用，否则在 IDE、编译或升版副作用前报错；SDK dry-run 与自动版本不适用于 IDE。`--desc` 共用，`-d` 仅在旧调用中是说明，原生命令中仍为 debug；选项值不是标记，支持分开或 `=` 写法，`--` 后停止分流扫描。
+
+`wv upload --help` 是 SDK 帮助，`wv help upload` 保留旧 IDE 帮助并提示未来弃用，`wv ide help upload` 保持显式 IDE 帮助、不警告。顶层 `wv preview` 不保留旧 IDE 分流，继续使用 `wv ide preview --project ./dist` 可保留 IDE 预览行为。完整规则见 [CLI 参考](/guide/cli#legacy-upload)。
 
 如果你的目标是把 DevTools 里的小程序日志持续桥接到终端，当前更推荐直接使用 `wv ide logs`。`weapp-ide-cli` 负责底层连接与日志订阅，`weapp-vite` 则补充了 AI 终端自动检测、默认策略与常驻命令封装。
 

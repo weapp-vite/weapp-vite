@@ -32,7 +32,7 @@ export default defineConfig({
 })
 ```
 
-无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；默认不升版、不读取 Git、不运行 npm。需要固定覆盖时设置 `weapp.upload`，一次性覆盖可用下文 CLI；本地自动升版和提交标题使用内置 `--bump` / `--git-desc`，不写入 Vite 配置。
 
 `weapp.upload` 不是自动上传开关。普通 `wv build`、`wv dev` 和 HMR 都不会上传；配置文件中的 JavaScript 仍会正常求值，不要在配置求值阶段调用上传接口。Token 也不能写进 `weapp.upload`。
 
@@ -147,12 +147,14 @@ pnpm exec wv build --upload -p xhs --uv 1.2.4 --desc "修复首页展示"
 pnpm exec wv upload -p xhs --uv 1.2.4 --desc "修复首页展示"
 ```
 
-以上两种方式二选一，避免重复上传。参数优先级是：
+需要本地升版并使用最新 Git 提交标题时，改用 `pnpm exec wv upload -p xhs --bump patch --git-desc`；可先加 `--dry-run`，不修改版本或锁文件。`--bump` 支持 `patch` / `minor` / `major`，与 `--uv` 冲突；`--git-desc` 与 `--desc` 冲突。生成值覆盖配置默认值，批量只准备一次；真实升版后失败不回滚，重试去掉 `--bump` 并复用原版本。应用根目录、npm/Git 前提及演练中的源版本差异见[本地自动版本](./environments.md#local-version)。
 
-- 版本：`--uv` > `weapp.upload.version` > `package.json.version`。
-- 说明：`--desc` > `weapp.upload.desc` > 根据包名与最终版本生成的 `name@version`；空白说明会使用生成值。
+`build --upload` 与独立 `upload` 两种入口二选一，避免重复上传。参数优先级是：
 
-小红书适配器要求最终版本与说明非空，不在本地强制三段数字格式；建议采用官方 README 示例中的 `1.2.3` 形式，平台最终规则仍由官方服务校验。`--version` / `-v` 是查询 CLI 版本，**不是上传版本参数**。在 `build` 上使用 `--uv`、`--desc`、`--dry-run` 必须同时传 `--upload`，不能与 `--watch` 组合。更多选项见[公共命令说明](../upload.md#commands)。
+- 版本：CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`。
+- 说明：CLI `--desc` 或 `--git-desc` 生成值 > `weapp.upload.desc` > 根据包名与最终版本生成的 `name@version`；空白说明会使用生成值。
+
+小红书适配器要求最终版本与说明非空，不在本地强制三段数字格式；建议采用官方 README 示例中的 `1.2.3` 形式，平台最终规则仍由官方服务校验。SDK 上传版本用 `--uv`；顶层 `upload` 的 `--version/-v` 是旧微信 IDE 标记，不要混入小红书 SDK 命令；查询工具自身版本用 `wv --version`。在 `build` 上使用 `--uv`、`--desc`、`--bump`、`--git-desc`、`--dry-run` 必须同时传 `--upload`，不能与 `--watch` 组合。更多选项见[公共命令说明](../upload.md#commands)。
 
 ## 5. 独立生成预览链接 {#preview}
 
@@ -160,7 +162,7 @@ pnpm exec wv upload -p xhs --uv 1.2.4 --desc "修复首页展示"
 pnpm exec wv preview -p xhs
 ```
 
-命令先构建，再用同一组 AppID 和 Token 调用官方 `preview`，不调用开发版本上传接口。`preview` 不消费 `weapp.upload` 的版本或说明默认值，也**不接收 `--uv`**。
+命令先构建，再用同一组 AppID 和 Token 调用官方 `preview`，不调用开发版本上传接口。`preview` 不消费 `weapp.upload` 的版本或说明默认值，也**不接收 `--uv`、`--bump` 或 `--git-desc`**。
 
 成功结果是 **预览链接（preview link）**，CLI 以 `[preview:xhs] 预览链接：…` 输出。虽然官方返回字段叫 `qrcodeUrl`，它表示二维码解码后的预览入口，**不是二维码图片 URL**。此入口不承诺生成本地 PNG，也不会自动打开浏览器或修改剪贴板；不要把这个值直接当成 `<img src>`。
 

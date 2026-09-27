@@ -10,6 +10,7 @@ import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, resolveRuntimeTargets } from '../runtime'
 import { resolveUploadPlatforms } from '../upload'
+import { prepareAutoUploadMetadata } from '../upload/autoMetadata'
 import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
 import { readUploadMetadata } from '../upload/options'
 import { scheduleCompletedProductionBuildExit } from './build'
@@ -43,6 +44,7 @@ export async function runUploadCommand(root: string | undefined, options: Upload
   const platforms = resolveUploadPlatforms(options.platform ?? options.p)
   setCommandNodeEnv('production')
   const cwd = path.resolve(root ?? process.cwd())
+  options = await prepareAutoUploadMetadata(cwd, options, action)
   for (const platform of platforms) {
     const target = await buildUploadTarget(cwd, platform, options, action)
     await executeUploadTarget(target, options, action)
@@ -56,7 +58,12 @@ export function registerUploadCommand(cli: CAC) {
     .option('--project-config <path>', '[string] project config path')
     .option('--uv <version>', '[string] upload version (default: weapp.upload.version or package.json version)')
     .option('--desc <text>', '[string] upload description (default: weapp.upload.desc or project name and version)')
+    .option('--bump <release>', '[string] increment local package version once (patch | minor | major; dry-run does not write)')
+    .option('--git-desc', '[boolean] use the latest Git commit subject as upload description')
     .option('--dry-run', '[boolean] build without validating upload credentials or uploading')
+    .example('wv upload -p weapp')
+    .example('wv upload -p xhs,tt --bump patch --git-desc --dry-run')
+    .example('wv upload --project ./dist --version 1.2.3 --desc "release"  (deprecated IDE syntax; use wv ide upload to retain IDE behavior)')
     .action(async (root: string | undefined, options: UploadCLIOptions) => {
       await runUploadCommand(root, { ...options, ...readUploadMetadata(cli) })
       scheduleCompletedProductionBuildExit({}, undefined)

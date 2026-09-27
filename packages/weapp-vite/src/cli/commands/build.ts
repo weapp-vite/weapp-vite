@@ -19,6 +19,7 @@ import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+import { prepareAutoUploadMetadata } from '../upload/autoMetadata'
 import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
 import { resolveBuildUploadOptions } from '../upload/options'
 
@@ -128,6 +129,8 @@ export function registerBuildCommand(cli: CAC) {
     .option('--upload', '[boolean] upload the mini program after this build succeeds')
     .option('--uv <version>', '[string] upload version override (requires --upload)')
     .option('--desc <text>', '[string] upload description override (requires --upload)')
+    .option('--bump <release>', '[string] increment local package version (patch | minor | major; requires --upload)')
+    .option('--git-desc', '[boolean] use the latest Git commit subject (requires --upload)')
     .option('--dry-run', '[boolean] validate upload output without credentials or SDK calls (requires --upload)')
     .action(async (root: string, options: BuildUploadCLIOptions) => {
       let analyzeHandle: AnalyzeDashboardHandle | undefined
@@ -137,13 +140,16 @@ export function registerBuildCommand(cli: CAC) {
       try {
         options = { ...options }
         filterDuplicateOptions(options)
-        const uploadOptions = resolveBuildUploadOptions(cli, options)
+        let uploadOptions = resolveBuildUploadOptions(cli, options)
         setCommandNodeEnv('production')
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
         targets = resolveRuntimeTargets(options)
         if (uploadOptions && !getBackendForCapability(targets, 'miniprogram', 'build')) {
           throw new Error('--upload 仅支持包含小程序目标的构建，不能用于纯 Web 构建。')
+        }
+        if (uploadOptions) {
+          uploadOptions = await prepareAutoUploadMetadata(cwd, uploadOptions, 'upload')
         }
         const inlineConfig = createInlineConfig(targets, {
           scope: options.scope,

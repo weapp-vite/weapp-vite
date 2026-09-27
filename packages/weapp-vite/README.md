@@ -31,7 +31,7 @@
 - 🌐 **实验性 Web Runtime**：同一份原生 WXML/WXSS/TS 或 wevu Vue SFC 源码可通过 `-p web` 启动和构建浏览器版本
 - 🎨 **内置 Tailwind CSS**：通过 `weapp.tailwindcss` 配置 `weapp-tailwindcss` 的 core 与 generator 集成；Tailwind CSS v4 项目引入 `tailwindcss` 后可自动启用
 - 🧩 **实验性 uni-app 组件库兼容**：通过显式依赖白名单与 `WotUiResolver()` 在微信小程序和 Web 中使用 Wot UI Vue SFC
-- 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
+- 🧰 **IDE 命令增强**：通过 `wv ide <command>` 调用 `weapp-ide-cli`；保留旧顶层上传参数并提示未来弃用，SDK 与 IDE 边界见下文
 - 🧪 **真实产物单测**：`weapp-vite/test` 提供不启动 CLI 的程序化测试构建入口，可配合 `@mpcore/test` 测试页面和组件
 - 🌍 **内置 i18n**：构建期编译 locale JSON，通过 WXS 翻译模板，并在逻辑层安全切换已构建语言
 
@@ -332,9 +332,14 @@ wv build --upload -p weapp
 # 独立 upload 命令仍支持多个小程序目标；all 在此表示六端
 wv upload --platform jd,swan
 wv upload --platform all --dry-run
+
+# 内置本地自动版本演练，不修改版本或锁文件
+wv upload -p xhs,tt --mode test --bump patch --git-desc --dry-run
 ```
 
-通常无需配置 `weapp.upload`：默认读取业务 `package.json.version`，说明自动生成 `项目名@版本`；不会自动递增版本。仅需覆盖时再用 `weapp.upload` 或 CLI `--uv` / `--desc`。`.env.test` / `.env.production`、不同 AppID、本地自动升版与 CI 方案见[上传环境与自动版本](https://vite.weapp.dev/guide/upload/environments.html)。普通 `build`、`dev/HMR` 不上传，`preview` 不使用上传默认参数；配置文件仍正常求值。`build` 的上传专属参数必须与 `--upload` 一起使用，不支持 `--watch` 或 Web-only。
+通常无需配置 `weapp.upload`：默认读取业务 `package.json.version`，说明自动生成 `项目名@版本`；默认不升版、不读取 Git、不运行 npm。需要覆盖时用 `weapp.upload` 或 CLI `--uv` / `--desc`；本地自动版本显式使用 CLI `--bump patch|minor|major` / `--git-desc`，分别与 `--uv` / `--desc` 冲突，不写入 Vite 配置。`.env.test` / `.env.production`、不同 AppID、本地自动版本与 CI 方案见[上传环境与自动版本](https://vite.weapp.dev/guide/upload/environments.html)。普通 `build`、`dev/HMR` 不上传，`preview` 不使用上传默认参数；配置文件仍正常求值。`build` 的上传专属参数必须与 `--upload` 一起使用，不支持 `--watch` 或 Web-only。
+
+自动元数据在首次配置求值、编译前准备一次，批量共用；升版仅处理命令根目录的应用清单，不向父目录查找。真实升版需要本机 npm，只有 Git 说明要求已有提交的 Git 仓库；不执行生命周期钩子、不 commit/tag/push。dry-run 不运行 npm、不修改版本或锁文件，直接导入 `package.json` 的构建代码仍读取原始版本。实际升版后的构建或上传失败不回滚，重试去掉 `--bump` 并复用原版本，必要时用 `--uv` / `--desc` 固定上一批元数据。
 
 `build -p all --upload` 保持“小程序 + Web”语义，等两个后端都构建成功后只上传小程序；独立 `wv upload -p all` 才是六端逐一构建上传，首次失败停止。`--dry-run` 只构建并校验产物，不校验凭据、不调用 SDK。
 
@@ -350,13 +355,13 @@ wv preview -p xhs,jd,swan --mode production
 wv preview -p all --dry-run
 ```
 
-`preview` 复用上述六端构建与凭据，调用官方预览接口，不上传开发版本、不提审、不正式发布。微信返回 `.weapp-vite/preview/` 下本次生成的二维码图片；支付宝、京东返回二维码图片 URL；抖音、小红书、百度返回官方预览链接。默认 mode 为 `production`，不要求上传版本。百度预览也需要 `SWAN_MIN_VERSION`。
+`preview` 复用上述六端构建与凭据，调用官方预览接口，不上传开发版本、不提审、不正式发布。微信返回 `.weapp-vite/preview/` 下本次生成的二维码图片；支付宝、京东返回二维码图片 URL；抖音、小红书、百度返回官方预览链接。默认 mode 为 `production`，不要求上传版本，也不接受 `--uv`、`--bump` 或 `--git-desc`。百度预览也需要 `SWAN_MIN_VERSION`。
 
 `--dry-run` 只构建和校验产物，不调用 SDK、不生成预览结果。真实扫码权限与有效期依平台规则，详情见 [CLI 预览文档](https://vite.weapp.dev/guide/cli.html)。
 
 ## CLI 中调用 weapp-ide-cli
 
-`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/upload/preview/close/open/init/generate/analyze/npm/prepare/mcp` 等原生命令外，其它 IDE 相关命令都可以直接调用。旧微信上传、预览使用显式 `ide upload`、`ide preview`：
+`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力：原生命令通常优先，其他命令仅在 IDE catalog 命中时透传。`wv upload` 默认走六端 SDK，但保留带明确旧参数的顶层微信 IDE 上传；`wv preview` 仍是 SDK 预览，不属于旧语法兼容范围。稳定的显式 `ide upload`、`ide preview` 不弃用：
 
 ```sh
 weapp-vite ide preview --project ./dist/build/mp-weixin
@@ -381,6 +386,21 @@ weapp-vite ide logs --open
 # 等价写法
 wv ide preview --project ./dist/build/mp-weixin
 ```
+
+原有顶层上传的长、短参数仍可原样执行，不额外触发 weapp-vite 构建：
+
+```sh
+wv upload --project ./dist --version 1.2.3 --desc "release"
+wv upload -p ./dist -v 1.2.3 -d "release"
+```
+
+新 SDK 上传使用 `wv upload -p weapp` 即可，无需 `--project`，框架按项目配置与本轮实际输出自动定位。上面 `./dist` 只是旧 IDE 工程目录示例，应包含 `project.config.json`；旧入口省略定位参数时保持透传，不会默认补 `dist`。
+
+每次旧顶层调用只警告一次未来移除，不要求立即改写脚本；若只想保留 IDE 行为，改为 `wv ide upload -p ./dist -v 1.2.3 -d "release"`，该显式入口不警告。若迁移到 SDK，先在**源码项目根**安装 `miniprogram-ci`、配置 AppID、代码上传私钥与 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。SDK 会重新构建、使用新凭据，不复用 IDE 登录；不要把旧 `--project` 的产物目录直接作为 `[root]`。
+
+`-p` 有 `--version/-v`、`--project`、`--appid`、`--ext-appid` 或 `--info-output/-i` 等旧标记时才表示 IDE 项目目录，否则表示平台，不猜测路径。旧标记与 SDK 的 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`（含其 `--no-*` 形式）混用，在 IDE、编译或版本修改前报错；SDK dry-run/自动版本不适用于 IDE。`--desc` 共用，`-d` 只在旧调用中是说明，原生命令中仍是 debug。
+
+`wv upload --help` 查看 SDK 帮助；`wv help upload` 保留旧 IDE 帮助并提示未来弃用；`wv ide help upload` 不弃用、不警告。等号写法、选项值与 `--` 边界等完整规则见[旧上传兼容与迁移](https://vite.weapp.dev/guide/cli.html#legacy-upload)。
 
 ## CLI 启动 MCP
 

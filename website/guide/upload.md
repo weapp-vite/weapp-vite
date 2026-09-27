@@ -16,6 +16,8 @@ keywords:
 
 配置 `.env.test` / `.env.production`、切换 AppID，或不想每次手改版本和说明，直接看[上传环境与自动版本](./upload/environments.md)。
 
+下文的构建、凭据、dry-run 和自动版本规则仅针对 SDK 入口。原有顶层微信 IDE 上传仍保留原参数行为，只提示未来弃用；见[旧上传兼容与迁移](#legacy-upload)。这项兼容不包含顶层 `preview`。
+
 ## 选择平台
 
 | 目标   | CLI 平台值 | 安装到业务项目的官方工具 | 分步指南                                            |
@@ -47,10 +49,10 @@ export default defineConfig({
 })
 ```
 
-默认读取业务 `package.json.version`，说明自动生成为 `项目名@版本`，无需每次修改配置；版本不会自动递增。[本地脚本或 CI](./upload/environments.md#local-version)可以自动升版并生成提交说明。`weapp.upload` 仅用于可选的版本/说明覆盖，不接受 AppID 或凭据。
+默认读取业务 `package.json.version`，说明自动生成为 `项目名@版本`，无需每次修改配置；默认不升版、不读取 Git、不运行 npm。需要本地升版与最新提交标题时，显式使用内置 [`--bump` / `--git-desc`](./upload/environments.md#local-version)；[CI](./upload/environments.md#ci) 仍可直接传版本和说明，无需修改版本文件。`weapp.upload` 仅用于可选的版本/说明覆盖，不接受 AppID、凭据或自动升版选项。
 
-- 版本：`--uv` > `weapp.upload.version` > `package.json.version`。
-- 说明：`--desc` > `weapp.upload.desc` > 根据项目名称与最终版本生成的说明。
+- 版本：CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`；`--uv` 与 `--bump` 不能同时传。
+- 说明：CLI `--desc` 或 `--git-desc` 生成值 > `weapp.upload.desc` > 根据项目名称与最终版本生成的说明；`--desc` 与 `--git-desc` 不能同时传。
 - 参数保持字符串语义后去除首尾空白；显式空版本会报错，空说明使用默认说明。字符串可以保留前导零，但还要满足目标平台的版本规则。
 - 普通构建、开发重建不启用上传；`preview` 不使用 `weapp.upload` 默认参数。
 - 配置文件仍会正常加载与合并，上传开关不保证 JavaScript getter 延迟求值。不要在配置文件求值时执行上传副作用。
@@ -83,7 +85,7 @@ export default defineConfig({
 
 ## 3. 选择正确的命令 {#commands}
 
-以下命令都从源码项目根目录执行，不是在旧 `dist` 中操作：
+以下命令都从源码项目根目录执行，不是在旧 `dist` 中操作。**SDK 上传无需 `--project`**：CLI 会根据项目配置和本轮实际写出目录自动定位产物，而不是固定读取 `./dist`。多平台默认代码目录是 `dist/<平台>/dist/`，自定义输出按 `build.outDir` 等构建设置处理。
 
 ```bash
 # 只构建，不上传；即使已经配置 weapp.upload 也一样
@@ -98,7 +100,10 @@ pnpm exec wv build --upload -p xhs
 # 独立上传入口也会先构建，不需要先执行一次 build
 pnpm exec wv upload -p xhs
 
-# 单独构建预览，不上传开发版本，也不接受 --uv
+# 显式本地升版并使用最新 Git 提交标题；先演练，不改版本文件
+pnpm exec wv upload -p xhs --bump patch --git-desc --dry-run
+
+# 单独构建预览，不上传开发版本，不接受 --uv / --bump / --git-desc
 pnpm exec wv preview -p xhs --desc "验收首页"
 ```
 
@@ -107,12 +112,35 @@ pnpm exec wv preview -p xhs --desc "验收首页"
 | 调整 `--outDir`、`--minify` 等构建参数后上传  | `build --upload`，保留 `build` 的选项，不重复构建                                                                           |
 | 只验证构建和目录关系                          | 上传或预览命令加 `--dry-run`；上传仍要求非空版本，但不验证凭据、平台专属版本规则、IP 白名单、网络或扫码权限                 |
 | 开发时 watch/HMR                              | 不上传；`build --watch --upload` 会报错                                                                                     |
-| 普通 build 传 `--uv` / `--desc` / `--dry-run` | 必须同时传 `--upload`，否则报错                                                                                             |
+| 普通 build 传上传选项 | `--uv` / `--desc` / `--bump` / `--git-desc` / `--dry-run` 必须同时传 `--upload`，否则报错 |
 | Web-only                                      | `build -p web --upload` 不支持                                                                                              |
 | 上传已经存在的旧产物、不再构建                | 新入口不提供此模式，避免误传旧版本                                                                                          |
-| 沿用已登录微信 IDE 的旧脚本                   | 显式使用 `wv ide upload --project <IDE项目根> -v 1.2.3 -d "说明"` 或 `wv ide preview --project <IDE项目根>`；它们不额外构建 |
+| 沿用已登录微信 IDE 的旧脚本                   | 旧 `wv upload --project <IDE项目根> -v 1.2.3 -d "说明"` 仍可用并提示未来弃用；稳定入口为 `wv ide upload ...`，预览用 `wv ide preview --project <IDE项目根>`；均不额外触发 weapp-vite 构建 |
 
 成功时 CLI 明确区分“上传完成”和“预览已生成”，前者仍未提审、未正式发布。微信预览产生本地二维码图片；支付宝、京东返回二维码图片 URL；抖音、小红书、百度返回扫码目标或预览链接。工具不会自动打开浏览器或修改剪贴板。
+
+`--bump patch|minor|major` 只处理命令 `[root]` 下的应用 `package.json`，不向父目录查找；真实升版需要本机 npm。`--git-desc` 单独要求 Git 仓库已有提交。二者在首次编译器初始化、配置求值前各执行一次，批量共用结果。真实升版使用 npm 标准版本更新，不执行生命周期钩子、不 commit/tag/push；后续构建或上传失败不回滚，重试时去掉 `--bump` 并复用原版本。`--dry-run` 不运行 npm、不修改版本或锁文件，导入 `package.json` 的构建代码仍读取原始版本。完整前提与重试示例见[本地自动版本](./upload/environments.md#local-version)。
+
+### 旧微信 IDE 上传兼容与迁移 {#legacy-upload}
+
+旧上传脚本不用立即改写，以下长、短参数均保持原样：
+
+```bash
+wv upload --project ./dist --version 1.2.3 --desc "release"
+wv upload -p ./dist -v 1.2.3 -d "release"
+```
+
+这里的 `./dist` 仅假设原脚本的 IDE 工程根在那里，**不是默认值**；应使用包含 `project.config.json` 的实际 IDE 工程目录，而非把代码输出目录一概当作工程根。旧入口保持原样透传，省略定位参数时不会替你补 `./dist`，其余行为交给官方 IDE CLI；也可沿用原脚本的 `--appid` 定位。新的 `wv upload -p weapp` 则无需手填这条路径。
+
+这类顶层调用每次警告一次，说明未来将移除；显式 `wv ide upload -p ./dist -v 1.2.3 -d "release"` 不弃用，也不发出该警告。二者继续使用已登录的微信 IDE 与已有 IDE 项目，不额外运行 weapp-vite 构建。
+
+需要改用 SDK 时，先按[微信指南](./upload/weapp.md)在**源码项目根目录**安装 `miniprogram-ci`，配置 AppID、代码上传私钥和 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。这是重新构建并使用新凭据的流程，不是 IDE 命令的等价替换；不要把旧 `--project` 的 `dist` 目录直接复制成新命令的 `[root]`。
+
+顶层分流由明确参数决定：旧标记为 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 标记为长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`。两组混用在 IDE、编译或升版副作用前报错，SDK 标记的 `--no-*` 形式也不能绕过检查。`--dry-run`、`--bump`、`--git-desc` 不适用于 IDE。
+
+`-p` 本身不决定后端：有旧标记时是 IDE 项目目录，否则是平台；不按值是否像平台名或文件是否存在猜测。`--desc` 共用，`-d` 只在旧调用中保留说明含义，原生命令仍将其作为 debug。参数支持分开和 `=` 形式，必填值不当作标记，仅在选项位置遇到 `--` 后停止扫描。完整规则见 [CLI 参考](./cli.md#legacy-upload)。
+
+`wv upload --help` 是 SDK 帮助；`wv help upload` 保留旧 IDE 帮助并警告未来弃用；`wv ide help upload` 是不弃用的显式帮助。顶层 `wv preview` 仍只走 SDK；沿用 IDE 预览须使用 `wv ide preview --project ./dist`。
 
 ## 4. 一份配置与批量上传 {#batch}
 
@@ -247,6 +275,9 @@ pnpm exec wv build --upload -p xhs
 # 按给定顺序分别构建、校验、上传；未选平台不会执行
 pnpm exec wv upload -p xhs,tt --uv 1.2.3 --desc "同步发布开发版本"
 
+# 本地自动版本：批量只升版一次，所有目标使用同一 Git 提交标题
+pnpm exec wv upload -p xhs,tt --mode test --bump patch --git-desc
+
 # 仅检查六个平台的配置和构建输出
 pnpm exec wv upload -p all --dry-run
 
@@ -320,7 +351,7 @@ Token 型平台，以小红书为例：
 | 版本或说明被拒绝                                 | 推荐 `1.2.3`；支付宝禁前导零且说明少于 200 字符，抖音三段数字，百度二至四段数字；平台还可能拒绝重复版本 |
 | 代码目录不一致 / 缺少 `app.json`                 | SDK 实际根目录必须等于本次输出；检查项目标准文件名、代码根字段、`--outDir` 和多平台布局，不要指向旧包   |
 | 开启多平台后提示必须指定平台                     | 显式传 `-p xhs` 等；`targets` 不会自动选择当前平台                                                      |
-| `--version 1.2.3` 没有上传                       | `--version` / `-v` 是 CLI 版本查询；新上传入口使用 `--uv`                                               |
+| 版本参数混用或进入了 IDE 上传                   | SDK 版本使用 `--uv`；顶层 `upload` 的 `--version/-v` 是旧 IDE 标记，不能混入 SDK 选项；工具版本查询使用 `wv --version` |
 | 预览没有二维码文件                               | 只有微信写本地图片；其他目标返回二维码 URL 或扫码链接；dry-run 不生成任何预览结果                       |
 | SDK 异常退出或未收到完成确认                     | 本次视为失败；检查脱敏错误、平台权限和网络，不要仅凭子进程 exit 0 判断上传成功                          |
 | dry-run 成功，真实上传失败                       | dry-run 未校验凭据及官方平台规则，不代表授权、白名单、网络或平台受理成功                                |

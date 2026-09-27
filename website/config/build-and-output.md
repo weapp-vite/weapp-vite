@@ -48,7 +48,7 @@ keywords:
 - **类型**：`{ version?: string; desc?: string }`
 - **默认值**：未配置
 
-为显式执行的 `wv build --upload` 或独立 `wv upload` 提供默认版本与说明。CLI 的 `--uv` / `--desc` 优先；版本未配置时读取 `package.json.version`，说明未配置时使用项目名称与最终版本。配置只支持 `version`、`desc`，不支持凭据字段。
+为显式执行的 `wv build --upload` 或独立 `wv upload` 提供默认版本与说明。CLI 的 `--uv` / `--desc` 或 `--bump` / `--git-desc` 生成值优先；版本未配置时读取 `package.json.version`，说明未配置时使用项目名称与最终版本。配置只支持 `version`、`desc`，不支持凭据字段，也不支持 `bump`、`gitDesc`。
 
 这不是自动上传开关：普通 `build`、`dev/HMR` 不使用这组上传默认参数，也不上传；`preview` 不使用该配置。配置文件本身仍会正常加载与合并，不保证其中的 JavaScript getter 延迟求值。`build --upload` 复用本次构建，等待所有选中的构建后端成功并校验小程序产物后才调用官方工具；独立 `upload` 自行构建后上传。
 
@@ -57,7 +57,9 @@ wv build --upload --dry-run
 wv build --upload -p weapp --uv 1.2.3 --desc "更新首页"
 ```
 
-`build` 的 `--uv`、`--desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、`-p web --upload` 会报错。`build -p all --upload` 仍是“小程序 + Web”，两者构建都成功后只上传小程序；独立 `wv upload -p all` 才表示六端逐一构建上传。`--dry-run` 不校验凭据、不调用 SDK。
+本地自动版本仅由 CLI 显式启用：`wv upload -p xhs,tt --mode test --bump patch --git-desc`。`--bump` 接受 `patch` / `minor` / `major`，与 `--uv` 冲突；`--git-desc` 使用最新 Git 提交标题，与 `--desc` 冲突。默认不升版、不读取 Git、不运行 npm；真实升版需要 npm，只有 `--git-desc` 要求已有提交的 Git 仓库。命令根目录的应用版本在首次配置求值前更新一次，批量共用；不会向父目录查找或操作外层 workspace 根包，也不会执行生命周期钩子、commit/tag/push。后续失败不回滚，重试同一版本应移除 `--bump`。dry-run 不改版本或锁文件，导入 `package.json` 的代码仍读取原始版本。详见[本地自动版本](../guide/upload/environments.md#local-version)。
+
+`build` 的 `--uv`、`--desc`、`--bump`、`--git-desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、`-p web --upload` 会报错。`preview` 不接受升版或 Git 说明选项。`build -p all --upload` 仍是“小程序 + Web”，两者构建都成功后只上传小程序；独立 `wv upload -p all` 才表示六端逐一构建上传。`--dry-run` 不校验凭据、不调用 SDK。
 
 AppID 来自目标项目配置，凭据只通过环境变量提供。各平台完整配置、上传与预览、环境文件、密钥获取、批量操作及 CI 见[小程序上传与预览指南](../guide/upload.md)；完整触发矩阵见[上传配置与触发时机](../guide/cli.md#上传配置与触发时机)。淘宝目前不在统一上传支持列表内。
 

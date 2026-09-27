@@ -190,3 +190,40 @@ describe('inline project config output ownership', { timeout: 60000 }, () => {
     expect(await readPage('dist/xhs/dist')).not.toContain('current-page')
   })
 })
+
+describe('automatic version visibility in real builds', { timeout: 30000 }, () => {
+  beforeEach(async () => {
+    vi.stubEnv('XHS_UPLOAD_TOKEN', '')
+    await writeFile(path.join(root, 'src/pages/index/index.js'), 'Page({ data: { marker: __FIXTURE_VERSION__ } })')
+    await writeFile(path.join(root, 'vite.config.mjs'), `import { readFileSync } from 'node:fs'
+      const manifest = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+      export default {
+        logLevel: 'silent',
+        define: { __FIXTURE_VERSION__: JSON.stringify(manifest.version) },
+        weapp: {
+          platform: 'xhs',
+          srcRoot: 'src',
+          multiPlatform: { projectConfigs: { xhs: { appid: 'fixture-app' } } }
+        }
+      }`)
+  })
+
+  it('updates the manifest before evaluating build config and retains it after credential failure', async () => {
+    await expect(runBuild('--upload', '--bump', 'patch')).rejects.toThrow('XHS_UPLOAD_TOKEN')
+
+    expect(JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))).toMatchObject({ version: '1.2.4' })
+    expect(await readPage('dist/xhs/dist')).toContain('1.2.4')
+    expect(JSON.parse(await readFile(path.join(root, 'dist/xhs/dist/app.json'), 'utf8'))).toMatchObject({
+      pages: ['pages/index/index'],
+    })
+  })
+
+  it('leaves imported source versions unchanged when only projecting a dry-run upload version', async () => {
+    const originalManifest = await readFile(path.join(root, 'package.json'), 'utf8')
+    await runBuild('--upload', '--bump', 'patch', '--dry-run')
+
+    expect(await readFile(path.join(root, 'package.json'), 'utf8')).toBe(originalManifest)
+    expect(await readPage('dist/xhs/dist')).toContain('1.2.3')
+    expect(await readPage('dist/xhs/dist')).not.toContain('1.2.4')
+  })
+})

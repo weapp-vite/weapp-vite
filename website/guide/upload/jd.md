@@ -42,7 +42,7 @@ export default defineConfig({
 })
 ```
 
-无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；版本不会自动递增。仅需固定覆盖时才设置 `weapp.upload`，临时覆盖可用下文 CLI 参数。
+无需配置 `weapp.upload`：上传版本默认读取业务 `package.json.version`，说明按包名与最终版本自动生成 `name@version`；默认不升版、不读取 Git、不运行 npm。需要固定覆盖时设置 `weapp.upload`，一次性覆盖可用下文 CLI；本地自动升版和提交标题使用内置 `--bump` / `--git-desc`，不写入 Vite 配置。
 
 `weapp.upload` 只给 `build --upload` / `upload` 提供默认参数；普通构建、开发和 HMR 不会自动上传。配置文件代码仍会正常求值，不要在配置加载时执行上传等外部副作用。
 
@@ -113,7 +113,9 @@ pnpm exec wv build --upload -p jd
 pnpm exec wv upload -p jd --uv 1.2.4 --desc "修复首页展示"
 ```
 
-这两条真实上传方式二选一。`upload` 不复用旧产物，无需先单独执行 `build`。上传版本取值顺序是 `--uv` → `weapp.upload.version` → `package.json.version`；不要用查询 CLI 版本的 `--version` / `-v`。
+这两条真实上传方式二选一。`upload` 不复用旧产物，无需先单独执行 `build`。上传版本优先级为 CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`。SDK 上传使用 `--uv`；顶层 `upload` 的 `--version/-v` 是旧微信 IDE 标记，不要混入京东 SDK 命令。查询工具自身版本使用 `wv --version`。
+
+需要本地升版并使用最新 Git 提交标题时，改用 `pnpm exec wv upload -p jd --bump patch --git-desc`；可先加 `--dry-run`，不修改版本或锁文件。`--bump` 支持 `patch` / `minor` / `major`，与 `--uv` 冲突；`--git-desc` 与 `--desc` 冲突。生成值覆盖配置默认值，批量只准备一次；真实升版后失败不回滚，重试去掉 `--bump` 并复用原版本。应用根目录、npm/Git 前提及演练中的源版本差异见[本地自动版本](./environments.md#local-version)。
 
 成功时 CLI 报告开发版本上传完成，**不自动提审、不正式发布**。京东适配器不额外限制上传版本为三段数字，仍建议使用 `1.2.3`，官方服务会做最终校验。官方 SDK 可能输出二维码相关信息，但需要统一预览结果时应使用下一节的 `preview`，不要把上传完成日志当成预览链接。
 
@@ -128,7 +130,7 @@ pnpm exec wv preview -p jd
 
 结果是**官方二维码图片 URL**，CLI 以“二维码图片”打印；打开图片后按京东平台要求扫码。它不是本地图片路径或二维码内容字符串，CLI 不自动打开浏览器、不修改剪贴板。官方未返回有效图片地址时会报失败。
 
-`preview` 不使用 `weapp.upload` 的默认值，不要求版本号，也不接受 `--uv`。二维码有效期、扫码者权限及真机可用性由京东决定，构建成功或 dry-run 不能替代目标 IDE/真机验证。
+`preview` 不使用 `weapp.upload` 的默认值，不要求版本号，也不接受 `--uv`、`--bump` 或 `--git-desc`。二维码有效期、扫码者权限及真机可用性由京东决定，构建成功或 dry-run 不能替代目标 IDE/真机验证。
 
 ## 6. 京东上传与预览必须跨进程串行
 
