@@ -1,74 +1,17 @@
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
-import type { DashboardArtifactFiles } from './dashboardDevframe/artifacts'
-import fs from 'node:fs'
-import { createRequire } from 'node:module'
+import type { AnalyzeDashboardDevframeController, DashboardArtifactFiles, DashboardRuntimeEventInput } from '../../dashboard'
 import process from 'node:process'
 import { buildOtpAuthUrl, refreshTempAuthCode } from 'devframe/node/auth'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
 import { createServer } from 'vite'
+import { createAnalyzeDashboardDevframe } from '../../dashboard'
+import { ANALYZE_DASHBOARD_PACKAGE_NAME, resolveDashboardRoot } from '../../dashboard/assets'
 import logger, { colors } from '../../logger'
-import { parseCommentJson } from '../../utils'
-import { createAnalyzeDashboardDevframe } from './dashboardDevframe'
-import { createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
+import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
-const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
-const require = createRequire(import.meta.url)
-
-type DashboardRuntimeEventKind = 'command' | 'build' | 'diagnostic' | 'hmr' | 'system'
-type DashboardRuntimeEventLevel = 'info' | 'success' | 'warning' | 'error'
-
-interface DashboardRuntimeEvent {
-  id: string
-  kind: DashboardRuntimeEventKind
-  level: DashboardRuntimeEventLevel
-  title: string
-  detail: string
-  timestamp: string
-  source: string
-  durationMs?: number
-  tags?: string[]
-  profile?: DashboardRuntimeEventProfile
-}
-
-export interface DashboardRuntimeEventProfile {
-  timestamp?: string
-  totalMs?: number
-  eventId?: string
-  event?: string
-  file?: string
-  relativeFile?: string
-  sourceRootFile?: string
-  buildCoreMs?: number
-  buildStartMs?: number
-  pluginResolveMs?: number
-  transformMs?: number
-  snapshotResolveMs?: number
-  snapshotBuildMs?: number
-  writeMs?: number
-  watchToDirtyMs?: number
-  emitMs?: number
-  sharedChunkResolveMs?: number
-  resolveCount?: number
-  dirtyCount?: number
-  pendingCount?: number
-  emittedCount?: number
-  dirtyReasonSummary?: string[]
-  pendingReasonSummary?: string[]
-}
-
-export interface DashboardRuntimeEventInput {
-  kind: DashboardRuntimeEventKind
-  level: DashboardRuntimeEventLevel
-  title: string
-  detail: string
-  source?: string
-  durationMs?: number
-  tags?: string[]
-  profile?: DashboardRuntimeEventProfile
-}
 
 function createInstallCommand(agent: PackageManagerAgent | undefined) {
   const resolved = resolveCommand(agent ?? 'npm', 'install', [ANALYZE_DASHBOARD_PACKAGE_NAME])
@@ -78,154 +21,7 @@ function createInstallCommand(agent: PackageManagerAgent | undefined) {
   return `${resolved.command} ${resolved.args.join(' ')}`
 }
 
-interface ResolvedDashboardRoot {
-  root: string
-  configFile?: string
-}
-
-interface DashboardPackageManifest {
-  weappViteDashboard?: {
-    devConfigFile?: string
-    devRoot?: string
-    distDir?: string
-  }
-}
-
-function formatEventTimestamp(date = new Date()) {
-  return date.toLocaleTimeString('zh-CN', { hour12: false })
-}
-
-function createDashboardRuntimeEvent(input: DashboardRuntimeEventInput) {
-  return {
-    id: `dashboard:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
-    kind: input.kind,
-    level: input.level,
-    title: input.title,
-    detail: input.detail,
-    timestamp: formatEventTimestamp(),
-    source: input.source ?? 'weapp-vite',
-    durationMs: input.durationMs,
-    tags: input.tags,
-    profile: input.profile,
-  } satisfies DashboardRuntimeEvent
-}
-
-function readDashboardManifest(packageJsonPath: string): DashboardPackageManifest | undefined {
-  try {
-    return parseCommentJson(fs.readFileSync(packageJsonPath, 'utf8')) as DashboardPackageManifest
-  }
-  catch {
-    return undefined
-  }
-}
-
-function resolveDashboardDistRoot(packageRoot: string, manifest: DashboardPackageManifest | undefined): ResolvedDashboardRoot | undefined {
-  const distDir = manifest?.weappViteDashboard?.distDir ?? 'dist'
-  const distRoot = path.resolve(packageRoot, distDir)
-  if (!fs.existsSync(distRoot)) {
-    return undefined
-  }
-  return {
-    root: distRoot,
-  }
-}
-
-function resolveDashboardDevRoot(packageRoot: string, manifest: DashboardPackageManifest | undefined): ResolvedDashboardRoot | undefined {
-  const devRoot = manifest?.weappViteDashboard?.devRoot
-  const devConfigFile = manifest?.weappViteDashboard?.devConfigFile
-
-  if (!devRoot || !devConfigFile) {
-    return undefined
-  }
-
-  const root = path.resolve(packageRoot, devRoot)
-  const configFile = path.resolve(root, devConfigFile)
-
-  if (!fs.existsSync(root) || !fs.existsSync(configFile)) {
-    return undefined
-  }
-
-  return {
-    root,
-    configFile,
-  }
-}
-
-function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: PackageManagerAgent, watch?: boolean }) {
-  const resolvePaths = options?.cwd && options.cwd !== process.cwd()
-    ? [options.cwd, process.cwd()]
-    : options?.cwd
-      ? [options.cwd]
-      : undefined
-
-  let dashboardPackageRoot: string | undefined
-  let dashboardManifest: DashboardPackageManifest | undefined
-  try {
-    const dashboardPackageJsonPath = require.resolve(`${ANALYZE_DASHBOARD_PACKAGE_NAME}/package.json`, {
-      paths: resolvePaths,
-    })
-    dashboardPackageRoot = path.dirname(dashboardPackageJsonPath)
-    dashboardManifest = readDashboardManifest(dashboardPackageJsonPath)
-  }
-  catch {
-    dashboardPackageRoot = undefined
-    dashboardManifest = undefined
-  }
-
-  if (dashboardPackageRoot) {
-    const devResolved = resolveDashboardDevRoot(dashboardPackageRoot, dashboardManifest)
-    const distResolved = resolveDashboardDistRoot(dashboardPackageRoot, dashboardManifest)
-    const resolved = options?.watch
-      ? devResolved ?? distResolved
-      : distResolved ?? devResolved
-    if (resolved) {
-      return resolved
-    }
-  }
-
-  logger.warn(`[weapp-vite ui] 未安装可选仪表盘包 ${colors.bold(colors.green(ANALYZE_DASHBOARD_PACKAGE_NAME))}，已自动降级关闭 dashboard 能力。`)
-  logger.info(`如需启用，请执行 ${colors.bold(colors.green(createInstallCommand(options?.packageManagerAgent)))}`)
-  return undefined
-}
-
-async function waitForServerExit(server: ViteDevServer) {
-  let resolved = false
-
-  const cleanup = async () => {
-    if (resolved) {
-      return
-    }
-    resolved = true
-    try {
-      await server.close()
-    }
-    catch (error) {
-      logger.error(error)
-    }
-  }
-
-  const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM']
-
-  await new Promise<void>((resolvePromise) => {
-    const resolveOnce = async () => {
-      await cleanup()
-      signals.forEach((signal) => {
-        process.removeListener(signal, resolveOnce)
-      })
-      resolvePromise()
-    }
-
-    signals.forEach((signal) => {
-      process.once(signal, resolveOnce)
-    })
-
-    server.httpServer?.once('close', resolveOnce)
-  })
-}
-
-export interface AnalyzeDashboardHandle {
-  update: (result: AnalyzeSubpackagesResult, artifacts: DashboardArtifactFiles, previousResult?: AnalyzeSubpackagesResult | null) => Promise<void>
-  emitRuntimeEvents: (events: DashboardRuntimeEventInput[]) => void
+export interface AnalyzeDashboardHandle extends Pick<AnalyzeDashboardDevframeController, 'update' | 'emitRuntimeEvents'> {
   waitForExit: () => Promise<void>
   close: () => Promise<void>
   urls: string[]
@@ -247,132 +43,120 @@ export async function startAnalyzeDashboard(
 ): Promise<AnalyzeDashboardHandle | void> {
   const resolved = resolveDashboardRoot(options)
   if (!resolved) {
+    logger.warn(`[weapp-vite ui] 未安装可选仪表盘包 ${colors.bold(colors.green(ANALYZE_DASHBOARD_PACKAGE_NAME))}，已自动降级关闭 dashboard 能力。`)
+    logger.info(`如需启用，请执行 ${colors.bold(colors.green(createInstallCommand(options.packageManagerAgent)))}`)
     return
   }
   const { root, configFile } = resolved
-
-  const state = { current: result, previous: options.previousResult ?? null, artifacts: options.artifacts }
-  const runtimeEvents = {
-    current: [
-      createDashboardRuntimeEvent({
+  const devframe = createAnalyzeDashboardDevframe({
+    snapshot: { current: result, previous: options.previousResult ?? null, artifacts: options.artifacts },
+    initialEvents: [
+      {
         kind: 'command',
         level: 'success',
-        title: options?.watch ? 'dashboard watch session started' : 'dashboard static session started',
-        detail: options?.watch
+        title: options.watch ? 'dashboard watch session started' : 'dashboard static session started',
+        detail: options.watch
           ? 'weapp-vite UI 已进入实时分析模式，后续 analyze 结果会继续推送到 dashboard。'
           : 'weapp-vite UI 已进入静态分析模式，当前页面展示的是一次性分析结果。',
-        tags: options?.watch ? ['watch', 'analyze'] : ['static', 'analyze'],
-      }),
-      ...(options?.initialEvents ?? []).map(event => createDashboardRuntimeEvent(event)),
+        tags: options.watch ? ['watch', 'analyze'] : ['static', 'analyze'],
+      },
+      ...(options.initialEvents ?? []),
     ],
-  }
-  const devframe = createAnalyzeDashboardDevframe({
-    getAnalyzeSnapshot: () => state,
-    getRuntimeEvents: () => runtimeEvents.current,
     roots: {
-      pluginRoot: options?.pluginRoot,
-      projectRoot: options?.cwd,
-      srcRoot: options?.srcRoot ?? (options?.cwd ? path.resolve(options.cwd, 'src') : undefined),
+      pluginRoot: options.pluginRoot,
+      projectRoot: options.cwd,
+      srcRoot: options.srcRoot ?? (options.cwd ? path.resolve(options.cwd, 'src') : undefined),
     },
   })
-  const plugins = [
-    createAnalyzeDashboardViteBridge(devframe.definition),
-  ]
 
-  const serverOptions = {
-    root,
-    configFile: configFile ?? false,
-    clearScreen: false,
-    appType: 'spa',
-    publicDir: false,
-    plugins,
-    server: {
-      host: '127.0.0.1',
-      port: 0,
-      watch: {
-        ignored: ['**/*'],
+  let server: ViteDevServer | undefined
+  try {
+    server = await createServer({
+      root,
+      base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
+      configFile: configFile ?? false,
+      clearScreen: false,
+      appType: 'spa',
+      publicDir: false,
+      plugins: [
+        {
+          name: 'weapp-vite:dashboard-lifetime',
+          enforce: 'pre',
+          configureServer(createdServer) {
+            server = createdServer
+          },
+        },
+        createAnalyzeDashboardViteBridge(devframe),
+      ],
+      server: {
+        host: '127.0.0.1',
+        port: 0,
+        watch: { ignored: ['**/*'] },
       },
-    },
-    logLevel: 'error',
-  } satisfies Parameters<typeof createServer>[0]
+      logLevel: 'error',
+    })
+    await server.listen(0)
+  }
+  catch (error) {
+    devframe.dispose()
+    await server?.close().catch(closeError => logger.error(closeError))
+    throw error
+  }
 
-  const server = await createServer(serverOptions)
-
-  const requestedPort = typeof serverOptions.server?.port === 'number'
-    ? serverOptions.server.port
-    : undefined
-  await server.listen(requestedPort)
-  const urls = (() => {
-    const resolved = server.resolvedUrls
-    if (!resolved) {
-      return []
-    }
-    return [
-      ...(resolved.local ?? []),
-      ...(resolved.network ?? []),
-    ]
-  })()
+  const activeServer = server
+  const urls = [
+    ...(activeServer.resolvedUrls?.local ?? []),
+    ...(activeServer.resolvedUrls?.network ?? []),
+  ]
   const authCode = refreshTempAuthCode()
   const authenticatedUrls = urls.map(url => buildOtpAuthUrl(url, authCode))
-
-  let closed = false
-  const waitPromise = waitForServerExit(server).then(() => {
-    closed = true
-    state.artifacts = new Map()
-    devframe.dispose()
+  let closing: Promise<void> | undefined
+  let resolveExit!: () => void
+  const waitPromise = new Promise<void>((resolve) => {
+    resolveExit = resolve
   })
-
-  const emitRuntimeEvents = (events: DashboardRuntimeEventInput[]) => {
-    if (events.length === 0) {
-      return
+  const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM']
+  let onExit: () => Promise<void>
+  const close = () => {
+    if (!closing) {
+      devframe.dispose()
+      closing = Promise.resolve().then(() => activeServer.close()).finally(() => {
+        for (const signal of signals) {
+          process.removeListener(signal, onExit)
+        }
+        activeServer.httpServer?.removeListener('close', onExit)
+        resolveExit()
+      })
     }
-
-    const nextEvents = events.map(event => createDashboardRuntimeEvent(event))
-    runtimeEvents.current = [...nextEvents, ...runtimeEvents.current].slice(0, 24)
-
-    devframe.syncRuntimeEvents()
+    return closing
   }
+  onExit = async () => {
+    await close().catch(error => logger.error(error))
+  }
+  for (const signal of signals) {
+    process.once(signal, onExit)
+  }
+  activeServer.httpServer?.once('close', onExit)
 
   const handle: AnalyzeDashboardHandle = {
-    async update(nextResult, artifacts, previousResult) {
-      if (closed) {
-        return
-      }
-      state.previous = previousResult ?? state.current
-      state.current = nextResult
-      state.artifacts = artifacts
-      emitRuntimeEvents([
-        {
-          kind: 'build',
-          level: 'info',
-          title: 'analyze payload refreshed',
-          detail: `已推送新的 analyze 结果，当前包含 ${nextResult.packages.length} 个包与 ${nextResult.modules.length} 个模块。`,
-          tags: ['analyze', 'refresh'],
-        },
-      ])
-      devframe.notifyAnalyzeUpdate()
-    },
-    emitRuntimeEvents,
+    update: devframe.update,
+    emitRuntimeEvents: devframe.emitRuntimeEvents,
     waitForExit: () => waitPromise,
-    close: async () => {
-      closed = true
-      await server.close()
-    },
+    close,
     urls: authenticatedUrls,
   }
 
-  if (options?.watch) {
+  if (options.watch) {
     if (!options.silentStartupLog) {
       logger.info('weapp-vite UI 已启动（分析视图，实时模式），按 Ctrl+C 退出。')
       for (const url of handle.urls) {
         logger.info(`  ➜  ${colors.bold(colors.cyan(url))}`)
       }
     }
-    void waitPromise // 允许异步清理
     return handle
   }
 
-  if (!options?.silentStartupLog) {
+  if (!options.silentStartupLog) {
     logger.info('weapp-vite UI 已启动（分析视图，静态模式），按 Ctrl+C 退出。')
     for (const url of handle.urls) {
       logger.info(`  ➜  ${colors.bold(colors.cyan(url))}`)

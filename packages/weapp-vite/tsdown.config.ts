@@ -6,6 +6,8 @@ export default defineConfig({
     'web-apis': './src/webApis.ts',
     'cli': './src/cli.ts',
     'config': './src/config.ts',
+    'dashboard': './src/dashboard/index.ts',
+    'dashboard/vite': './src/dashboard/vite.ts',
     'json': './src/json.ts',
     'volar': './src/volar.ts',
     'runtime': './src/plugins/vue/runtime.ts',
@@ -38,6 +40,8 @@ export default defineConfig({
     onlyBundle: false,
     resolveDepSubpath: true,
     neverBundle: [
+      '@vitejs/devtools-kit',
+      '@vitejs/devtools-kit/node',
       '@swc/core',
       '@weapp-vite/ast',
       '@weapp-vite/ast/babel',

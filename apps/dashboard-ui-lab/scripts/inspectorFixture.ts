@@ -1,6 +1,11 @@
-import type { AnalyzeSubpackagesResult, ModuleInFile, ModuleUsage, PackageFileEntry, PackageReport } from '../../../packages/weapp-vite/src/analyze/subpackages/types'
+import type { AnalyzeSubpackagesResult, DashboardArtifactFiles } from 'weapp-vite/dashboard'
 import { Buffer } from 'node:buffer'
-import { createDashboardArtifactSnapshot } from '../../../packages/weapp-vite/src/cli/analyze/dashboardDevframe/artifacts'
+import { createDashboardArtifactSnapshot } from 'weapp-vite/dashboard'
+
+type PackageReport = AnalyzeSubpackagesResult['packages'][number]
+type PackageFileEntry = PackageReport['files'][number]
+type ModuleInFile = NonNullable<PackageFileEntry['modules']>[number]
+type ModuleUsage = AnalyzeSubpackagesResult['modules'][number]
 
 export const FIXTURE_PROJECT_NAME = 'dashboard-ui-lab · Inspector fixture (synthetic report)'
 export const SELECTED_SOURCE = 'inspector/selected-module.ts'
@@ -15,6 +20,12 @@ export interface InspectorFixtureState {
   sourceMissing: boolean
 }
 
+export interface InspectorFixture {
+  result: AnalyzeSubpackagesResult
+  artifacts: DashboardArtifactFiles
+  sources: Map<string, string>
+}
+
 export function createBaselineState(): InspectorFixtureState {
   return {
     relatedVersion: 0,
@@ -26,7 +37,7 @@ export function createBaselineState(): InspectorFixtureState {
 }
 
 /** 构造明确标记的实验报告；产物仅保留在分析快照中，不写入真实构建目录。 */
-export function createInspectorFixture(state: InspectorFixtureState, generatedAt: string) {
+export function createInspectorFixture(state: InspectorFixtureState, generatedAt: string): InspectorFixture {
   const sources = new Map<string, string>()
   const artifacts = createDashboardArtifactSnapshot()
 

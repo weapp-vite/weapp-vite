@@ -64,6 +64,49 @@ wv build -p web
 
 `web` 是浏览器 runtime 的规范平台名，`h5` 仅作为向后兼容别名保留；未选择 Web 平台时不改变现有小程序构建。完整配置和兼容边界见 [Web 运行时配置](https://vite.weapp.dev/config/web) 与 [`@weapp-vite/web`](https://vite.weapp.dev/packages/web)。
 
+### Dashboard 嵌入 Vite DevTools
+
+`weapp-vite/dashboard` 是 Node 端共享核心；CLI 独立工作台与 Vite DevTools 复用同一个 `DevframeDefinition` 和 `@weapp-vite/dashboard` 面板。可选适配器位于 `weapp-vite/dashboard/vite`，使用官方 `createPluginFromDevframe`，不会由普通包入口或 CLI 自动加载。
+
+接入方安装 `@weapp-vite/dashboard`、`@vitejs/devtools` 和 `@vitejs/devtools-kit`。当前接入按 DevTools / Kit `0.7.6`、Devframe `1.1.0` 验证；Kit 是可选 peer，宿主依赖不进入小程序产物。
+
+```ts
+import type { DevToolsConfig } from '@vitejs/devtools/config'
+import type { DashboardAnalyzeSnapshot, DashboardContentRoots } from 'weapp-vite/dashboard'
+import { DevTools } from '@vitejs/devtools'
+import { createAnalyzeDashboardDevframe, resolveDashboardClientAssets } from 'weapp-vite/dashboard'
+import { createAnalyzeDashboardPlugin } from 'weapp-vite/dashboard/vite'
+
+export function createDashboardHost(snapshot: DashboardAnalyzeSnapshot, roots: DashboardContentRoots) {
+  const dashboard = createAnalyzeDashboardDevframe({
+    snapshot,
+    roots,
+    clientAssets: resolveDashboardClientAssets(roots.projectRoot),
+  })
+  const hostOptions: DevToolsConfig = {
+    builtinDevTools: false,
+    clientAuth: true,
+    allowedOrigins: [],
+    mcp: false,
+  }
+  return {
+    dashboard,
+    plugins: [
+      DevTools(hostOptions),
+      createAnalyzeDashboardPlugin(dashboard, { base: '/tools/weapp/' }),
+    ],
+  }
+}
+```
+
+将返回的 `plugins` 交给 Vite 配置。调用方先完成分析及历史元数据持久化，用 `createDashboardArtifactSnapshot().capture` 收集该次分析的产物，再提交 `{ current, previous, artifacts }`。后续调用 `dashboard.update(result, artifacts, previousResult?)`；仅运行事件变化时调用 `dashboard.emitRuntimeEvents(events)`。提交后不要再修改报告或产物 Map。
+
+每个控制器只挂载到一个宿主。适配器在 Vite 关闭或自身 setup 失败时释放核心；自行使用 `dashboard.definition` 对接其他 Devframe 宿主时，调用方必须在关闭和启动失败路径调用 `dashboard.dispose()`。核心不启动服务器，也不拥有外部宿主的认证、Origin 或 MCP 策略；共享宿主不是只读沙箱。
+
+面板默认位于 `/__weapp-vite/`，自定义目录与应用 `base` 独立。前端复用宿主连接或从页面相对位置发现元数据，复制视图链接保留目录和查询参数但排除认证 fragment。适配器只在开发模式挂载，生产构建不要求可选面板资源，也不导出报告。以上入口仅用于 Node 开发 / 构建宿主，不应导入小程序 AppService。
+
+仓库内可通过 `apps/dashboard-ui-lab` 的 `dev:inspector` 与 `dev:inspector:host` 验证两种宿主，详见其 [实验说明](../../apps/dashboard-ui-lab/README.md)。
+
 ### Vue 项目
 
 ```typescript

@@ -1,5 +1,5 @@
 import type { FileHandle } from 'node:fs/promises'
-import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
 import type { DashboardArtifactFiles } from './artifacts'
 import type {
   DashboardContentAllowlist,
@@ -252,22 +252,25 @@ export function createDashboardFileReader(
   artifacts: DashboardArtifactFiles,
 ): DashboardFileReader {
   let allowlist = createDashboardContentAllowlist(result)
-  let currentArtifacts = artifacts
+  let currentArtifacts: DashboardArtifactFiles | undefined = artifacts
   let disposed = false
   return {
     read: async (input) => {
-      if (disposed) {
+      if (disposed || !currentArtifacts) {
         throw new Error('Dashboard 文件读取会话已关闭。')
       }
       return await readAllowedDashboardFile(input, roots, allowlist, currentArtifacts)
     },
     update(nextResult, nextArtifacts) {
+      if (disposed) {
+        return
+      }
       allowlist = createDashboardContentAllowlist(nextResult)
       currentArtifacts = nextArtifacts
     },
     dispose() {
       disposed = true
-      currentArtifacts = new Map()
+      currentArtifacts = undefined
       allowlist.artifactPaths.clear()
       allowlist.sourcePaths.clear()
     },

@@ -1,0 +1,26 @@
+{
+  "name": "dashboard-public-types",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "target": "ES2023",
+      "strict": true,
+      "paths": {
+        "weapp-vite/dashboard": [
+          "../../dist/dashboard.d.mts"
+        ],
+        "weapp-vite/dashboard/vite": [
+          "../../dist/dashboard/vite.d.mts"
+        ]
+      },
+      "types": [
+        "node",
+        "miniprogram-api-typings"
+      ]
+    }
+  }
+}

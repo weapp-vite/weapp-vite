@@ -1,17 +1,28 @@
 import type { Interface } from 'node:readline'
-import type { AnalyzeDashboardHandle } from '../../../packages/weapp-vite/src/cli/analyze/dashboard'
-import type { InspectorFixtureState } from './inspectorFixture'
+import type { AnalyzeDashboardDevframeController } from 'weapp-vite/dashboard'
+import type { InspectorFixture, InspectorFixtureState } from './inspectorFixture'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
-import { startAnalyzeDashboard } from '../../../packages/weapp-vite/src/cli/analyze/dashboard'
+import { parseArgs } from 'node:util'
 import { createBaselineState, createInspectorFixture, FIXTURE_PROJECT_NAME, LONG_FILE, SELECTED_FILE, SELECTED_SOURCE } from './inspectorFixture'
+
+interface InspectorHostHandle extends Pick<AnalyzeDashboardDevframeController, 'update'> {
+  urls: string[]
+  close: () => Promise<void>
+  waitForExit: () => Promise<void>
+}
 
 const labRoot = fileURLToPath(new URL('../', import.meta.url))
 const help = `
+Host options:
+  --vite-devtools    使用真实 Vite DevTools 宿主；不指定时仍为独立 Dashboard
+  --panel-base PATH  宿主模式下的 Dashboard 挂载目录（例如 /qa/dashboard/）
+  --app-base PATH    宿主模式下的 Vite 输入应用 base（例如 /lab/）
+
 Inspector fixture commands (one command per line):
   baseline / reset  恢复基线报告、全部临时源码；同身份的 UI 折叠状态由 Dashboard 保留
   related           所选模块源码/贡献增大，新增一个关联产物；首次增加动态 import
@@ -34,15 +45,25 @@ reset 只重置 fixture 数据；要清空所选身份/未读请先在 UI 切到
 `
 
 async function main() {
+  const { values } = parseArgs({
+    options: {
+      'vite-devtools': { type: 'boolean', default: false },
+      'panel-base': { type: 'string' },
+      'app-base': { type: 'string' },
+    },
+  })
+  if (!values['vite-devtools'] && (values['panel-base'] !== undefined || values['app-base'] !== undefined)) {
+    throw new Error('--panel-base / --app-base 仅用于 --vite-devtools 宿主模式。')
+  }
   const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'wv-inspector-'))
   const srcRoot = path.join(temporaryRoot, 'src')
-  let dashboard: AnalyzeDashboardHandle | undefined
+  let dashboard: InspectorHostHandle | undefined
   let input: Interface | undefined
   let stopping = false
   let writtenSources = new Map<string, string>()
   let state = createBaselineState()
   let generatedAt = new Date().toISOString()
-  let fixture = createInspectorFixture(state, generatedAt)
+  let fixture: InspectorFixture
 
   const stop = () => {
     stopping = true
@@ -90,14 +111,30 @@ async function main() {
   }
 
   try {
+    fixture = createInspectorFixture(state, generatedAt)
     await syncSources(fixture.sources)
-    dashboard = await startAnalyzeDashboard(fixture.result, {
-      artifacts: fixture.artifacts,
-      cwd: labRoot,
-      srcRoot,
-      watch: true,
-      silentStartupLog: true,
-    }) || undefined
+    if (values['vite-devtools']) {
+      // 实验入口验证宿主加载边界；静态导入会让独立场景也加载可选 DevTools SDK。
+      const { startInspectorViteHost } = await import('./inspectorViteHost')
+      dashboard = await startInspectorViteHost({
+        cwd: labRoot,
+        snapshot: { current: fixture.result, previous: null, artifacts: fixture.artifacts },
+        roots: { projectRoot: labRoot, srcRoot },
+        panelBase: values['panel-base'],
+        appBase: values['app-base'],
+      })
+    }
+    else {
+      // Vite 宿主场景必须只消费公开核心入口，不能顺带加载 CLI 启动器。
+      const { startAnalyzeDashboard } = await import('../../../packages/weapp-vite/src/cli/analyze/dashboard')
+      dashboard = await startAnalyzeDashboard(fixture.result, {
+        artifacts: fixture.artifacts,
+        cwd: labRoot,
+        srcRoot,
+        watch: true,
+        silentStartupLog: true,
+      }) || undefined
+    }
     if (!dashboard?.urls.length) {
       throw new Error('Inspector fixture 无法启动真实 Dashboard；请先安装仓库依赖并准备 @weapp-vite/dashboard。')
     }
@@ -184,10 +221,14 @@ async function main() {
       await dashboard?.close()
     }
     finally {
-      await fs.rm(temporaryRoot, { recursive: true, force: true })
-      process.removeListener('SIGINT', stop)
-      process.removeListener('SIGTERM', stop)
-      console.log('[fixture] Dashboard 已关闭，本会话临时源码已清理。')
+      try {
+        await fs.rm(temporaryRoot, { recursive: true, force: true })
+        console.log('[fixture] Dashboard 已关闭，本会话临时源码已清理。')
+      }
+      finally {
+        process.removeListener('SIGINT', stop)
+        process.removeListener('SIGTERM', stop)
+      }
     }
   }
 }
