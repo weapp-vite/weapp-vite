@@ -27,6 +27,12 @@ it('compiles a static weapp runtime with unprepared application tsconfig referen
       export const ref = (value: number) => ({ value });
       export const computed = (getter: () => number) => ({ get value() { return getter(); } });
     `)
+    await writeFile(path.join(runtimeRoot, 'index.ts'), `
+      export const createStore = () => ({});
+      export const setActivePinia = (store: unknown) => store;
+      export const defineStore = (_id: string, setup: () => unknown) => setup;
+      export const storeToRefs = (store: unknown) => store;
+    `)
     await writeFile(path.join(runtimeRoot, 'scheduler.ts'), 'export const nextTick = () => Promise.resolve("ready");')
 
     const { code } = await compileVueSharedRuntime(root)

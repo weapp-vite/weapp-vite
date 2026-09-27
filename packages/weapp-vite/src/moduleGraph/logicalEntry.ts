@@ -25,13 +25,13 @@ export function createLogicalEntryModuleCode(
     : [forwardsDefault
         ? `export { default } from ${source};`
         : `import ${source};`]
-  const seen = new Set<string>()
+  const dependencyIds = new Set<string>()
   for (const dependency of dependencies) {
-    const dependencyId = createSidecarModuleId(entry.sourceId, dependency.sourceId, dependency.kind)
-    if (seen.has(dependencyId)) {
-      continue
-    }
-    seen.add(dependencyId)
+    dependencyIds.add(createSidecarModuleId(entry.sourceId, dependency.sourceId, dependency.kind))
+  }
+  // 依赖集合不携带执行顺序；首次发现与图恢复可能枚举不同顺序。
+  // 保持包装模块内容稳定，避免脚本更新额外失效不执行注册的逻辑入口。
+  for (const dependencyId of [...dependencyIds].sort()) {
     imports.push(`import ${JSON.stringify(dependencyId)};`)
   }
   imports.push(`export * from ${source};`)

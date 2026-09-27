@@ -38,6 +38,8 @@ type RuntimeSetupFunction<
 let vueCompatInstanceUid = 0
 
 function attachVueCompatInstanceView(target: InternalRuntimeState, proxy: Record<string, any>) {
+  // 已排队的用户回调可以持有实例；兼容视图与宿主注册表的销毁周期分离。
+  let exposedView: Record<string, any> | undefined
   const internal = target as Record<string, any>
   const descriptors: PropertyDescriptorMap = {
     proxy: {
@@ -61,7 +63,7 @@ function attachVueCompatInstanceView(target: InternalRuntimeState, proxy: Record
     exposed: {
       configurable: true,
       enumerable: false,
-      get: () => target[WEVU_EXPOSED_KEY],
+      get: () => exposedView,
     },
   }
   for (const [key, descriptor] of Object.entries(descriptors)) {
@@ -95,6 +97,9 @@ function attachVueCompatInstanceView(target: InternalRuntimeState, proxy: Record
     catch {
       proxy[key] = descriptor.value
     }
+  }
+  return (exposed: Record<string, any>) => {
+    exposedView = exposed
   }
 }
 
@@ -180,7 +185,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   }
 
   const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
-  attachVueCompatInstanceView(target, setupInstance as Record<string, any>)
+  const updateExposedView = attachVueCompatInstanceView(target, setupInstance as Record<string, any>)
   const slots = attachRuntimeSlots(runtimeState, props)
   const setupState = runtimeWithDefaults.setupState ?? Object.create(null)
   attachRuntimeSetupState(runtimeState, setupState)
@@ -207,6 +212,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     // 与 Vue 3 对齐的 expose
     expose: (exposed: Record<string, any>) => {
       target[WEVU_EXPOSED_KEY] = exposed
+      updateExposedView(exposed)
     },
 
     // 与 Vue 3 对齐的 attrs（小程序中为非 props 属性集合）

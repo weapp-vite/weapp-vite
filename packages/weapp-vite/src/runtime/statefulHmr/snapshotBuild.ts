@@ -1,9 +1,11 @@
 import type { InlineConfig } from 'vite'
 import type { CompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
+import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
+import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
@@ -24,6 +26,7 @@ export async function buildStatefulHmrSnapshot(
     await ctx.scanService.loadAppEntry()
     ctx.scanService.loadSubPackages()
     let globalStyleRoutes: string[] = []
+    let publicAssets: ReturnType<typeof createPublicAssetSourcePlan> | undefined
     const baseOptions = ctx.configService.merge(
       undefined,
       createSharedBuildConfig(ctx.configService, ctx.scanService),
@@ -31,9 +34,19 @@ export async function buildStatefulHmrSnapshot(
     baseOptions.plugins = [...(baseOptions.plugins ?? []), {
       name: 'weapp-vite:stateful-hmr-page-style-metadata',
       enforce: 'post',
-      generateBundle(_options, bundle) {
+      configResolved(config) {
+        publicAssets = createPublicAssetSourcePlan({ publicDir: config.publicDir, copyPublicDir: config.build.copyPublicDir }, ctx.configService.outDir)
+      },
+      async generateBundle(_options, bundle) {
         // 资产快照随后会删除 JS chunk，必须在完整产物阶段确认页面注册与样式边界。
         globalStyleRoutes = resolveComponentPageGlobalStyleRoutes(Object.values(bundle), ctx.runtimeState.build.hmr.componentPageStyleOptions)
+        // write:false 不运行 Vite 的 public 复制阶段；把未被编译产物覆盖的文件交给原生资产写出。
+        for (const file of await publicAssets?.scan() ?? []) {
+          const fileName = publicAssets!.outputName(file)
+          if (!bundle[fileName]) {
+            this.emitFile({ type: 'asset', fileName, source: await readFile(file) })
+          }
+        }
       },
     }]
     const options = configure(baseOptions)

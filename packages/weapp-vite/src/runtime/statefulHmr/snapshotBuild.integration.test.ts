@@ -1,4 +1,5 @@
 import type { OutputAsset, OutputChunk } from 'rolldown'
+import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
@@ -58,6 +59,45 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 describe('stateful snapshot component metadata', () => {
   afterEach(async () => {
     await Promise.all(temporaryRoots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
+  })
+
+  it('includes current public bytes in unwritten snapshots while preserving compiled output precedence', async () => {
+    const root = await createProject()
+    const publicDir = path.join(root, 'public')
+    await fs.mkdir(publicDir)
+    await fs.writeFile(path.join(publicDir, 'extra.data'), 'first public bytes')
+    await fs.writeFile(path.join(publicDir, '.visible'), 'dot file')
+    await fs.writeFile(path.join(publicDir, 'app.js'), 'public must not replace App')
+    const readSnapshot = async () => {
+      const result = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' })
+      return Array.isArray(result.output) ? result.output.flatMap(item => item.output) : 'output' in result.output ? result.output.output : []
+    }
+    const first = await readSnapshot()
+    const publicOutput = (output: Array<OutputAsset | OutputChunk>, name: string) => {
+      const file = output.find(item => item.fileName === name)
+      return file?.type === 'asset' ? Buffer.from(file.source).toString('utf8') : undefined
+    }
+    expect(publicOutput(first, 'extra.data')).toBe('first public bytes')
+    expect(publicOutput(first, '.visible')).toBe('dot file')
+    expect(first.find(item => item.fileName === 'app.js')?.type).toBe('chunk')
+    await fs.writeFile(path.join(publicDir, 'extra.data'), 'next public bytes')
+    expect(publicOutput(await readSnapshot(), 'extra.data')).toBe('next public bytes')
+    await fs.rm(path.join(publicDir, 'extra.data'))
+    expect(publicOutput(await readSnapshot(), 'extra.data')).toBeUndefined()
+    await expect(fs.stat(path.join(root, 'dist/extra.data'))).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it.each(['publicDir', 'copyPublicDir'] as const)('keeps disabled %s public assets out of snapshots', async (disabled) => {
+    const root = await createProject()
+    await fs.mkdir(path.join(root, 'public'))
+    await fs.writeFile(path.join(root, 'public/ignored.data'), 'must not emit')
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, config => ({
+      ...config,
+      ...(disabled === 'publicDir' ? { publicDir: false } : {}),
+      build: { ...config.build, ...(disabled === 'copyPublicDir' ? { copyPublicDir: false } : {}) },
+    }))
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    expect(outputs.some(item => item.fileName === 'ignored.data')).toBe(false)
   })
 
   it('retains native page style metadata after asset-only snapshots discard script chunks', async () => {

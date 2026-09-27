@@ -91,15 +91,13 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     },
   }
 
-  function registerPageDeclarationSourceResolver(pluginContext: PluginContext) {
-    service.setPageDeclarationSourceResolver(
-      typeof pluginContext.resolve === 'function'
-        ? async (source, importer) => {
-          const resolved = await pluginContext.resolve(source, importer, { skipSelf: true })
-          return resolved?.id
-        }
-        : undefined,
-    )
+  function createPageDeclarationSourceResolver(pluginContext: PluginContext): Parameters<AutoRoutesService['setPageDeclarationSourceResolver']>[0] {
+    return typeof pluginContext.resolve === 'function'
+      ? async (source, importer) => {
+        const resolved = await pluginContext.resolve(source, importer, { skipSelf: true })
+        return resolved?.id
+      }
+      : undefined
   }
 
   const refreshAutoRoutesAliasTargets = () => {
@@ -356,7 +354,6 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     },
 
     buildStart() {
-      registerPageDeclarationSourceResolver(this)
       refreshAutoRoutesAliasTargets()
       startRouteFileWatcher()
     },
@@ -378,13 +375,11 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       if (!resolvedId) {
         return null
       }
-      registerPageDeclarationSourceResolver(this)
-
       if (resolvedId === WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID && !service.isEnabled()) {
         this.error(`${WEVU_AUTO_ROUTES_MODULE_ID} 需要启用 weapp.autoRoutes。`)
       }
 
-      await service.ensureFresh()
+      await service.ensureFresh(createPageDeclarationSourceResolver(this))
       if (isAutoRoutesWatchMode(ctx.configService)) {
         // serve 的 addWatchFile 会创建隐式导入，不能让纯数据模块反向依赖页面。
         const watchContext = resolvedConfig?.command === 'serve'
@@ -416,8 +411,7 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
       if (!isPageScriptTransformRequest(id, normalizedId)) {
         return null
       }
-      registerPageDeclarationSourceResolver(this)
-      await service.ensureFresh()
+      await service.ensureFresh(createPageDeclarationSourceResolver(this))
       startRouteFileWatcher()
       if (!service.isPageDeclarationSource(normalizedId)) {
         return null
@@ -433,7 +427,6 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
     },
 
     async watchChange(id, change) {
-      registerPageDeclarationSourceResolver(this)
       const event = change?.event
       if (service.isRouteFile(id)) {
         if (resolvedConfig?.command === 'serve' && event === 'update') {

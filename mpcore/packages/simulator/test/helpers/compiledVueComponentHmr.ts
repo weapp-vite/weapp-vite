@@ -12,7 +12,7 @@ import { createStatefulHmrRolldownRuntimeSource } from '../../../../../packages/
 import { createStatefulHmrInitialGraph } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
 import { compileVueSharedRuntime } from './compileVueSharedRuntime'
 
-async function collectVueComponentHmr(repoRoot: string, source: string) {
+async function collectVueComponentHmr(repoRoot: string, source: string, modules: Record<string, string> = {}) {
   const runtime = await compileVueSharedRuntime(repoRoot)
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'vue-client-companion-')))
   const sourceId = path.join(root, 'index.vue').replaceAll('\\', '/')
@@ -29,6 +29,9 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
     plugins: [{
       name: 'real-vue-client-companion',
       resolveId(id) {
+        if (id in modules) {
+          return id
+        }
         if (id === ownerId || id === sourceId) {
           return id
         }
@@ -37,6 +40,9 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
         }
       },
       async load(id) {
+        if (id in modules) {
+          return { code: modules[id]!, moduleType: 'ts' }
+        }
         if (id === path.join(root, 'vue-shared-runtime.js')) {
           return runtime.code
         }
@@ -96,10 +102,12 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
     initialFiles = output.output.filter(item => item.type === 'chunk').map(item => [item.fileName, item.code])
     const patchedSource = source
       .replace('count.value += 1', 'count.value += 2')
+      .replace('store.increment(1)', 'store.increment(2)')
       .replace('step:1', 'step:2')
       .replace('STATEFUL-VUE-BASE', 'STATEFUL-VUE-PATCHED')
     const repatchedSource = patchedSource
       .replace('count.value += 2', 'count.value += 3')
+      .replace('store.increment(2)', 'store.increment(3)')
       .replace('step:2', 'step:3')
     for (const updated of [patchedSource, repatchedSource, source]) {
       // 与注册 owner 回归保持一致：原子替换源码，避免轮询读取截断后的半成品。
@@ -136,11 +144,11 @@ async function collectVueComponentHmr(repoRoot: string, source: string) {
 const compiledFixtures = new Map<string, ReturnType<typeof collectVueComponentHmr>>()
 
 /** 缓存真实引擎生成的首包和连续更新、还原补丁，浏览器与 Node 执行完全相同的 client 协议。 */
-export function compileVueComponentHmr(repoRoot: string, source: string) {
-  const key = `${repoRoot}:${source}`
+export function compileVueComponentHmr(repoRoot: string, source: string, modules: Record<string, string> = {}) {
+  const key = `${repoRoot}:${source}:${JSON.stringify(modules)}`
   let compiled = compiledFixtures.get(key)
   if (!compiled) {
-    compiled = collectVueComponentHmr(repoRoot, source)
+    compiled = collectVueComponentHmr(repoRoot, source, modules)
     compiledFixtures.set(key, compiled)
   }
   return compiled

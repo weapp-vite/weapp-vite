@@ -120,9 +120,10 @@ export function parseStatefulHmrControlSource(source: string): StatefulHmrContro
       return undefined
     }
     const resolvedUrl = new URL(url)
+    // 首轮产物可能先发布端口 0；客户端必须等待服务开始监听后的控制地址。
     if (
       resolvedUrl.protocol !== 'http:'
-      || !resolvedUrl.port
+      || Number(resolvedUrl.port) <= 0
       || !LOOPBACK_HOSTNAMES.has(resolvedUrl.hostname)
       || resolvedUrl.pathname !== STATEFUL_HMR_CONTROL_ENDPOINT
     ) {
