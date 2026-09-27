@@ -113,6 +113,7 @@ function createImportSections(context: TreemapDetailContext, imports: TreemapImp
       return { ...row, id, description: `${row.description} · import: ${entry.path}` }
     })
     return {
+      id: `${direction}-${kind}`,
       title: `${direction === 'incoming' ? '被引用 · ' : '引用 · '}${kind === 'static' ? '静态 import' : '动态 import'}`,
       empty: direction === 'incoming' ? '报告中没有可定位到此产物的引用。' : '报告未记录此类引用。',
       rows: sortDetailRows(rows),
@@ -129,6 +130,7 @@ export function createTreemapDetailSections(
   if (!meta || meta.kind === 'package' || meta.kind === 'file') {
     const children = meta ? context.tree.get(meta.nodeId)?.children ?? [] : nodes
     const sections: TreemapDetailSection[] = [{
+      id: 'children',
       title: !meta ? '包' : meta.kind === 'package' ? '产物文件' : '模块与资源',
       empty: !meta || meta.kind === 'package'
         ? '当前筛选下没有可浏览的节点。请调整图表筛选。'
@@ -141,8 +143,8 @@ export function createTreemapDetailSections(
     return sections
   }
   if (meta.kind === 'module') {
-    return [{ title: '所在产物 · 跨包位置', empty: '报告未记录此模块的产物位置。', rows: createModuleLocations(context, meta) }]
+    return [{ id: 'locations', title: '所在产物 · 跨包位置', empty: '报告未记录此模块的产物位置。', rows: createModuleLocations(context, meta) }]
   }
   const location = findDetailFile(context, meta)
-  return [{ title: '所在产物', empty: '报告未包含此资源的产物详情。', rows: location ? [createFileLocationRow(context, location)] : [] }]
+  return [{ id: 'locations', title: '所在产物', empty: '报告未包含此资源的产物详情。', rows: location ? [createFileLocationRow(context, location)] : [] }]
 }

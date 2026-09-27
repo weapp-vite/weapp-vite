@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AnalyzeSubpackagesResult, TreemapNode, TreemapNodeMeta } from '../types'
 import { computed, nextTick, shallowRef, watch } from 'vue'
+import { useTreemapDetailSections } from '../composables/useTreemapDetailSections'
 import { formatSignedBytes } from '../utils/sourceCompareSummary'
 import {
   createTreemapDetailContext,
@@ -13,6 +14,7 @@ import {
   getDetailSourceState,
 } from '../utils/treemapDetails/context'
 import { createTreemapDetailSections, createTreemapImportIndex } from '../utils/treemapDetails/references'
+import TreemapDetailGroup from './TreemapDetailGroup.vue'
 
 const props = defineProps<{
   result: AnalyzeSubpackagesResult
@@ -26,10 +28,17 @@ const emit = defineEmits<{
 }>()
 
 const query = shallowRef('')
+const panel = shallowRef<HTMLElement | null>(null)
+const identityHeader = shallowRef<HTMLElement | null>(null)
 const heading = shallowRef<HTMLHeadingElement | null>(null)
 const report = computed(() => createTreemapDetailReport(props.result))
 const context = computed(() => createTreemapDetailContext(report.value, props.nodes))
 const imports = computed(() => createTreemapImportIndex(report.value))
+const sectionState = useTreemapDetailSections({
+  report: () => report.value,
+  imports: () => imports.value,
+  selectedMeta: () => props.selectedMeta,
+})
 const details = computed(() => {
   const meta = props.selectedMeta
   if (!meta) {
@@ -43,6 +52,14 @@ const details = computed(() => {
     source: getDetailSourceState(context.value, meta),
     outsideFilter: !context.value.tree.has(meta.nodeId),
   }
+})
+const identityLabel = computed(() => {
+  if (!props.selectedMeta || !details.value) {
+    return '按包浏览产物与模块'
+  }
+  return props.selectedMeta.kind === 'package'
+    ? props.selectedMeta.packageLabel
+    : details.value.path.split(/[\\/]/).pop() || details.value.path
 })
 const sections = computed(() => createTreemapDetailSections(context.value, imports.value, props.nodes, props.selectedMeta))
 const filteredSections = computed(() => {
@@ -59,19 +76,79 @@ watch(() => props.selectedMeta?.nodeId, () => {
   query.value = ''
 })
 
+function findScrollContainer(element: HTMLElement): HTMLElement {
+  for (let current: HTMLElement | null = element; current; current = current.parentElement) {
+    if (/auto|scroll/.test(getComputedStyle(current).overflowY)) {
+      return current
+    }
+  }
+  return document.scrollingElement instanceof HTMLElement ? document.scrollingElement : document.documentElement
+}
+
+function getScrollBounds(container: HTMLElement) {
+  if (container === document.scrollingElement) {
+    return { top: 0, bottom: window.innerHeight }
+  }
+  const rect = container.getBoundingClientRect()
+  return {
+    top: Math.max(0, rect.top + container.clientTop),
+    bottom: Math.min(window.innerHeight, rect.top + container.clientTop + container.clientHeight),
+  }
+}
+
+let disclosureRequest = 0
+
+async function toggleSection(id: string, element: HTMLElement) {
+  const request = ++disclosureRequest
+  const selectedId = props.selectedMeta?.nodeId
+  const container = findScrollContainer(element)
+  const scrollTop = container.scrollTop
+  const opening = !sectionState.isOpen(id)
+  sectionState.setOpen(id, opening)
+  if (!opening) {
+    return
+  }
+  await nextTick()
+  if (request !== disclosureRequest || selectedId !== props.selectedMeta?.nodeId
+    || !element.isConnected || !sectionState.isOpen(id) || Math.abs(container.scrollTop - scrollTop) > 1) {
+    return
+  }
+  const bounds = getScrollBounds(container)
+  const rect = element.getBoundingClientRect()
+  if (rect.bottom <= bounds.bottom) {
+    return
+  }
+  const top = Math.max(bounds.top, identityHeader.value?.getBoundingClientRect().bottom ?? bounds.top)
+  container.scrollTo({ top: container.scrollTop + rect.top - top, behavior: 'instant' })
+}
+
 async function selectNode(meta: TreemapNodeMeta) {
+  disclosureRequest++
   emit('selectNode', meta)
   await nextTick()
-  heading.value?.focus()
+  heading.value?.focus({ preventScroll: true })
+  if (panel.value) {
+    const container = findScrollContainer(panel.value)
+    const top = container === panel.value
+      ? 0
+      : container.scrollTop + panel.value.getBoundingClientRect().top - getScrollBounds(container).top
+    container.scrollTo({ top, behavior: 'instant' })
+  }
 }
 </script>
 
 <template>
-  <section aria-label="节点详情与导航" class="min-w-0 text-sm text-(--dashboard-text)">
-    <header class="min-w-0 border-b border-(--dashboard-border) pb-4">
-      <h3 ref="heading" tabindex="-1" class="rounded-sm text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--dashboard-accent)">
-        {{ details ? '节点详情' : '浏览构建产物' }}
+  <section ref="panel" aria-label="节点详情与导航" class="min-w-0 text-sm text-(--dashboard-text) [&_:is(button,input)]:scroll-mt-24">
+    <header ref="identityHeader" class="sticky top-0 z-10 -mx-4 -mt-4 border-b border-(--dashboard-border) bg-(--dashboard-panel) px-4 py-3">
+      <h3 ref="heading" tabindex="-1" class="flex min-w-0 items-baseline gap-2 rounded-sm text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dashboard-accent)">
+        <span class="shrink-0">{{ details ? '节点详情' : '浏览构建产物' }}</span>
+        <span v-if="selectedMeta" class="truncate text-xs font-normal text-(--dashboard-text-soft)" :title="selectedMeta.packageLabel">{{ selectedMeta.packageLabel }}</span>
       </h3>
+      <p class="mt-1 truncate font-mono text-xs text-(--dashboard-text-muted)" :title="details?.path">
+        {{ identityLabel }}
+      </p>
+    </header>
+    <div class="mt-4 min-w-0 border-b border-(--dashboard-border) pb-4">
       <template v-if="selectedMeta && details">
         <p class="mt-2 font-mono text-xs leading-5 [overflow-wrap:anywhere]">
           {{ details.path }}
@@ -160,7 +237,7 @@ async function selectNode(meta: TreemapNodeMeta) {
       <p v-else class="mt-2 text-xs leading-5 text-(--dashboard-text-soft)">
         从包进入产物、模块或资源；下方按钮与图块选择同步，无需操作画布。
       </p>
-    </header>
+    </div>
 
     <div class="mt-4 min-w-0">
       <label class="block text-xs text-(--dashboard-text-soft)">
@@ -179,37 +256,16 @@ async function selectNode(meta: TreemapNodeMeta) {
       <p v-if="query.trim() && !visibleCount" class="mt-3 text-xs leading-5 text-(--dashboard-text-soft)">
         当前列表没有匹配结果；清空搜索可查看全部条目。
       </p>
-      <section v-for="section in filteredSections" :key="section.title" :aria-label="section.title" class="mt-4 min-w-0">
-        <h4 class="text-xs font-semibold">
-          {{ section.title }} <span class="font-normal text-(--dashboard-text-soft)">{{ section.rows.length }}</span>
-        </h4>
-        <ul v-if="section.rows.length" class="mt-1 min-w-0 divide-y divide-(--dashboard-border)">
-          <li v-for="row in section.rows" :key="row.id" class="min-w-0">
-            <button
-              v-if="row.meta"
-              type="button"
-              :title="row.path"
-              class="block min-h-11 w-full min-w-0 rounded-sm px-1 py-2 text-left hover:bg-(--dashboard-accent-soft) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--dashboard-accent)"
-              @click="selectNode(row.meta)"
-            >
-              <span class="block font-mono text-xs leading-5 [overflow-wrap:anywhere]">{{ row.path }}</span>
-              <span class="mt-1 block text-[11px] leading-4 text-(--dashboard-text-soft) [overflow-wrap:anywhere]">{{ row.description }}</span>
-              <span class="mt-1 block text-xs tabular-nums text-(--dashboard-text-soft)">{{ row.size }}</span>
-            </button>
-            <div v-else class="px-1 py-2">
-              <p class="font-mono text-xs leading-5 [overflow-wrap:anywhere]">
-                {{ row.path }}
-              </p>
-              <p class="mt-1 text-[11px] leading-4 text-(--dashboard-text-soft) [overflow-wrap:anywhere]">
-                {{ row.description }} · {{ row.size }}
-              </p>
-            </div>
-          </li>
-        </ul>
-        <p v-else-if="!query.trim()" class="mt-2 text-xs leading-5 text-(--dashboard-text-soft)">
-          {{ section.empty }}
-        </p>
-      </section>
+      <TreemapDetailGroup
+        v-for="section in filteredSections"
+        :key="section.id"
+        :section="section"
+        :open="sectionState.isOpen(section.id)"
+        :unread="sectionState.hasUnread(section.id)"
+        :searching="Boolean(query.trim())"
+        @toggle="toggleSection"
+        @select-node="selectNode"
+      />
       <p v-if="selectedMeta?.kind === 'file' || selectedMeta?.kind === 'module'" class="mt-4 text-[11px] leading-5 text-(--dashboard-text-soft)">
         引用仅来自构建产物的静态 / 动态 import 记录；模块位置不是源码级依赖关系。
       </p>

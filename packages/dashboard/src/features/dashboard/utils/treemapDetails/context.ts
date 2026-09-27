@@ -26,6 +26,7 @@ export interface TreemapDetailRow {
 }
 
 export interface TreemapDetailSection {
+  id: string
   title: string
   empty: string
   rows: TreemapDetailRow[]

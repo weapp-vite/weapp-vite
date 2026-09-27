@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "wv dev",
     "dev:ui": "wv dev --ui",
+    "dev:inspector": "node --import tsx scripts/inspector.ts",
     "build": "wv build",
     "build:ui": "wv build --ui",
     "check:budget-fail": "node scripts/check-budget-fail.mjs",

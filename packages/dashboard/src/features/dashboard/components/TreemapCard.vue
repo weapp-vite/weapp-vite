@@ -61,7 +61,7 @@ function handleChartRef(element: Element | ComponentPublicInstance | null) {
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) xl:h-full" aria-label="体积地图工作台">
+  <section class="flex min-h-0 flex-col overflow-clip rounded-lg border border-(--dashboard-border) bg-(--dashboard-panel) xl:h-full" aria-label="体积地图工作台">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-(--dashboard-border) px-3 py-2">
       <h2 class="mr-auto text-sm font-semibold">
         体积地图 <span class="ml-1 font-mono text-xs font-normal text-(--dashboard-text-muted)">{{ formatBytes(visibleBytes) }}</span>
