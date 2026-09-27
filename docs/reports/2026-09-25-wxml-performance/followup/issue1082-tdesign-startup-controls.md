@@ -2,6 +2,8 @@
 
 当前产品提交为 `bad3afc8702b6606f6de8fd861d0c305f487d2a7`。真实 IDE 的 TDesign 颜色更新场景尚未完成首屏与 DOM 验收。以下都是临时诊断，不能计入正式通过项；产品源码、模板和正式 suite 已恢复，`weapp-vite` 已重新构建。
 
+后续[直接 IDE CLI 与实际 SDK 对照](./issue1082-tdesign-direct-sdk.md)补充了观测：桌面已解锁；`wv open` 仍有 automator 健康检查，旧“普通 CLI”观察不能排除该交互。新直接 IDE CLI 项目也出现无响应，且实际 3.15.2 的全新项目仍未恢复首次启动。
+
 ## 对照与结果
 
 入口为 `e2e/ide/template-tailwindcss-tdesign-hmr.runtime.test.ts` 的 `updates the visible Tailwind`。正式场景保留原颜色、主题切换和 HMR 断言，同一 suite 复用一次 automator 会话，通过原页面就绪检查取得首页；本轮没有新增页面或修改正式 AppID/页面条件。
