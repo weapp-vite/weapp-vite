@@ -329,7 +329,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   }
 
   async function invalidateCompilerForFile(id: string, event: 'create' | 'update' | 'delete') {
-    const compiler = await getCompiler()
+    // 失效已有状态不应创建编译器；尚未生成的样式仍维护下面的脏标记。
+    const compiler = compilerPromise ? await compilerPromise : undefined
     const normalizedId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
     const indexes = resolved.cssEntries.flatMap((entry, index) =>
       normalizeManagedTailwindcssEntryPath(entry) === normalizeManagedTailwindcssEntryPath(normalizedId) ? [index] : [],
@@ -340,7 +341,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (event === 'delete') {
         const rootId = compilerRootIds.get(index)
         if (rootId) {
-          await compiler.remove(rootId)
+          await compiler?.remove(rootId)
         }
         transformedSources.delete(index)
         dirtySlots.delete(index)
@@ -352,7 +353,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     if (event === 'delete' && indexes.length > 0) {
       return
     }
-    compiler.invalidate([normalizedId])
+    compiler?.invalidate([normalizedId])
   }
 
   function prepareBundleStyles(bundle: OutputBundle) {

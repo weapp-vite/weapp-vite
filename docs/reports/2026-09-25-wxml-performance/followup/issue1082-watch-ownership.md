@@ -189,3 +189,6 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 
 
 进一步修正 [同一模板编辑的重复快照请求](./issue1082-mixed-snapshot-ownership.md)：四次源事件从八次请求、五次构建变为四次请求、四次构建；headless 37/37 和真实 IDE 原生相关场景 20/20 DOM 通过。该诊断不替代完整性能门禁，也不代表真实 Wevu 首次模板失败已解决。
+
+
+后续 [Tailwind 编译器休眠边界](./issue1082-tailwind-dormancy.md) 修正未使用 Tailwind 时首次更新的多余初始化：27 项集成测试和两项模板 CLI 通过。真实 TDesign 计算样式场景在修改前后均于启动阶段超时，保留未完成 runtime 验收，不冒称通过。
