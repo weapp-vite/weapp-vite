@@ -57,3 +57,15 @@ Computer Use 操作微信开发者工具 2.02.2609231，运行时实际 SDK 3.17
 本轮仅审计/测试/报告变化，产品源码和 dist 与52a一致，不新增 changeset。两个既有大型审计驱动仅接入共用消费 helper，不各自实现传输循环。复用的本地 runner 的候选描述保留了旧预演标签，实际基底52a及新增驱动源码 hash 另行记录，不据该标签宣称最终HEAD正式性能通过。
 
 [CI失败、局部前后验证和类型对照归档](./issue1081-template-audit-acknowledgement.json.gz)：42份记录，解压 1044542 bytes，SHA256 `12ad792ae439ce1cf8e112f1fa8a256ff4716879aef5da63bc46f938ddb009bf`。
+
+## auto-import 收集器同一消费边界
+
+`99e3ee08b` 的 CI 已完整通过 Wevu 模板编辑/恢复，随后进入 auto-import HMR 阶段，在第一组 manual 恢复等待直到 collector deadline；不是性能阈值失败。CI artifact 原件 SHA `4f7288921a4bf80e9064d7875ce9e5a4c5157d7fbf9297e7b3beb90b61e74069`。本地相同1:manual复现原90秒恢复超时。
+
+该收集器完全没有 stateful 审计端；新增节点伴随脚本未消费，后续恢复被交付队列阻塞。现复用同一个 helper：首次编辑前注册，原10ms产物轮询函数返回计时后再消费/确认。保留原字节完整恢复断言、两轮往返、配置数量、截止时间和阈值。无 control 文件的 classic 路径保持原样，旧协议不新增 poll/ack。
+
+修正后 Smoke 的1/69、manual/automatic四配置完整16条记录通过；相关测量/协议两文件15项回归通过。正式 worker 的动态入口已逐项核对：模板HMR、auto-import HMR及独立Workspace审计使用相同消费边界；build类入口不运行开发服务。产品源码未改，无需新dist或changeset；既有大文件只接入共享helper。
+
+[完整失败与局部验证归档](./issue1081-auto-import-audit-acknowledgement.json.gz)：37份记录，解压 1001717 bytes，SHA256 `e4a1b81b1ea487e4f24e3267cfb4ed45da9a57cfb374b018170c8a27114e9d07`。
+
+auto-import 驱动的定向 tsc 在相同配置下对基底与修改后均报告五项既存 e2e helper 类型错误，诊断一致、无新增；不将其写成类型检查通过。
