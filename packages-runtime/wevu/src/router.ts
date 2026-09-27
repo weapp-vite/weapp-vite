@@ -24,6 +24,17 @@ export {
   isNavigationFailure,
 } from './router/navigationCore'
 export { resolveRouteLocation } from './router/resolve'
+export { usePageScrollRestoration, useScrollViewRestoration } from './router/scrollRestoration/adapters'
+export { createScrollRestoration, useScrollRestoration } from './router/scrollRestoration/index'
+export type {
+  ScrollRestorationContext,
+  ScrollRestorationController,
+  ScrollRestorationHandle,
+  ScrollRestorationOptions,
+  ScrollRestorationRegistrationOptions,
+  ScrollViewRestorationHandle,
+  UseScrollRestorationOptions,
+} from './router/scrollRestoration/types'
 export { NavigationFailureType } from './router/types'
 export type {
   AddRoute,

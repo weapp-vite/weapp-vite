@@ -1,6 +1,6 @@
 ---
 title: wevu/router
-description: wevu/router 子路径文档，介绍命名路由编译宏、自动路由、守卫、失败分类与小程序环境下的边界。
+description: wevu/router 子路径文档，介绍命名路由编译宏、自动路由、守卫、失败分类、滚动恢复与小程序环境下的边界。
 keywords:
   - wevu/router
   - definePage
@@ -184,6 +184,8 @@ await router.push({ name: 'home' })
 - `parseQuery()` / `stringifyQuery()`：query 处理工具
 - `createNavigationFailure()` / `isNavigationFailure()`：失败对象与判定
 - `NavigationFailureType`：失败类别枚举
+- `createScrollRestoration()`：为 router 显式创建滚动快照会话
+- `useScrollRestoration()` / `usePageScrollRestoration()` / `useScrollViewRestoration()`：在同步 setup 中注册自定义、页面或容器恢复
 
 ## 5. 常见心智
 
@@ -217,6 +219,101 @@ const result = await router.forward()
 ```
 
 这在小程序里通常会返回 `NavigationFailureType.aborted`，属于预期行为，不是 bug。
+
+### 5.4 按需恢复滚动位置 {#scroll-restoration}
+
+滚动恢复是显式启用的能力，不是 `createRouter()` 的默认行为，也不是 Vue Router 的 `scrollBehavior`。先在 App 初始化模块中、任何导航发生前创建一次会话：
+
+```ts
+import { createRouter, createScrollRestoration } from 'wevu/router'
+
+export const router = createRouter()
+export const scrollRestoration = createScrollRestoration({ router })
+```
+
+同一个 router 只能有一个未释放的 controller。页面/组件的组合式函数必须在同步 `setup()` 或 `<script setup>` 中调用；默认使用当前 router 的 controller，多 router 场景显式传入 `{ controller: scrollRestoration }`。不要每进一个页面就重新创建会话。
+
+#### `scroll-view`：显式绑定容器
+
+WebView 和 Skyline 都可使用属性控制的 `scroll-view`。把返回的 ref 解构为顶层绑定，同时绑定两个位置属性和 `scroll` 事件：
+
+```vue
+<script setup lang="ts">
+import { useScrollViewRestoration } from 'wevu/router'
+
+const { scrollTop, scrollLeft, onScroll } = useScrollViewRestoration({
+  id: 'catalog',
+})
+</script>
+
+<template>
+  <scroll-view
+    scroll-y
+    style="height: 400px"
+    :scroll-top="scrollTop"
+    :scroll-left="scrollLeft"
+    @scroll="onScroll"
+  >
+    <view style="height: 1600px">
+      商品列表内容
+    </view>
+  </scroll-view>
+</template>
+```
+
+滚动区必须有明确尺寸，内容也必须足够长；横向滚动还需启用 `scroll-x` 并提供超出容器的内容宽度。`onScroll` 只更新普通内存缓存，不会在每次滚动时改写 ref 或触发 `setData`。恢复时会先提交当前位置基线，再提交目标值，因此重复恢复相同目标也能生效。
+
+不要在同一容器上同时使用 `scroll-into-view`：宿主会优先执行它，而不是这里的 `scroll-top/scroll-left`。需要锚点定位或虚拟列表时，用自定义适配器保持唯一滚动控制方。
+
+#### WebView 页面级滚动
+
+如果滚动的是整个 WebView 页面，在页面同步 setup 中注册：
+
+```ts
+import { usePageScrollRestoration } from 'wevu/router'
+
+const handle = usePageScrollRestoration({ id: 'page' })
+```
+
+它缓存 `onPageScroll` 的位置，并通过 `wx.pageScrollTo({ scrollTop, duration: 0 })` 恢复。Skyline 不提供这里假定的页面级滚动容器，不能使用此 helper，应改用显式 `scroll-view`。内置适配器没有快照时恢复到 `0`。
+
+#### 异步内容：业务就绪后再恢复
+
+自动恢复只等待页面/组件 ready、原生路由完成、首屏守卫结算以及实际宿主渲染提交，不会猜测接口、图片尺寸或虚拟列表何时稳定。此类页面应设置 `manual: true`，先在同步 setup 中注册，再在业务内容准备完成后调用 `handle.scroll()`：
+
+```ts
+import { onReady, ref } from 'wevu'
+import { useScrollViewRestoration } from 'wevu/router'
+import { loadRows } from '@/services/catalog'
+
+const rows = ref<string[]>([])
+const handle = useScrollViewRestoration({ id: 'catalog', manual: true })
+const { scrollTop, scrollLeft, onScroll } = handle
+
+onReady(async () => {
+  rows.value = await loadRows()
+  await handle.scroll()
+})
+```
+
+这里的 `loadRows` 是业务自己的数据加载函数；模板仍按上例绑定三个解构值，并渲染 `rows`。`scroll()` 会等待本轮实际宿主提交，但图片解码、后续分页等仍需业务等待。目标超出当前内容范围时会被宿主裁到可滚动范围，不会等待内容变长后自动重试。调用方应处理 `scroll()` 的拒绝；返回 `false` 表示已跳过或恢复已失效，并非错误，也不代表目标像素已到达。
+
+#### 会话、原生保留页与清理
+
+- 默认快照索引是 `route.fullPath + id`（内部按两层 key 存储），`id` 默认为 `'default'`。不同 query 默认隔离，例如 `?category=a` 与 `?category=b`；覆盖 `key` 为 `route => route.path` 会主动合并这些位置。key 在注册绑定归属页面时确定，不会持续跟踪响应式筛选条件。
+- 同一原生页面内相同 `key/id` 只能注册一次；多个列表使用不同 `id`。跨页面实例使用相同 `key/id` 会共享快照，必须保持相同数据格式。
+- 快照只存在 controller 的会话内存中，可跨原生页面销毁、同一运行会话内的 `reLaunch` 保留；冷启动、应用重新加载或 `dispose()` 后不会保留，不写入 storage。
+- 自动恢复只作用于本次原生路由新建的页面实例。返回栈中保留页、切回已保留 tab、应用回到前台时，位置仍由原生宿主维护，不会再次回放快照。保留页若由业务重建了内容，可在内容就绪后手动 `scroll()`。
+- 微信原生自动关联要求基础库 **3.5.5+**，以及 `BeforeAppRoute`、`AppRoute`、`AppRouteDone`、`BeforePageUnload` 四组 `on/off` API；事件必须携带字符串 `routeEventId`。低版本或缺少能力时 `controller.automatic === false`，仍可捕获并手动 `scroll()`，不能把 `onShow` 当作路由完成通知。`manual: true` 也会令当前 handle 的 `automatic` 为 `false`。
+- 部分原生同路径 `reLaunch` 的 `AppRouteDone.routeEventId` 为空（已在基础库 3.17.2 观察到）。仅当目标是本次已确认的新页面，且完成事件的 `webviewId`、路径、导航类型全部匹配时才接受；不同的非空 ID、旧页面和保留页不会走此兼容路径。恢复上下文保留前置路由事件的 ID。
+- 仓库 Web/headless 宿主通过显式路由事件契约接入，不伪装成微信高版本 SDK。此能力不模拟浏览器 viewport、DOM 查询、history 或 Vue Router 的 `savedPosition`。
+- headless 的滚动范围计算只覆盖显式 inline `px` 视口和单个内容盒，不具备完整 CSS 布局能力；仅靠样式表、自动尺寸或复杂布局得到的位置，必须在实际浏览器或微信 IDE 中验收。headless 通过不等于真实 WebView/Skyline 渲染验证通过。
+
+`handle.clear()` 只清除当前 `key/id` 的快照；`controller.clear(key)` 清除该 key 下全部 id，`controller.clear()` 清除整个会话。它们让相关待完成恢复失效，但不注销注册、不改变当前滚动位置；之后的正常隐藏/卸载仍可捕获新快照。
+
+`handle.stop()` 注销当前注册并使待完成恢复失效，保留已有快照，**不会额外捕获**；所以 `handle.clear(); handle.stop()` 不会把刚清除的位置写回来。正常生命周期销毁仍会在停止注册前捕获。应用级 `controller.dispose()` 则移除宿主监听、注销所有注册、取消待完成恢复并清空会话。
+
+自定义列表使用 `useScrollRestoration()`：`capture` 必须同步返回独立对象或 `null`（清除），不能返回 Promise 或仍会被修改的响应式对象；异步 `restore` 每次 `await` 后、写宿主前都必须检查 `context.isActive()`。详见 [滚动恢复 API 与自定义示例](/wevu/api/router#scroll-restoration) 和 [类型参考](/wevu/api/router-types#scroll-restoration-types)。
 
 ## 6. 调试与迁移建议
 

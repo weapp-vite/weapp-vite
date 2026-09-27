@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   bindPageScrollOwner,
   captureEntryScrollPosition,
+  claimPageScrollRestoration,
   disposePageScrollOwner,
   recordActiveEntryScrollPosition,
   restoreEntryScrollPosition,
@@ -69,6 +70,29 @@ describe('route scroll ownership contract', () => {
     runtime.container.scrollTop = 35
     recordActiveEntryScrollPosition()
     expect(first.scrollTop).toBe(30)
+  })
+
+  it('suppresses only claimed fresh restores and releases independent claims idempotently', () => {
+    const page = {} as NonNullable<PageStackEntry['instance']>
+    const entry: PageStackEntry = { active: true, id: 'pages/claimed', query: {}, instance: page, scrollTop: 60 }
+    const other: PageStackEntry = { active: true, id: 'pages/other', query: {}, instance: {} as typeof page, scrollTop: 15 }
+    runtime.container = createContainer(40)
+    const releaseFirst = claimPageScrollRestoration(page)
+    const releaseSecond = claimPageScrollRestoration(page)
+    restoreEntryScrollPosition(entry)
+    expect(runtime.container.scrollTop).toBe(40)
+    releaseFirst()
+    releaseFirst()
+    restoreEntryScrollPosition(entry)
+    expect(runtime.container.scrollTop).toBe(40)
+    restoreEntryScrollPosition(other)
+    expect(runtime.container.scrollTop).toBe(15)
+    restoreEntryScrollPosition(entry, true)
+    expect(runtime.container.scrollTop).toBe(60)
+    runtime.container.scrollTop = 75
+    releaseSecond()
+    restoreEntryScrollPosition(entry)
+    expect(runtime.container.scrollTop).toBe(60)
   })
 
   it('binds once, replaces containers and disposes listener state', () => {

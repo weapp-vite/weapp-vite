@@ -1,6 +1,6 @@
 ---
 title: Wevu Router 类型
-description: wevu/router 的公开 TypeScript 类型，覆盖位置、参数、守卫、失败、路由记录和小程序宿主 Router。
+description: wevu/router 的公开 TypeScript 类型，覆盖位置、参数、守卫、失败、路由记录、滚动恢复和小程序宿主 Router。
 outline:
   level: [2, 2]
 keywords:
@@ -111,3 +111,27 @@ JSON 值递归联合：`null | boolean | number | string | StaticRouteValue[] | 
 <!--@include: ../../.partials/wevu-api/router-types/03-路由记录类型.md-->
 
 <!--@include: ../../.partials/wevu-api/router-types/04-小程序-router-类型.md-->
+
+## 滚动恢复类型 {#scroll-restoration-types}
+
+以下接口均从 `wevu/router` 导出；运行时函数、默认值及清理语义见 [滚动恢复 API](/wevu/api/router#scroll-restoration)，绑定方式见 [使用指南](/wevu/router#scroll-restoration)。
+
+| 类型 | 公开成员与用途 |
+| --- | --- |
+| `ScrollRestorationOptions<TRouteMap extends object = object>` | `router: RouterNavigation<TRouteMap>`、`onError?: (error: unknown) => void`；创建 controller 的选项 |
+| `ScrollRestorationController` | `readonly automatic: boolean`、`clear(key?: string): void`、`dispose(): void`；管理一个 router 的内存会话 |
+| `ScrollRestorationRegistrationOptions` | `controller?`、`key?`、`id?`、`manual?`；三种适配器共用的注册选项 |
+| `UseScrollRestorationOptions<T extends object>` | 扩展公共注册选项，要求同步 `capture` 和可异步 `restore`；`T` 是业务拥有的快照格式 |
+| `ScrollRestorationContext` | `readonly route: Readonly<RouteLocationNormalizedLoaded>`、`readonly routeEventId?: string`、`isActive(): boolean`；异步恢复的活动性检查 |
+| `ScrollRestorationHandle` | `readonly automatic: boolean`、`scroll(): Promise<boolean>`、`clear(): void`、`stop(): void`；单个注册的控制句柄 |
+| `ScrollViewRestorationHandle` | 扩展 `ScrollRestorationHandle`，增加 `scrollTop: Ref<number>`、`scrollLeft: Ref<number>` 和 `onScroll(event: { detail: { scrollTop: number, scrollLeft: number } }): void` |
+
+公共注册选项中，`controller` 的类型是 `ScrollRestorationController`，`id` 为 `string`，`manual` 为 `boolean`；`key` 的类型为 `string | ((route: Readonly<RouteLocationNormalizedLoaded>) => string)`，默认使用包含 query 的 `fullPath`，`id` 默认为 `'default'`。
+
+自定义适配器的两个回调签名是：
+
+- `capture: () => (T & { then?: never }) | null`
+- `restore: (snapshot: T | undefined, context: ScrollRestorationContext) => void | Promise<void>`
+
+`capture` 返回独立对象或 `null`（清除），不能返回 Promise；类型也不能替代调用方对嵌套快照所有权的保证。没有已保存快照时 `restore` 收到 `undefined`，每次 `await` 后须重新检查 `context.isActive()`。`routeEventId` 是可选的宿主操作关联标识，不是 `key` 或原生页面实例标识。
+
