@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
+import type { ScanRoutesOptions } from './routes'
 import type { AutoRoutesPersistentCache } from './service/shared'
 import { setImmediate } from 'node:timers/promises'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,7 +26,7 @@ const collectCandidatesMock = vi.hoisted(() => vi.fn(async () => new Map()))
 const cloneCandidateMock = vi.hoisted(() => vi.fn((candidate: Record<string, any>) => ({ ...candidate })))
 const createTypedRouterDefinitionMock = vi.hoisted(() => vi.fn(() => 'type TypedRouter = []'))
 const createAutoRoutesTopologyKeyMock = vi.hoisted(() => vi.fn(() => 'topology'))
-const scanRoutesMock = vi.hoisted(() => vi.fn(async () => ({
+const scanRoutesMock = vi.hoisted(() => vi.fn(async (_ctx?: unknown, _candidates?: unknown, _options?: ScanRoutesOptions) => ({
   snapshot: {
     pages: [],
     entries: [],
@@ -183,6 +184,31 @@ describe('createAutoRoutesService branch coverage', () => {
 
     expect(scanRoutesMock).toHaveBeenCalledTimes(1)
     expect(outputFileMock).toHaveBeenCalledWith('/project/.weapp-vite/typed-router.d.ts', 'type TypedRouter = []', 'utf8')
+  })
+
+  it('limits a build resolver to its refresh without replacing the service resolver', async () => {
+    const service = createAutoRoutesService(createContext({ autoRoutes: true }))
+    const ownedResolver = vi.fn(async () => '/project/src/owned.cjs')
+    const buildResolver = vi.fn(async () => '/project/src/build.cjs')
+    service.setPageDeclarationSourceResolver(ownedResolver)
+
+    await service.ensureFresh(buildResolver)
+    expect(scanRoutesMock.mock.calls[0]?.[2]?.resolvePageDeclarationSource).toBe(buildResolver)
+    service.markDirty()
+    await service.ensureFresh()
+    expect(scanRoutesMock.mock.calls[1]?.[2]?.resolvePageDeclarationSource).toBe(ownedResolver)
+  })
+
+  it('recovers a failed build refresh with the service-owned resolver', async () => {
+    const service = createAutoRoutesService(createContext({ autoRoutes: true }))
+    const ownedResolver = vi.fn(async () => '/project/src/owned.cjs')
+    const buildResolver = vi.fn(async () => '/project/src/build.cjs')
+    service.setPageDeclarationSourceResolver(ownedResolver)
+    scanRoutesMock.mockRejectedValueOnce(new Error('build resolution failed'))
+
+    await expect(service.ensureFresh(buildResolver)).rejects.toThrow('build resolution failed')
+    await service.ensureFresh()
+    expect(scanRoutesMock.mock.calls[1]?.[2]?.resolvePageDeclarationSource).toBe(ownedResolver)
   })
 
   it('does not rewrite typed definition when disk content is already current', async () => {

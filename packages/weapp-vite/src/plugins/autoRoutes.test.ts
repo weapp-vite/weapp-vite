@@ -26,7 +26,7 @@ vi.mock('chokidar', () => ({
 }))
 
 function createPlugin(overrides: Record<string, unknown> = {}) {
-  const ensureFresh = vi.fn(async () => {})
+  const ensureFresh = vi.fn(async (_resolver?: (source: string, importer?: string) => Promise<string | undefined>) => {})
   const getModuleCode = vi.fn(() => 'export const pages = ["pages/home/index"]')
   const getNamedModuleCode = vi.fn(() => 'export const routes = [{"name":"home","path":"/pages/home/index","meta":{}}]')
   const getWatchFiles = vi.fn(() => [])
@@ -302,19 +302,38 @@ describe('auto-routes plugin alias fallback', () => {
     expect(ensureFresh).not.toHaveBeenCalled()
     expect(addWatchFile).not.toHaveBeenCalled()
     expect(chokidar.watch).toHaveBeenCalledTimes(1)
-    const declarationResolver = setPageDeclarationSourceResolver.mock.calls[0]?.[0]
-    expect(declarationResolver).toBeTypeOf('function')
-    if (!declarationResolver) {
-      throw new Error('Expected a page declaration source resolver')
-    }
-    await expect(declarationResolver('@/pageScripts/profile', '/virtual/project/src/pages/profile/index.vue'))
-      .resolves
-      .toBe('/virtual/project/src/pageScripts/profile.ts')
-    expect(resolve).toHaveBeenCalledWith(
-      '@/pageScripts/profile',
-      '/virtual/project/src/pages/profile/index.vue',
-      { skipSelf: true },
-    )
+    expect(setPageDeclarationSourceResolver).not.toHaveBeenCalled()
+    expect(resolve).not.toHaveBeenCalled()
+  })
+
+  it('does not retain a disposed build resolver for later route refreshes', async () => {
+    const { plugin, ensureFresh, setPageDeclarationSourceResolver, ctx } = createPlugin()
+    const stableResolver = vi.fn(async () => '/virtual/project/src/profile.cjs')
+    let storedResolver = stableResolver as (source: string, importer?: string) => Promise<string | undefined>
+    let driverAlive = true
+    const buildResolver = vi.fn(async () => {
+      if (!driverAlive) {
+        throw new Error('Plugin driver is already dropped.')
+      }
+      return { id: '/virtual/project/src/profile.cjs' }
+    })
+    setPageDeclarationSourceResolver.mockImplementation((resolver) => {
+      if (resolver) {
+        storedResolver = resolver
+      }
+    })
+    ensureFresh.mockImplementation(async (resolver = storedResolver) => {
+      await resolver('@page-scripts/profile.cjs', '/virtual/project/src/pages/profile/index.vue')
+    })
+    plugin.configResolved?.({ command: 'build' } as ResolvedConfig)
+    await plugin.load?.call({ resolve: buildResolver } as unknown as PluginContext, '\0weapp-vite:auto-routes')
+    expect(buildResolver).toHaveBeenCalledTimes(1)
+    expect(buildResolver).toHaveBeenCalledWith('@page-scripts/profile.cjs', '/virtual/project/src/pages/profile/index.vue', { skipSelf: true })
+
+    driverAlive = false
+    await expect(ctx.autoRoutesService.ensureFresh()).resolves.toBeUndefined()
+    expect(stableResolver).toHaveBeenCalledTimes(1)
+    expect(buildResolver).toHaveBeenCalledTimes(1)
   })
 
   it('does not start route watcher when autoRoutes.watch is false', async () => {
