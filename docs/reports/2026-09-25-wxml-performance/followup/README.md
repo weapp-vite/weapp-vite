@@ -100,3 +100,4 @@ classic 模板首次恢复的 compiler profile 中位数约 255.37 → 255.57 ms
 - [TDesign 直接 IDE CLI 与实际基础库对照](./issue1082-tdesign-direct-sdk.md)：更正 `wv open` 的 automator 交互边界；确认新项目实际 SDK 为 3.15.2 后，首次启动仍未通过。
 - [TDesign 默认 layout 启动对照](./issue1082-tdesign-layout-isolation.md)：关闭 layout 时原颜色用例 5/5，通过原生源码 slot 首屏对照；完整 stateful 配置尚未通过，不把诊断配置当修复。
 - [PR #1086 新 42a 性能运行第三批八片](./nightly-pr1086-36290038049-third.md)：累计 26/27 分片、418 指标，最后 macOS auto-HMR 尚未收齐。
+- [一次 IDE 编译后的完整 TDesign 可见交互](./issue1082-tdesign-manual-compile.md)：相同 1212 个产物下编译恢复首屏；记录脚本/颜色交互及跨上下文数据差异，保留自动化失败。
