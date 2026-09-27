@@ -335,6 +335,25 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
+  it.each(['running', 'written'] as const)('does not rebuild the same mixed edit when its patch arrives after the snapshot is %s', async (phase) => {
+    const session = await start()
+    const file = path.join(root, 'src/page.vue')
+    const ready = Promise.withResolvers<StatefulHmrSnapshot>()
+    session.rebuild.mockImplementationOnce(async () => ready.promise)
+    session.sourceChange(file, 'update', ['entry-mixed-asset:1'])
+    await vi.advanceTimersByTimeAsync(50)
+    expect(session.rebuild).toHaveBeenCalledTimes(1)
+    if (phase === 'written') {
+      ready.resolve(snapshot('blue'))
+      await vi.advanceTimersByTimeAsync(50)
+    }
+    expect(harness.callbacks!.onPatch([file], { type: 'Patch', code: 'void 0', filename: 'update.js' })).toBe(true)
+    ready.resolve(snapshot('blue'))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(session.rebuild).toHaveBeenCalledTimes(1)
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+  })
+
   it('keeps source classifications across unrelated profile writes and consumes only the delivered files', async () => {
     const component = path.join(root, 'src/component.vue')
     const other = path.join(root, 'src/other.vue')

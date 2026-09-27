@@ -478,10 +478,8 @@ class StatefulHmrSession {
       }
       return false
     }
-    if (allowCompilerContentPatch || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))) {
-      // 安全的 JS patch 与模板、样式快照分别同步，混合视觉更新不能无故重载并清空交互状态。
-      this.requestSnapshotRefresh(files)
-    }
+    // 视觉快照由 handleSourceUpdate 的真实源事件调度；同一事件的 JS patch 不是新编辑。
+    // 再次请求会使正在编译的快照过期，或在其写出后重复编译相同内容。
     void this.adapter.registerPatchModules(output.code).then(async () => {
       const moduleCode = transformStatefulHmrPatchImports(output.code, {
         filename: output.filename,

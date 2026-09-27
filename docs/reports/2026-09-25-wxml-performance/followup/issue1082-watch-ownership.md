@@ -186,3 +186,6 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 
 
 后续 [public 更新与资产删除生命周期](./issue1082-asset-lifecycle.md) 已补齐：六项 CLI、最终 headless 六场景 37/37 DOM、真实 DevTools 资产/编辑器两场景 13/13 DOM 通过。保留最初失败、部分写出事务与 prelude 归属回归；原 Wevu 首次模板及完整性能验收仍未完成。
+
+
+进一步修正 [同一模板编辑的重复快照请求](./issue1082-mixed-snapshot-ownership.md)：四次源事件从八次请求、五次构建变为四次请求、四次构建；headless 37/37 和真实 IDE 原生相关场景 20/20 DOM 通过。该诊断不替代完整性能门禁，也不代表真实 Wevu 首次模板失败已解决。
