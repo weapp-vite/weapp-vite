@@ -203,3 +203,8 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 ## 按顺序合并后的 main 同步
 
 [#1083、#1085 已合并及 #1086 同步验证](./issue1082-ordered-main-sync.md)记录最新父提交、生成清单、140 tests、37/37 headless DOM 与所有未通过记录。完整真实 TDesign/Wevu 验收仍未完成，保持草稿。
+
+
+## 原生页面镜像与启动入口对照
+
+[本轮独立原生对照及失败记录](./issue1082-native-context-and-startup.md)确认 SDK 3.17.3 脚本热重载的页面栈镜像差异，并把首次启动延迟定位到产品入口执行之前。Wevu 模板仍未通过，全部临时探针已恢复，保持草稿。
