@@ -71,3 +71,14 @@
 固定基线 `e7862e61dd83e3b9e356ac1e176267b31ab298af` 保持不变。历史回退、不稳定、基线 sitemap 缺陷与独立包生命周期不可比较项继续保留。main Nightly `36172401898` 测的是合并后的 main `d657d7b64bf2e5fb367862377255d513dab0ec07`，不包含本次优化，不能据其结果判断 #1085 的收益。
 
 stateful 混合临时文件事件导致完整重建的复现仍成立，本次没有实现文件事件过滤，也未证明该现象与所有发布超时或 #1081 同因。原生 DevEngine 的无 watcher 内存构建探针已验证：buildStart/load/transform/generateBundle 都可以登记不在模块图内的 `addWatchFile` 依赖；模块图成员关系不能替代完整监听归属。后续方案还须覆盖 native builtin 依赖及独立快照、自定义 compiler、WXML、copy/public 与目录拓扑。
+
+## 按顺序合并前的 main 同步验证（2026-09-27）
+
+已普通 merge main（包含 #1089 和已合并的 #1083），被测 HEAD `63767ee23a4a536c9f5d9cddadc946cac46552d0`。证据索引保留双方内容，重新生成的 DOM 清单为 112 tasks / 292 cases / 0 missing。产品改动仍限定单次同步 realpath 作用域，changeset 同时覆盖 weapp-vite 与 create-weapp-vite。
+
+- 重建 constants、compiler、wevu、web、simulator 与 weapp-vite 后，路径作用域、symlink 替换、模块图、分块/配置服务 4 文件 36 tests 通过；包级 typecheck、test:types、scoped ESLint 通过。最初 compiler dist 未同步导致 preserveComments 类型错误，重建后已消失，未改源码类型掩盖问题。
+- headless 两 suite 共 3 cases / 8 DOM 通过。真实 IDE 初次合并运行虽然 3 cases / 8 DOM 均通过，严格报告因两个 fixture 实测基础库 3.16.3 / 3.17.2 不同而失败；该完整失败保留。
+- 按原 suite 边界分别严格执行，WXML 原生/Vue 共 2 cases / 4 DOM、classic HMR 1 case / 4 DOM 均通过且进程 exit 0。未修改版本检查、DOM 断言或 fixture 基础库配置。
+- [原始日志与 DOM 脱敏归档](./issue1082-realpath-main-sync.json.gz)：解压 94518 bytes，SHA256 `c07107c94b0e8aed22623bf1d0ebc22eff979244ef341983232cf4a0be5dc500`；每份原始材料的 raw SHA 单列。
+
+按维护者本次确认的口径，Nightly 非阻断；[36198019403 完整结果](./nightly-pr1085-36198019403-final.md)仍为失败，性能回退继续由 #1082 跟踪。上述正确性通过不等于性能通过。最终合并仍须以最终 HEAD 普通 CI 为准。
