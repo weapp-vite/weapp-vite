@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：112；微信：109；范围外：3。
-- 展开的 case 声明：299；已接入计划：299；缺计划：0。
+- 任务：113；微信：110；范围外：3。
+- 展开的 case 声明：300；已接入计划：300；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -57,6 +57,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/index.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-1015-css-hmr.runtime.test.ts | devtools | 2 | 2 | 0 | wechat |
 | ide/issue-1029-auto-routes.runtime.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
+| ide/issue-1081-tailwind-batch.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
 | ide/issue-340-hoist.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
 | ide/issue-963-plugin-es6.runtime.test.ts | devtools, headless | 4 | 4 | 0 | wechat |
 | ide/issue-969-launch.runtime.test.ts | devtools | 1 | 1 | 0 | wechat |
@@ -1238,6 +1239,17 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1029`; checkpoints: `[{ id: 'legacy', route: ISSUE_1029_LEGACY, action: '未声明页面仍可按路径访问且没有伪造名称', nodes: [{ selector: '#legacy-title', text: 'Unannotated page' }], }]`; source: `e2e/ide/issue-1029-auto-routes.runtime.test.ts:133`
 - Operations: `reLaunch(ISSUE_1029_HOME)`, `callMethod(_runE2E)`, `callMethodWithOptions(_runE2E)`, `check(legacy)`
+
+
+## ide/issue-1081-tailwind-batch.runtime.test.ts
+
+### issue #1081: Tailwind batch delivery > replaces and removes utilities while retaining the page and click state
+
+- Source: `e2e/ide/issue-1081-tailwind-batch.runtime.test.ts:57`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `e2e-apps/github-issues/fixtures/issue-1081`; checkpoints: `colors.map((color, index) => ({ id: color, route, action: '确认批次样式和保留的交互状态', nodes: [ { selector: '#issue-1081-utility', text: 'batch utility', ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { 'background-color': computed[index]`; source: `e2e/ide/issue-1081-tailwind-batch.runtime.test.ts:72`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `tap(<missing>)`, `check(#fce7f3)`, `check(color)`
 
 
 ## ide/issue-340-hoist.runtime.test.ts

@@ -4,17 +4,20 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { ViteDevServer } from 'vite'
 import { Buffer } from 'node:buffer'
 import { randomBytes } from 'node:crypto'
+import { bundleHmrCode, readMappedHmrCode } from './patchPreparation'
 import { createStatefulHmrServerState, transitionStatefulHmrServer } from './serverState'
 
 const endpointPath = '/__weapp_vite_stateful_hmr__'
 const pollTimeout = 25_000
 
 interface ClientReport {
-  action: 'poll' | 'rebuild' | 'register'
+  action: 'ack' | 'poll' | 'rebuild' | 'register'
   buildId: string
   sessionId: string
   token: string
   version: number
+  payloads?: string[]
+  initialReady?: boolean
   failure?: unknown
 }
 
@@ -28,6 +31,17 @@ export class StatefulHmrTransport {
   private readonly token = createId()
   private readonly pendingPolls = new Map<string, PendingPoll>()
   private closed = false
+  private suspended = false
+  private confirmationChain: Promise<void> = Promise.resolve()
+  private publishedVersion = 0
+  private executedVersion = 0
+  private initialPayloads = new Map<string, () => Promise<void>>()
+  private readonly initializedSessions = new Set<string>()
+  private readonly executions = new Map<number, {
+    resolve: () => void
+    reject: (error: Error) => void
+    delivered: () => Promise<void>
+  }>()
 
   constructor(
     private readonly server: ViteDevServer,
@@ -49,12 +63,69 @@ export class StatefulHmrTransport {
 
   close(): void {
     this.closed = true
+    this.cancelPendingDeliveries()
     this.respondToAll({ type: 'rebuilding' })
   }
 
-  addDelta(code: string, changedIds: string[]): void {
+  addDelta(code: string, changedIds: string[], delivered?: () => Promise<void>): Promise<void> {
     this.apply({ type: 'delta-added', bytes: Buffer.byteLength(code), changedIds, code })
+    const execution = Promise.withResolvers<void>()
+    void execution.promise.catch(() => {})
+    this.executions.set(this.state.hostVersion, { ...execution, delivered: delivered ?? (async () => {}) })
     this.respondToAll({ type: 'changed' })
+    return execution.promise
+  }
+
+  cancelPendingDeliveries(): void {
+    this.suspended = true
+    for (const execution of this.executions.values()) {
+      execution.reject(new Error('Stateful HMR delivery cancelled by full synchronization'))
+    }
+    this.executions.clear()
+    this.publishedVersion = 0
+    this.executedVersion = 0
+  }
+
+  private async acknowledge(body: ClientReport): Promise<void> {
+    if (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId
+      || !Number.isInteger(body.version) || body.version > this.publishedVersion
+      || body.version !== this.state.inFlight?.targetVersion) {
+      return
+    }
+    const buildId = this.state.buildId
+    for (const [version, execution] of [...this.executions]) {
+      if (version > body.version) {
+        break
+      }
+      await execution.delivered()
+      if (this.state.buildId !== buildId || this.executions.get(version) !== execution) {
+        return
+      }
+      this.executions.delete(version)
+      this.executedVersion = Math.max(this.executedVersion, version)
+      execution.resolve()
+    }
+  }
+
+  registerInitialPayloads(files: string[], delivered: (file: string) => Promise<void>): void {
+    this.initializedSessions.clear()
+    this.initialPayloads = new Map(files.map(file => [file, () => delivered(file)]))
+  }
+
+  private async acknowledgeInitial(body: ClientReport): Promise<void> {
+    if (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId || !Array.isArray(body.payloads)) {
+      return
+    }
+    for (const file of body.payloads) {
+      const delivered = this.initialPayloads.get(file)
+      if (delivered) {
+        await delivered()
+        this.initialPayloads.delete(file)
+      }
+    }
+    if (body.payloads.includes('app.js')) {
+      this.initializedSessions.add(body.sessionId)
+    }
   }
 
   createBuildId(): string {
@@ -62,12 +133,14 @@ export class StatefulHmrTransport {
   }
 
   commitFullBuild(buildId: string): void {
+    this.cancelPendingDeliveries()
     this.apply({ type: 'full-build-committed', buildId })
+    this.suspended = false
     this.respondToAll({ type: 'rebuilding' })
   }
 
   isCurrentBuild(buildId: string): boolean {
-    return this.state.buildId === buildId
+    return !this.suspended && this.state.buildId === buildId
   }
 
   createControl() {
@@ -97,6 +170,10 @@ export class StatefulHmrTransport {
       respond(response, 403, { type: 'forbidden' })
       return
     }
+    if (this.suspended) {
+      respond(response, 202, { type: 'rebuilding' })
+      return
+    }
     if (body.action === 'rebuild') {
       const failure = body.failure
       if (failure && typeof failure === 'object' && 'reason' in failure) {
@@ -112,16 +189,67 @@ export class StatefulHmrTransport {
       return
     }
     if (body.action === 'register') {
+      const previousSession = this.state.activeSessionId
       const commands = this.apply({
         type: 'client-registered',
         buildId: body.buildId,
         sessionId: body.sessionId,
         version: body.version,
       })
+      if (this.state.activeSessionId !== previousSession) {
+        this.executedVersion = 0
+      }
       if (commands.some(command => command.type === 'request-full-build')) {
         this.requestFullBuild()
       }
-      respond(response, 200, { type: 'registered' })
+      try {
+        const confirmation = this.confirmationChain.then(() => this.acknowledgeInitial(body))
+        this.confirmationChain = confirmation.catch(() => {})
+        await confirmation
+      }
+      catch {
+        respond(response, 500, { type: 'confirmation-failed' })
+        return
+      }
+      respond(response, 200, {
+        type: 'registered',
+        acknowledgement: 'explicit-v1',
+        ...(body.initialReady !== undefined ? { ready: this.initializedSessions.has(body.sessionId) } : {}),
+      })
+      return
+    }
+    if (body.action === 'ack' && (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId
+      || !Number.isInteger(body.version) || body.version < 0 || body.version > this.publishedVersion)) {
+      respond(response, 409, { type: 'confirmation-failed' })
+      return
+    }
+    try {
+      const confirmation = this.confirmationChain.then(async () => {
+        await this.acknowledgeInitial(body)
+        await this.acknowledge(body)
+      })
+      this.confirmationChain = confirmation.catch(() => {})
+      await confirmation
+    }
+    catch {
+      respond(response, 500, { type: 'confirmation-failed' })
+      return
+    }
+    if (body.action === 'ack') {
+      if (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId || body.version > this.executedVersion) {
+        respond(response, 409, { type: 'confirmation-failed' })
+        return
+      }
+      respond(response, 200, { type: 'acknowledged', version: body.version })
+      return
+    }
+    if (body.initialReady === false && body.buildId === this.state.buildId && body.sessionId === this.state.activeSessionId && this.initializedSessions.has(body.sessionId)) {
+      respond(response, 200, { type: 'ready' })
+      return
+    }
+    if (body.buildId === this.state.buildId && body.sessionId === this.state.activeSessionId
+      && Number.isInteger(body.version) && body.version >= 0 && body.version < this.executedVersion) {
+      respond(response, 200, { type: 'changed' })
       return
     }
     const commands = this.apply({
@@ -134,6 +262,11 @@ export class StatefulHmrTransport {
     if (publish?.type === 'publish-batch') {
       try {
         await this.publishUpdate(publish.batch.buildId, renderBatch(publish.batch, createId()))
+        if (!this.isCurrentBuild(publish.batch.buildId)) {
+          respond(response, 202, { type: 'rebuilding' })
+          return
+        }
+        this.publishedVersion = Math.max(this.publishedVersion, publish.batch.targetVersion)
         respond(response, 200, { type: 'batch-published', targetVersion: publish.batch.targetVersion })
       }
       catch {
@@ -207,13 +340,11 @@ export function renderBatch(
     fromVersion: batch.fromVersion,
     targetVersion: batch.targetVersion,
   }
-  const code = batch.deltas.map(delta => `(() => {\n${indent(delta.code, 2)}\n})();`).join('\n')
-  return `// ${nonce}\nglobalThis.__WEAPP_VITE_STATEFUL_HMR_CLIENT__.receiveBatch(${JSON.stringify(metadata)}, () => {\n${indent(code, 2)}\n});\n`
-}
-
-function indent(value: string, spaces: number): string {
-  const prefix = ' '.repeat(spaces)
-  return value.split('\n').map(line => `${prefix}${line}`).join('\n')
+  return bundleHmrCode(
+    batch.deltas.map((delta, index) => readMappedHmrCode(delta.code, `delta-${batch.fromVersion + index + 1}.js`)),
+    `// ${nonce}\nglobalThis.__WEAPP_VITE_STATEFUL_HMR_CLIENT__.receiveBatch(${JSON.stringify(metadata)}, () => {\n`,
+    '\n});\n',
+  )
 }
 
 function isClientReport(value: unknown): value is ClientReport {
@@ -221,7 +352,7 @@ function isClientReport(value: unknown): value is ClientReport {
     return false
   }
   const candidate = value as Partial<ClientReport>
-  return (candidate.action === 'poll' || candidate.action === 'rebuild' || candidate.action === 'register')
+  return (candidate.action === 'ack' || candidate.action === 'poll' || candidate.action === 'rebuild' || candidate.action === 'register')
     && typeof candidate.buildId === 'string'
     && typeof candidate.sessionId === 'string'
     && typeof candidate.token === 'string'

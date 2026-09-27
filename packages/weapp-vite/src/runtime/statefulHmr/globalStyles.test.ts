@@ -4,7 +4,7 @@ import path from 'node:path'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
 import { fs } from '@weapp-core/shared/node'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createStatefulHmrGlobalStyleAssets } from './globalStyles'
+import { createStatefulHmrGlobalStyleAssets, mergeStatefulHmrCompilerAssets } from './globalStyles'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { getChangedStatefulHmrSnapshotAssets, mergeStatefulHmrSnapshotAssets } from './session'
 
@@ -247,4 +247,26 @@ describe('stateful HMR global styles', () => {
     await writeStatefulHmrOutput(root, getChangedStatefulHmrSnapshotAssets(initial, next))
     await expect(fs.readFile(path.join(root, `${route}.wxss`), 'utf8')).resolves.toBe('')
   })
+})
+
+it.each(['', '.local { padding: 7px; }'])('merges compiler styles while retaining other owners (local: %s)', (local) => {
+  const bytes = new Uint8Array([0, 255, 195, 40])
+  const previous = createStatefulHmrGlobalStyleAssets([
+    { type: 'asset', fileName: 'app.wxss', source: '.probe { color: red; }' },
+    { type: 'asset', fileName: 'pages/index.wxss', source: local },
+    { type: 'asset', fileName: 'image.png', source: bytes },
+    { type: 'asset', fileName: 'app.json', source: '{"pages":["pages/index"]}' },
+  ], 'wxss', { componentPageGlobalStyleRoutes: ['pages/index'], refreshPageStyles: true })
+  const merged = mergeStatefulHmrCompilerAssets(previous, [
+    { type: 'asset', fileName: 'app.wxss', source: '.probe { color: blue; }' },
+  ], 'wxss', { componentPageGlobalStyleRoutes: ['pages/index'], refreshPageStyles: true })
+  expect(merged.find(file => file.fileName === 'image.png')).toMatchObject({ source: bytes })
+  expect(merged.find(file => file.fileName === 'app.json')).toMatchObject({ source: '{"pages":["pages/index"]}' })
+  const page = merged.find(file => file.fileName === 'pages/index.wxss') as Extract<StatefulHmrOutputFile, { type: 'asset' }>
+  if (local) {
+    expect(String(page.source)).toContain(local)
+  }
+  expect(String(page.source)).toContain('color: blue')
+  expect(String(page.source)).not.toContain('color: red')
+  expect(merged.find(file => file.fileName === styleFile)).toMatchObject({ source: '.probe { color: blue; }' })
 })

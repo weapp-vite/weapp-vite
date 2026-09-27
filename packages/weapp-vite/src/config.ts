@@ -55,6 +55,9 @@ export type {
   WxmlRemoveOptions,
 }
 export type {
+  WeappCompilerHmrAsset,
+  WeappCompilerHmrPreparation,
+  WeappCompilerHmrRequest,
   WeappCompilerPlugin,
   WeappCompilerPluginCapabilities,
   WeappCompilerPluginContext,

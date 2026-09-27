@@ -1,9 +1,11 @@
 import type { ScanWxmlResult } from '../../../wxml'
 import type { WxmlServiceState } from './shared'
+import { createHash } from 'node:crypto'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { isEmptyObject } from '../../../context/shared'
 import logger from '../../../logger'
+import { getCompilerSourceSnapshot, readCompilerInput, readCompilerSourceSnapshot } from '../../../plugins/utils/sourceSnapshot'
 import { scanWxml } from '../../../wxml'
 import { requireConfigService } from '../../utils/requireConfigService'
 import { invalidateAggregatedComponents } from './shared'
@@ -25,9 +27,12 @@ export function createWxmlScanner(
 
   async function scan(filepath: string) {
     const configService = requireConfigService(state.ctx, '扫描 WXML 前必须初始化 configService。')
-    let stat: { mtimeMs?: number, ctimeMs?: number, size?: number }
+    const pinned = readCompilerSourceSnapshot(getCompilerSourceSnapshot(configService), filepath)
+    let stat: { mtimeMs?: number, ctimeMs?: number, size?: number } = {}
     try {
-      stat = await fs.stat(filepath)
+      if (pinned === undefined) {
+        stat = await fs.stat(filepath)
+      }
     }
     catch (error: any) {
       if (error && error.code === 'ENOENT') {
@@ -47,7 +52,9 @@ export function createWxmlScanner(
       throw error
     }
 
-    const signature = `${stat.mtimeMs ?? ''}:${stat.ctimeMs ?? ''}:${stat.size ?? ''}`
+    const signature = pinned === undefined
+      ? `${stat.mtimeMs ?? ''}:${stat.ctimeMs ?? ''}:${stat.size ?? ''}`
+      : `snapshot:${createHash('sha256').update(pinned).digest('hex')}`
     const shouldRescan = await state.cache.isInvalidate(filepath, { signature, checkMtime: false })
     if (!shouldRescan) {
       const cached = state.cache.get(filepath)
@@ -57,7 +64,7 @@ export function createWxmlScanner(
       }
     }
 
-    const wxml = await fs.readFile(filepath, 'utf8')
+    const wxml = await readCompilerInput(configService, filepath)
     const res = analyze(wxml)
     state.tokenMap.set(filepath, res)
     state.cache.set(filepath, res)

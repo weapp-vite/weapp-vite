@@ -1445,7 +1445,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
               glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
             },
-            rebuild: async (files) => {
+            rebuild: async (files, sources) => {
               for (const file of files) {
                 invalidateFileCache(file)
               }
@@ -1467,7 +1467,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
                   },
                 ]
                 return snapshotOptions
-              }, ctx)
+              }, ctx, sources)
               const output = toStatefulHmrOutput(snapshot.output)
               return {
                 output,

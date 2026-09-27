@@ -2,9 +2,10 @@ import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { JsonResolvableEntry } from '../utils'
 import type { FileCache } from '@/cache'
-import { fs } from '@weapp-core/shared/fs'
+import { createHash } from 'node:crypto'
 import { bundleRequire } from 'rolldown-require'
 import { debug, logger } from '../context/shared'
+import { getCompilerSourceSnapshot, readCompilerInput, readCompilerSourceSnapshot } from '../plugins/utils/sourceSnapshot'
 import { inlineAutoRoutesImports, normalizeAppJson, parseCommentJson, resolveJson } from '../utils'
 import { hasOwn } from './utils/object'
 import { requireConfigService } from './utils/requireConfigService'
@@ -26,16 +27,22 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
 
     try {
       const isAppConfig = APP_CONFIG_RE.test(filepath)
+      const pinned = readCompilerSourceSnapshot(getCompilerSourceSnapshot(configService), filepath)
       let autoRoutesSignature: string | undefined
       if (isAppConfig && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
         await ctx.autoRoutesService?.ensureFresh()
         autoRoutesSignature = ctx.autoRoutesService?.getSignature?.()
       }
 
-      const invalid = await cache.isInvalidate(
-        filepath,
-        typeof autoRoutesSignature === 'string' ? { signature: autoRoutesSignature } : undefined,
-      )
+      const signature = pinned === undefined
+        ? autoRoutesSignature
+        : `snapshot:${createHash('sha256').update(pinned).update('\0').update(autoRoutesSignature ?? '').digest('hex')}`
+      const invalid = await cache.isInvalidate(filepath, signature === undefined
+        ? undefined
+        : {
+            signature,
+            ...(pinned === undefined ? {} : { checkMtime: false }),
+          })
       if (!invalid) {
         const cached = cache.get(filepath)
         if (cached !== undefined) {
@@ -46,7 +53,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
       if (SCRIPT_JSON_CONFIG_RE.test(filepath)) {
         const routesReference = ctx.autoRoutesService?.getReference()
         const fallbackRoutes = routesReference ?? { pages: [], entries: [], subPackages: [] }
-        const scriptContent = await fs.readFile(filepath, 'utf8')
+        const scriptContent = await readCompilerInput(configService, filepath)
         const inlinedContent = isAppConfig
           ? inlineAutoRoutesImports(scriptContent, fallbackRoutes)
           : scriptContent
@@ -54,7 +61,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
           filepath,
           cwd: configService.options.cwd,
           preserveTemporaryFile: true,
-          ...(inlinedContent === scriptContent ? {} : { source: inlinedContent }),
+          ...(pinned === undefined && inlinedContent === scriptContent ? {} : { source: inlinedContent }),
           rolldownOptions: {
             input: {
               // @ts-ignore
@@ -73,7 +80,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
           : exportedConfig
       }
       else {
-        resultJson = parseCommentJson(await fs.readFile(filepath, 'utf8'))
+        resultJson = parseCommentJson(await readCompilerInput(configService, filepath))
       }
       if (isAppConfig) {
         resultJson = normalizeAppJson(resultJson)

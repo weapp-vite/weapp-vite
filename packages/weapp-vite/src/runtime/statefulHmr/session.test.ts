@@ -1,3 +1,5 @@
+import { runInNewContext } from 'node:vm'
+import { WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY } from '@weapp-core/constants'
 import { describe, expect, it } from 'vitest'
 import {
   getChangedStatefulHmrSnapshotAssets,
@@ -255,8 +257,17 @@ describe('stateful hmr session', () => {
 
     stampStatefulHmrFullBuild(output, 'build-a')
 
-    expect(output[0].code).toBe('// weapp-vite-stateful-build:build-a\napp();')
-    expect(output[1].code).toBe('// weapp-vite-stateful-build:build-a\nshared();')
+    const events: string[] = []
+    const runtime = {
+      [WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY]: { payloadDelivered: (file: string) => events.push(file) },
+      app: () => events.push('execute-app'),
+      shared: () => events.push('execute-shared'),
+    }
+    for (const item of output.slice(0, 2)) {
+      expect(item.code).toContain('// weapp-vite-stateful-build:build-a')
+      runInNewContext(item.code, runtime)
+    }
+    expect(events).toEqual(['execute-app', 'app.js', 'execute-shared', 'weapp-vendors/shared.js'])
     expect(output[2]).toEqual({ fileName: 'app.json', source: '{}', type: 'asset' })
   })
 

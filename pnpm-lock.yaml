@@ -3074,6 +3074,9 @@ importers:
 
   packages/weapp-vite:
     dependencies:
+      '@weapp-tailwindcss/engine':
+        specifier: 0.1.1
+        version: 0.1.1(tailwindcss@4.3.3)
       '@babel/preset-env':
         specifier: ^8.0.6
         version: 8.0.6(@babel/core@8.0.6)

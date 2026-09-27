@@ -6,6 +6,9 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
+import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
+import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
+import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
@@ -15,6 +18,7 @@ export async function buildStatefulHmrSnapshot(
   loadOptions: LoadConfigOptions,
   configure: (options: InlineConfig) => InlineConfig = options => options,
   owner?: Pick<CompilerContext, 'runtimeState'>,
+  sources?: ReadonlyMap<string, string | null>,
 ) {
   const ctx = createCompilerContextInstance()
   if (owner) {
@@ -23,6 +27,9 @@ export async function buildStatefulHmrSnapshot(
   return await ctx.autoImportService.runWithoutOutputWrites(async () => {
     ctx.currentBuildTarget = 'app'
     await ctx.configService.load(loadOptions)
+    if (sources) {
+      setCompilerSourceSnapshot(ctx.configService, sources)
+    }
     await ctx.scanService.loadAppEntry()
     ctx.scanService.loadSubPackages()
     let globalStyleRoutes: string[] = []
@@ -51,6 +58,31 @@ export async function buildStatefulHmrSnapshot(
     }]
     const options = configure(baseOptions)
     options.build = { ...options.build, watch: undefined, write: false }
+    if (sources) {
+      options.plugins = [{
+        name: 'weapp-vite:snapshot-input',
+        enforce: 'pre',
+        load: {
+          order: 'pre',
+          handler(id) {
+            if (id.startsWith('\0') || id.includes('?')) {
+              return null
+            }
+            const sourceId = normalizeFsResolvedId(id)
+            const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
+            if (sourceId.endsWith('.vue') || (nativeEntry?.path && normalizeFsResolvedId(nativeEntry.path) === sourceId)
+              || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
+              return null
+            }
+            const source = sources.get(compilerSourceId(id))
+            if (source === null) {
+              throw new Error(`Source removed from snapshot: ${id}`)
+            }
+            return source === undefined ? null : { code: source }
+          },
+        },
+      }, ...(options.plugins ?? [])]
+    }
     const output = await build(options)
     return {
       output,

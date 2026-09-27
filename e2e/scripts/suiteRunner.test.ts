@@ -540,6 +540,13 @@ describe('suiteRunner', () => {
     expect(ideFullLabels).toContain('ide/template-dev-open-all.runtime.test.ts')
     expect(ideFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
     expect(ideFullLabels).toContain('ide/stateful-hmr.runtime.test.ts')
+    expect(ideGithubIssuesLabels).toContain('ide/issue-1081-tailwind-batch.runtime.test.ts')
+    const batchHeadlessTask = (await getSuiteTasks('ide-dom-headless'))
+      .find(task => task.label === 'ide/issue-1081-tailwind-batch.runtime.test.ts')
+    expect(batchHeadlessTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
+    })
     expect(ideFullLabels).not.toContain('ide/chunk-modes.runtime.duplicate.test.ts')
     expect(ideExhaustiveLabels).not.toContain('ide/runtimeErrors.test.ts')
     expect(ideExhaustiveLabels).not.toContain('ide/uview-plus-compat.runtime.test.ts')

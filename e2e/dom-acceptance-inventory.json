@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 112,
-    "wechatTaskCount": 109,
+    "taskCount": 113,
+    "wechatTaskCount": 110,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 299,
-    "casesWithPlan": 299,
+    "expandedCaseDeclarations": 300,
+    "casesWithPlan": 300,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -3151,6 +3151,40 @@
             "callMethod(_runE2E)",
             "callMethodWithOptions(_runE2E)",
             "check(legacy)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
+      "task": "ide/issue-1081-tailwind-batch.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools",
+        "headless"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/issue-1081-tailwind-batch.runtime.test.ts:57",
+          "name": "issue #1081: Tailwind batch delivery > replaces and removes utilities while retaining the page and click state",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "e2e-apps/github-issues/fixtures/issue-1081",
+              "checkpoints": "colors.map((color, index) => ({ id: color, route, action: '确认批次样式和保留的交互状态', nodes: [ { selector: '#issue-1081-utility', text: 'batch utility', ...(resolveRuntimeProviderName() === 'devtools' ? { styles: { 'background-color': computed[index]",
+              "source": "e2e/ide/issue-1081-tailwind-batch.runtime.test.ts:72"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "tap(<missing>)",
+            "check(#fce7f3)",
+            "check(color)"
           ],
           "notes": []
         }
@@ -7951,6 +7985,10 @@
       "sha256": "c0cbff284ff60648be3922394474c5cfad02a1dc9b1667fb0bd8a963a4ef8eaf"
     },
     {
+      "file": "e2e/ide/issue-1081-tailwind-batch.runtime.test.ts",
+      "sha256": "763b971d762551bd02fce5bc4e37b0d38e0b0f5b663b95094947fe3495108030"
+    },
+    {
       "file": "e2e/ide/issue-340-hoist.runtime.test.ts",
       "sha256": "be11ae8a0779e4fdf9a915c4bff48e6cca7ac23bd0c327dbbb1191f1390a54b8"
     },
@@ -8436,7 +8474,7 @@
     },
     {
       "file": "e2e/scripts/e2e-suite-manifest.ts",
-      "sha256": "02198d5acb5642d58d85e7552f95117b70fb98db541864728956684c4281bd8f"
+      "sha256": "63000e538fea38ede35c264b57d6a3c2c97788a924f2d0bfe4696667e16da3b2"
     },
     {
       "file": "e2e/scripts/hmr-guard-manifest.ts",
@@ -8504,7 +8542,7 @@
     },
     {
       "file": "e2e/utils/devProcessDiagnostics.ts",
-      "sha256": "4beec47926923d76a2dede312db5bd8019e9ee8f975f416d134a434135fc34e9"
+      "sha256": "36b6c9912b0011ff9cf439752aec980323cbc685a89871c1546fe8160bf2b6d1"
     },
     {
       "file": "e2e/utils/devProcessStdio.ts",
@@ -8569,6 +8607,10 @@
     {
       "file": "e2e/utils/issue1029Project.ts",
       "sha256": "457676e62c44dea9a07de1384e208bf2c0d14e2fa847f3632707e65d25fc45a7"
+    },
+    {
+      "file": "e2e/utils/issue1081Project.ts",
+      "sha256": "8e874b4a45b73c071ee91b10eef685aa87e539f4730a986996e5c94db8313df4"
     },
     {
       "file": "e2e/utils/issue963Project.ts",
@@ -8649,6 +8691,10 @@
     {
       "file": "e2e/utils/startupProtocolDiagnostics.ts",
       "sha256": "dc8c24d48ec04760c669ca05b9dbb512a8c3c955b3cfccabba2a1daeb3c3bf6b"
+    },
+    {
+      "file": "e2e/utils/statefulHmrTransport.ts",
+      "sha256": "07714122ceab990e8d2a8e9db82db229e069cec3af7d9da47b501d8aabf0c35b"
     },
     {
       "file": "e2e/utils/templateAcceptance/features.ts",

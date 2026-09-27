@@ -48,11 +48,14 @@ function localStyleSource(source: string): string {
   if (!source.startsWith(globalStart)) {
     return source
   }
-  const end = source.indexOf(globalEnd, globalStart.length)
+  // 刷新标记移除后，纯全局样式页可以恰好以结束注释结尾；换行不属于边界身份。
+  const endMarker = globalEnd.trimEnd()
+  const end = source.indexOf(endMarker, globalStart.length)
   if (end < 0) {
     throw new Error('Stateful HMR component page global stylesheet boundary is incomplete')
   }
-  return source.slice(end + globalEnd.length)
+  const remainder = source.slice(end + endMarker.length)
+  return remainder.startsWith('\n') ? remainder.slice(1) : remainder
 }
 
 /** 将全局样式放在同目录资产，避免微信直接修改 app.wxss 时完整重启。 */
@@ -148,4 +151,22 @@ export function createStatefulHmrGlobalStyleAssets(
     result[index] = { ...item, source: nextSource }
   }
   return result
+}
+
+/** 编译 provider 只替换自己的文本资产，保留其他 owner 的 JSON、二进制资源和模板。 */
+export function mergeStatefulHmrCompilerAssets(
+  previous: Iterable<StatefulHmrOutputFile>,
+  incoming: StatefulHmrOutputFile[],
+  styleExtension: string,
+  options: Parameters<typeof createStatefulHmrGlobalStyleAssets>[2],
+): StatefulHmrOutputFile[] {
+  const output = new Map(Array.from(previous, item => [item.fileName, item]))
+  const entryFile = changeFileExtension('app', styleExtension)
+  for (const item of incoming) {
+    if (item.fileName === entryFile) {
+      output.delete(changeFileExtension(WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME, styleExtension))
+    }
+    output.set(item.fileName, item)
+  }
+  return createStatefulHmrGlobalStyleAssets([...output.values()], styleExtension, options)
 }

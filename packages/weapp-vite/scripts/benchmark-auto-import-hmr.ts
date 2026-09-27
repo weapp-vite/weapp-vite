@@ -4,10 +4,14 @@ import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink, writeFile }
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 import path from 'pathe'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../../../e2e/utils/dev-memory'
 import { startDevProcess } from '../../../e2e/utils/dev-process'
 import { createBenchmarkDevEnv } from '../../../scripts/benchmarkTemplatesHmr/environment'
+import { parseStatefulHmrControlSource } from '../../../scripts/workspace-hmr/scenarios'
+import { StatefulHmrAuditClient } from '../../../scripts/workspace-hmr/statefulAuditClient'
+import { acknowledgeStatefulTemplateArtifact } from '../../../scripts/workspace-hmr/statefulAuditUpdate'
 import vantComponents from '../src/auto-import-components/resolvers/json/vant.json'
 import { writeBenchmarkResolverFile } from './utils/benchmark-tsconfig'
 import { benchmarkModeSelected, benchmarkReportResults } from './utils/benchmarkSelection'
@@ -193,6 +197,27 @@ async function measureHmr(options: {
 
       const outputPath = path.join(project.tempDir, 'dist/pages/bench-hmr-auto-import/index.wxml')
       const originalOutput = await readFile(outputPath, 'utf8')
+      const controlPath = path.join(project.tempDir, 'dist', WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE)
+      const controlSource = await readFile(controlPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') {
+          return undefined
+        }
+        throw error
+      })
+      const client = controlSource === undefined ? undefined : new StatefulHmrAuditClient()
+      if (client && controlSource !== undefined) {
+        await client.ensureRegistered(parseStatefulHmrControlSource(controlSource), DEV_TIMEOUT_MS)
+      }
+      const acknowledgeArtifact = async (marker: string, absent = false) => {
+        if (client) {
+          await acknowledgeStatefulTemplateArtifact({
+            client,
+            readControl: async () => parseStatefulHmrControlSource(await readFile(controlPath, 'utf8')),
+            isCurrentUpdate: async () => (await readFile(outputPath, 'utf8')).includes(marker) !== absent,
+            timeoutMs: DEV_TIMEOUT_MS,
+          })
+        }
+      }
       const cycles: Array<{ editMs: number, restoreMs: number }> = []
       for (let cycle = 0; cycle < (process.env.AUTO_IMPORT_BENCH_PAIRED === '1' ? 2 : 1); cycle++) {
         const marker = `auto-import-hmr-${mode}-${usedTags.length}-${iteration}-${cycle}`
@@ -206,6 +231,7 @@ async function measureHmr(options: {
             timeoutMs: DEV_TIMEOUT_MS,
             signal: measurementAbort.signal,
           }), `${mode} emitted hmr marker`)
+          await acknowledgeArtifact(marker)
           const restoreMs = await dev.waitFor(measureFileMarkerUpdate({
             outputPath,
             marker,
@@ -214,6 +240,7 @@ async function measureHmr(options: {
             timeoutMs: DEV_TIMEOUT_MS,
             signal: measurementAbort.signal,
           }), `${mode} restored hmr output`)
+          await acknowledgeArtifact(marker, true)
           cycles.push({ editMs, restoreMs })
         }
         finally {

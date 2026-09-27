@@ -158,6 +158,7 @@
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-tailwindcss/engine": "0.1.1",
     "@weapp-vite/ast": "workspace:*",
     "@weapp-vite/eslint": "workspace:*",
     "@weapp-vite/i18n": "workspace:*",
