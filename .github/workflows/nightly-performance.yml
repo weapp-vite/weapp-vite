@@ -62,7 +62,8 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      max-parallel: 6
+      # 单个目标有三 OS × 九个独立分片；分片内的成对采样仍串行执行。
+      max-parallel: 27
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - name: Check out trusted driver
