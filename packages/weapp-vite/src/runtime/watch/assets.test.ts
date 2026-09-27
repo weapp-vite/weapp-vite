@@ -40,6 +40,8 @@ it('owns copy updates and directory recovery without claiming editor files or im
     await vi.waitFor(() => expect(changed).toHaveBeenCalledWith(image, 'update'))
     await writeFile(dynamic, 'now included')
     await vi.waitFor(() => expect(changed).toHaveBeenCalledWith(dynamic, 'create'))
+    // chokidar 合并同一路径 50ms 内的 change；等待后续独立的过滤状态恢复事件。
+    await delay(100)
     await writeFile(dynamic, 'exclude')
     await vi.waitFor(() => expect(changed).toHaveBeenCalledWith(dynamic, 'delete'))
     const nested = path.join(src, 'nested/new.txt')

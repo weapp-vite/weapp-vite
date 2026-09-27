@@ -192,3 +192,6 @@ mpcore 的 Node/browser provider 模板测试同步覆盖 Page/Component 两轮�
 
 
 后续 [Tailwind 编译器休眠边界](./issue1082-tailwind-dormancy.md) 修正未使用 Tailwind 时首次更新的多余初始化：27 项集成测试和两项模板 CLI 通过。真实 TDesign 计算样式场景在修改前后均于启动阶段超时，保留未完成 runtime 验收，不冒称通过。
+
+
+42a 的两项普通 CI 失败已在 [exposed 卸载视图与资产测试事件边界](./issue1082-ci-exposed-lifecycle.md) 中复现并修正：Wot 全部 99 组件两视口行为、Wevu 子组件 headless/真实 IDE 各 6/6 DOM 通过。远端新 HEAD 仍需独立验证。
