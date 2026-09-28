@@ -84,6 +84,7 @@ describe('dev process diagnostics', () => {
     '[weapp-vite] stateful HMR: transform rejected',
     '[weapp-vite] stateful HMR snapshot refresh failed',
     '[weapp-vite] stateful HMR patch transform failed',
+    '[weapp-vite] stateful HMR delivery failed',
     '[weapp-vite] stateful HMR server restart failed',
     '[weapp-vite] stateful HMR output failed: output rejected',
   ])('recognizes an explicit error logger message: %s', (header) => {

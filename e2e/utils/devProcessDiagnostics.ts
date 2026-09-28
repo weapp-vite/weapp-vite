@@ -3,7 +3,7 @@ import { stripVTControlCharacters } from 'node:util'
 import { appendIdeReportEvent } from './ideWarningReport'
 
 const VITE_LOG_PREFIX = /^(?:\d{1,2}:\d{2}:\d{2}(?:\s*[AP]M)?\s+)?\[vite\]\s+(?:[\w-]+\s+(?=Internal server error:|Pre-transform error|\[weapp-vite\]))?/
-const STATEFUL_HMR_ERROR = /^\[weapp-vite\] stateful HMR(?: client (?:patch-failed|bridge-not-ready):|:| (?:snapshot refresh|patch transform|server restart) failed(?:\s|$)| output failed:)/
+const STATEFUL_HMR_ERROR = /^\[weapp-vite\] stateful HMR(?: client (?:patch-failed|bridge-not-ready):|:| (?:snapshot refresh|patch transform|delivery|server restart) failed(?:\s|$)| output failed:)/
 const VITE_ERROR = /^(?:Internal server error:|Pre-transform error(?: \([^\r\n]+\))?:)/
 
 export function createDevProcessDiagnostics(project: string) {

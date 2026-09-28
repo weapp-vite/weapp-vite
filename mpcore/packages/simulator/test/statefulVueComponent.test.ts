@@ -46,6 +46,7 @@ describe.each(['node', 'browser'] as const)('%s Vue child stateful HMR', (provid
         }
         expect(textContent(node('.parent-count'))).toBe(String(parentCount))
         expect(textContent(node('.child-count'))).toBe(String(childCount))
+        expect(textContent(node('.child-store-count'))).toBe(String(childCount))
         expect(textContent(node('.child-result'))).toBe(result)
         expect(textContent(node('.child-marker'))).toBe(marker)
         const inputNode = node('.input')

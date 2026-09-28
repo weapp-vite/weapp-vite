@@ -15,6 +15,7 @@ describe('e2e suite manifest', () => {
   it.each([
     'ide/wevu-runtime.pruning.test.ts',
     'ide/github-issues.runtime.issue1035.test.ts',
+    'ide/github-issues.runtime.feature1087.test.ts',
     'ide/issue-963-plugin-es6.runtime.test.ts',
     'ide/issue-998-tailwind.runtime.test.ts',
     'ide/body-blob.runtime.test.ts',
@@ -27,6 +28,7 @@ describe('e2e suite manifest', () => {
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
     'ide/wevu-subpackage-placement.runtime.test.ts',
+    'ide/wevu-json-render.runtime.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
     const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)
     expect(headless?.env).toMatchObject({

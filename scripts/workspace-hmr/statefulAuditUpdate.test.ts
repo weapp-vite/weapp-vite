@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { StatefulHmrAuditClient } from './statefulAuditClient'
-import { waitForStatefulHmrAuditUpdate } from './statefulAuditUpdate'
+import { acknowledgeStatefulTemplateArtifact, waitForStatefulHmrAuditUpdate } from './statefulAuditUpdate'
 
 describe('stateful HMR audit mutation acknowledgement', () => {
   it('keeps polling after an older batch until the current mutation is emitted', async () => {
@@ -56,5 +56,52 @@ describe('stateful HMR audit mutation acknowledgement', () => {
     finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('template artifact companion batches', () => {
+  it('consumes each generated binding patch before the next template restoration', async () => {
+    const requests: string[] = []
+    let pending = 1
+    let consumed = 0
+    const request = vi.fn(async (_input: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { action: string, version: number }
+      requests.push(`${body.action}:${body.version}`)
+      if (body.action === 'register') {
+        return new Response(JSON.stringify({ type: 'registered', acknowledgement: 'explicit-v1' }))
+      }
+      if (body.action === 'ack') {
+        expect(body.version).toBe(pending)
+        consumed = pending
+        return new Response(JSON.stringify({ type: 'acknowledged', version: consumed }))
+      }
+      expect(body.version).toBe(consumed)
+      return new Response(JSON.stringify({ type: 'batch-published', targetVersion: pending }))
+    })
+    const client = new StatefulHmrAuditClient(request)
+    const options = {
+      client,
+      readControl: async () => ({ buildId: 'build', token: 'token', url: 'http://localhost/control' }),
+      isCurrentUpdate: async () => true,
+      timeoutMs: 1_000,
+    }
+    await acknowledgeStatefulTemplateArtifact(options)
+    expect(consumed).toBe(1)
+    pending = 2
+    await acknowledgeStatefulTemplateArtifact(options)
+    expect(consumed).toBe(2)
+    expect(requests).toEqual(['register:0', 'poll:0', 'ack:1', 'poll:1', 'ack:2'])
+  })
+
+  it('does not poll an old baseline that never publishes template-generated script batches', async () => {
+    const request = vi.fn(async () => new Response(JSON.stringify({ type: 'registered' })))
+    const client = new StatefulHmrAuditClient(request)
+    await acknowledgeStatefulTemplateArtifact({
+      client,
+      readControl: async () => ({ buildId: 'baseline', token: 'token', url: 'http://localhost/control' }),
+      isCurrentUpdate: async () => true,
+      timeoutMs: 1_000,
+    })
+    expect(request).toHaveBeenCalledOnce()
   })
 })

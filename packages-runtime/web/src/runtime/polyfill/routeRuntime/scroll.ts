@@ -7,6 +7,27 @@ let activeEntry: PageStackEntry | undefined
 let boundContainer: ScrollContainer | undefined
 let scrollHandler: (() => void) | undefined
 
+const restorationClaims = new WeakMap<object, number>()
+
+/** 仅认领新页面首次恢复；保留页面的容器位置仍由宿主维护，显式 pageScrollTo 不受影响。 */
+export function claimPageScrollRestoration(page: object): () => void {
+  restorationClaims.set(page, (restorationClaims.get(page) ?? 0) + 1)
+  let released = false
+  return () => {
+    if (released) {
+      return
+    }
+    released = true
+    const remaining = (restorationClaims.get(page) ?? 1) - 1
+    if (remaining > 0) {
+      restorationClaims.set(page, remaining)
+    }
+    else {
+      restorationClaims.delete(page)
+    }
+  }
+}
+
 export function getPageContainer() {
   return getAppContainer()
 }
@@ -21,7 +42,10 @@ export function captureEntryScrollPosition(entry: PageStackEntry) {
   }
 }
 
-export function restoreEntryScrollPosition(entry: PageStackEntry) {
+export function restoreEntryScrollPosition(entry: PageStackEntry, retained = false) {
+  if (!retained && entry.instance && restorationClaims.has(entry.instance)) {
+    return
+  }
   const container = getPageContainer()
   if (container) {
     container.scrollTop = entry.scrollTop ?? 0
@@ -39,8 +63,12 @@ export function setEntryScrollOwner(entry: PageStackEntry, active: boolean) {
 }
 
 export function recordActiveEntryScrollPosition() {
-  if (activeEntry) {
+  if (activeEntry?.active) {
     captureEntryScrollPosition(activeEntry)
+    const page = activeEntry.instance as (PageStackEntry['instance'] & {
+      onPageScroll?: (event: { scrollTop: number }) => void
+    }) | undefined
+    page?.onPageScroll?.({ scrollTop: activeEntry.scrollTop ?? 0 })
   }
 }
 

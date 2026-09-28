@@ -1502,15 +1502,7 @@ function validateLaunchAppConfig(config: Record<string, any>): LaunchAppConfigVa
     }
   }
 
-  if (!Object.hasOwn(config, 'subPackages')) {
-    return {
-      ready: false,
-      reason: 'subPackages is missing',
-      warmupRoute: resolveRouteFromAppConfig(config),
-    }
-  }
-
-  if (!Array.isArray(config.subPackages)) {
+  if (Object.hasOwn(config, 'subPackages') && !Array.isArray(config.subPackages)) {
     return {
       ready: false,
       reason: 'subPackages is not an array',
@@ -1526,7 +1518,7 @@ function validateLaunchAppConfig(config: Record<string, any>): LaunchAppConfigVa
     }
   }
 
-  for (const subPackage of [...config.subPackages, ...(Array.isArray(config.subpackages) ? config.subpackages : [])]) {
+  for (const subPackage of [...(Array.isArray(config.subPackages) ? config.subPackages : []), ...(Array.isArray(config.subpackages) ? config.subpackages : [])]) {
     if (!subPackage || typeof subPackage !== 'object') {
       return {
         ready: false,

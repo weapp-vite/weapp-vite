@@ -135,6 +135,10 @@ export const WEVU_RUNTIME_KEY = '__wevuRuntime'
 export const WEVU_RUNTIME_OWNER_ID_KEY = '__wevuRuntimeOwnerId'
 export const WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD = '__weapp_vite_resolvePublicInstance'
 export const WEVU_HOST_COMMIT_PROMISE_KEY = '__wevuHostCommitPromise'
+/** 宿主按原生页面认领首次滚动恢复；函数返回可重复调用的释放回调。 */
+export const WEVU_PAGE_SCROLL_RESTORATION_OWNER_KEY = '__wevuPageScrollRestorationOwner'
+/** 宿主值为 1 时，实现带 routeEventId 的路由阶段契约；不代表微信 SDK 版本。 */
+export const WEVU_ROUTE_EVENT_CONTRACT_KEY = '__wevuRouteEventContract'
 export const WEVU_TEMPLATE_REFS_KEY = '__wevuTemplateRefs'
 export const WEVU_LAYOUT_HOSTS_KEY = '__wevuLayoutHosts'
 export const WEVU_FUNCTION_PROP_PATHS_KEY = '__wevuFunctionPropPaths'
@@ -150,6 +154,11 @@ export const WEVU_ROUTE_DONE_CALLED_KEY = '__wevuRouteDoneCalled'
 export const WEVU_ROUTE_DONE_IN_TICK_KEY = '__wevuRouteDoneInTick'
 export const WEVU_INITIAL_NAVIGATION_TIMEOUT_MARKER = '__wevu_initial_navigation_timeout__'
 export const WEVU_PAGE_SCROLL_HOOK_DEPTH_KEY = '__wevuPageScrollHookDepth'
+/** 宿主负责 pageScrollTo 的实际滚动事件，框架不再合成第二份通知。 */
+export const WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY = '__wevuPageScrollEventContract'
+export const WEVU_PAGE_HOOK_BRIDGES_KEY = '__wevuPageHookBridges'
+/** 框架滚动观察器独立于用户 onPageScroll，不能改变选项式 hook 的优先级。 */
+export const WEVU_PAGE_SCROLL_OBSERVERS_KEY = '__wevuPageScrollObservers'
 export const WEVU_ON_BEFORE_UNMOUNT_HOOK = '__wevuOnBeforeUnmount'
 export const WEVU_ON_BEFORE_UPDATE_HOOK = '__wevuOnBeforeUpdate'
 export const WEVU_ON_UPDATED_HOOK = '__wevuOnUpdated'

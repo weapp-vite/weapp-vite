@@ -275,6 +275,7 @@ function renderNodeTree(
       ownerJsonPath,
       ownerFilePath,
       componentEntry.filePath,
+      scope.genericComponents,
     )
     const slots = collectComponentSlots(
       clonedNode,
@@ -345,6 +346,7 @@ function renderNodeTree(
   }
 
   applyNodeBindings(clonedNode, scope)
+  clonedNode.attribs!['data-sim-node'] = instancePath
   clonedNode.children = renderChildren(
     clonedNode.children ?? [],
     scope,

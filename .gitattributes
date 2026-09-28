@@ -225,3 +225,6 @@ Procfile          text
 
 # Prevents massive diffs from built files
 dist/*            binary
+
+# 统一补丁的空上下文行必须保留一个前缀空格。
+integrations/shared-hmr-tailwind/*.patch text eol=lf whitespace=-blank-at-eol

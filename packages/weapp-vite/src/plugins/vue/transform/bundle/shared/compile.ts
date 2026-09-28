@@ -2,11 +2,11 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../../context'
 import type { ResolvedAppShell } from '../../appShell'
 import type { CompilationCacheEntry, VueBundleCompileOptionsState } from './types'
-import { fs } from '@weapp-core/shared/fs'
 import { compileJsxFile, compileVueFile, resolveVueSfcHmrSignatures, resolveVueSfcStyleIndependentSignature } from 'wevu/compiler'
 import { storeVueSfcHmrSignatures } from '../../../../../runtime/storeVueSfcHmrSignatures'
 import { normalizeFsResolvedId } from '../../../../../utils/resolvedId'
 import { registerResolvedPageLayoutDependencies } from '../../../../utils/pageLayout'
+import { readCompilerInput } from '../../../../utils/sourceSnapshot'
 import { readAndParseSfc } from '../../../../utils/vueSfc'
 import { createCompileVueFileOptions, resolveSfcStylePreprocessOptions } from '../../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../../injectPageFeatures'
@@ -138,7 +138,7 @@ export async function refreshCompiledVueEntryCacheInDev(options: {
   }
 
   try {
-    const rawSource = await fs.readFile(filename, 'utf-8')
+    const rawSource = await readCompilerInput(configService, filename)
     const isApp = isAppVueLikeFile(filename)
     const transformed = isApp
       ? await resolveTransformAutoRoutesSource({
@@ -273,7 +273,7 @@ export async function loadFallbackPageEntryCompilation(options: {
   compileOptionsState: VueBundleCompileOptionsState
   appShell?: ResolvedAppShell
 }) {
-  const source = await fs.readFile(options.entryFilePath, 'utf-8')
+  const source = await readCompilerInput(options.configService, options.entryFilePath)
   const result = await compileAndFinalizeVueLikeFile({
     source,
     filename: options.entryFilePath,

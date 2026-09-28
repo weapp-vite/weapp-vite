@@ -105,11 +105,19 @@ export {
   navigateToMiniProgram,
   nextTick,
   offAppHide,
+  offAppRoute,
+  offAppRouteDone,
   offAppShow,
+  offBeforeAppRoute,
+  offBeforePageUnload,
   offNetworkStatusChange,
   offWindowResize,
   onAppHide,
+  onAppRoute,
+  onAppRouteDone,
   onAppShow,
+  onBeforeAppRoute,
+  onBeforePageUnload,
   onNetworkStatusChange,
   onWindowResize,
   openAppAuthorizeSetting,
@@ -165,6 +173,7 @@ export {
   vibrateShort,
 } from './polyfill'
 export type { AppHideCallback, AppHideOptions, AppLaunchOptions, AppShowCallback } from './polyfill'
+export type { AppRouteCallback, AppRouteEvent, AppRouteOpenType, BeforePageUnloadCallback, BeforePageUnloadEvent } from './polyfill'
 export {
   disposeWebRouting,
   getWebRoutingConfig,

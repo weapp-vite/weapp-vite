@@ -13,6 +13,7 @@ import { getAutoImportConfig } from '../runtime/autoImport/config'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { findJsEntry, findVueEntry, toPosixPath, touch } from '../utils'
 import { toKebabCaseComponentName } from '../utils/json'
+import { createAutoImportSidecarPlan, resolveAutoImportWatchTargets } from './autoImport/watchTargets'
 
 interface AutoImportState {
   ctx: CompilerContext
@@ -25,10 +26,6 @@ interface WatchFileRegistrar {
   addWatchFile?: (id: string) => void
 }
 
-const LEADING_DOT_SLASH_RE = /^\.\//
-const LEADING_SLASHES_RE = /^\/+/
-const GLOB_WILDCARD_RE = /[*?[{]/
-const TRAILING_SLASHES_RE = /\/+$/
 const AUTO_IMPORT_WATCHER_KEY = '__auto-import-vue-watcher__'
 const AUTO_IMPORT_CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const AUTO_IMPORT_JS_SUFFIXES = new Set(scriptExtensions.map(ext => `.${ext}`))
@@ -235,26 +232,9 @@ function registerAutoImportWatchTargets(
 ) {
   const { configService } = state.ctx
   if (!configService) {
-    return new Set()
+    return new Set<string>()
   }
-  const watchTargets = new Set<string>()
-
-  if (options.includeSrcRoot !== false) {
-    watchTargets.add(configService.absoluteSrcRoot)
-  }
-
-  for (const pattern of globs ?? []) {
-    const normalizedPattern = toPosixPath(pattern).replace(LEADING_DOT_SLASH_RE, '').replace(LEADING_SLASHES_RE, '')
-    const wildcardIndex = normalizedPattern.search(GLOB_WILDCARD_RE)
-    const base = wildcardIndex >= 0 ? normalizedPattern.slice(0, wildcardIndex) : normalizedPattern
-    const cleanedBase = base.replace(TRAILING_SLASHES_RE, '')
-
-    if (!cleanedBase) {
-      continue
-    }
-
-    watchTargets.add(path.resolve(configService.absoluteSrcRoot, cleanedBase))
-  }
+  const watchTargets = resolveAutoImportWatchTargets(configService.absoluteSrcRoot, globs ?? [], options.includeSrcRoot !== false)
 
   if (typeof registrar?.addWatchFile !== 'function') {
     return watchTargets
@@ -371,6 +351,11 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       return
     }
 
+    const sidecarWatcherMap = ctx.runtimeState?.watcher?.sidecarWatcherMap
+    if (!sidecarWatcherMap) {
+      return
+    }
+
     const watchTargets = registerAutoImportWatchTargets(state, globs, undefined, {
       includeSrcRoot: false,
     })
@@ -378,8 +363,10 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       return
     }
 
-    const watcher = chokidar.watch(Array.from(watchTargets, target => String(target)), createSidecarWatchOptions(configService, {
+    const sidecarPlan = createAutoImportSidecarPlan(watchTargets)
+    const watcher = chokidar.watch(sidecarPlan.roots, createSidecarWatchOptions(configService, {
       ignoreInitial: true,
+      ignored: sidecarPlan.ignored,
       persistent: true,
       awaitWriteFinish: {
         stabilityThreshold: 80,
@@ -421,11 +408,6 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       void refreshAutoImportImporters(ctx, filePath)
     })
 
-    const sidecarWatcherMap = ctx.runtimeState?.watcher?.sidecarWatcherMap
-    if (!sidecarWatcherMap) {
-      return
-    }
-
     sidecarWatcherMap.set(AUTO_IMPORT_WATCHER_KEY, {
       close: () => watcher.close(),
     })
@@ -448,8 +430,12 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
 
       const autoImportConfig = getAutoImportConfig(configService)
       const globs = autoImportConfig?.globs
-      registerAutoImportWatchTargets(state, globs, this as unknown as WatchFileRegistrar)
       const sidecarWatcherReady = startAutoImportFileWatcher(globs)
+      // 活动开发会话由过滤后的侧车负责组件发现；整目录 addWatchFile 会把临时文件送入原生 HMR。
+      // 非开发构建或没有托管侧车的宿主仍保留原有原生监听入口。
+      if (globs?.length && !fileWatcherStarted) {
+        registerAutoImportWatchTargets(state, globs, this as unknown as WatchFileRegistrar)
+      }
       const globsKey = createAutoImportGlobsKey(globs)
       if (globsKey !== state.lastGlobsKey) {
         state.initialScanDone = false

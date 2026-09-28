@@ -1556,6 +1556,34 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
+  apps/wevu-json-render-demo:
+    dependencies:
+      '@wevu/json-render':
+        specifier: workspace:*
+        version: link:../../packages-runtime/json-render
+      '@wevu/json-render-components':
+        specifier: workspace:*
+        version: link:../../packages-runtime/json-render-components
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages-runtime/wevu
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@weapp-vite/volar':
+        specifier: workspace:*
+        version: link:../../packages/volar
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+
   apps/wevu-jsx-tsx-demo:
     devDependencies:
       '@weapp-vite/dashboard':
@@ -2582,6 +2610,37 @@ importers:
         specifier: 'catalog:'
         version: 5.2.3
 
+  packages-runtime/json-render:
+    dependencies:
+      '@json-render/core':
+        specifier: 0.21.0
+        version: 0.21.0(zod@4.6.5)
+      '@wevu/json-render-components':
+        specifier: workspace:*
+        version: link:../json-render-components
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
+
+  packages-runtime/json-render-components:
+    devDependencies:
+      miniprogram-api-typings:
+        specifier: 'catalog:'
+        version: 5.2.3
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../wevu
+
   packages-runtime/react:
     dependencies:
       '@weapp-core/constants':
@@ -3074,6 +3133,15 @@ importers:
 
   packages/weapp-vite:
     dependencies:
+      "@weapp-vite/hmr":
+        specifier: workspace:*
+        version: link:../hmr
+      "@weapp-vite/tailwindcss":
+        specifier: workspace:*
+        version: link:../tailwindcss
+      '@weapp-tailwindcss/engine':
+        specifier: 0.1.1
+        version: 0.1.1(tailwindcss@4.3.3)
       '@babel/preset-env':
         specifier: ^8.0.6
         version: 8.0.6(@babel/core@8.0.6)
@@ -4317,6 +4385,27 @@ importers:
       wrangler:
         specifier: ^4.137.0
         version: 4.137.0(@types/node@26.6.2)(bufferutil@4.1.0)
+
+  packages/hmr:
+    dependencies:
+      "@jridgewell/remapping":
+        specifier: ^2.3.5
+        version: 2.3.5
+
+  packages/tailwindcss:
+    dependencies:
+      "@weapp-tailwindcss/engine":
+        specifier: 0.1.1
+        version: 0.1.1(tailwindcss@4.3.3)
+      "@weapp-vite/hmr":
+        specifier: workspace:*
+        version: link:../hmr
+      pathe:
+        specifier: "catalog:"
+        version: 2.0.3
+      weapp-tailwindcss:
+        specifier: "catalog:"
+        version: 5.5.8(@oxc-project/types@0.151.0)(jiti@2.7.0)(lightningcss@1.33.0)(rolldown@1.2.10)(supports-color@10.2.2)(tailwindcss@4.3.3)(tsx@4.23.15)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(less@4.9.1(supports-color@10.2.2))(sass-embedded@1.105.0)(sass@1.105.0)(terser@5.34.1)(tsx@4.23.15)(yaml@2.9.1))
 
 packages:
 
@@ -6709,6 +6798,11 @@ packages:
 
   '@json-render/core@0.19.0':
     resolution: {integrity: sha512-vvcyZ+10EDZKbEyB1J2kXOGfDaiZR2LurZGSqi2r5STHyKr+Te85DWaBxTwRGgM7U1LtIvNx85BzzjElRKoAIg==}
+    peerDependencies:
+      zod: ^4.0.0
+
+  '@json-render/core@0.21.0':
+    resolution: {integrity: sha512-vysEbTjO1y8mEgAsp0tztRyaWCkNsBrG8MhAqbndGK3qmMXjMRdCNtk21+AQRNKdRelFGVAwBgtUNW8tfjQlsw==}
     peerDependencies:
       zod: ^4.0.0
 
@@ -20870,6 +20964,10 @@ snapshots:
   '@jsdevtools/ono@7.1.3': {}
 
   '@json-render/core@0.19.0(zod@4.6.5)':
+    dependencies:
+      zod: 4.6.5
+
+  '@json-render/core@0.21.0(zod@4.6.5)':
     dependencies:
       zod: 4.6.5
 

@@ -7,6 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { execa } from 'execa'
 import { firefox, webkit } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { isHttpServerReady } from '../utils/httpReadiness'
 import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevServer'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -46,7 +47,7 @@ async function waitForServer(server: Subprocess, logs: { value: string }) {
       continue
     }
     try {
-      if ((await fetch(resolvedUrl)).ok) {
+      if (await isHttpServerReady(resolvedUrl, Math.min(2_000, Math.max(1, STARTUP_TIMEOUT - (Date.now() - startedAt))))) {
         return resolvedUrl
       }
     }

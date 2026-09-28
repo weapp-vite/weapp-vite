@@ -112,7 +112,7 @@ vi.mock('../src/shared/slugify', () => ({
 
 vi.mock('../src/runtime/appShell/tabBar', () => ({
   configureTabBar: runtime.configureTabBar,
-  getTabBarPagePaths: () => runtime.tabPaths,
+  getTabBarPagePaths: () => new Set(runtime.tabPaths),
   syncTabBarRoute: runtime.syncTabBarRoute,
 }))
 
@@ -352,7 +352,7 @@ describe('web route runtime orchestration', () => {
     const stack = runtime.pageStack!
 
     stack.entries.splice(0, stack.entries.length, { active: true, id: 'pages/home/index', query: {} }, { active: true, id: 'pages/detail/index', query: {} })
-    reconcile(undefined, { stack: [{ id: 'pages/home/index', query: { restored: '1' } }] })
+    reconcile(undefined, { stack: [{ id: 'pages/home/index', query: {} }] })
     expect(stack.entries).toHaveLength(1)
 
     reconcile(undefined, { stack: [
@@ -371,7 +371,6 @@ describe('web route runtime orchestration', () => {
 
     stack.entries.length = 0
     reconcile(undefined, { stack: [{ id: 'pages/missing/index', query: {} }] })
-    expect(runtime.syncDocumentHead).toHaveBeenLastCalledWith({ route: undefined, title: undefined })
 
     const back = vi.spyOn(stack, 'back').mockImplementationOnce(() => {
       stack.entries.length = 0

@@ -123,7 +123,19 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           // 先等待独立分包成功，失败时不能提前推进主包的 HMR 指纹。
           // 子产物已完成自身校验与裁剪，在主包内不重复处理。
           const independentAssets: EmittedAsset[] = []
-          await flushIndependentOutputs(ctx, subPackageMeta, asset => independentAssets.push(asset))
+          try {
+            await flushIndependentOutputs(ctx, subPackageMeta, asset => independentAssets.push(asset))
+          }
+          finally {
+            // 子构建没有活动 watcher；主发布者接管其精确依赖，失败时也保留恢复监听。
+            if (ctx.configService.isDev && !subPackageMeta) {
+              for (const files of ctx.runtimeState?.build?.independent?.watchFiles.values() ?? []) {
+                for (const file of files) {
+                  this.addWatchFile(file)
+                }
+              }
+            }
+          }
           checkpoint('publicationIndependentMs')
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,

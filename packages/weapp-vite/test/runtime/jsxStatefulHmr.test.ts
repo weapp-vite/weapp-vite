@@ -7,27 +7,51 @@ import path from 'pathe'
 import { expect, it, vi } from 'vitest'
 import { createCompilerContext } from '../../src/createContext'
 import logger from '../../src/logger'
-import { StatefulHmrTransport } from '../../src/runtime/statefulHmr/transport'
 
 function createBundleRuntime(root: string) {
   const rebuilds: unknown[] = []
+  const requests: Array<{ action: string, version?: number, payloads?: string[] }> = []
+  const pending = new Set<AbortController>()
+  let closed = false
   const context = createContext({
     console,
-    setTimeout: () => 1,
-    clearTimeout() {},
+    setTimeout,
+    clearTimeout,
     App() {},
     Page() {},
     Component() {},
     Behavior: (definition: unknown) => definition,
     wx: {
-      request(options: { data: { action: string, failure?: unknown }, success: (result: unknown) => void }) {
-        if (options.data.action === 'register') {
-          options.success({ statusCode: 200, data: { type: 'registered' } })
-        }
+      request(options: { url: string, data: { action: string, failure?: unknown }, success: (result: unknown) => void, fail?: (error: unknown) => void }) {
+        const controller = new AbortController()
+        pending.add(controller)
+        const body = JSON.stringify(options.data)
+        requests.push(JSON.parse(body))
         if (options.data.action === 'rebuild') {
           rebuilds.push(options.data.failure)
         }
-        return { abort() {} }
+        void fetch(options.url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body,
+          signal: controller.signal,
+        }).then(async (response) => {
+          const data = await response.json() as { type?: string }
+          if (closed) {
+            return
+          }
+          options.success({ statusCode: response.status, data })
+          if (data.type === 'batch-published') {
+            const source = readFileSync(path.join(root, '__weapp_vite_hmr/update.js'), 'utf8')
+            runInContext(source, context, { filename: 'update.js', timeout: 5_000 })
+          }
+        }).catch((error) => {
+          if (!closed && !controller.signal.aborted) {
+            rebuilds.push(error)
+            options.fail?.(error)
+          }
+        }).finally(() => pending.delete(controller))
+        return { abort: () => controller.abort() }
       },
     },
   })
@@ -47,15 +71,25 @@ function createBundleRuntime(root: string) {
   }
   return {
     load,
-    applyBatch(source: string) {
-      runInContext(source, context, { filename: 'update.js', timeout: 5_000 })
+    requests,
+    assertHealthy() {
       expect(rebuilds).toEqual([])
+    },
+    close() {
+      closed = true
+      runInContext(`globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]?.stop()`, context)
+      for (const controller of pending) {
+        controller.abort()
+      }
     },
     getImporters(id: string) {
       return runInContext(`globalThis.__rolldown_runtime__.getImporters(${JSON.stringify(id)})`, context) as string[]
     },
     getVersion() {
       return runInContext(`globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].getVersion()`, context) as number
+    },
+    isInitialReady() {
+      return runInContext(`globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].getTransportState().initialReady`, context) === true
     },
   }
 }
@@ -73,12 +107,12 @@ it('updates shared JSX and page handlers without replacing the active DevEngine 
   const errorSpy = vi.spyOn(logger, 'error').mockImplementation((...messages) => {
     errors.push(messages.map(String).join(' '))
   })
-  const controlSpy = vi.spyOn(StatefulHmrTransport.prototype, 'createControl')
   const page = `import {defineComponent} from 'wevu'
 import Card from '../components/card.vue'
 import {sharedFragment, createDynamicBlock} from '../shared'
 export default defineComponent({data(){return {count:0}},methods:{increment(){this.count++}},render(){return <view><view className="title">initial-page</view><Card title="card"/>{sharedFragment}{createDynamicBlock(()=><button onTap={this.increment}>count:{this.count}</button>)}</view>}})`
   let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
+  let runtime: ReturnType<typeof createBundleRuntime> | undefined
   try {
     await fs.ensureDir(path.dirname(source))
     await fs.ensureDir(path.join(cwd, 'src/components'))
@@ -100,47 +134,59 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     expect(componentEntries.size).toBeGreaterThan(0)
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('initial-page')
     const controlHash = createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')
-    const runtime = createBundleRuntime(path.join(cwd, 'dist'))
+    runtime = createBundleRuntime(path.join(cwd, 'dist'))
     runtime.load('app.js')
     runtime.load('pages/index.js')
     // 编译器 cwd 与 Vite root 不同时，首包依赖图仍须使用引擎的模块 ID。
     expect(runtime.getImporters(path.relative(cwd, shared))).toContain(path.relative(cwd, source))
-    const control = controlSpy.mock.results.at(-1)?.value as ReturnType<StatefulHmrTransport['createControl']>
-    const report = async (action: 'register' | 'poll', version: number) => {
-      const response = await fetch(control.url, {
-        method: 'POST',
-        body: JSON.stringify({ ...control, action, version, sessionId: 'jsx-regression' }),
-        signal: AbortSignal.timeout(30_000),
-      })
-      expect(response.ok).toBe(true)
-      return response.json() as Promise<{ type: string, targetVersion: number }>
-    }
-    expect(await report('register', 0)).toMatchObject({ type: 'registered' })
+    await expect.poll(() => runtime!.requests.some(request =>
+      request.payloads?.includes('app.js') && request.payloads.includes('pages/index.js'),
+    ), { timeout: 30_000 }).toBe(true)
+    await expect.poll(() => runtime!.isInitialReady(), { timeout: 30_000 }).toBe(true)
     await fs.writeFile(shared, 'export const sharedFragment=<text>updated-shared</text>;export const createDynamicBlock=(factory)=>factory()')
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-shared')
     expect(ctx.runtimeState.build.hmr).toBe(hmrState)
     expect(ctx.runtimeState.build.hmr.externalComponentEntryMap).toBe(componentEntries)
-    const sharedBatch = await report('poll', 0)
-    expect(sharedBatch.type).toBe('batch-published')
-    expect(sharedBatch.targetVersion).toBeGreaterThan(0)
-    runtime.applyBatch(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8'))
-    expect(runtime.getVersion()).toBe(sharedBatch.targetVersion)
+    await expect.poll(() => {
+      runtime!.assertHealthy()
+      expect(errors).toEqual([])
+      return runtime!.getVersion()
+    }, { timeout: 30_000 }).toBeGreaterThan(0)
+    const sharedVersion = runtime.getVersion()
+    runtime.assertHealthy()
     await fs.writeFile(source, page.replace('initial-page', 'updated-page').replace('this.count++', 'this.count += 2'))
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-page')
-    const pageBatch = await report('poll', sharedBatch.targetVersion)
-    expect(pageBatch.type).toBe('batch-published')
-    expect(pageBatch.targetVersion).toBeGreaterThan(sharedBatch.targetVersion)
+    await expect.poll(() => {
+      runtime!.assertHealthy()
+      expect(errors).toEqual([])
+      return runtime!.getVersion()
+    }, { timeout: 30_000 }).toBeGreaterThan(sharedVersion)
     expect(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8')).toContain('this.count += 2')
-    runtime.applyBatch(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8'))
-    expect(runtime.getVersion()).toBe(pageBatch.targetVersion)
+    runtime.assertHealthy()
+    // 源码 transform 继续拥有共享 JSX；恢复也必须由实际客户端执行并确认。
+    expect(ctx.moduleGraphService.getEntryDependencies(source)).toContainEqual({ kind: 'jsx', sourceId: shared })
+    let version = runtime.getVersion()
+    for (const [file, content, marker] of [
+      [shared, 'export const sharedFragment=<text>restored-shared</text>;export const createDynamicBlock=(factory)=>factory()', 'restored-shared'],
+      [source, page, 'initial-page'],
+    ]) {
+      await fs.writeFile(file, content)
+      await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain(marker)
+      await expect.poll(() => {
+        runtime.assertHealthy()
+        return runtime.getVersion()
+      }, { timeout: 30_000 }).toBeGreaterThan(version)
+      version = runtime.getVersion()
+      expect(ctx.runtimeState.build.hmr).toBe(hmrState)
+    }
     await new Promise(resolve => setTimeout(resolve, 2_000))
     expect(createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')).toBe(controlHash)
     expect(errors).toEqual([])
   }
   finally {
+    runtime?.close()
     await ctx?.watcherService.closeAll()
     errorSpy.mockRestore()
-    controlSpy.mockRestore()
     await fs.remove(cwd)
   }
 }, 120_000)

@@ -41,7 +41,7 @@ const workbench = useWorkbench()
             :viewport-height="workbench.viewportSize.value.height"
             :viewport-width="workbench.viewportSize.value.width"
             @back="workbench.run(() => workbench.session.value?.navigateBack())"
-            @dispatch-tap-chain="workbench.handleDispatchTapChain"
+            @dispatch-tap="workbench.handleDispatchTap"
             @select-scope="workbench.handleSelectScope"
             @update-viewport="workbench.handleUpdateViewport"
           />

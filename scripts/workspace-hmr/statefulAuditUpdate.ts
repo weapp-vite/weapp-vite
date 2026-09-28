@@ -38,3 +38,13 @@ export async function waitForStatefulHmrAuditUpdate(options: {
   }
   throw new Error('Timed out waiting for a stateful HMR patch batch matching the current source mutation.', { cause: lastError })
 }
+
+/** 新增 Vue 节点会生成绑定脚本；产物计时结束后消费伴随补丁，旧协议保持原路径。 */
+export async function acknowledgeStatefulTemplateArtifact(options: Parameters<typeof waitForStatefulHmrAuditUpdate>[0]) {
+  await options.client.ensureRegistered(await options.readControl(), options.timeoutMs)
+  if (!options.client.supportsExplicitAcknowledgement) {
+    return
+  }
+  await waitForStatefulHmrAuditUpdate(options)
+  await options.client.acknowledgePublished(options.timeoutMs)
+}

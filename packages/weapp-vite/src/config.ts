@@ -49,6 +49,9 @@ export function defineConfig(config: UserConfigExport): UserConfigExport {
 }
 
 export type {
+  WeappCompilerHmrAsset,
+  WeappCompilerHmrPreparation,
+  WeappCompilerHmrRequest,
   WeappCompilerPlugin,
   WeappCompilerPluginCapabilities,
   WeappCompilerPluginContext,

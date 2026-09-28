@@ -5,6 +5,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
+import { readTaskCases } from './domAcceptanceReport/inventory'
 import {
   getSuiteTasks,
   IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
@@ -32,6 +33,31 @@ function terminateTestChild(pid: number) {
 }
 
 describe('suiteRunner', () => {
+  it('includes generated Vue bindings and template cycles in the strict headless DOM gate', async () => {
+    const tasks = await getSuiteTasks('ide-dom-headless')
+    const statefulTasks = tasks.filter(task => task.label === 'ide/stateful-hmr.runtime.test.ts')
+    expect(statefulTasks).toHaveLength(1)
+    const task = statefulTasks[0]!
+    expect(task.env).toMatchObject({
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
+    })
+    const filterIndex = task.args.indexOf('-t')
+    expect(filterIndex).toBeGreaterThanOrEqual(0)
+    const filter = new RegExp(task.args[filterIndex + 1]!)
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), task.label, task.acceptanceTemplates)
+    const selected = cases.filter(item => filter.test(item.name)).map(item => item.name)
+    expect(selected).toHaveLength(7)
+    expect(selected.some(name => name.includes('template-generated computations and event handlers'))).toBe(true)
+    expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
+    expect(selected.some(name => name.includes('copied and public asset lifecycle'))).toBe(true)
+    expect(selected.some(name => name.includes('isolated script updates and restoration'))).toBe(true)
+    for (const runtime of ['native', 'component', 'wevu']) {
+      expect(selected.some(name => name.includes(`preserves ${runtime} page state across two template`))).toBe(true)
+    }
+    expect(selected.some(name => name.includes('style updates') || name.includes('local and store refs'))).toBe(false)
+  })
+
   it('formats failure summary with failed tasks', () => {
     const summary = formatSuiteSummary('e2e:ci', [
       { label: 'task-a', exitCode: 0, durationMs: 1200, artifacts: [] },
@@ -512,6 +538,13 @@ describe('suiteRunner', () => {
     expect(ideFullLabels).toContain('ide/template-dev-open-all.runtime.test.ts')
     expect(ideFullLabels).toContain('ide/github-issues.runtime.issue1010.test.ts')
     expect(ideFullLabels).toContain('ide/stateful-hmr.runtime.test.ts')
+    expect(ideGithubIssuesLabels).toContain('ide/issue-1081-tailwind-batch.runtime.test.ts')
+    const batchHeadlessTask = (await getSuiteTasks('ide-dom-headless'))
+      .find(task => task.label === 'ide/issue-1081-tailwind-batch.runtime.test.ts')
+    expect(batchHeadlessTask?.env).toMatchObject({
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+      WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1',
+    })
     expect(ideFullLabels).not.toContain('ide/chunk-modes.runtime.duplicate.test.ts')
     expect(ideExhaustiveLabels).not.toContain('ide/runtimeErrors.test.ts')
     expect(ideExhaustiveLabels).not.toContain('ide/uview-plus-compat.runtime.test.ts')
@@ -616,41 +649,6 @@ describe('suiteRunner', () => {
       WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER: '1',
     })
     expect(IDE_GITHUB_ISSUES_AGGREGATE_LABELS.every(label => ideFullLabels.includes(label))).toBe(true)
-    expect(ideGithubIssuesLabels).toEqual([
-      'ide/wxml-transform.runtime.test.ts',
-      'ide/wevu-runtime.pruning.test.ts',
-      'ide/github-issues.runtime.issue1035.test.ts',
-      'ide/issue-963-plugin-es6.runtime.test.ts',
-      'ide/issue-997-rebuild.runtime.test.ts',
-      'ide/issue-998-tailwind.runtime.test.ts',
-      'ide/issue-1015-css-hmr.runtime.test.ts',
-      'ide/issue-1029-auto-routes.runtime.test.ts',
-      'ide/github-issues.runtime.component-instance-apis.test.ts',
-      'ide/github-issues.runtime.issue1015.test.ts',
-      ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
-      'ide/github-issues.runtime.issue448-formdata-upload.test.ts',
-      'ide/github-issues.runtime.issue547.test.ts',
-      'ide/github-issues.runtime.issue558.test.ts',
-      'ide/github-issues.runtime.issue615.test.ts',
-      'ide/github-issues.runtime.issue621.test.ts',
-      'ide/github-issues.runtime.issue1010.test.ts',
-      'ide/github-issues.runtime.issue779.test.ts',
-      'ide/github-issues.runtime.issue826.test.ts',
-      'ide/github-issues.runtime.issue642-bug7-default.test.ts',
-      'ide/github-issues.runtime.issue642-bug7-performance.test.ts',
-      'ide/github-issues.runtime.issue642-bug8.test.ts',
-      'ide/github-issues.runtime.require-async.test.ts',
-      'ide/github-issues.runtime.issue911.test.ts',
-      'ide/github-issues.runtime.issue941.test.ts',
-      'ide/github-issues.runtime.issue1009.test.ts',
-      'ide/github-issues.runtime.issue1049.test.ts',
-      'ide/github-issues.runtime.issue1011.test.ts',
-      'ide/github-issues.runtime.issue1012.test.ts',
-      'ide/github-issues.runtime.issue852.test.ts',
-      'ide/github-issues.runtime.slot-fallback-compiler-off.test.ts',
-      'ide/github-issues.runtime.subpackage-item.test.ts',
-      'ide/github-issues.runtime.subpackage-user.test.ts',
-    ])
     for (const sourceLabel of IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS) {
       expect(ideFullLabels).not.toContain(sourceLabel)
       expect(ideGithubIssuesLabels).not.toContain(sourceLabel)

@@ -81,6 +81,8 @@ export default await defineEslintConfig({
         'apps/socket-io-chat/web/**/*.{js,ts,vue}',
         'website/**/*.{js,ts,vue}',
         'packages/weapp-vite/example/**/*.{js,ts,tsx,vue}',
+        'mpcore/demos/web/**/*.{js,ts,tsx,vue}',
+        'mpcore/packages/simulator/e2e/**/*.{js,ts,tsx,vue}',
       ],
       rules: {
         'wevu/no-risky-api': 'off',
@@ -105,6 +107,7 @@ export default await defineEslintConfig({
           'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'packages-runtime/json-render/src/{catalog,compat,core,path,projection,renderer,stream,types,useRenderer,validation}.ts',
           'packages-runtime/web-apis/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'e2e-apps/*/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
@@ -116,6 +119,7 @@ export default await defineEslintConfig({
         'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+        'packages-runtime/json-render/src/{catalog,compat,core,path,projection,renderer,stream,types,useRenderer,validation}.ts',
         '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
       ],
       ignores: [

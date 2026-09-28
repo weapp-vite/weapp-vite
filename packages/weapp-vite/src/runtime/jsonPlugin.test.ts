@@ -2,6 +2,8 @@ import os from 'node:os'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/fs'
 import { afterEach, describe, expect, it } from 'vitest'
+import { compilerSourceId } from '../plugins/compilerPlugin/hmr'
+import { setCompilerSourceSnapshot } from '../plugins/utils/sourceSnapshot'
 import { createJsonServicePlugin } from './jsonPlugin'
 import { createRuntimeState } from './runtimeState'
 
@@ -44,6 +46,25 @@ afterEach(async () => {
 })
 
 describe('runtime/jsonPlugin', () => {
+  it.each(['json', 'json.ts'])('reads and caches pinned %s content instead of later disk saves', async (extension) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-pinned-json-'))
+    tempRoots.push(root)
+    const file = path.join(root, `app.${extension}`)
+    const source = (title: string) => {
+      const json = JSON.stringify({ pages: ['pages/index/index'], window: { navigationBarTitleText: title } })
+      return extension === 'json' ? json : `export default ${json}`
+    }
+    await fs.writeFile(file, source('future'))
+    const ctx = createTestContext(root)
+    setCompilerSourceSnapshot(ctx.configService, new Map([[compilerSourceId(file), source('first')]]))
+    const first = await ctx.jsonService.read(file)
+    expect(first.window.navigationBarTitleText).toBe('first')
+    await fs.writeFile(file, source('later'))
+    expect(await ctx.jsonService.read(file)).toBe(first)
+    setCompilerSourceSnapshot(ctx.configService, new Map([[compilerSourceId(file), source('second')]]))
+    expect((await ctx.jsonService.read(file)).window.navigationBarTitleText).toBe('second')
+  })
+
   it('reads app.json.ts script config as plain object', async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-json-plugin-'))
     tempRoots.push(root)

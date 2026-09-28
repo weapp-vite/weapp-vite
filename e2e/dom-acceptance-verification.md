@@ -4,9 +4,18 @@
 
 本文件保留验收规范和提交前的诊断记录；**交付状态以 PR 中绑定最终 SHA 的验收摘要和云端 checks 为准**。下表和历史索引保留局部通过与失败证据，不能据此宣称最终提交上的全量 IDE 或 PR CI 已通过。除明确标记的已提交运行外，本轮诊断报告来自未提交工作区；`workingTreeDirty: true` 时，报告中的 SHA 不代表这些修改已经进入该提交。
 
-最新静态清单为 **91 个任务、88 个微信任务、3 个范围外百度任务、226 个展开 case**。226 个 case 均注册计划，缺计划、未解析参数化和没有 case 的微信任务均为零。数量变化来自新增结算和组件实例 API 正式场景；临时组件 API probe 已移除。组件库和人工 IDE 示例仍按原 manifest 排除。
+静态任务与 case 数量由当前提交的源码生成，不在文档中维护固定数字。组件库和人工 IDE 示例仍按 manifest 排除。静态清单只证明源码计划接入完整性，不代表运行通过。
 
-这是源码接入完整性，不是执行结果。任务、fixture、路由、操作和计划来源见 [生成清单](./dom-acceptance-inventory.md) 与 [JSON 清单](./dom-acceptance-inventory.json)。清单由源码生成，不手工维护统计值。
+## 多分支协作与清单生成
+
+唯一事实来源是 `e2e/scripts/e2e-suite-manifest.ts` 与它引用的测试、计划和 helper。`e2e/dom-acceptance-inventory.json` / `.md` 是忽略的本地生成文件，不再纳入 Git。新增或修改场景时只提交源码，两个分支不会因为全量统计、顺序或 source hash 改变而共同修改清单。
+
+- `pnpm e2e:dom-acceptance:check`：直接分析当前源码，拒绝缺计划、未解析参数化和没有 case 的微信任务；不读取本地清单，首次 checkout 无需先生成报告。
+- `pnpm e2e:dom-acceptance:write`：按需生成上述 JSON / Markdown，保留任务、fixture、路由、操作、计划来源和依赖 SHA-256；生成文件不会进入 `git status`。修改源码后需要重新生成才可查看最新报告。
+- CI 的 IDE DOM Acceptance Contracts 在同一提交上执行 `--write --check`，并上传带 OS、Node 版本与 SHA 的 `dom-acceptance-inventory-*` artifact；即使覆盖检查失败，也会上传已生成的清单用于定位。
+- pre-commit 和 CI 检查 Git 索引，拒绝通过 `git add -f` 把清单重新纳入追踪；lint-staged 对 E2E 源码运行覆盖检查，不再自动生成或暂存文件。
+
+旧分支首次合入这项迁移时，已修改的清单可能产生一次 modify/delete 冲突：保留源码、manifest、计划和测试双方的有效改动，对两份生成清单执行 `git rm -- e2e/dom-acceptance-inventory.json e2e/dom-acceptance-inventory.md`，再运行 `check`，需要查看报告时运行 `write`。不要使用 `merge=ours` 或 `merge=union` 合并清单。迁移后这两份生成文件不再产生内容合并冲突；真实源码或 manifest 的语义冲突仍需正常解决。
 
 ## 验收规范
 

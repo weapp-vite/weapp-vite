@@ -1,0 +1,43 @@
+{
+  "name": "@weapp-vite/hmr",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "小程序宿主共享的编译批次、资产提交与交付协调内核",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/hmr"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run -c vitest.config.ts",
+    "test:types": "tsd --files \"test-d/**/*.test-d.ts\"",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@jridgewell/remapping": "^2.3.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

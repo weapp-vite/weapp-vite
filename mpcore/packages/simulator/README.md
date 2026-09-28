@@ -25,6 +25,16 @@
 
 此入口只负责页面样式依赖和 CSS 兼容声明，不实现嵌套组件的完整样式隔离、类名前缀转换或 `rpx` 布局换算。Component 页面的 `page-isolated`、`page-strong-isolated`、`page-apply-shared`、`page-shared` 禁用隐式 `app.wxss`，页面仍可显式导入样式；最终页面 JSON 的 `styleIsolation` 优先于 JS 定义，JSON 未提供该值时才保留 JS 选项。普通 `Page` 注册不应用组件隔离选项，普通 `isolated` 也不等同于 `page-isolated`。缺失依赖、循环导入、非法 CSS 和不支持的导入会抛出明确错误。支持带媒体条件的本地导入；远程导入及 `layer` / `supports` 导入条件不受支持，也不会触发外部请求。
 
+## 路由完成与滚动状态
+
+Node/browser 宿主提供 `BeforeAppRoute`、`BeforePageUnload`、`AppRoute`、`AppRouteDone` 四组 `wx.on/off` 事件；同一次导航共享字符串 `routeEventId`。前置事件发生在隐藏/卸载之前，完成事件等待目标页 ready 和该次宿主提交。模拟器通过显式事件能力标记接入，`SDKVersion` 仍为 `0.0.0`，不代表真实微信基础库或 Skyline 渲染器。
+
+浏览器自定义 renderer 的 `onRender` 可以返回 Promise；必须在实际 DOM 提交后 resolve，路由完成和 `setData` 回调才会继续。同步 renderer 可保持原来的返回值，非 Promise 返回值被忽略。Web demo 在更新响应式 revision 后返回 Vue `nextTick()`，等待预览 Shadow DOM 的 watcher 完成。关闭会话或被更新导航取代后，不发布旧的路由完成事件。工作台先初始化候选项目，成功后关闭旧会话再替换预览，防止旧提交确认新项目的 DOM；初始化或目录导入失败时保留当前可用会话。
+
+`scroll-view` 的请求属性与实际位置分开保存。模型按启用的轴裁剪实际位置，内容缩短/移除时重新裁剪；未改变的绑定不会覆盖用户滚动，也不会在内容增长后自动重试。当前可求值的范围限定为 **inline `px` 视口尺寸及一个 `view` 内容盒的显式尺寸**，各轴独立；逻辑分组 `block`、注释和空白不生成内容盒。仅通过 WXSS 指定的尺寸、`rpx/%`、自动布局及多个内容盒等未知几何保守使用零范围，不能作为真实布局位置的证明。浏览器预览能显示 CSS，不等于这个原生状态模型实现了完整浏览器布局；复杂布局仍须在实际浏览器或微信 IDE 中验证。
+
+测试节点与真实预览点击共用原生 tap 分发：保留原始 `target`，逐层更新 `currentTarget`，遵守 `catchtap/catch:tap`，仅在事件到达 `navigator` 时执行其默认导航。一次交互先确定原始页面/组件归属，业务回调中的销毁、重新渲染或同路由重建不将剩余冒泡发送给新实例。测试节点 `tap()` 仍等待异步业务处理并传递结果或错误；导航的原生默认动作不等待异步业务 Promise。
+
 ## 分块请求 mock
 
 `session.mockRequest()` 支持为 `enableChunked: true` 的请求声明分块，默认仍不访问网络：

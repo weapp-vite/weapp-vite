@@ -1,3 +1,4 @@
+import type { HmrCompilerPreparation as WeappCompilerHmrPreparation, HmrCompilerRequest as WeappCompilerHmrRequest } from '@weapp-vite/hmr'
 import type { OutputBundle } from 'rolldown'
 import type { ResolvedConfig } from 'vite'
 import type { OutputExtensions } from '../platforms/types'
@@ -63,7 +64,15 @@ export interface WeappCompilerOutputRequest {
   state?: unknown
 }
 
+export type {
+  HmrCompilerAsset as WeappCompilerHmrAsset,
+  HmrCompilerPreparation as WeappCompilerHmrPreparation,
+  HmrCompilerRequest as WeappCompilerHmrRequest,
+} from '@weapp-vite/hmr'
+
 export interface WeappCompilerPluginController {
+  /** 同批次资产与脚本必须使用此调用持有的固定状态。 */
+  prepareHmr?: (request: WeappCompilerHmrRequest) => WeappCompilerHmrPreparation | Promise<WeappCompilerHmrPreparation>
   buildStart?: () => void | Promise<void>
   claimSource?: (request: WeappCompilerSourceRequest) => boolean | WeappCompilerSourceClaim | Promise<boolean | WeappCompilerSourceClaim | null> | null
   transformSource?: (request: WeappCompilerSourceRequest) => WeappCompilerTransformResult | null | Promise<WeappCompilerTransformResult | null>

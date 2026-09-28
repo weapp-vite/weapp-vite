@@ -35,6 +35,7 @@ export const HMR_GUARD_TEST_GROUPS = {
     'external-linked-vue-component.hmr.test.ts',
     'hmr-issue-1015-external-css-vars.test.ts',
     'style-import-vue.test.ts',
+    'hmr-asset-ownership.test.ts',
     'wevu-runtime.hmr.test.ts',
   ]),
   complexDeveloperFlows: resolveCiTests([

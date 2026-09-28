@@ -7,7 +7,6 @@ import type { ChunkEmitTask } from '../chunkEmitter'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { ResolvedEntryRecord } from './resolve'
-import fs from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
 import { fs as sharedFs } from '@weapp-core/shared/fs'
 import MagicString from 'magic-string'
@@ -25,6 +24,7 @@ import {
   resolveNativeLayoutStaticAssetEntries,
 } from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
+import { readCompilerInput } from '../../../utils/sourceSnapshot'
 import { emitWxmlAssetFile, resolveWxmlEmitContext } from '../../../utils/wxmlEmit'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
@@ -208,7 +208,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     ? prefetch((async () => {
         const startedAt = performance.now()
         try {
-          return await readFileCached(id, { checkMtime: configService.isDev })
+          return await readCompilerInput(configService, id, file => readFileCached(file, { checkMtime: configService.isDev }))
         }
         finally {
           recordEntryDuration('entryCodeReadMs', startedAt)
@@ -248,7 +248,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         : await Promise.all(styleImportsResult.value.map(async (styleImport) => {
             return {
               styleImport,
-              source: await readFileCached(styleImport, { checkMtime: configService.isDev }),
+              source: await readCompilerInput(configService, styleImport, file => readFileCached(file, { checkMtime: configService.isDev })),
             }
           }))
     }
@@ -281,7 +281,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     if (assets.json) {
       registerJsonAsset({
         jsonPath: assets.json,
-        json: JSON.parse(await fs.readFile(assets.json, 'utf8')),
+        json: JSON.parse(await readCompilerInput(configService, assets.json)),
         type: 'component',
       })
     }
@@ -289,7 +289,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const assetEntries = await resolveNativeLayoutStaticAssetEntries({
       assets,
       resolvedOptions,
-      readFile: fs.readFile,
+      readFile: file => readCompilerInput(configService, file),
     })
 
     const emittedCodeCache = emittedWxmlCodeCache ?? new Map<string, string>()
@@ -490,7 +490,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         plan: layoutPlan,
       })
       if (layoutPlan) {
-        const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
+        const nativeTemplate = await readCompilerInput(configService, templatePath, file => readFileCached(file, { checkMtime: configService.isDev }))
         const transformed = applyPageLayoutPlanToNativePage(
           {
             script: code,

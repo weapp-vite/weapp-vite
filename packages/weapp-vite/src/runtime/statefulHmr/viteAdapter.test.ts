@@ -94,6 +94,7 @@ describe('stateful HMR Vite adapter', () => {
     expect(legacyListenCalls).toBe(0)
     expect(bundledDev._devEngine).toBe(engine)
     expect(devOptions.watch).toEqual({
+      exclude: [],
       compareContentsForPolling: true,
       pollInterval: 120,
       skipWrite: true,
@@ -312,6 +313,7 @@ describe('stateful HMR Vite adapter', () => {
         type: 'chunk',
       },
     ])).resolves.toBe(2)
+    expect(deliveredPayloads).toEqual([])
     await adapter.registerPatchModules('createCjsInitializer("src/pages/detail.ts")')
     await adapter.markPayloadDelivered('__weapp_vite_hmr/update.js')
 
@@ -321,7 +323,6 @@ describe('stateful HMR Vite adapter', () => {
       'src/pages/detail.ts',
     ])
     expect(deliveredPayloads).toEqual([
-      'pages/index/index.js',
       '__weapp_vite_hmr/update.js',
     ])
   })
@@ -360,4 +361,39 @@ describe('stateful HMR Vite adapter', () => {
     const bundledDev = (adapter as any).bundledDev
     await expect(bundledDev.listen()).rejects.toThrow('初始构建超时')
   })
+})
+
+it('preserves the callback batch and metadata for all patches of the registered client', () => {
+  const onBatch = vi.fn()
+  const onPatch = vi.fn()
+  const adapter = new StatefulHmrViteAdapter({ root: '/project' } as any, {} as any, {
+    onBatch,
+    onPatch,
+    onError: vi.fn(),
+    onOutput: vi.fn(),
+    waitForInitialBundle: async () => {},
+  })
+  const updates = ['first', 'second'].map((name, index) => ({
+    clientId: 'weapp-vite-stateful-hmr',
+    update: { type: 'Patch', code: name, filename: `${name}.js`, seq: index, futureMetadata: { name } },
+  }))
+  const batch = { changedFiles: ['page.ts'], updates }
+  Reflect.get(adapter, 'handleHmrUpdates').call(adapter, batch)
+  expect(onBatch).toHaveBeenCalledExactlyOnceWith(batch)
+  expect(onPatch).not.toHaveBeenCalled()
+})
+
+it('keeps invalidation owned by DevEngine instead of replaying Vite container watch hooks', async () => {
+  const watched = vi.fn()
+  const container = { watchChange: watched }
+  const adapter = new StatefulHmrViteAdapter({ build: { rolldownOptions: {} }, root: '/project' } as any, {
+    environments: { client: { pluginContainer: container, bundledDev: {
+      getRolldownOptions: async () => ({}),
+      storeOutputFiles() {},
+      listen: async () => {},
+    } } },
+  } as any, { onError: vi.fn(), onOutput: vi.fn(), onPatch: vi.fn(), waitForInitialBundle: async () => {} })
+  adapter.install()
+  await container.watchChange('page.vue', { event: 'update' })
+  expect(watched).not.toHaveBeenCalled()
 })

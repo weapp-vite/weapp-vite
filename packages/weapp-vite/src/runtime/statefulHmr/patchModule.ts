@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
+import type { EncodedSourceMapLike } from '../../utils/sourcemap'
 import { WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE } from '@weapp-core/constants'
 import MagicString from 'magic-string'
 import path from 'pathe'
@@ -8,6 +9,7 @@ import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveNpmBuildCandidateDependencyRecordSync } from '../npmPlugin/service'
 
 export interface StatefulHmrPatchImports {
+  onMap?: (map: EncodedSourceMapLike) => void
   filename: string
   resolveImport: (specifier: string, importers: string[]) => string
 }
@@ -60,6 +62,7 @@ export function transformStatefulHmrPatchImports(code: string, options: Stateful
       : `${requireExpression};`
     transformed.update(statement.start!, statement.end!, replacement)
   }
+  options.onMap?.(transformed.generateMap({ source: options.filename, includeContent: true, hires: true }) as EncodedSourceMapLike)
   return transformed.toString()
 }
 

@@ -12,7 +12,8 @@ import type {
   MiniProgramThemeChangeResult,
   MiniProgramUnhandledRejectionResult,
 } from '../types'
-import { assertInSetup, ensurePageHookOnInstance, ensurePageShareMenusOnSetup, ensureSinglePageHookOnInstance, pushHook } from './base'
+import { assertInSetup, ensurePageShareMenusOnSetup, ensureSinglePageHookOnInstance, pushHook } from './base'
+import { ensurePageHookOnInstance } from './pageScroll'
 
 function registerHook(name: string, handler: (...args: any[]) => any, options?: { single?: boolean }) {
   pushHook(assertInSetup(name), name, handler as any, options as any)
