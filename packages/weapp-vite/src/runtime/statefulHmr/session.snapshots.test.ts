@@ -5,7 +5,7 @@ import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { realpathSync } from 'node:fs'
-import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { runInNewContext } from 'node:vm'
 import { WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME } from '@weapp-core/constants'
@@ -128,6 +128,7 @@ async function start(initial = snapshot('red'), entryIds: string[] = [], inlineC
     scanService: { subPackageMap: new Map() },
     moduleGraphService: {
       collectAffectedEntries: () => new Set(),
+      recordChangedFile: (file: string, event: string) => changes.set(file, event),
       getPendingChanges: () => Array.from(changes, ([file, event]) => ({ file, event })),
     },
   } as unknown as MutableCompilerContext
@@ -771,6 +772,42 @@ describe('stateful snapshot output transactions', () => {
     session.refresh()
     await vi.advanceTimersByTimeAsync(50)
     expect(writtenAssets()).toContainEqual(copied)
+  })
+
+  it('refreshes public assets from filesystem changes using the resolved public directory', async () => {
+    vi.useRealTimers()
+    const publicRoot = path.join(root, 'static-assets')
+    await mkdir(publicRoot, { recursive: true })
+    const directory = await mkdtemp(path.join(publicRoot, 'watch-lifecycle-'))
+    temporaryDirectories.push(directory)
+    const source = path.join(directory, 'config.js')
+    const fileName = path.relative(publicRoot, source)
+    const publicAsset = { type: 'asset' as const, fileName, source: 'original' }
+    await writeFile(source, publicAsset.source)
+    const initial = snapshot('red', [])
+    initial.output.push(publicAsset)
+    const session = await start(initial)
+    session.rebuild.mockImplementation(async () => {
+      const next = snapshot('red', [])
+      const content = await readFile(source, 'utf8').catch(() => undefined)
+      if (content !== undefined) {
+        next.output.push({ ...publicAsset, source: content })
+      }
+      return next
+    })
+    for (const content of ['updated', undefined, 'original']) {
+      harness.writeOutput.mockClear()
+      if (content === undefined) {
+        await rm(source)
+        await vi.waitFor(() => expect(harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])).toContain(fileName))
+      }
+      else {
+        await writeFile(source, content)
+        await vi.waitFor(() => expect(writtenAssets()).toContainEqual({ ...publicAsset, source: content }))
+      }
+    }
+    expect(session.rebuild).toHaveBeenCalledWith([source])
+    expect(harness.fullBuild).not.toHaveBeenCalled()
   })
 
   it('restores original bytes when deletion is superseded during native write', async () => {
