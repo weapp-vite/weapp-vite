@@ -942,7 +942,7 @@ export default class Page {
   }
 
   async callMethodWithOptions(method: string, options: PageCallMethodOptions = {}, ...args: any[]) {
-    if (options.routeOnly || (options.fallback !== false && this.preferAppServicePageProtocol)) {
+    if (options.routeOnly || (options.fallback !== false && (this.preferAppServicePageProtocol || this.connection.prefersAppServicePageMethod))) {
       return await this.callRouteMethod(method, args, options.timeout)
     }
     try {

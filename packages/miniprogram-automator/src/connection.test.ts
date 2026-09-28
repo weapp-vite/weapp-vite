@@ -63,16 +63,22 @@ describe('Connection', () => {
     await expect(pending).resolves.toEqual({ data: { ok: true } })
   })
 
-  it.each(['2.01.2510290', '2.02.2609231'])('selects the app-service Page protocol for affected DevTools %s', async (version) => {
+  it.each([
+    ['2.01.2510290', true, true],
+    ['2.02.2609231', false, true],
+    ['2.01.2601010', false, false],
+  ] as const)('selects only affected Page protocols for DevTools %s', async (version, pageProtocol, methodProtocol) => {
     const { default: Connection } = await import('./Connection')
     const transport = new FakeTransport()
     const connection = new Connection(transport as any)
 
     connection.configureToolInfo({ version })
-    expect(connection.prefersAppServicePageProtocol).toBe(true)
+    expect(connection.prefersAppServicePageProtocol).toBe(pageProtocol)
+    expect(connection.prefersAppServicePageMethod).toBe(methodProtocol)
 
-    connection.configureToolInfo({ version: '2.01.2601010' })
+    connection.configureToolInfo({ version: 'unknown' })
     expect(connection.prefersAppServicePageProtocol).toBe(false)
+    expect(connection.prefersAppServicePageMethod).toBe(false)
   })
 
   it('rejects protocol errors and pending callbacks on close', async () => {

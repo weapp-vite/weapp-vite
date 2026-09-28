@@ -153,6 +153,28 @@ describe('Page', () => {
     expect(send).not.toHaveBeenCalledWith('Page.callMethod', expect.anything(), expect.anything())
   })
 
+  it('retains native element queries when only the Page method protocol is affected', async () => {
+    const send = vi.fn(async (method: string) => {
+      if (method === 'Page.getElements') {
+        return { elements: [{ elementId: 'native-node', tagName: 'view' }] }
+      }
+      if (method === 'App.callFunction') {
+        return { result: { ok: true } }
+      }
+      throw new Error(`Unexpected protocol: ${method}`)
+    })
+    const page = new Page({
+      send,
+      prefersAppServicePageProtocol: false,
+      prefersAppServicePageMethod: true,
+    } as any, { id: 7, path: '/pages/index', query: {} })
+
+    await expect(page.$$('.hello')).resolves.toHaveLength(1)
+    await expect(page.callMethod('runE2E')).resolves.toEqual({ ok: true })
+    await expect(page.callMethodWithOptions('runE2E', { fallback: false })).rejects.toThrow('Page.callMethod')
+    expect(send.mock.calls.map(([method]) => method)).toEqual(['Page.getElements', 'App.callFunction', 'Page.callMethod'])
+  })
+
   it('falls back to app-service rendered nodes when Page.getElements times out', async () => {
     const timeoutError = Object.assign(
       new Error('DevTools did not respond to protocol method Page.getElements within 2500ms'),
