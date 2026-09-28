@@ -36,6 +36,17 @@ async function main() {
   const projectConfig = JSON.parse(await readFile(path.join(workspace, 'e2e-apps/github-issues/project.config.json'), 'utf8'))
   const isolated = await mkdtemp(path.join(tmpdir(), 'shared-host-install-'))
   try {
+    const localTarballs = path.join(isolated, 'tarballs')
+    await mkdir(localTarballs)
+    for (const [name, specifier] of Object.entries(overrides)) {
+      if (!specifier.startsWith('file:')) {
+        continue
+      }
+      const source = fileURLToPath(specifier)
+      const fileName = path.basename(source)
+      await cp(source, path.join(localTarballs, fileName))
+      overrides[name] = `file:./tarballs/${fileName}`
+    }
     await writeFile(path.join(isolated, 'package.json'), JSON.stringify({
       private: true,
       type: 'module',

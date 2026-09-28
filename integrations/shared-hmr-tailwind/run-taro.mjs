@@ -32,6 +32,21 @@ async function main() {
     configFile: false,
     plugins: [{
       name: 'shared-host-observer',
+      buildStart() {
+        process.stdout.write('SHARED_HOST_PHASE=build-start\n')
+      },
+      buildEnd(error) {
+        process.stdout.write(`SHARED_HOST_PHASE=build-end error=${Boolean(error)}\n`)
+      },
+      renderStart() {
+        process.stdout.write('SHARED_HOST_PHASE=render-start\n')
+      },
+      generateBundle() {
+        process.stdout.write('SHARED_HOST_PHASE=generate-bundle\n')
+      },
+      writeBundle() {
+        process.stdout.write('SHARED_HOST_PHASE=write-bundle\n')
+      },
       configureServer(server) {
         server.ws.on('vpt:mini-hmr:report', report => process.stdout.write(`SHARED_HOST_REPORT=${JSON.stringify(report)}\n`))
       },

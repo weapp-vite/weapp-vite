@@ -4108,14 +4108,14 @@
       "templates": [],
       "cases": [
         {
-          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:78",
+          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:84",
           "name": "shared HMR compiler: Taro runtime > keeps React state while publishing and applying class and event updates separately",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "integrations/shared-hmr-tailwind/fixture",
               "checkpoints": "[ { id: 'initial', route, action: '初始 Taro 产物', nodes: [{ selector: '#shared-utility', text: 'shared utility' }, { selector: '#shared-count', text: '0' }] }, { id: 'edited', route, action: '等待真实 applied 并保留点击状态', nodes: [{ selector: '#share",
-              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:87"
+              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:93"
             }
           ],
           "routes": [
@@ -4132,14 +4132,14 @@
           "notes": []
         },
         {
-          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:119",
+          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:125",
           "name": "shared HMR compiler: Taro runtime > applies a newly generated native utility without a full reload",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "integrations/shared-hmr-tailwind/fixture",
               "checkpoints": "[ { id: 'style-initial', route, action: '确认初始可见样式', nodes: [{ selector: '#shared-utility', text: 'shared utility', ...(checkStyles ? { styles: { 'background-color': 'rgb(252, 231, 243)' } } : {}) }] }, { id: 'style-edited', route, action: '",
-              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:128"
+              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:134"
             }
           ],
           "routes": [
@@ -8236,7 +8236,7 @@
     },
     {
       "file": "e2e/ide/shared-taro-hmr.runtime.test.ts",
-      "sha256": "0e1dd87f1cafa2ba3f07ab4cabfe9958818bbf0857e931226f49441a71f15730"
+      "sha256": "5125f68548c5e3d42d8680c1966108e14fd4773f163cb896369982c2472731eb"
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",

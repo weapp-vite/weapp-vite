@@ -37,6 +37,7 @@ describe('shared HMR compiler: Taro runtime', { concurrent: false }, () => {
       cwd: root,
       env: { ...createDevProcessEnv({ usePolling: false }), WEAPP_VITE_TARO_HMR_MODE: resolveRuntimeProviderName() === 'headless' ? 'interpreter' : 'devtools' },
       reject: false,
+      extendEnv: false,
     })
     child.stdout?.on('data', (data) => {
       output += String(data)
@@ -44,8 +45,13 @@ describe('shared HMR compiler: Taro runtime', { concurrent: false }, () => {
     child.stderr?.on('data', (data) => {
       output += String(data)
     })
-    await vi.waitFor(() => expect(/SHARED_HOST_PROJECT=(.+)/.exec(output)?.[1], output).toBeTruthy(), { timeout: 60_000 })
-    project = /SHARED_HOST_PROJECT=(.+)/.exec(output)![1]!.trim()
+    await Promise.race([
+      vi.waitFor(() => expect(/SHARED_HOST_PROJECT=([^\r\n]+)\r?\n/.exec(output)?.[1], output).toBeTruthy(), { timeout: 60_000 }),
+      child.then((result) => {
+        throw new Error(`Taro startup exited: code=${result.exitCode} signal=${result.signal}\n${output}`)
+      }),
+    ])
+    project = /SHARED_HOST_PROJECT=([^\r\n]+)\r?\n/.exec(output)![1]!.trim()
     await vi.waitFor(async () => expect(await readFile(path.join(project, 'dist/app.wxss'), 'utf8')).toContain('vpt-build:'), { timeout: 30_000 })
     for (const extension of ['js', 'json', 'wxml']) {
       expect(await readFile(path.join(project, `dist/pages/index/index.${extension}`), 'utf8')).not.toBe('')
