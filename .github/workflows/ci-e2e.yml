@@ -127,8 +127,12 @@ jobs:
         node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/github-issues --platform weapp
         node packages/weapp-vite/bin/weapp-vite.js prepare e2e-apps/template-wevu-regression --platform weapp
         node --import tsx scripts/check-e2e-ide-shared-launch.ts
-        node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --check
+        node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check
         pnpm vitest run -c e2e/vitest.e2e.internal.config.ts --maxWorkers=1 --no-file-parallelism
+      artifact_name: dom-acceptance-inventory-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ github.sha }}
+      artifact_path: |
+        e2e/dom-acceptance-inventory.json
+        e2e/dom-acceptance-inventory.md
     secrets: inherit
 
   miniapp-platform-build-gate:

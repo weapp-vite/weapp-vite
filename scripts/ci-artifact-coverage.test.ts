@@ -39,6 +39,20 @@ describe('CI artifact coverage', () => {
     }
   })
 
+  it('generates and checks the current source inventory before tests and uploads both reports', async () => {
+    const workflow = await readWorkflow('ci-e2e.yml')
+    const job = workflow.jobs['ide-dom-acceptance-internal']
+    const commands = splitPatterns(job.with?.main_command)
+    const inventoryIndex = commands.indexOf('node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write --check')
+    expect(inventoryIndex).toBeGreaterThanOrEqual(0)
+    expect(inventoryIndex).toBeLessThan(commands.findIndex(command => command.includes('vitest.e2e.internal.config.ts')))
+    expect(job.with?.artifact_name).toContain('github.sha')
+    expect(splitPatterns(job.with?.artifact_path)).toEqual([
+      'e2e/dom-acceptance-inventory.json',
+      'e2e/dom-acceptance-inventory.md',
+    ])
+  })
+
   it('uploads the build identity manifest while restricting hidden files to build output paths', async () => {
     const workflow = await readWorkflow('reusable-node-command.yml')
     const steps = Object.values(workflow.jobs).flatMap(job => job.steps ?? [])
@@ -82,6 +96,8 @@ describe('CI artifact coverage', () => {
       'docs/reports/*-e2e-ide-dom-headless-*-suite-report/**',
       'docs/reports/dom-acceptance/**',
       'docs/reports/simulator-browser/**',
+      'e2e/dom-acceptance-inventory.json',
+      'e2e/dom-acceptance-inventory.md',
     ])
   })
 })
