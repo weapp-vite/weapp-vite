@@ -252,8 +252,9 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
-      files: ['e2e-apps/request-clients-real/package.json'],
+      files: ['e2e-apps/request-clients-real/package.json', 'apps/socket-io-chat/package.json'],
       rules: {
+        // 请求客户端与 Socket.IO 示例保留 Express 服务端集成，避免依赖升级改变示例协议。
         'e18e/ban-dependencies': 'off',
       },
     }, {

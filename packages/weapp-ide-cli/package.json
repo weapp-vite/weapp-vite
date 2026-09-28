@@ -90,7 +90,7 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.1.0",
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/shared": "workspace:*",
     "@weapp-vite/devtools-runtime": "workspace:*",
