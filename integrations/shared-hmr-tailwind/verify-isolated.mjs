@@ -43,7 +43,7 @@ async function main() {
     }, null, 2))
     await writeFile(path.join(isolated, 'pnpm-workspace.yaml'), `overrides: ${JSON.stringify(overrides)}\n`)
     await cp(path.join(here, 'fixture/src'), path.join(isolated, 'src'), { recursive: true })
-    await execa('pnpm', ['install', '--ignore-scripts'], { cwd: isolated, stdio: 'inherit' })
+    await execa('pnpm', ['install', '--no-frozen-lockfile', '--ignore-scripts'], { cwd: isolated, stdio: 'inherit' })
     // 驱动脚本也位于临时根，模块解析无法回退到本仓库 node_modules。
     await writeFile(path.join(isolated, 'verify.mjs'), `
 import assert from 'node:assert/strict'

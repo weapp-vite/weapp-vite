@@ -62,8 +62,9 @@ async function main() {
     config.overrides[artifact.name] = `file:${path.relative(taro, artifact.file).replaceAll('\\', '/')}`
   }
   await writeFile(configFile, YAML.stringify(config))
-  await command(taro, 'pnpm', ['install', '--ignore-scripts'])
+  await command(taro, 'pnpm', ['install', '--no-frozen-lockfile', '--ignore-scripts'])
   await command(taro, 'pnpm', ['prepare:taro'])
+  await command(taro, 'pnpm', ['--filter', 'vite-plugin-taro', 'build'])
   await command(taro, 'pnpm', ['--filter', 'vite-plugin-taro', 'typecheck'])
   await writeFile(path.join(destination, 'artifacts.json'), `${JSON.stringify({
     sources,
