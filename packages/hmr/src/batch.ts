@@ -100,7 +100,8 @@ export async function transformHmrPatch(
   preparations: readonly HmrCompilerPreparation[],
   sourcemap: boolean,
 ): Promise<{ code: string, map: HmrSourceMap | null }> {
-  let code = patch.code.replace(/^\/\/[#@] sourceMappingURL=.*$/gm, '')
+  // 仅移除末尾标准注释；引号、反引号和块注释边界不能被当成映射 URL 吞掉。
+  let code = patch.code.replace(/(?:^|\r?\n)[ \t]*\/\/[#@] sourceMappingURL=[^\r\n'"`*<>]+(?:\r?\n[ \t]*)*$/, '')
   let map = sourcemap && patch.sourcemap ? normalizeHmrSourceMap(patch.sourcemap) : null
   if (map && (!map.sources.length || !map.mappings)) {
     map = null

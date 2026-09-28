@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { HmrAssetStore } from './assets'
-import { captureHmrBatch, normalizeHmrSourceMap, transformHmrBatch } from './batch'
+import { captureHmrBatch, normalizeHmrSourceMap, transformHmrBatch, transformHmrPatch } from './batch'
 import { HmrCompilerHost } from './compilerHost'
 import { HmrTransaction } from './transaction'
 
@@ -174,4 +174,14 @@ it('honors disabled sourcemaps without consuming a provider map', async () => {
   ] }, [{ transformJavaScript: transform }], { sourcemap: false })
   expect(result.updates[0]!.update).toMatchObject({ code: 'before();updated()', seq: 1 })
   expect(result.updates[0]!.update.sourcemap).toBeUndefined()
+})
+
+it('preserves sourceMappingURL text inside JavaScript literals', async () => {
+  const code = 'const text = `\n//# sourceMappingURL=example.map`'
+  expect((await transformHmrPatch({ code, filename: 'patch.js' }, [], false)).code).toBe(code)
+})
+
+it('removes a generated trailing sourcemap directive', async () => {
+  const code = 'run()\n//# sourceMappingURL=data:application/json;base64,e30=\n'
+  expect((await transformHmrPatch({ code, filename: 'patch.js' }, [], false)).code.trimEnd()).toBe('run()')
 })
