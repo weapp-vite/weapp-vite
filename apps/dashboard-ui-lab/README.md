@@ -54,6 +54,8 @@ pnpm --filter dashboard-ui-lab dev:inspector
 
 该入口的项目名含 `Inspector fixture (synthetic report)`，不替换 `dev:ui` / `build:ui`，也不证明真实小程序构建或 runtime 行为。源码保存在本会话独立的系统临时目录；产物只保存在内存快照中，不写入 `dist`。更新仍使用现有 OTP、scoped RPC 和 revision 协议，没有浏览器可写控制端点。
 
+`dev:inspector` 与 `dev:inspector:host` 是非小程序 Node 测试宿主，已在 HMR 脚本契约的精确入口清单中声明；常规 `dev` / `dev:ui` 仍必须使用 `wv dev`，不豁免整个项目。
+
 临时源码和宿主输入 / 缓存目录各自由会话持有，普通关闭与进程退出共用同一个清理入口。EOF 导致 Vite 直接结束进程时也会同步移除这些目录，不能仅凭异步 `finally` 的日志判断是否清理成功；不会删除其他会话目录。`SIGKILL` 等不触发 Node 退出事件的终止不在此保证内。
 
 服务端不注入慢读取。需要检查加载中与过期响应时，可在独立 QA 浏览器中延迟真实文件 RPC；这不是生产协议或 Dashboard UI 的功能。
