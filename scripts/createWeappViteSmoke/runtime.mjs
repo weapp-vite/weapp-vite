@@ -4,16 +4,20 @@ import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { cleanupChildProcessHandles, formatCommand, tail, terminateProcess, waitForChildClose } from '../project-lifecycle.mjs'
 import { createCommandProcess } from './process.mjs'
-import { isFilePresent, outputDirectory } from './templates.mjs'
+import { isFilePresent, outputDirectory, resolveMiniProgramDirectory } from './templates.mjs'
 
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
 const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
 const UPDATE_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_UPDATE_TIMEOUT_MS || 60 * 1000)
 
-async function distHasRequiredOutputs(projectDir, templateName) {
+export async function distHasRequiredOutputs(projectDir, templateName) {
+  const miniProgramDir = await resolveMiniProgramDirectory(projectDir, templateName)
+  if (!miniProgramDir) {
+    return false
+  }
   const requiredFiles = [
-    path.join(projectDir, outputDirectory(templateName), 'app.json'),
-    path.join(projectDir, outputDirectory(templateName), 'app.js'),
+    path.join(miniProgramDir, 'app.json'),
+    path.join(miniProgramDir, 'app.js'),
   ]
   const checks = await Promise.all(requiredFiles.map(isFilePresent))
   return checks.every(Boolean)
@@ -71,9 +75,10 @@ async function measureDevUpdate(projectDir, templateName) {
     path.join(projectDir, 'src/app.json'),
     path.join(projectDir, 'src/app.vue'),
   ])
-  const distFile = path.join(projectDir, outputDirectory(templateName), 'app.json')
+  const miniProgramDir = await resolveMiniProgramDirectory(projectDir, templateName)
+  const distFile = miniProgramDir && path.join(miniProgramDir, 'app.json')
 
-  if (!sourceFile || !await isFilePresent(distFile)) {
+  if (!sourceFile || !distFile || !await isFilePresent(distFile)) {
     throw new Error('Missing source/dist file for dev update measurement')
   }
 

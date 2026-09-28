@@ -24,6 +24,19 @@ export function outputDirectory(templateName) {
   return templateName === 'multi-platform' || templateName === 'multi-platform-sfc' ? 'dist/weapp' : 'dist'
 }
 
+/** 按 IDE 工程配置解析小程序产物根目录，避免将多平台工程目录误认为产物目录。 */
+export async function resolveMiniProgramDirectory(projectDir, templateName) {
+  const projectRoot = templateName === 'multi-platform' || templateName === 'multi-platform-sfc'
+    ? path.join(projectDir, outputDirectory(templateName))
+    : projectDir
+  const configPath = path.join(projectRoot, 'project.config.json')
+  if (!await isFilePresent(configPath)) {
+    return null
+  }
+  const config = JSON.parse(await fs.readFile(configPath, 'utf8'))
+  return path.resolve(projectRoot, config.miniprogramRoot ?? '.')
+}
+
 export function shouldSkipTemplateFile(filePath, templateRoot = '') {
   const normalize = value => value.replace(/^\\\\\?\\/, '').replaceAll('\\', '/')
   const relativePath = normalize(templateRoot ? path.relative(normalize(templateRoot), normalize(filePath)) : filePath)
