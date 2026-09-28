@@ -12,10 +12,18 @@ export async function verifyPublicTypes() {
   expectType<'native'>(captureHmrBatch(batch).origin)
   const transformed = await transformHmrBatch(batch, [provider], { sourcemap: true })
   expectType<number>(transformed.updates[0]!.update.seq)
+  expectType<string | undefined>(transformed.updates[0]!.update.sourcemap)
   expectType<'native'>(transformed.origin)
   const state = new HmrAssetStore()
   expectType<Promise<HmrAssetChanges<HmrAsset>>>(state.commit([], async () => {}))
   expectType<Promise<HmrAssetChanges<HmrAsset>>>(state.commit([], async () => {}, ['host-chunk.js']))
   const transaction = new HmrTransaction({ identity: { generation: 'build', revision: 1 }, prepare: () => 1, commit: async () => {}, publish: async () => {} })
   expectType<boolean>(transaction.acknowledge({ generation: 'build', revision: 1 }))
+  const literal = await transformHmrBatch({ changedFiles: [], updates: [{
+    clientId: 'client' as const,
+    update: { type: 'Patch' as const, code: 'before' as const, sourcemap: 'old' as const, filename: 'patch.js' as const, seq: 3 as const },
+  }] }, [], { sourcemap: false })
+  expectType<string>(literal.updates[0]!.update.code)
+  expectType<string | undefined>(literal.updates[0]!.update.sourcemap)
+  expectType<3>(literal.updates[0]!.update.seq)
 }

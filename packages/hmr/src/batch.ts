@@ -28,7 +28,17 @@ export interface HmrBatch<U extends HmrClientUpdate = HmrClientUpdate> {
   updates: readonly U[]
 }
 
-export type CapturedHmrBatch<B extends HmrBatch> = Omit<B, 'changedFiles' | 'updates'> & HmrBatch<B['updates'][number]>
+export type CapturedHmrBatch<B extends HmrBatch> = Readonly<Omit<B, 'changedFiles' | 'updates'>> & HmrBatch<B['updates'][number] & HmrClientUpdate>
+
+type TransformedUpdate<U extends HmrUpdate> = U extends HmrUpdate
+  ? Omit<U, 'code' | 'sourcemap'> & Pick<HmrUpdate, 'sourcemap'> & (U extends { code: string } ? { code: string } : Pick<HmrUpdate, 'code'>)
+  : never
+
+type TransformedClient<U extends HmrClientUpdate> = U extends HmrClientUpdate
+  ? Omit<U, 'update'> & { update: TransformedUpdate<U['update']> }
+  : never
+
+export type TransformedHmrBatch<B extends HmrBatch> = Readonly<Omit<B, 'changedFiles' | 'updates'>> & HmrBatch<TransformedClient<B['updates'][number]>>
 
 /** 在回调入口保留完整元数据和原始顺序，不合并不同的源码代次。 */
 export function captureHmrBatch<B extends HmrBatch>(batch: B): CapturedHmrBatch<B> {
@@ -96,16 +106,24 @@ export async function transformHmrPatch(
     map = null
   }
   for (const preparation of preparations) {
-    const result = await preparation.transformJavaScript?.({ code, fileName: patch.filename })
+    const result = await preparation.transformJavaScript?.({ code, fileName: patch.filename, sourcemap })
     if (result) {
       if (sourcemap && result.code !== code && !result.map) {
         throw new Error('Compiler HMR transform changed code without a source map')
       }
-      map = composeHmrSourceMaps(normalizeHmrSourceMap(result.map), map)
+      if (sourcemap) {
+        map = composeHmrSourceMaps(normalizeHmrSourceMap(result.map), map)
+      }
       code = result.code
     }
   }
   return { code, map }
+}
+
+/** 只拓宽会被转换的字段；其余宿主元数据保持原类型。 */
+function withPatchTransform<U extends HmrClientUpdate>(item: U, update?: Pick<HmrUpdate, 'code' | 'sourcemap'>): TransformedClient<U>
+function withPatchTransform(item: HmrClientUpdate, update?: Pick<HmrUpdate, 'code' | 'sourcemap'>): HmrClientUpdate {
+  return update ? { ...item, update: { ...item.update, ...update } } : item
 }
 
 /** 只转换 Patch 的代码和映射；宿主继续决定 FullReload、Noop 和每个 client 的处理。 */
@@ -113,17 +131,17 @@ export async function transformHmrBatch<B extends HmrBatch>(
   batch: B,
   preparations: readonly HmrCompilerPreparation[],
   options: { sourcemap: boolean },
-): Promise<CapturedHmrBatch<B>> {
+): Promise<TransformedHmrBatch<B>> {
   const captured = captureHmrBatch(batch)
-  const updates: B['updates'][number][] = []
+  const updates: TransformedClient<B['updates'][number]>[] = []
   for (const item of captured.updates) {
     const patch = item.update
     if (patch.type !== 'Patch' || typeof patch.code !== 'string' || typeof patch.filename !== 'string') {
-      updates.push(item)
+      updates.push(withPatchTransform<B['updates'][number]>(item))
       continue
     }
     const transformed = await transformHmrPatch({ ...patch, code: patch.code, filename: patch.filename }, preparations, options.sourcemap)
-    updates.push({ ...item, update: { ...patch, code: transformed.code, sourcemap: transformed.map ? JSON.stringify(transformed.map) : undefined } })
+    updates.push(withPatchTransform<B['updates'][number]>(item, { code: transformed.code, sourcemap: transformed.map ? JSON.stringify(transformed.map) : undefined }))
   }
   return { ...captured, updates }
 }

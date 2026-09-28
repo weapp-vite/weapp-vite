@@ -163,3 +163,15 @@ it('transfers output ownership without deleting a filename now emitted as a host
   expect(write).not.toHaveBeenCalled()
   expect(store.ownedNames()).toEqual([])
 })
+
+it('honors disabled sourcemaps without consuming a provider map', async () => {
+  const transform = vi.fn(({ code, sourcemap }) => {
+    expect(sourcemap).toBe(false)
+    return { code: `${code};updated()`, map: { unused: true } }
+  })
+  const result = await transformHmrBatch({ changedFiles: [], updates: [
+    { clientId: 'client', update: { type: 'Patch', filename: 'patch.js', code: 'before()', seq: 1 } },
+  ] }, [{ transformJavaScript: transform }], { sourcemap: false })
+  expect(result.updates[0]!.update).toMatchObject({ code: 'before();updated()', seq: 1 })
+  expect(result.updates[0]!.update.sourcemap).toBeUndefined()
+})

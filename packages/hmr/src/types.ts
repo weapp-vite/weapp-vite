@@ -1,6 +1,7 @@
 export interface HmrCompilerOutputRequest {
   fileName: string
   code: string
+  sourcemap?: boolean
   entryId?: string
   state?: unknown
 }

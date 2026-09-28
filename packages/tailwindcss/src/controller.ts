@@ -68,8 +68,8 @@ export function createTailwindPreparation(
     assets,
     dependencies: snapshot.dependencies,
     transformTemplate: async ({ code, fileName }) => ({ code: await compiler.transformTemplate(code, snapshot, { filename: fileName }) }),
-    transformJavaScript: async ({ code, fileName }) => {
-      const result = await compiler.transformJavaScript(code, snapshot, { filename: fileName, generateMap: true })
+    transformJavaScript: async ({ code, fileName, sourcemap }) => {
+      const result = await compiler.transformJavaScript(code, snapshot, { filename: fileName, generateMap: sourcemap !== false })
       if (result.error) {
         throw result.error
       }
