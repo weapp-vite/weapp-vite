@@ -21,6 +21,8 @@ export const TEMPLATE_CATALOG = {
   '@types/react-reconciler': '0.33.0',
   '@types/semver': '^7.8.0',
   '@vant/weapp': '^1.11.7',
+  '@vitejs/devtools': '0.7.6',
+  '@vitejs/devtools-kit': '0.7.6',
   '@vitejs/plugin-vue': '^6.0.9',
   '@vue/babel-plugin-jsx': '3.0.0',
   '@vue/compiler-core': '^3.5.43',
