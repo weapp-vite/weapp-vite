@@ -2,13 +2,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
+import { assertDomInventoryUntracked, DOM_INVENTORY_FILES } from '../../../scripts/dom-inventory-policy.mjs'
 import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes, selectIdeRuntimeChunkExtraCases, selectIdeRuntimeChunkMatrixCases } from '../../chunk-modes.matrix'
 import { getIdeExhaustiveTasks, getIdeHeadlessTasks } from '../e2e-suite-manifest'
 import { ACCEPTANCE_ROOT } from './helpers'
 import { analyzeCaseSource, readCaseInventory, readFactoryTitle } from './inventoryAnalyzer'
 import { collectInventorySources } from './inventorySources'
-
-const INVENTORY_WRITE_COMMAND = 'pnpm e2e:dom-acceptance:write'
 
 export function readTaskCases(root: string, label: string, templates?: string[]) {
   const file = `e2e/${label}`
@@ -84,7 +83,7 @@ export function renderDomAcceptanceInventory(inventory: ReturnType<typeof create
     '',
     '字面量参数表与模板 runner 子任务已展开；动态表会显式标注。一个 case 内的多路由操作保留在 routes/operations；模板的完整 route/checkpoint 定义见 plan source。GitHub aggregate 的直接测试导入递归展开。',
     '',
-    'JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。',
+    'JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256。清单仅供本地查看和 CI artifact 下载，不提交到 Git；check 始终从当前源码验证覆盖。',
     '',
     `- 任务：${inventory.summary.taskCount}；微信：${inventory.summary.wechatTaskCount}；范围外：${inventory.summary.outOfScopeTaskCount}。`,
     `- 展开的 case 声明：${inventory.summary.expandedCaseDeclarations}；已接入计划：${inventory.summary.casesWithPlan}；缺计划：${inventory.summary.casesMissingPlan}。`,
@@ -131,56 +130,24 @@ export function renderDomAcceptanceInventory(inventory: ReturnType<typeof create
 export async function formatDomAcceptanceInventory(markdown: string, root = ACCEPTANCE_ROOT) {
   const { ESLint } = await import('eslint')
   const eslint = new ESLint({ cwd: root, fix: true })
-  const [result] = await eslint.lintText(markdown, { filePath: path.join(root, 'e2e/dom-acceptance-inventory.md') })
+  // 使用非忽略的虚拟文件名应用 Markdown 规则；生成报告本身不参与 Git 或 lint 扫描。
+  const [result] = await eslint.lintText(markdown, { filePath: path.join(root, 'e2e/dom-acceptance-report.md') })
   if (!result || result.errorCount) {
     throw new Error(`DOM inventory Markdown formatting failed: ${result?.messages.map(message => message.message).join('; ') ?? 'missing ESLint result'}`)
   }
   return result.output ?? markdown
 }
 
-function describeInventoryDrift(saved: unknown, current: ReturnType<typeof createDomAcceptanceInventory>) {
-  if (!saved || typeof saved !== 'object') {
-    return 'saved JSON is missing or invalid'
-  }
-  const savedRecord = saved as { sources?: unknown, summary?: unknown }
-  const savedSources = Array.isArray(savedRecord.sources)
-    ? savedRecord.sources.filter((item): item is { file?: unknown, sha256?: unknown } => Boolean(item) && typeof item === 'object')
-    : []
-  const currentSources = new Map(current.sources.map(source => [source.file, source.sha256]))
-  const changed = savedSources
-    .filter(source => typeof source.file === 'string' && currentSources.get(source.file) !== source.sha256)
-    .map(source => source.file as string)
-  const added = current.sources.filter(source => !savedSources.some(savedSource => savedSource.file === source.file)).map(source => source.file)
-  const removed = savedSources.filter(source => typeof source.file === 'string' && !currentSources.has(source.file)).map(source => source.file as string)
-  const summaryChanged = JSON.stringify(savedRecord.summary) !== JSON.stringify(current.summary)
-  const details = [
-    changed.length ? `changed sources: ${changed.join(', ')}` : '',
-    added.length ? `added sources: ${added.join(', ')}` : '',
-    removed.length ? `removed sources: ${removed.join(', ')}` : '',
-    summaryChanged ? 'summary changed' : '',
-  ].filter(Boolean)
-  return details.length ? details.join('; ') : 'generated JSON differs'
-}
-
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const inventory = createDomAcceptanceInventory()
-  const markdownPath = path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.md')
-  const markdown = process.argv.includes('--write') || process.argv.includes('--check')
-    ? await formatDomAcceptanceInventory(renderDomAcceptanceInventory(inventory))
-    : undefined
   if (process.argv.includes('--write')) {
-    fs.writeFileSync(path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.json'), `${JSON.stringify(inventory, null, 2)}\n`)
-    fs.writeFileSync(markdownPath, markdown!)
+    const markdown = await formatDomAcceptanceInventory(renderDomAcceptanceInventory(inventory))
+    fs.writeFileSync(path.join(ACCEPTANCE_ROOT, DOM_INVENTORY_FILES[0]), `${JSON.stringify(inventory, null, 2)}\n`)
+    fs.writeFileSync(path.join(ACCEPTANCE_ROOT, DOM_INVENTORY_FILES[1]), markdown)
   }
   if (process.argv.includes('--check')) {
+    assertDomInventoryUntracked(ACCEPTANCE_ROOT)
     assertDomAcceptanceInventoryComplete(inventory)
-    const saved: unknown = JSON.parse(fs.readFileSync(path.join(ACCEPTANCE_ROOT, 'e2e/dom-acceptance-inventory.json'), 'utf8'))
-    if (JSON.stringify(saved) !== JSON.stringify(inventory)) {
-      throw new Error(`DOM case inventory is stale (${describeInventoryDrift(saved, inventory)}); run ${INVENTORY_WRITE_COMMAND} and stage the generated files`)
-    }
-    if (fs.readFileSync(markdownPath, 'utf8') !== markdown) {
-      throw new Error(`DOM case Markdown inventory is stale; run ${INVENTORY_WRITE_COMMAND} and stage the generated files`)
-    }
   }
   console.log(JSON.stringify(inventory.summary, null, 2))
 }

@@ -21,6 +21,10 @@ packages/weapp-vite/test/fixtures/asset/src/typed-router.d.ts
 # testing
 coverage
 
+# Derived DOM coverage reports: generate locally / upload in CI, never commit.
+/e2e/dom-acceptance-inventory.json
+/e2e/dom-acceptance-inventory.md
+
 # next.js
 .next/
 out/

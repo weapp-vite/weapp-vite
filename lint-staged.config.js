@@ -18,9 +18,8 @@ function filterTempE2eAppFiles(files) {
 }
 
 export default {
-  '{e2e/ide/**/*.{ts,tsx},e2e/scripts/e2e-suite-manifest.ts,e2e/scripts/domAcceptanceReport/**/*.{ts,tsx}}': [
-    'node scripts/sync-dom-acceptance-inventory.mjs',
-  ],
+  // 校验当前源码，不生成或暂存共享清单；包括间接引用的计划和矩阵。
+  'e2e/**/*.{ts,tsx,mts}': () => 'pnpm e2e:dom-acceptance:check',
   '**/project{,.private}.config.json': (files) => {
     const projectConfigFiles = files.filter(isWechatDevtoolsProjectConfig)
 
