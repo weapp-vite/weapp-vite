@@ -5,6 +5,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
 import { E2E_TARGET_FILE_ENV } from '../utils/vitestTargetFile'
+import { readTaskCases } from './domAcceptanceReport/inventory'
 import {
   getSuiteTasks,
   IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
@@ -44,10 +45,7 @@ describe('suiteRunner', () => {
     const filterIndex = task.args.indexOf('-t')
     expect(filterIndex).toBeGreaterThanOrEqual(0)
     const filter = new RegExp(task.args[filterIndex + 1]!)
-    const inventory = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../dom-acceptance-inventory.json'), 'utf8')) as {
-      tasks: Array<{ task: string, cases: Array<{ name: string }> }>
-    }
-    const cases = inventory.tasks.find(item => item.task === task.label)!.cases
+    const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), task.label, task.acceptanceTemplates)
     const selected = cases.filter(item => filter.test(item.name)).map(item => item.name)
     expect(selected).toHaveLength(7)
     expect(selected.some(name => name.includes('template-generated computations and event handlers'))).toBe(true)
