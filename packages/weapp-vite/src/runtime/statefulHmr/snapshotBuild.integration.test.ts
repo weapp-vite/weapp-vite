@@ -58,7 +58,7 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
-  it('preserves discovered native component assets with pinned component sources', async () => {
+  it.each([false, true])('preserves discovered native component assets with pinned sources (isDev=%s)', async (isDev) => {
     const root = await fs.realpath(await createProject())
     await fs.writeFile(path.join(root, 'project.private.config.json'), JSON.stringify({ setting: { compileHotReLoad: true } }))
     await fs.writeFile(path.join(root, 'vite.config.ts'), [
@@ -79,7 +79,7 @@ describe('stateful snapshot component metadata', () => {
       await fs.writeFile(file, source.replace('PINNED', 'FUTURE'))
       sources.set(compilerSourceId(file), source)
     }
-    const result = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, undefined, undefined, sources)
+    const result = await buildStatefulHmrSnapshot({ cwd: root, isDev, mode: 'development' }, undefined, undefined, sources)
     const outputs = Array.isArray(result.output) ? result.output.flatMap(item => item.output) : 'output' in result.output ? result.output.output : []
     expect(outputs.map(item => item.fileName)).toEqual(expect.arrayContaining([
       'components/native-leaf/index.js',
