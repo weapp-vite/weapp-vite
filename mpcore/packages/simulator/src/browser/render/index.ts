@@ -275,6 +275,7 @@ function renderNodeTree(
       ownerJsonPath,
       ownerFilePath,
       componentEntry.filePath,
+      scope.genericComponents,
     )
     const slots = collectComponentSlots(
       clonedNode,

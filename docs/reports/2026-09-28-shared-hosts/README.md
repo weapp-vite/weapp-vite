@@ -31,7 +31,7 @@
 | weapp-vite #1081 headless | 通过，覆盖类名增删、扫描来源、主题、JS-only 不重写样式与映射 |
 | weapp-vite headless 状态保持 | 六场景通过：监听排除、计算/事件、三种模板往返、Wevu 脚本与 store |
 | weapp-vite 微信脚本状态保持 | 原生连续编辑恢复及 Wevu local/store 恢复通过；最终资产内核变更后原生场景再次通过 |
-| DOM 清单 | 114 tasks、302 cases、0 missing，使用生成脚本更新 |
+| DOM 清单 | 115 tasks、306 cases、0 missing，使用生成脚本更新 |
 | 独立安装 | 仓库外真实 tarball 安装与原生构建通过；完整 weapp-vite 不可解析 |
 
 ## 保留的失败与归因修正
@@ -51,7 +51,7 @@ weapp-vite 拆分版本和未拆分 main 在 #1081 首次颜色更新均失败�
 脱敏日志及 DOM 报告见 `evidence.json.gz`，原始日志 SHA-256 随归档保留。
 
 
-解压后 2495643 bytes，SHA-256 `5fcabcf0a8d2e3d532e6e89cf49e2f34a67a1a2826965d16a6a083f1141b88b8`。
+解压后 2540349 bytes，SHA-256 `23848cc90d68d474ffe64c9eb22e413cd33116c210da19312736e973b2d6a5e1`。
 
 公开 sourcemap 开关及转换结果类型已补回归：关闭映射时不生成/消费映射，代码与映射字段在转换后拓宽，其他元数据保留原类型。相关 13 项内核测试和公开 tsd 通过。
 
@@ -61,3 +61,6 @@ weapp-vite 拆分版本和未拆分 main 在 #1081 首次颜色更新均失败�
 首个 PR HEAD 的三系统新增宿主 job 均在 Taro 依赖准备阶段报 `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`，尚未进入用例。原因是临时 clone 注入本地 tarball 后，CI 默认启用了冻结安装。修正仅对这些生成的验证目录使用 `--no-frozen-lockfile`；主仓库与固定上游基线继续冻结安装。
 
 冷环境还要求在打包前显式构建 Taro 插件本身，准备脚本已包含该步骤。以 `CI=true` 在新 clone 中完成准备、类型检查和仓库外独立安装/原生构建，均通过。该调整不修改产品或放宽运行时断言。
+
+
+交付期间 main 已合入 #1093，现以普通 merge 合入 `cb38c6b863afe826609f42a185aec79753725621`。DOM 清单由脚本重新生成，保留新增 json-render 与本次 Taro 场景，共 115 tasks、306 cases、0 missing。编译选项、递归属性、调度内核与 CI 产物契约共 51 项定向回归通过。Node 22 全仓 CI 原先唯一的测试失败是新增产物清单路径未登记，现已更新准确路径断言。

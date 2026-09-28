@@ -84,6 +84,8 @@ export default defineConfig({
 })
 ```
 
+库模式的 SFC 入口和递归依赖均由逻辑入口负责组件注册；源码模块导出组件选项，避免递归引用时重复调用宿主 `Component`。
+
 ## 发布到 npm（宿主自行安装 `wevu`）
 
 如果你的组件库会发布到 npm，并要求宿主项目自行安装 `wevu`，推荐把 `wevu` 作为 `peerDependencies`，同时在库构建里显式 external 掉 `wevu` 与它的子路径。
