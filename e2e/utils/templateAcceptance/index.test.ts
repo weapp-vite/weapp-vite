@@ -42,7 +42,7 @@ describe('template DOM interactions', () => {
     const tap = vi.fn(async () => {})
     const child = { $$: vi.fn(async () => [{ tap }]) }
     const page = { $$: vi.fn(async () => [child]) }
-    await tapTemplateNode(page, { selector: 'button', scope: ['count-control'] })
+    await tapTemplateNode(page, { selector: 'button', scope: ['count-control'] }, 'devtools')
     expect(page.$$).toHaveBeenCalledWith('count-control', { fallback: false, timeout: 5_000 })
     expect(child.$$).toHaveBeenCalledWith('button', { fallback: false, timeout: 5_000 })
     expect(tap).toHaveBeenCalledOnce()
@@ -54,17 +54,19 @@ describe('template DOM interactions', () => {
         throw new Error('protocol unavailable')
       }),
     }
-    await expect(tapTemplateNode(page, { selector: '#counter' })).rejects.toThrow('protocol unavailable')
+    await expect(tapTemplateNode(page, { selector: '#counter' }, 'devtools')).rejects.toThrow('protocol unavailable')
   })
 
-  it('locates a generic component by its owned descendant', async () => {
+  it.each(['devtools', 'headless'] as const)('locates a generic component by its owned descendant with %s', async (provider) => {
     const tap = vi.fn(async () => {})
     const button = { tap }
-    const unrelated = { $$: vi.fn(async () => []) }
-    const counter = { $$: vi.fn(async () => [button]) }
-    const page = { $$: vi.fn(async () => [unrelated, counter]) }
-    await tapTemplateNode(page, { selector: 'button', scope: [{ has: '#counter' }] })
-    expect(page.$$).toHaveBeenCalledWith('component', { fallback: false, timeout: 5_000 })
+    const unrelated = { tagName: 'component', $$: vi.fn(async () => []) }
+    const counter = { tagName: 'component', $$: vi.fn(async () => [button]) }
+    const container = { tagName: 'view', $$: vi.fn(async () => [button]) }
+    const page = { $$: vi.fn(async () => provider === 'devtools' ? [container, unrelated, counter] : [unrelated, counter]) }
+    await tapTemplateNode(page, { selector: 'button', scope: [{ has: '#counter' }] }, provider)
+    expect(page.$$).toHaveBeenCalledWith(provider === 'devtools' ? '*' : 'component', { fallback: false, timeout: 5_000 })
+    expect(container.$$).not.toHaveBeenCalled()
     expect(counter.$$).toHaveBeenCalledWith('#counter', { fallback: false, timeout: 5_000 })
     expect(tap).toHaveBeenCalledOnce()
   })

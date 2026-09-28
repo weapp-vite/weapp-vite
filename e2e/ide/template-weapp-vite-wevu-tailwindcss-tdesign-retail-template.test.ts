@@ -872,7 +872,7 @@ describe('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template pari
             await page.callMethod(step.method)
           }
           if (step.tap) {
-            await tapTemplateNode(page, step.tap)
+            await tapTemplateNode(page, step.tap, resolveRuntimeProviderName())
           }
           await dom.check(step.id, miniProgram, page)
           if (useRuntimeParity && step === route.steps[0]) {

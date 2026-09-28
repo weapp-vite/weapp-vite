@@ -688,7 +688,7 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
       }
       for (const step of routePlan.steps) {
         if (step.tap) {
-          await tapTemplateNode(page, step.tap)
+          await tapTemplateNode(page, step.tap, resolveRuntimeProviderName())
         }
         if (step.method) {
           await page.callMethod(step.method)

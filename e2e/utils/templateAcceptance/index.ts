@@ -1,4 +1,9 @@
-import type { DomCheckpoint, DomNodeExpectation, DomProvider, DomScope } from '../domAcceptance/types'
+import type { DomCheckpoint, DomElement, DomNodeExpectation, DomProvider, DomScope } from '../domAcceptance/types'
+import { queryDomElements } from '../domAcceptance/query'
+
+interface TemplateDomElement extends DomElement {
+  tap: () => Promise<void>
+}
 
 export interface TemplateDomStep extends DomCheckpoint {
   tap?: { selector: string, scope?: DomScope[] }
@@ -54,14 +59,20 @@ export function assertTemplateRouteCoverage(pages: string[], routes: TemplateDom
   }
 }
 
-export async function tapTemplateNode(page: any, target: NonNullable<TemplateDomStep['tap']>) {
+export async function tapTemplateNode(page: any, target: NonNullable<TemplateDomStep['tap']>, provider: DomProvider) {
+  const query = (owner: any, selector: string) => queryDomElements<TemplateDomElement>(
+    value => owner.$$(value, { fallback: false, timeout: 5_000 }),
+    selector,
+    provider,
+    'css',
+  )
   let owner = page
   for (const scope of target.scope ?? []) {
-    let matches = await owner.$$(typeof scope === 'string' ? scope : 'component', { fallback: false, timeout: 5_000 })
+    let matches = await query(owner, typeof scope === 'string' ? scope : 'component')
     if (typeof scope !== 'string') {
       const scoped = []
       for (const component of matches) {
-        const descendants = await component.$$(scope.has, { fallback: false, timeout: 5_000 })
+        const descendants = await query(component, scope.has)
         if (descendants.length > 0) {
           scoped.push(component)
         }
@@ -73,7 +84,7 @@ export async function tapTemplateNode(page: any, target: NonNullable<TemplateDom
     }
     owner = matches[0]
   }
-  const matches = await owner.$$(target.selector, { fallback: false, timeout: 5_000 })
+  const matches = await query(owner, target.selector)
   if (matches.length !== 1) {
     throw new Error(`Expected exactly one template tap target: ${target.selector}`)
   }
