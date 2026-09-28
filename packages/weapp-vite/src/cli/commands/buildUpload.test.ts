@@ -144,21 +144,20 @@ describe('build upload opt-in', () => {
     expect(state.build).toHaveBeenCalledTimes(1)
     expect(state.build).toHaveBeenCalledWith(expect.objectContaining({ skipNpm: true }))
     expect(state.execute).toHaveBeenCalledTimes(1)
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.objectContaining({
+    const { projectPath, version, desc } = state.execute.mock.calls[0]![1]
+    expect({ projectPath, version, desc }).toEqual({
       projectPath: path.join(root, 'release/jd'),
       version: '2.3.4',
       desc: '配置上传说明',
-    }), [], 'upload')
+    })
     expect(state.close).toHaveBeenCalledTimes(1)
   })
 
   it('preserves numeric strings and the last repeated metadata value through CAC', async () => {
     await runBuild('--upload', '--uv', '00123', '--uv=00456', '--desc', '000')
 
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.objectContaining({
-      version: '00456',
-      desc: '000',
-    }), [], 'upload')
+    const { version, desc } = state.execute.mock.calls[0]![1]
+    expect({ version, desc }).toEqual({ version: '00456', desc: '000' })
   })
 
   it('waits for both all-target builds and uploads only the configured mini program', async () => {
@@ -186,7 +185,7 @@ describe('build upload opt-in', () => {
     expect(state.createContext).toHaveBeenCalledTimes(1)
     expect(state.build).toHaveBeenCalledTimes(1)
     expect(state.execute).toHaveBeenCalledTimes(1)
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.anything(), [], 'upload')
+    expect(state.execute.mock.calls[0]![0]).toBe('jd')
     expect(state.webClose).toHaveBeenCalledTimes(1)
   })
 

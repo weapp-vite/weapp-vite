@@ -417,7 +417,7 @@ wv mcp doctor codex
 
 多个平台推荐在一份 `weapp.multiPlatform.projectConfigs` 中集中配置 AppID，不需要分别维护六份原生 JSON，见[统一项目配置](./upload.md#batch)。可复制的 `.env.test` / `.env.production`、不同 AppID 以及自动版本/提交说明见[上传环境与自动版本](./upload/environments.md)。
 
-本节的构建、凭据、配置默认值与 `--dry-run` / `--bump` / `--git-desc` 均针对 SDK 入口，不适用于[兼容的旧微信 IDE 上传](#legacy-upload)。
+本节的构建、凭据、配置默认值与 SDK 专属选项均针对 SDK 入口，不适用于[兼容的旧微信 IDE 上传](#legacy-upload)。
 
 ```bash
 # 京东、百度分别构建并上传
@@ -446,8 +446,12 @@ wv upload -p xhs,tt --mode test --bump patch --git-desc
 | `--git-desc`                | 最新 Git 提交的 subject 作为说明，与显式 `--desc` 冲突 |
 | `--project-config <path>`   | 使用指定项目配置；文件名须是目标平台的标准名称                                                     |
 | `--dry-run`                 | 只构建并检查 SDK 读取的代码目录与本次产物一致、`app.json` 存在                                     |
+| `--json`                    | stdout 输出单个结构化汇总，日志和进度进入 stderr；失败退出码非零 |
+| `--timeout <seconds>`       | 每个平台 SDK worker 的本地超时，不含构建；正数秒，精度不超过毫秒，默认不增加超时 |
 | `-m, --mode <mode>`         | 默认 `production`，同时选择构建配置和 `.env` 模式                                                  |
 | `-c, --config <file>`       | 指定 Vite 配置                                                                                     |
+
+报告保留前序成功和后续未执行目标；SDK 开始后超时或中断会标记远端结果未确认，不自动重试。官方进度不等于上传完成。完整字段、六端可选结果及取消边界见[结果、进度与本地超时](./upload.md#report)。`--json` / `--timeout` 仅支持独立 `upload`，不适用于 `build --upload` 或 `preview`。
 
 #### 上传配置与触发时机
 
@@ -544,7 +548,7 @@ wv upload --project=./dist --version=1.2.3 --desc="release"
 分流只看明确的参数标记，不猜测目录或平台：
 
 - 旧 IDE 标记：`--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`。
-- SDK 标记：长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`。它们与旧标记混用时，在 IDE、编译器或版本文件产生副作用前报错；即使使用其 `--no-*` 形式也不能混入旧调用。SDK 自动版本选项不会在 IDE 上传中被静默忽略。
+- SDK 标记：长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`、`--json`、`--timeout`。它们与旧标记混用时，在 IDE、编译器或版本文件产生副作用前报错；即使使用其 `--no-*` 形式也不能混入旧调用。SDK 专属选项不会在 IDE 上传中被静默忽略。
 - `-p` 单独不是旧标记：带旧标记时仍是 IDE 项目目录，否则是原生平台参数；不根据值是否像平台名或路径是否存在决定后端。`--desc` 两边共用；`-d` 仅在旧调用中是说明，在原生命令中仍是全局 debug。
 - 必填选项值只作为数据，不识别成方言标记；支持分开和 `=` 形式。仅在选项位置遇到 `--` 才停止扫描，例如 `--desc "--"` 中的 `--` 仍是说明；可选的 `--debug` 不会吞掉后续选项。
 

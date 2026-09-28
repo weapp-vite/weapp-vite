@@ -332,6 +332,7 @@ wv build --upload -p weapp
 # 独立 upload 命令仍支持多个小程序目标；all 在此表示六端
 wv upload --platform jd,swan
 wv upload --platform all --dry-run
+wv upload --platform xhs,tt --json --timeout 180
 
 # 内置本地自动版本演练，不修改版本或锁文件
 wv upload -p xhs,tt --mode test --bump patch --git-desc --dry-run
@@ -342,6 +343,8 @@ wv upload -p xhs,tt --mode test --bump patch --git-desc --dry-run
 自动元数据在首次配置求值、编译前准备一次，批量共用；升版仅处理命令根目录的应用清单，不向父目录查找。真实升版需要本机 npm，只有 Git 说明要求已有提交的 Git 仓库；不执行生命周期钩子、不 commit/tag/push。dry-run 不运行 npm、不修改版本或锁文件，直接导入 `package.json` 的构建代码仍读取原始版本。实际升版后的构建或上传失败不回滚，重试去掉 `--bump` 并复用原版本，必要时用 `--uv` / `--desc` 固定上一批元数据。
 
 `build -p all --upload` 保持“小程序 + Web”语义，等两个后端都构建成功后只上传小程序；独立 `wv upload -p all` 才是六端逐一构建上传，首次失败停止。`--dry-run` 只构建并校验产物，不校验凭据、不调用 SDK。
+
+独立 `upload --json` 将单个结构化报告写入 stdout，构建日志与官方进度进入 stderr；失败保留前序成功、当前错误和后续 `not-run` 条目，并以非零状态退出。`--timeout <秒>` 只限制各平台 SDK worker，不包含构建。SDK 开始后超时或中断标记远端结果未确认；终止本地进程不能取消远端任务，不自动重试。六端可选结果与进度差异见[结果、进度与本地超时](https://vite.weapp.dev/guide/upload.html#report)。这两个选项不适用于 `build --upload`、`preview` 或 IDE 上传。
 
 多个平台可用一份 `weapp.multiPlatform.projectConfigs` 映射集中配置 AppID，公共字段用对象展开复用，不必手工维护六份原生 JSON。构建器在代码输出目录内生成对应项目配置；原生文件方式仍可使用。完整配置见[一份配置与批量上传](https://vite.weapp.dev/guide/upload.html#batch)。
 
@@ -398,7 +401,7 @@ wv upload -p ./dist -v 1.2.3 -d "release"
 
 每次旧顶层调用只警告一次未来移除，不要求立即改写脚本；若只想保留 IDE 行为，改为 `wv ide upload -p ./dist -v 1.2.3 -d "release"`，该显式入口不警告。若迁移到 SDK，先在**源码项目根**安装 `miniprogram-ci`、配置 AppID、代码上传私钥与 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。SDK 会重新构建、使用新凭据，不复用 IDE 登录；不要把旧 `--project` 的产物目录直接作为 `[root]`。
 
-`-p` 有 `--version/-v`、`--project`、`--appid`、`--ext-appid` 或 `--info-output/-i` 等旧标记时才表示 IDE 项目目录，否则表示平台，不猜测路径。旧标记与 SDK 的 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`（含其 `--no-*` 形式）混用，在 IDE、编译或版本修改前报错；SDK dry-run/自动版本不适用于 IDE。`--desc` 共用，`-d` 只在旧调用中是说明，原生命令中仍是 debug。
+`-p` 有 `--version/-v`、`--project`、`--appid`、`--ext-appid` 或 `--info-output/-i` 等旧标记时才表示 IDE 项目目录，否则表示平台，不猜测路径。旧标记与 SDK 的 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`、`--json`、`--timeout`（含其 `--no-*` 形式）混用，在 IDE、编译或版本修改前报错；SDK 专属选项不适用于 IDE。`--desc` 共用，`-d` 只在旧调用中是说明，原生命令中仍是 debug。
 
 `wv upload --help` 查看 SDK 帮助；`wv help upload` 保留旧 IDE 帮助并提示未来弃用；`wv ide help upload` 不弃用、不警告。等号写法、选项值与 `--` 边界等完整规则见[旧上传兼容与迁移](https://vite.weapp.dev/guide/cli.html#legacy-upload)。
 

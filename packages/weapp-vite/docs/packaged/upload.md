@@ -156,6 +156,25 @@ pnpm exec wv preview -p xhs,tt
 
 `--dry-run` 不加载 SDK、不校验凭据或官方平台规则、不生成二维码；上传入口仍要求非空版本。它不能证明平台授权、网络、IP 白名单或扫码权限正确。上传失败后保留错误并定位根因，不把 SDK 提前退出视为成功；取消命令不能撤回已被平台接收的版本。
 
+## 结构化结果与本地超时
+
+```bash
+wv upload -p xhs,tt --json --timeout 180 > upload-report.json
+wv upload -p all --dry-run --json
+```
+
+`--json` 让 stdout 只输出一个报告，日志和官方进度进入 stderr；失败退出码非零。不使用 JSON 时仍打印逐平台汇总。`--json` / `--timeout` 仅适用于独立 SDK `upload`，不适用于 `build --upload`、`preview`、IDE 上传或 `weapp.upload` 配置。
+
+报告为 `{ schemaVersion: 1, action: "upload", status, results, error? }`。整批 `status` 为 `success` / `failed`；`results` 按请求顺序保留各平台的 `platform`、可选 `requestedVersion`、最后进入的 `stage`（`prepare` / `build` / `validate` / `upload`）及 `status`（`success` / `failed` / `not-run` / `dry-run` / `unknown`）。从配置推断但尚未解析的平台为 `null`；列表解析前失败时 `results` 可为空。首次失败后保留前序结果，后续条目为 `not-run`。
+
+成功条目的 `result` 只含官方实际返回的可选信息：微信的 `subPackages` / `plugins`（体积为字节），支付宝的 `sdkVersion` / `qrCodeUrl`，抖音的 `previewUrl` / `qrCodeFile`，京东的 `qrCodeUrl` / `qrCodeBase64`，百度的 `previewUrl` / `fileSize` / `warnings`；小红书成功结果为 `{}`。不从请求版本或内部标识推断 SDK 确认版本，不因可选信息缺失而改判失败。字段结构见[完整结果参考](https://vite.weapp.dev/guide/upload.html#report)。
+
+进度只使用公开能力：微信任务状态／消息、小红书百分比、支付宝日志／任务创建／版本创建事件。其他平台不伪造百分比；任何进度事件都不能替代 SDK 完成确认和正常退出。
+
+`--timeout` 是每个平台 SDK worker 的本地超时，不含构建；默认不增加超时。值为正数秒，精度不超过毫秒，最大 `2147483.647` 秒。SDK 执行期间，`SIGINT` / `SIGTERM` 或超时会触发本地上传进程树清理，无法确认清理完成时报告错误。构建等前置阶段保留原有信号退出行为，不等待挂起的构建，也不保证生成最终报告。
+
+SDK 开始后超时／中断标记 `status: "unknown"`、`remoteOutcome: "unknown"`；SDK 尚未开始时可为 `remoteOutcome: "not-started"`。其他 SDK 错误也可能携带 `remoteOutcome: "unknown"`。**本地停止不代表远端取消**，先核实平台状态再重试；不会自动重试、回滚、提审、设置体验版或正式发布。
+
 ## 完整教程
 
 - [微信](https://vite.weapp.dev/guide/upload/weapp.html)
@@ -182,7 +201,7 @@ wv upload --project=./dist --version=1.2.3 --desc="release"
 
 SDK 迁移不是等价换名：回到包含 `package.json`、Vite 配置和源码的项目根，安装 `miniprogram-ci` 并配置 AppID、上传私钥和 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。不要把旧 `--project` 的构建产物目录当作 SDK `[root]`；SDK 需要新凭据，不复用 IDE 登录。
 
-- 旧标记为 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 标记为长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`。混用在 IDE、编译或版本修改前报错；SDK 标记的 `--no-*` 形式也不能混入旧调用。dry-run、自动升版与 Git 说明不适用于 IDE。
+- 旧标记为 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 标记为长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`、`--json`、`--timeout`。混用在 IDE、编译或版本修改前报错；SDK 标记的 `--no-*` 形式也不能混入旧调用。SDK 专属选项不适用于 IDE。
 - `-p` 仅在有旧标记时表示 IDE 项目目录，否则表示原生平台；不根据路径存在与否或值是否像平台名猜测。`--desc` 共用，`-d` 仅在旧调用中是说明，原生命令中仍是 debug。
 - 参数支持分开和 `=` 形式；必填值只是数据，仅在选项位置遇到 `--` 后停止扫描。
 - `wv upload --help` 查看 SDK 帮助；`wv help upload` 保留旧 IDE 帮助并警告未来弃用；`wv ide help upload` 保持显式 IDE 帮助、不警告。工具自身版本查询用 `wv --version`。

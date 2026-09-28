@@ -32,11 +32,12 @@
 - `close` 是 `weapp-vite` 原生命令，用于关闭微信开发者工具。
 - `mcp init|print|doctor` 是 `weapp-vite` 原生命令，用于管理 AI 客户端配置。
 - SDK `upload`、`preview` 在六端生产构建后调用官方上传、预览接口。兼容只覆盖旧顶层上传，不扩展到顶层 preview；IDE 预览继续使用 `ide preview`。
-- 旧上传标记：`--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`。SDK 标记：长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`，其 `--no-*` 形式也参与分流和混用判断。不要在旧 IDE 调用中忽略 SDK 自动版本参数。
+- 旧上传标记：`--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`。SDK 标记：长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`、`--json`、`--timeout`，其 `--no-*` 形式也参与分流和混用判断。不要在旧 IDE 调用中忽略 SDK 专属选项。
 - `-p` 单独不判定为旧方言：有旧标记时为 IDE 项目目录，否则为原生平台；禁止用路径存在性或值是否像平台名推断。`--desc` 共用，`-d` 仅在旧调用中为描述，原生仍为 debug。必填选项值只是数据，支持分开和 `=` 形式；仅在选项位置遇到 `--` 才停止扫描，`--desc "--"` 仍为说明。可选的 `--debug` 不会吞掉后续选项。
 - 旧长参数 `wv upload --project ./dist --version 1.2.3 --desc "release"` 与短参数 `wv upload -p ./dist -v 1.2.3 -d "release"` 原样保留。`./dist` 仅为 IDE 工程目录示例，不是默认值；省略定位参数时保持透传，不补固定目录，由官方 CLI 处理。每次仅警告一次未来移除，给用户迁移时间。`wv ide upload -p ./dist -v 1.2.3 -d "release"` 是稳定显式入口，不弃用、不警告。SDK 的 `wv upload -p weapp` 无需 `--project`，自动定位配置及本轮产物。
-- SDK 迁移不是等价替换：从源码项目根安装 `miniprogram-ci`，配置 AppID、代码上传私钥和 IP 白名单后，用 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。不复用 IDE 登录，不把旧 `--project` 产物目录当作 SDK root；IDE 调用不使用 SDK dry-run、`--bump` 或 `--git-desc`。
+- SDK 迁移不是等价替换：从源码项目根安装 `miniprogram-ci`，配置 AppID、代码上传私钥和 IP 白名单后，用 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。不复用 IDE 登录，不把旧 `--project` 产物目录当作 SDK root；IDE 调用不使用 SDK dry-run、`--bump`、`--git-desc`、`--json` 或 `--timeout`。
 - `build --upload` 在本次已选构建后端全部成功后复用产物上传，不能再次调用独立 `upload` 导致重复构建；上传凭据与目录规则见本地 `dist/docs/upload.md`。`build -p all` 是“小程序 + Web”，不等于 `upload/preview -p all` 的六端列表；淘宝没有统一适配器。
+- `--json` / `--timeout` 仅属于独立 SDK `upload`，不扩展 `build --upload` 或 `preview`。JSON 模式 stdout 只输出一次整批结果、stderr 保留日志和官方事件。超时仅覆盖 SDK worker；中断后的远端结果未确认，不实现远端取消或自动重试。
 - `help <cmd>`：
   - `help upload`：保留旧 IDE help 并警告未来弃用；SDK help 使用 `upload --help`
   - 其他 native command：保留 native help
