@@ -70,7 +70,8 @@ export async function buildStatefulHmrSnapshot(
             }
             const sourceId = normalizeFsResolvedId(id)
             const nativeEntry = ctx.runtimeState.build.hmr.entriesMap.get(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(sourceId)))
-            if (sourceId.endsWith('.vue') || (nativeEntry?.path && normalizeFsResolvedId(nativeEntry.path) === sourceId)
+            // 发现的组件记录暂时指向引用它的入口；按注册身份保留原生加载及其伴随资产输出。
+            if (sourceId.endsWith('.vue') || nativeEntry
               || (ctx.scanService.appEntry?.path && normalizeFsResolvedId(ctx.scanService.appEntry.path) === sourceId)) {
               return null
             }

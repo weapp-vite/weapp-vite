@@ -58,6 +58,37 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('preserves discovered native component assets with pinned component sources', async () => {
+    const root = await fs.realpath(await createProject())
+    await fs.writeFile(path.join(root, 'project.private.config.json'), JSON.stringify({ setting: { compileHotReLoad: true } }))
+    await fs.writeFile(path.join(root, 'vite.config.ts'), [
+      `import { defineConfig } from ${JSON.stringify(path.resolve(import.meta.dirname, '../../config.ts'))}`,
+      'export default defineConfig({ weapp: { srcRoot: "src", hmr: { runtime: "stateful-experimental" } } })',
+    ].join('\n'))
+    const files = {
+      'src/pages/index/index.json': JSON.stringify({ component: true, usingComponents: { 'native-leaf': '../../components/native-leaf/index', 'wevu-leaf': '../../components/wevu-leaf/index' } }),
+      'src/pages/index/index.wxml': '<native-leaf /><wevu-leaf />',
+      'src/components/native-leaf/index.js': 'Component({ data: { marker: "PINNED" } })',
+      'src/components/native-leaf/index.json': '{"component":true}',
+      'src/components/native-leaf/index.wxml': '<view>{{marker}}</view>',
+    }
+    const sources = new Map<string, string>()
+    for (const [relative, source] of Object.entries(files)) {
+      const file = path.join(root, relative)
+      await fs.mkdir(path.dirname(file), { recursive: true })
+      await fs.writeFile(file, source.replace('PINNED', 'FUTURE'))
+      sources.set(compilerSourceId(file), source)
+    }
+    const result = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, undefined, undefined, sources)
+    const outputs = Array.isArray(result.output) ? result.output.flatMap(item => item.output) : 'output' in result.output ? result.output.output : []
+    expect(outputs.map(item => item.fileName)).toEqual(expect.arrayContaining([
+      'components/native-leaf/index.js',
+      'components/native-leaf/index.json',
+      'components/native-leaf/index.wxml',
+    ]))
+    expect((outputs.find(item => item.fileName === 'components/native-leaf/index.js') as OutputChunk).code).toContain('PINNED')
+  })
+
   it('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs', async () => {
     const root = await createProject()
     const inputs = new Map<string, string>([

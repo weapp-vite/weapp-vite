@@ -640,6 +640,10 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       route: 'pages/component/index',
       source: 'e2e',
     })
+    // 后续场景会重新进入同一组件页，必须先恢复注册定义并消费恢复补丁。
+    const restoreVersion = await readClientVersion()
+    await replaceFileByRename(COMPONENT_SOURCE, originalComponentSource)
+    await waitForClientVersion(restoreVersion + 1)
   })
 
   it('preserves parent and native child DOM state across a child script patch and restoration', async (ctx) => {
@@ -744,14 +748,26 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         await dom.check('prepared', miniProgram, page)
         expect(original).toContain('<input')
         for (const cycle of [0, 1]) {
+          // SFC 模板也会发布脚本补丁；产物可见不代表客户端已消费，必须在下一次编辑前完成交付。
+          const version = runtime === 'wevu' ? await readClientVersion() : undefined
           const marker = `TEMPLATE-CYCLE-${cycle}`
           const updated = original.replace('<input', `<view class="template-cycle">${marker}</view>\n    <input`)
           await replaceFileByRename(source, updated)
           await devProcess!.waitFor(waitForFileContains(output, marker), 'template edit emitted')
+          if (version !== undefined) {
+            await waitForClientVersion(version + 1)
+          }
+          for (const extension of ['js', 'json', 'wxml']) {
+            expect(await fs.pathExists(path.join(DIST_ROOT, `components/native-counter/index.${extension}`)), `native component ${extension} after template edit`).toBe(true)
+          }
           await dom.check(`edit-${cycle}`, miniProgram, await miniProgram.currentPage())
           expect(await readRuntimeState(page)).toEqual(expected)
+          const restoreVersion = runtime === 'wevu' ? await readClientVersion() : undefined
           await replaceFileByRename(source, original)
           await devProcess!.waitFor(expect.poll(async () => (await fs.readFile(output, 'utf8')).includes(marker), { timeout: 90_000 }).toBe(false), 'template restore emitted')
+          if (restoreVersion !== undefined) {
+            await waitForClientVersion(restoreVersion + 1)
+          }
           await dom.check(`restore-${cycle}`, miniProgram, await miniProgram.currentPage())
           expect(await readRuntimeState(page)).toEqual(expected)
         }
