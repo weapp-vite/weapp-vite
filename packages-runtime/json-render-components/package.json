@@ -42,6 +42,7 @@
   },
   "scripts": {
     "build": "tsdown && wv build --config weapp-vite.config.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.ts\"",
     "lint": "eslint ."
