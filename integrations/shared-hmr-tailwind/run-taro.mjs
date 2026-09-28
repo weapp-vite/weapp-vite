@@ -37,6 +37,9 @@ async function main() {
       },
       buildEnd(error) {
         process.stdout.write(`SHARED_HOST_PHASE=build-end error=${Boolean(error)}\n`)
+        if (error) {
+          process.stderr.write(`SHARED_HOST_BUILD_ERROR=${error.stack ?? error.message ?? String(error)}\n`)
+        }
       },
       renderStart() {
         process.stdout.write('SHARED_HOST_PHASE=render-start\n')
