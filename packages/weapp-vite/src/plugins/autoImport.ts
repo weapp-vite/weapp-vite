@@ -384,7 +384,10 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       logger.info(`[auto-import:watch] ${action}组件文件 ${configService.relativeCwd(filePath)}`)
       void autoImportService.registerPotentialComponent(filePath)
         .then(async () => {
-          await refreshAutoImportImporters(ctx, filePath)
+          // 已入图源码的内容更新由原生 watcher 负责；重新触碰引用方会制造第二轮 HMR。
+          if (action === '新增' || getAutoImportCandidateKind(filePath) === 'config' || !ctx.moduleGraphService?.hasModule(filePath)) {
+            await refreshAutoImportImporters(ctx, filePath)
+          }
         })
     }
 
@@ -477,7 +480,8 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
     },
 
     async watchChange(id, change) {
-      if (!state.initialScanDone || !state.resolvedConfig) {
+      // 托管侧车独占组件发现和元数据登记，避免同一文件再由原生 watchChange 重复处理。
+      if (fileWatcherStarted || !state.initialScanDone || !state.resolvedConfig) {
         return
       }
 
@@ -505,7 +509,9 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
 
       await autoImportService.registerPotentialComponent(absolutePath)
-      await refreshAutoImportImporters(ctx, absolutePath)
+      if (change.event === 'create' || getAutoImportCandidateKind(absolutePath) === 'config' || !ctx.moduleGraphService?.hasModule(absolutePath)) {
+        await refreshAutoImportImporters(ctx, absolutePath)
+      }
     },
   }
 }

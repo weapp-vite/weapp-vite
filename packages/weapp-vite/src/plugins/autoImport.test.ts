@@ -742,7 +742,7 @@ describe('autoImport plugin', () => {
     }
   })
 
-  it('queues importer pending entries after a component file changes', async () => {
+  it.each([false, true])('refreshes changed component importers only when the graph does not own the source: %s', async (graphOwnsSource) => {
     const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
     await fs.ensureDir(tempRoot)
     const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-change-importers-'))
@@ -760,6 +760,7 @@ describe('autoImport plugin', () => {
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
 
     const ctx = {
+      moduleGraphService: { hasModule: () => graphOwnsSource },
       runtimeState: {
         autoImport: {
           pendingEntriesByImporter: new Map(),
@@ -814,8 +815,15 @@ describe('autoImport plugin', () => {
 
       sidecarWatcher.emit('change', hotCardFile)
 
+      await vi.waitFor(() => expect(registerPotentialComponent).toHaveBeenCalledWith(hotCardFile))
+      await plugin.watchChange?.(hotCardFile, { event: 'update' })
+      if (graphOwnsSource) {
+        expect(registerPotentialComponent).toHaveBeenCalledTimes(1)
+        expect((await fs.stat(pageVueFile)).mtimeMs).toBe(initialPageStat.mtimeMs)
+        expect(ctx.runtimeState.autoImport.pendingEntriesByImporter.size).toBe(0)
+        return
+      }
       await vi.waitFor(async () => {
-        expect(registerPotentialComponent).toHaveBeenCalledWith(hotCardFile)
         const nextPageStat = await fs.stat(pageVueFile)
         expect(nextPageStat.mtimeMs).toBeGreaterThan(initialPageStat.mtimeMs)
         expect(ctx.runtimeState.autoImport.pendingEntriesByImporter.get(pageVueFile.replace(/\.vue$/, ''))).toEqual(
@@ -883,7 +891,7 @@ describe('autoImport plugin', () => {
     const ctx = {
       runtimeState: {
         watcher: {
-          sidecarWatcherMap: new Map(),
+          sidecarWatcherMap: undefined,
         },
       },
       configService: {
@@ -963,7 +971,7 @@ describe('autoImport plugin', () => {
           pendingEntriesByImporter: new Map(),
         },
         watcher: {
-          sidecarWatcherMap: new Map(),
+          sidecarWatcherMap: undefined,
         },
       },
       wxmlService: {

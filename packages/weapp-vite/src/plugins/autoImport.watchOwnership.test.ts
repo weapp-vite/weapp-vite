@@ -1,11 +1,12 @@
 import type { CompilerContext } from '../context'
 import type { AutoImportComponents } from '../types'
-import { mkdir, mkdtemp, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { setTimeout as delay } from 'node:timers/promises'
 import path from 'pathe'
 import { dev } from 'rolldown/experimental'
 import { describe, expect, it, vi } from 'vitest'
+import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { autoImport } from './autoImport'
 
 function hook<T extends (...args: any[]) => any>(value: T | { handler: T } | undefined): T {
@@ -40,7 +41,7 @@ function fixture(root: string, options: false | AutoImportComponents) {
   } as unknown as CompilerContext
   const plugin = autoImport(ctx)[0]!
   hook(plugin.configResolved)({ build: { outDir: 'dist' }, command: 'serve' } as any)
-  return { plugin, register, remove, close: () => Promise.all([...sidecars.values()].map(watcher => watcher.close())) }
+  return { ctx, plugin, register, remove, close: () => Promise.all([...sidecars.values()].map(watcher => watcher.close())) }
 }
 
 describe('auto import topology ownership', () => {
@@ -102,6 +103,84 @@ describe('auto import topology ownership', () => {
       expect(updates.every(update => update.type === 'Patch')).toBe(true)
       await writeFile(userDependency, 'after')
       await vi.waitFor(() => expect(changes).toContain('.user.rules'), { timeout: 5_000, interval: 20 })
+    }
+    finally {
+      await engine.close()
+      await running
+      await auto.close()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
+  it('publishes one native HMR patch per owned component edit without touching its importer', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'auto-import-component-update-')))
+    const source = path.join(root, 'entry.js')
+    const component = path.join(root, 'components/Card.vue')
+    const code = (value: number) => `export const value = ${value}; import.meta.hot.accept();`
+    await mkdir(path.dirname(component), { recursive: true })
+    await writeFile(source, 'import { value } from "./components/Card.vue"; console.log(value);')
+    await writeFile(component, code(1))
+    const auto = fixture(root, { globs: ['components/**/*.vue'] })
+    auto.ctx.moduleGraphService = { hasModule: (file: string) => file === component } as CompilerContext['moduleGraphService']
+    auto.ctx.wxmlService = { wxmlComponentsMap: new Map([[source.slice(0, -3), { Card: [] }]]) } as unknown as CompilerContext['wxmlService']
+    auto.ctx.autoImportService.resolve = () => ({ value: { name: 'Card', from: '/components/Card' } }) as any
+    const updates: string[][] = []
+    const errors: Error[] = []
+    const engine = await dev({
+      cwd: root,
+      input: source,
+      experimental: { devMode: { lazy: false } },
+      plugins: [{
+        name: 'actual-component-discovery-owner',
+        buildStart: hook(auto.plugin.buildStart),
+        watchChange: hook(auto.plugin.watchChange),
+        async load(id) {
+          if (normalizeFsResolvedId(id) === component) {
+            this.addWatchFile(component)
+            return await readFile(component, 'utf8')
+          }
+        },
+      }],
+    }, { format: 'esm' }, {
+      watch: { skipWrite: true, usePolling: true, pollInterval: 20 },
+      onOutput(result) {
+        if (result instanceof Error) {
+          errors.push(result)
+        }
+      },
+      onHmrUpdates(result) {
+        if (result instanceof Error) {
+          errors.push(result)
+        }
+        else {
+          updates.push(result.changedFiles.map(file => path.relative(root, file)))
+        }
+      },
+    })
+    const running = engine.run()
+    try {
+      await engine.registerClient('component-discovery-owner')
+      await engine.ensureCurrentBuildFinish()
+      await engine.getBundleState()
+      // 原生 watcher 的 OS 注册晚于首个输出回调。
+      await delay(100)
+      const importerMtime = (await stat(source)).mtimeMs
+      for (const value of [2, 1]) {
+        const previous = updates.length
+        auto.register.mockClear()
+        await writeFile(`${component}.pending`, code(value))
+        await rename(`${component}.pending`, component)
+        await vi.waitFor(() => {
+          expect(errors).toEqual([])
+          expect(updates.length).toBe(previous + 1)
+          expect(auto.register).toHaveBeenCalledExactlyOnceWith(component)
+        }, { timeout: 5_000, interval: 20 })
+        await engine.ensureCurrentBuildFinish()
+        await engine.getBundleState()
+        expect((await stat(source)).mtimeMs).toBe(importerMtime)
+        expect(updates.at(-1)).toEqual(['components/Card.vue'])
+      }
+      expect(errors).toEqual([])
     }
     finally {
       await engine.close()
