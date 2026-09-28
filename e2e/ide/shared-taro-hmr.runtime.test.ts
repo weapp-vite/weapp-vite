@@ -143,8 +143,10 @@ describe('shared HMR compiler: Taro runtime', { concurrent: false }, () => {
     await rename(`${source}.pending`, source)
     await expect.poll(() => readFile(path.join(project, 'dist/assets/global.wxss'), 'utf8'), { timeout: 45_000 }).toContain('#c7d2fe')
     await expect.poll(() => readReports(output).filter(report => report.kind === 'applied').length, { timeout: 45_000 }).toBeGreaterThan(before)
-    const node = (await (await host.currentPage()).$('#shared-utility'))!
-    expect(await (node.attribute ?? node.attr).call(node, 'class')).toContain('c7d2fe')
+    await expect.poll(async () => {
+      const node = (await (await host.currentPage()).$('#shared-utility'))!
+      return (node.attribute ?? node.attr).call(node, 'class')
+    }).toContain('c7d2fe')
     await dom.check('style-edited', host, await host.currentPage())
     expect(readReports(output).filter(report => report.kind === 'startup')).toHaveLength(startups.length)
     expect(readReports(output).findLast(report => report.kind === 'applied')?.buildId).toBe(buildId)

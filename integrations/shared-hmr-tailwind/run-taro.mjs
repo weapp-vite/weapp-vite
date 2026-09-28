@@ -32,6 +32,12 @@ async function main() {
     configFile: false,
     plugins: [{
       name: 'shared-host-observer',
+      // 禁止父工程中偶然存在的 Preact 掩盖固定 React fixture 的依赖分支错误。
+      resolveId(id) {
+        if (id === 'preact') {
+          this.error('Inactive Preact dependency reached the React host')
+        }
+      },
       buildStart() {
         process.stdout.write('SHARED_HOST_PHASE=build-start\n')
       },

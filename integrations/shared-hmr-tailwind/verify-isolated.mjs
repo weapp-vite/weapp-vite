@@ -60,7 +60,7 @@ async function main() {
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { readFile } from 'node:fs/promises'
-import { build } from 'vite'
+import { build, createServer } from 'vite'
 import vpt from 'vite-plugin-taro'
 const require = createRequire(import.meta.url)
 assert.throws(() => require.resolve('weapp-vite'), { code: 'MODULE_NOT_FOUND' })
@@ -70,6 +70,18 @@ assert.equal(rolldown.version, '1.2.9')
 await build({ root: process.cwd(), configFile: false, plugins: [vpt({ target: 'wx', app: 'src/app.tsx', pages: [{ path: 'pages/index/index' }], appJson: {}, projectConfigJson: { appid: ${JSON.stringify(projectConfig.appid)} } })], build: { minify: false } })
 assert.match(await readFile('dist/assets/global.wxss', 'utf8'), /py-5_d5/)
 console.info('ISOLATED_INSTALL_AND_NATIVE_BUILD_PASSED')
+process.env.NODE_ENV = 'development'
+for (const mode of ['rebuild', 'interpreter']) {
+  let rejectBuild
+  const failed = new Promise((_resolve, reject) => { rejectBuild = reject })
+  const server = await createServer({ root: process.cwd(), configFile: false, plugins: [
+    vpt({ target: 'wx', app: 'src/app.tsx', pages: [{ path: 'pages/index/index' }], appJson: {}, projectConfigJson: { appid: ${JSON.stringify(projectConfig.appid)} }, hmr: { mode } }),
+    { name: 'isolation-guard', resolveId(id) { if (id === 'preact') throw new Error('Inactive Preact dependency requested') }, buildEnd(error) { if (error) rejectBuild(error) } }
+  ], server: { host: '127.0.0.1', port: 0, strictPort: true } })
+  try { await Promise.race([server.listen(), failed]) }
+  finally { await server.close() }
+}
+console.info('ISOLATED_NORMAL_AND_STATEFUL_DEV_PASSED')
 `)
     await execa(process.execPath, ['verify.mjs'], { cwd: isolated, stdio: 'inherit' })
   }

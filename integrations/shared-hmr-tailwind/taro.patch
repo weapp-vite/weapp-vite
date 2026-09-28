@@ -346,6 +346,109 @@ index c3ad36d..df96d7c 100644
      /** True when the buildId belongs to the current complete build. */
      isCurrentBuild(buildId: string): boolean {
          return buildId === this.buildId
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts b/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts
+index 7aeac80..7c52ab9 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts
+@@ -15,6 +15,7 @@ import { createMiniPolyfillPlugin } from './polyfill/create-mini-polyfill-plugin
+ import { renderCapsule } from './render/capsule.ts'
+ import { renderNative } from './render/native.ts'
+ import { createResolver } from './resolve/resolver.ts'
++import { createMiniRuntimeDefinesPlugin } from './runtime-defines.ts'
+ import { createMiniStylePlugin } from './styles/plugins.ts'
+ import { createMiniWatchPlugin } from './watch/create-mini-watch-plugin.ts'
+ 
+@@ -36,6 +37,7 @@ export function createMiniTargetPlugins(contract: MiniContract): PluginOption[]
+         createMiniNativeComponentPlugin(),
+         createMiniPolyfillPlugin(contract),
+         createMiniGlobalPlugin(placement),
++        createMiniRuntimeDefinesPlugin(),
+         createMiniDevelopmentPlugin(contract, styles),
+         createMiniWatchPlugin(contract)
+     ]
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.test.ts
+new file mode 100644
+index 0000000..738a906
+--- /dev/null
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.test.ts
+@@ -0,0 +1,23 @@
++import assert from 'node:assert/strict'
++import test from 'node:test'
++import path from 'node:path'
++import { tmpdir } from 'node:os'
++import { specializeRuntimeDefines } from './runtime-defines.ts'
++
++test('eliminates inactive framework imports while preserving active runtime dependencies and maps', async () => {
++    const source = `import { active } from 'active-runtime';
++if (process.env.FRAMEWORK === 'preact') require('preact');
++export const answer = active;`
++    const result = await specializeRuntimeDefines(source, path.join(tmpdir(), 'vpt-specialized-runtime.js'), { 'process.env.FRAMEWORK': '"react"' })
++    assert.doesNotMatch(result.code, /preact/)
++    assert.match(result.code, /active-runtime/)
++    assert.match(result.code, /answer/)
++    assert.ok(result.map)
++    const map = JSON.parse(result.map) as { sourcesContent: string[] }
++    assert.ok(map.sourcesContent.includes(source))
++})
++
++test('keeps a selected optional framework dependency for the host resolver to validate', async () => {
++    const result = await specializeRuntimeDefines(`if (process.env.FRAMEWORK === 'preact') require('preact');`, path.join(tmpdir(), 'vpt-specialized-runtime.js'), { 'process.env.FRAMEWORK': '"preact"' })
++    assert.match(result.code, /preact/)
++})
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.ts b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.ts
+new file mode 100644
+index 0000000..c475e25
+--- /dev/null
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.ts
+@@ -0,0 +1,48 @@
++import { build } from 'rolldown'
++import type { Plugin } from 'vite'
++import { createExactModuleIdFilter } from '../../utils/modules.ts'
++import { resolveTaroRuntime } from '../../utils/packages.ts'
++
++/** 在宿主依赖扫描前专门化固定 SDK 的框架分支，不解析或代替其活跃依赖。 */
++export async function specializeRuntimeDefines(code: string, id: string, define: Record<string, unknown>) {
++    let map: string | null = null
++    const result = await build({
++        input: id,
++        external: (_id, importer) => importer !== undefined,
++        transform: {
++            define: Object.fromEntries(Object.entries(define).map(([key, value]) => [key,
++                typeof value === 'string' ? value : value === undefined ? 'undefined' : JSON.stringify(value)
++            ]))
++        },
++        plugins: [{
++            name: 'vpt:runtime-source',
++            resolveId(source) { if (source === id) return source },
++            load(source) { if (source === id) return code },
++            generateBundle(_options, bundle) {
++                const chunk = Object.values(bundle).find(item => item.type === 'chunk')
++                map = chunk?.type === 'chunk' && chunk.map ? chunk.map.toString() : null
++            }
++        }],
++        output: { format: 'es', minify: 'dce-only', keepNames: true, sourcemap: 'hidden' },
++        write: false
++    })
++    const chunk = result.output.find(item => item.type === 'chunk')
++    if (!chunk || chunk.type !== 'chunk') throw new Error('Missing specialized Taro runtime output')
++    return { code: chunk.code, map }
++}
++
++/** 仅处理宿主持有的 framework runtime，应用模块与原始 HMR accept 图保持原处理路径。 */
++export function createMiniRuntimeDefinesPlugin(): Plugin {
++    const runtimeId = resolveTaroRuntime('plugin-framework-react/runtime')
++    return {
++        name: 'vpt:mini-runtime-defines',
++        apply: 'serve',
++        transform: {
++            order: 'post',
++            filter: { id: createExactModuleIdFilter(runtimeId) },
++            handler(code, id) {
++                return specializeRuntimeDefines(code, id, this.environment.config.define ?? {})
++            }
++        }
++    }
++}
 diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.test.ts
 index 0084d65..7c20233 100644
 --- a/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.test.ts

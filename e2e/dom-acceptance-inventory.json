@@ -8236,7 +8236,7 @@
     },
     {
       "file": "e2e/ide/shared-taro-hmr.runtime.test.ts",
-      "sha256": "5125f68548c5e3d42d8680c1966108e14fd4773f163cb896369982c2472731eb"
+      "sha256": "75bad2c6e77e98862e8aaab98238c2c2628d2c873a23dc3db594d048d467db32"
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
