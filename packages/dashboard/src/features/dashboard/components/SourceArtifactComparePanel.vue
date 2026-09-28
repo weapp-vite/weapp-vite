@@ -182,14 +182,14 @@ onBeforeUnmount(() => {
           :class="getInsightClassName(item.tone)"
         >
           <div class="flex items-start justify-between gap-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em]">
               {{ item.label }}
             </p>
             <p class="shrink-0 text-sm font-semibold">
               {{ item.value }}
             </p>
           </div>
-          <p class="mt-2 line-clamp-2 text-xs leading-5 opacity-80">
+          <p class="mt-2 line-clamp-2 text-xs leading-5">
             {{ item.detail }}
           </p>
         </article>
