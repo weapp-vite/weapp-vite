@@ -69,6 +69,7 @@ export interface DomAcceptance {
 }
 
 export interface DomElement {
+  readonly tagName?: string | (() => Promise<string | undefined>)
   text: () => Promise<string>
   $$?: (selector: string, options: { timeout: number }) => Promise<DomElement[]>
   outerWxml?: () => Promise<string>

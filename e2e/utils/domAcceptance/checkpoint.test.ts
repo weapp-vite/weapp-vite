@@ -258,19 +258,50 @@ describe('DOM acceptance evidence', () => {
     const { page, session } = createPage()
     const children = await page.$$('#message', { fallback: false, timeout: 100 })
     const queryChildren = vi.fn(async () => children)
-    page.$$ = vi.fn(async () => [{
-      ...children[0]!,
-      $$: queryChildren,
-    }, {
-      ...children[0]!,
-      $$: async () => [],
-    }])
+    page.$$ = vi.fn(async selector => selector === '*'
+      ? [{
+          ...children[0]!,
+          tagName: 'component',
+          $$: queryChildren,
+        }, {
+          ...children[0]!,
+          tagName: 'component',
+          $$: async () => [],
+        }, {
+          ...children[0]!,
+          tagName: 'view',
+          $$: async () => children,
+        }]
+      : [])
     const evidence = await captureDomCheckpoint(session, page, {
       ...checkpoint,
       nodes: [{ ...checkpoint.nodes[0]!, scope: [{ has: '#message' }] }],
     }, 'devtools', 100)
     expect(evidence.nodes[0]?.nodes[0]?.text).toBe('ready')
     expect(queryChildren).toHaveBeenCalledTimes(2)
+    expect(page.$$).toHaveBeenCalledWith('*', expect.objectContaining({ fallback: false }))
+  })
+
+  it('uses headless component hosts without requiring native protocol metadata', async () => {
+    const { page, session } = createPage()
+    const children = await page.$$('#message', { fallback: false, timeout: 100 })
+    page.$$ = vi.fn(async selector => selector === 'component'
+      ? [{ text: async () => '', $$: async () => children }]
+      : [])
+    const evidence = await captureDomCheckpoint(session, page, {
+      ...checkpoint,
+      nodes: [{ ...checkpoint.nodes[0]!, scope: [{ has: '#message' }] }],
+    }, 'headless', 0)
+    expect(evidence.nodes[0]?.nodes[0]?.text).toBe('ready')
+    expect(page.$$).toHaveBeenCalledWith('component', expect.objectContaining({ fallback: false }))
+  })
+
+  it('does not accept component absence when native node metadata is unavailable', async () => {
+    const { page, session } = createPage()
+    await expect(captureDomCheckpoint(session, page, {
+      ...checkpoint,
+      nodes: [{ selector: 'component', count: 0 }],
+    }, 'devtools', 0)).rejects.toThrow('cannot identify rendered component hosts')
   })
 
   it('detects a hidden node even when it has nonzero dimensions', async () => {
@@ -286,10 +317,11 @@ describe('DOM acceptance evidence', () => {
 
   it('checks component absence by descendants and propagates child query failures', async () => {
     const { page, session } = createPage()
-    page.$$ = async () => [{ text: async () => '', $$: async () => [] }]
+    page.$$ = async () => [{ tagName: 'component', text: async () => '', $$: async () => [] }]
     const removed = { ...checkpoint, nodes: [{ selector: 'component', has: '#layout', count: 0 }] }
     expect((await captureDomCheckpoint(session, page, removed, 'devtools', 0)).nodes[0]).toMatchObject({ has: '#layout', count: 0 })
     page.$$ = async () => [{
+      tagName: 'component',
       text: async () => '',
       $$: async () => {
         throw new Error('component protocol failed')

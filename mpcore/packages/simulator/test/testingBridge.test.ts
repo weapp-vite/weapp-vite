@@ -23,6 +23,22 @@ describe('headless testing bridge', () => {
     cleanupTempDirs(tempDirs)
   })
 
+  it('resolves generic component hosts one rendered scope at a time', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({ projectPath })
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const hosts = await page.$$('component')
+    expect(hosts).toHaveLength(1)
+    expect(await hosts[0]!.attr('id')).toBe('status-card')
+    const nested = await hosts[0]!.$$('component')
+    expect(nested).toHaveLength(1)
+    expect(await nested[0]!.attr('id')).toBe('mini-badge')
+    expect(await (await nested[0]!.$('#mini-badge-inner'))!.text()).toBe('stable')
+    expect(await page.$$('#mini-badge-inner')).toEqual([])
+    expect(await hosts[0]!.$$('#mini-badge-inner')).toEqual([])
+  })
+
   it('launches a session and exposes current page handles', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

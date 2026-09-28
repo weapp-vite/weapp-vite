@@ -10,6 +10,8 @@ const tabbarNode = {
 }
 ```
 
+验收层的 `component` 表示通用组件宿主。DevTools 使用原生 `*` 查询后按节点 `tagName` 元数据筛选；同名 CSS 标签不保证可查询。headless 使用逻辑树的组件宿主查询。两者仍逐层进入组件作用域，不能以普通容器或 AppService 数据代替组件 DOM。
+
 两种查询都禁用 AppService fallback，并在证据中记录 `query`。provider 缺少 XPath 能力、查询异常或表达式失败不能被计为节点不存在；只有成功返回空集合才满足 `count: 0`。
 
 每次采集都读取当前页面并核对路由和只读 `pageId`，完成查询后再次核对。HMR 或同路由重建导致身份变化时，丢弃本次证据并重试；缺少真实页面身份时失败。headless 的身份绑定底层页面实例，重新创建测试 handle 不改变身份。调用方传入的旧 handle 只用于核对预期路由，不能作为当前界面的证据来源。

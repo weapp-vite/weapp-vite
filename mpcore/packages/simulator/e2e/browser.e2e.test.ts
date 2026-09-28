@@ -1167,6 +1167,10 @@ describe('simulator browser e2e', { concurrent: false }, () => {
     const host = renderedHosts.querySelector('[data-sim-component="status-card"]')
     expect(host?.getAttribute('id')).toBe('status-card')
     expect(host?.querySelector('#status-card-pulse')).not.toBeNull()
+    const renderedComponents = [...renderedHosts.querySelectorAll('[data-sim-component]')]
+    const matchingHosts = renderedComponents.filter(node => node.querySelector('#status-card-pulse'))
+    expect(matchingHosts.map(node => node.id)).toEqual(['status-card', 'pascal-case-card'])
+    expect(new Set(matchingHosts.map(node => node.getAttribute('data-sim-scope'))).size).toBe(2)
     expect(bridge.readScopeSnapshot(scopeIds[0])).toMatchObject({
       properties: {
         count: 3,

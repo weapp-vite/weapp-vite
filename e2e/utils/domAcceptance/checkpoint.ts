@@ -1,6 +1,7 @@
 import type { DomAcceptance, DomCheckpoint, DomCheckpointEvidence, DomPage, DomSession } from './types'
 import { setTimeout as delay } from 'node:timers/promises'
 import { isDeepStrictEqual } from 'node:util'
+import { queryDomElements } from './query'
 import { assertResponsiveCalcStyle, assertResponsiveStyle } from './styles'
 
 export function normalizeDomRoute(route: string) {
@@ -110,7 +111,7 @@ export async function captureDomCheckpoint(
           ? currentPage.getElementsByXpath!(selector, { fallback: false, timeout: Math.max(1, deadline - Date.now()) })
           : currentPage.$$(selector, { fallback: false, timeout: Math.max(1, deadline - Date.now()) })
         for (const scope of expected.scope ?? []) {
-          let parents = await query(typeof scope === 'string' ? scope : 'component')
+          let parents = await queryDomElements(query, typeof scope === 'string' ? scope : 'component', provider, queryMode)
           if (typeof scope !== 'string') {
             const matches = []
             for (const component of parents) {
@@ -132,7 +133,7 @@ export async function captureDomCheckpoint(
           const queryChildren = parent.$$.bind(parent)
           query = selector => queryChildren(selector, { timeout: Math.max(1, deadline - Date.now()) })
         }
-        let elements = await query(expected.selector)
+        let elements = await queryDomElements(query, expected.selector, provider, queryMode)
         if (expected.has) {
           const matches = []
           for (const element of elements) {
