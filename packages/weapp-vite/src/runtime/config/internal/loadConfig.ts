@@ -10,13 +10,7 @@ import logger from '../../../logger'
 import {
   createCjsConfigLoadError,
   getAliasEntries,
-  getProjectConfig,
-  getProjectConfigFileName,
-  getProjectConfigRootKeys,
-  getProjectPrivateConfig,
-  getProjectPrivateConfigFileName,
   loadViteConfigFile,
-  resolveProjectConfigRoot,
   resolveWeappConfigFile,
   TYPELESS_PACKAGE_JSON_WARNING_CODE,
 } from '../../../utils'
@@ -24,7 +18,8 @@ import { hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { resolveWeappWebConfig } from '../web'
 import { configureBuildAndPlugins, resolveCliPlatformRuntime } from './loadConfig/build'
-import { formatProjectConfigPath, loadPackageJson, normalizeRelativeDistRoot, resolveProjectConfigPaths } from './loadConfig/shared'
+import { loadProjectConfig, validateProjectConfigSources } from './loadConfig/projectConfig'
+import { loadPackageJson } from './loadConfig/shared'
 import { inspectTsconfigPathsUsage } from './tsconfigPaths'
 
 export interface LoadConfigFactoryOptions {
@@ -291,6 +286,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       }
     }
 
+    validateProjectConfigSources(inlineConfig, loadedConfig, weappLoaded?.config)
+
     const mergedLoadedConfig = weappLoaded?.config
       ? reuseLoadedWeappConfig
         ? loadedConfig
@@ -397,7 +394,6 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     })
 
     const {
-      buildConfig,
       platform,
       multiPlatform,
       isWebRuntime,
@@ -412,55 +408,23 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       projectConfigPath,
       cwd,
     })
-    let projectConfig: Record<string, any> = {}
-    let projectPrivateConfig: Record<string, any> = {}
-    let projectConfigPathResolved: string | undefined
-    let projectPrivateConfigPathResolved: string | undefined
-    let mpDistRoot = ''
-    const isLibMode = Boolean(resolvedLibConfig?.enabled)
-    if (!isWebRuntime && !isLibMode) {
-      const { basePath, privatePath } = resolveProjectConfigPaths({
-        platform,
-        multiPlatform,
-        projectConfigPath,
-        isWebRuntime,
-      })
-      projectConfig = await getProjectConfig(cwd, {
-        basePath,
-        privatePath,
-      })
-      projectPrivateConfig = await getProjectPrivateConfig(cwd, { privatePath })
-      mpDistRoot = resolveProjectConfigRoot(projectConfig, platform) ?? ''
-      if (!mpDistRoot) {
-        const displayPath = formatProjectConfigPath(cwd, basePath ?? getProjectConfigFileName(platform))
-        const rootKeys = getProjectConfigRootKeys(platform)
-        const hint = rootKeys.join(' 或 ')
-        throw new Error(`请在 ${displayPath} 里设置 ${hint}, 比如可以设置为 dist/`)
-      }
-      if (multiPlatform.enabled && !path.isAbsolute(mpDistRoot)) {
-        const normalizedDistRoot = normalizeRelativeDistRoot(mpDistRoot)
-        if (normalizedDistRoot === 'dist') {
-          mpDistRoot = path.join('dist', platform, normalizedDistRoot)
-        }
-      }
-      if (outputRoot) {
-        mpDistRoot = outputRoot
-        buildConfig.outDir = outputRoot
-      }
-      else {
-        buildConfig.outDir ??= mpDistRoot
-      }
-      projectConfigPathResolved = path.resolve(cwd, basePath ?? getProjectConfigFileName(platform))
-      projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? getProjectPrivateConfigFileName(platform))
-    }
-    else if (isLibMode) {
-      const libOutDir = buildConfig.outDir ?? resolvedLibConfig?.outDir ?? 'dist'
-      buildConfig.outDir ??= libOutDir
-      mpDistRoot = libOutDir
-    }
-    if (pluginOnly && buildConfig.outDir) {
-      mpDistRoot = buildConfig.outDir
-    }
+    const {
+      projectConfig,
+      projectPrivateConfig,
+      projectConfigPath: projectConfigPathResolved,
+      projectPrivateConfigPath: projectPrivateConfigPathResolved,
+      mpDistRoot,
+    } = await loadProjectConfig({
+      config,
+      cwd,
+      platform,
+      multiPlatform,
+      projectConfigPath,
+      outputRoot,
+      pluginOnly,
+      isWebRuntime,
+      resolvedLibConfig,
+    })
     const aliasEntries = mergeJsonAliasEntries(config.weapp?.jsonAlias)
 
     config.plugins ??= []

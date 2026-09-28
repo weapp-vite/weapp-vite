@@ -1235,6 +1235,7 @@ describe('openIde', () => {
         platform: 'weapp',
         cwd: '/workspace/project',
         mpDistRoot: '/workspace/project/dist/weapp/dist',
+        multiPlatform: { enabled: true, projectConfigRoot: 'config', targets: ['weapp'] },
         weappViteConfig: {
           mcp: { enabled: true },
         },

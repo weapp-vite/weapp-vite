@@ -1,0 +1,14 @@
+{
+  "name": "upload-config-tsd",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "target": "ES2023",
+      "strict": true,
+      "types": ["node", "miniprogram-api-typings"]
+    }
+  }
+}

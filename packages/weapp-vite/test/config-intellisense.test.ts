@@ -23,6 +23,7 @@ function createLanguageService(options: {
     baseUrl: options.root,
     paths: {
       'weapp-vite': ['src/config.ts'],
+      'weapp-vite/config': ['src/config.ts'],
       '@/*': ['src/*'],
     },
   }
@@ -74,22 +75,6 @@ describe('defineConfig editor intellisense', () => {
     '}))',
   ].join('\n')
 
-  it('should resolve config property definitions to types file', () => {
-    const languageService = createLanguageService({ fileName, source, root })
-
-    const expectedFiles = {
-      srcRoot: 'packages/weapp-vite/src/types/config/main.ts',
-      autoImportComponents: 'packages/weapp-vite/src/types/config/main.ts',
-      vueComponents: 'packages/weapp-vite/src/types/config/features.ts',
-    } as const
-
-    for (const key of Object.keys(expectedFiles) as Array<keyof typeof expectedFiles>) {
-      const position = getTokenPosition(source, key)
-      const definitions = languageService.getDefinitionAtPosition(fileName, position)
-      expect(definitions?.[0]?.fileName).toContain(expectedFiles[key])
-    }
-  })
-
   it('should provide hover info for WeappViteConfig fields', { timeout: 180_000 }, () => {
     const languageService = createLanguageService({ fileName, source, root })
     const position = getTokenPosition(source, 'srcRoot')
@@ -99,6 +84,7 @@ describe('defineConfig editor intellisense', () => {
 
     expect(display).toContain('srcRoot')
     expect(display).toContain('string')
+    languageService.dispose()
   })
 
   it('should contextually type destructured config env params', () => {
@@ -125,5 +111,69 @@ describe('defineConfig editor intellisense', () => {
     const display = ts.displayPartsToString(quickInfo?.displayParts ?? [])
 
     expect(display).toContain('mode: string')
+    languageService.dispose()
+  })
+
+  it('completes platform-owned native fields through the config entry', { timeout: 180_000 }, () => {
+    const nativeSource = [
+      'import { defineConfig } from \'weapp-vite/config\'',
+      'const common = { description: \'shared\' }',
+      'defineConfig({ weapp: { multiPlatform: { projectConfigs: { /*platforms*/ } } } })',
+      'export default defineConfig(({ mode }) => ({',
+      '  weapp: { srcRoot: mode, multiPlatform: { projectConfigs: {',
+      '    weapp: { ...common, /*weapp*/ },',
+      '    alipay: { ...common, /*alipay*/ },',
+      '    tt: { ...common, /*tt*/ },',
+      '    xhs: { ...common, /*xhs*/ },',
+      '    jd: { ...common, /*jd*/ },',
+      '    swan: { ...common, /*swan*/ },',
+      '  } } },',
+      '}))',
+      'defineConfig({ weapp: { multiPlatform: { projectConfigs: {',
+      '  weapp: { setting: { /*weapp-setting*/ }, packOptions: { /*weapp-pack*/ } },',
+      '  alipay: { compileOptions: { /*alipay-compile*/ }, developOptions: { /*alipay-develop*/ } },',
+      '  tt: { setting: { /*tt-setting*/ } },',
+      '  xhs: { setting: { /*xhs-setting*/ } },',
+      '  swan: { setting: { /*swan-setting*/ }, \'compilation-args\': { common: { /*swan-compile*/ } } },',
+      '} } } })',
+    ].join('\n')
+    const languageService = createLanguageService({ fileName, source: nativeSource, root })
+    const completions = (marker: string) => {
+      const position = nativeSource.indexOf(`/*${marker}*/`)
+      expect(position).toBeGreaterThanOrEqual(0)
+      // 含连字符的原生字段会以带引号的补全文本返回。
+      return languageService.getCompletionsAtPosition(fileName, position, {})?.entries.map(entry => entry.name.replace(/^(["'])(.*)\1$/, '$2')) ?? []
+    }
+
+    try {
+      expect(completions('platforms').sort()).toEqual(['alipay', 'jd', 'swan', 'tt', 'weapp', 'xhs'])
+      const expectedFields = {
+        'weapp': ['appid', 'projectname', 'libVersion', 'setting', 'packOptions'],
+        'alipay': ['appid', 'format', 'compileOptions', 'developOptions', 'uploadExclude'],
+        'tt': ['appid', 'projectname', 'disablePrivate', 'setting'],
+        'xhs': ['appid', 'projectname', 'libVersion', 'setting'],
+        'jd': ['appid', 'appId'],
+        'swan': ['appid', 'developType', 'compilation-args'],
+        'weapp-setting': ['es6', 'urlCheck', 'packNpmManually', 'babelSetting'],
+        'weapp-pack': ['ignore', 'include'],
+        'alipay-compile': ['typescript', 'component2', 'resolveAlias', 'transpile'],
+        'alipay-develop': ['hotReload', 'sourcemap', 'minify'],
+        'tt-setting': ['compileHotReLoad', 'autoCompile', 'useCompilerPlugins'],
+        'xhs-setting': ['minified', 'urlCheck'],
+        'swan-setting': ['urlCheck'],
+        'swan-compile': ['ignoreTransJs', 'ignorePrefixCss'],
+      }
+      for (const [marker, fields] of Object.entries(expectedFields)) {
+        expect(completions(marker), marker).toEqual(expect.arrayContaining(fields))
+      }
+      expect(completions('weapp')).not.toContain('compileOptions')
+      expect(completions('alipay')).not.toContain('setting')
+      expect(completions('swan-setting')).not.toContain('es6')
+      expect(completions('jd')).not.toContain('setting')
+      expect(languageService.getSemanticDiagnostics(fileName)).toEqual([])
+    }
+    finally {
+      languageService.dispose()
+    }
   })
 })

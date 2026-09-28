@@ -335,6 +335,205 @@ describe('runtime config internal loadConfig', () => {
     } as any)).rejects.toThrow('当前平台 "xhs" 不在 weapp.multiPlatform.targets 配置中')
   })
 
+  it.each([
+    { outputRoot: undefined, mpDistRoot: 'dist/weapp/dist', outDir: 'custom-code' },
+    { outputRoot: 'cli-code', mpDistRoot: 'cli-code', outDir: 'cli-code' },
+  ])('preserves native file-mode output precedence: %j', async ({ outputRoot, mpDistRoot, outDir }) => {
+    const result = await createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'weapp',
+      outputRoot,
+      inlineConfig: {
+        build: { outDir: 'custom-code' },
+        weapp: { multiPlatform: true },
+      },
+    })
+
+    expect(result.mpDistRoot).toBe(mpDistRoot)
+    expect(result.config.build?.outDir).toBe(outDir)
+    expect(result.projectConfigPath).toBe('/project/config/weapp/project.config.json')
+    expect(result.projectPrivateConfigPath).toBe('/project/config/weapp/project.private.config.json')
+    expect(result.multiPlatform.projectConfigs).toBeUndefined()
+  })
+
+  it.each(['weapp', 'alipay', 'tt', 'swan', 'jd', 'xhs'] as const)('resolves inline %s config without native or private file reads', async (platform) => {
+    const entry = Object.freeze({ appid: `${platform}-app`, setting: Object.freeze({ urlCheck: false }) })
+    const projectConfigs = Object.freeze({ [platform]: entry })
+    const result = await createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: platform,
+      inlineConfig: { weapp: { platform, multiPlatform: { projectConfigs } } },
+    })
+
+    expect(result.projectConfig).toEqual({
+      ...entry,
+      compileType: 'miniprogram',
+      [platform === 'swan' ? 'smartProgramRoot' : 'miniprogramRoot']: '.',
+    })
+    expect(result.mpDistRoot).toBe(`dist/${platform}/dist`)
+    expect(result.config.build?.outDir).toBe(result.mpDistRoot)
+    expect(result.multiPlatform.targets).toEqual([platform])
+    expect(result.multiPlatform.projectConfigs).toEqual(projectConfigs)
+    expect(result.projectConfigPath).toBeUndefined()
+    expect(result.projectPrivateConfigPath).toBeUndefined()
+    expect(result.projectPrivateConfig).toEqual({})
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+    expect(getProjectPrivateConfigMock).not.toHaveBeenCalled()
+    expect(entry).toEqual({ appid: `${platform}-app`, setting: { urlCheck: false } })
+  })
+
+  it.each([
+    { outDir: 'custom-code', outputRoot: undefined, expected: 'custom-code' },
+    { outDir: 'custom-code', outputRoot: 'cli-code', expected: 'cli-code' },
+  ])('uses known inline output directory $expected without changing the SDK root', async ({ outDir, outputRoot, expected }) => {
+    const result = await createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'swan',
+      outputRoot,
+      inlineConfig: {
+        build: { outDir },
+        weapp: {
+          platform: 'swan',
+          multiPlatform: { projectConfigs: { swan: { appId: 'swan-app', compileType: 'native-mode' } } },
+        },
+      },
+    })
+
+    expect(result.mpDistRoot).toBe(expected)
+    expect(result.config.build?.outDir).toBe(expected)
+    expect(result.projectConfig.smartProgramRoot).toBe('.')
+    expect(result.projectConfig.miniprogramRoot).toBeUndefined()
+    expect(result.projectConfig.compileType).toBe('native-mode')
+  })
+
+  it('rejects a missing selected entry even when explicitly allowed by targets', async () => {
+    await expect(createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'xhs',
+      inlineConfig: {
+        weapp: {
+          platform: 'xhs',
+          multiPlatform: { targets: ['weapp', 'xhs'], projectConfigs: { weapp: {} } },
+        },
+      },
+    })).rejects.toThrow()
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+    expect(getProjectPrivateConfigMock).not.toHaveBeenCalled()
+  })
+
+  it('preserves an explicit allowlist even when the selected platform has an inline entry', async () => {
+    await expect(createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'xhs',
+      inlineConfig: {
+        weapp: {
+          platform: 'xhs',
+          multiPlatform: { targets: ['weapp'], projectConfigs: { weapp: {}, xhs: {} } },
+        },
+      },
+    })).rejects.toThrow()
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { projectConfigs: null },
+    { projectConfigs: { weapp: { appid: null } } },
+    { projectConfigs: { weapp: { miniprogramRoot: undefined } } },
+    { projectConfigs: { weapp: {} }, projectConfigRoot: '' },
+    { projectConfigs: { weapp: {} }, enabled: false },
+  ])('rejects invalid inline values before config defaults can discard them: %j', async (multiPlatform) => {
+    loadViteConfigFileMock.mockResolvedValueOnce({
+      config: { weapp: { multiPlatform } },
+      path: '/project/vite.config.ts',
+    })
+
+    await expect(createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'weapp',
+    })).rejects.toThrow()
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+    expect(getProjectPrivateConfigMock).not.toHaveBeenCalled()
+  })
+
+  it('does not fall through to native files for inline plugin-only builds', async () => {
+    await expect(createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'weapp',
+      pluginOnly: true,
+      inlineConfig: {
+        weapp: { multiPlatform: { projectConfigs: { weapp: {} } } },
+      },
+    })).rejects.toThrow()
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+    expect(getProjectPrivateConfigMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps Web builds independent of the selected mini-program entry', async () => {
+    const result = await createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'web',
+      inlineConfig: {
+        build: { outDir: 'web-code' },
+        weapp: { multiPlatform: { projectConfigs: { xhs: {} } } },
+      },
+    })
+
+    expect(result.projectConfig).toEqual({})
+    expect(result.projectPrivateConfig).toEqual({})
+    expect(result.projectConfigPath).toBeUndefined()
+    expect(result.projectPrivateConfigPath).toBeUndefined()
+    expect(result.config.build?.outDir).toBe('web-code')
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+    expect(getProjectPrivateConfigMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps library output independent of inline project JSON', async () => {
+    hasLibEntryMock.mockReturnValueOnce(true)
+    resolveWeappLibConfigMock.mockReturnValueOnce({
+      enabled: true,
+      outDir: 'dist-lib',
+      root: '/project/lib-src',
+      entry: 'index.ts',
+    })
+    const result = await createFactory()({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      cliPlatform: 'weapp',
+      inlineConfig: {
+        weapp: {
+          lib: { entry: 'index.ts' },
+          multiPlatform: { targets: 'all', projectConfigs: { xhs: {} } },
+        },
+      },
+    })
+
+    expect(result.projectConfig).toEqual({})
+    expect(result.projectPrivateConfig).toEqual({})
+    expect(result.projectConfigPath).toBeUndefined()
+    expect(result.projectPrivateConfigPath).toBeUndefined()
+    expect(result.mpDistRoot).toBe('dist-lib')
+    expect(result.config.build?.outDir).toBe('dist-lib')
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+    expect(getProjectPrivateConfigMock).not.toHaveBeenCalled()
+  })
+
   it('resolves project config paths and injects rolldown/vite plugins on success path', async () => {
     loadViteConfigFileMock.mockResolvedValueOnce({
       config: {

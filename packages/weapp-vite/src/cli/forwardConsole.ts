@@ -3,7 +3,7 @@ import process from 'node:process'
 import { determineAgent } from '@vercel/detect-agent'
 import { isRetryableAutomatorLaunchError, resolveProjectAutomatorPort, startForwardConsole as startWechatForwardConsole } from 'weapp-ide-cli'
 import logger, { colors } from '../logger'
-import { resolveIdeProjectPath, shouldUseAutomatorProjectWrapper } from './openIde'
+import { resolveIdeProjectRoot, shouldUseAutomatorProjectWrapper } from './openIde'
 
 export interface ResolvedForwardConsoleOptions {
   enabled: boolean
@@ -319,7 +319,13 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
     return false
   }
 
-  const projectPath = resolveIdeProjectPath(options.mpDistRoot) ?? options.cwd
+  const multiPlatform = options.weappViteConfig?.multiPlatform
+  const generatedProjectConfig = typeof multiPlatform === 'object' && multiPlatform.projectConfigs !== undefined
+  const projectPath = resolveIdeProjectRoot(
+    options.mpDistRoot,
+    options.cwd,
+    generatedProjectConfig,
+  )
   if (!projectPath) {
     return false
   }

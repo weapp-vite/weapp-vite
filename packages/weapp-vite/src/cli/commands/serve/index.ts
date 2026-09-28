@@ -75,6 +75,7 @@ export function registerServeCommand(cli: CAC) {
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(isUiEnabled(options) && miniBackend)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
+      const generatedProjectConfig = configService.multiPlatform.projectConfigs !== undefined
       const miniProgramDevActions = createServeMiniProgramDevActions({
         build: async () => {
           await miniBackend?.driver.dev(ctx, options)
@@ -99,7 +100,7 @@ export function registerServeCommand(cli: CAC) {
           })
           writePostOpenSeparator()
         },
-        projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd),
+        projectPath: resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd, generatedProjectConfig),
         startForwardConsole: async (openOptions) => {
           if (resolveServeIdeOpenStrategy(openOptions, options.ideOpenStrategy) === 'automator') {
             // IDE 启动由 openIde 负责；日志消费者只能连接，不能再次启动或恢复项目。
@@ -118,7 +119,7 @@ export function registerServeCommand(cli: CAC) {
             cwd: configService.cwd,
             preferOpenedSession: false,
             recoverAutomatorSession: async () => {
-              const projectPath = resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd)
+              const projectPath = resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd, generatedProjectConfig)
               await openIde(configService.platform, projectPath, {
                 loginRetry: options.loginRetry,
                 loginRetryTimeout: options.loginRetryTimeout,

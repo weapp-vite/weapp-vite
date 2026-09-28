@@ -39,6 +39,12 @@ const docEntries = [
     summary: 'CLI 命令、prepare、build、screenshot、MCP 等快速入口。',
   },
   {
+    source: path.join(packagedDocsDir, 'upload.md'),
+    output: 'upload.md',
+    title: 'Upload and Preview',
+    summary: '六端上传/预览、AppID 与凭据、批量执行、CI 和淘宝支持边界。',
+  },
+  {
     source: path.join(packagedDocsDir, 'ai-workflows.md'),
     output: 'ai-workflows.md',
     title: 'AI Workflows',
@@ -120,7 +126,8 @@ function createIndex(entries) {
     '8. 涉及 wevu 运行时与页面/组件/store 约束时读 `wevu-authoring.md`。',
     '9. 涉及 Vue SFC 宏、模板约束与编辑器提示时读 `vue-sfc.md`、`volar.md` 与 `define-config-overloads.md`。',
     '10. 编写页面或组件单测时读 `testing.md`。',
-    '11. 遇到告警、prepare、截图、日志、依赖异常时读 `troubleshooting.md`。',
+    '11. 上传或预览小程序时读 `upload.md`，核对平台、AppID、凭据与输出目录。',
+    '12. 遇到告警、prepare、截图、日志、依赖异常时读 `troubleshooting.md`。',
     '',
     '## Included Docs',
     '',

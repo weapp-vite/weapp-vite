@@ -132,11 +132,14 @@ async function runWechatIdeOpenWithRetry(argv: string[]) {
 }
 
 /**
- * @description 根据 mpDistRoot 推导 IDE 项目目录（目录内应包含 project/mini 配置）
+ * @description 根据代码输出目录推导 IDE 项目目录；内联项目配置与 app.json 同目录。
  */
-export function resolveIdeProjectPath(mpDistRoot?: string) {
+export function resolveIdeProjectPath(mpDistRoot?: string, generatedProjectConfig = false) {
   if (!mpDistRoot || !mpDistRoot.trim()) {
     return undefined
+  }
+  if (generatedProjectConfig) {
+    return mpDistRoot
   }
   const parent = path.dirname(mpDistRoot)
   if (!parent || parent === '.' || parent === '/') {
@@ -148,8 +151,9 @@ export function resolveIdeProjectPath(mpDistRoot?: string) {
 /**
  * @description 结合 mpDistRoot 与配置根目录解析最终 IDE 项目目录。
  */
-export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
-  return resolveIdeProjectPath(mpDistRoot) ?? cwd
+export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string, generatedProjectConfig = false) {
+  const projectPath = resolveIdeProjectPath(mpDistRoot, generatedProjectConfig)
+  return generatedProjectConfig && projectPath && cwd ? path.resolve(cwd, projectPath) : projectPath ?? cwd
 }
 
 export async function closeIde() {
@@ -542,7 +546,11 @@ export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions
       })
       platform ??= ctx.configService.platform
       if (!projectPath) {
-        projectPath = resolveIdeProjectRoot(ctx.configService.mpDistRoot, ctx.configService.cwd)
+        projectPath = resolveIdeProjectRoot(
+          ctx.configService.mpDistRoot,
+          ctx.configService.cwd,
+          ctx.configService.multiPlatform.projectConfigs !== undefined,
+        )
       }
       return {
         cwd: ctx.configService.cwd,

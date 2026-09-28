@@ -1,6 +1,9 @@
+import type { CAC } from 'cac'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const tryRunIdeCommandMock = vi.hoisted(() => vi.fn())
+const loadConfigMock = vi.hoisted(() => vi.fn())
+const nativeActionMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./cli/ide', () => ({
   tryRunIdeCommand: tryRunIdeCommandMock,
@@ -8,7 +11,12 @@ vi.mock('./cli/ide', () => ({
 
 vi.mock('./cli/commands/alipay', () => ({ registerAlipayCommand: vi.fn() }))
 vi.mock('./cli/commands/analyze', () => ({ registerAnalyzeCommand: vi.fn() }))
-vi.mock('./cli/commands/build', () => ({ registerBuildCommand: vi.fn() }))
+vi.mock('./cli/commands/build', () => ({
+  registerBuildCommand: vi.fn((cli: CAC) => cli.command('build [root]')
+    .option('--upload', 'upload')
+    .option('--bump <release>', 'bump')
+    .action(nativeActionMock)),
+}))
 vi.mock('./cli/commands/close', () => ({ registerCloseCommand: vi.fn() }))
 vi.mock('./cli/commands/generate', () => ({ registerGenerateCommand: vi.fn() }))
 vi.mock('./cli/commands/ide', () => ({ registerIdeCommand: vi.fn() }))
@@ -17,9 +25,25 @@ vi.mock('./cli/commands/mcp', () => ({ registerMcpCommand: vi.fn() }))
 vi.mock('./cli/commands/npm', () => ({ registerNpmCommand: vi.fn() }))
 vi.mock('./cli/commands/open', () => ({ registerOpenCommand: vi.fn() }))
 vi.mock('./cli/commands/prepare', () => ({ registerPrepareCommand: vi.fn() }))
-vi.mock('./cli/commands/serve', () => ({ registerServeCommand: vi.fn() }))
+vi.mock('./cli/commands/serve', () => ({
+  registerServeCommand: vi.fn((cli: CAC) => cli.command('[root]')
+    .alias('dev')
+    .alias('serve')
+    .action(nativeActionMock)),
+}))
+vi.mock('./cli/commands/upload', () => ({
+  registerUploadCommand: vi.fn((cli: CAC) => cli.command('upload [root]')
+    .option('--bump <release>', 'bump')
+    .action(nativeActionMock)),
+  registerPreviewCommand: vi.fn(),
+}))
 vi.mock('./cli/error', () => ({ handleCLIError: vi.fn() }))
-vi.mock('./cli/mcpAutoStart', () => ({ maybeAutoStartMcpServer: vi.fn() }))
+vi.mock('./cli/loadConfig', () => ({ loadConfig: loadConfigMock }))
+vi.mock('./aiEnvironment', () => ({ detectAiDevelopmentEnvironment: vi.fn(async () => ({ isAgent: false })) }))
+vi.mock('./mcp', () => ({
+  resolveWeappMcpConfig: vi.fn(() => ({ enabled: false })),
+  startWeappViteMcpServer: vi.fn(),
+}))
 vi.mock('./cli/prepareGuard', () => ({ handlePrepareLifecycleError: vi.fn(() => false) }))
 vi.mock('./runtime/tsconfigSupport', () => ({ syncManagedTsconfigBootstrapFiles: vi.fn() }))
 vi.mock('./utils', () => ({ checkRuntime: vi.fn() }))
@@ -29,6 +53,8 @@ describe('weapp-vite cli entry', () => {
   beforeEach(() => {
     vi.resetModules()
     tryRunIdeCommandMock.mockReset()
+    loadConfigMock.mockReset().mockResolvedValue({ config: { weapp: { mcp: false } } })
+    nativeActionMock.mockReset()
   })
 
   it('waits for forwarded ide commands to finish before resolving module evaluation', async () => {
@@ -44,6 +70,7 @@ describe('weapp-vite cli entry', () => {
     process.argv = ['node', 'weapp-vite', 'screenshot']
 
     try {
+      // CLI 在模块求值时读取 argv，必须先安装本用例参数再加载入口。
       await import('./cli.ts?case=forwarded-await')
     }
     finally {
@@ -52,5 +79,27 @@ describe('weapp-vite cli entry', () => {
 
     expect(tryRunIdeCommandMock).toHaveBeenCalledWith(['screenshot'])
     expect(forwardedResolved).toBe(true)
+  })
+
+  it.each([
+    { args: ['--mode', 'test', 'build', '--upload', '--bump', 'patch'], configReads: 0 },
+    { args: ['--config', 'vite.config.mjs', 'upload', '--bump', 'patch'], configReads: 0 },
+    { args: ['--mode', 'test', 'dev'], configReads: 0 },
+    { args: ['--mode', 'test'], configReads: 1 },
+  ])('does not preload config for explicit commands behind global options: $args', async ({ args, configReads }) => {
+    tryRunIdeCommandMock.mockResolvedValue(false)
+    const originalArgv = process.argv
+    process.argv = ['node', 'weapp-vite', ...args]
+
+    try {
+      // 测试入口求值顺序，静态导入会早于本用例的 argv 与 mock 设置。
+      await import('./cli.ts?case=leading-options')
+    }
+    finally {
+      process.argv = originalArgv
+    }
+
+    expect(nativeActionMock).toHaveBeenCalledTimes(1)
+    expect(loadConfigMock).toHaveBeenCalledTimes(configReads)
   })
 })

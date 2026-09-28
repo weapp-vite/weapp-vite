@@ -1,5 +1,6 @@
 export * from './features'
 export * from './foundation'
 export * from './main'
+export * from './projectConfig'
 export * from './wxmlTransform'
 export * from './wxmlValidate'
