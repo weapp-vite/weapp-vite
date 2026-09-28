@@ -3,16 +3,15 @@ import type { ViteDevServer } from 'vite'
 import type { Compiler, CompilerGenerateRequest, CompilerGenerateResult, CompilerSnapshot } from 'weapp-tailwindcss/core'
 import type { CompilerContext } from '../../context'
 import type { WeappCompilerHmrPreparation, WeappCompilerHmrRequest } from '../../types/compilerPlugin'
-import { createHash } from 'node:crypto'
-import { readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } from '@weapp-tailwindcss/engine'
+import { createTailwindPreparation, prepareTailwindRoots } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
 import { changeFileExtension } from '../../utils/file'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { labelSourceMapInput } from '../../utils/sourcemap'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../compilerPlugin/hmr'
 import { findManagedTailwindcssEntryMarker, hasManagedTailwindcssOutputMarker } from '../tailwindcssMarker'
 
@@ -139,7 +138,6 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   }
 
   const captured = new WeakMap<WeappCompilerHmrRequest, { roots: Map<number, Root>, bundle: OutputBundle }>()
-  const generatedRoots = new WeakMap<Root, { signature: string, result: CompilerGenerateResult }>()
 
   async function prepare(request: WeappCompilerHmrRequest): Promise<WeappCompilerHmrPreparation> {
     let input = captured.get(request)
@@ -152,82 +150,18 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
       return {}
     }
     const compiler = await options.compiler()
+    const generated = await prepareTailwindRoots(compiler, request, input.roots, {
+      cwd: ctx.configService.cwd,
+      sourceId: compilerSourceId,
+      isOutput: file => Boolean(ctx.configService.outDir && isPathInside(ctx.configService.outDir, file)),
+      reusePreprocessedCss(file, previous, current) {
+        return typeof current === 'string' && typeof previous === 'string' && file.endsWith('.vue')
+          && resolveVueSfcHmrSignatures(current, file).blockSignatures?.style === resolveVueSfcHmrSignatures(previous, file).blockSignatures?.style
+      },
+    })
     const entries: CompilerGenerateResult[] = []
-    for (const [index, root] of input.roots) {
-      const base = root.request.sourceOptions?.projectRoot ?? root.request.source?.base ?? ctx.configService.cwd
-      const matches = createTailwindV4SourceEntryMatcher(createTailwindV4CompiledSourceEntries(
-        root.result.root,
-        [...root.result.sources],
-        base,
-      ))
-      const sources = [...request.sources].flatMap(([file, content]) => content !== null && matches?.(file)
-        && !(ctx.configService.outDir && isPathInside(ctx.configService.outDir, file))
-        ? [{ content, extension: path.extname(file).slice(1) }]
-        : [])
-      const sourceOptions = root.request.sourceOptions
-      if (!sourceOptions) {
-        throw new Error('Tailwind HMR requires a captured source entry')
-      }
-      const cssSources = sourceOptions.cssSources?.map((source) => {
-        if (!source.file) {
-          return source
-        }
-        const id = compilerSourceId(source.file ?? '')
-        const raw = request.sources.get(id)
-        const previous = root.rawSources.get(id)
-        if (raw === previous || raw === undefined) {
-          return source
-        }
-        if (typeof raw === 'string' && typeof previous === 'string' && id.endsWith('.vue')
-          && resolveVueSfcHmrSignatures(raw, id).blockSignatures?.style === resolveVueSfcHmrSignatures(previous, id).blockSignatures?.style) {
-          return source
-        }
-        if (typeof raw !== 'string' || source.css !== previous) {
-          throw new CompilerHmrResyncError(request.changedFiles, 'Compiler root requires a new preprocessed input')
-        }
-        return { ...source, css: raw }
-      })
-      const entrySources = (sourceOptions.cssEntries ?? []).map((file) => {
-        const css = request.sources.get(compilerSourceId(file))
-        if (typeof css !== 'string') {
-          throw new TypeError(`Missing captured Tailwind CSS input: ${file}`)
-        }
-        return { file, css, base: path.dirname(file), dependencies: [file] }
-      })
-      const memoryRoots = new Set([...cssSources ?? [], ...entrySources].flatMap(source => source.file ? [compilerSourceId(source.file)] : []))
-      const dependencyVersions = new Map<string, string>()
-      const checkDependency = (file: string) => {
-        const id = compilerSourceId(file)
-        if (memoryRoots.has(id)) {
-          return
-        }
-        const expected = request.sources.get(id)
-        const source = readFileSync(file, 'utf8')
-        const stat = statSync(file, { bigint: true })
-        const version = `${stat.mtimeNs}:${stat.ctimeNs}:${stat.ino}:${stat.size}`
-        if (expected !== source || (dependencyVersions.has(id) && dependencyVersions.get(id) !== version)) {
-          throw new CompilerHmrResyncError(request.changedFiles, 'Compiler dependency changed outside the captured input view')
-        }
-        dependencyVersions.set(id, version)
-      }
-      for (const file of root.result.dependencies) {
-        checkDependency(file)
-      }
-      const signature = createHash('sha256').update(JSON.stringify([cssSources, entrySources, sources, [...dependencyVersions]])).digest('hex')
-      const cached = generatedRoots.get(root)
-      // 候选由 core 从完整内存来源提取；后续磁盘保存不能参与本次扫描。
-      entries[index] = cached?.signature === signature
-        ? cached.result
-        : await compiler.generate({
-            ...root.request,
-            sourceOptions: { ...sourceOptions, cssEntries: [], cssSources: [...cssSources ?? [], ...entrySources] },
-            sources,
-            scanSources: false,
-          })
-      for (const file of entries[index]!.dependencies) {
-        checkDependency(file)
-      }
-      generatedRoots.set(root, { signature, result: entries[index]! })
+    for (const [index, entry] of generated) {
+      entries[index] = entry
     }
     const snapshot = compiler.mergeSnapshots(entries.map(entry => entry.snapshot))
     const bundle = Object.fromEntries(Object.entries(input.bundle).map(([file, output]) => [file, { ...output }])) as OutputBundle
@@ -253,20 +187,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
     if (!assets.length && entries.some((entry, index) => entry.css !== input.roots.get(index)?.result.css)) {
       throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind HMR 没有可提交的样式归属，需要完整重同步。')
     }
-    return {
-      assets,
-      dependencies: snapshot.dependencies,
-      transformTemplate: async ({ code, fileName }) => ({
-        code: await compiler.transformTemplate(code, snapshot, { filename: fileName }),
-      }),
-      transformJavaScript: async ({ code, fileName }) => {
-        const transformed = await compiler.transformJavaScript(code, snapshot, { filename: fileName, generateMap: true })
-        if (transformed.error) {
-          throw transformed.error
-        }
-        return { code: transformed.code, map: labelSourceMapInput(transformed.map, fileName, code) }
-      },
-    }
+    return createTailwindPreparation(compiler, snapshot, assets)
   }
 
   return { captureFile, configureServer, prepare, rememberBundle, rememberRoot, watchFiles }

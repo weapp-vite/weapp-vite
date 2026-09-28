@@ -1,3 +1,4 @@
+import type { HmrCompilerPreparation as WeappCompilerHmrPreparation, HmrCompilerRequest as WeappCompilerHmrRequest } from '@weapp-vite/hmr'
 import type { OutputBundle } from 'rolldown'
 import type { ResolvedConfig } from 'vite'
 import type { OutputExtensions } from '../platforms/types'
@@ -63,27 +64,11 @@ export interface WeappCompilerOutputRequest {
   state?: unknown
 }
 
-export interface WeappCompilerHmrRequest {
-  /** 宿主封存的输入版本，不等同于客户端执行版本。 */
-  revision: number
-  changedFiles: readonly string[]
-  sources: ReadonlyMap<string, string | null>
-}
-
-export interface WeappCompilerHmrAsset {
-  fileName: string
-  code: string
-}
-
-export interface WeappCompilerHmrPreparation {
-  assets?: readonly WeappCompilerHmrAsset[]
-  dependencies?: readonly string[]
-  invalidated?: readonly string[]
-  transformJavaScript?: (request: WeappCompilerOutputRequest) => WeappCompilerTransformResult | null | Promise<WeappCompilerTransformResult | null>
-  transformTemplate?: (request: WeappCompilerOutputRequest) => WeappCompilerTransformResult | null | Promise<WeappCompilerTransformResult | null>
-  /** 批次确认或取消后释放固定的编译状态。 */
-  dispose?: () => void | Promise<void>
-}
+export type {
+  HmrCompilerAsset as WeappCompilerHmrAsset,
+  HmrCompilerPreparation as WeappCompilerHmrPreparation,
+  HmrCompilerRequest as WeappCompilerHmrRequest,
+} from '@weapp-vite/hmr'
 
 export interface WeappCompilerPluginController {
   /** 同批次资产与脚本必须使用此调用持有的固定状态。 */

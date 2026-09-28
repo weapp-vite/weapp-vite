@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "kind": "static-plan-inventory",
   "summary": {
-    "taskCount": 113,
-    "wechatTaskCount": 110,
+    "taskCount": 114,
+    "wechatTaskCount": 111,
     "outOfScopeTaskCount": 3,
-    "expandedCaseDeclarations": 300,
-    "casesWithPlan": 300,
+    "expandedCaseDeclarations": 302,
+    "casesWithPlan": 302,
     "casesMissingPlan": 0,
     "unresolvedParameterizations": 0,
     "tasksWithoutCaseDeclarations": 0
@@ -4099,6 +4099,62 @@
       ]
     },
     {
+      "task": "ide/shared-taro-hmr.runtime.test.ts",
+      "scope": "wechat",
+      "reason": null,
+      "providers": [
+        "devtools"
+      ],
+      "templates": [],
+      "cases": [
+        {
+          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:78",
+          "name": "shared HMR compiler: Taro runtime > keeps React state while publishing and applying class and event updates separately",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "integrations/shared-hmr-tailwind/fixture",
+              "checkpoints": "[ { id: 'initial', route, action: '初始 Taro 产物', nodes: [{ selector: '#shared-utility', text: 'shared utility' }, { selector: '#shared-count', text: '0' }] }, { id: 'edited', route, action: '等待真实 applied 并保留点击状态', nodes: [{ selector: '#share",
+              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:87"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(initial)",
+            "tap(<missing>)",
+            "check(edited)",
+            "check(event)",
+            "check(restored)"
+          ],
+          "notes": []
+        },
+        {
+          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:119",
+          "name": "shared HMR compiler: Taro runtime > applies a newly generated native utility without a full reload",
+          "plans": [
+            {
+              "registration": "createDomAcceptance",
+              "fixture": "integrations/shared-hmr-tailwind/fixture",
+              "checkpoints": "[ { id: 'style-initial', route, action: '确认初始可见样式', nodes: [{ selector: '#shared-utility', text: 'shared utility', ...(checkStyles ? { styles: { 'background-color': 'rgb(252, 231, 243)' } } : {}) }] }, { id: 'style-edited', route, action: '",
+              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:128"
+            }
+          ],
+          "routes": [
+            "/pages/index/index"
+          ],
+          "operations": [
+            "reLaunch(/pages/index/index)",
+            "check(style-initial)",
+            "check(style-edited)"
+          ],
+          "notes": []
+        }
+      ]
+    },
+    {
       "task": "ide/stateful-hmr.runtime.test.ts",
       "scope": "wechat",
       "reason": null,
@@ -8081,6 +8137,10 @@
       "sha256": "a9c1b5417b6b5d905c07d3e259135947729726fbe90f95ee6b14327cc9c1d0dc"
     },
     {
+      "file": "e2e/ide/shared-taro-hmr.runtime.test.ts",
+      "sha256": "0e1dd87f1cafa2ba3f07ab4cabfe9958818bbf0857e931226f49441a71f15730"
+    },
+    {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",
       "sha256": "ef81a4f96bb48143da286c750597675ce8a3767fc65afab96ccc57ca89ce5e35"
     },
@@ -8506,7 +8566,7 @@
     },
     {
       "file": "e2e/utils/automator.ts",
-      "sha256": "ed7aec5e2bca249b65ac2dcb13bbc68becfee97f795c9cd56a8d1ce137d7b883"
+      "sha256": "dde3fd7e82321ec507d2b73f1998b26fa693907d3a9731e27fce43cf09873743"
     },
     {
       "file": "e2e/utils/automatorBridgeFiles.ts",
@@ -8695,6 +8755,10 @@
     {
       "file": "e2e/utils/statefulHmrTransport.ts",
       "sha256": "07714122ceab990e8d2a8e9db82db229e069cec3af7d9da47b501d8aabf0c35b"
+    },
+    {
+      "file": "e2e/utils/taroHmrTransport.ts",
+      "sha256": "72825b96313e3354700a71ab96ad4048a0edfc175e4796c25d0e8a1dfd9a3fba"
     },
     {
       "file": "e2e/utils/templateAcceptance/features.ts",

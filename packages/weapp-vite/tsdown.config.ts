@@ -39,6 +39,8 @@ export default defineConfig({
     resolveDepSubpath: true,
     neverBundle: [
       '@swc/core',
+      '@weapp-vite/hmr',
+      '@weapp-vite/tailwindcss',
       '@weapp-vite/ast',
       '@weapp-vite/ast/babel',
       '@weapp-vite/ast/babelCore',

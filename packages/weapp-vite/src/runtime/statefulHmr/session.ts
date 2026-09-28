@@ -16,6 +16,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
+import { HmrAssetStore } from '@weapp-vite/hmr'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { createServer, transformWithOxc } from 'vite'
@@ -194,8 +195,6 @@ export async function runStatefulHmrDev(
 
 class StatefulHmrSession {
   private readonly publicAssetSources: ReturnType<typeof createPublicAssetSourcePlan>
-  private readonly uncommittedSnapshotAssetNames = new Set<string>()
-  private snapshotAssetsReliable = true
   private assetWatcher?: ReturnType<typeof watchAssetSources>
   private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
@@ -208,7 +207,7 @@ class StatefulHmrSession {
   private readonly transport: StatefulHmrTransport
   private outputChain: Promise<void> = Promise.resolve()
   private restartTimer?: ReturnType<typeof setTimeout>
-  private snapshotAssets = new Map<string, StatefulHmrOutputFile>()
+  private readonly snapshotAssets = new HmrAssetStore<Extract<StatefulHmrOutputFile, { type: 'asset' }>>()
   private componentPageGlobalStyleRoutes: string[] = []
   private initialSnapshot?: StatefulHmrSnapshot
   private readonly emittedSourceIds: Set<string>
@@ -435,7 +434,7 @@ class StatefulHmrSession {
       if (fullBuild) {
         for (const item of snapshotOutput ?? this.snapshotAssets.values()) {
           if (isStatefulHmrSnapshotAsset(item)) {
-            this.uncommittedSnapshotAssetNames.add(item.fileName)
+            this.snapshotAssets.track([item])
           }
         }
       }
@@ -449,7 +448,7 @@ class StatefulHmrSession {
           ? { publicDir: this.server.config.publicDir, copyPublicDir: this.server.config.build.copyPublicDir }
           : undefined,
         snapshotBatch?.traceBatchId,
-        fullBuild ? [...new Set([...this.snapshotAssets.keys(), ...this.uncommittedSnapshotAssetNames])].filter(file => !currentOutputFiles.has(file)) : [],
+        fullBuild ? this.snapshotAssets.ownedNames().filter(file => !currentOutputFiles.has(file)) : [],
       )
       if (buildId) {
         this.delivery.reset()
@@ -703,7 +702,7 @@ class StatefulHmrSession {
     const pending = this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
     return pending.catch((error) => {
       // 原生写盘失败可能已有部分输出落盘，不能继续用旧字节快照省略下一次写入。
-      this.snapshotAssetsReliable = false
+      this.snapshotAssets.invalidate()
       throw error
     })
   }
@@ -807,25 +806,13 @@ class StatefulHmrSession {
 
   /** 快照刷新与编译批次共享资产提交、删除及失败恢复基线。 */
   private async commitSnapshotAssets(output: StatefulHmrOutputFile[], traceBatchId?: number, superseded = false): Promise<void> {
-    const changedOutput = this.snapshotAssetsReliable
-      ? getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
-      : output.filter(isStatefulHmrSnapshotAsset)
-    this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changedOutput, superseded)
-    const currentNames = new Set(output.map(item => item.fileName))
-    const removedAssets = [...new Set([...this.snapshotAssets.keys(), ...this.uncommittedSnapshotAssetNames])]
-      .filter(file => !currentNames.has(file))
-    // 写盘失败可能已有部分新资产落盘，后续两种交付路径都必须能够撤销。
-    for (const item of changedOutput) {
-      if (isStatefulHmrSnapshotAsset(item)) {
-        this.uncommittedSnapshotAssetNames.add(item.fileName)
-      }
-    }
-    if (changedOutput.length || removedAssets.length) {
-      await this.writeOutput('refresh', changedOutput, undefined, traceBatchId, removedAssets)
-    }
-    this.snapshotAssetsReliable = true
-    this.uncommittedSnapshotAssetNames.clear()
-    this.snapshotAssets = new Map(output.filter(isStatefulHmrSnapshotAsset).map(item => [item.fileName, item]))
+    const assets = output.filter(isStatefulHmrSnapshotAsset)
+    const retainedFileNames = output.map(item => item.fileName)
+    const changes = this.snapshotAssets.diff(assets, retainedFileNames)
+    this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changes.changed, superseded)
+    await this.snapshotAssets.commit(assets, async ({ changed, removed }) => {
+      await this.writeOutput('refresh', changed, undefined, traceBatchId, removed)
+    }, retainedFileNames)
   }
 
   private createSnapshotAssets(snapshot: StatefulHmrSnapshot): StatefulHmrOutputFile[] {
@@ -863,14 +850,8 @@ class StatefulHmrSession {
   }
 
   private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
-    this.snapshotAssetsReliable = true
-    this.uncommittedSnapshotAssetNames.clear()
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
-    this.snapshotAssets = new Map(
-      output
-        .filter(isStatefulHmrSnapshotAsset)
-        .map(item => [item.fileName, item]),
-    )
+    this.snapshotAssets.adopt(output.filter(isStatefulHmrSnapshotAsset))
   }
 
   private async waitForInitialBundle(): Promise<void> {

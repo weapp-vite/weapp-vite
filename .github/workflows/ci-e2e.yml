@@ -84,6 +84,30 @@ jobs:
         docs/reports/*-e2e-ide-dom-headless-*-suite-report/**
     secrets: inherit
 
+  shared-compiler-hosts:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    name: Shared Compiler Hosts (${{ matrix.os }} / Node 24)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: '24'
+      timeout_minutes: 30
+      build_command: pnpm --filter weapp-vite... --filter @mpcore/simulator... build
+      main_command: |
+        node integrations/shared-hmr-tailwind/prepare.mjs
+        node integrations/shared-hmr-tailwind/verify-install.mjs
+        node integrations/shared-hmr-tailwind/verify-isolated.mjs
+        node integrations/shared-hmr-tailwind/run-taro.mjs --build
+        pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 pnpm vitest run -c e2e/vitest.e2e.headless.config.ts e2e/ide/shared-taro-hmr.runtime.test.ts
+      artifact_name: shared-compiler-hosts-${{ matrix.os }}
+      artifact_path: |
+        docs/reports/dom-acceptance/**
+        .tmp/shared-hosts/artifacts.json
+
   ide-dom-acceptance-internal:
     if: ${{ !cancelled() && (needs.miniapp-e2e-build-pr.result == 'success' || needs.miniapp-e2e-build-full.result == 'success') }}
     needs: [miniapp-e2e-build-pr, miniapp-e2e-build-full]

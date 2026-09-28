@@ -6,8 +6,8 @@
 
 JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享计划、helper 或 manifest 后，CI 会要求重新生成清单。
 
-- 任务：113；微信：110；范围外：3。
-- 展开的 case 声明：300；已接入计划：300；缺计划：0。
+- 任务：114；微信：111；范围外：3。
+- 展开的 case 声明：302；已接入计划：302；缺计划：0。
 - 未解析的动态参数化：0；未发现 case 声明的微信任务：0。
 
 重新生成：`node --import tsx e2e/scripts/domAcceptanceReport/inventory.ts --write`。
@@ -72,6 +72,7 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 | ide/request-clients-real-native.runtime.test.ts | devtools | 6 | 6 | 0 | wechat |
 | ide/request-clients-real.runtime.test.ts | devtools | 7 | 7 | 0 | wechat |
 | ide/shared-styles.runtime.test.ts | devtools, headless | 1 | 1 | 0 | wechat |
+| ide/shared-taro-hmr.runtime.test.ts | devtools | 2 | 2 | 0 | wechat |
 | ide/stateful-hmr.runtime.test.ts | devtools | 12 | 12 | 0 | wechat |
 | ide/stream-capability.runtime.test.ts | devtools, headless | 8 | 8 | 0 | wechat |
 | ide/subpackage-shared-strategy-complex.runtime.test.ts | devtools, headless | 2 | 2 | 0 | wechat |
@@ -1539,6 +1540,25 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Registration: `createDomAcceptance`; fixture: `test/fixture-projects/weapp-vite/subPackages-shared-styles`; checkpoints: `sharedStyleCheckpoints(provider)`; source: `e2e/ide/shared-styles.runtime.test.ts:60`
 - Routes: `/pages/index/index`, `/packageA/pages/foo/index`, `/packageB/pages/bar/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(main)`, `reLaunch(/packageA/pages/foo/index)`, `check(subpackage)`, `reLaunch(/packageB/pages/bar/index)`, `check(independent)`
+
+
+## ide/shared-taro-hmr.runtime.test.ts
+
+### shared HMR compiler: Taro runtime > keeps React state while publishing and applying class and event updates separately
+
+- Source: `e2e/ide/shared-taro-hmr.runtime.test.ts:78`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `integrations/shared-hmr-tailwind/fixture`; checkpoints: `[ { id: 'initial', route, action: '初始 Taro 产物', nodes: [{ selector: '#shared-utility', text: 'shared utility' }, { selector: '#shared-count', text: '0' }] }, { id: 'edited', route, action: '等待真实 applied 并保留点击状态', nodes: [{ selector: '#share`; source: `e2e/ide/shared-taro-hmr.runtime.test.ts:87`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `tap(<missing>)`, `check(edited)`, `check(event)`, `check(restored)`
+
+### shared HMR compiler: Taro runtime > applies a newly generated native utility without a full reload
+
+- Source: `e2e/ide/shared-taro-hmr.runtime.test.ts:119`
+- Plan: registered in source; runtime verification required
+- Registration: `createDomAcceptance`; fixture: `integrations/shared-hmr-tailwind/fixture`; checkpoints: `[ { id: 'style-initial', route, action: '确认初始可见样式', nodes: [{ selector: '#shared-utility', text: 'shared utility', ...(checkStyles ? { styles: { 'background-color': 'rgb(252, 231, 243)' } } : {}) }] }, { id: 'style-edited', route, action: '`; source: `e2e/ide/shared-taro-hmr.runtime.test.ts:128`
+- Routes: `/pages/index/index`
+- Operations: `reLaunch(/pages/index/index)`, `check(style-initial)`, `check(style-edited)`
 
 
 ## ide/stateful-hmr.runtime.test.ts
