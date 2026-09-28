@@ -1,0 +1,123 @@
+diff --git a/packages/weapp-tailwindcss/src/core/compiler/transforms.ts b/packages/weapp-tailwindcss/src/core/compiler/transforms.ts
+index 4f0912239..e9fcfb4b2 100644
+--- a/packages/weapp-tailwindcss/src/core/compiler/transforms.ts
++++ b/packages/weapp-tailwindcss/src/core/compiler/transforms.ts
+@@ -3,7 +3,6 @@ import type { Compiler, CompilerCssTransformOptions, CompilerSnapshot } from './
+ import type { UserDefinedOptions } from '@/types'
+ import { finalizeMiniProgramCssRoot, stripTailwindBannerComments } from '@weapp-tailwindcss/postcss/transform'
+ import { getCompilerContext } from '@/context'
+-import { shouldSkipJsTransform } from '@/js/precheck'
+ import { getInternalCompilerSnapshot } from './snapshot'
+ 
+ const DEFAULT_JS_OPTIONS = Object.freeze({ tailwindcssMajorVersion: 4 as const })
+@@ -121,11 +120,9 @@ export function createCompilerTransforms({ ensureActive, track, userOptions }: C
+     const resolvedOptions = options?.tailwindcssMajorVersion === undefined
+       ? options ? { ...options, tailwindcssMajorVersion: 4 } : DEFAULT_JS_OPTIONS
+       : options
+-    return track(Promise.resolve(
+-      shouldSkipJsTransform(source, resolvedOptions)
+-        ? { code: source }
+-        : context.jsHandler(source, classSet, resolvedOptions),
+-    ))
++    // 显式快照可包含自定义 utility 和 JS 转义拼写；通用前缀预检不能否定快照中的候选。
++    // 匹配仍由 handler 的 classNameSet 精确约束，并复用其解析快速路径与缓存。
++    return track(Promise.resolve(context.jsHandler(source, classSet, resolvedOptions)))
+   }
+ 
+   function transformTemplate(source: string, snapshot: CompilerSnapshot, options?: Parameters<Compiler['transformTemplate']>[2]) {
+diff --git a/packages/weapp-tailwindcss/src/js/replacement-cache.ts b/packages/weapp-tailwindcss/src/js/replacement-cache.ts
+index 5b283bf7b..831afae59 100644
+--- a/packages/weapp-tailwindcss/src/js/replacement-cache.ts
++++ b/packages/weapp-tailwindcss/src/js/replacement-cache.ts
+@@ -26,7 +26,7 @@ export function getReplacement(
+ ) {
+   let cached = store.get(candidate)
+   if (cached === undefined) {
+-    cached = replaceWxml(candidate, { escapeMap })
++    cached = replaceWxml(candidate, { escapeMap, keepEOL: true })
+     store.set(candidate, cached)
+   }
+   return cached
+diff --git a/packages/weapp-tailwindcss/src/shared/classname-transform.ts b/packages/weapp-tailwindcss/src/shared/classname-transform.ts
+index 9147384a2..ab3edb33f 100644
+--- a/packages/weapp-tailwindcss/src/shared/classname-transform.ts
++++ b/packages/weapp-tailwindcss/src/shared/classname-transform.ts
+@@ -37,15 +37,15 @@ function isUrlLikeCandidate(candidate: string) {
+ }
+ 
+ function isPlainSlashPathCandidate(candidate: string) {
++  if (isUrlLikeCandidate(candidate)) {
++    return true
++  }
++
+   const slashIndex = candidate.indexOf('/')
+   if (slashIndex <= 0) {
+     return false
+   }
+ 
+-  if (isUrlLikeCandidate(candidate)) {
+-    return true
+-  }
+-
+   if (candidate.includes('[') || candidate.includes(']') || candidate.includes(':')) {
+     return false
+   }
+@@ -80,7 +80,7 @@ function getEscapedCandidateCacheStore(escapeMap?: EscapeMap) {
+ function getEscapedCandidate(candidate: string, escapeMap?: EscapeMap, store = getEscapedCandidateCacheStore(escapeMap)) {
+   let cached = store.get(candidate)
+   if (cached === undefined) {
+-    cached = replaceWxml(candidate, { escapeMap })
++    cached = replaceWxml(candidate, { escapeMap, keepEOL: true })
+     store.set(candidate, cached)
+   }
+   return cached
+diff --git a/packages/weapp-tailwindcss/test/compiler/core-compiler-explicit-snapshot.test.ts b/packages/weapp-tailwindcss/test/compiler/core-compiler-explicit-snapshot.test.ts
+index 0620f779c..d3992fd93 100644
+--- a/packages/weapp-tailwindcss/test/compiler/core-compiler-explicit-snapshot.test.ts
++++ b/packages/weapp-tailwindcss/test/compiler/core-compiler-explicit-snapshot.test.ts
+@@ -29,3 +29,45 @@ describe('createCompiler explicit snapshot mode', () => {
+   })
+ })
+ 
++describe('snapshot JavaScript candidate authority', () => {
++  it('transforms exact generated candidates without utility-prefix hints', async () => {
++    const { createCompiler } = await import('@/core')
++    const compiler = createCompiler()
++    try {
++      const snapshot = compiler.createSnapshot({ classSet: ['before:content-["x"]', 'custom:utility'], id: 'host', revision: 1 })
++      const source = `const value = 'before:content-["x"] custom:utility absent:utility'`
++      const result = await compiler.transformJavaScript(source, snapshot)
++      expect(result.code).toBe(`const value = 'before_ccontent-_b_qx_q_B custom_cutility absent:utility'`)
++    }
++    finally {
++      await compiler.dispose()
++    }
++  })
++
++  it('preserves protocol-relative URLs alongside exact slash candidates', async () => {
++    const { createCompiler } = await import('@/core')
++    const compiler = createCompiler()
++    try {
++      const snapshot = compiler.createSnapshot({ classSet: ['//cdn.example.com/app.js', 'w-[1/2]'], id: 'host', revision: 1 })
++      const result = await compiler.transformJavaScript('const value = \'//cdn.example.com/app.js w-[1/2]\'', snapshot)
++      expect(result.code).toBe('const value = \'//cdn.example.com/app.js w-_b1_f2_B\'')
++    }
++    finally {
++      await compiler.dispose()
++    }
++  })
++})
++
++it.each(['\n', '\r'])('preserves decoded line endings inside exact JS candidates: %j', async (ending) => {
++  const { createCompiler } = await import('@/core')
++  const compiler = createCompiler()
++  try {
++    const candidate = `before:content-['x${ending}y']`
++    const snapshot = compiler.createSnapshot({ classSet: [candidate], id: 'host', revision: 1 })
++    const result = await compiler.transformJavaScript(`const value = ${JSON.stringify(candidate)}`, snapshot)
++    expect(result.code).toBe(`const value = ${JSON.stringify(`before_ccontent-_b_ax${ending}y_a_B`)}`)
++  }
++  finally {
++    await compiler.dispose()
++  }
++})

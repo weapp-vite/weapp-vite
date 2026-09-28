@@ -24,6 +24,7 @@ it('keeps the latest parent and Vue child DOM state through consecutive bridge p
       render()
       expect(preview.querySelector('.parent-count')?.textContent).toBe(parent)
       expect(preview.querySelector('.child-count')?.textContent).toBe(counter)
+      expect(preview.querySelector('.child-store-count')?.textContent).toBe(counter)
       expect(preview.querySelector('.child-result')?.textContent).toBe(result)
       expect(preview.querySelector('.child-marker')?.textContent).toBe(marker)
       expect(preview.querySelector('.input')?.getAttribute('value')).toBe(input)

@@ -294,8 +294,8 @@ wv ide setup .
 
 ```sh
 # 直接透传（推荐在脚本中使用）
-wv preview --project ./dist/build/mp-weixin
-wv upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+wv ide preview --project ./dist/build/mp-weixin
+wv ide upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
 wv config lang en
 wv screenshot --project ./dist/build/mp-weixin --json
 wv compare --project ./dist/build/mp-weixin --baseline .screenshots/baseline/index.png --max-diff-pixels 100 --json
@@ -307,7 +307,7 @@ wv ide setup .
 ```
 
 > [!WARNING]
-> `weapp-vite` 会优先执行自己的原生命令；只有未命中时，才会回退透传到 `weapp-ide-cli`。因此 `build/dev/open/analyze/generate/mcp/prepare` 这些命令不会被官方 IDE CLI 覆盖。
+> `weapp-vite` 通常优先执行自己的原生命令，仅 catalog 命中的 IDE 命令才透传。兼容例外是旧顶层上传：`wv upload --project ./dist --version 1.2.3 --desc "release"` 或 `wv upload -p ./dist -v 1.2.3 -d "release"` 仍保持原行为，每次提示一次未来弃用；稳定的 `wv ide upload` 不弃用。`-p` 有旧标记时是 IDE 项目目录，否则是平台，不根据路径猜测；SDK 与旧参数混用会报错。六端构建使用 `wv upload/preview -p <platform>`，IDE 预览使用 `wv ide preview`；旧顶层预览不在兼容范围内。迁移到 SDK 时从源码项目根配置新凭据，用 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`，不要把旧产物目录当作源码 root。帮助与完整分流规则见 [CLI 文档](/guide/cli#legacy-upload)。
 
 ## 下一步建议
 

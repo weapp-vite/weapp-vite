@@ -7,14 +7,16 @@ import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
-import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
+import type { StatefulHmrDevEngineBatch, StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
+  WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE,
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
+import { HmrAssetStore } from '@weapp-vite/hmr'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { createServer, transformWithOxc } from 'vite'
@@ -22,22 +24,29 @@ import { isNativeScriptAnalysisOwner, refreshGlassEaselNativeScripts } from '../
 import { isGlassEaselDetected } from '../../analyze/glassEasel/state'
 import { logger } from '../../context/shared'
 import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGraph/protocol'
+import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
+import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
+import { watchAssetSources } from '../watch/assets'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
 import { isStatefulHmrBoundary } from './boundaries'
+import { compileHmrBatch } from './compileBatch'
+import { HmrDeliveryCoordinator } from './deliveryCoordinator'
 import { StatefulHmrDirectoryUpdates } from './directoryUpdates'
-import { createStatefulHmrGlobalStyleAssets } from './globalStyles'
+import { createStatefulHmrGlobalStyleAssets, mergeStatefulHmrCompilerAssets } from './globalStyles'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 import { createStatefulHmrInitialGraph, resolveStatefulHmrModuleRoot } from './initialModuleGraph'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
 import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
 import { writeStatefulHmrOutput } from './outputWriter'
-import { createStatefulHmrPatchImportResolver, transformStatefulHmrPatchImports } from './patchModule'
+import { readMappedHmrCode, wrapHmrCode } from './patchPreparation'
+import { shouldResetStatefulHmrRetention } from './retention'
 import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
@@ -46,15 +55,13 @@ import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
 export { isStatefulHmrBoundary } from './boundaries'
-
-const maxRetainedDeltaCount = 1_000
-const maxRetainedDeltaBytes = 16 * 1024 * 1024
+export { shouldResetStatefulHmrRetention } from './retention'
 
 interface StatefulHmrSnapshots {
   entryIds: Iterable<string>
   delegatedComponentEntryIds?: Iterable<string>
   initial: StatefulHmrSnapshot
-  rebuild: (files: string[]) => Promise<StatefulHmrSnapshot>
+  rebuild: (files: string[], sources?: ReadonlyMap<string, string | null>) => Promise<StatefulHmrSnapshot>
 }
 
 interface ActiveSnapshotBatch {
@@ -83,6 +90,21 @@ export async function runStatefulHmrDev(
   const entryIds = new Set(Array.from(snapshots.entryIds, id => normalizeFsResolvedId(id)))
   const delegatedComponentEntryIds = new Set(Array.from(snapshots.delegatedComponentEntryIds ?? [], id => normalizeFsResolvedId(id)))
   const pollingWatchOptions = resolvePollingWatchOptions(configService)
+  const capturePlugin: Plugin = {
+    name: 'weapp-vite:hmr-input',
+    enforce: 'pre',
+    transform(code, id) {
+      // 受管入口的 load 会注入配置与依赖；原始内容由入口读取器封存。
+      if (!entryIds.has(normalizeFsResolvedId(id))) {
+        getCompilerHmrHost(compilerContext).captureNative(id, code)
+      }
+    },
+    watchChange(id, change) {
+      if (change.event === 'delete') {
+        getCompilerHmrHost(compilerContext).capture(id, null)
+      }
+    },
+  }
   const installPlugin: Plugin = {
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
@@ -133,9 +155,10 @@ export async function runStatefulHmrDev(
       ...(buildOptions.experimental ?? {}),
       bundledDev: true,
     },
-    plugins: [createStatefulHmrSidecarPlugin(), installPlugin, ...(buildOptions.plugins ?? [])],
+    plugins: [capturePlugin, createStatefulHmrSidecarPlugin(), installPlugin, ...(buildOptions.plugins ?? [])],
     server: {
       ...(buildOptions.server ?? {}),
+      hmr: false,
       host: '127.0.0.1',
       port: 0,
       watch: {
@@ -159,6 +182,7 @@ export async function runStatefulHmrDev(
     if (!session) {
       throw new Error('微信状态保持 HMR session 未完成初始化。')
     }
+    await session.watchAssets()
     await session.refreshControl()
     return createWatcherAdapter(server, session, buildEvents)
   }
@@ -170,15 +194,20 @@ export async function runStatefulHmrDev(
 }
 
 class StatefulHmrSession {
+  private readonly publicAssetSources: ReturnType<typeof createPublicAssetSourcePlan>
+  private assetWatcher?: ReturnType<typeof watchAssetSources>
   private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
+  private readonly delivery: HmrDeliveryCoordinator
+  private resynchronizing = false
+  private closed = false
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
   private readonly diagnostics: ReturnType<typeof createStatefulHmrSnapshotDiagnostics>
   private readonly transport: StatefulHmrTransport
   private outputChain: Promise<void> = Promise.resolve()
   private restartTimer?: ReturnType<typeof setTimeout>
-  private snapshotAssets = new Map<string, StatefulHmrOutputFile>()
+  private readonly snapshotAssets = new HmrAssetStore<Extract<StatefulHmrOutputFile, { type: 'asset' }>>()
   private componentPageGlobalStyleRoutes: string[] = []
   private initialSnapshot?: StatefulHmrSnapshot
   private readonly emittedSourceIds: Set<string>
@@ -203,16 +232,21 @@ class StatefulHmrSession {
   ) {
     // DevEngine 可能先交付失败输出、随后才等待首轮就绪；保留拒绝结果但提前订阅。
     void this.initialBundle.promise.catch(() => {})
+    this.publicAssetSources = createPublicAssetSourcePlan({
+      publicDir: server.config.publicDir,
+      copyPublicDir: server.config.build.copyPublicDir,
+    }, ctx.configService.outDir)
     this.diagnostics = createStatefulHmrSnapshotDiagnostics({ root: server.config.root, outDir: ctx.configService!.outDir })
     this.directoryUpdates = new StatefulHmrDirectoryUpdates(server.config.root)
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
+    this.directoryUpdates.seedSources([...this.entryIds, ...this.emittedSourceIds])
     this.initialSnapshot = snapshots.initial
     this.transport = new StatefulHmrTransport(
       server,
       async (buildId, source) => {
         await this.enqueueOutput(async () => {
           if (!this.transport.isCurrentBuild(buildId)) {
-            return
+            throw new Error('Stateful HMR payload belongs to a retired build')
           }
           await this.writeOutput('delta', [{
             type: 'asset',
@@ -223,10 +257,20 @@ class StatefulHmrSession {
       },
       () => this.requestFullBuild(),
     )
+    this.delivery = new HmrDeliveryCoordinator((error) => {
+      if (error instanceof CompilerHmrResyncError) {
+        logger.info(`[weapp-vite] stateful HMR 正在完整重同步：${error.message}`)
+        this.requestFullBuild(error.files)
+        return
+      }
+      logger.error('[weapp-vite] stateful HMR delivery failed', error)
+      this.buildEvents.emitEvent({ code: 'ERROR', error: error instanceof Error ? error : new Error(String(error)), result: undefined as never })
+    }, () => this.requestFullBuild())
     this.adapter = new StatefulHmrViteAdapter(server.config, server, {
-      onError: message => server.config.logger.error(`[weapp-vite] stateful HMR: ${message}`),
+      onError: message => logger.error(`[weapp-vite] stateful HMR: ${message}`),
       onOutput: (output, source) => this.handleOutput(output, source),
-      onPatch: (files, output) => this.handlePatch(files, output),
+      onBatch: batch => this.handleBatch(batch),
+      onPatch: (files, output) => this.handleBatch({ changedFiles: files, updates: [{ clientId: 'weapp-vite-stateful-hmr', update: output }] }),
       waitForInitialBundle: () => this.waitForInitialBundle(),
     }, devWatchOptions)
     this.snapshotScheduler = new StatefulHmrSnapshotScheduler({
@@ -245,9 +289,35 @@ class StatefulHmrSession {
     this.transport.install()
     this.adapter.install()
     this.ctx.onStatefulHmrSourceChange = this.sourceChangeListener
+    getCompilerHmrHost(this.ctx).onDependencyChange = (file) => {
+      void this.waitForInitialBundle().then(async () => {
+        await this.adapter.waitForNativeUpdates()
+        if (!this.closed && !getCompilerHmrHost(this.ctx).isNativeSource(file)) {
+          this.handleBatch({ changedFiles: [file], updates: [] })
+        }
+      }).catch(() => {})
+    }
+  }
+
+  async watchAssets(): Promise<void> {
+    this.assetWatcher = watchAssetSources(this.ctx.configService, {
+      isModule: file => (this.server.moduleGraph.getModulesByFile(file)?.size ?? 0) > 0,
+      onChange: (file, event) => {
+        this.ctx.moduleGraphService.recordChangedFile(file, event)
+        this.handleSourceUpdate(file)
+      },
+      onError: (error) => {
+        this.buildEvents.emitEvent({ code: 'ERROR', error, result: undefined as never })
+        this.server.config.logger.error('[weapp-vite] asset watcher failed', { error })
+      },
+    })
+    await this.assetWatcher.ready
   }
 
   async close(): Promise<void> {
+    this.closed = true
+    getCompilerHmrHost(this.ctx).onDependencyChange = undefined
+    await this.assetWatcher?.close()
     if (this.restartTimer) {
       clearTimeout(this.restartTimer)
     }
@@ -255,6 +325,7 @@ class StatefulHmrSession {
       this.ctx.onStatefulHmrSourceChange = undefined
     }
     this.transport.close()
+    await this.delivery.close()
     await this.snapshotScheduler.close()
     this.sourceDirtyReasons.clear()
     await this.outputChain
@@ -287,6 +358,10 @@ class StatefulHmrSession {
       return
     }
     this.sourceDirtyReasons.set(normalizedFile, { reasons: [...dirtyReasonSummary] })
+    if (this.publicAssetSources.matchesPath(normalizedFile)) {
+      this.requestSnapshotRefresh([normalizedFile])
+      return
+    }
     if (shouldRestartStatefulHmrServer(
       [normalizedFile],
       this.ctx.configService?.configFileDependencies,
@@ -302,8 +377,12 @@ class StatefulHmrSession {
     const affectedEntries = this.ctx.moduleGraphService.collectAffectedEntries(normalizedFile)
     const hasTrackedModule = (this.server.moduleGraph.getModulesByFile(normalizedFile)?.size ?? 0) > 0
     const isEmittedDependency = this.emittedSourceIds.has(normalizedFile)
-    if (shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
+    if (!getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) && shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
       this.requestFullBuild([normalizedFile])
+      return
+    }
+    if (getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) || dirtyReasonSummary.some(reason => isCompilerContentDirtyReason(reason) || reason.startsWith('entry-mixed-asset:'))) {
+      // 同批次的视觉资产由原生更新回调交付，不能提前启动独立快照。
       return
     }
     if (requiresStatefulHmrSnapshot(
@@ -327,7 +406,7 @@ class StatefulHmrSession {
       const snapshot = snapshotBatch?.snapshot ?? this.initialSnapshot
       const snapshotOutput = snapshot ? this.createSnapshotAssets(snapshot) : undefined
       const compatibleOutput = createStatefulHmrGlobalStyleAssets(
-        await transformOutput(output),
+        await transformOutput(output, Boolean(this.server.config.build.sourcemap)),
         resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
         {
           componentPageGlobalStyleRoutes: snapshot?.componentPageGlobalStyleRoutes ?? this.componentPageGlobalStyleRoutes,
@@ -352,6 +431,14 @@ class StatefulHmrSession {
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE, 'void 0;\n')
         setAsset(compatibleOutput, WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE, 'void 0;\n')
       }
+      if (fullBuild) {
+        for (const item of snapshotOutput ?? this.snapshotAssets.values()) {
+          if (isStatefulHmrSnapshotAsset(item)) {
+            this.snapshotAssets.track([item])
+          }
+        }
+      }
+      const currentOutputFiles = new Set(compatibleOutput.map(item => item.fileName))
       await this.writeOutput(
         fullBuild ? 'full' : 'additional',
         fullBuild
@@ -361,15 +448,22 @@ class StatefulHmrSession {
           ? { publicDir: this.server.config.publicDir, copyPublicDir: this.server.config.build.copyPublicDir }
           : undefined,
         snapshotBatch?.traceBatchId,
+        fullBuild ? this.snapshotAssets.ownedNames().filter(file => !currentOutputFiles.has(file)) : [],
       )
       if (buildId) {
+        this.delivery.reset()
         this.transport.commitFullBuild(buildId)
+        getCompilerHmrHost(this.ctx).setNativeSources(collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root))
+        this.transport.registerInitialPayloads(compatibleOutput.filter(item => item.type === 'chunk').map(item => item.fileName), file => this.adapter.markPayloadDelivered(file))
         if (snapshot && snapshotOutput) {
           this.adoptSnapshot(snapshot, snapshotOutput)
           this.initialSnapshot = undefined
         }
         for (const sourceId of collectStatefulHmrEmittedSourceIds(compatibleOutput, this.server.config.root)) {
           this.emittedSourceIds.add(sourceId)
+        }
+        if (!snapshotBatch?.isSuperseded()) {
+          this.directoryUpdates.seedSources([...this.entryIds, ...this.emittedSourceIds])
         }
         const moduleCount = await this.adapter.registerBundleModules(compatibleOutput)
         if (snapshotBatch) {
@@ -394,7 +488,11 @@ class StatefulHmrSession {
     return outputTask
   }
 
-  private handlePatch(files: string[], output: StatefulHmrDevEngineUpdate): boolean {
+  private handleBatch(batch: StatefulHmrDevEngineBatch): boolean {
+    this.diagnostics?.delivery('received', 0, batch.changedFiles)
+    let files = batch.changedFiles.map(file => normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file)))
+    const updates = batch.updates.filter(item => item.update.type !== 'Noop')
+    const output = updates[0]?.update ?? { type: 'Noop' as const }
     files = this.directoryUpdates.consume(files)
     const dirtyReasonSummary = [...new Set(files.flatMap((file) => {
       const source = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
@@ -402,16 +500,25 @@ class StatefulHmrSession {
       this.sourceDirtyReasons.delete(source)
       return reasons
     }))]
+    if (this.resynchronizing) {
+      this.snapshotScheduler.request('full', files)
+      return false
+    }
     if (this.entryGraphRevision !== this.rebuiltEntryGraphRevision) {
       return false
     }
-    if (output.type === 'Noop' || files.length === 0) {
+    const compilerOnly = files.length > 0 && files.every(file => getCompilerHmrHost(this.ctx).ownsDependency(file)
+      && (isStatefulHmrAssetFile(file) || (!this.emittedSourceIds.has(file) && !this.entryIds.has(file) && !getCompilerHmrHost(this.ctx).isNativeSource(file))))
+    if ((output.type === 'Noop' && !compilerOnly) || files.length === 0) {
       return false
     }
+    const input = getCompilerHmrHost(this.ctx).freeze(files)
+    this.diagnostics?.input(input)
+
     const allowCompilerContentPatch = dirtyReasonSummary.some(isCompilerContentDirtyReason)
-    if (!isSafeJavaScriptPatch(
+    if (!compilerOnly && !updates.every(({ update }) => isSafeJavaScriptPatch(
       files,
-      output,
+      update,
       dirtyReasonSummary,
       {
         allowCompilerContent: allowCompilerContentPatch,
@@ -420,7 +527,7 @@ class StatefulHmrSession {
         srcRoot: this.ctx.configService!.absoluteSrcRoot,
         entryIds: this.entryIds,
       },
-    )) {
+    ))) {
       if (shouldRestartStatefulHmrServer(files, this.ctx.configService?.configFileDependencies)) {
         this.requestServerRestart()
       }
@@ -438,49 +545,114 @@ class StatefulHmrSession {
       }
       return false
     }
-    if (allowCompilerContentPatch || dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))) {
-      // 安全的 JS patch 与模板、样式快照分别同步，混合视觉更新不能无故重载并清空交互状态。
-      this.requestSnapshotRefresh(files)
+    if (!getCompilerHmrHost(this.ctx).supported) {
+      this.requestFullBuild(files)
+      return false
     }
-    void this.adapter.registerPatchModules(output.code).then(async () => {
-      const moduleCode = transformStatefulHmrPatchImports(output.code, {
-        filename: output.filename,
-        resolveImport: createStatefulHmrPatchImportResolver(this.ctx, output.filename),
-      })
-      const code = await transformJavaScript(moduleCode, output.filename)
-      if (
-        shouldResetStatefulHmrRetention(
-          this.transport.retainedDeltaCount,
-          this.transport.retainedDeltaBytes,
-          Buffer.byteLength(code),
+    this.diagnostics?.delivery('captured', input.revision, files)
+    // 编译器扫描依赖不代表接管了原生资产写出；非脚本资源仍走固定输入快照。
+    const needsSnapshot = files.some(file => requiresStatefulHmrSnapshot(file)) || (!getCompilerHmrHost(this.ctx).enabled && allowCompilerContentPatch) || (dirtyReasonSummary.some(reason => reason.startsWith('entry-mixed-asset:'))
+      && (!getCompilerHmrHost(this.ctx).enabled || getCompilerHmrHost(this.ctx).hasVisualChanges(files, input)))
+    const patches = (compilerOnly && !files.some(file => /\.module\.[^.]+$/.test(file)) ? [] : updates).filter(item => item.update.type === 'Patch').map(item => ({ ...item, update: { ...item.update } }))
+    let scriptFacts: ReturnType<StatefulHmrViteAdapter['captureGlassEaselScriptUpdates']> | undefined
+    try {
+      if (isGlassEaselDetected(this.ctx)) {
+        scriptFacts = this.adapter.captureGlassEaselScriptUpdates(
+          patches.flatMap(({ update }) => update.type === 'Patch' ? [update.code] : []).join('\n'),
+          patches.flatMap(({ update }) => update.type === 'Patch' ? update.changedIds ?? [] : []),
         )
-      ) {
-        this.requestFullBuild()
-        return
       }
-      this.transport.addDelta(code, output.changedIds ?? [])
-      await this.adapter.markPayloadDelivered(output.filename)
-      const updates = isGlassEaselDetected(this.ctx)
-        ? await this.adapter.collectGlassEaselScriptUpdates(output.code, output.changedIds ?? [])
-        : undefined
-      await this.outputChain
-      if (updates) {
-        refreshGlassEaselNativeScripts(this.ctx, updates)
-      }
-      this.buildEvents.emitEvent({ code: 'END' })
-    }).catch((error) => {
-      this.server.config.logger.error('[weapp-vite] stateful HMR patch transform failed', { error })
-      this.buildEvents.emitEvent({
-        code: 'ERROR',
-        error: error instanceof Error ? error : new Error(String(error)),
-        result: undefined as never,
+    }
+    catch (error) {
+      logger.error('[weapp-vite] stateful HMR delivery failed', error)
+      this.requestFullBuild(files)
+      return false
+    }
+    let preparation: ReturnType<ReturnType<typeof getCompilerHmrHost>['prepare']> | undefined
+    const prepareProviders = () => {
+      preparation ??= getCompilerHmrHost(this.ctx).prepare(input).catch((error) => {
+        preparation = undefined
+        throw error
       })
-      this.requestFullBuild()
+      return preparation
+    }
+    void prepareProviders().catch(() => {})
+    this.delivery.enqueue({
+      bytes: patches.reduce((bytes, item) => bytes + (item.update.type === 'Patch' ? Buffer.byteLength(item.update.code) : 0), 0),
+      prepare: async () => {
+        this.diagnostics?.delivery('prepare', input.revision, files)
+        try {
+          const compiled = await compileHmrBatch({
+            ctx: this.ctx,
+            input,
+            needsSnapshot,
+            patches,
+            prepareProviders,
+            rebuild: (files, sources) => sources ? this.snapshots.rebuild(files, sources) : this.snapshots.rebuild(files),
+            sourcemap: Boolean(this.server.config.build.sourcemap),
+          })
+          const { compilerAssets, snapshot, code, changedIds, filenames } = compiled
+          if (shouldResetStatefulHmrRetention(this.transport.retainedDeltaCount, this.transport.retainedDeltaBytes, Buffer.byteLength(code))) {
+            this.requestFullBuild(files)
+          }
+          return {
+            commit: () => this.enqueueOutput(async () => {
+              this.diagnostics?.delivery('commit', input.revision, files)
+              const next = snapshot
+                ? this.createSnapshotAssets(snapshot)
+                : compilerAssets.length
+                  ? mergeStatefulHmrCompilerAssets(
+                      this.snapshotAssets.values(),
+                      compilerAssets.map(asset => ({ type: 'asset' as const, fileName: asset.fileName, source: asset.code })),
+                      resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension,
+                      { createIfMissing: true, componentPageGlobalStyleRoutes: this.componentPageGlobalStyleRoutes, refreshPageStyles: true },
+                    )
+                  : [...this.snapshotAssets.values()]
+              await this.commitSnapshotAssets(next)
+              if (snapshot) {
+                this.adoptSnapshot(snapshot, next)
+                this.commitGlassEaselAnalysis(snapshot, 'refresh')
+              }
+            }),
+            publish: async () => {
+              this.diagnostics?.delivery('publish', input.revision, files)
+              if (!filenames.length) {
+                this.buildEvents.emitEvent({ code: 'END' })
+                return
+              }
+              let acknowledged = 0
+              await this.transport.addDelta(code, [...new Set(changedIds)], async () => {
+                this.diagnostics?.delivery('acknowledge', input.revision, files)
+                while (acknowledged < filenames.length) {
+                  const update = patches[acknowledged]?.update
+                  if (update?.type === 'Patch') {
+                    await this.adapter.registerPatchModules(update.code)
+                  }
+                  await this.adapter.markPayloadDelivered(filenames[acknowledged]!)
+                  acknowledged += 1
+                }
+              })
+              if (scriptFacts) {
+                refreshGlassEaselNativeScripts(this.ctx, scriptFacts)
+              }
+              this.buildEvents.emitEvent({ code: 'END' })
+            },
+            dispose: compiled.dispose,
+          }
+        }
+        catch (error) {
+          preparation = undefined
+          throw error
+        }
+      },
     })
     return true
   }
 
   private requestFullBuild(files: Iterable<string> = []): void {
+    this.resynchronizing = true
+    this.delivery.reset()
+    this.transport.cancelPendingDeliveries()
     if (this.diagnostics) {
       files = [...files]
       this.diagnostics.request('full', files as string[])
@@ -524,9 +696,15 @@ class StatefulHmrSession {
     output: StatefulHmrOutputFile[],
     initialPublicAssets?: StatefulHmrInitialPublicAssets,
     batchId?: number,
+    removedAssets: string[] = [],
   ): Promise<void> {
-    const write = () => writeStatefulHmrOutput(this.ctx.configService!.outDir, output, initialPublicAssets)
-    return this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
+    const write = () => writeStatefulHmrOutput(this.ctx.configService!.outDir, output, initialPublicAssets, removedAssets)
+    const pending = this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
+    return pending.catch((error) => {
+      // 原生写盘失败可能已有部分输出落盘，不能继续用旧字节快照省略下一次写入。
+      this.snapshotAssets.invalidate()
+      throw error
+    })
   }
 
   private async executeSnapshotBatch(batch: {
@@ -594,6 +772,7 @@ class StatefulHmrSession {
           if (!activeBatch.fullOutputCommitted) {
             throw new Error('微信状态保持 HMR 完整构建未交付可持久化的原生完整输出。')
           }
+          this.resynchronizing = false
           this.rebuiltEntryGraphRevision = entryGraphRevision
           releaseSourceChanges()
           this.commitGlassEaselAnalysis(snapshot, 'full')
@@ -614,16 +793,26 @@ class StatefulHmrSession {
         return
       }
       const output = this.createSnapshotAssets(snapshot)
-      const changedOutput = getChangedStatefulHmrSnapshotAssets(this.snapshotAssets.values(), output)
-      this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changedOutput, batch.isSuperseded())
-      await this.writeOutput('refresh', changedOutput, undefined, traceBatchId)
+      await this.commitSnapshotAssets(output, traceBatchId, batch.isSuperseded())
+      // 写盘期间到达的新事件仍须以实际落盘内容为基线；分析事实只提交未被取代的批次。
+      this.adoptSnapshot(snapshot, output)
       if (batch.isSuperseded()) {
         return
       }
-      this.adoptSnapshot(snapshot, output)
       this.commitGlassEaselAnalysis(snapshot, 'refresh')
       this.buildEvents.emitEvent({ code: 'END' })
     })
+  }
+
+  /** 快照刷新与编译批次共享资产提交、删除及失败恢复基线。 */
+  private async commitSnapshotAssets(output: StatefulHmrOutputFile[], traceBatchId?: number, superseded = false): Promise<void> {
+    const assets = output.filter(isStatefulHmrSnapshotAsset)
+    const retainedFileNames = output.map(item => item.fileName)
+    const changes = this.snapshotAssets.diff(assets, retainedFileNames)
+    this.diagnostics?.diff(traceBatchId, this.snapshotAssets.values(), output, changes.changed, superseded)
+    await this.snapshotAssets.commit(assets, async ({ changed, removed }) => {
+      await this.writeOutput('refresh', changed, undefined, traceBatchId, removed)
+    }, retainedFileNames)
   }
 
   private createSnapshotAssets(snapshot: StatefulHmrSnapshot): StatefulHmrOutputFile[] {
@@ -662,11 +851,7 @@ class StatefulHmrSession {
 
   private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
-    this.snapshotAssets = new Map(
-      output
-        .filter(item => item.type === 'asset')
-        .map(item => [item.fileName, item]),
-    )
+    this.snapshotAssets.adopt(output.filter(isStatefulHmrSnapshotAsset))
   }
 
   private async waitForInitialBundle(): Promise<void> {
@@ -887,36 +1072,29 @@ function isNonJavaScriptSidecarId(id: string): boolean {
   return sidecar !== undefined && sidecar.kind !== 'script' && sidecar.kind !== 'jsx'
 }
 
-export function shouldResetStatefulHmrRetention(
-  retainedDeltaCount: number,
-  retainedDeltaBytes: number,
-  nextDeltaBytes: number,
-): boolean {
-  return retainedDeltaCount >= maxRetainedDeltaCount
-    || retainedDeltaBytes + nextDeltaBytes >= maxRetainedDeltaBytes
-}
-
-async function transformOutput(output: StatefulHmrOutputFile[]): Promise<StatefulHmrOutputFile[]> {
-  return await Promise.all(output.map(async (item) => {
+async function transformOutput(output: StatefulHmrOutputFile[], sourcemap: boolean): Promise<StatefulHmrOutputFile[]> {
+  const mapFiles = new Set(output.flatMap(item => item.type === 'chunk' ? [item.sourcemapFileName ?? `${item.fileName}.map`] : []))
+  return await Promise.all(output.filter(item => !mapFiles.has(item.fileName)).map(async (item) => {
     if (item.type !== 'chunk') {
       return item
     }
+    const code = item.code.replace(/^\/\/[#@] sourceMappingURL=.*$/gm, '')
+    const result = await transformWithOxc(code, item.fileName, {
+      assumptions: { setPublicClassFields: true },
+      lang: 'js',
+      sourcemap,
+      target: 'es2018',
+      tsconfig: false,
+    })
     return {
       ...item,
-      code: await transformJavaScript(item.code, item.fileName),
+      code: wrapHmrCode({
+        code: result.code,
+        filename: item.fileName,
+        map: sourcemap ? composeSourceMaps(normalizeEncodedSourceMapLike(result.map), normalizeEncodedSourceMapLike(item.map)) : null,
+      }),
     }
   }))
-}
-
-async function transformJavaScript(code: string, filename: string): Promise<string> {
-  const result = await transformWithOxc(code, filename, {
-    assumptions: { setPublicClassFields: true },
-    lang: 'js',
-    sourcemap: false,
-    target: 'es2018',
-    tsconfig: false,
-  })
-  return result.code
 }
 
 function setAsset(output: StatefulHmrOutputFile[], fileName: string, source: string): void {
@@ -933,7 +1111,11 @@ function setAsset(output: StatefulHmrOutputFile[], fileName: string, source: str
 export function stampStatefulHmrFullBuild(output: StatefulHmrOutputFile[], buildId: string): void {
   for (const item of output) {
     if (item.type === 'chunk' && item.fileName.endsWith('.js')) {
-      item.code = `// weapp-vite-stateful-build:${buildId}\n${item.code}`
+      item.code = wrapHmrCode(
+        readMappedHmrCode(item.code, item.fileName),
+        `// weapp-vite-stateful-build:${buildId}\n`,
+        `\nglobalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}] && globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].payloadDelivered(${JSON.stringify(item.fileName)});\n`,
+      )
     }
   }
 }

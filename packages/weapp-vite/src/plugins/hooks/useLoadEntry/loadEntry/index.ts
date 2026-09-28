@@ -26,6 +26,7 @@ import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../.
 import { registerResolvedPageLayoutDependencies } from '../../../utils/pageLayout'
 import { emitScriptlessComponentAsset, resolveScriptlessComponentFileName, SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
+import { readCompilerInput } from '../../../utils/sourceSnapshot'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
@@ -229,7 +230,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     const task = (async () => {
-      const layoutSource = await fs.readFile(layoutFile, 'utf-8')
+      const layoutSource = await readCompilerInput(configService, layoutFile, file => fs.readFile(file, 'utf-8'))
       return shouldEmitScriptlessVueLayoutJsFromSource(layoutSource, layoutFile)
     })()
 
@@ -351,7 +352,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         return vueSource
       }
       try {
-        vueSource = await fs.readFile(vueEntryPath, 'utf-8')
+        vueSource = await readCompilerInput(configService, vueEntryPath, file => fs.readFile(file, 'utf-8'))
       }
       catch (error) {
         const missingEntry = error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT'
@@ -654,7 +655,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       else if (type === 'page' && templatePath && !VUE_LIKE_PAGE_ENTRY_RE.test(id)) {
         const layoutStartedAt = performance.now()
         try {
-          const source = await fs.readFile(id, 'utf-8')
+          const source = await readCompilerInput(configService, id, file => fs.readFile(file, 'utf-8'))
           entryCodeSource = source
           const hasLayoutHint = hasPageLayoutSourceHint(source)
           const cachedLayoutPlan = isStableHmr && !hasLayoutHint

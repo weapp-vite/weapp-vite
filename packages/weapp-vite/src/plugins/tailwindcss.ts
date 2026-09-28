@@ -13,6 +13,7 @@ import type { CompilerContext } from '../context'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import process from 'node:process'
+import { createTailwindController } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { resolveBuildScope } from '../runtime/buildScope'
@@ -22,9 +23,12 @@ import { changeFileExtension } from '../utils'
 import { applyOutputChunkTransform } from '../utils/outputChunk'
 import { isPathInside } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { labelSourceMapInput } from '../utils/sourcemap'
 import { markWeappCompilerPlugin } from './compilerPlugin'
+import { CompilerHmrResyncError, getCompilerHmrHost } from './compilerPlugin/hmr'
 import { processCssWithCache } from './css/shared/preprocessor'
 import { createStyleSourceMeta } from './css/styleOwnership'
+import { createTailwindHmrAdapter } from './tailwindcss/hmr'
 import { findManagedStyleImports } from './tailwindcss/imports'
 import { resolveVueStyleSource } from './tailwindcss/vueStyle'
 import {
@@ -222,7 +226,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   let resolvedConfig: ResolvedConfig | undefined
   let loaded = false
   let persistentWatch = false
+  let statefulCompiler = false
   let compilerDisposal: Promise<void> | undefined
+  let hmr: ReturnType<typeof createTailwindHmrAdapter>
 
   function getSourceSlot(id: string, entry: number) {
     const style = parseWeappVueStyleRequest(id)
@@ -265,8 +271,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     return coreModulePromise
   }
 
+  const controller = createTailwindController({ compiler: resolved.options, loadCore: getCoreModule })
+
   async function getCompiler() {
-    compilerPromise ??= getCoreModule().then(({ createCompiler }) => createCompiler(resolved.options))
+    compilerPromise ??= controller.getCompiler()
     const compiler = await compilerPromise
     if (!loaded) {
       loaded = true
@@ -304,7 +312,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     compilerSourceOptions.set(index, sourceOptions)
     const id = compilerRootIds.get(index) ?? createCompilerRootId(index, entry)
     compilerRootIds.set(index, id)
-    const generated = await compiler.generate({
+    const request: CompilerGenerateRequest = {
       id,
       sourceOptions,
       target: resolved.generatorTarget,
@@ -313,13 +321,17 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       styleOptions: typeof resolved.options.generator === 'object'
         ? resolved.options.generator.styleOptions
         : undefined,
-    })
+    }
+    const generated = await compiler.generate(request)
+    if (statefulCompiler) {
+      await hmr.rememberRoot(index, request, generated)
+    }
     compilerSnapshots.set(index, generated.snapshot)
     return generated
   }
 
   function disposeCompiler() {
-    return compilerDisposal ??= Promise.resolve(compilerPromise?.then(compiler => compiler.dispose()))
+    return compilerDisposal ??= controller.dispose()
   }
 
   async function closeSnapshotCompiler() {
@@ -329,7 +341,8 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   }
 
   async function invalidateCompilerForFile(id: string, event: 'create' | 'update' | 'delete') {
-    const compiler = await getCompiler()
+    // 失效已有状态不应创建编译器；尚未生成的样式仍维护下面的脏标记。
+    const compiler = compilerPromise ? await compilerPromise : undefined
     const normalizedId = normalizeFsResolvedId(id.split('?')[0], { stripLeadingNullByte: true })
     const indexes = resolved.cssEntries.flatMap((entry, index) =>
       normalizeManagedTailwindcssEntryPath(entry) === normalizeManagedTailwindcssEntryPath(normalizedId) ? [index] : [],
@@ -340,7 +353,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (event === 'delete') {
         const rootId = compilerRootIds.get(index)
         if (rootId) {
-          await compiler.remove(rootId)
+          await compiler?.remove(rootId)
         }
         transformedSources.delete(index)
         dirtySlots.delete(index)
@@ -352,7 +365,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     if (event === 'delete' && indexes.length > 0) {
       return
     }
-    compiler.invalidate([normalizedId])
+    compiler?.invalidate([normalizedId])
   }
 
   function prepareBundleStyles(bundle: OutputBundle) {
@@ -374,15 +387,18 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
   }
 
-  async function transformBundle(this: any, bundle: OutputBundle) {
+  async function transformBundle(this: any, bundle: OutputBundle, pinned?: { entries: CompilerGenerateResult[], snapshot: CompilerSnapshot }) {
     if (resolved.autoDetected && resolved.cssEntries.length === 0) {
       return
     }
     const compiler = await getCompiler()
-    const generatedEntries = resolved.options.generator === false
+    if (statefulCompiler && !pinned) {
+      hmr.rememberBundle(bundle)
+    }
+    const generatedEntries = pinned?.entries ?? (resolved.options.generator === false
       ? []
       : await (generatedEntriesPromise ??= Promise.all(resolved.cssEntries.map((entry, index) =>
-          generateEntryCss(compiler, index, entry))))
+          generateEntryCss(compiler, index, entry)))))
     const snapshots = generatedEntries.length > 0
       ? generatedEntries.map((generated, index) => compilerSnapshots.get(index) ?? generated.snapshot)
       : [compiler.createSnapshot({
@@ -390,7 +406,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
           classSet: [],
           target: resolved.generatorTarget,
         })]
-    const snapshot = compiler.mergeSnapshots([...snapshots, ...Array.from(importedSources.values(), source => source.snapshot)])
+    for (const file of hmr.watchFiles) {
+      this.addWatchFile(file)
+    }
+    const snapshot = pinned?.snapshot ?? compiler.mergeSnapshots([...snapshots, ...Array.from(importedSources.values(), source => source.snapshot)])
     const seenEntries = new Set(Array.from(importedSources.values()).flatMap(source => source.entries))
     const styleExtension = ctx.configService.outputExtensions.wxss
     const templateExtension = ctx.configService.outputExtensions.wxml
@@ -491,7 +510,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       if (transformed.error) {
         throw transformed.error
       }
-      applyOutputChunkTransform(output as OutputChunk, transformed.code, transformed.map as any)
+      applyOutputChunkTransform(output as OutputChunk, transformed.code, labelSourceMapInput(transformed.map, output.fileName, output.code))
     }
   }
 
@@ -562,9 +581,19 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     }
   }
 
+  hmr = createTailwindHmrAdapter(ctx, {
+    compiler: getCompiler,
+    render: (bundle, entries, snapshot) => transformBundle.call({ addWatchFile() {} }, bundle, { entries, snapshot }),
+  })
+
   const managerPlugin: Plugin = {
     name: MANAGED_PLUGIN_NAME,
     enforce: 'pre',
+    configureServer(server) {
+      if (statefulCompiler) {
+        hmr.configureServer(server)
+      }
+    },
     generateBundle: {
       order: 'pre',
       handler(_options, bundle) {
@@ -591,6 +620,15 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       resolvedConfig = config
       // 开发语义的一次性快照没有 closeWatcher，资源寿命应由实际构建控制器决定。
       persistentWatch = config.command === 'serve' || Boolean(config.build?.watch)
+      statefulCompiler = config.command === 'serve' && ctx.configService.platform === 'weapp' && Boolean(config.experimental?.bundledDev)
+      if (statefulCompiler) {
+        getCompilerHmrHost(ctx).register(MANAGED_PLUGIN_NAME, (request) => {
+          if (importedSources.size) {
+            throw new CompilerHmrResyncError(request.changedFiles, 'Tailwind 导入式样式尚未提供可固定的产物归属，需要完整重同步。')
+          }
+          return hmr.prepare(request)
+        })
+      }
     },
     async buildEnd(error) {
       if (error) {
@@ -719,6 +757,9 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       }
     },
     async watchChange(id, change) {
+      if (statefulCompiler) {
+        hmr.captureFile(id, change.event === 'delete')
+      }
       await invalidateCompilerForFile(id, change.event)
     },
     async handleHotUpdate({ file }) {

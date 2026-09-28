@@ -142,6 +142,20 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: '多平台构建', link: '/guide/multi-platform' },
+      {
+        text: '上传与预览指南',
+        link: '/guide/upload',
+        collapsed: true,
+        items: [
+          { text: '环境与自动版本', link: '/guide/upload/environments' },
+          { text: '微信', link: '/guide/upload/weapp' },
+          { text: '小红书', link: '/guide/upload/xhs' },
+          { text: '抖音', link: '/guide/upload/tt' },
+          { text: '支付宝与淘宝边界', link: '/guide/upload/alipay' },
+          { text: '京东', link: '/guide/upload/jd' },
+          { text: '百度', link: '/guide/upload/swan' },
+        ],
+      },
       { text: 'WXS 增强', link: '/guide/wxs' },
       { text: 'Web 兼容矩阵', link: '/guide/web-compat-matrix' },
     ],
@@ -353,6 +367,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: '@wevu/compiler', link: '/packages/wevu-compiler' },
+      { text: '@wevu/json-render（实验）', link: '/packages/wevu-json-render' },
       { text: '@weapp-core/api', link: '/packages/weapi/' },
       { text: '@weapp-vite/i18n', link: '/packages/i18n' },
       { text: '@weapp-vite/web', link: '/packages/web' },

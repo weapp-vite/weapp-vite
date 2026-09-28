@@ -1,0 +1,27 @@
+{
+  "name": "wevu-json-render-demo",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wv dev",
+    "build": "wv build",
+    "open": "wv open",
+    "prepare:weapp": "wv prepare",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
+    "test": "vitest run --config vitest.config.ts",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@wevu/json-render": "workspace:*",
+    "@wevu/json-render-components": "workspace:*",
+    "wevu": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@weapp-vite/volar": "workspace:*",
+    "miniprogram-api-typings": "catalog:",
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

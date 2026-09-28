@@ -1,6 +1,7 @@
 import type { ComponentPublicInstance } from '../../component'
 import type { PageRecord, PageStackEntry } from './options'
 import { ensureAppContainer, onDocumentReady } from '../../appShell/container'
+import { cancelEntryRoute } from './events'
 import { attachRouteMeta } from './lifecycle'
 import {
   bindPageScrollOwner,
@@ -40,6 +41,8 @@ export function setEntryActiveInDom(entry: PageStackEntry, active: boolean) {
 }
 
 export function unmountEntryFromDom(entry: PageStackEntry) {
+  cancelEntryRoute(entry)
+  entry.destroyed = true
   setEntryScrollOwner(entry, false)
   const element = entry.element
   if (!element) {
@@ -63,6 +66,9 @@ export function mountEntryToDom(
     return
   }
   onDocumentReady(() => {
+    if (entry.destroyed) {
+      return
+    }
     const container = ensureAppContainer()
     if (!container) {
       return
@@ -83,6 +89,7 @@ export function mountEntryToDom(
     if (entry.active) {
       restoreEntryScrollPosition(entry)
     }
+    entry.onRouteMounted?.()
   })
 }
 

@@ -9,6 +9,7 @@ import { createRuntimePruningFiles } from './test/helpers/runtimePruning'
 import { createRuntimePublicFactoryFiles } from './test/helpers/runtimePublicFactory'
 import { createRuntimeValueSnapshotFiles } from './test/helpers/runtimeValueSnapshot'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
+import { createStatefulBatchDeliveryFiles } from './test/helpers/statefulBatchDelivery'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
 import { createStatefulNativePageFiles } from './test/helpers/statefulNativePage'
 import { createStatefulStoreBindingFiles } from './test/helpers/statefulStoreBindings'
@@ -35,6 +36,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:stateful-batch-delivery-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:runtime-pruning-fixture') {
         return `\0${id}`
       }
@@ -49,6 +53,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:stateful-batch-delivery-fixture') {
+        return `export default ${JSON.stringify(createStatefulBatchDeliveryFiles())}`
+      }
       if (id === '\0virtual:runtime-pruning-fixture') {
         const [pruned, publicFactory] = await Promise.all([createRuntimePruningFiles(), createRuntimePublicFactoryFiles()])
         return `export default ${JSON.stringify(pruned)}; export const publicFactorySources = ${JSON.stringify(publicFactory)}`

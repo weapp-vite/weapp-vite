@@ -24,7 +24,7 @@ import { collectBenchmarkHmrProfile } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
-import { waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
+import { acknowledgeStatefulTemplateArtifact, waitForStatefulHmrAuditUpdate } from './workspace-hmr/statefulAuditUpdate'
 
 type ScenarioGroup
   = | 'app-json'
@@ -640,6 +640,26 @@ async function benchmarkScenario(
     await waitForBenchmarkOutput(readOutput, marker, { absent, timeoutMs, expectedContent: absent ? originalOutput : undefined })
   }
 
+  const acknowledgeArtifact = async (marker: string, absent = false) => {
+    if (usesStatefulScript) {
+      await statefulClient.acknowledgePublished(timeoutMs)
+    }
+    else if (runtime === 'stateful' && scenario.group === 'vue-template') {
+      await acknowledgeStatefulTemplateArtifact({
+        client: statefulClient,
+        readControl,
+        isCurrentUpdate: async () => (await readOutput()).includes(marker) !== absent,
+        timeoutMs,
+        onEvent(event) {
+          transport.push({ ...event, phase })
+          if (transport.length > 32) {
+            transport.shift()
+          }
+        },
+      })
+    }
+  }
+
   try {
     for (let index = 0; index < iterations; index += 1) {
       const marker = createMarker(template.id, scenario.id, index)
@@ -651,7 +671,7 @@ async function benchmarkScenario(
       if ((await readOutput()).includes(expectedMarker)) {
         throw new Error(`Scenario ${scenario.id} already contains the new output marker.`)
       }
-      if (usesStatefulScript) {
+      if (usesStatefulScript || (runtime === 'stateful' && scenario.group === 'vue-template')) {
         await statefulClient.ensureRegistered(await readControl(), timeoutMs)
       }
 
@@ -661,6 +681,7 @@ async function benchmarkScenario(
       await replaceFileByRename(scenario.sourceFile, updated)
       await waitForOutput(expectedMarker)
       const wallMs = performance.now() - startedAt
+      await acknowledgeArtifact(expectedMarker)
       const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs))
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample)
@@ -671,6 +692,7 @@ async function benchmarkScenario(
       await replaceFileByRename(scenario.sourceFile, original)
       await waitForOutput(expectedMarker, true)
       const restoreWallMs = performance.now() - restoreStartedAt
+      await acknowledgeArtifact(expectedMarker, true)
       const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs))
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
@@ -711,6 +733,7 @@ async function benchmarkScenario(
       phase = 'cleanup'
       if (await restoreBenchmarkSource(scenario.sourceFile, original) && expectedMarker) {
         await waitForOutput(expectedMarker, true)
+        await acknowledgeArtifact(expectedMarker, true)
       }
     }
     catch (error) {

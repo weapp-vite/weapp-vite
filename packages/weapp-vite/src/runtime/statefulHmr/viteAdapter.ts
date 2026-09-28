@@ -11,6 +11,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_PRELOAD_FILE,
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
+import path from 'pathe'
 import { assertStatefulHmrRuntimeOutput, createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 import { resolveStatefulHmrModuleRoot, toStableModuleId } from './initialModuleGraph'
 import { StatefulHmrOutputPublication } from './outputPublication'
@@ -53,6 +54,11 @@ export type StatefulHmrDevEngineUpdate
       sourcemap?: string
       sourcemapFilename?: string
     }
+
+export interface StatefulHmrDevEngineBatch {
+  changedFiles: string[]
+  updates: Array<{ clientId: string, update: StatefulHmrDevEngineUpdate }>
+}
 
 type StatefulHmrDevEngine = DevEngine & {
   registerModules?: (clientId: string, modules: string[]) => Promise<void> | void
@@ -120,6 +126,7 @@ export class StatefulHmrViteAdapter {
     private readonly callbacks: {
       onError: (message: string) => void
       onOutput: (output: StatefulHmrOutputFile[], source: StatefulHmrOutputSource) => void | Promise<void>
+      onBatch?: (batch: StatefulHmrDevEngineBatch) => void
       onPatch: (files: string[], output: StatefulHmrDevEngineUpdate) => boolean
       waitForInitialBundle: () => Promise<void>
     },
@@ -137,6 +144,11 @@ export class StatefulHmrViteAdapter {
       throw new TypeError('当前 Vite bundled-development 私有 API 与 weapp-vite 不兼容。')
     }
     this.bundledDev = bundledDev
+    // DevEngine 直接运行插件 watchChange；Vite 容器不能再为同一文件触发第二轮失效。
+    const container = this.server.environments.client.pluginContainer
+    if (container) {
+      container.watchChange = async () => {}
+    }
     this.installOptions(bundledDev)
     this.installOutput(bundledDev)
     this.installListener(bundledDev)
@@ -152,12 +164,10 @@ export class StatefulHmrViteAdapter {
 
   async registerBundleModules(output: StatefulHmrOutputFile[]): Promise<number> {
     const moduleIds = new Set<string>()
-    const payloadFilenames: string[] = []
     for (const item of output) {
       if (item.type !== 'chunk') {
         continue
       }
-      payloadFilenames.push(item.fileName)
       for (const match of item.code.matchAll(/registerModule\("([^"]+)"/g)) {
         moduleIds.add(match[1]!)
       }
@@ -169,7 +179,6 @@ export class StatefulHmrViteAdapter {
       }
     }
     await this.registerModules([...moduleIds])
-    await this.markPayloadsDelivered(payloadFilenames)
     return moduleIds.size
   }
 
@@ -179,6 +188,10 @@ export class StatefulHmrViteAdapter {
 
   async markPayloadDelivered(filename: string): Promise<void> {
     await this.markPayloadsDelivered([filename])
+  }
+
+  async waitForNativeUpdates(): Promise<void> {
+    await this.bundledDev?._devEngine?.ensureCurrentBuildFinish()
   }
 
   async collectGlassEaselScriptUpdates(
@@ -195,6 +208,14 @@ export class StatefulHmrViteAdapter {
       return []
     }
 
+    return this.captureGlassEaselScriptUpdates(patchCode, changedIds)
+  }
+
+  captureGlassEaselScriptUpdates(patchCode: string, changedIds: readonly string[]): GlassEaselNativeScriptUpdate[] {
+    const engine = this.bundledDev?._devEngine
+    if (!engine) {
+      throw new Error('Vite DevEngine 未初始化，无法读取 GlassEasel 模块事实。')
+    }
     const root = resolveStatefulHmrModuleRoot(this.config.root, this.config.build?.rolldownOptions.cwd)
     const rawModuleIdsByStableId = new Map<string, string[]>()
     for (const rawId of engine.moduleGraph.getModuleIds()) {
@@ -381,7 +402,7 @@ export class StatefulHmrViteAdapter {
       const userFooter = output.footer
       output.format = 'cjs'
       output.minify = false
-      output.sourcemap = false
+      output.sourcemap = Boolean(this.config.build.sourcemap)
       output.banner = async (chunk: { fileName: string, isEntry?: boolean }) => {
         const existing = typeof userBanner === 'function' ? await userBanner(chunk) : (userBanner ?? '')
         return `${existing}${existing ? '\n' : ''}${createStatefulHmrBanner(chunk)}`
@@ -447,6 +468,9 @@ export class StatefulHmrViteAdapter {
         },
         watch: {
           skipWrite: true,
+          exclude: this.config.build.outDir
+            ? [path.resolve(this.config.root, this.config.build.outDir), `${path.resolve(this.config.root, this.config.build.outDir)}/**`]
+            : [],
           ...this.watchOptions,
         },
       }) as StatefulHmrDevEngine
@@ -472,7 +496,8 @@ export class StatefulHmrViteAdapter {
       this.callbacks.onError(result.message)
       return
     }
-    if (result.changedFiles.length === 0) {
+    if (this.callbacks.onBatch) {
+      this.callbacks.onBatch({ ...result, updates: result.updates.filter(item => item.clientId === clientId) })
       return
     }
     for (const { clientId: updateClientId, update } of result.updates) {

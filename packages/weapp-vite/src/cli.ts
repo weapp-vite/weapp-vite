@@ -14,6 +14,7 @@ import { registerNpmCommand } from './cli/commands/npm'
 import { registerOpenCommand } from './cli/commands/open'
 import { registerPrepareCommand } from './cli/commands/prepare'
 import { registerServeCommand } from './cli/commands/serve'
+import { registerPreviewCommand, registerUploadCommand } from './cli/commands/upload'
 import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
 import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
@@ -50,6 +51,8 @@ cli
 registerIdeCommand(cli)
 registerAlipayCommand(cli)
 registerBuildCommand(cli)
+registerUploadCommand(cli)
+registerPreviewCommand(cli)
 registerCloseCommand(cli)
 registerAnalyzeCommand(cli)
 registerInitCommand(cli)
@@ -90,7 +93,7 @@ function resolveManagedTsconfigBootstrapRoot(args: string[]) {
     }
     return undefined
   }
-  if (['analyze', 'build', 'close', 'dev', 'open', 'prepare', 'serve'].includes(firstArg)) {
+  if (['analyze', 'build', 'close', 'dev', 'open', 'prepare', 'preview', 'serve', 'upload'].includes(firstArg)) {
     if (secondArg && !secondArg.startsWith('-')) {
       return path.resolve(secondArg)
     }
@@ -108,7 +111,10 @@ try {
       await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
     }
     cli.parse(process.argv, { run: false })
-    await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+    // 仅为未显式命名的默认入口预启动；dev/serve 自管生命周期，其他命令不得提前求值配置。
+    if (cli.matchedCommand?.name === '' && cli.matchedCommandName === undefined) {
+      await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+    }
     await cli.runMatchedCommand()
   }
 }

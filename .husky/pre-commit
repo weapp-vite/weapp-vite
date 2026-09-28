@@ -2,6 +2,8 @@
 set -e
 
 repo_root="$(git rev-parse --show-toplevel)"
+node "$repo_root/scripts/dom-inventory-policy.mjs"
+
 workspace_root="$repo_root"
 
 while [ "$workspace_root" != "/" ]; do

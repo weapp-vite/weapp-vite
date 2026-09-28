@@ -17,7 +17,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 用户要处理支付宝 `.axml/.acss`、抖音 `.ttml/.ttss`、`buildScope`、sourcemap 或自动 HMR 模式选择。
 - 用户要用 Vitest 对真实小程序编译产物进行页面或组件测试。
 - 用户要让 AI 正确使用项目，包括 `AGENTS.md`、`dist/docs`、screenshot / compare / logs / mcp。
-- 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、透传边界、`preview/upload/open/config` 这类 DevTools CLI 能力。
+- 用户要梳理 `weapp-vite` 与 `weapp-ide-cli` 的命令归属、六端构建上传与 `ide upload/preview/open/config` 等 IDE 能力边界。
 
 ## 不适用场景
 
@@ -40,7 +40,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 2. 区分顶层 Vite 字段和小程序专属 `weapp.*`，先理顺基础项：
    - `weapp.srcRoot`
    - `weapp.platform`
-   - `weapp.multiPlatform`
+   - `weapp.multiPlatform`：多端推荐 `projectConfigs` 平台映射，公共字段用对象展开；未写 `targets` 时从映射键推导。无需手工维护六份 JSON，构建器在代码输出目录内原生生成标准项目文件，代码根固定为 `.`。输入不写代码根字段，目录用 `build.outDir`；原生文件方式仍用 `projectConfigRoot`，不能与映射混用。AppID 可在外层配置函数按 mode 读取，Token/私钥不进入映射。
    - 多平台始终单目标构建；显式选择微信、支付宝、抖音、百度、京东、小红书或 Web，不把一次构建描述成同时产出全部平台
    - `weapp.autoRoutes`
    - `weapp.autoImportComponents`
@@ -61,11 +61,17 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - i18n：通过 `import { i18n } from 'weapp-vite/i18n'` 获取构建实例；Native Component 与 Component Page 使用 `behaviors: [i18n.behavior]`，传统 `Page({...})` 使用 `i18n.page(options)`；主包与普通分包共享实例，独立分包从默认语言创建实例；无 Vite 原生项目直接使用 `@weapp-vite/i18n`
    - React 项目：这里只判断项目级 `weapp.react` 和构建所有权，TSX/runtime/bridge 细节转交 `weapp-vite-react-best-practices`
 4. CLI 与 IDE 所有权保持清晰：
-   - `weapp-vite` 原生命令优先
+   - `weapp-vite` 原生命令通常优先；明确保留旧顶层微信 IDE `upload` 与 `help upload` 的兼容例外
    - `weapp-ide-cli` 只在 catalog 命中后透传
-   - 原生命令包含 `dev` / `serve` / `build` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
+   - 原生命令包含 `dev` / `serve` / `build` / `upload` / `preview` / `close` / `analyze` / `init` / `open` / `npm` / `generate` / `prepare` / `mcp`
    - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
-   - `preview` / `upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定
+   - `wv build --upload -p <平台>` 复用本次构建并在产物校验通过后上传；普通 build/dev/HMR 不启用上传。`weapp.upload` 仅提供版本和说明，AppID 与凭据配置先读 `dist/docs/upload.md` 及[分平台上传指南](https://vite.weapp.dev/guide/upload.html)，不要把支付宝当作淘宝支持。
+   - SDK `wv upload/preview -p <weapp|alipay|tt|xhs|jd|swan>` 自行构建后调用按需安装的官方工具；多目标用逗号分隔或显式 `all`，与 `build -p all` 的“小程序 + Web”含义不同。`--dry-run` 不调用 SDK；upload 只上传开发版本，preview 只生成官方预览结果，均不提审、不正式上线。顶层 preview 不在旧语法兼容范围内，IDE 预览用 `wv ide preview`。
+   - 旧顶层 `wv upload --project ./dist --version 1.2.3 --desc "release"` 与 `wv upload -p ./dist -v 1.2.3 -d "release"` 保留原始参数、IDE 分发及退出行为，不额外触发构建；每次仅警告一次未来移除。显式 `wv ide upload` 不弃用、不警告，不能把原生所有权断言写成“所有 upload 都禁止 IDE 分发”。
+   - 分流只依据明确方言标记：旧 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`。混用在 IDE、编译、版本修改前报错，SDK 的 `--no-*` 形式也参与判断；不允许自动版本选项在 IDE 调用中静默忽略。
+   - `-p` 有旧标记时是 IDE 项目目录，否则是平台，不看目录是否存在或值是否像平台名。`--desc` 共用；`-d` 仅在旧调用中为说明，原生仍为 debug。选项值只是数据，支持分开及 `=` 形式，在 `--` 处停止分流扫描。
+   - SDK 迁移从源码项目根安装官方 SDK，配置 AppID 与 SDK 上传凭据后使用 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`，不能把旧 `--project` 产物目录直接当作 SDK root，也不复用 IDE 登录。dry-run、`--bump`、`--git-desc` 只属于 SDK；保留原行为用稳定的 `wv ide upload`。
+   - `ide preview` / `ide upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定；`wv upload --help` 保持 SDK 帮助，`wv help upload` 恢复旧 IDE 帮助并警告未来弃用，`wv ide help upload` 不警告。原生上传版本用 `--uv`，原生 preview 不要求上传版本。
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
    - 输出路径不对：查 `srcRoot`、project config、`build.outDir`

@@ -330,7 +330,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(loggerWarnMock).toHaveBeenCalled()
   })
 
-  it('keeps module-owned registration for layouts and library builds', () => {
+  it('keeps module-owned registration for layouts but delegates library components to logical entries', () => {
     const layoutPath = '/project/src/layouts/default.vue'
     const createOptions = (
       vuePath: string,
@@ -363,7 +363,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(createOptions(layoutPath).runtimeBindingManifest).toBe('compact')
     expect(createOptions('/project/src/components/card.vue', {
       weappLibConfig: { enabled: true },
-    }).skipComponentTransform).toBe(false)
+    }).skipComponentTransform).toBe(true)
   })
 
   it('uses virtual-host slot fallback wrapper by default only on weapp platform', () => {
@@ -578,7 +578,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
     expect(externalComponentEntryMap.get('weapp_vite_external/@wot-ui/ui/components/wd-button/wd-button')).toBe(resolvedVueEntry)
   })
 
-  it('emits Options API local SFC entries through logical component registration', async () => {
+  it.each([false, true])('emits SFC entries with a single registration owner (library: %s)', async (library) => {
     const resolvedVueEntry = '/project/node_modules/uview-plus/components/u-calendar/header.vue'
     const externalComponentEntryMap = new Map<string, string>()
     const emitFile = vi.fn()
@@ -603,6 +603,7 @@ describe('resolveVueTemplatePlatformOptions', () => {
         platform: 'weapp',
         outputExtensions: {},
         absoluteSrcRoot: '/project/src',
+        weappLibConfig: { enabled: library },
         weappViteConfig: {},
         relativeOutputPath: (id: string) => id === resolvedVueEntry
           ? 'weapp_vite_external/uview-plus/components/u-calendar/header'

@@ -16,18 +16,6 @@ import '../../../demos/web/src/styles.css'
 
 interface SimulatorE2EApi {
   callComponentMethod: (scopeId: string, method: string, ...args: any[]) => unknown
-  dispatchTapChain: (payload: {
-    activeScopeId: string
-    chain: Array<{
-      event: {
-        currentTarget: { dataset: Record<string, string>, id: string }
-        target: { dataset: Record<string, string>, id: string }
-      }
-      method: string
-      scopeId: string
-      stopAfter: boolean
-    }>
-  }) => void
   findComponentScopeIds: (selector: string) => string[]
   getState: () => {
     appData: string
@@ -1226,73 +1214,15 @@ describe('simulator browser e2e', { concurrent: false }, () => {
       },
       targetId: 'status-card',
     })
-    bridge.dispatchTapChain({
-      activeScopeId: 'page:pages/lab/index',
-      chain: [
-        {
-          event: {
-            currentTarget: {
-              dataset: {
-                phase: 'inner-bind',
-              },
-              id: 'tap-bind-chain',
-            },
-            target: {
-              dataset: {
-                phase: 'inner-bind',
-              },
-              id: 'tap-bind-chain',
-            },
-          },
-          method: 'recordTap',
-          scopeId: 'page:pages/lab/index',
-          stopAfter: false,
-        },
-        {
-          event: {
-            currentTarget: {
-              dataset: {
-                phase: 'outer-bind',
-              },
-              id: '',
-            },
-            target: {
-              dataset: {
-                phase: 'inner-bind',
-              },
-              id: 'tap-bind-chain',
-            },
-          },
-          method: 'recordTap',
-          scopeId: 'page:pages/lab/index',
-          stopAfter: false,
-        },
-      ],
-    })
-    bridge.dispatchTapChain({
-      activeScopeId: 'page:pages/lab/index',
-      chain: [
-        {
-          event: {
-            currentTarget: {
-              dataset: {
-                phase: 'inner-catch',
-              },
-              id: 'tap-catch-chain',
-            },
-            target: {
-              dataset: {
-                phase: 'inner-catch',
-              },
-              id: 'tap-catch-chain',
-            },
-          },
-          method: 'recordTap',
-          scopeId: 'page:pages/lab/index',
-          stopAfter: true,
-        },
-      ],
-    })
+    const shadow = Array.from(mountNode!.querySelectorAll('*'))
+      .map(element => element.shadowRoot)
+      .find((root): root is ShadowRoot => root !== null)
+    const bindTarget = shadow?.querySelector<HTMLElement>('#tap-bind-chain')
+    const catchTarget = shadow?.querySelector<HTMLElement>('#tap-catch-chain')
+    expect(bindTarget).toBeTruthy()
+    expect(catchTarget).toBeTruthy()
+    bindTarget!.click()
+    catchTarget!.click()
     const tappedPageState = await waitFor(
       () => parseJsonString<Record<string, any>>(bridge.getState().pageData),
       snapshot => Array.isArray(snapshot.tapTrail) && snapshot.tapTrail.length >= 3,

@@ -81,6 +81,8 @@ export default await defineEslintConfig({
         'apps/socket-io-chat/web/**/*.{js,ts,vue}',
         'website/**/*.{js,ts,vue}',
         'packages/weapp-vite/example/**/*.{js,ts,tsx,vue}',
+        'mpcore/demos/web/**/*.{js,ts,tsx,vue}',
+        'mpcore/packages/simulator/e2e/**/*.{js,ts,tsx,vue}',
       ],
       rules: {
         'wevu/no-risky-api': 'off',
@@ -105,6 +107,7 @@ export default await defineEslintConfig({
           'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+          'packages-runtime/json-render/src/{catalog,compat,core,path,projection,renderer,stream,types,useRenderer,validation}.ts',
           'packages-runtime/web-apis/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
           'e2e-apps/*/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
@@ -116,6 +119,7 @@ export default await defineEslintConfig({
         'packages-runtime/react/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         'packages-runtime/wevu/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
         'packages-runtime/wevu-query/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
+        'packages-runtime/json-render/src/{catalog,compat,core,path,projection,renderer,stream,types,useRenderer,validation}.ts',
         '@weapp-core/shared/src/**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,vue}',
       ],
       ignores: [
@@ -233,9 +237,13 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
-      files: ['packages/weapp-vite/package.json', 'packages/create-weapp-vite/package.json'],
+      files: [
+        'packages/weapp-vite/package.json',
+        'packages/create-weapp-vite/package.json',
+        'packages/weapp-vite/src/cli/upload/autoMetadata.ts',
+      ],
       rules: {
-        // 构建器与脚手架统一使用 npm 的 semver caret、预发布版本兼容语义。
+        // 构建器、脚手架与上传升版复用 npm 的 semver caret、预发布和版本递增语义。
         'e18e/ban-dependencies': 'off',
       },
     }, {
@@ -244,8 +252,9 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
-      files: ['e2e-apps/request-clients-real/package.json'],
+      files: ['e2e-apps/request-clients-real/package.json', 'apps/socket-io-chat/package.json'],
       rules: {
+        // 请求客户端与 Socket.IO 示例保留 Express 服务端集成，避免依赖升级改变示例协议。
         'e18e/ban-dependencies': 'off',
       },
     }, {

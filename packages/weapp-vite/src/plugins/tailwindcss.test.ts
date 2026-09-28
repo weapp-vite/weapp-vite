@@ -102,6 +102,62 @@ describe('managed Tailwind integration', () => {
     expect(mocks.createCompiler).not.toHaveBeenCalled()
   })
 
+  it.each(['watchChange', 'handleHotUpdate', 'buildStart'] as const)('keeps unused auto-detected Tailwind dormant during %s', async (hook) => {
+    mocks.packageInfo = { version: '4.3.3' }
+    mocks.createCompiler.mockReturnValue({ invalidate: vi.fn() })
+    const ctx = createContext(undefined)
+    ctx.configService.isDev = true
+    ctx.moduleGraphService = { getPendingChanges: () => [{ file: '/project/src/page.vue', event: 'update' }] }
+    const plugin = createTailwindcssPlugin(ctx)[0]!
+    if (hook === 'buildStart') {
+      await getHookHandler(plugin.buildStart)?.call({ addWatchFile: vi.fn() } as any, {} as any)
+    }
+    else if (hook === 'watchChange') {
+      await plugin.watchChange?.('/project/src/page.vue', { event: 'update' } as any)
+    }
+    else {
+      await getHookHandler(plugin.handleHotUpdate)?.call({} as any, { file: '/project/src/page.vue' } as any)
+    }
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+  })
+
+  it('keeps pre-generation style invalidation without creating a compiler', async () => {
+    mocks.packageInfo = { version: '4.3.3' }
+    mocks.createCompiler.mockReturnValue({ invalidate: vi.fn() })
+    const plugin = getPlugins(undefined)[0]!
+    const entry = '/project/src/app.css'
+    getHookHandler(plugin.transform)?.call({} as any, '@import "tailwindcss";', entry, {} as any)
+    await plugin.watchChange?.(entry, { event: 'update' } as any)
+    expect(getHookHandler(plugin.shouldTransformCachedModule)?.call({} as any, { id: entry } as any)).toBe(true)
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+  })
+
+  it('activates on the first Tailwind import after earlier dormant source updates', async () => {
+    mocks.packageInfo = { version: '4.3.3' }
+    const entry = '/project/src/app.css'
+    const snapshot = { classSet: new Set<string>(), dependencies: [entry], roots: [{ id: 'late-root', revision: 1 }], sources: [], target: 'weapp' }
+    const compiler = {
+      generate: vi.fn(async () => ({ css: '.late { color: red; }', rawCss: '.late { color: red; }', dependencies: [entry], snapshot })),
+      mergeSnapshots: vi.fn(() => snapshot),
+      transformCss: vi.fn(async (source: string) => ({ css: source })),
+      invalidate: vi.fn(),
+      remove: vi.fn(async () => {}),
+      dispose: vi.fn(async () => {}),
+    }
+    mocks.createCompiler.mockReturnValue(compiler)
+    const [plugin, outputPlugin] = getPlugins(undefined)
+    await plugin!.watchChange?.('/project/src/page.vue', { event: 'update' } as any)
+    expect(mocks.createCompiler).not.toHaveBeenCalled()
+    const marker = getHookHandler(plugin!.transform)?.call({} as any, '@import "tailwindcss";', entry, {} as any)?.code
+    const bundle = { 'app.wxss': { type: 'asset', fileName: 'app.wxss', source: marker } } as unknown as OutputBundle
+    await getHookHandler(plugin!.generateBundle)?.call({ addWatchFile: vi.fn() } as any, {} as any, bundle, false)
+    await getHookHandler(outputPlugin!.generateBundle)?.call({ addWatchFile: vi.fn() } as any, {} as any, bundle, false)
+    expect(mocks.createCompiler).toHaveBeenCalledTimes(1)
+    expect(bundle['app.wxss']).toMatchObject({ source: '.late { color: red; }' })
+    await plugin!.watchChange?.('/project/src/page.vue', { event: 'update' } as any)
+    expect(compiler.invalidate).toHaveBeenCalledWith(['/project/src/page.vue'])
+  })
+
   it('auto-detects an imported Tailwind v4 CSS entry, including nested CSS syntax', () => {
     mocks.packageInfo = { version: '4.3.3' }
     const plugin = getPlugins(undefined)[0]!

@@ -11,7 +11,18 @@ export async function createStatefulVueComponentFiles(): Promise<Array<[string, 
   const source = readFileSync(path.join(repoRoot, 'e2e-apps/stateful-hmr/src', componentSource), 'utf8')
     .replace('const count = ref(0)', 'const marker = \'STATEFUL-VUE-BASE\'\nconst count = ref(0)')
     .replace('<view class="child-count">', '<view class="child-marker">{{ marker }}</view>\n    <view class="child-count">')
-  const compiled = await compileVueComponentHmr(repoRoot, source)
+    .replace('<script setup lang="ts">', `<script setup lang="ts">
+import { storeToRefs } from 'wevu'
+import { useCounterStore } from 'virtual:companion-store'
+const store = useCounterStore()
+const { count: storeCount } = storeToRefs(store)
+`)
+    .replace('count.value += 1', 'count.value += 1\n  store.increment(1)')
+    .replace('<view class="child-count">', '<view class="child-store-count">{{ storeCount }}</view>\n    <view class="child-count">')
+  const storeSource = readFileSync(path.join(repoRoot, 'e2e-apps/stateful-hmr/src/shared/store.ts'), 'utf8')
+  const compiled = await compileVueComponentHmr(repoRoot, source, {
+    'virtual:companion-store': `import { createStore, setActivePinia } from 'wevu';\nsetActivePinia(createStore());\n${storeSource}`,
+  })
   const sources = createStatefulNativeComponentFiles().map(([file, content]): [string, string] => [
     file.replaceAll('native-counter', 'vue-counter'),
     content.replaceAll('native-counter', 'vue-counter'),

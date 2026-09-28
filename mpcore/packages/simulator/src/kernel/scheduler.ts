@@ -5,6 +5,7 @@ export class RuntimeScheduler {
   private readonly intervals = new Set<IntervalHandle>()
   private readonly timeouts = new Set<TimeoutHandle>()
   private closed = false
+  private canceledHandle?: TimeoutHandle
   private readonly onError: (error: unknown) => void
 
   constructor(onError: (error: unknown) => void) {
@@ -38,7 +39,7 @@ export class RuntimeScheduler {
 
   queueMicrotask(handler: () => void) {
     if (this.closed) {
-      throw new Error('Cannot schedule work after the runtime session has closed.')
+      return
     }
     queueMicrotask(() => {
       if (this.closed) {
@@ -55,7 +56,7 @@ export class RuntimeScheduler {
 
   setInterval(handler: (...args: any[]) => void, timeout?: number, ...args: any[]) {
     if (this.closed) {
-      throw new Error('Cannot schedule work after the runtime session has closed.')
+      return this.getCanceledHandle()
     }
     const handle = setInterval(() => {
       try {
@@ -71,7 +72,7 @@ export class RuntimeScheduler {
 
   setTimeout(handler: (...args: any[]) => void, timeout?: number, ...args: any[]) {
     if (this.closed) {
-      throw new Error('Cannot schedule work after the runtime session has closed.')
+      return this.getCanceledHandle()
     }
     const handle = setTimeout(() => {
       this.timeouts.delete(handle)
@@ -84,5 +85,14 @@ export class RuntimeScheduler {
     }, timeout)
     this.timeouts.add(handle)
     return handle
+  }
+
+  /** 已销毁 realm 的 Promise 回调不能复活任务，也不能向外泄漏异步拒绝。 */
+  private getCanceledHandle(): TimeoutHandle {
+    if (!this.canceledHandle) {
+      this.canceledHandle = setTimeout(() => {}, 0)
+      clearTimeout(this.canceledHandle)
+    }
+    return this.canceledHandle
   }
 }

@@ -3,6 +3,30 @@ import { describe, expect, it } from 'vitest'
 import { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from './inject'
 
 describe('injectWevuPageFeatures', () => {
+  it.each(['babel', 'oxc'] as const)('enables page scrolling through imported adapter helpers with %s', async (astEngine) => {
+    const pageId = 'fixtures/scroll/page.ts'
+    const helperId = 'fixtures/scroll/useDocument.ts'
+    const result = await injectWevuPageFeaturesInJsWithResolver(`
+import { defineComponent } from 'wevu'
+import { useDocument } from './useDocument'
+defineComponent({ setup() { useDocument() } })
+    `, {
+      id: pageId,
+      astEngine,
+      resolver: {
+        async resolveId(source, importer) {
+          return importer === pageId && source === './useDocument' ? helperId : undefined
+        },
+        async loadCode(id) {
+          return id === helperId
+            ? 'import { usePageScrollRestoration } from \'wevu/router\'; export function useDocument() { return usePageScrollRestoration() }'
+            : undefined
+        },
+      },
+    })
+    expect(result.code).toMatch(/enableOnPageScroll:\s*true/)
+  })
+
   it('returns original source when no flags or no options object are detected', () => {
     const noFlags = injectWevuPageFeaturesInJs(`
 import { defineComponent } from 'wevu'

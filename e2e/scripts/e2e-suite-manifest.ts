@@ -61,6 +61,7 @@ const IDE_BRIDGE_WRAPPER_TEST_LABELS = new Set([
   'ide/github-issues.runtime.issue941.test.ts',
   'ide/github-issues.runtime.issue1011.test.ts',
   'ide/lifecycle-compare.test.ts',
+  'ide/github-issues.runtime.feature1087.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
   'ide/shared-styles.runtime.test.ts',
   'ide/stateful-hmr.runtime.test.ts',
@@ -104,6 +105,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
+  'ide/issue-1081-tailwind-batch.runtime.test.ts',
   'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
@@ -127,6 +129,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue941.test.ts',
   'ide/github-issues.runtime.issue1009.test.ts',
   'ide/github-issues.runtime.issue1049.test.ts',
+  'ide/github-issues.runtime.feature1087.test.ts',
   'ide/github-issues.runtime.issue1011.test.ts',
   'ide/github-issues.runtime.issue1012.test.ts',
   'ide/github-issues.runtime.issue852.test.ts',
@@ -235,9 +238,11 @@ const IDE_GATE_TESTS = [
 const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
+  'ide/github-issues.runtime.feature1087.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
   'ide/issue-997-rebuild.runtime.test.ts',
   'ide/issue-998-tailwind.runtime.test.ts',
+  'ide/issue-1081-tailwind-batch.runtime.test.ts',
   'ide/body-blob.runtime.test.ts',
   'ide/stream-capability.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
@@ -267,6 +272,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/tdesign-dialog-import.runtime.test.ts',
   'ide/wevu-vue-demo.script-setup.emit.runtime.test.ts',
   'ide/wevu-comprehensive.runtime.test.ts',
+  'ide/wevu-json-render.runtime.test.ts',
   'ide/wevu-subpackage-placement.runtime.test.ts',
 ]
 const IDE_HEADLESS_FULL_TESTS = [...new Set([
@@ -456,6 +462,16 @@ function createHeadlessVitestTask(configPath: string, filePath: string, label = 
 
 function getHeadlessPatternTasks(patterns: string[]) {
   return patterns.map(filePath => createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, filePath)))
+}
+
+function getIdeDomHeadlessTasks() {
+  const stateful = createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'ide/stateful-hmr.runtime.test.ts'))
+  // 同一会话覆盖状态保持与模板生成脚本；计算样式断言仍留在完整真实 IDE suite。
+  stateful.args.push('-t', 'ignores unowned editor files|copied and public asset lifecycle|updates Wevu template-generated|two template edit and restore cycles|isolated script updates and restoration')
+  return [...getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS), stateful].map(task => ({
+    ...task,
+    env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
+  }))
 }
 
 function createCommandTask(label: string, args: string[]): SuiteTask {
@@ -752,10 +768,7 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
   'ide-dom-headless': {
     name: 'ide-dom-headless',
     description: 'Strict rendered checkpoint gate for provider-compatible IDE scenarios',
-    tasks: () => getHeadlessPatternTasks(IDE_DOM_HEADLESS_PATTERNS).map(task => ({
-      ...task,
-      env: { ...task.env, WEAPP_VITE_E2E_DOM_ACCEPTANCE: '1' },
-    })),
+    tasks: getIdeDomHeadlessTasks,
   },
   'ide-full': {
     name: 'ide-full',

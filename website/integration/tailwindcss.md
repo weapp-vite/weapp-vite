@@ -26,7 +26,7 @@ pnpm create weapp-vite
 
 `weapp-vite` 已内置 `weapp-tailwindcss@5.5.2` 的 compiler 集成，不需要安装或注册 `weapp-tailwindcss/vite`。
 
-Tailwind 集成现在位于通用的 `weapp.compilerPlugins` 底层编译插件协议之上。后续 UnoCSS 或其他 CSS 编译器可以独立实现同一协议接入，现有项目继续使用 `weapp.tailwindcss` 即可。
+第三方 CSS 编译器可以通过 `weapp.compilerPlugins` 接入，内置 Tailwind 保留 `weapp.tailwindcss` 配置；两者的状态保持 HMR 使用同一批次交付接口。
 
 先安装 Tailwind CSS 4：
 

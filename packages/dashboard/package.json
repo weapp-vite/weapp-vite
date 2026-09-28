@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "echarts": "catalog:",
-    "monaco-editor": "^0.56.0",
+    "monaco-editor": "^0.57.0",
     "tailwind-merge": "catalog:",
     "tailwind-variants": "catalog:",
     "vue": "catalog:",

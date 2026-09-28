@@ -1604,7 +1604,7 @@ describe('emitSharedVueEntryAssets', () => {
       },
     })
 
-    expect(readFileMock).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', 'utf-8')
+    expect(readFileMock).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', 'utf8')
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(result.source).toBe('<view>{{title}}</view>')
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)

@@ -447,6 +447,8 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
   const control = globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}];
   globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}]?.stop?.();
   let version = 0;
+  const payloads = [];
+  let initialReady = false;
   let phase = 'registering';
   let pendingBatch;
   let requestGeneration = 0;
@@ -472,7 +474,7 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
     activeRequest = wx.request({
       url: control.url,
       method: 'POST',
-      data: { token: control.token, action, buildId: control.buildId, sessionId, version, failure },
+      data: { token: control.token, action, buildId: control.buildId, sessionId, version, failure, payloads, initialReady },
       timeout: 30000,
       success(result) {
         if (generation !== requestGeneration) return;
@@ -481,10 +483,12 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
         const type = result?.data?.type;
         lastResponse = { action, statusCode: result?.statusCode, type };
         if (action === 'register' && type === 'registered') {
+          initialReady = result.data.ready === true;
           phase = 'polling';
           if (pendingBatch) globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}].receiveBatch(pendingBatch.meta, pendingBatch.apply);
           else send('poll');
-        } else if (type === 'idle' || type === 'changed') send('poll');
+        } else if (type === 'ready') { initialReady = true; send('poll'); }
+        else if (type === 'idle' || type === 'changed') send('poll');
         else if (type === 'batch-published') schedule(2000);
         else if (type === 'rebuilding') schedule(1000);
         else schedule(500);
@@ -514,9 +518,12 @@ globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY)}] = ${JSON.stri
   };
   globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY)}] = {
     lastApply: undefined,
+    payloadDelivered(filename) {
+      if (payloads.indexOf(filename) < 0) { payloads.push(filename); schedule(0); }
+    },
     getVersion() { return version; },
     getLastApply() { return this.lastApply; },
-    getTransportState() { return { phase, version, lastRequestError, lastResponse }; },
+    getTransportState() { return { phase, version, initialReady, lastRequestError, lastResponse }; },
     stop() {
       phase = 'stopped';
       requestGeneration++;

@@ -24,6 +24,30 @@ export default defineConfig({
 
 适合希望用约定生成页面路由的项目。启用后要保持 pages 目录与输出约定稳定。
 
+### `multiPlatform.projectConfigs`
+
+在一份配置中按 `weapp` / `alipay` / `tt` / `xhs` / `jd` / `swan` 提供原生项目字段，公共项用普通对象展开。没有显式 `targets` 时从映射键推导；完整示例见[上传速查](./upload.md#多平台与输出校验)。
+
+各平台已知字段及嵌套设置提供智能提示；原生对象允许未知扩展字段，字符串选项允许新增取值，不需要 `as any`。独立映射推荐从 `weapp-vite/config` 导入 `MultiPlatformProjectConfigs` 并使用 `satisfies`，保留扩展字段推导。此开放能力不放宽平台名、AppID 类型和生成代码根限制。
+
+`defineConfig` 的泛型不保证拒绝所有多余属性；需要静态检查平台名拼写时使用 `satisfies MultiPlatformProjectConfigs`，构建时仍拒绝不支持的平台。
+
+标准项目 JSON 由打包器原生生成在代码目录内，默认 `dist/<平台>/dist/`，与 `app.json` 同级。SDK 代码根为 `.`；输入不能填写 `miniprogramRoot`、`srcMiniprogramRoot`、`smartProgramRoot`，修改目录用 `build.outDir`。这里只管理 IDE/SDK 项目配置，不代替业务 `app.json`。
+
+不读取源码侧原生项目 JSON 或私有 JSON；缺少选中平台时直接报错，不回退到旧文件。不能同时指定 `projectConfigRoot` 或 `enabled: false`。独立插件仍使用原生文件模式；Web/组件库不生成项目 JSON。不写映射时保留原生文件模式。凭据始终走环境变量，不写入映射。
+
+### `upload`
+
+`weapp.upload: { version?: string; desc?: string }` 只设置显式 `wv build --upload` 和独立 `wv upload` 的默认参数，不是自动上传开关，也不支持凭据字段或 `bump`、`gitDesc`。版本优先级为 CLI `--uv` 或 `--bump` 生成值 > `weapp.upload.version` > `package.json.version`；说明优先级为 CLI `--desc` 或 `--git-desc` 生成值 > `weapp.upload.desc` > 项目名称与最终版本。值会去除首尾空白，显式空版本报错，空说明使用自动生成的说明。
+
+普通 `build`、`dev/HMR` 不使用这组上传默认参数也不上传，`preview` 不使用该配置。配置文件本身仍会正常加载与合并，不保证其中的 JavaScript getter 延迟求值。`wv build --upload` 复用本次构建，等待所有选中的构建后端成功、产物校验通过后才调用平台工具；`wv build --upload --dry-run` 不校验凭据、不调用 SDK。
+
+`build` 上的 `--uv`、`--desc`、`--bump`、`--git-desc`、`--dry-run` 必须与 `--upload` 一起使用；`--watch --upload`、仅 Web 的 `-p web --upload` 会报错。`build -p all --upload` 是“小程序 + Web”，两者都构建成功后只上传小程序；独立 `upload -p all` 则保持六端逐一构建上传。
+
+默认不执行 Git 或 npm 版本操作。需要时显式使用 `wv upload -p xhs,tt --bump patch --git-desc`：`--bump patch|minor|major` 与 `--uv` 冲突，`--git-desc` 与 `--desc` 冲突，`preview` 不接受这两个选项。真实升版需要本机 npm；只有 Git 说明要求已有提交的 Git 仓库。版本只取命令根目录的应用清单，不向父目录查找；首次配置求值前准备一次，批量共用，不运行生命周期钩子、不 commit/tag/push。dry-run 不运行 npm、不修改版本或锁文件，直接导入清单的构建代码仍看到原始版本。升版后的失败不回滚，重试去掉 `--bump` 并复用同一版本。详见[内置本地自动版本](./upload.md#内置本地自动版本)。
+
+CI 可在测试通过后显式执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。凭据仍通过环境变量提供；先读本地[上传与预览速查](./upload.md)，完整的 AppID、私钥、支付宝 JSON 身份密钥、各端 Token、环境文件和 CI Secrets 示例见[分平台操作指南](https://vite.weapp.dev/guide/upload.html)。
+
 ### `buildScope`
 
 用于只构建主包和指定分包。常用在大项目里只调试某几个业务分包：
@@ -208,11 +232,15 @@ export default defineConfig({
 
 provider 的状态由 provider 自己维护，host 负责插件顺序、源码所有权冲突、依赖监听和产物生命周期。`weapp.tailwindcss` 仍然是内置 Tailwind adapter 的兼容门面；UnoCSS 等实现可以独立包的形式提供同一协议。
 
+微信状态保持 HMR 使用可选的 `controller.prepareHmr(request)` 协作：输入提供 `revision`、`changedFiles` 与固定的 `sources` 内容视图，返回本批次的 `assets`、`transformJavaScript`、依赖信息和资源释放方法。资产路径相对于输出目录；所有 Patch 共用该批次的编译状态。宿主通过 Vite/Rolldown 提交资产后才发布补丁，并在客户端执行回报后通知 DevEngine。开启 sourcemap 时，修改代码的转换必须同时返回映射。没有批次接口的内容 provider 使用完整构建回退。
+
+共享协议由实验包 `@weapp-vite/hmr` 提供，Tailwind 控制器委托 `@weapp-vite/tailwindcss` 和 `weapp-tailwindcss/core`。两个包均不创建 DevEngine、watcher 或直接写出产物，框架与宿主运行时仍由适配器拥有；现有配置和 `prepareHmr` 类型兼容。Taro 的实验适配保留其持久发布与应用确认两阶段，不改变 weapp-vite 在应用确认后通知 DevEngine 的语义。
+
 ### `tailwindcss`
 
 内置的 `weapp-tailwindcss` 集成支持显式配置和 Tailwind CSS v4 自动检测。显式配置优先级最高：设置为 `false` 会完全关闭（包括自动检测），设置为 `true` 或对象会按显式选项启用。未配置时，项目解析到 Tailwind CSS v4 且 CSS 模块实际包含 `@import "tailwindcss"`（也支持 `source(...)` 等合法参数）才会自动启用；Tailwind CSS v3、未安装或未引入该模块时不会生成 Tailwind CSS。
 
-启用后，`weapp-vite` 使用 `weapp-tailwindcss@5.5.2` 的 `core` compiler 处理 WXSS、WXML 和 JavaScript，通过 `compiler.generate()` 生成 Tailwind CSS，并将结果写入正常的样式产物。WXSS 最终化由 core 统一完成，Tailwind 构建阶段的 `@plugin`、`@source` 等指令不会泄漏到小程序产物：
+启用后，`weapp-vite` 通过 `weapp-tailwindcss/core` compiler 处理 WXSS、WXML 和 JavaScript，通过 `compiler.generate()` 生成 Tailwind CSS，并将结果写入正常的样式产物。WXSS 最终化由 core 统一完成，Tailwind 构建阶段的 `@plugin`、`@source` 等指令不会泄漏到小程序产物：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -548,7 +576,7 @@ wv mcp doctor codex
 
 ```bash
 weapp-vite build
-weapp-vite preview --project ./dist/build/mp-weixin
+weapp-vite preview -p weapp --mode test
 weapp-vite ide preview --project ./dist/build/mp-weixin
 ```
 
