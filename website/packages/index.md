@@ -39,6 +39,7 @@ keywords:
 - 想用 Vitest 测试真实小程序编译产物：用 `@mpcore/test`、`@mpcore/vitest` 与 `@mpcore/weapp-vite`
 - 想低成本测试不依赖模板的 Wevu Composition API：用 `@wevu/test-utils`
 - 想跨页面共享服务端数据、协调请求并在变更后刷新列表：用 `@wevu/query`
+- 想在 Wevu 中渲染受组件目录约束的 JSON 界面：用实验性的 `@wevu/json-render`
 
 ## 包能力矩阵
 
@@ -58,6 +59,7 @@ keywords:
 | `@mpcore/test`            | 小程序逻辑树测试工具                     | 页面/组件单测、宿主 mock、交互与诊断                 | [/packages/mpcore-test](/packages/mpcore-test)                             |
 | `@wevu/test-utils`        | Wevu 逻辑与 Vue SFC 测试工具             | Composition API、SFC、响应式状态、生命周期与事件     | [/packages/wevu-test-utils](/packages/wevu-test-utils)                     |
 | `@wevu/query`             | Wevu 服务端状态与查询缓存                | 同键请求共享、跨页失效刷新、mutation、分页与账号隔离 | [服务端状态查询](/wevu/store#server-state-query)                           |
+| `@wevu/json-render`       | json-render 的 Wevu 适配（实验）         | 预编译组件、状态绑定、动作与 JSONL 增量界面更新      | [JSON 界面渲染](/packages/wevu-json-render)                                |
 
 ## 已有独立文档模块
 

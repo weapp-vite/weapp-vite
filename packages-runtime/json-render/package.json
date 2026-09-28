@@ -1,0 +1,78 @@
+{
+  "name": "@wevu/json-render",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "json-render \u7684 Wevu \u5c0f\u7a0b\u5e8f\u6e32\u67d3\u4e0e\u4ea4\u4e92\u9002\u914d\u5c42",
+  "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages-runtime/json-render"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "wevu",
+    "json-render",
+    "mini-program",
+    "generative-ui"
+  ],
+  "sideEffects": [
+    "./src/compat.ts",
+    "./dist/compat.mjs"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./resolver": {
+      "types": "./dist/resolver.d.mts",
+      "import": "./dist/resolver.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsdown -w",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:types": "pnpm build && tsd --files \"test-d/**/*.test-d.{ts,tsx}\"",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "peerDependencies": {
+    "wevu": "workspace:*"
+  },
+  "dependencies": {
+    "@json-render/core": "0.21.0",
+    "@wevu/json-render-components": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:",
+    "wevu": "workspace:*"
+  },
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "paths": {}
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

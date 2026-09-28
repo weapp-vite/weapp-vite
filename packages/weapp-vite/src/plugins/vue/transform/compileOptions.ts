@@ -59,11 +59,9 @@ function shouldDelegateComponentRegistration(
   vuePath: string,
   isPage: boolean,
   isApp: boolean,
-  configService: NonNullable<CompilerContext['configService']>,
 ) {
   return !isPage
     && !isApp
-    && !configService.weappLibConfig?.enabled
     && !ctx.moduleGraphService?.isLogicalLayoutEntry?.(vuePath)
 }
 
@@ -436,7 +434,6 @@ export function createCompileVueFileOptions(
     vuePath,
     isPage,
     isApp,
-    configService,
   )
   const pageLayout = toCompilerPageLayoutPlan(resolvedPageLayout)
   const pageLayoutSignature = createCompilerPageLayoutPlanSignature(resolvedPageLayout)

@@ -106,6 +106,7 @@ export function resolveComponentGenerics(
   ownerJsonPath: string,
   ownerFilePath: string,
   componentFilePath: string,
+  ownerGenerics?: Map<string, string>,
 ) {
   const componentJsonPath = path.resolve(
     context.project.miniprogramRootPath,
@@ -120,7 +121,7 @@ export function resolveComponentGenerics(
   const resolved = new Map<string, string>()
   for (const [genericName, definition] of Object.entries(componentGenerics)) {
     const selectedAlias = hostNode.attribs?.[`generic:${genericName}`]
-    const selectedPath = selectedAlias ? ownerComponents.get(selectedAlias) : undefined
+    const selectedPath = selectedAlias ? ownerGenerics?.get(selectedAlias) ?? ownerComponents.get(selectedAlias) : undefined
     if (selectedPath) {
       resolved.set(genericName, selectedPath)
       continue
@@ -224,9 +225,11 @@ export function syncComponentProperties(
     const previousSnapshot = instance.__propertySnapshots?.[key]
     if (hasComponentPropertyValueChanged(instance.properties[key], previousSnapshot, nextValue, bindingAffected)) {
       previousProperties[key] = instance.properties[key]
-      instance.properties[key] = nextValue
+      // 属性跨组件边界传递时必须隔离引用，否则父级深层 patch 会提前改写子级旧值。
+      const deliveredValue = cloneValue(nextValue)
+      instance.properties[key] = deliveredValue
       if (Object.hasOwn(definition.properties ?? {}, key)) {
-        instance.data[key] = nextValue
+        instance.data[key] = deliveredValue
       }
       changedRootKeys.push(key)
     }

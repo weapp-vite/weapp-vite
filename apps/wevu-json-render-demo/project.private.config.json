@@ -1,0 +1,27 @@
+{
+  "projectname": "wevu-json-render-demo",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "售后服务",
+          "pathName": "pages/index/index",
+          "query": ""
+        },
+        {
+          "name": "空白页",
+          "pathName": "pages/blank/index",
+          "query": ""
+        },
+        {
+          "name": "基础目录",
+          "pathName": "pages/basic/index",
+          "query": ""
+        }
+      ]
+    }
+  },
+  "setting": {
+    "urlCheck": false
+  }
+}
