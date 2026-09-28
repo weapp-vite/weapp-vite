@@ -1551,13 +1551,13 @@ JSON 中的 sources 保存测试和本地 E2E 依赖的 SHA-256；修改共享�
 - Plan: registered in source; runtime verification required
 - Registration: `createDomAcceptance`; fixture: `integrations/shared-hmr-tailwind/fixture`; checkpoints: `[ { id: 'initial', route, action: '初始 Taro 产物', nodes: [{ selector: '#shared-utility', text: 'shared utility' }, { selector: '#shared-count', text: '0' }] }, { id: 'edited', route, action: '等待真实 applied 并保留点击状态', nodes: [{ selector: '#share`; source: `e2e/ide/shared-taro-hmr.runtime.test.ts:93`
 - Routes: `/pages/index/index`
-- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `tap(<missing>)`, `check(edited)`, `check(event)`, `check(restored)`
+- Operations: `reLaunch(/pages/index/index)`, `check(initial)`, `tap(<missing>)`, `check(edited)`, `check(event)`, `check(restored-ready)`, `check(restored)`
 
 ### shared HMR compiler: Taro runtime > applies a newly generated native utility without a full reload
 
-- Source: `e2e/ide/shared-taro-hmr.runtime.test.ts:125`
+- Source: `e2e/ide/shared-taro-hmr.runtime.test.ts:127`
 - Plan: registered in source; runtime verification required
-- Registration: `createDomAcceptance`; fixture: `integrations/shared-hmr-tailwind/fixture`; checkpoints: `[ { id: 'style-initial', route, action: '确认初始可见样式', nodes: [{ selector: '#shared-utility', text: 'shared utility', ...(checkStyles ? { styles: { 'background-color': 'rgb(252, 231, 243)' } } : {}) }] }, { id: 'style-edited', route, action: '`; source: `e2e/ide/shared-taro-hmr.runtime.test.ts:134`
+- Registration: `createDomAcceptance`; fixture: `integrations/shared-hmr-tailwind/fixture`; checkpoints: `[ { id: 'style-initial', route, action: '确认初始可见样式', nodes: [{ selector: '#shared-utility', text: 'shared utility', ...(checkStyles ? { styles: { 'background-color': 'rgb(252, 231, 243)' } } : {}) }] }, { id: 'style-edited', route, action: '`; source: `e2e/ide/shared-taro-hmr.runtime.test.ts:136`
 - Routes: `/pages/index/index`
 - Operations: `reLaunch(/pages/index/index)`, `check(style-initial)`, `check(style-edited)`
 

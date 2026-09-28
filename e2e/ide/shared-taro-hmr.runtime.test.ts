@@ -94,6 +94,7 @@ describe('shared HMR compiler: Taro runtime', { concurrent: false }, () => {
       { id: 'initial', route, action: '初始 Taro 产物', nodes: [{ selector: '#shared-utility', text: 'shared utility' }, { selector: '#shared-count', text: '0' }] },
       { id: 'edited', route, action: '等待真实 applied 并保留点击状态', nodes: [{ selector: '#shared-utility', text: 'shared utility updated' }, { selector: '#shared-count', text: '1' }] },
       { id: 'event', route, action: '执行更新后的事件', nodes: [{ selector: '#shared-count', text: '3' }] },
+      { id: 'restored-ready', route, action: '确认恢复渲染完成再交互', nodes: [{ selector: '#shared-utility', text: 'shared utility' }, { selector: '#shared-count', text: '3' }] },
       { id: 'restored', route, action: '恢复源码并保留状态', nodes: [{ selector: '#shared-utility', text: 'shared utility' }, { selector: '#shared-count', text: '4' }] },
     ])
     await dom.check('initial', host, page)
@@ -116,6 +117,7 @@ describe('shared HMR compiler: Taro runtime', { concurrent: false }, () => {
     await writeFile(temporary, original)
     await rename(temporary, source)
     await expect.poll(receiptCount, { timeout: 45_000 }).toBeGreaterThan(editedReceipts)
+    await dom.check('restored-ready', host, await host.currentPage())
     await (await (await host.currentPage()).$('#shared-count'))!.tap()
     await dom.check('restored', host, await host.currentPage())
     expect(output).not.toMatch(/HMR (?:publish|update) failed/)

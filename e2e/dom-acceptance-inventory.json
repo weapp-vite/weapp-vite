@@ -4127,19 +4127,20 @@
             "tap(<missing>)",
             "check(edited)",
             "check(event)",
+            "check(restored-ready)",
             "check(restored)"
           ],
           "notes": []
         },
         {
-          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:125",
+          "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:127",
           "name": "shared HMR compiler: Taro runtime > applies a newly generated native utility without a full reload",
           "plans": [
             {
               "registration": "createDomAcceptance",
               "fixture": "integrations/shared-hmr-tailwind/fixture",
               "checkpoints": "[ { id: 'style-initial', route, action: '确认初始可见样式', nodes: [{ selector: '#shared-utility', text: 'shared utility', ...(checkStyles ? { styles: { 'background-color': 'rgb(252, 231, 243)' } } : {}) }] }, { id: 'style-edited', route, action: '",
-              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:134"
+              "source": "e2e/ide/shared-taro-hmr.runtime.test.ts:136"
             }
           ],
           "routes": [
@@ -8236,7 +8237,7 @@
     },
     {
       "file": "e2e/ide/shared-taro-hmr.runtime.test.ts",
-      "sha256": "75bad2c6e77e98862e8aaab98238c2c2628d2c873a23dc3db594d048d467db32"
+      "sha256": "04185d177dba70f5e112160af50fcc040b7a3dd70a038ff2cd7d780e4f52ce8b"
     },
     {
       "file": "e2e/ide/stateful-hmr.runtime.test.ts",

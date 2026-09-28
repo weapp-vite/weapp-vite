@@ -51,7 +51,7 @@ weapp-vite 拆分版本和未拆分 main 在 #1081 首次颜色更新均失败�
 脱敏日志及 DOM 报告见 `evidence.json.gz`，原始日志 SHA-256 随归档保留。
 
 
-解压后 3170536 bytes，SHA-256 `d1aa452542461bae73fa3eea63157b6b7f115e89c9a03eed876cf9cff0cc49b3`。
+解压后 3200015 bytes，SHA-256 `51895d6dbba210b7b7c071d74bb544c739e2b39b729edf1fb94168642c1cb35a`。
 
 公开 sourcemap 开关及转换结果类型已补回归：关闭映射时不生成/消费映射，代码与映射字段在转换后拓宽，其他元数据保留原类型。相关 13 项内核测试和公开 tsd 通过。
 
@@ -72,3 +72,6 @@ weapp-vite 拆分版本和未拆分 main 在 #1081 首次颜色更新均失败�
 远端启动错误最终定位为固定 React SDK 的未选 Preact 分支仍进入依赖解析，本机父目录中的 Preact 曾掩盖该缺口。宿主新增只针对 framework runtime 的原生 Rolldown 专门化，先处理已解析的框架常量与不可达分支，所有活跃依赖仍留给原有解析流程，源码映射保留。没有添加 Preact 依赖或修改运行时源码、React Refresh 与 HMR 接受边界。
 
 验证新增了拒绝解析 Preact 的 fixture 守卫，以及仓库外独立安装后的普通开发和状态保持开发构建；本机均通过。专门化、依赖保留与映射契约通过，headless 和真实微信两场景均为 6/6。运行时应用回报与 React 可见更新分别观察，不把 applied 等同于 DOM 已完成渲染。
+
+
+恢复事件验证新增 restored-ready 检查点，先确认恢复文本且计数仍为 3，再点击验证旧事件使其变为 4。该检查显式等待 React 可见渲染，不将应用回报当作渲染完成；headless 与真实微信最终均为 7/7。
