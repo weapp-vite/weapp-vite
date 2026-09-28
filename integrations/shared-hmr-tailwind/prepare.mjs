@@ -56,6 +56,8 @@ async function main() {
   }
   const configFile = path.join(taro, 'pnpm-workspace.yaml')
   const config = YAML.parse(await readFile(configFile, 'utf8'))
+  const hostManifest = JSON.parse(await readFile(path.join(taro, 'packages/vite-plugin-taro/package.json'), 'utf8'))
+  config.overrides.rolldown = hostManifest.dependencies.rolldown
   for (const artifact of artifacts) {
     config.overrides[artifact.name] = `file:${path.relative(taro, artifact.file).replaceAll('\\', '/')}`
   }
