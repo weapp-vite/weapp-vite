@@ -210,6 +210,8 @@ provider 的状态由 provider 自己维护，host 负责插件顺序、源码�
 
 微信状态保持 HMR 使用可选的 `controller.prepareHmr(request)` 协作：输入提供 `revision`、`changedFiles` 与固定的 `sources` 内容视图，返回本批次的 `assets`、`transformJavaScript`、依赖信息和资源释放方法。资产路径相对于输出目录；所有 Patch 共用该批次的编译状态。宿主通过 Vite/Rolldown 提交资产后才发布补丁，并在客户端执行回报后通知 DevEngine。开启 sourcemap 时，修改代码的转换必须同时返回映射。没有批次接口的内容 provider 使用完整构建回退。
 
+共享协议由实验包 `@weapp-vite/hmr` 提供，Tailwind 控制器委托 `@weapp-vite/tailwindcss` 和 `weapp-tailwindcss/core`。两个包均不创建 DevEngine、watcher 或直接写出产物，框架与宿主运行时仍由适配器拥有；现有配置和 `prepareHmr` 类型兼容。Taro 的实验适配保留其持久发布与应用确认两阶段，不改变 weapp-vite 在应用确认后通知 DevEngine 的语义。
+
 ### `tailwindcss`
 
 内置的 `weapp-tailwindcss` 集成支持显式配置和 Tailwind CSS v4 自动检测。显式配置优先级最高：设置为 `false` 会完全关闭（包括自动检测），设置为 `true` 或对象会按显式选项启用。未配置时，项目解析到 Tailwind CSS v4 且 CSS 模块实际包含 `@import "tailwindcss"`（也支持 `source(...)` 等合法参数）才会自动启用；Tailwind CSS v3、未安装或未引入该模块时不会生成 Tailwind CSS。

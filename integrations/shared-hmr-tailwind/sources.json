@@ -1,0 +1,10 @@
+{
+  "taro": {
+    "repository": "https://github.com/sep2/vite-plugin-taro.git",
+    "revision": "3f8e2da2c7bca98a8e152e77b697d64f07d27ddf"
+  },
+  "tailwind-core": {
+    "repository": "https://github.com/sonofmagic/weapp-tailwindcss.git",
+    "revision": "49eb14473c573cc2923ce2a2b4153ff0a136b9c3"
+  }
+}

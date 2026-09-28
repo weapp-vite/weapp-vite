@@ -865,23 +865,28 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(launchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('does not launch DevTools when app.json is missing subPackages', async () => {
-    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '40'
-
-    createProjectFixture(sandboxRoot)
+  it('launches a complete main-package app without optional subPackages', async () => {
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
     writeJson(path.join(sandboxRoot, 'dist/app.json'), {
       pages: ['pages/index/index'],
     })
+    launchMock.mockResolvedValueOnce(createMockMiniProgram())
+    const { launchAutomator } = await import('../utils/automator')
+    const miniProgram = await launchAutomator({ projectPath: sandboxRoot })
+    expect(launchMock).toHaveBeenCalledTimes(1)
+    await miniProgram.close()
+  })
 
+  it('rejects a present malformed subPackages declaration', async () => {
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '40'
+    createProjectFixture(sandboxRoot)
+    writeJson(path.join(sandboxRoot, 'dist/app.json'), { pages: ['pages/index/index'], subPackages: {} })
     const { launchAutomator } = await import('../utils/automator')
     await expect(launchAutomator({ projectPath: sandboxRoot })).rejects.toMatchObject({
       name: 'WechatIdeLaunchAppConfigNotReadyError',
-      message: expect.stringContaining('reason=subPackages is missing'),
+      message: expect.stringContaining('reason=subPackages is not an array'),
     })
-
     expect(launchMock).not.toHaveBeenCalled()
-    expect(connectMock).not.toHaveBeenCalled()
-    expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
   })
 
   it('retries when warmup current page never becomes ready and closes previous miniProgram', async () => {

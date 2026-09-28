@@ -13,6 +13,7 @@ import type { CompilerContext } from '../context'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import process from 'node:process'
+import { createTailwindController } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
 import { parseSidecarSourceRequest } from '../moduleGraph/protocol'
 import { resolveBuildScope } from '../runtime/buildScope'
@@ -270,8 +271,10 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
     return coreModulePromise
   }
 
+  const controller = createTailwindController({ compiler: resolved.options, loadCore: getCoreModule })
+
   async function getCompiler() {
-    compilerPromise ??= getCoreModule().then(({ createCompiler }) => createCompiler(resolved.options))
+    compilerPromise ??= controller.getCompiler()
     const compiler = await compilerPromise
     if (!loaded) {
       loaded = true
@@ -328,7 +331,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
   }
 
   function disposeCompiler() {
-    return compilerDisposal ??= Promise.resolve(compilerPromise?.then(compiler => compiler.dispose()))
+    return compilerDisposal ??= controller.dispose()
   }
 
   async function closeSnapshotCompiler() {

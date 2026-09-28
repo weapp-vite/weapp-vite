@@ -174,3 +174,11 @@ export default defineConfig({
 - [共享 Chunk 配置](/config/chunks.md)
 - [共享配置](/config/shared.md)
 - [调试指南](/guide/debug.md)
+
+## 宿主共享编译内核（实验）
+
+`@weapp-vite/hmr` 提供固定输入批次、编译 provider 契约、资产提交状态、补丁映射和交付事务；`@weapp-vite/tailwindcss` 在同一份 `weapp-tailwindcss/core` 快照下生成样式并转换模板与 JS。它们都是 Node 侧工具，不包含页面、布局、框架运行时或监听器。
+
+weapp-vite 的 `weapp.hmr`、`weapp.tailwindcss` 和可选 `prepareHmr` 类型保持兼容。宿主继续创建 DevEngine、接入模块图与监听、通过原生 emit/write 输出，并决定传输与应用确认边界。Taro 的实验接入保留 React Refresh、PatchJournal 和既有 HMR 模式；持久发布确认与应用确认分别记录。
+
+首期针对微信做双宿主运行时验收，支付宝与抖音仅验证编译产物和适配契约。完整重同步仍是完整重同步；已记录的微信 IDE 模板/样式缓存限制不会因为拆包而自动消失。实验接入与固定版本重现脚本见仓库 `integrations/shared-hmr-tailwind`。

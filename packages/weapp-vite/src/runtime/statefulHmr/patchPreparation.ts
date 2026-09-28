@@ -4,6 +4,7 @@ import type { StatefulHmrPatchImports } from './patchModule'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
 import { Buffer } from 'node:buffer'
 import remapping from '@jridgewell/remapping'
+import { transformHmrPatch } from '@weapp-vite/hmr'
 import MagicString, { Bundle } from 'magic-string'
 import { transformWithOxc } from 'vite'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
@@ -32,22 +33,8 @@ export async function prepareHmrPatch(
   imports: StatefulHmrPatchImports,
   sourcemap: boolean,
 ): Promise<PreparedHmrCode> {
-  let code = patch.code.replace(/^\/\/[#@] sourceMappingURL=.*$/gm, '')
-  let map = sourcemap && patch.sourcemap ? normalizeEncodedSourceMapLike(JSON.parse(patch.sourcemap)) : null
-  // 部分原生 Patch 只提供来源清单而没有映射；此时保留到原始 Patch 的映射，不能组合出空结果。
-  if (map && (!map.sources.length || !map.mappings)) {
-    map = null
-  }
-  for (const preparation of preparations) {
-    const result = await preparation.transformJavaScript?.({ code, fileName: patch.filename })
-    if (result) {
-      if (sourcemap && result.code !== code && !result.map) {
-        throw new Error('Compiler HMR transform changed code without a source map')
-      }
-      map = composeSourceMaps(normalizeEncodedSourceMapLike(result.map), map)
-      code = result.code
-    }
-  }
+  const transformed = await transformHmrPatch(patch, preparations, sourcemap)
+  let { code, map } = transformed
   code = transformStatefulHmrPatchImports(code, {
     ...imports,
     onMap: (value) => {

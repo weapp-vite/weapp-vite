@@ -1,0 +1,1407 @@
+diff --git a/packages/vite-plugin-taro/package.json b/packages/vite-plugin-taro/package.json
+index 09f76c0..8104e0e 100644
+--- a/packages/vite-plugin-taro/package.json
++++ b/packages/vite-plugin-taro/package.json
+@@ -90,7 +90,9 @@
+         "rolldown": "1.2.9",
+         "sval": "0.6.12",
+         "tailwindcss": "^4.3.3",
+-        "vite-plugin-taro-runtime": "workspace:*"
++        "vite-plugin-taro-runtime": "workspace:*",
++        "@weapp-vite/hmr": "0.1.0",
++        "@weapp-vite/tailwindcss": "0.1.0"
+     },
+     "peerDependencies": {
+         "react": "^19.3.0",
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/create-hmr-results-stream.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/create-hmr-results-stream.ts
+index 1ec8d5b..edd861f 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/create-hmr-results-stream.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/create-hmr-results-stream.ts
+@@ -26,8 +26,9 @@ type HmrUpdates = Exclude<HmrUpdatesResult, Error>
+ export function createHmrResultsStream(
+     batchMilliseconds: number,
+     scheduler: SchedulerLike,
+-    publish: (result: HmrUpdates) => void,
+-    reportError: (error: Error) => void
++    publish: (result: HmrUpdates, batches: readonly HmrUpdates[]) => void,
++    reportError: (error: Error) => void,
++    hasWork?: (result: HmrUpdates) => boolean
+ ): Subject<HmrUpdatesResult> {
+     /*
+      * This hot Subject is the sole mutable boundary between Rolldown's non-awaited callback and RxJS. Admitted generations are
+@@ -39,7 +40,7 @@ export function createHmrResultsStream(
+     const results = new Subject<HmrUpdatesResult>()
+ 
+     const meaningfulResults = results.pipe(
+-        filter((result) => result instanceof Error || result.updates.some(({ update }) => update.type !== 'Noop'))
++        filter((result) => result instanceof Error || (hasWork ? hasWork(result) : result.updates.some(({ update }) => update.type !== 'Noop')))
+     )
+ 
+     meaningfulResults
+@@ -70,7 +71,7 @@ export function createHmrResultsStream(
+                 publish({
+                     updates: successfulWindow.flatMap((result) => result.updates),
+                     changedFiles: successfulWindow.flatMap((result) => result.changedFiles)
+-                })
++                }, successfulWindow)
+             }
+         })
+ 
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.test.ts
+index bdfba22..f28f1f0 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.test.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.test.ts
+@@ -168,14 +168,22 @@ test('reduces synthetic engine update variants and unknown host failures without
+     }
+     const styles: MiniStylePlugin = {
+         name: 'test:synthetic-wx-styles',
++        captureUpdate(artifacts) {
++            const failure = styleFailure
++            styleFailure = undefined
++            const prepared = failure === undefined
++                ? Promise.resolve({ stylesheet: '.synthetic {}\n', artifacts })
++                : Promise.reject(failure)
++            void prepared.catch(() => {})
++            return { changed: true, prepared }
++        },
++        async commitUpdate(stylesheet, writeWxss) {
++            await writeWxss(stylesheet)
++        },
+         async finalizeUpdate(artifacts, writeWxss) {
+-            if (styleFailure !== undefined) {
+-                const failure = styleFailure
+-                styleFailure = undefined
+-                throw failure
+-            }
+-            await writeWxss('.synthetic {}\n')
+-            return artifacts
++            const output = await styles.captureUpdate(artifacts).prepared
++            await styles.commitUpdate(output.stylesheet, writeWxss)
++            return output.artifacts
+         }
+     }
+     const server = await createServer({
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.ts
+index 408971c..67f2dc1 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/dev-host.ts
+@@ -1,5 +1,6 @@
+ import path from 'node:path'
+ import colors from 'picocolors'
++import { captureHmrBatch, HmrTransaction } from '@weapp-vite/hmr'
+ import { type DevEngine, type DevOptions, dev } from 'rolldown/experimental'
+ import { asyncScheduler } from 'rxjs'
+ import type { ViteDevServer } from 'vite'
+@@ -34,10 +35,10 @@ type HmrUpdatesResult = Parameters<NonNullable<DevOptions['onHmrUpdates']>>[0]
+ type HmrUpdates = Exclude<HmrUpdatesResult, Error>
+ type DevOutputResult = Parameters<NonNullable<DevOptions['onOutput']>>[0]
+ /** A complete build callback is a host action whether it carries durable output or an initial/later build failure. */
+-type OutputAction = Readonly<{ kind: 'output'; result: DevOutputResult }>
++type OutputAction = Readonly<{ kind: 'output'; result: DevOutputResult; preparation?: ReturnType<MiniStylePlugin['captureUpdate']> }>
+ 
+ type HostAction =
+-    | Readonly<{ kind: 'publish'; result: HmrUpdates }>
++    | Readonly<{ kind: 'publish'; result: HmrUpdates; batches: readonly HmrUpdates[] }>
+     | Readonly<{ kind: 'error'; error: Error }>
+     | Readonly<{ kind: 'report'; report: RuntimeReport }>
+     | OutputAction
+@@ -86,16 +87,18 @@ export async function createMiniDevHost({
+         hostActions.next({ kind: 'report', report: report })
+     })
+ 
++    // 每个原始回调保存自己的样式投影；窗口只合并入队动作，不覆盖编译代次。
++    const preparations = new WeakMap<HmrUpdates, Readonly<{ buildId: string | undefined; styles: ReturnType<MiniStylePlugin['captureUpdate']> }>>()
+     const engine: DevEngine = await createEngine()
+ 
+     const hmrResults = createHmrResultsStream(
+         hmrBatchMilliseconds,
+         asyncScheduler,
+-        (result) => {
++        (result, batches) => {
+             // One reduced window becomes one host transaction: style preparation, one cumulative mode publication, then ordered
+             // delivery notifications for every original Rolldown payload retained by the stream. The reduction changes physical
+             // write count only; notification count and order still match Rolldown's sequence frontier exactly.
+-            hostActions.next({ kind: 'publish', result: result })
++            hostActions.next({ kind: 'publish', result, batches })
+         },
+         (error) => {
+             /*
+@@ -105,7 +108,8 @@ export async function createMiniDevHost({
+              * valid source, the watch engine emits an ordinary successful callback and resumes the normal publication path.
+              */
+             hostActions.next({ kind: 'error', error: error })
+-        }
++        },
++        result => result.updates.some(({ update }) => update.type !== 'Noop') || preparations.get(result)?.styles.changed === true
+     )
+ 
+     /*
+@@ -229,7 +233,7 @@ export async function createMiniDevHost({
+     function applyHostAction(action: HostAction): void | Promise<void> {
+         switch (action.kind) {
+             case 'publish':
+-                return publishUpdates(action.result)
++                return publishWindow(action.batches)
+             case 'error':
+                 logMiniError(server.config.logger, `${contract.options.target} HMR update failed`, action.error)
+                 return
+@@ -240,15 +244,16 @@ export async function createMiniDevHost({
+                     logMiniError(server.config.logger, `${contract.options.target} dev build failed`, action.result)
+                     return
+                 }
+-                return publishCompleteStyles()
++                return publishCompleteStyles(action.preparation!)
+             case 'listening':
+                 return publishBuildBoundary()
+         }
+     }
+ 
+     /** Publishes graph-complete styles before rotating the App-visible build identity. */
+-    async function publishCompleteStyles(): Promise<void> {
+-        await styles.finalizeUpdate([], writeGlobalStyle)
++    async function publishCompleteStyles(preparation: ReturnType<MiniStylePlugin['captureUpdate']>): Promise<void> {
++        const prepared = await preparation.prepared
++        await styles.commitUpdate(prepared.stylesheet, writeGlobalStyle)
+         await publishBuildBoundary()
+     }
+ 
+@@ -300,12 +305,20 @@ export async function createMiniDevHost({
+                 onHmrUpdates:
+                     hmrMode.rebuildStrategy === 'on-failure'
+                         ? (result: HmrUpdatesResult) => {
+-                              hmrResults.next(result)
+-                          }
++                            if (result instanceof Error) {
++                                hmrResults.next(result)
++                                return
++                            }
++                            const captured = captureHmrBatch(result)
++                            const batch: HmrUpdates = { ...result, changedFiles: [...captured.changedFiles], updates: [...captured.updates] }
++                            const patches = batch.updates.flatMap(({ clientId, update }) => journal.isCurrentBuild(clientId) && update.type === 'Patch' ? [update] : [])
++                            preparations.set(batch, { buildId: journal.currentBuildId, styles: styles.captureUpdate(patches) })
++                            hmrResults.next(batch)
++                        }
+                         : undefined,
+                 // Initial and later complete builds share one admission path; startup merely observes the first OutputAction.
+                 onOutput: (result: DevOutputResult) => {
+-                    hostActions.next({ kind: 'output', result: result })
++                    hostActions.next({ kind: 'output', result: result, preparation: result instanceof Error ? undefined : styles.captureUpdate([]) })
+                 },
+                 rebuildStrategy: hmrMode.rebuildStrategy === 'always' ? 'always' : 'never',
+                 watch: {
+@@ -325,8 +338,19 @@ export async function createMiniDevHost({
+         engine.triggerFullBuild()
+     }
+ 
++    /** 窗口内部仍按原回调逐批交付，让资产与对应补丁保持同一编译快照。 */
++    async function publishWindow(batches: readonly HmrUpdates[]): Promise<void> {
++        for (const batch of batches) {
++            await publishUpdates(batch)
++        }
++    }
++
+     /** Selects active updates and publishes their resulting host transaction. */
+     async function publishUpdates(result: HmrUpdates): Promise<void> {
++        const captured = preparations.get(result)
++        if (!captured || captured.buildId === undefined || captured.buildId !== journal.currentBuildId) {
++            return
++        }
+         /*
+          * This transaction-local array preserves every patch in one pass and permits immediate rebuild dominance. It never escapes
+          * the serialized action. A filter/find/flatMap pipeline would scan a large burst repeatedly and allocate an intermediate.
+@@ -346,26 +370,35 @@ export async function createMiniDevHost({
+             return
+         }
+ 
+-        await publishPatchBatch(patches)
++        await publishPatchBatch(patches, captured.styles, captured.buildId)
+     }
+ 
+     /** Publishes one coherent native stylesheet, selected-mode delivery, and Rolldown-frontier transaction. */
+-    async function publishPatchBatch(patches: readonly PatchUpdate[]): Promise<void> {
+-        if (patches.length === 0) {
++    async function publishPatchBatch(patches: readonly PatchUpdate[], captured: ReturnType<MiniStylePlugin['captureUpdate']> | undefined, buildId: string): Promise<void> {
++        if (patches.length === 0 && !captured?.changed) {
+             return
+         }
+-
+-        // `onHmrUpdates` runs after every affected transform has updated captured CSS and the live import graph. The style
+-        // boundary finalizes every factory before atomically publishing its matching native stylesheet.
+-        const finalizedPatches = await styles.finalizeUpdate(patches, writeGlobalStyle)
+-
+-        // Publish the global native stylesheet before JavaScript delivery so the mode observes one coherent HMR transaction.
+-        // Delivery must become durable before Rolldown advances: later patches may be generated relative to this batch even if
+-        // the runtime has not applied it. PatchJournal retains the unapplied range, so every later publication still bridges the
+-        // runtime's older application frontier.
+-        await journal.produce(finalizedPatches)
+-
+-        await commitPublishedBatch(finalizedPatches)
++        const preparation = captured ?? styles.captureUpdate(patches)
++        // VPT 的持久发布与运行时 applied 回报仍由 PatchJournal 分别维护。
++        const transaction = new HmrTransaction({
++            identity: { generation: buildId, revision: patches.at(-1)?.seq ?? 0 },
++            prepare: () => preparation.prepared,
++            commit: prepared => styles.commitUpdate(prepared.stylesheet, writeGlobalStyle),
++            publish: async prepared => {
++                const finalized = patches.map((patch, index) => ({ ...patch, ...prepared.artifacts[index] }))
++                await journal.produce(finalized)
++                await commitPublishedBatch(finalized)
++            }
++        })
++        try {
++            await transaction.publish()
++        } catch (error) {
++            // 编译回调本身的语法错误仍只报告；已经进入交付的失败明确重新同步。
++            requestFullBuild('compiled style or patch publication failed')
++            throw error
++        } finally {
++            await transaction.dispose()
++        }
+     }
+ 
+     /**
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts
+index 1566c52..5b315f8 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts
+@@ -1,6 +1,7 @@
+ import { randomUUID } from 'node:crypto'
+ import fs from 'node:fs/promises'
+ import path from 'node:path'
++import { rolldown } from 'rolldown'
+ import type { HmrInfo } from './hmr-protocol.ts'
+ 
+ export const hmrInfoFileName = 'hmr/info.js'
+@@ -24,27 +25,39 @@ export function renderDevelopmentAppStyle(globalStyleFileName: string, buildId:
+     return `@import "./${globalStyleFileName}";\n/* vpt-build:${buildId} */\n`
+ }
+ 
+-/**
+- * Atomically publishes one physical development file so DevTools can observe only complete generations.
+- *
+- * Writing directly to the watched JavaScript path exposes truncate and partial-write states as separate filesystem events. A
+- * sibling temporary file plus same-filesystem rename makes the destination replacement atomic while remaining reusable for
+- * metadata and styles; the `.txt` suffix keeps DevTools from compiling the temporary source as another Mini Program module.
+- */
++/** 原生 emit/write 生成字节，再在写出钩子内原子发布同目录文件。 */
+ export async function writeDevelopmentFile(outDir: string, fileName: string, source: string): Promise<void> {
+-    const filePath = path.join(outDir, fileName)
+-    const directory = path.dirname(filePath)
+-
+-    await fs.mkdir(directory, { recursive: true })
+-
+-    const temporaryPath = path.join(directory, `.${path.basename(filePath)}.${randomUUID()}.txt`)
+-
++    const virtualEntry = '\0vpt:development-output'
++    const temporaryName = path.posix.join(path.posix.dirname(fileName), `.${path.posix.basename(fileName)}.${randomUUID()}.txt`)
++    const temporaryPath = path.join(outDir, temporaryName)
++    const writer = await rolldown({
++        input: virtualEntry,
++        logLevel: 'silent',
++        plugins: [{
++            name: 'vpt:native-development-writer',
++            resolveId(id) { if (id === virtualEntry) { return id } },
++            load(id) { if (id === virtualEntry) { return 'export {}' } },
++            buildStart() { this.emitFile({ type: 'asset', fileName: temporaryName, source }) },
++            generateBundle(_options, bundle) {
++                for (const [name, output] of Object.entries(bundle)) {
++                    if (output.type === 'chunk' && output.facadeModuleId === virtualEntry) { delete bundle[name] }
++                }
++            },
++            async writeBundle(_options, bundle) {
++                await fs.rename(temporaryPath, path.join(outDir, fileName))
++                const output = bundle[temporaryName]
++                if (output) {
++                    delete bundle[temporaryName]
++                    output.fileName = fileName
++                    bundle[fileName] = output
++                }
++            }
++        }]
++    })
+     try {
+-        // DevTools ignores the temporary .txt file; keeping it beside the destination guarantees a same-filesystem rename.
+-        await fs.writeFile(temporaryPath, source)
+-        await fs.rename(temporaryPath, filePath)
++        await writer.write({ dir: outDir, format: 'cjs' })
+     } finally {
+-        // rename removes the source path on success; force cleanup covers interrupted writes and failed replacements.
++        await writer.close()
+         await fs.rm(temporaryPath, { force: true })
+     }
+ }
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/patch-journal.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/patch-journal.ts
+index c3ad36d..df96d7c 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/patch-journal.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/patch-journal.ts
+@@ -45,6 +45,11 @@ export class PatchJournal {
+         this.publishPatches = publishPatches
+     }
+ 
++    /** 当前会话身份只由日志所有者维护，供批次事务绑定代次。 */
++    get currentBuildId(): string | undefined {
++        return this.buildId
++    }
++
+     /** True when the buildId belongs to the current complete build. */
+     isCurrentBuild(buildId: string): boolean {
+         return buildId === this.buildId
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts b/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts
+index 7aeac80..7c52ab9 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/plugins.ts
+@@ -15,6 +15,7 @@ import { createMiniPolyfillPlugin } from './polyfill/create-mini-polyfill-plugin
+ import { renderCapsule } from './render/capsule.ts'
+ import { renderNative } from './render/native.ts'
+ import { createResolver } from './resolve/resolver.ts'
++import { createMiniRuntimeDefinesPlugin } from './runtime-defines.ts'
+ import { createMiniStylePlugin } from './styles/plugins.ts'
+ import { createMiniWatchPlugin } from './watch/create-mini-watch-plugin.ts'
+ 
+@@ -36,6 +37,7 @@ export function createMiniTargetPlugins(contract: MiniContract): PluginOption[]
+         createMiniNativeComponentPlugin(),
+         createMiniPolyfillPlugin(contract),
+         createMiniGlobalPlugin(placement),
++        createMiniRuntimeDefinesPlugin(),
+         createMiniDevelopmentPlugin(contract, styles),
+         createMiniWatchPlugin(contract)
+     ]
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.test.ts
+new file mode 100644
+index 0000000..738a906
+--- /dev/null
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.test.ts
+@@ -0,0 +1,23 @@
++import assert from 'node:assert/strict'
++import test from 'node:test'
++import path from 'node:path'
++import { tmpdir } from 'node:os'
++import { specializeRuntimeDefines } from './runtime-defines.ts'
++
++test('eliminates inactive framework imports while preserving active runtime dependencies and maps', async () => {
++    const source = `import { active } from 'active-runtime';
++if (process.env.FRAMEWORK === 'preact') require('preact');
++export const answer = active;`
++    const result = await specializeRuntimeDefines(source, path.join(tmpdir(), 'vpt-specialized-runtime.js'), { 'process.env.FRAMEWORK': '"react"' })
++    assert.doesNotMatch(result.code, /preact/)
++    assert.match(result.code, /active-runtime/)
++    assert.match(result.code, /answer/)
++    assert.ok(result.map)
++    const map = JSON.parse(result.map) as { sourcesContent: string[] }
++    assert.ok(map.sourcesContent.includes(source))
++})
++
++test('keeps a selected optional framework dependency for the host resolver to validate', async () => {
++    const result = await specializeRuntimeDefines(`if (process.env.FRAMEWORK === 'preact') require('preact');`, path.join(tmpdir(), 'vpt-specialized-runtime.js'), { 'process.env.FRAMEWORK': '"preact"' })
++    assert.match(result.code, /preact/)
++})
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.ts b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.ts
+new file mode 100644
+index 0000000..c475e25
+--- /dev/null
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/runtime-defines.ts
+@@ -0,0 +1,48 @@
++import { build } from 'rolldown'
++import type { Plugin } from 'vite'
++import { createExactModuleIdFilter } from '../../utils/modules.ts'
++import { resolveTaroRuntime } from '../../utils/packages.ts'
++
++/** 在宿主依赖扫描前专门化固定 SDK 的框架分支，不解析或代替其活跃依赖。 */
++export async function specializeRuntimeDefines(code: string, id: string, define: Record<string, unknown>) {
++    let map: string | null = null
++    const result = await build({
++        input: id,
++        external: (_id, importer) => importer !== undefined,
++        transform: {
++            define: Object.fromEntries(Object.entries(define).map(([key, value]) => [key,
++                typeof value === 'string' ? value : value === undefined ? 'undefined' : JSON.stringify(value)
++            ]))
++        },
++        plugins: [{
++            name: 'vpt:runtime-source',
++            resolveId(source) { if (source === id) return source },
++            load(source) { if (source === id) return code },
++            generateBundle(_options, bundle) {
++                const chunk = Object.values(bundle).find(item => item.type === 'chunk')
++                map = chunk?.type === 'chunk' && chunk.map ? chunk.map.toString() : null
++            }
++        }],
++        output: { format: 'es', minify: 'dce-only', keepNames: true, sourcemap: 'hidden' },
++        write: false
++    })
++    const chunk = result.output.find(item => item.type === 'chunk')
++    if (!chunk || chunk.type !== 'chunk') throw new Error('Missing specialized Taro runtime output')
++    return { code: chunk.code, map }
++}
++
++/** 仅处理宿主持有的 framework runtime，应用模块与原始 HMR accept 图保持原处理路径。 */
++export function createMiniRuntimeDefinesPlugin(): Plugin {
++    const runtimeId = resolveTaroRuntime('plugin-framework-react/runtime')
++    return {
++        name: 'vpt:mini-runtime-defines',
++        apply: 'serve',
++        transform: {
++            order: 'post',
++            filter: { id: createExactModuleIdFilter(runtimeId) },
++            handler(code, id) {
++                return specializeRuntimeDefines(code, id, this.environment.config.define ?? {})
++            }
++        }
++    }
++}
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.test.ts
+index 0084d65..7c20233 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.test.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.test.ts
+@@ -80,7 +80,7 @@ test('retains native prefix exceptions without adding browser prefixes', async (
+     assert.doesNotMatch(css, /-(?:webkit|moz|ms)-(?:appearance|user-select)/)
+ })
+ 
+-test('rewrites only generated Tailwind classes in strings and template elements', () => {
++test('rewrites only generated Tailwind classes in strings and template elements', async () => {
+     const transformer = createMiniTransformer()
+     const code = [
+         "const classes = 'py-5.5 w-1/2 pages/home/index mr-4.5'",
+@@ -88,7 +88,7 @@ test('rewrites only generated Tailwind classes in strings and template elements'
+     ].join('\n')
+ 
+     assert.equal(
+-        transformer.transformJavaScript({ classSet, code, filename: 'entry.js' }),
++        await transformer.transformJavaScript({ classSet, code, filename: 'entry.js' }),
+         [
+             "const classes = 'py-5_d5 w-1_f2 pages/home/index mr-4.5'",
+             'const template = `px-1_d25 $' + '{value} py-5_d5`'
+@@ -96,17 +96,17 @@ test('rewrites only generated Tailwind classes in strings and template elements'
+     )
+ })
+ 
+-test('rewrites TypeScript template spans without consuming their delimiters', () => {
++test('rewrites TypeScript template spans without consuming their delimiters', async () => {
+     const transformer = createMiniTransformer()
+     const code = 'const template = `px-1.25 $' + '{first} py-5.5 $' + '{second} w-1/2`'
+ 
+     assert.equal(
+-        transformer.transformJavaScript({ classSet, code, filename: 'entry.ts' }),
++        await transformer.transformJavaScript({ classSet, code, filename: 'entry.ts' }),
+         'const template = `px-1_d25 $' + '{first} py-5_d5 $' + '{second} w-1_f2`'
+     )
+ })
+ 
+-test('leaves slash paths and URLs intact while rewriting slash-based classes', () => {
++test('leaves slash paths and URLs intact while rewriting slash-based classes', async () => {
+     const transformer = createMiniTransformer()
+     const slashClassSet = new Set([
+         '//cdn.example.com/app.js',
+@@ -120,12 +120,12 @@ test('leaves slash paths and URLs intact while rewriting slash-based classes', (
+         "const value = '//cdn.example.com/app.js http://example.com/app.js https://example.com/app.js pages/home/index w-[1/2] variant:w-1/2'"
+ 
+     assert.equal(
+-        transformer.transformJavaScript({ classSet: slashClassSet, code, filename: 'entry.js' }),
++        await transformer.transformJavaScript({ classSet: slashClassSet, code, filename: 'entry.js' }),
+         "const value = '//cdn.example.com/app.js http://example.com/app.js https://example.com/app.js pages/home/index w-_b1_f2_B variant_cw-1_f2'"
+     )
+ })
+ 
+-test('detects every escaped JavaScript spelling in arbitrary-value classes', () => {
++test('detects every escaped JavaScript spelling in arbitrary-value classes', async () => {
+     const transformer = createMiniTransformer()
+     const escapedClassSet = new Set([
+         'before:content-["x"]',
+@@ -145,7 +145,7 @@ test('detects every escaped JavaScript spelling in arbitrary-value classes', ()
+     ].join('\n')
+ 
+     assert.equal(
+-        transformer.transformJavaScript({ classSet: escapedClassSet, code, filename: 'entry.js' }),
++        await transformer.transformJavaScript({ classSet: escapedClassSet, code, filename: 'entry.js' }),
+         [
+             "const doubleQuote = 'before_ccontent-_b_qx_q_B'",
+             "const backslash = 'before_ccontent-_b_ax_ry_a_B'",
+@@ -157,10 +157,10 @@ test('detects every escaped JavaScript spelling in arbitrary-value classes', ()
+     )
+ })
+ 
+-test('rejects malformed final JavaScript before exposing partial class rewrites', () => {
++test('rejects malformed final JavaScript before exposing partial class rewrites', async () => {
+     const transformer = createMiniTransformer()
+ 
+-    assert.throws(
++    await assert.rejects(
+         () => transformer.transformJavaScript({ classSet, code: "export const = 'py-5.5'", filename: 'entry.js' }),
+         /Failed to transform Tailwind classes/
+     )
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.ts b/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.ts
+index 9bd3f3a..93b97c9 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/styles/create-mini-transformer.ts
+@@ -1,10 +1,7 @@
+-import type { Node, StringLiteral, TemplateElement } from '@oxc-project/types'
+-import { splitCandidateTokens } from '@tailwindcss-mangle/engine'
+-import { escape as escapeClassName, MappingChars2String } from '@weapp-core/escape'
+-import { createStyleHandler, type IStyleHandlerOptions, postcssHtmlTransform } from '@weapp-tailwindcss/postcss'
+-import { type WalkerEnter, walk } from 'oxc-walker'
+-import { RolldownMagicString } from 'rolldown'
+-import { parseSync } from 'rolldown/utils'
++import { createTailwindController, prepareTailwindOutput, createTailwindPreparation } from '@weapp-vite/tailwindcss'
++import { transformHmrPatch } from '@weapp-vite/hmr'
++import { type IStyleHandlerOptions, postcssHtmlTransform } from '@weapp-tailwindcss/postcss'
++import { tailwindcssBasedir } from '../../tailwind/tailwind-css.ts'
+ import { miniHtmlBase } from './mini-html-base.ts'
+ 
+ const cssPreflight = {
+@@ -53,195 +50,33 @@ type JavaScriptTransformInput = Readonly<{
+     filename: string
+ }>
+ 
+-type MiniTransformer = Readonly<{
+-    transformJavaScript: (input: JavaScriptTransformInput) => string
+-    transformStylesheet: (css: string) => Promise<string>
+-}>
+-
+-type CandidateTransform = Readonly<{
+-    pattern: RegExp
+-    replacements: ReadonlyMap<string, string>
+-}>
+-
+-/** Creates VPT's fixed Tailwind-v4 Mini Program transformer without loading a framework project context. */
+-export function createMiniTransformer(): MiniTransformer {
+-    const styleHandler = createStyleHandler(miniStyleHandlerOptions)
+-    // Weak keys release each transaction's exact precheck and replacement table with its projected class set.
+-    const candidateTransformByClassSet = new WeakMap<ReadonlySet<string>, CandidateTransform | null>()
+-
+-    const transformJavaScript = ({ classSet, code, filename }: JavaScriptTransformInput): string => {
+-        const candidateTransform = getCandidateTransform(classSet, candidateTransformByClassSet)
+-        if (!candidateTransform?.pattern.test(code)) {
+-            return code
+-        }
+-        return transformJavaScriptSource(code, filename, candidateTransform.replacements)
+-    }
+-
++/** Taro 只配置原生样式策略，生成、转义与映射统一使用公共控制器。 */
++export function createMiniTransformer() {
++    const controller = createTailwindController({compiler: {...miniStyleHandlerOptions, tailwindcssBasedir}})
+     return {
+-        transformJavaScript,
+-        async transformStylesheet(css) {
+-            // Each call receives the complete global projection, so the base is emitted once in builds and HMR.
+-            // Flatten only application CSS, preserving its layer policy. Native-ready defaults precede the result
+-            // so later mapped HTML selectors and utility classes can override them at equal specificity.
+-            return `${miniHtmlBase}\n${(await styleHandler(css)).css}`
+-        }
+-    }
+-}
+-
+-function transformJavaScriptSource(code: string, filename: string, replacements: ReadonlyMap<string, string>): string {
+-    const parsed = parseSync(filename, code)
+-    if (parsed.errors.length > 0) {
+-        const diagnostics = parsed.errors.map((error) => error.message).join('; ')
+-        throw new Error(`Failed to transform Tailwind classes in ${filename}: ${diagnostics}`)
+-    }
+-
+-    // This transaction-local editor batches non-overlapping literal replacements without regenerating untouched code.
+-    const editor = new RolldownMagicString(code, { filename })
+-    walk(parsed.program, {
+-        enter: createClassNameVisitor(code, replacements, editor)
+-    })
+-    return editor.toString()
+-}
+-
+-function createClassNameVisitor(
+-    code: string,
+-    replacements: ReadonlyMap<string, string>,
+-    editor: RolldownMagicString
+-): WalkerEnter {
+-    return (node) => {
+-        if (isStringLiteral(node)) {
+-            replaceStringLiteral(code, node, replacements, editor)
+-            return
+-        }
+-        if (node.type === 'TemplateElement') {
+-            replaceTemplateElement(code, node, replacements, editor)
+-        }
+-    }
+-}
+-
+-function replaceStringLiteral(
+-    code: string,
+-    node: StringLiteral,
+-    replacements: ReadonlyMap<string, string>,
+-    editor: RolldownMagicString
+-): void {
+-    const transformed = transformLiteralText(node.value, replacements)
+-    if (transformed !== undefined) {
+-        replaceRange(code, node.start + 1, node.end - 1, jsStringEscape(transformed), editor)
++        controller,
++        async prepare(css: string, classSet: ReadonlySet<string>, convertedCss?: string) {
++            if (convertedCss !== undefined) {
++                const compiler = await controller.getCompiler()
++                const snapshot = compiler.createSnapshot({ id: 'vpt:global', classSet })
++                return { css: convertedCss, snapshot, preparation: createTailwindPreparation(compiler, snapshot) }
++            }
++            const prepared = await prepareTailwindOutput(controller.getCompiler(), { id: 'vpt:global', css, classSet })
++            return { ...prepared, css: `${miniHtmlBase}\n${prepared.css}` }
++        },
++        async transformStylesheet(css: string) {
++            const prepared = await prepareTailwindOutput(controller.getCompiler(), { id: 'vpt:style', css, classSet: [] })
++            return `${miniHtmlBase}\n${prepared.css}`
++        },
++        async transformJavaScript(input: JavaScriptTransformInput) {
++            const compiler = await controller.getCompiler()
++            const snapshot = compiler.createSnapshot({ id: 'vpt:script', classSet: input.classSet })
++            try {
++                return (await transformHmrPatch(input, [createTailwindPreparation(compiler, snapshot)], false)).code
++            } catch (error) {
++                throw new Error(`Failed to transform Tailwind classes in ${input.filename}`, { cause: error })
++            }
++        },
++        dispose: () => controller.dispose()
+     }
+ }
+-
+-function replaceTemplateElement(
+-    code: string,
+-    node: TemplateElement,
+-    replacements: ReadonlyMap<string, string>,
+-    editor: RolldownMagicString
+-): void {
+-    const transformed = transformLiteralText(node.value.raw, replacements)
+-    if (transformed !== undefined) {
+-        replaceTemplateRange(code, node, transformed, editor)
+-    }
+-}
+-
+-function replaceTemplateRange(
+-    code: string,
+-    node: TemplateElement,
+-    transformed: string,
+-    editor: RolldownMagicString
+-): void {
+-    const first = code[node.start]
+-    const last = code[node.end - 1]
+-    const start = node.start + (first === '`' || first === '}' ? 1 : 0)
+-    const end = node.end - (last === '`' ? 1 : last === '{' ? 2 : 0)
+-    replaceRange(code, start, end, transformed, editor)
+-}
+-
+-function replaceRange(
+-    code: string,
+-    start: number,
+-    end: number,
+-    transformed: string,
+-    editor: RolldownMagicString
+-): void {
+-    if (start < end && transformed !== code.slice(start, end)) {
+-        editor.overwrite(start, end, transformed)
+-    }
+-}
+-
+-function transformLiteralText(source: string, replacements: ReadonlyMap<string, string>): string | undefined {
+-    const candidates = splitCandidateTokens(source)
+-    // This local accumulator applies each admitted token once while preserving all non-class source bytes.
+-    let transformed = source
+-
+-    candidates.forEach((candidate) => {
+-        const replacement = replacements.get(candidate)
+-        if (replacement !== undefined) {
+-            transformed = transformed.replace(candidate, replacement)
+-        }
+-    })
+-
+-    return transformed === source ? undefined : transformed
+-}
+-
+-/** Builds the exact source precheck and replacements owned by one projected class set. */
+-function getCandidateTransform(
+-    classSet: ReadonlySet<string>,
+-    transformByClassSet: WeakMap<ReadonlySet<string>, CandidateTransform | null>
+-): CandidateTransform | undefined {
+-    const cached = transformByClassSet.get(classSet)
+-    if (cached !== undefined) {
+-        return cached ?? undefined
+-    }
+-
+-    // These local collections become weakly reachable with the class set and never accumulate across HMR generations.
+-    const alternatives = new Set<string>()
+-    const replacements = new Map<string, string>()
+-    classSet.forEach((candidate) => {
+-        const replacement = escapeClassName(candidate, { map: MappingChars2String })
+-        if (replacement === candidate || isPlainSlashPathCandidate(candidate)) {
+-            return
+-        }
+-        replacements.set(candidate, replacement)
+-        alternatives.add(RegExp.escape(candidate))
+-        alternatives.add(RegExp.escape(jsStringEscape(candidate)))
+-    })
+-
+-    const transform =
+-        alternatives.size > 0 ? { pattern: new RegExp([...alternatives].join('|')), replacements: replacements } : null
+-    transformByClassSet.set(classSet, transform)
+-    return transform ?? undefined
+-}
+-
+-function isPlainSlashPathCandidate(candidate: string): boolean {
+-    if (candidate.startsWith('//') || candidate.startsWith('http://') || candidate.startsWith('https://')) {
+-        return true
+-    }
+-    const slashIndex = candidate.indexOf('/')
+-    if (slashIndex <= 0) {
+-        return false
+-    }
+-    if (candidate.includes('[') || candidate.includes(']') || candidate.includes(':')) {
+-        return false
+-    }
+-    return !candidate.slice(0, slashIndex).includes('-')
+-}
+-
+-function isStringLiteral(node: Node): node is StringLiteral {
+-    return node.type === 'Literal' && typeof node.value === 'string'
+-}
+-
+-function jsStringEscape(value: string): string {
+-    return value.replaceAll(/[\n\r"'\\\u2028\u2029]/g, (character) => {
+-        switch (character) {
+-            case '\n':
+-                return '\\n'
+-            case '\r':
+-                return '\\r'
+-            case '\u2028':
+-                return '\\u2028'
+-            case '\u2029':
+-                return '\\u2029'
+-        }
+-        return `\\${character}`
+-    })
+-}
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/styles/output-finalizer.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/styles/output-finalizer.test.ts
+index d1b0404..21bd6c2 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/styles/output-finalizer.test.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/styles/output-finalizer.test.ts
+@@ -58,8 +58,11 @@ async function createStyleFixture(
+     await Reflect.apply(config.handler, {}, [{ build: { cssMinify } }])
+     await Reflect.apply(configResolved, {}, [{ build: { minify: false }, plugins: [cssPost] }])
+     const transformer = transformers.at(-1)!
+-    const css = testContext.mock.method(transformer, 'transformStylesheet')
+-    const javaScript = testContext.mock.method(transformer, 'transformJavaScript')
++    const compiler = await transformer.controller.getCompiler()
++    testContext.after(() => transformer.dispose())
++    const originalCss = compiler.transformCss.bind(compiler)
++    const css = testContext.mock.method(compiler, 'transformCss')
++    const javaScript = testContext.mock.method(compiler, 'transformJavaScript')
+     const capture = cssPost.transform
+     assert.ok(typeof capture === 'function')
+ 
+@@ -91,6 +94,7 @@ async function createStyleFixture(
+         context,
+         graph,
+         css,
++        originalCss,
+         javaScript,
+         published,
+         publish,
+@@ -120,14 +124,20 @@ test('reuses unchanged CSS and candidate tables while rewriting each current pat
+     await fixture.transform('/app.css', tailwind(['py-5.5']))
+     const first = await fixture.update("const first = 'py-5.5'")
+     const unchanged = await fixture.update("const next = 'py-5.5'")
+-    assert.deepEqual(first, [{ code: "const first = 'py-5_d5'", filename: 'app.js', seq: 1 }])
+-    assert.deepEqual(unchanged, [{ code: "const next = 'py-5_d5'", filename: 'app.js', seq: 1 }])
++    assert.deepEqual(first.map(({ sourcemap, ...artifact }) => {
++        assert.ok(sourcemap)
++        return artifact
++    }), [{ code: "const first = 'py-5_d5'", filename: 'app.js', seq: 1 }])
++    assert.deepEqual(unchanged.map(({ sourcemap, ...artifact }) => {
++        assert.ok(sourcemap)
++        return artifact
++    }), [{ code: "const next = 'py-5_d5'", filename: 'app.js', seq: 1 }])
+     assert.match(fixture.published[0]!, /\.py-5_d5/)
+     assert.equal(fixture.published.length, 1)
+     assert.equal(fixture.css.mock.callCount(), 1)
+-    assert.strictEqual(
+-        fixture.javaScript.mock.calls[0]!.arguments[0].classSet,
+-        fixture.javaScript.mock.calls[1]!.arguments[0].classSet
++    assert.deepEqual(
++        new Set(fixture.javaScript.mock.calls[0]!.arguments[1].classSet),
++        new Set(fixture.javaScript.mock.calls[1]!.arguments[1].classSet)
+     )
+ 
+     // Model byte-identical postprocessed CSS with changed raw candidates, which must invalidate only the replacement table.
+@@ -136,9 +146,9 @@ test('reuses unchanged CSS and candidate tables while rewriting each current pat
+     await fixture.capture('/app.css', capturedCss)
+     const changed = await fixture.update("const changed = 'py-5.5 mr-4.5'")
+     assert.equal(changed[0]!.code, "const changed = 'py-5.5 mr-4_d5'")
+-    assert.notStrictEqual(
+-        fixture.javaScript.mock.calls[1]!.arguments[0].classSet,
+-        fixture.javaScript.mock.calls[2]!.arguments[0].classSet
++    assert.notDeepEqual(
++        new Set(fixture.javaScript.mock.calls[1]!.arguments[1].classSet),
++        new Set(fixture.javaScript.mock.calls[2]!.arguments[1].classSet)
+     )
+     assert.equal(fixture.css.mock.callCount(), 1)
+ 
+@@ -146,13 +156,13 @@ test('reuses unchanged CSS and candidate tables while rewriting each current pat
+     const cleared = await fixture.update("const cleared = 'py-5.5 mr-4.5'")
+     await fixture.update("const empty = 'py-5.5'")
+     assert.equal(cleared[0]!.code, "const cleared = 'py-5.5 mr-4.5'")
+-    assert.notStrictEqual(
+-        fixture.javaScript.mock.calls[2]!.arguments[0].classSet,
+-        fixture.javaScript.mock.calls[3]!.arguments[0].classSet
++    assert.notDeepEqual(
++        new Set(fixture.javaScript.mock.calls[2]!.arguments[1].classSet),
++        new Set(fixture.javaScript.mock.calls[3]!.arguments[1].classSet)
+     )
+-    assert.strictEqual(
+-        fixture.javaScript.mock.calls[3]!.arguments[0].classSet,
+-        fixture.javaScript.mock.calls[4]!.arguments[0].classSet
++    assert.deepEqual(
++        new Set(fixture.javaScript.mock.calls[3]!.arguments[1].classSet),
++        new Set(fixture.javaScript.mock.calls[4]!.arguments[1].classSet)
+     )
+     assert.equal(fixture.css.mock.callCount(), 1)
+     assert.equal(fixture.published.length, 1)
+@@ -208,9 +218,9 @@ test('reprojects cyclic multi-entry graphs, deduplicates styles, and prunes remo
+     fixture.graph.set('/app.js', { importedIds: ['/b.css'], dynamicallyImportedIds: ['/a.css?one', '/lazy.js'] })
+     await fixture.update(code)
+     assert.equal(fixture.css.mock.calls[1]!.arguments[0], `${b}\n${a}`)
+-    assert.strictEqual(
+-        fixture.javaScript.mock.calls[0]!.arguments[0].classSet,
+-        fixture.javaScript.mock.calls[1]!.arguments[0].classSet
++    assert.deepEqual(
++        new Set(fixture.javaScript.mock.calls[0]!.arguments[1].classSet),
++        new Set(fixture.javaScript.mock.calls[1]!.arguments[1].classSet)
+     )
+ 
+     fixture.graph.set('/app.js', { importedIds: [], dynamicallyImportedIds: ['/a.css?one'] })
+@@ -227,9 +237,9 @@ test('reprojects cyclic multi-entry graphs, deduplicates styles, and prunes remo
+     fixture.graph.clear()
+     await fixture.update(code)
+     assert.equal(fixture.css.mock.callCount(), 4)
+-    assert.strictEqual(
+-        fixture.javaScript.mock.calls[3]!.arguments[0].classSet,
+-        fixture.javaScript.mock.calls[4]!.arguments[0].classSet
++    assert.deepEqual(
++        new Set(fixture.javaScript.mock.calls[3]!.arguments[1].classSet),
++        new Set(fixture.javaScript.mock.calls[4]!.arguments[1].classSet)
+     )
+ })
+ 
+@@ -249,7 +259,11 @@ for (const failureStage of ['conversion', 'minification', 'JavaScript'] as const
+                 throw new Error('simulated CSS conversion failure')
+             })
+         } else if (failureStage === 'minification') {
+-            fixture.css.mock.mockImplementationOnce(async () => '.broken { color: red; } }')
++            fixture.css.mock.mockImplementationOnce(async (...args) => {
++                const result = await fixture.originalCss(...args)
++                result.css = '.broken { color: red; } }'
++                return result
++            })
+         }
+         await assert.rejects(fixture.update(failureStage === 'JavaScript' ? "const = 'mr-4.5'" : code), Error)
+         assert.equal(fixture.published.length, 1, 'Failed conversion must not publish newer CSS')
+@@ -258,9 +272,9 @@ for (const failureStage of ['conversion', 'minification', 'JavaScript'] as const
+         await fixture.transform('/app.css', tailwind(['py-5.5']))
+         await fixture.capture('/app.css', previousCss)
+         await fixture.update(code)
+-        assert.strictEqual(
+-            fixture.javaScript.mock.calls[0]!.arguments[0].classSet,
+-            fixture.javaScript.mock.calls.at(-1)!.arguments[0].classSet
++        assert.deepEqual(
++            new Set(fixture.javaScript.mock.calls[0]!.arguments[1].classSet),
++            new Set(fixture.javaScript.mock.calls.at(-1)!.arguments[1].classSet)
+         )
+         assert.deepEqual(
+             fixture.css.mock.calls.map((call) => call.arguments[0]),
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.test.ts
+index 0dd0daf..bca0964 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.test.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.test.ts
+@@ -98,7 +98,7 @@ test('transforms WXSS and JavaScript from one supplied class set without source
+     const transformer = createMiniTransformer()
+     const classSet = new Set(['py-5.5'])
+     const style = await transformer.transformStylesheet('.py-5\\.5 { padding: 1px; }')
+-    const javaScript = transformer.transformJavaScript({
++    const javaScript = await transformer.transformJavaScript({
+         classSet,
+         code: "export const className = 'py-5.5'",
+         filename: 'entry.js'
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.ts b/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.ts
+index 135c331..9d44348 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/styles/plugins.ts
+@@ -1,7 +1,7 @@
+ import path from 'node:path'
+-import { Scanner } from '@tailwindcss/oxide'
+-import { createTailwindV4Engine, resolveTailwindV4Source, type TailwindV4Engine } from '@tailwindcss-mangle/engine/v4'
+-import type { PluginContext } from 'rolldown'
++import { listTailwindSourceFiles, type TailwindController, type TailwindOutput } from '@weapp-vite/tailwindcss'
++import { composeHmrSourceMaps, HmrAssetStore, normalizeHmrSourceMap, transformHmrPatch } from '@weapp-vite/hmr'
++import { RolldownMagicString, type PluginContext } from 'rolldown'
+ import { type BuildOptions, isCSSRequest, normalizePath, type Plugin, type Rolldown } from 'vite'
+ import { normalizeModuleId } from '../../../utils/modules.ts'
+ import { wrapPluginTransform } from '../../../utils/vite.ts'
+@@ -19,7 +19,7 @@ type TailwindRoot = Readonly<{
+     /** CSS imports and compiler inputs whose changes invalidate the generator rather than only its candidate cache. */
+     dependencies: ReadonlySet<string>
+     /** Stateful Tailwind compiler reused for candidate-only source updates. */
+-    generator: TailwindV4Engine
++    generator: TailwindController
+     /** Physical files covered by Tailwind source patterns and registered with Rolldown's watcher. */
+     files: readonly string[]
+     /** Marks a compiler dependency change that requires replacing the generator on the root's next transform. */
+@@ -38,16 +38,22 @@ type StyleModule = Readonly<{
+ type JavaScriptArtifact = Readonly<{
+     code: string
+     filename: string
++    sourcemap?: string
+ }>
+ 
+ /** Vite plugin with the host operation that finalizes one coherent native-style/JavaScript transaction. */
+ export type MiniStylePlugin = Plugin &
+     Readonly<{
+         /** Neutralizes browser CSS payloads and atomically publishes the matching global native stylesheet. */
++        captureUpdate: <Artifact extends JavaScriptArtifact>(artifacts: readonly Artifact[]) => Readonly<{
++            changed: boolean
++            prepared: Promise<Readonly<{ stylesheet: string; artifacts: readonly (Artifact & { sourcemap?: string })[] }>>
++        }>
++        commitUpdate: (stylesheet: string, writeStylesheet: (stylesheet: string) => Promise<void>) => Promise<void>
+         finalizeUpdate: <Artifact extends JavaScriptArtifact>(
+             artifacts: readonly Artifact[],
+             writeStylesheet: (stylesheet: string) => Promise<void>
+-        ) => Promise<readonly Artifact[]>
++        ) => Promise<readonly (Artifact & { sourcemap?: string })[]>
+     }>
+ 
+ /** Vite CSS request modes that do not represent graph-owned application stylesheets. */
+@@ -56,122 +62,9 @@ const tailwindRootImportPattern = /(@(?:import|reference)\s+(?:url\(\s*)?)(['"])
+ const tailwindcssEntryPath = normalizePath(path.join(tailwindcssBasedir, 'index.css'))
+ 
+ /**
+- * Creates the single owner of global native-style compilation, graph projection, class rewriting, and publication.
+- *
+- * ## Architectural invariant
+- *
+- * One Mini Program transaction must expose JavaScript and native CSS produced from one class-identity snapshot. Tailwind utility
+- * names can be escaped—for example, `py-5.5` becomes `py-5_d5`—so publishing either side independently can leave running code
+- * referring to selectors that do not yet exist. This plugin therefore treats reachable CSS, Tailwind candidates, converted
+- * native CSS, and converted JavaScript as one output. Complete builds and HMR updates both call `finalizeOutput()`; they differ only
+- * in how the returned bytes are materialized.
+- *
+- * ## Ownership boundaries
+- *
+- * The pipeline deliberately gives each subsystem one responsibility:
+- *
+- * 1. Rolldown owns module reachability and invalidation. VPT reads `getModuleInfo()` and registers watch files, but does not
+- *    maintain a second import graph or decide independently which root should rerun.
+- * 2. The persistent Tailwind generator owns candidate discovery and incremental candidate removal. VPT invokes it only from
+- *    the owning CSS root's Rolldown transform and never rescans the project during output publication.
+- * 3. Vite owns preprocessors, PostCSS, CSS Modules, and final module CSS semantics. VPT observes the input to the resolved
+- *    `vite:css-post` hook only after the original hook succeeds; it never rereads source files or repeats CSS preprocessing.
+- * 4. The fixed Mini transformer owns selector conversion and Oxc-based JavaScript class-string conversion. One retained
+- *    transformer and one projected candidate set drive both operations without loading a framework project context.
+- * 5. VPT owns physical global native CSS and patch publication. Vite's browser CSS asset is only an intermediate carrier and is
+- *    removed before VPT emits the contract-selected global stylesheet.
+- *
+- * Native Page and component styles are outside this global pipeline. The target skeleton is generated after this style plugin
+- * and emits those opaque companions later. Mini output also enforces `cssCodeSplit: false`, so Vite contributes at
+- * most one browser compiler stylesheet for this plugin to replace.
+- *
+- * ## Compilation phases
+- *
+- * ### 1. Tailwind pre-transform
+- *
+- * The pre-transform checks physical application CSS for Tailwind imports. Ordinary styles pass through. A
+- * Tailwind root compiles to browser CSS before Vite's normal CSS pipeline runs. Successful generation records the generator,
+- * watched source files, current class set, compiler dependencies, and exact root source under the normalized module ID.
+- *
+- * Candidate files and compiler dependencies intentionally have different invalidation behavior:
+- *
+- * - Candidate-file changes rerun the root with the existing Tailwind engine. The engine rescans the authoritative
+- *   source set and returns one complete stylesheet containing both additions and removals.
+- * - Compiler-dependency changes mark the root invalid. Its next Rolldown transform resolves a new Tailwind source, generator,
+- *   and watched file set. Replacement is delayed until that transform has current source and plugin context.
+- * - If a stylesheet stops being a Tailwind root, its Tailwind state is removed. The later Vite CSS hook replaces the retained
+- *   CSS after normal processing succeeds.
+- *
+- * ### 2. Vite-final CSS capture
+- *
+- * `configResolved` wraps the concrete `vite:css-post` transform while preserving its hook metadata, filter, ordering, and
+- * plugin context. The original Vite hook executes first, which preserves CSS Module exports and Vite's internal extraction
+- * state. Only a successful transform updates `styleByModuleId`; syntax errors therefore leave the last successful CSS available
+- * to the currently running application. Query modes such as `?raw`, `?url`, and `?inline` are excluded because they represent
+- * values rather than graph-owned stylesheets.
+- *
+- * ### 3. Live-graph projection
+- *
+- * Output finalization starts from resolved App/Page entry IDs and traverses Rolldown's current static and dynamic import edges
+- * in dependency-first post-order. Transaction-local visited sets terminate cycles and deduplicate shared modules and physical
+- * stylesheets. A retained stylesheet contributes only when its module is still reachable, so removing an import prunes its CSS
+- * and Tailwind candidates without a separate prune protocol or persistent topology cache. Candidate sets are unioned only from
+- * the Tailwind roots whose captured CSS survives that exact traversal, preserving the CSS/class identity invariant.
+- *
+- * ### 4. Shared native-style finalization
+- *
+- * `finalizeOutput()` converts the concatenated reachable CSS to native CSS, optionally minifies that complete global file
+- * (including HTML defaults), then transforms each JavaScript artifact with the same projected class set. Both builds and HMR
+- * follow `build.cssMinify`, defaulting to `build.minify`, using Lightning CSS. Vite's intermediate CSS minification
+- * remains disabled so only final native bytes are optimized. The function returns data without bundle mutation or filesystem
+- * publication. Any conversion or minification failure rejects before callers expose partial output. JavaScript conversion is
+- * skipped when the projection contains no Tailwind candidates, preserving ordinary bundle bytes.
+- *
+- * `createFinalizeOutput()` captures the resolved output policy once and retains only the latest successful CSS conversion and
+- * candidate identity. Every transaction supplies a fresh live-graph projection, but byte-identical CSS skips both PostCSS and
+- * Lightning CSS. Equal candidate contents reuse the same set and replacement table even when the projection allocated a new
+- * set. Changed candidates never reuse stale replacements; conversion failures do not advance the snapshot.
+- *
+- * ### 5a. Complete-build commit
+- *
+- * The post-order `generateBundle` hook gathers all JavaScript chunks, finalizes them as one operation, and only then mutates the
+- * bundle. It assigns converted code, clears invalid source maps, removes Vite's intermediate browser stylesheet, and always
+- * emits the contract-selected global file, including the HTML compatibility base even when the application has no styles.
+- * Native output hooks run afterward and emit Page/component companion files independently.
+- *
+- * ### 5b. Development commit
+- *
+- * The development host calls `finalizeUpdate()` after Rolldown produces patch factories or a complete-output notification.
+- * Finalization uses the `PluginContext` captured by `buildStart`, so it observes the same current graph as the compiler. After
+- * all conversion succeeds, the host's atomic writer publishes changed native CSS before `finalizeUpdate()` returns converted
+- * patch factories. Their captured Vite CSS literals are emptied first; factories, exports, changed IDs, and sequences remain
+- * intact. The patch publisher therefore cannot expose newer JavaScript class identities before matching selectors exist.
+- * `publishedStylesheet` advances only after a successful write and suppresses byte-identical native-tool reload events.
+- *
+- * ## Retained state and lifecycle
+- *
+- * Each plugin instance owns the following bounded state and transformation services:
+- *
+- * - `cssMinify`: requested global-style minification captured before disabling Vite's intermediate pass, then resolved once;
+- * - `entryIds`: graph-exact App/Page entry identities resolved at the start of each build;
+- * - `graphContext`: the active Rolldown graph reader needed by host calls made outside plugin hooks;
+- * - `styleByModuleId`: the latest successful Vite CSS plus optional Tailwind state at one normalized module identity;
+- * - `publishedStylesheet`: the last durably published development stylesheet used for unchanged-write suppression;
+- * - `finalizeOutput`: resolved output options, the fixed Mini transformer, and the latest successful CSS/candidate snapshot.
+- *
+- * The state owners remain scoped to one plugin instance; `entryIds` is atomically replaced after each complete resolution.
+- * A development watcher retains them across updates; build and watcher shutdown clear the complete style store.
+- *
+- * ## Cost model
+- *
+- * Projection is `O(V + E + B + C)` for reachable modules, import edges, concatenated CSS bytes, and candidate insertions.
+- * Building one exact candidate precheck costs `O(C)` candidate bytes and testing a chunk costs `O(J)` source bytes. Matching
+- * chunks then parse and walk in `O(J)`; replacing `Kᵢ` candidate tokens in literal `i` costs `O(LᵢKᵢ)` while preserving
+- * untouched bytes through Rolldown's native editor. Comparing candidate sets costs `O(C)` without sorting. Retained memory
+- * is `O(B + C + D + F)` for latest CSS, candidate sets, compiler dependencies, and watched file identities; no second application
+- * graph is retained. The Tailwind generator stays alive across candidate edits to avoid repeating source normalization and
+- * compiler initialization. Native CSS conversion/minification runs only when projected CSS changes;
+- * no extra source reads or graph traversals are needed.
++ * 宿主保留模块图、Vite CSS 预处理与原生写出所有权。
++ * Tailwind core 生成候选集，共享控制器以一次投影转换 CSS 和 JS。
++ * 每次 DevEngine 回调立即捕获输入，再由宿主已有队列提交和发布。
+  */
+ export function createMiniStylePlugin(
+     contract: Pick<MiniContract, 'styles'>,
+@@ -190,7 +83,34 @@ export function createMiniStylePlugin(
+     // This mutable map is the only retained style store: Vite and Tailwind update separate fields at one module identity.
+     const styleByModuleId = new Map<string, StyleModule>()
+     // This mutable frontier advances only after the host durably writes native CSS, suppressing byte-identical filesystem events.
+-    let publishedStylesheet: string | undefined
++    const publishedStyles = new HmrAssetStore()
++    // 仅保存最近一次回调的输入投影，用于发现没有 JS 补丁的样式事务。
++    let admittedProjection: ReturnType<typeof projectStyles> | undefined
++    const miniTransformer = createMiniTransformer()
++    const compiler = miniTransformer.controller
++
++    const captureUpdate = <Artifact extends JavaScriptArtifact>(artifacts: readonly Artifact[]) => {
++        const projection = projectStyles(entryIds, styleByModuleId, graphContext)
++        const changed = !admittedProjection || admittedProjection.css !== projection.css
++            || !equalCandidates(admittedProjection.classSet, projection.classSet)
++        admittedProjection = projection
++        const captured = artifacts.map(artifact => ({ ...artifact }))
++        const prepared = finalizeOutput(projection, captured.map(neutralizeViteCssPayload)).then(output => ({
++            stylesheet: output.stylesheet,
++            artifacts: captured.map((artifact, index) => ({
++                ...artifact, code: output.javaScript[index]!.code,
++                sourcemap: output.javaScript[index]!.map ? JSON.stringify(output.javaScript[index]!.map) : undefined
++            }))
++        }))
++        // 回调可以早于宿主队列消费，拒绝结果仍由事务等待点报告。
++        void prepared.catch(() => {})
++        return { changed, prepared }
++    }
++    const commitUpdate = async (stylesheet: string, writeStylesheet: (stylesheet: string) => Promise<void>) => {
++        await publishedStyles.commit([{ fileName: contract.styles.globalFileName, source: stylesheet }], async () => {
++            await writeStylesheet(stylesheet)
++        })
++    }
+ 
+     /** Invalidates every Tailwind root fed by one changed compiler dependency. */
+     const invalidateTailwindDependencies = (dependencyId: string): void => {
+@@ -218,7 +138,7 @@ export function createMiniStylePlugin(
+         /** Resolves the output policy and installs the private Vite integration that observes fully processed module CSS. */
+         configResolved(config) {
+             cssMinify ??= Boolean(config.build.minify)
+-            finalizeOutput = createFinalizeOutput({ filename: contract.styles.globalFileName, minify: cssMinify })
++            finalizeOutput = createFinalizeOutput({ filename: contract.styles.globalFileName, minify: cssMinify }, miniTransformer)
+ 
+             // `vite:css-post` is the boundary after all public CSS processing and before browser-module serialization.
+             const cssPostPlugin = config.plugins.find((plugin) => plugin.name === 'vite:css-post')!
+@@ -277,7 +197,7 @@ export function createMiniStylePlugin(
+ 
+                 // Candidate-only updates reuse the Tailwind engine; compiler-input updates replace it atomically.
+                 const reusable = previous?.invalidated ? undefined : previous
+-                const compiled = await compileTailwindRoot(this.environment.config.root, rootId, code, reusable)
++                const compiled = await compileTailwindRoot(compiler, this.environment.config.root, rootId, code, reusable)
+ 
+                 // Replace the retained root record only after generation has produced a complete result.
+                 styleByModuleId.set(rootId, { css: style?.css, tailwind: compiled.root })
+@@ -297,10 +217,12 @@ export function createMiniStylePlugin(
+         /** Invalidates compiler state before Rolldown transforms roots selected through their watched dependencies. */
+         hotUpdate(update) {
+             invalidateTailwindDependencies(normalizeModuleId(update.file))
++            return compiler.invalidate([update.file]).then(() => undefined)
+         },
+         /** Marks roots whose compiler inputs changed for non-HMR Rolldown watch lifecycles. */
+         watchChange(id) {
+             invalidateTailwindDependencies(normalizeModuleId(id))
++            return compiler.invalidate([id]).then(() => undefined)
+         },
+         generateBundle: {
+             // Vite must finish chunking and CSS extraction before VPT finalizes the complete native output transaction.
+@@ -315,13 +237,21 @@ export function createMiniStylePlugin(
+                 // Step 2: finish all fallible CSS and JavaScript conversion before mutating any bundle output.
+                 const finalized = await finalizeOutput(
+                     projectStyles(entryIds, styleByModuleId, this),
+-                    chunks.map((chunk) => ({ code: chunk.code, filename: chunk.fileName }))
++                    chunks.map((chunk) => ({ code: chunk.code, filename: chunk.fileName, sourcemap: chunk.map ? JSON.stringify(chunk.map) : undefined }))
+                 )
+ 
+                 // Step 3: commit the converted JavaScript as one completed result and discard now-invalid source maps.
+                 chunks.forEach((chunk, index) => {
+-                    chunk.code = finalized.javaScript[index]!
+-                    chunk.map = null
++                    const transformed = finalized.javaScript[index]!
++                    chunk.code = transformed.code
++                    // 转换后的 inline map 与实际 chunk 代码一同交给原生写出。
++                    // Rolldown 1.2 的声明漏掉规范允许的 null sourcesContent；保留真实缺项，不伪造源码。
++                    chunk.map = transformed.map ? {
++                        ...transformed.map,
++                        file: chunk.fileName,
++                        toString: () => JSON.stringify(transformed.map),
++                        toUrl: () => `data:application/json;base64,${Buffer.from(JSON.stringify(transformed.map)).toString('base64')}`
++                    } as Rolldown.SourceMap : null
+                 })
+ 
+                 // Step 4: remove Vite's browser CSS carrier; VPT owns the sole physical global native stylesheet.
+@@ -336,87 +266,39 @@ export function createMiniStylePlugin(
+             }
+         },
+         /** Releases build-only state after the final bundle has consumed it. */
+-        closeBundle() {
+-            if (this.environment.config.command === 'build') {
++        async closeBundle() {
++            if (this.environment.config.command === 'build' && !this.environment.config.build.watch) {
+                 styleByModuleId.clear()
++                await compiler.dispose()
+             }
+         },
+         /** Releases all long-lived development state when the owning watcher terminates. */
+-        closeWatcher() {
++        async closeWatcher() {
+             styleByModuleId.clear()
++            await compiler.dispose()
+         },
+-        /** Finalizes one development result and publishes matching native CSS before exposing converted patch factories. */
+-        finalizeUpdate: async <Artifact extends JavaScriptArtifact>(
+-            artifacts: readonly Artifact[],
+-            writeStylesheet: (stylesheet: string) => Promise<void>
+-        ): Promise<readonly Artifact[]> => {
+-            // CSS is already captured for physical publication, so its browser payload need not enter JavaScript conversion.
+-            const javaScript = artifacts.map((artifact) => ({
+-                code: neutralizeViteCssPayload(artifact.code),
+-                filename: artifact.filename
+-            }))
+-
+-            // Step 1: complete every fallible conversion against one snapshot of the current module graph.
+-            const output = await finalizeOutput(projectStyles(entryIds, styleByModuleId, graphContext), javaScript)
+-
+-            // Step 2: publish native CSS first so the tool cannot observe JavaScript with newer class identities.
+-            if (output.stylesheet !== publishedStylesheet) {
+-                await writeStylesheet(output.stylesheet)
+-                // Advance the frontier only after the atomic writer succeeds; failed writes remain retryable.
+-                publishedStylesheet = output.stylesheet
+-            }
+-
+-            // Step 3: preserve patch metadata and replace only code after the matching stylesheet is durable.
+-            return artifacts.map((artifact, index) => ({ ...artifact, code: output.javaScript[index]! }))
++        captureUpdate,
++        commitUpdate,
++        finalizeUpdate: async <Artifact extends JavaScriptArtifact>(artifacts: readonly Artifact[], writeStylesheet: (stylesheet: string) => Promise<void>) => {
++            const prepared = await captureUpdate(artifacts).prepared
++            await commitUpdate(prepared.stylesheet, writeStylesheet)
++            return prepared.artifacts
+         }
+     }
+ }
+ 
+ /** Creates one cached native-output converter for a fixed filename and minification policy. */
+-function createFinalizeOutput(stylesheetOptions: Parameters<typeof minifyMiniStylesheet>[1]) {
+-    // The fixed transformer retains only deterministic class-escape and PostCSS pipeline caches for this finalizer.
+-    const miniTransformer = createMiniTransformer()
+-    // Retain only the latest successful CSS conversion and candidate identity, not historical outputs or graph topology.
+-    let previousOutput:
+-        | Readonly<{
+-              css: string
+-              classSet: ReadonlySet<string>
+-              stylesheet: string
+-          }>
+-        | undefined
+-
+-    return async function finalizeOutput(
+-        projection: ReturnType<typeof projectStyles>,
+-        javaScript: readonly JavaScriptArtifact[]
+-    ) {
+-        // Step 1: reuse candidate identities only when this transaction's live projection has equal contents.
+-        const classSet =
+-            previousOutput && equalCandidates(previousOutput.classSet, projection.classSet)
+-                ? previousOutput.classSet
+-                : projection.classSet
+-
+-        // Step 2: reuse identical CSS or convert before minifying, including native units, selectors, and HTML defaults.
+-        const stylesheet =
+-            previousOutput?.css === projection.css
+-                ? previousOutput.stylesheet
+-                : await minifyMiniStylesheet(
+-                      await miniTransformer.transformStylesheet(projection.css),
+-                      stylesheetOptions
+-                  )
+-
+-        // Step 3: transform artifacts independently with the exact candidate set projected from that stylesheet.
+-        const transformedJavaScript = javaScript.map((artifact) =>
+-            miniTransformer.transformJavaScript({
+-                classSet,
+-                code: artifact.code,
+-                filename: artifact.filename
+-            })
+-        )
+-
+-        // Advance only after all conversions succeed; failed CSS/JS transactions leave the reusable snapshot intact.
+-        previousOutput = { css: projection.css, classSet, stylesheet }
+-        // Returning data keeps physical bundle mutation and development filesystem publication at their respective owners.
+-        return { javaScript: transformedJavaScript, stylesheet }
++function createFinalizeOutput(stylesheetOptions: Parameters<typeof minifyMiniStylesheet>[1], miniTransformer: ReturnType<typeof createMiniTransformer>) {
++    // 缓存成功的完整投影；回调各自持有 Promise，不读取后来更新的输入。
++    let previous: Readonly<{ css: string; classSet: ReadonlySet<string>; prepared: TailwindOutput; stylesheet: string }> | undefined
++    return async function finalizeOutput(projection: ReturnType<typeof projectStyles>, javaScript: readonly JavaScriptArtifact[]) {
++        const captured = { css: projection.css, classSet: new Set(projection.classSet) }
++        const cached = previous && previous.css === captured.css && equalCandidates(previous.classSet, captured.classSet) ? previous : undefined
++        const prepared = cached?.prepared ?? await miniTransformer.prepare(captured.css, captured.classSet, previous?.css === captured.css ? previous.prepared.css : undefined)
++        const stylesheet = previous?.css === captured.css ? previous.stylesheet : await minifyMiniStylesheet(prepared.css, stylesheetOptions)
++        const transformed = await Promise.all(javaScript.map(artifact => transformHmrPatch(artifact, [prepared.preparation], true)))
++        previous = { ...captured, prepared, stylesheet }
++        return { stylesheet, javaScript: transformed }
+     }
+ }
+ 
+@@ -489,45 +371,30 @@ function projectStyles(
+ 
+ /** Compiles one Tailwind root and returns replacement state without mutating the retained module store. */
+ async function compileTailwindRoot(
++    controller: TailwindController,
+     projectRoot: string,
+     rootId: string,
+     css: string,
+     previous: TailwindRoot | undefined
+ ): Promise<Readonly<{ css: string; root: TailwindRoot }>> {
+-    // Step 1: exact root-source equality proves that candidate changes can reuse the existing compiler.
+-    const reuse = previous?.source === css
+-
+-    // Step 2: compiler-input changes resolve a fresh Tailwind source and create a new engine before retained state changes.
+-    const generator = reuse
+-        ? previous.generator
+-        : createTailwindV4Engine(
+-              await resolveTailwindV4Source({
+-                  projectRoot: projectRoot,
+-                  cwd: tailwindcssBasedir,
+-                  cssSources: [
+-                      {
+-                          css: resolveTailwindRootImport(css),
+-                          base: path.dirname(rootId),
+-                          file: rootId
+-                      }
+-                  ]
+-              })
+-          )
+-
+-    // Step 3: authoritative source scanning returns one complete stylesheet containing additions and removals.
+-    const generated = await generator.generate({ scanSources: true })
+-
+-    // Step 4: return a complete immutable replacement record; the caller commits it only after this function succeeds.
+-    return {
+-        css: generated.css,
+-        root: {
+-            source: css,
+-            classSet: generated.classSet,
+-            dependencies: new Set(generated.dependencies.map(normalizeModuleId)),
+-            generator: generator,
+-            files: reuse ? previous.files : new Scanner({ sources: generated.sources }).files,
+-            invalidated: false
++    const compiler = await controller.getCompiler()
++    if (!previous || previous.source !== css) {
++        compiler.invalidate([rootId])
++    }
++    const generated = await compiler.generate({
++        id: rootId,
++        target: 'tailwind',
++        scanSources: true,
++        sourceOptions: {
++            projectRoot,
++            cwd: tailwindcssBasedir,
++            cssSources: [{ css: resolveTailwindRootImport(css), base: path.dirname(rootId), file: rootId }]
+         }
++    })
++    const files = await listTailwindSourceFiles(generated, projectRoot)
++    return {
++        css: generated.rawCss,
++        root: { source: css, classSet: new Set(generated.classSet), dependencies: new Set(generated.dependencies.map(normalizeModuleId)), generator: controller, files, invalidated: false }
+     }
+ }
+ 
+@@ -575,11 +442,22 @@ function isApplicationStyle(id: string): boolean {
+  *
+  * The surrounding factory, CSS Module exports, changed IDs, and patch sequence remain unchanged.
+  */
+-function neutralizeViteCssPayload(code: string): string {
+-    return code.replace(
+-        /(\b(?:const|let|var)\s+__vite__css[\w$]*\s*=\s*)"(?:\\[\s\S]|[^"\\])*"(?=;\s*\b__vite__updateStyle[\w$]*\s*\()/g,
+-        '$1""'
++function neutralizeViteCssPayload(artifact: JavaScriptArtifact): JavaScriptArtifact {
++    const editor = new RolldownMagicString(artifact.code)
++    const pattern = /(\b(?:const|let|var)\s+__vite__css[\w$]*\s*=\s*)("(?:\\[\s\S]|[^"\\])*")(?=;\s*\b__vite__updateStyle[\w$]*\s*\()/g
++    let changed = false
++    for (const match of artifact.code.matchAll(pattern)) {
++        editor.overwrite(match.index + match[1]!.length, match.index + match[0].length, '""')
++        changed = true
++    }
++    if (!changed) {
++        return artifact
++    }
++    const map = composeHmrSourceMaps(
++        normalizeHmrSourceMap(editor.generateMap({ source: artifact.filename, includeContent: true, hires: true })),
++        artifact.sourcemap ? normalizeHmrSourceMap(artifact.sourcemap) : null
+     )
++    return { ...artifact, code: editor.toString(), sourcemap: map ? JSON.stringify(map) : undefined }
+ }
+ 
+ /** Detects Tailwind v4 package imports before Vite processes the resulting CSS. */
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/styles/source-filter.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/styles/source-filter.test.ts
+index 25e435c..0bcfd55 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/styles/source-filter.test.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/styles/source-filter.test.ts
+@@ -124,7 +124,11 @@ test('ordinary CSS clears retained Tailwind candidates while raw requests leave
+     const updateId = `${styleId}?v=2`
+     assert.equal(await Reflect.apply(transform.handler, context, [ordinary, updateId]), undefined)
+     await Reflect.apply(capture, context, [ordinary, updateId])
+-    assert.deepEqual(await styles.finalizeUpdate([artifact], publish), [artifact])
++    const cleared = await styles.finalizeUpdate([artifact], publish)
++    assert.equal(cleared[0]!.code, artifact.code)
++    assert.equal(cleared[0]!.filename, artifact.filename)
++    assert.equal(cleared[0]!.seq, artifact.seq)
++    assert.ok(cleared[0]!.sourcemap)
+     assert.equal(published.length, 2)
+     assert.match(published[1], /\.plain/)
+     assert.doesNotMatch(published[1], /py-5_d5/)
