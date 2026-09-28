@@ -1,5 +1,6 @@
 import type { Ref, ShallowRef } from 'vue'
 import type {
+  AnalyzeTreemapColorMode,
   AnalyzeTreemapFilterMode,
   DuplicateModuleEntry,
   IncrementAttributionEntry,
@@ -17,25 +18,61 @@ export function useAnalyzeTreemapFilters(options: {
   selectedBudgetWarning: ShallowRef<PackageBudgetWarning | null>
   selectedLargestFile: ShallowRef<LargestFileEntry | null>
   selectedTreemapMeta: ShallowRef<TreemapNodeMeta | null>
+  hasComparison: Ref<boolean>
 }) {
   const route = useRoute()
   const router = useRouter()
+
+  function setTreemapFilterMode(mode: AnalyzeTreemapFilterMode) {
+    const query = { ...route.query }
+    if (mode === 'all') {
+      delete query.filter
+    }
+    else {
+      query.filter = mode
+    }
+    return router.replace({ query })
+  }
 
   const treemapFilterMode = computed<AnalyzeTreemapFilterMode>({
     get() {
       return resolveTreemapFilterMode(route.query.filter)
     },
     set(value) {
-      const query = { ...route.query }
-      if (value === 'all') {
-        delete query.filter
-      }
-      else {
-        query.filter = value
-      }
-      void router.replace({ query })
+      void setTreemapFilterMode(value)
     },
   })
+
+  const treemapColorMode = computed<AnalyzeTreemapColorMode>(() => {
+    const color = route.query.color
+    return color === 'source' || color === 'duplicates' || color === 'delta' ? color : 'package'
+  })
+
+  function handleUpdateTreemapColorMode(mode: AnalyzeTreemapColorMode) {
+    if (mode === 'delta' && !options.hasComparison.value) {
+      return
+    }
+    const query = { ...route.query }
+    if (mode === 'package') {
+      delete query.color
+    }
+    else {
+      query.color = mode
+    }
+    void router.replace({ query })
+  }
+
+  function handleInspectTreemapProblem(problem: 'duplicates' | 'growth') {
+    if (problem === 'growth' && !options.hasComparison.value) {
+      return
+    }
+    options.selectedTreemapMeta.value = null
+    options.selectedLargestFile.value = null
+    options.selectedBudgetWarning.value = null
+    void router.replace({
+      query: { ...route.query, filter: problem, color: problem === 'growth' ? 'delta' : 'duplicates' },
+    })
+  }
 
   const growthFileKeys = computed(() =>
     new Set(options.incrementAttribution.value
@@ -62,7 +99,7 @@ export function useAnalyzeTreemapFilters(options: {
   })
   const treemapFilterState = computed(() => ({
     mode: treemapFilterMode.value,
-    selectedPackageId: selectedPackageId.value,
+    selectedPackageId: treemapFilterMode.value === 'selected-package' ? selectedPackageId.value : null,
     growthFileKeys: growthFileKeys.value,
     growthModuleIds: growthModuleIds.value,
     duplicateModuleIds: duplicateModuleIds.value,
@@ -73,6 +110,9 @@ export function useAnalyzeTreemapFilters(options: {
     if (mode === 'selected-package' && !selectedPackageId.value) {
       return
     }
+    if (mode === 'growth' && !options.hasComparison.value) {
+      return
+    }
     treemapFilterMode.value = mode
   }
 
@@ -80,9 +120,13 @@ export function useAnalyzeTreemapFilters(options: {
     canUseSelectedPackageFilter,
     duplicateModuleIds,
     growthModuleIds,
+    handleInspectTreemapProblem,
+    handleUpdateTreemapColorMode,
     handleUpdateTreemapFilterMode,
     selectedPackageId,
+    setTreemapFilterMode,
     treemapFilterMode,
+    treemapColorMode,
     treemapFilterState,
   }
 }

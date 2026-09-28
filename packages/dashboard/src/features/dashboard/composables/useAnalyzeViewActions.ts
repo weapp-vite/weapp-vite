@@ -3,10 +3,6 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { copyText } from '../utils/clipboard'
 
-export function createAnalyzeViewUrl(fullPath: string) {
-  return new URL(fullPath, window.location.origin).toString()
-}
-
 export function useAnalyzeViewActions(options: {
   exportStatus: ShallowRef<string>
   moreMenuOpen: Ref<boolean>
@@ -19,7 +15,8 @@ export function useAnalyzeViewActions(options: {
   const canResetView = computed(() => route.fullPath !== '/analyze')
 
   async function copyViewLink() {
-    await copyText(createAnalyzeViewUrl(route.fullPath))
+    const href = router.resolve({ path: route.path, query: route.query }).href
+    await copyText(new URL(href, window.location.origin).href)
     options.exportStatus.value = '视图链接已复制'
     options.moreMenuOpen.value = false
   }

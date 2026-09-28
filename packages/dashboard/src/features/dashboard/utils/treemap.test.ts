@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { formatTreemapNodeLabel, formatTreemapTooltip } from './treemap'
-import { createTreemapNodeStyle } from './treemapRisk'
+import { createTreemapColorStyle } from './treemapPalette'
 
 function convertHslColor(value: string) {
   const match = value.match(/^hsl\((\d+), (\d+)%, (\d+)%\)$/)
@@ -80,7 +80,7 @@ describe('treemap presentation', () => {
     expect(tooltip).toContain('&lt;img src=x onerror=alert(1)&gt;')
   })
 
-  it('uses group color for fill and risk only for the border', () => {
+  it('preserves package identity and readable contrast across reordering', () => {
     const packageIds = [
       '__main__',
       'centerPages',
@@ -92,42 +92,22 @@ describe('treemap presentation', () => {
       'reportPages',
       'settingsPages',
       'sharedPages',
+      'pkg-69',
     ]
     const colorById = new Map(packageIds.map(id => [
       id,
-      createTreemapNodeStyle(0.2, id, 'leaf').itemStyle.color,
+      createTreemapColorStyle(id).itemStyle.color,
     ]))
     const reorderedColorById = new Map([...packageIds].reverse().map(id => [
       id,
-      createTreemapNodeStyle(0.2, id, 'leaf').itemStyle.color,
+      createTreemapColorStyle(id).itemStyle.color,
     ]))
-    const healthy = createTreemapNodeStyle(0.2, '__main__', 'leaf')
-    const risky = createTreemapNodeStyle(0.9, '__main__', 'leaf')
-    const otherPackage = createTreemapNodeStyle(0.2, 'centerPages', 'leaf')
-    const hiddenLabel = createTreemapNodeStyle(0.2, '__main__', 'leaf', false)
-    const hiddenUpperLabel = createTreemapNodeStyle(0.2, '__main__', 'file', true, false)
-    const quantizedContrastEdge = createTreemapNodeStyle(0.2, 'pkg-69', 'leaf')
 
-    expect(new Set(colorById.values()).size).toBe(packageIds.length)
     for (const packageId of packageIds) {
       expect(reorderedColorById.get(packageId)).toBe(colorById.get(packageId))
+      const style = createTreemapColorStyle(packageId)
+      expect(getContrastRatio(style.itemStyle.color, style.label.color)).toBeGreaterThanOrEqual(4.5)
     }
-    for (const packageId of packageIds) {
-      for (const depth of ['package', 'file', 'leaf'] as const) {
-        const style = createTreemapNodeStyle(0.2, packageId, depth)
-        expect(getContrastRatio(style.itemStyle.color, style.label.color)).toBeGreaterThanOrEqual(4.5)
-        expect(style.upperLabel.backgroundColor).toBe(style.itemStyle.color)
-      }
-    }
-    expect(getContrastRatio(
-      quantizedContrastEdge.itemStyle.color,
-      quantizedContrastEdge.label.color,
-    )).toBeGreaterThanOrEqual(4.5)
-    expect(healthy.itemStyle.color).toBe(risky.itemStyle.color)
-    expect(healthy.itemStyle.borderColor).not.toBe(risky.itemStyle.borderColor)
-    expect(healthy.itemStyle.color).not.toBe(otherPackage.itemStyle.color)
-    expect(healthy.itemStyle.color).toMatch(/^hsl\(\d+, 42%, 46%\)$/)
-    expect(hiddenLabel.label.show).toBe(false)
-    expect(hiddenUpperLabel.upperLabel.show).toBe(false)
+    expect(colorById.get('__main__')).not.toBe(colorById.get('centerPages'))
   })
 })

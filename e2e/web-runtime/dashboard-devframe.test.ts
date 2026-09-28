@@ -6,7 +6,7 @@ import path from 'node:path'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { startAnalyzeDashboard } from '../../packages/weapp-vite/src/cli/analyze/dashboard'
-import { createDashboardArtifactSnapshot } from '../../packages/weapp-vite/src/cli/analyze/dashboardDevframe/artifacts'
+import { createDashboardArtifactSnapshot } from '../../packages/weapp-vite/src/dashboard'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
@@ -185,8 +185,7 @@ describe('Dashboard Devframe browser regression', () => {
     ).toBeGreaterThan(initialSocketCount)
     await expect.poll(() => activePage.getByText('weapp-vite DevTools connected').first().isVisible()).toBe(true)
 
-    const origin = new URL(dashboardUrl).origin
-    await activePage.goto(`${origin}/analyze?tab=graph`, { waitUntil: 'domcontentloaded' })
+    await activePage.goto(new URL('analyze?tab=graph', dashboardUrl).href, { waitUntil: 'domcontentloaded' })
     await expect.poll(
       () => activePage.getByText('weapp-vite DevTools connected').first().isVisible(),
       { timeout: 30_000 },
@@ -196,7 +195,7 @@ describe('Dashboard Devframe browser regression', () => {
       { timeout: 30_000 },
     ).toBeGreaterThan(0)
 
-    await activePage.goto(`${origin}/analyze?tab=source`, { waitUntil: 'domcontentloaded' })
+    await activePage.goto(new URL('analyze?tab=source', dashboardUrl).href, { waitUntil: 'domcontentloaded' })
     await expect.poll(
       () => activePage.getByRole('heading', { name: '源码对比' }).isVisible(),
       { timeout: 30_000 },
@@ -232,7 +231,7 @@ describe('Dashboard Devframe browser regression', () => {
     const unauthorizedPage = await unauthorizedContext.newPage()
     try {
       const dialogPromise = unauthorizedPage.waitForEvent('dialog')
-      await unauthorizedPage.goto(origin, { waitUntil: 'domcontentloaded' })
+      await unauthorizedPage.goto(new URL('.', dashboardUrl).href, { waitUntil: 'domcontentloaded' })
       const dialog = await dialogPromise
       expect(dialog.message()).toContain('authentication code')
       await dialog.dismiss()

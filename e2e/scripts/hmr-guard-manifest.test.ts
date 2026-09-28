@@ -9,6 +9,9 @@ import { HMR_GUARD_ALL_TESTS, HMR_GUARD_TEST_GROUPS, HMR_GUARD_UTILITY_TESTS } f
 const ROOT = path.resolve(import.meta.dirname, '..')
 const REPO_ROOT = path.resolve(ROOT, '..')
 const DEV_SCRIPT_ALLOWLIST = new Set([
+  // Inspector 使用合成报告启动 Node 宿主，不走小程序 dev watcher；常规 dev / dev:ui 仍受检查。
+  'apps/dashboard-ui-lab#dev:inspector',
+  'apps/dashboard-ui-lab#dev:inspector:host',
   'apps/socket-io-chat#dev',
   'apps/socket-io-chat#dev:web',
   'apps/rollup-watcher#dev',

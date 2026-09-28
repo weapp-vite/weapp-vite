@@ -51,46 +51,57 @@ weapp-vite dev --analyze
 
 `weapp-vite` 会在运行时检查当前项目中是否安装了 `@weapp-vite/dashboard`。如果存在，就读取本包 `dist/` 中的静态资源并启动本地 DevTools 页面。
 
-Dashboard 通过挂载在 `/__weapp-vite/` 下的 Devframe 1.0 bridge 连接 CLI（[上游迁移说明](https://github.com/devframes/devframe/blob/v1.0.0/docs/content/7.migrations/1.migration-0.10.md)）：
+独立 Dashboard 的页面与 Devframe 1.1 bridge 共同挂载在 `/__weapp-vite/` 下（[上游更新日志](https://github.com/devframes/devframe/releases/tag/v1.1.0)、[1.0 迁移说明](https://github.com/devframes/devframe/blob/v1.1.0/docs/content/7.migrations/0.migration-1.0.md)）：
 
 - Analyze 数据通过带 revision、SHA-256 描述符和固定页上限的只读 RPC 分页获取
 - revision 与最近运行事件通过服务端单向通知同步；WebSocket 断开后会重连并重新查询权威状态
-- Dashboard 不创建可由客户端回写的业务 shared state，并拒绝通用 shared-state set/patch
+- Dashboard 不创建可由客户端回写的业务 shared state；独立宿主额外拒绝通用 shared-state set/patch，共享宿主不会覆盖这些全局 RPC
 - 源码读取保留当前报告 allowlist、符号链接和读取竞态防护；产物文本来自当前分析 revision 的只读快照，不回退到实时 `dist`
 - 单文件上限为 2 MiB，当前 revision 的产物保留预算按原始字节计为 32 MiB；超限明确报错，不读取其他 revision 或磁盘上的替代内容
-- Devframe 显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
+- 独立宿主显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
 - 页面不再依赖 HTML 全局变量、业务 SSE 或 Vite HMR 作为业务数据通道
-- bridge 保持 `mcp: false`，不加载可选的 `@devframes/agentic`；仓库现有 MCP 服务不经由这个 bridge 提供
+- 独立 bridge 保持 `mcp: false`；Vite DevTools 的认证、Origin 与 MCP 策略由其宿主配置持有，不能把共享宿主视为只读沙箱
+
+前端使用 Devframe 的已有连接继承与相对元数据发现，不再写死独立 bridge 地址。路由和复制视图链接保留实际挂载前缀；复制链接仅包含页面路径与查询参数，不携带认证 fragment。`devframe connect --base` 是 MCP connector 的探测选项，不是 Dashboard 的挂载配置。
 
 微信开发者工具继续负责模拟器、原生调试和真机能力；Dashboard 是构建、HMR、包体、诊断和自动化状态的伴随 DevTools。
 
-## 面向 App 与小程序的演进边界
+## 体积地图工作台
 
-当前页面仍是单项目构建工作台，不是跨设备调试器。`runtimeEvents` 记录的是 CLI/build/HMR/diagnostic 事件，不是被调试应用的 console 或 network 流；前后端也尚未建立 target identity、能力协商和多会话生命周期协议。
+- 图表与节点详情同屏显示；窄屏时详情排在图表下方。可点击图块，也可用详情列表搜索、逐级选择小节点；面包屑和列表支持键盘操作。
+- “显示”控制节点范围，“着色”独立选择所属分包、模块来源、重复打包或构建增量。换色不会改变当前筛选范围和图块面积；图例说明当前颜色含义。
+- 工具栏下拉将标签和值放在同一个轻量触发器内；选项统一左对齐，右侧勾号标明当前选择。方向键移动、Enter 确认、Escape 取消，禁用项不会被键盘选中。
+- “查重复”同时启用重复筛选和重复着色。重复按同一个模块 ID 出现在不同包中判断，不把同包多次引用、同名路径或多个 query 变体合并成跨包重复。
+- “看增长”使用当前选中的基线或上次构建，只显示增长部分。增量比较同一包、文件、模块位置的已记录产物字节；缺失体积标为未知，新增单独标记，不用原始源码体积替代。没有比较快照时入口禁用；已删除节点不出现在当前产物图中。
+- 详情区保留完整路径、模块 ID、所属包、实际产物大小和已记录模块贡献。模块贡献不等于独立文件大小；缺失贡献时图块可能使用原始模块体积估算，详情会明确区分。
+- 详情标题在滚动时保留节点身份；子节点、跨包位置和各类引用可分别折叠，支持 Enter / Space。关闭的分组只有在相关内容实际变化时才显示“有更新”，打开后清除；同值报告、无关包更新和筛选 / 着色 / 列表搜索不会触发未读。
+- 后台报告更新不会主动滚动或移动焦点。显式展开超出可视区域的分组时才调整所属滚动容器；后续切换、收起或手动滚动优先。通过详情列表导航后，焦点回到新节点标题，详情从头显示。
+- 引用与被引用来自报告中的静态 / 动态 import；模块的跨包位置不是源码级依赖图。无法唯一定位的引用仅展示文本，点击当前筛选之外的已知产物会先恢复全部范围。
+- “查看源码与产物”复用只读源码对比，支持所有报告产物，不受概览 Top Files 数量限制；从模块进入时选择对应源码。第三方依赖不提供工作区源码入口，生成文件或已移除的源码仍可能返回明确的“文件不存在”提示，不回退到其他文件。
+- 当前体积地图的选择会随报告更新按节点身份保留；节点移除时回到所属包，包被移除时恢复全部范围。
 
-源码对比使用与当前报告同一次生成过程采集的产物文本。完整分析从 `analyzeSubpackages` 的 `write: false` 构建输出捕获 chunk/asset；开发模式 fallback 则在扫描 `dist` 生成报告时保存本次读到的同一份字节，并丢弃失败分析的部分捕获。静态 `analyze`、`build --ui`、`dev --ui` 和 fallback 都随报告提交对应快照，不会为界面补写 bundle。
+## 宿主无关的 Devframe 核心
 
-文件请求携带当前显示的 revision，报告更新会拒绝旧请求与过期异步响应；即使文件路径未变，对比面板也会重新读取。产物只保留当前报告对应的快照，不写入历史 JSON，也不证明目标设备正在运行的构建版本；源码仍读取工作区当前文件，不承诺历史源码快照。这条一致性链路不替代下述 target identity 和运行时 adapter。
+分层参考 [Pinia Colada 的 Devframe 定义与宿主入口](https://github.com/posva/pinia-colada/tree/2f181cbcf5e1a9a9ce06599ae14acdedc24b48d3/devtools/src)，通过 [Vite DevTools 官方适配器](https://devtools.vite.dev/kit/devtools-plugin) 挂载同一份定义，而不是另建 Dashboard、RPC 协议或多 target 框架。
 
-| 目标 | 当前可复用部分 | 尚缺的边界 |
+| 职责 | 入口 | 边界 |
 | --- | --- | --- |
-| 真实微信 IDE | `@weapp-vite/devtools-runtime` 与 MCP 中的 automator 会话、页面数据/WXML 和 console 读取 | Dashboard 只读 adapter、按 target 隔离的日志、显式 detach |
-| Node headless / browser simulator | `mpcore` 的逻辑快照、页面操作和浏览器预览 | 各 provider 的能力声明与事件适配；不能把模拟结果当作真实 IDE 布局或宿主行为 |
-| 桌面 DevTools App 外壳 | 当前 Web Dashboard 与本地 CLI bridge | 桌面打包、进程所有权、安全 IPC、导航及权限隔离 |
-| 原生 iOS/Android App | Dashboard 展示层与 Devframe 连接层 | 原生 runtime/debugger adapter、设备发现、会话管理和平台能力协议 |
+| 报告生产 | 现有 analyze/build/dev 调用方 | 编译、历史持久化和产物捕获在发布前完成 |
+| 共享核心 | `weapp-vite/dashboard` | 持有报告、当前产物、运行事件、revision 与 scoped 只读 RPC，不启动服务器 |
+| 独立宿主 | CLI 的 `startAnalyzeDashboard` | 选择源码或静态页面，持有 Vite、OTP、退出信号与独立只读策略 |
+| Vite DevTools 宿主 | `weapp-vite/dashboard/vite` | 使用 `createPluginFromDevframe`，复用现有宿主端口与传输，关闭时释放核心 |
+| 前端 | `@weapp-vite/dashboard` | 同一份原生 Vite 构建的 SPA，不导入 Node 核心 |
 
-Web/H5 backend 和 Donut 的多端小程序配置不等于已有通用原生 App 调试目标。桌面外壳也不会自动获得原生调试能力。
+`createAnalyzeDashboardDevframe` 返回 `definition`、`update`、`emitRuntimeEvents` 和 `dispose`。每个控制器对应一个宿主生命周期；提交后的报告与产物 Map 不得继续修改。报告更新先完成报告、产物、事件和 revision 的一致切换，再发送一次通知；事件更新不会改变报告 revision。`update` 完成不代表浏览器已经渲染完成。
 
-如果“App/小程序版本”指工作台本身运行在手机或小程序中，当前依赖浏览器 DOM 的 Dashboard 不能直接作为小程序原生页面运行。需要另行设计 WebView 或原生 UI 容器，以及设备到开发机的连接和鉴权；当前 loopback-only bridge 不提供远程设备接入，不能靠放开监听地址替代安全设计。
+`resolveDashboardClientAssets` 返回可选前端包已构建 SPA 的绝对目录，未安装或未构建时返回 `undefined`。独立开发宿主仍可选择源码入口；Vite DevTools 挂载必须提供已构建资源。接入步骤和完整 Node 端示例见 [weapp-vite 的嵌入接口](../weapp-vite/README.md#dashboard-嵌入-vite-devtools)。
 
-推荐先落地一条只读链路：**真实微信 IDE attach → 当前页 route/data/WXML → 按会话隔离的 console → detach**。由 `packages/devtools-runtime` 持有窄的 target contract 和 adapter，Dashboard 只消费能力声明和结构化结果；随后再分别接入 headless、browser 和原生 App adapter。不在第一步暴露 `setData`、任意宿主 API、页面方法调用或任意路径写入。
+Vite 适配器只在开发模式启用，不向生产构建导出报告，也不向小程序 AppService 注入客户端脚本。默认面板目录为 `/__weapp-vite/`；显式 `base` 与 Vite 应用自身的 `base` 独立。一个共享宿主中的其他插件仍可使用其合法的 shared-state、编辑或命令能力；Dashboard 的只读查询不构成插件之间的安全沙箱。
 
-多 target/Hub 化之前需要明确以下边界：
+源码对比使用与当前报告同一次生成过程捕获的产物。完整分析从 `analyzeSubpackages` 的 `write: false` 输出捕获 chunk/asset；开发 fallback 在扫描产物生成报告时保存同一份字节。两者都不为界面补写 bundle。文件请求携带 revision，更新或关闭会拒绝旧请求及过期异步响应；产物只保留当前报告的快照，源码仍读取 allowlist 内的当前工作区文件。
 
-- 协议携带 target identity、协议版本、capabilities 和会话状态；构建 revision 与运行时事件序列分开，文件读取继续受 target/project allowlist 约束。
-- 当前独立 bridge 覆盖了 Devframe 通用 shared-state set/patch 并拒绝写入。这是单工具的只读策略，不能原样放进共享 Hub，否则会阻止其他 Devframe 的 shared-state 写入；需要隔离 bridge 或改为本工具范围内的权限边界。
-- 工作台直接依赖已升级至 Devframe 1.0；`@vitejs/devtools-kit` 的传递依赖仍使用自己的 Devframe/Hub 0.8。当前 bridge 独立运行，不强制覆盖上游 peer 版本；未来接入其 Hub 前需要先统一兼容契约。
-- 复用 automator 时区分释放引用与真正断开连接；日志订阅、缓存和清理必须归属具体 target。当前 MCP 日志池不是多 target 隔离协议，不能直接用作统一事件流。
+`runtimeEvents` 仍是 CLI/build/HMR/diagnostic 事件，不是应用 console/network，也不自动 attach 微信 IDE、模拟器或原生设备。此次抽取只改变 DevTools 的宿主边界。
+
 
 ## 项目结构
 

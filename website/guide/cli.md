@@ -81,6 +81,14 @@ wv [root]
 - `--scope` 会只保留主包和指定分包进入开发构建，适合日常只调试某几个业务分包。产物 `app.json.subPackages` 也只包含参与 scope 的分包。
 - `--ui` 仅监听 `127.0.0.1`，终端会输出带一次性 OTP 的 magic link；Dashboard 通过分页只读 RPC 获取 Analyze 数据，并在连接中断后自动重连。
 
+#### Dashboard 嵌入 Vite DevTools
+
+`--ui` 保持独立工作台模式，页面与 RPC 共同挂载在 `/__weapp-vite/`。需要复用现有 Vite DevTools 宿主时，使用 Node 入口 `weapp-vite/dashboard` 创建报告控制器，再通过 `weapp-vite/dashboard/vite` 的 `createAnalyzeDashboardPlugin` 挂载同一份定义和面板。
+
+接入方提供已完成的报告、当前产物快照与明确的源码根目录；可选 `@weapp-vite/dashboard` 提供原生构建资源。宿主持有认证、Origin、MCP 和服务生命周期，Dashboard 不覆盖共享宿主的全局 shared-state 写入。适配器只在开发模式启用，不把报告或客户端脚本注入生产小程序。
+
+自定义面板目录与 Vite 应用 `base` 独立；页面导航与复制视图链接会保留实际挂载前缀，复制链接不会携带认证 fragment。完整用法见 [包内嵌入接口文档](https://github.com/weapp-vite/weapp-vite/tree/main/packages/weapp-vite#dashboard-嵌入-vite-devtools)；该说明也随 `weapp-vite/dist/docs/README.md` 发布。
+
 ### 2) `build`
 
 用于生产构建（支持 watch）。普通 `build` 不上传；只有显式传入 `--upload` 才使用上传默认参数，并在构建成功后上传。

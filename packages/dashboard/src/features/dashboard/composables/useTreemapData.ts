@@ -1,24 +1,30 @@
 import type { Ref } from 'vue'
-import type { AnalyzeSubpackagesResult, ResolvedTheme, TreemapNode, TreemapNodeMeta } from '../types'
+import type { AnalyzeSubpackagesResult, AnalyzeTreemapColorMode, ResolvedTheme, TreemapLegendItem, TreemapNode, TreemapNodeMeta } from '../types'
 import type { TreemapFilterState } from '../utils/treemapDataNodes'
 import { computed } from 'vue'
-import { formatTreemapTooltip, TREEMAP_LEVELS } from '../utils/treemap'
-import { createDefaultTreemapFilterState, createTreemapNodes } from '../utils/treemapDataNodes'
+import { formatTreemapLabel, formatTreemapTooltip, TREEMAP_LEVELS } from '../utils/treemap'
+import { colorTreemapNodes, createTreemapColorIndex, createTreemapComparisonSizes, describeTreemapColor } from '../utils/treemapColor'
+import { createTreemapNodes } from '../utils/treemapDataNodes'
 
 export function useTreemapData(
   resultRef: Ref<AnalyzeSubpackagesResult | null>,
   resolvedTheme: Ref<ResolvedTheme>,
-  filterRef?: Ref<TreemapFilterState>,
+  filterRef: Ref<TreemapFilterState>,
+  color: {
+    mode: Ref<AnalyzeTreemapColorMode>
+    comparisonResult: Ref<AnalyzeSubpackagesResult | null>
+  },
 ) {
   const packageLabelMap = computed(() =>
     new Map((resultRef.value?.packages ?? []).map(pkg => [pkg.id, pkg.label])),
   )
 
-  const moduleUsageCount = computed(() =>
-    new Map((resultRef.value?.modules ?? []).map(mod => [mod.id, mod.packages.length])),
-  )
+  const colorIndex = computed(() => createTreemapColorIndex(resultRef.value))
+  const comparisonSizes = computed(() => color.comparisonResult.value
+    ? createTreemapComparisonSizes(color.comparisonResult.value)
+    : null)
 
-  const treemapNodes = computed<TreemapNode[]>(() => {
+  const filteredNodes = computed<TreemapNode[]>(() => {
     const result = resultRef.value
     if (!result) {
       return []
@@ -27,21 +33,30 @@ export function useTreemapData(
     return createTreemapNodes({
       result,
       packageLabelMap: packageLabelMap.value,
-      moduleUsageCount: moduleUsageCount.value,
-      filter: filterRef?.value ?? createDefaultTreemapFilterState(),
+      moduleUsageCount: colorIndex.value.moduleUsageCount,
+      filter: filterRef.value,
     })
   })
+
+  const colorProjection = computed(() => colorTreemapNodes({
+    nodes: filteredNodes.value,
+    mode: color.mode.value,
+    current: colorIndex.value,
+    comparison: color.mode.value === 'delta' ? comparisonSizes.value : null,
+  }))
+  const treemapNodes = computed(() => colorProjection.value.nodes)
+  const treemapLegend = computed<TreemapLegendItem[]>(() => colorProjection.value.legend)
+  const treemapColorDescription = computed(() => describeTreemapColor(color.mode.value, color.comparisonResult.value !== null))
 
   const treemapOption = computed(() => {
     const isDark = resolvedTheme.value === 'dark'
     const textColor = isDark ? '#f8fafc' : '#0f172a'
-    const mutedTextColor = isDark ? '#94a3b8' : '#64748b'
-    const panelColor = isDark ? '#141820' : '#ffffff'
     const borderColor = isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(71, 85, 105, 0.18)'
     const nodeBorderColor = '#475569'
 
     return {
       backgroundColor: 'transparent',
+      animation: false,
       tooltip: {
         formatter: (params: { data?: { meta?: TreemapNodeMeta } }) => formatTreemapTooltip(params.data?.meta),
         confine: true,
@@ -59,43 +74,23 @@ export function useTreemapData(
       series: [
         {
           type: 'treemap',
-          top: 8,
-          right: 8,
-          bottom: 38,
-          left: 8,
+          animation: false,
+          top: 2,
+          right: 2,
+          bottom: 2,
+          left: 2,
           sort: 'desc',
           squareRatio: (1 + Math.sqrt(5)) / 2,
-          nodeClick: 'zoomToNode',
-          roam: true,
-          roamTrigger: 'global',
-          zoomToNodeRatio: 0.82,
+          nodeClick: false,
+          roam: false,
           breadcrumb: {
-            show: true,
-            left: 8,
-            right: 8,
-            bottom: 6,
-            height: 24,
-            emptyItemWidth: 24,
-            itemStyle: {
-              color: panelColor,
-              borderColor,
-              borderWidth: 1,
-              textStyle: {
-                color: mutedTextColor,
-                fontSize: 11,
-              },
-            },
-            emphasis: {
-              itemStyle: {
-                color: isDark ? '#1d2530' : '#f1f5f9',
-              },
-            },
+            show: false,
           },
           visibleMin: 14,
           label: {
             show: true,
             color: textColor,
-            formatter: '{b}',
+            formatter: formatTreemapLabel,
             fontSize: 11,
             fontWeight: 500,
             lineHeight: 15,
@@ -103,9 +98,14 @@ export function useTreemapData(
             overflow: 'truncate',
             textBorderWidth: 0,
           },
+          labelLayout: ({ rect }: { rect: { width: number, height: number } }) => ({
+            hideOverlap: true,
+            fontSize: rect.width < 60 || rect.height < 34 || rect.width * rect.height < 2800 ? 0 : 11,
+          }),
           upperLabel: {
             show: true,
             color: textColor,
+            formatter: (params: { data?: TreemapNode }) => formatTreemapLabel(params).replace('\n', ' · '),
             fontSize: 12,
             fontWeight: 650,
             lineHeight: 17,
@@ -132,5 +132,7 @@ export function useTreemapData(
   return {
     treemapOption,
     treemapNodes,
+    treemapLegend,
+    treemapColorDescription,
   }
 }

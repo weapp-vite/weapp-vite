@@ -21,7 +21,6 @@ import { normalizeRuntimeEvents } from '../runtimeEvents'
 import { readDashboardAnalyzeSnapshot } from './payload'
 
 const DEVFRAME_ID = 'weapp-vite' as const
-const DASHBOARD_DEVFRAME_BASE = '/__weapp-vite/'
 const RECONNECT_DELAYS_MS = [250, 500, 1_000, 2_000, 5_000] as const
 const STALE_DASHBOARD_ANALYZE_REVISION_RE = /Analyze revision|revision.*Dashboard 状态/i
 
@@ -241,8 +240,8 @@ function createDashboardSession(client: DevframeRpcClient): DashboardConnectionS
 
 async function initializeDashboardDevframe() {
   const client = await connectDevframe({
-    baseURL: DASHBOARD_DEVFRAME_BASE,
     callTimeout: 30_000,
+    webmcp: false,
   })
   let session: DashboardConnectionSession | undefined
   try {

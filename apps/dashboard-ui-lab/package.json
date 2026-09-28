@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "wv dev",
     "dev:ui": "wv dev --ui",
+    "dev:inspector": "node --import tsx scripts/inspector.ts",
+    "dev:inspector:host": "node --import tsx scripts/inspector.ts --vite-devtools",
     "build": "wv build",
     "build:ui": "wv build --ui",
     "check:budget-fail": "node scripts/check-budget-fail.mjs",
@@ -15,9 +17,13 @@
     "postinstall": "wv prepare"
   },
   "devDependencies": {
+    "@vitejs/devtools": "catalog:",
+    "@vitejs/devtools-kit": "catalog:",
     "@weapp-vite/dashboard": "workspace:*",
+    "devframe": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

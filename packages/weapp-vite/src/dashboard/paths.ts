@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult } from '../../../analyze/subpackages'
+import type { AnalyzeSubpackagesResult } from '../analyze/subpackages'
 import path from 'pathe'
 
 export type DashboardFileKind = 'artifact' | 'source'

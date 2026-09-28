@@ -1,19 +1,12 @@
 import type * as NodeFs from 'node:fs'
 import type * as NodeModule from 'node:module'
+import type { AnalyzeSubpackagesResult } from '../../dashboard'
 import { EventEmitter } from 'node:events'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startAnalyzeDashboard } from './dashboard'
 
-interface MockDashboardDevframeOptions {
-  getAnalyzeSnapshot: () => unknown
-  getRuntimeEvents: () => unknown[]
-  roots: {
-    pluginRoot?: string
-    projectRoot?: string
-    srcRoot?: string
-  }
-}
+const disposeMock = vi.hoisted(() => vi.fn())
 
 const existsSyncMock = vi.hoisted(() => vi.fn(() => undefined))
 const readFileSyncMock = vi.hoisted(() => vi.fn(() => undefined))
@@ -22,20 +15,18 @@ const resolveCommandMock = vi.hoisted(() => vi.fn(() => ({
   command: 'pnpm',
   args: ['add', '@weapp-vite/dashboard'],
 })))
-const notifyAnalyzeUpdateMock = vi.hoisted(() => vi.fn())
-const syncRuntimeEventsMock = vi.hoisted(() => vi.fn())
-const createAnalyzeDashboardDevframeMock = vi.hoisted(() => vi.fn((_options: MockDashboardDevframeOptions) => ({
+const createAnalyzeDashboardDevframeMock = vi.hoisted(() => vi.fn(() => ({
   definition: { id: 'weapp-vite' },
-  notifyAnalyzeUpdate: notifyAnalyzeUpdateMock,
-  syncRuntimeEvents: syncRuntimeEventsMock,
-  dispose: vi.fn(),
+  update: vi.fn(async () => {}),
+  emitRuntimeEvents: vi.fn(),
+  dispose: disposeMock,
 })))
 const createAnalyzeDashboardViteBridgeMock = vi.hoisted(() => vi.fn(() => ({
   name: 'weapp-vite-dashboard-devframe',
 })))
 const refreshTempAuthCodeMock = vi.hoisted(() => vi.fn(() => '654321'))
 const buildOtpAuthUrlMock = vi.hoisted(() => vi.fn((url: string, code: string) => `${url}#devframe_otp=${code}`))
-const createServerMock = vi.hoisted(() => vi.fn())
+const createServerMock = vi.hoisted(() => vi.fn<(options: MockServerOptions) => Promise<MockServer>>())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   error: vi.fn(),
@@ -71,6 +62,7 @@ vi.mock('vite', () => ({
 }))
 
 vi.mock('./dashboardViteBridge', () => ({
+  ANALYZE_DASHBOARD_DEVFRAME_BASE: '/__weapp-vite/',
   createAnalyzeDashboardViteBridge: createAnalyzeDashboardViteBridgeMock,
 }))
 
@@ -79,7 +71,7 @@ vi.mock('devframe/node/auth', () => ({
   refreshTempAuthCode: refreshTempAuthCodeMock,
 }))
 
-vi.mock('./dashboardDevframe', () => ({
+vi.mock('../../dashboard', () => ({
   createAnalyzeDashboardDevframe: createAnalyzeDashboardDevframeMock,
 }))
 
@@ -117,14 +109,7 @@ vi.mock('../../logger', () => ({
 
 interface MockServer {
   listen: ReturnType<typeof vi.fn>
-  printUrls: ReturnType<typeof vi.fn>
   close: ReturnType<typeof vi.fn>
-  middlewares: {
-    use: ReturnType<typeof vi.fn>
-  }
-  ws?: {
-    send: ReturnType<typeof vi.fn>
-  }
   httpServer?: EventEmitter
   resolvedUrls?: {
     local?: string[]
@@ -132,32 +117,36 @@ interface MockServer {
   }
 }
 
+interface MockServerOptions {
+  plugins?: { configureServer?: (server: MockServer) => unknown }[]
+}
+
 function createMockServer(overrides: Partial<MockServer> = {}): MockServer {
   return {
     listen: vi.fn(async () => {}),
-    printUrls: vi.fn(),
     close: vi.fn(async () => {}),
-    middlewares: {
-      use: vi.fn(),
-    },
-    ws: {
-      send: vi.fn(),
-    },
     httpServer: new EventEmitter(),
     resolvedUrls: {
-      local: ['http://127.0.0.1:4173/'],
-      network: ['http://192.168.0.2:4173/'],
+      local: ['http://127.0.0.1:4173/__weapp-vite/'],
+      network: ['http://192.168.0.2:4173/__weapp-vite/'],
     },
     ...overrides,
   }
 }
 
-function createAnalyzeResult(label: string) {
+function createAnalyzeResult(label: string): AnalyzeSubpackagesResult {
   return {
-    packages: [{ id: label, label, files: [] }],
+    packages: [{ id: label, label, type: 'main', files: [] }],
     modules: [],
     subPackages: [],
-  } as any
+    glassEasel: {
+      detected: false,
+      minimumBaseLibrary: '3.8.12',
+      migrationGuide: '',
+      diagnostics: [],
+      summary: { errors: 0, warnings: 0 },
+    },
+  }
 }
 
 describe('analyze dashboard', () => {
@@ -168,14 +157,13 @@ describe('analyze dashboard', () => {
         return undefined
       }
       return `{
-        // dashboard dev/runtime manifest
         "weappViteDashboard": {
           "distDir": "dist"
         }
       }`
     })
     existsSyncMock.mockImplementation((value: string) => {
-      return value === '/mock/dashboard/dist'
+      return value === '/mock/dashboard/dist/index.html'
         || value === '/mock/dashboard/package.json'
         ? true
         : undefined
@@ -195,206 +183,73 @@ describe('analyze dashboard', () => {
 
     await expect(startAnalyzeDashboard(createAnalyzeResult('missing'), { artifacts: new Map(), cwd: '/project', packageManagerAgent: 'pnpm' })).resolves.toBeUndefined()
     expect(createServerMock).not.toHaveBeenCalled()
-    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('[weapp-vite ui]'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('pnpm add @weapp-vite/dashboard'))
   })
 
-  it('starts in watch mode from dist assets and supports update/close/waitForExit', async () => {
+  it('closes the server and core once and removes exit listeners', async () => {
     const server = createMockServer()
-
-    createServerMock.mockImplementation(async (options: any) => {
-      for (const plugin of options.plugins ?? []) {
-        plugin?.configureServer?.(server as any)
-      }
-      return server
-    })
-
-    const initial = createAnalyzeResult('initial')
-    const handle = await startAnalyzeDashboard(initial, { artifacts: new Map(), watch: true, cwd: '/project' })
-
-    expect(handle).toBeDefined()
-    expect(handle?.urls).toEqual([
-      'http://127.0.0.1:4173/#devframe_otp=654321',
-      'http://192.168.0.2:4173/#devframe_otp=654321',
-    ])
-    expect(server.listen).toHaveBeenCalledTimes(1)
-    expect(server.printUrls).not.toHaveBeenCalled()
-    expect(buildOtpAuthUrlMock).toHaveBeenCalledTimes(2)
-    expect(refreshTempAuthCodeMock).toHaveBeenCalledTimes(1)
-    expect(buildOtpAuthUrlMock).toHaveBeenNthCalledWith(1, 'http://127.0.0.1:4173/', '654321')
-    expect(buildOtpAuthUrlMock).toHaveBeenNthCalledWith(2, 'http://192.168.0.2:4173/', '654321')
-    expect(server.listen.mock.invocationCallOrder[0]).toBeLessThan(refreshTempAuthCodeMock.mock.invocationCallOrder[0]!)
-    expect(createAnalyzeDashboardDevframeMock).toHaveBeenCalledTimes(1)
-    const devframeOptions = createAnalyzeDashboardDevframeMock.mock.calls[0]?.[0]
-    expect(devframeOptions?.getRuntimeEvents()).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        kind: 'command',
-        level: 'success',
-      }),
-    ]))
-    expect(createAnalyzeDashboardViteBridgeMock).toHaveBeenCalledWith(
-      { id: 'weapp-vite' },
-    )
-    expect(server.ws?.send).not.toHaveBeenCalled()
-
-    const updatePayload = createAnalyzeResult('next')
-    await handle?.update(updatePayload, new Map())
-    expect(devframeOptions?.getRuntimeEvents()).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        kind: 'build',
-        level: 'info',
-      }),
-    ]))
-    expect(syncRuntimeEventsMock).toHaveBeenCalledTimes(1)
-    expect(notifyAnalyzeUpdateMock).toHaveBeenCalledTimes(1)
-
-    const createServerArg = createServerMock.mock.calls[0]?.[0]
-    expect(createServerArg).toMatchObject({
-      root: '/mock/dashboard/dist',
-      configFile: false,
-      plugins: [
-        {
-          name: 'weapp-vite-dashboard-devframe',
-        },
-      ],
-    })
-    handle?.emitRuntimeEvents([
-      {
-        kind: 'system',
-        level: 'warning',
-        title: 'custom runtime warning',
-        detail: 'custom event',
-        tags: ['custom'],
-      },
-    ])
-    expect(devframeOptions?.getRuntimeEvents()).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        kind: 'system',
-        level: 'warning',
-        title: 'custom runtime warning',
-      }),
-    ]))
-    expect(syncRuntimeEventsMock).toHaveBeenCalledTimes(2)
+    createServerMock.mockResolvedValue(server)
+    const initialSignalListeners = process.listenerCount('SIGINT')
+    const handle = await startAnalyzeDashboard(createAnalyzeResult('initial'), { artifacts: new Map(), watch: true, cwd: '/project' })
 
     await handle?.close()
+    await handle?.close()
+    await handle?.waitForExit()
     expect(server.close).toHaveBeenCalledTimes(1)
-
-    server.httpServer?.emit('close')
-    await handle?.waitForExit()
-    expect(server.close).toHaveBeenCalledTimes(2)
-    expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI 已启动（分析视图，实时模式），按 Ctrl+C 退出。')
-    expect(loggerMock.info).toHaveBeenCalledWith('  ➜  http://127.0.0.1:4173/#devframe_otp=654321')
+    expect(disposeMock).toHaveBeenCalledTimes(1)
+    expect(process.listenerCount('SIGINT')).toBe(initialSignalListeners)
+    expect(server.httpServer?.listenerCount('close')).toBe(0)
   })
 
-  it('prefers dashboard source root in watch mode when the local package exposes a dev config', async () => {
+  it('releases the core when Vite creation fails without replacing the original error', async () => {
+    const failure = new Error('Vite configuration failed')
+    createServerMock.mockRejectedValueOnce(failure)
+    await expect(startAnalyzeDashboard(createAnalyzeResult('failure'), { artifacts: new Map(), watch: true })).rejects.toBe(failure)
+    expect(disposeMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes a captured server when plugin setup fails before createServer resolves', async () => {
+    const failure = new Error('Devframe setup failed')
     const server = createMockServer()
-
-    readFileSyncMock.mockImplementation((value: string) => {
-      if (value !== '/mock/dashboard/package.json') {
-        return undefined
-      }
-      return `{
-        "weappViteDashboard": {
-          "devRoot": ".",
-          "devConfigFile": "vite.config.ts",
-          "distDir": "dist"
-        }
-      }`
-    })
-    existsSyncMock.mockImplementation((value: string) => {
-      return value === '/mock/dashboard'
-        || value === '/mock/dashboard/vite.config.ts'
-        || value === '/mock/dashboard/dist'
-        || value === '/mock/dashboard/package.json'
-        ? true
-        : undefined
-    })
-    createServerMock.mockImplementation(async (options: any) => {
+    createServerMock.mockImplementationOnce(async (options) => {
       for (const plugin of options.plugins ?? []) {
-        plugin?.configureServer?.(server as any)
+        await plugin?.configureServer?.(server)
       }
-      return server
+      throw failure
     })
-
-    const handle = await startAnalyzeDashboard(createAnalyzeResult('source'), { artifacts: new Map(), watch: true, cwd: '/project' })
-    const createServerArg = createServerMock.mock.calls[0]?.[0] as any
-
-    expect(handle).toBeDefined()
-    expect(createServerArg.root).toBe('/mock/dashboard')
-    expect(createServerArg.configFile).toBe('/mock/dashboard/vite.config.ts')
-
-    await handle?.close()
-    server.httpServer?.emit('close')
-    await handle?.waitForExit()
+    await expect(startAnalyzeDashboard(createAnalyzeResult('failure'), { artifacts: new Map(), watch: true })).rejects.toBe(failure)
+    expect(server.close).toHaveBeenCalledTimes(1)
+    expect(disposeMock).toHaveBeenCalledTimes(1)
   })
 
-  it('prefers built dashboard assets in static mode when a local dev root is also available', async () => {
-    const server = createMockServer()
-
-    readFileSyncMock.mockImplementation((value: string) => {
-      if (value !== '/mock/dashboard/package.json') {
-        return undefined
-      }
-      return `{
-        "weappViteDashboard": {
-          "devRoot": ".",
-          "devConfigFile": "vite.config.ts",
-          "distDir": "dist"
-        }
-      }`
-    })
-    existsSyncMock.mockImplementation((value: string) => {
-      return value === '/mock/dashboard'
-        || value === '/mock/dashboard/vite.config.ts'
-        || value === '/mock/dashboard/dist'
-        || value === '/mock/dashboard/package.json'
-        ? true
-        : undefined
-    })
-    createServerMock.mockImplementation(async (options: any) => {
-      for (const plugin of options.plugins ?? []) {
-        plugin?.configureServer?.(server as any)
-      }
-      return server
-    })
-
-    vi.useFakeTimers()
-    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static-dist'), { artifacts: new Map(), cwd: '/project' })
-    setTimeout(() => {
-      server.httpServer?.emit('close')
-    }, 0)
-    await vi.runAllTimersAsync()
-    await expect(runPromise).resolves.toBeUndefined()
-    vi.useRealTimers()
-
-    const createServerArg = createServerMock.mock.calls[0]?.[0] as any
-    expect(createServerArg.root).toBe('/mock/dashboard/dist')
-    expect(createServerArg.configFile).toBe(false)
-  })
-
-  it('starts in static mode and resolves with empty urls when vite does not expose resolvedUrls', async () => {
+  it('closes a created server on listen failure even if cleanup also fails', async () => {
+    const failure = new Error('listen failed')
     const server = createMockServer({
-      ws: undefined,
-      resolvedUrls: undefined,
+      listen: vi.fn().mockRejectedValue(failure),
+      close: vi.fn().mockRejectedValue(new Error('close failed')),
     })
+    createServerMock.mockResolvedValueOnce(server)
+    const initialSignalListeners = process.listenerCount('SIGINT')
+    await expect(startAnalyzeDashboard(createAnalyzeResult('failure'), { artifacts: new Map(), watch: true })).rejects.toBe(failure)
+    expect(server.close).toHaveBeenCalledTimes(1)
+    expect(disposeMock).toHaveBeenCalledTimes(1)
+    expect(process.listenerCount('SIGINT')).toBe(initialSignalListeners)
+  })
 
-    createServerMock.mockImplementation(async (options: any) => {
-      for (const plugin of options.plugins ?? []) {
-        plugin?.configureServer?.(server as any)
-      }
-      return server
+  it('waits for static host exit even when Vite exposes no resolved URLs', async () => {
+    const server = createMockServer({ resolvedUrls: undefined })
+    createServerMock.mockResolvedValueOnce(server)
+    let finished = false
+    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'), { artifacts: new Map() }).then(() => {
+      finished = true
     })
-
-    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'), { artifacts: new Map(), cwd: '/project' })
-    setTimeout(() => {
-      server.httpServer?.emit('close')
-    }, 0)
-    await expect(runPromise).resolves.toBeUndefined()
-
-    expect(server.ws?.send).toBeUndefined()
-    const createServerArg = createServerMock.mock.calls[0]?.[0] as any
-    expect(createServerArg.root).toBe('/mock/dashboard/dist')
-    expect(createServerArg.configFile).toBe(false)
+    await vi.waitFor(() => expect(server.httpServer?.listenerCount('close')).toBe(1))
+    expect(finished).toBe(false)
+    server.httpServer?.emit('close')
+    await runPromise
+    expect(finished).toBe(true)
+    expect(server.close).toHaveBeenCalledTimes(1)
+    expect(disposeMock).toHaveBeenCalledTimes(1)
+    expect(server.httpServer?.listenerCount('close')).toBe(0)
   })
 
   it('logs close errors when cleanup fails on process signal', async () => {
@@ -403,19 +258,19 @@ describe('analyze dashboard', () => {
         throw new Error('close failed')
       }),
     })
-    const signalHandlers = new Map<string, (...args: any[]) => any>()
-    const onceSpy = vi.spyOn(process, 'once').mockImplementation(((signal: string, listener: (...args: any[]) => any) => {
+    const signalHandlers = new Map<Parameters<typeof process.once>[0], Parameters<typeof process.once>[1]>()
+    vi.spyOn(process, 'once').mockImplementation((signal, listener) => {
       signalHandlers.set(signal, listener)
       return process
-    }) as any)
-    const removeSpy = vi.spyOn(process, 'removeListener').mockImplementation(((signal: string) => {
+    })
+    vi.spyOn(process, 'removeListener').mockImplementation((signal) => {
       signalHandlers.delete(signal)
       return process
-    }) as any)
+    })
 
-    createServerMock.mockImplementation(async (options: any) => {
+    createServerMock.mockImplementation(async (options) => {
       for (const plugin of options.plugins ?? []) {
-        plugin?.configureServer?.(server as any)
+        await plugin?.configureServer?.(server)
       }
       return server
     })
@@ -424,8 +279,7 @@ describe('analyze dashboard', () => {
     await signalHandlers.get('SIGINT')?.()
     await handle?.waitForExit()
 
-    expect(onceSpy).toHaveBeenCalled()
-    expect(removeSpy).toHaveBeenCalled()
+    expect(signalHandlers.size).toBe(0)
     expect(server.close).toHaveBeenCalledTimes(1)
     expect(loggerMock.error).toHaveBeenCalledWith(expect.objectContaining({
       message: 'close failed',

@@ -1,27 +1,12 @@
-import type { AnalyzeBudgetConfig, AnalyzeSubpackagesResult } from '../types'
-
-const defaultWarningRatio = 0.85
-export type TreemapNodeDepth = 'package' | 'file' | 'leaf'
-
-const depthColorSettings = {
-  package: {
-    saturation: 50,
-    lightness: 34,
-  },
-  file: {
-    saturation: 46,
-    lightness: 40,
-  },
-  leaf: {
-    saturation: 42,
-    lightness: 46,
-  },
-} satisfies Record<TreemapNodeDepth, { saturation: number, lightness: number }>
-const wevuRuntimeRiskScoreLimit = 0.5
-const groupPresentationCache = new Map<string, { color: string, textColor: string }>()
-
-function clamp(value: number, min = 0, max = 1) {
-  return Math.min(max, Math.max(min, value))
+export interface TreemapColorStyle {
+  itemStyle: { color: string, borderColor: string }
+  label: { color: string, show: boolean } & Record<string, unknown>
+  upperLabel: { color: string, show: boolean, backgroundColor: string } & Record<string, unknown>
+  emphasis: {
+    itemStyle: { color: string, borderColor: string }
+    label: { color: string, show: boolean }
+    upperLabel: { color: string, show: boolean, backgroundColor: string }
+  }
 }
 
 function hashGroupKey(value: string) {
@@ -88,33 +73,7 @@ function getReadableTextColor(background: number[]) {
     : '#000000'
 }
 
-function getGroupPresentation(groupKey: string, depth: TreemapNodeDepth) {
-  const cacheKey = `${groupKey}\u0000${depth}`
-  const cached = groupPresentationCache.get(cacheKey)
-  if (cached) {
-    return cached
-  }
-  const settings = depthColorSettings[depth]
-  const hue = hashGroupKey(groupKey)
-  const presentation = {
-    color: `hsl(${hue}, ${settings.saturation}%, ${settings.lightness}%)`,
-    textColor: getReadableTextColor(convertHslToRgb(hue, settings.saturation, settings.lightness)),
-  }
-  groupPresentationCache.set(cacheKey, presentation)
-  return presentation
-}
-
-function createRiskBorderColor(score: number) {
-  if (score >= 0.82) {
-    return '#fb7185'
-  }
-  if (score >= 0.58) {
-    return '#fbbf24'
-  }
-  return '#475569'
-}
-
-function isWevuRuntimeReference(...references: Array<string | undefined>) {
+export function isWevuRuntimeReference(...references: Array<string | undefined>) {
   return references.some((reference) => {
     if (!reference) {
       return false
@@ -126,13 +85,6 @@ function isWevuRuntimeReference(...references: Array<string | undefined>) {
       || normalizedReference.includes('node_modules/@weapp-vite/wevu/')
       || normalizedReference.includes('weapp-vendors/wevu-')
   })
-}
-
-function normalizeRuntimeRiskScore(score: number, ...references: Array<string | undefined>) {
-  if (isWevuRuntimeReference(...references)) {
-    return Math.min(score, wevuRuntimeRiskScoreLimit)
-  }
-  return score
 }
 
 function createNodeLabelStyle(textColor: string, emphasis = false) {
@@ -151,15 +103,11 @@ function createNodeLabelStyle(textColor: string, emphasis = false) {
   }
 }
 
-export function createTreemapNodeStyle(
-  score: number,
-  groupKey: string,
-  depth: TreemapNodeDepth,
-  showLabel = true,
-  showUpperLabel = true,
-) {
-  const { color, textColor } = getGroupPresentation(groupKey, depth)
-  const borderColor = createRiskBorderColor(score)
+export function createTreemapColorStyle(groupKey: string, hue = hashGroupKey(groupKey), saturation = 42): TreemapColorStyle {
+  const lightness = 46
+  const color = `hsl(${hue}, ${saturation}%, ${lightness}%)`
+  const textColor = getReadableTextColor(convertHslToRgb(hue, saturation, lightness))
+  const borderColor = '#475569'
   return {
     itemStyle: {
       color,
@@ -167,70 +115,28 @@ export function createTreemapNodeStyle(
     },
     label: {
       ...createNodeLabelStyle(textColor),
-      show: showLabel,
+      show: true,
     },
     upperLabel: {
       ...createNodeLabelStyle(textColor, true),
       backgroundColor: color,
       padding: [0, 4],
-      show: showUpperLabel,
+      show: true,
     },
     emphasis: {
       itemStyle: {
         color,
         borderColor,
       },
+      label: {
+        color: textColor,
+        show: true,
+      },
+      upperLabel: {
+        color: textColor,
+        backgroundColor: color,
+        show: true,
+      },
     },
   }
-}
-
-export function getPackageLimitBytes(
-  pkg: AnalyzeSubpackagesResult['packages'][number],
-  budgets: AnalyzeBudgetConfig | undefined,
-) {
-  if (!budgets) {
-    return 0
-  }
-  if (pkg.type === 'main') {
-    return budgets.mainBytes
-  }
-  if (pkg.type === 'subPackage') {
-    return budgets.subPackageBytes
-  }
-  if (pkg.type === 'independent') {
-    return budgets.independentBytes
-  }
-  return budgets.totalBytes
-}
-
-export function createBudgetRiskScore(totalBytes: number, limitBytes: number, warningRatio = defaultWarningRatio) {
-  if (limitBytes <= 0) {
-    return 0
-  }
-  const ratio = totalBytes / limitBytes
-  if (ratio >= 1) {
-    return 1
-  }
-  if (ratio >= warningRatio) {
-    return 0.58 + ((ratio - warningRatio) / Math.max(1 - warningRatio, 0.01)) * 0.32
-  }
-  return clamp((ratio / warningRatio) * 0.42, 0, 0.42)
-}
-
-export function createShareRiskScore(bytes: number, parentBytes: number) {
-  if (parentBytes <= 0) {
-    return 0
-  }
-  const ratio = bytes / parentBytes
-  if (ratio >= 0.72) {
-    return 0.92
-  }
-  if (ratio >= 0.45) {
-    return 0.64 + ((ratio - 0.45) / 0.27) * 0.22
-  }
-  return clamp(ratio / 0.45 * 0.46, 0, 0.46)
-}
-
-export function normalizeTreemapRiskScore(score: number, ...references: Array<string | undefined>) {
-  return normalizeRuntimeRiskScore(score, ...references)
 }

@@ -1,4 +1,4 @@
-import type { AnalyzeSubpackagesResult, PackageFileEntry } from '../../analyze/subpackages'
+import type { AnalyzeSubpackagesResult, PackageFileEntry } from '../analyze/subpackages'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -6,14 +6,10 @@ import path from 'node:path'
 import process from 'node:process'
 import { initDevframe } from 'devframe/initiate'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  createAnalyzeDashboardDevframe,
-  createDashboardFileReader,
-  MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS,
-  MAX_DASHBOARD_FILE_CONTENT_BYTES,
-  readDashboardFileContent,
-} from './dashboardDevframe'
-import { createDashboardArtifactSnapshot, MAX_DASHBOARD_ARTIFACT_CONTENT_BYTES } from './dashboardDevframe/artifacts'
+import { createDashboardArtifactSnapshot, MAX_DASHBOARD_ARTIFACT_CONTENT_BYTES, MAX_DASHBOARD_FILE_CONTENT_BYTES } from './artifacts'
+import { createDashboardFileReader, readDashboardFileContent } from './content'
+import { createAnalyzeDashboardDevframe } from './index'
+import { MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS } from './payload'
 
 const temporaryRoots: string[] = []
 
@@ -70,90 +66,115 @@ afterEach(async () => {
 })
 
 describe('dashboard Devframe protocol', () => {
-  it('registers paged analyze queries without writable shared state', async () => {
+  it('publishes one coherent report revision and preserves foreign shared-state writes', async () => {
     const current = createAnalyzeResult()
-    const next = createAnalyzeResult()
+    const next = createAnalyzeResult([{ file: 'app.js', type: 'chunk', from: 'main' }])
     next.packages[0]!.label = 'x'.repeat(MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS + 16)
-    const snapshot = {
-      current,
-      previous: null as AnalyzeSubpackagesResult | null,
-      artifacts: new Map(),
-    }
-    const runtimeEvents: unknown[] = [{ id: 'initial' }]
     const controller = createAnalyzeDashboardDevframe({
-      getAnalyzeSnapshot: () => snapshot,
-      getRuntimeEvents: () => runtimeEvents,
+      snapshot: { current, previous: null, artifacts: new Map() },
+      initialEvents: [{ kind: 'command', level: 'info', title: 'initial', detail: 'session' }],
       roots: {},
     })
-    const instance = initDevframe(controller.definition, {
-      auth: false,
-      base: '/',
-      sse: false,
-      ws: false,
-    })
-
+    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false })
     try {
       await instance.ready
       const context = await instance.context
       const dashboard = context.scope('weapp-vite')
+      const foreign = await context.scope('foreign').rpc.sharedState('counter', { initialValue: { count: 0 } })
+      await dashboard.rpc.call('devframe:rpc:server-state:set', 'foreign:counter', { count: 1 }, 'set')
+      await dashboard.rpc.call('devframe:rpc:server-state:patch', 'foreign:counter', [{ op: 'replace', path: ['count'], value: 2 }], 'patch')
+      expect(foreign.value()).toEqual({ count: 2 })
+      await dashboard.rpc.call('devframe:rpc:server-state:set', 'weapp-vite:dashboard', { revision: 999 }, 'unrelated-state')
       const initialState = await dashboard.rpc.call('get-dashboard-state')
       expect(initialState).toMatchObject({
         revision: 0,
-        runtimeEvents: [{ id: 'initial' }],
-        analyze: {
-          current: { pages: 1 },
-          previous: null,
-        },
+        runtimeEvents: [{ title: 'initial' }],
+        analyze: { current: { pages: 1 }, previous: null },
       })
-      expect(context.rpc.sharedState.keys()).not.toContain('weapp-vite:dashboard')
-      await expect(dashboard.rpc.call(
-        'devframe:rpc:server-state:set',
-        'weapp-vite:dashboard',
-        { revision: 999 },
-        'malicious-set',
-      )).rejects.toThrow('只允许服务端修改')
-      await expect(dashboard.rpc.call(
-        'devframe:rpc:server-state:patch',
-        'weapp-vite:dashboard',
-        [{ op: 'replace', path: ['revision'], value: 999 }],
-        'malicious-patch',
-      )).rejects.toThrow('只允许服务端修改')
 
-      snapshot.previous = current
-      snapshot.current = next
-      runtimeEvents.unshift({ id: 'next' })
-      controller.syncRuntimeEvents()
-      controller.notifyAnalyzeUpdate()
-
+      const broadcast = vi.spyOn(context.rpc, 'broadcast')
+      const artifacts = createDashboardArtifactSnapshot()
+      artifacts.capture('app.js', 'new artifact')
+      await controller.update(next, artifacts.files)
+      const publications = broadcast.mock.calls.filter(([options]) => options.method === 'weapp-vite:dashboard-state-updated')
+      expect(publications).toHaveLength(1)
       const nextState = await dashboard.rpc.call('get-dashboard-state')
+      expect(publications[0]?.[0].args).toEqual([nextState])
       expect(nextState.revision).toBe(1)
-      expect(nextState.runtimeEvents).toEqual([{ id: 'next' }, { id: 'initial' }])
-      expect(nextState.analyze.current.pages).toBeGreaterThan(1)
-      expect(nextState.analyze.previous).toMatchObject({ pages: 1 })
+      expect(nextState.runtimeEvents.map(event => event.kind)).toEqual(['build', 'command'])
+      expect(nextState.analyze.previous).toEqual(initialState.analyze.current)
+      await expect(dashboard.rpc.call('read-dashboard-file', { kind: 'artifact', path: 'app.js', revision: 1 }))
+        .resolves
+        .toMatchObject({ content: 'new artifact' })
 
       const content: string[] = []
       for (let index = 0; index < nextState.analyze.current.pages; index++) {
-        const page = await dashboard.rpc.call('get-analyze-page', {
-          index,
-          revision: nextState.revision,
-          target: 'current',
-        })
+        const page = await dashboard.rpc.call('get-analyze-page', { index, revision: 1, target: 'current' })
+        expect(page.descriptor).toEqual(nextState.analyze.current)
         expect(page.content.length).toBeLessThanOrEqual(MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS)
         content.push(page.content)
       }
       expect(JSON.parse(content.join(''))).toEqual(next)
-      await expect(dashboard.rpc.call('get-analyze-page', {
-        index: 0,
-        revision: 0,
-        target: 'current',
-      })).rejects.toThrow('Analyze revision')
+      const previous = await dashboard.rpc.call('get-analyze-page', { index: 0, revision: 1, target: 'previous' })
+      expect(JSON.parse(previous.content)).toEqual(current)
+      await expect(dashboard.rpc.call('get-analyze-page', { index: 0, revision: 0, target: 'current' })).rejects.toThrow('Analyze revision')
+      await expect(dashboard.rpc.call('get-analyze-page', { index: nextState.analyze.current.pages, revision: 1, target: 'current' })).rejects.toThrow('分页不存在')
+      await expect(dashboard.rpc.call('get-analyze-page', { index: -1, revision: 1, target: 'current' })).rejects.toThrow('合法的 Analyze 分页请求')
+
+      controller.emitRuntimeEvents([{ kind: 'system', level: 'warning', title: 'warning', detail: 'event only' }])
+      const eventState = await dashboard.rpc.call('get-dashboard-state')
+      expect(eventState.revision).toBe(1)
+      expect(eventState.analyze).toEqual(nextState.analyze)
+      expect(eventState.runtimeEvents.map(event => event.kind)).toEqual(['system', 'build', 'command'])
+      controller.dispose()
+      controller.dispose()
+      broadcast.mockClear()
+      controller.emitRuntimeEvents([{ kind: 'system', level: 'info', title: 'closed', detail: '' }])
+      await controller.update(current, new Map())
+      expect(broadcast).not.toHaveBeenCalled()
+      expect(artifacts.files.get('app.js')?.content).toBe('new artifact')
+      await expect(dashboard.rpc.call('get-dashboard-state')).rejects.toThrow('Analyze revision')
+      await expect(dashboard.rpc.call('get-analyze-page', { index: 0, revision: 1, target: 'current' })).rejects.toThrow('Analyze revision')
     }
     finally {
+      vi.restoreAllMocks()
+      controller.dispose()
       await instance.close()
     }
   })
 
-  it('serves revision-owned artifacts without disk files and rejects obsolete in-flight reads', async () => {
+  it('retains bounded events and pre-mount report updates without changing revisions for events', async () => {
+    const initial = createAnalyzeResult()
+    const next = createAnalyzeResult([{ file: 'next.js', type: 'chunk', from: 'main' }])
+    const previous = createAnalyzeResult([{ file: 'previous.js', type: 'chunk', from: 'main' }])
+    const controller = createAnalyzeDashboardDevframe({
+      snapshot: { current: initial, previous: null, artifacts: new Map() },
+      roots: {},
+    })
+    await controller.update(next, new Map(), previous)
+    controller.emitRuntimeEvents(Array.from({ length: 30 }, (_, index) => ({
+      kind: 'system',
+      level: 'info',
+      title: `event-${index}`,
+      detail: '',
+    })))
+    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false })
+    try {
+      await instance.ready
+      const dashboard = (await instance.context).scope('weapp-vite')
+      const state = await dashboard.rpc.call('get-dashboard-state')
+      expect(state.revision).toBe(1)
+      expect(state.runtimeEvents.map(event => event.title)).toEqual(Array.from({ length: 24 }, (_, index) => `event-${index}`))
+      const page = await dashboard.rpc.call('get-analyze-page', { index: 0, revision: 1, target: 'previous' })
+      expect(JSON.parse(page.content)).toEqual(previous)
+    }
+    finally {
+      controller.dispose()
+      await instance.close()
+    }
+  })
+
+  it.each(['update', 'dispose'] as const)('rejects obsolete in-flight reads after %s without clearing caller artifacts', async (transition) => {
     const project = await createTemporaryProject()
     const result = createAnalyzeResult([{
       file: 'analysis-only.js',
@@ -166,8 +187,7 @@ describe('dashboard Devframe protocol', () => {
     initialArtifacts.capture('analysis-only.js', 'initial analysis bytes')
     const snapshot = { current: result, previous: null, artifacts: initialArtifacts.files }
     const controller = createAnalyzeDashboardDevframe({
-      getAnalyzeSnapshot: () => snapshot,
-      getRuntimeEvents: () => [],
+      snapshot,
       roots: { srcRoot: path.join(project.projectRoot, 'src') },
     })
     const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false })
@@ -201,10 +221,21 @@ describe('dashboard Devframe protocol', () => {
       })
       const rejectedRead = expect(pendingRead).rejects.toThrow('Analyze revision')
       await readStarted
+      if (transition === 'dispose') {
+        controller.dispose()
+        releaseRead()
+        await rejectedRead
+        expect(initialArtifacts.files.get('analysis-only.js')?.content).toBe('initial analysis bytes')
+        await expect(dashboard.rpc.call('read-dashboard-file', {
+          kind: 'artifact',
+          path: 'analysis-only.js',
+          revision: 0,
+        })).rejects.toThrow('Analyze revision')
+        return
+      }
       const nextArtifacts = createDashboardArtifactSnapshot()
       nextArtifacts.capture('analysis-only.js', 'updated analysis bytes')
-      snapshot.artifacts = nextArtifacts.files
-      controller.notifyAnalyzeUpdate()
+      await controller.update(result, nextArtifacts.files)
       releaseRead()
       await rejectedRead
 
@@ -219,8 +250,7 @@ describe('dashboard Devframe protocol', () => {
         revision: 1,
       })).resolves.toMatchObject({ content: 'updated analysis bytes' })
       await fs.writeFile(path.join(project.artifactRoot, 'analysis-only.js'), 'stale disk bytes')
-      snapshot.artifacts = new Map()
-      controller.notifyAnalyzeUpdate()
+      await controller.update(result, new Map())
       await expect(dashboard.rpc.call('read-dashboard-file', {
         kind: 'artifact',
         path: 'analysis-only.js',
@@ -462,7 +492,7 @@ describe('dashboard Devframe protocol', () => {
     }, result, new Map())).rejects.toThrow('源码路径存在多个候选文件，已拒绝读取。')
   })
 
-  it('caches the allowlist until the analyze revision changes', async () => {
+  it('replaces the allowlist when a new report is published', async () => {
     const result = createAnalyzeResult([
       {
         file: 'pages/index/index.js',
@@ -478,13 +508,8 @@ describe('dashboard Devframe protocol', () => {
       kind: 'artifact',
       path: 'pages/index/index.js',
     })).resolves.toMatchObject({ content: 'Page({})\n' })
-    result.packages = []
-    await expect(reader.read({
-      kind: 'artifact',
-      path: 'pages/index/index.js',
-    })).resolves.toMatchObject({ content: 'Page({})\n' })
 
-    reader.update(result, new Map())
+    reader.update(createAnalyzeResult(), new Map())
     await expect(reader.read({
       kind: 'artifact',
       path: 'pages/index/index.js',

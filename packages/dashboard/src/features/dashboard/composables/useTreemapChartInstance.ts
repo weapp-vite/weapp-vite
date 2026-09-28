@@ -10,16 +10,25 @@ export function useTreemapChartInstance(options: {
   activeTab: Ref<DashboardTab>
   resolvedTheme: Ref<ResolvedTheme>
   treemapOption: ComputedRef<TreemapChartOption>
+  focusNodeId: Ref<string | null>
   handleChartClick: (params: unknown) => void
 }) {
   const chartRef = shallowRef<HTMLDivElement>()
   let chart: ECharts | undefined
+  let resizeObserver: ResizeObserver | undefined
+  let animationFrame: number | undefined
 
   function handleResize() {
     chart?.resize()
   }
 
   function destroyChart() {
+    resizeObserver?.disconnect()
+    resizeObserver = undefined
+    if (animationFrame !== undefined) {
+      window.cancelAnimationFrame(animationFrame)
+      animationFrame = undefined
+    }
     chart?.dispose()
     chart = undefined
   }
@@ -42,33 +51,40 @@ export function useTreemapChartInstance(options: {
       destroyChart()
       return
     }
-
     await nextTick()
-
-    if (!chartRef.value) {
+    const element = chartRef.value
+    if (options.activeTab.value !== 'treemap' || !element?.isConnected) {
       return
     }
-
-    if (chartRef.value.clientWidth === 0 || chartRef.value.clientHeight === 0) {
-      window.requestAnimationFrame(() => {
-        void ensureChart()
-      })
-      return
-    }
-
     if (!chart) {
-      chart = echarts.init(chartRef.value, options.resolvedTheme.value === 'dark' ? 'dark' : undefined, { renderer: 'canvas' })
+      chart = echarts.init(element, options.resolvedTheme.value === 'dark' ? 'dark' : undefined, { renderer: 'canvas' })
       chart.on('click', options.handleChartClick)
+      resizeObserver = new ResizeObserver(() => {
+        if (animationFrame !== undefined) {
+          window.cancelAnimationFrame(animationFrame)
+        }
+        animationFrame = window.requestAnimationFrame(() => {
+          animationFrame = undefined
+          handleResize()
+        })
+      })
+      resizeObserver.observe(element)
     }
-
     chart.setOption(options.treemapOption.value, true)
+    if (options.focusNodeId.value) {
+      focusTreemapNode(options.focusNodeId.value)
+    }
     chart.resize()
   }
+
   function bindChartRef(element: Element | null) {
-    chartRef.value = element instanceof HTMLDivElement
-      ? element
-      : undefined
-    if (chartRef.value) {
+    const next = element instanceof HTMLDivElement ? element : undefined
+    if (next === chartRef.value) {
+      return
+    }
+    destroyChart()
+    chartRef.value = next
+    if (next) {
       void ensureChart()
     }
   }
@@ -78,10 +94,22 @@ export function useTreemapChartInstance(options: {
     (newOption) => {
       if (chart) {
         chart.setOption(newOption, true)
+        if (options.focusNodeId.value) {
+          focusTreemapNode(options.focusNodeId.value)
+        }
       }
     },
-    { deep: true },
+    { flush: 'post' },
   )
+
+  watch(options.focusNodeId, (nodeId) => {
+    if (nodeId) {
+      focusTreemapNode(nodeId)
+    }
+    else {
+      resetTreemapFocus()
+    }
+  }, { flush: 'post' })
 
   watch(options.activeTab, () => {
     void ensureChart()
@@ -98,8 +126,6 @@ export function useTreemapChartInstance(options: {
     bindChartRef,
     destroyChart,
     ensureChart,
-    focusTreemapNode,
     handleResize,
-    resetTreemapFocus,
   }
 }

@@ -33,7 +33,8 @@ const {
   filteredDuplicateModules,
   filteredLargestFiles,
   handleAddActionToWorkQueue,
-  handleFocusTreemapSelection,
+  handleInspectTreemapProblem,
+  handleOpenTreemapSource,
   handleResetTreemapFocus,
   handleSelectAction,
   handleSelectBudgetWarning,
@@ -41,7 +42,10 @@ const {
   handleSelectPackageInsight,
   handleSelectReviewChecklistItem,
   handleSelectCommand,
+  handleSelectTreemapNode,
   handleSelectWorkQueueItem,
+  handleUpdateTreemapColorMode,
+  hasTreemapComparison,
   handleUpdateTreemapFilterMode,
   historySnapshots,
   incrementAttribution,
@@ -65,7 +69,6 @@ const {
   reviewLayoutItems,
   selectedActionKey,
   selectedFileModules,
-  selectedTreemapFocusNodeId,
   selectedTreemapMeta,
   setBaselineSnapshot,
   setComparisonMode,
@@ -74,16 +77,22 @@ const {
   summary,
   toggleWorkQueueItem,
   topCards,
+  treemapColorMode,
+  treemapColorDescription,
+  treemapComparisonLabel,
+  treemapLegend,
+  treemapNodes,
+  treemapPath,
+  treemapSourcePath,
   treemapFilterMode,
   treemapFilterOptions,
-  treemapLayoutItems,
   visibleLargestFiles,
   workQueueItems,
 } = useAnalyzePageController()
 </script>
 
 <template>
-  <div class="grid min-h-[calc(100dvh-8rem)] grid-rows-[auto_minmax(44rem,1fr)] gap-4">
+  <div :class="activeTab === 'treemap' ? 'flex h-full min-h-0 flex-col gap-2' : 'grid min-h-[calc(100dvh-8rem)] grid-rows-[auto_minmax(44rem,1fr)] gap-4'">
     <AnalyzeEmptyPayloadPanel v-if="!resultRef" />
 
     <AnalyzeToolbar
@@ -117,6 +126,7 @@ const {
       :budget-warnings="budgetWarnings"
       :can-use-selected-package-filter="canUseSelectedPackageFilter"
       :comparison-mode="comparisonMode"
+      :has-treemap-comparison="hasTreemapComparison"
       :copy-status="exportStatus"
       :filtered-duplicate-modules="filteredDuplicateModules"
       :filtered-largest-files="filteredLargestFiles"
@@ -137,15 +147,20 @@ const {
       :result="resultRef"
       :selected-action-key="selectedActionKey"
       :selected-file-modules="selectedFileModules"
-      :selected-treemap-focus-node-id="selectedTreemapFocusNodeId"
       :selected-treemap-meta="selectedTreemapMeta"
       :source-layout-items="sourceLayoutItems"
       :theme="resolvedTheme"
       :top-cards="topCards"
       :total-bytes="summary.totalBytes"
+      :treemap-color-mode="treemapColorMode"
+      :treemap-color-description="treemapColorDescription"
+      :treemap-comparison-label="treemapComparisonLabel"
+      :treemap-legend="treemapLegend"
+      :treemap-nodes="treemapNodes"
+      :treemap-path="treemapPath"
+      :treemap-source-path="treemapSourcePath"
       :treemap-filter-mode="treemapFilterMode"
       :treemap-filter-options="treemapFilterOptions"
-      :treemap-layout-items="treemapLayoutItems"
       :visible-largest-files="visibleLargestFiles"
       :work-queue-items="workQueueItems"
       @add-action-to-queue="handleAddActionToWorkQueue"
@@ -153,18 +168,21 @@ const {
       @copy-pr="copyPrReport"
       @copy-review-checklist="copyPrReviewChecklist"
       @copy-work-queue="copyWorkQueueReport"
-      @focus-treemap-selection="handleFocusTreemapSelection"
+      @inspect-treemap-problem="handleInspectTreemapProblem"
+      @open-treemap-source="handleOpenTreemapSource"
       @remove-work-queue-item="removeWorkQueueItem"
       @reset-treemap-focus="handleResetTreemapFocus"
       @select-action="handleSelectAction"
       @select-budget-warning="handleSelectBudgetWarning"
       @select-file="handleSelectLargestFile"
       @select-package="handleSelectPackageInsight"
+      @select-treemap-node="handleSelectTreemapNode"
       @select-review-checklist-item="handleSelectReviewChecklistItem"
       @select-work-queue-item="handleSelectWorkQueueItem"
       @set-baseline="setBaselineSnapshot"
       @set-comparison-mode="setComparisonMode"
       @toggle-work-queue-item="toggleWorkQueueItem"
+      @update-treemap-color-mode="handleUpdateTreemapColorMode"
       @update-treemap-filter-mode="handleUpdateTreemapFilterMode"
     />
 

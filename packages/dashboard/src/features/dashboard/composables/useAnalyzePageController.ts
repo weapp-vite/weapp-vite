@@ -20,9 +20,6 @@ const overviewLayoutItems = [
 const reviewLayoutItems = [
   { id: 'review', label: 'PR 风险清单' },
 ]
-const treemapLayoutItems = [
-  { id: 'treemap', label: '体积地图' },
-]
 const packagesLayoutItems = [
   { id: 'packages', label: '包与产物' },
 ]
@@ -60,8 +57,9 @@ export function useAnalyzePageController() {
   const treemapController = useAnalyzeTreemapController({
     activeTab,
     resultRef,
+    comparisonResultRef,
     resolvedTheme,
-    largestFiles: dashboardData.largestFiles,
+    largestFiles: dashboardData.artifactFiles,
     duplicateModules: dashboardData.duplicateModules,
     incrementAttribution: dashboardData.incrementAttribution,
     packageInsights: dashboardData.packageInsights,
@@ -131,6 +129,7 @@ export function useAnalyzePageController() {
     },
   ])
   const activeBudgetWarningId = computed(() => treemapController.selectedBudgetWarning.value?.id ?? null)
+  const treemapComparisonLabel = computed(() => comparisonMode.value === 'baseline' ? '选定基线' : '上次构建')
 
   function handlePageClick() {
     moreMenuOpen.value = false
@@ -149,7 +148,12 @@ export function useAnalyzePageController() {
   }
 
   watch(resultRef, () => {
-    treemapController.resetTreemapSelection()
+    if (activeTab.value !== 'treemap') {
+      treemapController.resetTreemapSelection()
+      if (treemapController.treemapFilterMode.value === 'selected-package') {
+        treemapController.treemapFilterMode.value = 'all'
+      }
+    }
     interactions.resetPageSelection()
   })
 
@@ -195,7 +199,7 @@ export function useAnalyzePageController() {
     statusPills,
     topCards,
     treemapFilterOptions,
-    treemapLayoutItems,
+    treemapComparisonLabel,
     resultRef,
   }
 }

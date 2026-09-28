@@ -20,6 +20,14 @@ export default defineBuildConfig({
       input: 'src/config.ts',
     },
     {
+      input: 'src/dashboard/index.ts',
+      name: 'dashboard',
+    },
+    {
+      input: 'src/dashboard/vite.ts',
+      name: 'dashboard/vite',
+    },
+    {
       input: 'src/json.ts',
     },
     {

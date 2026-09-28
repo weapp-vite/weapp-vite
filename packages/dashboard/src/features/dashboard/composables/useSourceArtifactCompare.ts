@@ -16,6 +16,7 @@ export function useSourceArtifactCompare(options: {
   activeFileKey: Ref<string | null>
   files: Ref<LargestFileEntry[]>
   theme: Ref<'light' | 'dark'>
+  initialSourcePath: string | null
   onSelectFile: (file: LargestFileEntry) => void
 }) {
   const editorElement = ref<HTMLDivElement>()
@@ -205,7 +206,9 @@ export function useSourceArtifactCompare(options: {
   watch(
     sourceOptions,
     (items) => {
-      selectedSourcePath.value = items[0] ?? ''
+      selectedSourcePath.value = options.initialSourcePath && items.includes(options.initialSourcePath)
+        ? options.initialSourcePath
+        : items[0] ?? ''
     },
     { immediate: true },
   )

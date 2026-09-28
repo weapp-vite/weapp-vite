@@ -5,6 +5,7 @@ import type {
   AnalyzeComparisonMode,
   AnalyzeHistorySnapshot,
   AnalyzeSubpackagesResult,
+  AnalyzeTreemapColorMode,
   AnalyzeTreemapFilterMode,
   AnalyzeTreemapFilterOption,
   AnalyzeWorkQueueItem,
@@ -20,6 +21,8 @@ import type {
   ResolvedTheme,
   SelectedFileModuleDetail,
   SummaryMetric,
+  TreemapLegendItem,
+  TreemapNode,
   TreemapNodeMeta,
 } from '../types'
 import type { PrReviewChecklistItem, PrReviewChecklistSummary } from '../utils/prReviewChecklist'
@@ -44,6 +47,7 @@ defineProps<{
   budgetConfig?: AnalyzeBudgetConfig
   budgetWarnings: PackageBudgetWarning[]
   canUseSelectedPackageFilter: boolean
+  hasTreemapComparison: boolean
   comparisonMode: AnalyzeComparisonMode
   copyStatus: string
   filteredDuplicateModules: DuplicateModuleEntry[]
@@ -63,7 +67,6 @@ defineProps<{
   queuedActionKeys: string[]
   reviewLayoutItems: Array<{ id: string, label: string }>
   result: AnalyzeSubpackagesResult
-  selectedTreemapFocusNodeId: string | null
   selectedTreemapMeta: TreemapNodeMeta | null
   selectedActionKey: string | null
   selectedFileModules: SelectedFileModuleDetail[]
@@ -71,9 +74,15 @@ defineProps<{
   theme: ResolvedTheme
   topCards: DashboardMetricCard[]
   totalBytes: number
+  treemapColorMode: AnalyzeTreemapColorMode
+  treemapColorDescription: string
+  treemapComparisonLabel: string
+  treemapLegend: TreemapLegendItem[]
+  treemapNodes: TreemapNode[]
+  treemapPath: TreemapNode[]
+  treemapSourcePath: string | null
   treemapFilterMode: AnalyzeTreemapFilterMode
   treemapFilterOptions: AnalyzeTreemapFilterOption[]
-  treemapLayoutItems: Array<{ id: string, label: string }>
   visibleLargestFiles: LargestFileEntry[]
   workQueueItems: AnalyzeWorkQueueItem[]
   bindChartRef: (element: Element | null) => void
@@ -85,7 +94,8 @@ const emit = defineEmits<{
   copyPr: []
   copyReviewChecklist: []
   copyWorkQueue: []
-  focusTreemapSelection: []
+  inspectTreemapProblem: [problem: 'duplicates' | 'growth']
+  openTreemapSource: [meta: TreemapNodeMeta]
   removeWorkQueueItem: [id: string]
   resetTreemapFocus: []
   selectAction: [item: AnalyzeActionCenterItem]
@@ -93,10 +103,12 @@ const emit = defineEmits<{
   selectFile: [item: LargestFileEntry]
   selectPackage: [item: PackageInsight]
   selectReviewChecklistItem: [item: PrReviewChecklistItem]
+  selectTreemapNode: [meta: TreemapNodeMeta]
   selectWorkQueueItem: [item: AnalyzeWorkQueueItem]
   setBaseline: [id: string]
   setComparisonMode: [mode: AnalyzeComparisonMode]
   toggleWorkQueueItem: [id: string]
+  updateTreemapColorMode: [mode: AnalyzeTreemapColorMode]
   updateTreemapFilterMode: [mode: AnalyzeTreemapFilterMode]
 }>()
 
@@ -170,26 +182,29 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
     <ChunkGraphPanel :result="result" :theme="theme" />
   </section>
 
-  <section v-else-if="activeTab === 'treemap'" class="min-h-0">
-    <AnalyzeDraggableGrid
-      grid-class="grid h-full min-h-0 min-w-0 gap-2 overflow-x-hidden overflow-y-auto xl:overflow-hidden"
-      :items="treemapLayoutItems"
-      storage-key="weapp-vite:dashboard:analyze-layout:treemap"
-    >
-      <template #treemap>
-        <TreemapCard
-          :bind-chart-ref="bindChartRef"
-          :can-focus-selected="Boolean(selectedTreemapFocusNodeId)"
-          :filter-mode="treemapFilterMode"
-          :filter-options="treemapFilterOptions"
-          :can-use-selected-package-filter="canUseSelectedPackageFilter"
-          :is-empty="isTreemapEmpty"
-          @focus-selected="emit('focusTreemapSelection')"
-          @reset-focus="emit('resetTreemapFocus')"
-          @update-filter-mode="emit('updateTreemapFilterMode', $event)"
-        />
-      </template>
-    </AnalyzeDraggableGrid>
+  <section v-else-if="activeTab === 'treemap'" class="min-h-0 flex-1">
+    <TreemapCard
+      :bind-chart-ref="bindChartRef"
+      :filter-mode="treemapFilterMode"
+      :filter-options="treemapFilterOptions"
+      :can-use-selected-package-filter="canUseSelectedPackageFilter"
+      :has-comparison="hasTreemapComparison"
+      :comparison-label="treemapComparisonLabel"
+      :color-mode="treemapColorMode"
+      :color-description="treemapColorDescription"
+      :legend="treemapLegend"
+      :nodes="treemapNodes"
+      :path="treemapPath"
+      :result="result"
+      :selected-meta="selectedTreemapMeta"
+      :is-empty="isTreemapEmpty"
+      @reset-focus="emit('resetTreemapFocus')"
+      @select-node="emit('selectTreemapNode', $event)"
+      @open-source="emit('openTreemapSource', $event)"
+      @inspect-problem="emit('inspectTreemapProblem', $event)"
+      @update-color-mode="emit('updateTreemapColorMode', $event)"
+      @update-filter-mode="emit('updateTreemapFilterMode', $event)"
+    />
   </section>
 
   <section v-else-if="activeTab === 'files'" class="min-h-0">
@@ -219,6 +234,7 @@ const ChunkGraphPanel = defineAsyncComponent(() => import('./ChunkGraphPanel.vue
           :active-file-key="activeLargestFileKey"
           :files="filteredLargestFiles"
           :theme="theme"
+          :initial-source-path="treemapSourcePath"
           @select-file="emit('selectFile', $event)"
         />
       </template>

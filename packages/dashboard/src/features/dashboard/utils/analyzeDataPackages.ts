@@ -194,5 +194,4 @@ export function createLargestFiles(
 
   return entries
     .sort((a, b) => b.size - a.size || a.file.localeCompare(b.file))
-    .slice(0, 18)
 }
