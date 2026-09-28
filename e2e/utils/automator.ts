@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-import { Automator, MiniProgram } from '@weapp-vite/miniprogram-automator'
+import { Automator } from '@weapp-vite/miniprogram-automator'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
@@ -30,7 +30,6 @@ import {
 import { createStartupProtocolDiagnostics } from './startupProtocolDiagnostics'
 import { watchResolvedDirectory } from './watchResolvedDirectory'
 
-const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
 const DEVTOOLS_HTTP_PORT_ERROR = 'Failed to launch wechat web devTools, please make sure http port is open'
 const DEVTOOLS_INFRA_ERROR_PATTERNS = [
@@ -189,25 +188,6 @@ function resolveNonNegativeInt(value: number | undefined, fallback: number) {
   return Math.max(0, Math.trunc(value))
 }
 
-function compareVersion(versionA: string, versionB: string) {
-  const left = versionA.split('.')
-  const right = versionB.split('.')
-  const length = Math.max(left.length, right.length)
-
-  for (let index = 0; index < length; index += 1) {
-    const currentLeft = Number.parseInt(left[index] || '0', 10)
-    const currentRight = Number.parseInt(right[index] || '0', 10)
-    if (currentLeft > currentRight) {
-      return 1
-    }
-    if (currentLeft < currentRight) {
-      return -1
-    }
-  }
-
-  return 0
-}
-
 const RELAUNCH_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT,
   DEFAULT_RELUNCH_READY_TIMEOUT,
@@ -251,7 +231,6 @@ const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
   .filter(Boolean)
   .map(item => normalizePathForMatch(item))
 
-let versionPatched = false
 let loginPreflightPassed = false
 let localhostListenPatched = false
 const automator = new Automator()
@@ -2634,27 +2613,6 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
   return miniProgram
 }
 
-function patchAutomatorVersionCheck() {
-  if (versionPatched) {
-    return
-  }
-  versionPatched = true
-  MiniProgram.prototype.checkVersion = async function checkVersionPatched(this: {
-    send: (method: string, params?: Record<string, unknown>, options?: { timeout?: number }) => Promise<{ SDKVersion?: string }>
-  }, timeout?: number) {
-    const info = await this.send('Tool.getInfo', {}, timeout ? { timeout } : undefined)
-    const sdkVersion = info?.SDKVersion
-    if (!sdkVersion || sdkVersion === 'dev') {
-      return
-    }
-    if (compareVersion(sdkVersion, MIN_SDK_VERSION) < 0) {
-      throw new Error(
-        `SDKVersion is currently ${sdkVersion}, while automator requires at least version ${MIN_SDK_VERSION}`,
-      )
-    }
-  }
-}
-
 export async function terminateBridgeCliProcess(cliPid: number) {
   await terminateCliProcessTree(cliPid)
 }
@@ -2877,7 +2835,6 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   }
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
-  patchAutomatorVersionCheck()
   const { configureHeadlessSession: _configureHeadlessSession, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)

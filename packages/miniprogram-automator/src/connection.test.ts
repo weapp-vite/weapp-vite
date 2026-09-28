@@ -63,12 +63,12 @@ describe('Connection', () => {
     await expect(pending).resolves.toEqual({ data: { ok: true } })
   })
 
-  it('selects the app-service Page protocol for affected DevTools versions', async () => {
+  it.each(['2.01.2510290', '2.02.2609231'])('selects the app-service Page protocol for affected DevTools %s', async (version) => {
     const { default: Connection } = await import('./Connection')
     const transport = new FakeTransport()
     const connection = new Connection(transport as any)
 
-    connection.configureToolInfo({ version: '2.01.2510290' })
+    connection.configureToolInfo({ version })
     expect(connection.prefersAppServicePageProtocol).toBe(true)
 
     connection.configureToolInfo({ version: '2.01.2601010' })

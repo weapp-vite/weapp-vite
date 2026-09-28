@@ -34,6 +34,7 @@ interface ToolInfo {
 /** Page frame 定向消息失效、需要切换到 App-service Page 协议的 DevTools 版本。 */
 const APP_SERVICE_PAGE_PROTOCOL_VERSIONS = new Set([
   '2.01.2510290',
+  '2.02.2609231',
 ])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
