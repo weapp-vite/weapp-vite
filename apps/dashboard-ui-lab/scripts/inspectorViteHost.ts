@@ -3,7 +3,6 @@ import type { DevframeDefinition } from 'devframe/types'
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeDashboardDevframeController, DashboardAnalyzeSnapshot, DashboardContentRoots } from 'weapp-vite/dashboard'
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { DevTools } from '@vitejs/devtools'
@@ -13,6 +12,7 @@ import { withLeadingSlash, withTrailingSlash } from 'devframe/utils/url'
 import { createServer } from 'vite'
 import { createAnalyzeDashboardDevframe, resolveDashboardClientAssets } from 'weapp-vite/dashboard'
 import { createAnalyzeDashboardPlugin } from 'weapp-vite/dashboard/vite'
+import { createInspectorTemporaryRoot } from './inspectorTemporaryRoot'
 
 interface InspectorViteHostOptions {
   cwd: string
@@ -32,7 +32,8 @@ export async function startInspectorViteHost(options: InspectorViteHostOptions) 
     throw new Error('Inspector Vite DevTools host 需要已构建的 @weapp-vite/dashboard 原生资源；请先构建 Dashboard。')
   }
 
-  const appRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'wv-inspector-host-'))
+  const temporaryRoot = createInspectorTemporaryRoot('wv-inspector-host-')
+  const appRoot = temporaryRoot.root
   let controller: AnalyzeDashboardDevframeController | undefined
   let server: ViteDevServer | undefined
   let closePromise: Promise<void> | undefined
@@ -56,7 +57,7 @@ export async function startInspectorViteHost(options: InspectorViteHostOptions) 
       }
       finally {
         try {
-          await fs.rm(appRoot, { recursive: true, force: true })
+          temporaryRoot.remove()
         }
         finally {
           resolveExit()

@@ -2,13 +2,13 @@ import type { Interface } from 'node:readline'
 import type { AnalyzeDashboardDevframeController } from 'weapp-vite/dashboard'
 import type { InspectorFixture, InspectorFixtureState } from './inspectorFixture'
 import fs from 'node:fs/promises'
-import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { createBaselineState, createInspectorFixture, FIXTURE_PROJECT_NAME, LONG_FILE, SELECTED_FILE, SELECTED_SOURCE } from './inspectorFixture'
+import { createInspectorTemporaryRoot } from './inspectorTemporaryRoot'
 
 interface InspectorHostHandle extends Pick<AnalyzeDashboardDevframeController, 'update'> {
   urls: string[]
@@ -55,8 +55,8 @@ async function main() {
   if (!values['vite-devtools'] && (values['panel-base'] !== undefined || values['app-base'] !== undefined)) {
     throw new Error('--panel-base / --app-base 仅用于 --vite-devtools 宿主模式。')
   }
-  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'wv-inspector-'))
-  const srcRoot = path.join(temporaryRoot, 'src')
+  const temporaryRoot = createInspectorTemporaryRoot('wv-inspector-')
+  const srcRoot = path.join(temporaryRoot.root, 'src')
   let dashboard: InspectorHostHandle | undefined
   let input: Interface | undefined
   let stopping = false
@@ -222,7 +222,7 @@ async function main() {
     }
     finally {
       try {
-        await fs.rm(temporaryRoot, { recursive: true, force: true })
+        temporaryRoot.remove()
         console.log('[fixture] Dashboard 已关闭，本会话临时源码已清理。')
       }
       finally {

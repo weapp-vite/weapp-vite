@@ -68,7 +68,7 @@ wv build -p web
 
 `weapp-vite/dashboard` 是 Node 端共享核心；CLI 独立工作台与 Vite DevTools 复用同一个 `DevframeDefinition` 和 `@weapp-vite/dashboard` 面板。可选适配器位于 `weapp-vite/dashboard/vite`，使用官方 `createPluginFromDevframe`，不会由普通包入口或 CLI 自动加载。
 
-接入方安装 `@weapp-vite/dashboard`、`@vitejs/devtools` 和 `@vitejs/devtools-kit`。当前接入按 DevTools / Kit `0.7.6`、Devframe `1.1.0` 验证；Kit 是可选 peer，宿主依赖不进入小程序产物。
+接入方安装 `@weapp-vite/dashboard`、`@vitejs/devtools` 和 `@vitejs/devtools-kit`。当前接入按 Vite `8.3.0`、DevTools / Kit `0.7.6`、Devframe `1.1.0` 验证；Kit 是可选 peer，宿主依赖不进入小程序产物。
 
 ```ts
 import type { DevToolsConfig } from '@vitejs/devtools/config'
@@ -101,7 +101,9 @@ export function createDashboardHost(snapshot: DashboardAnalyzeSnapshot, roots: D
 
 将返回的 `plugins` 交给 Vite 配置。调用方先完成分析及历史元数据持久化，用 `createDashboardArtifactSnapshot().capture` 收集该次分析的产物，再提交 `{ current, previous, artifacts }`。后续调用 `dashboard.update(result, artifacts, previousResult?)`；仅运行事件变化时调用 `dashboard.emitRuntimeEvents(events)`。提交后不要再修改报告或产物 Map。
 
-每个控制器只挂载到一个宿主。适配器在 Vite 关闭或自身 setup 失败时释放核心；自行使用 `dashboard.definition` 对接其他 Devframe 宿主时，调用方必须在关闭和启动失败路径调用 `dashboard.dispose()`。核心不启动服务器，也不拥有外部宿主的认证、Origin 或 MCP 策略；共享宿主不是只读沙箱。
+每个控制器只同时挂载到一个逻辑宿主。适配器记录成功安装的 Vite 配置身份，并仅在该配置拥有的环境关闭时释放核心。成功重启将所有权移交给新配置，旧实例和未安装的失败候选的清理都不会误释放当前控制器；替换前的资源校验失败时，旧宿主仍可查询和更新。首次 setup 失败或 SDK 安装开始后的失败会释放核心，不承诺回滚部分安装。自行使用 `dashboard.definition` 对接其他 Devframe 宿主时，调用方必须负责最终关闭和启动失败时的 `dashboard.dispose()`。核心不启动服务器，也不拥有外部宿主的认证、Origin 或 MCP 策略；共享宿主不是只读沙箱。
+
+DevTools `0.7.6` 自身存在程序化重启边界：重复使用同一个 `DevTools()` 返回值时，旧实例关闭可能同时关闭新实例的 WebSocket；不安装 Dashboard 也能复现。应在每次重载的 Vite 配置中重新调用 `DevTools()`，不要把该 SDK 插件实例长期缓存在复用的 inline 配置里。上述重启验证使用重新创建的 SDK 宿主和保留的 Dashboard 控制器，不代表修复了上游传输问题。
 
 面板默认位于 `/__weapp-vite/`，自定义目录与应用 `base` 独立。前端复用宿主连接或从页面相对位置发现元数据，复制视图链接保留目录和查询参数但排除认证 fragment。适配器只在开发模式挂载，生产构建不要求可选面板资源，也不导出报告。以上入口仅用于 Node 开发 / 构建宿主，不应导入小程序 AppService。
 
