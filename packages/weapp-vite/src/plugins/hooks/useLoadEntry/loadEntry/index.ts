@@ -314,7 +314,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? cachedJson === undefined
         ? cachedEntryJson === undefined
           ? jsonService.read(jsonPath)
-          : Promise.resolve(cloneJsonValue(cachedEntryJson))
+          : Promise.resolve(cachedEntryJson)
         : Promise.resolve(cachedJson)
       : undefined
     const jsonReadStartedAt = performance.now()
@@ -325,8 +325,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           addJsonWatchTargets,
         ])
         if (json !== undefined && cachedJson === undefined && cachedEntryJson === undefined) {
-          entryJsonCache.set(jsonPath, cloneJsonValue(json))
+          entryJsonCache.set(jsonPath, json)
         }
+        // 缓存只保留源码配置，当前构建的自动绑定等派生字段不能写回缓存。
+        json = cloneJsonValue(json)
       }
       finally {
         recordEntryDuration('entryJsonReadMs', jsonReadStartedAt)

@@ -1,6 +1,7 @@
 import type { ResolvedConfig } from 'vite'
 import type { BuildTarget, CompilerContext } from '../../../context'
 import type { Entry, SubPackageMetaValue } from '../../../types'
+import type { JsonEmitRecord } from '../../hooks/useLoadEntry/jsonEmit'
 
 type LoadEntryApi = ReturnType<typeof import('../../hooks/useLoadEntry').useLoadEntry>
 
@@ -14,6 +15,7 @@ export interface CorePluginState {
   entryChunkLifecycle?: LoadEntryApi['entryChunkLifecycle']
   entriesMap: LoadEntryApi['entriesMap']
   jsonEmitFilesMap: LoadEntryApi['jsonEmitFilesMap']
+  pendingJsonEmitFilesMap: Map<string, JsonEmitRecord>
   resolvedEntryMap: LoadEntryApi['resolvedEntryMap']
   requireAsyncEmittedChunks: Set<string>
   watchFilesSnapshot: string[]

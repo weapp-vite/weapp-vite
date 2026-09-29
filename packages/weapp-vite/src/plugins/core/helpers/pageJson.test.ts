@@ -1,31 +1,79 @@
+import type { CompilerContext } from '../../../context'
+import type { JsonResolvableEntry } from '../../../utils'
+import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
+import type { CorePluginState } from './types'
 import { expect, it, vi } from 'vitest'
-import { emitJsonAssets } from './bundle'
+import { createRuntimeState } from '../../../runtime/runtimeState'
+import { resolveJson } from '../../../utils'
+import { createJsonEmitManager } from '../../hooks/useLoadEntry/jsonEmit'
+import { createRenderStartHook } from '../lifecycle/emit'
 
-it('emits empty page configuration and keeps unchanged JSON emission deduplicated', () => {
+vi.mock('../../utils/wxmlEmit', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../utils/wxmlEmit')>()
+  return { ...actual, emitWxmlAssetsWithCache: () => [] }
+})
+
+it('publishes removed component bindings during script HMR and restores retained JSON on a full write', async () => {
+  // 页面使用显式输出文件名，夹具只提供本次 JSON 发布会读取的编译服务。
+  const configService = { isDev: true } as CompilerContext['configService']
+  const manager = createJsonEmitManager(configService)
+  const runtimeState = createRuntimeState()
+  // 模板输出在本用例中隔离，只构造真实 JSON 发布需要的状态。
   const state = {
     ctx: {
-      jsonService: { resolve: (entry: { json: unknown }) => JSON.stringify(entry.json) },
-      configService: {},
-      runtimeState: { json: { emittedSource: new Map() } },
+      configService,
+      jsonService: { resolve: (entry: JsonResolvableEntry) => resolveJson(entry, undefined, 'weapp') },
+      runtimeState,
     },
-    jsonEmitFilesMap: new Map([
-      ['page', { fileName: 'packageB/pages/index/index.json', entry: { type: 'page', json: {} } }],
-      ['component', { fileName: 'components/card/index.json', entry: { type: 'component', json: { component: true } } }],
-    ]),
-  } as unknown as Parameters<typeof emitJsonAssets>[0]
-  const emitFile = vi.fn()
-  emitJsonAssets.call({ emitFile }, state)
-  expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
-    type: 'asset',
-    fileName: 'packageB/pages/index/index.json',
-    source: '{}',
-  }))
-  expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
-    type: 'asset',
-    fileName: 'components/card/index.json',
-    source: '{"component":true}',
-  }))
-  emitFile.mockClear()
-  emitJsonAssets.call({ emitFile }, state)
-  expect(emitFile).not.toHaveBeenCalled()
+    jsonEmitFilesMap: manager.map,
+    pendingJsonEmitFilesMap: manager.pendingMap,
+    entriesMap: new Map(),
+    hmrState: { hasBuiltOnce: false, didEmitAllEntries: false },
+    buildTarget: 'app',
+    watchFilesSnapshot: [],
+  } as unknown as CorePluginState
+  const published = new Map<string, unknown>()
+  const emittedNames: string[] = []
+  const emitFile: WxmlEmitRuntime['emitFile'] = (asset) => {
+    if (!asset.fileName || typeof asset.source !== 'string') {
+      throw new Error('Expected a named JSON asset')
+    }
+    const json: unknown = JSON.parse(asset.source)
+    published.set(asset.fileName, json)
+    emittedNames.push(asset.fileName)
+  }
+  const renderStart = createRenderStartHook(state)
+  const pageFileName = 'packageB/pages/index/index.json'
+  const componentFileName = 'components/card/index.json'
+  manager.register({
+    fileName: pageFileName,
+    type: 'page',
+    json: { usingComponents: { 'probe-card': '/components/probe-card/index' } },
+  })
+  manager.register({ fileName: componentFileName, type: 'component', json: { component: true } })
+  await renderStart.call({ emitFile })
+  expect(published.get(pageFileName)).toEqual({
+    usingComponents: { 'probe-card': '/components/probe-card/index' },
+  })
+  expect(published.get(componentFileName)).toEqual({ component: true })
+
+  state.hmrState.hasBuiltOnce = true
+  runtimeState.build.hmr.profile.dirtyReasonSummary = ['entry-direct:1']
+  manager.register({ fileName: pageFileName, type: 'page', json: {} })
+  emittedNames.length = 0
+  await renderStart.call({ emitFile })
+  expect(published.get(pageFileName)).toEqual({})
+  expect(emittedNames).toEqual([pageFileName])
+
+  manager.register({ fileName: pageFileName, type: 'page', json: {} })
+  emittedNames.length = 0
+  await renderStart.call({ emitFile })
+  expect(emittedNames).toEqual([])
+
+  state.hmrState.didEmitAllEntries = true
+  runtimeState.json.emittedSource.clear()
+  published.clear()
+  await renderStart.call({ emitFile })
+  expect(published.get(pageFileName)).toEqual({})
+  expect(published.get(componentFileName)).toEqual({ component: true })
 })

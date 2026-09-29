@@ -331,11 +331,18 @@ export function filterPluginBundleOutputs(
 }
 
 export function emitJsonAssets(this: any, state: CorePluginState) {
-  const { ctx } = state
+  const { ctx, hmrState } = state
   const { jsonService, configService } = ctx
+  // 增量发布由实际注册的配置驱动，脚本或模板改动也可能改变派生 JSON。
+  const records = !configService.isDev || !hmrState.hasBuiltOnce || hmrState.didEmitAllEntries
+    ? state.jsonEmitFilesMap
+    : state.pendingJsonEmitFilesMap
+  if (!records.size) {
+    return
+  }
   const emittedSourceCache = ctx.runtimeState.json.emittedSource
 
-  for (const jsonEmitFile of state.jsonEmitFilesMap.values()) {
+  for (const jsonEmitFile of records.values()) {
     if (
       jsonEmitFile.entry.json
       && isObject(jsonEmitFile.entry.json)
@@ -366,6 +373,7 @@ export function emitJsonAssets(this: any, state: CorePluginState) {
       }
     }
   }
+  state.pendingJsonEmitFilesMap.clear()
 }
 
 interface RemovalRange {

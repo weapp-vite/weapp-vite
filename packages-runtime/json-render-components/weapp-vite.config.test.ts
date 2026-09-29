@@ -17,7 +17,8 @@ it('loads the library config before unrelated workspace projects have generated 
       references: [{ path: './apps/unprepared/.weapp-vite/tsconfig.shared.json' }],
       files: [],
     }))
-    await symlink(path.join(repo, 'node_modules'), path.join(root, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
+    // 保留包级依赖边界，配置加载不能依赖根目录的隐式依赖提升。
+    await symlink(path.join(import.meta.dirname, 'node_modules'), path.join(project, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir')
     for (const file of ['package.json', 'tsconfig.json', 'weapp-vite.config.ts']) {
       await copyFile(path.join(import.meta.dirname, file), path.join(project, file))
     }
