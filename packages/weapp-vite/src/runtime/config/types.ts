@@ -15,6 +15,12 @@ export interface LoadConfigOptions {
   emitDefaultAutoImportOutputs?: boolean
   outputRoot?: string
   pluginOnly?: boolean
+  /** 宿主已执行的配置；存在时跳过 vite/weapp-vite 配置文件发现与加载。 */
+  hostConfig?: {
+    config: InlineConfig
+    path?: string
+    dependencies?: string[]
+  }
   inlineConfig?: InlineConfig
   configFile?: string
   configLoader?: ViteConfigLoader

@@ -386,6 +386,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
               return undefined
             }
             const config = await extractConfigFromVue(vueEntryPath, {
+              compilerContext: ctx,
               ...(source === undefined
                 ? { readSource: readVueSource }
                 : { source }),
@@ -482,6 +483,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
         await ctx.autoRoutesService.ensureFresh()
         const refreshedConfigFromVue = await extractConfigFromVue(vueEntryPath, {
+          compilerContext: ctx,
           source: await readVueSource(),
           force: true,
         })

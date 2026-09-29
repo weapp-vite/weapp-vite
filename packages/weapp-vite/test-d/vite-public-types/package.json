@@ -1,0 +1,16 @@
+{
+  "name": "vite-public-types",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "target": "ES2023",
+      "strict": true,
+      "paths": { "weapp-vite/vite": ["../../dist/vite.d.mts"] },
+      "types": ["node", "miniprogram-api-typings"]
+    }
+  }
+}

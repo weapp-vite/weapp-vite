@@ -183,6 +183,8 @@ const IDE_HMR_PATTERNS = [
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ]
 const IDE_FULL_CORE_PATTERNS = [
+  'ide/vite-plugin.runtime.test.ts',
+  'ide/vite-plugin-npm.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
@@ -236,6 +238,8 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/vite-plugin.runtime.test.ts',
+  'ide/vite-plugin-npm.runtime.test.ts',
   'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
   'ide/github-issues.runtime.feature1087.test.ts',

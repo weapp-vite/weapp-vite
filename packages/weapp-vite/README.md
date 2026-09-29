@@ -540,3 +540,7 @@ const artifact = await buildTestArtifact({ cwd: process.cwd() })
 [MIT](./LICENSE)
 
 <!-- "//------":""esbuild": "^0.21.3",", -->
+
+## 实验性标准 Vite 插件
+
+`weapp-vite/vite` 导出 `weapp()`，通过 `plugins: [weapp()]` 和顶层 `weapp` 配置接入原生 `vite build` / `vp build`。当前仅开放单目标微信生产构建；开发继续使用 `wv dev`。配置、Vite+ alias 与未开放能力见 [标准插件指南](https://vite.weapp.dev/guide/vite-plugin)。离线说明随包发布在 `dist/docs/vite-plugin.md`。

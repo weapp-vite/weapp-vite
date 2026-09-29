@@ -13,6 +13,8 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/vite-plugin.runtime.test.ts',
+    'ide/vite-plugin-npm.runtime.test.ts',
     'ide/wevu-runtime.pruning.test.ts',
     'ide/github-issues.runtime.issue1035.test.ts',
     'ide/github-issues.runtime.feature1087.test.ts',
