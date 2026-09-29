@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { prepareIndependentOutputs } from '../../../runtime/buildPlugin/independentPlan'
 import { resetEmittedOutputCaches } from '../../../runtime/buildPlugin/outputs'
 import { changeFileExtension } from '../../../utils'
 import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
@@ -592,6 +593,7 @@ export function useLoadEntry(
         ctx.autoRoutesService?.markDirty()
         ctx.scanService.markDirty()
         const app = await ctx.scanService.loadAppEntry()
+        await prepareIndependentOutputs(ctx)
         await loadEntry.call(this, app.path, 'app')
         options?.hmr?.setDidEmitAllEntries?.(true)
         options?.hmr?.setSkipSharedChunkRefresh?.(false)

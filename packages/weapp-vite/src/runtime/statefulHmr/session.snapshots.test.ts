@@ -4,6 +4,7 @@ import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrDevEngineUpdate } from './viteAdapter'
+import { EventEmitter } from 'node:events'
 import { realpathSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -274,6 +275,7 @@ describe('stateful snapshot output transactions', () => {
           logger: { info: vi.fn(), error: vi.fn() },
         },
         moduleGraph: { getModulesByFile: () => undefined },
+        watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
         close: vi.fn().mockResolvedValue(undefined),

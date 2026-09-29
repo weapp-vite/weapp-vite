@@ -49,8 +49,8 @@ export class WeappBuildSession extends CompilerSession {
     this.dependencyBuild = undefined
     return this.validating = this.run(async () => {
       const app = await this.context.scanService.loadAppEntry()
-      if (app.json.workers || (app.json.subPackages ?? []).some(entry => entry.independent)) {
-        throw new Error('[weapp-vite] 标准插件 alpha 尚不支持 worker 或独立分包，请使用 wv build。')
+      if (app.json.workers) {
+        throw new Error('[weapp-vite] 标准插件 alpha 尚不支持 worker，请使用 wv build。')
       }
       if (this.isClosing) {
         throw new Error('[weapp-vite] 构建会话已关闭。')

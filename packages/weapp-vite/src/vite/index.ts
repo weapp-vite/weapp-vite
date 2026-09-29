@@ -50,14 +50,17 @@ export function weapp(): Plugin[] {
             || options?.worker?.entry || options?.web || (options?.multiPlatform === true || (typeof options?.multiPlatform === 'object' && options.multiPlatform.enabled))) {
             throw new Error('[weapp-vite] 标准插件 alpha 仅支持单目标微信应用；高级目标请使用 wv build。')
           }
+          const userPlugins = configuredPlugins.filter(plugin => plugin !== coordinator && !slots.plugins.includes(plugin))
           const hostConfig = {
             ...config,
-            plugins: serveRequested ? configuredPlugins.filter(plugin => plugin !== coordinator && !slots.plugins.includes(plugin)) : [],
+            plugins: serveRequested ? userPlugins : [],
           }
           const { WeappBuildSession } = await import('./session')
           session = new WeappBuildSession()
           try {
             const merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
+            // 主构建的用户插件已由宿主安装；子构建仍需复用它们处理各自的输入。
+            session.context.configService.options.sourceConfig = { ...hostConfig, plugins: userPlugins }
             if (serveRequested) {
               const { prepareDevHostConfig } = await import('./dev')
               if (!session.statefulController && config.experimental?.bundledDev) {

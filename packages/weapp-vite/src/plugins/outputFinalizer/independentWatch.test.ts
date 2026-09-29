@@ -6,7 +6,7 @@ import { createRuntimeState } from '../../runtime/runtimeState'
 import { createOutputPublicationPlugin } from './publication'
 
 describe('independent source ownership at publication', () => {
-  it.each([false, true])('keeps precise child dependencies when the child fails=%s', async (fails) => {
+  it.each([[true, false, false], [true, false, true], [false, true, false], [false, true, true]])('keeps child dependencies (dev=%s, watch=%s, failure=%s)', async (isDev, watchMode, fails) => {
     const runtimeState = createRuntimeState()
     const source = path.resolve('fixture/src/pkg/index.wxml')
     const removed = path.resolve('fixture/src/removed/index.wxml')
@@ -17,7 +17,7 @@ describe('independent source ownership at publication', () => {
     runtimeState.build.independent.pendingOutputs.push(child.promise)
     const ctx = {
       runtimeState,
-      configService: { isDev: true },
+      configService: { isDev },
       scanService: { independentSubPackageMap: new Map([['pkg', {}]]) },
     } as unknown as CompilerContext
     const plugin = createOutputPublicationPlugin(ctx)
@@ -25,7 +25,7 @@ describe('independent source ownership at publication', () => {
     const handler = typeof hook === 'function' ? hook : hook.handler
     const addWatchFile = vi.fn()
     const emitFile = vi.fn()
-    const publication = handler.call({ addWatchFile, emitFile } as never, {} as never, {}, false)
+    const publication = handler.call({ addWatchFile, emitFile, meta: { watchMode } } as never, {} as never, {}, false)
     if (fails) {
       child.reject(failure)
       await expect(publication).rejects.toBe(failure)

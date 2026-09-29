@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
+import { prepareIndependentOutputs } from '../../../../runtime/buildPlugin/independentPlan'
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -179,7 +180,7 @@ async function resolvePluginOnlyInput(state: CorePluginState) {
 
 export function createOptionsHook(state: CorePluginState) {
   const { ctx, subPackageMeta } = state
-  const { scanService, configService, buildService } = ctx
+  const { scanService, configService } = ctx
 
   return async function options(this: any, options: any) {
     if (this) {
@@ -243,30 +244,11 @@ export function createOptionsHook(state: CorePluginState) {
         )
       }
       else {
-        const independentState = ctx.runtimeState.build.independent
-        independentState.pendingOutputs = []
-        scanService.loadSubPackages()
-        const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
-        // 独立分包按根串行构建，避免第三方插件的进程级状态在配置加载时竞争。
-        const previousSubPackageRoot = configService.currentSubPackageRoot
-        for (const root of dirtyIndependentRoots) {
-          const meta = scanService.independentSubPackageMap.get(root)
-          if (!meta) {
-            continue
-          }
-          const buildTask = buildService.buildIndependentBundle(root, meta)
-          buildTask.catch(() => {})
-          independentState.pendingOutputs.push(buildTask)
-          try {
-            await buildTask
-          }
-          catch {}
+        if (state.resolvedConfig?.build.watch && !configService.isDev) {
+          scanService.loadSubPackages()
         }
-        if (configService.currentSubPackageRoot !== previousSubPackageRoot) {
-          configService.options = {
-            ...configService.options,
-            currentSubPackageRoot: previousSubPackageRoot,
-          }
+        else {
+          await prepareIndependentOutputs(ctx)
         }
         scannedInput = await collectMainLogicalInputs(state, appEntry)
       }
@@ -279,7 +261,7 @@ export function createOptionsHook(state: CorePluginState) {
         continue
       }
       // 生产 watch 的页面拓扑由每轮 buildStart 注册，静态 input 只保留真实 app 入口。
-      const dynamicWatchEntry = Boolean(configService.inlineConfig?.build?.watch && !configService.isDev && source.type !== 'app' && !configService.weappLibConfig?.enabled)
+      const dynamicWatchEntry = Boolean(state.resolvedConfig?.build.watch && !configService.isDev && source.type !== 'app' && !configService.weappLibConfig?.enabled)
       if (!dynamicWatchEntry) {
         logicalInput[name] = createLogicalEntryId(sourceId, source.type)
       }

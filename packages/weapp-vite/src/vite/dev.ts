@@ -15,6 +15,7 @@ export function prepareDevHostConfig(session: WeappBuildSession, merged: InlineC
       config: {
         ...normalized,
         logLevel: user.logLevel,
+        customLogger: user.customLogger,
         appType: 'custom',
         define: {
           ...merged.define,

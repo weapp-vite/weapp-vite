@@ -202,16 +202,13 @@ const message: string = 'vue-host'
     expect(errors[0]?.message).toContain('活动宿主复用')
   })
 
-  it.each(['platform', 'worker', 'independent'] as const)('rejects unsupported %s before writing outputs', async (kind) => {
+  it.each(['platform', 'worker'] as const)('rejects unsupported %s before writing outputs', async (kind) => {
     const { root, config } = await fixture()
     if (kind === 'platform') {
       config.weapp!.platform = 'alipay'
     }
     if (kind === 'worker') {
       await writeFile(path.join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/home/index'], workers: 'workers' }))
-    }
-    if (kind === 'independent') {
-      await writeFile(path.join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/home/index'], subPackages: [{ root: 'subpackage', pages: [], independent: true }] }))
     }
     await expect(build(config)).rejects.toThrow(/alpha/)
     expect(await readdir(root)).not.toContain('dist')

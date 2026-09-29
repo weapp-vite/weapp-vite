@@ -11,7 +11,7 @@ const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
 const profile = process.argv[5] ?? 'basic'
-assert(['basic', 'react'].includes(profile))
+assert(['basic', 'react', 'independent'].includes(profile))
 assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
@@ -24,13 +24,15 @@ await writeFile(path.join(root, 'config-calls.txt'), '')
 let logs = ''
 let exited = false
 const originals = new Map()
-for (const file of profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
+const independentSource = 'src/subpackages/independent-wevu/pages/entry/index.vue'
+const independentOutput = 'subpackages/independent-wevu/pages/entry/index.wxml'
+for (const file of profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
   originals.set(file, await readFile(path.join(root, file), 'utf8'))
 }
 if (operation === 'stateful-dev') {
   await writeFile(path.join(root, 'vite.config.mts'), originals.get('vite.config.mts').replace('runtime: \'classic\'', 'runtime: \'stateful-experimental\''))
 }
-const args = operation === 'build-watch' ? ['build', '--watch', '--logLevel', 'info'] : ['dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0']]
+const args = operation === 'build-watch' ? ['build', '--watch', '--logLevel', 'info'] : ['dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0', '--logLevel', 'info']]
 const child = execFile(process.execPath, [cli, ...args], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024 })
 const done = new Promise((resolve) => {
   child.once('error', error => resolve({ error }))
@@ -76,17 +78,36 @@ async function waitForWatchRound(count) {
   assert(rounds() >= count, `Native watch did not finish round ${count}: ${logs}`)
 }
 
+async function waitForDevReady() {
+  if (operation === 'build-watch') {
+    return
+  }
+  const deadline = Date.now() + 20_000
+  while (!/开发服务已就绪|小程序开发产物已就绪/.test(logs) && Date.now() < deadline) {
+    if (exited) {
+      break
+    }
+    await delay(50)
+  }
+  assert(/开发服务已就绪|小程序开发产物已就绪/.test(logs), `Native ${toolchain} dev did not become ready: ${logs}`)
+}
+
 let shutdownFailed = false
 try {
   if (profile === 'react') {
     await waitForOutput('pages/static/index.wxml', 'weapp-vite React static bindings')
     await waitForOutput('pages/static/index.js', /\S/)
   }
+  else if (profile === 'independent') {
+    await waitForOutput(independentOutput, '__WSP_INDEPENDENT_ENTRY__')
+    await waitForOutput('subpackages/independent-wevu/pages/entry/index.js', /\S/)
+  }
   else {
     await waitForOutput('pages/native/index.js', 'native-host')
     await waitForOutput('pages/vue/index.js', 'vue-host')
   }
   await waitForWatchRound(1)
+  await waitForDevReady()
   if (profile === 'react') {
     const source = path.join(root, 'src/pages/static/view.tsx')
     await writeFile(source, originals.get('src/pages/static/view.tsx').replace('weapp-vite React static bindings', 'React host updated template'))
@@ -97,6 +118,16 @@ try {
       assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
     }
     console.log(`${toolchain}: native React ${operation} initial template and TSX update passed`)
+  }
+  else if (profile === 'independent') {
+    await writeFile(path.join(root, independentSource), originals.get(independentSource).replace('__WSP_INDEPENDENT_ENTRY__', 'independent host updated template'))
+    await waitForOutput(independentOutput, 'independent host updated template')
+    await waitForWatchRound(2)
+    await writeFile(path.join(root, independentSource), originals.get(independentSource))
+    await waitForOutput(independentOutput, '__WSP_INDEPENDENT_ENTRY__')
+    await waitForWatchRound(3)
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    console.log(`${toolchain}: native independent ${operation} template update and restore passed with one config evaluation`)
   }
   else if (operation === 'stateful-dev') {
     const control = await waitForOutput('__weapp_vite_hmr/control.js', /http:\/\/localhost:[1-9]\d*\//)

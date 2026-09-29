@@ -142,7 +142,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           }
           finally {
             // 子构建没有活动 watcher；主发布者接管其精确依赖，失败时也保留恢复监听。
-            if (ctx.configService.isDev && !subPackageMeta) {
+            if ((ctx.configService.isDev || this.meta.watchMode) && !subPackageMeta) {
               for (const files of ctx.runtimeState?.build?.independent?.watchFiles.values() ?? []) {
                 for (const file of files) {
                   this.addWatchFile(file)

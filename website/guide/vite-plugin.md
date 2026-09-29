@@ -11,7 +11,7 @@ keywords:
 
 # 标准 Vite 插件与 Vite+
 
-`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件和普通分包。主产物由宿主 Vite 的编译管线生成。
+`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件、普通分包与独立分包。主产物由宿主 Vite 的编译管线生成。
 
 ## 配置
 
@@ -72,7 +72,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | `vp preview` | Vite 的 Web 预览，不是小程序二维码预览 |
 | `vp pack` | 通用库打包，不替代小程序 lib mode |
 
-独立分包、worker、微信插件双产物、lib mode、多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
+worker、微信插件双产物、lib mode、多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
 
 常规 npm 依赖先在会话临时目录准备，再作为宿主 bundle 的资源统一写出。当前不开放 `npm.buildOptions` 回调和微信 `packNpmManually` 手工输出映射，避免子任务写入宿主未管理的目录；这两类配置继续使用 `wv build`。
 
@@ -117,3 +117,11 @@ middleware mode 支持构建与可等待关闭。运行小程序的 stateful 通
 注册同一个 `weapp()`，继续使用顶层 `weapp.react` 配置和既有 `@weapp-vite/react` 运行时。生产构建、classic、生产 watch 与实验性 stateful 共用 React 编译器；静态 TSX 在 stateful 下按既有规则重建会话，不承诺 React hooks 状态跨此类重载保持。
 
 `renderMode: 'auto'` 可组合静态 WXML、动态模板与原生/Wevu 组件 bridge；`dynamic` 仍不支持原生组件 bridge。React Compiler 继续是可选 SWC 能力，其安装与降级规则不随宿主改变。模板输出使用共享的源码根与输出路径映射，支持自定义 `srcRoot` 和符号链接项目路径。
+
+## 独立分包
+
+`app.json` 或 `app.vue` 中的 `subPackages[].independent`，以及顶层 `weapp.subPackages` 的配置沿用独立 CLI 语义。三入口共享独立子构建；子构建直接复用本次已加载的配置、CLI 覆盖与用户插件，不再次执行配置文件。
+
+每个子构建只生成内存产物，最终由主构建的 Vite/Rolldown 发布。classic、stateful 和原生生产 watch 由宿主调度子包更新，不为独立分包另外创建 watcher。生产 watch 支持独立脚本与模板依赖、语法错误恢复，以及删除分包后的陈旧产物清理。
+
+stateful 下独立分包源码由宿主 watcher 驱动完整更新批次，不承诺子包 JS 状态保持；子包的 Vue、脚本和伴随资产无需进入主 DevEngine 模块图也能触发更新。

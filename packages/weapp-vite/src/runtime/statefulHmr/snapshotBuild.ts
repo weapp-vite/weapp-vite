@@ -3,6 +3,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
 import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import path from 'pathe'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
@@ -98,6 +99,10 @@ export async function buildStatefulHmrSnapshot(
     const output = await build(options)
     return {
       output,
+      getIndependentSources: () => ({
+        files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]))],
+        roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)),
+      }),
       getGlassEaselAnalysisByOwner: () => ctx.runtimeState.glassEasel.analysisByOwner,
       getEntryIds: () => ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
       getDelegatedComponentEntryIds: () => Array.from(ctx.runtimeState.build.hmr.resolvedEntryMap.keys()).filter(id =>

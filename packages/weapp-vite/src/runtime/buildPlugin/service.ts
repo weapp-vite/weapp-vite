@@ -1480,6 +1480,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             initial: {
               output: initialSnapshot,
               tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
+              independentSources: snapshot.getIndependentSources(),
               componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
               glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
             },
@@ -1509,6 +1510,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               const output = toStatefulHmrOutput(snapshot.output)
               return {
                 output,
+                independentSources: snapshot.getIndependentSources(),
                 entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
                 delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
                 componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
