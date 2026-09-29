@@ -89,8 +89,10 @@
     "make-fetch-happen": "^16.0.1",
     "npm-registry-fetch": "^20.0.1",
     "pathe": "catalog:",
+    "picomatch": "^4.0.7",
     "pkg-types": "catalog:",
-    "semver": "^7.8.5"
+    "semver": "^7.8.5",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@types/make-fetch-happen": "^10.0.4",

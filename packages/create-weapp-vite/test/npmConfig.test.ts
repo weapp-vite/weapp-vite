@@ -89,9 +89,9 @@ describe('npm network configuration', () => {
     expect(targetResult.stdout.trim()).toBe(existing.registry)
   })
 
-  it.each(['project', 'unlisted'])('matches pnpm workspace configuration for %s regardless of membership or child npmrc', async (name) => {
+  it.each(['project', 'unlisted', 'excluded'])('matches pnpm workspace membership and authentication for %s', async (name) => {
     await writeFile(userconfig, 'registry=https://user.example/\n')
-    await writeFile(path.join(root, 'pnpm-workspace.yaml'), 'packages:\n  - project\n')
+    await writeFile(path.join(root, 'pnpm-workspace.yaml'), 'packages:\n  - project\n  - excluded\n  - "!excluded"\n')
     await writeFile(path.join(root, '.npmrc'), [
       'registry=https://workspace.example/',
       '@weapp-vite:registry=https://workspace-private.example/',
@@ -109,24 +109,25 @@ describe('npm network configuration', () => {
     const network = await resolveRegistryOptions({ projectRoot: target })
     const fromCwd = await resolveRegistryOptions({ cwd: nested })
     const actual = await readRegistry('pnpm', target)
-    expect(actual.stdout.trim()).toBe('https://workspace.example/')
+    const member = name === 'project'
+    expect(actual.stdout.trim()).toBe(member ? 'https://workspace.example/' : 'https://child.example/')
     expect(network.registry).toBe(actual.stdout.trim())
     expect(fromCwd.registry).toBe(actual.stdout.trim())
-    expect(registryForPackage('@weapp-vite/dashboard', network)).toBe('https://workspace-private.example/')
-    expect(network['//workspace-private.example/:_authToken']).toBe('fixture-workspace-token')
-    expect(network['//child.example/:_authToken']).toBeUndefined()
+    expect(registryForPackage('@weapp-vite/dashboard', network)).toBe(member ? 'https://workspace-private.example/' : 'https://child.example/')
+    expect(network['//workspace-private.example/:_authToken']).toBe(member ? 'fixture-workspace-token' : undefined)
+    expect(network['//child.example/:_authToken']).toBe(member ? undefined : 'fixture-child-token')
   })
 
-  it('uses the existing workspace before a target directory is created', async () => {
+  it.each(['project/new-app', 'unlisted'])('resolves workspace membership before creating %s', async (relative) => {
     await writeFile(userconfig, 'registry=https://user.example/\n')
     await writeFile(path.join(root, 'pnpm-workspace.yaml'), 'packages:\n  - project/*\n')
     await writeFile(path.join(root, '.npmrc'), 'registry=https://workspace.example/\n')
-    const target = path.join(project, 'new-app')
+    const target = path.join(root, relative)
     const beforeCreation = await resolveRegistryOptions({ projectRoot: target })
     await mkdir(target)
     await writeFile(path.join(target, 'package.json'), '{"name":"network-fixture","private":true}')
     const actual = await readRegistry('pnpm', target)
-    expect(actual.stdout.trim()).toBe('https://workspace.example/')
+    expect(actual.stdout.trim()).toBe(relative.startsWith('project/') ? 'https://workspace.example/' : 'https://user.example/')
     expect(beforeCreation.registry).toBe(actual.stdout.trim())
   })
 

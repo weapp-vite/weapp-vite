@@ -126,4 +126,30 @@ describe('pnpm dependency build policy', () => {
 
     await expect(ensurePnpmBuildPolicy(file)).rejects.toThrow()
   })
+
+  it.each(['unlisted', 'apps/excluded'])('creates a standalone policy for nonmember %s', async (name) => {
+    const existing = 'packages:\n  - apps/*\n  - "!apps/excluded"\n'
+    await writeFile(path.join(root, 'pnpm-workspace.yaml'), existing)
+    const project = path.join(root, name)
+    expect(await findPnpmWorkspaceRoot(project)).toBeUndefined()
+    await mkdir(project, { recursive: true })
+
+    await ensurePnpmBuildPolicy(project)
+
+    expect(await findPnpmWorkspaceRoot(project)).toBe(project)
+    expect(await readFile(path.join(root, 'pnpm-workspace.yaml'), 'utf8')).toBe(existing)
+    expect(parse(await readFile(path.join(project, 'pnpm-workspace.yaml'), 'utf8'))).toHaveProperty('allowBuilds')
+  })
+
+  it.each(['packages: []\n', 'allowBuilds: {}\n'])('does not inherit a workspace without member patterns: %s', async (config) => {
+    await writeFile(path.join(root, 'pnpm-workspace.yaml'), config)
+    expect(await findPnpmWorkspaceRoot(root)).toBe(root)
+    expect(await findPnpmWorkspaceRoot(path.join(root, 'new-project'))).toBeUndefined()
+  })
+
+  it.each(['apps/*/', './apps/*', 'apps/{member,other}', '**'])('matches pnpm member pattern %s before creation', async (pattern) => {
+    await writeFile(path.join(root, 'pnpm-workspace.yaml'), stringify({ packages: [pattern, '!apps/excluded/'] }))
+    expect(await findPnpmWorkspaceRoot(path.join(root, 'apps', 'member'))).toBe(root)
+    expect(await findPnpmWorkspaceRoot(path.join(root, 'apps', 'excluded'))).toBeUndefined()
+  })
 })

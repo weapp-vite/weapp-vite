@@ -65,6 +65,7 @@ describe('Connection', () => {
 
   it.each([
     ['2.01.2510290', true, true],
+    ['2.02.2608070', false, true],
     ['2.02.2609231', false, true],
     ['2.01.2601010', false, false],
   ] as const)('selects only affected Page protocols for DevTools %s', async (version, pageProtocol, methodProtocol) => {

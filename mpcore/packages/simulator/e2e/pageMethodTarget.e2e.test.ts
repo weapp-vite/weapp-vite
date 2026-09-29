@@ -2,7 +2,7 @@ import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 import { resolveTestingPageMethodTarget } from '../src/testing/pageMethodTarget'
 
-it('keeps retained-page method completion separate from the current rendered page', async () => {
+it('binds nested methods to the retained page without changing the current rendered page', async () => {
   const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles([
     ['app.json', '{"pages":["pages/index/index"]}'],
     ['app.js', 'App({})'],
@@ -12,7 +12,8 @@ it('keeps retained-page method completion separate from the current rendered pag
         this.setData({owner:query.owner})
         this.pending=new Promise(resolve=>{this.finish=resolve})
       },
-      identify(){this.setData({calls:this.data.calls+1});return this.data.owner},
+      identify(){return this.refreshLifecycleSummary()},
+      refreshLifecycleSummary(){this.setData({calls:this.data.calls+1});return this.data.owner},
       waitForNavigation(){return this.pending},
       completeNavigation(){this.finish(this.data.owner)}
     })`],
