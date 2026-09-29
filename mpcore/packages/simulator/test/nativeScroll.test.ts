@@ -31,8 +31,10 @@ function createProject(files = nativeScrollFiles) {
 
 afterEach(async () => {
   for (const session of sessions.splice(0)) {
+    // 先关闭会话中的托管任务，再恢复真实计时器。
     await session.close()
   }
+  vi.useRealTimers()
   cleanupTempDirs(tempDirs)
 })
 
@@ -122,10 +124,15 @@ describe.each(['node', 'browser'] as const)('%s native scroll and tap behavior',
     ['nested-unbound', [{ target: 'nested-unbound', currentTarget: 'middle' }]],
   ])('executes catching handlers once and blocks ancestor navigation for %s', async (id, taps) => {
     const { session, page } = await createSession()
+    vi.useFakeTimers()
     const stages = session.getApp()!.globalData.stages as string[]
     stages.length = 0
     const node = querySelectorAll(session.renderCurrentPage().root, `#${id}`)[0]!
     expect(session.dispatchNativeNodeEvent(node, 'tap', {})).toBe(true)
+    expect(page.data.taps).toEqual(taps)
+    // 先让托管微任务提交导航，再排空宿主任务，避免关闭会话掩盖误导航。
+    await Promise.resolve()
+    await vi.runAllTimersAsync()
     expect(page.data.taps).toEqual(taps)
     expect(session.getCurrentPages()).toEqual([page])
     expect(stages).toEqual([])
@@ -135,7 +142,7 @@ describe.each(['node', 'browser'] as const)('%s native scroll and tap behavior',
     const { session, page } = await createSession()
     const node = querySelectorAll(session.renderCurrentPage().root, `#${id}`)[0]!
     session.dispatchNativeNodeEvent(node, 'tap', {})
-    expect(session.getCurrentPages().at(-1)?.route).toBe('pages/detail/index')
+    await vi.waitFor(() => expect(session.getCurrentPages().at(-1)?.route).toBe('pages/detail/index'))
     expect(page.data.taps).toEqual(id === 'own-catch' ? [{ target: id, currentTarget: id }] : [])
   })
 
@@ -144,21 +151,25 @@ describe.each(['node', 'browser'] as const)('%s native scroll and tap behavior',
     const node = querySelectorAll(session.renderCurrentPage().root, '#below-navigator')[0]!
     session.dispatchNativeNodeEvent(node, 'tap', {})
     expect(page.data.taps).toEqual([{ target: 'below-navigator', currentTarget: 'above' }])
-    expect(session.getCurrentPages().at(-1)?.route).toBe('pages/detail/index')
+    await vi.waitFor(() => expect(session.getCurrentPages().at(-1)?.route).toBe('pages/detail/index'))
   })
 
   it('executes ordinary tap handlers without creating navigation', async () => {
     const { session, page } = await createSession()
+    vi.useFakeTimers()
     const stages = session.getApp()!.globalData.stages as string[]
     stages.length = 0
     const node = querySelectorAll(session.renderCurrentPage().root, '#ordinary')[0]!
     session.dispatchNativeNodeEvent(node, 'tap', {})
     expect(page.data.taps).toEqual([{ target: 'ordinary', currentTarget: 'ordinary' }])
+    await Promise.resolve()
+    await vi.runAllTimersAsync()
+    expect(page.data.taps).toEqual([{ target: 'ordinary', currentTarget: 'ordinary' }])
     expect(session.getCurrentPages()).toEqual([page])
     expect(stages).toEqual([])
   })
 
-  it.each(['remove', 'remove-and-render', 'reLaunch'])('keeps tap ownership after synchronous component %s', async (action) => {
+  it.each(['remove', 'remove-and-render', 'reLaunch'])('keeps tap ownership when component handlers request %s', async (action) => {
     const { session, page } = await createSession(nativeTapOwnershipFiles)
     await setDataAndCommit(page, { action })
     const node = querySelectorAll(session.renderCurrentPage().root, '#leaf')[0]!
@@ -173,6 +184,7 @@ describe.each(['node', 'browser'] as const)('%s native scroll and tap behavior',
       { owner: 'page', identity: 1, type: 'tap', target: 'leaf', currentTarget: 'outer', mark },
     ])
     expect(page.data.visible).toBe(false)
+    await vi.waitFor(() => expect(session.getCurrentPages().at(-1)?.route).toBe('pages/detail/index'))
     const pages = session.getCurrentPages()
     expect(pages.map(entry => entry.route)).toEqual(['pages/index/index', 'pages/detail/index'])
     expect(pages[1]!.options).toEqual({ from: 'default' })
@@ -227,12 +239,16 @@ it('uses the same native propagation through the public testing bridge without d
   const miniProgram = await launch({ projectPath: createProject() })
   sessions.push(miniProgram)
   const page = await miniProgram.reLaunch('/pages/index/index')
+  vi.useFakeTimers()
   await (await page.$('#nested'))!.tap()
+  await Promise.resolve()
+  await vi.runAllTimersAsync()
   expect(await page.data('taps')).toEqual([
     { target: 'nested', currentTarget: 'nested' },
     { target: 'nested', currentTarget: 'middle' },
   ])
   expect((await miniProgram.currentPage())?.pageId).toBe(page.pageId)
+  vi.useRealTimers()
   await (await page.$('#unbound'))!.tap()
-  expect((await miniProgram.currentPage())?.path).toBe('pages/detail/index')
+  expect((await miniProgram.waitForCurrentPage('/pages/detail/index'))?.path).toBe('pages/detail/index')
 })

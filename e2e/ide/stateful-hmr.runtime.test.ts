@@ -823,11 +823,89 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       await triggerIncrement()
       await waitForPatchedBehavior(5, page)
       await check('restored-clicked', 5)
+
+      const storedBeforeNavigation = await storeCount()
+      const navigationVersion = await readClientVersion()
+      // 同一轮事件循环发起导航；宿主应异步提交，不能重入 HMR 的状态恢复窗口。
+      await miniProgram.evaluate((payload: { key: string, route: string }) => {
+        const bridge = (globalThis as any)[payload.key]
+        bridge.__navigationEndUpdate = bridge.endUpdate
+        bridge.endUpdate = () => {
+          const endUpdate = bridge.__navigationEndUpdate
+          bridge.endUpdate = endUpdate
+          delete bridge.__navigationEndUpdate
+          endUpdate.call(bridge)
+          let returned = false
+          wx.reLaunch({
+            url: payload.route,
+            success: () => { bridge.__navigationAfterReturn = returned },
+          })
+          returned = true
+        }
+      }, { key: WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY, route: WEVU_ROUTE })
+      await replaceFileByRename(WEVU_SOURCE, patched)
+      await waitForClientVersion(navigationVersion + 1)
+      await dom.check('navigated', miniProgram, await miniProgram.currentPage())
+      await expect.poll(() => miniProgram.evaluate((key: string) => {
+        return (globalThis as any)[key].__navigationAfterReturn
+      }, WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)).toBe(true)
+      expect(await readRuntimeState()).toEqual({
+        count: 0,
+        input: '',
+        identity: '',
+        route: 'pages/wevu/index',
+        source: 'e2e',
+      })
+      await expect.poll(storeCount).toBe(storedBeforeNavigation)
+      await triggerIncrement()
+      await waitForPatchedBehavior(2)
+      await dom.check('navigated-clicked', miniProgram, await miniProgram.currentPage())
+      await expect.poll(storeCount).toBe(storedBeforeNavigation + 2)
+      const navigationRestoreVersion = await readClientVersion()
+      await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      await waitForClientVersion(navigationRestoreVersion + 1)
+      await dom.check('navigated-restored', miniProgram, await miniProgram.currentPage())
     }
     finally {
-      if (await fs.readFile(WEVU_SOURCE, 'utf8') !== originalWevuSource) {
-        await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+      try {
+        await miniProgram.evaluate((key: string) => {
+          const bridge = (globalThis as any)[key]
+          if (bridge.__navigationEndUpdate) {
+            bridge.endUpdate = bridge.__navigationEndUpdate
+            delete bridge.__navigationEndUpdate
+          }
+          delete bridge.__navigationAfterReturn
+        }, WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)
+      }
+      finally {
+        if (await fs.readFile(WEVU_SOURCE, 'utf8') !== originalWevuSource) {
+          await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
+        }
       }
     }
   })
+
+  for (const hook of ['load', 'show', 'ready']) {
+    it(`commits navigation requested in ${hook} after current page readiness`, async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', [{
+        id: 'redirected',
+        route: '/pages/component/index',
+        action: `从 ${hook} 发起导航后检查目标页与生命周期顺序`,
+        nodes: [
+          { selector: '.count', text: '0' },
+          { selector: '.input', attributes: { value: '' } },
+        ],
+      }])
+      await miniProgram.evaluate((mode: string) => {
+        wx.reLaunch({ url: `/pages/native/index?source=e2e&redirectAt=${mode}` })
+      }, hook)
+      const events = ['load', 'show', 'ready', 'routeDone', 'unload']
+      events.splice(events.indexOf(hook) + 1, 0, 'returned')
+      events.push('success', 'complete')
+      await expect.poll(() => miniProgram.evaluate(() => {
+        return getApp().globalData.navigationTrace?.events
+      }), { timeout: 30_000, interval: 100 }).toEqual(events)
+      await dom.check('redirected', miniProgram, await miniProgram.currentPage())
+    })
+  }
 })

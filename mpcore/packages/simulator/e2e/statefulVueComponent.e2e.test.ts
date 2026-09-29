@@ -50,6 +50,20 @@ it('keeps the latest parent and Vue child DOM state through consecutive bridge p
     action('.child-increment')
     action('.parent-increment')
     await check('2', '8', 'step:1', 'STATEFUL-VUE-BASE')
+
+    action('.patch')
+    await page.reLaunch()
+    const nextPage = session.getCurrentPages().at(-1)!
+    await nextPage.flush()
+    render()
+    expect(nextPage).not.toBe(page)
+    expect(nextPage.selectComponent!('#vue-counter')).not.toBe(child)
+    expect(preview.querySelector('.parent-count')?.textContent).toBe('0')
+    expect(preview.querySelector('.child-count')?.textContent).toBe('0')
+    expect(preview.querySelector('.child-store-count')?.textContent).toBe('8')
+    expect(preview.querySelector('.child-result')?.textContent).toBe('ready')
+    expect(preview.querySelector('.child-marker')?.textContent).toBe('STATEFUL-VUE-PATCHED')
+    expect(preview.querySelector('.input')?.getAttribute('value')).toBe('')
   }
   finally {
     session.close()

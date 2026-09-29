@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import type { BrowserDirectoryFileLike, BrowserHeadlessSession } from '../../../../packages/simulator/src/browser'
 import type { PreviewTapTarget } from '../components/devicePreview/constants'
-import { computed, nextTick, ref, shallowRef } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFilesFromDirectory,
@@ -87,6 +87,12 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     return session.value.getScopeSnapshot(selectedScopeId.value)
   })
 
+  watch([currentPage, selectedScope], ([page, scope], [previousPage]) => {
+    if (page !== previousPage || !scope) {
+      selectedScopeId.value = page ? `page:${page.route}` : ''
+    }
+  }, { flush: 'sync' })
+
   function touch() {
     revision.value += 1
   }
@@ -122,19 +128,17 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
         return nextTick()
       },
     })
-    let nextScopeId = ''
     try {
       primeSession(nextSession)
       const firstRoute = nextSession.project.routes[0]?.route
       if (firstRoute) {
-        const initialPage = nextSession.reLaunch(`/${firstRoute}`)
+        nextSession.reLaunch(`/${firstRoute}`)
         nextSession.triggerResize({
           size: {
             windowHeight: viewportSize.value.height,
             windowWidth: viewportSize.value.width,
           },
         })
-        nextScopeId = `page:${initialPage.route}`
       }
       // 候选会话初始化成功后再关闭旧会话，避免旧提交确认新预览。
       session.value?.close()
@@ -146,42 +150,20 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
     session.value = nextSession
     currentScenarioId.value = scenarioId ?? ''
     projectLabel.value = label
-    selectedScopeId.value = nextScopeId
     touch()
   }
 
-  function syncSelectedScopeAfterRun(previousRoute: string) {
-    const nextRoute = session.value?.getCurrentPages().at(-1)?.route ?? ''
-    if (!nextRoute) {
-      selectedScopeId.value = ''
-      return
-    }
-
-    if (!selectedScopeId.value || nextRoute !== previousRoute) {
-      selectedScopeId.value = `page:${nextRoute}`
-      return
-    }
-
-    if (!session.value?.getScopeSnapshot(selectedScopeId.value)) {
-      selectedScopeId.value = `page:${nextRoute}`
-    }
-  }
-
   function run(action: () => unknown) {
-    const previousRoute = session.value?.getCurrentPages().at(-1)?.route ?? ''
     try {
       errorMessage.value = ''
       const result = action()
       if (result instanceof Promise) {
         void result
-          .then(() => syncSelectedScopeAfterRun(previousRoute))
           .catch((error) => {
             errorMessage.value = String((error as Error).message ?? error)
           })
           .finally(touch)
-        return
       }
-      syncSelectedScopeAfterRun(previousRoute)
     }
     catch (error) {
       errorMessage.value = String((error as Error).message ?? error)

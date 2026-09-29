@@ -26,7 +26,12 @@ export class StartupNavigationQueue {
 
   run<TOption extends HeadlessWxCallbackOption>(option: TOption | undefined, operation: (option: TOption | undefined) => unknown) {
     if (!this.collecting) {
-      return operation(option)
+      const submitted = option && { ...option }
+      // 先退出当前调用栈再提交宿主任务，让当前页面的 ready 与路由完成先交付。
+      this.scheduler.queueMicrotask(() => {
+        this.scheduler.setTimeout(() => operation(submitted), 0)
+      })
+      return
     }
     // 冷启动成功回调晚于目标页 ready；错误也必须在 App 启动栈退出后交付。
     const defer = <T extends (...args: any[]) => void>(callback: T | undefined) => callback
