@@ -1,4 +1,4 @@
-import type { OutputBundle } from 'rolldown'
+import type { OutputAsset, OutputBundle } from 'rolldown'
 import type { ViteDevServer } from 'vite'
 import type { Compiler, CompilerGenerateRequest, CompilerGenerateResult, CompilerSnapshot } from 'weapp-tailwindcss/core'
 import type { CompilerContext } from '../../context'
@@ -14,6 +14,7 @@ import { isPathInside } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { CompilerHmrResyncError, compilerSourceId, getCompilerHmrHost } from '../compilerPlugin/hmr'
 import { findManagedTailwindcssEntryMarker, hasManagedTailwindcssOutputMarker } from '../tailwindcssMarker'
+import { getTailwindStyleOwners, rememberTailwindStyleOwners } from './styleOwners'
 
 interface Root {
   request: CompilerGenerateRequest
@@ -30,7 +31,6 @@ interface Options {
 export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options) {
   const host = getCompilerHmrHost(ctx)
   const extensions = resolveOutputExtensions(ctx.configService.outputExtensions)
-  const isCompilerAsset = (file: string) => file.endsWith(`.${extensions.styleExtension}`) || file.endsWith(`.${extensions.templateExtension}`)
   const roots = new Map<number, Root>()
   let originalBundle: OutputBundle = {}
 
@@ -128,9 +128,10 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   }
 
   function rememberBundle(bundle: OutputBundle) {
+    rememberTailwindStyleOwners(ctx, bundle, extensions.styleExtension)
     const next = { ...originalBundle }
     for (const [file, output] of Object.entries(bundle)) {
-      if (output.type === 'asset' && isCompilerAsset(file)) {
+      if (output.type === 'asset' && file.endsWith(`.${extensions.templateExtension}`)) {
         next[file] = { ...output }
       }
     }
@@ -142,7 +143,12 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   async function prepare(request: WeappCompilerHmrRequest): Promise<WeappCompilerHmrPreparation> {
     let input = captured.get(request)
     if (!input) {
-      input = { roots: new Map(roots), bundle: originalBundle }
+      const bundle = { ...originalBundle }
+      for (const [fileName, source] of getTailwindStyleOwners(ctx)) {
+        // 仅供编译器处理的内存资产；最终文件仍由 Vite emit/write 创建。
+        bundle[fileName] = { type: 'asset', fileName, source, names: [], originalFileNames: [] } as unknown as OutputAsset
+      }
+      input = { roots: new Map(roots), bundle }
       captured.set(request, input)
     }
     // 本批没有受管入口时保持休眠；后续入口属于新的输入版本。

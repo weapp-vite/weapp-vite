@@ -11,6 +11,7 @@ export interface StatefulHmrSnapshot {
   output: StatefulHmrOutputFile[]
   componentPageGlobalStyleRoutes: string[]
   glassEaselAnalysisByOwner: ReadonlyMap<string, GlassEaselAnalysisFact>
+  tailwindStyleOwners?: ReadonlyMap<string, string>
   entryIds?: string[]
   delegatedComponentEntryIds?: string[]
 }

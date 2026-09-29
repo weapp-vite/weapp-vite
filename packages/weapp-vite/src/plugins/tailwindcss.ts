@@ -392,7 +392,7 @@ export function createTailwindcssPlugin(ctx: CompilerContext): Plugin[] {
       return
     }
     const compiler = await getCompiler()
-    if (statefulCompiler && !pinned) {
+    if (!pinned) {
       hmr.rememberBundle(bundle)
     }
     const generatedEntries = pinned?.entries ?? (resolved.options.generator === false

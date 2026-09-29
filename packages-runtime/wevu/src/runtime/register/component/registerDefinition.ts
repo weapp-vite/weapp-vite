@@ -459,6 +459,12 @@ export function registerComponentDefinition<D extends object, C extends Computed
       attachPageLayoutSetter(instance)
       attachRuntimeLayoutHosts(instance)
       enableDeferredSetData(instance, { rehydrateSetupState: true })
+    }, (instance: InternalRuntimeState) => {
+      // HMR 仅抑制用户卸载钩子；被宿主替换的实例仍须停止响应式任务和原生数据写入。
+      runTeardownSteps([
+        () => activeLayoutHosts && layoutHooks?.detachHosts(activeLayoutHosts, instance),
+        () => teardownRuntimeInstance(instance, { skipHooks: true }),
+      ])
     })
     if (!statefulHmrBridge.isApplying()) {
       registerNativeComponentDefinition(definition, isPage)

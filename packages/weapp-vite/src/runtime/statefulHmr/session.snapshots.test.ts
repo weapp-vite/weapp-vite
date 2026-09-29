@@ -226,22 +226,31 @@ describe('stateful snapshot output transactions', () => {
     expect(harness.writeOutput.mock.calls.flatMap(call => call[3] ?? [])).toContain('resources/partial.txt')
   })
 
-  it('issue #1081: does not publish a compiler patch before its stylesheet commits', async () => {
-    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+  it('commits compiler styles after script execution and keeps the build open until styles are written', async () => {
+    const applied = Promise.withResolvers<void>()
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await applied.promise
+      await delivered?.()
+    })
     const session = await start()
+    const ended = vi.fn()
+    session.events.watcher.on('event', ended)
+    ended.mockClear()
+    harness.writeOutput.mockClear()
     const commit = Promise.withResolvers<void>()
     harness.writeOutput.mockImplementationOnce(() => commit.promise)
     session.patch(['compiler-content:tailwind'])
     await vi.advanceTimersByTimeAsync(50)
-    try {
-      expect(delta).not.toHaveBeenCalled()
-    }
-    finally {
-      commit.resolve()
-    }
-    await vi.advanceTimersByTimeAsync(1)
     expect(delta).toHaveBeenCalledTimes(1)
-    delta.mockRestore()
+    expect(writtenAssets()).toEqual([])
+    expect(ended).not.toHaveBeenCalled()
+    applied.resolve()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(writtenAssets()).toContainEqual(expect.objectContaining({ fileName: styleFile, source: '.probe { color: blue; }' }))
+    expect(ended).not.toHaveBeenCalled()
+    commit.resolve()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(ended).toHaveBeenCalledWith(expect.objectContaining({ code: 'END' }))
   })
 
   beforeEach(() => {
@@ -409,7 +418,9 @@ describe('stateful snapshot output transactions', () => {
   })
 
   it('publishes a mixed visual edit as a patch plus changed assets without a full build', async () => {
-    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta')
+    const delta = vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
     const session = await start()
     harness.writeOutput.mockClear()
 
@@ -426,6 +437,9 @@ describe('stateful snapshot output transactions', () => {
   })
 
   it.each(['running', 'written'] as const)('builds one mixed snapshot at the native patch boundary (%s)', async (phase) => {
+    vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
     const session = await start()
     const file = path.join(root, 'src/page.vue')
     const ready = Promise.withResolvers<StatefulHmrSnapshot>()

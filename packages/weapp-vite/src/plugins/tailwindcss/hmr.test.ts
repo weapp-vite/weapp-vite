@@ -7,7 +7,9 @@ import path from 'node:path'
 import { expect, it, vi } from 'vitest'
 import { createCompiler } from 'weapp-tailwindcss/core'
 import { CompilerHmrResyncError, getCompilerHmrHost } from '../compilerPlugin/hmr'
+import { createManagedTailwindcssEntryMarker } from '../tailwindcssMarker'
 import { createTailwindHmrAdapter } from './hmr'
+import { getTailwindStyleOwners, rememberTailwindStyleOwners, setTailwindStyleOwners } from './styleOwners'
 
 it('allows unchanged CSS without an emitted owner but resynchronizes actual style changes', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'tailwind-owner-'))
@@ -122,6 +124,66 @@ it.each([false, true])('generates from fixed sources and preserves preprocessing
       sources: ['patch.js'],
       sourcesContent: ['const utility = "w-[37px]"'],
     })
+  }
+  finally {
+    await compiler.dispose()
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+it('uses snapshot-owned style templates when DevEngine emits no CSS and freezes each batch owner', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'tailwind-snapshot-owner-'))
+  const require = createRequire(import.meta.url)
+  await mkdir(path.join(root, 'node_modules'))
+  await symlink(path.dirname(require.resolve('tailwindcss/package.json')), path.join(root, 'node_modules/tailwindcss'), 'junction')
+  const source = path.join(root, 'page.ts')
+  const entry = path.join(root, 'app.css')
+  await writeFile(source, 'export const utility = "w-[37px]"')
+  await writeFile(entry, '@import "tailwindcss/utilities" source(none); @source "./page.ts";')
+  const compiler = createCompiler({ tailwindcssBasedir: root, appType: 'weapp-vite' })
+  const ctx = { configService: { cwd: root } } as CompilerContext
+  const snapshotContext = {} as CompilerContext
+  const host = getCompilerHmrHost(ctx)
+  const marker = createManagedTailwindcssEntryMarker(0)
+  const fileName = 'styles/merged.wxss'
+  const capture = (color: string) => {
+    rememberTailwindStyleOwners(snapshotContext, {
+      [fileName]: { type: 'asset', fileName, source: `${marker}\n.author { color: ${color}; }`, names: [], originalFileNames: [] },
+    }, 'wxss')
+    setTailwindStyleOwners(ctx, getTailwindStyleOwners(snapshotContext))
+  }
+  const adapter = createTailwindHmrAdapter(ctx, {
+    compiler: async () => compiler,
+    render: async (bundle, entries) => {
+      const style = bundle[fileName]
+      if (style?.type === 'asset') {
+        style.source = String(style.source).replace(marker, entries[0]!.css)
+      }
+    },
+  })
+  try {
+    const request: CompilerGenerateRequest = {
+      id: 'root',
+      sourceOptions: { projectRoot: root, cssEntries: [entry], packageName: 'tailwindcss' },
+      scanSources: true,
+      target: 'weapp',
+    }
+    await adapter.rememberRoot(0, request, await compiler.generate(request))
+    capture('red')
+    adapter.rememberBundle({})
+    host.capture(source, 'export const utility = "w-[53px]"')
+    const first = host.freeze([source])
+    const pending = adapter.prepare(first)
+    capture('blue')
+    const prepared = await pending
+    expect(prepared.assets).toEqual([{ fileName, code: expect.stringContaining('53px') }])
+    expect(prepared.assets![0]!.code).toContain('color: red')
+    expect(prepared.assets![0]!.code).not.toContain('37px')
+    expect((await adapter.prepare(first)).assets![0]!.code).toContain('color: red')
+    expect((await adapter.prepare(host.freeze([source]))).assets![0]!.code).toContain('color: blue')
+    setTailwindStyleOwners(ctx, new Map())
+    host.capture(source, 'export const utility = "w-[61px]"')
+    await expect(adapter.prepare(host.freeze([source]))).rejects.toBeInstanceOf(CompilerHmrResyncError)
   }
   finally {
     await compiler.dispose()

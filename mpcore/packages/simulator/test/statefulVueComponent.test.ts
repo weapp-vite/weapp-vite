@@ -23,7 +23,7 @@ describe.each(['node', 'browser'] as const)('%s Vue child stateful HMR', (provid
       : createBrowserHeadlessSession({ files: createBrowserVirtualFiles(sources) })
     try {
       const page = session.reLaunch('/pages/index/index')
-      const child = page.selectComponent!('#vue-counter')
+      let child = page.selectComponent!('#vue-counter')
       const tapChild = () => {
         const document = parseDocument(session.renderCurrentPage().wxml)
         const button = selectOne('.child-increment', document.children)
@@ -73,6 +73,21 @@ describe.each(['node', 'browser'] as const)('%s Vue child stateful HMR', (provid
       tapChild()
       page.incrementParent()
       await check(2, 8, 'step:1', 'STATEFUL-VUE-BASE')
+      // 对齐 IDE 模板热更新：宿主替换组件时抑制用户生命周期，但必须销毁旧响应式实例。
+      const detached = child!
+      page.detachChildForHmr()
+      session.renderCurrentPage()
+      expect(detached.__wevu).toBeUndefined()
+      const detachedCount = detached.data.storeCount
+      expect(detachedCount).toBe(8)
+      page.attachChildForHmr()
+      session.renderCurrentPage()
+      page.finishHostReplacement()
+      child = page.selectComponent!('#vue-counter')
+      expect(child).not.toBe(detached)
+      tapChild()
+      await check(2, 9, 'step:1', 'STATEFUL-VUE-BASE')
+      expect(detached.data.storeCount).toBe(detachedCount)
     }
     finally {
       session.close()
