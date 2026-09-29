@@ -173,6 +173,8 @@ wv upload -p all --dry-run --json
 
 `--timeout` 是每个平台 SDK worker 的本地超时，不含构建；默认不增加超时。值为正数秒，精度不超过毫秒，最大 `2147483.647` 秒。SDK 执行期间，`SIGINT` / `SIGTERM` 或超时会触发本地上传进程树清理，无法确认清理完成时报告错误。构建等前置阶段保留原有信号退出行为，不等待挂起的构建，也不保证生成最终报告。
 
+Windows 使用 PowerShell 查询已退出 worker 的子进程归属，单次查询最多等待 30 秒；这是 SDK 执行结束后的本地清理预算，不包含在 `--timeout` 内。查询或终止失败仍然报错，不会跳过清理或自动重试上传。
+
 SDK 开始后超时／中断标记 `status: "unknown"`、`remoteOutcome: "unknown"`；SDK 尚未开始时可为 `remoteOutcome: "not-started"`。其他 SDK 错误也可能携带 `remoteOutcome: "unknown"`。**本地停止不代表远端取消**，先核实平台状态再重试；不会自动重试、回滚、提审、设置体验版或正式发布。
 
 ## 完整教程

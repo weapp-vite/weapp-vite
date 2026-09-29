@@ -179,6 +179,7 @@ export async function executeUpload(platform: string, context: UploadContext, se
       }
     }
     const onExit = () => {
+      clearTimeout(timer)
       // Windows 从 ParentProcessId 恢复子树；POSIX 清理仍然存在的进程组。
       terminate(false)
       closeTimer = setTimeout(() => {

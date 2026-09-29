@@ -12,6 +12,7 @@ function childPids(pid: number, lifetime?: ProcessLifetime): number[] {
       ? `[DateTimeOffset]::FromUnixTimeMilliseconds(${lifetime.start}).UtcDateTime`
       : `(Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}').CreationDate.ToUniversalTime()`
     const until = lifetime ? `[DateTimeOffset]::FromUnixTimeMilliseconds(${lifetime.end}).UtcDateTime` : '[DateTime]::UtcNow'
+    // PowerShell 启动与 CIM 查询使用独立有界预算，不复用 taskkill 的短时限。
     const output = execFileSync('powershell.exe', [
       '-NoProfile',
       '-NonInteractive',
@@ -20,7 +21,7 @@ function childPids(pid: number, lifetime?: ProcessLifetime): number[] {
       + `Get-CimInstance Win32_Process -Filter 'ParentProcessId = ${pid}' `
       + '| Where-Object { $_.CreationDate.ToUniversalTime() -ge $since -and $_.CreationDate.ToUniversalTime() -le $until } '
       + '| Select-Object -ExpandProperty ProcessId',
-    ], { encoding: 'utf8', windowsHide: true, timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] })
+    ], { encoding: 'utf8', windowsHide: true, timeout: 30000, stdio: ['ignore', 'pipe', 'ignore'] })
     return output.split(/\s+/).map(Number).filter(value => Number.isSafeInteger(value) && value > 0)
   }
   const output = execFileSync('ps', ['-A', '-o', 'pid=,ppid='], {

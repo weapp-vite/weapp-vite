@@ -73,6 +73,17 @@ describe('upload process ownership', () => {
     expect(state.kill).not.toHaveBeenCalled()
   })
 
+  it('does not claim cleanup succeeded when Windows ownership discovery times out', () => {
+    state.platform = 'win32'
+    const timeout = Object.assign(new Error('ownership discovery timed out'), { code: 'ETIMEDOUT' })
+    state.execFileSync.mockImplementation(() => {
+      throw timeout
+    })
+    expect(() => terminateUploadProcess(101, { exited: true, lifetime: { start: 1000, end: 2000 } }))
+      .toThrow(timeout)
+    expect(state.kill).not.toHaveBeenCalled()
+  })
+
   it('does not silently accept a live Windows process when taskkill is denied', () => {
     state.platform = 'win32'
     const denied = new Error('access denied')

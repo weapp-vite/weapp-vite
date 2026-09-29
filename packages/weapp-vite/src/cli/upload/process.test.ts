@@ -142,6 +142,13 @@ describe('upload worker lifecycle', () => {
     expect(progress).toHaveBeenCalledWith({ type: 'progress', percent: 40, message: 'upload [REDACTED]' })
   })
 
+  it('does not apply the SDK deadline after the worker exits while pipes are closing', async () => {
+    vi.useFakeTimers()
+    const execution = run('success', { timeoutMs: 10 })
+    state.children[0]!.once('exit', () => vi.advanceTimersByTime(10))
+    await expect(execution).resolves.toEqual({ sdkVersion: '1.2.3' })
+  })
+
   it('rejects exit zero without a completion handshake even after progress', async () => {
     await expect(run('no-completion')).rejects.toMatchObject({
       name: 'UploadExecutionError',
