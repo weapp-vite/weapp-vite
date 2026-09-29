@@ -8,6 +8,31 @@ describe('page method target parity', () => {
   const directories: string[] = []
   afterEach(() => cleanupTempDirs(directories))
 
+  it.each([{}, { routeOnly: true }])('preserves the native page receiver and nested methods with %j', async (options) => {
+    const project = createBaseFixture()
+    directories.push(project)
+    fs.writeFileSync(path.join(project, 'dist/pages/index/index.js'), `
+Page({
+  data: { summary: '', calls: 0 },
+  updateSummary(value) {
+    this.setData({ summary: value, calls: this.data.calls + 1 })
+    return this.data.summary
+  },
+  refreshLifecycleSummary(value) { return this.updateSummary(value) }
+})
+`)
+    const miniProgram = await launch({ projectPath: project })
+    try {
+      const page = await miniProgram.reLaunch('/pages/index/index')
+      await expect(page.callMethodWithOptions('refreshLifecycleSummary', options, 'finalized')).resolves.toBe('finalized')
+      expect(await page.data('summary')).toBe('finalized')
+      expect(await page.data('calls')).toBe(1)
+    }
+    finally {
+      await miniProgram.close()
+    }
+  })
+
   it('restricts Page protocol calls to the top page while routeOnly awaits the retained page Promise', async () => {
     const project = createBaseFixture()
     directories.push(project)
