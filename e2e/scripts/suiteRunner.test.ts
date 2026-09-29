@@ -51,6 +51,7 @@ describe('suiteRunner', () => {
     expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
     expect(selected.some(name => name.includes('copied and public asset lifecycle'))).toBe(true)
     expect(selected.some(name => name.includes('isolated script updates and restoration'))).toBe(true)
+    expect(selected.some(name => name.includes('initializes updated native defaults'))).toBe(true)
     for (const runtime of ['native', 'component', 'wevu']) {
       expect(selected.some(name => name.includes(`preserves ${runtime} page state across two template`))).toBe(true)
     }

@@ -3,7 +3,7 @@ import sources from 'virtual:stateful-native-page-fixture'
 import { expect, it } from 'vitest'
 import { createBrowserHeadlessSession, createBrowserVirtualFiles } from '../src/browser'
 
-it('renders independent WXSS updates and real Page bridge patches without resetting DOM state', () => {
+it('renders independent WXSS updates and real Page bridge patches without resetting DOM state', async () => {
   const files = createBrowserVirtualFiles(sources as Array<[string, string]>)
   const session = createBrowserHeadlessSession({ files })
   const host = document.createElement('div')
@@ -55,6 +55,27 @@ it('renders independent WXSS updates and real Page bridge patches without resett
     check(3, white)
     action('.increment')
     check(4, white)
+    const templateFile = 'pages/native/index.wxml'
+    const originalTemplate = files.get(templateFile)!
+    for (const template of [originalTemplate.replace('<input', '<view>template update</view><input'), originalTemplate]) {
+      files.set(templateFile, template)
+      check(4, white)
+    }
+    page.patchPage()
+    await page.reLaunch()
+    const fresh = session.getCurrentPages().at(-1)!
+    expect(fresh).not.toBe(page)
+    render()
+    expect(preview.querySelector('.count')?.textContent).toBe('7')
+    action('.increment')
+    render()
+    expect(preview.querySelector('.count')?.textContent).toBe('9')
+    fresh.restorePage()
+    render()
+    expect(preview.querySelector('.count')?.textContent).toBe('9')
+    await fresh.reLaunch()
+    render()
+    expect(preview.querySelector('.count')?.textContent).toBe('0')
   }
   finally {
     session.close()

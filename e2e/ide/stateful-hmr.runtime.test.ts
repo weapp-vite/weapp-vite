@@ -22,6 +22,7 @@ import { assetLifecycleCheckpoints, verifyAssetLifecycle } from './statefulHmrDo
 import { editorFileCheckpoints } from './statefulHmrDom/editorFiles'
 import { nativeChildCheckpoints } from './statefulHmrDom/nativeChild'
 import { verifyNativeChildHmr } from './statefulHmrDom/nativeChildCase'
+import { nativeDefaultCheckpoints } from './statefulHmrDom/nativeDefaults'
 import { scriptStateCheckpoints } from './statefulHmrDom/scriptState'
 import { templateBindingCheckpoints } from './statefulHmrDom/templateBindings'
 import { templateCycleCheckpoints } from './statefulHmrDom/templates'
@@ -890,6 +891,47 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
         if (await fs.readFile(WEVU_SOURCE, 'utf8') !== originalWevuSource) {
           await replaceFileByRename(WEVU_SOURCE, originalWevuSource)
         }
+      }
+    }
+  })
+
+  it('initializes updated native defaults after cross-page template HMR', async (ctx) => {
+    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', nativeDefaultCheckpoints())
+    const patch = async (updated: boolean) => {
+      const version = await readClientVersion()
+      await replaceFileByRename(NATIVE_SOURCE, updated ? originalNativeSource.replace('count: 0', 'count: 7') : originalNativeSource)
+      await waitForClientVersion(version + 1)
+    }
+    try {
+      for (const runtime of ['native', 'component'] as const) {
+        const source = path.join(APP_ROOT, `src/pages/${runtime}/index.wxml`)
+        const original = await fs.readFile(source, 'utf8')
+        await relaunchStatefulRoute(`/pages/${runtime}/index?source=e2e`)
+        try {
+          await replaceFileByRename(source, original.replace('<input', '<view class="default-template">changed</view><input'))
+          await dom.check(`${runtime}-edited`, miniProgram, await miniProgram.currentPage())
+          await replaceFileByRename(source, original)
+          await dom.check(`${runtime}-restored`, miniProgram, await miniProgram.currentPage())
+        }
+        finally {
+          if (await fs.readFile(source, 'utf8') !== original) {
+            await replaceFileByRename(source, original)
+          }
+        }
+      }
+      await patch(true)
+      await relaunchStatefulRoute(NATIVE_ROUTE)
+      await dom.check('new-defaults', miniProgram, await miniProgram.currentPage())
+      await triggerIncrement()
+      await dom.check('incremented', miniProgram, await miniProgram.currentPage())
+      await patch(false)
+      await dom.check('active-restored', miniProgram, await miniProgram.currentPage())
+      await relaunchStatefulRoute(NATIVE_ROUTE)
+      await dom.check('restored-defaults', miniProgram, await miniProgram.currentPage())
+    }
+    finally {
+      if (await fs.readFile(NATIVE_SOURCE, 'utf8') !== originalNativeSource) {
+        await patch(false)
       }
     }
   })
