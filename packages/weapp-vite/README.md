@@ -14,6 +14,10 @@
 
 <p>&nbsp;</p>
 
+## 普通 Vite 与 Vite+
+
+独立项目继续使用 `wv dev/build`，不需要注册插件或安装 Vite+。采用普通 Vite / Vite+ 时，在顶层 `weapp` 配置旁注册 `weapp-vite/vite` 的 `weapp()`，使用原生 `vite dev/build` / `vp dev/build`。当前插件开放微信 TS/Vue 生产构建与实验性 classic 开发；开发阶段显式选择 `weapp.hmr.runtime: 'classic'`，高级目标和 stateful 仍在分阶段对齐。Vite+ 需要配套 core alias 与依赖覆盖，详见[标准插件指南](https://vite.weapp.dev/guide/vite-plugin.html)。
+
 ## 使用文档地址: [vite.weapp.dev](https://vite.weapp.dev)
 
 ## Features

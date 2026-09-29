@@ -21,6 +21,7 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
+import { hasDevModuleGraphHost, reportDevModuleGraphBuild } from '../../moduleGraph/host'
 import { hasManagedCompilerEntries } from '../../plugins/compilerPluginRegistry'
 import { collectVueStyleScriptChanges } from '../../plugins/core/lifecycle/vueStyleDependency'
 import { invalidateFileCache } from '../../plugins/utils/cache'
@@ -1328,9 +1329,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function startDev(target: BuildTarget, restartDev: (target: BuildTarget) => Promise<RolldownWatcher>): Promise<RolldownWatcher> {
-    if (process.env.NODE_ENV === undefined) {
-      process.env.NODE_ENV = 'development'
-    }
     debug?.(`[${target}] dev build watcher start`)
     const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
     const configuredHmrRuntime = configService.weappViteConfig.hmr?.runtime
@@ -1587,6 +1585,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
     let failedSnapshotReasons: SnapshotBuildReason[] = []
+    let initialBuildFailed = false
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
     let emittedAutoRoutesSignature: string | undefined
@@ -1859,7 +1858,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
           const hasModule = ctx.moduleGraphService.hasModule(id)
           debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
-          if (!hasModule) {
+          if (!hasModule && !initialBuildFailed) {
             return
           }
           const startedAt = performance.now()
@@ -1886,7 +1885,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
               error: error instanceof Error ? error : new Error(String(error)),
               result: undefined as never,
             })
-            throw error
+            if (!hasDevModuleGraphHost(ctx)) {
+              throw error
+            }
+            // 借用宿主时保留恢复调度，首构建失败后下次输入变更执行完整快照。
+            initialBuildFailed = true
+            failedSnapshotReasons = [{ forceFullRescan: true }]
+            logger.error(error)
+            return devBuildWatcher!.watcher
           }
         })()
       : build(buildOptions) as unknown as Promise<RolldownWatcher>
@@ -1937,6 +1943,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         startTime = performance.now()
       }
       else if (e.code === 'END') {
+        initialBuildFailed = false
+        reportDevModuleGraphBuild(ctx, true)
         const bundlerDurationMs = performance.now() - startTime
         const durationMs = bundlerDurationMs
           + (target === 'app' ? ctx.runtimeState.build.hmr.profile.watchToDirtyMs ?? 0 : 0)
@@ -1991,6 +1999,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         })
       }
       else if (e.code === 'ERROR') {
+        reportDevModuleGraphBuild(ctx, false)
         resetHmrProfile()
         if (target !== 'app') {
           rejectWatcher(e)
@@ -2058,6 +2067,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         if (isConfigDependency) {
+          // 标准宿主负责配置重载；旧控制器只处理自己加载的配置。
+          if (hasDevModuleGraphHost(ctx)) {
+            return
+          }
           requestedConfigRestartBuilds.add(target)
         }
         for (const root of independentRoots) {

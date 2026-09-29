@@ -32,6 +32,14 @@ describe('planned DOM cases versus actual collection', () => {
     ])
   })
 
+  it('enumerates standalone and native Vite classic runtime cases', async () => {
+    const cases = await readPlannedTaskCases({ label: 'ide/hmr-auto-classic.runtime.test.ts', command: 'node', args: [] }, 'headless')
+    expect(cases.map(item => item.name)).toEqual([
+      'wv automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
+      'vite automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
+    ])
+  })
+
   it('expands provider titles and template children from the declared suite source', async () => {
     const jsx = await readPlannedTaskCases({ label: 'ide/wevu-jsx-tsx.runtime.test.ts', command: 'node', args: [] }, 'headless')
     expect(jsx).toHaveLength(3)

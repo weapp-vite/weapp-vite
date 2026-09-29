@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fs } from '@weapp-core/shared/node'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -13,6 +14,7 @@ import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
 const CLI_PATH = path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
+const VITE_CLI = path.join(path.dirname(createRequire(import.meta.url).resolve('vite/package.json')), 'bin/vite.js')
 const CONTROL_FILE = path.join(APP_ROOT, 'dist/__weapp_vite_hmr/control.js')
 const DIST_NATIVE_JS = path.join(APP_ROOT, 'dist/pages/native/index.js')
 const NATIVE_SOURCE = path.join(APP_ROOT, 'src/pages/native/index.ts')
@@ -92,135 +94,133 @@ async function disconnectAutomatorSession() {
   }
 }
 
-describe('automatic classic HMR in real WeChat DevTools', { concurrent: false }, () => {
-  beforeAll(async () => {
-    await cleanupResidualDevProcesses()
-    await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
+for (const host of ['wv', 'vite'] as const) {
+  describe(`${host} automatic classic HMR in real WeChat DevTools`, { concurrent: false }, () => {
+    beforeAll(async () => {
+      await cleanupResidualDevProcesses()
+      await cleanupResidualIdeProcesses()
+      await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
 
-    originalNativeSource = await fs.readFile(NATIVE_SOURCE, 'utf8')
-    originalPrivateConfig = await fs.readFile(PRIVATE_CONFIG, 'utf8')
-    const privateConfig = JSON.parse(originalPrivateConfig) as {
-      setting?: Record<string, unknown>
-    }
-    privateConfig.setting = {
-      ...(privateConfig.setting ?? {}),
-      compileHotReLoad: false,
-    }
-    await fs.writeFile(PRIVATE_CONFIG, `${JSON.stringify(privateConfig, null, 2)}\n`, 'utf8')
-    await fs.writeFile(NATIVE_SOURCE, normalizeNativeSource(originalNativeSource), 'utf8')
-    await fs.remove(path.join(APP_ROOT, 'dist'))
+      originalNativeSource = await fs.readFile(NATIVE_SOURCE, 'utf8')
+      originalPrivateConfig = await fs.readFile(PRIVATE_CONFIG, 'utf8')
+      const privateConfig = JSON.parse(originalPrivateConfig) as {
+        setting?: Record<string, unknown>
+      }
+      privateConfig.setting = {
+        ...(privateConfig.setting ?? {}),
+        compileHotReLoad: false,
+      }
+      await fs.writeFile(PRIVATE_CONFIG, `${JSON.stringify(privateConfig, null, 2)}\n`, 'utf8')
+      await fs.writeFile(NATIVE_SOURCE, normalizeNativeSource(originalNativeSource), 'utf8')
+      await fs.remove(path.join(APP_ROOT, 'dist'))
 
-    devProcess = startDevProcess(process.execPath, [
-      CLI_PATH,
-      'dev',
-      APP_ROOT,
-      '--platform',
-      'weapp',
-      '--skipNpm',
-    ], {
-      all: true,
-      cwd: APP_ROOT,
-      env: createDevProcessEnv(),
-      reject: false,
+      const args = host === 'wv'
+        ? [CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
+        : [VITE_CLI, 'dev', '--config', 'vite.plugin.config.mts', '--host', '127.0.0.1', '--port', '0']
+      devProcess = startDevProcess(process.execPath, args, {
+        all: true,
+        cwd: APP_ROOT,
+        env: createDevProcessEnv(),
+        reject: false,
+      })
+      await devProcess.waitFor(
+        waitForFileContains(DIST_NATIVE_JS, 'STATEFUL-NATIVE-BASE'),
+        'classic HMR initial page output',
+      )
+      expect(await fs.pathExists(CONTROL_FILE)).toBe(false)
+
+      miniProgram = await connectAutomatorSession()
+    }, 600_000)
+
+    afterAll(async () => {
+      try {
+        await disconnectAutomatorSession()
+      }
+      catch {}
+      miniProgram = undefined
+      try {
+        await devProcess?.stop(5_000)
+      }
+      catch {}
+      devProcess = undefined
+      if (originalNativeSource) {
+        await fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8')
+      }
+      if (originalPrivateConfig) {
+        await fs.writeFile(PRIVATE_CONFIG, originalPrivateConfig, 'utf8')
+      }
+      await cleanupResidualDevProcesses()
+      await cleanupResidualIdeProcesses()
     })
-    await devProcess.waitFor(
-      waitForFileContains(DIST_NATIVE_JS, 'STATEFUL-NATIVE-BASE'),
-      'classic HMR initial page output',
-    )
-    expect(await fs.pathExists(CONTROL_FILE)).toBe(false)
 
-    miniProgram = await connectAutomatorSession()
-  }, 600_000)
+    it('uses direct output and reloads the page instead of preserving its state', async (ctx) => {
+      const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', [
+        ['initial', 'STATEFUL-NATIVE-BASE', 0, ''],
+        ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'],
+        ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''],
+        ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''],
+      ].map(([id, marker, count, input]) => ({
+        id: String(id),
+        route: '/pages/native/index',
+        action: `检查 classic HMR ${id} 阶段的标题、计数和输入`,
+        nodes: [
+          { selector: '.marker', text: String(marker) },
+          { selector: '.count', text: String(count) },
+          { selector: '.input', attributes: { value: String(input) } },
+        ],
+      })))
+      let page = await miniProgram.reLaunch(NATIVE_ROUTE)
+      await waitForRuntimeState(state => state.marker === 'STATEFUL-NATIVE-BASE')
+      await dom.check('initial', miniProgram, page)
+      await miniProgram.evaluate(() => {
+        const pages = getCurrentPages()
+        const page = pages[pages.length - 1] as any
+        page.__statefulHmrIdentity = 'classic-instance'
+        page.setData({ input: 'classic-held-input' })
+        page.increment()
+      })
+      expect(await waitForRuntimeState(state => state.count === 1)).toEqual({
+        count: 1,
+        identity: 'classic-instance',
+        input: 'classic-held-input',
+        marker: 'STATEFUL-NATIVE-BASE',
+        source: 'classic-auto-e2e',
+      })
+      await dom.check('prepared', miniProgram, page)
 
-  afterAll(async () => {
-    try {
+      const updatedSource = normalizeNativeSource(originalNativeSource)
+        .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
+        .replace('this.data.count + 1', 'this.data.count + 2')
+      await replaceFileByRename(NATIVE_SOURCE, updatedSource)
+      await devProcess!.waitFor(
+        waitForFileContains(DIST_NATIVE_JS, 'this.data.count + 2'),
+        'classic HMR direct page output update',
+      )
+
       await disconnectAutomatorSession()
-    }
-    catch {}
-    miniProgram = undefined
-    try {
-      await devProcess?.stop(5_000)
-    }
-    catch {}
-    devProcess = undefined
-    if (originalNativeSource) {
-      await fs.writeFile(NATIVE_SOURCE, originalNativeSource, 'utf8')
-    }
-    if (originalPrivateConfig) {
-      await fs.writeFile(PRIVATE_CONFIG, originalPrivateConfig, 'utf8')
-    }
-    await cleanupResidualDevProcesses()
-    await cleanupResidualIdeProcesses()
+      miniProgram = await connectAutomatorSession()
+      // 重连 bridge 后宿主可能只恢复 path 而丢失 query，显式重放完整 route 保持断言身份稳定。
+      page = await miniProgram.reLaunch(NATIVE_ROUTE)
+      const reloaded = await waitForRuntimeState(state => (
+        state.marker === 'STATEFUL-NATIVE-PATCHED'
+        && state.source === 'classic-auto-e2e'
+      ))
+      expect(reloaded).toEqual({
+        count: 0,
+        identity: '',
+        input: '',
+        marker: 'STATEFUL-NATIVE-PATCHED',
+        source: 'classic-auto-e2e',
+      })
+      await dom.check('reloaded', miniProgram, page)
+
+      await miniProgram.evaluate(() => {
+        const pages = getCurrentPages()
+        const page = pages[pages.length - 1] as any
+        page.increment()
+      })
+      expect((await waitForRuntimeState(state => state.count === 2)).count).toBe(2)
+      await dom.check('updated', miniProgram, page)
+    })
   })
-
-  it('uses direct output and reloads the page instead of preserving its state', async (ctx) => {
-    const dom = createDomAcceptance(ctx, 'e2e-apps/stateful-hmr', [
-      ['initial', 'STATEFUL-NATIVE-BASE', 0, ''],
-      ['prepared', 'STATEFUL-NATIVE-BASE', 1, 'classic-held-input'],
-      ['reloaded', 'STATEFUL-NATIVE-PATCHED', 0, ''],
-      ['updated', 'STATEFUL-NATIVE-PATCHED', 2, ''],
-    ].map(([id, marker, count, input]) => ({
-      id: String(id),
-      route: '/pages/native/index',
-      action: `检查 classic HMR ${id} 阶段的标题、计数和输入`,
-      nodes: [
-        { selector: '.marker', text: String(marker) },
-        { selector: '.count', text: String(count) },
-        { selector: '.input', attributes: { value: String(input) } },
-      ],
-    })))
-    let page = await miniProgram.reLaunch(NATIVE_ROUTE)
-    await waitForRuntimeState(state => state.marker === 'STATEFUL-NATIVE-BASE')
-    await dom.check('initial', miniProgram, page)
-    await miniProgram.evaluate(() => {
-      const pages = getCurrentPages()
-      const page = pages[pages.length - 1] as any
-      page.__statefulHmrIdentity = 'classic-instance'
-      page.setData({ input: 'classic-held-input' })
-      page.increment()
-    })
-    expect(await waitForRuntimeState(state => state.count === 1)).toEqual({
-      count: 1,
-      identity: 'classic-instance',
-      input: 'classic-held-input',
-      marker: 'STATEFUL-NATIVE-BASE',
-      source: 'classic-auto-e2e',
-    })
-    await dom.check('prepared', miniProgram, page)
-
-    const updatedSource = normalizeNativeSource(originalNativeSource)
-      .replace('STATEFUL-NATIVE-BASE', 'STATEFUL-NATIVE-PATCHED')
-      .replace('this.data.count + 1', 'this.data.count + 2')
-    await replaceFileByRename(NATIVE_SOURCE, updatedSource)
-    await devProcess!.waitFor(
-      waitForFileContains(DIST_NATIVE_JS, 'this.data.count + 2'),
-      'classic HMR direct page output update',
-    )
-
-    await disconnectAutomatorSession()
-    miniProgram = await connectAutomatorSession()
-    // 重连 bridge 后宿主可能只恢复 path 而丢失 query，显式重放完整 route 保持断言身份稳定。
-    page = await miniProgram.reLaunch(NATIVE_ROUTE)
-    const reloaded = await waitForRuntimeState(state => (
-      state.marker === 'STATEFUL-NATIVE-PATCHED'
-      && state.source === 'classic-auto-e2e'
-    ))
-    expect(reloaded).toEqual({
-      count: 0,
-      identity: '',
-      input: '',
-      marker: 'STATEFUL-NATIVE-PATCHED',
-      source: 'classic-auto-e2e',
-    })
-    await dom.check('reloaded', miniProgram, page)
-
-    await miniProgram.evaluate(() => {
-      const pages = getCurrentPages()
-      const page = pages[pages.length - 1] as any
-      page.increment()
-    })
-    expect((await waitForRuntimeState(state => state.count === 2)).count).toBe(2)
-    await dom.check('updated', miniProgram, page)
-  })
-})
+}

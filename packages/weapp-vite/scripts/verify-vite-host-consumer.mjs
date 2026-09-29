@@ -47,7 +47,7 @@ ${standalone ? '' : 'import { weapp } from \'weapp-vite/vite\''}
 appendFileSync(new URL('./config-calls.txt', import.meta.url), 'loaded\\n')
 export default defineConfig(async () => ({
   ${standalone ? '' : 'plugins: [weapp()],'}
-  weapp: { platform: 'weapp', srcRoot: 'src', autoRoutes: false },
+  weapp: { platform: 'weapp', srcRoot: 'src', autoRoutes: false, hmr: { runtime: 'classic' }, mcp: false },
   build: { outDir: 'dist', minify: false },
   test: { include: ['host.spec.ts'] },
 }))
@@ -152,3 +152,5 @@ assert.equal(existsSync(path.join(root, '.weapp-vite')), true)
 await command(wv, ['build', '--config', 'vite.config.mts'])
 assert.match(await readOutput('pages/native/index.js'), /native-host/)
 console.log(`${toolchain}: packed exports, single host/config, TS/Vue/subpackage build and wv compatibility passed${standalone ? ' (standalone CLI without plugin registration)' : ', including test isolation'}`)
+
+await command(path.join(import.meta.dirname, 'verify-vite-host-dev.mjs'), [root, standalone ? 'wv' : plus ? 'vite-plus' : 'vite'])

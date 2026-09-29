@@ -1,7 +1,9 @@
 import type { EmittedAsset } from 'rolldown'
-import type { InlineConfig } from 'vite'
+import type { InlineConfig, ViteDevServer } from 'vite'
+import { attachDevModuleGraphHost } from '../moduleGraph/host'
 import { isReactEnabled } from '../plugins/react'
 import { CompilerSession } from '../runtime/compilerSession'
+import { resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
 import { prepareNpmAssets } from './npm'
@@ -11,11 +13,11 @@ export class WeappBuildSession extends CompilerSession {
   private dependencyBuild?: Promise<EmittedAsset[]>
   private validating?: Promise<void>
 
-  async prepare(config: InlineConfig, cwd: string, mode: string): Promise<InlineConfig> {
+  async prepare(config: InlineConfig, cwd: string, mode: string, isDev = false): Promise<InlineConfig> {
     await this.initialize({
       cwd,
       mode,
-      isDev: false,
+      isDev,
       emitDefaultAutoImportOutputs: false,
       hostConfig: { config },
       syncSupportFiles: false,
@@ -25,6 +27,13 @@ export class WeappBuildSession extends CompilerSession {
       throw new Error('[weapp-vite] 标准插件 alpha 尚不支持 React，请使用 wv build。')
     }
     const service = this.context.configService
+    if (isDev && resolveHmrRuntimeDecision({
+      platform: service.platform,
+      configured: service.weappViteConfig.hmr?.runtime,
+      compileHotReLoad: service.projectPrivateConfig.setting?.compileHotReLoad,
+    }).runtime !== 'classic') {
+      throw new Error('[weapp-vite] 标准插件开发模式暂仅支持 classic，请显式设置 weapp.hmr.runtime 为 classic。')
+    }
     if (service.weappViteConfig.npm?.enable && (service.weappViteConfig.npm.buildOptions || service.projectConfig.setting?.packNpmManually)) {
       throw new Error('[weapp-vite] 标准插件 alpha 尚不支持自定义 npm 构建回调或手工 npm 输出映射，请使用 wv build。')
     }
@@ -51,6 +60,30 @@ export class WeappBuildSession extends CompilerSession {
       }
       this.state = 'building'
     })
+  }
+
+  async startDev(server: ViteDevServer) {
+    let started = false
+    let successful = false
+    let reportedReady = false
+    const reportReady = () => {
+      if (started && successful && !reportedReady && !this.isClosing) {
+        reportedReady = true
+        server.config.logger.info('[weapp-vite] 小程序开发产物已就绪 (classic)')
+      }
+    }
+    this.onClose(attachDevModuleGraphHost(this.context, server, (result) => {
+      successful = result
+      reportReady()
+    }))
+    this.onClose(() => this.context.watcherService.closeAll())
+    await this.validateEntries()
+    await this.run(() => this.context.buildService.build({}))
+    if (!this.isClosing) {
+      this.state = 'watching'
+      started = true
+      reportReady()
+    }
   }
 
   buildDependencies() {

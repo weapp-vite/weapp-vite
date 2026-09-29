@@ -157,7 +157,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 ## 标准 Vite 插件（实验性）
 
 - 配置可导入 `weapp` from `weapp-vite/vite`，以 `plugins: [weapp()]` 激活；继续读取顶层 `weapp`。
-- 当前仅支持单目标微信生产构建；`vite dev` / `vp dev`、watch、React 与高级目标尚未开放，开发使用 `wv dev`。
+- 当前插件支持单目标微信生产构建与实验性 classic 开发（`vite dev` / `vp dev`，显式配置 `weapp.hmr.runtime: classic`）；build watch、stateful、React 与高级目标尚未开放。独立 `wv dev/build` 保留完整能力。
 - 宿主配置是唯一隐式来源；插件不会再次发现 `weapp-vite.config.*`。Vite+ 要按官方 alias 规则统一 `vite` 与 core，不能只看版本号相等。
 - Vitest 配置加载不启动小程序编译。`vp preview`、`vp pack` 不能分别解释为微信预览或小程序组件库构建。
 - 使用前优先读取当前包 `dist/docs/vite-plugin.md` 的支持矩阵，不把后续路线图当成已发布能力。

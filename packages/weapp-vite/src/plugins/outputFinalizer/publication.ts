@@ -5,12 +5,14 @@ import type { SubPackageMetaValue } from '../../types'
 import type { WxmlDependencyCommit } from '../../wxml/processing/dependencies'
 import type { RewriteWevuInternalRuntimeImportsOptions } from '../core/helpers/bundle'
 import { Buffer } from 'node:buffer'
+import path from 'pathe'
 import { createHmrProfileCheckpoint } from '../../utils/hmrProfile'
 import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
 import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/processing/dependencies'
 import { validateWxmlBundle } from '../../wxml/validate'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
 import { flushIndependentOutputs } from './independent'
+import { prepareOutputOwnership } from './ownership'
 
 function outputSourceToString(output: OutputBundle[string]) {
   if (output.type === 'chunk') {
@@ -97,16 +99,28 @@ export function pruneUnchangedDevHmrOutputs(
 /** 编译器完成所有输出转换后，按最终内容裁剪本轮写入。 */
 export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   let preserveCompleteBundle = false
+  let outDir: string | undefined
+  let commitOwnership: (() => Promise<void>) | undefined
   return {
     name: 'weapp-vite:output-publication',
     enforce: 'post',
     configResolved(config) {
       // 原生引擎仍发布完整注册图，静态资源去重由 stateful 快照归属处理。
       preserveCompleteBundle = config.experimental?.bundledDev === true
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    writeBundle: {
+      order: 'post',
+      sequential: true,
+      async handler() {
+        await commitOwnership?.()
+        commitOwnership = undefined
+      },
     },
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
+        commitOwnership = undefined
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         const outputBundle = bundle as unknown as OutputBundle
         const partial = !preserveCompleteBundle
@@ -137,6 +151,12 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             }
           }
           checkpoint('publicationIndependentMs')
+          if (ctx.configService.isDev && !preserveCompleteBundle && outDir) {
+            commitOwnership = prepareOutputOwnership(ctx, outDir, [
+              ...Object.keys(outputBundle),
+              ...independentAssets.flatMap(asset => asset.fileName ? [asset.fileName] : []),
+            ], partial)
+          }
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,
             preserveCompleteBundle,

@@ -2,6 +2,7 @@ import type { Plugin } from 'vite'
 
 // 顺序与内部编译阶段一致；可选能力保留空槽，配置阶段只绑定实现，不注册新插件。
 const descriptors: Array<[string, Plugin['enforce']?]> = [
+  ['weapp-vite:module-graph-provider', 'pre'],
   ...['config', 'watcher', 'wxml', 'json', 'scan', 'auto-routes', 'auto-import', 'npm', 'build', 'web']
     .map(name => [`weapp-runtime:${name}-service`] as [string]),
   ['weapp-vite:context', 'pre'],

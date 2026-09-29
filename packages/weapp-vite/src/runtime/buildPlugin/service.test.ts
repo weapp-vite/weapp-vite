@@ -1054,7 +1054,7 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(process.env.NODE_ENV).toBe('development')
+    expect(process.env.NODE_ENV).toBeUndefined()
     expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({
       outDir: '/project/dist',

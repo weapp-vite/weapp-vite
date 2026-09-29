@@ -3,6 +3,7 @@ import type { WeappBuildSession } from './session'
 import process from 'node:process'
 import path from 'pathe'
 import { isWeappViteHost } from '../pluginHost'
+import { createSessionEnvironmentPlugin } from './environment'
 import { resolvePlugins } from './options'
 import { createPluginSlots } from './slots'
 import '../config'
@@ -43,8 +44,8 @@ export function weapp(): Plugin[] {
             return
           }
           serveRequested = env.command === 'serve'
-          if (serveRequested) {
-            return
+          if (serveRequested && config.experimental?.bundledDev) {
+            throw new Error('[weapp-vite] classic 开发模式暂不支持 experimental.bundledDev，请关闭此选项。')
           }
           if (config.build?.watch) {
             throw new Error('[weapp-vite] 标准插件 alpha 尚未开放 build --watch；请使用 wv dev。')
@@ -54,11 +55,20 @@ export function weapp(): Plugin[] {
             || options?.worker?.entry || options?.web || (options?.multiPlatform === true || (typeof options?.multiPlatform === 'object' && options.multiPlatform.enabled))) {
             throw new Error('[weapp-vite] 标准插件 alpha 仅支持单目标微信应用；高级目标请使用 wv build。')
           }
-          const hostConfig = { ...config, plugins: [] }
+          const hostConfig = {
+            ...config,
+            plugins: serveRequested ? configuredPlugins.filter(plugin => plugin !== coordinator && !slots.plugins.includes(plugin)) : [],
+          }
           const { WeappBuildSession } = await import('./session')
           session = new WeappBuildSession()
           try {
-            const merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode)
+            const merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
+            if (serveRequested) {
+              const { prepareDevHostConfig } = await import('./dev')
+              const host = prepareDevHostConfig(session, merged, config)
+              slots.bind([host.plugin])
+              return host.config
+            }
             slots.bind(await resolvePlugins(merged.plugins))
             // plugins 在工厂阶段已固定；不能通过 config 返回值动态注册。
             const { plugins: _plugins, configFile: _configFile, ...normalized } = merged
@@ -79,9 +89,32 @@ export function weapp(): Plugin[] {
         }
       },
     },
-    configureServer() {
-      if (!inactive && serveRequested) {
-        throw new Error('[weapp-vite] 标准插件 alpha 暂仅支持生产构建；开发请使用 wv dev。')
+    async configureServer(server) {
+      if (inactive || !serveRequested || !session) {
+        return
+      }
+      const active = session
+      const restart = server.restart.bind(server)
+      server.restart = async (force) => {
+        // Vite 先创建新服务器再关闭旧服务器；先等待旧产物任务，避免两个会话并发写同一目录。
+        await active.close()
+        await restart(force)
+      }
+      const close = server.close.bind(server)
+      server.close = async () => {
+        try {
+          await active.close()
+        }
+        finally {
+          await close()
+        }
+      }
+      try {
+        await active.startDev(server)
+      }
+      catch (error) {
+        await server.close().catch(() => {})
+        throw error
       }
     },
     configResolved(config) {
@@ -91,32 +124,8 @@ export function weapp(): Plugin[] {
       session.context.configService.options.configFilePath = config.configFile || undefined
       session.context.configService.options.configFileDependencies = config.configFileDependencies
     },
-    options: {
-      order: 'pre',
-      async handler() {
-        try {
-          await session?.validateEntries()
-        }
-        catch (error) {
-          await session?.close().catch(() => {})
-          throw error
-        }
-      },
-    },
-    generateBundle: {
-      order: 'post',
-      async handler() {
-        for (const asset of await session?.buildDependencies() ?? []) {
-          this.emitFile(asset)
-        }
-      },
-    },
-    closeBundle: {
-      order: 'post',
-      sequential: true,
-      async handler() {
-        await session?.close()
-      },
+    applyToEnvironment() {
+      return session && !inactive ? createSessionEnvironmentPlugin(session, serveRequested) : false
     },
   }
   return [coordinator, ...slots.plugins]
