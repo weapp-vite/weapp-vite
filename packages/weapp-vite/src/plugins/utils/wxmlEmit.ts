@@ -6,6 +6,7 @@ import { isTemplate } from '../../utils'
 import { changeFileExtension } from '../../utils/file'
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../utils/path'
+import { resolveRealpath } from '../../utils/realpathScope'
 import { resolveScriptModuleTagName } from '../../utils/wxmlScriptModule'
 import { handleWxml } from '../../wxml/handle'
 import { resolveRelativeOutputFileNameWithExtension } from './outputFileName'
@@ -74,7 +75,16 @@ export function resolveWxmlEmitTargets(options: {
       if (!pluginRoot) {
         return false
       }
-      return isPathInside(pluginRoot, id)
+      if (isPathInside(pluginRoot, id)) {
+        return true
+      }
+      // bundler 可能返回真实路径，而宿主配置保留了符号链接路径。
+      try {
+        return isPathInside(normalizeWatchPath(resolveRealpath(pluginRoot)), normalizeWatchPath(resolveRealpath(id)))
+      }
+      catch {
+        return false
+      }
     }
     return scanService.isMainPackageFileName(fileName)
   }

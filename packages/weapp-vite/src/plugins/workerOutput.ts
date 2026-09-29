@@ -1,6 +1,6 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
-import { bindWorkerAppBuilder, buildWorkerAssets, getWorkerSources } from '../runtime/buildPlugin/workerPlan'
+import { buildWorkerAssets, getWorkerSources } from '../runtime/buildPlugin/workerPlan'
 
 /** 主应用和 worker 共用发布事务；子目标自身不持有 watcher 或输出目录。 */
 export function createWorkerOutputPlugin(ctx: CompilerContext): Plugin {
@@ -14,13 +14,6 @@ export function createWorkerOutputPlugin(ctx: CompilerContext): Plugin {
     },
     configResolved(config) {
       bundledDev = config.experimental?.bundledDev === true
-    },
-    async buildApp(builder) {
-      bindWorkerAppBuilder(ctx, builder)
-      const main = builder.environments.client
-      if (main && !main.isBuilt) {
-        await builder.build(main)
-      }
     },
     generateBundle: {
       order: 'pre',

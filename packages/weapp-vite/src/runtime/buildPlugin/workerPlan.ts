@@ -1,17 +1,16 @@
 import type { EmittedAsset, RolldownOutput } from 'rolldown'
-import type { ViteBuilder } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import path from 'pathe'
 import { BuildEnvironment, createBuilder } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { getAppBuilder } from './appBuilder'
 import { collectIndependentWatchFiles } from './independentWatch'
 import { checkWorkersOptions } from './workers'
 
 interface WorkerPlan {
   files: Map<string, Set<string>>
   listeners: Set<(files: string[]) => void>
-  builder?: ViteBuilder
 }
 const plans = new WeakMap<MutableCompilerContext, WorkerPlan>()
 
@@ -22,11 +21,6 @@ function plan(ctx: MutableCompilerContext) {
     plans.set(ctx, value)
   }
   return value
-}
-
-/** 子环境借用应用 builder；不会重新执行宿主配置或注册主编译插件。 */
-export function bindWorkerAppBuilder(ctx: CompilerContext, builder: ViteBuilder) {
-  plan(ctx).builder = builder
 }
 
 export function getWorkerSources(ctx: MutableCompilerContext) {
@@ -89,7 +83,7 @@ export async function buildWorkerAssets(ctx: CompilerContext): Promise<EmittedAs
       local.config.environments.weapp_workers = local.config.environments.client!
       const environment = new BuildEnvironment('weapp_workers', local.config)
       await environment.init()
-      const builder = state.builder ?? local
+      const builder = getAppBuilder(ctx) ?? local
       builder.environments.weapp_workers = environment
       const result = await builder.build(environment) as RolldownOutput | RolldownOutput[]
       watch.commit()

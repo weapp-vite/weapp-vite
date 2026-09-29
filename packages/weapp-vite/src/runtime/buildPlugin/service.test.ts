@@ -25,14 +25,12 @@ const resetEmittedOutputCachesMock = vi.hoisted(() => vi.fn())
 const isOutputRootInsideOutDirMock = vi.hoisted(() => vi.fn((outDir: string, pluginOutputRoot: string) => {
   return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
 }))
-const createCompilerContextMock = vi.hoisted(() => vi.fn(async () => ({
-  buildService: {
-    build: vi.fn(async () => ({ output: [] })),
-  },
-  watcherService: {
-    closeAll: vi.fn(),
-  },
+const createPluginProjectSessionMock = vi.hoisted(() => vi.fn(async () => ({
+  context: { buildService: { build: vi.fn(async () => ({ output: [] })) } },
+  run: async (task: () => Promise<unknown>) => await task(),
+  close: vi.fn(async () => {}),
 })))
+const setPluginProjectBuildOptionsMock = vi.hoisted(() => vi.fn())
 const disableProjectPrivateConfigHotReloadMock = vi.hoisted(() => vi.fn(async () => true))
 const syncProjectConfigToOutputMock = vi.hoisted(() => vi.fn(async () => {}))
 const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
@@ -125,8 +123,12 @@ vi.mock('./outputs', async importOriginal => ({
   resetEmittedOutputCaches: resetEmittedOutputCachesMock,
 }))
 
-vi.mock('../../createContext', () => ({
-  createCompilerContext: createCompilerContextMock,
+vi.mock('./pluginProject', () => ({
+  createPluginProjectSession: createPluginProjectSessionMock,
+  isPluginProjectClosing: () => false,
+  runPluginProjectRestart: (_ctx: unknown, run: () => Promise<void>) => run(),
+  setPluginProjectBuildOptions: setPluginProjectBuildOptionsMock,
+  assertPluginProjectOutput: vi.fn(),
 }))
 
 vi.mock('../../utils/projectConfig', () => ({
@@ -2615,7 +2617,7 @@ describe('runtime buildPlugin service', () => {
     expect(resetEmittedOutputCachesMock).not.toHaveBeenCalled()
   })
 
-  it('passes explicit output preservation into isolated plugin builds', async () => {
+  it('delegates production plugin options to the publication stage', async () => {
     buildMock.mockResolvedValue({ output: [] })
     const ctx = createMockContext()
     Object.assign(ctx.configService, {
@@ -2625,9 +2627,8 @@ describe('runtime buildPlugin service', () => {
       absolutePluginOutputRoot: '/project/dist-plugin',
     })
     await createBuildService(ctx).build({ skipNpm: true })
-    expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
-      inlineConfig: { build: { outDir: '/project/dist-plugin', emptyOutDir: false } },
-    }))
+    expect(setPluginProjectBuildOptionsMock).toHaveBeenCalledWith(ctx, { skipNpm: true })
+    expect(createPluginProjectSessionMock).not.toHaveBeenCalled()
   })
 
   it('skips output cleanup in dev when cleanOutputsInDev is false', async () => {
@@ -2783,23 +2784,8 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(buildMock).toHaveBeenNthCalledWith(1, {})
-    expect(createCompilerContextMock).toHaveBeenCalledWith({
-      key: 'plugin-build:/project',
-      cwd: '/project',
-      isDev: false,
-      mode: undefined,
-      pluginOnly: true,
-      configFile: undefined,
-      cliPlatform: 'weapp',
-      projectConfigPath: '/project/project.config.json',
-      inlineConfig: {
-        build: {
-          outDir: '/project/dist-plugin',
-        },
-      },
-    })
-    const isolatedCtx = await createCompilerContextMock.mock.results[0].value
-    expect(isolatedCtx.buildService.build).toHaveBeenCalledWith(undefined)
+    expect(createPluginProjectSessionMock).not.toHaveBeenCalled()
+    expect(setPluginProjectBuildOptionsMock).toHaveBeenCalledWith(ctx, {})
     expect(queueStartSpy).toHaveBeenCalled()
     expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({
@@ -2892,13 +2878,11 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
       .mockResolvedValueOnce({ output: [] })
-    createCompilerContextMock.mockResolvedValueOnce({
-      buildService: {
-        build: vi.fn(async () => pluginWatcher),
-      },
-      watcherService: {
-        closeAll: vi.fn(),
-      },
+    const closePlugin = vi.fn(async () => {})
+    createPluginProjectSessionMock.mockResolvedValueOnce({
+      context: { buildService: { build: vi.fn(async () => pluginWatcher) } },
+      run: async task => await task(),
+      close: closePlugin,
     })
 
     const ctx = createMockContext({
@@ -2912,22 +2896,11 @@ describe('runtime buildPlugin service', () => {
 
     await service.build({ skipNpm: true })
 
-    expect(createCompilerContextMock).toHaveBeenCalledWith({
-      key: 'plugin-build:/project',
-      cwd: '/project',
-      isDev: true,
-      mode: undefined,
-      pluginOnly: true,
-      configFile: undefined,
-      cliPlatform: 'weapp',
-      projectConfigPath: '/project/project.config.json',
-      inlineConfig: {
-        build: {
-          outDir: '/project/dist-plugin',
-        },
-      },
-    })
-    expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(pluginWatcher, '/project/plugin')
+    expect(createPluginProjectSessionMock).toHaveBeenCalledWith(ctx)
+    const child = ctx.watcherService.sidecarWatcherMap.get('plugin-session:/project/plugin')
+    expect(child).toBeDefined()
+    await child!.close()
+    expect(closePlugin).toHaveBeenCalledOnce()
   })
 
   it('runs prod lib build and emits dts without npm/project-config/plugin build', async () => {
@@ -2974,7 +2947,7 @@ describe('runtime buildPlugin service', () => {
     await service.build({ skipNpm: true })
 
     expect(ctx.currentBuildTarget).toBe('plugin')
-    expect(createCompilerContextMock).not.toHaveBeenCalled()
+    expect(createPluginProjectSessionMock).not.toHaveBeenCalled()
     expect(ctx.npmService.build).not.toHaveBeenCalled()
   })
 

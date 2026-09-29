@@ -1,12 +1,17 @@
 import { readdir, readFile, rm } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies -- 三入口消费项目使用原生 CLI 并兼容 Windows。
+import { execa } from 'execa'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createIssue963Project, ISSUE_963_CLI } from '../utils/issue963Project'
 
+const externalProject = process.env.WEAPP_VITE_E2E_PLUGIN_PROJECT
+const compilerHost = process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv'
 const ROUTE = '/pages/index/index'
 
 // ES6 开关在宿主启动时加载；每组只启动一次，组内宿主与插件页面通过导航复用。
@@ -18,13 +23,21 @@ for (const mode of ['disabled', 'enabled']) {
     let host: Awaited<ReturnType<typeof launchAutomator>> | undefined
     const errors: string[] = []
     beforeAll(async () => {
-      project = await createIssue963Project(es6)
-      await runWeappViteBuildWithLogCapture({
-        cliPath: ISSUE_963_CLI,
-        projectRoot: project,
-        platform: 'weapp',
-        label: `issue-963-es6-${es6}`,
-      })
+      project = externalProject ?? await createIssue963Project(es6)
+      if (externalProject) {
+        const require = createRequire(path.join(project, 'package.json'))
+        const packageName = compilerHost === 'wv' ? 'weapp-vite' : compilerHost
+        const cli = path.join(path.dirname(require.resolve(`${packageName}/package.json`)), compilerHost === 'wv' ? 'bin/weapp-vite.js' : compilerHost === 'vite-plus' ? 'bin/vp' : 'bin/vite.js')
+        await execa(process.execPath, [cli, 'build', ...compilerHost === 'wv' ? [] : ['--config', 'vite.plugin.config.mts']], { cwd: project })
+      }
+      else {
+        await runWeappViteBuildWithLogCapture({
+          cliPath: ISSUE_963_CLI,
+          projectRoot: project,
+          platform: 'weapp',
+          label: `issue-963-es6-${es6}`,
+        })
+      }
       for (const file of ['dist/app.js', 'dist/pages/index/index.js', 'dist-plugin/index.js', 'dist-plugin/plugin.json', 'dist-plugin/pages/hello-page/index.js']) {
         expect(await readFile(path.join(project, file), 'utf8')).not.toBe('')
       }
@@ -64,7 +77,7 @@ for (const mode of ['disabled', 'enabled']) {
     }, 180_000)
     afterAll(async () => {
       await host?.close()
-      if (project) {
+      if (project && !externalProject) {
         await rm(project, { recursive: true, force: true })
       }
     }, 60_000)

@@ -11,7 +11,7 @@ const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
 const runtime = process.argv[3]
 const runtimeSuite = process.argv[4] ?? 'stateful'
-assert(['stateful', 'react', 'independent', 'worker'].includes(runtimeSuite))
+assert(['stateful', 'react', 'independent', 'worker', 'plugin'].includes(runtimeSuite))
 assert(runtime === undefined || ['headless', 'devtools', 'both'].includes(runtime))
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-host-install-'))
@@ -59,6 +59,10 @@ try {
     })
     overrides.vite = 'npm:@voidzero-dev/vite-plus-core@1.0.0'
   }
+  if (runtimeSuite === 'plugin') {
+    // 消费用例固定公开版本，不依赖维护仓库 node_modules 的安装状态。
+    Object.assign(dependencies, { dayjs: '1.11.21', sass: '1.104.1' })
+  }
   if (runtimeSuite === 'worker') {
     const vendor = path.join(temporaryRoot, 'worker-vendor')
     await cp(path.join(repoRoot, 'e2e-apps/chunk-modes/node_modules/fake-pkg'), vendor, { recursive: true })
@@ -87,13 +91,23 @@ try {
   ], { cwd: repoRoot, stdio: 'inherit' })
   if (runtime) {
     assert(runtimeSuite !== 'stateful' || toolchain === 'vite-plus', 'stateful 独立 runtime 消费验证当前用于 Vite+；wv/vite 直接运行共享 fixture')
-    const fixtureRoot = path.join(repoRoot, 'e2e-apps', runtimeSuite === 'react' ? 'react-runtime-spike' : runtimeSuite === 'independent' ? 'wevu-subpackage-placement' : runtimeSuite === 'worker' ? 'chunk-modes' : 'stateful-hmr')
+    const fixtureRoot = runtimeSuite === 'plugin' ? path.join(repoRoot, 'templates/weapp-vite-plugin-template') : path.join(repoRoot, 'e2e-apps', runtimeSuite === 'react' ? 'react-runtime-spike' : runtimeSuite === 'independent' ? 'wevu-subpackage-placement' : runtimeSuite === 'worker' ? 'chunk-modes' : 'stateful-hmr')
     await rm(path.join(consumerRoot, 'src'), { recursive: true, force: true })
-    for (const entry of ['src', 'project.config.json', 'project.private.config.json']) {
+    for (const entry of ['src', 'project.config.json', 'project.private.config.json', ...runtimeSuite === 'plugin' ? ['plugin', 'shared', 'tsconfig.json'] : []]) {
       await cp(path.join(fixtureRoot, entry), path.join(consumerRoot, entry), { recursive: true })
     }
     if (runtimeSuite === 'stateful') {
       await cp(path.join(fixtureRoot, 'public'), path.join(consumerRoot, 'public'), { recursive: true })
+    }
+    if (runtimeSuite === 'plugin') {
+      for (const name of ['project.config.json', 'project.private.config.json']) {
+        const file = path.join(consumerRoot, name)
+        const project = JSON.parse(await readFile(file, 'utf8'))
+        project.libVersion = '3.17.3'
+        project.setting = { ...project.setting, es6: false, packNpmManually: false }
+        delete project.setting.packNpmRelationList
+        await writeFile(file, `${JSON.stringify(project, null, 2)}\n`)
+      }
     }
     if (runtimeSuite !== 'stateful') {
       const config = `import { appendFileSync } from 'node:fs'
@@ -104,7 +118,7 @@ export default defineConfig({
   ${toolchain === 'wv' ? '' : 'plugins: [weapp()],'}
   build: { minify: true },
   define: { 'process.env.NODE_ENV': JSON.stringify('production'), __WEAPP_CHUNK_SCENARIO__: JSON.stringify('worker') },
-  weapp: { srcRoot: 'src', ${runtimeSuite === 'react' ? 'react: { compiler: false, renderMode: \'auto\' },' : runtimeSuite === 'worker' ? 'worker: { entry: [\'index\', \'messages/index\'] },' : ''} hmr: { runtime: 'classic' } },
+  weapp: { srcRoot: 'src', ${runtimeSuite === 'plugin' ? 'pluginRoot: \'plugin\', typescript: { app: { include: [\'../shared/**/*\'], compilerOptions: { paths: { \'@/*\': [\'./*\'] } } } }, npm: { enable: true, pluginPackage: { dependencies: [\'dayjs\'] } },' : runtimeSuite === 'react' ? 'react: { compiler: false, renderMode: \'auto\' },' : runtimeSuite === 'worker' ? 'worker: { entry: [\'index\', \'messages/index\'] },' : ''} hmr: { runtime: 'classic' } },
 })
 `
       await writeFile(path.join(consumerRoot, `vite.${runtimeSuite}.config.mts`), config)
@@ -134,24 +148,26 @@ export default defineConfig({
         'run',
         '-c',
         'e2e/vitest.e2e.devtools.config.ts',
-        runtimeSuite === 'react' ? 'e2e/ide/react-runtime-spike.runtime.test.ts' : runtimeSuite === 'independent' ? 'e2e/ide/wevu-subpackage-placement.runtime.test.ts' : runtimeSuite === 'worker' ? 'e2e/ide/worker-host.runtime.test.ts' : 'e2e/ide/stateful-hmr.runtime.test.ts',
+        runtimeSuite === 'plugin' ? 'e2e/ide/issue-963-plugin-es6.runtime.test.ts' : runtimeSuite === 'react' ? 'e2e/ide/react-runtime-spike.runtime.test.ts' : runtimeSuite === 'independent' ? 'e2e/ide/wevu-subpackage-placement.runtime.test.ts' : runtimeSuite === 'worker' ? 'e2e/ide/worker-host.runtime.test.ts' : 'e2e/ide/stateful-hmr.runtime.test.ts',
         '-t',
-        runtimeSuite === 'react'
-          ? 'renders React hooks|renders the compiled native WXML|all six interop edges'
-          : runtimeSuite === 'worker'
-            ? 'exchanges worker messages'
-            : runtimeSuite === 'independent'
-              ? 'visits main, normal subpackage, and independent subpackage vue routes'
-              : provider === 'devtools'
-                ? 'preserves native Page|preserves native Component|preserves Wevu local and store|preserves native page state across two template'
-                : 'preserves native Component|preserves Wevu local and store|preserves native page state across two template',
+        runtimeSuite === 'plugin'
+          ? 'ES6: disabled'
+          : runtimeSuite === 'react'
+            ? 'renders React hooks|renders the compiled native WXML|all six interop edges'
+            : runtimeSuite === 'worker'
+              ? 'exchanges worker messages'
+              : runtimeSuite === 'independent'
+                ? 'visits main, normal subpackage, and independent subpackage vue routes'
+                : provider === 'devtools'
+                  ? 'preserves native Page|preserves native Component|preserves Wevu local and store|preserves native page state across two template'
+                  : 'preserves native Component|preserves Wevu local and store|preserves native page state across two template',
       ], {
         cwd: repoRoot,
         stdio: 'inherit',
         env: {
           WEAPP_VITE_E2E_RUNTIME_PROVIDER: provider,
           WEAPP_VITE_E2E_COMPILER_HOST: toolchain,
-          [runtimeSuite === 'react' ? 'WEAPP_VITE_E2E_REACT_PROJECT' : runtimeSuite === 'independent' ? 'WEAPP_VITE_E2E_INDEPENDENT_PROJECT' : runtimeSuite === 'worker' ? 'WEAPP_VITE_E2E_WORKER_PROJECT' : 'WEAPP_VITE_E2E_STATEFUL_PROJECT']: consumerRoot,
+          [runtimeSuite === 'plugin' ? 'WEAPP_VITE_E2E_PLUGIN_PROJECT' : runtimeSuite === 'react' ? 'WEAPP_VITE_E2E_REACT_PROJECT' : runtimeSuite === 'independent' ? 'WEAPP_VITE_E2E_INDEPENDENT_PROJECT' : runtimeSuite === 'worker' ? 'WEAPP_VITE_E2E_WORKER_PROJECT' : 'WEAPP_VITE_E2E_STATEFUL_PROJECT']: consumerRoot,
         },
       })
     }

@@ -5,7 +5,7 @@ import type {
   RolldownWatcher,
 } from 'rolldown'
 import type { InlineConfig } from 'vite'
-import type { BuildTarget, MutableCompilerContext } from '../../context'
+import type { BuildTarget, CompilerContext, MutableCompilerContext } from '../../context'
 import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
@@ -19,7 +19,6 @@ import chokidar from 'chokidar'
 import path from 'pathe'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
-import { createCompilerContext } from '../../createContext'
 import { createDevModuleGraphProvider } from '../../moduleGraph/devProvider'
 import { hasDevModuleGraphHost, reportDevModuleGraphBuild } from '../../moduleGraph/host'
 import { hasManagedCompilerEntries } from '../../plugins/compilerPluginRegistry'
@@ -58,6 +57,7 @@ import { createDevBuildWatcher } from './devBuildWatcher'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
+import { assertPluginProjectOutput, createPluginProjectSession, isPluginProjectClosing, runPluginProjectRestart, setPluginProjectBuildOptions } from './pluginProject'
 import { refreshSnapshotSources } from './snapshotSources'
 import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
 import { observeWorkerSources, ownsWorkerSource } from './workerPlan'
@@ -1895,25 +1895,35 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         void (async () => {
           const shouldRestart = shouldRestartDevBuild(target)
           if (shouldRestart) {
-            await watcher.close()
-            logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
-            ctx.moduleGraphService.resetSession()
-            resetRuntimeStateForFreshBuild(ctx.runtimeState)
-            await configService.load(configService.loadOptions)
-            try {
-              const supportFiles = await syncProjectSupportFiles(ctx)
-              for (const warning of supportFiles.managedTsconfigWarnings) {
-                logger.warn(warning)
+            await runPluginProjectRestart(ctx as CompilerContext, async () => {
+              await watcher.close()
+              if (isPluginProjectClosing(ctx as CompilerContext)) {
+                return
               }
-            }
-            catch (error) {
-              const message = error instanceof Error ? error.message : String(error)
-              logger.warn(`[prepare] 自动同步 .weapp-vite 支持文件失败：${message}`)
-            }
-            await scanService.loadAppEntry()
-            scanService.loadSubPackages()
-            await restartDev(target)
-            logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
+              logger.info('检测到 Vite 配置变更，正在重启小程序开发构建...')
+              ctx.moduleGraphService.resetSession()
+              resetRuntimeStateForFreshBuild(ctx.runtimeState)
+              await configService.load(configService.loadOptions)
+              try {
+                if (!configService.pluginOnly) {
+                  const supportFiles = await syncProjectSupportFiles(ctx)
+                  for (const warning of supportFiles.managedTsconfigWarnings) {
+                    logger.warn(warning)
+                  }
+                }
+              }
+              catch (error) {
+                const message = error instanceof Error ? error.message : String(error)
+                logger.warn(`[prepare] 自动同步 .weapp-vite 支持文件失败：${message}`)
+              }
+              await scanService.loadAppEntry()
+              scanService.loadSubPackages()
+              if (isPluginProjectClosing(ctx as CompilerContext)) {
+                return
+              }
+              await restartDev(target)
+              logger.success('Vite 配置已重新加载，小程序开发构建已重启。')
+            })
             resolveWatcher(e)
             return
           }
@@ -2225,35 +2235,22 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return undefined
     }
 
-    const inlineConfig: InlineConfig = {
-      build: {
-        outDir: pluginOutputRoot,
-      },
+    const session = await createPluginProjectSession(ctx as CompilerContext)
+    try {
+      const result = await session.run(() => session.context.buildService.build(options))
+      if (configService.isDev) {
+        const root = `plugin-session:${configService.absolutePluginRoot}`
+        watcherService.sidecarWatcherMap.set(root, { close: () => session.close() })
+      }
+      else {
+        await session.close()
+      }
+      return result
     }
-    const emptyOutDir = configService.inlineConfig.build?.emptyOutDir
-    if (typeof emptyOutDir === 'boolean') {
-      inlineConfig.build!.emptyOutDir = emptyOutDir
+    catch (error) {
+      await session.close().catch(() => {})
+      throw error
     }
-    const isolatedKey = `plugin-build:${configService.cwd}`
-    const isolatedCtx = await createCompilerContext({
-      key: isolatedKey,
-      cwd: configService.cwd,
-      isDev: configService.isDev,
-      mode: configService.mode,
-      pluginOnly: true,
-      configFile: configService.configFilePath,
-      cliPlatform: configService.platform,
-      projectConfigPath: configService.projectConfigPath,
-      inlineConfig,
-    })
-
-    isolatedCtx.currentBuildTarget = 'plugin'
-    const result = await isolatedCtx.buildService.build(options)
-    if (configService.isDev && result && typeof (result as RolldownWatcher).on === 'function') {
-      const watcherRoot = configService.absolutePluginRoot ?? configService.absoluteSrcRoot
-      watcherService.setRollupWatcher(result as RolldownWatcher, watcherRoot)
-    }
-    return result
   }
 
   async function runBuildTarget(target: BuildTarget) {
@@ -2266,6 +2263,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
+    assertPluginProjectOutput(ctx as CompilerContext)
+    setPluginProjectBuildOptions(ctx as CompilerContext, options ?? {})
     if (shouldCleanOutputs(configService, 'startup')) {
       await cleanOutputs(configService)
       resetEmittedOutputCaches(ctx.runtimeState)
@@ -2309,7 +2308,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       projectConfigSyncTask,
       npmBuildTask,
     ])
-    if (!pluginOnly && !isLibMode && configService.absolutePluginRoot) {
+    if (configService.isDev && !pluginOnly && !isLibMode && configService.absolutePluginRoot) {
       await runIsolatedPluginBuild(options)
     }
     debug?.('build end')

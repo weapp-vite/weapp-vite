@@ -11,7 +11,7 @@ const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
 const profile = process.argv[5] ?? 'basic'
-assert(['basic', 'react', 'independent', 'worker'].includes(profile))
+assert(['basic', 'react', 'independent', 'worker', 'plugin'].includes(profile))
 assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
@@ -20,13 +20,16 @@ assert(['wv', 'vite', 'vite-plus'].includes(toolchain))
 const packageName = toolchain === 'wv' ? 'weapp-vite' : toolchain
 const cli = path.join(path.dirname(require.resolve(`${packageName}/package.json`)), toolchain === 'wv' ? 'bin/weapp-vite.js' : toolchain === 'vite-plus' ? 'bin/vp' : 'bin/vite.js')
 await rm(path.join(root, 'dist'), { recursive: true, force: true })
+if (profile === 'plugin') {
+  await rm(path.join(root, 'dist-plugin'), { recursive: true, force: true })
+}
 await writeFile(path.join(root, 'config-calls.txt'), '')
 let logs = ''
 let exited = false
 const originals = new Map()
 const independentSource = 'src/subpackages/independent-wevu/pages/entry/index.vue'
 const independentOutput = 'subpackages/independent-wevu/pages/entry/index.wxml'
-for (const file of profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : profile === 'worker' ? ['src/workers/messages/message.ts', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
+for (const file of profile === 'plugin' ? ['shared/shared-data.ts', 'plugin/plugin.json', 'vite.config.mts'] : profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : profile === 'worker' ? ['src/workers/messages/message.ts', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
   originals.set(file, await readFile(path.join(root, file), 'utf8'))
 }
 if (operation === 'stateful-dev') {
@@ -94,7 +97,11 @@ async function waitForDevReady() {
 
 let shutdownFailed = false
 try {
-  if (profile === 'react') {
+  if (profile === 'plugin') {
+    await waitForOutput('../dist-plugin/index.js', '[shared:')
+    await waitForOutput('app.json', 'hello-plugin')
+  }
+  else if (profile === 'react') {
     await waitForOutput('pages/static/index.wxml', 'weapp-vite React static bindings')
     await waitForOutput('pages/static/index.js', /\S/)
   }
@@ -111,7 +118,31 @@ try {
   }
   await waitForWatchRound(1)
   await waitForDevReady()
-  if (profile === 'react') {
+  if (profile === 'plugin') {
+    const file = 'shared/shared-data.ts'
+    await writeFile(path.join(root, file), originals.get(file).replace('[shared:', '[updated-shared:'))
+    await waitForOutput('../dist-plugin/index.js', '[updated-shared:')
+    await waitForWatchRound(2)
+    await writeFile(path.join(root, file), originals.get(file))
+    await waitForOutput('../dist-plugin/index.js', '[shared:')
+    await waitForWatchRound(3)
+    const manifestFile = 'plugin/plugin.json'
+    const manifest = JSON.parse(originals.get(manifestFile))
+    delete manifest.pages['hello-page']
+    await writeFile(path.join(root, manifestFile), JSON.stringify(manifest))
+    const removedPage = path.join(root, 'dist-plugin/pages/hello-page/index.js')
+    const deadline = Date.now() + 20_000
+    while (Date.now() < deadline && await readFile(removedPage).then(() => true, () => false)) {
+      await delay(50)
+    }
+    await assert.rejects(readFile(removedPage), { code: 'ENOENT' })
+    await writeFile(path.join(root, manifestFile), originals.get(manifestFile))
+    await waitForOutput('../dist-plugin/pages/hello-page/index.wxml', '插件页直接使用 Vue SFC')
+    await waitForOutput('../dist-plugin/pages/hello-page/index.js', /\S/)
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    console.log(`${toolchain}: native plugin ${operation} shared import update, page removal and restoration passed with one config evaluation`)
+  }
+  else if (profile === 'react') {
     const source = path.join(root, 'src/pages/static/view.tsx')
     await writeFile(source, originals.get('src/pages/static/view.tsx').replace('weapp-vite React static bindings', 'React host updated template'))
     await waitForOutput('pages/static/index.wxml', 'React host updated template')
@@ -188,8 +219,8 @@ finally {
       }
     }
     visit(child.pid)
-    // Vite+ 的原生启动器转交给独立进程组；优先让实际服务正常退出，再等待启动器返回。
-    for (const pid of descendants.length ? descendants : [child.pid]) {
+    // Vite+ 的原生启动器转交给独立进程组；wv/vite 直接接收信号并清理自己拥有的子进程。
+    for (const pid of toolchain === 'vite-plus' && descendants.length ? descendants : [child.pid]) {
       try {
         process.kill(pid, 'SIGTERM')
       }
@@ -217,4 +248,4 @@ finally {
   }
 }
 
-assert(!shutdownFailed, `Native ${toolchain} ${operation} did not exit after SIGTERM`)
+assert(!shutdownFailed, `Native ${toolchain} ${operation} did not exit after SIGTERM: ${logs}`)

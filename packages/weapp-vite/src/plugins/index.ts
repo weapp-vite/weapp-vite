@@ -4,6 +4,7 @@ import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import { wrapPlugin } from 'vite-plugin-performance'
 import { resolveWeappAutoRoutesConfig } from '@/autoRoutesConfig'
 import { createSelectedRuntimeProviderPlugin, resolveRuntimeProvider } from '@/runtimeProviders'
+import { createAppBuilderPlugin } from '../runtime/buildPlugin/appBuilder'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
@@ -12,6 +13,7 @@ import { weappVite } from './core'
 import { css } from './css'
 import { i18n } from './i18n'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
+import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
 import { preflight } from './preflight'
 import { createReactPlugin, isReactEnabled } from './react'
 import { createTailwindcssPlugin } from './tailwindcss'
@@ -106,7 +108,7 @@ export function vitePluginWeapp(
   }
   groups.push(css(ctx))
   if (!subPackageMeta && !libModeEnabled) {
-    groups.push([createWorkerOutputPlugin(ctx)])
+    groups.push([createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
   }
   groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
   if (tailwindcssPlugins.length > 1) {

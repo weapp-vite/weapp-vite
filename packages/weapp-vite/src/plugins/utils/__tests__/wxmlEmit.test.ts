@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../../context'
+import { realpathSync } from 'node:fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
@@ -48,6 +49,23 @@ describe('emitWxmlAssetsWithCache', () => {
     const token = ctx.wxmlService!.analyze('<view />')
     ctx.wxmlService!.tokenMap.set(filePath, token)
     ctx.wxmlService!.depsMap.set(filePath, new Set())
+  })
+
+  it('keeps plugin templates resolved through a symlink without accepting foreign files', () => {
+    const root = '/project/plugin'
+    const template = '/physical/plugin/pages/home/index.wxml'
+    Object.defineProperty(ctx.configService!, 'absolutePluginRoot', { value: root })
+    ctx.configService!.relativeOutputPath = id => path.relative('/physical/plugin', id)
+    ctx.wxmlService!.tokenMap.clear()
+    ctx.wxmlService!.tokenMap.set(template, ctx.wxmlService!.analyze('<view>plugin</view>'))
+    ctx.wxmlService!.tokenMap.set('/physical/foreign/index.wxml', ctx.wxmlService!.analyze('<view>foreign</view>'))
+    const realpath = vi.spyOn(realpathSync, 'native').mockImplementation((input) => {
+      return String(input) === root ? '/physical/plugin' : String(input)
+    })
+    try {
+      expect(resolveWxmlEmitTargets({ compiler: ctx as any, buildTarget: 'plugin' }).map(target => target.fileName)).toEqual(['pages/home/index.wxml'])
+    }
+    finally { realpath.mockRestore() }
   })
 
   it('emits assets only when content changes', () => {

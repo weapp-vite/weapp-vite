@@ -11,6 +11,7 @@ import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
 import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/processing/dependencies'
 import { validateWxmlBundle } from '../../wxml/validate'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
+import { resolveRootEntryBasename } from '../core/lifecycle/load/weapi'
 import { flushIndependentOutputs } from './independent'
 import { prepareOutputOwnership } from './ownership'
 
@@ -69,7 +70,10 @@ export function pruneUnchangedDevHmrOutputs(
     rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
     stabilizeWevuRuntimeChunkAccess(bundle)
   }
+  const rootInputFile = `${resolveRootEntryBasename({ ctx })}.js`
   for (const [fileName, output] of Object.entries(bundle)) {
+    // 固定根入口由 bundler input 驱动，不属于动态 emitFile 的页面/组件集合。
+    const isRootInput = output.type === 'chunk' && output.isEntry && fileName === rootInputFile
     const isCurrentHmrChunk = isHmrBuild
       && output.type === 'chunk'
       && (
@@ -83,6 +87,7 @@ export function pruneUnchangedDevHmrOutputs(
       && output.type === 'chunk'
       && emittedChunkFileNames?.size
       && !isCurrentHmrChunk
+      && !isRootInput
     ) {
       delete bundle[fileName]
       continue
