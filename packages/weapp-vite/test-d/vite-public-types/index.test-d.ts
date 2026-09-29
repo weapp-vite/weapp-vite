@@ -10,3 +10,5 @@ defineConfig(() => ({ plugins: [weapp()], weapp: { platform: 'weapp' } }))
 defineConfig(async () => ({ plugins: [weapp()], weapp: { platform: 'weapp' } }))
 expectError(defineConfig({ plugins: [weapp()], weapp: { platform: 'invalid-platform' } }))
 expectError(defineConfig({ plugins: [weapp()], weapp: { srcRot: 'src' } }))
+
+defineConfig({ plugins: [weapp()], weapp: { platform: 'web' } })

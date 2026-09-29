@@ -16,7 +16,7 @@ import { applyMcpCliOptions } from '../../mcpOptions'
 import { setCommandNodeEnv } from '../../nodeEnv'
 import { openIde, resolveIdeProjectRoot } from '../../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../../options'
-import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../../runtime'
+import { createInlineConfig, logRuntimeTarget, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from '../../runtime'
 import { createAnalyzeController } from './analyze'
 import { createServeMiniProgramDevActions, resolveServeIdeOpenStrategy, resolveWebHost, waitForServeShutdownSignal } from './shared'
 
@@ -50,12 +50,12 @@ export function registerServeCommand(cli: CAC) {
       setCommandNodeEnv('development')
       const cwd = root ?? process.cwd()
       const configFile = resolveConfigFile(options)
-      const targets = resolveRuntimeTargets(options)
-      const webBackend = getBackendForCapability(targets, 'web', 'dev')
-      const host = webBackend ? resolveWebHost(options.host) : undefined
+      let targets = resolveRuntimeTargets(options)
+      const host = resolveWebHost(options.host)
       const inlineConfig = createInlineConfig(targets, {
         scope: options.scope,
         host,
+        inlineConfig: host === undefined ? undefined : { server: { host } },
       })
       const ctx = await createCompilerContext({
         cwd,
@@ -69,6 +69,8 @@ export function registerServeCommand(cli: CAC) {
         projectConfigPath: options.projectConfig,
       })
       const { configService } = ctx
+      targets = resolveConfiguredRuntimeTargets(targets, configService.options?.sourceConfig?.weapp?.platform)
+      const webBackend = getBackendForCapability(targets, 'web', 'dev')
       const miniBackend = getBackendForCapability(targets, 'miniprogram', 'dev')
       const aiEnvironment = await detectAiDevelopmentEnvironment()
       const mcpConfig = applyMcpCliOptions(configService.weappViteConfig?.mcp, options)

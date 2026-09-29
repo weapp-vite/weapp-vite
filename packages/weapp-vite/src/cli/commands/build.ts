@@ -18,8 +18,8 @@ import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { setCommandNodeEnv } from '../nodeEnv'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
-import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
-import { prepareAutoUploadMetadata } from '../upload/autoMetadata'
+import { createInlineConfig, logRuntimeTarget, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from '../runtime'
+import { prepareAutoUploadMetadata, validateAutoUploadMetadata } from '../upload/autoMetadata'
 import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
 import { resolveBuildUploadOptions } from '../upload/options'
 
@@ -147,11 +147,11 @@ export function registerBuildCommand(cli: CAC) {
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
         targets = resolveRuntimeTargets(options)
+        if (uploadOptions) {
+          validateAutoUploadMetadata(uploadOptions, 'upload')
+        }
         if (uploadOptions && !getBackendForCapability(targets, 'miniprogram', 'build')) {
           throw new Error('--upload 仅支持包含小程序目标的构建，不能用于纯 Web 构建。')
-        }
-        if (uploadOptions) {
-          uploadOptions = await prepareAutoUploadMetadata(cwd, uploadOptions, 'upload')
         }
         const inlineConfig = createInlineConfig(targets, {
           scope: options.scope,
@@ -168,6 +168,13 @@ export function registerBuildCommand(cli: CAC) {
           emitDefaultAutoImportOutputs: false,
           preloadAppEntry: false,
         })
+        targets = resolveConfiguredRuntimeTargets(targets, ctx.configService.options?.sourceConfig?.weapp?.platform)
+        if (uploadOptions && !getBackendForCapability(targets, 'miniprogram', 'build')) {
+          throw new Error('--upload 仅支持包含小程序目标的构建，不能用于纯 Web 构建。')
+        }
+        if (uploadOptions) {
+          uploadOptions = await prepareAutoUploadMetadata(cwd, uploadOptions, 'upload')
+        }
         for (const backend of targets.select('build')) {
           session.onClose(() => backend.driver.close(ctx!))
         }

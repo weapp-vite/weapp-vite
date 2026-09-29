@@ -13,19 +13,29 @@ import { prepareNpmAssets } from './npm'
 export class WeappBuildSession extends CompilerSession {
   private dependencyBuild?: Promise<EmittedAsset[]>
   private validating?: Promise<void>
+  isWeb = false
   statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
 
   async prepare(config: InlineConfig, cwd: string, mode: string, isDev = false): Promise<InlineConfig> {
+    this.isWeb = config.weapp?.platform === 'web'
     await this.initialize({
       cwd,
       mode,
       isDev,
       emitDefaultAutoImportOutputs: false,
       hostConfig: { config },
+      cliPlatform: this.isWeb ? 'web' : undefined,
       syncSupportFiles: false,
       preloadAppEntry: false,
     })
     const service = this.context.configService
+    if (this.isWeb) {
+      const merged = service.mergeWeb()
+      if (!merged) {
+        throw new Error('[weapp-vite] Web 目标不能禁用 weapp.web。')
+      }
+      return merged
+    }
     if (isDev && resolveHmrRuntimeDecision({
       platform: service.platform,
       configured: service.weappViteConfig.hmr?.runtime,
@@ -52,7 +62,7 @@ export class WeappBuildSession extends CompilerSession {
     }
     this.dependencyBuild = undefined
     return this.validating = this.run(async () => {
-      if (!this.context.configService.weappLibConfig?.enabled) {
+      if (!this.isWeb && !this.context.configService.weappLibConfig?.enabled) {
         await this.context.scanService.loadAppEntry()
         checkWorkersOptions('app', this.context.configService, this.context.scanService)
       }
@@ -71,6 +81,11 @@ export class WeappBuildSession extends CompilerSession {
   }
 
   async startDev(server: ViteDevServer) {
+    if (this.isWeb) {
+      await this.run(() => syncManagedTsconfigFiles(this.context))
+      this.state = 'watching'
+      return
+    }
     let started = false
     let successful = false
     let reportedReady = false
@@ -105,6 +120,9 @@ export class WeappBuildSession extends CompilerSession {
   }
 
   buildDependencies() {
+    if (this.isWeb) {
+      return Promise.resolve([])
+    }
     if (this.state !== 'building') {
       throw new Error('[weapp-vite] 依赖构建需要活动的构建会话。')
     }

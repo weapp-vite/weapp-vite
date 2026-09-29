@@ -93,6 +93,7 @@ const config = defineConfig(async (_env) => ({
   weapp: { platform: 'weapp' },
   ${plus ? 'run: { tasks: { prepare: { command: \'wv prepare\', cache: false } } }, test: { include: [\'host.spec.ts\'] },' : ''}
 }))
+defineConfig({ weapp: { platform: 'web' } })
 const resolved = await config({ command: 'build', mode: 'production' })
 // Vite+ 的返回类型会正规化为宿主 UserConfig，保持其原有可选字段契约。
 const platform: WeappViteConfig['platform'] = resolved.weapp?.platform

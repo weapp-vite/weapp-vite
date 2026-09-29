@@ -2,6 +2,8 @@ import type { Plugin } from 'vite'
 
 // 顺序与内部编译阶段一致；可选能力保留空槽，配置阶段只绑定实现，不注册新插件。
 const descriptors: Array<[string, Plugin['enforce']?]> = [
+  ['weapp-vite:runtime-provider:web-runtime', 'pre'],
+  ['@weapp-vite/web', 'pre'],
   ['weapp-vite:module-graph-provider', 'pre'],
   ['weapp-vite:hmr-input', 'pre'],
   ['weapp-vite:stateful-hmr-sidecar', 'pre'],

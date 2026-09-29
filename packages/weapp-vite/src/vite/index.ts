@@ -46,8 +46,8 @@ export function weapp(): Plugin[] {
           }
           serveRequested = env.command === 'serve'
           const options = config.weapp
-          if (options?.web) {
-            throw new Error('[weapp-vite] 标准插件暂未开放 Web 目标。')
+          if (options?.web?.enable !== false && options?.web && options.platform !== 'web') {
+            throw new Error('[weapp-vite] Web 与小程序混合宿主尚未开放；纯 Web 请设置 weapp.platform=web。')
           }
           const userPlugins = configuredPlugins.filter(plugin => plugin !== coordinator && !slots.plugins.includes(plugin))
           const hostConfig = {
@@ -60,6 +60,12 @@ export function weapp(): Plugin[] {
             const merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
             // 主构建的用户插件已由宿主安装；子构建仍需复用它们处理各自的输入。
             session.context.configService.options.sourceConfig = { ...hostConfig, plugins: userPlugins }
+            if (session.isWeb) {
+              slots.bind((await resolvePlugins(merged.plugins)).filter(plugin => !configuredPlugins.includes(plugin)))
+              const { plugins: _plugins, configFile: _configFile, ...normalized } = merged
+              normalized.logLevel = config.logLevel
+              return normalized
+            }
             if (serveRequested) {
               const { prepareDevHostConfig } = await import('./dev')
               if (!session.statefulController && config.experimental?.bundledDev) {

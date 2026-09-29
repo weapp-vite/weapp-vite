@@ -7,12 +7,13 @@ import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
+import { verifyWebConsumer } from './verify-vite-host-web.mjs'
 
 const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
 const runtime = process.argv[3]
 const runtimeSuite = process.argv[4] ?? 'stateful'
-assert(['stateful', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform'].includes(runtimeSuite))
+assert(['stateful', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web'].includes(runtimeSuite))
 assert(runtime === undefined || ['headless', 'devtools', 'both'].includes(runtime))
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-host-install-'))
@@ -90,7 +91,10 @@ try {
     consumerRoot,
     ...(toolchain === 'wv' ? ['wv'] : []),
   ], { cwd: repoRoot, stdio: 'inherit' })
-  if (runtime && runtimeSuite === 'platform') {
+  if (runtimeSuite === 'web') {
+    await verifyWebConsumer(consumerRoot, toolchain, repoRoot)
+  }
+  else if (runtime && runtimeSuite === 'platform') {
     await verifyPlatformConsumer(consumerRoot, toolchain, repoRoot, runtime)
   }
   else if (runtime) {

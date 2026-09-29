@@ -73,7 +73,8 @@ vi.mock('../options', () => ({
   isUiEnabled: isUiEnabledMock,
 }))
 
-vi.mock('../runtime', () => ({
+vi.mock('../runtime', async importOriginal => ({
+  ...await importOriginal<typeof import('../runtime')>(),
   resolveRuntimeTargets: resolveRuntimeTargetsMock,
   createInlineConfig: createInlineConfigMock,
   logRuntimeTarget: logRuntimeTargetMock,

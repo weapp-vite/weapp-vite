@@ -72,7 +72,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | `vp preview` | Vite 的 Web 预览，不是小程序二维码预览 |
 | `vp pack` | 通用库打包，不替代小程序 lib mode |
 
-每次调用只编译一个小程序平台。Web 目标与 Web/小程序混合宿主仍待后续阶段开放。
+每次调用选择一个目标。纯 Web 使用 `weapp.platform: 'web'`；Web/小程序同宿主混合开发仍未开放。
 
 常规 npm 依赖先在会话临时目录准备，再作为宿主 bundle 的资源统一写出。当前不开放 `npm.buildOptions` 回调和微信 `packNpmManually` 手工输出映射，避免子任务写入宿主未管理的目录；这两类配置继续使用 `wv build`。
 
@@ -171,3 +171,12 @@ export default defineConfig({
 目录式平台项目配置从 `config/<platform>/` 读取，默认发布到 `dist/<platform>/`，小程序产物位于其 `dist/` 子目录。项目配置同样通过配套原生引擎写出，生产 watch 更新并清理本会话已拥有的文件；拒绝覆盖小程序编译输出的配置目录内容。目录式配置暂不支持 `build.write: false`，内联 `multiPlatform.projectConfigs` 可随主 bundle 返回内存产物。配置目录中的符号链接尚未开放。
 
 原生 TS 和 Vue SFC 的六平台生产构建、classic 更新，以及普通 Vite/Vite+ 的生产 watch 使用同一消费矩阵。stateful 仅开放微信；其他平台明确使用 classic。微信运行时使用 headless 与真实 IDE 验收；其他平台的构建/增量检查不代表各自真实 IDE runtime 均已通过，高级能力仍按平台分别验收。
+
+
+## 纯 Web 目标
+
+三入口都可在顶层设置 `weapp.platform: 'web'`，沿用 `weapp.web` 的源码根、输出目录和 runtime 配置；未指定 `weapp.web` 时使用 Web 默认值。普通 Vite 与 Vite+ 继续注册同一个 `weapp()`，独立 `wv` 无需注册插件，也无需再传 `--platform web`。显式 CLI `--platform` 覆盖配置目标。
+
+项目需保留既有 Web `index.html`，通过 `/@weapp-vite/web/entry` 启动 runtime。纯 Web 不要求小程序 `project.config.json`，默认输出 `dist/web`，不会同时生成小程序 bundle。原生生产构建、开发服务和插件生产 watch 使用宿主生命周期；Web 的浏览器 HMR 不启用微信 stateful 引擎。
+
+生产产物与 dev 服务均使用浏览器验证 Vue SFC、原生组件语义和交互。Web 测试只证明浏览器目标，不替代六个平台真实 IDE 验收。Web/小程序混合宿主仍会明确报错，后续需独立环境隔离后再开放。

@@ -6,6 +6,7 @@ import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
+import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { getAliasEntries } from '../../../utils'
 import { hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
@@ -211,6 +212,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       userConfigured: userConfiguredTopLevel,
     })
 
+    const selectedPlatform = cliPlatform ?? config.weapp?.platform
+    const webTarget = resolveCliPlatformRuntime(selectedPlatform).isWebRuntime
+    if (config.weapp?.platform === 'web') {
+      config.weapp.platform = DEFAULT_MP_PLATFORM
+    }
+
     const rawLibConfig = config.weapp?.lib
     const libEntryConfigured = hasLibEntry(rawLibConfig?.entry)
     if (rawLibConfig && !libEntryConfigured) {
@@ -248,7 +255,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
       srcRoot,
       config: config.weapp?.web,
-      enableByCli: resolveCliPlatformRuntime(cliPlatform).isWebRuntime,
+      enableByCli: webTarget,
     })
 
     const {
@@ -262,7 +269,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       oxcVitePlugin,
       injectBuiltinAliases,
       resolvedLibConfig,
-      cliPlatform,
+      cliPlatform: webTarget ? 'web' : cliPlatform,
       explicitPlatform: Boolean(inlineConfig?.weapp?.platform ?? mergedLoadedConfig.weapp?.platform),
       projectConfigPath,
       cwd,

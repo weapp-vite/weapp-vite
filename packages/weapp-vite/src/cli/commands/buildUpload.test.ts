@@ -253,6 +253,23 @@ describe('build upload opt-in', () => {
 })
 
 describe('build upload CLI guards', () => {
+  it('rejects config-selected Web before bumping the manifest or preparing an upload', async () => {
+    const original = state.createContext.getMockImplementation()!
+    state.createContext.mockImplementation(async (options) => {
+      const ctx = await original(options)
+      ctx.configService.options = { sourceConfig: { weapp: { platform: 'web' } } }
+      return ctx
+    })
+    const manifest = JSON.stringify({ name: 'web-build-fixture', version: '1.0.0' })
+    await writeFile(path.join(root, 'package.json'), manifest)
+    await expect(runBuild('--upload', '--bump', 'patch')).rejects.toThrow('纯 Web')
+    expect(await readFile(path.join(root, 'package.json'), 'utf8')).toBe(manifest)
+    expect(state.build).not.toHaveBeenCalled()
+    expect(state.webBuild).not.toHaveBeenCalled()
+    expect(state.prepare).not.toHaveBeenCalled()
+    expect(state.execute).not.toHaveBeenCalled()
+  })
+
   it.each([
     { args: ['--upload', '--watch'] },
     { args: ['--upload', '-p', 'web'] },

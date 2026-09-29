@@ -177,3 +177,20 @@ jobs:
       artifact_name: platform-runtime-${{ matrix.host }}
       artifact_path: docs/reports/dom-acceptance/**
     secrets: inherit
+
+  web-runtime:
+    name: Web browser runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      install_playwright: true
+      playwright_browsers: chromium
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web
+    secrets: inherit
