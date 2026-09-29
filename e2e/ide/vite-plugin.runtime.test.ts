@@ -13,52 +13,54 @@ const VITE_CLI = path.join(path.dirname(require.resolve('vite/package.json')), '
 const WV_CLI = path.join(path.dirname(require.resolve('weapp-vite/package.json')), 'bin/weapp-vite.js')
 
 // 每种入口独立 suite，构建后只启动一次 runtime，避免复用另一入口的旧产物快照。
-describe.each(['vite', 'wv'] as const)('%s shared compiler session runtime (weapp e2e)', { concurrent: false }, (host) => {
-  let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
+for (const host of ['vite', 'wv'] as const) {
+  describe(`${host} shared compiler session runtime (weapp e2e)`, { concurrent: false }, () => {
+    let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | undefined
 
-  async function getSharedMiniProgram() {
-    if (!miniProgram) {
-      const args = host === 'vite'
-        ? [VITE_CLI, 'build', '--config', 'vite.plugin.config.mts']
-        : [WV_CLI, 'build']
-      await execa(process.execPath, args, { cwd: APP_ROOT })
-      miniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
-        warmupRoute: '/pages/home/index',
-        warmupRootSelectors: ['.title'],
-      })
+    async function getSharedMiniProgram() {
+      if (!miniProgram) {
+        const args = host === 'vite'
+          ? [VITE_CLI, 'build', '--config', 'vite.plugin.config.mts']
+          : [WV_CLI, 'build']
+        await execa(process.execPath, args, { cwd: APP_ROOT })
+        miniProgram = await launchAutomator({
+          projectPath: APP_ROOT,
+          warmupRoute: '/pages/home/index',
+          warmupRootSelectors: ['.title'],
+        })
+      }
+      return miniProgram
     }
-    return miniProgram
-  }
 
-  afterAll(async () => {
-    await miniProgram?.close()
-  })
+    afterAll(async () => {
+      await miniProgram?.close()
+    })
 
-  it('renders Vue routes and navigates to an ordinary subpackage after build', async (context) => {
-    const acceptance = createDomAcceptance(context, 'e2e-apps/auto-routes-define-app-json', [
-      {
-        id: 'native-build-home',
-        route: '/pages/home/index',
-        action: `reLaunch the ${host} build and inspect generated route links`,
-        nodes: [
-          { selector: '.title', text: 'auto-routes 导航中心' },
-          { selector: 'navigator', count: 6 },
-        ],
-      },
-      {
-        id: 'native-build-subpackage',
-        route: '/subpackages/marketing/pages/campaign/index',
-        action: 'reLaunch an ordinary subpackage in the same runtime session',
-        nodes: [{ selector: '.title', text: 'marketing/campaign' }],
-      },
-    ])
-    const runtime = await getSharedMiniProgram()
-    const home = await runtime.reLaunch('/pages/home/index')
-    await acceptance.check('native-build-home', runtime, home)
-    const links = await home.data('routeLinks') as Array<{ route: string }>
-    expect(links.map(link => link.route)).toContain('subpackages/marketing/pages/campaign/index')
-    const subpackage = await runtime.reLaunch('/subpackages/marketing/pages/campaign/index')
-    await acceptance.check('native-build-subpackage', runtime, subpackage)
+    it('renders Vue routes and navigates to an ordinary subpackage after build', async (context) => {
+      const acceptance = createDomAcceptance(context, 'e2e-apps/auto-routes-define-app-json', [
+        {
+          id: 'native-build-home',
+          route: '/pages/home/index',
+          action: `reLaunch the ${host} build and inspect generated route links`,
+          nodes: [
+            { selector: '.title', text: 'auto-routes 导航中心' },
+            { selector: 'navigator', count: 6 },
+          ],
+        },
+        {
+          id: 'native-build-subpackage',
+          route: '/subpackages/marketing/pages/campaign/index',
+          action: 'reLaunch an ordinary subpackage in the same runtime session',
+          nodes: [{ selector: '.title', text: 'marketing/campaign' }],
+        },
+      ])
+      const runtime = await getSharedMiniProgram()
+      const home = await runtime.reLaunch('/pages/home/index')
+      await acceptance.check('native-build-home', runtime, home)
+      const links = await home.data('routeLinks') as Array<{ route: string }>
+      expect(links.map(link => link.route)).toContain('subpackages/marketing/pages/campaign/index')
+      const subpackage = await runtime.reLaunch('/subpackages/marketing/pages/campaign/index')
+      await acceptance.check('native-build-subpackage', runtime, subpackage)
+    })
   })
-})
+}

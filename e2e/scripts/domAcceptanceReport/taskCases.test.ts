@@ -24,6 +24,14 @@ describe('planned DOM cases versus actual collection', () => {
     }
   })
 
+  it('enumerates both compiler entrypoints with the same names as runtime collection', async () => {
+    const cases = await readPlannedTaskCases({ label: 'ide/vite-plugin.runtime.test.ts', command: 'node', args: [] }, 'headless')
+    expect(cases.map(item => item.name)).toEqual([
+      'vite shared compiler session runtime (weapp e2e) > renders Vue routes and navigates to an ordinary subpackage after build',
+      'wv shared compiler session runtime (weapp e2e) > renders Vue routes and navigates to an ordinary subpackage after build',
+    ])
+  })
+
   it('expands provider titles and template children from the declared suite source', async () => {
     const jsx = await readPlannedTaskCases({ label: 'ide/wevu-jsx-tsx.runtime.test.ts', command: 'node', args: [] }, 'headless')
     expect(jsx).toHaveLength(3)
