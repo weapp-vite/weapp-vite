@@ -59,11 +59,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/node": "^2.1.0",
-    "@modelcontextprotocol/server": "^2.1.0",
+    "@modelcontextprotocol/server": "^2.2.0",
     "@weapp-vite/devtools-runtime": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@modelcontextprotocol/client": "^2.1.0"
+    "@modelcontextprotocol/client": "^2.2.0"
   }
 }
