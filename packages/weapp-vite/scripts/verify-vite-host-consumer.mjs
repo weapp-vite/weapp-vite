@@ -17,9 +17,10 @@ assert(consumer.name.startsWith('weapp-vite-host-') || consumer.name === 'weapp-
 const weappPackage = require.resolve('weapp-vite/package.json')
 assert(realpathSync(weappPackage).startsWith(`${realpathSync(root)}${path.sep}node_modules${path.sep}`), '必须安装 tarball，不能链接 workspace')
 const plus = Boolean(consumer.dependencies?.['vite-plus'] ?? consumer.devDependencies?.['vite-plus'])
-const toolchain = plus ? 'vite-plus' : 'vite'
+const standalone = process.argv[3] === 'wv'
+const toolchain = standalone ? 'weapp-vite' : plus ? 'vite-plus' : 'vite'
 const toolchainPackage = require.resolve(`${toolchain}/package.json`)
-const cli = path.join(path.dirname(toolchainPackage), plus ? 'bin/vp' : 'bin/vite.js')
+const cli = path.join(path.dirname(toolchainPackage), standalone ? 'bin/weapp-vite.js' : plus ? 'bin/vp' : 'bin/vite.js')
 const compilerRequire = createRequire(weappPackage)
 assert.equal(realpathSync(require.resolve('vite/package.json')), realpathSync(compilerRequire.resolve('vite/package.json')), '宿主和编译器必须解析到同一个 Vite')
 const run = promisify(execFile)
@@ -38,14 +39,14 @@ async function command(file, args) {
 }
 
 const files = {
-  'tsconfig.json': JSON.stringify({ references: [{ path: './.weapp-vite/tsconfig.app.json' }], files: [] }),
+  'tsconfig.json': JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', skipLibCheck: true } }),
   'tsconfig.types.json': JSON.stringify({ compilerOptions: { noEmit: true, strict: true, skipLibCheck: true, module: 'NodeNext' }, files: ['types.mts'] }),
   'vite.config.mts': `import { appendFileSync } from 'node:fs'
 import { defineConfig } from '${toolchain}'
-import { weapp } from 'weapp-vite/vite'
+${standalone ? '' : 'import { weapp } from \'weapp-vite/vite\''}
 appendFileSync(new URL('./config-calls.txt', import.meta.url), 'loaded\\n')
 export default defineConfig(async () => ({
-  plugins: [weapp()],
+  ${standalone ? '' : 'plugins: [weapp()],'}
   weapp: { platform: 'weapp', srcRoot: 'src', autoRoutes: false },
   build: { outDir: 'dist', minify: false },
   test: { include: ['host.spec.ts'] },
@@ -88,7 +89,7 @@ try {
 import type { WeappViteConfig } from 'weapp-vite/config'
 import { weapp } from 'weapp-vite/vite'
 const config = defineConfig(async (_env) => ({
-  plugins: [weapp()],
+  ${standalone ? '' : 'plugins: [weapp()],'}
   weapp: { platform: 'weapp' },
   ${plus ? 'run: { tasks: { prepare: { command: \'wv prepare\', cache: false } } }, test: { include: [\'host.spec.ts\'] },' : ''}
 }))
@@ -115,7 +116,10 @@ for (const [file, source] of Object.entries(files)) {
 }
 await rm(path.join(root, 'dist'), { recursive: true, force: true })
 await rm(path.join(root, '.weapp-vite'), { recursive: true, force: true })
-if (plus) {
+if (standalone) {
+  await rm(path.join(root, 'weapp-vite.config.mjs'))
+}
+else if (plus) {
   await command(cli, ['test', 'run'])
 }
 else {
@@ -124,8 +128,12 @@ else {
 }
 assert.equal(existsSync(path.join(root, 'dist')), false)
 assert.equal(existsSync(path.join(root, '.weapp-vite')), false)
-await command(require.resolve('typescript/bin/tsc'), ['-p', 'tsconfig.types.json'])
+if (!standalone) {
+  await command(require.resolve('typescript/bin/tsc'), ['-p', 'tsconfig.types.json'])
+}
 await command(path.join(root, 'probe-host.mjs'), [])
+// 测试宿主必须使用有效 tsconfig；构建阶段再验证受管引用尚未生成的干净安装路径。
+await writeFile(path.join(root, 'tsconfig.json'), JSON.stringify({ references: [{ path: './.weapp-vite/tsconfig.app.json' }], files: [] }))
 await writeFile(path.join(root, 'config-calls.txt'), '')
 await command(cli, ['build'])
 assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
@@ -137,10 +145,10 @@ assert.match(await readOutput('extra/detail/index.wxml'), /subpackage-host/)
 assert.deepEqual(JSON.parse(await readOutput('app.json')).pages, ['pages/native/index', 'pages/vue/index'])
 assert.equal(existsSync(path.join(root, 'dist/index.html')), false)
 // 旧 CLI 保留双配置发现语义；只有标准插件忽略影子配置。
-await rm(path.join(root, 'weapp-vite.config.mjs'))
+await rm(path.join(root, 'weapp-vite.config.mjs'), { force: true })
 const wv = path.join(path.dirname(weappPackage), 'bin/weapp-vite.js')
 await command(wv, ['prepare', '--config', 'vite.config.mts'])
 assert.equal(existsSync(path.join(root, '.weapp-vite')), true)
 await command(wv, ['build', '--config', 'vite.config.mts'])
 assert.match(await readOutput('pages/native/index.js'), /native-host/)
-console.log(`${toolchain}: packed exports, single host/config, TS/Vue/subpackage build, test isolation and wv compatibility passed`)
+console.log(`${toolchain}: packed exports, single host/config, TS/Vue/subpackage build and wv compatibility passed${standalone ? ' (standalone CLI without plugin registration)' : ', including test isolation'}`)

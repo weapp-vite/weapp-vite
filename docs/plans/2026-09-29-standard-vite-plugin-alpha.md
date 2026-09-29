@@ -36,14 +36,17 @@ node packages/weapp-vite/scripts/verify-vite-host-consumer.mjs <独立临时消�
 
 脚本会重建测试源文件并清理该临时目录的 `dist` 和 `.weapp-vite`，不能用于业务项目。目录必须位于维护仓库之外，`package.json` 设置 `private: true` 且名称以 `weapp-vite-host-` 开头。先安装本地 `pnpm pack` 生成的 tarball，不使用 workspace 链接。
 
-消费项目验证组合：
+消费项目验证组合（每个项目采用独立 npm 依赖图，未使用 workspace 链接）：
 
-| 宿主 | 依赖 | 安装约束 |
+| 入口 | 依赖 | 安装约束 |
 | --- | --- | --- |
-| Vite | `vite@8.3.1`、`vitest@5.0.2`、weapp-vite tarball | npm 正常 peer 校验 |
-| Vite+ | `vite-plus@1.0.0`、`vite` alias 到 `@voidzero-dev/vite-plus-core@1.0.0`、`vitest@5.0.1`、weapp-vite tarball | npm overrides 将全部 `vite` 指向同一 alias；探针使用 `--legacy-peer-deps` |
+| 独立 CLI | weapp-vite tarball、wevu；不显式安装 Vite / Vite+，不注册插件 | `npm install --strict-peer-deps` |
+| Vite | `vite@8.3.1`、`vitest@5.0.2`、weapp-vite tarball、wevu | `npm install --strict-peer-deps` |
+| Vite+ | `vite-plus@1.0.0`、`vite` alias 到 `@voidzero-dev/vite-plus-core@1.0.0`、`vitest@5.0.1`、weapp-vite tarball、wevu | `npm install --strict-peer-deps`，overrides 统一 `vite` alias |
 
-本次两个独立消费项目都用 `@swc/core@1.16.2` override 和 `npm install --ignore-scripts`。原因是可选 SWC 新版二进制下载超时；支持的 TS/Vue 路径不依赖 SWC。这是验证环境约束，不是新的产品依赖要求。Vite+ alias 的包版本为 1.0.0，与部分生态包要求的 Vite 8 peer 版本范围不同，因此不能把本次结果描述为 npm 严格 peer 安装已经通过。
+三个项目均同时安装本 PR 的 `rolldown-require` tarball，并通过 npm override 将间接依赖指向该待发布包。这用于验证联动发布后的依赖图，不是跳过 peer 校验；发布后依靠 changeset 更新依赖版本。未使用 `--legacy-peer-deps`、`--force`、`--ignore-scripts` 或 SWC override。npm 自身的默认 allow-scripts 策略仍提示部分可选依赖脚本待允许，不能把这些安装结果描述为所有可选原生后端的验收。
+
+独立 CLI 验证使用 `node packages/weapp-vite/scripts/verify-vite-host-consumer.mjs <独立临时消费目录> wv`；同一组原生 TS/Vue/分包 fixture 使用 `weapp-vite` 的 `defineConfig`，不注册 `weapp()`，执行 `wv build/prepare`。普通 Vite / Vite+ 额外检查测试宿主无副作用和配置类型。三入口开发能力尚未对齐，不能用本次生产验证替代 dev 验收。
 
 脚本检查发布 exports、宿主与编译器实际解析到同一个 Vite 文件、真实 `vp test`/Vitest 无输出副作用、异步配置类型、单次配置求值、TS/Vue/分包产物、`wv prepare/build`。同时探测 `dev`/`scan` 及 bundled-development 的 `getRolldownOptions`、`storeOutputFiles`、`listen`；该探针不代表 stateful HMR 已集成或通过运行时测试。
 
@@ -81,4 +84,4 @@ WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devto
 - Ubuntu、Windows、macOS 的新增 npm runtime suite 均在构建前因缺失 `.weapp-vite/tsconfig.app.json` 失败，本地已有支持文件掩盖了问题。新增干净受管 TypeScript fixture，先复现原生 Vite transform 失败，再将支持文件准备放到会话真实构建阶段；配置检查与测试加载仍不落盘。
 - 更新 5 个旧宏解析断言，显式核验调用携带所属编译上下文，不移除会话隔离。
 - 更新后的插件/会话 18 个测试、宏调用相关 101 个测试、包级 typecheck 和 scoped ESLint 通过。两个 runtime suite 的 3 个用例在 headless 与真实微信开发者工具再次通过。
-- 全新 npm 严格安装暴露发布版 `rolldown-require@2.0.33` 的精确 peer 要求为 Rolldown 1.2.10，与当前编译器 1.2.11 不符。其 peer 改为 `^1.2.10`，与开发 catalog 解耦，并添加联动发布 changeset。独立消费验证需要同时安装本 PR 的 `rolldown-require` tarball，不能继续使用旧发布包来代表修复后依赖图。
+- 全新 npm 严格安装暴露发布版 `rolldown-require@2.0.33` 的精确 peer 要求为 Rolldown 1.2.10，与当前编译器 1.2.11 不符。保持仓库单引擎 catalog 约束，通过联动发布 changeset 将适配包的发布 peer 同步为已经验证的 1.2.11。独立消费验证需要同时安装本 PR 的 `rolldown-require` tarball，不能继续使用旧发布包来代表修复后依赖图。
