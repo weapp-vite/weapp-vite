@@ -6,6 +6,7 @@ import path from 'pathe'
 import {
   resolveMainBuildDependencyPatterns,
   resolveNpmBuildCandidateDependenciesSync,
+  resolveNpmDistDirName,
   resolveTargetDependencies,
 } from '../runtime/npmPlugin/service/dependencies'
 
@@ -55,7 +56,7 @@ export async function prepareNpmAssets(ctx: CompilerContext): Promise<EmittedAss
       if (failure?.status === 'rejected') {
         throw failure.reason
       }
-      await collect(outDir, path.posix.join(target.root, 'miniprogram_npm'))
+      await collect(outDir, path.posix.join(target.root, resolveNpmDistDirName(ctx.configService)))
     }
     return assets
   }

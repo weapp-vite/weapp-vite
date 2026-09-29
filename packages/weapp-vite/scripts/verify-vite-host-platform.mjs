@@ -51,6 +51,8 @@ export default defineConfig({
     assert((await readFile(path.join(outDir, `pages/index/index.${styleExt}`), 'utf8')).includes('counter-panel'))
     assert((await readFile(path.join(outDir, 'pages/index/index.js'), 'utf8')).includes(platform))
     assert(await readFile(path.join(root, 'dist', platform, projectFile), 'utf8'))
+    const npmDirectory = platform === 'alipay' ? 'node_modules' : 'miniprogram_npm'
+    assert(await readFile(path.join(outDir, npmDirectory, '@weapp-core/constants/index.js'), 'utf8'))
     for (const operation of host === 'wv' ? ['dev'] : ['dev', 'build-watch']) {
       await execa(process.execPath, [path.join(repoRoot, 'packages/weapp-vite/scripts/verify-vite-host-dev.mjs'), root, host, operation, 'platform', platform], { cwd: repoRoot, stdio: 'inherit' })
     }

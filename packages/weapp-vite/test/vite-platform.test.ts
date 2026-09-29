@@ -54,11 +54,11 @@ async function fixture(platform: ReturnType<typeof getSupportedMiniProgramPlatfo
 it.each(getSupportedMiniProgramPlatforms())('builds %s selected by top-level config with native project metadata', async (platform) => {
   const { config, read, extensions } = await fixture(platform)
   await build(config)
-  expect(JSON.parse(await read('app.json')).pages).toEqual(['pages/home/index'])
+  expect((JSON.parse(await read('app.json')) as { pages: string[] }).pages).toEqual(['pages/home/index'])
   expect(await read('pages/home/index.js')).toContain('platform-host')
   expect(await read(`pages/home/index.${extensions.wxml}`)).toContain('{{message}}')
   expect(await read(`pages/home/index.${extensions.wxss}`)).toContain('red')
-  const project = JSON.parse(await read(getProjectPlatformOptions(platform).projectConfigFileName))
+  const project = JSON.parse(await read(getProjectPlatformOptions(platform).projectConfigFileName)) as Record<string, unknown>
   expect(project[platform === 'swan' ? 'smartProgramRoot' : 'miniprogramRoot']).toBe('.')
 }, 30_000)
 
@@ -88,8 +88,8 @@ async function directoryFixture() {
 it('publishes directory metadata beside the application through native writes', async () => {
   const { config, read, readProject } = await directoryFixture()
   await build(config)
-  expect(JSON.parse(await readProject('project.config.json')).miniprogramRoot).toBe('dist')
-  expect(JSON.parse(await readProject('project.private.config.json')).projectname).toBe('platform-fixture')
+  expect((JSON.parse(await readProject('project.config.json')) as { miniprogramRoot: string }).miniprogramRoot).toBe('dist')
+  expect((JSON.parse(await readProject('project.private.config.json')) as { projectname: string }).projectname).toBe('platform-fixture')
   expect(await read('app.js')).toContain('App')
 })
 
@@ -123,7 +123,7 @@ it('publishes directory metadata when stateful dev uses an in-memory application
   config.weapp!.hmr = { runtime: 'stateful-experimental' }
   const server = await createServer(config)
   try {
-    expect(JSON.parse(await readProject('project.config.json')).miniprogramRoot).toBe('dist')
+    expect((JSON.parse(await readProject('project.config.json')) as { miniprogramRoot: string }).miniprogramRoot).toBe('dist')
     await writeFile(path.join(root, 'src/pages/home/index.wxml'), '<view>stateful platform</view>')
     await expect.poll(() => read('pages/home/index.wxml'), { timeout: 15_000 }).toContain('stateful platform')
   }
@@ -141,4 +141,18 @@ it('returns inline platform metadata in memory without writing final outputs', a
   }
   expect(result.output.map(file => file.fileName)).toContain('mini.project.json')
   await expect(read('app.js')).rejects.toMatchObject({ code: 'ENOENT' })
+})
+
+it('uses the platform npm directory for Alipay native component assets', async () => {
+  const { root, config, read } = await fixture('alipay')
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'platform-consumer', type: 'module', dependencies: { 'mini-card': '1.0.0' } }))
+  const pkg = path.join(root, 'node_modules/mini-card')
+  await mkdir(path.join(pkg, 'miniprogram'), { recursive: true })
+  await writeFile(path.join(pkg, 'package.json'), JSON.stringify({ name: 'mini-card', version: '1.0.0', main: 'miniprogram/index.js', miniprogram: 'miniprogram' }))
+  for (const [extension, source] of Object.entries({ js: 'Component({})', json: '{"component":true}', wxml: '<view>npm platform</view>', wxss: 'view { color: green; }' })) {
+    await writeFile(path.join(pkg, `miniprogram/index.${extension}`), source)
+  }
+  await build(config)
+  expect(await read('node_modules/mini-card/index.axml')).toContain('npm platform')
+  expect((JSON.parse(await read('node_modules/mini-card/index.json')) as { component: boolean }).component).toBe(true)
 })

@@ -11,7 +11,9 @@
 
 ## 验证
 
-- 5 文件累计 179 项定向测试通过（首轮 177 项，平台新增 stateful/内存测试后该文件 17 项通过）。包含六平台原生编译与 classic、目录发布、watch 更新/删除、输出冲突保护、微信 stateful 与内存配置发布。
+额外修复宿主 npm 目录硬编码及旧 CLI 的四平台 npm 根目录漂移，默认依赖使用目标平台目录名并落到解析后的输出目录；独立消费同步断言 npm 文件路径。
+
+- 7 文件累计 205 项定向测试通过（基础 4 文件 162 项，平台及 npm 目录回归 3 文件 43 项）。包含六平台原生编译与 classic、目录发布、watch 更新/删除、输出冲突保护、微信 stateful 与内存配置发布。
 - 包级 typecheck、test:types、build、ESLint 与网站构建通过；suite manifest 32 项、共享 automator 147 文件检查通过。
 - 同一多平台 SFC 模板分别经 wv、vite、vite-plus 独立 tarball 严格 peer 安装；每入口六平台生产和 classic 通过，vite/vp 另通过生产 watch 更新及立即恢复，配置均仅执行一次。
 - 每入口微信 headless 与真实 IDE 各 1 场景通过：平台注入、SFC 组件首屏、点击后派生状态、页面重入；runtime error/exception 为 0。其他平台未宣称完成真实 IDE runtime 验收。
