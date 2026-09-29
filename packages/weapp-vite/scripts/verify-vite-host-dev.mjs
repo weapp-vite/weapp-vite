@@ -11,8 +11,10 @@ const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
 const profile = process.argv[5] ?? 'basic'
-assert(['basic', 'react', 'independent', 'worker', 'plugin', 'lib'].includes(profile))
+assert(['basic', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform'].includes(profile))
 assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
+const platform = process.argv[6] ?? 'weapp'
+const templateExt = { weapp: 'wxml', alipay: 'axml', tt: 'ttml', swan: 'swan', jd: 'jxml', xhs: 'xhsml' }[platform]
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 assert(consumer.private && consumer.name.startsWith('weapp-vite-host-'))
@@ -29,7 +31,7 @@ let exited = false
 const originals = new Map()
 const independentSource = 'src/subpackages/independent-wevu/pages/entry/index.vue'
 const independentOutput = 'subpackages/independent-wevu/pages/entry/index.wxml'
-for (const file of profile === 'lib' ? ['src/components/interactive-native/index.ts', 'src/components/interactive-vue/index.vue', 'vite.config.mts'] : profile === 'plugin' ? ['shared/shared-data.ts', 'plugin/plugin.json', 'vite.config.mts'] : profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : profile === 'worker' ? ['src/workers/messages/message.ts', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
+for (const file of profile === 'platform' ? ['src/pages/index/index.vue', 'vite.config.mts'] : profile === 'lib' ? ['src/components/interactive-native/index.ts', 'src/components/interactive-vue/index.vue', 'vite.config.mts'] : profile === 'plugin' ? ['shared/shared-data.ts', 'plugin/plugin.json', 'vite.config.mts'] : profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : profile === 'worker' ? ['src/workers/messages/message.ts', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
   originals.set(file, await readFile(path.join(root, file), 'utf8'))
 }
 if (operation === 'stateful-dev') {
@@ -97,7 +99,10 @@ async function waitForDevReady() {
 
 let shutdownFailed = false
 try {
-  if (profile === 'lib') {
+  if (profile === 'platform') {
+    await waitForOutput(`${platform}/dist/pages/index/index.${templateExt}`, 'platform-marker')
+  }
+  else if (profile === 'lib') {
     await waitForOutput('library/native/index.js', 'Native library')
     await waitForOutput('library/vue/index.wxml', 'Vue library')
   }
@@ -122,7 +127,18 @@ try {
   }
   await waitForWatchRound(1)
   await waitForDevReady()
-  if (profile === 'lib') {
+  if (profile === 'platform') {
+    const file = 'src/pages/index/index.vue'
+    await writeFile(path.join(root, file), originals.get(file).replace('SFC 响应式交互检查', 'Updated platform interaction'))
+    await waitForOutput(`${platform}/dist/pages/index/index.${templateExt}`, 'Updated platform interaction')
+    await waitForWatchRound(2)
+    await writeFile(path.join(root, file), originals.get(file))
+    await waitForOutput(`${platform}/dist/pages/index/index.${templateExt}`, 'SFC 响应式交互检查')
+    await waitForWatchRound(3)
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    console.log(`${toolchain}: ${platform} native ${operation} update and restore passed`)
+  }
+  else if (profile === 'lib') {
     const native = 'src/components/interactive-native/index.ts'
     const vue = 'src/components/interactive-vue/index.vue'
     await writeFile(path.join(root, native), originals.get(native).replace('Native library', 'Updated native library'))

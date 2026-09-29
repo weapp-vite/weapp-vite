@@ -6,12 +6,13 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
+import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
 
 const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
 const runtime = process.argv[3]
 const runtimeSuite = process.argv[4] ?? 'stateful'
-assert(['stateful', 'react', 'independent', 'worker', 'plugin', 'lib'].includes(runtimeSuite))
+assert(['stateful', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform'].includes(runtimeSuite))
 assert(runtime === undefined || ['headless', 'devtools', 'both'].includes(runtime))
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-host-install-'))
@@ -89,7 +90,10 @@ try {
     consumerRoot,
     ...(toolchain === 'wv' ? ['wv'] : []),
   ], { cwd: repoRoot, stdio: 'inherit' })
-  if (runtime) {
+  if (runtime && runtimeSuite === 'platform') {
+    await verifyPlatformConsumer(consumerRoot, toolchain, repoRoot, runtime)
+  }
+  else if (runtime) {
     assert(runtimeSuite !== 'stateful' || toolchain === 'vite-plus', 'stateful 独立 runtime 消费验证当前用于 Vite+；wv/vite 直接运行共享 fixture')
     const fixtureRoot = runtimeSuite === 'plugin' ? path.join(repoRoot, 'templates/weapp-vite-plugin-template') : path.join(repoRoot, 'e2e-apps', runtimeSuite === 'react' ? 'react-runtime-spike' : runtimeSuite === 'independent' ? 'wevu-subpackage-placement' : runtimeSuite === 'worker' ? 'chunk-modes' : runtimeSuite === 'lib' ? 'lib-mode' : 'stateful-hmr')
     await rm(path.join(consumerRoot, 'src'), { recursive: true, force: true })

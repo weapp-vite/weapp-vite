@@ -2,6 +2,7 @@ import type { MpPlatform, ProjectConfig } from '@/types'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { getProjectPlatformOptions } from '../platform'
+import { collectProjectConfigAssets, publishProjectConfigAssets } from './projectConfigOutput'
 
 interface ProjectConfigOptions {
   ignorePrivate?: boolean
@@ -117,6 +118,6 @@ export async function syncProjectConfigToOutput(options: {
     return
   }
 
-  await fs.ensureDir(syncDirs.outputRoot)
-  await fs.copy(syncDirs.sourceDir, syncDirs.outputRoot)
+  const assets = await collectProjectConfigAssets(syncDirs.sourceDir, syncDirs.outputRoot, options.outDir)
+  await publishProjectConfigAssets(syncDirs.outputRoot, assets)
 }

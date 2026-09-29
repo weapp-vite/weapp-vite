@@ -1377,6 +1377,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       const nativeBuildEvents = getStatefulBuildEvents()
       nativeBuildEvents.emitEvent({ code: 'START' })
       try {
+        await syncProjectConfigToOutput({
+          outDir: configService.outDir,
+          projectConfigPath: configService.projectConfigPath,
+          enabled: configService.multiPlatform.enabled,
+        })
         const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, appendHmrMetricsPlugin, ctx)
         const initialSnapshot = toStatefulHmrOutput(snapshot.output)
         const initialGlobalStyleRoutes = snapshot.getGlobalStyleRoutes()
@@ -2269,16 +2274,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       resetEmittedOutputCaches(ctx.runtimeState)
     }
     const pluginOnly = configService.pluginOnly
-    const isMultiPlatformEnabled = configService.multiPlatform.enabled
     const isLibMode = configService.weappLibConfig?.enabled
-    const projectConfigSyncTask = !isLibMode && !pluginOnly
-      ? syncProjectConfigToOutput({
-          outDir: configService.outDir,
-          projectConfigPath: configService.projectConfigPath,
-          projectPrivateConfigPath: configService.projectPrivateConfigPath,
-          enabled: isMultiPlatformEnabled,
-        })
-      : Promise.resolve()
     const shouldPreloadAppEntryForWorkers = (
       !configService.isDev
       && !isLibMode
@@ -2293,7 +2289,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
     const [result] = await waitForBuildTasks([
       runBuildTarget(pluginOnly ? 'plugin' : 'app'),
-      projectConfigSyncTask,
       npmBuildTask,
     ])
     if (configService.isDev && !pluginOnly && !isLibMode && configService.absolutePluginRoot) {

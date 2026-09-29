@@ -16,6 +16,7 @@ import { createLibDtsPlugin } from './libDts'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
 import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
 import { preflight } from './preflight'
+import { createProjectConfigDirectoryPlugin } from './projectConfig/directory'
 import { createReactPlugin, isReactEnabled } from './react'
 import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
@@ -109,7 +110,7 @@ export function vitePluginWeapp(
   }
   groups.push(css(ctx))
   if (!subPackageMeta && !libModeEnabled) {
-    groups.push([createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
+    groups.push([createProjectConfigDirectoryPlugin(ctx), createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
   }
   groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
   if (tailwindcssPlugins.length > 1) {

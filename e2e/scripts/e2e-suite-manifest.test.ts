@@ -32,6 +32,7 @@ describe('e2e suite manifest', () => {
     'ide/wevu-subpackage-placement.runtime.test.ts',
     'ide/worker-host.runtime.test.ts',
     'ide/lib-host.runtime.test.ts',
+    'ide/platform-host.runtime.test.ts',
     'ide/wevu-json-render.runtime.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
     const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)

@@ -31,6 +31,9 @@ export class WeappBuildSession extends CompilerSession {
       configured: service.weappViteConfig.hmr?.runtime,
       compileHotReLoad: service.projectPrivateConfig.setting?.compileHotReLoad,
     }).runtime === 'stateful-experimental') {
+      if (service.platform !== 'weapp') {
+        throw new Error('[weapp-vite] stateful-experimental 仅支持微信；其他平台请配置 hmr.runtime=classic。')
+      }
       this.statefulController = createStatefulHmrHostPlugins(this.context)
     }
     if (service.weappViteConfig.npm?.enable && (service.weappViteConfig.npm.buildOptions || service.projectConfig.setting?.packNpmManually)) {

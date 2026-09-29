@@ -10,6 +10,8 @@ on:
       - e2e/ide/react-runtime-spike.runtime.test.ts
       - e2e/ide/wevu-subpackage-placement.runtime.test.ts
       - e2e/ide/worker-host.runtime.test.ts
+      - e2e/ide/platform-host.runtime.test.ts
+      - 'templates/weapp-vite-multi-platform-sfc-template/**'
       - e2e/ide/lib-host.runtime.test.ts
       - 'e2e-apps/lib-mode/**'
       - e2e/ide/issue-963-plugin-es6.runtime.test.ts
@@ -156,5 +158,22 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless lib
       artifact_name: lib-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  platform-runtime:
+    name: Platform builds and runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless platform
+      artifact_name: platform-runtime-${{ matrix.host }}
       artifact_path: docs/reports/dom-acceptance/**
     secrets: inherit

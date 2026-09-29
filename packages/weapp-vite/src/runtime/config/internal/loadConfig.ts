@@ -263,6 +263,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       injectBuiltinAliases,
       resolvedLibConfig,
       cliPlatform,
+      explicitPlatform: Boolean(inlineConfig?.weapp?.platform ?? mergedLoadedConfig.weapp?.platform),
       projectConfigPath,
       cwd,
     })

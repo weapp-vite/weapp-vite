@@ -37,6 +37,7 @@ export function configureBuildAndPlugins(options: {
   injectBuiltinAliases: (config: InlineConfig, wevuRuntime?: WevuRuntimeAliasMode) => void
   resolvedLibConfig: LoadConfigResult['weappLib']
   cliPlatform?: string
+  explicitPlatform?: boolean
   projectConfigPath?: string
   cwd: string
 }) {
@@ -176,8 +177,8 @@ export function configureBuildAndPlugins(options: {
 
   const platform = config.weapp?.platform ?? DEFAULT_MP_PLATFORM
   const multiPlatform = resolveMultiPlatformConfig(config.weapp?.multiPlatform)
-  if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
-    throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
+  if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform && !options.explicitPlatform) {
+    throw new Error('已开启 weapp.multiPlatform，请通过 weapp.platform 或 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
   }
   if (multiPlatform.enabled && !isWebRuntime && !supportsMultiPlatformTarget(multiPlatform, platform)) {
     throw new Error(`当前平台 "${platform}" 不在 weapp.multiPlatform.targets 配置中，可选平台：${multiPlatform.targets.join(', ')}`)

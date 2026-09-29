@@ -46,9 +46,8 @@ export function weapp(): Plugin[] {
           }
           serveRequested = env.command === 'serve'
           const options = config.weapp
-          if ((options?.platform && options.platform !== 'weapp')
-            || options?.web || (options?.multiPlatform === true || (typeof options?.multiPlatform === 'object' && options.multiPlatform.enabled))) {
-            throw new Error('[weapp-vite] 标准插件 alpha 仅支持单目标微信应用；高级目标请使用 wv build。')
+          if (options?.web) {
+            throw new Error('[weapp-vite] 标准插件暂未开放 Web 目标。')
           }
           const userPlugins = configuredPlugins.filter(plugin => plugin !== coordinator && !slots.plugins.includes(plugin))
           const hostConfig = {

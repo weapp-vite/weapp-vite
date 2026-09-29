@@ -1,6 +1,6 @@
 # 标准 Vite 插件与 Vite+
 
-`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件、普通分包、独立分包、worker、微信插件双产物与 lib mode。主产物由宿主 Vite 的编译管线生成。
+`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持六平台单目标原生 JS/TS、Wevu Vue SFC 编译；微信另已验收 React、自动路由、自动组件、普通分包、独立分包、worker、微信插件双产物与 lib mode。主产物由宿主 Vite 的编译管线生成。
 
 ## 配置
 
@@ -52,7 +52,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 
 | 命令 | 当前行为 |
 | --- | --- |
-| `vite build` / `vp build` | 实验性微信生产构建 |
+| `vite build` / `vp build` | 实验性单目标小程序生产构建 |
 | `wv dev` / `wv build` | 保留原有能力；显式插件不会重复安装编译器 |
 | `vite dev` / `vp dev` | 实验性 classic / stateful 开发；由宿主管理启动、重启与关闭 |
 | `vite build --watch` / `vp build --watch` | 实验性生产 watch：完整目标产物、入口增删与失败恢复 |
@@ -61,7 +61,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | `vp preview` | Vite 的 Web 预览，不是小程序二维码预览 |
 | `vp pack` | 通用库打包，不替代小程序 lib mode |
 
-多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
+每次调用只编译一个小程序平台。Web 目标与 Web/小程序混合宿主仍待后续阶段开放。
 
 生产构建、build watch、classic 与实验性 stateful dev 已接入。任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。完整编译能力对齐继续由 #1097 追踪；高级目标限制是阶段边界。
 
@@ -134,3 +134,27 @@ classic、stateful 和生产 watch 不为 worker 额外启动构建 watcher。�
 生产 watch 追踪声明编译器发现的类型依赖，类型变更会重新生成声明。每轮声明编译使用独立 TypeScript 缓存，避免旧类型跨轮复用。classic `dev` 可用于组件库源码更新，开发模式沿用独立 CLI 不生成声明的规则；组件交互在消费它的小程序应用中验证。
 
 `vp pack` 继续使用通用库打包语义；小程序库的模板、样式、JSON 和专属声明仍通过 `weapp.lib` 构建。
+
+
+## 六平台目标选择
+
+三入口共用顶层 `weapp.platform`，可选择 `weapp`、`alipay`、`tt`、`swan`、`jd`、`xhs`。启用 `weapp.multiPlatform` 时也可通过该字段指定本次目标，独立 CLI 继续接受 `--platform`。普通 Vite/Vite+ 命令不接受 `wv` 专属的 `--platform` 参数；多目标使用不同配置文件或任务，并确保输出目录独立。
+
+```ts
+import { defineConfig } from 'vite'
+import { weapp } from 'weapp-vite/vite'
+
+export default defineConfig({
+  plugins: [weapp()],
+  weapp: {
+    platform: 'alipay',
+    srcRoot: 'src',
+    multiPlatform: true,
+    hmr: { runtime: 'classic' },
+  },
+})
+```
+
+目录式平台项目配置从 `config/<platform>/` 读取，默认发布到 `dist/<platform>/`，小程序产物位于其 `dist/` 子目录。项目配置同样通过配套原生引擎写出，生产 watch 更新并清理本会话已拥有的文件；拒绝覆盖小程序编译输出的配置目录内容。目录式配置暂不支持 `build.write: false`，内联 `multiPlatform.projectConfigs` 可随主 bundle 返回内存产物。配置目录中的符号链接尚未开放。
+
+原生 TS 和 Vue SFC 的六平台生产构建、classic 更新，以及普通 Vite/Vite+ 的生产 watch 使用同一消费矩阵。stateful 仅开放微信；其他平台明确使用 classic。微信运行时使用 headless 与真实 IDE 验收；其他平台的构建/增量检查不代表各自真实 IDE runtime 均已通过，高级能力仍按平台分别验收。

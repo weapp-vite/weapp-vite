@@ -322,7 +322,7 @@ describe('runtime config internal loadConfig', () => {
       inlineConfig: {},
       cliPlatform: undefined,
       configFile: '/project/vite.config.ts',
-    } as any)).rejects.toThrow('请通过 --platform 指定目标小程序平台')
+    } as any)).rejects.toThrow('请通过 weapp.platform 或 --platform 指定目标小程序平台')
   })
 
   it('throws when platform is outside configured multiPlatform targets', async () => {
