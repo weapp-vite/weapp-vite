@@ -6,5 +6,21 @@
   ],
   "window": {
     "navigationBarTitleText": "Stateful HMR"
+  },
+  "tabBar": {
+    "color": "#666666",
+    "selectedColor": "#000000",
+    "list": [
+      {
+        "pagePath": "pages/native/index",
+        "text": "Native",
+        "iconPath": "hmr-tabbar.png"
+      },
+      {
+        "pagePath": "pages/wevu/index",
+        "text": "Wevu",
+        "iconPath": "hmr-tabbar.png"
+      }
+    ]
   }
 }

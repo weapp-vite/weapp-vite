@@ -69,3 +69,23 @@ it('leaves relocated compiler configs intact when their outputs are outside the 
   await restore()
   expect(await fs.readFile(options.configPath, 'utf8')).toBe('{}')
 })
+
+it('keeps JSON-declared assets in the IDE index while delegating other assets', async () => {
+  const options = await fixture('{}')
+  await installIdeAssetWatch({ ...options, output: [
+    { type: 'asset', fileName: 'app.json', source: JSON.stringify({ tabBar: { list: [
+      { iconPath: 'icons/home.png', selectedIconPath: 'icons/home-active.png' },
+      { iconPath: '@tabIcon' },
+    ] } }) },
+    { type: 'asset', fileName: 'theme.json', source: JSON.stringify({ light: { tabIcon: 'icons/themed.png' } }) },
+    { type: 'asset', fileName: 'pages/index.json', source: JSON.stringify({ custom: 'icons/a+b.png' }) },
+  ] })
+  const config = await fs.readJSON(options.configPath) as { watchOptions: { ignore: string[] } }
+  const ignored = picomatch(config.watchOptions.ignore)
+  for (const file of ['dist/icons/home.png', 'dist/icons/home-active.png', 'dist/icons/themed.png', 'dist/icons/a+b.png']) {
+    expect(ignored(file), file).toBe(false)
+  }
+  for (const file of ['dist/resources/live.png', 'dist/public.png', 'dist/icons/other.svg']) {
+    expect(ignored(file), file).toBe(true)
+  }
+})

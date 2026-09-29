@@ -1426,6 +1426,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             configPath: privateConfigPath,
             outDir: configService.outDir,
             inheritedWatchOptions: configService.projectConfig?.watchOptions,
+            output: initialSnapshot,
           })
         }
         await configService.load(configService.loadOptions)

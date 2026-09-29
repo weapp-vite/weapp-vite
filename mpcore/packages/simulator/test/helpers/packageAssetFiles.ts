@@ -1,6 +1,12 @@
 export const packageAssetFiles: Array<[string, string]> = [
   ['project.config.json', JSON.stringify({ miniprogramRoot: 'dist' })],
-  ['dist/app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+  ['dist/app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/second/index'], tabBar: { list: [
+    { pagePath: 'pages/index/index', text: 'First', iconPath: 'tabbar.png' },
+    { pagePath: 'pages/second/index', text: 'Second', iconPath: 'tabbar.png' },
+  ] } })],
+  ['dist/tabbar.png', 'tabbar-icon'],
+  ['dist/pages/second/index.js', 'Page({})'],
+  ['dist/pages/second/index.wxml', '<view>Second</view>'],
   ['dist/app.js', 'App({})'],
   ['dist/pages/index/index.js', `Page({
     data: { content: '', count: 2 },

@@ -1,3 +1,5 @@
+import type { StatefulHmrOutputFile } from './outputWriter'
+import { Buffer } from 'node:buffer'
 import { isDeepStrictEqual } from 'node:util'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -21,6 +23,31 @@ interface WatchLease {
 
 function leasePath(configPath: string) {
   return path.join(path.dirname(configPath), '.weapp-vite', 'ide-asset-watch.json')
+}
+
+/** IDE 会用监听索引校验 JSON 声明的资源，保守保留这些文件名及主题配置中的资源。 */
+function assetPattern(output: StatefulHmrOutputFile[]) {
+  const names = new Set<string>()
+  const collect = (value: unknown): void => {
+    if (typeof value === 'string' && !value.includes(':')) {
+      const extension = path.extname(value)
+      if (defaultAssetExtensions.includes(extension.slice(1))) {
+        names.add(path.basename(value, extension).replace(/[\\*?[\]{}()!+@|.]/g, '\\$&'))
+      }
+    }
+    else if (value && typeof value === 'object') {
+      for (const child of Object.values(value)) {
+        collect(child)
+      }
+    }
+  }
+  for (const file of output) {
+    if (file.type === 'asset' && file.fileName.endsWith('.json')) {
+      collect(JSON.parse(typeof file.source === 'string' ? file.source : Buffer.from(file.source).toString('utf8')))
+    }
+  }
+  const basename = names.size ? `!(${[...names].sort().join('|')})` : '*'
+  return `**/${basename}.{${defaultAssetExtensions.join(',')}}`
 }
 
 /** 恢复开发期间临时接管的资产监听；保留用户在会话内修改的其他配置。 */
@@ -64,6 +91,7 @@ export async function installIdeAssetWatch(options: {
   configPath: string
   outDir: string
   inheritedWatchOptions?: WatchConfig
+  output?: StatefulHmrOutputFile[]
 }): Promise<() => Promise<void>> {
   const { configPath, outDir } = options
   await restoreIdeAssetWatch(configPath)
@@ -82,7 +110,7 @@ export async function installIdeAssetWatch(options: {
   const config: PrivateConfig = original === null ? {} : JSON.parse(original)
   const previous = config.watchOptions?.ignore ?? []
   const inherited = config.watchOptions ? [] : options.inheritedWatchOptions?.ignore ?? []
-  const pattern = path.posix.join(relative, `**/*.{${defaultAssetExtensions.join(',')}}`)
+  const pattern = `${relative ? `${relative}/` : ''}${assetPattern(options.output ?? [])}`
   const added = [...new Set([...inherited, pattern])].filter(rule => !previous.includes(rule))
   config.watchOptions = {
     ...(config.watchOptions ?? options.inheritedWatchOptions),

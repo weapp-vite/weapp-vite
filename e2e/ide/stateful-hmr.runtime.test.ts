@@ -269,6 +269,7 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       reject: false,
     })
     await devProcess.waitFor(waitForStatefulHmrControl(CONTROL_FILE), 'stateful HMR control ready')
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'hmr-tabbar.png'))).toBe(true)
 
     miniProgram = await launchAutomator({
       async configureHeadlessSession(session) {
