@@ -88,6 +88,20 @@ describe.each(['node', 'browser'] as const)('%s Vue child stateful HMR', (provid
       tapChild()
       await check(2, 9, 'step:1', 'STATEFUL-VUE-BASE')
       expect(detached.data.storeCount).toBe(detachedCount)
+
+      page.patchChild()
+      await page.reLaunch()
+      const nextPage = session.getCurrentPages().at(-1)!
+      await nextPage.flush()
+      const freshDocument = parseDocument(session.renderCurrentPage().wxml)
+      const freshText = (selector: string) => textContent(selectOne(selector, freshDocument.children)!)
+      expect(nextPage).not.toBe(page)
+      expect(nextPage.selectComponent!('#vue-counter')).not.toBe(child)
+      expect(freshText('.parent-count')).toBe('0')
+      expect(freshText('.child-count')).toBe('0')
+      expect(freshText('.child-store-count')).toBe('9')
+      expect(freshText('.child-result')).toBe('ready')
+      expect(freshText('.child-marker')).toBe('STATEFUL-VUE-PATCHED')
     }
     finally {
       session.close()

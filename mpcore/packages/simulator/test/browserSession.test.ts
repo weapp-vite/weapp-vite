@@ -5,7 +5,238 @@ import {
 } from '../src/browser'
 
 describe('BrowserHeadlessSession', () => {
-  it('commits the tab stack before running switchTab success', () => {
+  it.each(['reLaunch', 'redirectTo', 'navigateBack'] as const)('preserves the open page stack and component state when %s onUnload throws', (method) => {
+    const unloadError = new Error('navigation unload failed')
+    const lifecycle: string[] = []
+    let shouldThrow = true
+    const session = createBrowserHeadlessSession({
+      globals: {
+        unloadError,
+        shouldFailUnload: () => shouldThrow,
+        record: (event: string) => lifecycle.push(event),
+      },
+      files: createBrowserVirtualFiles([
+        ['app.json', JSON.stringify({ pages: ['pages/home/index', 'pages/detail/index', 'pages/target/index'] })],
+        ['app.js', 'App({})'],
+        ['pages/home/index.json', JSON.stringify({ usingComponents: { child: '/components/child' } })],
+        ['pages/home/index.js', 'Page({ onUnload() { record("home:unload") } })'],
+        ['pages/home/index.wxml', '<child id="home-child" />'],
+        ['pages/detail/index.json', JSON.stringify({ usingComponents: { child: '/components/child' } })],
+        ['pages/detail/index.js', `Page({
+          onUnload() {
+            record('detail:unload')
+            if (shouldFailUnload()) throw unloadError
+          },
+        })`],
+        ['pages/detail/index.wxml', '<child id="detail-child" />'],
+        ['components/child.json', JSON.stringify({ component: true })],
+        ['components/child.js', `Component({
+          data: { value: 'initial' },
+          lifetimes: { detached() { record('child:detached') } },
+        })`],
+        ['components/child.wxml', '<view>{{value}}</view>'],
+        ['pages/target/index.js', 'Page({ onLoad() { record("target:load") } })'],
+        ['pages/target/index.wxml', '<view>target</view>'],
+      ]),
+    })
+    try {
+      const home = session.reLaunch('/pages/home/index')
+      const homeChild = home.selectComponent?.('#home-child')
+      homeChild.setData({ value: 'home-preserved' })
+      const detail = session.navigateTo('/pages/detail/index')
+      const detailChild = detail.selectComponent?.('#detail-child')
+      detailChild.setData({ value: 'detail-preserved' })
+      let failure: unknown
+      try {
+        if (method === 'navigateBack') {
+          session.navigateBack()
+        }
+        else {
+          session[method]('/pages/target/index')
+        }
+      }
+      catch (error) {
+        failure = error
+      }
+      expect(failure).toBe(unloadError)
+      expect(session.isClosed).toBe(false)
+      const pages = session.getCurrentPages()
+      expect(pages.map(page => page.route)).toEqual(['pages/home/index', 'pages/detail/index'])
+      expect(pages[0]).toBe(home)
+      expect(pages[1]).toBe(detail)
+      session.renderCurrentPage()
+      expect(detail.selectComponent?.('#detail-child')).toBe(detailChild)
+      expect(detailChild.data.value).toBe('detail-preserved')
+      expect(lifecycle).toEqual(['detail:unload'])
+
+      shouldThrow = false
+      expect(session.navigateBack()).toBe(home)
+      expect(home.selectComponent?.('#home-child')).toBe(homeChild)
+      expect(homeChild.data.value).toBe('home-preserved')
+    }
+    finally {
+      shouldThrow = false
+      session.close()
+    }
+  })
+
+  it('detaches every component and unlinks relations when the first detached throws during close', async () => {
+    const detachedError = new Error('parent detached failed')
+    const laterError = new Error('child detached failed')
+    const detached: string[] = []
+    const subscriptions = new Set<string>()
+    const targetLoaded = vi.fn()
+    const navigated = vi.fn()
+    const session = createBrowserHeadlessSession({
+      globals: {
+        detachedError,
+        laterError,
+        targetLoaded,
+        navigated,
+        subscribe: (label: string) => subscriptions.add(label),
+        release: (label: string) => {
+          detached.push(label)
+          subscriptions.delete(label)
+        },
+      },
+      files: createBrowserVirtualFiles([
+        ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/target/index'] })],
+        ['app.js', 'App({})'],
+        ['pages/index/index.json', JSON.stringify({
+          usingComponents: { 'relation-parent': '/components/parent', 'relation-child': '/components/child' },
+        })],
+        ['pages/index/index.js', `Page({
+          queueNavigation() { wx.navigateTo({ url: '/pages/target/index', success: navigated }) },
+        })`],
+        ['pages/index/index.wxml', '<relation-parent id="parent"><relation-child id="child" /></relation-parent>'],
+        ['components/parent.json', JSON.stringify({ component: true })],
+        ['components/parent.js', `Component({
+          relations: { './child': { type: 'descendant' } },
+          lifetimes: {
+            attached() { subscribe('parent') },
+            detached() { release('parent'); throw detachedError },
+          },
+        })`],
+        ['components/parent.wxml', '<view><slot /></view>'],
+        ['components/child.json', JSON.stringify({ component: true })],
+        ['components/child.js', `Component({
+          relations: { './parent': { type: 'ancestor' } },
+          lifetimes: {
+            attached() { subscribe('child') },
+            detached() { release('child'); throw laterError },
+          },
+        })`],
+        ['components/child.wxml', '<view>child</view>'],
+        ['pages/target/index.js', 'Page({ onLoad() { targetLoaded() } })'],
+        ['pages/target/index.wxml', '<view>target</view>'],
+      ]),
+    })
+    try {
+      vi.useFakeTimers({ toFake: ['queueMicrotask', 'setTimeout', 'clearTimeout'] })
+      const page = session.reLaunch('/pages/index/index')
+      const parent = page.selectComponent?.('#parent')
+      const child = page.selectComponent?.('#child')
+      expect(parent.getRelationNodes('./child')).toEqual([child])
+      expect(child.getRelationNodes('./parent')).toEqual([parent])
+      expect([...subscriptions]).toEqual(['parent', 'child'])
+      page.queueNavigation()
+      vi.runAllTicks()
+      let failure: unknown
+      try {
+        session.close()
+      }
+      catch (error) {
+        failure = error
+      }
+      expect(failure).toBe(detachedError)
+      expect(session.isClosed).toBe(true)
+      expect(() => session.getCurrentPages()).toThrow(/closed/i)
+      expect(detached).toEqual(['parent', 'child'])
+      expect([...subscriptions]).toEqual([])
+      expect(parent.getRelationNodes('./child')).toEqual([])
+      expect(child.getRelationNodes('./parent')).toEqual([])
+      await vi.runAllTimersAsync()
+      expect(targetLoaded).not.toHaveBeenCalled()
+      expect(navigated).not.toHaveBeenCalled()
+      session.close()
+      expect(detached).toEqual(['parent', 'child'])
+    }
+    finally {
+      try {
+        session.close()
+      }
+      finally {
+        vi.useRealTimers()
+      }
+    }
+  })
+
+  it('cleans up after a throwing onUnload without running old navigation or unloading twice', async () => {
+    const unloadError = new Error('browser page unload failed')
+    const homeUnloaded = vi.fn()
+    const detailUnloaded = vi.fn()
+    const detached = vi.fn()
+    const targetLoaded = vi.fn()
+    const session = createBrowserHeadlessSession({
+      globals: { unloadError, homeUnloaded, detailUnloaded, detached, targetLoaded },
+      files: createBrowserVirtualFiles([
+        ['app.json', JSON.stringify({ pages: ['pages/home/index', 'pages/detail/index', 'pages/target/index'] })],
+        ['app.js', 'App({})'],
+        ['pages/home/index.js', 'Page({ onUnload() { homeUnloaded() } })'],
+        ['pages/home/index.wxml', '<view>home</view>'],
+        ['pages/detail/index.json', JSON.stringify({ usingComponents: { child: '/components/child/index' } })],
+        ['pages/detail/index.js', `Page({
+          queueNavigation() { wx.navigateTo({ url: '/pages/target/index' }) },
+          onUnload() {
+            this.setData({ unloaded: true })
+            detailUnloaded()
+            throw unloadError
+          },
+        })`],
+        ['pages/detail/index.wxml', '<child />'],
+        ['components/child/index.json', JSON.stringify({ component: true })],
+        ['components/child/index.js', 'Component({ lifetimes: { detached() { detached() } } })'],
+        ['components/child/index.wxml', '<view>child</view>'],
+        ['pages/target/index.js', 'Page({ onLoad() { targetLoaded() } })'],
+        ['pages/target/index.wxml', '<view>target</view>'],
+      ]),
+    })
+    try {
+      vi.useFakeTimers({ toFake: ['queueMicrotask', 'setTimeout', 'clearTimeout'] })
+      session.reLaunch('/pages/home/index')
+      const detail = session.navigateTo('/pages/detail/index')
+      session.renderCurrentPage()
+      detail.queueNavigation()
+      vi.runAllTicks()
+      let failure: unknown
+      try {
+        session.close()
+      }
+      catch (error) {
+        failure = error
+      }
+      expect(failure).toBe(unloadError)
+      expect(session.isClosed).toBe(true)
+      expect(() => session.getCurrentPages()).toThrow(/closed/i)
+      expect(detail.data.unloaded).toBe(true)
+      await vi.runAllTimersAsync()
+      expect(targetLoaded).not.toHaveBeenCalled()
+      session.close()
+      expect(homeUnloaded).toHaveBeenCalledTimes(1)
+      expect(detailUnloaded).toHaveBeenCalledTimes(1)
+      expect(detached).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      try {
+        session.close()
+      }
+      finally {
+        vi.useRealTimers()
+      }
+    }
+  })
+
+  it('commits the tab stack before running switchTab success', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({
         pages: ['pages/home/index', 'pages/profile/index'],
@@ -20,16 +251,22 @@ describe('BrowserHeadlessSession', () => {
 Page({
   data: { callbackRoute: '', completed: false, unloaded: false, unloadedBeforeSuccess: false },
   openProfile() {
-    wx.switchTab({
-      url: '/pages/profile/index',
-      success: () => {
-        const pages = getCurrentPages()
-        this.setData({
-          callbackRoute: pages[pages.length - 1].route,
-          unloadedBeforeSuccess: this.data.unloaded,
-        })
-      },
-      complete: () => this.setData({ completed: true }),
+    return new Promise((resolve, reject) => {
+      wx.switchTab({
+        url: '/pages/profile/index',
+        success: () => {
+          const pages = getCurrentPages()
+          this.setData({
+            callbackRoute: pages[pages.length - 1].route,
+            unloadedBeforeSuccess: this.data.unloaded,
+          })
+        },
+        fail: reject,
+        complete: () => {
+          this.setData({ completed: true })
+          resolve()
+        },
+      })
     })
   },
   onUnload() {
@@ -44,7 +281,7 @@ Page({
     const session = createBrowserHeadlessSession({ files })
     const homePage = session.reLaunch('/pages/home/index')
 
-    homePage.openProfile()
+    await homePage.openProfile()
 
     expect(homePage.data).toMatchObject({
       callbackRoute: 'pages/profile/index',
@@ -164,7 +401,7 @@ exports.named = 'async-named'
     })
   })
 
-  it('loads local plugin exports, public components, and pages', () => {
+  it('loads local plugin exports, public components, and pages', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({
         pages: ['pages/index/index'],
@@ -183,7 +420,9 @@ const plugin = requirePlugin('hello')
 Page({
   data: { answer: plugin.answer },
   openPluginPage() {
-    wx.navigateTo({ url: 'plugin://hello/hello-page' })
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({ url: 'plugin://hello/hello-page', success: resolve, fail: reject })
+    })
   },
 })
 `],
@@ -206,7 +445,7 @@ Page({
 
     expect(page.data.answer).toBe(42)
     expect(session.renderCurrentPage().wxml).toContain('id="plugin-card"')
-    page.openPluginPage()
+    await page.openPluginPage()
     expect(session.getCurrentPages().at(-1)?.route).toBe('plugin-private://wxpluginprovider/pages/hello/index')
     expect(session.renderCurrentPage().wxml).toContain('plugin page')
   })
@@ -318,7 +557,7 @@ Component({
     })
   })
 
-  it('runs built output from virtual files and renders wxml in browser runtime', () => {
+  it('runs built output from virtual files and renders wxml in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index', 'pages/detail/index'] })],
       ['app.js', 'App({ globalData: { boot: true } })'],
@@ -328,8 +567,12 @@ Page({
     title: 'Browser demo',
   },
   goDetail() {
-    wx.navigateTo({
-      url: '/pages/detail/index?from=index',
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/detail/index?from=index',
+        success: resolve,
+        fail: reject,
+      })
     })
   },
 })
@@ -355,7 +598,7 @@ Page({
     expect(indexPage.route).toBe('pages/index/index')
     expect(session.getApp()?.globalData.boot).toBe(true)
 
-    indexPage.goDetail()
+    await indexPage.goDetail()
 
     expect(session.renderCurrentPage().wxml).toContain('Detail')
     expect(session.renderCurrentPage().wxml).toContain('index')
@@ -442,7 +685,9 @@ Component({
       this.setData({ snapshot: this.data.lifecycleLog.join('|') })
     },
     openNext() {
-      wx.navigateTo({ url: '/pages/next/index' })
+      return new Promise((resolve, reject) => {
+        wx.navigateTo({ url: '/pages/next/index', success: resolve, fail: reject })
+      })
     },
   },
 })
@@ -457,7 +702,7 @@ Component({
     await vi.waitFor(() => expect(page.data.lifecycleLog).toContain('ready'))
     session.triggerRouteDone({ from: 'browser' })
     session.triggerResize({ size: { windowWidth: 412 } })
-    page.openNext()
+    await page.openNext()
     session.navigateBack()
     page.snapshot()
 
@@ -2279,7 +2524,7 @@ Page({
     expect(page.data.locationSupported).toBe(true)
   })
 
-  it('supports navigation bar title, color and loading state defaults in browser runtime', () => {
+  it('supports navigation bar title, color and loading state defaults in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({
         pages: ['pages/index/index', 'pages/detail/index'],
@@ -2354,8 +2599,12 @@ Page({
     })
   },
   goDetail() {
-    wx.navigateTo({
-      url: '/pages/detail/index'
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/detail/index',
+        success: resolve,
+        fail: reject,
+      })
     })
   }
 })
@@ -2407,7 +2656,7 @@ Page({
       'hide-loading:complete:hideNavigationBarLoading:ok',
     ])
 
-    page.goDetail()
+    await page.goDetail()
     expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Shell')
     expect(session.getCurrentPageNavigationBar()).toEqual({
       animation: null,
@@ -2747,7 +2996,7 @@ Page({
     ])
   })
 
-  it('supports background text style and color defaults and updates in browser runtime', () => {
+  it('supports background text style and color defaults and updates in browser runtime', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({
         pages: ['pages/index/index', 'pages/detail/index'],
@@ -2799,8 +3048,12 @@ Page({
     })
   },
   goDetail() {
-    wx.navigateTo({
-      url: '/pages/detail/index'
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/detail/index',
+        success: resolve,
+        fail: reject,
+      })
     })
   }
 })
@@ -2845,7 +3098,7 @@ Page({
       'invalid:complete:none',
     ])
 
-    page.goDetail()
+    await page.goDetail()
     expect(session.getCurrentPageBackground()).toEqual({
       backgroundColor: '#fefefe',
       backgroundColorBottom: '#eeeeee',
@@ -3681,7 +3934,7 @@ Component({
     expect(page?.data.result).toBe('methods')
   })
 
-  it('supports top-level component lifecycle hooks without lifetimes wrapper', () => {
+  it('supports top-level component lifecycle hooks without lifetimes wrapper', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/a/index', 'pages/b/index'] })],
       ['app.js', 'App({})'],
@@ -3690,7 +3943,15 @@ Component({
           'status-card': '../../components/status-card/index',
         },
       })],
-      ['pages/a/index.js', 'Page({ openB() { wx.reLaunch({ url: "/pages/b/index" }) } })'],
+      ['pages/a/index.js', `
+Page({
+  openB() {
+    return new Promise((resolve, reject) => {
+      wx.reLaunch({ url: '/pages/b/index', success: resolve, fail: reject })
+    })
+  },
+})
+`],
       ['pages/a/index.wxml', '<status-card /><view bindtap="openB">next</view>'],
       ['pages/b/index.js', 'Page({})'],
       ['pages/b/index.wxml', '<view>B</view>'],
@@ -3737,7 +3998,7 @@ Component({
     const componentScopeId = scopes.find(scopeId => scopeId.includes('status-card'))
     expect(componentScopeId).toBeTruthy()
 
-    pageA.openB()
+    await pageA.openB()
     const componentScope = session.getScopeSnapshot(componentScopeId!)
     expect(componentScope).toBeNull()
   })
@@ -3979,7 +4240,7 @@ Component({
     expect(page.data.summary).toContain('"secondOwner":"default"')
   })
 
-  it('runs component pageLifetimes on page show hide and resize', () => {
+  it('runs component pageLifetimes on page show hide and resize', async () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/a/index', 'pages/b/index'] })],
       ['app.js', 'App({})'],
@@ -3988,7 +4249,15 @@ Component({
           'status-card': '../../components/status-card/index',
         },
       })],
-      ['pages/a/index.js', 'Page({ openB() { wx.navigateTo({ url: "/pages/b/index" }) } })'],
+      ['pages/a/index.js', `
+Page({
+  openB() {
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({ url: '/pages/b/index', success: resolve, fail: reject })
+    })
+  },
+})
+`],
       ['pages/a/index.wxml', '<status-card mode="{{\'A\'}}" /><view bindtap="openB">next</view>'],
       ['pages/b/index.js', 'Page({})'],
       ['pages/b/index.wxml', '<view>B</view>'],
@@ -4042,7 +4311,7 @@ Component({
     rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('resize:375')
 
-    pageA.openB()
+    await pageA.openB()
     const componentScope = session.getScopeSnapshot(componentScopeId!)
     expect(componentScope?.data.lifecycleLog).toEqual(['show', 'resize:375', 'hide'])
   })
