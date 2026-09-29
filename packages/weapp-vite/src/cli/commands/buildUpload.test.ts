@@ -19,7 +19,30 @@ const state = vi.hoisted(() => ({
   prepare: vi.fn(),
   execute: vi.fn(),
 }))
-vi.mock('../../createContext', () => ({ createCompilerContext: state.createContext }))
+vi.mock('../../runtime/compilerSession', () => ({
+  CompilerSession: class {
+    context: any
+    cleanup: Array<() => Promise<void>> = []
+    onClose(cleanup: () => Promise<void>) {
+      this.cleanup.push(cleanup)
+    }
+
+    async initialize(options: unknown) {
+      this.context = await state.createContext(options)
+      return this.context
+    }
+
+    run(operation: () => Promise<unknown>) {
+      return operation()
+    }
+
+    async close() {
+      for (const cleanup of this.cleanup.toReversed()) {
+        await cleanup()
+      }
+    }
+  },
+}))
 vi.mock('../upload/index', async importOriginal => ({
   ...await importOriginal<typeof UploadModule>(),
   prepareUpload: state.prepare,

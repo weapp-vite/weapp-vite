@@ -456,6 +456,53 @@ async function waitForMockCalls(mock: { mock: { calls: unknown[] } }, count: num
 }
 
 describe('runtime buildPlugin service', () => {
+  it('waits for npm output work before propagating a failed production build', async () => {
+    const ctx = createMockContext()
+    ctx.configService.isDev = false
+    let finishNpm!: () => void
+    const pendingNpm = new Promise<void>((resolve) => {
+      finishNpm = resolve
+    })
+    ctx.npmService.build.mockReturnValue(pendingNpm)
+    const error = new Error('main build failed')
+    buildMock.mockRejectedValue(error)
+    const service = createBuildService(ctx)
+    let settled = false
+    const result = service.build().finally(() => {
+      settled = true
+    })
+    const rejected = expect(result).rejects.toBe(error)
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(ctx.npmService.build).toHaveBeenCalledOnce()
+    expect(settled).toBe(false)
+    finishNpm()
+    await rejected
+    expect(settled).toBe(true)
+  })
+
+  it('waits for a sibling worker build before propagating the main build error', async () => {
+    const ctx = createMockContext()
+    ctx.configService.isDev = false
+    checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: 'workers' })
+    let finishWorker!: () => void
+    const pendingWorker = new Promise<void>((resolve) => {
+      finishWorker = resolve
+    })
+    buildWorkersMock.mockReturnValueOnce(pendingWorker)
+    const error = new Error('main build failed')
+    buildMock.mockRejectedValue(error)
+    let settled = false
+    const result = createBuildService(ctx).build({ skipNpm: true }).finally(() => {
+      settled = true
+    })
+    const rejected = expect(result).rejects.toBe(error)
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(buildWorkersMock).toHaveBeenCalledOnce()
+    expect(settled).toBe(false)
+    finishWorker()
+    await rejected
+  })
+
   beforeEach(() => {
     devBuildWatcherQueue.length = 0
     vi.clearAllMocks()

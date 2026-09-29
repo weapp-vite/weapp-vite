@@ -40,6 +40,7 @@ import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { getWxmlWatchFiles, isWxmlDependency, observeWxmlDependencies } from '../../wxml/processing/dependencies'
+import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -2182,7 +2183,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ),
     )
     const workerPromise = target === 'app' && hasWorkersDir ? buildWorkers(configService) : Promise.resolve()
-    const [output] = await Promise.all([bundlerPromise, workerPromise])
+    const [output] = await waitForBuildTasks([bundlerPromise, workerPromise])
 
     debug?.(`[${target}] prod build end`)
     return output as RolldownOutput | RolldownOutput[]
@@ -2340,12 +2341,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     debug?.('build start')
     const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
-    const result = await runBuildTarget(pluginOnly ? 'plugin' : 'app')
-    if (shouldEmitLibDts) {
-      await generateLibDts(configService)
-    }
-    await projectConfigSyncTask
-    await npmBuildTask
+    const [result] = await waitForBuildTasks([
+      (async () => {
+        const output = await runBuildTarget(pluginOnly ? 'plugin' : 'app')
+        if (shouldEmitLibDts) {
+          await generateLibDts(configService)
+        }
+        return output
+      })(),
+      projectConfigSyncTask,
+      npmBuildTask,
+    ])
     if (!pluginOnly && !isLibMode && configService.absolutePluginRoot) {
       await runIsolatedPluginBuild(options)
     }
