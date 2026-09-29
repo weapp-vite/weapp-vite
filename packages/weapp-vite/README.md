@@ -16,7 +16,7 @@
 
 ## 普通 Vite 与 Vite+
 
-独立项目继续使用 `wv dev/build`，不需要注册插件或安装 Vite+。采用普通 Vite / Vite+ 时，在顶层 `weapp` 配置旁注册 `weapp-vite/vite` 的 `weapp()`，使用原生 `vite dev/build` / `vp dev/build`。当前插件开放微信 TS/Vue 生产构建、原生 `build --watch` 与实验性 classic/stateful 开发；通过 `weapp.hmr.runtime` 选择模式，高级目标仍在分阶段对齐。Vite+ 需要配套 core alias 与依赖覆盖，详见[标准插件指南](https://vite.weapp.dev/guide/vite-plugin.html)。
+独立项目继续使用 `wv dev/build`，不需要注册插件或安装 Vite+。采用普通 Vite / Vite+ 时，在顶层 `weapp` 配置旁注册 `weapp-vite/vite` 的 `weapp()`，使用原生 `vite dev/build` / `vp dev/build`。当前插件开放微信 TS/Vue/React 生产构建、原生 `build --watch` 与实验性 classic/stateful 开发；通过 `weapp.hmr.runtime` 选择模式，高级目标仍在分阶段对齐。Vite+ 需要配套 core alias 与依赖覆盖，详见[标准插件指南](https://vite.weapp.dev/guide/vite-plugin.html)。
 
 ## 使用文档地址: [vite.weapp.dev](https://vite.weapp.dev)
 
@@ -547,4 +547,4 @@ const artifact = await buildTestArtifact({ cwd: process.cwd() })
 
 ## 实验性标准 Vite 插件
 
-`weapp-vite/vite` 导出 `weapp()`，通过 `plugins: [weapp()]` 和顶层 `weapp` 配置接入原生 `vite build` / `vp build`。当前仅开放单目标微信生产构建；开发继续使用 `wv dev`。配置、Vite+ alias 与未开放能力见 [标准插件指南](https://vite.weapp.dev/guide/vite-plugin)。离线说明随包发布在 `dist/docs/vite-plugin.md`。
+`weapp-vite/vite` 导出 `weapp()`，通过 `plugins: [weapp()]` 和顶层 `weapp` 配置接入原生 `vite build` / `vp build`。当前开放微信 TS/Vue/React 生产构建、原生 build watch 与实验性 classic/stateful 开发；高级目标继续分阶段对齐。配置、Vite+ alias 与未开放能力见 [标准插件指南](https://vite.weapp.dev/guide/vite-plugin)。离线说明随包发布在 `dist/docs/vite-plugin.md`。

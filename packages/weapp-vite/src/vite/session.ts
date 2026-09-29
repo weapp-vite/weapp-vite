@@ -1,7 +1,6 @@
 import type { EmittedAsset } from 'rolldown'
 import type { InlineConfig, ViteDevServer } from 'vite'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
-import { isReactEnabled } from '../plugins/react'
 import { CompilerSession } from '../runtime/compilerSession'
 import { resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
@@ -25,9 +24,6 @@ export class WeappBuildSession extends CompilerSession {
       syncSupportFiles: false,
       preloadAppEntry: false,
     })
-    if (isReactEnabled(this.context)) {
-      throw new Error('[weapp-vite] 标准插件 alpha 尚不支持 React，请使用 wv build。')
-    }
     const service = this.context.configService
     if (isDev && resolveHmrRuntimeDecision({
       platform: service.platform,

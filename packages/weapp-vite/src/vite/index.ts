@@ -4,6 +4,7 @@ import process from 'node:process'
 import path from 'pathe'
 import { isWeappViteHost } from '../pluginHost'
 import { createSessionEnvironmentPlugin } from './environment'
+import { bindHostLifecycle } from './lifecycle'
 import { resolvePlugins } from './options'
 import { createPluginSlots } from './slots'
 import '../config'
@@ -100,21 +101,7 @@ export function weapp(): Plugin[] {
           return result
         }
       }
-      const restart = server.restart.bind(server)
-      server.restart = async (force) => {
-        // Vite 先创建新服务器再关闭旧服务器；先等待旧产物任务，避免两个会话并发写同一目录。
-        await active.close()
-        await restart(force)
-      }
-      const close = server.close.bind(server)
-      server.close = async () => {
-        try {
-          await active.close()
-        }
-        finally {
-          await close()
-        }
-      }
+      bindHostLifecycle(server, () => active.close())
       try {
         await active.startDev(server)
       }

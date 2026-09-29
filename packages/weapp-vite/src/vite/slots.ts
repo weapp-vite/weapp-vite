@@ -14,6 +14,7 @@ const descriptors: Array<[string, Plugin['enforce']?]> = [
   ['weapp-vite:preflight', 'pre'],
   ['weapp-vite:set-env', 'pre'],
   ['weapp-vite:uni-app-compatibility', 'pre'],
+  ['weapp-vite:react', 'pre'],
   ['weapp-vite:vue:resolver'],
   ['weapp-vite:vue:transform'],
   ['weapp-vite:vue:watch'],

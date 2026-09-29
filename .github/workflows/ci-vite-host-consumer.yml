@@ -7,6 +7,10 @@ on:
       - .github/workflows/reusable-node-command.yml
       - 'packages/weapp-vite/**'
       - e2e/ide/stateful-hmr.runtime.test.ts
+      - e2e/ide/react-runtime-spike.runtime.test.ts
+      - 'e2e/ide/reactRuntimeDom/**'
+      - 'e2e-apps/react-runtime-spike/**'
+      - 'packages-runtime/react/**'
       - 'e2e/ide/statefulHmrDom/**'
       - 'e2e-apps/stateful-hmr/**'
       - 'packages/rolldown-require/**'
@@ -57,5 +61,22 @@ jobs:
         ${{ matrix.host == 'vite-plus' && 'node packages/weapp-vite/scripts/verify-vite-host-install.mjs vite-plus headless' ||
         format('pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_COMPILER_HOST={0} pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/stateful-hmr.runtime.test.ts -t "preserves native Component|preserves Wevu local and store|preserves native page state across two template"', matrix.host) }}
       artifact_name: stateful-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  react-runtime:
+    name: React runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless react
+      artifact_name: react-runtime-${{ matrix.host }}
       artifact_path: docs/reports/dom-acceptance/**
     secrets: inherit

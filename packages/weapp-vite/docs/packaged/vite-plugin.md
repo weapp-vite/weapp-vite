@@ -1,6 +1,6 @@
 # 标准 Vite 插件与 Vite+
 
-`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、自动路由、自动组件和普通分包。主产物由宿主 Vite 的编译管线生成。
+`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件和普通分包。主产物由宿主 Vite 的编译管线生成。
 
 ## 配置
 
@@ -61,7 +61,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | `vp preview` | Vite 的 Web 预览，不是小程序二维码预览 |
 | `vp pack` | 通用库打包，不替代小程序 lib mode |
 
-React、独立分包、worker、微信插件双产物、lib mode、多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
+独立分包、worker、微信插件双产物、lib mode、多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
 
 生产构建、build watch、classic 与实验性 stateful dev 已接入。任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。完整编译能力对齐继续由 #1097 追踪；高级目标限制是阶段边界。
 
@@ -98,3 +98,9 @@ classic 模式不支持宿主 `experimental.bundledDev: true`，开启时会在�
 普通 Vite 与 Vite+ 均已验证原生 Page/Component 脚本补丁、样式更新、模板往返及 Wevu 本地/store 状态保持，包含 headless 可观察语义与真实微信 IDE。Vite+ 验收在严格安装的独立发布包依赖图中使用原生 `vp dev`；独立 `wv` 同时通过同组 headless 与真实微信 IDE 回归。当前结果覆盖这些定向场景，完整跨平台发布矩阵仍需持续验证。
 
 middleware mode 支持构建与可等待关闭。运行小程序的 stateful 通信还需要消费方把 Vite middleware 挂载到可访问的 HTTP 服务，并配置对应端口；只创建 middleware 服务不会自动提供监听端点。
+
+## React
+
+注册同一个 `weapp()`，继续使用顶层 `weapp.react` 配置和既有 `@weapp-vite/react` 运行时。生产构建、classic、生产 watch 与实验性 stateful 共用 React 编译器；静态 TSX 在 stateful 下按既有规则重建会话，不承诺 React hooks 状态跨此类重载保持。
+
+`renderMode: 'auto'` 可组合静态 WXML、动态模板与原生/Wevu 组件 bridge；`dynamic` 仍不支持原生组件 bridge。React Compiler 继续是可选 SWC 能力，其安装与降级规则不随宿主改变。模板输出使用共享的源码根与输出路径映射，支持自定义 `srcRoot` 和符号链接项目路径。

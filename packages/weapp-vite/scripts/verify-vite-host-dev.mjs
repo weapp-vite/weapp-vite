@@ -10,6 +10,8 @@ import { promisify } from 'node:util'
 const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
+const profile = process.argv[5] ?? 'basic'
+assert(['basic', 'react'].includes(profile))
 assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
@@ -22,7 +24,7 @@ await writeFile(path.join(root, 'config-calls.txt'), '')
 let logs = ''
 let exited = false
 const originals = new Map()
-for (const file of ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
+for (const file of profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
   originals.set(file, await readFile(path.join(root, file), 'utf8'))
 }
 if (operation === 'stateful-dev') {
@@ -76,10 +78,27 @@ async function waitForWatchRound(count) {
 
 let shutdownFailed = false
 try {
-  await waitForOutput('pages/native/index.js', 'native-host')
-  await waitForOutput('pages/vue/index.js', 'vue-host')
+  if (profile === 'react') {
+    await waitForOutput('pages/static/index.wxml', 'weapp-vite React static bindings')
+    await waitForOutput('pages/static/index.js', /\S/)
+  }
+  else {
+    await waitForOutput('pages/native/index.js', 'native-host')
+    await waitForOutput('pages/vue/index.js', 'vue-host')
+  }
   await waitForWatchRound(1)
-  if (operation === 'stateful-dev') {
+  if (profile === 'react') {
+    const source = path.join(root, 'src/pages/static/view.tsx')
+    await writeFile(source, originals.get('src/pages/static/view.tsx').replace('weapp-vite React static bindings', 'React host updated template'))
+    await waitForOutput('pages/static/index.wxml', 'React host updated template')
+    await waitForWatchRound(2)
+    // 静态 TSX 的 stateful 更新会按既有语义重启；classic/watch 不重载配置。
+    if (operation !== 'stateful-dev') {
+      assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    }
+    console.log(`${toolchain}: native React ${operation} initial template and TSX update passed`)
+  }
+  else if (operation === 'stateful-dev') {
     const control = await waitForOutput('__weapp_vite_hmr/control.js', /http:\/\/localhost:[1-9]\d*\//)
     const endpoint = control.match(/http:\/\/localhost:\d+\/__weapp_vite_stateful_hmr__/)?.[0]
     assert(endpoint, 'Stateful host must publish its HTTP transport endpoint')
