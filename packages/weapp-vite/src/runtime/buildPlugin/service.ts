@@ -44,6 +44,7 @@ import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRu
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
+import { installIdeAssetWatch, restoreIdeAssetWatch } from '../statefulHmr/assetWatch'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { runStatefulHmrDev } from '../statefulHmr/session'
 import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
@@ -1260,6 +1261,23 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let statefulWatcherClosed = false
   const statefulRestartTasks = new Set<Promise<void>>()
   let stopStatefulWatcher: (() => Promise<void>) | undefined
+  let restoreAssetWatch: (() => Promise<void>) | undefined
+  let projectConfigReady = Promise.resolve()
+
+  function idePrivateConfigPath() {
+    if (!configService.projectPrivateConfigPath) {
+      return undefined
+    }
+    return configService.multiPlatform.enabled
+      ? path.join(path.dirname(configService.outDir), 'project.private.config.json')
+      : configService.projectPrivateConfigPath
+  }
+
+  async function releaseAssetWatch() {
+    const restore = restoreAssetWatch
+    restoreAssetWatch = undefined
+    await restore?.()
+  }
 
   async function trackStatefulRestart(restart: () => Promise<void>) {
     const task = restart()
@@ -1301,6 +1319,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       finally {
         // 重启期间 active watcher 暂为空，仍须等待快照和新服务器退出，才能允许删除输出目录。
         await Promise.allSettled([...statefulRestartTasks])
+        await releaseAssetWatch()
       }
     })()
     statefulBuildEvents = buildEvents
@@ -1400,6 +1419,15 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return await restartDev(target)
         }
         logHmrRuntimeDecision(hmrDecision)
+        const privateConfigPath = idePrivateConfigPath()
+        if (privateConfigPath) {
+          await projectConfigReady
+          restoreAssetWatch ??= await installIdeAssetWatch({
+            configPath: privateConfigPath,
+            outDir: configService.outDir,
+            inheritedWatchOptions: configService.projectConfig?.watchOptions,
+          })
+        }
         await configService.load(configService.loadOptions)
         ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
@@ -1410,6 +1438,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ...(buildOptions.build ?? {}),
           write: true,
         }
+        buildOptions.plugins = [...(buildOptions.plugins ?? []), {
+          name: 'weapp-vite:ide-asset-watch-ownership',
+          // Vite 自身的 SIGTERM 处理会在 server.close 后退出，恢复必须属于其关闭事务。
+          closeBundle: releaseAssetWatch,
+        }]
         if (statefulWatcherClosed) {
           return nativeBuildEvents.watcher
         }
@@ -1520,6 +1553,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           })
           // 失败可能发生在被 close 等待的重启任务内部，停止资源时不能反向等待自身。
           await stopStatefulWatcher!()
+          await releaseAssetWatch()
           throw error
         }
         devHmrDecision = {
@@ -1529,6 +1563,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         logger.warn(`微信状态保持 HMR 运行时不可用，已自动降级为 classic：${error instanceof Error ? error.message : String(error)}`)
         logger.info(formatHmrRuntimeStartupMessages(devHmrDecision)[0])
+        await releaseAssetWatch()
         ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await configService.load(configService.loadOptions)
@@ -2267,6 +2302,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
+    const privateConfigPath = idePrivateConfigPath()
+    if (configService.platform === 'weapp' && privateConfigPath) {
+      await restoreIdeAssetWatch(privateConfigPath)
+    }
     if (shouldCleanOutputs(configService, 'startup')) {
       await cleanOutputs(configService)
       resetEmittedOutputCaches(ctx.runtimeState)
@@ -2287,6 +2326,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           enabled: isMultiPlatformEnabled,
         })
       : Promise.resolve()
+    projectConfigReady = projectConfigSyncTask
     const shouldPreloadAppEntryForWorkers = (
       !configService.isDev
       && !isLibMode

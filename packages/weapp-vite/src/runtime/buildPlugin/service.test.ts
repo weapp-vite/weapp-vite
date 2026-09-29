@@ -70,6 +70,9 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigWarnings: [],
 })))
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
+const restoreAssetWatchMock = vi.hoisted(() => vi.fn(async () => {}))
+const installIdeAssetWatchMock = vi.hoisted(() => vi.fn(async () => restoreAssetWatchMock))
+const restoreIdeAssetWatchMock = vi.hoisted(() => vi.fn(async () => {}))
 const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
   options: { build: {}, plugins: [] as Plugin[] },
   getGlobalStyleRoutes: () => [],
@@ -142,6 +145,11 @@ vi.mock('../supportFiles', () => ({
 
 vi.mock('../statefulHmr/session', () => ({
   runStatefulHmrDev: runStatefulHmrDevMock,
+}))
+
+vi.mock('../statefulHmr/assetWatch', () => ({
+  installIdeAssetWatch: installIdeAssetWatchMock,
+  restoreIdeAssetWatch: restoreIdeAssetWatchMock,
 }))
 
 vi.mock('../statefulHmr/snapshotBuild', () => ({
@@ -637,6 +645,23 @@ describe('runtime buildPlugin service', () => {
       expect(JSON.parse(snapshots.initial.output[0].source)).toEqual({ component: true, options: { multipleSlots: true } })
     }
     expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('restores IDE asset watching as part of Vite shutdown before the process can exit', async () => {
+    buildMock.mockResolvedValue({ output: [] })
+    runStatefulHmrDevMock.mockResolvedValue({ close: vi.fn(async () => {}) })
+    const ctx = createMockContext()
+    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
+    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
+    const options = runStatefulHmrDevMock.mock.calls[0]![1] as InlineConfig
+    const plugin = (options.plugins as Plugin[]).find(plugin => plugin.name === 'weapp-vite:ide-asset-watch-ownership')!
+    expect(plugin).toBeDefined()
+    const close = plugin.closeBundle as () => Promise<void>
+    const before = restoreAssetWatchMock.mock.calls.length
+    await close()
+    expect(restoreAssetWatchMock).toHaveBeenCalledTimes(before + 1)
+    await watcher.close()
+    expect(restoreAssetWatchMock).toHaveBeenCalledTimes(before + 1)
   })
 
   it('replaces stateful session graphs and releases the replacement through the original public close handle', async () => {

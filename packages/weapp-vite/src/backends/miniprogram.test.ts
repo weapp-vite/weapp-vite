@@ -79,7 +79,8 @@ describe('miniprogram backend Web combinations', () => {
 
   it('delegates mini-program operations to compiler services', async () => {
     const build = vi.fn(async () => 'built')
-    const close = vi.fn()
+    const closed = Promise.resolve()
+    const close = vi.fn(() => closed)
     const ctx = {
       buildService: { build },
       watcherService: { closeAll: close },
@@ -87,7 +88,7 @@ describe('miniprogram backend Web combinations', () => {
 
     await expect(miniprogramBackend.driver.build(ctx, { mode: 'production' } as any)).resolves.toBe('built')
     await expect(miniprogramBackend.driver.dev(ctx, { mode: 'development' } as any)).resolves.toBe('built')
-    miniprogramBackend.driver.close(ctx)
+    expect(miniprogramBackend.driver.close(ctx)).toBe(closed)
 
     expect(build).toHaveBeenCalledTimes(2)
     expect(close).toHaveBeenCalledTimes(1)

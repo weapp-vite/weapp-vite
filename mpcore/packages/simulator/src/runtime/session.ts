@@ -48,6 +48,7 @@ import { runComponentLifecycle } from './componentInstance'
 import { detachComponentRelations } from './componentInstance/relations'
 import { resolveNativeComponentSelection } from './componentInstance/selection'
 import { createModuleLoader } from './moduleLoader'
+import { createPackageAssetReader } from './packageAsset'
 import { createPageInstance } from './pageInstance'
 import { runInitialPageLifecycles } from './pageLifecycle'
 import { renderRuntimePageTree } from './render'
@@ -253,6 +254,7 @@ export class HeadlessSession {
     this.project = options.project ?? loadProject(options.projectPath!)
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
       strictMocks: options.strictHostMocks,
+      readPackageFile: createPackageAssetReader(relative => this.project.artifactSource.readText(path.join(this.project.miniprogramRootPath, relative))),
     })
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)

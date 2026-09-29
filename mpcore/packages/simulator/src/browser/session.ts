@@ -37,6 +37,7 @@ import { HeadlessAppLifecycle } from '../runtime/appLifecycle'
 import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
 import { detachComponentRelations } from '../runtime/componentInstance/relations'
 import { resolveNativeComponentSelection } from '../runtime/componentInstance/selection'
+import { createPackageAssetReader } from '../runtime/packageAsset'
 import { createPageInstance } from '../runtime/pageInstance'
 import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
 import { HeadlessRouteEvents } from '../runtime/routeEvents'
@@ -260,6 +261,7 @@ export class BrowserHeadlessSession {
     this.files = options.files
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
       strictMocks: options.strictHostMocks,
+      readPackageFile: createPackageAssetReader(relative => readBrowserVirtualFile(this.files, join(this.project.miniprogramRootPath, relative))),
     })
     this.onRender = options.onRender
     this.project = options.project ?? createBrowserProject(options.files)

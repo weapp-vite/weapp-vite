@@ -20,6 +20,7 @@ declare const browserWx: HeadlessWx
 expectType<{ errMsg: string } | undefined>(browserWx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
 expectType<void>(browserWx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
 expectType<string>(browserWx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+expectType<string>(browserWx.getFileSystemManager().readFileSync('resources/image.png', 'utf8'))
 
 browserWx.getFileSystemManager().access({
   path: 'headless://wxfile/temp/0001',

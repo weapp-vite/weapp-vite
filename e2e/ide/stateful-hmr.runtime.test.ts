@@ -425,6 +425,14 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await triggerIncrement()
     await waitForPatchedBehavior(2, page)
     await verifyAssetLifecycle({
+      readAsset: file => miniProgram.evaluate((filePath: string) => {
+        try {
+          return wx.getFileSystemManager().readFileSync(filePath, 'utf8')
+        }
+        catch {
+          return undefined
+        }
+      }, file),
       appRoot: APP_ROOT,
       check: async (id) => {
         const current = await miniProgram.currentPage()

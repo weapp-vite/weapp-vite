@@ -22,10 +22,12 @@ export async function verifyAssetLifecycle(options: {
   appRoot: string
   check: (id: string) => Promise<void>
   increment: () => Promise<void>
+  readAsset: (file: string) => Promise<string | undefined>
 }) {
   const assets = [
     { source: 'src/resources/ownership-lifecycle.png', output: 'resources/ownership-lifecycle.png' },
     { source: 'public/ownership-lifecycle.data', output: 'ownership-lifecycle.data' },
+    { source: 'public/ownership-readable.png', output: 'ownership-readable.png' },
   ]
   const verify = async (content?: string) => {
     for (const asset of assets) {
@@ -36,6 +38,9 @@ export async function verifyAssetLifecycle(options: {
         }
         throw error
       }), { timeout: 30_000, interval: 100 }).toBe(content)
+    }
+    for (const asset of assets.filter(asset => asset.output.endsWith('.png'))) {
+      await expect.poll(() => options.readAsset(asset.output), { timeout: 10_000 }).toBe(content)
     }
   }
   const write = async (content: string) => {

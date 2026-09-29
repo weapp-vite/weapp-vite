@@ -46,6 +46,8 @@ export default defineConfig({
 
 `stateful-experimental` 目前只支持微信小程序平台。它使用 Vite bundled dev graph 和微信 App Service 内的增量补丁协议，JavaScript/Vue 安全更新会在现有实例上替换方法并恢复状态。可处理的模板和样式变化通过资产更新同步；JSON/配置、模块边界不兼容、补丁积压超过保留上限或补丁执行失败等情况使用完整构建回退。
 
+状态保持开发期间，weapp-vite 会临时在 IDE 私有配置中排除输出目录内静态资源的原生监听，避免 PNG 等资源变更触发整页重编译。资源仍由 Vite 写出，运行时按路径重新读取时可获得最新内容。代码、模板、样式和 JSON 配置继续交给 IDE 处理。会话关闭或下一次构建前会恢复原有监听配置，并保留用户在会话内修改的其他设置；发布前请运行正式构建，不直接使用开发产物。
+
 内置 Tailwind 将对应的样式与 JavaScript 作为一个编译批次处理：先完成资产提交，再发布全部补丁，最后根据客户端执行回报通知 DevEngine。样式生成或写入失败时不发布该批次补丁，后续更新可以重试；最终样式内容未变化时不重复写入。写入成功与页面已经应用新样式是不同的阶段，排查视觉更新时还需检查实际页面的计算样式。
 
 微信开发者工具[暂不支持 Skyline 热重载](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98)。首次编译检测到任意生成的应用或页面 JSON 使用 `renderer: 'skyline'` 时，`wv dev` 会输出兼容性警告，将当前项目私有配置中的 `setting.compileHotReLoad` 持久化为 `false`，并强制使用 `classic`，即使用户显式配置了 `stateful-experimental`。其他私有配置字段不会改变；切回 WebView 后需要由开发者按需重新开启热重载。
