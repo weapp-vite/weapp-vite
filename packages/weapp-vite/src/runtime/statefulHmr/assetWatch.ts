@@ -69,7 +69,9 @@ export async function installIdeAssetWatch(options: {
   await restoreIdeAssetWatch(configPath)
   const relative = path.relative(path.dirname(configPath), outDir)
   if (relative === '..' || relative.startsWith('../') || path.isAbsolute(relative)) {
-    throw new Error('Stateful HMR output must be inside the IDE project to manage asset watching')
+    // 自定义配置可仅作为编译输入，输出位于其目录之外；该 IDE 根本身不监听这些产物。
+    // 不能写入越界 glob，也不能因此拒绝合法的独立构建。
+    return async () => {}
   }
   const original = await fs.readFile(configPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
     if (error.code === 'ENOENT') {

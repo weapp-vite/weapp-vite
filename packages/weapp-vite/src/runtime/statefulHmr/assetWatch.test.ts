@@ -61,7 +61,11 @@ it('recovers an interrupted session before another install and removes newly cre
   await restoreIdeAssetWatch(options.configPath)
 })
 
-it('rejects outputs outside the IDE project', async () => {
+it('leaves relocated compiler configs intact when their outputs are outside the IDE watch root', async () => {
   const options = await fixture('{}')
-  await expect(installIdeAssetWatch({ ...options, outDir: path.dirname(path.dirname(options.outDir)) })).rejects.toThrow('inside the IDE project')
+  const restore = await installIdeAssetWatch({ ...options, outDir: path.dirname(path.dirname(options.outDir)) })
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe('{}')
+  expect(await fs.pathExists(path.join(path.dirname(options.configPath), '.weapp-vite'))).toBe(false)
+  await restore()
+  expect(await fs.readFile(options.configPath, 'utf8')).toBe('{}')
 })
