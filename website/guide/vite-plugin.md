@@ -11,7 +11,7 @@ keywords:
 
 # 标准 Vite 插件与 Vite+
 
-`weapp-vite/vite` 提供实验性的生产构建与 classic 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、自动路由、自动组件和普通分包。主产物由宿主 Vite 的编译管线生成。
+`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、自动路由、自动组件和普通分包。主产物由宿主 Vite 的编译管线生成。
 
 ## 配置
 
@@ -65,7 +65,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | --- | --- |
 | `vite build` / `vp build` | 实验性微信生产构建 |
 | `wv dev` / `wv build` | 保留原有能力；显式插件不会重复安装编译器 |
-| `vite dev` / `vp dev` | 实验性 classic 开发：首次落盘、增量、失败恢复与宿主重启 |
+| `vite dev` / `vp dev` | 实验性 classic / stateful 开发；由宿主管理启动、重启与关闭 |
 | `vite build --watch` / `vp build --watch` | 实验性生产 watch：完整目标产物、入口增删与失败恢复 |
 | `vp test` | 插件不启动小程序编译；mpcore 测试继续显式使用 artifact API |
 | `wv prepare/open/upload/mcp` | 继续使用小程序专属命令 |
@@ -76,13 +76,13 @@ React、独立分包、worker、微信插件双产物、lib mode、多平台与 
 
 常规 npm 依赖先在会话临时目录准备，再作为宿主 bundle 的资源统一写出。当前不开放 `npm.buildOptions` 回调和微信 `packNpmManually` 手工输出映射，避免子任务写入宿主未管理的目录；这两类配置继续使用 `wv build`。
 
-生产构建、build watch 与 classic dev 已接入；stateful HMR、任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。尤其不能把 bundled-development 能力探针通过等同于 stateful runtime 已通过。
+生产构建、build watch、classic 与实验性 stateful dev 已接入。任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。完整编译能力对齐继续由 #1097 追踪；高级目标限制是阶段边界。
 
 ## classic 开发
 
 `vite dev` / `vp dev` 由宿主负责服务器和配置重载，小程序会话复用现有增量编译调度，产物经 Vite/Rolldown 原生 write 落盘。首次完整产物就绪后才打印小程序就绪日志。脚本、模板、样式和页面增删会更新产物；语法错误修正后继续编译。宿主 `server.close()`（包括 middleware mode）会等待正在执行的构建再释放自有资源。
 
-这一阶段不支持宿主 `experimental.bundledDev: true`，开启时会在启动前报错。需选择 `weapp.hmr.runtime: 'classic'`。如果自动选择结果或显式配置要求 stateful，会明确报错；不会悄悄改为 classic。classic 更新遵循完整重载语义，不承诺实例状态保持。`wv dev` 保留原有 HMR 选择和全部目标能力。
+classic 模式不支持宿主 `experimental.bundledDev: true`，开启时会在启动前报错。classic 更新遵循完整重载语义，不承诺实例状态保持。`wv dev` 保留原有 HMR 选择和全部目标能力。
 
 同一宿主目前只编译一个小程序目标，暂不支持同时开发 Web。插件不会自动打开 IDE、启动 MCP 或上传。
 
@@ -101,3 +101,13 @@ React、独立分包、worker、微信插件双产物、lib mode、多平台与 
 `vite build --watch` 与 `vp build --watch` 复用生产配置，每轮通过宿主 emit/write 发布当前目标的完整产物。支持脚本、模板、样式更新，页面增删和语法错误恢复；删除页面时清理对应的已拥有产物及 sourcemap。`emptyOutDir: false` 时保留其他工具写入的文件。关闭 watcher 会等待本轮写出和会话资源释放。
 
 这一路径不提供状态保持 HMR，也不自动重启配置文件。修改 Vite 配置或配置依赖后，按宿主 build watch 的语义重新启动命令；需要配置自动重启时使用 classic `vite dev` / `vp dev`。目标能力限制与插件生产构建一致。
+
+## 实验性 stateful 开发
+
+在同一顶层配置中设置 `weapp.hmr.runtime: 'stateful-experimental'`，继续使用 `vite dev` / `vp dev`。适配器安装在宿主的 client 环境，使用其配套 Rolldown DevEngine；不会另起一个 Vite 服务。无需手工开启 `experimental.bundledDev`，但宿主必须提供所需私有 API，能力检查失败会明确报错。
+
+该模式面向微信 WebView，需开启微信开发者工具热重载。当前宿主遇到 Skyline 或缺失私有 API 时明确报错，需显式改用 classic；独立 CLI 的自动降级行为保留。JS 安全补丁、模板与样式更新复用现有 stateful 协议；页面入口拓扑变化由宿主重新创建会话，配置依赖变化由宿主重新加载配置。关闭会等待本会话拥有的任务和引擎；不会关闭其他宿主实例。
+
+普通 Vite 与 Vite+ 均已验证原生 Page/Component 脚本补丁、样式更新、模板往返及 Wevu 本地/store 状态保持，包含 headless 可观察语义与真实微信 IDE。Vite+ 验收在严格安装的独立发布包依赖图中使用原生 `vp dev`；独立 `wv` 同时通过同组 headless 与真实微信 IDE 回归。当前结果覆盖这些定向场景，完整跨平台发布矩阵仍需持续验证。
+
+middleware mode 支持构建与可等待关闭。运行小程序的 stateful 通信还需要消费方把 Vite middleware 挂载到可访问的 HTTP 服务，并配置对应端口；只创建 middleware 服务不会自动提供监听端点。

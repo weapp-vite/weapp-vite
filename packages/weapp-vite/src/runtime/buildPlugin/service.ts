@@ -48,6 +48,7 @@ import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { installIdeAssetWatch, restoreIdeAssetWatch } from '../statefulHmr/assetWatch'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
+import { getStatefulHmrHost } from '../statefulHmr/hostPlugins'
 import { runStatefulHmrDev } from '../statefulHmr/session'
 import { buildStatefulHmrSnapshot } from '../statefulHmr/snapshotBuild'
 import { syncProjectSupportFiles } from '../supportFiles'
@@ -1403,6 +1404,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         )
         const skylineFiles = findSkylineRendererFiles(initialSnapshot)
         if (skylineFiles.length > 0) {
+          if (getStatefulHmrHost(ctx)) {
+            throw new Error('[weapp-vite] 宿主 stateful 开发仅支持微信 WebView；Skyline 项目请显式选择 weapp.hmr.runtime="classic"。')
+          }
           await applySkylineHmrFallback({
             compileHotReLoad,
             configured: hmrDecision.configured,
@@ -1428,7 +1432,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             output: initialSnapshot,
           })
         }
-        await configService.load(configService.loadOptions)
+        // 快照已使用独立上下文，不再重读当前会话的用户配置。
         ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await scanService.loadAppEntry()
@@ -1543,7 +1547,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         if (statefulWatcherClosed) {
           return nativeBuildEvents.watcher
         }
-        const useClassicFallback = hmrDecision.configured === 'auto'
+        const useClassicFallback = !getStatefulHmrHost(ctx) && hmrDecision.configured === 'auto'
           && isStatefulHmrRuntimeCompatibilityError(error)
         if (!useClassicFallback) {
           nativeBuildEvents.emitEvent({

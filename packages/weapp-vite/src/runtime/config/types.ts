@@ -30,6 +30,8 @@ export interface LoadConfigOptions {
 
 export interface LoadConfigResult {
   loadOptions: LoadConfigOptions
+  /** 本次加载的用户配置，供隔离子会话重新归一化，避免重复执行配置文件。 */
+  sourceConfig?: InlineConfig
   config: InlineConfig
   aliasEntries: ResolvedAlias[]
   outputExtensions: OutputExtensions

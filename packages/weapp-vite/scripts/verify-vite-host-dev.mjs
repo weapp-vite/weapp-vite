@@ -10,7 +10,7 @@ import { promisify } from 'node:util'
 const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
-assert(['dev', 'build-watch'].includes(operation))
+assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 assert(consumer.private && consumer.name.startsWith('weapp-vite-host-'))
@@ -22,10 +22,13 @@ await writeFile(path.join(root, 'config-calls.txt'), '')
 let logs = ''
 let exited = false
 const originals = new Map()
-for (const file of ['src/pages/native/index.ts', 'src/pages/vue/index.vue']) {
+for (const file of ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
   originals.set(file, await readFile(path.join(root, file), 'utf8'))
 }
-const args = operation === 'build-watch' ? ['build', '--watch'] : ['dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0']]
+if (operation === 'stateful-dev') {
+  await writeFile(path.join(root, 'vite.config.mts'), originals.get('vite.config.mts').replace('runtime: \'classic\'', 'runtime: \'stateful-experimental\''))
+}
+const args = operation === 'build-watch' ? ['build', '--watch', '--logLevel', 'info'] : ['dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0']]
 const child = execFile(process.execPath, [cli, ...args], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024 })
 const done = new Promise((resolve) => {
   child.once('error', error => resolve({ error }))
@@ -48,7 +51,7 @@ async function waitForOutput(file, text) {
       break
     }
     const output = await readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')
-    if (output.includes(text)) {
+    if (typeof text === 'string' ? output.includes(text) : text.test(output)) {
       return output
     }
     await delay(50)
@@ -56,19 +59,53 @@ async function waitForOutput(file, text) {
   throw new Error(`Native ${toolchain} ${operation} did not emit ${file}: ${logs}`)
 }
 
+async function waitForWatchRound(count) {
+  if (operation !== 'build-watch') {
+    return
+  }
+  const deadline = Date.now() + 20_000
+  const rounds = () => [...logs.matchAll(/built in \d+ms/g)].length
+  while (rounds() < count && Date.now() < deadline) {
+    if (exited) {
+      break
+    }
+    await delay(50)
+  }
+  assert(rounds() >= count, `Native watch did not finish round ${count}: ${logs}`)
+}
+
 let shutdownFailed = false
 try {
   await waitForOutput('pages/native/index.js', 'native-host')
   await waitForOutput('pages/vue/index.js', 'vue-host')
-  const script = path.join(root, 'src/pages/native/index.ts')
-  await writeFile(script, (await readFile(script, 'utf8')).replace('native-host', 'native-dev-update'))
-  const output = await waitForOutput('pages/native/index.js', 'native-dev-update')
-  assert(!output.includes('/@vite/client'))
-  const vue = path.join(root, 'src/pages/vue/index.vue')
-  await writeFile(vue, (await readFile(vue, 'utf8')).replace('vue-host', 'vue-dev-update'))
-  await waitForOutput('pages/vue/index.js', 'vue-dev-update')
-  assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-  console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with one config evaluation`)
+  await waitForWatchRound(1)
+  if (operation === 'stateful-dev') {
+    const control = await waitForOutput('__weapp_vite_hmr/control.js', /http:\/\/localhost:[1-9]\d*\//)
+    const endpoint = control.match(/http:\/\/localhost:\d+\/__weapp_vite_stateful_hmr__/)?.[0]
+    assert(endpoint, 'Stateful host must publish its HTTP transport endpoint')
+    const response = await fetch(endpoint, { method: 'POST', body: '{}' })
+    assert.equal(response.status, 403, 'Transport must be served by the listening host')
+    const template = path.join(root, 'src/pages/native/index.wxml')
+    await writeFile(template, '<view>stateful-template {{message}}</view>')
+    await waitForOutput('pages/native/index.wxml', 'stateful-template')
+    await writeFile(template, originals.get('src/pages/native/index.wxml'))
+    await waitForOutput('pages/native/index.wxml', '<view>{{message}}</view>')
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    console.log(`${toolchain}: native stateful dev engine, host transport and template restoration passed`)
+  }
+  else {
+    const script = path.join(root, 'src/pages/native/index.ts')
+    await writeFile(script, (await readFile(script, 'utf8')).replace('native-host', 'native-dev-update'))
+    const output = await waitForOutput('pages/native/index.js', 'native-dev-update')
+    assert(!output.includes('/@vite/client'))
+    await waitForWatchRound(2)
+    const vue = path.join(root, 'src/pages/vue/index.vue')
+    await writeFile(vue, (await readFile(vue, 'utf8')).replace('vue-host', 'vue-dev-update'))
+    await waitForOutput('pages/vue/index.js', 'vue-dev-update')
+    await waitForWatchRound(3)
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with one config evaluation`)
+  }
 }
 finally {
   if (process.platform === 'win32') {

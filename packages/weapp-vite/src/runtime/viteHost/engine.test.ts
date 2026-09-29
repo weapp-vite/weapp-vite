@@ -3,14 +3,14 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, expect, it } from 'vitest'
-import { loadHostRolldown, resolveViteHost } from './engine'
+import { loadHostRolldown, loadHostRolldownBuild, resolveViteHost } from './engine'
 
 const roots: string[] = []
 afterEach(async () => {
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
-async function hostFixture(kind: 'vite' | 'vite-plus', source = 'export function dev() {} export function scan() {}') {
+async function hostFixture(kind: 'vite' | 'vite-plus', source = 'export function dev() {} export function scan() {} export function rolldown() {}') {
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'vite-host-engine-')))
   roots.push(root)
   const host = path.join(root, 'node_modules/vite')
@@ -20,7 +20,7 @@ async function hostFixture(kind: 'vite' | 'vite-plus', source = 'export function
     name: bundled ? '@voidzero-dev/vite-plus-core' : 'vite',
     version: bundled ? '1.0.0' : '8.3.1',
     type: 'module',
-    exports: { './package.json': './package.json', ...(bundled ? { './rolldown/experimental': './engine.js' } : {}) },
+    exports: { './package.json': './package.json', ...(bundled ? { './rolldown/experimental': './engine.js', './rolldown': './engine.js' } : {}) },
   }))
   const engine = bundled ? path.join(host, 'engine.js') : path.join(host, 'node_modules/rolldown/engine.js')
   if (!bundled) {
@@ -29,7 +29,7 @@ async function hostFixture(kind: 'vite' | 'vite-plus', source = 'export function
       name: 'rolldown',
       version: '1.2.11',
       type: 'module',
-      exports: { './experimental': './engine.js' },
+      exports: { '.': './engine.js', './experimental': './engine.js' },
     }))
   }
   await writeFile(engine, source)
@@ -42,6 +42,7 @@ it.each(['vite', 'vite-plus'] as const)('loads the exact %s engine module withou
   expect(identity.kind).toBe(kind)
   expect(identity.experimentalPath).toBe(engine)
   expect(await loadHostRolldown(importer)).toBe(await import(pathToFileURL(engine).href))
+  expect(await loadHostRolldownBuild(importer)).toBe(await import(pathToFileURL(engine).href))
 })
 
 it('reports missing host capabilities instead of silently loading the library engine', async () => {

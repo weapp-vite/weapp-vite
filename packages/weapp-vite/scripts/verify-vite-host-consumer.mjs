@@ -157,3 +157,5 @@ await command(path.join(import.meta.dirname, 'verify-vite-host-dev.mjs'), [root,
 if (!standalone) {
   await command(path.join(import.meta.dirname, 'verify-vite-host-dev.mjs'), [root, plus ? 'vite-plus' : 'vite', 'build-watch'])
 }
+
+await command(path.join(import.meta.dirname, 'verify-vite-host-dev.mjs'), [root, standalone ? 'wv' : plus ? 'vite-plus' : 'vite', 'stateful-dev'])

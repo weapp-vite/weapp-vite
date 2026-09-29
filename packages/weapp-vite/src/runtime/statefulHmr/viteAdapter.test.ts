@@ -134,6 +134,7 @@ describe('stateful HMR Vite adapter', () => {
     const bundledDev = {
       _devEngine: {},
       getRolldownOptions: async () => ({ resolve: { alias: { existing: '/existing' } } }),
+      listen: async () => {},
       storeOutputFiles: () => {},
     }
     const adapter = new StatefulHmrViteAdapter(
@@ -169,6 +170,7 @@ describe('stateful HMR Vite adapter', () => {
     const stored: any[][] = []
     const bundledDev = {
       getRolldownOptions: async () => ({}),
+      listen: async () => {},
       storeOutputFiles: (output: any[]) => stored.push(output),
     }
     const adapter = new StatefulHmrViteAdapter(

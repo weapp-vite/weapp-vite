@@ -44,9 +44,6 @@ export function weapp(): Plugin[] {
             return
           }
           serveRequested = env.command === 'serve'
-          if (serveRequested && config.experimental?.bundledDev) {
-            throw new Error('[weapp-vite] classic 开发模式暂不支持 experimental.bundledDev，请关闭此选项。')
-          }
           const options = config.weapp
           if ((options?.platform && options.platform !== 'weapp') || options?.lib || options?.pluginRoot
             || options?.worker?.entry || options?.web || (options?.multiPlatform === true || (typeof options?.multiPlatform === 'object' && options.multiPlatform.enabled))) {
@@ -62,13 +59,17 @@ export function weapp(): Plugin[] {
             const merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
             if (serveRequested) {
               const { prepareDevHostConfig } = await import('./dev')
+              if (!session.statefulController && config.experimental?.bundledDev) {
+                throw new Error('[weapp-vite] classic 开发模式暂不支持 experimental.bundledDev，请关闭此选项。')
+              }
               const host = prepareDevHostConfig(session, merged, config)
-              slots.bind([host.plugin])
+              slots.bind((await resolvePlugins(host.plugins)).filter(plugin => !configuredPlugins.includes(plugin)))
               return host.config
             }
             slots.bind(await resolvePlugins(merged.plugins))
             // plugins 在工厂阶段已固定；不能通过 config 返回值动态注册。
             const { plugins: _plugins, configFile: _configFile, ...normalized } = merged
+            normalized.logLevel = config.logLevel
             // 清理范围交给宿主判断；不能继承 wv 子构建的默认 emptyOutDir=false。
             if (normalized.build) {
               normalized.build.emptyOutDir = config.build?.emptyOutDir
@@ -91,6 +92,14 @@ export function weapp(): Plugin[] {
         return
       }
       const active = session
+      if (active.statefulController) {
+        const listen = server.listen.bind(server)
+        server.listen = async (...args) => {
+          const result = await listen(...args)
+          await active.refreshHostControl()
+          return result
+        }
+      }
       const restart = server.restart.bind(server)
       server.restart = async (force) => {
         // Vite 先创建新服务器再关闭旧服务器；先等待旧产物任务，避免两个会话并发写同一目录。

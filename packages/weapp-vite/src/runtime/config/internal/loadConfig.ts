@@ -308,6 +308,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     return {
       config,
+      sourceConfig: mergedLoadedConfig,
       loadOptions: opts,
       aliasEntries,
       outputExtensions,

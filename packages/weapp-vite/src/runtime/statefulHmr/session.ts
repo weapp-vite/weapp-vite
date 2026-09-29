@@ -1,7 +1,7 @@
 import type { RolldownWatcher } from 'rolldown'
 /* eslint-disable ts/no-use-before-define */
 
-import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
+import type { InlineConfig, ViteDevServer } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { DevBuildWatcherController } from '../buildPlugin/devBuildWatcher'
 import type { StatefulHmrSnapshot } from './globalStyles'
@@ -17,7 +17,6 @@ import {
   WEAPP_VITE_STATEFUL_HMR_UPDATE_FILE,
 } from '@weapp-core/constants'
 import { HmrAssetStore } from '@weapp-vite/hmr'
-import MagicString from 'magic-string'
 import path from 'pathe'
 import { createServer, transformWithOxc } from 'vite'
 import { isNativeScriptAnalysisOwner, refreshGlassEaselNativeScripts } from '../../analyze/glassEasel/nativeScripts'
@@ -36,20 +35,18 @@ import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/so
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { watchAssetSources } from '../watch/assets'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
-import { isStatefulHmrBoundary } from './boundaries'
 import { compileHmrBatch } from './compileBatch'
 import { HmrDeliveryCoordinator } from './deliveryCoordinator'
 import { StatefulHmrDirectoryUpdates } from './directoryUpdates'
 import { createStatefulHmrGlobalStyleAssets, mergeStatefulHmrCompilerAssets } from './globalStyles'
+import { createStatefulHmrHostPlugins, getStatefulHmrHost } from './hostPlugins'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
-import { createStatefulHmrInitialGraph, resolveStatefulHmrModuleRoot } from './initialModuleGraph'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
 import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
 import { writeStatefulHmrOutput } from './outputWriter'
 import { readMappedHmrCode, wrapHmrCode } from './patchPreparation'
 import { shouldResetStatefulHmrRetention } from './retention'
 import { createStatefulHmrControlSource } from './runtimeSource'
-import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
 import { retainStylesUntilScriptApplied } from './styleDelivery'
@@ -57,6 +54,8 @@ import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
 export { isStatefulHmrBoundary } from './boundaries'
+
+export { redirectNativeComponentRegistration } from './hostPlugins'
 export { shouldResetStatefulHmrRetention } from './retention'
 
 interface StatefulHmrSnapshots {
@@ -88,62 +87,13 @@ export async function runStatefulHmrDev(
     throw new Error('weapp.hmr.runtime="stateful-experimental" 目前仅支持微信小程序平台。')
   }
   let session: StatefulHmrSession | undefined
-  let moduleGraphRoot = buildOptions.root ?? configService.cwd
   const entryIds = new Set(Array.from(snapshots.entryIds, id => normalizeFsResolvedId(id)))
   const delegatedComponentEntryIds = new Set(Array.from(snapshots.delegatedComponentEntryIds ?? [], id => normalizeFsResolvedId(id)))
   const pollingWatchOptions = resolvePollingWatchOptions(configService)
-  const capturePlugin: Plugin = {
-    name: 'weapp-vite:hmr-input',
-    enforce: 'pre',
-    transform(code, id) {
-      // 受管入口的 load 会注入配置与依赖；原始内容由入口读取器封存。
-      if (!entryIds.has(normalizeFsResolvedId(id))) {
-        getCompilerHmrHost(compilerContext).captureNative(id, code)
-      }
-    },
-    watchChange(id, change) {
-      if (change.event === 'delete') {
-        getCompilerHmrHost(compilerContext).capture(id, null)
-      }
-    },
-  }
-  const installPlugin: Plugin = {
-    name: 'weapp-vite:stateful-hmr-session',
-    enforce: 'post',
-    configResolved(config) {
-      moduleGraphRoot = resolveStatefulHmrModuleRoot(config.root, config.build.rolldownOptions.cwd)
-    },
-    configureServer(server) {
-      const currentSession = new StatefulHmrSession(compilerContext, server, restart, entryIds, snapshots, {
-        compareContentsForPolling: pollingWatchOptions.usePolling === true ? true : undefined,
-        pollInterval: pollingWatchOptions.interval,
-        usePolling: pollingWatchOptions.usePolling,
-      }, delegatedComponentEntryIds, buildEvents)
-      session = currentSession
-      currentSession.install()
-    },
-    transform(code, id) {
-      if (
-        !isStatefulHmrBoundary(
-          id,
-          configService.absoluteSrcRoot,
-          entryIds,
-          delegatedComponentEntryIds,
-        )
-        || code.includes('import.meta.hot.accept')
-      ) {
-        return
-      }
-      const transformed = id.endsWith('.vue') ? code : redirectNativeComponentRegistration(code)
-      return `${transformed}\nif (import.meta.hot) import.meta.hot.accept();\n`
-    },
-    renderChunk(code, chunk, options) {
-      if (options.format === 'cjs' && chunk.moduleIds.length) {
-        return { code: `${code}${createStatefulHmrInitialGraph(chunk, this, moduleGraphRoot)}`, map: null }
-      }
-    },
-  }
-  const server = await createServer({
+  const host = getStatefulHmrHost(compilerContext)
+  const controller = host?.controller ?? createStatefulHmrHostPlugins(compilerContext)
+  controller.setInputs(entryIds, delegatedComponentEntryIds)
+  const server = host?.server ?? await createServer({
     ...buildOptions,
     root: buildOptions.root ?? configService.cwd,
     appType: 'custom',
@@ -157,7 +107,7 @@ export async function runStatefulHmrDev(
       ...(buildOptions.experimental ?? {}),
       bundledDev: true,
     },
-    plugins: [capturePlugin, createStatefulHmrSidecarPlugin(), installPlugin, ...(buildOptions.plugins ?? [])],
+    plugins: [...controller.plugins, ...(buildOptions.plugins ?? [])],
     server: {
       ...(buildOptions.server ?? {}),
       hmr: false,
@@ -180,17 +130,31 @@ export async function runStatefulHmrDev(
     },
   })
   try {
-    await server.listen()
-    if (!session) {
-      throw new Error('微信状态保持 HMR session 未完成初始化。')
+    session = new StatefulHmrSession(compilerContext, server, host ? () => host.server.restart() : restart, entryIds, snapshots, {
+      compareContentsForPolling: pollingWatchOptions.usePolling === true ? true : undefined,
+      pollInterval: pollingWatchOptions.interval,
+      usePolling: pollingWatchOptions.usePolling,
+    }, delegatedComponentEntryIds, buildEvents)
+    session.install()
+    if (host) {
+      await session.startEngine()
+    }
+    else {
+      await server.listen()
     }
     await session.watchAssets()
+    if (host) {
+      const active = session
+      host.refreshControl = () => active.refreshControl()
+    }
     await session.refreshControl()
-    return createWatcherAdapter(server, session, buildEvents)
+    return createWatcherAdapter(server, session, buildEvents, Boolean(host))
   }
   catch (error) {
     await session?.close().catch(() => {})
-    await server.close().catch(() => {})
+    if (!host) {
+      await server.close().catch(() => {})
+    }
     throw error
   }
 }
@@ -302,6 +266,10 @@ class StatefulHmrSession {
     }
   }
 
+  async startEngine(): Promise<void> {
+    await this.adapter.start()
+  }
+
   async watchAssets(): Promise<void> {
     this.assetWatcher = watchAssetSources(this.ctx.configService, {
       publicAssets: {
@@ -334,6 +302,7 @@ class StatefulHmrSession {
     this.transport.close()
     await this.delivery.close()
     await this.snapshotScheduler.close()
+    await this.adapter.close()
     this.sourceDirtyReasons.clear()
     await this.outputChain
   }
@@ -986,6 +955,7 @@ function createWatcherAdapter(
   server: ViteDevServer,
   session: StatefulHmrSession,
   buildEvents: DevBuildWatcherController,
+  borrowed = false,
 ): RolldownWatcher {
   let closePromise: Promise<void> | undefined
   const watcher: RolldownWatcher = {
@@ -996,7 +966,9 @@ function createWatcherAdapter(
           await session.close()
         }
         finally {
-          await server.close()
+          if (!borrowed) {
+            await server.close()
+          }
         }
       })()
       return closePromise
@@ -1011,36 +983,6 @@ function createWatcherAdapter(
     },
   }
   return watcher
-}
-
-export function redirectNativeComponentRegistration(code: string): string {
-  if (!code.includes('Component')) {
-    return code
-  }
-  const ast = parseJsLike(code)
-  const magicString = new MagicString(code)
-  let changed = false
-  traverse(ast, {
-    CallExpression(path) {
-      const callee = path.node.callee
-      if (
-        callee.type !== 'Identifier'
-        || callee.name !== 'Component'
-        || path.scope.hasBinding('Component')
-        || callee.start == null
-        || callee.end == null
-      ) {
-        return
-      }
-      magicString.overwrite(
-        callee.start,
-        callee.end,
-        `globalThis[${JSON.stringify(WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY)}].Component`,
-      )
-      changed = true
-    },
-  })
-  return changed ? magicString.toString() : code
 }
 
 export function isSafeJavaScriptPatch(

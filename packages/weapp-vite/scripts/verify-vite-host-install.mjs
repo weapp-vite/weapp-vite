@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -9,6 +9,8 @@ import { execa } from 'execa'
 
 const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
+const runtime = process.argv[3]
+assert(runtime === undefined || ['headless', 'devtools'].includes(runtime))
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-host-install-'))
 const consumerRoot = path.join(temporaryRoot, 'consumer')
@@ -76,6 +78,40 @@ try {
     consumerRoot,
     ...(toolchain === 'wv' ? ['wv'] : []),
   ], { cwd: repoRoot, stdio: 'inherit' })
+  if (runtime) {
+    assert.equal(toolchain, 'vite-plus', '独立 runtime 消费验证当前用于 Vite+；wv/vite 直接运行共享 fixture')
+    const fixtureRoot = path.join(repoRoot, 'e2e-apps/stateful-hmr')
+    await rm(path.join(consumerRoot, 'src'), { recursive: true, force: true })
+    for (const entry of ['src', 'project.config.json', 'project.private.config.json']) {
+      await cp(path.join(fixtureRoot, entry), path.join(consumerRoot, entry), { recursive: true })
+    }
+    await writeFile(path.join(consumerRoot, 'vite.stateful.config.mts'), `import { defineConfig } from 'vite-plus'
+import { weapp } from 'weapp-vite/vite'
+export default defineConfig({
+  plugins: [weapp()],
+  weapp: { srcRoot: 'src', appPrelude: { webRuntime: true }, hmr: { runtime: 'stateful-experimental', logLevel: 'verbose' } },
+})
+`)
+    await execa('pnpm', [
+      'vitest',
+      'run',
+      '-c',
+      'e2e/vitest.e2e.devtools.config.ts',
+      'e2e/ide/stateful-hmr.runtime.test.ts',
+      '-t',
+      runtime === 'devtools'
+        ? 'preserves native Page|preserves native Component|preserves Wevu local and store|preserves native page state across two template'
+        : 'preserves native Component|preserves Wevu local and store|preserves native page state across two template',
+    ], {
+      cwd: repoRoot,
+      stdio: 'inherit',
+      env: {
+        WEAPP_VITE_E2E_RUNTIME_PROVIDER: runtime,
+        WEAPP_VITE_E2E_COMPILER_HOST: toolchain,
+        WEAPP_VITE_E2E_STATEFUL_PROJECT: consumerRoot,
+      },
+    })
+  }
 }
 finally {
   await rm(temporaryRoot, { recursive: true, force: true })

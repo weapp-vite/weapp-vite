@@ -685,7 +685,9 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/stale.ts', { id: '/project/src/stale.ts' })
 
     await createBuildService(ctx).build({ skipNpm: true })
+    expect(ctx.configService.load).not.toHaveBeenCalled()
     await runStatefulHmrDevMock.mock.calls[0]![2]()
+    expect(ctx.configService.load).toHaveBeenCalledTimes(1)
 
     for (const [, , , snapshots] of runStatefulHmrDevMock.mock.calls) {
       expect(snapshots.entryIds).toEqual(new Set([snapshotEntry]))

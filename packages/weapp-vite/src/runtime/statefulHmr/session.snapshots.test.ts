@@ -1,5 +1,5 @@
 import type { OutputBundle } from 'rolldown'
-import type { InlineConfig, Plugin } from 'vite'
+import type { InlineConfig } from 'vite'
 import type { CompilerContext, MutableCompilerContext } from '../../context'
 import type { StatefulHmrSnapshot } from './globalStyles'
 import type { StatefulHmrInitialPublicAssets, StatefulHmrOutputFile } from './outputWriter'
@@ -48,6 +48,7 @@ vi.mock('./viteAdapter', () => ({
     }
 
     install() {}
+    async close() {}
     async registerBundleModules() {
       return 1
     }
@@ -282,8 +283,6 @@ describe('stateful snapshot output transactions', () => {
           await harness.callbacks!.waitForInitialBundle()
         },
       }
-      const plugin = options.plugins?.find(value => value && 'name' in value && value.name === 'weapp-vite:stateful-hmr-session') as Plugin
-      ;(plugin.configureServer as (server: unknown) => void)(server)
       return server
     })
   })

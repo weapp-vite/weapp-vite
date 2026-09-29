@@ -45,7 +45,8 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
       order: 'post',
       sequential: true,
       async handler() {
-        if (!this.meta.watchMode || serve) {
+        // 开发宿主的 close/restart 统一释放会话，原生引擎关闭不能反向等待自身。
+        if (!serve && !this.meta.watchMode) {
           await session.close()
         }
       },

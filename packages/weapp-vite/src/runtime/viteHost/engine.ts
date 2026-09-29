@@ -66,3 +66,15 @@ export async function loadHostRolldown(importer?: string | URL): Promise<typeof 
     throw new Error(`[weapp-vite] 无法加载 ${host} 配套的 Rolldown；请检查宿主依赖和 Vite+ alias 配置。`, { cause })
   }
 }
+
+/** 原生输出写出也绑定宿主引擎，避免 Vite+ 额外加载包内另一套 Rolldown。 */
+export async function loadHostRolldownBuild(importer?: string | URL): Promise<typeof import('rolldown')> {
+  const identity = resolveViteHost(importer)
+  const hostRequire = createRequire(identity.packagePath)
+  const entry = hostRequire.resolve(identity.kind === 'vite-plus' ? '@voidzero-dev/vite-plus-core/rolldown' : 'rolldown')
+  const runtime = await import(pathToFileURL(entry).href) as typeof import('rolldown')
+  if (typeof runtime.rolldown !== 'function') {
+    throw new TypeError(`[weapp-vite] ${identity.kind}@${identity.packageVersion} 缺少 Rolldown 原生写出能力。`)
+  }
+  return runtime
+}

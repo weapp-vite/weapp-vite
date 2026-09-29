@@ -5,6 +5,7 @@ import { isReactEnabled } from '../plugins/react'
 import { CompilerSession } from '../runtime/compilerSession'
 import { resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
+import { attachStatefulHmrHost, createStatefulHmrHostPlugins, getStatefulHmrHost } from '../runtime/statefulHmr/hostPlugins'
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
 import { prepareNpmAssets } from './npm'
 
@@ -12,6 +13,7 @@ import { prepareNpmAssets } from './npm'
 export class WeappBuildSession extends CompilerSession {
   private dependencyBuild?: Promise<EmittedAsset[]>
   private validating?: Promise<void>
+  statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
 
   async prepare(config: InlineConfig, cwd: string, mode: string, isDev = false): Promise<InlineConfig> {
     await this.initialize({
@@ -31,8 +33,8 @@ export class WeappBuildSession extends CompilerSession {
       platform: service.platform,
       configured: service.weappViteConfig.hmr?.runtime,
       compileHotReLoad: service.projectPrivateConfig.setting?.compileHotReLoad,
-    }).runtime !== 'classic') {
-      throw new Error('[weapp-vite] 标准插件开发模式暂仅支持 classic，请显式设置 weapp.hmr.runtime 为 classic。')
+    }).runtime === 'stateful-experimental') {
+      this.statefulController = createStatefulHmrHostPlugins(this.context)
     }
     if (service.weappViteConfig.npm?.enable && (service.weappViteConfig.npm.buildOptions || service.projectConfig.setting?.packNpmManually)) {
       throw new Error('[weapp-vite] 标准插件 alpha 尚不支持自定义 npm 构建回调或手工 npm 输出映射，请使用 wv build。')
@@ -75,8 +77,11 @@ export class WeappBuildSession extends CompilerSession {
     const reportReady = () => {
       if (started && successful && !reportedReady && !this.isClosing) {
         reportedReady = true
-        server.config.logger.info('[weapp-vite] 小程序开发产物已就绪 (classic)')
+        server.config.logger.info(`[weapp-vite] 小程序开发产物已就绪 (${this.statefulController ? 'stateful-experimental' : 'classic'})`)
       }
+    }
+    if (this.statefulController) {
+      this.onClose(attachStatefulHmrHost(this.context, { server, controller: this.statefulController }))
     }
     this.onClose(attachDevModuleGraphHost(this.context, server, (result) => {
       successful = result
@@ -87,9 +92,16 @@ export class WeappBuildSession extends CompilerSession {
     await this.run(() => this.context.buildService.build({}))
     if (!this.isClosing) {
       this.state = 'watching'
+      if (this.statefulController) {
+        successful = true
+      }
       started = true
       reportReady()
     }
+  }
+
+  async refreshHostControl() {
+    await getStatefulHmrHost(this.context)?.refreshControl?.()
   }
 
   buildDependencies() {

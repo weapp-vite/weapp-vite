@@ -59,12 +59,6 @@ it('rejects bundled development before starting a classic host', async () => {
     .toThrow('暂不支持 experimental.bundledDev')
 })
 
-it('rejects stateful development until its host adapter is available', async () => {
-  await expect(fixture([], undefined, async () => ({
-    weapp: { srcRoot: 'src', vue: { enable: false }, hmr: { runtime: 'stateful-experimental' } },
-  }))).rejects.toThrow('暂仅支持 classic')
-})
-
 it('updates template/style, reports script failures, and rebuilds after correction', async () => {
   const failures: unknown[] = []
   const { root, read } = await fixture([{ name: 'observe-build-failures', buildEnd(error) {
