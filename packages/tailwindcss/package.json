@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/tailwindcss",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "基于 weapp-tailwindcss/core 的宿主无关编译控制器",
   "license": "MIT",
   "repository": {

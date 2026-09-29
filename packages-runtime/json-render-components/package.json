@@ -1,7 +1,7 @@
 {
   "name": "@wevu/json-render-components",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Precompiled mini-program components for @wevu/json-render",
   "license": "MIT",
   "homepage": "https://github.com/weapp-vite/weapp-vite#readme",

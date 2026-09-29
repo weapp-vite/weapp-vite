@@ -1,5 +1,37 @@
 # @weapp-vite/dashboard
 
+## 7.4.0
+
+### Minor Changes
+
+- 提供可复用的 Dashboard Devframe 核心与 Vite DevTools 接入入口，独立工作台和共享宿主复用同一套面板、报告与只读文件能力；保留宿主各自的鉴权和生命周期边界，并支持挂载目录下的导航与视图链接。
+
+### Patch Changes
+
+- 基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+  默认 catalog 变更键：weapp-tailwindcss。命名 catalog 变更键：weapp-tailwindcss-fixed(weapp-tailwindcss)。
+
+- 修复 Dashboard 手动主题与系统主题不一致时的状态色混用，统一由界面主题控制暗色样式，并提高源码对比提示卡标题及说明文字的对比度。
+
+- 升级 Vite、Rolldown、Tailwind 构建链及 Dashboard、MCP、自动化工具的相关依赖，保持共享依赖版本一致，并同步脚手架模板使用的依赖 catalog。迁移 uview-plus 3.8.125 兼容补丁，仅保留条码实例 $nextTick 等待。保留 TypeScript 6 与现有环境变量展开语义。
+
+- 自动补充依赖升级发布记录。
+  涉及包：
+  - @weapp-vite/glass-easel-web-adapter：dependencies.glass-easel-template-compiler
+  - @weapp-vite/ast：dependencies.@oxc-project/types
+  - @weapp-vite/eslint：devDependencies.@typescript-eslint/parser
+  - @weapp-vite/mcp：dependencies.@modelcontextprotocol/server、devDependencies.@modelcontextprotocol/client
+  - @weapp-vite/tailwindcss：dependencies.@weapp-tailwindcss/engine
+  - weapp-ide-cli：dependencies.@modelcontextprotocol/server
+  - weapp-vite：dependencies.@weapp-tailwindcss/engine
+  - create-weapp-vite：基于 weapp-vite / wevu 的依赖升级联动更新脚手架模板
+
+- 将体积地图调整为图表与节点详情同屏的分析工作台，分离节点筛选与分包、来源、重复打包、构建增量着色，补充键盘可操作的下钻路径、小节点列表、跨包位置与源码入口，并修复完整产物导航及报告更新时的选择态边界。下拉控件采用轻量工具栏样式、左对齐选项与右侧勾选标记，保留清晰的键盘焦点与禁用状态。
+
+- 将 DevTools 工作台的直接依赖 Devframe 从 1.0.0 升级至 1.1.0，并同步模板依赖目录。核对上游更新后保留现有 scoped RPC、OTP/Origin 鉴权和断线重连写法，继续关闭 bridge 的 MCP，不强制覆盖 `@vitejs/devtools-kit` 的传递 Devframe/Hub 0.8 依赖。
+
+- 改进体积地图详情阅读：保留吸顶节点身份，支持独立折叠子节点与引用分组，仅在关闭分组的相关内容变化时提示未读，并让显式导航与手动滚动优先于自动定位。
+
 ## 7.3.0
 
 ### Patch Changes

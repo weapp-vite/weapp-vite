@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/hmr",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "小程序宿主共享的编译批次、资产提交与交付协调内核",
   "license": "MIT",
   "repository": {
