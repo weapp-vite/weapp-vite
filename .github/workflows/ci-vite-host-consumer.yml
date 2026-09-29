@@ -1,0 +1,39 @@
+name: Vite Host Consumer
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ci-vite-host-consumer.yml
+      - .github/workflows/reusable-node-command.yml
+      - 'packages/weapp-vite/**'
+      - 'packages/rolldown-require/**'
+      - 'packages-runtime/wevu/**'
+      - 'packages-runtime/wevu-compiler/**'
+      - '@weapp-core/**'
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: vite-host-consumer-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  consumer:
+    name: Packed consumer (${{ matrix.toolchain }})
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require...
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}
+    secrets: inherit

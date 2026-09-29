@@ -50,7 +50,7 @@ vite build
     "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0"
   },
   "overrides": {
-    "vite": "$vite"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0"
   }
 }
 ```

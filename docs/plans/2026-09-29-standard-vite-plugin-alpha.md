@@ -28,7 +28,15 @@ pnpm --filter weapp-vite test:types
 pnpm vitest run packages/weapp-vite/test/vite-plugin.test.ts packages/weapp-vite/src/vite/session.test.ts packages/weapp-vite/src/runtime/viteHost/engine.test.ts packages/weapp-vite/src/utils/file/vueConfig.sessions.test.ts
 ```
 
-发布包消费脚本：
+自动打包、严格安装和消费验证（先完成包构建）：
+
+```sh
+node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv
+node packages/weapp-vite/scripts/verify-vite-host-install.mjs vite
+node packages/weapp-vite/scripts/verify-vite-host-install.mjs vite-plus
+```
+
+`ci-vite-host-consumer.yml` 在 Linux / Node 24 上按三个入口分别执行，强制关闭 peer 绕过选项。自动脚本打包 weapp-vite/Wevu 的完整运行时 workspace 依赖闭包（包括常量、编译器和 Rolldown 适配包），使用 tarball 和显式 overrides 安装到仓库外临时目录，避免混入旧 npm runtime；不安装 workspace 链接。直接消费已有临时项目的脚本：
 
 ```sh
 node packages/weapp-vite/scripts/verify-vite-host-consumer.mjs <独立临时消费目录>
