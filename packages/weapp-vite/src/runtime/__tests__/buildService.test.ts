@@ -35,6 +35,8 @@ function createMockCompilerContext() {
   } as MutableCompilerContext
 
   ctx.configService = {
+    loadOptions: {},
+    options: { sourceConfig: {} },
     weappViteConfig: {},
     merge: vi.fn((_meta: any, _inline: any, overrides: any) => overrides ?? {}),
     mergeWorkers: vi.fn(),
@@ -112,6 +114,7 @@ describe('buildService independent bundles', () => {
       runtimeState: createRuntimeState(),
       autoImportService: isolatedScheduling,
       configService: isolatedConfigServiceMock,
+      moduleGraphService: { resetSession: vi.fn(), getEntryDependencies: () => [] },
     })
     isolatedConfigServiceMock.merge.mockClear()
     isolatedConfigServiceMock.setImportMetaEnvDefineOverride.mockClear()
@@ -165,6 +168,7 @@ describe('buildService independent bundles', () => {
       await result
     }
     expect(stages).toEqual(['config', 'build'])
+    expect(createCompilerContextInstanceMock.mock.results.at(-1)?.value.moduleGraphService.resetSession).toHaveBeenCalledOnce()
     expect(scheduleManifestWrite).not.toHaveBeenCalled()
     isolatedScheduling.deferOrSchedule('manifest', true)
     expect(scheduleManifestWrite).toHaveBeenCalledExactlyOnceWith(true)
