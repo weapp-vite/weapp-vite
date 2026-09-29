@@ -38,7 +38,7 @@ async function command(file, args) {
 }
 
 const files = {
-  'tsconfig.json': JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', skipLibCheck: true } }),
+  'tsconfig.json': JSON.stringify({ references: [{ path: './.weapp-vite/tsconfig.app.json' }], files: [] }),
   'tsconfig.types.json': JSON.stringify({ compilerOptions: { noEmit: true, strict: true, skipLibCheck: true, module: 'NodeNext' }, files: ['types.mts'] }),
   'vite.config.mts': `import { appendFileSync } from 'node:fs'
 import { defineConfig } from '${toolchain}'

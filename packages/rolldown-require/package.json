@@ -77,7 +77,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "peerDependencies": {
-    "rolldown": "catalog:"
+    "rolldown": "^1.2.10"
   },
   "dependencies": {
     "@rollup/pluginutils": "^5.4.0",

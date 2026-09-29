@@ -32,9 +32,9 @@ describe('standard Vite plugin npm publication (weapp e2e)', { concurrent: false
 
   for (const kind of ['bare', 'index'] as const) {
     it(`renders and opens emitted npm components with ${kind} imports`, async (context) => {
+      const acceptance = createDomAcceptance(context, 'e2e-apps/tdesign-dialog-import', dialogImportCheckpoints(kind).filter(checkpoint => ['initial', 'open', 'cancel'].includes(checkpoint.id)))
       const miniProgram = await getSharedMiniProgram()
       const page = await miniProgram.reLaunch(`/pages/dialog-${kind}/index`)
-      const acceptance = createDomAcceptance(context, 'e2e-apps/tdesign-dialog-import', dialogImportCheckpoints(kind).filter(checkpoint => ['initial', 'open', 'cancel'].includes(checkpoint.id)))
       await acceptance.check('initial', miniProgram, page)
       const button = await page.$(`#dialog-${kind}-open`)
       expect(button).toBeTruthy()

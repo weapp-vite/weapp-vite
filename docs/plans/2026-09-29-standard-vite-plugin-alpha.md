@@ -1,6 +1,6 @@
 # 标准 Vite 插件：生产构建 alpha 实施记录
 
-关联总追踪项：[#1097](https://github.com/weapp-vite/weapp-vite/issues/1097)。此记录只描述已经实现的生产构建切片，不代表整个集成规划完成。
+关联总追踪项：[#1097](https://github.com/weapp-vite/weapp-vite/issues/1097)。此记录只描述已经实现的生产构建切片，不代表整个集成规划完成。最终产品要求独立 `wv`、普通 Vite 插件与 Vite+ 插件均为长期维护的一等入口，完整编译能力对齐；`wv dev/build` 不退化为临时兼容命令。
 
 ## 已实现
 
@@ -75,3 +75,10 @@ WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devto
 - 两个新增 runtime suite 共 3 个用例，headless 与真实微信开发者工具均通过。真实 IDE 曾出现一次 simulator 启动异常，经既有恢复流程重新启动后通过，未弱化 DOM 断言。
 - 两个 suite 已加入正式 headless 与 IDE 清单；清单回归 29 个用例、共享 IDE 启动约束与 DOM 验收清单检查通过。
 - scoped ESLint 与 website 构建通过；跨平台 CI 和性能验证尚未执行。
+
+## CI 收敛回归
+
+- Ubuntu、Windows、macOS 的新增 npm runtime suite 均在构建前因缺失 `.weapp-vite/tsconfig.app.json` 失败，本地已有支持文件掩盖了问题。新增干净受管 TypeScript fixture，先复现原生 Vite transform 失败，再将支持文件准备放到会话真实构建阶段；配置检查与测试加载仍不落盘。
+- 更新 5 个旧宏解析断言，显式核验调用携带所属编译上下文，不移除会话隔离。
+- 更新后的插件/会话 18 个测试、宏调用相关 101 个测试、包级 typecheck 和 scoped ESLint 通过。两个 runtime suite 的 3 个用例在 headless 与真实微信开发者工具再次通过。
+- 全新 npm 严格安装暴露发布版 `rolldown-require@2.0.33` 的精确 peer 要求为 Rolldown 1.2.10，与当前编译器 1.2.11 不符。其 peer 改为 `^1.2.10`，与开发 catalog 解耦，并添加联动发布 changeset。独立消费验证需要同时安装本 PR 的 `rolldown-require` tarball，不能继续使用旧发布包来代表修复后依赖图。

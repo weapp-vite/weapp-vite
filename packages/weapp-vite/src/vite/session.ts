@@ -4,6 +4,7 @@ import type { CompilerContext } from '../context'
 import { createCompilerContextInstance } from '../context/createCompilerContextInstance'
 import { isReactEnabled } from '../plugins/react'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
+import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
 import { retainWatcherService } from '../runtime/watcherPlugin'
 import { prepareNpmAssets } from './npm'
 
@@ -58,6 +59,11 @@ export class WeappBuildSession {
         throw new Error('[weapp-vite] 标准插件 alpha 尚不支持 worker 或独立分包，请使用 wv build。')
       }
       if (this.state === 'closing' || this.state === 'closed') {
+        throw new Error('[weapp-vite] 构建会话已关闭。')
+      }
+      // 仅在真实构建开始后生成支持文件，保证干净安装可构建且配置检查无落盘副作用。
+      await syncManagedTsconfigFiles(this.context)
+      if (this.closing) {
         throw new Error('[weapp-vite] 构建会话已关闭。')
       }
       this.state = 'building'

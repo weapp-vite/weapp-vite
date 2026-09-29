@@ -63,6 +63,18 @@ describe('standard Vite plugin', () => {
     expect(await readdir(path.join(root, 'dist'))).not.toContain('index.html')
   })
 
+  it('builds from a clean managed TypeScript project without a prior prepare command', async () => {
+    const { root, config } = await fixture()
+    await writeFile(path.join(root, 'tsconfig.json'), JSON.stringify({
+      references: [{ path: './.weapp-vite/tsconfig.app.json' }],
+      files: [],
+    }))
+    expect(await readdir(root)).not.toContain('.weapp-vite')
+    await build(config)
+    expect(await readOutput(root, 'pages/home/index.js')).toContain('home')
+    expect(JSON.parse(await readFile(path.join(root, '.weapp-vite/tsconfig.app.json'), 'utf8')).include).toContain('../src/**/*')
+  })
+
   it('isolates concurrent projects, including mode=test production builds', async () => {
     const first = await fixture('first')
     const second = await fixture('second')
