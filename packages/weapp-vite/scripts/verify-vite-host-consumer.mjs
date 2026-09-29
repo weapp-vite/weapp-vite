@@ -154,3 +154,6 @@ assert.match(await readOutput('pages/native/index.js'), /native-host/)
 console.log(`${toolchain}: packed exports, single host/config, TS/Vue/subpackage build and wv compatibility passed${standalone ? ' (standalone CLI without plugin registration)' : ', including test isolation'}`)
 
 await command(path.join(import.meta.dirname, 'verify-vite-host-dev.mjs'), [root, standalone ? 'wv' : plus ? 'vite-plus' : 'vite'])
+if (!standalone) {
+  await command(path.join(import.meta.dirname, 'verify-vite-host-dev.mjs'), [root, plus ? 'vite-plus' : 'vite', 'build-watch'])
+}

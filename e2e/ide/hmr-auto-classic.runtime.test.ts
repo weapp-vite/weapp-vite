@@ -94,7 +94,7 @@ async function disconnectAutomatorSession() {
   }
 }
 
-for (const host of ['wv', 'vite'] as const) {
+for (const host of ['wv', 'vite', 'vite-watch'] as const) {
   describe(`${host} automatic classic HMR in real WeChat DevTools`, { concurrent: false }, () => {
     beforeAll(async () => {
       await cleanupResidualDevProcesses()
@@ -116,7 +116,9 @@ for (const host of ['wv', 'vite'] as const) {
 
       const args = host === 'wv'
         ? [CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
-        : [VITE_CLI, 'dev', '--config', 'vite.plugin.config.mts', '--host', '127.0.0.1', '--port', '0']
+        : host === 'vite-watch'
+          ? [VITE_CLI, 'build', '--watch', '--config', 'vite.plugin.config.mts']
+          : [VITE_CLI, 'dev', '--config', 'vite.plugin.config.mts', '--host', '127.0.0.1', '--port', '0']
       devProcess = startDevProcess(process.execPath, args, {
         all: true,
         cwd: APP_ROOT,

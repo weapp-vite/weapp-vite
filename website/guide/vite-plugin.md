@@ -66,7 +66,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | `vite build` / `vp build` | 实验性微信生产构建 |
 | `wv dev` / `wv build` | 保留原有能力；显式插件不会重复安装编译器 |
 | `vite dev` / `vp dev` | 实验性 classic 开发：首次落盘、增量、失败恢复与宿主重启 |
-| `build --watch` | 尚未开放，构建前报错 |
+| `vite build --watch` / `vp build --watch` | 实验性生产 watch：完整目标产物、入口增删与失败恢复 |
 | `vp test` | 插件不启动小程序编译；mpcore 测试继续显式使用 artifact API |
 | `wv prepare/open/upload/mcp` | 继续使用小程序专属命令 |
 | `vp preview` | Vite 的 Web 预览，不是小程序二维码预览 |
@@ -76,7 +76,7 @@ React、独立分包、worker、微信插件双产物、lib mode、多平台与 
 
 常规 npm 依赖先在会话临时目录准备，再作为宿主 bundle 的资源统一写出。当前不开放 `npm.buildOptions` 回调和微信 `packNpmManually` 手工输出映射，避免子任务写入宿主未管理的目录；这两类配置继续使用 `wv build`。
 
-生产构建与 classic dev 已接入；build watch、stateful HMR、任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。尤其不能把 bundled-development 能力探针通过等同于 stateful runtime 已通过。
+生产构建、build watch 与 classic dev 已接入；stateful HMR、任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。尤其不能把 bundled-development 能力探针通过等同于 stateful runtime 已通过。
 
 ## classic 开发
 
@@ -95,3 +95,9 @@ React、独立分包、worker、微信插件双产物、lib mode、多平台与 
 - 缓存：开发服务、IDE、上传、MCP 与 runtime E2E 不应配置任务缓存。生产缓存的完整恢复与输入失效矩阵尚未验收。
 
 跟踪：[标准插件与 Vite+ 集成 #1097](https://github.com/weapp-vite/weapp-vite/issues/1097)。
+
+## 生产 watch
+
+`vite build --watch` 与 `vp build --watch` 复用生产配置，每轮通过宿主 emit/write 发布当前目标的完整产物。支持脚本、模板、样式更新，页面增删和语法错误恢复；删除页面时清理对应的已拥有产物及 sourcemap。`emptyOutDir: false` 时保留其他工具写入的文件。关闭 watcher 会等待本轮写出和会话资源释放。
+
+这一路径不提供状态保持 HMR，也不自动重启配置文件。修改 Vite 配置或配置依赖后，按宿主 build watch 的语义重新启动命令；需要配置自动重启时使用 classic `vite dev` / `vp dev`。目标能力限制与插件生产构建一致。

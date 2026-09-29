@@ -123,7 +123,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         commitOwnership = undefined
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         const outputBundle = bundle as unknown as OutputBundle
-        const partial = !preserveCompleteBundle
+        const partial = ctx.configService.isDev && !preserveCompleteBundle
           && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
           && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
         let commitValidation: WxmlDependencyCommit | undefined
@@ -151,7 +151,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             }
           }
           checkpoint('publicationIndependentMs')
-          if (ctx.configService.isDev && !preserveCompleteBundle && outDir) {
+          if ((ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
             commitOwnership = prepareOutputOwnership(ctx, outDir, [
               ...Object.keys(outputBundle),
               ...independentAssets.flatMap(asset => asset.fileName ? [asset.fileName] : []),

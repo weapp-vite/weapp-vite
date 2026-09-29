@@ -131,10 +131,10 @@ function normalizeAppConfigSubPackages(
   return config
 }
 
-async function applyAutoRoutesToAppConfigIfNeeded(
+export async function applyAutoRoutesToAppConfigIfNeeded(
   ctx: MutableCompilerContext,
   config: AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] },
-) {
+): Promise<AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] }> {
   const autoRoutesService = ctx.autoRoutesService
   if (!autoRoutesService?.isEnabled()) {
     return config

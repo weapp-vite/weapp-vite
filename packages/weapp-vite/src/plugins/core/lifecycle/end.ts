@@ -57,9 +57,9 @@ export function createBuildEndHook(state: CorePluginState) {
 
   return async function buildEnd(this: any) {
     state.ctx.moduleGraphService.bindBuildContext(state, this)
-    // 一次性构建清空 outDir 时必须保留全量输出，不能被单个 sidecar 的诊断范围收窄。
-    // watch 构建仅在启动时清目录，后续更新仍遵循增量契约。
-    const replacesOutput = state.resolvedConfig?.build.emptyOutDir === true && !state.resolvedConfig.build.watch
+    // 生产 watch 每轮发布完整目标，不能被单个 sidecar 的诊断范围收窄。
+    const replacesOutput = (!state.ctx.configService.isDev && Boolean(state.resolvedConfig?.build.watch))
+      || (state.resolvedConfig?.build.emptyOutDir === true && !state.resolvedConfig.build.watch)
     if (replacesOutput) {
       state.hmrState.didEmitAllEntries = true
       state.hmrState.skipSharedChunkRefresh = false
@@ -107,7 +107,7 @@ export function createBuildEndHook(state: CorePluginState) {
         dirtyReasonSummary: summary,
       }
 
-      if (metadataOnly) {
+      if (metadataOnly && !replacesOutput) {
         for (const entryId of affectedEntries) {
           state.loadedEntrySet.delete(entryId)
           await state.loadEntry.call(this, entryId, resolveEntryType(state, entryId), { metadataOnly: true })

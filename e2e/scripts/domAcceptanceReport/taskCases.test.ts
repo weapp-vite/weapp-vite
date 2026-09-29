@@ -37,6 +37,7 @@ describe('planned DOM cases versus actual collection', () => {
     expect(cases.map(item => item.name)).toEqual([
       'wv automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
       'vite automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
+      'vite-watch automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
     ])
   })
 

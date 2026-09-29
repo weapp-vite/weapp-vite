@@ -9,6 +9,8 @@ import { promisify } from 'node:util'
 
 const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
+const operation = process.argv[4] ?? 'dev'
+assert(['dev', 'build-watch'].includes(operation))
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 assert(consumer.private && consumer.name.startsWith('weapp-vite-host-'))
@@ -19,7 +21,12 @@ await rm(path.join(root, 'dist'), { recursive: true, force: true })
 await writeFile(path.join(root, 'config-calls.txt'), '')
 let logs = ''
 let exited = false
-const child = execFile(process.execPath, [cli, 'dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0']], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024 })
+const originals = new Map()
+for (const file of ['src/pages/native/index.ts', 'src/pages/vue/index.vue']) {
+  originals.set(file, await readFile(path.join(root, file), 'utf8'))
+}
+const args = operation === 'build-watch' ? ['build', '--watch'] : ['dev', ...toolchain === 'wv' ? [] : ['--host', '127.0.0.1', '--port', '0']]
+const child = execFile(process.execPath, [cli, ...args], { cwd: root, detached: process.platform !== 'win32', maxBuffer: 10 * 1024 * 1024 })
 const done = new Promise((resolve) => {
   child.once('error', error => resolve({ error }))
   child.once('exit', (code, signal) => {
@@ -46,7 +53,7 @@ async function waitForOutput(file, text) {
     }
     await delay(50)
   }
-  throw new Error(`Native ${toolchain} dev did not emit ${file}: ${logs}`)
+  throw new Error(`Native ${toolchain} ${operation} did not emit ${file}: ${logs}`)
 }
 
 let shutdownFailed = false
@@ -61,7 +68,7 @@ try {
   await writeFile(vue, (await readFile(vue, 'utf8')).replace('vue-host', 'vue-dev-update'))
   await waitForOutput('pages/vue/index.js', 'vue-dev-update')
   assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
-  console.log(`${toolchain}: native classic dev initial output and TS/Vue updates passed with one config evaluation`)
+  console.log(`${toolchain}: native ${operation} initial output and TS/Vue updates passed with one config evaluation`)
 }
 finally {
   if (process.platform === 'win32') {
@@ -104,6 +111,9 @@ finally {
   }
   child.stdout.destroy()
   child.stderr.destroy()
+  for (const [file, content] of originals) {
+    await writeFile(path.join(root, file), content)
+  }
 }
 
-assert(!shutdownFailed, `Native ${toolchain} dev did not exit after SIGTERM`)
+assert(!shutdownFailed, `Native ${toolchain} ${operation} did not exit after SIGTERM`)

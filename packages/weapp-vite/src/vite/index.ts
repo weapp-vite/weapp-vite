@@ -47,9 +47,6 @@ export function weapp(): Plugin[] {
           if (serveRequested && config.experimental?.bundledDev) {
             throw new Error('[weapp-vite] classic 开发模式暂不支持 experimental.bundledDev，请关闭此选项。')
           }
-          if (config.build?.watch) {
-            throw new Error('[weapp-vite] 标准插件 alpha 尚未开放 build --watch；请使用 wv dev。')
-          }
           const options = config.weapp
           if ((options?.platform && options.platform !== 'weapp') || options?.lib || options?.pluginRoot
             || options?.worker?.entry || options?.web || (options?.multiPlatform === true || (typeof options?.multiPlatform === 'object' && options.multiPlatform.enabled))) {

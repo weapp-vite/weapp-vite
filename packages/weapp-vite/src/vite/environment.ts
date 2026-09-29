@@ -16,8 +16,18 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
           await session.validateEntries()
         }
         catch (error) {
-          await session.close().catch(() => {})
+          if (!this.meta.watchMode) {
+            await session.close().catch(() => {})
+          }
           throw error
+        }
+      },
+    },
+    buildStart: {
+      order: 'pre',
+      async handler() {
+        if (!serve && this.meta.watchMode) {
+          await session.validateEntries()
         }
       },
     },
@@ -35,8 +45,13 @@ export function createSessionEnvironmentPlugin(session: WeappBuildSession, serve
       order: 'post',
       sequential: true,
       async handler() {
-        await session.close()
+        if (!this.meta.watchMode || serve) {
+          await session.close()
+        }
       },
+    },
+    async closeWatcher() {
+      await session.close()
     },
   }
 }

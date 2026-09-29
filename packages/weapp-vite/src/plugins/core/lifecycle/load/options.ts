@@ -278,10 +278,16 @@ export function createOptionsHook(state: CorePluginState) {
       if (!sourceId) {
         continue
       }
-      logicalInput[name] = createLogicalEntryId(sourceId, source.type)
+      // 生产 watch 的页面拓扑由每轮 buildStart 注册，静态 input 只保留真实 app 入口。
+      const dynamicWatchEntry = Boolean(configService.inlineConfig?.build?.watch && !configService.isDev && source.type !== 'app' && !configService.weappLibConfig?.enabled)
+      if (!dynamicWatchEntry) {
+        logicalInput[name] = createLogicalEntryId(sourceId, source.type)
+      }
       const normalized = normalizeFsResolvedId(sourceId)
       if (normalized) {
-        state.hmrRootInputIds.add(normalizeSourceId(normalized))
+        if (!dynamicWatchEntry) {
+          state.hmrRootInputIds.add(normalizeSourceId(normalized))
+        }
         if (source.type !== 'app' && state.entriesMap) {
           const relativeBase = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(normalized))
           state.entriesMap.set(relativeBase, {

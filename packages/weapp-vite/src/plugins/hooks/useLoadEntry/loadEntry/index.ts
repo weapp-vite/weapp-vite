@@ -250,7 +250,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     type: 'app' | 'page' | 'component',
     loadOptions?: { metadataOnly?: boolean },
   ) {
-    if (configService.isDev) {
+    if (configService.isDev || configService.inlineConfig?.build?.watch) {
       existsCache.clear()
     }
     const stopwatch = debug ? createStopwatch() : undefined
@@ -424,7 +424,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const nativeLayoutScriptEntries = new Set<string>()
     let resolvedPageLayoutPlan: ResolvedPageLayoutPlan | null | undefined
     let entryCodeSource: string | undefined
-    let autoRoutesSignature = configService.isDev
+    let autoRoutesSignature = (configService.isDev || configService.inlineConfig?.build?.watch)
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
     const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
@@ -509,7 +509,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (appResult.appJson) {
         json = appResult.appJson
       }
-      autoRoutesSignature = configService.isDev
+      autoRoutesSignature = (configService.isDev || configService.inlineConfig?.build?.watch)
         ? ctx.autoRoutesService?.getSignature?.()
         : undefined
       entries.push(...appResult.entries)
