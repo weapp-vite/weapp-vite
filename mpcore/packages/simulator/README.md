@@ -15,7 +15,7 @@
 - 提供原生形状的 `wx.onAppShow/offAppShow/onAppHide/offAppHide`；Node/browser session 与测试句柄通过 `triggerAppShow(options?)`、`triggerAppHide({ reason })` 显式驱动应用前后台事件，普通页面导航不会伪造应用切换
 - 测试入口 `launch({ configureSession })` 会在执行 `app.js` 前等待配置完成，可安装测试宿主能力；配置失败会关闭会话，默认 request 仍受既有 mock / strict mock 策略约束，不自动开放真实网络
 - 通过共享 `RuntimeKernel` 管理 artifact、独立执行 realm、timer、diagnostics 与平台适配边界
-- `close()` 会清理页面栈、组件 scope、observer、timer、事件和模块缓存，并使旧页面/节点 handle 失效
+- `close()` 会清理页面栈、组件 scope、observer、timer、事件和模块缓存，并使旧页面/节点 handle 失效；Node/browser 中页面 `onUnload` 或组件 `detached` 抛错后仍继续清理其余组件、关系和调度器，最后保留并抛出首个异常，重复关闭不会重复卸载。普通导航沿用遇错即停止的卸载边界，不启用关闭专用的尽力清理策略。
 
 编写页面和组件单测时优先使用上层 `@mpcore/test`；直接使用本包适合实现 provider、调试桥或更低层运行时断言。
 
@@ -28,6 +28,10 @@
 ## 路由完成与滚动状态
 
 Node/browser 宿主提供 `BeforeAppRoute`、`BeforePageUnload`、`AppRoute`、`AppRouteDone` 四组 `wx.on/off` 事件；同一次导航共享字符串 `routeEventId`。前置事件发生在隐藏/卸载之前，完成事件等待目标页 ready 和该次宿主提交。模拟器通过显式事件能力标记接入，`SDKVersion` 仍为 `0.0.0`，不代表真实微信基础库或 Skyline 渲染器。
+
+业务代码中的 `wx.navigateTo/redirectTo/reLaunch/navigateBack/switchTab` 在调用时捕获选项与回调，在当前调用栈退出后的宿主任务中提交，不会重入当前 HMR 事务或页面挂载。提交后修改或复用原选项对象，不会改变已提交的导航。
+
+底层 `session` 同名方法仍用于同步驱动；测试会话句柄的导航方法必须 `await`，以真实成功或失败回调完成，而不是立即返回旧页面。Node session 在实际清理完成后通过既有事件接口发送一次 `close` 通知，拒绝所有关联测试句柄中尚未完成的导航等待；直接关闭 `configureSession` 保留的底层 session 同样有效。`tap()` 触发导航后应使用 `waitForCurrentPage()` 等可观察条件等待目标页；同路由重启还须等待新页面身份或业务完成信号，不能仅匹配路径。工作台的选中 scope 跟随实际当前页切换，不把导航请求返回当作切换完成。
 
 浏览器自定义 renderer 的 `onRender` 可以返回 Promise；必须在实际 DOM 提交后 resolve，路由完成和 `setData` 回调才会继续。同步 renderer 可保持原来的返回值，非 Promise 返回值被忽略。Web demo 在更新响应式 revision 后返回 Vue `nextTick()`，等待预览 Shadow DOM 的 watcher 完成。关闭会话或被更新导航取代后，不发布旧的路由完成事件。工作台先初始化候选项目，成功后关闭旧会话再替换预览，防止旧提交确认新项目的 DOM；初始化或目录导入失败时保留当前可用会话。
 

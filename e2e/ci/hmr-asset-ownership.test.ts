@@ -20,7 +20,7 @@ async function waitForAsset(file: string, expected: string) {
   throw new Error(`Asset did not receive expected bytes: ${path.basename(file)}`)
 }
 
-async function createAssetWatchFixture(runtime: string) {
+async function createAssetWatchFixture(runtime: string, initialPublicDirectory = true) {
   const tempRoot = path.join(ROOT, '.tmp')
   await fs.ensureDir(tempRoot)
   const app = await fs.mkdtemp(path.join(tempRoot, 'asset-watch-'))
@@ -48,6 +48,9 @@ async function createAssetWatchFixture(runtime: string) {
     'public/app.js': '// PUBLIC-APP-COLLISION',
   }
   for (const [file, content] of Object.entries(sources)) {
+    if (!initialPublicDirectory && file.startsWith('public/')) {
+      continue
+    }
     await fs.outputFile(path.join(app, file), content)
   }
   const dev = startDevProcess(process.execPath, [CLI, 'dev', app, '--platform', 'weapp', '--skipNpm'], {
@@ -84,6 +87,29 @@ describe('copied asset watch ownership', { concurrent: false }, () => {
       await expect(fs.readFile(path.join(app, 'dist/public.txt'), 'utf8')).resolves.toBe('public-original-bytes')
       expect(await fs.readFile(path.join(app, 'dist/app.js'), 'utf8')).not.toContain('PUBLIC-APP-COLLISION')
       expect(dev.getOutput()).not.toMatch(/Build failed|Build error|snapshot refresh failed|asset watcher failed/)
+    }
+    finally {
+      await dev.stop(5_000)
+      await fs.remove(app)
+    }
+  })
+
+  it.each(['classic', 'stateful-experimental'])('watches a public directory created after startup in %s', async (runtime) => {
+    const { app, dev } = await createAssetWatchFixture(runtime, false)
+    const publicDir = path.join(app, 'public')
+    const source = path.join(publicDir, 'nested/late.data')
+    const output = path.join(app, 'dist/nested/late.data')
+    try {
+      await dev.waitForInitialBuild(60_000)
+      expect(await fs.pathExists(publicDir)).toBe(false)
+      await fs.outputFile(source, 'late public original')
+      await dev.waitFor(waitForAsset(output, 'late public original'), 'late public directory discovery')
+      await replaceFileByRename(source, 'late public edited')
+      await dev.waitFor(waitForAsset(output, 'late public edited'), 'late public asset update')
+      await fs.remove(publicDir)
+      await dev.waitFor(expect.poll(() => fs.pathExists(output), { timeout: 30_000, interval: 100 }).toBe(false), 'removed public directory prunes its assets')
+      await fs.outputFile(source, 'late public edited')
+      await dev.waitFor(waitForAsset(output, 'late public edited'), 'recreated public directory restores identical bytes')
     }
     finally {
       await dev.stop(5_000)

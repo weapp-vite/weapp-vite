@@ -33,7 +33,9 @@ it('publishes route completion after the browser render commit and captures befo
       unloaded: event.page.data.unloaded,
       coordinates: event.page.measure('#primary'),
     }))
-    wx.redirectTo({ url: '/pages/detail/index' })
+    await new Promise<void>((resolve, reject) => {
+      wx.redirectTo({ url: '/pages/detail/index', success: () => resolve(), fail: reject })
+    })
     expect(captured).toEqual([{ samePage: true, unloaded: false, coordinates: { scrollTop: 250, scrollLeft: 75 } }])
     expect(displayed).toHaveLength(1)
     await vi.waitFor(() => expect(displayed[1]).toMatchObject({ path: 'pages/detail/index', text: 'true' }))
@@ -46,6 +48,58 @@ it('publishes route completion after the browser render commit and captures befo
   finally {
     session.close()
     preview.remove()
+  }
+})
+
+it('captures each submitted destination and callbacks when browser navigation options are reused', async () => {
+  const session = createBrowserHeadlessSession({ files: createBrowserVirtualFiles(routeEventFiles) })
+  try {
+    const home = session.reLaunch('/pages/home/index')
+    const app = session.getApp()!
+    const wx = app.getWx() as HeadlessWx
+    await vi.waitFor(() => expect(app.globalData.events.at(-1)?.stage).toBe('done'))
+    const callbacks: string[] = []
+    const request = {
+      url: '/pages/detail/index?source=first',
+      success: () => { callbacks.push('first:success') },
+      fail: () => { callbacks.push('first:fail') },
+      complete: () => { callbacks.push('first:complete') },
+    }
+    wx.redirectTo(request)
+    Object.assign(request, {
+      url: '/pages/missing/index',
+      success: () => { callbacks.push('second:success') },
+      fail: () => { callbacks.push('second:fail') },
+      complete: () => { callbacks.push('second:complete') },
+    })
+    wx.redirectTo(request)
+    Object.assign(request, {
+      url: '/pages/other/index?source=mutated',
+      success: () => { callbacks.push('mutated:success') },
+      fail: () => { callbacks.push('mutated:fail') },
+      complete: () => { callbacks.push('mutated:complete') },
+    })
+    expect(session.getCurrentPages()).toEqual([home])
+    expect(callbacks).toEqual([])
+    await vi.waitFor(() => expect(callbacks).toEqual([
+      'first:success',
+      'first:complete',
+      'second:fail',
+      'second:complete',
+    ]))
+    expect(session.getCurrentPages()).toHaveLength(1)
+    const detail = session.getCurrentPages()[0]!
+    expect(detail.route).toBe('pages/detail/index')
+    expect(detail.options).toEqual({ source: 'first' })
+    expect(detail).not.toBe(home)
+    await vi.waitFor(() => expect(app.globalData.events.at(-1)).toMatchObject({
+      stage: 'done',
+      path: 'pages/detail/index',
+      query: { source: 'first' },
+    }))
+  }
+  finally {
+    session.close()
   }
 })
 
@@ -106,7 +160,7 @@ it('acknowledges the real workbench Vue flush after its preview shadow DOM is up
     expect(home.data.taps).toEqual(['caught'])
     shadow!.querySelector<HTMLElement>('#forward-label')!.click()
     expect(home.data.taps).toEqual(['caught', 'forward', 'outer'])
-    expect(session.getCurrentPages().at(-1)?.options).toEqual({ from: 'navigator' })
+    await vi.waitFor(() => expect(session.getCurrentPages().at(-1)?.options).toEqual({ from: 'navigator' }))
     await vi.waitFor(() => expect(displayed).toEqual([
       { path: 'pages/home/index', text: 'true' },
       { path: 'pages/detail/index', text: 'true' },
@@ -388,6 +442,7 @@ it('uses the same native navigation and scroll owner for browser interactions', 
     expect(page.measure('#secondary')).toEqual({ scrollTop: 60, scrollLeft: 0 })
     const navigatorLabel = querySelectorAll(root, '#forward-label')[0]!
     session.dispatchNativeNodeEvent(navigatorLabel, 'tap', {})
+    await vi.waitFor(() => expect(session.getCurrentPages().at(-1)?.route).toBe('pages/detail/index'))
     const detail = session.getCurrentPages().at(-1)!
     expect(detail.route).toBe('pages/detail/index')
     expect(detail.options).toEqual({ from: 'navigator' })

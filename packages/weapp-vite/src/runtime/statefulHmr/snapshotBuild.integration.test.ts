@@ -70,7 +70,7 @@ describe('stateful snapshot component metadata', () => {
       'src/pages/index/index.wxml': '<native-leaf /><wevu-leaf />',
       'src/components/native-leaf/index.js': 'Component({ data: { marker: "PINNED" } })',
       'src/components/native-leaf/index.json': '{"component":true,"options":{"styleIsolation":"apply-shared"}}',
-      'src/components/native-leaf/index.wxml': '<view>PINNED-TEMPLATE:{{marker}}</view>',
+      'src/components/native-leaf/index.wxml': '<view>PINNED-TEMPLATE{{marker}}</view>',
       'src/components/native-leaf/index.wxss': '.native-leaf { width: 19px; }',
     }
     const sources = new Map<string, string>()
@@ -93,9 +93,10 @@ describe('stateful snapshot component metadata', () => {
     expect(script.code).not.toContain('FUTURE')
     const config = outputs.find(item => item.fileName === 'components/native-leaf/index.json') as OutputAsset
     expect(JSON.parse(String(config.source))).toMatchObject({ component: true, options: { styleIsolation: 'apply-shared' } })
-    const template = outputs.find(item => item.fileName === 'components/native-leaf/index.wxml') as OutputAsset
-    expect(String(template.source)).toContain('PINNED-TEMPLATE')
-    expect(String(template.source)).not.toContain('FUTURE-TEMPLATE')
+    expect(outputs.find(item => item.fileName === 'components/native-leaf/index.wxml')).toMatchObject({
+      type: 'asset',
+      source: '<view>PINNED-TEMPLATE{{marker}}</view>',
+    })
     const style = outputs.find(item => item.fileName === 'components/native-leaf/index.wxss') as OutputAsset
     expect(String(style.source)).toMatch(/width:\s*19px/)
     expect(String(style.source)).not.toContain('71px')

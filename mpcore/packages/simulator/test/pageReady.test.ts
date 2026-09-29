@@ -40,7 +40,7 @@ describe.each(['node', 'browser'] as const)('%s page readiness task boundary', (
     const session = createSession()
     const firstPage = session.reLaunch('/pages/destination/index')
     await vi.waitFor(() => expect(firstPage.data.ready).toBe(true))
-    firstPage.openIndex()
+    await firstPage.openIndex()
     const page = session.getCurrentPages().at(-1)!
     expect(page.data.label).toBe('pending')
     expect(session.getApp()?.globalData.events).toEqual(['load', 'show', 'success', 'complete'])
@@ -72,7 +72,7 @@ describe.each(['node', 'browser'] as const)('%s page readiness task boundary', (
     await vi.waitFor(() => expect(callback).toHaveBeenCalledOnce())
   })
 
-  it.each(['load', 'show', 'ready'])('stops later lifecycles when %s redirects the page', async (hook) => {
+  it.each(['load', 'show', 'ready'])('completes current readiness before navigation requested in %s', async (hook) => {
     const session = createSession()
     session.reLaunch(`/pages/index/index?mode=${hook}-redirect`)
     await vi.waitFor(() => {
@@ -80,13 +80,15 @@ describe.each(['node', 'browser'] as const)('%s page readiness task boundary', (
       expect(session.getCurrentPages().at(-1)?.data.ready).toBe(true)
     })
     const events = session.getApp()?.globalData.events as string[]
-    expect(events).not.toContain('routeDone')
-    if (hook === 'load') {
-      expect(events).not.toContain('show')
-    }
-    if (hook !== 'ready') {
-      expect(events).not.toContain('ready')
-    }
+    // 与真实 DevTools 一致：生命周期内发起的 wx 导航不会重入当前页面的挂载。
+    expect(events).toEqual([
+      'load',
+      'show',
+      ...(hook === 'load' ? [] : ['loaded']),
+      'ready',
+      'routeDone',
+      'unload',
+    ])
   })
 
   it('does not run readiness for a page unloaded before its queued task', async () => {
