@@ -11,7 +11,7 @@ const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
 const runtime = process.argv[3]
 const runtimeSuite = process.argv[4] ?? 'stateful'
-assert(['stateful', 'react', 'independent', 'worker', 'plugin'].includes(runtimeSuite))
+assert(['stateful', 'react', 'independent', 'worker', 'plugin', 'lib'].includes(runtimeSuite))
 assert(runtime === undefined || ['headless', 'devtools', 'both'].includes(runtime))
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-host-install-'))
@@ -91,9 +91,9 @@ try {
   ], { cwd: repoRoot, stdio: 'inherit' })
   if (runtime) {
     assert(runtimeSuite !== 'stateful' || toolchain === 'vite-plus', 'stateful 独立 runtime 消费验证当前用于 Vite+；wv/vite 直接运行共享 fixture')
-    const fixtureRoot = runtimeSuite === 'plugin' ? path.join(repoRoot, 'templates/weapp-vite-plugin-template') : path.join(repoRoot, 'e2e-apps', runtimeSuite === 'react' ? 'react-runtime-spike' : runtimeSuite === 'independent' ? 'wevu-subpackage-placement' : runtimeSuite === 'worker' ? 'chunk-modes' : 'stateful-hmr')
+    const fixtureRoot = runtimeSuite === 'plugin' ? path.join(repoRoot, 'templates/weapp-vite-plugin-template') : path.join(repoRoot, 'e2e-apps', runtimeSuite === 'react' ? 'react-runtime-spike' : runtimeSuite === 'independent' ? 'wevu-subpackage-placement' : runtimeSuite === 'worker' ? 'chunk-modes' : runtimeSuite === 'lib' ? 'lib-mode' : 'stateful-hmr')
     await rm(path.join(consumerRoot, 'src'), { recursive: true, force: true })
-    for (const entry of ['src', 'project.config.json', 'project.private.config.json', ...runtimeSuite === 'plugin' ? ['plugin', 'shared', 'tsconfig.json'] : []]) {
+    for (const entry of ['src', 'project.config.json', 'project.private.config.json', ...runtimeSuite === 'plugin' ? ['plugin', 'shared', 'tsconfig.json'] : runtimeSuite === 'lib' ? ['runtime', 'tsconfig.json'] : []]) {
       await cp(path.join(fixtureRoot, entry), path.join(consumerRoot, entry), { recursive: true })
     }
     if (runtimeSuite === 'stateful') {
@@ -109,7 +109,22 @@ try {
         await writeFile(file, `${JSON.stringify(project, null, 2)}\n`)
       }
     }
-    if (runtimeSuite !== 'stateful') {
+    if (runtimeSuite === 'lib') {
+      for (const name of ['weapp-vite.runtime-lib.config.ts', 'weapp-vite.runtime.config.ts']) {
+        let config = await readFile(path.join(fixtureRoot, name), 'utf8')
+        if (toolchain !== 'wv') {
+          config = config.replace('from \'weapp-vite\'', `from '${toolchain}'`).replace('export default defineConfig({', `import { weapp } from 'weapp-vite/vite'\n\nexport default defineConfig({\n  plugins: [weapp()],`)
+        }
+        await writeFile(path.join(consumerRoot, name), config)
+        if (name.includes('runtime-lib')) {
+          await writeFile(path.join(consumerRoot, 'vite.config.mts'), config)
+        }
+      }
+      for (const operation of toolchain === 'wv' ? ['dev'] : ['dev', 'build-watch']) {
+        await execa(process.execPath, [fileURLToPath(new URL('./verify-vite-host-dev.mjs', import.meta.url)), consumerRoot, toolchain, operation, 'lib'], { cwd: repoRoot, stdio: 'inherit' })
+      }
+    }
+    else if (runtimeSuite !== 'stateful') {
       const config = `import { appendFileSync } from 'node:fs'
 import { defineConfig } from '${toolchain === 'wv' ? 'weapp-vite' : toolchain}'
 ${toolchain === 'wv' ? '' : 'import { weapp } from \'weapp-vite/vite\''}
@@ -148,26 +163,28 @@ export default defineConfig({
         'run',
         '-c',
         'e2e/vitest.e2e.devtools.config.ts',
-        runtimeSuite === 'plugin' ? 'e2e/ide/issue-963-plugin-es6.runtime.test.ts' : runtimeSuite === 'react' ? 'e2e/ide/react-runtime-spike.runtime.test.ts' : runtimeSuite === 'independent' ? 'e2e/ide/wevu-subpackage-placement.runtime.test.ts' : runtimeSuite === 'worker' ? 'e2e/ide/worker-host.runtime.test.ts' : 'e2e/ide/stateful-hmr.runtime.test.ts',
+        runtimeSuite === 'lib' ? 'e2e/ide/lib-host.runtime.test.ts' : runtimeSuite === 'plugin' ? 'e2e/ide/issue-963-plugin-es6.runtime.test.ts' : runtimeSuite === 'react' ? 'e2e/ide/react-runtime-spike.runtime.test.ts' : runtimeSuite === 'independent' ? 'e2e/ide/wevu-subpackage-placement.runtime.test.ts' : runtimeSuite === 'worker' ? 'e2e/ide/worker-host.runtime.test.ts' : 'e2e/ide/stateful-hmr.runtime.test.ts',
         '-t',
-        runtimeSuite === 'plugin'
-          ? 'ES6: disabled'
-          : runtimeSuite === 'react'
-            ? 'renders React hooks|renders the compiled native WXML|all six interop edges'
-            : runtimeSuite === 'worker'
-              ? 'exchanges worker messages'
-              : runtimeSuite === 'independent'
-                ? 'visits main, normal subpackage, and independent subpackage vue routes'
-                : provider === 'devtools'
-                  ? 'preserves native Page|preserves native Component|preserves Wevu local and store|preserves native page state across two template'
-                  : 'preserves native Component|preserves Wevu local and store|preserves native page state across two template',
+        runtimeSuite === 'lib'
+          ? 'renders compiled native and Vue libraries'
+          : runtimeSuite === 'plugin'
+            ? 'ES6: disabled'
+            : runtimeSuite === 'react'
+              ? 'renders React hooks|renders the compiled native WXML|all six interop edges'
+              : runtimeSuite === 'worker'
+                ? 'exchanges worker messages'
+                : runtimeSuite === 'independent'
+                  ? 'visits main, normal subpackage, and independent subpackage vue routes'
+                  : provider === 'devtools'
+                    ? 'preserves native Page|preserves native Component|preserves Wevu local and store|preserves native page state across two template'
+                    : 'preserves native Component|preserves Wevu local and store|preserves native page state across two template',
       ], {
         cwd: repoRoot,
         stdio: 'inherit',
         env: {
           WEAPP_VITE_E2E_RUNTIME_PROVIDER: provider,
           WEAPP_VITE_E2E_COMPILER_HOST: toolchain,
-          [runtimeSuite === 'plugin' ? 'WEAPP_VITE_E2E_PLUGIN_PROJECT' : runtimeSuite === 'react' ? 'WEAPP_VITE_E2E_REACT_PROJECT' : runtimeSuite === 'independent' ? 'WEAPP_VITE_E2E_INDEPENDENT_PROJECT' : runtimeSuite === 'worker' ? 'WEAPP_VITE_E2E_WORKER_PROJECT' : 'WEAPP_VITE_E2E_STATEFUL_PROJECT']: consumerRoot,
+          [runtimeSuite === 'lib' ? 'WEAPP_VITE_E2E_LIB_PROJECT' : runtimeSuite === 'plugin' ? 'WEAPP_VITE_E2E_PLUGIN_PROJECT' : runtimeSuite === 'react' ? 'WEAPP_VITE_E2E_REACT_PROJECT' : runtimeSuite === 'independent' ? 'WEAPP_VITE_E2E_INDEPENDENT_PROJECT' : runtimeSuite === 'worker' ? 'WEAPP_VITE_E2E_WORKER_PROJECT' : 'WEAPP_VITE_E2E_STATEFUL_PROJECT']: consumerRoot,
         },
       })
     }

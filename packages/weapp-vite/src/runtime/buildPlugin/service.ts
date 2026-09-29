@@ -42,7 +42,6 @@ import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { getWxmlWatchFiles, isWxmlDependency, observeWxmlDependencies } from '../../wxml/processing/dependencies'
 import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
-import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
@@ -2272,11 +2271,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     const pluginOnly = configService.pluginOnly
     const isMultiPlatformEnabled = configService.multiPlatform.enabled
     const isLibMode = configService.weappLibConfig?.enabled
-    const shouldEmitLibDts = Boolean(
-      isLibMode
-      && configService.weappLibConfig?.dts?.enabled !== false
-      && !configService.isDev,
-    )
     const projectConfigSyncTask = !isLibMode && !pluginOnly
       ? syncProjectConfigToOutput({
           outDir: configService.outDir,
@@ -2298,13 +2292,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.('build start')
     const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
     const [result] = await waitForBuildTasks([
-      (async () => {
-        const output = await runBuildTarget(pluginOnly ? 'plugin' : 'app')
-        if (shouldEmitLibDts) {
-          await generateLibDts(configService)
-        }
-        return output
-      })(),
+      runBuildTarget(pluginOnly ? 'plugin' : 'app'),
       projectConfigSyncTask,
       npmBuildTask,
     ])

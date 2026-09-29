@@ -279,6 +279,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/wevu-json-render.runtime.test.ts',
   'ide/wevu-subpackage-placement.runtime.test.ts',
   'ide/worker-host.runtime.test.ts',
+  'ide/lib-host.runtime.test.ts',
 ]
 const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,

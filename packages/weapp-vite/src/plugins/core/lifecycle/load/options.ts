@@ -9,6 +9,7 @@ import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { prepareIndependentOutputs } from '../../../../runtime/buildPlugin/independentPlan'
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
+import { resolveRealpath } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 
 interface LogicalInputSource {
@@ -214,6 +215,7 @@ export function createOptionsHook(state: CorePluginState) {
         const normalized = normalizeFsResolvedId(entry.input)
         if (normalized) {
           libState.entries.set(normalized, entry)
+          libState.entries.set(normalizeFsResolvedId(resolveRealpath(normalized)), entry)
         }
         return acc
       }, {})

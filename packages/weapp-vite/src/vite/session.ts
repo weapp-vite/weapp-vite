@@ -49,8 +49,10 @@ export class WeappBuildSession extends CompilerSession {
     }
     this.dependencyBuild = undefined
     return this.validating = this.run(async () => {
-      await this.context.scanService.loadAppEntry()
-      checkWorkersOptions('app', this.context.configService, this.context.scanService)
+      if (!this.context.configService.weappLibConfig?.enabled) {
+        await this.context.scanService.loadAppEntry()
+        checkWorkersOptions('app', this.context.configService, this.context.scanService)
+      }
       if (this.isClosing) {
         throw new Error('[weapp-vite] 构建会话已关闭。')
       }

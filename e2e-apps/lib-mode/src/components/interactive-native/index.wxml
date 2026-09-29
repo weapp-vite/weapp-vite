@@ -1,0 +1,3 @@
+<view class="native-label">Native library</view>
+<button id="native-increment" bindtap="increment">increment</button>
+<view class="native-count">{{count}}</view>

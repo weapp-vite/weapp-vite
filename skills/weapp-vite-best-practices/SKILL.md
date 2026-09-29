@@ -157,7 +157,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 ## 标准 Vite 插件（实验性）
 
 - 配置可导入 `weapp` from `weapp-vite/vite`，以 `plugins: [weapp()]` 激活；继续读取顶层 `weapp`。
-- 当前插件支持单目标微信生产构建与实验性 classic/stateful 开发（`vite dev` / `vp dev`，通过顶层 `weapp.hmr.runtime` 选择），以及原生 `vite build --watch` / `vp build --watch`（生产完整产物，修改宿主配置后需重启命令）；支持微信原生 TS、Wevu Vue 与 React；React 静态 TSX 的 stateful 更新会重建会话，不承诺 hooks 状态保持。已支持独立分包及其宿主监听、子构建配置复用；worker 已进入共享子目标与宿主监听；stateful worker 更新使用完整批次，不承诺线程状态保持。微信插件双产物已接入独立会话与原生 app builder；插件更新不承诺状态保持，双产物暂不支持 `build.write: false`。lib、其他平台及 Web 目标仍待对齐。独立 `wv dev/build` 保留完整能力。
+- 当前插件支持单目标微信生产构建与实验性 classic/stateful 开发（`vite dev` / `vp dev`，通过顶层 `weapp.hmr.runtime` 选择），以及原生 `vite build --watch` / `vp build --watch`（生产完整产物，修改宿主配置后需重启命令）；支持微信原生 TS、Wevu Vue 与 React；React 静态 TSX 的 stateful 更新会重建会话，不承诺 hooks 状态保持。已支持独立分包及其宿主监听、子构建配置复用；worker 已进入共享子目标与宿主监听；stateful worker 更新使用完整批次，不承诺线程状态保持。微信插件双产物已接入独立会话与原生 app builder；插件更新不承诺状态保持，双产物暂不支持 `build.write: false`。lib mode 已共用原生声明发布、classic 开发与生产 watch；其他平台及 Web 目标仍待对齐。独立 `wv dev/build` 保留完整能力。
 - 宿主配置是唯一隐式来源；插件不会再次发现 `weapp-vite.config.*`。Vite+ 要按官方 alias 规则统一 `vite` 与 core，不能只看版本号相等。
 - Vitest 配置加载不启动小程序编译。`vp preview`、`vp pack` 不能分别解释为微信预览或小程序组件库构建。
 - 使用前优先读取当前包 `dist/docs/vite-plugin.md` 的支持矩阵，不把后续路线图当成已发布能力。

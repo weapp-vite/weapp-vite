@@ -11,7 +11,7 @@ import {
 
 /** 复用依赖编译器准备中间产物，最终输出统一交给宿主 emit/write。 */
 export async function prepareNpmAssets(ctx: CompilerContext): Promise<EmittedAsset[]> {
-  if (!ctx.configService.weappViteConfig.npm?.enable) {
+  if (ctx.configService.weappLibConfig?.enabled || !ctx.configService.weappViteConfig.npm?.enable) {
     return []
   }
   const candidates = resolveNpmBuildCandidateDependenciesSync(ctx, ctx.configService.packageJson)

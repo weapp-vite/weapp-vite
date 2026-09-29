@@ -11,7 +11,7 @@ keywords:
 
 # 标准 Vite 插件与 Vite+
 
-`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件、普通分包、独立分包、worker 与微信插件双产物。主产物由宿主 Vite 的编译管线生成。
+`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件、普通分包、独立分包、worker、微信插件双产物与 lib mode。主产物由宿主 Vite 的编译管线生成。
 
 ## 配置
 
@@ -72,7 +72,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | `vp preview` | Vite 的 Web 预览，不是小程序二维码预览 |
 | `vp pack` | 通用库打包，不替代小程序 lib mode |
 
-lib mode、多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
+多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
 
 常规 npm 依赖先在会话临时目录准备，再作为宿主 bundle 的资源统一写出。当前不开放 `npm.buildOptions` 回调和微信 `packNpmManually` 手工输出映射，避免子任务写入宿主未管理的目录；这两类配置继续使用 `wv build`。
 
@@ -139,3 +139,11 @@ classic、stateful 和生产 watch 不为 worker 额外启动构建 watcher。�
 插件输出可放在主应用输出内部或同级目录，但不能等于或包含主应用输出目录。classic 与 stateful 宿主都保留独立的插件编译会话，由父会话负责关闭；插件 watcher 负责增量更新与入口拓扑重建，不承诺插件 JS 状态保持。生产 watch 支持共享依赖、编译失败恢复和插件页面移除。
 
 当前阶段不支持双产物的 `build.write: false`，会提前报错。标准插件的 npm 自定义 builder、手工 npm 输出映射等既有限制仍适用；这些组合继续进入后续能力对齐验收。
+
+## 小程序组件库
+
+顶层 `weapp.lib` 直接用于 `wv build`、`vite build` 和 `vp build`。原生组件、Vue SFC、纯脚本入口及 `fileName` 输出映射沿用同一编译器，声明文件与 JS、JSON、模板和样式一起进入原生 bundle；`build.write: false` 返回包含声明的内存产物。
+
+生产 watch 追踪声明编译器发现的类型依赖，类型变更会重新生成声明。每轮声明编译使用独立 TypeScript 缓存，避免旧类型跨轮复用。classic `dev` 可用于组件库源码更新，开发模式沿用独立 CLI 不生成声明的规则；组件交互在消费它的小程序应用中验证。
+
+`vp pack` 继续使用通用库打包语义；小程序库的模板、样式、JSON 和专属声明仍通过 `weapp.lib` 构建。

@@ -11,7 +11,7 @@ const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
 const profile = process.argv[5] ?? 'basic'
-assert(['basic', 'react', 'independent', 'worker', 'plugin'].includes(profile))
+assert(['basic', 'react', 'independent', 'worker', 'plugin', 'lib'].includes(profile))
 assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
@@ -29,7 +29,7 @@ let exited = false
 const originals = new Map()
 const independentSource = 'src/subpackages/independent-wevu/pages/entry/index.vue'
 const independentOutput = 'subpackages/independent-wevu/pages/entry/index.wxml'
-for (const file of profile === 'plugin' ? ['shared/shared-data.ts', 'plugin/plugin.json', 'vite.config.mts'] : profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : profile === 'worker' ? ['src/workers/messages/message.ts', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
+for (const file of profile === 'lib' ? ['src/components/interactive-native/index.ts', 'src/components/interactive-vue/index.vue', 'vite.config.mts'] : profile === 'plugin' ? ['shared/shared-data.ts', 'plugin/plugin.json', 'vite.config.mts'] : profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : profile === 'worker' ? ['src/workers/messages/message.ts', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
   originals.set(file, await readFile(path.join(root, file), 'utf8'))
 }
 if (operation === 'stateful-dev') {
@@ -97,7 +97,11 @@ async function waitForDevReady() {
 
 let shutdownFailed = false
 try {
-  if (profile === 'plugin') {
+  if (profile === 'lib') {
+    await waitForOutput('library/native/index.js', 'Native library')
+    await waitForOutput('library/vue/index.wxml', 'Vue library')
+  }
+  else if (profile === 'plugin') {
     await waitForOutput('../dist-plugin/index.js', '[shared:')
     await waitForOutput('app.json', 'hello-plugin')
   }
@@ -118,7 +122,19 @@ try {
   }
   await waitForWatchRound(1)
   await waitForDevReady()
-  if (profile === 'plugin') {
+  if (profile === 'lib') {
+    const native = 'src/components/interactive-native/index.ts'
+    const vue = 'src/components/interactive-vue/index.vue'
+    await writeFile(path.join(root, native), originals.get(native).replace('Native library', 'Updated native library'))
+    await waitForOutput('library/native/index.js', 'Updated native library')
+    if (operation === 'build-watch') {
+      await waitForOutput('library/native/index.d.ts', 'Updated native library')
+    }
+    await writeFile(path.join(root, vue), originals.get(vue).replace('Vue library', 'Updated Vue library'))
+    await waitForOutput('library/vue/index.wxml', 'Updated Vue library')
+    console.log(`${toolchain}: native library ${operation} updates passed`)
+  }
+  else if (profile === 'plugin') {
     const file = 'shared/shared-data.ts'
     await writeFile(path.join(root, file), originals.get(file).replace('[shared:', '[updated-shared:'))
     await waitForOutput('../dist-plugin/index.js', '[updated-shared:')

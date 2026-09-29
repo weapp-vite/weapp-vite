@@ -12,6 +12,7 @@ import { createCompilerPluginPlugins } from './compilerPlugin'
 import { weappVite } from './core'
 import { css } from './css'
 import { i18n } from './i18n'
+import { createLibDtsPlugin } from './libDts'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
 import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
 import { preflight } from './preflight'
@@ -118,6 +119,9 @@ export function vitePluginWeapp(
     groups.push([compilerPlugins[1]!])
   }
 
+  if (!subPackageMeta && libModeEnabled) {
+    groups.push([createLibDtsPlugin(ctx)])
+  }
   groups.push([createOutputPublicationPlugin(ctx, subPackageMeta)])
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))

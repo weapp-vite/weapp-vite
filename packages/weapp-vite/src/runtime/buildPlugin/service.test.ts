@@ -2903,7 +2903,7 @@ describe('runtime buildPlugin service', () => {
     expect(closePlugin).toHaveBeenCalledOnce()
   })
 
-  it('runs prod lib build and emits dts without npm/project-config/plugin build', async () => {
+  it('delegates prod lib publication to the native plugin chain without CLI-only dts/npm tasks', async () => {
     process.env.NODE_ENV = 'production'
     buildMock.mockResolvedValueOnce({ output: [] })
 
@@ -2925,7 +2925,7 @@ describe('runtime buildPlugin service', () => {
     await service.build()
 
     expect(buildMock).toHaveBeenCalledTimes(1)
-    expect(generateLibDtsMock).toHaveBeenCalledWith(ctx.configService)
+    expect(generateLibDtsMock).not.toHaveBeenCalled()
     expect(syncProjectConfigToOutputMock).not.toHaveBeenCalled()
     expect(ctx.npmService.build).not.toHaveBeenCalled()
   })
