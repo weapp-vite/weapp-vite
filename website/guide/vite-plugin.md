@@ -1,3 +1,14 @@
+---
+description: 使用 weapp-vite 标准 Vite 插件与 Vite+ 构建微信小程序，了解顶层 weapp 配置、core 依赖 alias、生产构建 alpha 支持范围，以及开发模式、测试和命令兼容边界。
+keywords:
+  - weapp-vite
+  - Vite 插件
+  - Vite+
+  - 微信小程序
+  - 生产构建
+  - Vue SFC
+---
+
 # 标准 Vite 插件与 Vite+
 
 `weapp-vite/vite` 提供实验性的生产构建入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、自动路由、自动组件和普通分包。主产物由宿主 Vite 的编译管线生成。
