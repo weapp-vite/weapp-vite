@@ -49,6 +49,7 @@ const { count: storeCount } = storeToRefs(store)
   });`)
   files.set('components/vue-counter/index.wxml', compiled.template ?? '')
   files.set('pages/index/index.wxml', files.get('pages/index/index.wxml')!
+    .replace('<vue-counter id=', '<vue-counter wx:if="{{showChild}}" id=')
     .replace('<button class="restore"', '<button class="repatch" bindtap="repatchChild">repatch</button>\n      <button class="restore"'))
   const header = `
     require('../../hmr-runtime.js');
@@ -71,7 +72,10 @@ const { count: storeCount } = storeToRefs(store)
     runtime.registrationModuleId = 'pages/index/index.js';
     bridge.installNative('Page', Page);
     bridge.Page({
-      data: { parentCount: 0, input: '' },
+      data: { parentCount: 0, input: '', showChild: true },
+      detachChildForHmr() { bridge.beginUpdate(); this.setData({ showChild: false }); },
+      attachChildForHmr() { this.setData({ showChild: true }); },
+      finishHostReplacement() { bridge.endUpdate(); },
       incrementParent() { this.setData({ parentCount: this.data.parentCount + 1 }); },
       onInput(event) { this.setData({ input: event.detail.value }); },
       flush() { return runtime.loadExports('vue-shared-runtime.js').nextTick(); },

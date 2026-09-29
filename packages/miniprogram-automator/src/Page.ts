@@ -160,9 +160,7 @@ export default class Page {
       return await this.queryRouteElement(selector, options)
     }
     try {
-      const element = await this.send('Page.getElement', { selector }, {
-        timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
-      })
+      const element = await this.queryPageElements('Page.getElement', selector, options)
       return Element.create(this.connection, { ...element, pageId: this.id }, this.elementMap)
     }
     catch (error) {
@@ -179,9 +177,7 @@ export default class Page {
       return await this.queryRouteElements(selector, options)
     }
     try {
-      const { elements } = await this.send('Page.getElements', { selector }, {
-        timeout: options.timeout ?? PAGE_QUERY_TIMEOUT,
-      })
+      const { elements } = await this.queryPageElements('Page.getElements', selector, options)
       return elements.map((element: any) => {
         return Element.create(this.connection, { ...element, pageId: this.id }, this.elementMap)
       })
@@ -192,6 +188,20 @@ export default class Page {
       }
       this.preferAppServicePageProtocol = true
       return await this.queryRouteElements(selector, options)
+    }
+  }
+
+  private async queryPageElements(method: 'Page.getElement' | 'Page.getElements', selector: string, options: PageQueryOptions) {
+    const timeout = options.timeout ?? PAGE_QUERY_TIMEOUT
+    try {
+      return await this.send(method, { selector }, { timeout })
+    }
+    catch (error) {
+      // 导航期间 AppService 已可查询，但页面帧可能尚未接收首个 RPC；只重试无副作用的元素查询。
+      if (options.fallback === false || !isRecoverablePageProtocolError(error, method)) {
+        throw error
+      }
+      return await this.send(method, { selector }, { timeout })
     }
   }
 

@@ -28,6 +28,7 @@ import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { isReactStaticTemplateSource } from '../../plugins/react'
+import { setTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
@@ -51,6 +52,7 @@ import { createStatefulHmrControlSource } from './runtimeSource'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 import { createStatefulHmrSnapshotDiagnostics } from './snapshotDiagnostics'
 import { StatefulHmrSnapshotScheduler } from './snapshotScheduler'
+import { retainStylesUntilScriptApplied } from './styleDelivery'
 import { StatefulHmrTransport } from './transport'
 import { StatefulHmrViteAdapter } from './viteAdapter'
 
@@ -241,6 +243,7 @@ class StatefulHmrSession {
     this.emittedSourceIds = collectStatefulHmrEmittedSourceIds(snapshots.initial.output, server.config.root)
     this.directoryUpdates.seedSources([...this.entryIds, ...this.emittedSourceIds])
     this.initialSnapshot = snapshots.initial
+    setTailwindStyleOwners(ctx, snapshots.initial.tailwindStyleOwners)
     this.transport = new StatefulHmrTransport(
       server,
       async (buildId, source) => {
@@ -475,7 +478,7 @@ class StatefulHmrSession {
         }
         else {
           if (snapshot) {
-            this.commitGlassEaselAnalysis(snapshot, 'full')
+            this.commitSnapshotMetadata(snapshot, 'full')
           }
           this.buildEvents.emitEvent({ code: 'END' })
         }
@@ -599,6 +602,7 @@ class StatefulHmrSession {
           if (shouldResetStatefulHmrRetention(this.transport.retainedDeltaCount, this.transport.retainedDeltaBytes, Buffer.byteLength(code))) {
             this.requestFullBuild(files)
           }
+          let deferredStyles: StatefulHmrOutputFile[] | undefined
           return {
             commit: () => this.enqueueOutput(async () => {
               this.diagnostics?.delivery('commit', input.revision, files)
@@ -612,10 +616,14 @@ class StatefulHmrSession {
                       { createIfMissing: true, componentPageGlobalStyleRoutes: this.componentPageGlobalStyleRoutes, refreshPageStyles: true },
                     )
                   : [...this.snapshotAssets.values()]
-              await this.commitSnapshotAssets(next)
-              if (snapshot) {
+              deferredStyles = filenames.length ? next : undefined
+              const beforeScripts = deferredStyles
+                ? retainStylesUntilScriptApplied(this.snapshotAssets.values(), next, resolveOutputExtensions(this.ctx.configService?.outputExtensions).styleExtension)
+                : next
+              await this.commitSnapshotAssets(beforeScripts)
+              if (snapshot && !deferredStyles) {
                 this.adoptSnapshot(snapshot, next)
-                this.commitGlassEaselAnalysis(snapshot, 'refresh')
+                this.commitSnapshotMetadata(snapshot, 'refresh')
               }
             }),
             publish: async () => {
@@ -636,6 +644,15 @@ class StatefulHmrSession {
                   acknowledged += 1
                 }
               })
+              if (deferredStyles) {
+                await this.enqueueOutput(async () => {
+                  await this.commitSnapshotAssets(deferredStyles!)
+                  if (snapshot) {
+                    this.adoptSnapshot(snapshot, deferredStyles!)
+                    this.commitSnapshotMetadata(snapshot, 'refresh')
+                  }
+                })
+              }
               if (scriptFacts) {
                 refreshGlassEaselNativeScripts(this.ctx, scriptFacts)
               }
@@ -779,7 +796,7 @@ class StatefulHmrSession {
           this.resynchronizing = false
           this.rebuiltEntryGraphRevision = entryGraphRevision
           releaseSourceChanges()
-          this.commitGlassEaselAnalysis(snapshot, 'full')
+          this.commitSnapshotMetadata(snapshot, 'full')
           this.buildEvents.emitEvent({ code: 'END' })
         }
       }
@@ -803,7 +820,7 @@ class StatefulHmrSession {
       if (batch.isSuperseded()) {
         return
       }
-      this.commitGlassEaselAnalysis(snapshot, 'refresh')
+      this.commitSnapshotMetadata(snapshot, 'refresh')
       this.buildEvents.emitEvent({ code: 'END' })
     })
   }
@@ -832,7 +849,8 @@ class StatefulHmrSession {
     )
   }
 
-  private commitGlassEaselAnalysis(snapshot: StatefulHmrSnapshot, mode: 'full' | 'refresh'): void {
+  private commitSnapshotMetadata(snapshot: StatefulHmrSnapshot, mode: 'full' | 'refresh'): void {
+    setTailwindStyleOwners(this.ctx, snapshot.tailwindStyleOwners)
     const current = this.ctx.runtimeState.glassEasel.analysisByOwner
     const preserveScripts = isGlassEaselDetected(this.ctx)
     // 资产快照不发布 JS，不能回滚构建期间已经提交的 native full/delta 事实。

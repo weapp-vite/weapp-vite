@@ -7,6 +7,7 @@ import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { compilerSourceId } from '../../plugins/compilerPlugin/hmr'
+import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
@@ -94,6 +95,7 @@ export async function buildStatefulHmrSnapshot(
         && ctx.runtimeState.build.hmr.entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(id)))?.type === 'component',
       ),
       getGlobalStyleRoutes: () => globalStyleRoutes,
+      getTailwindStyleOwners: () => getTailwindStyleOwners(ctx),
     }
   }).finally(() => ctx.moduleGraphService.resetSession())
 }

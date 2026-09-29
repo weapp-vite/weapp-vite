@@ -4,6 +4,7 @@ import { createPinia, defineComponent, defineStore, nextTick, onAttached, onUnlo
 import { applySnapshotUpdate } from '@/runtime/app/setData/snapshot'
 
 describe('runtime: stateful HMR', () => {
+  let dispose: ((instance: any) => void) | undefined
   let applying = false
   let refresh: ((instance: any, stateSnapshot?: Record<string, any>) => void) | undefined
   let registeredDefinition: Record<string, any> | undefined
@@ -12,6 +13,7 @@ describe('runtime: stateful HMR', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     refresh = undefined
+    dispose = undefined
     registeredDefinition = undefined
     trackedDefinition = undefined
     applying = false
@@ -23,7 +25,9 @@ describe('runtime: stateful HMR', () => {
       trackWevuComponent(
         definition: Record<string, any>,
         callback: (instance: any, stateSnapshot?: Record<string, any>) => void,
+        cleanup: (instance: any) => void,
       ) {
+        dispose = cleanup
         refresh = callback
         trackedDefinition = {
           ...definition,
@@ -43,6 +47,40 @@ describe('runtime: stateful HMR', () => {
   afterEach(() => {
     delete (globalThis as any).Component
     delete (globalThis as any)[WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY]
+  })
+
+  it('stops queued and future state updates on a replaced host without replaying user unload hooks', async () => {
+    const count = ref(0)
+    const unloaded = vi.fn()
+    defineComponent({
+      setup() {
+        onUnload(unloaded)
+        return { count }
+      },
+    })
+    const createHost = () => {
+      const instance: any = { data: {}, properties: {} }
+      instance.setData = vi.fn((payload: Record<string, any>) => Object.assign(instance.data, payload))
+      return instance
+    }
+    const oldHost = createHost()
+    registeredDefinition!.lifetimes.attached.call(oldHost)
+    await nextTick()
+    oldHost.setData.mockClear()
+    count.value = 1
+    expect(dispose).toBeTypeOf('function')
+    dispose!(oldHost)
+    const replacement = createHost()
+    refresh!(replacement, { count: 1 })
+    await nextTick()
+    count.value = 2
+    await nextTick()
+    await nextTick()
+
+    expect(oldHost.setData).not.toHaveBeenCalled()
+    expect(oldHost.__wevu).toBeUndefined()
+    expect(replacement.data.count).toBe(2)
+    expect(unloaded).not.toHaveBeenCalled()
   })
 
   it('rehydrates setup state from native data without replaying user lifecycle hooks', async () => {

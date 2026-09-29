@@ -18,7 +18,7 @@ it('keeps the latest parent and Vue child DOM state through consecutive bridge p
   }
   try {
     const page = session.reLaunch('/pages/index/index')
-    const child = page.selectComponent!('#vue-counter')
+    let child = page.selectComponent!('#vue-counter')
     const check = async (parent: string, counter: string, result: string, marker: string, input = 'held-input') => {
       await page.flush()
       render()
@@ -50,6 +50,21 @@ it('keeps the latest parent and Vue child DOM state through consecutive bridge p
     action('.child-increment')
     action('.parent-increment')
     await check('2', '8', 'step:1', 'STATEFUL-VUE-BASE')
+    // 对齐 IDE 模板热更新：宿主替换组件时抑制用户生命周期，但必须销毁旧响应式实例。
+    const detached = child!
+    page.detachChildForHmr()
+    session.renderCurrentPage()
+    expect(detached.__wevu).toBeUndefined()
+    const detachedCount = detached.data.storeCount
+    expect(detachedCount).toBe(8)
+    page.attachChildForHmr()
+    session.renderCurrentPage()
+    page.finishHostReplacement()
+    child = page.selectComponent!('#vue-counter')
+    expect(child).not.toBe(detached)
+    action('.child-increment')
+    await check('2', '9', 'step:1', 'STATEFUL-VUE-BASE')
+    expect(detached.data.storeCount).toBe(detachedCount)
 
     action('.patch')
     await page.reLaunch()
@@ -60,7 +75,7 @@ it('keeps the latest parent and Vue child DOM state through consecutive bridge p
     expect(nextPage.selectComponent!('#vue-counter')).not.toBe(child)
     expect(preview.querySelector('.parent-count')?.textContent).toBe('0')
     expect(preview.querySelector('.child-count')?.textContent).toBe('0')
-    expect(preview.querySelector('.child-store-count')?.textContent).toBe('8')
+    expect(preview.querySelector('.child-store-count')?.textContent).toBe('9')
     expect(preview.querySelector('.child-result')?.textContent).toBe('ready')
     expect(preview.querySelector('.child-marker')?.textContent).toBe('STATEFUL-VUE-PATCHED')
     expect(preview.querySelector('.input')?.getAttribute('value')).toBe('')

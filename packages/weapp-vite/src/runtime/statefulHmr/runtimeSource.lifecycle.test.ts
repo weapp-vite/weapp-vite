@@ -28,7 +28,7 @@ interface RuntimeBridge {
   Page: (definition: Definition) => Definition
   Component: (definition: Definition) => void
   takeNativeDefinitions: (name: string) => Definition[]
-  trackWevuComponent: (definition: Definition, refresh: (instance: HostInstance, snapshot?: HostInstance['data']) => void) => Definition
+  trackWevuComponent: (definition: Definition, refresh: (instance: HostInstance, snapshot?: HostInstance['data']) => void, dispose?: (instance: HostInstance) => void) => Definition
   beginUpdate: () => void
   endUpdate: () => void
   getDebugSnapshot: () => { instances: { moduleId: string, count: number }[] }
@@ -282,6 +282,55 @@ describe('stateful HMR host lifecycle tracking', () => {
     definition!.lifetimes!.attached!.call(nextPage)
     expect(nextPage.data).toEqual({ count: 0, input: '' })
     expect(refresh).toHaveBeenLastCalledWith(nextPage, { count: 0, input: '' })
+  })
+
+  it('disposes suppressed Wevu detachments while retaining replacement state', () => {
+    const runtime = createRuntime()
+    const detached = vi.fn()
+    const dispose = vi.fn()
+    const definition = runtime.bridge.trackWevuComponent({ lifetimes: { detached } }, vi.fn(), dispose)
+    const original = createHost()
+    definition.lifetimes!.attached!.call(original)
+    original.data.count = 3
+    runtime.bridge.beginUpdate()
+    definition.lifetimes!.detached!.call(original)
+    const replacement = createHost()
+    definition.lifetimes!.attached!.call(replacement)
+    runtime.finishUpdate()
+
+    expect(dispose).toHaveBeenCalledExactlyOnceWith(original)
+    expect(detached).not.toHaveBeenCalled()
+    expect(replacement.data.count).toBe(3)
+  })
+
+  it('initializes replacement Wevu hosts during template-only updates before ready can reset their state', () => {
+    const runtime = createRuntime()
+    const mounted = new WeakSet<object>()
+    const mount = vi.fn((instance: HostInstance, snapshot?: HostInstance['data']) => {
+      if (!mounted.has(instance)) {
+        mounted.add(instance)
+        instance.setData(snapshot ?? { count: 0, input: '' })
+      }
+    })
+    const source = {
+      lifetimes: {
+        attached(this: HostInstance) { mount(this) },
+        ready(this: HostInstance) { mount(this) },
+      },
+    }
+    const definition = runtime.bridge.trackWevuComponent(source, mount)
+    const original = createHost()
+    definition.lifetimes!.attached!.call(original)
+    original.data = { count: 2, input: 'held' }
+    runtime.bridge.beginUpdate()
+    definition.lifetimes!.detached!.call(original)
+    const replacement = createHost()
+    definition.lifetimes!.attached!.call(replacement)
+    runtime.finishUpdate()
+    definition.lifetimes!.ready!.call(replacement)
+
+    expect(replacement.data).toEqual({ count: 2, input: 'held' })
+    expect(mount).toHaveBeenCalledWith(replacement, { count: 2, input: 'held' })
   })
 
   it('cleans Wevu page unloads during suppression and supplies missing component boundaries', () => {

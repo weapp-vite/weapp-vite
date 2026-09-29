@@ -123,6 +123,7 @@ const instanceSnapshots = new WeakMap();
 const moduleSnapshots = new Map();
 const pendingNativeDefinitions = new Map();
 const wevuRefreshes = new Map();
+const wevuDisposals = new Map();
 const wevuRefreshGenerations = new Map();
 const wevuInstanceGenerations = new WeakMap();
 let suppressLifecycles = false;
@@ -165,6 +166,13 @@ function forgetInstance(instance, moduleId) {
   instanceSnapshots.delete(instance);
   if (!suppressLifecycles) moduleSnapshots.delete(moduleId);
 }
+function forgetWevuInstance(instance, moduleId) {
+  try {
+    if (suppressLifecycles) wevuDisposals.get(moduleId)?.(instance);
+  } finally {
+    forgetInstance(instance, moduleId);
+  }
+}
 function restoreInstanceState(instance, moduleId) {
   const snapshot = instanceSnapshots.get(instance);
   if (!snapshot || snapshot.moduleId !== moduleId) return;
@@ -189,7 +197,7 @@ function restoreTrackedInstances() {
 function refreshWevuInstance(instance, moduleId) {
   if (!instance || (typeof instance !== 'object' && typeof instance !== 'function')) return;
   const generation = wevuRefreshGenerations.get(moduleId) || 0;
-  if (generation === 0) return;
+  if (generation === 0 && !suppressLifecycles) return;
   let generations = wevuInstanceGenerations.get(instance);
   if (generations?.get(moduleId) === generation) return;
   const refresh = wevuRefreshes.get(moduleId);
@@ -309,7 +317,7 @@ function decorateWevuComponent(definition, moduleId) {
         return callLatestWevuFunction(this, name, fallback, args);
       } finally {
         rememberInstanceState(this, moduleId);
-        if (name === 'onUnload') forgetInstance(this, moduleId);
+        if (name === 'onUnload') forgetWevuInstance(this, moduleId);
       }
     };
   }
@@ -326,7 +334,7 @@ function decorateWevuComponent(definition, moduleId) {
         if (suppressLifecycles) return;
         return callLatestWevuFunction(this, 'lifetimes.' + name, fallback, args);
       } finally {
-        if (name === 'detached') forgetInstance(this, moduleId);
+        if (name === 'detached') forgetWevuInstance(this, moduleId);
       }
     };
   }
@@ -410,13 +418,14 @@ globalThis[bridgeKey] = {
       refreshGenerations: [...wevuRefreshGenerations.entries()],
     };
   },
-  trackWevuComponent(definition, refresh) {
+  trackWevuComponent(definition, refresh, dispose) {
     const moduleId = runtime.currentModuleId || runtime.registrationModuleId || 'Component';
     if (!runtime.applyingPatch && runtime.patchedModules.has(moduleId)) {
       return decorateWevuComponent(definition, moduleId);
     }
     definitions.set(moduleId, definition);
     if (typeof refresh === 'function') wevuRefreshes.set(moduleId, refresh);
+    if (typeof dispose === 'function') wevuDisposals.set(moduleId, dispose);
     if (runtime.applyingPatch) {
       wevuRefreshGenerations.set(moduleId, (wevuRefreshGenerations.get(moduleId) || 0) + 1);
       for (const instance of [...getInstances(moduleId)]) refreshWevuInstance(instance, moduleId);

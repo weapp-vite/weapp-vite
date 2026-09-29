@@ -18,6 +18,8 @@ import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet, waitForEmittedStylesheet } from '../utils/emittedStylesheet'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
+import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
 import { createWevuTailwindHmrFileDiagnostics } from '../utils/wevuTailwindHmrDiagnostics'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
@@ -111,6 +113,8 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
   let indexVue = ''
   let indexWxmlDist = ''
   let miniProgram: any
+  let disposeTransport: (() => void) | undefined
+  const headless = resolveRuntimeProviderName() === 'headless'
 
   async function removeAutomatorSessionFiles() {
     if (!fixtureRoot) {
@@ -123,8 +127,10 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
   }
 
   async function stopDevSession() {
+    disposeTransport?.()
+    disposeTransport = undefined
     if (miniProgram) {
-      await Promise.resolve(miniProgram.disconnect?.()).catch(() => {})
+      await Promise.resolve(headless ? miniProgram.close?.() : miniProgram.disconnect?.()).catch(() => {})
       miniProgram = undefined
     }
     if (fixtureRoot) {
@@ -133,7 +139,9 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     await devProcess?.stop().catch(() => {})
     devProcess = undefined
     await removeAutomatorSessionFiles()
-    await cleanupResidualIdeProcesses()
+    if (!headless) {
+      await cleanupResidualIdeProcesses()
+    }
   }
 
   async function waitForAppRuntimeReady(timeoutMs = 120_000) {
@@ -241,7 +249,9 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     let lastError: unknown
     for (let attempt = 1; attempt <= STARTUP_ATTEMPTS; attempt += 1) {
       await stopDevSession()
-      await cleanDevtoolsCache('compile', { cwd: fixtureRoot })
+      if (!headless) {
+        await cleanDevtoolsCache('compile', { cwd: fixtureRoot })
+      }
       await removeAutomatorSessionFiles()
       await delay(1_600)
       devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '--non-interactive'], {
@@ -258,6 +268,9 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
         await waitForFileContains(path.join(fixtureRoot, 'dist/app.wxss'), `@import "./${WEAPP_VITE_STATEFUL_HMR_GLOBAL_STYLE_BASENAME}.wxss";`)
         await waitForEmittedStylesheet(path.join(fixtureRoot, 'dist/pages/index/index.wxss'), 'background-color: #f6f7fb')
         miniProgram = await launchAutomator({
+          configureHeadlessSession(session) {
+            disposeTransport = installStatefulHmrTransport(session, path.join(fixtureRoot, 'dist'))
+          },
           bridgeProjectMode: 'direct',
           engineBuildFallbackSettleMs: 5_000,
           launchMode: 'bridge',
@@ -281,7 +294,9 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
   }
 
   beforeAll(async () => {
-    await cleanupResidualIdeProcesses()
+    if (!headless) {
+      await cleanupResidualIdeProcesses()
+    }
     await fs.mkdir(FIXTURE_PARENT, { recursive: true })
     fixtureRoot = await fs.mkdtemp(path.join(FIXTURE_PARENT, 'fixture-'))
     await fs.cp(TEMPLATE_ROOT, fixtureRoot, {
@@ -343,7 +358,7 @@ onLaunch(function (this: Record<string, unknown>) {
       route: INDEX_ROUTE,
       action: `背景阶段 ${index}：计算样式、布局与点击计数`,
       nodes: [
-        { selector: `#${PROBE_ID}`, styles: { 'background-color': color }, visible: true },
+        { selector: `#${PROBE_ID}`, ...(!headless ? { styles: { 'background-color': color }, visible: true } : {}) },
         { selector: '#count-label', text: `已点击 ${index === 0 ? 0 : 1} 次` },
       ],
     })), {
@@ -351,11 +366,12 @@ onLaunch(function (this: Record<string, unknown>) {
       route: INDEX_ROUTE,
       action: '新增页面局部样式后，验证局部优先级、全局背景与交互状态',
       nodes: [
-        { selector: `#${PROBE_ID}`, styles: { 'background-color': 'rgb(252, 231, 243)' }, visible: true },
-        { selector: '#wevu-tailwind-local-probe', text: 'Local style', styles: { 'background-color': 'rgb(31, 41, 55)' }, visible: true },
+        { selector: `#${PROBE_ID}`, ...(!headless ? { styles: { 'background-color': 'rgb(252, 231, 243)' }, visible: true } : {}) },
+        { selector: '#wevu-tailwind-local-probe', text: 'Local style', ...(!headless ? { styles: { 'background-color': 'rgb(31, 41, 55)' }, visible: true } : {}) },
         { selector: '#count-label', text: '已点击 1 次' },
       ],
     }])
+    context.onTestFailed(() => process.stdout.write(devProcess?.getOutput().slice(-16000) ?? ''))
     const initialRuntime = await startDevSession()
     const initialPage = await waitForIndexPage()
     await dom.check('background:0', miniProgram, initialPage)

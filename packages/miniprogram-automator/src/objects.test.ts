@@ -209,7 +209,7 @@ describe('Page', () => {
     }, {
       timeout: 2_500,
     })
-    expect(send).toHaveBeenNthCalledWith(2, 'App.callFunction', {
+    expect(send).toHaveBeenNthCalledWith(3, 'App.callFunction', {
       args: ['pages/index', {}, 'view', []],
       functionDeclaration: expect.stringContaining('createSelectorQuery'),
     }, {
@@ -240,8 +240,8 @@ describe('Page', () => {
     await expect(page.$('.hello')).resolves.not.toBeNull()
 
     expect(send).not.toHaveBeenCalledWith('Page.getElement', expect.anything(), expect.anything())
-    expect(send).toHaveBeenCalledTimes(3)
-    expect(send).toHaveBeenNthCalledWith(3, 'App.callFunction', {
+    expect(send).toHaveBeenCalledTimes(4)
+    expect(send).toHaveBeenNthCalledWith(4, 'App.callFunction', {
       args: ['pages/index', {}, '.hello', []],
       functionDeclaration: expect.stringContaining('createSelectorQuery'),
     }, {
@@ -554,7 +554,7 @@ describe('Page', () => {
     await expect(page.data('probeStatus')).resolves.toBe('ready')
 
     expect(send).not.toHaveBeenCalledWith('Page.getData', expect.anything(), expect.anything())
-    expect(send).toHaveBeenNthCalledWith(3, 'App.callFunction', {
+    expect(send).toHaveBeenNthCalledWith(4, 'App.callFunction', {
       args: ['/pages/index', {}, 'probeStatus'],
       functionDeclaration: expect.stringContaining('readPath'),
     }, {

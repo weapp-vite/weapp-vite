@@ -73,6 +73,7 @@ const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
 const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
   options: { build: {}, plugins: [] as Plugin[] },
   getGlobalStyleRoutes: () => [],
+  getTailwindStyleOwners: () => new Map(),
   getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
   getEntryIds: () => new Set<string>(),
   getDelegatedComponentEntryIds: () => new Set<string>(),
@@ -457,6 +458,7 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockReset().mockImplementation(async () => ({
       options: { build: {}, plugins: [] },
       getGlobalStyleRoutes: () => [],
+      getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set<string>(),
       getDelegatedComponentEntryIds: () => new Set<string>(),
@@ -601,12 +603,14 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }).mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
