@@ -1,5 +1,5 @@
 import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
-import type { IndependentSources } from './independentSources'
+import type { ChildSources } from './childSources'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
@@ -9,7 +9,7 @@ import { changeFileExtension } from '../../utils/file'
 import { createStatefulHmrStyleRebaser } from './globalStyles/rebase'
 
 export interface StatefulHmrSnapshot {
-  independentSources?: IndependentSources
+  childSources?: ChildSources
   output: StatefulHmrOutputFile[]
   componentPageGlobalStyleRoutes: string[]
   glassEaselAnalysisByOwner: ReadonlyMap<string, GlassEaselAnalysisFact>

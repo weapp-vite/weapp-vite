@@ -30,6 +30,7 @@ describe('e2e suite manifest', () => {
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
     'ide/wevu-subpackage-placement.runtime.test.ts',
+    'ide/worker-host.runtime.test.ts',
     'ide/wevu-json-render.runtime.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
     const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)

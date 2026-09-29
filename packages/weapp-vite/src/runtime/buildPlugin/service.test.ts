@@ -39,9 +39,6 @@ const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createSharedBuildConfigMock = vi.hoisted(() => vi.fn(() => ({ shared: true })))
 const touchMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkWorkersOptionsMock = vi.hoisted(() => vi.fn())
-const devWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
-const watchWorkersMock = vi.hoisted(() => vi.fn())
-const buildWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -70,14 +67,11 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigWarnings: [],
 })))
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
-const restoreAssetWatchMock = vi.hoisted(() => vi.fn(async () => {}))
-const installIdeAssetWatchMock = vi.hoisted(() => vi.fn(async () => restoreAssetWatchMock))
-const restoreIdeAssetWatchMock = vi.hoisted(() => vi.fn(async () => {}))
 const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
   options: { build: {}, plugins: [] as Plugin[] },
   getGlobalStyleRoutes: () => [],
+  getChildSources: () => ({ files: [], roots: [] }),
   getTailwindStyleOwners: () => new Map(),
-  getIndependentSources: () => ({ files: [], roots: [] }),
   getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
   getEntryIds: () => new Set<string>(),
   getDelegatedComponentEntryIds: () => new Set<string>(),
@@ -148,11 +142,6 @@ vi.mock('../statefulHmr/session', () => ({
   runStatefulHmrDev: runStatefulHmrDevMock,
 }))
 
-vi.mock('../statefulHmr/assetWatch', () => ({
-  installIdeAssetWatch: installIdeAssetWatchMock,
-  restoreIdeAssetWatch: restoreIdeAssetWatchMock,
-}))
-
 vi.mock('../statefulHmr/snapshotBuild', () => ({
   buildStatefulHmrSnapshot: async (loadOptions: unknown, configure: (options: InlineConfig) => InlineConfig) => {
     const snapshot = await createStatefulHmrSnapshotOptionsMock(loadOptions)
@@ -185,9 +174,6 @@ vi.mock('./touchAppWxss', async importOriginal => ({
 
 vi.mock('./workers', () => ({
   checkWorkersOptions: checkWorkersOptionsMock,
-  devWorkers: devWorkersMock,
-  watchWorkers: watchWorkersMock,
-  buildWorkers: buildWorkersMock,
 }))
 
 vi.mock('../../context/shared', () => ({
@@ -481,27 +467,14 @@ describe('runtime buildPlugin service', () => {
     expect(settled).toBe(true)
   })
 
-  it('waits for a sibling worker build before propagating the main build error', async () => {
+  it('propagates a worker publication failure from the main build transaction', async () => {
     const ctx = createMockContext()
     ctx.configService.isDev = false
     checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: 'workers' })
-    let finishWorker!: () => void
-    const pendingWorker = new Promise<void>((resolve) => {
-      finishWorker = resolve
-    })
-    buildWorkersMock.mockReturnValueOnce(pendingWorker)
-    const error = new Error('main build failed')
-    buildMock.mockRejectedValue(error)
-    let settled = false
-    const result = createBuildService(ctx).build({ skipNpm: true }).finally(() => {
-      settled = true
-    })
-    const rejected = expect(result).rejects.toBe(error)
-    await new Promise<void>(resolve => setImmediate(resolve))
-    expect(buildWorkersMock).toHaveBeenCalledOnce()
-    expect(settled).toBe(false)
-    finishWorker()
-    await rejected
+    const error = new Error('worker publication failed')
+    buildMock.mockRejectedValueOnce(error)
+    await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toBe(error)
+    expect(buildMock).toHaveBeenCalledOnce()
   })
 
   beforeEach(() => {
@@ -514,8 +487,9 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockReset().mockImplementation(async () => ({
       options: { build: {}, plugins: [] },
       getGlobalStyleRoutes: () => [],
+      getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
-      getIndependentSources: () => ({ files: [], roots: [] }),
+  getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set<string>(),
       getDelegatedComponentEntryIds: () => new Set<string>(),
@@ -619,29 +593,21 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
   })
 
-  it.each(['snapshot', 'worker'] as const)('releases classic resources after %s startup failure even when the graph provider cannot close', async (kind) => {
+  it('releases classic resources after publication failure even when the graph provider cannot close', async () => {
     const ctx = createMockContext()
     const plugin = createWatcherServicePlugin(ctx)
     const sidecarClose = vi.fn(async () => {})
     ctx.watcherService.sidecarWatcherMap.set('auto-import', { close: sidecarClose })
-    const startupError = new Error(`${kind} startup failed`)
+    const startupError = new Error('publication startup failed')
     const closeError = new Error('graph close failed')
     createDevModuleGraphProviderMock.mockResolvedValueOnce({ close: vi.fn(async () => {
       throw closeError
     }) })
     buildMock.mockImplementation(async () => {
       plugin.configResolved?.({ command: 'build', build: {} } as any)
-      if (kind === 'snapshot') {
-        await plugin.buildEnd?.(startupError)
-        throw startupError
-      }
-      await plugin.closeBundle?.()
-      return { output: [] }
+      await plugin.buildEnd?.(startupError)
+      throw startupError
     })
-    if (kind === 'worker') {
-      checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: '/project/src/workers' })
-      devWorkersMock.mockRejectedValueOnce(startupError)
-    }
     await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toMatchObject({
       errors: [startupError, closeError],
     })
@@ -660,16 +626,18 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
-      getIndependentSources: () => ({ files: [], roots: [] }),
+  getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
     }).mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
-      getIndependentSources: () => ({ files: [], roots: [] }),
+  getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
       getDelegatedComponentEntryIds: () => new Set<string>(),
@@ -698,23 +666,6 @@ describe('runtime buildPlugin service', () => {
       expect(JSON.parse(snapshots.initial.output[0].source)).toEqual({ component: true, options: { multipleSlots: true } })
     }
     expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('restores IDE asset watching as part of Vite shutdown before the process can exit', async () => {
-    buildMock.mockResolvedValue({ output: [] })
-    runStatefulHmrDevMock.mockResolvedValue({ close: vi.fn(async () => {}) })
-    const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
-    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
-    const options = runStatefulHmrDevMock.mock.calls[0]![1] as InlineConfig
-    const plugin = (options.plugins as Plugin[]).find(plugin => plugin.name === 'weapp-vite:ide-asset-watch-ownership')!
-    expect(plugin).toBeDefined()
-    const close = plugin.closeBundle as () => Promise<void>
-    const before = restoreAssetWatchMock.mock.calls.length
-    await close()
-    expect(restoreAssetWatchMock).toHaveBeenCalledTimes(before + 1)
-    await watcher.close()
-    expect(restoreAssetWatchMock).toHaveBeenCalledTimes(before + 1)
   })
 
   it('replaces stateful session graphs and releases the replacement through the original public close handle', async () => {
@@ -795,40 +746,19 @@ describe('runtime buildPlugin service', () => {
     expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
   })
 
-  it('drains and releases an opened stateful session when worker startup and server close fail', async () => {
+  it('releases stateful graph ownership after publication startup failure', async () => {
     const graph = createModuleGraphService()
     const ctx = createMockContext({ moduleGraphService: graph })
     ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
     const entry = '/project/src/pages/index.ts'
     const dependency = '/project/src/shared.wxml'
-    const started = Promise.withResolvers<void>()
-    const ready = Promise.withResolvers<void>()
-    const startupError = new Error('worker startup failed')
-    const closeError = new Error('stateful server close failed')
-    let closed = false
-    checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: '/project/src/workers' })
-    devWorkersMock.mockRejectedValueOnce(startupError)
+    const error = new Error('worker publication failed')
     buildMock.mockResolvedValue({ output: [] })
     runStatefulHmrDevMock.mockImplementationOnce(async () => {
       graph.replaceEntryDependencies(entry, 'template', [dependency])
-      started.resolve()
-      await ready.promise
-      return {
-        close: async () => {
-          closed = true
-          throw closeError
-        },
-      }
+      throw error
     })
-    const rejected = expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toMatchObject({
-      errors: [startupError, closeError],
-    })
-    await started.promise
-    expect(graph.collectAffectedEntries(dependency)).toEqual(new Set([entry]))
-    expect(closed).toBe(false)
-    ready.resolve()
-    await rejected
-    expect(closed).toBe(true)
+    await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toBe(error)
     expect(graph.hasModule(dependency)).toBe(false)
     expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
   })
@@ -1070,8 +1000,6 @@ describe('runtime buildPlugin service', () => {
     })
     expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
     expect(ctx.runtimeState.build.npmBuilt).toBe(true)
-    expect(devWorkersMock).toHaveBeenCalledWith(ctx.configService, ctx.watcherService, 'workers')
-    expect(watchWorkersMock).toHaveBeenCalledTimes(1)
     expect(touchMock).not.toHaveBeenCalled()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
@@ -2855,7 +2783,6 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(buildMock).toHaveBeenNthCalledWith(1, {})
-    expect(buildWorkersMock).toHaveBeenCalledTimes(1)
     expect(createCompilerContextMock).toHaveBeenCalledWith({
       key: 'plugin-build:/project',
       cwd: '/project',

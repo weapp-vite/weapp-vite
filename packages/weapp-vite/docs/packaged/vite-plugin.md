@@ -1,6 +1,6 @@
 # 标准 Vite 插件与 Vite+
 
-`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件、普通分包与独立分包。主产物由宿主 Vite 的编译管线生成。
+`weapp-vite/vite` 提供实验性的生产构建、classic 与 stateful 开发入口。当前阶段支持单目标微信原生 JS/TS、Wevu Vue SFC、React、自动路由、自动组件、普通分包、独立分包与 worker。主产物由宿主 Vite 的编译管线生成。
 
 ## 配置
 
@@ -61,7 +61,7 @@ pnpm 使用项目级 `pnpm-workspace.yaml` 的 `overrides` 完成同样的 alias
 | `vp preview` | Vite 的 Web 预览，不是小程序二维码预览 |
 | `vp pack` | 通用库打包，不替代小程序 lib mode |
 
-worker、微信插件双产物、lib mode、多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
+微信插件双产物、lib mode、多平台与 Web 混合宿主未开放。遇到这些目标应使用现有 `wv` 链路，不通过生成部分产物来跳过限制。
 
 生产构建、build watch、classic 与实验性 stateful dev 已接入。任务缓存、Dashboard/MCP 会话复用、脚手架工具链选项和完整跨平台发布矩阵仍属于后续阶段。完整编译能力对齐继续由 #1097 追踪；高级目标限制是阶段边界。
 
@@ -112,3 +112,9 @@ middleware mode 支持构建与可等待关闭。运行小程序的 stateful 通
 每个子构建只生成内存产物，最终由主构建的 Vite/Rolldown 发布。classic、stateful 和原生生产 watch 由宿主调度子包更新，不为独立分包另外创建 watcher。生产 watch 支持独立脚本与模板依赖、语法错误恢复，以及删除分包后的陈旧产物清理。
 
 stateful 下独立分包源码由宿主 watcher 驱动完整更新批次，不承诺子包 JS 状态保持；子包的 Vue、脚本和伴随资产无需进入主 DevEngine 模块图也能触发更新。
+
+## worker
+
+沿用 `app.json` 的 `workers` 与顶层 `weapp.worker.entry`，三入口使用同一子目标编译。原生 app builder 纳入 worker 环境，子目标复用已加载的配置和用户插件，返回内存产物；最终由主应用原生 emit/write 一次发布。
+
+classic、stateful 和生产 watch 不为 worker 额外启动构建 watcher。输入归属主会话，包含 worker 依赖修改、错误恢复、新增导入以及关闭等待；从 app 配置移除 worker 后，生产 watch 清理旧输出。stateful 中 worker 变化触发完整更新，不承诺保留 worker 线程状态。

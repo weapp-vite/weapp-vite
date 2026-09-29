@@ -35,12 +35,12 @@ import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/so
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { watchAssetSources } from '../watch/assets'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
+import { observeChildSources } from './childSources'
 import { compileHmrBatch } from './compileBatch'
 import { HmrDeliveryCoordinator } from './deliveryCoordinator'
 import { StatefulHmrDirectoryUpdates } from './directoryUpdates'
 import { createStatefulHmrGlobalStyleAssets, mergeStatefulHmrCompilerAssets } from './globalStyles'
 import { createStatefulHmrHostPlugins, getStatefulHmrHost } from './hostPlugins'
-import { observeIndependentSources } from './independentSources'
 import { registerStatefulHmrInitialChunkLoaders } from './initialChunkLoaders'
 import { isChangedNativeComponentSidecar } from './nativeComponentSidecar'
 import { isStatefulHmrSnapshotAsset, selectStatefulHmrAdditionalOutput } from './outputOwnership'
@@ -162,7 +162,7 @@ export async function runStatefulHmrDev(
 
 class StatefulHmrSession {
   private readonly publicAssetSources: ReturnType<typeof createPublicAssetSourcePlan>
-  private independentSources?: ReturnType<typeof observeIndependentSources>
+  private childSources?: ReturnType<typeof observeChildSources>
   private assetWatcher?: ReturnType<typeof watchAssetSources>
   private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
@@ -255,8 +255,8 @@ class StatefulHmrSession {
   }
 
   install(): void {
-    this.independentSources = observeIndependentSources(this.server, file => this.requestFullBuild([file]))
-    this.independentSources.adopt(this.initialSnapshot?.independentSources)
+    this.childSources = observeChildSources(this.server, file => this.requestFullBuild([file]))
+    this.childSources.adopt(this.initialSnapshot?.childSources)
     this.transport.install()
     this.adapter.install()
     this.ctx.onStatefulHmrSourceChange = this.sourceChangeListener
@@ -295,7 +295,7 @@ class StatefulHmrSession {
 
   async close(): Promise<void> {
     this.closed = true
-    this.independentSources?.close()
+    this.childSources?.close()
     getCompilerHmrHost(this.ctx).onDependencyChange = undefined
     await this.assetWatcher?.close()
     if (this.restartTimer) {
@@ -325,7 +325,7 @@ class StatefulHmrSession {
   handleSourceUpdate(file: string, dirtyReasonSummary: string[] = []): void {
     const normalizedFile = normalizeFsResolvedId(path.isAbsolute(file) ? file : path.resolve(this.server.config.root, file))
     this.diagnostics?.source(normalizedFile, dirtyReasonSummary)
-    if (this.independentSources?.owns(normalizedFile)) {
+    if (this.childSources?.owns(normalizedFile)) {
       return
     }
     const normalizedOutDir = normalizeFsResolvedId(this.ctx.configService!.outDir).replace(/\/$/, '')
@@ -849,7 +849,7 @@ class StatefulHmrSession {
   }
 
   private adoptSnapshot(snapshot: StatefulHmrSnapshot, output: StatefulHmrOutputFile[]): void {
-    this.independentSources?.adopt(snapshot.independentSources)
+    this.childSources?.adopt(snapshot.childSources)
     this.componentPageGlobalStyleRoutes = [...snapshot.componentPageGlobalStyleRoutes]
     this.snapshotAssets.adopt(output.filter(isStatefulHmrSnapshotAsset))
   }

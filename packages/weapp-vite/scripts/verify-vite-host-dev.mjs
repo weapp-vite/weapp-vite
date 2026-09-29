@@ -11,7 +11,7 @@ const root = path.resolve(process.argv[2])
 const toolchain = process.argv[3]
 const operation = process.argv[4] ?? 'dev'
 const profile = process.argv[5] ?? 'basic'
-assert(['basic', 'react', 'independent'].includes(profile))
+assert(['basic', 'react', 'independent', 'worker'].includes(profile))
 assert(['dev', 'build-watch', 'stateful-dev'].includes(operation))
 const require = createRequire(path.join(root, 'package.json'))
 const consumer = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
@@ -26,7 +26,7 @@ let exited = false
 const originals = new Map()
 const independentSource = 'src/subpackages/independent-wevu/pages/entry/index.vue'
 const independentOutput = 'subpackages/independent-wevu/pages/entry/index.wxml'
-for (const file of profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
+for (const file of profile === 'react' ? ['src/pages/static/view.tsx', 'vite.config.mts'] : profile === 'independent' ? [independentSource, 'vite.config.mts'] : profile === 'worker' ? ['src/workers/messages/message.ts', 'vite.config.mts'] : ['src/pages/native/index.ts', 'src/pages/vue/index.vue', 'src/pages/native/index.wxml', 'vite.config.mts']) {
   originals.set(file, await readFile(path.join(root, file), 'utf8'))
 }
 if (operation === 'stateful-dev') {
@@ -98,6 +98,9 @@ try {
     await waitForOutput('pages/static/index.wxml', 'weapp-vite React static bindings')
     await waitForOutput('pages/static/index.js', /\S/)
   }
+  else if (profile === 'worker') {
+    await waitForOutput('workers/messages/index.js', 'worker hello')
+  }
   else if (profile === 'independent') {
     await waitForOutput(independentOutput, '__WSP_INDEPENDENT_ENTRY__')
     await waitForOutput('subpackages/independent-wevu/pages/entry/index.js', /\S/)
@@ -118,6 +121,17 @@ try {
       assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
     }
     console.log(`${toolchain}: native React ${operation} initial template and TSX update passed`)
+  }
+  else if (profile === 'worker') {
+    const file = 'src/workers/messages/message.ts'
+    await writeFile(path.join(root, file), originals.get(file).replace('worker hello', 'worker updated'))
+    await waitForOutput('workers/messages/index.js', 'worker updated')
+    await waitForWatchRound(2)
+    await writeFile(path.join(root, file), originals.get(file))
+    await waitForOutput('workers/messages/index.js', 'worker hello')
+    await waitForWatchRound(3)
+    assert.equal(await readFile(path.join(root, 'config-calls.txt'), 'utf8'), 'loaded\n')
+    console.log(`${toolchain}: native worker ${operation} import update and restore passed with one config evaluation`)
   }
   else if (profile === 'independent') {
     await writeFile(path.join(root, independentSource), originals.get(independentSource).replace('__WSP_INDEPENDENT_ENTRY__', 'independent host updated template'))

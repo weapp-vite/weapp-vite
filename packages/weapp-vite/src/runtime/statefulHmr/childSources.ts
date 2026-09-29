@@ -1,13 +1,13 @@
 import type { ViteDevServer } from 'vite'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 
-export interface IndependentSources {
+export interface ChildSources {
   files: string[]
   roots: string[]
 }
 
 /** 独立目标不属于主 DevEngine 模块图，复用宿主 watcher 请求完整批次。 */
-export function observeIndependentSources(server: ViteDevServer, update: (file: string) => void) {
+export function observeChildSources(server: ViteDevServer, update: (file: string) => void) {
   let files = new Set<string>()
   let roots: string[] = []
   const owns = (file: string) => {
@@ -22,7 +22,7 @@ export function observeIndependentSources(server: ViteDevServer, update: (file: 
   server.watcher.on('all', onChange)
   return {
     owns,
-    adopt(sources?: IndependentSources) {
+    adopt(sources?: ChildSources) {
       files = new Set(sources?.files.map(file => normalizeFsResolvedId(file)))
       roots = sources?.roots.map(root => normalizeFsResolvedId(root).replace(/\/$/, '')) ?? []
       server.watcher.add([...files, ...roots])

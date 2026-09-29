@@ -9,6 +9,9 @@ on:
       - e2e/ide/stateful-hmr.runtime.test.ts
       - e2e/ide/react-runtime-spike.runtime.test.ts
       - e2e/ide/wevu-subpackage-placement.runtime.test.ts
+      - e2e/ide/worker-host.runtime.test.ts
+      - 'e2e-apps/chunk-modes/**'
+      - 'mpcore/packages/simulator/**'
       - 'e2e/ide/subpackagePlacementDom/**'
       - 'e2e-apps/wevu-subpackage-placement/**'
       - 'e2e/ide/reactRuntimeDom/**'
@@ -98,5 +101,22 @@ jobs:
       build_command: pnpm build:pkgs:ci
       main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless independent
       artifact_name: independent-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  worker-runtime:
+    name: Worker runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless worker
+      artifact_name: worker-runtime-${{ matrix.host }}
       artifact_path: docs/reports/dom-acceptance/**
     secrets: inherit

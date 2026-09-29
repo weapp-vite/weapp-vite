@@ -12,6 +12,7 @@ import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
+import { getWorkerSources } from '../buildPlugin/workerPlan'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 
@@ -99,9 +100,9 @@ export async function buildStatefulHmrSnapshot(
     const output = await build(options)
     return {
       output,
-      getIndependentSources: () => ({
-        files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]))],
-        roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)),
+      getChildSources: () => ({
+        files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]).concat(getWorkerSources(ctx).files))],
+        roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)).concat(getWorkerSources(ctx).roots),
       }),
       getGlassEaselAnalysisByOwner: () => ctx.runtimeState.glassEasel.analysisByOwner,
       getEntryIds: () => ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),

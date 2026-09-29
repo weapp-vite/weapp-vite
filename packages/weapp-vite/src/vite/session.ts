@@ -1,6 +1,7 @@
 import type { EmittedAsset } from 'rolldown'
 import type { InlineConfig, ViteDevServer } from 'vite'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
+import { checkWorkersOptions } from '../runtime/buildPlugin/workers'
 import { CompilerSession } from '../runtime/compilerSession'
 import { resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
@@ -48,10 +49,8 @@ export class WeappBuildSession extends CompilerSession {
     }
     this.dependencyBuild = undefined
     return this.validating = this.run(async () => {
-      const app = await this.context.scanService.loadAppEntry()
-      if (app.json.workers) {
-        throw new Error('[weapp-vite] 标准插件 alpha 尚不支持 worker，请使用 wv build。')
-      }
+      await this.context.scanService.loadAppEntry()
+      checkWorkersOptions('app', this.context.configService, this.context.scanService)
       if (this.isClosing) {
         throw new Error('[weapp-vite] 构建会话已关闭。')
       }

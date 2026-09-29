@@ -33,6 +33,7 @@ const descriptors: Array<[string, Plugin['enforce']?]> = [
   ['weapp-vite:compiler:source', 'pre'],
   ['weapp-vite:tailwindcss', 'pre'],
   ['weapp-vite:css', 'pre'],
+  ['weapp-vite:worker-output'],
   ['weapp-vite:output-finalizer', 'post'],
   ['weapp-vite:tailwindcss:output', 'post'],
   ['weapp-vite:compiler:output', 'post'],

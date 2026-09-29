@@ -18,6 +18,7 @@ import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
 import { wevu } from './wevu'
+import { createWorkerOutputPlugin } from './workerOutput'
 import { workers } from './workers'
 import { wxs } from './wxs'
 
@@ -104,6 +105,9 @@ export function vitePluginWeapp(
     groups.push([tailwindcssPlugins[0]!])
   }
   groups.push(css(ctx))
+  if (!subPackageMeta && !libModeEnabled) {
+    groups.push([createWorkerOutputPlugin(ctx)])
+  }
   groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
   if (tailwindcssPlugins.length > 1) {
     groups.push([tailwindcssPlugins[1]!])

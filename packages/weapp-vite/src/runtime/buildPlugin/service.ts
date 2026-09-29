@@ -46,7 +46,6 @@ import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRu
 import { generateLibDts } from '../libDts'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
-import { installIdeAssetWatch, restoreIdeAssetWatch } from '../statefulHmr/assetWatch'
 import { isStatefulHmrRuntimeCompatibilityError } from '../statefulHmr/commonRuntime'
 import { getStatefulHmrHost } from '../statefulHmr/hostPlugins'
 import { runStatefulHmrDev } from '../statefulHmr/session'
@@ -61,7 +60,8 @@ import { createIndependentBuilder } from './independent'
 import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs } from './outputs'
 import { refreshSnapshotSources } from './snapshotSources'
 import { resolveTouchAppWxssEnabled, touchExistingAppStyle } from './touchAppWxss'
-import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
+import { observeWorkerSources, ownsWorkerSource } from './workerPlan'
+import { checkWorkersOptions } from './workers'
 
 export interface BuildOptions {
   skipNpm?: boolean
@@ -1264,23 +1264,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   let statefulWatcherClosed = false
   const statefulRestartTasks = new Set<Promise<void>>()
   let stopStatefulWatcher: (() => Promise<void>) | undefined
-  let restoreAssetWatch: (() => Promise<void>) | undefined
-  let projectConfigReady = Promise.resolve()
-
-  function idePrivateConfigPath() {
-    if (!configService.projectPrivateConfigPath) {
-      return undefined
-    }
-    return configService.multiPlatform.enabled
-      ? path.join(path.dirname(configService.outDir), 'project.private.config.json')
-      : configService.projectPrivateConfigPath
-  }
-
-  async function releaseAssetWatch() {
-    const restore = restoreAssetWatch
-    restoreAssetWatch = undefined
-    await restore?.()
-  }
 
   async function trackStatefulRestart(restart: () => Promise<void>) {
     const task = restart()
@@ -1322,7 +1305,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       finally {
         // 重启期间 active watcher 暂为空，仍须等待快照和新服务器退出，才能允许删除输出目录。
         await Promise.allSettled([...statefulRestartTasks])
-        await releaseAssetWatch()
       }
     })()
     statefulBuildEvents = buildEvents
@@ -1331,7 +1313,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   async function startDev(target: BuildTarget, restartDev: (target: BuildTarget) => Promise<RolldownWatcher>): Promise<RolldownWatcher> {
     debug?.(`[${target}] dev build watcher start`)
-    const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
+    checkWorkersOptions(target, configService, scanService)
     const configuredHmrRuntime = configService.weappViteConfig.hmr?.runtime
     const compileHotReLoad = configService.projectPrivateConfig.setting?.compileHotReLoad
     devHmrDecision ??= resolveHmrRuntimeDecision({
@@ -1422,16 +1404,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return await restartDev(target)
         }
         logHmrRuntimeDecision(hmrDecision)
-        const privateConfigPath = idePrivateConfigPath()
-        if (privateConfigPath) {
-          await projectConfigReady
-          restoreAssetWatch ??= await installIdeAssetWatch({
-            configPath: privateConfigPath,
-            outDir: configService.outDir,
-            inheritedWatchOptions: configService.projectConfig?.watchOptions,
-            output: initialSnapshot,
-          })
-        }
         // 快照已使用独立上下文，不再重读当前会话的用户配置。
         ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
@@ -1442,98 +1414,74 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           ...(buildOptions.build ?? {}),
           write: true,
         }
-        buildOptions.plugins = [...(buildOptions.plugins ?? []), {
-          name: 'weapp-vite:ide-asset-watch-ownership',
-          // Vite 自身的 SIGTERM 处理会在 server.close 后退出，恢复必须属于其关闭事务。
-          closeBundle: releaseAssetWatch,
-        }]
         if (statefulWatcherClosed) {
           return nativeBuildEvents.watcher
         }
-        const workerPromise = hasWorkersDir && workersDir
-          ? devWorkers(configService, watcherService, workersDir)
-          : Promise.resolve()
-        const startup = await Promise.allSettled([
-          runStatefulHmrDev(ctx, buildOptions, () => trackStatefulRestart(async () => {
-            const activeWatcher = activeStatefulWatcher
-            activeStatefulWatcher = undefined
-            await activeWatcher?.close()
-            if (statefulWatcherClosed) {
-              return
-            }
-            logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
-            ctx.moduleGraphService.resetSession()
-            resetRuntimeStateForFreshBuild(ctx.runtimeState)
-            await configService.load(configService.loadOptions)
-            await scanService.loadAppEntry()
-            scanService.loadSubPackages()
-            if (statefulWatcherClosed) {
-              return
-            }
-            await restartDev(target)
-            if (!statefulWatcherClosed) {
-              logger.success('微信状态保持 HMR 构建已完成完整重载。')
-            }
-          }), {
-            entryIds: initialEntryIds,
-            delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-            initial: {
-              output: initialSnapshot,
-              tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
-              independentSources: snapshot.getIndependentSources(),
-              componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
-              glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
-            },
-            rebuild: async (files, sources) => {
-              for (const file of files) {
-                invalidateFileCache(file)
-              }
-              const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
-                const snapshotOptions = appendHmrMetricsPlugin(options)
-                snapshotOptions.build = { ...(snapshotOptions.build ?? {}), emptyOutDir: false }
-                snapshotOptions.plugins = [
-                  ...(snapshotOptions.plugins ?? []),
-                  {
-                    name: 'weapp-vite:stateful-hmr-snapshot-assets',
-                    enforce: 'post',
-                    generateBundle(_options, bundle) {
-                      for (const [fileName, item] of Object.entries(bundle)) {
-                        if (item.type === 'chunk') {
-                          delete bundle[fileName]
-                        }
-                      }
-                    },
-                  },
-                ]
-                return snapshotOptions
-              }, ctx, sources)
-              const output = toStatefulHmrOutput(snapshot.output)
-              return {
-                output,
-                independentSources: snapshot.getIndependentSources(),
-                entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
-                delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
-                componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
-                tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
-                glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
-              }
-            },
-          }, nativeBuildEvents),
-          workerPromise,
-        ])
-        const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
-        if (startupErrors.length > 0) {
-          if (startup[0].status === 'fulfilled') {
-            try {
-              await startup[0].value.close()
-            }
-            catch (error) {
-              startupErrors.push(error)
-            }
+        const watcher = await runStatefulHmrDev(ctx, buildOptions, () => trackStatefulRestart(async () => {
+          const activeWatcher = activeStatefulWatcher
+          activeStatefulWatcher = undefined
+          await activeWatcher?.close()
+          if (statefulWatcherClosed) {
+            return
           }
-          throw startupErrors.length === 1 ? startupErrors[0] : new AggregateError(startupErrors, 'Stateful development watcher startup failed')
-        }
-        const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
+          logger.info('检测到非兼容更新，正在重启微信状态保持 HMR 构建...')
+          ctx.moduleGraphService.resetSession()
+          resetRuntimeStateForFreshBuild(ctx.runtimeState)
+          await configService.load(configService.loadOptions)
+          await scanService.loadAppEntry()
+          scanService.loadSubPackages()
+          if (statefulWatcherClosed) {
+            return
+          }
+          await restartDev(target)
+          if (!statefulWatcherClosed) {
+            logger.success('微信状态保持 HMR 构建已完成完整重载。')
+          }
+        }), {
+          entryIds: initialEntryIds,
+          delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
+          initial: {
+            output: initialSnapshot,
+            childSources: snapshot.getChildSources(),
+            tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
+            componentPageGlobalStyleRoutes: initialGlobalStyleRoutes,
+            glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+          },
+          rebuild: async (files, sources) => {
+            for (const file of files) {
+              invalidateFileCache(file)
+            }
+            const snapshot = await buildStatefulHmrSnapshot(configService.loadOptions, (options) => {
+              const snapshotOptions = appendHmrMetricsPlugin(options)
+              snapshotOptions.build = { ...(snapshotOptions.build ?? {}), emptyOutDir: false }
+              snapshotOptions.plugins = [
+                ...(snapshotOptions.plugins ?? []),
+                {
+                  name: 'weapp-vite:stateful-hmr-snapshot-assets',
+                  enforce: 'post',
+                  generateBundle(_options, bundle) {
+                    for (const [fileName, item] of Object.entries(bundle)) {
+                      if (item.type === 'chunk') {
+                        delete bundle[fileName]
+                      }
+                    }
+                  },
+                },
+              ]
+              return snapshotOptions
+            }, ctx, sources)
+            const output = toStatefulHmrOutput(snapshot.output)
+            return {
+              output,
+              childSources: snapshot.getChildSources(),
+              tailwindStyleOwners: snapshot.getTailwindStyleOwners(),
+              entryIds: [...collectStatefulHmrEntryIds(snapshot.getEntryIds())],
+              delegatedComponentEntryIds: snapshot.getDelegatedComponentEntryIds(),
+              componentPageGlobalStyleRoutes: snapshot.getGlobalStyleRoutes(),
+              glassEaselAnalysisByOwner: snapshot.getGlassEaselAnalysisByOwner(),
+            }
+          },
+        }, nativeBuildEvents)
         if (statefulWatcherClosed) {
           await watcher.close()
           return nativeBuildEvents.watcher
@@ -1559,7 +1507,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           })
           // 失败可能发生在被 close 等待的重启任务内部，停止资源时不能反向等待自身。
           await stopStatefulWatcher!()
-          await releaseAssetWatch()
           throw error
         }
         devHmrDecision = {
@@ -1569,7 +1516,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         logger.warn(`微信状态保持 HMR 运行时不可用，已自动降级为 classic：${error instanceof Error ? error.message : String(error)}`)
         logger.info(formatHmrRuntimeStartupMessages(devHmrDecision)[0])
-        await releaseAssetWatch()
         ctx.moduleGraphService.resetSession()
         resetRuntimeStateForFreshBuild(ctx.runtimeState)
         await configService.load(configService.loadOptions)
@@ -1902,13 +1848,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
         })()
       : build(buildOptions) as unknown as Promise<RolldownWatcher>
-    const workerPromise = target === 'app' && hasWorkersDir && workersDir
-      ? devWorkers(configService, watcherService, workersDir)
-      : Promise.resolve()
-    const startup = await Promise.allSettled([watcherPromise, workerPromise])
+    const startup = await Promise.allSettled([watcherPromise])
     const startupErrors = startup.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
     if (startupErrors.length > 0) {
-      // 等初次构建与 worker 启动都结束再回收；一个关闭失败不能遗留控制器租约。
+      // worker 属于初次发布事务；一个关闭失败不能遗留控制器租约。
       const cleanup = await Promise.allSettled([
         async () => await moduleGraphProvider?.close(),
         async () => await devBuildWatcher?.watcher.close(),
@@ -1918,12 +1861,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       throw errors.length === 1 ? errors[0] : new AggregateError(errors, 'Development watcher startup failed')
     }
     const watcher = (startup[0] as PromiseFulfilledResult<RolldownWatcher>).value
-    const isTestEnv = process.env.VITEST === 'true'
-      || process.env.NODE_ENV === 'test'
-
-    if (target === 'app' && hasWorkersDir && workersDir && !isTestEnv) {
-      watchWorkers(configService, watcherService, workersDir)
-    }
 
     debug?.('dev build watcher end')
     debug?.('dev watcher listen start')
@@ -2029,6 +1966,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }),
       )
       const unobserveWxml = observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
+      const unobserveWorkers = observeWorkerSources(ctx, files => snapshotWatcher.add(files))
       const independentWatch = ctx.runtimeState.build.independent
       const observeIndependent = (files: string[]) => {
         snapshotWatcher.add(files)
@@ -2045,6 +1983,11 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         const normalizedId = normalizeFsResolvedId(id)
+        const workerSource = ownsWorkerSource(ctx, normalizedId)
+        if (workerSource) {
+          scheduleSnapshotBuild({ event: event === 'unlink' ? 'delete' : 'update', file: id, forceFullRescan: true }, performance.now())
+          return
+        }
         const independentRoots: string[] = []
         for (const [root, files] of independentWatch.watchFiles) {
           if (files.has(normalizedId)) {
@@ -2115,6 +2058,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         close: async () => {
           try {
             unobserveWxml()
+            unobserveWorkers()
             independentWatch.watchListeners.delete(observeIndependent)
             await Promise.all([snapshotWatcher.close(), assetWatcher.close()])
           }
@@ -2188,7 +2132,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   async function runProd(target: BuildTarget) {
     debug?.(`[${target}] prod build start`)
-    const { hasWorkersDir } = checkWorkersOptions(target, configService, scanService)
+    checkWorkersOptions(target, configService, scanService)
     const bundlerPromise = build(
       // eslint-disable-next-line ts/no-use-before-define
       applyTargetBuildOverride(
@@ -2201,8 +2145,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         target,
       ),
     )
-    const workerPromise = target === 'app' && hasWorkersDir ? buildWorkers(configService) : Promise.resolve()
-    const [output] = await waitForBuildTasks([bundlerPromise, workerPromise])
+    const output = await bundlerPromise
 
     debug?.(`[${target}] prod build end`)
     return output as RolldownOutput | RolldownOutput[]
@@ -2323,10 +2266,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
-    const privateConfigPath = idePrivateConfigPath()
-    if (configService.platform === 'weapp' && privateConfigPath) {
-      await restoreIdeAssetWatch(privateConfigPath)
-    }
     if (shouldCleanOutputs(configService, 'startup')) {
       await cleanOutputs(configService)
       resetEmittedOutputCaches(ctx.runtimeState)
@@ -2347,7 +2286,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           enabled: isMultiPlatformEnabled,
         })
       : Promise.resolve()
-    projectConfigReady = projectConfigSyncTask
     const shouldPreloadAppEntryForWorkers = (
       !configService.isDev
       && !isLibMode
