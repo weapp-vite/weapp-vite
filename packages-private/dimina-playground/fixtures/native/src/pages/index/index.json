@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "counter-leaf": "../../components/counter-leaf/index",
+    "van-button": "@vant/weapp/button/index"
+  }
+}

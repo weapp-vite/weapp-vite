@@ -1,0 +1,15 @@
+<wxs module="format">module.exports = { double: function(value) { return value * 2 } }</wxs>
+<view>
+  <text>原生示例</text>
+  <text id="count">原生计数：{{count}}</text>
+  <text>WXS：{{format.double(count)}}</text>
+  <button bindtap="increment">原生加一</button>
+  <counter-leaf bindchange="changed" />
+  <text>组件事件：{{events}}</text>
+  <van-button bind:click="increment">npm 加一</van-button>
+  <image src="../../assets/check.svg" style="width:32px;height:32px" />
+  <button bindtap="navigate">进入分包</button>
+  <button bindtap="bridgeSuccess">调用宿主</button>
+  <button bindtap="bridgeFailure">宿主失败</button>
+  <text>{{bridge}}</text><text>{{failure}}</text>
+</view>

@@ -1,0 +1,39 @@
+{
+  "name": "@weapp-vite/dimina-playground",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dimina 真实小程序产物接入实验",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "scripts": {
+    "setup:dimina": "tsx scripts/setup.ts",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "lint": "eslint . --ignore-pattern \"!**/fixtures/**\" --ignore-pattern \"**/node_modules/**\" --ignore-pattern \"**/.weapp-vite/**\" --ignore-pattern \"**/.cache/**\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run -c vitest.config.ts"
+  },
+  "dependencies": {
+    "@vant/weapp": "catalog:",
+    "@weapp-vite/react": "workspace:*",
+    "mitt": "3.0.1",
+    "react": "catalog:",
+    "react-reconciler": "catalog:",
+    "wevu": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "execa": "^9.6.1",
+    "miniprogram-api-typings": "catalog:",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "~5.0.2",
+    "weapp-vite": "workspace:*"
+  }
+}

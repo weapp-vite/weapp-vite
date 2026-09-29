@@ -482,6 +482,14 @@ function createCommandTask(label: string, args: string[]): SuiteTask {
   }
 }
 
+export function getDiminaTasks() {
+  return [{
+    label: 'dimina-web',
+    command: 'pnpm',
+    args: ['vitest', 'run', '-c', path.resolve(ROOT, 'vitest.e2e.dimina.config.ts')],
+  }] satisfies SuiteTask[]
+}
+
 export function getWebTasks() {
   return [{
     label: 'web-runtime',
@@ -729,6 +737,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ci-full',
     description: 'Complete miniapp CI suite for nightly and manual matrix runs',
     tasks: getCiFullTasks,
+  },
+  'dimina': {
+    name: 'dimina',
+    description: 'Experimental Dimina Web container acceptance',
+    tasks: getDiminaTasks,
   },
   'web': {
     name: 'web',
