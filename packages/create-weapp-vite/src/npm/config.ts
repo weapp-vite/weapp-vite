@@ -21,7 +21,7 @@ export interface RegistryOptions extends Omit<FetchOptions, 'proxy'> {
 export interface ResolveRegistryOptions {
   registry?: string
   cwd?: string
-  /** 以目标项目或最近 pnpm workspace 为安装边界，不继承普通父项目的 .npmrc。 */
+  /** 以目标项目或其所属 pnpm workspace 为安装边界，不继承普通父项目的 .npmrc。 */
   projectRoot?: string
 }
 
@@ -74,7 +74,7 @@ async function findProjectConfigDir(cwd: string) {
   let current = path.resolve(cwd)
   while (true) {
     try {
-      await Promise.any(['.npmrc', 'package.json', 'node_modules'].map(name => access(path.join(current, name))))
+      await Promise.any(['.npmrc', 'package.json', 'node_modules', 'pnpm-workspace.yaml'].map(name => access(path.join(current, name))))
       return current
     }
     catch {
@@ -109,9 +109,10 @@ export async function resolveRegistryOptions(options: ResolveRegistryOptions = {
     env.npm_config_registry = registryOverride
   }
 
-  const target = path.resolve(options.projectRoot ?? options.cwd ?? process.cwd())
+  const requestedDir = path.resolve(options.projectRoot ?? options.cwd ?? process.cwd())
+  const target = options.projectRoot ? requestedDir : await findProjectConfigDir(requestedDir)
   const workspaceRoot = await findPnpmWorkspaceRoot(target)
-  const cwd = workspaceRoot ?? (options.projectRoot ? target : await findProjectConfigDir(target))
+  const cwd = workspaceRoot ?? target
   const configOptions = {
     ...configDefinitions,
     flatten: flattenNetworkConfig,
