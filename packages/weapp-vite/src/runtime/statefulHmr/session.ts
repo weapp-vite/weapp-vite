@@ -301,6 +301,10 @@ class StatefulHmrSession {
 
   async watchAssets(): Promise<void> {
     this.assetWatcher = watchAssetSources(this.ctx.configService, {
+      publicAssets: {
+        publicDir: this.server.config.publicDir,
+        copyPublicDir: this.server.config.build.copyPublicDir,
+      },
       isModule: file => (this.server.moduleGraph.getModulesByFile(file)?.size ?? 0) > 0,
       onChange: (file, event) => {
         this.ctx.moduleGraphService.recordChangedFile(file, event)

@@ -196,17 +196,27 @@ Page({
     this.push('home:onTabItemTap:' + JSON.stringify(options))
   },
   goDetail() {
-    wx.navigateTo({
-      url: '../detail/index?from=home',
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '../detail/index?from=home',
+        success: resolve,
+        fail: reject,
+      })
     })
   },
   goDetailWithCallbacks() {
-    wx.navigateTo({
-      url: '../detail/index?from=home-callback',
-      success: () => {
-        this.push('home:navigateTo:success:' + getCurrentPages().at(-1).route)
-      },
-      complete: () => this.push('home:navigateTo:complete'),
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '../detail/index?from=home-callback',
+        success: () => {
+          this.push('home:navigateTo:success:' + getCurrentPages().at(-1).route)
+        },
+        fail: reject,
+        complete: () => {
+          this.push('home:navigateTo:complete')
+          resolve()
+        },
+      })
     })
   },
   goDetailLater() {
@@ -217,10 +227,15 @@ Page({
     }, 20)
   },
   goMissingWithCallbacks() {
-    wx.navigateTo({
-      url: '../missing/index',
-      fail: (error) => this.push('home:navigateTo:fail:' + error.message),
-      complete: () => this.push('home:navigateTo:complete'),
+    return new Promise((resolve) => {
+      wx.navigateTo({
+        url: '../missing/index',
+        fail: (error) => this.push('home:navigateTo:fail:' + error.message),
+        complete: () => {
+          this.push('home:navigateTo:complete')
+          resolve()
+        },
+      })
     })
   },
   goProfile() {
@@ -229,20 +244,31 @@ Page({
     })
   },
   goProfileWithCallbacks() {
-    wx.switchTab({
-      url: '/pages/profile/index',
-      success: () => {
-        const pages = getCurrentPages()
-        this.push('home:switchTab:success:' + pages[pages.length - 1].route)
-      },
-      complete: () => this.push('home:switchTab:complete'),
+    return new Promise((resolve, reject) => {
+      wx.switchTab({
+        url: '/pages/profile/index',
+        success: () => {
+          const pages = getCurrentPages()
+          this.push('home:switchTab:success:' + pages[pages.length - 1].route)
+        },
+        fail: reject,
+        complete: () => {
+          this.push('home:switchTab:complete')
+          resolve()
+        },
+      })
     })
   },
   goProfileWithQueryCallbacks() {
-    wx.switchTab({
-      url: '/pages/profile/index?from=home',
-      fail: (error) => this.push('home:switchTab:fail:' + error.message),
-      complete: () => this.push('home:switchTab:complete'),
+    return new Promise((resolve) => {
+      wx.switchTab({
+        url: '/pages/profile/index?from=home',
+        fail: (error) => this.push('home:switchTab:fail:' + error.message),
+        complete: () => {
+          this.push('home:switchTab:complete')
+          resolve()
+        },
+      })
     })
   },
 })
@@ -277,18 +303,30 @@ Page({
     this.push('detail:onUnload')
   },
   replaceProfile() {
-    wx.redirectTo({
-      url: '/pages/settings/index?from=detail',
+    return new Promise((resolve, reject) => {
+      wx.redirectTo({
+        url: '/pages/settings/index?from=detail',
+        success: resolve,
+        fail: reject,
+      })
     })
   },
   goSettings() {
-    wx.navigateTo({
-      url: '/pages/settings/index?from=detail-stack',
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/settings/index?from=detail-stack',
+        success: resolve,
+        fail: reject,
+      })
     })
   },
   backHome(delta) {
-    wx.navigateBack({
-      delta,
+    return new Promise((resolve, reject) => {
+      wx.navigateBack({
+        delta,
+        success: resolve,
+        fail: reject,
+      })
     })
   },
   relaunchProfile() {
@@ -328,8 +366,12 @@ Page({
     this.push('settings:onUnload')
   },
   back(delta) {
-    wx.navigateBack({
-      delta,
+    return new Promise((resolve, reject) => {
+      wx.navigateBack({
+        delta,
+        success: resolve,
+        fail: reject,
+      })
     })
   },
 })
@@ -2103,8 +2145,12 @@ export function createComponentLifecycleFixture() {
   writeScript(path.join(root, 'dist/pages/a/index.js'), `
 Page({
   openB() {
-    wx.navigateTo({
-      url: '/pages/b/index'
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/b/index',
+        success: resolve,
+        fail: reject,
+      })
     })
   }
 })

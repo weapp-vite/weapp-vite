@@ -75,6 +75,11 @@ const { count: storeCount } = storeToRefs(store)
       incrementParent() { this.setData({ parentCount: this.data.parentCount + 1 }); },
       onInput(event) { this.setData({ input: event.detail.value }); },
       flush() { return runtime.loadExports('vue-shared-runtime.js').nextTick(); },
+      reLaunch() {
+        return new Promise((resolve, reject) => {
+          wx.reLaunch({ url: '/pages/index/index', success: resolve, fail: reject });
+        });
+      },
       patchChild() { update(component.patched, ${JSON.stringify(compiled.patched.changedIds)}); },
       repatchChild() { update(component.repatched, ${JSON.stringify(compiled.repatched.changedIds)}); },
       restoreChild() { update(component.restored, ${JSON.stringify(compiled.restored.changedIds)}); }

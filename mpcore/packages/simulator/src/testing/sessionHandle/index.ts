@@ -20,10 +20,18 @@ export interface HeadlessTestingToolInfo {
 }
 
 export class HeadlessTestingSessionHandle {
+  private readonly pendingNavigations = new Set<(error: unknown) => void>()
+
   constructor(
     private readonly project: HeadlessProjectDescriptor,
     private readonly session: HeadlessSession,
-  ) {}
+  ) {
+    this.session.on('close', () => {
+      for (const reject of this.pendingNavigations) {
+        reject(new Error('The headless testing session closed before navigation completed.'))
+      }
+    })
+  }
 
   async close() {
     this.session.close()
@@ -139,35 +147,35 @@ export class HeadlessTestingSessionHandle {
   }
 
   async reLaunch(route: string) {
-    this.invokeNavigation('reLaunch', {
+    await this.invokeNavigation('reLaunch', {
       url: route,
     })
     return await this.requireCurrentPage('reLaunch', route)
   }
 
   async navigateTo(route: string) {
-    this.invokeNavigation('navigateTo', {
+    await this.invokeNavigation('navigateTo', {
       url: route,
     })
     return await this.requireCurrentPage('navigateTo', route)
   }
 
   async redirectTo(route: string) {
-    this.invokeNavigation('redirectTo', {
+    await this.invokeNavigation('redirectTo', {
       url: route,
     })
     return await this.requireCurrentPage('redirectTo', route)
   }
 
   async navigateBack(delta = 1) {
-    this.invokeNavigation('navigateBack', {
+    await this.invokeNavigation('navigateBack', {
       delta,
     })
     return await this.currentPage()
   }
 
   async switchTab(route: string) {
-    this.invokeNavigation('switchTab', {
+    await this.invokeNavigation('switchTab', {
       url: route,
     })
     return await this.requireCurrentPage('switchTab', route)
@@ -230,23 +238,33 @@ export class HeadlessTestingSessionHandle {
   }
 
   private invokeNavigation(methodName: string, options: { url?: string, delta?: number }) {
-    const failure: { received: boolean, error?: unknown } = { received: false }
-    this.session.callWxMethod(methodName, {
-      ...options,
-      fail(error: unknown) {
-        failure.received = true
-        failure.error = error
-      },
+    return new Promise<void>((resolve, reject) => {
+      const rejectNavigation = (error: unknown) => {
+        this.pendingNavigations.delete(rejectNavigation)
+        reject(error)
+      }
+      this.pendingNavigations.add(rejectNavigation)
+      try {
+        this.session.callWxMethod(methodName, {
+          ...options,
+          success: () => {
+            this.pendingNavigations.delete(rejectNavigation)
+            resolve()
+          },
+          fail: (error: unknown) => {
+            const details = error && typeof error === 'object' ? error as { errMsg?: unknown, message?: unknown } : undefined
+            const reason = typeof details?.errMsg === 'string'
+              ? details.errMsg
+              : typeof details?.message === 'string' ? details.message : String(error)
+            const target = options.url ? ` route "${options.url}"` : ''
+            rejectNavigation(new Error(`Failed to ${methodName}${target} through the headless wx runtime: ${reason}`, { cause: error }))
+          },
+        })
+      }
+      catch (error) {
+        rejectNavigation(error)
+      }
     })
-    if (failure.received) {
-      const error = failure.error
-      const details = error && typeof error === 'object' ? error as { errMsg?: unknown, message?: unknown } : undefined
-      const reason = typeof details?.errMsg === 'string'
-        ? details.errMsg
-        : typeof details?.message === 'string' ? details.message : String(error)
-      const target = options.url ? ` route "${options.url}"` : ''
-      throw new Error(`Failed to ${methodName}${target} through the headless wx runtime: ${reason}`, { cause: error })
-    }
   }
 
   private async requireCurrentPage(methodName: string, route: string) {

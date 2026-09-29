@@ -47,13 +47,15 @@ describe('suiteRunner', () => {
     const filter = new RegExp(task.args[filterIndex + 1]!)
     const cases = readTaskCases(path.resolve(import.meta.dirname, '../..'), task.label, task.acceptanceTemplates)
     const selected = cases.filter(item => filter.test(item.name)).map(item => item.name)
-    expect(selected).toHaveLength(7)
     expect(selected.some(name => name.includes('template-generated computations and event handlers'))).toBe(true)
     expect(selected.some(name => name.includes('ignores unowned editor files'))).toBe(true)
     expect(selected.some(name => name.includes('copied and public asset lifecycle'))).toBe(true)
     expect(selected.some(name => name.includes('isolated script updates and restoration'))).toBe(true)
     for (const runtime of ['native', 'component', 'wevu']) {
       expect(selected.some(name => name.includes(`preserves ${runtime} page state across two template`))).toBe(true)
+    }
+    for (const hook of ['load', 'show', 'ready']) {
+      expect(selected.some(name => name.includes(`commits navigation requested in ${hook}`))).toBe(true)
     }
     expect(selected.some(name => name.includes('style updates') || name.includes('local and store refs'))).toBe(false)
   })

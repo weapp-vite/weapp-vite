@@ -96,6 +96,47 @@ describe('stateful snapshot component metadata', () => {
     expect(String(style.source)).not.toContain('71px')
   })
 
+  it('keeps native child assets when the parent and child scripts are pinned', async () => {
+    const root = await createProject()
+    await fs.rename(path.join(root, 'vite.config.ts'), path.join(root, 'weapp-vite.config.ts'))
+    await fs.writeFile(path.join(root, 'project.private.config.json'), JSON.stringify({ setting: { compileHotReLoad: true } }))
+    const files = {
+      'src/app.ts': 'App({})',
+      'src/pages/index/index.ts': 'Component({})',
+      'src/pages/index/index.json': JSON.stringify({ component: true, usingComponents: { 'native-leaf': '../../components/native-leaf/index' } }),
+      'src/pages/index/index.wxml': '<native-leaf />',
+      'src/components/native-leaf/index.js': 'Component({})',
+      'src/components/native-leaf/index.json': '{"component":true}',
+      'src/components/native-leaf/index.wxml': '<view>PINNED-NATIVE-LEAF</view>',
+    }
+    const sources = new Map<string, string>()
+    for (const [relative, source] of Object.entries(files)) {
+      const file = path.join(root, relative)
+      await fs.mkdir(path.dirname(file), { recursive: true })
+      await fs.writeFile(file, source.replace('PINNED-NATIVE-LEAF', 'FUTURE-NATIVE-LEAF'))
+      sources.set(compilerSourceId(file), source)
+    }
+    const snapshot = await buildStatefulHmrSnapshot({ cwd: root, isDev: true, mode: 'development' }, config => ({
+      ...config,
+      plugins: [...(config.plugins ?? []), {
+        name: 'snapshot-assets-only',
+        enforce: 'post',
+        generateBundle(_options, bundle) {
+          for (const [file, item] of Object.entries(bundle)) {
+            if (item.type === 'chunk') {
+              delete bundle[file]
+            }
+          }
+        },
+      }],
+    }), undefined, sources)
+    const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+    const nativeJson = outputs.find(item => item.fileName === 'components/native-leaf/index.json')
+    expect(nativeJson?.type).toBe('asset')
+    expect(JSON.parse(String((nativeJson as OutputAsset).source))).toEqual({ component: true })
+    expect(outputs.find(item => item.fileName === 'components/native-leaf/index.wxml')).toMatchObject({ type: 'asset', source: '<view>PINNED-NATIVE-LEAF</view>' })
+  })
+
   it('compiles the pinned SFC instead of a newer disk save', async () => {
     const root = await createProject()
     const file = path.join(root, 'src/components/wevu-leaf/index.vue')
