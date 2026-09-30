@@ -320,6 +320,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 - This repo ships user-facing skills under `skills/*`:
   - `weapp-vite-best-practices`
+  - `weapp-acceptance`
   - `docs-and-website-sync`
   - `release-and-changeset-best-practices`
   - `weapp-devtools-e2e-best-practices`

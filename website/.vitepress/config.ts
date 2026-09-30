@@ -91,6 +91,8 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'AI 协作', link: '/guide/ai' },
       { text: 'AI Skills', link: '/guide/skills' },
       { text: 'AI 任务工作流', link: '/guide/ai-workflows' },
+      { text: '改动验收', link: '/guide/acceptance' },
+      { text: '独立 Agent', link: '/guide/agent/' },
       { text: '目录结构', link: '/guide/directory-structure/' },
       { text: '手动集成', link: '/guide/manual-integration' },
     ],

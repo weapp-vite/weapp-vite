@@ -198,3 +198,7 @@ wv ide logs --open
 2. [AI Skills 使用指南](/guide/skills)
 3. [CLI 命令参考](/guide/cli)
 4. [调试与贡献](/guide/debug)
+
+## 改动验收
+
+使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。
