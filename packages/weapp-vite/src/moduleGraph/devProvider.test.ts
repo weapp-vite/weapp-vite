@@ -202,11 +202,15 @@ describe('dev module graph provider', () => {
     const result = await (plugin.transform as any).call({}, `
 <script setup lang="ts">
 import { value } from './shared'
+import { label } from './template-only'
+import type { Props } from './types-only'
 const lazy = () => import('./lazy')
 console.log(value, lazy)
 </script>
 `, '/project/src/pages/home/index.vue')
 
+    expect(result.code).toContain('./template-only')
+    expect(result.code).not.toContain('./types-only')
     expect(result.code).toContain('./shared')
     expect(result.code).toContain('import(')
     expect(result.code).toContain('./lazy')

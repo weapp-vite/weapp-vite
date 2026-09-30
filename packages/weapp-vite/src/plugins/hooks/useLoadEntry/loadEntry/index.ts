@@ -12,7 +12,9 @@ import { createHash } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { get, isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
+import path from 'pathe'
 import { mayContainPageMeta, resolveVueSfcHmrSignatures } from 'wevu/compiler'
+import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
 import { storeVueSfcHmrSignatures } from '../../../../runtime/storeVueSfcHmrSignatures'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
@@ -154,7 +156,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const existsCache = new Map<string, boolean>()
   const pathExistsTtlMs = getPathExistsTtlMs(configService)
   const reExportResolutionCache = new Map<string, Map<string, string | undefined>>()
-  const entryResolver = createEntryResolver(configService)
+  const entryResolver = createEntryResolver(configService, base => path.extname(base) ? undefined : getSelectedAutoRouteSource(ctx, base))
   const appEntriesCache: { current?: AppEntriesCache } = {}
   const appEntryOutputCache: {
     current?: {
@@ -285,7 +287,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           findJsonEntry(id),
           id.endsWith('.vue')
             ? Promise.resolve(id)
-            : findVueEntry(baseName),
+            : getSelectedAutoRouteSource(ctx, baseName) ? Promise.resolve(undefined) : findVueEntry(baseName),
         ])
         entrySidecarResolutionCache.set(normalizedId, {
           jsonEntry,
@@ -386,6 +388,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
               return undefined
             }
             const config = await extractConfigFromVue(vueEntryPath, {
+              context: ctx,
               ...(source === undefined
                 ? { readSource: readVueSource }
                 : { source }),
@@ -482,6 +485,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
         await ctx.autoRoutesService.ensureFresh()
         const refreshedConfigFromVue = await extractConfigFromVue(vueEntryPath, {
+          context: ctx,
           source: await readVueSource(),
           force: true,
         })

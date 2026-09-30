@@ -6,6 +6,7 @@ import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
+import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -31,7 +32,7 @@ async function collectImportedVueComponents(
     }
     const pageBase = path.resolve(absoluteSrcRoot, candidate.entry)
     const scriptEntry = await findJsEntry(pageBase)
-    const pageSource = scriptEntry.path ?? await findVueEntry(pageBase)
+    const pageSource = getSelectedAutoRouteSource(state.ctx, pageBase) ?? scriptEntry.path ?? await findVueEntry(pageBase)
     if (!pageSource || !await fs.pathExists(pageSource)) {
       continue
     }
@@ -274,7 +275,8 @@ export function createOptionsHook(state: CorePluginState) {
 
     const logicalInput: Record<string, string> = {}
     for (const [name, source] of Object.entries(scannedInput)) {
-      const sourceId = await resolveLogicalInput(this, source, state.ctx.scanService.appEntry?.path)
+      const selected = source.type === 'page' ? getSelectedAutoRouteSource(ctx, source.input) : undefined
+      const sourceId = await resolveLogicalInput(this, selected ? { ...source, input: selected } : source, state.ctx.scanService.appEntry?.path)
       if (!sourceId) {
         continue
       }

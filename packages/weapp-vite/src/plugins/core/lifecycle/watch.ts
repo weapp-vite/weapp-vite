@@ -9,6 +9,7 @@ import logger from '../../../logger'
 import { resolveMultiPlatformProjectConfigDir } from '../../../multiPlatform'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '../../../runtime/autoRoutesPlugin/generatedPaths'
+import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
@@ -317,7 +318,10 @@ async function processChangedFile(
     }
     dirtyReasonStats.set(cause, (dirtyReasonStats.get(cause) ?? 0) + 1)
   }
-  const declaredEntryType = state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
+  const selectedPageSource = getSelectedAutoRouteSource(ctx, normalizedId)
+  const declaredEntryType = !selectedPageSource || selectedPageSource === normalizedId
+    ? state.entriesMap.get(removeExtensionDeep(relativeSrc))?.type
+    : undefined
   const isDeletedMissingSelf = event === 'delete' && !await fs.pathExists(normalizedId)
   if (isDeletedMissingSelf) {
     ctx.moduleGraphService.removeEntryDependencies(normalizedId)
@@ -557,7 +561,7 @@ async function processChangedFile(
         ? normalizedId.slice(0, -pathKind.configSuffix.length)
         : pathKind.extension ? normalizedId.slice(0, -pathKind.extension.length) : normalizedId
       const primaryScript = await findJsEntry(basePath)
-      const primaryEntry = primaryScript.path ?? (pathKind.isStyle ? await findVueEntry(basePath) : undefined)
+      const primaryEntry = getSelectedAutoRouteSource(ctx, basePath) ?? primaryScript.path ?? (pathKind.isStyle ? await findVueEntry(basePath) : undefined)
       if (primaryEntry) {
         markScriptDirty(primaryEntry, pathKind.configSuffix ? 'json-sidecar' : pathKind.isStyle ? 'style-sidecar' : 'sidecar-direct')
         handledSidecarMetadataUpdate = true

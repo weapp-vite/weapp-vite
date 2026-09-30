@@ -66,6 +66,8 @@ async function transformVueSource(code: string, id: string, config?: ResolvedCon
     sourcemap: false,
     target: 'esnext',
     tsconfig: false,
+    // 模板使用的值导入在脚本中可能没有引用，仍然属于真实依赖图。
+    typescript: { onlyRemoveTypeImports: true },
   }, undefined, config)
 }
 

@@ -203,7 +203,7 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
   let configFromVue: Record<string, any> | undefined
   if (!appConfigFile && vueAppPath) {
     const { extractConfigFromVue } = await import('../../../utils/file')
-    configFromVue = await extractConfigFromVue(vueAppPath)
+    configFromVue = await extractConfigFromVue(vueAppPath, { context: ctx })
     if (configFromVue) {
       appConfigFile = vueAppPath
     }
