@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { expect, it } from 'vitest'
+import { globSync } from 'tinyglobby'
+import { afterEach, expect, it, vi } from 'vitest'
 import { parse } from 'yaml'
 
 it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/evidence in independent CI', async () => {
@@ -26,4 +27,27 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   expect(evidence.if).toBe('always()')
   expect(evidence.with?.['include-hidden-files']).toBe(true)
   expect(String(evidence.with?.path).trim().split('\n')).toEqual(['docs/reports/*-e2e-dimina-*-suite-report/**', '.cache/dimina/screenshots/**'])
+})
+
+afterEach(() => {
+  vi.doUnmock('node:path')
+  vi.resetModules()
+  vi.unstubAllEnvs()
+})
+
+it.each(['posix', 'win32'] as const)('discovers the Dimina browser suite with %s path resolution', async (platform) => {
+  vi.resetModules()
+  vi.stubEnv('WEAPP_VITE_E2E_TARGET_FILE', '')
+  vi.doMock('node:path', () => ({
+    default: {
+      ...path,
+      resolve: (...parts: string[]) => {
+        const resolved = path.resolve(...parts).replaceAll('\\', '/')
+        return platform === 'win32' ? resolved.replaceAll('/', '\\') : resolved
+      },
+    },
+  }))
+  const { default: config } = await import('../e2e/vitest.e2e.dimina.config')
+  const files = globSync(config.test!.include!, { cwd: path.resolve(import.meta.dirname, '..') })
+  expect(files).toEqual(['e2e/dimina/web.test.ts'])
 })
