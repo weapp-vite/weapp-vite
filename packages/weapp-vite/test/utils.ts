@@ -1,6 +1,6 @@
 import type { LoadConfigOptions } from '../src/context'
 import { existsSync } from 'node:fs'
-import { cp, lstat, mkdir, mkdtemp, readFile, readlink, rm, symlink } from 'node:fs/promises'
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, realpath, rm, symlink } from 'node:fs/promises'
 import { fdir } from 'fdir'
 import path from 'pathe'
 import { resetCompilerContext } from '../src/context/getInstance'
@@ -114,11 +114,14 @@ export function createTask() {
 let contextCounter = 0
 
 export async function ensureWorkspacePackageLink(projectRoot: string, packageName = 'weapp-vite') {
-  const projectNodeModulesDir = path.join(projectRoot, 'node_modules')
   if (packageName !== 'weapp-vite') {
     return
   }
 
+  const requestedNodeModulesDir = path.join(projectRoot, 'node_modules')
+  await mkdir(requestedNodeModulesDir, { recursive: true })
+  // fixture 可能复用 node_modules 或项目目录链接；相对目标必须基于链接实际所在目录解析。
+  const projectNodeModulesDir = await realpath(requestedNodeModulesDir)
   const packageRoot = path.join(projectNodeModulesDir, packageName)
   const existingStat = await lstat(packageRoot).catch(() => null)
   if (existingStat?.isSymbolicLink()) {
@@ -131,7 +134,6 @@ export async function ensureWorkspacePackageLink(projectRoot: string, packageNam
     await rm(packageRoot, { recursive: true, force: true })
   }
 
-  await mkdir(projectNodeModulesDir, { recursive: true })
   await symlink(path.relative(projectNodeModulesDir, workspaceWeappViteDir), packageRoot, 'junction')
 }
 
