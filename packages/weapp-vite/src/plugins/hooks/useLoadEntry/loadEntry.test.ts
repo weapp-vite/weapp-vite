@@ -334,6 +334,7 @@ function createLoader(options?: CreateLoaderOptions) {
   })
 
   return {
+    compilerCtx,
     loader,
     jsonService,
     jsonCache,
@@ -755,7 +756,7 @@ describe('createEntryLoader', () => {
   })
 
   it('reuses cached vue json block config during direct script hmr', async () => {
-    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const { compilerCtx, loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
     const entryPath = '/project/src/pages/home/index.vue'
     const config = { navigationBarTitleText: 'Home' }
@@ -771,7 +772,7 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, entryPath, 'page')
 
     expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
-    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source })
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source, context: compilerCtx })
     mockExtractConfigFromVue.mockClear()
     registerJsonAsset.mockClear()
     readFileMock.mockResolvedValue(source.replace('count = 1', 'count = 2'))
@@ -851,7 +852,7 @@ describe('createEntryLoader', () => {
   })
 
   it('extracts vue json block config again when the json block changes during hmr', async () => {
-    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const { compilerCtx, loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
     const entryPath = '/project/src/pages/home/index.vue'
     const firstSource = '<json>{"navigationBarTitleText":"Home"}</json><script setup>const count = 1</script>'
@@ -876,7 +877,7 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, entryPath, 'page')
 
     expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
-    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource })
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource, context: compilerCtx })
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: nextConfig,
@@ -884,7 +885,7 @@ describe('createEntryLoader', () => {
   })
 
   it('does not reuse entry-level vue config cache for json macros', async () => {
-    const { loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+    const { compilerCtx, loader, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
     const entryPath = '/project/src/pages/home/index.vue'
     const firstSource = '<script setup>definePageJson({ navigationBarTitleText: "Home" })</script>'
@@ -909,7 +910,7 @@ describe('createEntryLoader', () => {
     await loader.call(pluginCtx, entryPath, 'page')
 
     expect(mockExtractConfigFromVue).toHaveBeenCalledTimes(1)
-    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource })
+    expect(mockExtractConfigFromVue).toHaveBeenCalledWith(entryPath, { source: nextSource, context: compilerCtx })
     expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
       jsonPath: '/project/src/pages/home/index.json',
       json: nextConfig,
@@ -2138,7 +2139,7 @@ describe('createEntryLoader', () => {
         },
       })
 
-    const { loader, entriesMap, emitEntriesChunks } = createLoader({
+    const { compilerCtx, loader, entriesMap, emitEntriesChunks } = createLoader({
       autoRoutesService,
       normalizeEntry: entry => entry.replace(/^\//, ''),
     })
@@ -2149,6 +2150,7 @@ describe('createEntryLoader', () => {
     expect(mockExtractConfigFromVue).toHaveBeenLastCalledWith('/project/src/app.vue', {
       source: 'console.log("noop")',
       force: true,
+      context: compilerCtx,
     })
     expect(entriesMap.get('custom-tab-bar/index')?.type).toBe('component')
     const emittedResolvedIds = emitEntriesChunks.mock.calls.flatMap(
