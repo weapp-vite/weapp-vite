@@ -1,5 +1,5 @@
 import type { CAC } from 'cac'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const tryRunIdeCommandMock = vi.hoisted(() => vi.fn())
 const loadConfigMock = vi.hoisted(() => vi.fn())
@@ -16,6 +16,7 @@ vi.mock('./cli/commands/build', () => ({
     .option('--upload', 'upload')
     .option('--bump <release>', 'bump')
     .action(nativeActionMock)),
+  scheduleCompletedProductionBuildExit: vi.fn(),
 }))
 vi.mock('./cli/commands/close', () => ({ registerCloseCommand: vi.fn() }))
 vi.mock('./cli/commands/generate', () => ({ registerGenerateCommand: vi.fn() }))
@@ -34,6 +35,10 @@ vi.mock('./cli/commands/serve', () => ({
 vi.mock('./cli/commands/upload', () => ({
   registerUploadCommand: vi.fn((cli: CAC) => cli.command('upload [root]')
     .option('--bump <release>', 'bump')
+    .option('--json', 'JSON report')
+    .option('--timeout <seconds>', 'timeout')
+    .option('--platform <platform>', 'platform')
+    .option('--uv <version>', 'version')
     .action(nativeActionMock)),
   registerPreviewCommand: vi.fn(),
 }))
@@ -54,7 +59,11 @@ describe('weapp-vite cli entry', () => {
     vi.resetModules()
     tryRunIdeCommandMock.mockReset()
     loadConfigMock.mockReset().mockResolvedValue({ config: { weapp: { mcp: false } } })
-    nativeActionMock.mockReset()
+    nativeActionMock.mockReset().mockResolvedValue({ schemaVersion: 1, action: 'upload', status: 'success', results: [] })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('waits for forwarded ide commands to finish before resolving module evaluation', async () => {
@@ -101,5 +110,44 @@ describe('weapp-vite cli entry', () => {
 
     expect(nativeActionMock).toHaveBeenCalledTimes(1)
     expect(loadConfigMock).toHaveBeenCalledTimes(configReads)
+  })
+
+  it.each([
+    { args: ['--timeout'] },
+    { args: ['--platform'] },
+    { args: ['--uv'] },
+    { args: ['--unknown-upload-option'] },
+    { args: ['--json', '--timeout'] },
+  ])('reports startup validation errors as JSON before invoking upload: $args', async ({ args }) => {
+    tryRunIdeCommandMock.mockResolvedValue(false)
+    const originalArgv = process.argv
+    const originalExitCode = process.exitCode
+    const stdout: string[] = []
+    vi.spyOn(process.stdout, 'write').mockImplementation(((chunk: string | Uint8Array, encodingOrCallback?: unknown, callback?: unknown) => {
+      stdout.push(String(chunk))
+      const done = typeof encodingOrCallback === 'function' ? encodingOrCallback : callback
+      if (typeof done === 'function') {
+        done()
+      }
+      return true
+    }) as typeof process.stdout.write)
+    process.argv = ['node', 'weapp-vite', 'upload', '--json', ...args]
+    try {
+      await import('./cli.ts?case=upload-json-startup')
+      expect(JSON.parse(stdout.join(''))).toEqual({
+        schemaVersion: 1,
+        action: 'upload',
+        status: 'failed',
+        results: [],
+        error: expect.any(String),
+      })
+      expect(process.exitCode).toBe(1)
+      expect(nativeActionMock).not.toHaveBeenCalled()
+      expect(loadConfigMock).not.toHaveBeenCalled()
+    }
+    finally {
+      process.argv = originalArgv
+      process.exitCode = originalExitCode
+    }
   })
 })

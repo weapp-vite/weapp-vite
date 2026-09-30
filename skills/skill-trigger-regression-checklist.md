@@ -2,9 +2,10 @@
 
 ## 目标
 
-验证以下 8 个主 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 9 个主 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
+- `weapp-acceptance`
 - `docs-and-website-sync`
 - `release-and-changeset-best-practices`
 - `weapp-devtools-e2e-best-practices`
@@ -431,3 +432,12 @@ pnpm skills:score:json
 | K7   |      |            |            |           |      |
 | K8   |      |            |            |           |      |
 | K9   |      |            |            |           |      |
+
+## 验收场景新增用例
+
+| ID | 提问 | 预期 skill | 实际 skill | 备注 |
+| --- | --- | --- | --- | --- |
+| M1 | 改完登录表单后，保存并重跑验收场景，给我断言和日志 | weapp-acceptance | | |
+| M2 | 检查这份小程序验收截图是否对应当前代码 | weapp-acceptance | | |
+| M3 | 排查仓库的 automator 全局串行与 provider parity | weapp-devtools-e2e-best-practices | | 边界 |
+| X14 | Codex 写完页面后运行现有场景并查询报告，不修改底层 E2E | weapp-acceptance | | 冲突 |

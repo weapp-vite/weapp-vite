@@ -58,3 +58,9 @@ session.mockRequest({
 顶层 `delay` 控制响应头阶段，每个分块的 `delay` 相对于前一个阶段。请求提供 `onHeadersReceived` / `offHeadersReceived`、`onChunkReceived` / `offChunkReceived`；不传回调的 off 方法移除全部对应监听。取消会停止后续分块并仅触发一次 `fail → complete`。可设置 `error` 模拟已发送分块后的连接失败。
 
 分块请求的 `success.data` 按已验证的微信 DevTools 行为返回空字符串；数据只通过 chunk 交付。未设置 `chunks` 时不会将普通 `response` 自动拆分。自定义 driver 仍可只实现 abort，公开监听方法类型为可选，使用前需检测能力。此模型不提供 Streams 或传输反压保证。
+
+## worker
+
+Node 与浏览器 simulator 支持从编译产物创建 worker、CommonJS 依赖、双向消息复制、终止及会话关闭清理；每个 worker 拥有独立模块缓存、全局对象与计时器。配置沿用 `app.json.workers`，worker 分包支持 `preDownloadSubpackage({ packageType: 'workers' })`。
+
+当前对照场景覆盖首条消息、双向通信、页面重入与关闭后不再投递。simulator 使用确定性任务调度，不模拟真实并行线程性能、系统进程回收或实验性 worker 后端。

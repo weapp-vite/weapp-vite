@@ -2,7 +2,7 @@ import type { HeadConfig, PageData } from 'vitepress'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { createSeoHead } from './seo'
+import { createSeoHead, transformPageDataForSeo } from './seo'
 import { siteBaseUrl } from './site'
 
 function findHead(head: HeadConfig[], tag: string, key: string, value: string) {
@@ -12,6 +12,29 @@ function findHead(head: HeadConfig[], tag: string, key: string, value: string) {
 }
 
 describe('website SEO domain', () => {
+  it('serializes page-specific SEO for client navigation and preserves custom head', () => {
+    const customHead: HeadConfig = ['meta', { name: 'custom-page-tag', content: 'retained' }]
+    const pages = ['guide/index.md', 'guide/subpackage.md'].map((relativePath): PageData => ({
+      relativePath,
+      filePath: relativePath,
+      title: '指南',
+      description: '',
+      headers: [],
+      frontmatter: { head: [customHead] },
+    }))
+    pages.forEach(transformPageDataForSeo)
+
+    expect(pages.map(page => findHead(page.frontmatter.head, 'link', 'rel', 'canonical')?.[1]?.href))
+      .toEqual([`${siteBaseUrl}/guide/`, `${siteBaseUrl}/guide/subpackage`])
+    for (const page of pages) {
+      expect(page.description).toBe(page.frontmatter.description)
+      expect(page.description).not.toBe('')
+      expect(page.frontmatter.head).toContainEqual(customHead)
+      expect(findHead(page.frontmatter.head, 'script', 'id', 'seo-article')).toBeDefined()
+      expect(findHead(page.frontmatter.head, 'script', 'id', 'seo-breadcrumb')).toBeDefined()
+    }
+  })
+
   it('uses the canonical site domain in page metadata', () => {
     const pageData: PageData = {
       relativePath: 'guide/index.md',

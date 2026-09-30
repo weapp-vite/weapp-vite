@@ -4,24 +4,12 @@ import type {
   DevtoolsRuntimeSessionOptions,
 } from './mcp'
 
+export * from './lease'
 export {
   readDevtoolsElementSnapshot,
   resolveDevtoolsProjectPath,
   resolveDevtoolsWorkspacePath,
   toDevtoolsSerializableValue,
-} from './mcp'
-export type {
-  AutomatorElement,
-  AutomatorMiniProgram,
-  AutomatorPage,
-  DevtoolsConnectionInput,
-  DevtoolsContext,
-  DevtoolsElementSnapshot,
-  DevtoolsPageSnapshot,
-  DevtoolsRuntimeHooks,
-  DevtoolsRuntimeSessionOptions,
-  DevtoolsToolResult,
-  MiniProgramElementLike,
 } from './mcp'
 
 export interface MiniProgramEventMap {
@@ -31,6 +19,7 @@ export interface MiniProgramEventMap {
 
 interface SharedMiniProgramSessionEntry {
   refs: number
+  closeWhenUnused?: boolean
   session: Promise<AutomatorMiniProgram>
 }
 
@@ -76,19 +65,27 @@ export async function acquireSharedMiniProgram(
   }
 }
 
+/** Release a subscription using the exact key returned by resolveSharedMiniProgramSessionKey. */
+export function releaseSharedMiniProgramByKey(sessionKey: string) {
+  const entry = sharedMiniProgramSessions.get(sessionKey)
+  if (entry) {
+    entry.refs = Math.max(0, entry.refs - 1)
+    if (entry.refs === 0 && entry.closeWhenUnused) {
+      sharedMiniProgramSessions.delete(sessionKey)
+      void entry.session.then(program => program.disconnect()).catch(() => undefined)
+    }
+  }
+}
+
 /**
  * @description 释放指定项目的共享会话引用；会话对象会继续缓存，直到显式关闭或重置。
  */
 export function releaseSharedMiniProgram(projectPath: string, sessionIdOrPort?: string | number) {
-  const entry = sharedMiniProgramSessions.get(resolveSharedMiniProgramSessionKey({
+  releaseSharedMiniProgramByKey(resolveSharedMiniProgramSessionKey({
     projectPath,
     ...(typeof sessionIdOrPort === 'number' ? { port: sessionIdOrPort } : {}),
     ...(typeof sessionIdOrPort === 'string' ? { sessionId: sessionIdOrPort } : {}),
   }))
-  if (!entry) {
-    return
-  }
-  entry.refs = Math.max(0, entry.refs - 1)
 }
 
 /**
@@ -156,5 +153,51 @@ export async function withMiniProgram<T>(
     if (miniProgram) {
       miniProgram.disconnect()
     }
+  }
+}
+
+export type {
+  AutomatorElement,
+  AutomatorMiniProgram,
+  AutomatorPage,
+  DevtoolsConnectionInput,
+  DevtoolsContext,
+  DevtoolsElementSnapshot,
+  DevtoolsPageSnapshot,
+  DevtoolsRuntimeHooks,
+  DevtoolsRuntimeSessionOptions,
+  DevtoolsToolResult,
+  MiniProgramElementLike,
+} from './mcp'
+
+/** 检查缓存，供调用方记录其实际创建的连接。 */
+export function hasSharedMiniProgram(options: Pick<DevtoolsRuntimeSessionOptions, 'projectPath' | 'port' | 'sessionId'>) {
+  return sharedMiniProgramSessions.has(resolveSharedMiniProgramSessionKey(options))
+}
+
+/** 只清理仍由调用方创建、且已无活动引用的连接。 */
+export async function closeOwnedSharedMiniProgram(options: Pick<DevtoolsRuntimeSessionOptions, 'projectPath' | 'port' | 'sessionId'>, owned: unknown) {
+  const key = resolveSharedMiniProgramSessionKey(options)
+  const entry = sharedMiniProgramSessions.get(key)
+  if (!entry) {
+    return
+  }
+  const program = await entry.session.catch(() => null)
+  if (program !== owned || sharedMiniProgramSessions.get(key) !== entry) {
+    return
+  }
+  if (entry.refs !== 0) {
+    entry.closeWhenUnused = true
+    return
+  }
+  sharedMiniProgramSessions.delete(key)
+  program?.disconnect()
+}
+
+/** Retain a manager subscription independently of an in-flight operation. */
+export function retainSharedMiniProgram(sessionKey: string) {
+  const entry = sharedMiniProgramSessions.get(sessionKey)
+  if (entry) {
+    entry.refs += 1
   }
 }

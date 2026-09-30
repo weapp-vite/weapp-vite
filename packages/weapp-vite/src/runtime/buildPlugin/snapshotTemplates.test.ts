@@ -109,6 +109,7 @@ async function createFixture() {
   const state = {
     ctx,
     jsonEmitFilesMap: new Map(),
+    pendingJsonEmitFilesMap: new Map(),
     entriesMap: new Map([
       ['components/layout/index', { templatePath: ownerTemplate }],
       ['pages/unrelated/index', { templatePath: absolute('pages/unrelated/index.wxml') }],

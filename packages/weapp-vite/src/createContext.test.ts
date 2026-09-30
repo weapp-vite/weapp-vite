@@ -103,6 +103,28 @@ describe('createCompilerContext', () => {
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
   })
 
+  it('waits for its bootstrap task before propagating a config loading failure', async () => {
+    let resolveBootstrap!: (changed: boolean) => void
+    syncManagedTsconfigBootstrapFilesMock.mockReturnValueOnce(new Promise<boolean>((resolve) => {
+      resolveBootstrap = resolve
+    }))
+    const configError = new Error('invalid config')
+    getCompilerContextMock.mockReturnValueOnce({
+      configService: { load: vi.fn().mockRejectedValue(configError) },
+      scanService: { loadAppEntry: vi.fn() },
+    })
+    const settled = vi.fn()
+    const initialization = createCompilerContext({ cwd: '/project' })
+    void initialization.then(settled, settled)
+    const rejected = expect(initialization).rejects.toBe(configError)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(settled).not.toHaveBeenCalled()
+    resolveBootstrap(true)
+    await rejected
+    expect(syncProjectSupportFilesMock).not.toHaveBeenCalled()
+  })
+
   it('skips duplicate managed tsconfig bootstrap for already bootstrapped cwd', async () => {
     hasManagedTsconfigBootstrapCompletedMock.mockReturnValueOnce(true)
 

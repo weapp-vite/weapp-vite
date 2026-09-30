@@ -1,6 +1,7 @@
 export default {
   pages: [
     'pages/index/index',
+    'pages/worker/index',
   ],
   subPackages: [
     {

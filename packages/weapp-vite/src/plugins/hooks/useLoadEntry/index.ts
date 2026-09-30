@@ -6,6 +6,8 @@ import { fs } from '@weapp-core/shared/fs'
 import { supportedCssLangs, vueExtensions } from '../../../constants'
 import { createDebugger } from '../../../debugger'
 import { createLogicalEntryId } from '../../../moduleGraph/protocol'
+import { prepareIndependentOutputs } from '../../../runtime/buildPlugin/independentPlan'
+import { resetEmittedOutputCaches } from '../../../runtime/buildPlugin/outputs'
 import { changeFileExtension } from '../../../utils'
 import { recordHmrProfileDuration } from '../../../utils/hmrProfile'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -489,11 +491,13 @@ export function useLoadEntry(
         )
         return
       }
-      if (!shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
+      const refreshWatchMetadata = ctx.configService.inlineConfig?.build?.watch && !ctx.configService.isDev
+      if (!refreshWatchMetadata && !shouldPreloadEntryAssetOnly(ctx.runtimeState.build.hmr.profile.dirtyReasonSummary)) {
         await this.load(resolvedId)
         return
       }
-      const entryType = entriesMap.get(entryId)?.type === 'page' ? 'page' : 'component'
+      const relativeBase = removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(entryId))
+      const entryType = entriesMap.get(relativeBase)?.type === 'page' ? 'page' : 'component'
       await loadEntry.call(this, resolvedId.id, entryType)
     },
     (fileName) => {
@@ -556,6 +560,7 @@ export function useLoadEntry(
     dirtyEntrySet,
     resolvedEntryMap,
     jsonEmitFilesMap: jsonEmitManager.map,
+    pendingJsonEmitFilesMap: jsonEmitManager.pendingMap,
     entryChunkLifecycle,
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
@@ -573,6 +578,28 @@ export function useLoadEntry(
     async emitDirtyEntries(this: PluginContext) {
       entryChunkLifecycle.beginBuild()
       ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = false
+      if (this.meta?.watchMode && !ctx.configService.isDev && buildTarget === 'app' && !ctx.configService.weappLibConfig?.enabled) {
+        // 生产 watch 每轮发布完整目标；模块转换缓存与产物元数据的所有权分开处理。
+        resetEmittedOutputCaches(ctx.runtimeState)
+        ctx.runtimeState.css.sidecarImports.clear()
+        loadedEntrySet.clear()
+        dirtyEntrySet.clear()
+        dirtyEntryReasons.clear()
+        dirtyEntryEventIds.clear()
+        lastActualEmittedEntryIds.clear()
+        lastChunkEmittedEntryIds.clear()
+        lastEmittedChunkFileNames.clear()
+        metadataEntryIds.clear()
+        jsonEmitManager.map.clear()
+        ctx.autoRoutesService?.markDirty()
+        ctx.scanService.markDirty()
+        const app = await ctx.scanService.loadAppEntry()
+        await prepareIndependentOutputs(ctx)
+        await loadEntry.call(this, app.path, 'app')
+        options?.hmr?.setDidEmitAllEntries?.(true)
+        options?.hmr?.setSkipSharedChunkRefresh?.(false)
+        return
+      }
       if (!dirtyEntrySet.size) {
         options?.hmr?.setDidEmitAllEntries?.(false)
         options?.hmr?.setLastEmittedEntries?.(new Set())

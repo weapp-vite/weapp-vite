@@ -1,7 +1,9 @@
 import type { MpPlatform, ProjectConfig } from '@/types'
+import { defuOverrideArray } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { getProjectPlatformOptions } from '../platform'
+import { collectProjectConfigAssets, publishProjectConfigAssets } from './projectConfigOutput'
 
 interface ProjectConfigOptions {
   ignorePrivate?: boolean
@@ -55,7 +57,7 @@ export async function getProjectConfig(root: string, options?: ProjectConfigOpti
   const baseJson = await readProjectConfigFile(baseJsonPath, true)
   const privateJson = options?.ignorePrivate ? {} : await readProjectConfigFile(privateJsonPath, false)
 
-  return Object.assign({}, privateJson, baseJson) as ProjectConfig
+  return defuOverrideArray(privateJson, baseJson) as ProjectConfig
 }
 
 export async function getProjectPrivateConfig(root: string, options?: Pick<ProjectConfigOptions, 'privatePath'>) {
@@ -117,6 +119,6 @@ export async function syncProjectConfigToOutput(options: {
     return
   }
 
-  await fs.ensureDir(syncDirs.outputRoot)
-  await fs.copy(syncDirs.sourceDir, syncDirs.outputRoot)
+  const assets = await collectProjectConfigAssets(syncDirs.sourceDir, syncDirs.outputRoot, options.outDir)
+  await publishProjectConfigAssets(syncDirs.outputRoot, assets)
 }

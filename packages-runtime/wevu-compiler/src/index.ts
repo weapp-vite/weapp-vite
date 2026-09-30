@@ -12,6 +12,7 @@ export {
 export type {
   ExtractPageDeclarationWithDependenciesResult,
   StaticPageDeclaration,
+  StaticPageMeta,
   StaticRouteValue,
 } from './pageDeclaration'
 export { compileJsxFile } from './plugins/jsx/compileJsxFile'
@@ -145,7 +146,7 @@ export type {
   SourcePosition,
   SourceSpan,
 } from './types/diagnostics'
-export type { JsonConfig, JsonMergeContext, JsonMergeStage, JsonMergeStrategy } from './types/json'
+export type { JsonConfig, JsonMergeContext, JsonMergeFunction, JsonMergeStage, JsonMergeStrategy } from './types/json'
 
 export type {
   CompilerAppShell,

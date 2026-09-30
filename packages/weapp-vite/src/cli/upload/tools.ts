@@ -6,6 +6,7 @@ import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { getPackageInfo } from 'local-pkg'
 import logger from '../../logger'
+import { terminateUploadDescendants, terminateUploadProcess } from './processTree'
 
 export function requireUploadEnv(context: UploadContext, name: string): string {
   const value = context.env[name]?.trim()
@@ -72,8 +73,20 @@ export async function runUploadCli(context: UploadContext, packageName: string, 
       resolve(stdout)
     })
     function cancel() {
-      // worker 即将退出，不能等待 CLI 的信号处理；强制结束自有进程，防止继续上传。
-      child.kill('SIGKILL')
+      // exit 回调不能等待异步清理，必须同时终止 CLI 及其本地后代。
+      if (child.pid) {
+        try {
+          if (process.platform !== 'win32') {
+            terminateUploadDescendants(child.pid)
+          }
+          terminateUploadProcess(child.pid)
+        }
+        catch {
+          child.kill('SIGKILL')
+          process.stderr.write('无法确认上传 CLI 子进程已全部终止。\n')
+          process.exitCode = 1
+        }
+      }
     }
     process.once('exit', cancel)
     child.once('close', () => process.off('exit', cancel))

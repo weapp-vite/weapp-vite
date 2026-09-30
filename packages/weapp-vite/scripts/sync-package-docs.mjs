@@ -33,6 +33,12 @@ const docEntries = [
     summary: 'defineConfig 类型重载与配置推导说明。',
   },
   {
+    source: path.join(packagedDocsDir, 'vite-plugin.md'),
+    output: 'vite-plugin.md',
+    title: 'Standard Vite Plugin',
+    summary: '实验性标准 Vite 插件、Vite+ alias 与分阶段支持边界。',
+  },
+  {
     source: path.join(packagedDocsDir, 'getting-started.md'),
     output: 'getting-started.md',
     title: 'Getting Started',

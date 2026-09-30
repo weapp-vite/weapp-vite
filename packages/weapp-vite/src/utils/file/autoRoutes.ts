@@ -1,3 +1,4 @@
+import type { MutableCompilerContext } from '../../context'
 import { createRequire } from 'node:module'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -85,10 +86,9 @@ function resolveAutoRoutesMacroImportPath() {
   throw new Error('无法解析 auto-routes 模块路径。')
 }
 
-export async function resolveAutoRoutesInlineSnapshot(): Promise<AutoRoutesInlineSnapshot> {
+export async function resolveAutoRoutesInlineSnapshot(context?: MutableCompilerContext): Promise<AutoRoutesInlineSnapshot> {
   try {
-    const { getCompilerContext } = await import('../../context/getInstance')
-    const compilerContext = getCompilerContext()
+    const compilerContext = context ?? (await import('../../context/getInstance')).getCompilerContext()
     const service = compilerContext.autoRoutesService
     const reference = service?.getReference?.()
 

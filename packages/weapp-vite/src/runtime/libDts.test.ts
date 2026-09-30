@@ -1,3 +1,4 @@
+import { realpath } from 'node:fs/promises'
 import os from 'node:os'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
@@ -18,8 +19,8 @@ vi.mock('./lib', () => ({
   resolveWeappLibEntries: resolveWeappLibEntriesMock,
 }))
 
-vi.mock('rolldown', () => ({
-  build: buildMock,
+vi.mock('./viteHost/engine', () => ({
+  loadHostRolldownBuild: async () => ({ build: buildMock }),
 }))
 
 vi.mock('rolldown-plugin-dts', () => ({
@@ -186,10 +187,10 @@ describe('runtime lib dts generation', () => {
     expect(await fs.readFile(expectedPath, 'utf8')).toContain('interface ButtonProps')
     expect(await fs.pathExists(candidatePath)).toBe(false)
     expect(await fs.pathExists(jsStubPath)).toBe(true)
-    expect(await fs.readFile(jsStubPath, 'utf8')).toBe('export {}\\n')
+    expect(await fs.readFile(jsStubPath, 'utf8')).toBe('export {}\n')
   })
 
-  it('passes user rolldown dts options through to plugin', async () => {
+  it.each([false, true])('passes user rolldown dts options with relative tsconfig=%s', async (relative) => {
     const root = await createTempDir()
     const outDir = path.resolve(root, 'dist')
     const customTsconfig = path.resolve(root, 'tsconfig.lib.json')
@@ -211,7 +212,7 @@ describe('runtime lib dts generation', () => {
         dts: {
           enabled: true,
           rolldown: {
-            tsconfig: customTsconfig,
+            tsconfig: relative ? 'tsconfig.lib.json' : customTsconfig,
             compilerOptions: {
               preserveSymlinks: true,
             },
@@ -222,7 +223,7 @@ describe('runtime lib dts generation', () => {
 
     expect(dtsMock).toHaveBeenCalledTimes(1)
     const options = dtsMock.mock.calls[0]?.[0] as any
-    expect(options.tsconfig).toBe(customTsconfig)
+    expect(options.tsconfig).toBe(await realpath(customTsconfig))
     expect(options.compilerOptions.allowImportingTsExtensions).toBe(true)
     expect(options.compilerOptions.allowJs).toBe(true)
     expect(options.compilerOptions.preserveSymlinks).toBe(true)
@@ -260,7 +261,7 @@ describe('runtime lib dts generation', () => {
 
     expect(dtsMock).toHaveBeenCalledTimes(1)
     const options = dtsMock.mock.calls[0]?.[0] as any
-    expect(options.tsconfig).toBe(tsconfigPath)
+    expect(options.tsconfig).toBe(await realpath(tsconfigPath))
     expect(options.build).toBe(true)
   })
 

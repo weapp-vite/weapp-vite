@@ -8,7 +8,9 @@ import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies -- DevTools CLI fallback 需要跨平台进程执行与超时控制。
 import { execa } from 'execa'
 import {
+  openWechatIdeProjectByHttp,
   pollWechatIdeEngineBuildResultByHttp,
+  resetWechatIdeFileUtilsByHttp,
   startWechatIdeEngineBuildByHttp,
 } from './http'
 import { resolveCliPath } from './resolver'
@@ -21,6 +23,8 @@ export interface RunWechatIdeEngineBuildByHttpOptions extends WechatDevtoolsHttp
 
 export interface RunWechatIdeEngineBuildOptions extends RunWechatIdeEngineBuildByHttpOptions {
   fallbackToCli?: boolean
+  /** Keep protocol stdout free of CLI diagnostics. */
+  quiet?: boolean
   logPath?: string
 }
 
@@ -146,10 +150,10 @@ async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWec
   options.signal?.throwIfAborted()
 
   if ((result.exitCode ?? 1) === 0) {
-    if (stdout) {
+    if (stdout && !options.quiet) {
       process.stdout.write(stdout)
     }
-    if (stderr) {
+    if (stderr && !options.quiet) {
       process.stderr.write(stderr)
     }
     return
@@ -163,10 +167,10 @@ async function runWechatIdeEngineBuildByCli(projectPath: string, options: RunWec
     throw createEngineBuildEndpointMissingError()
   }
 
-  if (stdout) {
+  if (stdout && !options.quiet) {
     process.stdout.write(stdout)
   }
-  if (stderr) {
+  if (stderr && !options.quiet) {
     process.stderr.write(stderr)
   }
 
@@ -258,4 +262,17 @@ export async function runWechatIdeEngineBuild(
     )
     throw error
   }
+}
+
+/** Wait for the IDE to consume a build before deterministic acceptance interactions. */
+export async function prepareAcceptanceProject(projectPath: string, signal: AbortSignal) {
+  await openWechatIdeProjectByHttp(projectPath, { signal, timeoutMs: 10_000 })
+  await sleep(1000, signal)
+  await resetWechatIdeFileUtilsByHttp(projectPath, { signal, timeoutMs: 10_000 })
+  const result = await runWechatIdeEngineBuild(projectPath, { signal, overallTimeoutMs: 60_000, timeoutMs: 10_000, quiet: true })
+  // CLI fallback acknowledges opening before its simulator reload completes.
+  if (!result) {
+    await sleep(1500, signal)
+  }
+  return result
 }

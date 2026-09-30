@@ -1,4 +1,7 @@
+import { createRequire } from 'node:module'
 import { fs } from '@weapp-core/shared/node'
+// eslint-disable-next-line e18e/ban-dependencies -- 原生宿主构建需要跨平台进程启动。
+import { execa } from 'execa'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
@@ -6,8 +9,16 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { subpackagePlacementCheckpoints, subpackagePlacementRoutes } from './subpackagePlacementDom'
 
-const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
+const APP_ROOT = process.env.WEAPP_VITE_E2E_INDEPENDENT_PROJECT
+  ? path.resolve(process.env.WEAPP_VITE_E2E_INDEPENDENT_PROJECT)
+  : path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
+const CLI_PATH = process.env.WEAPP_VITE_E2E_INDEPENDENT_PROJECT
+  ? path.join(path.dirname(createRequire(path.join(APP_ROOT, 'package.json')).resolve('weapp-vite/package.json')), 'bin/weapp-vite.js')
+  : path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
+const HOST = process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv'
+if (HOST !== 'wv' && HOST !== 'vite' && HOST !== 'vite-plus') {
+  throw new Error(`Unsupported independent fixture host: ${HOST}`)
+}
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
 function normalizeRoute(value: string) {
@@ -16,13 +27,25 @@ function normalizeRoute(value: string) {
 
 async function buildFixture() {
   await fs.remove(DIST_ROOT)
-  await runWeappViteBuildWithLogCapture({
-    cliPath: CLI_PATH,
-    projectRoot: APP_ROOT,
-    platform: 'weapp',
-    cwd: APP_ROOT,
-    label: 'ide:wevu-subpackage-placement',
-  })
+  if (HOST === 'wv') {
+    await runWeappViteBuildWithLogCapture({
+      cliPath: CLI_PATH,
+      projectRoot: APP_ROOT,
+      platform: 'weapp',
+      cwd: APP_ROOT,
+      label: 'ide:wevu-subpackage-placement',
+    })
+  }
+  else {
+    const require = createRequire(path.join(APP_ROOT, 'package.json'))
+    const cli = path.join(path.dirname(require.resolve(`${HOST}/package.json`)), HOST === 'vite-plus' ? 'bin/vp' : 'bin/vite.js')
+    await execa(process.execPath, [cli, 'build', '--config', 'vite.independent.config.mts'], { cwd: APP_ROOT })
+  }
+  for (const { route } of subpackagePlacementRoutes) {
+    for (const extension of ['js', 'json', 'wxml']) {
+      expect(await fs.pathExists(path.join(DIST_ROOT, `${normalizeRoute(route)}.${extension}`))).toBe(true)
+    }
+  }
 }
 
 async function openRoute(miniProgram: any, route: string, options: { preferCurrent?: boolean } = {}) {

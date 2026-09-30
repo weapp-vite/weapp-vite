@@ -1,6 +1,6 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { parse, SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
-import type { JsonConfig } from '../../../../types/json'
+import type { JsonConfig, JsonMergeContext } from '../../../../types/json'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
 import type { CompileVueFileOptions } from './types'
 import { createHash } from 'node:crypto'
@@ -42,6 +42,8 @@ export interface ParsedVueFile {
   scriptPreprocessMap?: EncodedSourceMapLike | null
   templateResolvedId?: string
   meta: {
+    routeConfig?: JsonMergeContext['routeConfig']
+    pageMeta?: JsonMergeContext['pageMeta']
     hasScriptSetup: boolean
     hasSetupOption: boolean
     sfcSrcDeps?: string[]
@@ -281,6 +283,8 @@ export async function parseVueFile(
     }
   }
 
+  let routeConfig: JsonMergeContext['routeConfig']
+  let pageMeta: JsonMergeContext['pageMeta']
   let descriptorForCompile = resolvedDescriptor
   let usesExternalScriptCompileSource = false
   if (options?.isPage === true && (
@@ -297,6 +301,8 @@ export async function parseVueFile(
       { scriptResolvedId, scriptSetupResolvedId },
     )
     if (stripped) {
+      routeConfig = stripped.routeConfig
+      pageMeta = stripped.pageMeta
       const mainSourcePreprocessMap = scriptPreprocessMap
       resolvedDescriptor = stripped.descriptor
       usesExternalScriptCompileSource = Boolean(stripped.descriptorForCompile)
@@ -323,6 +329,8 @@ export async function parseVueFile(
   assertMatchingSfcScriptLang(resolvedDescriptor, filename)
 
   const meta = {
+    routeConfig,
+    pageMeta,
     hasScriptSetup: !!resolvedDescriptor.scriptSetup,
     hasSetupOption: !!resolvedDescriptor.script && SETUP_CALL_RE.test(resolvedDescriptor.script.content),
     sfcSrcDeps,
@@ -334,7 +342,7 @@ export async function parseVueFile(
   const jsonKind = options?.json?.kind
     ?? (options?.isApp ? 'app' : options?.isPage ? 'page' : 'component')
   const jsonDefaults = options?.json?.defaults?.[jsonKind]
-  const mergeJson = createJsonMerger(options?.json?.mergeStrategy, { filename, kind: jsonKind })
+  const mergeJson = createJsonMerger(options?.json?.mergeStrategy, { filename, kind: jsonKind, routeConfig, pageMeta })
 
   const scriptSetup = resolvedDescriptor.scriptSetup
   // 关闭输出 source map 时，仅在致命重解析错误分支读取宏变换的延迟 map。

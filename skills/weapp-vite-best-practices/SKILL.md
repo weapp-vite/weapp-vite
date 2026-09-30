@@ -67,10 +67,11 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - `analyze` 支持 `--json`、`--markdown`、`--report pr`、`--budget-check`、`--hmr-profile`、`--preload`、`--glass-easel-check`；分包预算来自 `weapp.analyze.budgets`，增量归因来自 `weapp.analyze.history`，预下载审计按触发包汇总实际分包体积与共享的 2 MB 额度
    - `wv build --upload -p <平台>` 复用本次构建并在产物校验通过后上传；普通 build/dev/HMR 不启用上传。`weapp.upload` 仅提供版本和说明，AppID 与凭据配置先读 `dist/docs/upload.md` 及[分平台上传指南](https://vite.weapp.dev/guide/upload.html)，不要把支付宝当作淘宝支持。
    - SDK `wv upload/preview -p <weapp|alipay|tt|xhs|jd|swan>` 自行构建后调用按需安装的官方工具；多目标用逗号分隔或显式 `all`，与 `build -p all` 的“小程序 + Web”含义不同。`--dry-run` 不调用 SDK；upload 只上传开发版本，preview 只生成官方预览结果，均不提审、不正式上线。顶层 preview 不在旧语法兼容范围内，IDE 预览用 `wv ide preview`。
+   - 独立 `upload --json` 的 stdout 只输出单个结构化汇总，日志与官方进度进入 stderr；批量遇错停止，保留前序成功及后续 `not-run`。`--timeout <秒>` 仅限制各平台 SDK worker，不含构建；SDK 开始后超时／中断标记远端结果未确认，不等于远端取消，禁止自动重试。结果字段只取官方实际返回信息，不推断版本或统一百分比。这两个选项不用于 `build --upload`、`preview`、IDE 或 `weapp.upload` 配置。
    - 旧顶层 `wv upload --project ./dist --version 1.2.3 --desc "release"` 与 `wv upload -p ./dist -v 1.2.3 -d "release"` 保留原始参数、IDE 分发及退出行为，不额外触发构建；每次仅警告一次未来移除。显式 `wv ide upload` 不弃用、不警告，不能把原生所有权断言写成“所有 upload 都禁止 IDE 分发”。
-   - 分流只依据明确方言标记：旧 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`。混用在 IDE、编译、版本修改前报错，SDK 的 `--no-*` 形式也参与判断；不允许自动版本选项在 IDE 调用中静默忽略。
+   - 分流只依据明确方言标记：旧 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`、`--json`、`--timeout`。混用在 IDE、编译、版本修改前报错，SDK 的 `--no-*` 形式也参与判断；不允许 SDK 专属选项在 IDE 调用中静默忽略。
    - `-p` 有旧标记时是 IDE 项目目录，否则是平台，不看目录是否存在或值是否像平台名。`--desc` 共用；`-d` 仅在旧调用中为说明，原生仍为 debug。选项值只是数据，支持分开及 `=` 形式，在 `--` 处停止分流扫描。
-   - SDK 迁移从源码项目根安装官方 SDK，配置 AppID 与 SDK 上传凭据后使用 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`，不能把旧 `--project` 产物目录直接当作 SDK root，也不复用 IDE 登录。dry-run、`--bump`、`--git-desc` 只属于 SDK；保留原行为用稳定的 `wv ide upload`。
+   - SDK 迁移从源码项目根安装官方 SDK，配置 AppID 与 SDK 上传凭据后使用 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`，不能把旧 `--project` 产物目录直接当作 SDK root，也不复用 IDE 登录。dry-run、`--bump`、`--git-desc`、`--json`、`--timeout` 只属于 SDK；保留原行为用稳定的 `wv ide upload`。
    - `ide preview` / `ide upload` / `config` / `screenshot` / `compare` 的帮助、退出码、JSON 输出要稳定；`wv upload --help` 保持 SDK 帮助，`wv help upload` 恢复旧 IDE 帮助并警告未来弃用，`wv ide help upload` 不警告。原生上传版本用 `--uv`，原生 preview 不要求上传版本。
    - 不要让未知命令盲目 passthrough
 5. 常见症状先分诊：
@@ -153,3 +154,11 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - `references/plugin-build-playbook.md`
 - `references/web-runtime-compatibility.md`
 - `references/native-ast-performance-checklist.md`
+
+## 标准 Vite 插件（实验性）
+
+- 配置可导入 `weapp` from `weapp-vite/vite`，以 `plugins: [weapp()]` 激活；继续读取顶层 `weapp`。
+- 当前插件支持单目标微信生产构建与实验性 classic/stateful 开发（`vite dev` / `vp dev`，通过顶层 `weapp.hmr.runtime` 选择），以及原生 `vite build --watch` / `vp build --watch`（生产完整产物，修改宿主配置后需重启命令）；支持微信原生 TS、Wevu Vue 与 React；React 静态 TSX 的 stateful 更新会重建会话，不承诺 hooks 状态保持。已支持独立分包及其宿主监听、子构建配置复用；worker 已进入共享子目标与宿主监听；stateful worker 更新使用完整批次，不承诺线程状态保持。微信插件双产物已接入独立会话与原生 app builder；插件更新不承诺状态保持，双产物暂不支持 `build.write: false`。lib mode 已共用原生声明发布、classic 开发与生产 watch；六平台原生 TS/Vue 支持顶层 `weapp.platform` 单目标选择、classic 与生产 watch；多平台目录式项目配置走原生写出，stateful 仍仅限微信，其他平台真实 IDE 和高级组合单独验收。纯 Web 使用顶层 `weapp.platform: 'web'`，复用同一插件与浏览器宿主；需要既有 Web HTML 入口，不要求小程序项目配置。Web/小程序混合宿主仍待对齐。独立 `wv dev/build` 保留完整能力。
+- 宿主配置是唯一隐式来源；插件不会再次发现 `weapp-vite.config.*`。Vite+ 要按官方 alias 规则统一 `vite` 与 core，不能只看版本号相等。
+- Vitest 配置加载不启动小程序编译。`vp preview`、`vp pack` 不能分别解释为微信预览或小程序组件库构建。
+- 使用前优先读取当前包 `dist/docs/vite-plugin.md` 的支持矩阵，不把后续路线图当成已发布能力。

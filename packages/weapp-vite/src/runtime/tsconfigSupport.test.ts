@@ -14,6 +14,7 @@ function createCtx(overrides: Record<string, any> = {}) {
       cwd: '/project',
       configFilePath: '/project/vite.config.ts',
       packageJson: {},
+      platform: overrides.weappViteConfig?.platform === 'web' ? 'weapp' : overrides.weappViteConfig?.platform,
       weappViteConfig: {},
       ...overrides,
     },

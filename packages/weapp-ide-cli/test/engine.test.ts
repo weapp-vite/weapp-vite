@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const pollWechatIdeEngineBuildResultByHttpMock = vi.hoisted(() => vi.fn())
 const startWechatIdeEngineBuildByHttpMock = vi.hoisted(() => vi.fn())
+const resetWechatIdeFileUtilsByHttpMock = vi.hoisted(() => vi.fn())
 const execaMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
 
@@ -12,6 +14,8 @@ vi.mock('execa', () => ({
 }))
 
 vi.mock('../src/cli/http', () => ({
+  openWechatIdeProjectByHttp: vi.fn().mockResolvedValue(undefined),
+  resetWechatIdeFileUtilsByHttp: resetWechatIdeFileUtilsByHttpMock,
   pollWechatIdeEngineBuildResultByHttp: pollWechatIdeEngineBuildResultByHttpMock,
   startWechatIdeEngineBuildByHttp: startWechatIdeEngineBuildByHttpMock,
 }))
@@ -39,6 +43,27 @@ describe('runWechatIdeEngineBuildByHttp', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('keeps CLI fallback output off protocol stdout when quiet', async () => {
+    startWechatIdeEngineBuildByHttpMock.mockRejectedValueOnce(new Error('Cannot GET /engine/build'))
+    execaMock.mockResolvedValueOnce({ exitCode: 0, stdout: 'diagnostic output', stderr: '' })
+    const write = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const { runWechatIdeEngineBuild } = await import('../src/cli/engine')
+    await runWechatIdeEngineBuild('/workspace/demo-app', { quiet: true })
+    expect(write).not.toHaveBeenCalled()
+  })
+
+  it('refreshes the IDE file index before polling acceptance build completion', async () => {
+    resetWechatIdeFileUtilsByHttpMock.mockResolvedValueOnce(undefined)
+    pollWechatIdeEngineBuildResultByHttpMock.mockResolvedValueOnce({ done: true, failed: false })
+    const { prepareAcceptanceProject } = await import('../src/cli/engine')
+    const signal = new AbortController().signal
+    const pending = prepareAcceptanceProject('/workspace/demo-app', signal)
+    await vi.advanceTimersByTimeAsync(1000)
+    await pending
+    expect(resetWechatIdeFileUtilsByHttpMock).toHaveBeenCalledWith('/workspace/demo-app', { signal, timeoutMs: 10_000 })
+    expect(startWechatIdeEngineBuildByHttpMock).toHaveBeenCalledOnce()
   })
 
   it('starts engine build and waits until done', async () => {

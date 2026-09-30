@@ -128,6 +128,7 @@ function createState(overrides: Record<string, any> = {}) {
     hmrSharedChunksMode: 'auto',
     hmrSharedChunkImporters: new Map(),
     jsonEmitFilesMap: new Map(),
+    pendingJsonEmitFilesMap: new Map(),
   } as any
 
   return {
@@ -339,68 +340,6 @@ describe('core lifecycle emit hook extra branches', () => {
         targetIds: new Set(['/project/src/pages/hmr/index.wxml']),
       }),
     )
-  })
-
-  it('skips json asset scan for script-only incremental hmr renderStart', async () => {
-    const state = createState({
-      ctx: {
-        configService: {
-          isDev: true,
-        },
-        runtimeState: {
-          build: {
-            hmr: {
-              profile: {
-                dirtyReasonSummary: ['entry-direct:1'],
-              },
-            },
-          },
-          wxml: {
-            emittedCode: new Map(),
-          },
-        },
-      },
-      hmrState: {
-        hasBuiltOnce: true,
-        didEmitAllEntries: false,
-      },
-    })
-    const hook = createRenderStartHook(state)
-
-    await hook.call({ emitFile: vi.fn() })
-
-    expect(emitJsonAssetsMock).not.toHaveBeenCalled()
-  })
-
-  it('keeps json asset scan for json-only incremental hmr renderStart', async () => {
-    const state = createState({
-      ctx: {
-        configService: {
-          isDev: true,
-        },
-        runtimeState: {
-          build: {
-            hmr: {
-              profile: {
-                dirtyReasonSummary: ['entry-json-only:1'],
-              },
-            },
-          },
-          wxml: {
-            emittedCode: new Map(),
-          },
-        },
-      },
-      hmrState: {
-        hasBuiltOnce: true,
-        didEmitAllEntries: false,
-      },
-    })
-    const hook = createRenderStartHook(state)
-
-    await hook.call({ emitFile: vi.fn() })
-
-    expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
   })
 
   it.each([

@@ -8,6 +8,8 @@ export interface UploadCLIOptions extends GlobalCLIOptions {
   bump?: string
   gitDesc?: boolean
   dryRun?: boolean
+  json?: boolean
+  timeout?: string | number
 }
 
 export interface BuildUploadCLIOptions extends UploadCLIOptions {
@@ -37,6 +39,21 @@ export function readUploadMetadata(cli: CAC) {
     desc: typeof values.desc === 'string' ? values.desc : undefined,
     bump: typeof values.bump === 'string' ? values.bump : undefined,
   }
+}
+
+/** 超时只约束单个平台的 SDK 进程，不含构建；未指定时不改变原有等待行为。 */
+export function resolveUploadTimeout(value: UploadCLIOptions['timeout']): number | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+  const seconds = typeof value === 'number' ? value : Number(value)
+  const milliseconds = Math.round(seconds * 1000)
+  if ((typeof value !== 'string' && typeof value !== 'number')
+    || !Number.isFinite(milliseconds) || milliseconds / 1000 !== seconds
+    || milliseconds <= 0 || milliseconds > 2147483647) {
+    throw new Error('--timeout 必须为正数秒，精度不超过毫秒且不能超过 2147483.647 秒。')
+  }
+  return milliseconds
 }
 
 /** 普通构建不读取上传元数据；上传必须是显式的一次性构建操作。 */

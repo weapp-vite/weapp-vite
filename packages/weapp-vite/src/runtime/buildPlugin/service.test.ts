@@ -25,23 +25,18 @@ const resetEmittedOutputCachesMock = vi.hoisted(() => vi.fn())
 const isOutputRootInsideOutDirMock = vi.hoisted(() => vi.fn((outDir: string, pluginOutputRoot: string) => {
   return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
 }))
-const createCompilerContextMock = vi.hoisted(() => vi.fn(async () => ({
-  buildService: {
-    build: vi.fn(async () => ({ output: [] })),
-  },
-  watcherService: {
-    closeAll: vi.fn(),
-  },
+const createPluginProjectSessionMock = vi.hoisted(() => vi.fn(async () => ({
+  context: { buildService: { build: vi.fn(async () => ({ output: [] })) } },
+  run: async (task: () => Promise<unknown>) => await task(),
+  close: vi.fn(async () => {}),
 })))
+const setPluginProjectBuildOptionsMock = vi.hoisted(() => vi.fn())
 const disableProjectPrivateConfigHotReloadMock = vi.hoisted(() => vi.fn(async () => true))
 const syncProjectConfigToOutputMock = vi.hoisted(() => vi.fn(async () => {}))
 const generateLibDtsMock = vi.hoisted(() => vi.fn(async () => {}))
 const createSharedBuildConfigMock = vi.hoisted(() => vi.fn(() => ({ shared: true })))
 const touchMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkWorkersOptionsMock = vi.hoisted(() => vi.fn())
-const devWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
-const watchWorkersMock = vi.hoisted(() => vi.fn())
-const buildWorkersMock = vi.hoisted(() => vi.fn(async () => {}))
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerSuccessMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -70,12 +65,10 @@ const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn(async () => ({
   managedTsconfigWarnings: [],
 })))
 const runStatefulHmrDevMock = vi.hoisted(() => vi.fn())
-const restoreAssetWatchMock = vi.hoisted(() => vi.fn(async () => {}))
-const installIdeAssetWatchMock = vi.hoisted(() => vi.fn(async () => restoreAssetWatchMock))
-const restoreIdeAssetWatchMock = vi.hoisted(() => vi.fn(async () => {}))
 const createStatefulHmrSnapshotOptionsMock = vi.hoisted(() => vi.fn(async (_options: unknown) => ({
   options: { build: {}, plugins: [] as Plugin[] },
   getGlobalStyleRoutes: () => [],
+  getChildSources: () => ({ files: [], roots: [] }),
   getTailwindStyleOwners: () => new Map(),
   getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
   getEntryIds: () => new Set<string>(),
@@ -130,8 +123,12 @@ vi.mock('./outputs', async importOriginal => ({
   resetEmittedOutputCaches: resetEmittedOutputCachesMock,
 }))
 
-vi.mock('../../createContext', () => ({
-  createCompilerContext: createCompilerContextMock,
+vi.mock('./pluginProject', () => ({
+  createPluginProjectSession: createPluginProjectSessionMock,
+  isPluginProjectClosing: () => false,
+  runPluginProjectRestart: (_ctx: unknown, run: () => Promise<void>) => run(),
+  setPluginProjectBuildOptions: setPluginProjectBuildOptionsMock,
+  assertPluginProjectOutput: vi.fn(),
 }))
 
 vi.mock('../../utils/projectConfig', () => ({
@@ -145,11 +142,6 @@ vi.mock('../supportFiles', () => ({
 
 vi.mock('../statefulHmr/session', () => ({
   runStatefulHmrDev: runStatefulHmrDevMock,
-}))
-
-vi.mock('../statefulHmr/assetWatch', () => ({
-  installIdeAssetWatch: installIdeAssetWatchMock,
-  restoreIdeAssetWatch: restoreIdeAssetWatchMock,
 }))
 
 vi.mock('../statefulHmr/snapshotBuild', () => ({
@@ -184,9 +176,6 @@ vi.mock('./touchAppWxss', async importOriginal => ({
 
 vi.mock('./workers', () => ({
   checkWorkersOptions: checkWorkersOptionsMock,
-  devWorkers: devWorkersMock,
-  watchWorkers: watchWorkersMock,
-  buildWorkers: buildWorkersMock,
 }))
 
 vi.mock('../../context/shared', () => ({
@@ -456,6 +445,40 @@ async function waitForMockCalls(mock: { mock: { calls: unknown[] } }, count: num
 }
 
 describe('runtime buildPlugin service', () => {
+  it('waits for npm output work before propagating a failed production build', async () => {
+    const ctx = createMockContext()
+    ctx.configService.isDev = false
+    let finishNpm!: () => void
+    const pendingNpm = new Promise<void>((resolve) => {
+      finishNpm = resolve
+    })
+    ctx.npmService.build.mockReturnValue(pendingNpm)
+    const error = new Error('main build failed')
+    buildMock.mockRejectedValue(error)
+    const service = createBuildService(ctx)
+    let settled = false
+    const result = service.build().finally(() => {
+      settled = true
+    })
+    const rejected = expect(result).rejects.toBe(error)
+    await new Promise<void>(resolve => setImmediate(resolve))
+    expect(ctx.npmService.build).toHaveBeenCalledOnce()
+    expect(settled).toBe(false)
+    finishNpm()
+    await rejected
+    expect(settled).toBe(true)
+  })
+
+  it('propagates a worker publication failure from the main build transaction', async () => {
+    const ctx = createMockContext()
+    ctx.configService.isDev = false
+    checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: 'workers' })
+    const error = new Error('worker publication failed')
+    buildMock.mockRejectedValueOnce(error)
+    await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toBe(error)
+    expect(buildMock).toHaveBeenCalledOnce()
+  })
+
   beforeEach(() => {
     devBuildWatcherQueue.length = 0
     vi.clearAllMocks()
@@ -466,6 +489,7 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockReset().mockImplementation(async () => ({
       options: { build: {}, plugins: [] },
       getGlobalStyleRoutes: () => [],
+      getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set<string>(),
@@ -508,34 +532,6 @@ describe('runtime buildPlugin service', () => {
     else {
       process.env.WEAPP_VITE_HMR_PROFILE_JSON = ORIGINAL_HMR_PROFILE_JSON
     }
-  })
-
-  it.each(['npm', 'worker', 'projectConfig'])('drains pending %s work before rejecting a failed build', async (kind) => {
-    const pending = Promise.withResolvers<void>()
-    const failure = new Error('invalid syntax')
-    const ctx = createMockContext()
-    ctx.configService.isDev = false
-    if (kind === 'npm') {
-      ctx.npmService.build.mockReturnValueOnce(pending.promise)
-    }
-    else if (kind === 'worker') {
-      checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: 'workers' })
-      buildWorkersMock.mockReturnValueOnce(pending.promise)
-    }
-    else {
-      syncProjectConfigToOutputMock.mockReturnValueOnce(pending.promise)
-    }
-    buildMock.mockRejectedValueOnce(failure)
-    let finished = false
-    const result = createBuildService(ctx).build().catch((error: unknown) => {
-      finished = true
-      return error
-    })
-    await vi.waitFor(() => expect(buildMock).toHaveBeenCalled())
-    await flushAsyncTasks()
-    expect(finished).toBe(false)
-    pending.reject(new Error('secondary failure'))
-    expect(await result).toBe(failure)
   })
 
   it('throws when required runtime services are missing', () => {
@@ -598,29 +594,21 @@ describe('runtime buildPlugin service', () => {
     expect(ctx.watcherService.sidecarWatcherMap.size).toBe(0)
   })
 
-  it.each(['snapshot', 'worker'] as const)('releases classic resources after %s startup failure even when the graph provider cannot close', async (kind) => {
+  it('releases classic resources after publication failure even when the graph provider cannot close', async () => {
     const ctx = createMockContext()
     const plugin = createWatcherServicePlugin(ctx)
     const sidecarClose = vi.fn(async () => {})
     ctx.watcherService.sidecarWatcherMap.set('auto-import', { close: sidecarClose })
-    const startupError = new Error(`${kind} startup failed`)
+    const startupError = new Error('publication startup failed')
     const closeError = new Error('graph close failed')
     createDevModuleGraphProviderMock.mockResolvedValueOnce({ close: vi.fn(async () => {
       throw closeError
     }) })
     buildMock.mockImplementation(async () => {
       plugin.configResolved?.({ command: 'build', build: {} } as any)
-      if (kind === 'snapshot') {
-        await plugin.buildEnd?.(startupError)
-        throw startupError
-      }
-      await plugin.closeBundle?.()
-      return { output: [] }
+      await plugin.buildEnd?.(startupError)
+      throw startupError
     })
-    if (kind === 'worker') {
-      checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: '/project/src/workers' })
-      devWorkersMock.mockRejectedValueOnce(startupError)
-    }
     await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toMatchObject({
       errors: [startupError, closeError],
     })
@@ -639,6 +627,7 @@ describe('runtime buildPlugin service', () => {
     createStatefulHmrSnapshotOptionsMock.mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
@@ -646,6 +635,7 @@ describe('runtime buildPlugin service', () => {
     }).mockResolvedValueOnce({
       options: { build: {}, plugins: [isolatedPlugin] },
       getGlobalStyleRoutes: () => [],
+      getChildSources: () => ({ files: [], roots: [] }),
       getTailwindStyleOwners: () => new Map(),
       getGlassEaselAnalysisByOwner: () => new Map<string, GlassEaselAnalysisFact>(),
       getEntryIds: () => new Set([snapshotEntry]),
@@ -666,30 +656,15 @@ describe('runtime buildPlugin service', () => {
     ctx.runtimeState.build.hmr.resolvedEntryMap.set('/project/src/stale.ts', { id: '/project/src/stale.ts' })
 
     await createBuildService(ctx).build({ skipNpm: true })
+    expect(ctx.configService.load).not.toHaveBeenCalled()
     await runStatefulHmrDevMock.mock.calls[0]![2]()
+    expect(ctx.configService.load).toHaveBeenCalledTimes(1)
 
     for (const [, , , snapshots] of runStatefulHmrDevMock.mock.calls) {
       expect(snapshots.entryIds).toEqual(new Set([snapshotEntry]))
       expect(JSON.parse(snapshots.initial.output[0].source)).toEqual({ component: true, options: { multipleSlots: true } })
     }
     expect(createStatefulHmrSnapshotOptionsMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('restores IDE asset watching as part of Vite shutdown before the process can exit', async () => {
-    buildMock.mockResolvedValue({ output: [] })
-    runStatefulHmrDevMock.mockResolvedValue({ close: vi.fn(async () => {}) })
-    const ctx = createMockContext()
-    ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
-    const watcher = await createBuildService(ctx).build({ skipNpm: true }) as RolldownWatcher
-    const options = runStatefulHmrDevMock.mock.calls[0]![1] as InlineConfig
-    const plugin = (options.plugins as Plugin[]).find(plugin => plugin.name === 'weapp-vite:ide-asset-watch-ownership')!
-    expect(plugin).toBeDefined()
-    const close = plugin.closeBundle as () => Promise<void>
-    const before = restoreAssetWatchMock.mock.calls.length
-    await close()
-    expect(restoreAssetWatchMock).toHaveBeenCalledTimes(before + 1)
-    await watcher.close()
-    expect(restoreAssetWatchMock).toHaveBeenCalledTimes(before + 1)
   })
 
   it('replaces stateful session graphs and releases the replacement through the original public close handle', async () => {
@@ -770,40 +745,19 @@ describe('runtime buildPlugin service', () => {
     expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
   })
 
-  it('drains and releases an opened stateful session when worker startup and server close fail', async () => {
+  it('releases stateful graph ownership after publication startup failure', async () => {
     const graph = createModuleGraphService()
     const ctx = createMockContext({ moduleGraphService: graph })
     ctx.configService.weappViteConfig.hmr = { runtime: 'stateful-experimental' }
     const entry = '/project/src/pages/index.ts'
     const dependency = '/project/src/shared.wxml'
-    const started = Promise.withResolvers<void>()
-    const ready = Promise.withResolvers<void>()
-    const startupError = new Error('worker startup failed')
-    const closeError = new Error('stateful server close failed')
-    let closed = false
-    checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: '/project/src/workers' })
-    devWorkersMock.mockRejectedValueOnce(startupError)
+    const error = new Error('worker publication failed')
     buildMock.mockResolvedValue({ output: [] })
     runStatefulHmrDevMock.mockImplementationOnce(async () => {
       graph.replaceEntryDependencies(entry, 'template', [dependency])
-      started.resolve()
-      await ready.promise
-      return {
-        close: async () => {
-          closed = true
-          throw closeError
-        },
-      }
+      throw error
     })
-    const rejected = expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toMatchObject({
-      errors: [startupError, closeError],
-    })
-    await started.promise
-    expect(graph.collectAffectedEntries(dependency)).toEqual(new Set([entry]))
-    expect(closed).toBe(false)
-    ready.resolve()
-    await rejected
-    expect(closed).toBe(true)
+    await expect(createBuildService(ctx).build({ skipNpm: true })).rejects.toBe(error)
     expect(graph.hasModule(dependency)).toBe(false)
     expect(graph.collectAffectedEntries(dependency)).toEqual(new Set())
   })
@@ -1035,18 +989,11 @@ describe('runtime buildPlugin service', () => {
     watcher.emit('END')
     await flushAsyncTasks()
 
-    expect(process.env.NODE_ENV).toBe('development')
+    expect(process.env.NODE_ENV).toBeUndefined()
     expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
-    expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({
-      outDir: '/project/dist',
-      projectConfigPath: '/project/project.config.json',
-      projectPrivateConfigPath: '/project/project.private.config.json',
-      enabled: false,
-    })
+    expect(syncProjectConfigToOutputMock).not.toHaveBeenCalled()
     expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
     expect(ctx.runtimeState.build.npmBuilt).toBe(true)
-    expect(devWorkersMock).toHaveBeenCalledWith(ctx.configService, ctx.watcherService, 'workers')
-    expect(watchWorkersMock).toHaveBeenCalledTimes(1)
     expect(touchMock).not.toHaveBeenCalled()
     expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(expect.any(Object), '/')
   })
@@ -2662,7 +2609,7 @@ describe('runtime buildPlugin service', () => {
     expect(resetEmittedOutputCachesMock).not.toHaveBeenCalled()
   })
 
-  it('passes explicit output preservation into isolated plugin builds', async () => {
+  it('delegates production plugin options to the publication stage', async () => {
     buildMock.mockResolvedValue({ output: [] })
     const ctx = createMockContext()
     Object.assign(ctx.configService, {
@@ -2672,9 +2619,8 @@ describe('runtime buildPlugin service', () => {
       absolutePluginOutputRoot: '/project/dist-plugin',
     })
     await createBuildService(ctx).build({ skipNpm: true })
-    expect(createCompilerContextMock).toHaveBeenCalledWith(expect.objectContaining({
-      inlineConfig: { build: { outDir: '/project/dist-plugin', emptyOutDir: false } },
-    }))
+    expect(setPluginProjectBuildOptionsMock).toHaveBeenCalledWith(ctx, { skipNpm: true })
+    expect(createPluginProjectSessionMock).not.toHaveBeenCalled()
   })
 
   it('skips output cleanup in dev when cleanOutputsInDev is false', async () => {
@@ -2695,51 +2641,7 @@ describe('runtime buildPlugin service', () => {
     await service.build()
 
     expect(cleanOutputsMock).not.toHaveBeenCalled()
-    expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('runs project config sync concurrently with the dev bundler build', async () => {
-    const watcher = createManualWatcher()
-    let releaseProjectConfigSync: (() => void) | undefined
-    syncProjectConfigToOutputMock.mockImplementationOnce(async () => {
-      await new Promise<void>((resolve) => {
-        releaseProjectConfigSync = resolve
-      })
-    })
-    buildMock.mockResolvedValueOnce(watcher)
-    const baseCtx = createMockContext()
-    const ctx = createMockContext({
-      configService: {
-        ...baseCtx.configService,
-        multiPlatform: {
-          ...baseCtx.configService.multiPlatform,
-          enabled: true,
-        },
-      },
-    })
-    const service = createBuildService(ctx)
-
-    const buildPromise = service.build({ skipNpm: true })
-    await watcher.subscribed
-
-    expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
-    expect(buildMock).toHaveBeenCalledTimes(1)
-
-    watcher.emit('START')
-    watcher.emit('END')
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(releaseProjectConfigSync).toBeDefined()
-
-    let resolved = false
-    buildPromise.then(() => {
-      resolved = true
-    }).catch(() => {})
-    await new Promise(resolve => setTimeout(resolve, 0))
-    expect(resolved).toBe(false)
-
-    releaseProjectConfigSync?.()
-    await buildPromise
-    expect(resolved).toBe(true)
+    expect(syncProjectConfigToOutputMock).not.toHaveBeenCalled()
   })
 
   it('cleans output in dev when cleanOutputsInDev is true', async () => {
@@ -2830,32 +2732,11 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(buildMock).toHaveBeenNthCalledWith(1, {})
-    expect(buildWorkersMock).toHaveBeenCalledTimes(1)
-    expect(createCompilerContextMock).toHaveBeenCalledWith({
-      key: 'plugin-build:/project',
-      cwd: '/project',
-      isDev: false,
-      mode: undefined,
-      pluginOnly: true,
-      configFile: undefined,
-      cliPlatform: 'weapp',
-      projectConfigPath: '/project/project.config.json',
-      inlineConfig: {
-        build: {
-          outDir: '/project/dist-plugin',
-        },
-      },
-    })
-    const isolatedCtx = await createCompilerContextMock.mock.results[0].value
-    expect(isolatedCtx.buildService.build).toHaveBeenCalledWith(undefined)
+    expect(createPluginProjectSessionMock).not.toHaveBeenCalled()
+    expect(setPluginProjectBuildOptionsMock).toHaveBeenCalledWith(ctx, {})
     expect(queueStartSpy).toHaveBeenCalled()
     expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
-    expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({
-      outDir: '/project/dist',
-      projectConfigPath: '/project/project.config.json',
-      projectPrivateConfigPath: '/project/project.private.config.json',
-      enabled: true,
-    })
+    expect(syncProjectConfigToOutputMock).not.toHaveBeenCalled()
   })
 
   it('runs prod bundler without waiting for local subpackage npm preload', async () => {
@@ -2940,13 +2821,11 @@ describe('runtime buildPlugin service', () => {
     buildMock
       .mockResolvedValueOnce(createWatcher(['START', 'END']))
       .mockResolvedValueOnce({ output: [] })
-    createCompilerContextMock.mockResolvedValueOnce({
-      buildService: {
-        build: vi.fn(async () => pluginWatcher),
-      },
-      watcherService: {
-        closeAll: vi.fn(),
-      },
+    const closePlugin = vi.fn(async () => {})
+    createPluginProjectSessionMock.mockResolvedValueOnce({
+      context: { buildService: { build: vi.fn(async () => pluginWatcher) } },
+      run: async task => await task(),
+      close: closePlugin,
     })
 
     const ctx = createMockContext({
@@ -2960,25 +2839,14 @@ describe('runtime buildPlugin service', () => {
 
     await service.build({ skipNpm: true })
 
-    expect(createCompilerContextMock).toHaveBeenCalledWith({
-      key: 'plugin-build:/project',
-      cwd: '/project',
-      isDev: true,
-      mode: undefined,
-      pluginOnly: true,
-      configFile: undefined,
-      cliPlatform: 'weapp',
-      projectConfigPath: '/project/project.config.json',
-      inlineConfig: {
-        build: {
-          outDir: '/project/dist-plugin',
-        },
-      },
-    })
-    expect(ctx.watcherService.setRollupWatcher).toHaveBeenCalledWith(pluginWatcher, '/project/plugin')
+    expect(createPluginProjectSessionMock).toHaveBeenCalledWith(ctx)
+    const child = ctx.watcherService.sidecarWatcherMap.get('plugin-session:/project/plugin')
+    expect(child).toBeDefined()
+    await child!.close()
+    expect(closePlugin).toHaveBeenCalledOnce()
   })
 
-  it('runs prod lib build and emits dts without npm/project-config/plugin build', async () => {
+  it('delegates prod lib publication to the native plugin chain without CLI-only dts/npm tasks', async () => {
     process.env.NODE_ENV = 'production'
     buildMock.mockResolvedValueOnce({ output: [] })
 
@@ -3000,7 +2868,7 @@ describe('runtime buildPlugin service', () => {
     await service.build()
 
     expect(buildMock).toHaveBeenCalledTimes(1)
-    expect(generateLibDtsMock).toHaveBeenCalledWith(ctx.configService)
+    expect(generateLibDtsMock).not.toHaveBeenCalled()
     expect(syncProjectConfigToOutputMock).not.toHaveBeenCalled()
     expect(ctx.npmService.build).not.toHaveBeenCalled()
   })
@@ -3022,7 +2890,7 @@ describe('runtime buildPlugin service', () => {
     await service.build({ skipNpm: true })
 
     expect(ctx.currentBuildTarget).toBe('plugin')
-    expect(createCompilerContextMock).not.toHaveBeenCalled()
+    expect(createPluginProjectSessionMock).not.toHaveBeenCalled()
     expect(ctx.npmService.build).not.toHaveBeenCalled()
   })
 

@@ -16,3 +16,6 @@ export interface StaticPageDeclaration {
   name: string
   meta?: Record<string, StaticRouteValue>
 }
+
+/** 完整可静态提取的页面元信息；动态成员不产生部分结果。 */
+export type StaticPageMeta = Record<string, StaticRouteValue>

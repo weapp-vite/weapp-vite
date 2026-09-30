@@ -12,7 +12,7 @@ import path from 'pathe'
 import { compileVueFile, isUniAppCompatibilityFile, transformUniAppSource } from 'wevu/compiler'
 import { compileWxml } from '../compiler/wxml'
 import { resolveScriptFile } from './files'
-import { appendInlineQuery, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport } from './path'
+import { appendInlineQuery, normalizePath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport } from './path'
 
 const traverse = _babelTraverse
 
@@ -93,7 +93,7 @@ export async function compileWebVueSfc(options: {
       },
     },
   })
-  state.sfcResults.set(filename, result)
+  state.sfcResults.set(normalizePath(filename), result)
   for (const dependency of result.meta?.sfcSrcDeps ?? []) {
     state.templatePathSet.add(dependency)
   }
@@ -111,7 +111,7 @@ export async function ensureWebVueSfcResult(options: {
   uniApp?: { include: string[] }
   stylePreprocessOptions?: WebStylePreprocessOptions
 }) {
-  const cached = options.state.sfcResults.get(options.filename)
+  const cached = options.state.sfcResults.get(normalizePath(options.filename))
   if (cached) {
     return cached
   }

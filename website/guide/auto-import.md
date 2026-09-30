@@ -151,6 +151,10 @@ export default <UserConfig>{
 
 构建器会在组件扫描、resolver 匹配的同一流程中自动刷新这些文件，无需手动触发。
 
+开发态下，目录扫描与文件监听使用一致的组件路径标识，Windows 路径分隔符不同不会形成两份注册记录。删除组件会移除注册；恢复文件或修改组件声明后，会重新判断是否满足注册条件。重建页面配置时，会重新计算自动生成的 `usingComponents`，移除失效的自动绑定，同时保留源码中显式声明的绑定。
+
+派生配置变化后，增量构建也会发布新的页面 JSON，包括清空配置时的 `{}`，不依赖变更文件是否为 JSON。
+
 从 `weapp-vite 6.15.1` 开始，`components.d.ts` 在为“带源码跳转的原生组件”补齐 Vue 模板类型时，也会稳定合并小程序通用基础属性。这意味着像下面这样的写法不再被误报：
 
 ```vue
@@ -169,7 +173,7 @@ wv prepare
 
 ## 常见疑问
 
-- **为什么没自动注册？** 先检查组件 `json` 是否包含 `"component": true`，再确认路径是否命中了 `globs`。修改 `globs` 或新增组件后记得重启 `pnpm dev` 以刷新缓存。
+- **为什么没自动注册？** 先检查组件 `json` 是否包含 `"component": true`，再确认路径是否命中了 `globs`。修改配置中的 `globs` 后需要重启 `pnpm dev`；在已监听的匹配目录中新增组件，无需重启。
 - **Resolver 报错怎么办？** 请确认对应 UI 库的 npm 包已安装，并与 resolver 支持的版本匹配。只想扫描本地组件时，可以临时移除 `resolvers`。
 - **如何禁用部分组件？** 结合 `include` / `exclude` 或自定义 resolver 即可实现选择性注册，详见 [自动导入组件配置](/config/auto-import-components.md#weapp-autoimportcomponents)。
 

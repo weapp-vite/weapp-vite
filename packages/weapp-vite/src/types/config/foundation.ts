@@ -312,37 +312,7 @@ export interface SharedChunkOverride {
   mode: SharedChunkMode
 }
 
-export type JsonMergeStage
-  = | 'defaults'
-    | 'json-block'
-    | 'auto-using-components'
-    | 'component-generics'
-    | 'macro'
-    | 'emit'
-    | 'merge-existing'
-
-export interface JsonMergeContext {
-  filename?: string
-  kind?: 'app' | 'page' | 'component' | 'unknown'
-  stage: JsonMergeStage
-}
-
-export type JsonMergeFunction = (
-  target: Record<string, any>,
-  source: Record<string, any>,
-  context: JsonMergeContext,
-) => Record<string, any> | void
-
-export type JsonMergeStrategy = 'deep' | 'assign' | 'replace' | JsonMergeFunction
-
-export interface JsonConfig {
-  defaults?: {
-    app?: Record<string, any>
-    page?: Record<string, any>
-    component?: Record<string, any>
-  }
-  mergeStrategy?: JsonMergeStrategy
-}
+export type { JsonConfig, JsonMergeContext, JsonMergeFunction, JsonMergeStage, JsonMergeStrategy } from 'wevu/compiler'
 
 export interface ChunksConfig {
   sharedStrategy?: SharedChunkStrategy

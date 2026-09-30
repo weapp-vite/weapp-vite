@@ -112,3 +112,9 @@ mpcore/packages/simulator/e2e/__screenshots__/
 # Reproducible external source/build caches
 /.cache/
 docs/reports/*-e2e-dimina-*-suite-report/
+
+# Local acceptance fixtures and evidence
+/artifacts/
+
+# Generated runtime DOM evidence; upload as CI artifacts instead.
+/docs/reports/dom-acceptance/

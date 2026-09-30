@@ -37,6 +37,7 @@ export function configureBuildAndPlugins(options: {
   injectBuiltinAliases: (config: InlineConfig, wevuRuntime?: WevuRuntimeAliasMode) => void
   resolvedLibConfig: LoadConfigResult['weappLib']
   cliPlatform?: string
+  explicitPlatform?: boolean
   projectConfigPath?: string
   cwd: string
 }) {
@@ -52,6 +53,16 @@ export function configureBuildAndPlugins(options: {
   } = options
 
   const buildConfig = config.build ?? (config.build = {})
+  const runtime = resolveCliPlatformRuntime(cliPlatform)
+  if (runtime.isWebRuntime) {
+    injectBuiltinAliases(config, 'build')
+    return {
+      buildConfig,
+      platform: DEFAULT_MP_PLATFORM,
+      multiPlatform: resolveMultiPlatformConfig(config.weapp?.multiPlatform),
+      ...runtime,
+    }
+  }
   const jsFormat = config.weapp?.jsFormat ?? 'cjs'
   const enableLegacyEs5 = config.weapp?.es5 === true
   if (enableLegacyEs5) {
@@ -76,12 +87,12 @@ export function configureBuildAndPlugins(options: {
     buildConfig.target = 'es2015'
   }
   else if (targetInfo.hasTarget && targetInfo.sanitized !== undefined) {
-    const defaultTarget = getDefaultBuildTarget(config.weapp?.platform)
+    const defaultTarget = getDefaultBuildTarget(config.weapp?.platform === 'web' ? undefined : config.weapp?.platform)
     const shouldUseDefaultForNonConcrete = Boolean(defaultTarget && isNonConcreteBuildTarget(originalTarget))
     buildConfig.target = shouldUseDefaultForNonConcrete ? defaultTarget : targetInfo.sanitized
   }
   else if (!targetInfo.hasTarget) {
-    const defaultTarget = getDefaultBuildTarget(config.weapp?.platform)
+    const defaultTarget = getDefaultBuildTarget(config.weapp?.platform === 'web' ? undefined : config.weapp?.platform)
     if (defaultTarget) {
       buildConfig.target = defaultTarget
     }
@@ -174,10 +185,10 @@ export function configureBuildAndPlugins(options: {
     config.plugins.unshift(oxcVitePlugin)
   }
 
-  const platform = config.weapp?.platform ?? DEFAULT_MP_PLATFORM
+  const platform = config.weapp?.platform === 'web' ? DEFAULT_MP_PLATFORM : (config.weapp?.platform ?? DEFAULT_MP_PLATFORM)
   const multiPlatform = resolveMultiPlatformConfig(config.weapp?.multiPlatform)
-  if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
-    throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
+  if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform && !options.explicitPlatform) {
+    throw new Error('已开启 weapp.multiPlatform，请通过 weapp.platform 或 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
   }
   if (multiPlatform.enabled && !isWebRuntime && !supportsMultiPlatformTarget(multiPlatform, platform)) {
     throw new Error(`当前平台 "${platform}" 不在 weapp.multiPlatform.targets 配置中，可选平台：${multiPlatform.targets.join(', ')}`)

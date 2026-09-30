@@ -4,7 +4,7 @@ import type { WevuRuntimeCapabilityMetadata } from '../../../../runtimeCapabilit
 import type { WevuBindingManifestV1, WevuRuntimeBindingManifestMode } from '../../../../types/bindingManifest'
 import type { ComponentStyleOptions } from '../../../../types/componentStyleOptions'
 import type { CompilerDiagnostic } from '../../../../types/diagnostics'
-import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
+import type { JsonConfig, JsonMergeContext, JsonMergeStrategy } from '../../../../types/json'
 import type { CompilerAppShell, CompilerPageLayoutPlan } from '../../../../types/pageLayout'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { EncodedSourceMapLike } from '../../../../utils/sourcemap'
@@ -36,6 +36,8 @@ export interface VueTransformResult {
   componentGenerics?: TemplateCompileResult['componentGenerics']
   classStyleWxs?: boolean
   meta?: {
+    routeConfig?: JsonMergeContext['routeConfig']
+    pageMeta?: JsonMergeContext['pageMeta']
     /** @internal */
     componentStyleOptions?: ComponentStyleOptions
     /** @internal */

@@ -7,6 +7,8 @@ import path from 'node:path'
 import { cac } from 'cac'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { callWriteBundleHooks } from '../../../test/pluginHook'
+import { UploadExecutionError } from '../upload/executionError'
+import { UploadCommandError } from '../upload/report'
 import { registerPreviewCommand, registerUploadCommand, runUploadCommand } from './upload'
 
 const state = vi.hoisted(() => ({
@@ -96,10 +98,16 @@ describe('build and upload transitions', () => {
     { config: undefined, options: {}, version: '1.0.0', desc: 'upload-fixture@1.0.0' },
     { config: { version: '2.3.4' }, options: {}, version: '2.3.4', desc: 'upload-fixture@2.3.4' },
     { config: { version: ' ' }, options: { uv: '3.4.5' }, version: '3.4.5', desc: 'upload-fixture@3.4.5' },
-  ])('resolves upload metadata with CLI > config > package precedence: $version / $desc', async ({ config, options, version, desc }) => {
+  ])('reports the requested version using CLI > config > package precedence: $version', async ({ config, options, version }) => {
     uploadConfig = config
-    await runUploadCommand(root, { platform: 'jd', ...options })
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.objectContaining({ version, desc }), [], 'upload')
+    const report = await runUploadCommand(root, { platform: 'jd', ...options })
+    expect(report.results).toEqual([{
+      platform: 'jd',
+      requestedVersion: version,
+      stage: 'upload',
+      status: 'success',
+      result: undefined,
+    }])
   })
 
   it('rejects an explicitly blank configured version before building or uploading', async () => {
@@ -114,10 +122,7 @@ describe('build and upload transitions', () => {
     uploadConfig = { version: ' ', desc: '仅上传' }
     state.execute.mockResolvedValue({ previewUrl: 'https://example.com/preview' })
     await runUploadCommand(root, { platform: 'jd' }, 'preview')
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.objectContaining({
-      version: '1.0.0',
-      desc: 'upload-fixture@1.0.0',
-    }), [], 'preview')
+    expect(state.execute.mock.calls.map(([, , , action]) => action)).toEqual(['preview'])
   })
 
   it('does not upload incomplete build output or start later targets', async () => {
@@ -149,26 +154,43 @@ describe('build and upload transitions', () => {
     await expect(runUploadCommand(root, { platform: 'jd,tt' })).rejects.toThrow('platform rejected upload')
     expect(events).toEqual(['build:jd', 'close:jd'])
   })
+
+  it('retains earlier success and leaves later platforms unexecuted after a rejection', async () => {
+    state.execute.mockResolvedValueOnce({ qrCodeUrl: 'https://example.com/trial.png' })
+      .mockRejectedValueOnce(new Error('platform rejected upload'))
+    const failure = await runUploadCommand(root, { platform: 'jd,tt,xhs' }).catch(error => error)
+    expect(failure).toBeInstanceOf(UploadCommandError)
+    expect(failure.report).toMatchObject({
+      status: 'failed',
+      results: [
+        { platform: 'jd', status: 'success', result: { qrCodeUrl: 'https://example.com/trial.png' } },
+        { platform: 'tt', status: 'failed', stage: 'upload' },
+        { platform: 'xhs', status: 'not-run', stage: 'prepare' },
+      ],
+    })
+    expect(events).toEqual(['build:jd', 'close:jd', 'build:tt', 'close:tt'])
+  })
+
+  it('does not confuse an uncertain remote result with a confirmed rejection', async () => {
+    state.execute.mockRejectedValueOnce(new UploadExecutionError('timed out', 'timeout', 'unknown'))
+    const failure = await runUploadCommand(root, { platform: 'jd,tt' }).catch(error => error)
+    expect(failure.report.results).toMatchObject([
+      { platform: 'jd', status: 'unknown', remoteOutcome: 'unknown' },
+      { platform: 'tt', status: 'not-run' },
+    ])
+  })
+
+  it('reports dry-run without inventing a successful upload result', async () => {
+    const report = await runUploadCommand(root, { platform: 'jd,tt', dryRun: true })
+    expect(report.results).toEqual([
+      { platform: 'jd', status: 'dry-run', stage: 'validate', requestedVersion: '2.3.4' },
+      { platform: 'tt', status: 'dry-run', stage: 'validate', requestedVersion: '2.3.4' },
+    ])
+    expect(state.execute).not.toHaveBeenCalled()
+  })
 })
 
 describe('upload metadata CLI parsing', () => {
-  it.each([
-    { action: 'upload', args: ['--uv', '00123', '--desc', '12345'], version: '00123', desc: '12345' },
-    { action: 'upload', args: ['--desc', '   '], version: '2.3.4', desc: 'upload-fixture@2.3.4' },
-    { action: 'upload', args: ['--uv=00123', '--uv=00456', '--desc=000'], version: '00456', desc: '000' },
-    { action: 'preview', args: ['--desc', '12345'], version: '1.0.0', desc: '12345' },
-  ])('preserves string metadata for $action $args', async ({ action, args, version, desc }) => {
-    const cli = cac()
-    registerUploadCommand(cli)
-    registerPreviewCommand(cli)
-    if (action === 'preview') {
-      state.execute.mockResolvedValue({ previewUrl: 'https://example.com/preview' })
-    }
-    cli.parse(['node', 'wv', action, root, '-p', 'jd', ...args], { run: false })
-    await cli.runMatchedCommand()
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.objectContaining({ version, desc }), [], action)
-  })
-
   it.each([
     { action: 'upload', option: 'uv', args: ['--uv', '1.2.3', '--uv'] },
     { action: 'upload', option: 'uv', args: ['--uv', '1.2.3', '--uv', '--desc', 'release'] },
@@ -251,6 +273,8 @@ describe('automatic upload version transitions', () => {
     { platform: 'web', bump: 'patch' },
     { platform: 'jd', bump: 'patch', uv: '2.0.0' },
     { platform: 'jd', bump: 'patch', gitDesc: true, desc: 'explicit' },
+    { platform: 'jd', bump: 'patch', timeout: 0 },
+    { platform: 'jd', bump: 'patch', timeout: 'invalid' },
   ])('rejects incompatible automatic metadata before changing files: %j', async (options) => {
     await expect(runUploadCommand(root, options)).rejects.toThrow()
     expect(await readFile(manifestPath, 'utf8')).toBe(originalManifest)

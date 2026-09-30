@@ -21,6 +21,8 @@ export async function refreshVueFileJsonConfig(
   const parsed = await parseVueFile(source, filename, options)
   const meta = {
     ...cachedResult.meta,
+    routeConfig: parsed.meta.routeConfig,
+    pageMeta: parsed.meta.pageMeta,
     hasScriptSetup: parsed.meta.hasScriptSetup,
     hasSetupOption: parsed.meta.hasSetupOption,
     sfcSrcDeps: parsed.meta.sfcSrcDeps,

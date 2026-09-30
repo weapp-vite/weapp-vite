@@ -66,13 +66,21 @@ export function createIndependentBuilder(
         }
         return await isolatedCtx.autoImportService.runWithoutOutputWrites(async () => {
           await isolatedCtx.configService.load({
+            ...configService.loadOptions,
             cwd: configService.cwd,
             isDev: configService.isDev,
             mode: configService.mode,
             configFile: configService.configFilePath,
+            hostConfig: {
+              config: configService.options.sourceConfig ?? {},
+              path: configService.configFilePath,
+              dependencies: configService.configFileDependencies,
+            },
             cliPlatform: configService.platform,
             inlineConfig: {
+              ...configService.loadOptions.inlineConfig,
               weapp: {
+                ...configService.loadOptions.inlineConfig?.weapp,
                 platform: configService.platform,
               },
             },
@@ -111,10 +119,9 @@ export function createIndependentBuilder(
             }, autoImportGlobs)
             await Promise.all(candidates.map(candidate => isolatedCtx.autoImportService.registerPotentialComponent(candidate)))
           }
-          const watch = configService.isDev ? collectIndependentWatchFiles(independentState.watchFiles, root, source => isolatedCtx.moduleGraphService.getEntryDependencies(source).map(dependency => dependency.sourceId), independentState.watchListeners) : undefined
-          if (watch) {
-            inlineConfig.plugins = [...inlineConfig.plugins ?? [], watch.plugin]
-          }
+          // 子构建不启动 watcher；无论开发或生产都记录依赖，由宿主决定是否监听。
+          const watch = collectIndependentWatchFiles(independentState.watchFiles, root, source => isolatedCtx.moduleGraphService.getEntryDependencies(source).map(dependency => dependency.sourceId), independentState.watchListeners)
+          inlineConfig.plugins = [...inlineConfig.plugins ?? [], watch.plugin]
           const restoreDefineEnv = syncImportMetaEnvDefineOverride(isolatedConfigService, inlineConfig.define as Record<string, unknown> | undefined)
           let result: RolldownOutput | RolldownOutput[]
           try {
@@ -130,10 +137,10 @@ export function createIndependentBuilder(
           if (!output) {
             throw new Error(`独立分包 ${root} 未产生输出`)
           }
-          watch?.commit()
+          watch.commit()
           storeIndependentOutput(root, output)
           return output
-        })
+        }).finally(() => isolatedCtx.moduleGraphService.resetSession())
       }
       catch (error) {
         const normalized = createIndependentBuildError(root, error)
