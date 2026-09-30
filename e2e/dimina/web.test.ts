@@ -83,6 +83,36 @@ for (const mode of ['preview', 'dev'] as const) {
       })
     })
 
+    it('resolves subpackage generic bindings and defaults, and updates empty/multiple virtual roots', async () => {
+      await withPage('native', async (page) => {
+        await visible(page, '原生计数：0')
+        await content(page).getByText('进入分包', { exact: true }).click()
+        await visible(page, '分包泛型：1')
+        await visible(page, '分包默认：1')
+        await content(page).getByText('更新分包属性', { exact: true }).click()
+        await visible(page, '分包泛型：2')
+        await visible(page, '分包默认：2')
+        await content(page).getByText('选择分包泛型', { exact: true }).click()
+        await visible(page, '分包事件：sub:2')
+        for (const count of [1, 2, 0, 1]) {
+          await content(page).getByText('切换动态根', { exact: true }).click()
+          await expect.poll(() => content(page).locator('.dynamic-root').count()).toBe(count)
+          for (const element of await content(page).locator('.dynamic-root').all()) {
+            expect(await element.evaluate(node => node.parentElement?.hasAttribute('data-dd-component-host'))).toBe(false)
+            expect(await element.evaluate(node => getComputedStyle(node).color)).toBe('rgb(18, 52, 86)')
+          }
+        }
+        expect(await content(page).locator('[name="/components/dynamic-roots/index"]').count()).toBe(0)
+        await expect.poll(() => page.locator('.dimina-native-view--enter-anima').count()).toBe(0)
+        await content(page).getByText('返回首页', { exact: true }).click()
+        await visible(page, '原生计数：0')
+        await content(page).getByText('进入分包', { exact: true }).click()
+        await visible(page, '分包泛型：1')
+        await expect.poll(() => content(page).locator('.dynamic-root').count()).toBe(0)
+        await expect.poll(() => page.locator('.dimina-native-view--enter-anima').count()).toBe(0)
+      })
+    })
+
     it('runs wevu reactivity and v-model', async () => {
       await withPage('wevu', async (page) => {
         await visible(page, 'wevu 计数：0')
@@ -138,6 +168,14 @@ for (const mode of ['preview', 'dev'] as const) {
         await expect.poll(() => content(page).locator('.generic-alpha').count()).toBe(1)
         await content(page).getByText('读取卸载次数', { exact: true }).click()
         await visible(page, '卸载次数：1')
+        await content(page).getByText('恢复首个实例', { exact: true }).click()
+        await expect.poll(() => content(page).getByText('alpha:2', { exact: true }).count()).toBe(2)
+        await content(page).getByText('选择 alpha', { exact: true }).first().click()
+        await visible(page, '事件归属：first:alpha:2')
+        await content(page).getByText('移除首个实例', { exact: true }).click()
+        await expect.poll(() => content(page).locator('.generic-alpha').count()).toBe(1)
+        await content(page).getByText('读取卸载次数', { exact: true }).click()
+        await visible(page, '卸载次数：2')
       })
     })
 

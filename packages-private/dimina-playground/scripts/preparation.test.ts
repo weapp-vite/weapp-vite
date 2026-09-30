@@ -6,6 +6,7 @@ import { execa } from 'execa'
 import { afterEach, describe, expect, it } from 'vitest'
 import { upstreamCommit } from '../config'
 import { preparationInputs, preparedRoot } from './preparation'
+import { recordPreparedAssets, requiredAssets } from './preparedAssets'
 import { prepareInstallation } from './prepareSource'
 
 const temporary: string[] = []
@@ -21,7 +22,7 @@ async function project() {
   const root = await directory()
   await mkdir(path.join(root, 'upstream/patches'), { recursive: true })
   await mkdir(path.join(root, 'scripts'))
-  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'upstream/patches/components.patch']) {
+  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'upstream/patches/components.patch']) {
     await writeFile(path.join(root, file), file)
   }
   return root
@@ -41,12 +42,33 @@ describe('SDK preparation boundary', () => {
     await rm(path.join(cache, 'ready.json'))
     await expect(preparedRoot(root, cache)).rejects.toThrow('setup:dimina')
     await writeFile(path.join(cache, 'ready.json'), JSON.stringify({ commit: upstreamCommit, fingerprint, directory: 'build-test' }))
-    expect(await preparedRoot(root, cache)).toBe(path.join(cache, 'build-test'))
+    await expect(preparedRoot(root, cache)).rejects.toThrow('incomplete SDK')
+    const build = path.join(cache, 'build-test')
+    for (const name of requiredAssets) {
+      const file = path.join(build, 'fe/packages', name)
+      await mkdir(path.dirname(file), { recursive: true })
+      await writeFile(file, name)
+    }
+    await mkdir(path.join(build, 'fe/node_modules'), { recursive: true })
+    await writeFile(path.join(build, 'fe/node_modules/.modules.yaml'), '')
+    await recordPreparedAssets(build)
+    expect(await preparedRoot(root, cache)).toBe(build)
+    const worker = path.join(build, 'fe/packages/container-sdk/dist/service.js')
+    await writeFile(worker, 'corrupted')
+    await expect(preparedRoot(root, cache)).rejects.toThrow('incomplete SDK')
+    await rm(worker)
+    await expect(preparedRoot(root, cache)).rejects.toThrow('incomplete SDK')
+    await writeFile(worker, 'container-sdk/dist/service.js')
+    expect(await preparedRoot(root, cache)).toBe(build)
+    await rm(path.join(build, 'fe/node_modules/.modules.yaml'))
+    await expect(preparedRoot(root, cache)).rejects.toThrow('incomplete SDK')
+    await writeFile(path.join(build, 'fe/node_modules/.modules.yaml'), '')
+    expect(await preparedRoot(root, cache)).toBe(build)
     await writeFile(path.join(root, 'upstream/patches/components.patch'), 'changed')
     await expect(preparedRoot(root, cache)).rejects.toThrow('stale SDK')
   })
 
-  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
+  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
     const root = await project()
     const first = await preparationInputs(root)
     expect(await preparationInputs(root)).toEqual(first)

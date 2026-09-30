@@ -2,12 +2,13 @@ import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { cacheRoot, root, upstreamCommit } from '../config'
+import { validatePreparedAssets } from './preparedAssets'
 
 export async function preparationInputs(projectRoot = root) {
   const patchRoot = path.join(projectRoot, 'upstream/patches')
   const patches = (await readdir(patchRoot)).filter(name => name.endsWith('.patch')).sort()
   const hash = createHash('sha256').update(upstreamCommit)
-  for (const name of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', ...patches.map(name => `upstream/patches/${name}`)]) {
+  for (const name of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', ...patches.map(name => `upstream/patches/${name}`)]) {
     hash.update(name).update(await readFile(path.join(projectRoot, name)))
   }
   return { fingerprint: hash.digest('hex'), patches: patches.map(name => path.join(patchRoot, name)) }
@@ -25,5 +26,10 @@ export async function preparedRoot(projectRoot = root, cacheDirectory = cacheRoo
     || !('directory' in value) || typeof value.directory !== 'string' || !/^build-[\w-]+$/.test(value.directory)) {
     throw new Error('Run pnpm --filter @weapp-vite/dimina-playground setup:dimina first (missing or stale SDK).')
   }
-  return path.join(cacheDirectory, value.directory)
+  const directory = path.join(cacheDirectory, value.directory)
+  try {
+    await validatePreparedAssets(directory)
+  }
+  catch { throw new Error('Run setup:dimina again (incomplete SDK assets or dependencies).') }
+  return directory
 }

@@ -76,15 +76,14 @@ index b54f835..224ee89 100644
  	}
 diff --git a/fe/packages/render/__tests__/component-generics.spec.js b/fe/packages/render/__tests__/component-generics.spec.js
 new file mode 100644
-index 0000000..9a777f2
+index 0000000..90c1d11
 --- /dev/null
 +++ b/fe/packages/render/__tests__/component-generics.spec.js
-@@ -0,0 +1,180 @@
+@@ -0,0 +1,206 @@
 +import fs from 'node:fs'
 +import os from 'node:os'
 +import path from 'node:path'
 +import vm from 'node:vm'
-+import { modDefine, modRequire } from '@dimina/common'
 +import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 +
 +describe('compiled generic and virtual components', () => {
@@ -111,6 +110,7 @@ index 0000000..9a777f2
 +	}
 +
 +	beforeEach(() => {
++		vi.resetModules()
 +		originalTargetPath = process.env.TARGET_PATH
 +		originalUint8Array = globalThis.Uint8Array
 +		// Vitest's jsdom realm can expose a different Uint8Array constructor than
@@ -151,7 +151,7 @@ index 0000000..9a777f2
 +	})
 +
 +
-+	it('isolates bindings, resolves defaults and forwarding, updates props and disposes hostless instances', async () => {
++	it.each([1, 2])('isolates generics and synchronizes virtual roots from initial value %s', async (initialValue) => {
 +		const component = (name, config, template, options = '') => {
 +			writeProjectFile(`components/${name}/index.json`, JSON.stringify({ component: true, ...config }))
 +			writeProjectFile(`components/${name}/index.wxml`, template)
@@ -161,16 +161,18 @@ index 0000000..9a777f2
 +		writeProjectFile('app.js', 'App({})')
 +		writeProjectFile('project.config.json', JSON.stringify({ appid: 'generic-regression' }))
 +		writeProjectFile(`${pagePath}.json`, JSON.stringify({ usingComponents: {
-+			outlet: '/components/outlet/index', forward: '/components/forward/index',
++			roots: '/components/roots/index', outlet: '/components/outlet/index', forward: '/components/forward/index',
 +			alpha: '/components/alpha/index', beta: '/components/beta/index',
 +		} }))
 +		writeProjectFile(`${pagePath}.wxml`, `<view>
++			<roots value="{{value}}" />
 +			<outlet wx:if="{{show}}" generic:item="alpha" value="{{value}}" bindpick="selected" />
 +			<outlet generic:item="beta" value="{{value}}" />
 +			<outlet value="{{value}}" />
 +			<forward generic:item="beta" value="{{value}}" />
 +		</view>`)
-+		writeProjectFile(`${pagePath}.js`, `Page({data:{value:1,show:true},selected(event){globalThis.__realComponentLifecycleLogs.push(event.detail)}})`)
++		writeProjectFile(`${pagePath}.js`, `Page({data:{value:${initialValue},show:true},selected(event){globalThis.__realComponentLifecycleLogs.push(event.detail)}})`)
++		component('roots', {}, '<view wx:if="{{value >= 2 &amp;&amp; value != 4}}" class="root-a">A</view><view wx:if="{{value == 2 || value == 5}}" class="root-b">B</view>', 'options:{virtualHost:true}')
 +		component('outlet', { componentGenerics: { item: { default: '/components/fallback/index' } } }, '<view class="outlet"><item value="{{value}}" bindpick="selected" /></view>', `methods:{selected(event){this.triggerEvent('pick', 'outlet:'+event.detail)}},options:{virtualHost:true},lifetimes:{attached(){globalThis.__realComponentLifecycleLogs.push('attached')},detached(){globalThis.__realComponentLifecycleLogs.push('detached')}}`)
 +		component('forward', { usingComponents: { outlet: '/components/outlet/index' }, componentGenerics: { item: true } }, '<outlet generic:item="item" value="{{value}}" />')
 +		for (const name of ['alpha', 'beta', 'fallback']) component(name, {}, `<view class="${name}">${name}:{{value}}</view>`)
@@ -211,6 +213,7 @@ index 0000000..9a777f2
 +		serviceRuntime.instances = {}
 +		serviceRuntime.pageStates.clear()
 +		renderLoader.staticModules = {}
++		const { modDefine, modRequire } = await import('@dimina/common')
 +		globalThis.modDefine = modDefine
 +		globalThis.modRequire = modRequire
 +		globalThis.Module = window.Module
@@ -235,8 +238,8 @@ index 0000000..9a777f2
 +		expect(renderLoader.getModuleByPath('/components/fallback/index')).toBeDefined()
 +		await vi.waitFor(() => expect(document.querySelectorAll('.outlet')).toHaveLength(4))
 +		await vi.waitFor(() => expect(document.querySelectorAll('.beta')).toHaveLength(2))
-+		expect(document.querySelector('.alpha').textContent).toBe('alpha:1')
-+		expect(document.querySelector('.fallback').textContent).toBe('fallback:1')
++		expect(document.querySelector('.alpha').textContent).toBe(`alpha:${initialValue}`)
++		expect(document.querySelector('.fallback').textContent).toBe(`fallback:${initialValue}`)
 +		const instances = Object.values(serviceRuntime.instances[bridgeId])
 +		const page = instances.find(instance => instance.is === pagePath)
 +		expect(instances.filter(instance => instance.is === '/components/outlet/index')).toHaveLength(4)
@@ -251,6 +254,25 @@ index 0000000..9a777f2
 +		await vi.waitFor(() => expect(document.querySelector('.alpha').textContent).toBe('alpha:2'))
 +		expect([...document.querySelectorAll('.beta')].map(el => el.textContent)).toEqual(['beta:2', 'beta:2'])
 +		expect(document.querySelector('.fallback').textContent).toBe('fallback:2')
++		const rootsId = Object.entries(serviceRuntime.instances[bridgeId]).find(([, instance]) => instance.is === '/components/roots/index')[0]
++		await vi.waitFor(() => expect(document.querySelectorAll('.root-a, .root-b')).toHaveLength(2))
++		const oldRoots = [...document.querySelectorAll('.root-a, .root-b')]
++		const scopeId = renderLoader.getModuleByPath('/components/roots/index').moduleInfo.id
++		for (const root of oldRoots) {
++			expect(renderRuntime.moduleRootIds.get(root)).toContain(rootsId)
++			expect(root.getAttribute('data-dd-style-host').split(' ')).toContain(scopeId)
++			expect(root.hasAttribute('data-dd-component-host')).toBe(false)
++		}
++		page.setData({value:3})
++		await vi.waitFor(() => expect(document.querySelectorAll('.root-a, .root-b')).toHaveLength(1))
++		expect(renderRuntime.moduleRootIds.get(oldRoots[1]) || []).not.toContain(rootsId)
++		page.setData({value:4})
++		await vi.waitFor(() => expect(document.querySelectorAll('.root-a, .root-b')).toHaveLength(0))
++		for (const root of oldRoots) expect(renderRuntime.moduleRootIds.get(root) || []).not.toContain(rootsId)
++		page.setData({value:5})
++		await vi.waitFor(() => expect(document.querySelectorAll('.root-a, .root-b')).toHaveLength(2))
++		const newRoots = [...document.querySelectorAll('.root-a, .root-b')]
++		for (const root of newRoots) expect(renderRuntime.moduleRootIds.get(root)).toContain(rootsId)
 +		page.setData({show:false})
 +		await vi.waitFor(() => expect(document.querySelector('.alpha')).toBeNull())
 +		await vi.waitFor(() => expect(globalThis.__realComponentLifecycleLogs.filter(x => x === 'detached')).toHaveLength(1))
@@ -258,6 +280,10 @@ index 0000000..9a777f2
 +		expect(globalThis.__realComponentLifecycleLogs.filter(x => x === 'attached')).toHaveLength(4)
 +		expect(globalThis.__realComponentLifecycleLogs.filter(x => x === 'detached')).toHaveLength(4)
 +		expect(serviceRuntime.instances[bridgeId]).toBeUndefined()
++		renderRuntime.app.unmount()
++		for (const root of [...oldRoots, ...newRoots]) expect(renderRuntime.moduleRootIds.get(root) || []).not.toContain(rootsId)
++		expect(renderRuntime.instance.has(rootsId)).toBe(false)
++		expect(renderRuntime.setupData.has(rootsId)).toBe(false)
 +	}, 30_000)
 +})
 diff --git a/fe/packages/render/__tests__/virtual-host-metadata.spec.js b/fe/packages/render/__tests__/virtual-host-metadata.spec.js
@@ -300,10 +326,18 @@ index c59221d..f15dcd6 100644
  		const serializedProps = props ? { ...props } : props
  		if (serializedProps) delete serializedProps.__diminaMeta
 diff --git a/fe/packages/render/src/core/runtime.js b/fe/packages/render/src/core/runtime.js
-index b7c07c2..ebf2966 100644
+index b7c07c2..5be8936 100644
 --- a/fe/packages/render/src/core/runtime.js
 +++ b/fe/packages/render/src/core/runtime.js
-@@ -39,6 +39,8 @@ import { resolveCanvasExportSize } from './canvas-export-limits'
+@@ -18,6 +18,7 @@ import {
+ 	normalizeStyle,
+ 	onMounted,
+ 	onUnmounted,
++	onUpdated,
+ 	openBlock,
+ 	provide,
+ 	reactive,
+@@ -39,6 +40,8 @@ import { resolveCanvasExportSize } from './canvas-export-limits'
  import { createMiniProgramSlots } from './slots'
  import { invokeMapContext } from './map-context'
  
@@ -312,7 +346,7 @@ index b7c07c2..ebf2966 100644
  const COMPONENT_HOST_ATTRIBUTE = 'data-dd-component-host'
  const STYLE_ISOLATION_ATTRIBUTE = 'data-dd-style-isolation'
  const STYLE_HOST_ATTRIBUTE = 'data-dd-style-host'
-@@ -1149,8 +1151,10 @@ class Runtime {
+@@ -1149,8 +1152,10 @@ class Runtime {
  			const styleIsolation = normalizeStyleIsolation(module.moduleInfo.styleIsolation)
  
  			// setup -> beforeCreate -> beforeMount
@@ -323,7 +357,7 @@ index b7c07c2..ebf2966 100644
  				__scopeId: sId,
  				components: undefined,
  				props: {
-@@ -1161,6 +1165,21 @@ class Runtime {
+@@ -1161,6 +1166,21 @@ class Runtime {
  					const parentInfo = inject('info')
  					const parentPath = inject('path')
  					const vueInstance = getCurrentInstance()
@@ -345,8 +379,15 @@ index b7c07c2..ebf2966 100644
  					// External classes belong to the component that lexically declared the
  					// child vnode. Slots can change the nearest Vue parent, so prefer the
  					// vnode scope over the injected render-parent scope.
-@@ -1268,7 +1287,7 @@ class Runtime {
+@@ -1264,14 +1284,22 @@ class Runtime {
+ 					}
+ 					that._pendingSetups.set(moduleId, new Promise(r => (_resolvePending = r)))
+ 
+-					onMounted(() => {
++					let registeredRoots = []
++					const syncModuleRoots = () => {
  						const roots = collectVNodeRootElements(vueInstance.subTree)
++						that.unregisterModuleRoots(moduleId, registeredRoots.filter(root => !roots.includes(root)))
  						that.registerModuleRoots(moduleId, roots)
  						for (const root of roots) {
 -							root.setAttribute(COMPONENT_HOST_ATTRIBUTE, '')
@@ -354,7 +395,27 @@ index b7c07c2..ebf2966 100644
  							root.setAttribute(STYLE_ISOLATION_ATTRIBUTE, styleIsolation)
  							addStyleHostToken(root, id)
  						}
-@@ -1382,7 +1401,12 @@ class Runtime {
++						registeredRoots = roots
++						return roots
++					}
++					onUpdated(syncModuleRoots)
++					onMounted(() => {
++						const roots = syncModuleRoots()
+ 						nextTick(() => {
+ 							// Slot content keeps its lexical Vue parent, while mini-program
+ 							// relations follow the rendered component tree. Resolve the
+@@ -1306,8 +1334,8 @@ class Runtime {
+ 					let unregisterFormControl
+ 					onUnmounted(() => {
+ 						unregisterFormControl?.()
+-						const roots = collectVNodeRootElements(vueInstance.subTree)
+-						that.unregisterModuleRoots(moduleId, roots)
++						that.unregisterModuleRoots(moduleId, registeredRoots)
++						registeredRoots = []
+ 						message.send({
+ 							type: 'mU',
+ 							target: 'service',
+@@ -1382,7 +1410,12 @@ class Runtime {
  					return templateData
  				},
  				render(...args) {

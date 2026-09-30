@@ -15,7 +15,9 @@
     "preview": "vite preview --host 127.0.0.1",
     "lint": "eslint . --ignore-pattern \"!**/fixtures/**\" --ignore-pattern \"**/node_modules/**\" --ignore-pattern \"**/.weapp-vite/**\" --ignore-pattern \"**/.cache/**\"",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run -c vitest.config.ts"
+    "test": "vitest run -c vitest.config.ts",
+    "test:upstream": "tsx scripts/testUpstream.ts",
+    "cache:key": "tsx scripts/cacheKey.ts"
   },
   "dependencies": {
     "@vant/weapp": "catalog:",
