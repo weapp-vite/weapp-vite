@@ -142,6 +142,25 @@ export default defineConfig({
 
 常见 `ctx.stage`：`defaults` / `json-block` / `auto-using-components` / `component-generics` / `macro` / `emit` / `merge-existing`。
 
+SFC 页面声明也会传入回调：`ctx.routeConfig` 是 `definePage({ name, meta })` 的静态声明，`ctx.pageMeta` 是 `definePageMeta(...)` 的完整静态对象。内联与外部脚本、规范导入别名均使用同一编译分析结果；这些字段会保留到 `emit`、`merge-existing` 以及 JSON-only HMR 重算。
+
+```ts
+mergeStrategy(target, source, ctx) {
+  const next = { ...target, ...source }
+  const title = ctx.routeConfig?.meta?.title
+  if (typeof title === 'string') {
+    next.navigationBarTitleText = title
+  }
+  if (ctx.pageMeta?.layout === false) {
+    next.navigationStyle = 'default'
+  }
+  return next
+}
+```
+
+没有对应声明时字段为 `undefined`。`pageMeta` 仅在整个对象由有限 JSON 字面量构成时提供；任一动态变量、调用、展开、计算属性、方法或访问器都会使整个字段为 `undefined`，不会返回部分对象，也不会执行表达式。已有非法路由声明仍报错。应用、组件和生成包装组件不继承所属页面的元信息。
+
+
 ---
 
 需要配置脚本别名？请前往 [JS 配置](/config/js.md#weapp-tsconfigpaths)。

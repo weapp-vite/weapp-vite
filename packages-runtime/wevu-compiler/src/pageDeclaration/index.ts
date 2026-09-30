@@ -1,7 +1,7 @@
 import type { SFCDescriptor, SFCScriptBlock } from 'vue/compiler-sfc'
 import type { ResolveSfcBlockSrcOptions } from '../plugins/utils/vueSfc'
 import type { EncodedSourceMapLike } from '../utils/sourcemap'
-import type { StaticPageDeclaration } from './public'
+import type { StaticPageDeclaration, StaticPageMeta } from './public'
 import type { PageDeclarationAnalysis, PageDeclarationScriptBlock, PageDeclarationScriptBlockKind } from './types'
 import { WEVU_DEFINE_PAGE_MACRO, WEVU_DEFINE_PAGE_META_MACRO } from '@weapp-core/constants'
 import MagicString, { Bundle } from 'magic-string'
@@ -15,7 +15,7 @@ const PAGE_DECLARATION_MACRO_HINT_RE = new RegExp(
 )
 
 export { collectPageMetaCallsFromPrograms } from './analyze'
-export type { StaticPageDeclaration, StaticRouteValue } from './public'
+export type { StaticPageDeclaration, StaticPageMeta, StaticRouteValue } from './public'
 
 interface ResolvedScriptSourceIds {
   scriptResolvedId?: string
@@ -33,6 +33,8 @@ interface StripPageDeclarationResult {
 }
 
 export interface StripSfcPageDeclarationResult extends StripPageDeclarationResult {
+  routeConfig?: StaticPageDeclaration
+  pageMeta?: StaticPageMeta
   descriptor: SFCDescriptor
   descriptorForCompile?: SFCDescriptor
   scriptMap?: EncodedSourceMapLike
@@ -314,6 +316,8 @@ function stripAnalyzedPageMacrosFromSfcDescriptor(
   return {
     code: mainTransform.code.toString(),
     descriptor: descriptorWithStrippedScripts,
+    routeConfig: analysis.declaration,
+    pageMeta: analysis.pageMeta,
     descriptorForCompile: externalCompile?.descriptor,
     map: sourceMap && hasMainEdits
       ? mainTransform.code.generateMap({

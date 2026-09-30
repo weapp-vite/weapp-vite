@@ -47,6 +47,7 @@ export function emitSharedVueEntryJsonAsset(options: {
   pluginCtx: any
   relativeBase: string
   config: string | undefined
+  meta?: VueTransformResult['meta']
   outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
   platformAssetOptions: {
     platform: string
@@ -78,7 +79,7 @@ export function emitSharedVueEntryJsonAsset(options: {
     options.pluginCtx,
     options.bundle,
     options.relativeBase,
-    { config: normalizedConfig },
+    { config: normalizedConfig, meta: options.meta },
     options.jsonOptions,
   )
 }
@@ -88,7 +89,7 @@ export async function emitSharedFallbackPageAssets(options: {
   pluginCtx: any
   configService: NonNullable<CompilerContext['configService']>
   relativeBase: string
-  result: Pick<VueTransformResult, 'style' | 'config'>
+  result: Pick<VueTransformResult, 'style' | 'config' | 'meta'>
   outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
   platformAssetOptions: {
     platform: string
@@ -126,6 +127,7 @@ export async function emitSharedFallbackPageAssets(options: {
     pluginCtx,
     relativeBase,
     config: result.config,
+    meta: result.meta,
     outputExtensions,
     platformAssetOptions,
     jsonOptions: {
@@ -290,7 +292,7 @@ export async function emitFallbackPageBundleAssets(options: {
   ctx: CompilerContext
   filename: string
   relativeBase: string
-  result: Pick<VueTransformResult, 'template' | 'style' | 'config' | 'classStyleWxs' | 'scopedSlotComponents' | 'slotFallbackWrapperComponent'>
+  result: Pick<VueTransformResult, 'template' | 'style' | 'config' | 'meta' | 'classStyleWxs' | 'scopedSlotComponents' | 'slotFallbackWrapperComponent'>
   configService: NonNullable<CompilerContext['configService']>
   templateExtension: string
   styleExtension: string
@@ -431,6 +433,7 @@ export async function emitCompiledEntryBundleAssets(options: {
       pluginCtx: options.pluginCtx,
       relativeBase: options.relativeBase,
       config: options.result.config,
+      meta: options.result.meta,
       outputExtensions: options.outputExtensions,
       platformAssetOptions: options.platformAssetOptions,
       jsonOptions: {

@@ -1,5 +1,5 @@
 import type { ObjectExpression } from '@weapp-vite/ast/babelTypes'
-import type { StaticPageDeclaration, StaticRouteValue } from './public'
+import type { StaticPageDeclaration, StaticPageMeta, StaticRouteValue } from './public'
 import type { PageDeclarationCall } from './types'
 import { WEVU_DEFINE_PAGE_MACRO } from '@weapp-core/constants'
 import * as t from '@weapp-vite/ast/babelTypes'
@@ -209,4 +209,22 @@ export function resolvePageDeclaration(
     )
   }
   return meta === undefined ? { name } : { name, meta }
+}
+
+/** 仅接受完整静态对象；未知表达式不会执行，也不泄漏部分提取结果。 */
+export function tryResolveStaticPageMeta(pageCall: PageDeclarationCall): StaticPageMeta | undefined {
+  const argument = pageCall.call.arguments[0]
+  if (pageCall.call.arguments.length !== 1 || !t.isExpression(argument)) {
+    return undefined
+  }
+  const value = unwrapStaticExpression(argument)
+  if (!t.isObjectExpression(value)) {
+    return undefined
+  }
+  try {
+    return resolveStaticRouteValue(pageCall, value)
+  }
+  catch {
+    return undefined
+  }
 }
