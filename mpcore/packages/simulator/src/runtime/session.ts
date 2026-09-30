@@ -48,6 +48,7 @@ import { runComponentLifecycle } from './componentInstance'
 import { detachComponentRelations } from './componentInstance/relations'
 import { resolveNativeComponentSelection } from './componentInstance/selection'
 import { createModuleLoader } from './moduleLoader'
+import { createPackageAssetReader } from './packageAsset'
 import { createPageInstance } from './pageInstance'
 import { runInitialPageLifecycles } from './pageLifecycle'
 import { renderRuntimePageTree } from './render'
@@ -253,6 +254,7 @@ export class HeadlessSession {
     this.project = options.project ?? loadProject(options.projectPath!)
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
       strictMocks: options.strictHostMocks,
+      readPackageFile: createPackageAssetReader(relative => this.project.artifactSource.readText(path.join(this.project.miniprogramRootPath, relative))),
     })
     this.registries = createHostRegistries()
     const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)
@@ -399,7 +401,13 @@ export class HeadlessSession {
     if (this.kernel.isClosed) {
       return
     }
-    this.unloadAllPages()
+    let failure: { error: unknown } | undefined
+    try {
+      this.unloadAllPages(undefined, true)
+    }
+    catch (error) {
+      failure = { error }
+    }
     this.canvasContexts.clear()
     this.renderRequestCallbacks.length = 0
     this.renderRequestPending = false
@@ -407,8 +415,19 @@ export class HeadlessSession {
     this.routeEvents.close()
     this.wxState.close()
     this.moduleLoader.close()
-    this.eventListeners.clear()
     this.kernel.close()
+    try {
+      this.emit('close')
+    }
+    catch (error) {
+      failure ??= { error }
+    }
+    finally {
+      this.eventListeners.clear()
+    }
+    if (failure) {
+      throw failure.error
+    }
   }
 
   getDiagnostics(): RuntimeDiagnosticEntry[] {
@@ -432,9 +451,22 @@ export class HeadlessSession {
     }
   }
 
-  private emit(eventName: string, ...args: any[]) {
+  private emit(eventName: string, ...args: unknown[]) {
+    let failure: { error: unknown } | undefined
     for (const handler of [...(this.eventListeners.get(eventName) ?? [])]) {
-      handler(...args)
+      try {
+        handler(...args)
+      }
+      catch (error) {
+        if (eventName !== 'close') {
+          throw error
+        }
+        // 关闭通知必须送达所有句柄，不能被其他订阅者的异常中断。
+        failure ??= { error }
+      }
+    }
+    if (failure) {
+      throw failure.error
     }
   }
 
@@ -1471,13 +1503,22 @@ export class HeadlessSession {
     }
   }
 
-  private unloadAllPages(event?: HeadlessWxRouteEvent) {
+  private unloadAllPages(event?: HeadlessWxRouteEvent, closing = false) {
     const pagesToUnload = new Set<HeadlessPageInstance>([
       ...this.pages,
       ...this.tabPages.values(),
     ])
+    let failure: { error: unknown } | undefined
     for (const page of [...pagesToUnload].reverse()) {
-      this.unloadPage(page, event)
+      try {
+        this.unloadPage(page, event, closing)
+      }
+      catch (error) {
+        if (!closing) {
+          throw error
+        }
+        failure ??= { error }
+      }
     }
     this.pages.length = 0
     this.tabPages.clear()
@@ -1485,14 +1526,37 @@ export class HeadlessSession {
     this.componentScopes.clear()
     this.clearMediaQueryObservers()
     this.currentPageInstance = null
+    if (failure) {
+      throw failure.error
+    }
   }
 
-  private unloadPage(page: HeadlessPageInstance, event?: HeadlessWxRouteEvent) {
-    this.routeEvents.beforeUnload(page, event)
-    page.onUnload?.()
+  private unloadPage(page: HeadlessPageInstance, event?: HeadlessWxRouteEvent, closing = false) {
+    let failure: { error: unknown } | undefined
+    try {
+      this.routeEvents.beforeUnload(page, event)
+      page.onUnload?.()
+    }
+    catch (error) {
+      if (!closing) {
+        throw error
+      }
+      failure = { error }
+    }
     this.clearMediaQueryObservers(page)
-    this.detachPageComponents(page.route)
+    try {
+      this.detachPageComponents(page.route, closing)
+    }
+    catch (error) {
+      if (!closing) {
+        throw error
+      }
+      failure ??= { error }
+    }
     this.tabPages.delete(stripLeadingSlash(page.route))
+    if (failure) {
+      throw failure.error
+    }
   }
 
   private requireCurrentPage(action: string) {
@@ -1555,16 +1619,36 @@ export class HeadlessSession {
       .filter(Boolean)
   }
 
-  private detachPageComponents(route: string) {
+  private detachPageComponents(route: string, closing = false) {
     const prefix = `page:${stripLeadingSlash(route)}`
     const removed = [...this.componentCache].filter(([scopeId]) => scopeId.startsWith(prefix))
+    let failure: { error: unknown } | undefined
     for (const [, instance] of removed) {
-      runComponentLifecycle(instance, 'detached')
+      try {
+        runComponentLifecycle(instance, 'detached')
+      }
+      catch (error) {
+        if (!closing) {
+          throw error
+        }
+        failure ??= { error }
+      }
     }
-    detachComponentRelations(removed.map(([, instance]) => instance))
+    try {
+      detachComponentRelations(removed.map(([, instance]) => instance))
+    }
+    catch (error) {
+      if (!closing) {
+        throw error
+      }
+      failure ??= { error }
+    }
     for (const [scopeId] of removed) {
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
+    }
+    if (failure) {
+      throw failure.error
     }
   }
 

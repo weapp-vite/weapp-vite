@@ -54,6 +54,24 @@ describe('performance reporting workflows', () => {
     expect(checkout.with.ref).toContain('github.event.repository.default_branch')
   })
 
+  it('downloads optional smoke evidence into its own stable directory', async () => {
+    const workflow = parse(await readFile(path.join(root, '.github/workflows/ci-performance-comment.yml'), 'utf8'))
+    const downloads = workflow.jobs['report-v2'].steps.filter((step: { uses?: string }) => step.uses?.startsWith('actions/download-artifact@'))
+    expect(downloads).toHaveLength(2)
+    const smoke = downloads.find((step: { with: { pattern: string } }) => step.with.pattern === 'performance-smoke-report')
+    expect(smoke.if).toBe('github.event.workflow_run.name == \'Performance Smoke\'')
+    expect(smoke.with).toMatchObject({
+      path: 'performance-artifacts/performance-smoke-report',
+    })
+    expect(smoke.with['run-id']).toContain('github.event.workflow_run.id')
+    // name 会在缺失 artifact 时失败，无法报告无需冒烟和采集失败的运行。
+    expect(smoke.with.name).toBeUndefined()
+    const nightly = downloads.find((step: { with: { pattern: string } }) => step.with.pattern === 'performance-*')
+    expect(nightly.if).toBe('github.event.workflow_run.name == \'Nightly Performance\'')
+    expect(nightly.with.path).toBe('performance-artifacts')
+    expect(nightly.with['merge-multiple'] ?? false).toBe(false)
+  })
+
   it('publishes the complete matrix and a compatibility artifact from the same measurement', async () => {
     const workflow = parse(await readFile(path.join(root, '.github/workflows/wevu-runtime-size.yml'), 'utf8'))
     const measure = workflow.jobs.measure.steps.find((step: { name?: string }) => step.name === 'Measure head and baseline')

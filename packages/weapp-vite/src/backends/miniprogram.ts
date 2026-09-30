@@ -64,7 +64,7 @@ export const miniprogramBackend: PlatformBackend = {
       return await ctx.buildService.build(options)
     },
     close(ctx) {
-      ctx.watcherService.closeAll()
+      return ctx.watcherService.closeAll()
     },
     resolvePlatformAlias(input) {
       return resolveMiniProgramPlatform(input)

@@ -43,11 +43,15 @@ Page({
 Page({
   data: { ready: false },
   openIndex() {
-    wx.navigateTo({
+    return new Promise((resolve, reject) => wx.navigateTo({
       url: '/pages/index/index',
       success: () => getApp().globalData.events.push('success'),
-      complete: () => getApp().globalData.events.push('complete'),
-    })
+      fail: reject,
+      complete: () => {
+        getApp().globalData.events.push('complete')
+        resolve()
+      },
+    }))
   },
   onReady() { this.setData({ ready: true }) },
 })

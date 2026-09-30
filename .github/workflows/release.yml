@@ -48,7 +48,8 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 完整质量检查曾耗时约 24 分钟，需为发布、npm 确认和发布后 hook 留足预算。
+    timeout-minutes: 60
     steps:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,6 +69,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run repo release CI
+        # 比 job 少 10 分钟，为依赖安装、失败时进度归档和清理预留余量。
+        timeout-minutes: 50
         env:
           GITHUB_TOKEN: ${{ secrets.REPOCTL_RELEASE_TOKEN || secrets.CHANGESETS_RELEASE_TOKEN || github.token }}
           REPO_RELEASE_MODE: ${{ inputs.mode || 'auto' }}

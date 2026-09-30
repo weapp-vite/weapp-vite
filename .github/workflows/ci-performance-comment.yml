@@ -92,7 +92,18 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
-      - name: Download inert evidence
+      # 唯一匹配会直接解压至 path，显式保留发布器约定的 artifact 目录。
+      # 使用精确 pattern，允许无需冒烟或采集失败时没有 artifact。
+      - name: Download smoke evidence
+        if: github.event.workflow_run.name == 'Performance Smoke'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: performance-smoke-report
+          path: performance-artifacts/performance-smoke-report
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Download nightly evidence
+        if: github.event.workflow_run.name == 'Nightly Performance'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: performance-*

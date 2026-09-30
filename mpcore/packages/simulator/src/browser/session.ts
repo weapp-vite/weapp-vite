@@ -37,6 +37,7 @@ import { HeadlessAppLifecycle } from '../runtime/appLifecycle'
 import { runComponentLifecycle, runComponentPageLifetime } from '../runtime/componentInstance'
 import { detachComponentRelations } from '../runtime/componentInstance/relations'
 import { resolveNativeComponentSelection } from '../runtime/componentInstance/selection'
+import { createPackageAssetReader } from '../runtime/packageAsset'
 import { createPageInstance } from '../runtime/pageInstance'
 import { runInitialPageLifecycles } from '../runtime/pageLifecycle'
 import { HeadlessRouteEvents } from '../runtime/routeEvents'
@@ -260,6 +261,7 @@ export class BrowserHeadlessSession {
     this.files = options.files
     this.wxState = createHeadlessWxState(this.kernel.scheduler, {
       strictMocks: options.strictHostMocks,
+      readPackageFile: createPackageAssetReader(relative => readBrowserVirtualFile(this.files, join(this.project.miniprogramRootPath, relative))),
     })
     this.onRender = options.onRender
     this.project = options.project ?? createBrowserProject(options.files)
@@ -407,7 +409,13 @@ export class BrowserHeadlessSession {
     if (this.kernel.isClosed) {
       return
     }
-    this.unloadAllPages()
+    let failure: { error: unknown } | undefined
+    try {
+      this.unloadAllPages(undefined, true)
+    }
+    catch (error) {
+      failure = { error }
+    }
     this.canvasContexts.clear()
     this.renderRequestCallbacks.length = 0
     this.renderRequestPending = false
@@ -416,6 +424,9 @@ export class BrowserHeadlessSession {
     this.wxState.close()
     this.moduleLoader.close()
     this.kernel.close()
+    if (failure) {
+      throw failure.error
+    }
   }
 
   getDiagnostics(): RuntimeDiagnosticEntry[] {
@@ -1588,13 +1599,22 @@ export class BrowserHeadlessSession {
     return item
   }
 
-  private unloadAllPages(event?: HeadlessWxRouteEvent) {
+  private unloadAllPages(event?: HeadlessWxRouteEvent, closing = false) {
     const pagesToUnload = new Set<HeadlessPageInstance>([
       ...this.pages,
       ...this.tabPages.values(),
     ])
+    let failure: { error: unknown } | undefined
     for (const page of [...pagesToUnload].reverse()) {
-      this.unloadPage(page, event)
+      try {
+        this.unloadPage(page, event, closing)
+      }
+      catch (error) {
+        if (!closing) {
+          throw error
+        }
+        failure ??= { error }
+      }
     }
     this.pages.length = 0
     this.tabPages.clear()
@@ -1602,14 +1622,37 @@ export class BrowserHeadlessSession {
     this.componentScopes.clear()
     this.clearMediaQueryObservers()
     this.currentPageInstance = null
+    if (failure) {
+      throw failure.error
+    }
   }
 
-  private unloadPage(page: HeadlessPageInstance, event?: HeadlessWxRouteEvent) {
-    this.routeEvents.beforeUnload(page, event)
-    page.onUnload?.()
+  private unloadPage(page: HeadlessPageInstance, event?: HeadlessWxRouteEvent, closing = false) {
+    let failure: { error: unknown } | undefined
+    try {
+      this.routeEvents.beforeUnload(page, event)
+      page.onUnload?.()
+    }
+    catch (error) {
+      if (!closing) {
+        throw error
+      }
+      failure = { error }
+    }
     this.clearMediaQueryObservers(page)
-    this.detachPageComponents(page.route)
+    try {
+      this.detachPageComponents(page.route, closing)
+    }
+    catch (error) {
+      if (!closing) {
+        throw error
+      }
+      failure ??= { error }
+    }
     this.tabPages.delete(stripLeadingSlash(page.route))
+    if (failure) {
+      throw failure.error
+    }
   }
 
   private requireCurrentPage(action: string) {
@@ -1621,16 +1664,36 @@ export class BrowserHeadlessSession {
     return current
   }
 
-  private detachPageComponents(route: string) {
+  private detachPageComponents(route: string, closing = false) {
     const prefix = `page:${stripLeadingSlash(route)}`
     const removed = [...this.componentCache].filter(([scopeId]) => scopeId.startsWith(prefix))
+    let failure: { error: unknown } | undefined
     for (const [, instance] of removed) {
-      runComponentLifecycle(instance, 'detached')
+      try {
+        runComponentLifecycle(instance, 'detached')
+      }
+      catch (error) {
+        if (!closing) {
+          throw error
+        }
+        failure ??= { error }
+      }
     }
-    detachComponentRelations(removed.map(([, instance]) => instance))
+    try {
+      detachComponentRelations(removed.map(([, instance]) => instance))
+    }
+    catch (error) {
+      if (!closing) {
+        throw error
+      }
+      failure ??= { error }
+    }
     for (const [scopeId] of removed) {
       this.componentCache.delete(scopeId)
       this.componentScopes.delete(scopeId)
+    }
+    if (failure) {
+      throw failure.error
     }
   }
 

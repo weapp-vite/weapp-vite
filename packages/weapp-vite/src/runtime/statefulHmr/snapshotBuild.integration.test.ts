@@ -70,7 +70,7 @@ describe('stateful snapshot component metadata', () => {
       'src/pages/index/index.wxml': '<native-leaf /><wevu-leaf />',
       'src/components/native-leaf/index.js': 'Component({ data: { marker: "PINNED" } })',
       'src/components/native-leaf/index.json': '{"component":true}',
-      'src/components/native-leaf/index.wxml': '<view>{{marker}}</view>',
+      'src/components/native-leaf/index.wxml': '<view>PINNED-TEMPLATE{{marker}}</view>',
     }
     const sources = new Map<string, string>()
     for (const [relative, source] of Object.entries(files)) {
@@ -87,6 +87,10 @@ describe('stateful snapshot component metadata', () => {
       'components/native-leaf/index.wxml',
     ]))
     expect((outputs.find(item => item.fileName === 'components/native-leaf/index.js') as OutputChunk).code).toContain('PINNED')
+    expect(outputs.find(item => item.fileName === 'components/native-leaf/index.wxml')).toMatchObject({
+      type: 'asset',
+      source: '<view>PINNED-TEMPLATE{{marker}}</view>',
+    })
   })
 
   it('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs', async () => {

@@ -889,6 +889,7 @@ const nativeScheduler: Pick<RuntimeScheduler, 'clearTimeout' | 'setTimeout'> = {
 
 export interface HeadlessWxStateOptions {
   strictMocks?: boolean
+  readPackageFile?: (filePath: string) => string | undefined
 }
 
 export function createHeadlessWxState(
@@ -1008,7 +1009,7 @@ export function createHeadlessWxState(
   const readFile = (filePath: string, encoding?: string): HeadlessWxReadFileSuccessResult => {
     normalizeEncoding(encoding)
     const normalizedPath = normalizeFsPath(filePath)
-    const fileContent = files.get(normalizedPath)
+    const fileContent = files.get(normalizedPath) ?? options.readPackageFile?.(normalizedPath)
     if (fileContent == null) {
       throw new Error(`readFile:fail no such file or directory, open '${normalizedPath}'`)
     }

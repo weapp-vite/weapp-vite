@@ -213,7 +213,7 @@ Page({
     })
   })
 
-  it('loads local plugin exports, public components, and pages', () => {
+  it('loads local plugin exports, public components, and pages', async () => {
     const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-local-plugin-'))
     tempDirs.push(projectPath)
     writeFixtureFile(path.join(projectPath, 'project.config.json'), JSON.stringify({
@@ -238,7 +238,9 @@ const plugin = requirePlugin('hello')
 Page({
   data: { answer: plugin.answer },
   openPluginPage() {
-    wx.navigateTo({ url: 'plugin://hello/hello-page' })
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({ url: 'plugin://hello/hello-page', success: resolve, fail: reject })
+    })
   },
 })
 `)
@@ -261,7 +263,7 @@ Page({
 
     expect(page.data.answer).toBe(42)
     expect(session.renderCurrentPage().wxml).toContain('id="plugin-card"')
-    page.openPluginPage()
+    await page.openPluginPage()
     expect(session.getCurrentPages().at(-1)?.route).toBe('plugin-private://wxpluginprovider/pages/hello/index')
     expect(session.renderCurrentPage().wxml).toContain('plugin page')
   })
@@ -331,7 +333,9 @@ Component({
       this.setData({ lifecycleLog: [...this.data.lifecycleLog, 'load:' + query.from] })
     },
     openNext() {
-      wx.navigateTo({ url: '/pages/next/index' })
+      return new Promise((resolve, reject) => {
+        wx.navigateTo({ url: '/pages/next/index', success: resolve, fail: reject })
+      })
     },
     runE2E() {
       return this.data.lifecycleLog.slice()
@@ -349,7 +353,7 @@ Component({
     expect(page.runE2E()).toEqual(['created', 'attached', 'load:e2e', 'show', 'ready', 'routeDone:undefined'])
     session.triggerRouteDone({ from: 'headless' })
     session.triggerResize({ size: { windowWidth: 390 } })
-    page.openNext()
+    await page.openNext()
     expect(page.runE2E()).toEqual([
       'created',
       'attached',
@@ -447,7 +451,7 @@ Page({
     expect(homePage.options).toEqual({ entry: 'direct' })
     expect(homePage.__route__).toBe('pages/home/index')
 
-    homePage.goDetail()
+    await homePage.goDetail()
 
     const detailPage = session.getCurrentPages().at(-1)
     await waitForNavigationReady(detailPage)
@@ -462,7 +466,7 @@ Page({
       'detail:onReady',
     ])
 
-    detailPage?.backHome()
+    await detailPage?.backHome()
 
     expect(session.getCurrentPages()).toHaveLength(1)
     expect(homePage.data.logs).toEqual([
@@ -486,7 +490,7 @@ Page({
     const homePage = session.reLaunch('/pages/home/index')
     await waitForNavigationReady(homePage)
 
-    homePage.goDetailWithCallbacks()
+    await homePage.goDetailWithCallbacks()
     const detailPage = session.getCurrentPages().at(-1)
     expect(homePage.data.logs.slice(-2)).toEqual([
       'home:navigateTo:success:pages/detail/index',
@@ -517,7 +521,7 @@ Page({
     ])
 
     session.navigateBack()
-    homePage.goMissingWithCallbacks()
+    await homePage.goMissingWithCallbacks()
 
     expect(session.getCurrentPages()).toHaveLength(1)
     expect(homePage.data.logs).toEqual([
@@ -544,10 +548,10 @@ Page({
 
     const homePage = session.reLaunch('/pages/home/index')
     await waitForNavigationReady(homePage)
-    homePage.goDetail()
+    await homePage.goDetail()
     const detailPage = session.getCurrentPages().at(-1)
     await waitForNavigationReady(detailPage)
-    detailPage?.goSettings()
+    await detailPage?.goSettings()
 
     const settingsPage = session.getCurrentPages().at(-1)
     await waitForNavigationReady(settingsPage)
@@ -558,7 +562,7 @@ Page({
       'pages/settings/index',
     ])
 
-    settingsPage?.back(0)
+    await settingsPage?.back(0)
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual([
       'pages/home/index',
@@ -580,20 +584,20 @@ Page({
       'detail:onShow',
     ])
 
-    detailPage?.goSettings()
+    await detailPage?.goSettings()
     const secondSettingsPage = session.getCurrentPages().at(-1)
     await waitForNavigationReady(secondSettingsPage)
-    secondSettingsPage?.back(-2)
+    await secondSettingsPage?.back(-2)
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual([
       'pages/home/index',
       'pages/detail/index',
     ])
 
-    detailPage?.goSettings()
+    await detailPage?.goSettings()
     const thirdSettingsPage = session.getCurrentPages().at(-1)
     await waitForNavigationReady(thirdSettingsPage)
-    thirdSettingsPage?.back(99)
+    await thirdSettingsPage?.back(99)
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual([
       'pages/home/index',
@@ -635,11 +639,11 @@ Page({
 
     const homePage = session.reLaunch('/pages/home/index')
     await waitForNavigationReady(homePage)
-    homePage.goDetail()
+    await homePage.goDetail()
 
     const detailPage = session.getCurrentPages().at(-1)
     await waitForNavigationReady(detailPage)
-    detailPage?.replaceProfile()
+    await detailPage?.replaceProfile()
 
     const settingsPage = session.getCurrentPages().at(-1)
     await waitForNavigationReady(settingsPage)
@@ -743,15 +747,15 @@ Page({
     expect(profilePage?.options).toEqual({})
   })
 
-  it('commits the tab stack before running switchTab success', () => {
+  it('commits the tab stack before running switchTab success', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
 
     const homePage = session.reLaunch('/pages/home/index')
-    homePage.goDetail()
+    await homePage.goDetail()
     const detailPage = session.getCurrentPages().at(-1)
-    homePage.goProfileWithCallbacks()
+    await homePage.goProfileWithCallbacks()
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual(['pages/profile/index'])
     const successIndex = homePage.data.logs.indexOf('home:switchTab:success:pages/profile/index')
@@ -768,7 +772,7 @@ Page({
 
     const homePage = session.reLaunch('/pages/home/index')
     await waitForNavigationReady(homePage)
-    homePage.goProfileWithQueryCallbacks()
+    await homePage.goProfileWithQueryCallbacks()
 
     expect(session.getCurrentPages().map(page => page.route)).toEqual([
       'pages/home/index',
@@ -2712,7 +2716,7 @@ Page({
     expect(session.callWxMethod('canIUse', 'getLocation.return.latitude')).toBe(true)
   })
 
-  it('supports navigation bar title, color and loading state defaults', () => {
+  it('supports navigation bar title, color and loading state defaults', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-navigation-bar-title-'))
     tempDirs.push(root)
 
@@ -2793,8 +2797,12 @@ Page({
     })
   },
   goDetail() {
-    wx.navigateTo({
-      url: '/pages/detail/index'
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/detail/index',
+        success: resolve,
+        fail: reject,
+      })
     })
   }
 })
@@ -2845,7 +2853,7 @@ Page({
       'hide-loading:complete:hideNavigationBarLoading:ok',
     ])
 
-    page.goDetail()
+    await page.goDetail()
     expect(session.getCurrentPageNavigationBarTitle()).toBe('App Shell')
     expect(session.getCurrentPageNavigationBar()).toEqual({
       animation: null,
@@ -3119,7 +3127,7 @@ Page({
     ])
   })
 
-  it('supports background text style and color defaults and updates', () => {
+  it('supports background text style and color defaults and updates', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-background-text-style-'))
     tempDirs.push(root)
 
@@ -3177,8 +3185,12 @@ Page({
     })
   },
   goDetail() {
-    wx.navigateTo({
-      url: '/pages/detail/index'
+    return new Promise((resolve, reject) => {
+      wx.navigateTo({
+        url: '/pages/detail/index',
+        success: resolve,
+        fail: reject,
+      })
     })
   }
 })
@@ -3222,7 +3234,7 @@ Page({
       'invalid:complete:none',
     ])
 
-    page.goDetail()
+    await page.goDetail()
     expect(session.getCurrentPageBackground()).toEqual({
       backgroundColor: '#fefefe',
       backgroundColorBottom: '#eeeeee',
@@ -3518,7 +3530,7 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('data-sim-component="PascalCaseCard"')
   })
 
-  it('runs component lifetimes and pageLifetimes in headless runtime', () => {
+  it('runs component lifetimes and pageLifetimes in headless runtime', async () => {
     const projectPath = createComponentLifecycleFixture()
     tempDirs.push(projectPath)
     const session = createHeadlessSession({ projectPath })
@@ -3551,7 +3563,7 @@ Page({
       type: 'component',
     })
 
-    pageA.openB()
+    await pageA.openB()
     expect(rendered.wxml).toContain('resize:375')
   })
 

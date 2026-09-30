@@ -48,10 +48,11 @@ export function createStatefulNativePageFiles(): Array<[string, string]> {
   const original = ts.transpileModule(readFileSync(path.join(fixtureRoot, 'index.ts'), 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022 },
   }).outputText.replace(/^Page\(/m, 'bridge.Page(').replace('bridge.Page({', `bridge.Page({
+    reLaunch() { return new Promise((resolve, reject) => wx.reLaunch({ url: '/pages/native/index?source=e2e', success: resolve, fail: reject })); },
     patchPage() { applyUpdate(true); },
     restorePage() { applyUpdate(false); },
   `)
-  const patched = original.replace('this.data.count + 1', 'this.data.count + 2')
+  const patched = original.replace('this.data.count + 1', 'this.data.count + 2').replace('count: 0', 'count: 7')
   return [
     ['project.config.json', '{"appid":"wx1234567890abcdef","miniprogramRoot":"."}'],
     ['app.json', '{"pages":["pages/native/index","pages/external/index"]}'],

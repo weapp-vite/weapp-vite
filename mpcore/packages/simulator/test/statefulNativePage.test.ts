@@ -10,7 +10,7 @@ import { createHeadlessSession } from '../src/runtime'
 import { createStatefulNativePageFiles } from './helpers/statefulNativePage'
 
 describe.each(['node', 'browser'] as const)('%s native Page style and script HMR', (provider) => {
-  it('preserves page state through style changes, script patches and restoration', () => {
+  it('preserves page state through style changes, script patches and restoration', async () => {
     const projectPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mpcore-native-page-hmr-'))
     const files = createBrowserVirtualFiles(createStatefulNativePageFiles())
     for (const [file, source] of files) {
@@ -57,6 +57,26 @@ describe.each(['node', 'browser'] as const)('%s native Page style and script HMR
       check(3)
       page.increment()
       check(4)
+      const templateFile = 'pages/native/index.wxml'
+      const originalTemplate = files.get(templateFile)!
+      for (const template of [originalTemplate.replace('<input', '<view>template update</view><input'), originalTemplate]) {
+        files.set(templateFile, template)
+        fs.writeFileSync(path.join(projectPath, templateFile), template)
+        check(4)
+      }
+      page.patchPage()
+      await page.reLaunch()
+      const fresh = session.getCurrentPages().at(-1)!
+      expect(fresh).not.toBe(page)
+      expect(fresh.data.count).toBe(7)
+      expect(textContent(selectOne('.count', parseDocument(session.renderCurrentPage().wxml).children)!)).toBe('7')
+      fresh.increment()
+      expect(fresh.data.count).toBe(9)
+      fresh.restorePage()
+      expect(fresh.data.count).toBe(9)
+      await fresh.reLaunch()
+      expect(session.getCurrentPages().at(-1)!.data.count).toBe(0)
+      expect(textContent(selectOne('.count', parseDocument(session.renderCurrentPage().wxml).children)!)).toBe('0')
     }
     finally {
       session.close()

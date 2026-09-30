@@ -2,6 +2,7 @@ export const nativeInstanceDefaultsSource = `
 const nativeInitialDefinitions = new Map();
 const pendingNativeDefaults = new WeakMap();
 function initializeNativeInstanceDefaults(instance, moduleId, render) {
+  invalidateDevtoolsTemplatePlaceholders();
   if (suppressLifecycles || wevuRefreshes.has(moduleId)) return;
   let pending = pendingNativeDefaults.get(instance);
   if (!pending && !instanceSnapshots.has(instance)) {

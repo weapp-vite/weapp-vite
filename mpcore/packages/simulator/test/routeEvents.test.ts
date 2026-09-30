@@ -62,7 +62,12 @@ describe.each(['node', 'browser'] as const)('%s native route listener contract',
     app.globalData.order.length = 0
     events.length = 0
 
-    wx.redirectTo({ url: '/pages/detail/index?id=42' })
+    const navigation = new Promise<void>((resolve, reject) => {
+      wx.redirectTo({ url: '/pages/detail/index?id=42', success: () => resolve(), fail: reject })
+    })
+    expect(session.getCurrentPages()).toEqual([home])
+    expect(events).toEqual([])
+    await navigation
     expect(events.map(event => event.stage)).toEqual(['before', 'unload', 'route'])
     expect(events[0]).toMatchObject({ path: 'pages/detail/index', query: { id: '42' }, stack: [home.route], renderer: 'webview' })
     expect(events[1]).toMatchObject({ path: home.route, pageInStack: true, unloaded: false })
@@ -82,6 +87,53 @@ describe.each(['node', 'browser'] as const)('%s native route listener contract',
     expect(events.map(event => event.routeEventId)).toEqual(Array.from({ length: 4 }).fill(events[0]!.routeEventId))
     expect(events[3]!.webviewId).toBe(events[0]!.webviewId)
     expect(events[1]!.webviewId).not.toBe(events[0]!.webviewId)
+  })
+
+  it('captures each submitted destination and callbacks when navigation options are reused', async () => {
+    const session = createSession()
+    const home = session.reLaunch('/pages/home/index')
+    const app = session.getApp()!
+    const wx = app.getWx() as HeadlessWx
+    await vi.waitFor(() => expect(app.globalData.events.at(-1)?.stage).toBe('done'))
+    const callbacks: string[] = []
+    const request = {
+      url: '/pages/detail/index?source=first',
+      success: () => { callbacks.push('first:success') },
+      fail: () => { callbacks.push('first:fail') },
+      complete: () => { callbacks.push('first:complete') },
+    }
+    wx.redirectTo(request)
+    Object.assign(request, {
+      url: '/pages/missing/index',
+      success: () => { callbacks.push('second:success') },
+      fail: () => { callbacks.push('second:fail') },
+      complete: () => { callbacks.push('second:complete') },
+    })
+    wx.redirectTo(request)
+    Object.assign(request, {
+      url: '/pages/other/index?source=mutated',
+      success: () => { callbacks.push('mutated:success') },
+      fail: () => { callbacks.push('mutated:fail') },
+      complete: () => { callbacks.push('mutated:complete') },
+    })
+    expect(session.getCurrentPages()).toEqual([home])
+    expect(callbacks).toEqual([])
+    await vi.waitFor(() => expect(callbacks).toEqual([
+      'first:success',
+      'first:complete',
+      'second:fail',
+      'second:complete',
+    ]))
+    expect(session.getCurrentPages()).toHaveLength(1)
+    const detail = session.getCurrentPages()[0]!
+    expect(detail.route).toBe('pages/detail/index')
+    expect(detail.options).toEqual({ source: 'first' })
+    expect(detail).not.toBe(home)
+    await vi.waitFor(() => expect(app.globalData.events.at(-1)).toMatchObject({
+      stage: 'done',
+      path: 'pages/detail/index',
+      query: { source: 'first' },
+    }))
   })
 
   it('preserves retained page identity across back and tabs without reporting a no-op as a new route', async () => {
@@ -132,12 +184,12 @@ describe.each(['node', 'browser'] as const)('%s native route listener contract',
     expect(app.globalData.order).not.toContain('ready:pages/detail/index')
   })
 
-  it.each(['load', 'ready'])('does not complete a page superseded in its %s lifecycle', async (hook) => {
+  it.each(['load', 'ready'])('completes the current route before navigation requested in its %s lifecycle', async (hook) => {
     const session = createSession()
     session.reLaunch(`/pages/home/index?mode=redirect-${hook}`)
     const events = session.getApp()!.globalData.events as RouteRecord[]
     await vi.waitFor(() => expect(events.at(-1)).toMatchObject({ stage: 'done', path: 'pages/other/index' }))
-    expect(events.filter(event => event.stage === 'done').map(event => event.path)).toEqual(['pages/other/index'])
+    expect(events.filter(event => event.stage === 'done').map(event => event.path)).toEqual(['pages/home/index', 'pages/other/index'])
   })
 
   it('does not emit accepted stages for invalid routes or failed page initialization', async () => {
@@ -152,11 +204,10 @@ describe.each(['node', 'browser'] as const)('%s native route listener contract',
     wx.navigateTo({ url: '/pages/missing/index', fail })
     wx.navigateTo({ url: '/pages/tab-a/index', fail })
     wx.switchTab({ url: '/pages/detail/index', fail })
-    expect(fail).toHaveBeenCalledTimes(3)
+    await vi.waitFor(() => expect(fail).toHaveBeenCalledTimes(3))
     expect(events).toEqual([])
     wx.navigateTo({ url: '/pages/detail/index?mode=throw', fail })
-    expect(fail).toHaveBeenCalledTimes(4)
-    await Promise.resolve()
+    await vi.waitFor(() => expect(fail).toHaveBeenCalledTimes(4))
     expect(events.map(event => event.stage)).toEqual(['before'])
   })
 
@@ -233,11 +284,11 @@ it('routes navigator descendant taps, native back and tabs through the public te
   expect(await home.data('scroll')).toEqual({ scrollTop: 330, scrollLeft: 45 })
   expect(await home.callMethod('measure', '#primary')).toEqual({ scrollTop: 330, scrollLeft: 45 })
   await (await home.$('#forward-label'))!.tap()
-  const detail = await miniProgram.currentPage()
+  const detail = await miniProgram.waitForCurrentPage('/pages/detail/index')
   expect(detail?.path).toBe('pages/detail/index')
   expect(detail?.query).toEqual({ from: 'navigator' })
   await (await detail!.$('#back'))!.tap()
-  expect((await miniProgram.currentPage())?.pageId).toBe(home.pageId)
+  expect((await miniProgram.waitForCurrentPage('/pages/home/index'))?.pageId).toBe(home.pageId)
   await (await home.$('#tab'))!.tap()
-  expect((await miniProgram.currentPage())?.path).toBe('pages/tab-a/index')
+  expect((await miniProgram.waitForCurrentPage('/pages/tab-a/index'))?.path).toBe('pages/tab-a/index')
 })

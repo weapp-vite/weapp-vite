@@ -3,6 +3,7 @@ import {
   WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY,
   WEAPP_VITE_STATEFUL_HMR_CONTROL_KEY,
 } from '@weapp-core/constants'
+import { devtoolsTemplateCacheSource } from './devtoolsTemplateCache'
 import { nativeInstanceDefaultsSource } from './nativeInstanceDefaults'
 import { statefulHmrUpdatePropagationSource } from './updatePropagationSource'
 
@@ -128,6 +129,7 @@ const wevuRefreshGenerations = new Map();
 const wevuInstanceGenerations = new WeakMap();
 let suppressLifecycles = false;
 const nativeRegistrations = {};
+${devtoolsTemplateCacheSource}
 ${nativeInstanceDefaultsSource}
 function getInstances(moduleId) {
   let values = instances.get(moduleId);
@@ -174,6 +176,7 @@ function forgetWevuInstance(instance, moduleId) {
   }
 }
 function restoreInstanceState(instance, moduleId) {
+  invalidateDevtoolsTemplatePlaceholders();
   const snapshot = instanceSnapshots.get(instance);
   if (!snapshot || snapshot.moduleId !== moduleId) return;
   const data = cloneInstanceData(snapshot.data);

@@ -78,14 +78,12 @@ jobs:
         include:
           - os: ubuntu-latest
             node-version: 22
-            timeout_minutes: 25
-            build_pkgs_script: build:pkgs:ci
+            timeout_minutes: 40
             build_script: build:ci
             lint_script: lint
           - os: ubuntu-latest
             node-version: 24
-            timeout_minutes: 25
-            build_pkgs_script: build:pkgs:ci
+            timeout_minutes: 40
             build_script: build:ci
             lint_script: lint
       max-parallel: 2
@@ -94,7 +92,8 @@ jobs:
       runs_on: ${{ matrix.os }}
       node_version: '${{ matrix.node-version }}'
       timeout_minutes: ${{ matrix.timeout_minutes }}
-      build_command: pnpm ${{ matrix.build_pkgs_script }}
+      # The full build below owns package artifacts; do not build them again during setup.
+      build_command: ''
       main_command: |
         pnpm ${{ matrix.lint_script }}
         pnpm ${{ matrix.build_script }}
