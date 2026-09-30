@@ -6,6 +6,7 @@ import process from 'node:process'
 import { execa } from 'execa'
 import { expect, it } from 'vitest'
 
+// CLI 集成验证依赖已构建的公开包，不能放进构建前的纯采集契约测试。
 it('loads the benchmark CLI dependency graph and discovers scenarios without starting a watcher', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'hmr-benchmark-entry-'))
   const template = path.join(root, 'templates/native')
