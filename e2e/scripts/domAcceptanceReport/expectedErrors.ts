@@ -1,6 +1,15 @@
 import type { RuntimeDiagnostic } from './runtimeDiagnostics'
 import type { AcceptanceCaseInput } from './types'
 
+function matchesDiagnosticMessage(event: RuntimeDiagnostic['event'], expected: string) {
+  if (event.text === expected) {
+    return true
+  }
+  // 本地与 CI 的 reporter 只改变级别前缀；保留原始日志，正文仍完整精确匹配。
+  return event.source === 'build' && event.channel === 'dev-process' && event.level === 'error'
+    && event.text?.replace(/^(?:\[error\]|ERROR)[ \t]+/, '') === expected
+}
+
 export function evaluateExpectedErrors(cases: AcceptanceCaseInput[], diagnostics: RuntimeDiagnostic[]) {
   const remaining = diagnostics.filter(item => item.event.level === 'error' || item.event.level === 'exception')
   const violations: string[] = []
@@ -33,7 +42,7 @@ export function evaluateExpectedErrors(cases: AcceptanceCaseInput[], diagnostics
       for (const expected of checkpoint.expectedErrors) {
         const matches = remaining.filter(actual => actual.caseId === item.id && actual.checkpointId === checkpoint.id
           && actual.scopeId === scopes[0]!.id && actual.event.source === expected.source && actual.event.level === expected.level
-          && actual.event.channel === expected.channel && actual.event.text === expected.text
+          && actual.event.channel === expected.channel && matchesDiagnosticMessage(actual.event, expected.text)
           && diagnostics.indexOf(actual) > startIndex && diagnostics.indexOf(actual) < endIndex)
         if (matches.length !== expected.count) {
           violations.push(`Expected error count mismatch: ${item.id}/${checkpoint.id}: expected ${expected.count}, received ${matches.length}: ${expected.text}`)

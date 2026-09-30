@@ -75,7 +75,7 @@ describe('issue #1081: delayed compiler transaction', () => {
       route,
       action: `检查 ${state.id} 批次的样式、文本与保留状态`,
       expectedErrors: state.id === 'failed'
-        ? [{ source: 'build' as const, level: 'error' as const, channel: 'dev-process', text: 'ERROR [weapp-vite] stateful HMR: Build failed with 1 error:', count: 1 }]
+        ? [{ source: 'build' as const, level: 'error' as const, channel: 'dev-process', text: '[weapp-vite] stateful HMR: Build failed with 1 error:', count: 1 }]
         : [],
       nodes: [
         { selector: '#batch-label', text: state.label },
