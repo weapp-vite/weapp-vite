@@ -71,6 +71,7 @@ jobs:
           path: |
             .cache/dimina/ready.json
             .cache/dimina/build-*/fe
+            !.cache/dimina/build-*/fe/**/node_modules
       - name: Prepare and verify Dimina SDK
         run: pnpm --filter @weapp-vite/dimina-playground setup:dimina --reuse
       - name: Lint

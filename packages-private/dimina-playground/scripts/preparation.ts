@@ -14,7 +14,7 @@ export async function preparationInputs(projectRoot = root) {
   return { fingerprint: hash.digest('hex'), patches: patches.map(name => path.join(patchRoot, name)) }
 }
 
-export async function preparedRoot(projectRoot = root, cacheDirectory = cacheRoot) {
+export async function preparedRoot(projectRoot = root, cacheDirectory = cacheRoot, options: { allowMissingDependencies?: boolean } = {}) {
   const { fingerprint } = await preparationInputs(projectRoot)
   let value: unknown
   try {
@@ -29,6 +29,9 @@ export async function preparedRoot(projectRoot = root, cacheDirectory = cacheRoo
   const directory = path.join(cacheDirectory, value.directory)
   try {
     await validatePreparedAssets(directory)
+    if (!options.allowMissingDependencies) {
+      await readFile(path.join(directory, 'fe/node_modules/.modules.yaml'))
+    }
   }
   catch { throw new Error('Run setup:dimina again (incomplete SDK assets or dependencies).') }
   return directory

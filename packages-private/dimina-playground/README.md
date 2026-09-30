@@ -96,7 +96,7 @@ setup 每次从干净的固定源码创建独立 `.cache/dimina/build-*` 目录�
 
 `.github/workflows/ci-dimina.yml` 在相关 PR 变更和手动触发时执行：Linux / Node 22.22.3（最低版本）、Windows / Node 24、macOS / Node 24。默认全仓构建仍不包含实验包。独立任务先构建公开依赖并刷新 injected workspace links，再显式准备 SDK、lint/stylelint/typecheck/unit/build，最后安装 Chromium 并串行运行 `pnpm e2e:dimina`。准备、浏览器安装和测试失败均使任务失败。
 
-缓存键使用实际 Node 完整版本、OS、架构以及与准备标记相同的输入摘要；不使用模糊恢复键。只缓存就绪标记与构建目录的 `fe` 子树（源码、依赖、完整 SDK），排除 clone 的 `.git`、原始源码缓存、日志及截图。`setup:dimina --reuse` 校验资源完整性后仍运行上游 21 项回归；缓存不完整时从干净源码重新准备，回归失败时删除就绪标记并报错。回归直接使用已准备的 Node/Vitest 入口，不通过 pnpm exec 隐式安装缺失依赖。普通 `setup:dimina` 始终创建新目录。
+缓存键使用实际 Node 完整版本、OS、架构以及与准备标记相同的输入摘要；不使用模糊恢复键。只缓存就绪标记与构建目录的 `fe` 子树（源码与完整 SDK），排除所有层级的 `node_modules`、clone 的 `.git`、原始源码缓存、日志及截图。依赖链接不属于可移植 SDK 产物，尤其不能依赖 Windows 缓存归档还原 junction 后仍可解析。`setup:dimina --reuse` 校验资源完整性后，以固定 pnpm 和 `--frozen-lockfile` 在当前 runner 重建依赖链接，再运行上游 21 项回归；缓存不完整时从干净源码重新准备，回归失败时删除就绪标记并报错。回归直接使用已准备的 Node/Vitest 入口，不通过 pnpm exec 隐式安装缺失依赖。普通 `setup:dimina` 始终创建新目录。
 
 ```sh
 pnpm --filter @weapp-vite/dimina-playground setup:dimina --reuse

@@ -42,5 +42,4 @@ export async function validatePreparedAssets(directory: string) {
     || Object.entries(expected).some(([name, hash]) => actual[name] !== hash)) {
     throw new Error('Incomplete or modified Dimina assets')
   }
-  await readFile(path.join(directory, 'fe/node_modules/.modules.yaml'))
 }

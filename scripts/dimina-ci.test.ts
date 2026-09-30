@@ -22,7 +22,11 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   const cache = steps.find(step => step.uses?.startsWith('actions/cache@'))!
   expect(cache.with?.key).toBe('$' + '{{ steps.sdk-key.outputs.key }}')
   expect(cache.with?.['restore-keys']).toBeUndefined()
-  expect(String(cache.with?.path).trim().split('\n')).toEqual(['.cache/dimina/ready.json', '.cache/dimina/build-*/fe'])
+  expect(String(cache.with?.path).trim().split('\n')).toEqual([
+    '.cache/dimina/ready.json',
+    '.cache/dimina/build-*/fe',
+    '!.cache/dimina/build-*/fe/**/node_modules',
+  ])
   const evidence = steps.find(step => step.uses?.startsWith('actions/upload-artifact@'))!
   expect(evidence.if).toBe('always()')
   expect(evidence.with?.['include-hidden-files']).toBe(true)
