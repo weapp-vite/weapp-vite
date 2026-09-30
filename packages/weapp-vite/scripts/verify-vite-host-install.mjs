@@ -82,7 +82,7 @@ try {
     assert.equal(toolchain, 'vite-plus', '独立 runtime 消费验证当前用于 Vite+；wv/vite 直接运行共享 fixture')
     const fixtureRoot = path.join(repoRoot, 'e2e-apps/stateful-hmr')
     await rm(path.join(consumerRoot, 'src'), { recursive: true, force: true })
-    for (const entry of ['src', 'project.config.json', 'project.private.config.json']) {
+    for (const entry of ['src', 'public', 'project.config.json', 'project.private.config.json']) {
       await cp(path.join(fixtureRoot, entry), path.join(consumerRoot, entry), { recursive: true })
     }
     await writeFile(path.join(consumerRoot, 'vite.stateful.config.mts'), `import { defineConfig } from 'vite-plus'

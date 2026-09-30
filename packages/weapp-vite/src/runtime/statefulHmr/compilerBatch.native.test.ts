@@ -70,6 +70,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
   try {
     await engine.registerClient('test-client')
     await engine.ensureCurrentBuildFinish()
+    await engine.getBundleState()
     expect(runtime.utility).toBe('py-5.5')
     await engine.notifyPayloadDelivered('app.js')
     for (const [index, utility] of ['py-6.5', 'py-7.5'].entries()) {
@@ -79,6 +80,10 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       expect(batches[index]!.input.sources.get(entry)).toBe(source(utility))
       expect(batches[index]!.code).toContain(utility)
       expect(batches[index]!.graphCode).toContain(utility)
+      await engine.notifyPayloadDelivered(batches[index]!.filename)
+      // 补丁回调早于原生 watcher 提交，下一轮编辑必须等待 coordinator 完成。
+      await engine.ensureCurrentBuildFinish()
+      await engine.getBundleState()
     }
     expect(batches[0]!.input.sources.get(entry)).toBe(source('py-6.5'))
     expect(batches[1]!.input.revision).toBeGreaterThan(batches[0]!.input.revision)
