@@ -86,6 +86,34 @@ describe('createAutoRoutesService', () => {
     }
   }
 
+  it('uses the same allowed source after deletion, restoration and cache reuse', async () => {
+    const base = path.join(srcRoot, 'pages/index/index')
+    await fs.writeFile(`${base}.vue`, `<script setup>definePage({ name: 'selected' })</script><template><view /></template>`)
+    await fs.writeFile(`${base}.js`, `export const business = 'kept'`)
+    const ctx = createContext({ extensions: ['vue'], persistentCache: true })
+    const service = createAutoRoutesService(ctx)
+    await service.ensureFresh()
+    expect(service.getSnapshot().pages).toEqual(['pages/index/index'])
+    expect(service.isPageSource(`${base}.vue`)).toBe(true)
+    expect(service.isPageSource(`${base}.ts`)).toBe(false)
+    expect(parseNamedRoutesModule(service.getNamedModuleCode()).map(route => route.name)).toEqual(['selected'])
+
+    await fs.remove(`${base}.vue`)
+    await service.handleFileChange(`${base}.vue`, 'unlink')
+    expect(service.getSnapshot().pages).toEqual([])
+    await fs.writeFile(`${base}.vue`, `<script setup>definePage({ name: 'restored' })</script><template><view /></template>`)
+    await service.handleFileChange(`${base}.vue`, 'add')
+    expect(parseNamedRoutesModule(service.getNamedModuleCode()).map(route => route.name)).toEqual(['restored'])
+
+    const restored = createAutoRoutesService(createContext({ extensions: ['vue'], persistentCache: true }))
+    await restored.ensureFresh()
+    expect(restored.isPageSource(`${base}.vue`)).toBe(true)
+    const changed = createAutoRoutesService(createContext({ extensions: ['js'], persistentCache: true }))
+    await changed.ensureFresh()
+    expect(changed.isPageSource(`${base}.js`)).toBe(true)
+    expect(changed.isPageSource(`${base}.vue`)).toBe(false)
+  })
+
   it('scans routes and exposes snapshot references', async () => {
     const ctx = createContext()
     const service = createAutoRoutesService(ctx)

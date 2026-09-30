@@ -1414,11 +1414,13 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     const entryId = '/project/src/pages/logs/hmr-added.vue'
     const appEntry = '/project/src/app.vue'
     const baseState = createState()
+    const onTopologyChange = vi.fn()
     const state = {
       ...baseState,
       resolvedEntryMap: new Map([[appEntry, { id: appEntry }]]),
       ctx: {
         ...baseState.ctx,
+        onStatefulHmrSourceChange: onTopologyChange,
         scanService: {
           ...baseState.ctx.scanService,
           appEntry: {
@@ -1437,6 +1439,7 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
 
     expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'delete')
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
+    expect(onTopologyChange).toHaveBeenCalledWith(appEntry, ['entry-graph-changed'])
     expect(invalidateFileCacheMock).toHaveBeenCalledWith(appEntry)
     expect(invalidateFileCacheMock).toHaveBeenCalledWith('weapp-vite/auto-routes')
     expect(invalidateFileCacheMock).toHaveBeenCalledWith('virtual:weapp-vite-auto-routes')

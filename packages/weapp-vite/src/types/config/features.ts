@@ -174,6 +174,8 @@ export interface WeappAutoRoutesConfig {
    * @remarks 默认会扫描主包 `pages/**`，以及已声明分包 root 下的 `pages/**`
    */
   include?: WeappAutoRoutesInclude
+  /** 页面入口扩展名（可带前导点）；未设置或为空时沿用默认解析。 */
+  extensions?: string[]
   /**
    * @description 是否启用自动路由持久化缓存，或指定自定义缓存文件路径
    * @default false

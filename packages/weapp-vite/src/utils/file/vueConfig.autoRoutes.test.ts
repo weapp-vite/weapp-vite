@@ -59,4 +59,21 @@ describe('JSON macro route snapshot ownership', () => {
     expect(inlined).toContain('pages/home/index')
     expect(inlined).not.toContain(routeImport)
   })
+  it('invalidates an unchanged app macro when its auto route snapshot changes', async () => {
+    const routes = { pages: ['pages/home/index', 'pages/removed/index'], entries: [], subPackages: [] }
+    mocks.getContext.mockReturnValue({
+      autoRoutesService: { ensureFresh: mocks.ensureFresh, getReference: () => routes },
+      runtimeState: { autoRoutes: { loadingAppConfig: false } },
+    })
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vue-config-topology-'))
+    roots.push(root)
+    const file = path.join(root, 'app.vue')
+    await fs.writeFile(file, `<script setup lang="ts">import { pages } from 'weapp-vite/auto-routes'
+    defineAppJson({ pages })</script>`)
+    mocks.extractMacro.mockImplementation(async () => ({ config: { pages: [...routes.pages] }, dependencies: [] }))
+    expect(await extractConfigFromVue(file)).toEqual({ pages: routes.pages })
+    routes.pages = ['pages/home/index']
+    expect(await extractConfigFromVue(file)).toEqual({ pages: ['pages/home/index'] })
+    expect(mocks.extractMacro).toHaveBeenCalledTimes(2)
+  })
 })

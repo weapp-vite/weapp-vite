@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { resolveWeappAutoRoutesConfig } from './autoRoutesConfig'
 
 describe('resolveWeappAutoRoutesConfig', () => {
+  it('normalizes extension dots and duplicates without changing include semantics', () => {
+    expect(resolveWeappAutoRoutesConfig({ extensions: ['.vue', 'vue', 'tsx'], include: 'pages/**' })).toMatchObject({ extensions: ['vue', 'tsx'], include: ['pages/**'] })
+    expect(resolveWeappAutoRoutesConfig({ extensions: [] }).extensions).toBeUndefined()
+  })
+
   it('keeps auto routes disabled when config is omitted', () => {
     expect(resolveWeappAutoRoutesConfig()).toEqual({
       enabled: false,
