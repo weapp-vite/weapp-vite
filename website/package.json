@@ -23,6 +23,7 @@
     "deploy:dry-run": "wrangler deploy --dry-run",
     "deploy:preview": "wrangler versions upload",
     "test": "vitest run",
+    "test:browser": "playwright test",
     "preview": "vitepress preview",
     "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt",
     "postinstall": "node ../scripts/print-rolldown-versions-at-install-tail.mjs"
@@ -50,7 +51,7 @@
     "tailwindcss": "catalog:tailwind4",
     "unplugin-auto-import": "^21.1.0",
     "unplugin-vue-components": "^32.1.0",
-    "vitepress": "2.0.0-alpha.18",
+    "vitepress": "2.0.0-alpha.20",
     "vitepress-plugin-group-icons": "^1.7.6",
     "vitepress-plugin-llms": "1.14.0",
     "vitepress-plugin-mermaid": "^2.0.17",

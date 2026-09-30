@@ -288,9 +288,9 @@ describe('runtime npm package builder core', () => {
     })
 
     expect(viteBuildMock).toHaveBeenCalledTimes(1)
-    expect(getPackageInfoMock).toHaveBeenCalledWith('demo')
-    expect(getPackageInfoMock).toHaveBeenCalledWith('fs/')
-    expect(getPackageInfoMock).not.toHaveBeenCalledWith('lodash')
+    expect(getPackageInfoMock).toHaveBeenCalledWith('demo', { paths: [ctx.configService!.cwd] })
+    expect(getPackageInfoMock).toHaveBeenCalledWith('fs/', { paths: [ctx.configService!.cwd] })
+    expect(getPackageInfoMock.mock.calls.map(([dep]) => dep)).not.toContain('lodash')
   })
 
   it('prefers exports.import and module entries over main for non-miniprogram packages', async () => {

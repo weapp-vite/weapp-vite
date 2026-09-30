@@ -2,9 +2,11 @@ import { defineConfig } from 'tsdown'
 
 export default defineConfig({
   entry: {
+    'vite': './src/vite/index.ts',
     'index': './src/index.ts',
     'web-apis': './src/webApis.ts',
     'cli': './src/cli.ts',
+    'cli-acceptance': './src/cli-acceptance.ts',
     'upload-worker': './src/cli/upload/worker.ts',
     'config': './src/config.ts',
     'dashboard': './src/dashboard/index.ts',

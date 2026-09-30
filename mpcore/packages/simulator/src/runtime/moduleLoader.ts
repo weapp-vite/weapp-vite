@@ -7,6 +7,7 @@ import type {
   HeadlessPageDefinition,
   HeadlessWx,
 } from '../host'
+import type { HeadlessWorkerApis } from '../host/wx/workers'
 import type { ArtifactSource, RuntimeKernel } from '../kernel'
 import type { HeadlessPluginDescriptor } from '../project'
 import path from 'node:path'
@@ -20,6 +21,7 @@ import {
   registerExportedComponentDefinition,
   registerPageDefinition,
 } from '../host'
+import { createWorkerHost } from '../runtime/workerHost'
 import { resolveMiniProgramModule } from './moduleResolution'
 import { createMiniProgramRuntimeGlobals } from './runtimeGlobals'
 import { closeRuntimeWxsLoader } from './wxs'
@@ -195,9 +197,10 @@ function createExecutionContext(
   kernel: RuntimeKernel,
   globals: Record<string, unknown>,
   onConsole?: (entry: import('../kernel').RuntimeConsoleEntry) => void,
+  workers?: HeadlessWorkerApis,
 ) {
   const runtimeConsole = kernel.diagnostics.createConsole(console, onConsole)
-  const wx = createHeadlessWx(wxDriver, runtimeConsole)
+  const wx = createHeadlessWx(wxDriver, runtimeConsole, workers)
 
   return createMiniProgramRuntimeGlobals({
     App(definition: HeadlessAppDefinition) {
@@ -245,6 +248,18 @@ export function createModuleLoader(
     plugins: HeadlessPluginDescriptor[]
   },
 ): HeadlessModuleLoader {
+  const workers = createWorkerHost({
+    root: options.miniprogramRootPath,
+    read: file => options.artifactSource.readText(file),
+    console: options.kernel.diagnostics.createConsole(console, options.onConsole),
+    createExecutor(globals) {
+      const realm = vm.createContext(globals)
+      return (source, file, module, require) => {
+        const execute = new vm.Script(`(function(module, exports, require) {${source}\n})`, { filename: file }).runInContext(realm)
+        execute(module, module.exports, require)
+      }
+    },
+  })
   const moduleCache = new Map<string, ModuleCacheEntry>()
   const executionContext: Record<string, any> = createExecutionContext(
     registries,
@@ -254,6 +269,7 @@ export function createModuleLoader(
     options.kernel,
     options.globals ?? {},
     options.onConsole,
+    workers.apis,
   )
   executionContext.globalThis = executionContext
 
@@ -350,6 +366,7 @@ export function createModuleLoader(
       return callback(...args)
     },
     close() {
+      workers.close()
       moduleCache.clear()
       closeRuntimeWxsLoader(loader)
     },

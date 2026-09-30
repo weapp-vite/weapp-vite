@@ -35,53 +35,18 @@ describe('ide devtools cleanup', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllEnvs()
     vi.useRealTimers()
   })
 
-  it('returns unix devtools process patterns for macOS cleanup', async () => {
-    const { resolveIdeDevtoolsProcessPatterns } = await import('./ide-devtools-cleanup')
-
-    expect(resolveIdeDevtoolsProcessPatterns('darwin')).toEqual([
-      'e2e/utils/automator.cli-bridge.ts',
-      'wechatwebdevtools.app/Contents/MacOS/cli',
-      'wechatwebdevtools.app/Contents/MacOS/Electron',
-      'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
-      'wechatwebdevtools',
-    ])
-  })
-
-  it('kills residual wechatdevtools processes on Windows and clears automator artifacts', async () => {
+  it.each(['darwin', 'win32'] as const)('preserves unowned DevTools and session artifacts on %s', async (platform) => {
     const { cleanupResidualDevtoolsProcesses } = await import('./ide-devtools-cleanup')
-
-    const task = cleanupResidualDevtoolsProcesses('win32')
+    const task = cleanupResidualDevtoolsProcesses(platform)
     await vi.runAllTimersAsync()
     await task
-
-    expect(cleanupResidualDevProcessesMock).not.toHaveBeenCalled()
-    expect(execaMock).toHaveBeenCalledWith('taskkill', ['/F', '/IM', 'wechatdevtools.exe', '/T'], expect.objectContaining({
-      reject: false,
-    }))
-    expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
-    expect(fsRmMock).toHaveBeenCalledTimes(2)
-  })
-
-  it('kills residual unix devtools processes by command pattern', async () => {
-    const { cleanupResidualDevtoolsProcesses } = await import('./ide-devtools-cleanup')
-
-    const task = cleanupResidualDevtoolsProcesses('darwin')
-    await vi.runAllTimersAsync()
-    await task
-
-    expect(cleanupResidualDevProcessesMock).not.toHaveBeenCalled()
-    expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledWith([
-      'e2e/utils/automator.cli-bridge.ts',
-      'wechatwebdevtools.app/Contents/MacOS/cli',
-      'wechatwebdevtools.app/Contents/MacOS/Electron',
-      'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
-      'wechatwebdevtools',
-    ], 2_500)
     expect(execaMock).not.toHaveBeenCalled()
-    expect(fsRmMock).toHaveBeenCalledTimes(2)
+    expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
+    expect(fsRmMock).not.toHaveBeenCalled()
   })
 
   it('cleans devtools compile cache via wechat cli', async () => {
@@ -100,6 +65,16 @@ describe('ide devtools cleanup', () => {
     )
   })
 
+  it('uses the selected CLI consistently for cache retry', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', 'stable-cli')
+    execaMock.mockResolvedValueOnce({ exitCode: 1, stderr: 'wait IDE port timeout' })
+    const { cleanDevtoolsCache } = await import('./ide-devtools-cleanup')
+    const task = cleanDevtoolsCache('compile')
+    await vi.runAllTimersAsync()
+    await task
+    expect(execaMock.mock.calls.map(call => call[0])).toEqual(['stable-cli', 'stable-cli'])
+  })
+
   it('retries cache clean after stale DevTools port initialization failure', async () => {
     execaMock
       .mockResolvedValueOnce({
@@ -115,17 +90,11 @@ describe('ide devtools cleanup', () => {
     await vi.runAllTimersAsync()
     await task
 
-    expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledWith([
-      'e2e/utils/automator.cli-bridge.ts',
-      'wechatwebdevtools.app/Contents/MacOS/cli',
-      'wechatwebdevtools.app/Contents/MacOS/Electron',
-      'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
-      'wechatwebdevtools',
-    ], 2_500)
+    expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
     expect(execaMock).toHaveBeenCalledTimes(2)
   })
 
-  it('stops the DevTools maintenance process after cache cleanup', async () => {
+  it('preserves a preexisting DevTools after cache cleanup', async () => {
     const { cleanDevtoolsCacheAndStop } = await import('./ide-devtools-cleanup')
 
     const task = cleanDevtoolsCacheAndStop('compile', { platform: 'darwin' })
@@ -133,10 +102,7 @@ describe('ide devtools cleanup', () => {
     await task
 
     expect(execaMock).toHaveBeenCalledTimes(1)
-    expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledTimes(1)
-    expect(execaMock.mock.invocationCallOrder[0]).toBeLessThan(
-      cleanupProcessesByCommandPatternsMock.mock.invocationCallOrder[0]!,
-    )
+    expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
   })
 
   it('runs full ide cleanup by chaining dev cleanup and devtools cleanup', async () => {
@@ -147,8 +113,8 @@ describe('ide devtools cleanup', () => {
     await task
 
     expect(cleanupResidualDevProcessesMock).toHaveBeenCalledTimes(1)
-    expect(cleanupProcessesByCommandPatternsMock).toHaveBeenCalledTimes(1)
-    expect(fsRmMock).toHaveBeenCalledTimes(2)
+    expect(cleanupProcessesByCommandPatternsMock).not.toHaveBeenCalled()
+    expect(fsRmMock).not.toHaveBeenCalled()
   })
 
   it.each(['all', 'auth', 'session', 'storage', 'file', 'network'])('rejects automatic %s cache cleanup before invoking DevTools', async (cleanType) => {

@@ -16,7 +16,7 @@ import llmstxt, {
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard'
 import { wevuApiSidebarItems } from './data/wevuApiSidebar'
-import { createSeoHead, transformPageDataForSeo } from './seo'
+import { transformPageDataForSeo } from './seo'
 import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
 import { siteBaseUrl } from './site'
 
@@ -91,6 +91,8 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'AI 协作', link: '/guide/ai' },
       { text: 'AI Skills', link: '/guide/skills' },
       { text: 'AI 任务工作流', link: '/guide/ai-workflows' },
+      { text: '改动验收', link: '/guide/acceptance' },
+      { text: '独立 Agent', link: '/guide/agent/' },
       { text: '目录结构', link: '/guide/directory-structure/' },
       { text: '手动集成', link: '/guide/manual-integration' },
     ],
@@ -104,6 +106,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/guide/vue-sfc/',
       },
       { text: 'Alias 别名', link: '/guide/alias' },
+      { text: '标准 Vite 插件 / Vite+', link: '/guide/vite-plugin' },
       { text: '自动构建 npm', link: '/guide/npm' },
       { text: '生成脚手架', link: '/guide/generate' },
       { text: '自动路由', link: '/guide/auto-routes' },
@@ -790,7 +793,6 @@ export default withMermaid(
     mermaid: {
       theme: 'default',
     },
-    transformHead: ({ pageData }) => createSeoHead(pageData),
     transformPageData(pageData) {
       transformPageDataForSeo(pageData)
     },
@@ -840,6 +842,8 @@ export default withMermaid(
       },
       resolve: {
         alias: {
+          // 保留插件的 Markdown 转换，由网站组件管理渲染和主题监听，避免全局属性触发重绘。
+          'vitepress-plugin-mermaid/Mermaid.vue': fileURLToPath(new URL('./components/mermaid/index.vue', import.meta.url)),
           // Fix SSR build error: mark.js deep import without extension in ESM
           'mark.js/src/vanilla.js': 'mark.js/dist/mark.es6.js',
           // Element Plus references @vue/shared directly in some ESM entries.
@@ -874,7 +878,6 @@ export default withMermaid(
         preprocessorOptions: {
           scss: {
             silenceDeprecations: ['legacy-js-api'],
-            api: 'modern-compiler',
           },
         },
       },

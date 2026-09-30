@@ -14,7 +14,7 @@ import { createPageDeclarationError, getAbsoluteOffset } from './diagnostics'
 import { collectDirectMacroCallsForTransform, collectMacroCallsFromPrograms } from './macroBindings'
 import { createProgramBlock, parsePageDeclarationBlock } from './program'
 import { getImportRemovalEdits } from './rewrite'
-import { resolvePageDeclaration } from './static'
+import { resolvePageDeclaration, tryResolveStaticPageMeta } from './static'
 
 const PAGE_META_MACRO = {
   moduleId: WE_VU_MODULE_ID,
@@ -105,6 +105,7 @@ export function analyzePageCompileTimeMacroBlocks(
   const { calls, runtimeImports } = collectMacroCallsFromPrograms(parsedBlocks, PAGE_META_MACRO)
   return {
     ...routeAnalysis,
+    pageMeta: calls.length === 1 ? tryResolveStaticPageMeta(calls[0]!) : undefined,
     edits: [
       ...routeAnalysis.edits,
       ...getImportRemovalEdits(runtimeImports),

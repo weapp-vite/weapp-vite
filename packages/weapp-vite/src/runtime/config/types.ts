@@ -15,6 +15,12 @@ export interface LoadConfigOptions {
   emitDefaultAutoImportOutputs?: boolean
   outputRoot?: string
   pluginOnly?: boolean
+  /** 宿主已执行的配置；存在时跳过 vite/weapp-vite 配置文件发现与加载。 */
+  hostConfig?: {
+    config: InlineConfig
+    path?: string
+    dependencies?: string[]
+  }
   inlineConfig?: InlineConfig
   configFile?: string
   configLoader?: ViteConfigLoader
@@ -24,6 +30,8 @@ export interface LoadConfigOptions {
 
 export interface LoadConfigResult {
   loadOptions: LoadConfigOptions
+  /** 本次加载的用户配置，供隔离子会话重新归一化，避免重复执行配置文件。 */
+  sourceConfig?: InlineConfig
   config: InlineConfig
   aliasEntries: ResolvedAlias[]
   outputExtensions: OutputExtensions

@@ -66,6 +66,7 @@ const mocks = vi.hoisted(() => {
   }
   const mockCreateServer = vi.fn(() => ({ name: '@weapp-vite/mcp-test' }))
   const mockCreateWeappViteMcpServerFactory = vi.fn(async (_options?: unknown) => ({
+    close: vi.fn(async () => {}),
     createServer: mockCreateServer,
     runtimeManager: mockRuntimeManager,
     workspaceRoot: '/workspace',
@@ -295,6 +296,7 @@ beforeEach(() => {
   mocks.mockRuntimeManager.withPage.mockClear()
   mocks.mockCreateWeappViteMcpServerFactory.mockReset()
   mocks.mockCreateWeappViteMcpServerFactory.mockResolvedValue({
+    close: vi.fn(async () => {}),
     createServer: mocks.mockCreateServer,
     runtimeManager: mocks.mockRuntimeManager,
     workspaceRoot: '/workspace',

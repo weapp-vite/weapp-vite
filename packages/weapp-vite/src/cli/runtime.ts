@@ -47,6 +47,12 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
   }
 }
 
+export function resolveConfiguredRuntimeTargets(targets: RuntimeTargets, platform?: MpPlatform | 'web'): RuntimeTargets {
+  return targets.rawPlatform === undefined && platform === 'web'
+    ? resolveRuntimeTargets({ platform: 'web' })
+    : targets
+}
+
 export function createInlineConfig(
   execution: RuntimeTargets,
   options: { scope?: string, host?: string | boolean, inlineConfig?: InlineConfig } = {},

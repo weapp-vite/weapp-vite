@@ -58,6 +58,33 @@ function readComponentJson(outputs: Array<OutputChunk | OutputAsset>) {
 }
 
 describe('stateful snapshot component metadata', () => {
+  it('reuses the CLI dual config source across snapshots without evaluating either file again', async () => {
+    const root = await createProject()
+    const configFile = path.join(root, 'vite.config.ts')
+    const extraConfigFile = path.join(root, 'weapp-vite.config.ts')
+    await fs.writeFile(extraConfigFile, 'export default { define: { SNAPSHOT_CONFIG_MARKER: JSON.stringify("merged-source") } }')
+    await fs.writeFile(path.join(root, 'src/app.ts'), 'App({ marker: SNAPSHOT_CONFIG_MARKER })')
+    const owner = createCompilerContextInstance()
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    await owner.configService.load(options)
+    expect(owner.configService.options.configMergeInfo?.merged).toBe(true)
+    // 资产刷新复用本轮配置；只有宿主配置重启才允许再次执行这两个文件。
+    await fs.writeFile(configFile, 'throw new Error("vite config executed twice")')
+    await fs.writeFile(extraConfigFile, 'throw new Error("weapp config executed twice")')
+    try {
+      for (const marker of ['first-template', 'second-template']) {
+        await fs.writeFile(path.join(root, 'src/pages/index/index.wxml'), `<view>${marker}</view>`)
+        const snapshot = await buildStatefulHmrSnapshot(options, undefined, owner)
+        const outputs = Array.isArray(snapshot.output) ? snapshot.output.flatMap(item => item.output) : 'output' in snapshot.output ? snapshot.output.output : []
+        expect((outputs.find(item => item.fileName === 'app.js') as OutputChunk).code).toContain('merged-source')
+        expect(String((outputs.find(item => item.fileName === 'pages/index/index.wxml') as OutputAsset).source)).toContain(marker)
+      }
+    }
+    finally {
+      owner.moduleGraphService.resetSession()
+    }
+  })
+
   it.each([false, true])('preserves discovered native component assets with pinned sources (isDev=%s)', async (isDev) => {
     const root = await fs.realpath(await createProject())
     await fs.writeFile(path.join(root, 'project.private.config.json'), JSON.stringify({ setting: { compileHotReLoad: true } }))

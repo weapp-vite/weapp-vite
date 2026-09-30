@@ -85,6 +85,7 @@ pnpm release:pre:exit       # Exit prerelease mode
 This repo includes installable user-facing skills in `./skills`:
 
 - `weapp-vite-best-practices`
+- `weapp-acceptance`
 - `docs-and-website-sync`
 - `release-and-changeset-best-practices`
 - `weapp-devtools-e2e-best-practices`

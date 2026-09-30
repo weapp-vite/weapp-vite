@@ -513,6 +513,51 @@ describe('autoImport plugin', () => {
     expect(ignored('/project/dist')).toBe(true)
   })
 
+  it('awaits the old auto import watcher before replacing it during a session restart', async () => {
+    const previous = createMockSidecarWatcher()
+    const replacement = createMockSidecarWatcher()
+    chokidarWatchMock.mockReturnValueOnce(previous).mockReturnValueOnce(replacement)
+    const sidecarWatcherMap = new Map<string, { close: () => unknown }>()
+    const ctx = {
+      runtimeState: { watcher: { sidecarWatcherMap }, autoImport: { pendingEntriesByImporter: new Map() } },
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        isDev: true,
+        relativeCwd: (file: string) => file,
+        relativeAbsoluteSrcRoot: (file: string) => file,
+        weappViteConfig: { autoImportComponents: { globs: ['components/**/*.vue'] } },
+      },
+      autoImportService: {
+        reset: vi.fn(),
+        filter: () => true,
+        awaitManifestWrites: vi.fn(),
+        registerPotentialComponent: vi.fn(),
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+    const first = autoImport(ctx)[0]
+    first.configResolved?.({ build: { outDir: 'dist' } } as any)
+    await first.buildStart?.call({ addWatchFile: vi.fn() } as any)
+    let release!: () => void
+    previous.close.mockImplementation(() => new Promise<void>((resolve) => {
+      release = resolve
+    }))
+    const second = autoImport(ctx)[0]
+    second.configResolved?.({ build: { outDir: 'dist' } } as any)
+    const restarting = second.buildStart?.call({ addWatchFile: vi.fn() } as any)
+    expect(previous.close).toHaveBeenCalledOnce()
+    expect(chokidarWatchMock).toHaveBeenCalledOnce()
+    release()
+    await restarting
+    expect(chokidarWatchMock).toHaveBeenCalledTimes(2)
+    expect(sidecarWatcherMap.size).toBe(1)
+    await [...sidecarWatcherMap.values()][0]!.close()
+    expect(replacement.close).toHaveBeenCalledOnce()
+  })
+
   it('waits for sidecar watcher ready before finishing dev buildStart', async () => {
     const reset = vi.fn()
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)

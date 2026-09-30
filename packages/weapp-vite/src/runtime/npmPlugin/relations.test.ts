@@ -144,7 +144,7 @@ describe('runtime npmPlugin relations', () => {
     ])
   })
 
-  it('keeps default relation for non-alipay platforms in multi-platform mode', () => {
+  it('uses resolved output for non-alipay platforms in multi-platform mode', () => {
     const ctx = createContext({
       platform: 'tt',
       multiPlatform: true,
@@ -154,7 +154,7 @@ describe('runtime npmPlugin relations', () => {
     expect(getPackNpmRelationList(ctx)).toEqual([
       {
         packageJsonPath: './package.json',
-        miniprogramNpmDistDir: '.',
+        miniprogramNpmDistDir: '/project/dist',
       },
     ])
   })

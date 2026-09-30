@@ -81,7 +81,8 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       expect(batches[index]!.input.sources.get(sourceId)).toBe(source(utility))
       expect(batches[index]!.code).toContain(utility)
       expect(batches[index]!.graphCode).toContain(utility)
-      // 原生回调先于监听路径提交，下一次变更须等待完整 coordinator 事务结束。
+      await engine.notifyPayloadDelivered(batches[index]!.filename)
+      // 补丁回调早于原生 watcher 提交，下一轮编辑必须等待 coordinator 完成。
       await engine.ensureCurrentBuildFinish()
       await engine.getBundleState()
     }

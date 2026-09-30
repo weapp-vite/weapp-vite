@@ -1,8 +1,9 @@
 import type { InlineConfig } from 'vite'
-import type { CompilerContext } from '../../context'
+import type { MutableCompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
 import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import path from 'pathe'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
@@ -11,6 +12,7 @@ import { getTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { setCompilerSourceSnapshot } from '../../plugins/utils/sourceSnapshot'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { shareWxmlDependencies } from '../../wxml/processing/dependencies'
+import { getWorkerSources } from '../buildPlugin/workerPlan'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 
@@ -18,7 +20,7 @@ import { resolveComponentPageGlobalStyleRoutes } from './componentPageStyles'
 export async function buildStatefulHmrSnapshot(
   loadOptions: LoadConfigOptions,
   configure: (options: InlineConfig) => InlineConfig = options => options,
-  owner?: Pick<CompilerContext, 'runtimeState'>,
+  owner?: Pick<MutableCompilerContext, 'runtimeState' | 'configService'>,
   sources?: ReadonlyMap<string, string | null>,
 ) {
   const ctx = createCompilerContextInstance()
@@ -27,7 +29,17 @@ export async function buildStatefulHmrSnapshot(
   }
   return await ctx.autoImportService.runWithoutOutputWrites(async () => {
     ctx.currentBuildTarget = 'app'
-    await ctx.configService.load(loadOptions)
+    const ownerConfig = owner?.configService
+    await ctx.configService.load(ownerConfig?.options.sourceConfig
+      ? {
+          ...loadOptions,
+          hostConfig: {
+            config: ownerConfig.options.sourceConfig,
+            path: ownerConfig.configFilePath,
+            dependencies: ownerConfig.configFileDependencies,
+          },
+        }
+      : loadOptions)
     if (sources) {
       setCompilerSourceSnapshot(ctx.configService, sources)
     }
@@ -88,6 +100,10 @@ export async function buildStatefulHmrSnapshot(
     const output = await build(options)
     return {
       output,
+      getChildSources: () => ({
+        files: [...new Set([...ctx.runtimeState.build.independent.watchFiles.values()].flatMap(files => [...files]).concat(getWorkerSources(ctx).files))],
+        roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)).concat(getWorkerSources(ctx).roots),
+      }),
       getGlassEaselAnalysisByOwner: () => ctx.runtimeState.glassEasel.analysisByOwner,
       getEntryIds: () => ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
       getDelegatedComponentEntryIds: () => Array.from(ctx.runtimeState.build.hmr.resolvedEntryMap.keys()).filter(id =>

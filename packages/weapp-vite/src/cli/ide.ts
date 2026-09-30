@@ -19,6 +19,7 @@ const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'generate',
   'g',
   'mcp',
+  'accept',
 ])
 
 const LEGACY_UPLOAD_OPTIONS: Record<string, true> = {

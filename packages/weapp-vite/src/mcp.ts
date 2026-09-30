@@ -9,7 +9,7 @@ import {
   DEFAULT_RUNTIME_REST_ENDPOINT,
   startWeappViteMcpServer as startMcpServer,
 } from '@weapp-vite/mcp'
-import { connectMiniProgram } from 'weapp-ide-cli'
+import { connectMiniProgram, prepareAcceptanceProject } from 'weapp-ide-cli'
 import { resolveAiDevelopmentEnvironmentFromEnv, resolveBooleanLikeEnv } from './aiEnvironment'
 import logger from './logger'
 
@@ -118,6 +118,7 @@ export async function startWeappViteMcpServer(options?: WeappViteMcpServerOption
   return startMcpServer({
     runtimeHooks: {
       connectMiniProgram,
+      prepareProject: prepareAcceptanceProject,
     },
     ...options,
     onReady: options?.onReady ?? ((message) => {

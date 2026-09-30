@@ -1,10 +1,11 @@
 import type { RolldownOutput } from 'rolldown'
 import type { StatefulHmrDevEngineUpdate } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/viteAdapter'
-import { mkdtemp, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { dev } from 'rolldown/experimental'
 import { compileVueFile } from 'wevu/compiler'
+import { renameAtomicFile } from '../../../../../e2e/utils/hmrAtomicRename'
 import { createLogicalEntryModuleCode } from '../../../../../packages/weapp-vite/src/moduleGraph/logicalEntry'
 import { createLogicalEntryId } from '../../../../../packages/weapp-vite/src/moduleGraph/protocol'
 import { isStatefulHmrBoundary } from '../../../../../packages/weapp-vite/src/runtime/statefulHmr/boundaries'
@@ -117,7 +118,7 @@ async function collectVueComponentHmr(repoRoot: string, source: string, modules:
       nextUpdate = update
       const timer = setTimeout(() => update.reject(new Error('Vue companion native HMR event timed out')), 10_000)
       try {
-        const [patch] = await Promise.all([update.promise, rename(pendingSource, sourceId)])
+        const [patch] = await Promise.all([update.promise, renameAtomicFile(pendingSource, sourceId)])
         if (patch.type !== 'Patch') {
           throw new Error(`Expected Vue component patch, received ${patch.type}`)
         }
