@@ -1,0 +1,4 @@
+<view id="doctor-root">
+  <view id="doctor-result">{{result}}</view>
+  <button id="increment" bindtap="increment">{{count}}</button>
+</view>

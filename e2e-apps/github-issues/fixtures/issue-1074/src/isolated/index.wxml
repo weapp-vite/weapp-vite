@@ -1,0 +1,3 @@
+<view id="doctor-root">
+  <view id="doctor-independent">{{message}}</view>
+</view>

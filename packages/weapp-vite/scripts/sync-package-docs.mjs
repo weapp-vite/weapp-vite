@@ -9,6 +9,12 @@ const packagedDocsDir = path.join(packageRoot, 'docs', 'packaged')
 
 const docEntries = [
   {
+    source: path.join(packagedDocsDir, 'doctor.md'),
+    output: 'doctor.md',
+    title: 'Doctor',
+    summary: '分层静态/构建/宿主证据、JSON/SARIF 与完整性退出码。',
+  },
+  {
     source: path.join(packageRoot, 'README.md'),
     output: 'README.md',
     title: 'weapp-vite Package Docs',

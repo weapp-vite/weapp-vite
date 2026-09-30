@@ -1,0 +1,17 @@
+{
+  "name": "doctor-public-types-tsd",
+  "type": "module",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "target": "ES2023",
+      "strict": true,
+      "paths": {
+        "weapp-vite/doctor": ["../../dist/doctor.d.mts"]
+      }
+    }
+  }
+}

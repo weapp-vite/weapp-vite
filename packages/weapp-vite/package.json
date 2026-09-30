@@ -113,6 +113,10 @@
     "./auto-import-presets/wevu-router": {
       "types": "./dist/auto-import-presets/wevu-router.d.mts",
       "import": "./dist/auto-import-presets/wevu-router.mjs"
+    },
+    "./doctor": {
+      "types": "./dist/doctor.d.mts",
+      "import": "./dist/doctor.mjs"
     }
   },
   "main": "./dist/index.mjs",
@@ -145,7 +149,7 @@
     "benchmark:auto-import:ci": "node --import tsx scripts/benchmark-auto-import-ci.ts",
     "test:dev": "vitest",
     "test": "vitest run",
-    "test:types": "cd test-d/auto-import-presets && tsd --files \"**/*.test-d.ts\" && cd ../auto-routes-define-app-json && tsd --files \"**/*.test-d.ts\" && cd ../config-define-config && tsd --files \"**/*.test-d.ts\" && cd ../config-public-types && tsd --files \"**/*.test-d.ts\" && cd ../upload-config && tsd --files \"**/*.test-d.ts\" && cd ../i18n-public-types && tsd --files \"**/*.test-d.ts\" && cd ../internal-src-types && tsd --files \"**/*.test-d.ts\" && cd ../resolvers-public-types && tsd --files \"**/*.test-d.ts\" && cd ../runtime-public-types && tsd --files \"**/*.test-d.ts\" && cd ../test-artifact-public-types && tsd --files \"**/*.test-d.ts\" && cd ../dashboard-public-types && tsd --files \"**/*.test-d.ts\"",
+    "test:types": "cd test-d/auto-import-presets && tsd --files \"**/*.test-d.ts\" && cd ../auto-routes-define-app-json && tsd --files \"**/*.test-d.ts\" && cd ../config-define-config && tsd --files \"**/*.test-d.ts\" && cd ../config-public-types && tsd --files \"**/*.test-d.ts\" && cd ../upload-config && tsd --files \"**/*.test-d.ts\" && cd ../i18n-public-types && tsd --files \"**/*.test-d.ts\" && cd ../internal-src-types && tsd --files \"**/*.test-d.ts\" && cd ../resolvers-public-types && tsd --files \"**/*.test-d.ts\" && cd ../runtime-public-types && tsd --files \"**/*.test-d.ts\" && cd ../test-artifact-public-types && tsd --files \"**/*.test-d.ts\" && cd ../dashboard-public-types && tsd --files \"**/*.test-d.ts\" && cd ../doctor-public-types && tsd --files \"**/*.test-d.ts\"",
     "lint:src": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
@@ -166,6 +170,7 @@
     "@babel/preset-env": "^8.0.6",
     "@babel/preset-typescript": "^8.0.1",
     "@jridgewell/remapping": "^2.3.5",
+    "@typescript-eslint/parser": "^8.71.0",
     "@vercel/detect-agent": "^1.2.5",
     "@volar/typescript": "^2.4.28",
     "@vue/language-core": "catalog:",
@@ -191,6 +196,7 @@
     "comment-json": "catalog:",
     "devframe": "catalog:",
     "dotenv-expand": "^12.0.3",
+    "eslint": "catalog:",
     "fdir": "catalog:",
     "htmlparser2": "catalog:",
     "local-pkg": "^1.2.1",
@@ -215,6 +221,7 @@
     "vite-plugin-performance": "workspace:*",
     "vite-tsconfig-paths": "^6.1.1",
     "vue": "catalog:",
+    "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "catalog:",
     "weapp-ide-cli": "workspace:*",
     "weapp-tailwindcss": "catalog:",

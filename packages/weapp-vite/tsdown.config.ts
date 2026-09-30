@@ -24,6 +24,8 @@ export default defineConfig({
     'test': './src/testArtifact.ts',
     'compatibility': './src/compatibility.ts',
     'eslint': './src/eslint.ts',
+    'doctor': './src/doctor/index.ts',
+    'doctor-worker': './src/doctor/buildWorker.ts',
   },
   dts: true,
   clean: true,
