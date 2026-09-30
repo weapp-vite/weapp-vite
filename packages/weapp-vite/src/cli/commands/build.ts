@@ -19,7 +19,7 @@ import { setCommandNodeEnv } from '../nodeEnv'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from '../runtime'
-import { prepareAutoUploadMetadata, validateAutoUploadMetadata } from '../upload/autoMetadata'
+import { prepareAutoUploadMetadataWithRollback, validateAutoUploadMetadata } from '../upload/autoMetadata'
 import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
 import { resolveBuildUploadOptions } from '../upload/options'
 
@@ -137,6 +137,7 @@ export function registerBuildCommand(cli: CAC) {
       let session: CompilerSession | undefined
       let ctx: CompilerSession['context'] | undefined
       let targets: ReturnType<typeof resolveRuntimeTargets> | undefined
+      let uploadMetadataRollback: (() => Promise<void>) | undefined
       let buildCompleted = false
       let buildFailed = false
       try {
@@ -157,6 +158,11 @@ export function registerBuildCommand(cli: CAC) {
           scope: options.scope,
           inlineConfig: createBuildInlineConfig(options),
         })
+        if (uploadOptions) {
+          const prepared = await prepareAutoUploadMetadataWithRollback(cwd, uploadOptions, 'upload')
+          uploadOptions = prepared.options
+          uploadMetadataRollback = prepared.rollback
+        }
         session = new CompilerSession()
         ctx = await session.initialize({
           cwd,
@@ -170,11 +176,11 @@ export function registerBuildCommand(cli: CAC) {
         })
         targets = resolveConfiguredRuntimeTargets(targets, ctx.configService.options?.sourceConfig?.weapp?.platform)
         if (uploadOptions && !getBackendForCapability(targets, 'miniprogram', 'build')) {
+          await uploadMetadataRollback?.()
+          uploadMetadataRollback = undefined
           throw new Error('--upload 仅支持包含小程序目标的构建，不能用于纯 Web 构建。')
         }
-        if (uploadOptions) {
-          uploadOptions = await prepareAutoUploadMetadata(cwd, uploadOptions, 'upload')
-        }
+        uploadMetadataRollback = undefined
         for (const backend of targets.select('build')) {
           session.onClose(() => backend.driver.close(ctx!))
         }

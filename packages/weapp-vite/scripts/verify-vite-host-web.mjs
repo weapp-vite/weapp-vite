@@ -5,6 +5,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
+import { stripVTControlCharacters } from 'node:util'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费验证需要跨平台原生命令和完整进程清理。
 import { execa } from 'execa'
 import { chromium } from 'playwright'
@@ -116,7 +117,7 @@ export default defineConfig({
         if (operation === 'dev') {
           let url
           await waitFor(() => {
-            url = logs.match(/http:\/\/127\.0\.0\.1:\d+\//)?.[0]
+            url = stripVTControlCharacters(logs).match(/http:\/\/127\.0\.0\.1:\d+\//)?.[0]
             return Boolean(url)
           }, 'dev URL', () => logs)
           const page = await checkPage(url)
