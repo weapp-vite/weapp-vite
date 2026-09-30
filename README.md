@@ -153,3 +153,7 @@ pnpm build:docs
 ## 许可证
 
 本项目基于 MIT License 发布，详见 [LICENSE](LICENSE)。
+
+## AI 改动验收
+
+通过 `wv accept --inspect --json` 检查环境；审阅配置后运行 `wv accept --trust --json`。现有 MCP 同时提供验收启动、状态、取消和报告工具，无需模型 Key。[接入指南](https://vite.weapp.dev/guide/acceptance)。独立 `weapp-agent` CLI 同仓维护并保留原命令。

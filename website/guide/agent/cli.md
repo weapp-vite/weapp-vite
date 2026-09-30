@@ -1,0 +1,48 @@
+---
+title: "CLI 参考"
+description: "交互与自动化使用同一套引擎。"
+sidebar:
+  order: 9
+---
+
+## 命令
+
+| 命令 | 用途 |
+| --- | --- |
+| `weapp-agent` | Ink 终端对话，支持进度、差异与审批 |
+| `init [directory]` | 创建配置；`--create` 新建小程序 |
+| `run <prompt>` | 执行单次任务 |
+| `resume <session> [prompt]` | 继续会话 |
+| `sessions` | 列出当前项目会话 |
+| `doctor` | 检查项目与凭据前提 |
+| `verify` | 独立执行配置中的验证命令，保留旧报告语义 |
+| `accept` | 无模型验收，返回 version 2 报告 |
+| `report <jobId>` | 读取报告并检查源码是否变化 |
+| `mcp` | 启动 stdio 验收服务 |
+| `skill <directory>` | 将随包 Skill 复制到指定的新目录 |
+
+全局参数：`-C` / `--cwd`、`--trust`、`--json`。`run` 和 `resume` 支持 `--image`。终端中按 Esc 取消当前任务，空闲时输入 `/exit` 退出。
+
+## JSON 输出
+
+```bash
+weapp-agent -C ./my-miniapp run "修复首页错误并验证" --json
+```
+
+`run` 和 `resume` 的 stdout 输出 JSONL 事件，包含 `version`、`sessionId`、`sequence`、`timestamp`、`type`、`data`。主要事件为 `run.started`、`text.delta`、`tool.started`、`tool.completed`、`usage`、`context.compacted`、`run.completed`。
+
+启动前错误使用 `{ "version": 1, "type": "error", "data": { "message": "..." } }`；此时尚未创建会话。`doctor`、`verify`、`init` 和 `sessions` 的 JSON 模式各输出一个结果对象。
+
+## 退出码
+
+| 退出码 | 含义 |
+| --- | --- |
+| 0 | 任务完成，或独立检查没有失败 |
+| 1 | 配置、模型或验证失败 |
+| 2 | 需要授权或中断状态核对 |
+| 3 | 达到步骤上限 |
+| 130 | 取消或超时 |
+
+任务完成不等于所有检查通过，请读取验证报告里的类别状态。
+
+`init` 的 `--model` 为可选项；独立 `run` / `resume` 仍需要模型配置。`accept` 仅在报告通过且未过期时返回 0，缺少必需证据或超时返回 1，待授权或中断核对返回 2，取消返回 130。详见[宿主接入与验收](/guide/acceptance)。
