@@ -16,6 +16,8 @@
 
 DMCC 原先用字符串分割截取相对模块 ID，Windows 正斜杠工作根与 `path.resolve` 的反斜杠不一致时会得到 `undefined`。补丁改用 `path.relative` 计算路径，再统一模块分隔符。最小回归使用真实临时小程序，覆盖原生路径、正斜杠路径和末尾分隔符；末尾分隔符在 POSIX 上也可复现同一个错误。
 
+npm `package.json` 入口则属于小程序模块 ID 命名空间。原先用宿主 `path.resolve` 会在 Windows 上引入盘符，导致最近一层 `miniprogram_npm` 的自定义入口丢失。改用 `path.posix.resolve`；保留已有 `require-path-resolution.spec.js` 的最近包优先断言，直接覆盖真实 compiler。文件系统相对路径仍使用原生 API，与模块 ID 分开处理。
+
 ## 独立验证
 
 在此仓库可直接运行：

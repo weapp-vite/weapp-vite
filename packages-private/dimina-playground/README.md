@@ -64,7 +64,7 @@ React 原生组件 bridge 当前只支持可静态分析的页面结构，动态
 
 固定提交缺少泛型与 virtualHost 支持。本实验在 `upstream/patches/component-semantics.patch` 维护源码补丁，不直接修改最终 bundle，也不依赖在线演示资源。
 
-- compiler 使用原生 `path.relative` 计算相对依赖 ID，再统一分隔符，兼容 Windows 正斜杠工作根与尾随分隔符；真实编译路径回归 14 项。
+- compiler 使用原生 `path.relative` 计算相对依赖 ID，再统一分隔符，兼容 Windows 正斜杠工作根与尾随分隔符；npm 自定义入口则按 POSIX 模块 ID 解析，避免 Windows 盘符进入虚拟 ID；真实编译路径回归 14 项。
 - compiler 保留 `componentGenerics` 元数据，并将默认组件加入依赖图；泛型出口使用正常组件渲染路径。
 - render 根据声明上下文解析绑定，按实例保存组件表，在 Vue 安装静态选项后恢复实例表；嵌套转发复用已经解析的绑定。泛型实现的事件仍交回出口声明者，保持属性更新与组件生命周期。
 - service 传递实际 `options.virtualHost`；render 在创建 VNode 时展开编译器宿主，不生成额外宿主 DOM，不在挂载后删除节点。普通组件仍保留宿主。
@@ -81,6 +81,8 @@ setup 每次从干净的固定源码创建独立 `.cache/dimina/build-*` 目录�
 - 原生完整流程、React 状态/列表/组件事件、wevu `v-model`、Bridge 成功/失败、分包返回状态保留、图片、配置缺失、SDK 加载失败及开发重建失败恢复均通过。Worker、iframe 和资源在 `/dimina/` 下实际加载。
 - setup 首次与重复准备、缓存复用、只复制缓存到另一目录后的直接回归、产物缺失/被修改拒绝、Windows Git CRLF 默认值、工具链/补丁/锁/脚本变更失效、补丁失败/构建失败后的恢复、未知修改保留均有验证；工作区工具测试 23 项、构建选择/CI 契约及 Windows planner 回归 21 项、公开依赖图定向单测 12 项及构建生命周期相关 96 项测试通过。
 - lint、stylelint、工作区及 weapp-vite typecheck、实验生产构建通过。首轮独立 CI 暴露 pnpm 版本切换未准备原生可执行文件（Linux/macOS）及补丁 CRLF 与索引不一致（Windows），已按上述工具链与换行边界修复；本地新准备和复用通过，33 个 compiler/SDK 产物摘要与此前 19/19 验收版本一致；这次工具链修复未并发重复浏览器测试，第二轮三平台 SDK 准备均通过，Linux/macOS 随后暴露彩色端口日志无法匹配、Windows 暴露相对模块 ID 的分隔符错误。现已分别加入 ANSI 日志清理和上游路径补丁，新增回归先复现再修复，干净准备与复用、上游 21/21、工具 23/23、lint/typecheck/build 及强制彩色输出下的严格浏览器 19/19 均通过；跨平台修复结果仍以草稿 PR #1104 的 checks 为准；本地结果不代表 Windows/Linux 矩阵或原生宿主验收。
+
+远端 run 36687593287：Linux / Node 22.22.3 与 macOS / Node 24 的准备、构建和浏览器 19/19 均通过。Windows 的新增上游回归进一步发现 npm 自定义入口被宿主路径 API 加入盘符，现改用 POSIX 模块 ID 解析，保留原有最近包优先断言；本次修复后本地干净准备、上游 21/21、工具 23/23、lint/build 及强制彩色日志下浏览器 19/19 通过；Windows 完整验收仍需以修复后 CI 为准。
 
 最小复现：运行 `pnpm e2e:dimina`，或进入 wevu 示例检查具名/作用域插槽；原生首页的“泛型边界测试”提供多实例、默认组件、转发、事件与卸载观察入口。补丁内的 `component-generics.spec.js` 用上游真实编译器和 service/render bridge 构建独立临时小程序，可与上游实现对照。
 

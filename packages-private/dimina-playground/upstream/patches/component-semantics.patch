@@ -36,9 +36,16 @@ index 0000000..47c54a7
 +  })
 +})
 diff --git a/fe/packages/compiler/src/core/logic-compiler.js b/fe/packages/compiler/src/core/logic-compiler.js
-index 284dccb..acb23ed 100644
+index 284dccb..ec81c3d 100644
 --- a/fe/packages/compiler/src/core/logic-compiler.js
 +++ b/fe/packages/compiler/src/core/logic-compiler.js
+@@ -1,5 +1,5 @@
+ import fs from 'node:fs'
+-import { relative, resolve, sep } from 'node:path'
++import { posix, relative, resolve, sep } from 'node:path'
+ import { isMainThread, parentPort } from 'node:worker_threads'
+ import { parseSync } from 'oxc-parser'
+ import { walk } from 'oxc-walker'
 @@ -579,7 +579,7 @@ function isBareModuleSpecifier(specifier) {
  
  function resolveRelativeModuleId(specifier, modulePath) {
@@ -48,6 +55,16 @@ index 284dccb..acb23ed 100644
  	return normalizeModuleId(relativeId)
  }
  
+@@ -626,7 +626,8 @@ function resolveModuleIdToExistingPath(moduleId) {
+ 			const packageInfo = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+ 			for (const entryField of ['miniprogram', 'main']) {
+ 				if (typeof packageInfo[entryField] === 'string' && packageInfo[entryField]) {
+-					const entryModuleId = normalizeModuleId(resolve(normalizedModuleId, packageInfo[entryField]))
++					// 小程序模块 ID 不属于宿主文件系统，不能由 Windows 路径解析器补入盘符。
++					const entryModuleId = normalizeModuleId(posix.resolve(normalizedModuleId, packageInfo[entryField]))
+ 					const resolvedEntry = resolveModuleIdToExistingPath(entryModuleId)
+ 					if (resolvedEntry) {
+ 						return resolvedEntry
 diff --git a/fe/packages/compiler/src/core/view-compiler.js b/fe/packages/compiler/src/core/view-compiler.js
 index 904c96b..dc64cdb 100644
 --- a/fe/packages/compiler/src/core/view-compiler.js
