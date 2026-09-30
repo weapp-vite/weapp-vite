@@ -1,8 +1,13 @@
 ---
 title: "快速开始"
-description: "从源码或打包产物启动你的第一个任务。"
+description: 从已发布 CLI 或 weapp-vite 工作区构建产物启动独立 Agent，配置模型并执行第一个小程序开发任务。
 sidebar:
   order: 1
+keywords:
+  - weapp-agent
+  - 快速开始
+  - 安装
+  - 模型配置
 ---
 
 如果已经使用 Codex 等 AI 工具，优先阅读[无模型接入与验收](/guide/acceptance)。下文介绍需要模型配置的独立 agent 模式。
@@ -25,10 +30,10 @@ weapp-agent --version
 
 ```bash
 git clone https://github.com/weapp-vite/weapp-vite.git
-cd weapp-agent
+cd weapp-vite
 corepack enable
 pnpm install
-pnpm build
+pnpm --filter @weapp-agent/cli... -r build
 pnpm --filter @weapp-agent/cli pack --pack-destination ../../artifacts
 ```
 

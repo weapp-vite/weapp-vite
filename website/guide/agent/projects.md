@@ -1,8 +1,13 @@
 ---
 title: "接入小程序项目"
-description: "识别工程结构并沿用现有技术栈。"
+description: 将独立 Agent 接入现有小程序项目，识别 weapp-vite 与 Wevu 工程结构，沿用脚本、项目指令和技术栈。
 sidebar:
   order: 3
+keywords:
+  - weapp-agent
+  - 小程序工程
+  - weapp-vite
+  - Wevu
 ---
 
 ## 支持范围

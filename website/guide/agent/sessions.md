@@ -1,8 +1,13 @@
 ---
 title: "会话与中断恢复"
-description: "保存上下文，不重复执行副作用。"
+description: 保存和恢复独立 Agent 会话，查看历史事件与任务状态，处理执行中断并避免自动重放有副作用的操作。
 sidebar:
   order: 7
+keywords:
+  - weapp-agent
+  - 会话恢复
+  - 中断
+  - 状态持久化
 ---
 
 ## 查看与恢复

@@ -39,8 +39,8 @@ node scripts/weapp-agent/smoke-baseline.mjs
 ## 宿主验证与远端门禁
 
 - 实际 Codex CLI 宿主完成 inspect → start → status → report → screenshot-1.png；任务 `e4bd74ad-9af1-4ae3-9ceb-3952d97682d0` 为 passed，stale=false，截图计数为 1。宿主只调用工具，未编辑代码。另验证未记录信任时返回 action_required，未执行项目脚本。此结果不代表 Codex 桌面 App UI 的安装验证。
-- Windows/Linux 和 Node 22.12.0 由迁移 CI 矩阵验证；本机结果仅为 macOS。
-- PR 在这些门禁完成前保持 Draft，不自动合并或发布。
+- 远端验收兼容性矩阵已在 Linux、macOS、Windows 全部通过：包构建、typecheck、测试、实际 tarball 安装，以及 Node 20.19.0 / 22.12.0 无模型冒烟。运行记录：[Acceptance and Agent #36688217026](https://github.com/weapp-vite/weapp-vite/actions/runs/36688217026)。本机真实 DevTools 验收仅为 macOS。
+- 本轮修复了迁入页面缺少 SEO 元数据的门禁失败，严格 SEO 检查与网站构建通过。PR 在其余仓库门禁全部通过前保持 Draft，不自动合并或发布。
 
 ## 本次真实运行任务
 

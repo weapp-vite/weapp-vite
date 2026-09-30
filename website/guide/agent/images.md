@@ -1,8 +1,13 @@
 ---
 title: "用参考截图开发"
-description: "把视觉参考带入同一个开发会话。"
+description: 向独立 Agent 会话添加参考截图，说明页面视觉要求，并区分设计参考、运行截图与实际验收证据。
 sidebar:
   order: 5
+keywords:
+  - weapp-agent
+  - 截图
+  - 视觉参考
+  - 图片输入
 ---
 
 ## 添加图片

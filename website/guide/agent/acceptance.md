@@ -3,6 +3,11 @@ title: "在 Codex 等工具中验收改动"
 description: "不配置第二个模型，也能获得小程序构建与运行证据。"
 sidebar:
   order: 2
+keywords:
+  - weapp-agent
+  - 验收场景
+  - Codex
+  - MCP
 ---
 
 Weapp Agent 提供工程检查和可重复的验收流程。Codex 等宿主继续负责理解需求、修改代码和修复失败；验收服务不调用模型、不要求 API Key。

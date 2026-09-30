@@ -1,8 +1,13 @@
 ---
 title: "权限与信任"
-description: "可执行范围由工具层判断。"
+description: 了解独立 Agent 的文件与命令权限、项目脚本信任机制，以及配置和验收场景变化后的重新授权规则。
 sidebar:
   order: 6
+keywords:
+  - weapp-agent
+  - 权限
+  - 项目信任
+  - 授权
 ---
 
 ## 信任项目

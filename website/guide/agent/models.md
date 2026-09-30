@@ -3,6 +3,11 @@ title: "模型与凭据"
 description: "连接 OpenAI、Anthropic 或兼容服务。"
 sidebar:
   order: 2
+keywords:
+  - weapp-agent
+  - OpenAI
+  - Anthropic
+  - 模型凭据
 ---
 
 ## 选择模型

@@ -1,8 +1,13 @@
 ---
 title: "开发与验证流程"
-description: "把代码修改与验证证据串起来。"
+description: 使用独立 Agent 完成代码修改、构建与运行验证，检查验收结论、日志和截图，并根据失败证据修复。
 sidebar:
   order: 4
+keywords:
+  - weapp-agent
+  - 开发流程
+  - 验收
+  - 失败修复
 ---
 
 ## 一次任务

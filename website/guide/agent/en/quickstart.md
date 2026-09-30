@@ -3,6 +3,11 @@ title: "Quickstart"
 description: "An independent coding agent for WeChat mini-programs."
 sidebar:
   order: 12
+keywords:
+  - weapp-agent
+  - quickstart
+  - WeChat mini-program
+  - CLI
 ---
 
 ## Install the preview
@@ -23,10 +28,10 @@ Weapp Agent is an early source preview. Use Node.js 24.15 or newer and pnpm.
 
 ```bash
 git clone https://github.com/weapp-vite/weapp-vite.git
-cd weapp-agent
+cd weapp-vite
 corepack enable
 pnpm install
-pnpm build
+pnpm --filter @weapp-agent/cli... -r build
 node packages/agent-cli/dist/index.mjs --help
 ```
 

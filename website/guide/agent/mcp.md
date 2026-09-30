@@ -1,8 +1,13 @@
 ---
 title: "MCP 与开发者工具"
-description: "复用项目安装的开发能力。"
+description: 了解独立 Agent 如何发现和连接项目 MCP 服务，以及无模型验收服务、工具权限与连接生命周期。
 sidebar:
   order: 8
+keywords:
+  - weapp-agent
+  - MCP
+  - 开发者工具
+  - 工具权限
 ---
 
 ## 对外验收服务

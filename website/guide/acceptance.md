@@ -1,3 +1,14 @@
+---
+title: 小程序改动验收
+description: 使用 wv accept 和现有 MCP 执行无模型验收，管理项目授权、确定性场景与当前代码的截图日志证据。
+keywords:
+  - weapp-vite
+  - 验收
+  - MCP
+  - Codex
+  - weapp-acceptance
+---
+
 # 小程序改动验收
 
 Codex 等宿主负责编辑代码；weapp-vite 执行构建和可重复场景，返回明确结论与截图、日志。无需额外模型 Key。

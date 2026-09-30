@@ -1,8 +1,13 @@
 ---
 title: "CLI 参考"
-description: "交互与自动化使用同一套引擎。"
+description: 查看 weapp-agent 独立 CLI 的命令与选项，配置项目、执行任务、恢复会话并读取验收报告。
 sidebar:
   order: 9
+keywords:
+  - weapp-agent
+  - CLI
+  - 命令行
+  - 验收报告
 ---
 
 ## 命令
