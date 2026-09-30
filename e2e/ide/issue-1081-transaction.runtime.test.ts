@@ -74,6 +74,9 @@ describe('issue #1081: delayed compiler transaction', () => {
       id: state.id,
       route,
       action: `检查 ${state.id} 批次的样式、文本与保留状态`,
+      expectedErrors: state.id === 'failed'
+        ? [{ source: 'build' as const, level: 'error' as const, channel: 'dev-process', text: 'ERROR [weapp-vite] stateful HMR: Build failed with 1 error:', count: 1 }]
+        : [],
       nodes: [
         { selector: '#batch-label', text: state.label },
         { selector: '#increment', text: '1' },
@@ -113,8 +116,10 @@ describe('issue #1081: delayed compiler transaction', () => {
     await dom.check('modules', session, await session.currentPage())
     const committedVersion = await version()
     const committedStyles = await readEmittedStylesheet(stylesheet)
-    await writeFile(source, 'export const label = \'invalid\'\nexport const utility = \'bg-[#abcdef]\'\n// BATCH_FAIL\n')
-    await expect.poll(() => dev!.getOutput(), { timeout: 30_000 }).toContain('issue1081 injected transform failure')
+    await dom.act('failed', async () => {
+      await writeFile(source, 'export const label = \'invalid\'\nexport const utility = \'bg-[#abcdef]\'\n// BATCH_FAIL\n')
+      await expect.poll(() => dev!.getOutput(), { timeout: 30_000 }).toContain('issue1081 injected transform failure')
+    })
     expect(await version()).toBe(committedVersion)
     expect(await readEmittedStylesheet(stylesheet)).toBe(committedStyles)
     await dom.check('failed', session, await session.currentPage())

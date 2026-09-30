@@ -10,10 +10,12 @@
 
 ```sh
 pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/issue-1081-batch-recovery.test.ts
-WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/issue-1081-transaction.runtime.test.ts
-WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/issue-1081-transaction.runtime.test.ts
+WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/issue-1081-transaction.runtime.test.ts
+WEAPP_VITE_E2E_DOM_ACCEPTANCE=1 WEAPP_VITE_E2E_RUNTIME_PROVIDER=devtools pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/issue-1081-transaction.runtime.test.ts
 ```
 
 以上命令必须串行。运行前重建受影响 package 的 dist；真实 DevTools 需要已登录且服务端口可用。suite 仅启动一次 automator，使用已登记的 `pages/index/index` 页面。
+
+严格验收将 `BATCH_FAIL` 的单次构建错误绑定到 `failed` 操作作用域，精确核对来源、通道、文本和次数。日志仍完整保留；其他构建或运行时错误、额外错误、错误未发生或恢复失败均不能通过。
 
 headless 不支持此场景所需的计算样式，所以只验证绑定、协议与生命周期；真实 DevTools 的背景色和文字颜色断言保持启用。mpcore 另有对应单测与浏览器计算样式测试，但不替代真实微信验收。
