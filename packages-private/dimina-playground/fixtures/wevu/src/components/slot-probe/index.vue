@@ -9,3 +9,9 @@ defineProps<{ value: number }>()
     <slot :value="value" />
   </view>
 </template>
+
+<style scoped>
+.slot-probe {
+  color: #123456;
+}
+</style>

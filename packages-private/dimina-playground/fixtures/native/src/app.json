@@ -1,6 +1,7 @@
 {
   "pages": [
-    "pages/index/index"
+    "pages/index/index",
+    "pages/generics/index"
   ],
   "window": {
     "navigationBarTitleText": "Dimina native"

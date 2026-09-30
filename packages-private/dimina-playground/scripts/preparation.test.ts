@@ -1,0 +1,92 @@
+/* eslint-disable e18e/ban-dependencies -- 本地 Git fixture 验证真实补丁准备过程。 */
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import { execa } from 'execa'
+import { afterEach, describe, expect, it } from 'vitest'
+import { upstreamCommit } from '../config'
+import { preparationInputs, preparedRoot } from './preparation'
+import { prepareInstallation } from './prepareSource'
+
+const temporary: string[] = []
+afterEach(async () => {
+  await Promise.all(temporary.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
+})
+async function directory() {
+  const result = await mkdtemp(path.join(os.tmpdir(), 'dimina-preparation-'))
+  temporary.push(result)
+  return result
+}
+async function project() {
+  const root = await directory()
+  await mkdir(path.join(root, 'upstream/patches'), { recursive: true })
+  await mkdir(path.join(root, 'scripts'))
+  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'upstream/patches/components.patch']) {
+    await writeFile(path.join(root, file), file)
+  }
+  return root
+}
+
+describe('SDK preparation boundary', () => {
+  it('rejects absent, malformed, unsafe and stale markers', async () => {
+    const root = await project()
+    const cache = await directory()
+    const { fingerprint } = await preparationInputs(root)
+    for (const value of [null, {}, { commit: upstreamCommit, fingerprint, directory: '../source' }, { commit: 'old', fingerprint, directory: 'build-test' }]) {
+      await writeFile(path.join(cache, 'ready.json'), JSON.stringify(value))
+      await expect(preparedRoot(root, cache)).rejects.toThrow('setup:dimina')
+    }
+    await writeFile(path.join(cache, 'ready.json'), 'invalid JSON')
+    await expect(preparedRoot(root, cache)).rejects.toThrow('setup:dimina')
+    await rm(path.join(cache, 'ready.json'))
+    await expect(preparedRoot(root, cache)).rejects.toThrow('setup:dimina')
+    await writeFile(path.join(cache, 'ready.json'), JSON.stringify({ commit: upstreamCommit, fingerprint, directory: 'build-test' }))
+    expect(await preparedRoot(root, cache)).toBe(path.join(cache, 'build-test'))
+    await writeFile(path.join(root, 'upstream/patches/components.patch'), 'changed')
+    await expect(preparedRoot(root, cache)).rejects.toThrow('stale SDK')
+  })
+
+  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
+    const root = await project()
+    const first = await preparationInputs(root)
+    expect(await preparationInputs(root)).toEqual(first)
+    await writeFile(path.join(root, file), 'changed')
+    expect((await preparationInputs(root)).fingerprint).not.toBe(first.fingerprint)
+  })
+
+  it('prepares clean isolated builds repeatedly and recovers from patch/build failures', async () => {
+    const source = await directory()
+    const cache = await directory()
+    const git = (args: string[]) => execa('git', args, { cwd: source })
+    await git(['init'])
+    await writeFile(path.join(source, 'value.txt'), 'before\n')
+    await git(['add', '.'])
+    await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture'])
+    const commit = (await git(['rev-parse', 'HEAD'])).stdout
+    await writeFile(path.join(source, 'value.txt'), 'after\n')
+    const patch = path.join(cache, 'change.patch')
+    await writeFile(patch, `${(await git(['diff'])).stdout}\n`)
+    await writeFile(path.join(source, 'value.txt'), 'unknown local edit\n')
+    const options = { source, cache, commit, patches: [patch], fingerprint: 'test' }
+    const build = async (directory: string) => {
+      expect(await readFile(path.join(directory, 'value.txt'), 'utf8')).toBe('after\n')
+    }
+    const first = await prepareInstallation(options, build)
+    await writeFile(path.join(first, 'value.txt'), 'previous build local edit\n')
+    const second = await prepareInstallation(options, build)
+    expect(second).not.toBe(first)
+    expect(await readFile(path.join(source, 'value.txt'), 'utf8')).toBe('unknown local edit\n')
+    expect(await readFile(path.join(first, 'value.txt'), 'utf8')).toBe('previous build local edit\n')
+    await expect(prepareInstallation(options, async () => {
+      throw new Error('failed build')
+    })).rejects.toThrow('failed build')
+    await expect(readFile(path.join(cache, 'ready.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+    const goodPatch = await readFile(patch)
+    await writeFile(patch, 'invalid patch')
+    await expect(prepareInstallation(options, build)).rejects.toThrow()
+    await expect(readFile(path.join(cache, 'ready.json'))).rejects.toMatchObject({ code: 'ENOENT' })
+    await writeFile(patch, goodPatch)
+    const recovered = await prepareInstallation(options, build)
+    expect(JSON.parse(await readFile(path.join(cache, 'ready.json'), 'utf8'))).toEqual({ commit, fingerprint: 'test', directory: path.basename(recovered) })
+  })
+})

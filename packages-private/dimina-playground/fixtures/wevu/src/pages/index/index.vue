@@ -15,7 +15,10 @@ const input = ref('initial')
     <text>输入：{{ input }}</text>
     <SlotProbe :value="count">
       <template #header><text>具名插槽</text></template>
-      <template #default="scope"><text>作用域值：{{ scope.value }}</text></template>
+      <template #default="scope">
+        <text>作用域值：{{ scope.value }}</text>
+        <button @tap="count++">插槽加一</button>
+      </template>
     </SlotProbe>
   </view>
 </template>

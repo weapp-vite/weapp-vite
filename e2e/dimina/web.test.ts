@@ -47,7 +47,7 @@ for (const mode of ['preview', 'dev'] as const) {
           text: (await frame.locator('body').textContent().catch(() => '') ?? '').replace(/\s+/g, ' ').slice(0, 2000),
         })))
         // eslint-disable-next-line no-console -- 保留真实 iframe 的失败诊断，不把主线程当作小程序 runtime。
-        console.error({ example, mode, errors, consoleErrors, frames })
+        console.error({ example, mode, errors, consoleErrors, frames, hostLogs: host.logs().slice(-6000) })
         throw error
       }
       finally {
@@ -100,6 +100,9 @@ for (const mode of ['preview', 'dev'] as const) {
         await visible(page, '作用域值：0')
         await content(page).getByText('wevu 加一', { exact: true }).click()
         await visible(page, '作用域值：1')
+        await content(page).getByText('插槽加一', { exact: true }).click()
+        await visible(page, '作用域值：2')
+        await visible(page, 'wevu 计数：2')
       })
     })
 
@@ -107,6 +110,34 @@ for (const mode of ['preview', 'dev'] as const) {
       await withPage('wevu', async (page) => {
         await visible(page, 'wevu 计数：0')
         await expect.poll(() => content(page).locator('.slot-probe').evaluate(element => element.parentElement?.hasAttribute('data-dd-component-host'))).toBe(false)
+        await expect.poll(() => content(page).locator('.slot-probe').evaluate(element => getComputedStyle(element).color)).toBe('rgb(18, 52, 86)')
+      })
+    })
+
+    it('isolates generic instances, defaults, forwarding, events and virtualHost cleanup', async () => {
+      await withPage('native', async (page) => {
+        await visible(page, '原生计数：0')
+        await content(page).getByText('泛型边界测试', { exact: true }).click()
+        await visible(page, '泛型边界')
+        await expect.poll(() => content(page).locator('.generic-alpha').count()).toBe(2)
+        await visible(page, 'beta:1')
+        await visible(page, 'fallback:1')
+        await content(page).getByText('选择 alpha', { exact: true }).first().click()
+        await visible(page, '事件归属：first:alpha:1')
+        await content(page).getByText('选择 beta', { exact: true }).click()
+        await visible(page, '事件归属：second:beta:1')
+        await content(page).getByText('选择 alpha', { exact: true }).last().click()
+        await visible(page, '事件归属：forwarded:alpha:1')
+        await content(page).getByText('更新泛型属性', { exact: true }).click()
+        await visible(page, 'beta:2')
+        await visible(page, 'fallback:2')
+        await expect.poll(() => content(page).getByText('alpha:2', { exact: true }).count()).toBe(2)
+        expect(await content(page).locator('.generic-alpha').first().evaluate(element => element.parentElement?.hasAttribute('data-dd-component-host'))).toBe(true)
+        expect(await content(page).locator('[name="/components/generic-outlet/index"]').count()).toBe(0)
+        await content(page).getByText('移除首个实例', { exact: true }).click()
+        await expect.poll(() => content(page).locator('.generic-alpha').count()).toBe(1)
+        await content(page).getByText('读取卸载次数', { exact: true }).click()
+        await visible(page, '卸载次数：1')
       })
     })
 

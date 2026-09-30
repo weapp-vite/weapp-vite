@@ -1,9 +1,13 @@
+import { createStatusReporter } from './status'
 import './style.css'
 
 const base = import.meta.env.BASE_URL
 const params = new URLSearchParams(location.search)
 const example = params.get('example') ?? 'native'
 const status = document.querySelector<HTMLElement>('#status')!
+const reporter = createStatusReporter(example, (message) => {
+  status.textContent = message
+})
 const allowed = ['native', 'wevu', 'react']
 const sdkUrl = `${base}dimina-sdk/index.js`
 const css = document.createElement('link')
@@ -31,17 +35,15 @@ async function launch() {
       },
     },
     onAppLaunchError(error: Error) {
-      status.textContent = `启动失败：${error.message}`
+      reporter.launchFailed(error.message)
     },
   })
   await container.openApp({ appId: 'wxb3d842a4a7e3440d', path: 'pages/index/index' })
-  if (!status.textContent?.startsWith('启动失败')) {
-    status.textContent = `${example} 示例已打开`
-  }
+  reporter.opened()
 }
 void launch().catch((error: unknown) => {
-  status.textContent = `启动失败：${String(error)}`
+  reporter.launchFailed(String(error))
 })
 import.meta.hot?.on('dimina:error', ({ message }: { message: string }) => {
-  status.textContent = `构建失败：${message}`
+  reporter.buildFailed(message)
 })

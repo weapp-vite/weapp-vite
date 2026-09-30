@@ -1,0 +1,1 @@
+<view class="generic-outlet"><item value="{{value}}" bindpick="selected" /></view>

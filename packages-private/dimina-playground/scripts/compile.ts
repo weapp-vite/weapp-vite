@@ -3,14 +3,12 @@ import { cp, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
-import { appId, cacheRoot, examples, root, upstreamCommit, upstreamRoot } from '../config'
+import { appId, examples, root } from '../config'
 import { collectAssets } from './assets'
+import { preparedRoot } from './preparation'
 
 export async function compileResources() {
-  const ready = await readFile(path.join(cacheRoot, 'ready.json'), 'utf8').catch(() => '')
-  if (!ready || (JSON.parse(ready) as { commit?: string }).commit !== upstreamCommit) {
-    throw new Error('Run pnpm --filter @weapp-vite/dimina-playground setup:dimina first.')
-  }
+  const upstreamRoot = await preparedRoot()
   const { createCompilerContext } = await import('weapp-vite')
   const assets = await collectAssets(path.join(upstreamRoot, 'fe/packages/container-sdk/dist'), 'dimina-sdk/')
   const mittPath = import.meta.resolve('mitt')
@@ -37,7 +35,7 @@ export async function compileResources() {
       const output = path.join(stage, example, 'dimina')
       await execa(process.execPath, ['--import', 'tsx', path.join(root, 'scripts/dmcc.ts'), output, artifact.miniprogramRootPath], {
         cwd: root,
-        env: { ASSETS_PATH_PREFIX: '1' },
+        env: { ASSETS_PATH_PREFIX: '1', DIMINA_PREPARED_ROOT: upstreamRoot },
         stdio: 'inherit',
       })
       for (const [name, content] of await collectAssets(output, `miniapps/${example}/`)) {
