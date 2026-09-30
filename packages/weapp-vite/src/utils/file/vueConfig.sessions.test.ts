@@ -32,6 +32,9 @@ defineAppJson({ pages: routes.pages })
     ])
     expect(await extractConfigFromVue(file, { compilerContext: first })).toEqual(results[0])
     expect(await extractConfigFromVue(file, { compilerContext: second })).toEqual(results[1])
+    first.autoRoutesService!.getReference = () => ({ pages: ['pages/replaced/index'], entries: [], subPackages: [] })
+    expect(await extractConfigFromVue(file, { compilerContext: first })).toEqual({ pages: ['pages/replaced/index'] })
+    expect(await extractConfigFromVue(file, { compilerContext: second })).toEqual(results[1])
   }
   finally {
     await fs.rm(root, { recursive: true, force: true })

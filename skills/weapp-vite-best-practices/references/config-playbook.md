@@ -47,3 +47,5 @@ export default defineConfig({
 - 最终产物约束使用 `weapp.wxml.validate(code, ctx)`，支持同步／异步和顺序数组；它在 transform/remove 和框架输出插件之后、HMR 比较及发布之前执行，不修改源码。
 - 使用 `await ctx.walk(node => { ... })` 观察只读节点，以 `ctx.report({ severity: 'warning' | 'error', message, code?, location? })` 报告结果；warning 允许发布，error 汇总后阻止输出。回调只能返回 undefined，不能返回模板字符串或 null。
 - 校验位置是最终模板位置，`rawValue` 是原始绑定内容；不要把动态绑定当运行时值。外部规则读取前登记 `addWatchFile`，转换与校验共享监听但分别维护依赖；独立分包校验不在主包重复执行。
+
+自动路由仅选择 Vue/TSX 入口时可设置 `autoRoutes: { extensions: ['vue', 'tsx'] }`。`include` 仍匹配无扩展名路径；空扩展名列表保留默认行为。所选页面的配套资源及显式业务导入仍参与构建。

@@ -10,11 +10,11 @@ export interface ResolvedEntryRecord {
   resolvedId: ResolvedId | null
 }
 
-export function createEntryResolver(configService?: { isDev?: boolean }) {
+export function createEntryResolver(configService?: { isDev?: boolean }, selectSource?: (base: string) => string | undefined) {
   const entryResolutionCache = new Map<string, ResolvedId | null>()
 
   async function resolveEntryWithCache(pluginCtx: PluginContext, absPath: string) {
-    const normalized = path.normalize(absPath)
+    const normalized = path.normalize(selectSource?.(absPath) ?? absPath)
     if (entryResolutionCache.has(normalized)) {
       return entryResolutionCache.get(normalized) ?? null
     }

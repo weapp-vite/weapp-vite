@@ -6,6 +6,7 @@ import {
 } from '@weapp-core/constants'
 import { resolveAutoRoutesAliasTargets } from '../../../runtime/autoRoutesPlugin/shared'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { ENTRY_GRAPH_CHANGE_REASON } from '../../hooks/useLoadEntry/entryChunkLifecycle'
 import { invalidateFileCache } from '../../utils/cache'
 
 /**
@@ -50,5 +51,7 @@ export function markAppEntryForAutoRoutesTopology(ctx: MutableCompilerContext, o
   }
 
   options.markEntryDirty(appEntryId, 'direct')
+  // 路由入口增删应先冻结旧 DevEngine 图，不依赖后续加载已删除页面成功。
+  ctx.onStatefulHmrSourceChange?.(appEntryId, [ENTRY_GRAPH_CHANGE_REASON])
   return true
 }

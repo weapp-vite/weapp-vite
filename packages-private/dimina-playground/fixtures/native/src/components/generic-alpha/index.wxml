@@ -1,0 +1,1 @@
+<view class="generic-alpha"><text>alpha:{{value}}</text><button bindtap="choose">选择 alpha</button></view>

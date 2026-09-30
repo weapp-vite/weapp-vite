@@ -3,6 +3,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
+import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
 import {
   resolveRequestRuntimeOptions,
 } from '../../../../runtime/config/internal/injectRequestGlobals'
@@ -170,7 +171,9 @@ export function createLoadHook(state: CorePluginState) {
         })
       }
       const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
-      const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
+      const selectedPageSource = getSelectedAutoRouteSource(ctx, sourceId)
+      const isSelectedPageSource = !selectedPageSource || selectedPageSource === sourceId
+      const declaredEntryType = isSelectedPageSource ? state.entriesMap?.get(relativeBasename)?.type : undefined
       const isDeclaredEntry = Boolean(declaredEntryType)
 
       const shouldCheckDeletedDeclaredEntry = configService.isDev
@@ -234,7 +237,7 @@ export function createLoadHook(state: CorePluginState) {
         return result
       }
 
-      if (loadedEntrySet.has(sourceId) || isDeclaredEntry || subPackageMeta?.entries.includes(relativeBasename)) {
+      if (loadedEntrySet.has(sourceId) || isDeclaredEntry || (isSelectedPageSource && subPackageMeta?.entries.includes(relativeBasename))) {
         const loadType = declaredEntryType === 'page' ? 'page' : 'component'
         // @ts-ignore Rolldown 的 PluginContext 类型不完整
         const result = await loadProfiledEntry(this, sourceId, loadType)

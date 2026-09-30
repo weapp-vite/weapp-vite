@@ -1,9 +1,14 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getCiFullTasks, getCiPrTasks, getCiTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
+import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it('registers Dimina as an explicit suite outside the ordinary Web baseline', async () => {
+    expect(await getSuiteTasks('dimina')).toEqual(getDiminaTasks())
+    expect(getWebTasks().some(task => task.label.includes('dimina'))).toBe(false)
+  })
+
   it('runs external CSS file HMR in DevTools without advertising unsupported headless file watching', async () => {
     const label = 'ide/issue-1015-css-hmr.runtime.test.ts'
     expect((await getSuiteTasks('ide-full:github-issues')).filter(task => task.label === label)).toHaveLength(1)
@@ -19,6 +24,7 @@ describe('e2e suite manifest', () => {
     'ide/github-issues.runtime.issue1035.test.ts',
     'ide/github-issues.runtime.feature1087.test.ts',
     'ide/issue-963-plugin-es6.runtime.test.ts',
+    'ide/issue-1074-doctor.runtime.test.ts',
     'ide/issue-998-tailwind.runtime.test.ts',
     'ide/body-blob.runtime.test.ts',
     'ide/stream-capability.runtime.test.ts',
@@ -27,6 +33,8 @@ describe('e2e suite manifest', () => {
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',
+    'ide/issue-1034-auto-routes.runtime.test.ts',
+    'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
     'ide/issue-1072-json-context.runtime.test.ts',
     'ide/wxml-transform.runtime.test.ts',
     'ide/template-retail-checkout.runtime.test.ts',

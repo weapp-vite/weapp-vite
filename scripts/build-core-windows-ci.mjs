@@ -18,6 +18,7 @@ const workspaceRoots = [
 
 const excludedPackages = new Set([
   '@weapp-vite/sfc-playground',
+  '@weapp-vite/dimina-playground',
 ])
 const WINDOWS_DLL_INITIALIZATION_FAILURE_CODES = new Set([
   -1073741502,
@@ -67,7 +68,7 @@ function getWorkspaceDependencies(packageJson) {
     .map(([name]) => name)
 }
 
-function createBuildPlan() {
+export function createBuildPlan() {
   const packages = new Map()
 
   for (const packageDir of discoverPackageDirs()) {
@@ -141,38 +142,44 @@ function createPnpmInvocation() {
   }
 }
 
-const pnpmInvocation = createPnpmInvocation()
-const buildPlan = createBuildPlan()
+function main() {
+  const pnpmInvocation = createPnpmInvocation()
+  const buildPlan = createBuildPlan()
 
-console.log(`Windows CI core build plan: ${buildPlan.length} packages`)
+  console.log(`Windows CI core build plan: ${buildPlan.length} packages`)
 
-for (const [index, packageInfo] of buildPlan.entries()) {
-  const label = `[${index + 1}/${buildPlan.length}] ${packageInfo.name}`
-  console.log(`\n${label}`)
+  for (const [index, packageInfo] of buildPlan.entries()) {
+    const label = `[${index + 1}/${buildPlan.length}] ${packageInfo.name}`
+    console.log(`\n${label}`)
 
-  const buildArgs = [...pnpmInvocation.args, '--filter', packageInfo.name, 'build']
-  let result = spawnSync(pnpmInvocation.command, buildArgs, {
-    cwd: repoRoot,
-    env: process.env,
-    shell: process.platform === 'win32',
-    stdio: 'inherit',
-  })
-
-  // Windows runner 偶发在启动 Node 原生 DLL 时失败；只对该系统错误重试一次。
-  if (WINDOWS_DLL_INITIALIZATION_FAILURE_CODES.has(result.status ?? 0)) {
-    console.warn(`${label} hit a Windows DLL initialization failure; retrying once`)
-    result = spawnSync(pnpmInvocation.command, buildArgs, {
+    const buildArgs = [...pnpmInvocation.args, '--filter', packageInfo.name, 'build']
+    let result = spawnSync(pnpmInvocation.command, buildArgs, {
       cwd: repoRoot,
       env: process.env,
       shell: process.platform === 'win32',
       stdio: 'inherit',
     })
-  }
 
-  if (result.error) {
-    throw result.error
+    // Windows runner 偶发在启动 Node 原生 DLL 时失败；只对该系统错误重试一次。
+    if (WINDOWS_DLL_INITIALIZATION_FAILURE_CODES.has(result.status ?? 0)) {
+      console.warn(`${label} hit a Windows DLL initialization failure; retrying once`)
+      result = spawnSync(pnpmInvocation.command, buildArgs, {
+        cwd: repoRoot,
+        env: process.env,
+        shell: process.platform === 'win32',
+        stdio: 'inherit',
+      })
+    }
+
+    if (result.error) {
+      throw result.error
+    }
+    if (result.status !== 0) {
+      process.exit(result.status ?? 1)
+    }
   }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1)
-  }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main()
 }

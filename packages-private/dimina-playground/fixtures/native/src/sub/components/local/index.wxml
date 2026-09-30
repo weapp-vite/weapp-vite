@@ -1,0 +1,1 @@
+<view class="subpackage-generic">分包泛型：{{value}}</view><button bindtap="pick">选择分包泛型</button>

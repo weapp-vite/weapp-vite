@@ -7,16 +7,14 @@ import { isDeepStrictEqual } from 'node:util'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { extractPageDeclarationWithDependencies } from 'wevu/compiler'
-import { scriptExtensions, vueExtensions } from '../../../constants'
 import { resolveImportee } from '../../../utils/json'
 import { toPosixPath } from '../../../utils/path'
 import { applyBuildScopeToAutoRoutes, resolveBuildScope } from '../../buildScope'
 import { normalizeAliasOptions } from '../../config/internal/alias'
+import { selectPageSources, selectRouteCandidate } from '../selection'
 import { createAutoRoutesArtifacts, createAutoRoutesSourceFingerprint } from '../service/shared'
 import { resolveAutoRoutesMatcherContext } from '../shared'
 import { resolveRoute } from './resolve'
-
-const PAGE_SOURCE_EXTENSIONS = [...scriptExtensions, ...vueExtensions]
 
 export interface ScanResult {
   snapshot: AutoRoutes
@@ -108,9 +106,7 @@ function resolvePageDeclarationAliases(ctx: MutableCompilerContext) {
 }
 
 function resolveCandidatePageSources(ctx: MutableCompilerContext, candidate: CandidateEntry) {
-  const sourceFiles = PAGE_SOURCE_EXTENSIONS
-    .map(extension => `${candidate.base}.${extension}`)
-    .filter(sourceFile => candidate.files.has(sourceFile))
+  const sourceFiles = selectPageSources(candidate)
   const nativeSource = sourceFiles[0]
   if (!nativeSource) {
     return []
@@ -252,6 +248,7 @@ export function createAutoRoutesTopologyKey(
   }))
   return JSON.stringify({
     buildScope: resolveBuildScope(configService.weappViteConfig.buildScope),
+    extensions: resolveAutoRoutesMatcherContext(ctx).autoRoutesConfig.extensions,
     webSiblingValidation: configService.weappWebConfig?.enabled === true,
     pageDeclarationAliases,
     candidates,
@@ -272,7 +269,7 @@ export async function scanRoutes(
   }
 
   const absoluteSrcRoot = configService.absoluteSrcRoot
-  const { matcher, subPackageRoots } = resolveAutoRoutesMatcherContext(ctx)
+  const { matcher, subPackageRoots, autoRoutesConfig } = resolveAutoRoutesMatcherContext(ctx)
   const pagesSet = new Set<string>()
   const entriesSet = new Set<string>()
   const subPackages = new Map<string, Set<string>>()
@@ -318,8 +315,9 @@ export async function scanRoutes(
 
     watchDirs.add(path.dirname(candidate.base))
 
+    const selected = selectRouteCandidate(candidate, autoRoutesConfig.extensions)
     const json = jsonMap.get(candidate)
-    if (!shouldIncludeScanCandidate(candidate, json, route)) {
+    if (!selected || !shouldIncludeScanCandidate(selected, json, route)) {
       continue
     }
 
@@ -332,7 +330,7 @@ export async function scanRoutes(
     else {
       pagesSet.add(route.pagePath)
     }
-    includedCandidates.push({ candidate, entry: route.entry })
+    includedCandidates.push({ candidate: selected, entry: route.entry })
   }
 
   for (const dir of matcher.getWatchRoots(absoluteSrcRoot)) {

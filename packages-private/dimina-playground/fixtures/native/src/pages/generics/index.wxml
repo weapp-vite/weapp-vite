@@ -1,0 +1,13 @@
+<view>
+  <text>泛型边界</text>
+  <button bindtap="increment">更新泛型属性</button>
+  <button bindtap="remove">移除首个实例</button>
+  <button bindtap="restore">恢复首个实例</button>
+  <button bindtap="capture">读取卸载次数</button>
+  <text>事件归属：{{selected}}</text>
+  <text>卸载次数：{{detached}}</text>
+  <outlet wx:if="{{show}}" generic:item="alpha" value="{{value}}" bindpick="first" />
+  <outlet generic:item="beta" value="{{value}}" bindpick="second" />
+  <outlet value="{{value}}" />
+  <forward generic:item="alpha" value="{{value}}" bindpick="forwarded" />
+</view>

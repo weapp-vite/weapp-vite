@@ -1,0 +1,13 @@
+page {
+padding: 24rpx;
+color: #17212d;
+}
+
+button {
+margin-top: 16rpx;
+}
+
+text {
+display: block;
+margin-bottom: 12rpx;
+}

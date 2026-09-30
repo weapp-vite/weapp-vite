@@ -15,6 +15,7 @@ import {
 import { normalizeSourceId } from '../../../moduleGraph/traversal'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry, isTemplate } from '../../../utils'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { collectComponentEntries } from '../../utils/analyze'
 import { pathExists as pathExistsCached } from '../../utils/cache'
 
 function resolveEntryRecord(state: CorePluginState, sourceId: string) {
@@ -47,21 +48,14 @@ async function resolveLocalModule(
   }
 }
 
-async function collectUsingComponentDependencies(
+async function collectComponentDependencies(
   state: CorePluginState,
   pluginContext: PluginContext,
   ownerId: string,
   json: unknown,
 ) {
-  if (!json || typeof json !== 'object' || !('usingComponents' in json)) {
-    return []
-  }
-  const usingComponents = json.usingComponents
-  if (!usingComponents || typeof usingComponents !== 'object' || Array.isArray(usingComponents)) {
-    return []
-  }
   const dependencies: LogicalEntryDependency[] = []
-  for (const value of Object.values(usingComponents)) {
+  for (const value of collectComponentEntries(json)) {
     if (typeof value !== 'string' || !value || value.includes('://')) {
       continue
     }
@@ -144,7 +138,7 @@ async function collectLogicalEntryDependencies(
     await state.ctx.wxmlService?.scan(templatePath)
   }
   dependencies.push(...collectTemplateDependencies(state, templatePath))
-  dependencies.push(...await collectUsingComponentDependencies(state, pluginContext, ownerId, entry?.json))
+  dependencies.push(...await collectComponentDependencies(state, pluginContext, ownerId, entry?.json))
   for (const kind of ['json', 'layout', 'script', 'style', 'template', 'using-component', 'wxs'] as const) {
     state.ctx.moduleGraphService.replaceEntryDependencies(
       ownerId,

@@ -1,0 +1,9 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/list/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Dimina react"
+  }
+}

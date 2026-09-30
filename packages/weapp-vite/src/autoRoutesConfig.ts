@@ -5,6 +5,7 @@ export interface ResolvedWeappAutoRoutesConfig {
   enabled: boolean
   typedRouter: boolean
   include: Array<string | RegExp>
+  extensions?: string[]
   persistentCache: boolean
   persistentCachePath?: string
   watch: boolean
@@ -33,6 +34,7 @@ export function resolveWeappAutoRoutesConfig(config?: boolean | WeappAutoRoutesC
       : Array.isArray(record.include)
         ? [...record.include]
         : [record.include],
+    ...(record.extensions?.length ? { extensions: [...new Set(record.extensions.map(extension => extension.replace(/^\./, '')))] } : {}),
     persistentCache: typeof record.persistentCache === 'string' || record.persistentCache === true,
     persistentCachePath: typeof record.persistentCache === 'string'
       ? record.persistentCache

@@ -1,0 +1,1 @@
+<view class="generic-fallback"><text>fallback:{{value}}</text><button bindtap="choose">选择 fallback</button></view>

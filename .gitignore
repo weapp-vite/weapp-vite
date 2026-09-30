@@ -109,9 +109,11 @@ website/public/seo-quality-report.json
 # simulator browser test artifacts
 mpcore/packages/simulator/e2e/__screenshots__/
 
+# Reproducible external source/build caches
+/.cache/
+docs/reports/*-e2e-dimina-*-suite-report/
+
 # Local acceptance fixtures and evidence
-/.cache/acceptance-fixtures/
-/.cache/acceptance-state/
 /artifacts/
 
 # Generated runtime DOM evidence; upload as CI artifacts instead.
