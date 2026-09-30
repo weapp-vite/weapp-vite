@@ -106,6 +106,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
 - 小程序单测不使用 jsdom；`@mpcore/test` 只暴露逻辑 WXML 树。测试产物必须通过 `weapp-vite/test` 交给 Vite/Rolldown emit，不能由适配器手写 bundle。
 - uni-app 兼容层默认关闭，只转换项目源码与 `include` 白名单依赖；Wot UI 与 uview-plus 分别以 `@wot-ui/ui@2.2.0`、`uview-plus@3.8.86` 的 npm 发布包 SFC 清单为兼容基线，不把它们泛化成完整 uni-app runtime。
 - 分包、插件、worker 和 lib mode 的性能判断都先看产物结构与 `wv analyze`，再改 chunk/shared 策略。
+- 第三方 `compilerPlugins` 的源码依赖通过转换结果的 `dependencies` 或该次异步转换内的 `context.addWatchFile` 声明；开发快照结束不代表 controller 会话结束。状态保持批次读取 `request.sources` 冻结视图，产物仍由 Vite/Rolldown 写出。完整验收要区分产物、JS 补丁和真实 IDE 计算样式。
 - 主包共享样式优先使用 `weapp.styles` 保持独立产物；默认排除 app，只有显式 `include: 'app.vue'` 等应用入口时才注入 `app.wxss`；`inject: false` 只 emit，独立分包必须通过自己的 `subPackages.<root>.styles` 持有副本。
 - 内置 i18n v1 只支持 `{name}` / `{user.name}` 插值，不提供 ICU、复数、日期/数字格式化或自动 storage 持久化；非微信平台不要启用。
 

@@ -178,6 +178,9 @@ function createProviderPlugin(
       return null
     },
     async transform(code, id) {
+      for (const dependency of ctx.moduleGraphService.getTransformDependencies?.(id) ?? []) {
+        this.addWatchFile(dependency)
+      }
       if (!id.endsWith('.vue')) {
         return null
       }

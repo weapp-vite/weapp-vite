@@ -236,6 +236,8 @@ export default defineConfig({
 
 provider 的状态由 provider 自己维护，host 负责插件顺序、源码所有权冲突、依赖监听和产物生命周期。`weapp.tailwindcss` 仍然是内置 Tailwind adapter 的兼容门面；UnoCSS 等实现可以独立包的形式提供同一协议。
 
+源码转换的 `dependencies` 与该次转换内的 `context.addWatchFile(id)` 共同声明依赖；成功转换后替换该源码的依赖集合，由 Vite 的模块图传播失效。开发快照写出结束不会提前释放 controller，所属开发会话结束时只调用一次 `dispose`。状态保持 HMR 将已声明依赖的新增、修改、删除纳入冻结输入，provider 应读取 `request.sources`，不能读取后续保存的可变文件。
+
 微信状态保持 HMR 使用可选的 `controller.prepareHmr(request)` 协作：输入提供 `revision`、`changedFiles` 与固定的 `sources` 内容视图，返回本批次的 `assets`、`transformJavaScript`、依赖信息和资源释放方法。资产路径相对于输出目录；所有 Patch 共用该批次的编译状态。宿主通过 Vite/Rolldown 提交资产后才发布补丁，并在客户端执行回报后通知 DevEngine。开启 sourcemap 时，修改代码的转换必须同时返回映射。没有批次接口的内容 provider 使用完整构建回退。
 
 共享协议由实验包 `@weapp-vite/hmr` 提供，Tailwind 控制器委托 `@weapp-vite/tailwindcss` 和 `weapp-tailwindcss/core`。两个包均不创建 DevEngine、watcher 或直接写出产物，框架与宿主运行时仍由适配器拥有；现有配置和 `prepareHmr` 类型兼容。Taro 的实验适配保留其持久发布与应用确认两阶段，不改变 weapp-vite 在应用确认后通知 DevEngine 的语义。
