@@ -35,6 +35,7 @@ export class StatefulHmrTransport {
   private confirmationChain: Promise<void> = Promise.resolve()
   private publishedVersion = 0
   private executedVersion = 0
+  private clientExecutedVersion = 0
   private initialPayloads = new Map<string, () => Promise<void>>()
   private readonly initializedSessions = new Set<string>()
   private readonly executions = new Map<number, {
@@ -84,14 +85,15 @@ export class StatefulHmrTransport {
     this.executions.clear()
     this.publishedVersion = 0
     this.executedVersion = 0
+    this.clientExecutedVersion = 0
   }
 
   private async acknowledge(body: ClientReport): Promise<void> {
     if (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId
-      || !Number.isInteger(body.version) || body.version > this.publishedVersion
-      || body.version !== this.state.inFlight?.targetVersion) {
+      || !Number.isInteger(body.version) || body.version < 0 || body.version > this.publishedVersion) {
       return
     }
+    // 执行账本属于构建宿主；IDE 重建客户端会清除传输 inFlight，但不能丢弃待确认执行。
     const buildId = this.state.buildId
     for (const [version, execution] of [...this.executions]) {
       if (version > body.version) {
@@ -104,6 +106,9 @@ export class StatefulHmrTransport {
       this.executions.delete(version)
       this.executedVersion = Math.max(this.executedVersion, version)
       execution.resolve()
+    }
+    if (body.sessionId === this.state.activeSessionId) {
+      this.clientExecutedVersion = Math.max(this.clientExecutedVersion, body.version)
     }
   }
 
@@ -197,7 +202,7 @@ export class StatefulHmrTransport {
         version: body.version,
       })
       if (this.state.activeSessionId !== previousSession) {
-        this.executedVersion = 0
+        this.clientExecutedVersion = 0
       }
       if (commands.some(command => command.type === 'request-full-build')) {
         this.requestFullBuild()
@@ -216,6 +221,13 @@ export class StatefulHmrTransport {
         acknowledgement: 'explicit-v1',
         ...(body.initialReady !== undefined ? { ready: this.initializedSessions.has(body.sessionId) } : {}),
       })
+      return
+    }
+    // 宿主可在 writeBundle 返回前执行已写出的补丁。发布尚未完成时，
+    // 保留 inFlight，避免 client-reported 提前清除执行确认所需的状态。
+    if (body.buildId === this.state.buildId && body.sessionId === this.state.activeSessionId
+      && body.version > this.publishedVersion && body.version === this.state.inFlight?.targetVersion) {
+      respond(response, 202, { type: 'publishing' })
       return
     }
     if (body.action === 'ack' && (body.buildId !== this.state.buildId || body.sessionId !== this.state.activeSessionId
@@ -248,7 +260,7 @@ export class StatefulHmrTransport {
       return
     }
     if (body.buildId === this.state.buildId && body.sessionId === this.state.activeSessionId
-      && Number.isInteger(body.version) && body.version >= 0 && body.version < this.executedVersion) {
+      && Number.isInteger(body.version) && body.version >= 0 && body.version < this.clientExecutedVersion) {
       respond(response, 200, { type: 'changed' })
       return
     }
