@@ -22,9 +22,9 @@ export function isBundledDtsEntry(entryPath: string) {
 
 function getStubContent(entryPath: string) {
   if (entryPath.endsWith('.vue')) {
-    return 'declare const _default: any\\nexport default _default\\n'
+    return 'declare const _default: any\nexport default _default\n'
   }
-  return 'export {}\\n'
+  return 'export {}\n'
 }
 
 export async function ensureStub(entry: ResolvedWeappLibEntry, outDir: string) {

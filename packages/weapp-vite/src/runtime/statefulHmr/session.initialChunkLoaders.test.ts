@@ -1,7 +1,8 @@
-import type { InlineConfig, Plugin } from 'vite'
+import type { InlineConfig } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import type { StatefulHmrViteAdapter } from './viteAdapter'
+import { EventEmitter } from 'node:events'
 import { tmpdir } from 'node:os'
 import { runInNewContext } from 'node:vm'
 import path from 'pathe'
@@ -34,6 +35,7 @@ vi.mock('./viteAdapter', () => ({
     }
 
     install() {}
+    async close() {}
     async registerBundleModules() { return 1 }
   },
 }))
@@ -70,6 +72,7 @@ describe('stateful session initial chunk package boundaries', () => {
           server: {},
           logger: { info: vi.fn(), error: vi.fn() },
         },
+        watcher: Object.assign(new EventEmitter(), { add: vi.fn() }),
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
         close: vi.fn(),
@@ -79,9 +82,6 @@ describe('stateful session initial chunk package boundaries', () => {
           await harness.callbacks!.waitForInitialBundle()
         },
       }
-      const plugin = options.plugins?.find(value => value && 'name' in value && value.name === 'weapp-vite:stateful-hmr-session') as Plugin
-      const configure = plugin.configureServer as (server: unknown) => void
-      configure(server)
       return server
     })
   })

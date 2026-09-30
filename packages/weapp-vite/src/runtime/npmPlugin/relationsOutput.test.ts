@@ -1,15 +1,16 @@
 import type { MutableCompilerContext } from '../../context'
+import type { MpPlatform } from '../../types'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { getPackNpmRelationList } from './relations'
 
-function createContext(outputDirectory: string, manualDirectory?: string) {
+function createContext(outputDirectory: string, manualDirectory?: string, platform: MpPlatform = 'weapp') {
   const cwd = path.resolve('npm-output-fixture')
   return {
     configService: {
       cwd,
       outDir: path.resolve(cwd, outputDirectory),
-      platform: 'weapp',
+      platform,
       multiPlatform: { enabled: true },
       projectConfig: {
         miniprogramRoot: 'dist',
@@ -29,7 +30,7 @@ function createContext(outputDirectory: string, manualDirectory?: string) {
   } as MutableCompilerContext
 }
 
-describe('multi-platform WeChat npm output', () => {
+describe('multi-platform npm output', () => {
   it.each(['dist/weapp/dist', 'output/weapp'])('places default npm packages in resolved output %s', (outputDirectory) => {
     const ctx = createContext(outputDirectory)
     const [relation] = getPackNpmRelationList(ctx)
@@ -59,4 +60,10 @@ describe('multi-platform WeChat npm output', () => {
       miniprogramNpmDistDir: '.',
     }])
   })
+})
+
+it.each(['weapp', 'tt', 'swan', 'jd', 'xhs'] as const)('uses the resolved %s application output for default npm assets', (platform) => {
+  const output = `dist/${platform}/dist`
+  const ctx = createContext(output, undefined, platform)
+  expect(getPackNpmRelationList(ctx)[0].miniprogramNpmDistDir).toBe(output)
 })

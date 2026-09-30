@@ -350,3 +350,10 @@ defineOptions({ behaviors: [i18n.behavior] })
 - 需要更完整的编辑器提示说明：[`../volar.md`](../volar.md)
 - 需要运行时页面/组件/store 约束：[`wevu-authoring.md`](./wevu-authoring.md)
 - 需要项目级 `weapp` 配置：[`weapp-config.md`](./weapp-config.md)
+
+
+## JSON 合并读取页面声明
+
+`weapp.json.mergeStrategy(target, source, ctx)` 可读取当前 SFC 页面的 `ctx.routeConfig`（`definePage` 的静态 `{ name, meta }`）和 `ctx.pageMeta`（`definePageMeta` 的完整静态对象）。元信息支持内联、外部脚本与规范导入别名，并贯穿编译阶段、`emit`、`merge-existing` 和 JSON-only HMR。
+
+可按 `typeof ctx.routeConfig?.meta?.title === 'string'` 映射 `navigationBarTitleText`。`pageMeta` 含动态变量、调用、展开或访问器时整个字段为 `undefined`；编译器不会执行表达式或返回部分对象。无声明以及非页面组件不提供这些字段。已有非法路由声明诊断保持有效。

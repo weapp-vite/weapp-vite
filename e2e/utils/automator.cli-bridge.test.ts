@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { enableAutomatorViaHttp, extendProjectConfig, resolveBootstrapCliArgs, resolveCliSpawnOptions, waitForSocketReady } from './automator.cli-bridge'
+import { enableAutomatorViaHttp, extendProjectConfig, resolveBootstrapCliArgs, resolveCliSpawnOptions, resolveLiveCliPid, waitForSocketReady } from './automator.cli-bridge'
 
 const opaqueToken = 'a'.repeat(32)
 
@@ -555,5 +555,15 @@ describe('extendProjectConfig', () => {
     expect(fs.readFileSync(path.join(projectPath, 'project.config.json'), 'utf8')).toBe(
       '{\n  "appid": "wx123",\n  "setting": {\n    "es6": true\n  }\n}\n',
     )
+  })
+})
+
+describe('CLI process ownership transfer', () => {
+  it('does not retain a reaped bootstrap PID for later cleanup', () => {
+    const pid = process.pid
+    expect(resolveLiveCliPid({ pid, exitCode: 0, signalCode: null })).toBeUndefined()
+    expect(resolveLiveCliPid({ pid, exitCode: 1, signalCode: null })).toBeUndefined()
+    expect(resolveLiveCliPid({ pid, exitCode: null, signalCode: 'SIGTERM' })).toBeUndefined()
+    expect(resolveLiveCliPid({ pid, exitCode: null, signalCode: null })).toBe(pid)
   })
 })

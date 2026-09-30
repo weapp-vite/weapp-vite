@@ -105,7 +105,9 @@ export function guardPrepareProcessExit(argv) {
 export async function runWeappViteCLI(options = {}) {
   const {
     argv = getGlobalProcess().argv.slice(2),
-    importer = () => import('../dist/cli.mjs'),
+    importer = () => ['accept', 'mcp'].includes(argv[0])
+      ? import('../dist/cli-acceptance.mjs')
+      : import('../dist/cli.mjs'),
     write = message => getGlobalProcess().stderr.write(`\n WARN  ${message}\n\n`),
   } = options
   const restorePrepareGuard = guardPrepareProcessExit(argv)

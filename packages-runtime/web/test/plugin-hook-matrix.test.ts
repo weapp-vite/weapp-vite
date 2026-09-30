@@ -356,7 +356,12 @@ describe('weapp web plugin hook matrix', () => {
     const { pageDir, root } = await createSfcResolverFixture('<view>version-one</view>')
     await writeFile(join(root, 'src/app.json'), JSON.stringify({ pages: ['pages/index/index'] }))
     const pagePath = join(pageDir, 'index.vue')
-    const templateId = `${pagePath}?weapp-web-sfc-template`
+    const pageIds = [normalizePath(pagePath), normalizePath(pagePath).replaceAll('/', '\\')]
+    const sfcSource = (version: string) => `
+<script setup>const version = '${version}'</script>
+<template><view>${version}: {{ version }}</view></template>
+<style>.${version} { color: red; }</style>
+`
     let releaseScan!: () => void
     let reportStarted!: () => void
     const blocked = new Promise<void>((resolve) => {
@@ -381,30 +386,41 @@ describe('weapp web plugin hook matrix', () => {
         return { pages: ['pages/index/index'] }
       },
     })
+    const expectSnapshot = async (version: string) => {
+      const diskSource = await readFile(pagePath, 'utf8')
+      for (const id of pageIds) {
+        await expect(plugin.load!.call({}, `${id}?weapp-web-sfc-template`)).resolves.toContain(version)
+        await expect(plugin.load!.call({}, `${id}.css?weapp-web-sfc-style&inline`)).resolves.toContain(`.${version}`)
+        await expect(plugin.transform!.call({}, diskSource, id)).resolves.toMatchObject({
+          code: expect.stringContaining(version),
+        })
+      }
+    }
     try {
+      await writeFile(pagePath, sfcSource('version-one'))
       await plugin.configResolved!.call({}, { root, command: 'serve' })
       blockNext = true
-      await writeFile(pagePath, '<template><view>version-two</view></template>')
+      await writeFile(pagePath, sfcSource('version-two'))
       const refresh = plugin.handleHotUpdate!.call({}, { file: pagePath })
       try {
         await started
-        await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-one')
+        await expectSnapshot('version-one')
       }
       finally {
         releaseScan()
         await refresh
       }
-      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+      await expectSnapshot('version-two')
 
       failConfig = true
+      await writeFile(pagePath, sfcSource('version-three'))
       await plugin.handleHotUpdate!.call({}, { file: join(root, '.weapp-vite/typed-router.d.ts') })
-      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+      await expectSnapshot('version-two')
       await expect(plugin.handleHotUpdate!.call({}, { file: pagePath })).rejects.toThrow('configuration unavailable')
-      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-two')
+      await expectSnapshot('version-two')
       failConfig = false
-      await writeFile(pagePath, '<template><view>version-three</view></template>')
       await plugin.handleHotUpdate!.call({}, { file: pagePath })
-      await expect(plugin.load!.call({}, templateId)).resolves.toContain('version-three')
+      await expectSnapshot('version-three')
     }
     finally {
       await rm(root, { recursive: true, force: true })

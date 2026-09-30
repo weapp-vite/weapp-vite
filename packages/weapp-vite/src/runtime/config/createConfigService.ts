@@ -275,13 +275,15 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     })
 
     setOptions(resolvedConfig)
-    configureLogger(resolvedConfig.config.weapp?.logger)
+    if (!input.hostConfig) {
+      configureLogger(resolvedConfig.config.weapp?.logger)
+    }
     if (resolvedConfig.configMergeInfo?.merged) {
       const weappConfigDisplay = formatConfigDisplayPath(resolvedConfig.configMergeInfo.weappConfigPath) ?? 'weapp-vite.config.ts'
       const viteConfigDisplay = formatConfigDisplayPath(resolvedConfig.configMergeInfo.viteConfigPath) ?? 'vite.config.ts'
       logger.info(`[config] 检测到同时存在 ${weappConfigDisplay} 与 ${viteConfigDisplay}，已合并两份 Vite 配置，优先级：${weappConfigDisplay} > ${viteConfigDisplay}`)
     }
-    packageManager = (await detect()) ?? {
+    packageManager = (await detect({ cwd: input.cwd })) ?? {
       agent: 'npm',
       name: 'npm',
     }

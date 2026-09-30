@@ -5,6 +5,7 @@ import type {
   HeadlessWxSelectorQueryNode,
   HeadlessWxSelectorQueryRequest,
 } from './core'
+import type { HeadlessWorkerApis } from './workers'
 import { WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY, WEVU_ROUTE_EVENT_CONTRACT_KEY } from '@weapp-core/constants'
 import { createHeadlessUniEventBus } from './eventBus'
 import { createHeadlessLogManager } from './logManager'
@@ -16,6 +17,7 @@ export * from './eventBus'
 export * from './fileSystem'
 export type { HeadlessWxGetLogManagerOption, HeadlessWxLogManager } from './logManager'
 export * from './media'
+export * from './workers'
 
 function invokeWxApi<TOption extends HeadlessWxCallbackOption<TResult>, TResult>(
   operation: () => TResult,
@@ -50,7 +52,7 @@ function resolveCapabilityValue(source: Record<string, any>, schema: string) {
   return current
 }
 
-export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<Console, 'debug' | 'info' | 'log' | 'warn'> = console): HeadlessWx {
+export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<Console, 'debug' | 'info' | 'log' | 'warn'> = console, workers?: HeadlessWorkerApis): HeadlessWx {
   const eventBus = createHeadlessUniEventBus()
   const rpx2px = (value: number) => {
     const width = driver.getWindowInfoSync().windowWidth
@@ -58,6 +60,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
   }
   const capabilityTree = {
     canIUse: true,
+    ...(workers ? { createWorker: true, preDownloadSubpackage: true } : {}),
     canvasToTempFilePath: true,
     chooseImage: { return: { errMsg: true, tempFilePaths: true, tempFiles: true } },
     chooseMessageFile: { return: { errMsg: true, tempFiles: true } },
@@ -162,6 +165,18 @@ export function createHeadlessWx(driver: HeadlessWxDriver, runtimeConsole: Pick<
     ...eventBus,
     [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1,
     [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1,
+    createWorker: (script) => {
+      if (!workers) {
+        throw new Error('Worker host is unavailable')
+      }
+      return workers.createWorker(script)
+    },
+    preDownloadSubpackage: (option) => {
+      if (!workers) {
+        throw new Error('Worker host is unavailable')
+      }
+      workers.preDownloadSubpackage(option)
+    },
     canIUse: schema => typeof schema === 'string' && schema.trim() !== '' && resolveCapabilityValue(capabilityTree, schema.trim()) != null,
     canvasToTempFilePath: option => invokeWxApi(() => driver.canvasToTempFilePath(option), option),
     chooseImage: option => invokeWxApi(() => driver.chooseImage(option ?? {}), option),

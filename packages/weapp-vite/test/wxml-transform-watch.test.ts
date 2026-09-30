@@ -7,13 +7,12 @@ const outputs = ['pages/native/index.wxml', 'pages/vue/index.wxml', 'sub/index.w
 
 async function waitForOutputs(root: string, label: string) {
   await expect.poll(async () => {
-    const contents = await Promise.all(outputs.map(file => fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')))
-    return contents.every(code => code.includes(`data-rule="${label}"`))
-  }, { timeout: 45_000, interval: 100 }).toBe(true)
-  for (const file of outputs) {
-    const code = await fs.readFile(path.join(root, 'dist', file), 'utf8')
-    expect(code.match(/<!-- transform-once -->/g), file).toHaveLength(1)
-  }
+    // 原生写出期间文件可能暂时不完整；标签与转换次数必须检查同一次读取。
+    return Promise.all(outputs.map(async (file) => {
+      const code = await fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')
+      return { file, label: code.includes(`data-rule="${label}"`), transforms: code.match(/<!-- transform-once -->/g)?.length ?? 0 }
+    }))
+  }, { timeout: 45_000, interval: 100 }).toEqual(outputs.map(file => ({ file, label: true, transforms: 1 })))
 }
 
 describe('WXML transform external dependencies', { concurrent: false }, () => {
@@ -44,10 +43,13 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       const independentSource = path.join(project.tempDir, 'src/independent/index.wxml')
       expect(compiler.ctx.runtimeState.build.independent.watchFiles.get('independent')).toContain(independentSource)
       for (const marker of ['independent-first', 'independent-second']) {
+        const previousProfile = compiler.ctx.runtimeState.build.hmr.recentProfiles.at(-1)
         await fs.appendFile(independentSource, `<view>${marker}</view>`)
         await expect.poll(async () => fs.readFile(path.join(project.tempDir, 'dist/independent/index.wxml'), 'utf8'), { timeout: 45_000 }).toContain(marker)
         await waitForOutputs(project.tempDir, 'initial')
         if (runtime === 'classic') {
+          // 产物写入先于 END；等待本轮 profile，不能读取上一轮样本。
+          await expect.poll(() => compiler.ctx.runtimeState.build.hmr.recentProfiles.at(-1), { timeout: 45_000, interval: 100 }).not.toBe(previousProfile)
           const profile = compiler.ctx.runtimeState.build.hmr.recentProfiles.at(-1)
           expect(profile?.dirtyReasonSummary).not.toContainEqual(expect.stringMatching(/^snapshot-full:/))
           expect(profile?.dirtyCount ?? 0).toBe(0)

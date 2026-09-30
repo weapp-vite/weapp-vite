@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createInlineConfig, resolveRuntimeTargets } from './runtime'
+import { createInlineConfig, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from './runtime'
 
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
@@ -18,6 +18,20 @@ vi.mock('../logger', () => ({
 }))
 
 describe('cli runtime target resolution', () => {
+  it('selects pure Web from config when CLI does not select a target', () => {
+    expect(resolveConfiguredRuntimeTargets(resolveRuntimeTargets({}), 'web').label).toBe('web')
+  })
+
+  it.each(['weapp', 'alipay', 'web', 'all'])('preserves explicit CLI target %s over Web config', (platform) => {
+    const targets = resolveRuntimeTargets({ platform })
+    expect(resolveConfiguredRuntimeTargets(targets, 'web')).toBe(targets)
+  })
+
+  it('preserves config-driven mini targets', () => {
+    const targets = resolveRuntimeTargets({})
+    expect(resolveConfiguredRuntimeTargets(targets, 'alipay')).toBe(targets)
+  })
+
   it('uses config-driven mini platform when cli platform is missing', () => {
     const targets = resolveRuntimeTargets({})
 

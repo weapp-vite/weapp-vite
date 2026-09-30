@@ -69,7 +69,7 @@ export default defineConfig({
         : {}),
     },
     worker: {
-      entry: ['index'],
+      entry: ['index', 'messages/index'],
     },
     npm: {
       enable: false,

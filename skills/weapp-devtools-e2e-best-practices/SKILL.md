@@ -29,7 +29,9 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 
 ## 核心流程
 
-1. 先确认没有其他仓库级 e2e、DevTools、automator、watch 或本地验证服务在运行，再确认环境前提：
+1. 先确认没有其他仓库级 e2e、automator、watch 或本地验证服务占用测试资源；保留手动打开或归属未知的 DevTools，再确认环境前提：
+   - 核对官方最新稳定版、查询时间、所选安装和实际连接宿主；默认使用最新稳定版，仅按用户明确指定使用其他版本
+   - 通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择，预检、启动、构建和恢复共用同一 CLI
    - WeChat DevTools 已登录
    - 服务端口已开启
    - 目标 app 使用真实 AppID
@@ -50,7 +52,11 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 
 ## 环境治理与已知边界
 
-- 仓库级 E2E 入口互斥运行；启动前先检查并清理残留 DevTools、automator、watch 和本地验证服务进程。
+- 仓库级 E2E 入口互斥运行；启动前检查进程，只释放本任务明确登记且仍持有的 DevTools、automator、watch 和验证服务资源。其他任务等待，手动 IDE 与归属未知的实例保留。
+- 启动失败不是全局清理授权。禁止按进程名、命令行子串或 Windows 镜像名终止所有 IDE；不得删除全局 session、port-lease、登录数据和用户缓存。恢复、超时、重试与 teardown 共用幂等 disposer；不将已退出的 CLI PID 当成宿主 PID。
+- 每轮真实 IDE 验收前从[官方渠道](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)核对最新稳定版，不把默认安装路径、已登录状态或较大版本号当作渠道证明。报告记录查询时间、来源、实际 IDE 及基础库版本；不要长期硬编码某个版本为“最新”。
+- 没有用户明确指定，不切换 RC、nightly、开发版或旧稳定版，即使当前测试失败。最新稳定版无法确认、未安装或未登录时报告阻塞，不静默回退、不绕过登录；固定性能运行仍按已批准目标执行，不重新采样。
+- 清理回归至少证明：本任务资源被释放，手动实例、另一项目及另一安装版本仍保留；重复 close/recovery 只释放一次。根因与复盘见 `docs/plans/2026-09-30-devtools-process-ownership.md`。
 - OS-only 失败先输出 `cross-platform suspect: checking command launch, path normalization, line endings, and filesystem assumptions before product logic`，并检查 workflow -> script -> Node wrapper -> child process 的最早分歧。
 - 跨平台进程启动优先使用 `execa`；原始 `spawn` 必须处理 Windows `.cmd`、quoting 和必要的 shell 边界。
 - 长时间 IDE suite 在 macOS 使用 `caffeinate -dimsu -- ...`，避免机器休眠导致假失败。
@@ -75,6 +81,7 @@ description: 面向 weapp-vite 仓库的 WeChat DevTools 与 mpcore headless run
 - 页面切换方案。
 - `e2e-app` 配置同步项。
 - 最小验证命令。
+- 官方稳定版核对来源及时间、实际 IDE/基础库版本、显式版本例外（如有）和资源清理范围。
 
 ## 完成标记
 

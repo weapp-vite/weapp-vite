@@ -49,6 +49,7 @@
   - `$docs-and-website-sync` when documentation or AI guidance must be refreshed together with code changes.
   - Use `$weapp-vite-best-practices` for stateful HMR, pluginRoot/dist-plugin, Web runtime compatibility, and native AST profiling; use `$wevu-best-practices` for `wevu/router` navigation semantics.
   - Use `$weapp-devtools-e2e-best-practices` for serialized DevTools runtime suites, shared automator sessions, and known host compatibility skips.
+  - `$weapp-acceptance` for repeatable checks with `wv accept`, assertions and current-code evidence; no extra model Key.
   - `$native-to-weapp-vite-wevu-migration` when migrating native mini-program projects to `weapp-vite + native`, or further toward Vue SFC / wevu.
 
 ## Native Mini-program Authoring

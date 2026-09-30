@@ -58,7 +58,10 @@ export async function prepareSwanUpload(context: UploadContext, action: UploadAc
         // url 会传给官方二维码生成器，是二维码内容而不是图片地址。
         return { previewUrl: previewUrl.trim() } satisfies PreviewResult
       }
-      return runUploadCli(context, 'swan-toolkit', 'swan', [
+      const output = await runUploadCli({
+        ...context,
+        env: { ...context.env, IS_NODE_JS: 'true' },
+      }, 'swan-toolkit', 'swan', [
         'upload',
         '--project-path',
         context.projectPath,
@@ -71,7 +74,17 @@ export async function prepareSwanUpload(context: UploadContext, action: UploadAc
         '--desc',
         context.desc,
         '--json',
-      ], secrets)
+      ], secrets, true)
+      try {
+        const marker = /^NODE_JS_ENV_RESULT:/m.exec(output)
+        if (!marker) {
+          throw new Error('缺少官方 JSON 结果标记。')
+        }
+        return JSON.parse(output.slice(marker.index + marker[0].length)) as unknown
+      }
+      catch {
+        throw new Error('百度上传未返回有效的 JSON 结果。')
+      }
     },
   }
 }

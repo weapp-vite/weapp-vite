@@ -184,7 +184,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     const vueSettings = getVueComponentsSettings(state.ctx)
 
     if ((!resolvedJsEntry || !resolvedJsonPath || !resolvedTemplatePath) && vueEntry) {
-      const vueConfig = await extractConfigFromVue(vueEntry)
+      const vueConfig = await extractConfigFromVue(vueEntry, { compilerContext: state.ctx })
       const vueJson = (vueConfig && typeof vueConfig === 'object' && !Array.isArray(vueConfig))
         ? { ...vueConfig }
         : {}

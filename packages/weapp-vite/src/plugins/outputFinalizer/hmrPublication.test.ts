@@ -39,3 +39,19 @@ describe('HMR chunk publication', () => {
     expect(bundle['pages/index/index.wxml']).toMatchObject({ source: '<view>updated template</view>' })
   })
 })
+
+it.each([false, true])('publishes a changed static plugin main input outside the dynamic entry set (changed=%s)', (changed) => {
+  const runtimeState = createRuntimeState()
+  runtimeState.build.hmr.profile.event = 'update'
+  runtimeState.build.hmr.lastEmittedChunkFileNames.add('pages/hello/index.js')
+  runtimeState.build.output.emittedSource.set('api/main.js', 'exports.message = "before"')
+  const bundle = {
+    'api/main.js': { type: 'chunk', isEntry: true, fileName: 'api/main.js', code: changed ? 'exports.message = "after"' : 'exports.message = "before"' },
+  } as unknown as OutputBundle
+  pruneUnchangedDevHmrOutputs({
+    configService: { isDev: true, pluginOnly: true },
+    scanService: { pluginJson: { main: 'api/main.js' } },
+    runtimeState,
+  } as CompilerContext, bundle)
+  expect(Boolean(bundle['api/main.js'])).toBe(changed)
+})

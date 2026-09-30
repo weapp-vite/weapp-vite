@@ -48,18 +48,23 @@ function createState(file: string, entryId: string) {
 }
 
 describe('core lifecycle buildEnd hook', () => {
-  it.each([undefined, {}])('preserves full output only for one-shot builds that empty outDir (watch: %s)', async (watch) => {
+  it.each([
+    { isDev: false, watch: undefined, full: true },
+    { isDev: false, watch: {}, full: true },
+    { isDev: true, watch: {}, full: false },
+  ])('preserves production snapshots and classic incremental semantics ($isDev/$watch)', async ({ isDev, watch, full }) => {
     const file = '/project/src/pages/home/index.json'
     const entryId = '/project/src/pages/home/index.ts'
     const { moduleGraphService, pluginContext, state } = createState(file, entryId)
+    state.ctx.configService.isDev = isDev
     state.resolvedConfig = { build: { emptyOutDir: true, watch } }
     moduleGraphService.recordChangedFile(file, 'update')
 
     await createBuildEndHook(state).call(pluginContext)
 
-    expect(state.hmrState.didEmitAllEntries).toBe(watch === undefined)
-    expect(state.hmrState.skipSharedChunkRefresh).toBe(watch !== undefined)
-    expect(state.ctx.runtimeState.build.hmr.didEmitAllEntries).toBe(watch === undefined ? true : undefined)
+    expect(state.hmrState.didEmitAllEntries).toBe(full)
+    expect(state.hmrState.skipSharedChunkRefresh).toBe(!full)
+    expect(state.ctx.runtimeState.build.hmr.didEmitAllEntries).toBe(full ? true : undefined)
   })
 
   it('resolves a pending sidecar through the active graph and refreshes metadata only', async () => {

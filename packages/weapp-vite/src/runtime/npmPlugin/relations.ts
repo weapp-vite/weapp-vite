@@ -111,7 +111,7 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
     ]
   }
 
-  if (!hasManualRelations && configService.platform === 'weapp') {
+  if (!hasManualRelations) {
     return [{
       ...packNpmRelationList[0],
       miniprogramNpmDistDir: resolveDefaultNpmDistDir(configService),

@@ -146,6 +146,23 @@ beforeEach(() => {
 })
 
 describe('runtime config internal loadConfig', () => {
+  it('normalizes host config without discovering or executing configuration files', async () => {
+    const hostConfig = { weapp: { srcRoot: 'mini', platform: 'weapp' as const } }
+    const result = await createFactory()({
+      cwd: '/project',
+      mode: 'test',
+      isDev: false,
+      hostConfig: { config: hostConfig, path: 'vite.config.ts', dependencies: ['shared.ts'] },
+    })
+    expect(loadViteConfigFileMock).not.toHaveBeenCalled()
+    expect(resolveWeappConfigFileMock).not.toHaveBeenCalled()
+    expect(result.config.weapp?.srcRoot).toBe('mini')
+    expect(result.config.configFile).toBe(false)
+    expect(result.configFileDependencies).toEqual(['/project/vite.config.ts', '/project/shared.ts'])
+    expect(result.configMergeInfo?.merged).toBe(false)
+    expect(hostConfig).toEqual({ weapp: { srcRoot: 'mini', platform: 'weapp' } })
+  })
+
   it('resolves config file paths and loaded weapp config reuse checks', () => {
     expect(resolveConfigFilePath('/project', 'configs/vite.config.ts')).toBe('/project/configs/vite.config.ts')
     expect(resolveConfigFilePath('/project', '/abs/vite.config.ts')).toBe('/abs/vite.config.ts')
@@ -305,7 +322,7 @@ describe('runtime config internal loadConfig', () => {
       inlineConfig: {},
       cliPlatform: undefined,
       configFile: '/project/vite.config.ts',
-    } as any)).rejects.toThrow('请通过 --platform 指定目标小程序平台')
+    } as any)).rejects.toThrow('请通过 weapp.platform 或 --platform 指定目标小程序平台')
   })
 
   it('throws when platform is outside configured multiPlatform targets', async () => {

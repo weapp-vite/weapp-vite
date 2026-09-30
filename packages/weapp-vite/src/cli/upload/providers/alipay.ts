@@ -1,7 +1,7 @@
 import type { PreparedUpload, PreviewResult, UploadAction, UploadContext } from '../types'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { loadUploadPackage, requireUploadAppId, requireUploadEnv } from '../tools'
+import { loadUploadPackage, redactUploadSecrets, requireUploadAppId, requireUploadEnv } from '../tools'
 
 interface MinidevSdk {
   minidev: {
@@ -13,7 +13,11 @@ interface MinidevSdk {
       version: string
       versionDescription: string
       experience: false
-    }) => Promise<{ version: string, experienceQrCodeUrl?: string }>
+    }, hooks?: {
+        onLog?: (data: string) => void
+        onTaskCreated?: (taskId: string) => void
+        onVersionCreated?: (version: string) => void
+      }) => Promise<{ version: string, experienceQrCodeUrl?: string }>
     preview: (options: {
       appId: string
       project: string
@@ -67,7 +71,7 @@ export async function prepareAlipayUpload(context: UploadContext, action: Upload
 
   return {
     secrets,
-    async run() {
+    async run(onProgress) {
       const sdk = await loadUploadPackage<MinidevSdk>('minidev', context.cwd)
       if (action === 'preview') {
         const result = await sdk.minidev.preview({
@@ -90,7 +94,13 @@ export async function prepareAlipayUpload(context: UploadContext, action: Upload
         version: context.version,
         versionDescription: context.desc,
         experience: false,
-      })
+      }, onProgress
+        ? {
+            onLog: message => onProgress({ type: 'log', message: redactUploadSecrets(message, secrets) }),
+            onTaskCreated: taskId => onProgress({ type: 'task-created', message: redactUploadSecrets(taskId, secrets) }),
+            onVersionCreated: version => onProgress({ type: 'version-created', message: redactUploadSecrets(version, secrets) }),
+          }
+        : undefined)
     },
   }
 }

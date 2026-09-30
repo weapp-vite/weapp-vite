@@ -1,0 +1,6 @@
+interface:
+  display_name: '小程序改动验收'
+  short_description: '通过 weapp-vite 执行确定性场景并检查证据新鲜度'
+  default_prompt: 'Use $weapp-acceptance 检查项目、执行验收并读取报告，明确区分通过、失败和未验证。'
+policy:
+  allow_implicit_invocation: true
