@@ -24,7 +24,7 @@ async function project() {
   await mkdir(path.join(root, 'upstream/patches'), { recursive: true })
   await mkdir(path.join(root, 'scripts'))
   await mkdir(path.join(root, 'upstream/toolchain'))
-  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch']) {
+  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/portableCache.ts', 'scripts/cacheSnapshot.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch']) {
     await writeFile(path.join(root, file), file)
   }
   return root
@@ -74,7 +74,7 @@ describe('SDK preparation boundary', () => {
     await expect(preparedRoot(root, cache)).rejects.toThrow('stale SDK')
   })
 
-  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
+  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/portableCache.ts', 'scripts/cacheSnapshot.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
     const root = await project()
     const first = await preparationInputs(root)
     expect(await preparationInputs(root)).toEqual(first)
