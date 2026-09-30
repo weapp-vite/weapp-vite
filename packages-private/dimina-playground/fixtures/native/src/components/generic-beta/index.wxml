@@ -1,0 +1,1 @@
+<view class="generic-beta"><text>beta:{{value}}</text><button bindtap="choose">选择 beta</button></view>

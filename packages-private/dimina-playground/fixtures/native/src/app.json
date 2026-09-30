@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/generics/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "Dimina native"
+  },
+  "subPackages": [
+    {
+      "root": "sub",
+      "pages": [
+        "detail/index"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{ "usingComponents": { "outlet": "../../components/generic-outlet/index", "forward": "../../components/generic-forward/index", "alpha": "../../components/generic-alpha/index", "beta": "../../components/generic-beta/index" } }

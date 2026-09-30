@@ -4,6 +4,7 @@ import type { CandidateEntry } from './candidates'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../utils/file'
 import {
+  collectCandidateForBase,
   isConfigFile,
   isScriptFile,
   isStyleFile,
@@ -171,7 +172,7 @@ export async function updateCandidateFromFile(
   }
 
   const { base, relativeBase } = resolvedBasePath
-  const { matcher, subPackageRoots } = resolveAutoRoutesMatcherContext(ctx)
+  const { matcher, subPackageRoots, autoRoutesConfig } = resolveAutoRoutesMatcherContext(ctx)
   const route = resolveRoute(relativeBase, subPackageRoots)
   const matchesInclude = matcher.matches(relativeBase)
   if (shouldRemoveAutoRoutesCandidate({
@@ -183,7 +184,10 @@ export async function updateCandidateFromFile(
     return removed
   }
 
-  const candidate = await rebuildCandidateForBase(base, ctx.configService.platform)
+  // 配置过滤时必须保留全部源码后缀，不能只发现默认优先级的第一个脚本。
+  const candidate = autoRoutesConfig.extensions?.length
+    ? await collectCandidateForBase(base)
+    : await rebuildCandidateForBase(base, ctx.configService.platform)
   if (!candidate) {
     const removed = stateCandidates.delete(base)
     return removed

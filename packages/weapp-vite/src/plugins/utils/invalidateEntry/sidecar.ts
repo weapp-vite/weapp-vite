@@ -2,6 +2,7 @@ import type { CompilerContext } from '../../../context'
 import type { ChangeEvent } from '../../../types'
 import path from 'pathe'
 import logger from '../../../logger'
+import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
 import { findJsEntry, findVueEntry, touch } from '../../../utils/file'
 import { collectAffectedScriptsAndImporters } from './cssGraph'
 import { configSuffixes, normalizePath, watchedCssExts, watchedScriptModuleSuffixes, watchedTemplateExts } from './shared'
@@ -40,7 +41,8 @@ export async function invalidateEntryForSidecar(ctx: CompilerContext, filePath: 
   }
 
   if (scriptBasePath) {
-    const primaryScript = await findJsEntry(scriptBasePath)
+    const selected = getSelectedAutoRouteSource(ctx, scriptBasePath)
+    const primaryScript = selected ? { path: selected } : await findJsEntry(scriptBasePath)
     const shouldSkipPrimaryTemplateTouch = event === 'update' && Boolean(ext && watchedTemplateExts.has(ext))
 
     if (primaryScript.path) {

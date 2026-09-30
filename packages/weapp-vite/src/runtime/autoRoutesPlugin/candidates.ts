@@ -247,6 +247,20 @@ export async function collectCandidates(
   })
 }
 
+/** 增量扫描只读取同一目录的兄弟文件，沿用全量候选聚合规则。 */
+export async function collectCandidateForBase(base: string): Promise<CandidateEntry | undefined> {
+  const candidates = new Map<string, CandidateEntry>()
+  const directory = path.dirname(base)
+  const files = await fs.readdir(directory, { withFileTypes: true }).catch(() => [])
+  for (const file of files) {
+    const entryPath = path.join(directory, file.name)
+    if (file.isFile() && removeExtensionDeep(entryPath) === base) {
+      applyCandidateEntryToMap(candidates, entryPath, { candidateBase: base })
+    }
+  }
+  return candidates.get(base)
+}
+
 export function cloneCandidate(candidate: CandidateEntry): CandidateEntry {
   return {
     base: candidate.base,

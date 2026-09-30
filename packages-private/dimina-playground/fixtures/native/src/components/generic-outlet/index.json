@@ -1,0 +1,1 @@
+{ "component": true, "componentGenerics": { "item": { "default": "../generic-fallback/index" } } }

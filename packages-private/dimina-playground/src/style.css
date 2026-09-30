@@ -1,0 +1,38 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: #18212c;
+  background: #f2f4f7;
+}
+
+header {
+  max-width: 840px;
+  padding: 20px;
+  margin: auto;
+}
+
+h1 {
+  font-size: 24px;
+}
+
+nav {
+  display: flex;
+  gap: 24px;
+}
+
+a {
+  color: #215abc;
+}
+
+#status {
+  min-height: 24px;
+}
+
+#container {
+  position: relative;
+  width: min(100%, 420px);
+  height: 700px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: white;
+}

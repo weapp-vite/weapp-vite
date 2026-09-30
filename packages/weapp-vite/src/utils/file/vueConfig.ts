@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
+import type { AutoRoutesInlineSnapshot } from './autoRoutes'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import { recursive as mergeRecursive } from 'merge'
@@ -8,6 +9,7 @@ import { hasAutoRoutesMacroImport, inlineAutoRoutesImports, resolveAutoRoutesInl
 
 const vueConfigCache = new Map<string, {
   config?: Record<string, any>
+  autoRoutesSignature?: string
   fileMtimeMs?: number
   dependencies: string[]
   dependencyMtimeMs: Map<string, number>
@@ -80,7 +82,12 @@ export async function extractConfigFromVue(
       contextConfigCaches.set(context, cache)
     }
     const cached = options?.force ? undefined : cache.get(vueFilePath)
-    if (cached && await isVueConfigCacheValid(vueFilePath, cached)) {
+    let autoRoutesInline: AutoRoutesInlineSnapshot | undefined
+    if (cached?.autoRoutesSignature !== undefined) {
+      autoRoutesInline = await resolveAutoRoutesInlineSnapshot(context)
+    }
+    if (cached && (cached.autoRoutesSignature === undefined || cached.autoRoutesSignature === JSON.stringify(autoRoutesInline))
+      && await isVueConfigCacheValid(vueFilePath, cached)) {
       return cached.config
     }
 
@@ -128,9 +135,9 @@ export async function extractConfigFromVue(
       try {
         const preambleContent = descriptor.script?.content
         // 普通 JSON 宏不依赖路由扫描，也不应触及其他编译上下文的支持文件。
-        const autoRoutesInline = hasAutoRoutesMacroImport(setupContent)
+        autoRoutesInline = hasAutoRoutesMacroImport(setupContent)
           || (preambleContent !== undefined && hasAutoRoutesMacroImport(preambleContent))
-          ? await resolveAutoRoutesInlineSnapshot(options?.compilerContext)
+          ? autoRoutesInline ?? await resolveAutoRoutesInlineSnapshot(options?.compilerContext)
           : undefined
         const macroEvalPreamble = preambleContent && autoRoutesInline
           ? inlineAutoRoutesImports(preambleContent, autoRoutesInline)
@@ -178,6 +185,7 @@ export async function extractConfigFromVue(
     const hasConfig = Object.keys(mergedConfig).length > 0
     cache.set(vueFilePath, {
       config: hasConfig ? mergedConfig : undefined,
+      autoRoutesSignature: autoRoutesInline && JSON.stringify(autoRoutesInline),
       fileMtimeMs,
       dependencies: normalizedDependencies,
       dependencyMtimeMs,

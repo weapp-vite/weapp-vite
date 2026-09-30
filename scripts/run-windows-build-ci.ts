@@ -33,6 +33,7 @@ export const WINDOWS_TURBO_BUILD_ARGS = [
   '--filter=!./templates/*',
   '--filter=!./website',
   '--filter=!@weapp-vite/sfc-playground',
+  '--filter=!@weapp-vite/dimina-playground',
   '--filter=!e2e-issue-814-tailwind4-broken',
 ]
 

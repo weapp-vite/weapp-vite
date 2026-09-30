@@ -1,0 +1,29 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/home/index",
+          "pathName": "pages/home/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "subpackages/account/pages/detail/index",
+          "pathName": "subpackages/account/pages/detail/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "subpackages/isolated/pages/detail/index",
+          "pathName": "subpackages/isolated/pages/detail/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  },
+  "setting": {
+    "urlCheck": false
+  }
+}

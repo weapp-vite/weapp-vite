@@ -1,0 +1,8 @@
+<text>分包详情</text>
+<button bindtap="back">返回首页</button>
+<button bindtap="increment">更新分包属性</button>
+<text>分包事件：{{selected}}</text>
+<outlet generic:item="local" value="{{value}}" bindpick="selected" />
+<local-outlet value="{{value}}" />
+<button bindtap="roots">切换动态根</button>
+<roots mode="{{mode}}" />

@@ -2,6 +2,18 @@ import type { App, Component, Page, Plugin } from '@weapp-core/schematics'
 import { get, isObject, removeExtension } from '@weapp-core/shared'
 import path from 'pathe'
 
+export function collectComponentEntries(json: unknown): string[] {
+  if (!isObject(json)) {
+    return []
+  }
+  const components = isObject(json.usingComponents) ? Object.values(json.usingComponents) : []
+  const generics = isObject(json.componentGenerics) ? Object.values(json.componentGenerics) : []
+  return [...new Set([
+    ...components,
+    ...generics.map(value => isObject(value) ? value.default : undefined),
+  ].filter((value): value is string => typeof value === 'string' && value.trim() !== ''))]
+}
+
 export function collectPluginExportEntries(plugins: unknown, root?: string) {
   if (!isObject(plugins)) {
     return [] as string[]
@@ -28,7 +40,7 @@ export function collectPluginExportEntries(plugins: unknown, root?: string) {
 export function analyzeAppJson(json: App) {
   const entries: string[] = []
   const pages = json.pages ?? []
-  const components = Object.values(get(json, 'usingComponents') ?? {}) as string[]
+  const components = collectComponentEntries(json)
   const subPackages = (
     [...json.subPackages ?? [], ...json.subpackages ?? []].filter(x => !x.independent).reduce<string[]>(
       (acc, cur) => {
@@ -75,8 +87,5 @@ export function analyzePluginJson(json: Plugin) {
 }
 
 export function analyzeCommonJson(json: Page | Component) {
-  const entries: string[] = []
-  const components = Object.values(get(json, 'usingComponents') ?? {}) as string[]
-  entries.push(...components)
-  return entries
+  return collectComponentEntries(json)
 }

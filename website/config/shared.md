@@ -35,6 +35,7 @@ keywords:
   enabled?: boolean
   typedRouter?: boolean
   include?: string | RegExp | Array<string | RegExp>
+  extensions?: string[]
   persistentCache?: boolean | string
   watch?: boolean
 }
@@ -67,6 +68,7 @@ export default defineConfig({
 - `enabled`：总开关
 - `typedRouter`：是否输出路由类型文件
 - `include`：扫描规则，支持 glob、正则和数组
+- `extensions`：可选页面入口扩展名，例如 `['vue', 'tsx']`，支持前导点；未设置或空数组保留默认行为。`include` 仍匹配无扩展名 base，不能用 `pages/**/*.vue` 替代此配置。同 base 的多个允许源码沿用 `ts`、`js`、`tsx`、`jsx`、`vue` 优先级；过滤同时约束声明提取和构建入口，配套模板、JSON、样式及显式业务导入保留。
 - `persistentCache`：是否启用持久化缓存，或指定缓存文件路径
 - `watch`：开发态是否监听页面目录变化
 

@@ -239,7 +239,7 @@ function createActionItems(options: {
   return actions
 }
 
-export function createAnalyzeBudgetCheck(result: AnalyzeSubpackagesResult): AnalyzeBudgetCheckItem[] {
+export function createAnalyzeBudgetCheck(result: Pick<AnalyzeSubpackagesResult, 'packages' | 'metadata'>): AnalyzeBudgetCheckItem[] {
   const budgets = result.metadata?.budgets
   if (!budgets) {
     return []

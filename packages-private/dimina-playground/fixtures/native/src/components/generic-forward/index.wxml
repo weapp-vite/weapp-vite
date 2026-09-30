@@ -1,0 +1,1 @@
+<outlet generic:item="item" value="{{value}}" bindpick="selected" />

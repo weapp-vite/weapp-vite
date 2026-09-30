@@ -7,6 +7,7 @@ import { registerAlipayCommand } from './cli/commands/alipay'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand, scheduleCompletedProductionBuildExit } from './cli/commands/build'
 import { registerCloseCommand } from './cli/commands/close'
+import { registerDoctorCommand } from './cli/commands/doctor'
 import { registerGenerateCommand } from './cli/commands/generate'
 import { registerIdeCommand } from './cli/commands/ide'
 import { registerInitCommand } from './cli/commands/init'
@@ -52,6 +53,7 @@ cli
 
 registerAcceptCommand(cli)
 registerIdeCommand(cli)
+registerDoctorCommand(cli)
 registerAlipayCommand(cli)
 registerBuildCommand(cli)
 registerUploadCommand(cli)
@@ -77,6 +79,7 @@ const skipManagedTsconfigBootstrapCommands = new Set([
   'mcp',
   'npm',
   'alipay',
+  'doctor',
   'accept',
 ])
 

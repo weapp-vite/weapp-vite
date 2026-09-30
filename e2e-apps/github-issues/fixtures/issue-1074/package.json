@@ -1,0 +1,8 @@
+{
+  "name": "issue-1074-doctor",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "weapp-vite": "workspace:*"
+  }
+}
