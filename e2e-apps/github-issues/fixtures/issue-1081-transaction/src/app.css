@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@source './pages/**/*.vue';
+@source './shared.ts';
+@source './batch.ts';
+
+@theme { --color-brand: #112234; }
+page { color: #111; }
