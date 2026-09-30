@@ -107,8 +107,11 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-998-tailwind.runtime.test.ts',
   'ide/issue-1081-tailwind-batch.runtime.test.ts',
   'ide/issue-1081-transaction.runtime.test.ts',
+  'ide/issue-1074-doctor.runtime.test.ts',
   'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
+  'ide/issue-1034-auto-routes.runtime.test.ts',
+  'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
   'ide/issue-1072-json-context.runtime.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/github-issues.runtime.issue1015.test.ts',
@@ -250,6 +253,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/issue-998-tailwind.runtime.test.ts',
   'ide/issue-1081-tailwind-batch.runtime.test.ts',
   'ide/issue-1081-transaction.runtime.test.ts',
+  'ide/issue-1074-doctor.runtime.test.ts',
   'ide/body-blob.runtime.test.ts',
   'ide/stream-capability.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
@@ -259,6 +263,8 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/github-issues.runtime.issue1012.test.ts',
   'ide/github-issues.runtime.issue1015.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
+  'ide/issue-1034-auto-routes.runtime.test.ts',
+  'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
   'ide/issue-1072-json-context.runtime.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
@@ -310,6 +316,7 @@ const CI_PR_PATTERNS = [
   'ci/github-issues.issue1035.build.test.ts',
   'ci/issue-862-output-watch.test.ts',
   'ci/issue-1029-auto-routes.test.ts',
+  'ci/issue-1034-auto-routes.test.ts',
   'ci/issue-1072-json-context.test.ts',
   'ci/headless-automator-provider.test.ts',
   'ci/platform-build.test.ts',
@@ -492,6 +499,14 @@ function createCommandTask(label: string, args: string[]): SuiteTask {
     command: 'node',
     args: ['--import', 'tsx', path.resolve(ROOT, 'scripts', 'run-hmr-guard-suite.ts'), ...args],
   }
+}
+
+export function getDiminaTasks() {
+  return [{
+    label: 'dimina-web',
+    command: 'pnpm',
+    args: ['vitest', 'run', '-c', path.resolve(ROOT, 'vitest.e2e.dimina.config.ts')],
+  }] satisfies SuiteTask[]
 }
 
 export function getWebTasks() {
@@ -741,6 +756,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ci-full',
     description: 'Complete miniapp CI suite for nightly and manual matrix runs',
     tasks: getCiFullTasks,
+  },
+  'dimina': {
+    name: 'dimina',
+    description: 'Experimental Dimina Web container acceptance',
+    tasks: getDiminaTasks,
   },
   'web': {
     name: 'web',

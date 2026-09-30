@@ -24,6 +24,8 @@ export default defineConfig({
 
 适合希望用约定生成页面路由的项目。启用后要保持 pages 目录与输出约定稳定。
 
+`autoRoutes: { extensions: ['vue', 'tsx'] }` 只选择允许后缀的页面入口，声明提取、构建与增量更新使用同一选择；未配置或空数组保持原行为。`include` 仍匹配无扩展名 base。多个允许源码沿用 `ts/js/tsx/jsx/vue` 优先级；同名模板、JSON、样式和显式业务导入不会被过滤。
+
 ### `multiPlatform.projectConfigs`
 
 在一份配置中按 `weapp` / `alipay` / `tt` / `xhs` / `jd` / `swan` 提供原生项目字段，公共项用普通对象展开。没有显式 `targets` 时从映射键推导；完整示例见[上传速查](./upload.md#多平台与输出校验)。

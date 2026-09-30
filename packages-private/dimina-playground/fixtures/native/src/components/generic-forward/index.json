@@ -1,0 +1,1 @@
+{ "component": true, "componentGenerics": { "item": true }, "usingComponents": { "outlet": "../generic-outlet/index" } }

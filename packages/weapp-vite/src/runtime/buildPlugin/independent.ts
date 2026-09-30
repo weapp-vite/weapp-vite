@@ -86,6 +86,10 @@ export function createIndependentBuilder(
             },
             projectConfigPath: configService.projectConfigPath,
           })
+          // 分包沿用主扫描确认的物理页面身份，不能重新按默认后缀解析。
+          if (owner) {
+            isolatedCtx.runtimeState.autoRoutes.pageSourceFiles = new Set(owner.runtimeState.autoRoutes.pageSourceFiles)
+          }
           const isolatedConfigService = isolatedCtx.configService
           isolatedConfigService.options = {
             ...isolatedConfigService.options,

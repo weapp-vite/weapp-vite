@@ -1,0 +1,11 @@
+{
+  "appid": "wxb3d842a4a7e3440d",
+  "projectname": "dimina-native",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "./",
+  "setting": {
+    "urlCheck": false,
+    "es6": false,
+    "minified": false
+  }
+}

@@ -5,6 +5,7 @@ import { removeExtensionDeep } from '@weapp-core/shared'
 import { mayContainPlatformApiIdentifierByText, resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { parseSidecarSourceRequest } from '../../../../moduleGraph/protocol'
+import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
 import {
   createInjectRequestGlobalsCode,
   injectRequestGlobalsIntoSfc,
@@ -61,7 +62,10 @@ export function createTransformHook(state: CorePluginState) {
     }
 
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
-    const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
+    const selectedPageSource = getSelectedAutoRouteSource(state.ctx, sourceId)
+    const declaredEntryType = !selectedPageSource || selectedPageSource === sourceId
+      ? state.entriesMap?.get(relativeBasename)?.type
+      : undefined
     const isLoadedEntry = state.loadedEntrySet?.has(sourceId) === true
     const isRootEntry = relativeBasename === 'app'
     if (!isLoadedEntry && declaredEntryType !== 'page' && declaredEntryType !== 'component') {

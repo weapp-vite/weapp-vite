@@ -1,0 +1,100 @@
+name: Dimina Web Experiment
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .gitattributes
+      - .github/workflows/ci-dimina.yml
+      - '.github/actions/**'
+      - 'packages-private/dimina-playground/**'
+      - 'packages/weapp-vite/**'
+      - 'packages-runtime/**'
+      - '@weapp-core/**'
+      - 'e2e/dimina/**'
+      - e2e/vitest.e2e.dimina.config.ts
+      - 'e2e/scripts/**'
+      - 'scripts/dimina-*.test.ts'
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  push:
+    branches: [main]
+    paths:
+      - .gitattributes
+      - 'packages-private/dimina-playground/**'
+      - 'e2e/dimina/**'
+      - e2e/vitest.e2e.dimina.config.ts
+      - .github/workflows/ci-dimina.yml
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dimina-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Dimina (${{ matrix.os }} / Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            node: 22.22.3
+          - os: windows-latest
+            node: '24'
+          - os: macos-latest
+            node: '24'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm --filter 'weapp-vite...' --filter '@weapp-vite/react...' build
+      - name: Compute SDK cache identity
+        id: sdk-key
+        run: pnpm --filter @weapp-vite/dimina-playground cache:key
+      - name: Restore SDK inputs and resources
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          key: ${{ steps.sdk-key.outputs.key }}
+          path: |
+            .cache/dimina/ready.json
+            .cache/dimina/build-*/fe
+      - name: Prepare and verify Dimina SDK
+        run: pnpm --filter @weapp-vite/dimina-playground setup:dimina --reuse
+      - name: Lint
+        run: pnpm --filter @weapp-vite/dimina-playground lint
+      - name: Stylelint
+        run: pnpm exec stylelint "packages-private/dimina-playground/**/*.{css,wxss,vue}"
+      - name: Typecheck
+        run: pnpm --filter @weapp-vite/dimina-playground typecheck
+      - name: Unit tests
+        run: pnpm --filter @weapp-vite/dimina-playground test
+      - name: Build selection and CI contract
+        run: pnpm exec vitest run scripts/dimina-build-selection.test.ts scripts/dimina-ci.test.ts
+      - name: Production build
+        run: pnpm --filter @weapp-vite/dimina-playground build
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Serialized browser acceptance
+        run: pnpm e2e:dimina
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.0
+        with:
+          name: dimina-${{ matrix.os }}-${{ matrix.node }}-${{ github.sha }}
+          include-hidden-files: true
+          path: |
+            docs/reports/*-e2e-dimina-*-suite-report/**
+            .cache/dimina/screenshots/**

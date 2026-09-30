@@ -51,3 +51,11 @@ Taro headless 与真实微信均为 2 场景、6 个 DOM 检查点通过，包�
 weapp-vite 的脚本状态保持通过真实微信验证；其首次样式更新的透明问题在拆分版本与未拆分 main 均复现，继续按既有原生对照单独记录。拆分不宣称修复此限制。
 
 仓库外独立验证使用 `node integrations/shared-hmr-tailwind/verify-isolated.mjs`：在系统临时目录安装真实 tarball，断言完整 weapp-vite 无法解析，再使用已安装 Taro 完成原生构建。示例显式通过宿主的 `pnpm overrides.rolldown` 对齐 Taro 与 Vite；不依赖历史 lockfile 恰好选择相同版本。公共包不设置全局引擎 override。
+
+## Windows 原子发布回归
+
+Windows 读取句柄可能使同目录原子 `rename` 暂时报 `EPERM`、`EACCES` 或 `EBUSY`，在 run 36693382801 中首先阻断了 `global.wxss` 发布，随后表现为没有 HMR applied 回报。私有 Taro 补丁只在 Windows 对这三种错误每 50ms 重试，最多 20 次；旧文件始终保留，预算耗尽或其他错误仍原样失败。字节仍由 Rolldown emit/write 输出，原子替换仍位于 `writeBundle`，不直接重写最终 bundle。
+
+prepare 在固定上游构建与 typecheck 后执行原子替换及真实 writer 的 9 项测试，覆盖临时占用恢复、永久失败边界、非 Windows/非占用错误立即失败，以及旧文件保留与临时产物清理。原有 Taro runtime 两项测试与 DOM 断言不变，Windows runtime 结果需以修复后 CI 为准。
+
+2026-09-30 本地复核：固定 Taro 版本及打包后的共享依赖重新构建，typecheck、9 项原子发布测试、生产构建通过；上述 headless 与 devtools 最小命令串行运行，均 2/2 通过。两种 provider 沿用一个 describe 级 automator，以 reLaunch 进入同一路由，保留真实 AppID 与条件页；共享启动检查 142 文件通过。真实开发者工具前后均确认正常登录并返回项目列表，服务连接、页面预热和 runtime 断言成功。该结果不替代 Windows runner 对文件占用恢复的复核。
