@@ -111,7 +111,7 @@ export function emitSfcJsonAsset(
   ctx: Emitter,
   bundle: Record<string, any>,
   relativeBase: string,
-  result: Pick<VueTransformResult, 'config'>,
+  result: Pick<VueTransformResult, 'config' | 'meta'>,
   options: {
     defaultConfig?: Record<string, any>
     mergeExistingAsset?: boolean
@@ -130,6 +130,8 @@ export function emitSfcJsonAsset(
   const mergeJson = createJsonMerger(options.mergeStrategy, {
     filename: jsonFileName,
     kind: options.kind ?? 'unknown',
+    routeConfig: result.meta?.routeConfig,
+    pageMeta: result.meta?.pageMeta,
   })
 
   const defaultConfig = options.defaultConfig

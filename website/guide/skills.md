@@ -100,3 +100,7 @@ pnpm seo-quality-check
 2. [AI 任务工作流](/guide/ai-workflows)
 3. [CLI 命令参考](/guide/cli)
 4. [@weapp-vite/mcp 包说明](/packages/mcp)
+
+## 改动验收
+
+使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。

@@ -126,3 +126,7 @@ wv mcp doctor codex
 - wevu 页面、组件、store 写法：[`wevu-authoring.md`](./wevu-authoring.md)
 - Vue SFC 宏与模板约束：[`vue-sfc.md`](./vue-sfc.md)
 - 常见告警与排障：[`troubleshooting.md`](./troubleshooting.md)
+
+## 确定性验收
+
+使用 `wv accept --init` 创建配置、`wv accept --inspect --json` 检查环境。审阅后 `wv accept --trust --json`，通过 `wv accept --report <jobId> --json` 读取报告。现有 MCP 的 weapp_project_inspect 和 weapp_acceptance_start/status/cancel/report 支持相同流程；使用 weapp-acceptance Skill。缺失必需检查、过期证据和单张截图都不能代表完整验收通过。

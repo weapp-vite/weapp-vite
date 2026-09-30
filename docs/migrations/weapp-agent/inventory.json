@@ -1,0 +1,1332 @@
+{
+  "repository": "https://github.com/weappjs/weapp-agent",
+  "commit": "a8a37d4a82c83c2701e36c09b2224462ec8d5514",
+  "files": [
+    {
+      "source": ".agents/skills/repoctl/SKILL.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".agents/skills/repoctl/references/commands.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".agents/skills/repoctl/references/config.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".agents/skills/repoctl/references/templates.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".dockerignore",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".editorconfig",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".gitattributes",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".github/FUNDING.yml",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".github/ISSUE_TEMPLATE/config.yml",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".github/workflows/ci.yml",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".gitignore",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".husky/commit-msg",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".husky/pre-commit",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".husky/pre-push",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".node-version",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".npmrc",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".vscode/extensions.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": ".vscode/settings.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "AGENTS.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "CLAUDE.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "CODE_OF_CONDUCT.md",
+      "destination": "docs/migrations/weapp-agent/source/CODE_OF_CONDUCT.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "CONTRIBUTING.md",
+      "destination": "docs/migrations/weapp-agent/source/CONTRIBUTING.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "LICENSE",
+      "destination": "docs/migrations/weapp-agent/source/LICENSE",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "README.en.md",
+      "destination": "docs/migrations/weapp-agent/source/README.en.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "README.md",
+      "destination": "docs/migrations/weapp-agent/source/README.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "ROADMAP.md",
+      "destination": "docs/migrations/weapp-agent/source/ROADMAP.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "SECURITY.md",
+      "destination": "docs/migrations/weapp-agent/source/SECURITY.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "THIRD_PARTY_NOTICES.md",
+      "destination": "docs/migrations/weapp-agent/source/THIRD_PARTY_NOTICES.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "VALIDATION.md",
+      "destination": "docs/migrations/weapp-agent/source/VALIDATION.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/.gitignore",
+      "destination": "packages/agent-cli/.gitignore",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/LICENSE",
+      "destination": "packages/agent-cli/LICENSE",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/README.md",
+      "destination": "packages/agent-cli/README.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/package.json",
+      "destination": "packages/agent-cli/package.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/skills/weapp-acceptance/SKILL.md",
+      "destination": "skills/weapp-acceptance/SKILL.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/skills/weapp-acceptance/references/scenarios.md",
+      "destination": "skills/weapp-acceptance/references/scenarios.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/src/index.ts",
+      "destination": "packages/agent-cli/src/index.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/src/ui.tsx",
+      "destination": "packages/agent-cli/src/ui.tsx",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/tsconfig.json",
+      "destination": "packages/agent-cli/tsconfig.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/cli/tsdown.config.ts",
+      "destination": "packages/agent-cli/tsdown.config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/.gitignore",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/AGENT.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/CLAUDE.md",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/astro.config.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/nimbus.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/package.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/pnpm-workspace.yaml",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/public/favicon.ico",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/public/fonts/Inter-Bold.ttf",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/public/fonts/LICENSE.txt",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/AgentDirective.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/Header.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/Render.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/aside/Aside.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/aside/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/badge/Badge.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/badge/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/banner/Banner.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/banner/banner.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/banner/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/breadcrumbs/Breadcrumbs.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/breadcrumbs/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/button/Button.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/button/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/button/variants.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/card-grid/CardGrid.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/card-grid/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/card/Card.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/card/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/code/Code.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/code/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/collapsible/Collapsible.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/collapsible/CollapsibleContent.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/collapsible/CollapsibleTrigger.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/collapsible/collapsible.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/collapsible/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/dialog/Dialog.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/dialog/DialogClose.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/dialog/DialogContent.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/dialog/dialog-close.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/dialog/dialog.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/dialog/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/layer-card/LayerCard.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/layer-card/LayerCardContent.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/layer-card/LayerCardHeader.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/layer-card/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/link-button/LinkButton.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/link-button/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/package-managers/PackageManagers.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/package-managers/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/package-managers/package-managers.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/page-actions/PageActions.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/page-actions/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/page-actions/page-actions.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/pagination/Pagination.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/pagination/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/search/SearchDialog.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/search/SearchTrigger.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/search/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/search/providers/pagefind.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/search/search-trigger.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/search/search.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/sidebar/Sidebar.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/sidebar/SidebarFilter.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/sidebar/SidebarGroup.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/sidebar/SidebarGroupHeader.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/sidebar/SidebarLink.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/sidebar/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/sidebar/sidebar.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/steps/Step.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/steps/Steps.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/steps/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/steps/steps.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/tabs/TabItem.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/tabs/Tabs.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/tabs/TabsContent.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/tabs/TabsList.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/tabs/TabsTrigger.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/tabs/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/tabs/tabs.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/theme-toggle/ThemeToggle.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/theme-toggle/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/theme-toggle/theme-toggle.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/toc/MobileTOC.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/toc/TOC.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/toc/index.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/toc/mobile-toc.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/components/ui/toc/toc.client.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/content.config.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/content/docs/acceptance.mdx",
+      "destination": "website/guide/agent/acceptance.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/architecture.mdx",
+      "destination": "website/guide/agent/architecture.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/cli.mdx",
+      "destination": "website/guide/agent/cli.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/contributing.mdx",
+      "destination": "website/guide/agent/contributing.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/en/quickstart.mdx",
+      "destination": "website/guide/agent/en/quickstart.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/getting-started.mdx",
+      "destination": "website/guide/agent/getting-started.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/images.mdx",
+      "destination": "website/guide/agent/images.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/mcp.mdx",
+      "destination": "website/guide/agent/mcp.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/models.mdx",
+      "destination": "website/guide/agent/models.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/permissions.mdx",
+      "destination": "website/guide/agent/permissions.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/projects.mdx",
+      "destination": "website/guide/agent/projects.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/sessions.mdx",
+      "destination": "website/guide/agent/sessions.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/docs/workflow.mdx",
+      "destination": "website/guide/agent/workflow.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "apps/docs/src/content/partials/example.mdx",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/layouts/BaseLayout.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/layouts/DocsLayout.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/lib/cn.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/404.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/[...slug].astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/[...slug]/index.md.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/[...slug]/index.mdx.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/[section]/llms.txt.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/index.astro",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/llms-full.txt.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/llms.txt.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/nimbus-api/coordinates.json.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/og.png.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/og/[...slug].ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/og/_og-card-config.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/pages/robots.txt.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/styles/globals.css",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/src/styles/prose.css",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/tsconfig.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "apps/docs/wrangler.jsonc",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Documentation content migrated; Astro renderer, theme and deployment replaced by existing VitePress website"
+    },
+    {
+      "source": "benchmarks/README.md",
+      "destination": "benchmarks/weapp-agent/README.md",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "benchmarks/tasks.json",
+      "destination": "benchmarks/weapp-agent/tasks.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "commitlint.config.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "eslint.config.js",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "examples/acceptance/counter.json",
+      "destination": "examples/weapp-agent/acceptance/counter.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "lint-staged.config.js",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "package.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "packages/core/package.json",
+      "destination": "packages/agent-core/package.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/src/config.ts",
+      "destination": "packages/agent-core/src/config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/src/engine.ts",
+      "destination": "packages/agent-core/src/engine.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/src/files.ts",
+      "destination": "packages/agent-core/src/files.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/src/index.ts",
+      "destination": "packages/agent-core/src/index.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/src/security.ts",
+      "destination": "packages/agent-core/src/security.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/src/session.ts",
+      "destination": "packages/agent-core/src/session.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/src/types.ts",
+      "destination": "packages/agent-core/src/types.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/test/engine.test.ts",
+      "destination": "packages/agent-core/test/engine.test.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/test/security.test.ts",
+      "destination": "packages/agent-core/test/security.test.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/tsconfig.json",
+      "destination": "packages/agent-core/tsconfig.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/tsdown.config.ts",
+      "destination": "packages/agent-core/tsdown.config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/core/vitest.config.ts",
+      "destination": "packages/agent-core/vitest.config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/package.json",
+      "destination": "packages/agent-mini-program/package.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/acceptance.ts",
+      "destination": "packages/acceptance/src/acceptance.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/index.ts",
+      "destination": "packages/agent-mini-program/src/index.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/mcp.ts",
+      "destination": "packages/agent-mini-program/src/mcp.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/project.ts",
+      "destination": "packages/acceptance/src/project.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/runtime.ts",
+      "destination": "packages/agent-mini-program/src/runtime.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/scenario.ts",
+      "destination": "packages/acceptance/src/scenario.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/server.ts",
+      "destination": "packages/mcp/src/server/acceptance.ts",
+      "disposition": "integrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/snapshot.ts",
+      "destination": "packages/acceptance/src/snapshot.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/src/verify.ts",
+      "destination": "packages/acceptance/src/verify.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/test/acceptance.test.ts",
+      "destination": "packages/agent-mini-program/test/acceptance.test.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/test/fixtures/server.mjs",
+      "destination": "packages/agent-mini-program/test/fixtures/server.mjs",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/test/mcp.test.ts",
+      "destination": "packages/agent-mini-program/test/mcp.test.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/test/project.test.ts",
+      "destination": "packages/acceptance/test/project.test.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/tsconfig.json",
+      "destination": "packages/agent-mini-program/tsconfig.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/tsdown.config.ts",
+      "destination": "packages/agent-mini-program/tsdown.config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/mini-program/vitest.config.ts",
+      "destination": "packages/agent-mini-program/vitest.config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/providers/package.json",
+      "destination": "packages/agent-providers/package.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/providers/src/index.ts",
+      "destination": "packages/agent-providers/src/index.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/providers/test/adapter.test.ts",
+      "destination": "packages/agent-providers/test/adapter.test.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/providers/tsconfig.json",
+      "destination": "packages/agent-providers/tsconfig.json",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/providers/tsdown.config.ts",
+      "destination": "packages/agent-providers/tsdown.config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "packages/providers/vitest.config.ts",
+      "destination": "packages/agent-providers/vitest.config.ts",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "pnpm-lock.yaml",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "pnpm-workspace.yaml",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "renovate.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "repoctl.config.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "scripts/acceptance-devtools.mjs",
+      "destination": "scripts/weapp-agent/acceptance-devtools.mjs",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "scripts/devtools-smoke.mjs",
+      "destination": "scripts/weapp-agent/devtools-smoke.mjs",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "scripts/fixtures-smoke.mjs",
+      "destination": "scripts/weapp-agent/fixtures-smoke.mjs",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "scripts/live-models.mjs",
+      "destination": "scripts/weapp-agent/live-models.mjs",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "scripts/smoke-pack.mjs",
+      "destination": "scripts/weapp-agent/smoke-pack.mjs",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "scripts/summarize-benchmark.mjs",
+      "destination": "scripts/weapp-agent/summarize-benchmark.mjs",
+      "disposition": "migrate",
+      "reason": null
+    },
+    {
+      "source": "stylelint.config.js",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "tsconfig.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "turbo.json",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    },
+    {
+      "source": "vitest.config.ts",
+      "destination": null,
+      "disposition": "replace",
+      "reason": "Replaced by target workspace governance and tooling"
+    }
+  ]
+}

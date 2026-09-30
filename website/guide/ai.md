@@ -308,3 +308,7 @@ export default defineConfig({
 6. [调试与贡献](/guide/debug)
 7. [@weapp-vite/mcp 包说明](/packages/mcp)
 8. [AI 学习入口](/ai)
+
+## 改动验收
+
+使用 [小程序改动验收](./acceptance) 和 `weapp-acceptance` Skill，通过现有 MCP 完成检查、场景运行和报告读取，无需第二个模型。

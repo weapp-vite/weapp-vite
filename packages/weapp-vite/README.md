@@ -551,3 +551,7 @@ const artifact = await buildTestArtifact({ cwd: process.cwd() })
 ## 实验性标准 Vite 插件
 
 `weapp-vite/vite` 导出 `weapp()`，通过 `plugins: [weapp()]` 和顶层 `weapp` 配置接入原生 `vite build` / `vp build`。当前开放微信 TS/Vue/React 生产构建、原生 build watch 与实验性 classic/stateful 开发；已支持普通分包、独立分包与 worker，其他高级目标继续分阶段对齐。配置、Vite+ alias 与未开放能力见 [标准插件指南](https://vite.weapp.dev/guide/vite-plugin)。离线说明随包发布在 `dist/docs/vite-plugin.md`。
+
+## AI 改动验收
+
+通过 `wv accept --inspect --json` 检查环境；审阅配置后运行 `wv accept --trust --json`。现有 MCP 同时提供验收启动、状态、取消和报告工具，无需模型 Key。[接入指南](https://vite.weapp.dev/guide/acceptance)。独立 `weapp-agent` CLI 同仓维护并保留原命令。
