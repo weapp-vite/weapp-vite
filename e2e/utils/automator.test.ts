@@ -6,6 +6,8 @@ import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
 import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
 import { isResidualDevProcessCommand } from './dev-process-cleanup'
+import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
+import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 
 vi.mock('./ideWarningReport', () => ({ appendIdeReportEvent: vi.fn(), resolveReportProjectPath: () => 'apps/demo' }))
 
@@ -398,6 +400,29 @@ describe('automator', () => {
       exception: 6,
       total: 21,
     })).toBe('[e2e-runtime-stats] warn=4 error=5 exception=6 total=15 log=3 info=2 debug=1 all=21')
+  })
+
+  it('cleans a real owned CLI child while preserving an unrelated process', async () => {
+    const spawnChild = () => spawn(process.execPath, ['-e', 'setInterval(() => {}, 10_000)'], {
+      detached: process.platform !== 'win32',
+      stdio: 'ignore',
+    })
+    const owned = spawnChild()
+    const unrelated = spawnChild()
+    const ownedPid = await waitForSpawn(owned)
+    const unrelatedPid = await waitForSpawn(unrelated)
+    const dispose = ownDevtoolsCleanup(() => terminateBridgeCliProcess(ownedPid))
+    try {
+      await cleanupResidualDevtoolsProcesses()
+      await expect(waitForProcessGone(ownedPid)).resolves.toBeUndefined()
+      expect(() => process.kill(unrelatedPid, 0)).not.toThrow()
+      await dispose()
+      expect(() => process.kill(unrelatedPid, 0)).not.toThrow()
+    }
+    finally {
+      await dispose()
+      await terminateBridgeCliProcess(unrelatedPid)
+    }
   })
 
   it('terminates detached bridge cli processes', async () => {

@@ -1,17 +1,11 @@
-import * as fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
 import process from 'node:process'
-// eslint-disable-next-line e18e/ban-dependencies -- e2e 需要直接调用 taskkill 进行 Windows DevTools 进程清理
+// eslint-disable-next-line e18e/ban-dependencies -- e2e 需要调用所选 DevTools CLI 清理编译缓存
 import { execa } from 'execa'
-import { cleanupProcessesByCommandPatterns } from './dev-process'
 import { cleanupResidualDevProcesses } from './dev-process-cleanup'
+import { resolveWechatCliPath } from './devtoolsCli'
+import { cleanupOwnedDevtoolsProcesses } from './devtoolsProcessOwnership'
 import { waitForDevtoolsLogQuiescence } from './ide-devtools-logs'
 
-const AUTOMATOR_SESSION_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-sessions')
-const AUTOMATOR_PORT_LEASE_DIR = path.join(os.tmpdir(), 'weapp-vite-automator-port-leases')
-const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
-const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 const COMPACT_WHITESPACE_PATTERN = /\s+/g
 const DEVTOOLS_CACHE_CLEAN_STALE_PORT_PATTERNS = [
   /#initialize-error:\s*wait IDE port timeout/i,
@@ -19,33 +13,7 @@ const DEVTOOLS_CACHE_CLEAN_STALE_PORT_PATTERNS = [
   /wait IDE port timeout/i,
 ] as const
 
-const UNIX_DEVTOOLS_PROCESS_PATTERNS = [
-  'e2e/utils/automator.cli-bridge.ts',
-  'wechatwebdevtools.app/Contents/MacOS/cli',
-  'wechatwebdevtools.app/Contents/MacOS/Electron',
-  'wechatwebdevtools.app/Contents/MacOS/wechatwebdevtools',
-  'wechatwebdevtools',
-] as const
-
 type DevtoolsCacheCleanType = 'compile'
-
-export function resolveIdeDevtoolsProcessPatterns(platform = process.platform) {
-  if (platform === 'win32') {
-    return [] as string[]
-  }
-
-  return [...UNIX_DEVTOOLS_PROCESS_PATTERNS]
-}
-
-function resolveWechatCliPath(cliPath?: string, platform = process.platform) {
-  if (typeof cliPath === 'string' && cliPath.trim()) {
-    return cliPath.trim()
-  }
-  if (platform === 'win32') {
-    return DEFAULT_WECHAT_CLI_WINDOWS_PATH
-  }
-  return DEFAULT_WECHAT_CLI_MACOS_PATH
-}
 
 function extractCleanCacheErrorText(error: unknown) {
   if (!error || typeof error !== 'object') {
@@ -107,39 +75,10 @@ async function runCleanDevtoolsCacheCommand(
   }
 }
 
-async function cleanupAutomatorSessionArtifacts() {
-  await Promise.all([
-    fs.rm(AUTOMATOR_SESSION_DIR, {
-      recursive: true,
-      force: true,
-    }).catch(() => {}),
-    fs.rm(AUTOMATOR_PORT_LEASE_DIR, {
-      recursive: true,
-      force: true,
-    }).catch(() => {}),
-  ])
-}
-
-export async function cleanupResidualDevtoolsProcesses(platform = process.platform) {
-  if (platform === 'win32') {
-    await execa('taskkill', ['/F', '/IM', 'wechatdevtools.exe', '/T'], {
-      reject: false,
-      stdin: 'ignore',
-      stdout: 'ignore',
-      stderr: 'ignore',
-    })
-  }
-  else {
-    const processPatterns = resolveIdeDevtoolsProcessPatterns(platform)
-    if (processPatterns.length > 0) {
-      try {
-        await cleanupProcessesByCommandPatterns(processPatterns, 2_500)
-      }
-      catch {}
-    }
-  }
-
-  await cleanupAutomatorSessionArtifacts()
+export async function cleanupResidualDevtoolsProcesses(_platform = process.platform) {
+  // 会话自己的 close/disconnect、CLI 子树由启动生命周期负责；绝不终止手动打开的 IDE。
+  // 不删除全局 session/port-lease 目录，其他进程可能仍持有其中的租约。
+  await cleanupOwnedDevtoolsProcesses()
   await waitForDevtoolsLogQuiescence()
 }
 
