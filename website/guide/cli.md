@@ -252,7 +252,9 @@ wv ide doctor --json
 wv ide doctor --strict
 ```
 
-doctor 会检查 CLI 路径、服务端口、登录状态、已打开项目的 automator websocket 和 `Tool.getInfo`；不会自动启动或关闭微信开发者工具。
+`wv ide doctor` 会检查 CLI 路径、服务端口配置、原生 `islogin` 查询、已打开项目的 automator websocket 和 `Tool.getInfo`。原生 CLI 查询可能拉起 IDE；需要不执行项目配置、不启动 IDE 的静态诊断时，使用上面的 `wv doctor`。
+
+连接失败不会删除持久化 automator 会话记录；失败不能证明记录过期，也不授予诊断命令清理其他操作的权限。若连接成功但 `Tool.getInfo` 失败，报告保留 `automator: ok`，单独将 `tool` 标为 warning，并释放本次连接；该结果不证明登录失效。
 
 ### 5) `close`
 

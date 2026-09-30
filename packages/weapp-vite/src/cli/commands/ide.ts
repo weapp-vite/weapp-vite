@@ -125,11 +125,22 @@ async function runIdeDoctor(projectPath: string | undefined, options: GlobalCLIO
         timeout: 3_000,
       }) as { disconnect?: () => void, toolInfo?: () => Promise<unknown> }
       automatorCheck = { status: 'ok', value: true }
-      if (typeof miniProgram.toolInfo === 'function') {
-        const toolInfo = await miniProgram.toolInfo()
-        toolCheck = { status: 'ok', value: toolInfo }
+      try {
+        if (typeof miniProgram.toolInfo === 'function') {
+          const toolInfo = await miniProgram.toolInfo()
+          toolCheck = { status: 'ok', value: toolInfo }
+        }
       }
-      miniProgram.disconnect?.()
+      catch {
+        toolCheck = {
+          status: 'warning',
+          message: '项目自动化连接已建立，但 Tool.getInfo 未能返回工具信息；宿主版本仍未确认。',
+          fix: '确认目标项目模拟器就绪后重新运行 doctor；此结果不证明登录失效。',
+        }
+      }
+      finally {
+        miniProgram.disconnect?.()
+      }
     }
     catch (error) {
       automatorCheck = {

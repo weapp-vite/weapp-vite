@@ -39,6 +39,8 @@ weapp-vite ide logs --open
 
 如果 DevTools 未能自动连接，先运行 `wv ide doctor --json`。`wv open`、`wv dev -o` 和 `wv ide logs --open` 默认先通过官方 CLI 打开项目，再连接 automator；只有需要兼容旧链路时才使用 `--ide-open-strategy automator`。
 
+`wv ide doctor` 的原生 `islogin` 查询可能拉起 IDE；只需要静态诊断时使用 `wv doctor --format json`。只读 automator 连接失败不会删除持久化会话记录。连接成功后若 `Tool.getInfo` 失败，`automator` 仍为 ok，`tool` 单独标记 warning，并释放本次连接；不能据此认定登录失效。
+
 如果项目启用了 `weapp.forwardConsole.enabled = 'auto'`，AI 终端场景下 `dev --open` 也可能自动附加日志桥。
 
 ## `.vue` 文件存在，但提示未安装 `wevu`

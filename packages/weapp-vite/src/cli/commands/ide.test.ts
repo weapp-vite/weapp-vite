@@ -184,6 +184,29 @@ describe('ide logs command', () => {
     stdoutWriteSpy.mockRestore()
   })
 
+  it('preserves the connected fact and disconnects when Tool.getInfo fails', async () => {
+    const disconnect = vi.fn()
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect,
+      toolInfo: vi.fn().mockRejectedValue(new Error('Tool.getInfo unavailable')),
+    })
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    try {
+      const { runIdeCommand } = await import('./ide')
+      await runIdeCommand('doctor', undefined, { json: true })
+      const output = JSON.parse(String(stdoutWriteSpy.mock.calls[0][0])) as {
+        checks: Record<string, { status: string, value?: unknown }>
+      }
+      expect(output.checks.automator).toMatchObject({ status: 'ok', value: true })
+      expect(output.checks.tool.status).toBe('warning')
+      expect(disconnect).toHaveBeenCalledTimes(1)
+      expect(openIdeMock).not.toHaveBeenCalled()
+    }
+    finally {
+      stdoutWriteSpy.mockRestore()
+    }
+  })
+
   it('fails strict ide doctor when the service port is disabled', async () => {
     detectWechatDevtoolsServicePortMock.mockResolvedValueOnce({
       servicePort: 14757,
