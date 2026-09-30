@@ -1,12 +1,18 @@
 import type { PreparedUpload, PreviewResult, UploadAction, UploadContext } from '../types'
 import { mkdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { loadUploadPackage, requireUploadAppId, requireUploadEnv } from '../tools'
+import { loadUploadPackage, redactUploadSecrets, requireUploadAppId, requireUploadEnv } from '../tools'
 
 interface WechatProject {
   appid: string
   projectPath: string
   privateKey: string
+}
+
+interface WechatTaskStatus {
+  id: string
+  message: string
+  status: 'doing' | 'done' | 'fail' | 'warn' | 'info'
 }
 
 interface WechatCi {
@@ -23,6 +29,7 @@ interface WechatCi {
     desc: string
     robot?: number
     setting: { useProjectConfig: true }
+    onProgressUpdate?: (task: WechatTaskStatus | string) => void
   }) => Promise<{
     subPackageInfo?: { name: string, size: number }[]
     pluginInfo?: { pluginProviderAppid: string, version: string, size: number }[]
@@ -63,9 +70,10 @@ export async function prepareWechatUpload(context: UploadContext, action: Upload
     throw new Error('WEAPP_CI_PRIVATE_KEY_PATH 指定的私钥文件不能为空。')
   }
 
+  const secrets = [privateKey, privateKey.trim()]
   return {
-    secrets: [privateKey, privateKey.trim()],
-    async run() {
+    secrets,
+    async run(onProgress) {
       const ci = await loadUploadPackage<WechatCi>('miniprogram-ci', context.cwd)
       const project = new ci.Project({
         appid,
@@ -100,6 +108,13 @@ export async function prepareWechatUpload(context: UploadContext, action: Upload
         desc: context.desc,
         robot,
         setting: { useProjectConfig: true },
+        onProgressUpdate: onProgress
+          ? (task) => {
+              // 官方任务只有状态和消息，没有可换算的百分比。
+              const message = typeof task === 'string' ? task : `${task.status}: ${task.message}`
+              onProgress({ type: 'progress', message: redactUploadSecrets(message, secrets) })
+            }
+          : undefined,
       })
     },
   }

@@ -12,7 +12,7 @@ vi.mock('../tools', async (importOriginal) => {
   return { ...tools, runUploadCli: vi.fn() }
 })
 
-describe('Swan preview result boundary', () => {
+describe('Swan result boundary', () => {
   let context: UploadContext
 
   beforeEach(async () => {
@@ -63,5 +63,28 @@ describe('Swan preview result boundary', () => {
 
   it('does not relax the upload version contract when preview skips release metadata', async () => {
     await expect(prepareSwanUpload(context, 'upload')).rejects.toThrow('版本号')
+  })
+
+  it('captures framed upload JSON after compiler logs without confusing it with preview metadata', async () => {
+    context.version = '1.2.3'
+    const result = { schemeUrl: 'baiduboxapp://swan/upload', fileSize: 1024, warningList: ['app.js:1:1 scan warning'] }
+    vi.mocked(runUploadCli).mockImplementation(async (cliContext, _packageName, _binName, _args, _secrets, captureOutput) => {
+      if (cliContext.env.IS_NODE_JS !== 'true' || !captureOutput) {
+        throw new Error('Official result framing and capture must be enabled.')
+      }
+      return `compiler log\r\nNODE_JS_ENV_RESULT:${JSON.stringify(result, null, 2)}\r\n`
+    })
+    const prepared = await prepareSwanUpload(context)
+    expect(await prepared.run()).toEqual(result)
+  })
+
+  it.each([
+    '{"schemeUrl":"baiduboxapp://swan/unframed"}',
+    'NODE_JS_ENV_RESULT:{broken',
+  ])('rejects missing or malformed framed upload JSON: %s', async (output) => {
+    context.version = '1.2.3'
+    vi.mocked(runUploadCli).mockResolvedValue(output)
+    const prepared = await prepareSwanUpload(context)
+    await expect(prepared.run()).rejects.toThrow('百度上传未返回有效的 JSON 结果。')
   })
 })

@@ -4,7 +4,7 @@ import { cac } from 'cac'
 import path from 'pathe'
 import { registerAlipayCommand } from './cli/commands/alipay'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
-import { registerBuildCommand } from './cli/commands/build'
+import { registerBuildCommand, scheduleCompletedProductionBuildExit } from './cli/commands/build'
 import { registerCloseCommand } from './cli/commands/close'
 import { registerGenerateCommand } from './cli/commands/generate'
 import { registerIdeCommand } from './cli/commands/ide'
@@ -20,6 +20,7 @@ import { tryRunIdeCommand } from './cli/ide'
 import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
 import { convertBase } from './cli/options'
 import { handlePrepareLifecycleError } from './cli/prepareGuard'
+import { outputUploadReport } from './cli/upload/report'
 import { VERSION } from './constants'
 import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 import { checkRuntime } from './utils'
@@ -106,16 +107,27 @@ try {
   const args = process.argv.slice(2)
   const forwarded = await tryRunIdeCommand(args)
   if (!forwarded) {
-    const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
-    if (managedTsconfigBootstrapRoot) {
-      await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
-    }
     cli.parse(process.argv, { run: false })
-    // 仅为未显式命名的默认入口预启动；dev/serve 自管生命周期，其他命令不得提前求值配置。
-    if (cli.matchedCommand?.name === '' && cli.matchedCommandName === undefined) {
-      await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+    const runCommand = async () => {
+      const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
+      if (managedTsconfigBootstrapRoot) {
+        await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
+      }
+      // 仅为未显式命名的默认入口预启动；dev/serve 自管生命周期，其他命令不得提前求值配置。
+      if (cli.matchedCommand?.name === '' && cli.matchedCommandName === undefined) {
+        await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
+      }
+      return cli.runMatchedCommand()
     }
-    await cli.runMatchedCommand()
+    if (cli.matchedCommand?.name === 'upload') {
+      const json = Array.isArray(cli.options.json) ? cli.options.json.at(-1) : cli.options.json
+      // 在 CAC 校验必填值和未知选项前接管输出，启动失败也必须产生报告。
+      await outputUploadReport(json === true, runCommand)
+      scheduleCompletedProductionBuildExit({}, undefined)
+    }
+    else {
+      await runCommand()
+    }
   }
 }
 catch (error) {

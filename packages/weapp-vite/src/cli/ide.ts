@@ -36,6 +36,8 @@ const SDK_UPLOAD_OPTIONS: Record<string, true> = {
   '--bump': true,
   '--git-desc': true,
   '--dry-run': true,
+  '--json': true,
+  '--timeout': true,
 }
 const UPLOAD_VALUE_OPTIONS: Record<string, true> = {
   ...LEGACY_UPLOAD_OPTIONS,
@@ -45,6 +47,7 @@ const UPLOAD_VALUE_OPTIONS: Record<string, true> = {
   '--platform': true,
   '--uv': true,
   '--bump': true,
+  '--timeout': true,
   '--project-config': true,
   '--port': true,
   '--lang': true,

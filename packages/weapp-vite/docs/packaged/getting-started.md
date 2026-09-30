@@ -61,6 +61,8 @@ wv upload -p xhs,tt --mode test --bump patch --git-desc --dry-run
 
 `build -p all --upload` 是“小程序 + Web”，等两者都构建成功后只上传小程序，不等于独立 `upload -p all` 的六端批量上传。
 
+需要 CI 报告时使用 `wv upload -p xhs,tt --json --timeout 180`：stdout 为单个 JSON 汇总，日志与官方进度进入 stderr；首次失败停止并保留未执行目标。超时仅限 SDK worker，不含构建；中断后不能推断远端取消，不自动重试。这两个选项不适用于 `build --upload`、`preview` 或 IDE，完整边界见[本地结果参考](./upload.md#结构化结果与本地超时)。
+
 多个平台推荐使用一份 `weapp.multiPlatform.projectConfigs` 映射，公共字段用对象展开，各平台只提供 AppID 和差异；标准项目 JSON 由构建器生成，不必手工维护六份文件。原生文件方式仍可使用，完整示例见本地[上传速查](./upload.md#多平台与输出校验)。
 
 按目标安装官方工具，并通过未提交的 `.env.<mode>.local` 或 CI Secrets 提供凭据，不要在 `weapp.upload` 中添加凭据字段。先读本地 [六端上传与预览速查](./upload.md)，再按[分平台操作指南](https://vite.weapp.dev/guide/upload.html)配置 AppID、密钥或 Token。淘宝不在支持列表内；百度官方 CLI Token 会进入子进程参数，仅在可信隔离 runner 上运行。
@@ -76,7 +78,7 @@ SDK 命令 `wv upload -p weapp` 无需 `--project`，会自动定位本次构建
 
 旧顶层语法每次只警告一次未来弃用，不要求立即迁移；稳定的显式 `wv ide upload -p ./dist -v 1.2.3 -d "release"` 不弃用、不警告，仍依赖 IDE 登录。若改用 SDK，需要从源码项目根安装 `miniprogram-ci`、配置 AppID、上传私钥和 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`；不复用 IDE 登录，也不能把旧 `--project` 的产物目录直接作为 SDK `[root]`。
 
-`-p` 只有与明确旧标记（如 `--version/-v` 或 `--project`）一起出现时才是 IDE 项目目录，否则是平台，不猜测路径。新旧方言混用在 IDE、构建或升版副作用前报错，`--dry-run` / `--bump` / `--git-desc` 不能用于旧 IDE 上传。`wv upload --help` 是 SDK 帮助，`wv help upload` 保留旧 IDE 帮助并警告，`wv ide help upload` 不警告。完整标记、短参数和 `=` / `--` 规则见[本地速查](./upload.md#旧上传兼容与迁移)。
+`-p` 只有与明确旧标记（如 `--version/-v` 或 `--project`）一起出现时才是 IDE 项目目录，否则是平台，不猜测路径。新旧方言混用在 IDE、构建或升版副作用前报错，`--dry-run` / `--bump` / `--git-desc` / `--json` / `--timeout` 不能用于旧 IDE 上传。`wv upload --help` 是 SDK 帮助，`wv help upload` 保留旧 IDE 帮助并警告，`wv ide help upload` 不警告。完整标记、短参数和 `=` / `--` 规则见[本地速查](./upload.md#旧上传兼容与迁移)。
 
 ### 构建并预览
 
