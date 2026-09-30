@@ -1,0 +1,57 @@
+{
+  "name": "@weapp-agent/mini-program",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Weapp Agent mini-program",
+  "license": "MIT",
+  "homepage": "https://vite.weapp.dev/guide/agent/getting-started",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/agent-mini-program"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "agent"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {},
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.2.0",
+    "@modelcontextprotocol/server": "^2.2.0",
+    "@weapp-agent/core": "workspace:*",
+    "@weapp-vite/acceptance": "workspace:*",
+    "@weapp-vite/mcp": "workspace:*",
+    "execa": "10.0.1",
+    "weapp-ide-cli": "workspace:*",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/node": "^2.1.0"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "name": "@weapp-agent/core",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Weapp Agent core",
+  "author": "ice breaker <hi@sonofmagic.top>",
+  "license": "MIT",
+  "homepage": "https://vite.weapp.dev/guide/agent/getting-started",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/agent-core"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "agent"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./project": {
+      "types": "./dist/project.d.mts",
+      "import": "./dist/project.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {},
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "diff": "9.0.0",
+    "execa": "10.0.1",
+    "zod": "4.6.5"
+  }
+}

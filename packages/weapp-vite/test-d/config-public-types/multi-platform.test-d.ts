@@ -123,3 +123,6 @@ const futureConfigs = {
 expectAssignable<ConfigProjectConfigs>(futureConfigs)
 expectType<number>(futureConfigs.weapp.setting.babelSetting.futureOption.revision)
 defineConfig({ weapp: { multiPlatform: { projectConfigs: futureConfigs } } })
+
+expectAssignable<WeappViteConfig>({ platform: 'web' })
+defineConfig({ weapp: { platform: 'web' } })

@@ -1,0 +1,45 @@
+# DevTools E2E 进程归属与版本选择
+
+启动失败和缓存恢复曾按名称终止所有微信开发者工具进程，Windows 使用镜像名、Unix 使用命令行子串。这会同时关闭手动打开的 IDE、其他项目和不同安装版本。自动恢复不能把进程名称当成资源所有权。
+
+修复后的恢复只清理本次 bridge 启动明确登记的 CLI 子树。正常 close 与启动失败共享一次性 disposer；已退出的 bootstrap CLI 不向父进程报告可清理 PID。未知归属的残留 IDE 保持运行，不能自动误杀；需要重启时先确认实例归属并显式处理。
+
+全局 session 与 port-lease 目录不再整体删除。会话自身的 close/disconnect、生命周期取消和桥接项目清理由原有资源管理器负责。
+
+通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 选择安装版本；显式传入 `cliPath` 优先，其次环境变量，最后使用原有平台默认值。登录预检、direct/bridge 启动、engine build 与缓存恢复使用同一解析入口。此环境变量只影响测试基础设施，不改变公开 CLI API。
+
+平台默认值只是兼容路径，不负责识别安装渠道或查询最新版。实际 E2E 执行必须按下面的版本规则核验并显式选择，不能把路径 fallback 当作稳定版证明。
+
+`cleanDevtoolsCacheAndStop` 保留调用兼容性，其 stop 仅作用于登记的资源。它不会停止复用的手动 IDE，也不会猜测由 CLI 间接启动且无法确认归属的宿主进程。
+
+验证包括跨平台清理回归、重复释放及失败后重试、CLI 选择和启动恢复测试；真实 IDE 验证需另外记录宿主版本、页面运行结果以及清理后进程是否仍存活。原生 WXSS 更新失败应保留为宿主/监听诊断，不能以进程存活替代样式验收。
+
+## 本轮实测（2026-09-30）
+
+开发基线为主线 `3ba29d4b3939a3d3f43c5750927020f6bb62421c`。稳定版 DevTools `2.02.2608080`、基础库 `3.17.3`，使用真实 AppID 的独立原生页面，通过共享 bridge 会话运行。
+
+- 修复前保护回归 5 项失败：macOS/Windows 全局进程清理、缓存重试、缓存清理后停止和 suite 清理均会触达无归属资源。
+- 修复后真实 IDE：先执行恢复清理，再启动原生页面，读取红色计算样式，点击后计数为 1。失败后执行会话 close 和恢复清理，原宿主 PID 仍存活，原有项目仍打开。运行时订阅统计为 warning/error/exception 各 0；IDE 内部另有 frontend 初始化诊断，二者没有混为同一统计。
+- 原生 WXSS 红→蓝更新失败：IDE 日志确认收到 `src/pages/home/index.wxss` 文件变更，计算样式在 30 秒内仍为红色。未进入后续绿色步骤，不能据此宣称连续 HMR 通过。该探针不经过 weapp-vite 编译链，样式验收与误杀修复分开记录。
+- 另一次窗口关闭日志只有正常 `close-requested`，没有新的系统崩溃报告，无法仅凭此确定发起者。此前 RC Helper 的 SIGABRT 记录不作为稳定版崩溃证据。
+
+定向命令：
+
+```sh
+pnpm vitest run --project e2e-hmr-infra e2e/utils/ide-devtools-cleanup.test.ts e2e/utils/devtoolsCli.test.ts e2e/utils/devtoolsProcessOwnership.test.ts e2e/utils/automator.cli-bridge.test.ts e2e/utils/automator.test.ts
+pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/automator-launch-resilience.test.ts
+```
+
+类型检查：新增 CLI 选择与资源归属模块通过定向 TypeScript 检查。包含旧 automator 依赖图的检查仍有 27 条既有诊断；在同 SHA 未修改 worktree 复跑后，按文件和错误内容比较无新增诊断，未将此描述为全量 typecheck 通过。
+
+所有命令串行运行；真实 IDE 探针使用选定 CLI 环境变量，不覆盖默认安装，也不复制登录凭据。
+
+## 固化的教训与执行规则
+
+- 故障路径：E2E 启动失败进入自动恢复，Unix 按命令行名称匹配进程，Windows 按镜像名终止进程；同名进程包含手动实例、其他项目及另一安装渠道，扩大了清理范围。错误发生在资源所有权边界，不应增加更宽的进程匹配或重试来掩盖。
+- 清理契约：仅释放当前任务登记且仍持有的 CLI 子树及会话资源。close、恢复、超时、取消和重试共用幂等释放；不复用已退出 PID，不删除全局 session、port-lease、用户缓存或登录信息。未知归属默认保留，其他活动测试等待完成。
+- 回归门槛：模拟两平台的恢复入口，禁止全局命令和全局目录删除；真实子进程证明仅目标被释放；真实 IDE 检查恢复前后手动宿主和其他项目保留。进程仍活着不等于样式或 runtime 验收通过。
+- 版本默认：每轮真实 IDE E2E 使用执行时官方最新稳定版，核对官方下载页稳定渠道、查询时间、所选安装和实际连接宿主。通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择；记录实际 IDE 和基础库版本，不将本文历史探针版本永久设为“最新”。
+- 版本例外：只有用户明确指定才使用 RC、nightly、开发版或旧稳定版。失败不能成为自行换版的理由；无法确认最新稳定版、未安装或未登录时保留证据并记录未完成，不静默回退，不绕过登录。既有固定目标的正式性能运行不重新采样。
+
+这些规则同步到 `AGENTS.local.md`、生成 `AGENTS.md` 的源文档、公开 E2E skill 及其 checklist、网站 AI 工作流。后续审查清理代码和运行 E2E 时一并执行。

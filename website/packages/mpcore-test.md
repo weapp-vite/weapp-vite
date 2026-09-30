@@ -40,3 +40,7 @@ expect(result).toHaveEmitted('change', { value: 2 })
 查询支持 `ByText`、`ByRole`、`ByTestId`、`ByAttribute`、`within()` 与同步/异步变体。交互支持 `tap/input/change/blur/trigger`。不提供依赖 CSS layout 的可见性断言。
 
 默认构建目录是 `.weapp-vite/test-artifacts/`。冷构建和 watch 重建都通过 Vite/Rolldown 写产物，保留真实分包、chunk 和编译结果。
+
+## worker 测试
+
+`@mpcore/simulator` 的 Node 与浏览器执行器可运行编译后的 worker，支持 CommonJS 依赖、双向消息复制与终止。测试项目沿用 `app.json.workers`；页面卸载时应终止自己创建的 worker。首条消息、消息往返及重新进入页面后的状态有真实微信 IDE 对照。此能力验证消息与生命周期语义，不用于评估并行线程性能或系统进程回收。

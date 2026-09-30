@@ -6,7 +6,6 @@ import path from 'pathe'
 import { runWithSuspendedSharedInput } from 'weapp-ide-cli'
 import logger from '../../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../../mcp'
-import { loadConfig } from '../loadConfig'
 import {
   buildMcpClientConfigPlan,
   formatMcpQuickStart,
@@ -57,6 +56,7 @@ async function resolveHttpUrl(options: Pick<McpCommandOptions, 'c' | 'config' | 
     }
 
     const configFile = resolveConfigFile(options as GlobalCLIOptions)
+    const { loadConfig } = await import('../loadConfig')
     const loaded = await loadConfig(configFile)
     const resolved = resolveWeappMcpConfig(loaded?.config?.weapp?.mcp)
     return `http://${resolved.host}:${resolved.port}${resolved.endpoint}`
@@ -162,7 +162,7 @@ async function handleServer(options: McpCommandOptions) {
     : options.transport === 'command'
       ? undefined
       : options.transport
-  await startWeappViteMcpServer({
+  const handle = await startWeappViteMcpServer({
     endpoint: options.endpoint,
     host: options.host,
     port: resolvePort(options.port),
@@ -171,6 +171,18 @@ async function handleServer(options: McpCommandOptions) {
     unref: options.unref,
     workspaceRoot: options.workspaceRoot,
   })
+
+  const shutdown = async () => {
+    process.off('SIGINT', shutdown)
+    process.off('SIGTERM', shutdown)
+    process.stdin.off('end', shutdown)
+    await handle.close?.()
+  }
+  process.once('SIGINT', shutdown)
+  process.once('SIGTERM', shutdown)
+  if (resolvedTransport !== 'streamable-http') {
+    process.stdin.once('end', shutdown)
+  }
 
   for (const line of formatMcpQuickStart({
     httpUrl: resolvedTransport === 'streamable-http'

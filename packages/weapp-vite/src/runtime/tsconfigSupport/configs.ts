@@ -47,12 +47,11 @@ export function resolveAppWevuJsxImportSource(
 
 function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const configService = requireConfigService(ctx, '生成 app tsconfig 前必须初始化 configService。')
-  const config = configService.weappViteConfig
   const userTypes = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.types
   const legacyTypes = legacyConfig?.app?.compilerOptions?.types
 
   const types = [
-    getPlatformAppTypesPackage(config.platform),
+    getPlatformAppTypesPackage(configService.platform),
     'weapp-vite/client',
   ]
 

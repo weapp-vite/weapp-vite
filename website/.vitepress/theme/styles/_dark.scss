@@ -14,7 +14,7 @@ html.dark {
   --vp-c-text-2: #cfe0d5;
   --vp-c-text-3: #97a59d;
 
-  .VPNav {
+  .VPNavBar::before {
     background: color.change(#0e170f, $alpha: 0.55) !important;
   }
   .VPSidebar {

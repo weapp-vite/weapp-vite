@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY } from '@weapp-core/constants'
@@ -30,7 +31,16 @@ import { installStatefulHmrTransport } from './statefulHmrDom/transport'
 import { vueChildCheckpoints } from './statefulHmrDom/vueChild'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
-const APP_ROOT = path.join(ROOT, 'e2e-apps/stateful-hmr')
+const APP_ROOT = process.env.WEAPP_VITE_E2E_STATEFUL_PROJECT
+  ? path.resolve(process.env.WEAPP_VITE_E2E_STATEFUL_PROJECT)
+  : path.join(ROOT, 'e2e-apps/stateful-hmr')
+const HOST = process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv'
+if (HOST !== 'wv' && HOST !== 'vite' && HOST !== 'vite-plus') {
+  throw new Error(`Unsupported stateful fixture host: ${HOST}`)
+}
+const VITE_CLI = HOST === 'vite-plus'
+  ? path.join(path.dirname(createRequire(path.join(APP_ROOT, 'package.json')).resolve('vite-plus/package.json')), 'bin/vp')
+  : path.join(path.dirname(createRequire(import.meta.url).resolve('vite/package.json')), 'bin/vite.js')
 const CLI_PATH = path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const CONTROL_FILE = path.join(DIST_ROOT, '__weapp_vite_hmr/control.js')
@@ -256,14 +266,9 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     ])
     await fs.remove(DIST_ROOT)
 
-    devProcess = startDevProcess(process.execPath, [
-      CLI_PATH,
-      'dev',
-      APP_ROOT,
-      '--platform',
-      'weapp',
-      '--skipNpm',
-    ], {
+    devProcess = startDevProcess(process.execPath, HOST === 'wv'
+      ? [CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm']
+      : [VITE_CLI, 'dev', '--config', 'vite.stateful.config.mts', '--host', '127.0.0.1', '--port', '0'], {
       all: true,
       cwd: APP_ROOT,
       env: createDevProcessEnv(),

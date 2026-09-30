@@ -1,0 +1,29 @@
+{
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "home",
+          "pathName": "pages/home/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "external",
+          "pathName": "pages/external/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "dynamic",
+          "pathName": "pages/dynamic/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  },
+  "setting": {
+    "urlCheck": false
+  }
+}

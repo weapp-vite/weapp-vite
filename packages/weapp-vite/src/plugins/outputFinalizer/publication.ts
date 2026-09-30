@@ -5,12 +5,15 @@ import type { SubPackageMetaValue } from '../../types'
 import type { WxmlDependencyCommit } from '../../wxml/processing/dependencies'
 import type { RewriteWevuInternalRuntimeImportsOptions } from '../core/helpers/bundle'
 import { Buffer } from 'node:buffer'
+import path from 'pathe'
 import { createHmrProfileCheckpoint } from '../../utils/hmrProfile'
 import { syncOutputChunkSourceMapAssets } from '../../utils/outputChunk'
 import { commitWxmlDependencies, failWxmlDependencies } from '../../wxml/processing/dependencies'
 import { validateWxmlBundle } from '../../wxml/validate'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from '../core/helpers/bundle'
+import { resolveRootEntryBasename } from '../core/lifecycle/load/weapi'
 import { flushIndependentOutputs } from './independent'
+import { prepareOutputOwnership } from './ownership'
 
 function outputSourceToString(output: OutputBundle[string]) {
   if (output.type === 'chunk') {
@@ -67,7 +70,10 @@ export function pruneUnchangedDevHmrOutputs(
     rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
     stabilizeWevuRuntimeChunkAccess(bundle)
   }
+  const rootInputFile = `${resolveRootEntryBasename({ ctx })}.js`
   for (const [fileName, output] of Object.entries(bundle)) {
+    // 固定根入口由 bundler input 驱动，不属于动态 emitFile 的页面/组件集合。
+    const isRootInput = output.type === 'chunk' && output.isEntry && fileName === rootInputFile
     const isCurrentHmrChunk = isHmrBuild
       && output.type === 'chunk'
       && (
@@ -81,6 +87,7 @@ export function pruneUnchangedDevHmrOutputs(
       && output.type === 'chunk'
       && emittedChunkFileNames?.size
       && !isCurrentHmrChunk
+      && !isRootInput
     ) {
       delete bundle[fileName]
       continue
@@ -97,19 +104,31 @@ export function pruneUnchangedDevHmrOutputs(
 /** 编译器完成所有输出转换后，按最终内容裁剪本轮写入。 */
 export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   let preserveCompleteBundle = false
+  let outDir: string | undefined
+  let commitOwnership: (() => Promise<void>) | undefined
   return {
     name: 'weapp-vite:output-publication',
     enforce: 'post',
     configResolved(config) {
       // 原生引擎仍发布完整注册图，静态资源去重由 stateful 快照归属处理。
       preserveCompleteBundle = config.experimental?.bundledDev === true
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    writeBundle: {
+      order: 'post',
+      sequential: true,
+      async handler() {
+        await commitOwnership?.()
+        commitOwnership = undefined
+      },
     },
     generateBundle: {
       order: 'post',
       async handler(_options, bundle) {
+        commitOwnership = undefined
         const checkpoint = createHmrProfileCheckpoint(ctx.configService.isDev ? ctx.runtimeState?.build?.hmr?.profile : undefined)
         const outputBundle = bundle as unknown as OutputBundle
-        const partial = !preserveCompleteBundle
+        const partial = ctx.configService.isDev && !preserveCompleteBundle
           && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
           && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
         let commitValidation: WxmlDependencyCommit | undefined
@@ -128,7 +147,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
           }
           finally {
             // 子构建没有活动 watcher；主发布者接管其精确依赖，失败时也保留恢复监听。
-            if (ctx.configService.isDev && !subPackageMeta) {
+            if ((ctx.configService.isDev || this.meta.watchMode) && !subPackageMeta) {
               for (const files of ctx.runtimeState?.build?.independent?.watchFiles.values() ?? []) {
                 for (const file of files) {
                   this.addWatchFile(file)
@@ -137,6 +156,12 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
             }
           }
           checkpoint('publicationIndependentMs')
+          if ((ctx.configService.isDev || this.meta.watchMode) && !preserveCompleteBundle && outDir) {
+            commitOwnership = prepareOutputOwnership(ctx, outDir, [
+              ...Object.keys(outputBundle),
+              ...independentAssets.flatMap(asset => asset.fileName ? [asset.fileName] : []),
+            ], partial)
+          }
           pruneUnchangedDevHmrOutputs(ctx, outputBundle, undefined, {
             runtimeRewriteDone: true,
             preserveCompleteBundle,

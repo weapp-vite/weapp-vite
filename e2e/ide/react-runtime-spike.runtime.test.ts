@@ -1,4 +1,7 @@
 import fs from 'node:fs/promises'
+import { createRequire } from 'node:module'
+// eslint-disable-next-line e18e/ban-dependencies -- 原生宿主构建需要跨平台进程启动。
+import { execa } from 'execa'
 import path from 'pathe'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
@@ -8,8 +11,16 @@ import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-de
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { counterCheckpoint, GENERIC_ROUTE, INTEROP_EDGES, INTEROP_ROUTE, interopCheckpoint, REACT_FIXTURE, reactControl, STATIC_ROUTE } from './reactRuntimeDom'
 
-const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
-const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/react-runtime-spike')
+const APP_ROOT = process.env.WEAPP_VITE_E2E_REACT_PROJECT
+  ? path.resolve(process.env.WEAPP_VITE_E2E_REACT_PROJECT)
+  : path.resolve(import.meta.dirname, '../../e2e-apps/react-runtime-spike')
+const CLI_PATH = process.env.WEAPP_VITE_E2E_REACT_PROJECT
+  ? path.join(path.dirname(createRequire(path.join(APP_ROOT, 'package.json')).resolve('weapp-vite/package.json')), 'bin/weapp-vite.js')
+  : path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
+const HOST = process.env.WEAPP_VITE_E2E_COMPILER_HOST ?? 'wv'
+if (HOST !== 'wv' && HOST !== 'vite' && HOST !== 'vite-plus') {
+  throw new Error(`Unsupported React fixture host: ${HOST}`)
+}
 const DIST_ROOT = path.resolve(APP_ROOT, 'dist')
 const PAGE_READY_TIMEOUT = 20_000
 const STARTUP_READY_TIMEOUT = 15_000
@@ -128,14 +139,21 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
       await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     }
     await fs.rm(DIST_ROOT, { force: true, recursive: true })
-    await runWeappViteBuildWithLogCapture({
-      cliPath: CLI_PATH,
-      projectRoot: APP_ROOT,
-      platform: 'weapp',
-      cwd: APP_ROOT,
-      label: 'ide:react-runtime-spike',
-      skipNpm: true,
-    })
+    if (HOST === 'wv') {
+      await runWeappViteBuildWithLogCapture({
+        cliPath: CLI_PATH,
+        projectRoot: APP_ROOT,
+        platform: 'weapp',
+        cwd: APP_ROOT,
+        label: 'ide:react-runtime-spike',
+        skipNpm: true,
+      })
+    }
+    else {
+      const require = createRequire(path.join(APP_ROOT, 'package.json'))
+      const cli = path.join(path.dirname(require.resolve(`${HOST}/package.json`)), HOST === 'vite-plus' ? 'bin/vp' : 'bin/vite.js')
+      await execa(process.execPath, [cli, 'build', '--config', 'vite.react.config.mts', '--mode', 'baseline'], { cwd: APP_ROOT })
+    }
 
     miniProgram = await launchReactRuntimeSpikeAutomator()
   }, 360_000)

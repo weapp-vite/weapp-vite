@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "name": "counter increments",
+  "steps": [
+    { "action": "route", "path": "/pages/agent-proof/index" },
+    { "action": "wait", "selector": "#count" },
+    { "action": "assert", "selector": "#count", "text": "0" },
+    { "action": "tap", "selector": "#increment" },
+    { "action": "assert", "selector": "#count", "text": "1" },
+    { "action": "screenshot" }
+  ]
+}

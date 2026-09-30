@@ -25,6 +25,8 @@ export interface DevtoolsRuntimeSessionOptions {
 }
 
 export interface DevtoolsRuntimeHooks {
+  /** Refresh the IDE build after project compilation, before acceptance interactions. */
+  prepareProject?: (projectPath: string, signal: AbortSignal) => Promise<unknown>
   connectMiniProgram: (options: DevtoolsRuntimeSessionOptions) => Promise<AutomatorMiniProgram>
   normalizeConnectionError?: (error: unknown) => unknown
 }

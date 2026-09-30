@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, syncExternalPluginOutputs } from './outputs'
+import { cleanOutputs, isOutputRootInsideOutDir, resetEmittedOutputCaches, shouldCleanOutputs, syncExternalPluginOutputs } from './outputs'
 
 const DEFAULT_TEST_PLATFORM = 'weapp'
 
@@ -45,6 +45,8 @@ function createConfigService(overrides: Record<string, unknown> = {}) {
   return {
     platform: DEFAULT_TEST_PLATFORM,
     weappViteConfig: {},
+    inlineConfig: {},
+    isDev: true,
     outDir: '/project/dist',
     mpDistRoot: '/project/dist',
     absolutePluginOutputRoot: undefined,
@@ -74,6 +76,20 @@ describe('buildPlugin outputs', () => {
     expect(isOutputRootInsideOutDir('/project/dist', '/project/dist')).toBe(true)
     expect(isOutputRootInsideOutDir('/project/dist', '/project/dist/plugin')).toBe(true)
     expect(isOutputRootInsideOutDir('/project/dist', '/project/dist-plugin')).toBe(false)
+  })
+
+  it('preserves nested child outputs during parent rebuilds while retaining startup cleanup', () => {
+    const parent = createConfigService({ absolutePluginOutputRoot: '/project/dist/plugin' })
+    expect(shouldCleanOutputs(parent, 'startup')).toBe(true)
+    expect(shouldCleanOutputs(parent, 'rebuild')).toBe(false)
+    expect(shouldCleanOutputs(createConfigService({ absolutePluginOutputRoot: '/project/dist-plugin' }), 'rebuild')).toBe(true)
+    expect(shouldCleanOutputs(createConfigService({ ...parent, pluginOnly: true }), 'rebuild')).toBe(true)
+  })
+
+  it('honors explicit output retention in both startup and rebuild phases', () => {
+    const config = createConfigService({ inlineConfig: { build: { emptyOutDir: false } } })
+    expect(shouldCleanOutputs(config, 'startup')).toBe(false)
+    expect(shouldCleanOutputs(config, 'rebuild')).toBe(false)
   })
 
   it('cleans mp output and keeps miniprogram_npm for default mini-program platform', async () => {

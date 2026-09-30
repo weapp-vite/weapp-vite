@@ -109,6 +109,7 @@ const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/issue-1074-doctor.runtime.test.ts',
   'ide/issue-1015-css-hmr.runtime.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
+  'ide/issue-1072-json-context.runtime.test.ts',
   'ide/github-issues.runtime.component-instance-apis.test.ts',
   'ide/github-issues.runtime.issue1015.test.ts',
   ...IDE_GITHUB_ISSUES_AGGREGATE_LABELS,
@@ -184,6 +185,8 @@ const IDE_HMR_PATTERNS = [
   'ide/wevu-jsx-tsx.hmr.runtime.test.ts',
 ]
 const IDE_FULL_CORE_PATTERNS = [
+  'ide/vite-plugin.runtime.test.ts',
+  'ide/vite-plugin-npm.runtime.test.ts',
   'ide/app-lifecycle.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/devtools-cli-workflow.runtime.test.ts',
@@ -237,6 +240,8 @@ const IDE_GATE_TESTS = [
 ].map(testPath => path.resolve(ROOT, testPath))
 // #779 的计算样式由真实 IDE 与 simulator 的 pageStyleImports browser companion 验收；逻辑树不提供颜色证据。
 const IDE_DOM_HEADLESS_PATTERNS = [
+  'ide/vite-plugin.runtime.test.ts',
+  'ide/vite-plugin-npm.runtime.test.ts',
   'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
   'ide/github-issues.runtime.feature1087.test.ts',
@@ -254,6 +259,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/github-issues.runtime.issue1012.test.ts',
   'ide/github-issues.runtime.issue1015.test.ts',
   'ide/issue-1029-auto-routes.runtime.test.ts',
+  'ide/issue-1072-json-context.runtime.test.ts',
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
   'ide/wxml-transform.runtime.test.ts',
@@ -276,6 +282,9 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/wevu-comprehensive.runtime.test.ts',
   'ide/wevu-json-render.runtime.test.ts',
   'ide/wevu-subpackage-placement.runtime.test.ts',
+  'ide/worker-host.runtime.test.ts',
+  'ide/lib-host.runtime.test.ts',
+  'ide/platform-host.runtime.test.ts',
 ]
 const IDE_HEADLESS_FULL_TESTS = [...new Set([
   ...IDE_GATE_TESTS,
@@ -301,6 +310,7 @@ const CI_PR_PATTERNS = [
   'ci/github-issues.issue1035.build.test.ts',
   'ci/issue-862-output-watch.test.ts',
   'ci/issue-1029-auto-routes.test.ts',
+  'ci/issue-1072-json-context.test.ts',
   'ci/headless-automator-provider.test.ts',
   'ci/platform-build.test.ts',
   'ci/platform-matrix.test.ts',
