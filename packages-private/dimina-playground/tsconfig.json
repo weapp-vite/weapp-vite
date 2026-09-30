@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "config.ts",
+    "scripts/**/*.ts",
+    "src/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "../../e2e/dimina/**/*.ts"
+  ]
+}

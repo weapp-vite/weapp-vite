@@ -1,0 +1,1 @@
+Component({ properties: { value: Number } })

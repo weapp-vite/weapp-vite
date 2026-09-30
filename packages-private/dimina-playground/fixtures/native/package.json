@@ -1,0 +1,8 @@
+{
+  "name": "dimina-native-fixture",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@vant/weapp": "1.11.7"
+  }
+}

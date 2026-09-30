@@ -247,6 +247,12 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
+      files: ['packages-private/dimina-playground/package.json'],
+      rules: {
+        // 实验工具使用 execa 隔离编译进程，并保持 Windows 命令解析语义。
+        'e18e/ban-dependencies': 'off',
+      },
+    }, {
       // Preserve Windows command resolution, abort handling and process cleanup semantics.
       files: ['packages/weapp-ide-cli/package.json', 'packages/agent-core/package.json', 'packages/agent-mini-program/package.json', 'packages/agent-cli/package.json', 'packages/acceptance/package.json'],
       rules: {

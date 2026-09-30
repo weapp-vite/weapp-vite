@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "outlet": "../../components/generic-outlet/index",
+    "local": "../components/local/index",
+    "local-outlet": "../components/outlet/index",
+    "roots": "../../components/dynamic-roots/index"
+  }
+}

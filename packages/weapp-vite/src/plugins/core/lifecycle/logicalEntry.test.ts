@@ -17,7 +17,7 @@ vi.mock('../../../utils', () => ({
 vi.mock('../../utils/cache', () => ({ pathExists: pathExistsMock }))
 
 describe('core logical entry lifecycle', () => {
-  it('loads the physical entry before expressing sidecars and resolved relations', async () => {
+  it.each(['usingComponents', 'componentGenerics'])('loads the physical entry and expresses %s dependencies', async (field) => {
     const sourceId = '/project/src/pages/home/index.ts'
     const templatePath = '/project/src/pages/home/index.wxml'
     const stylePath = '/project/src/pages/home/index.wxss'
@@ -39,8 +39,8 @@ describe('core logical entry lifecycle', () => {
       entriesMap: new Map([
         ['pages/home/index', {
           json: {
-            usingComponents: {
-              card: linkedComponent,
+            [field]: {
+              card: field === 'usingComponents' ? linkedComponent : { default: linkedComponent },
             },
           },
           jsonPath,
@@ -107,6 +107,12 @@ describe('core logical entry lifecycle', () => {
     ] as const) {
       expect(code).toContain(JSON.stringify(createSidecarModuleId(sourceId, dependency, kind)))
     }
+    state.entriesMap.get('pages/home/index').json = {}
+    const updated = await createLogicalEntryLoadHook(state)
+      .call(pluginCtx, createLogicalEntryId(sourceId, 'page'))
+    expect(updated?.code).not.toContain(JSON.stringify(createSidecarModuleId(sourceId, linkedComponent, 'using-component')))
+    expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenLastCalledWith(sourceId, 'wxs', [wxsPath])
+    expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(sourceId, 'using-component', [])
   })
 
   it('models a Vue physical source through the script sidecar protocol', async () => {

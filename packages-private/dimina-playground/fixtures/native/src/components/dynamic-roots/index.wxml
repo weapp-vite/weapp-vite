@@ -1,0 +1,2 @@
+<view wx:if="{{mode > 0}}" class="dynamic-root">动态根 A</view>
+<view wx:if="{{mode == 2}}" class="dynamic-root">动态根 B</view>
