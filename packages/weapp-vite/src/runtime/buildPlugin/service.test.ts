@@ -510,6 +510,34 @@ describe('runtime buildPlugin service', () => {
     }
   })
 
+  it.each(['npm', 'worker', 'projectConfig'])('drains pending %s work before rejecting a failed build', async (kind) => {
+    const pending = Promise.withResolvers<void>()
+    const failure = new Error('invalid syntax')
+    const ctx = createMockContext()
+    ctx.configService.isDev = false
+    if (kind === 'npm') {
+      ctx.npmService.build.mockReturnValueOnce(pending.promise)
+    }
+    else if (kind === 'worker') {
+      checkWorkersOptionsMock.mockReturnValue({ hasWorkersDir: true, workersDir: 'workers' })
+      buildWorkersMock.mockReturnValueOnce(pending.promise)
+    }
+    else {
+      syncProjectConfigToOutputMock.mockReturnValueOnce(pending.promise)
+    }
+    buildMock.mockRejectedValueOnce(failure)
+    let finished = false
+    const result = createBuildService(ctx).build().catch((error: unknown) => {
+      finished = true
+      return error
+    })
+    await vi.waitFor(() => expect(buildMock).toHaveBeenCalled())
+    await flushAsyncTasks()
+    expect(finished).toBe(false)
+    pending.reject(new Error('secondary failure'))
+    expect(await result).toBe(failure)
+  })
+
   it('throws when required runtime services are missing', () => {
     const runtimeState = createRuntimeState()
 

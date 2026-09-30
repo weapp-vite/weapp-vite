@@ -52,6 +52,7 @@ import { syncProjectSupportFiles } from '../supportFiles'
 import { watchAssetSources } from '../watch/assets'
 import { createSidecarWatchOptions } from '../watch/options'
 import { retainWatcherService } from '../watcherPlugin'
+import { settleBuildTasks } from './buildTasks'
 import { createDevBuildWatcher } from './devBuildWatcher'
 import { createHmrProfileMetricsPlugin } from './hmrProfileMetricsPlugin'
 import { createIndependentBuilder } from './independent'
@@ -2182,7 +2183,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ),
     )
     const workerPromise = target === 'app' && hasWorkersDir ? buildWorkers(configService) : Promise.resolve()
-    const [output] = await Promise.all([bundlerPromise, workerPromise])
+    const output = await settleBuildTasks(bundlerPromise, [workerPromise])
 
     debug?.(`[${target}] prod build end`)
     return output as RolldownOutput | RolldownOutput[]
@@ -2319,15 +2320,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       && configService.weappLibConfig?.dts?.enabled !== false
       && !configService.isDev,
     )
-    const projectConfigSyncTask = !isLibMode && !pluginOnly
-      ? syncProjectConfigToOutput({
-          outDir: configService.outDir,
-          projectConfigPath: configService.projectConfigPath,
-          projectPrivateConfigPath: configService.projectPrivateConfigPath,
-          enabled: isMultiPlatformEnabled,
-        })
-      : Promise.resolve()
-    projectConfigReady = projectConfigSyncTask
     const shouldPreloadAppEntryForWorkers = (
       !configService.isDev
       && !isLibMode
@@ -2338,14 +2330,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       await scanService.loadAppEntry()
       scanService.loadSubPackages()
     }
+    const projectConfigSyncTask = !isLibMode && !pluginOnly
+      ? syncProjectConfigToOutput({
+          outDir: configService.outDir,
+          projectConfigPath: configService.projectConfigPath,
+          projectPrivateConfigPath: configService.projectPrivateConfigPath,
+          enabled: isMultiPlatformEnabled,
+        })
+      : Promise.resolve()
+    projectConfigReady = projectConfigSyncTask
     debug?.('build start')
     const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
-    const result = await runBuildTarget(pluginOnly ? 'plugin' : 'app')
+    const result = await settleBuildTasks(runBuildTarget(pluginOnly ? 'plugin' : 'app'), [projectConfigSyncTask, npmBuildTask])
     if (shouldEmitLibDts) {
       await generateLibDts(configService)
     }
-    await projectConfigSyncTask
-    await npmBuildTask
     if (!pluginOnly && !isLibMode && configService.absolutePluginRoot) {
       await runIsolatedPluginBuild(options)
     }
