@@ -8,13 +8,13 @@ export async function preparationInputs(projectRoot = root) {
   const patchRoot = path.join(projectRoot, 'upstream/patches')
   const patches = (await readdir(patchRoot)).filter(name => name.endsWith('.patch')).sort()
   const hash = createHash('sha256').update(upstreamCommit)
-  for (const name of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', ...patches.map(name => `upstream/patches/${name}`)]) {
+  for (const name of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/portableCache.ts', 'scripts/cacheSnapshot.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', ...patches.map(name => `upstream/patches/${name}`)]) {
     hash.update(name).update(await readFile(path.join(projectRoot, name)))
   }
   return { fingerprint: hash.digest('hex'), patches: patches.map(name => path.join(patchRoot, name)) }
 }
 
-export async function preparedRoot(projectRoot = root, cacheDirectory = cacheRoot) {
+export async function preparedRoot(projectRoot = root, cacheDirectory = cacheRoot, options: { allowMissingDependencies?: boolean } = {}) {
   const { fingerprint } = await preparationInputs(projectRoot)
   let value: unknown
   try {
@@ -29,6 +29,9 @@ export async function preparedRoot(projectRoot = root, cacheDirectory = cacheRoo
   const directory = path.join(cacheDirectory, value.directory)
   try {
     await validatePreparedAssets(directory)
+    if (!options.allowMissingDependencies) {
+      await readFile(path.join(directory, 'fe/node_modules/.modules.yaml'))
+    }
   }
   catch { throw new Error('Run setup:dimina again (incomplete SDK assets or dependencies).') }
   return directory

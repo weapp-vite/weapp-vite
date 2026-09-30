@@ -6,7 +6,7 @@ import { root } from '../config'
 
 export async function prepareToolchain(buildRoot: string) {
   const directory = path.join(buildRoot, 'toolchain')
-  await mkdir(directory)
+  await mkdir(directory, { recursive: true })
   for (const file of ['package.json', 'package-lock.json', 'pnpm-workspace.yaml']) {
     await cp(path.join(root, 'upstream/toolchain', file), path.join(directory, file))
   }
