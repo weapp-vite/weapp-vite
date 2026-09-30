@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseMock = vi.hoisted(() => vi.fn())
 const closeWechatIdeProjectMock = vi.hoisted(() => vi.fn())
@@ -209,6 +209,11 @@ describe('openIde', () => {
       trustedProjectCount: 1,
     })
     miniProgramDisconnectMock.mockReset()
+  })
+
+  afterEach(() => {
+    expect(quitWechatIdeMock).not.toHaveBeenCalled()
+    expect(execFileMock).not.toHaveBeenCalled()
   })
 
   it('passes project path and alipay platform to weapp-ide-cli parse', async () => {
@@ -453,7 +458,7 @@ describe('openIde', () => {
     }
   })
 
-  it('closes current devtools window and reopens when user confirms retry for an opened weapp project', async () => {
+  it('reconnects the target project without closing a shared host when user confirms retry', async () => {
     connectOpenedAutomatorMock.mockResolvedValueOnce({
       disconnect: miniProgramDisconnectMock,
     })
@@ -469,11 +474,11 @@ describe('openIde', () => {
       port: 9633,
       timeout: 3000,
     })
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
     expect(colorsMock.green).toHaveBeenCalledWith('y')
     expect(colorsMock.bold).toHaveBeenCalledWith('y')
-    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 y 关闭当前窗口后重新打开。')
-    expect(loggerMock.info).toHaveBeenCalledWith('正在关闭当前已打开项目，并重新拉起微信开发者工具...')
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，已跳过重复打开。按 y 重新连接目标项目（保留现有窗口）。')
+    expect(loggerMock.info).toHaveBeenCalledWith('正在重新连接目标项目，保留现有微信开发者工具窗口...')
     expect(launchAutomatorMock).toHaveBeenCalledWith({
       persistAsDefaultSession: true,
       preserveProjectRoot: true,
@@ -511,8 +516,8 @@ describe('openIde', () => {
       timeout: 3000,
     })
     expect(miniProgramDisconnectMock).toHaveBeenCalledTimes(2)
-    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(loggerMock.info).toHaveBeenCalledWith('目标项目已在微信开发者工具中打开，当前命令将重新连接以刷新最新构建产物，保留现有窗口。')
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
     expect(launchAutomatorMock).toHaveBeenCalledWith({
       persistAsDefaultSession: true,
       preserveProjectRoot: true,
@@ -552,8 +557,8 @@ describe('openIde', () => {
       await openPromise
 
       expect(screenshotMock).toHaveBeenCalledWith({ timeout: 3000 })
-      expect(loggerMock.info).toHaveBeenCalledWith('目标项目的 automator 会话未通过健康检查，当前命令将关闭窗口并重新拉起。')
-      expect(quitWechatIdeMock).toHaveBeenCalledTimes(1)
+      expect(loggerMock.info).toHaveBeenCalledWith('目标项目的 automator 会话未通过健康检查，将重试连接目标项目，保留现有窗口。')
+      expect(quitWechatIdeMock).not.toHaveBeenCalled()
       expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
       expect(launchAutomatorMock).toHaveBeenCalledWith({
         persistAsDefaultSession: true,
@@ -581,8 +586,8 @@ describe('openIde', () => {
       await vi.advanceTimersByTimeAsync(5_000)
       await openPromise
 
-      expect(loggerMock.info).toHaveBeenCalledWith('未检测到可复用的 automator 会话，当前命令将关闭现有窗口并重新拉起目标项目。')
-      expect(quitWechatIdeMock).toHaveBeenCalledTimes(1)
+      expect(loggerMock.info).toHaveBeenCalledWith('未检测到可复用的 automator 会话，将尝试打开目标项目，保留其他窗口。')
+      expect(quitWechatIdeMock).not.toHaveBeenCalled()
       expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
       expect(launchAutomatorMock).toHaveBeenCalledWith({
         persistAsDefaultSession: true,
@@ -768,9 +773,9 @@ describe('openIde', () => {
     expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     expect(connectOpenedAutomatorMock).toHaveBeenCalled()
     expect(launchAutomatorMock).not.toHaveBeenCalled()
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
     expect(parseMock).toHaveBeenCalledTimes(2)
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在自动关闭并重新打开目标项目'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('正在重试打开目标项目（保留现有窗口）'))
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('微信开发者工具自动恢复未完成'))
   })
 
@@ -791,7 +796,7 @@ describe('openIde', () => {
 
     expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
     expect(parseMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在自动关闭并重新打开目标项目'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在重试打开目标项目（保留现有窗口）'))
     expect(loggerMock.warn).toHaveBeenCalledWith('已跳过微信开发者工具自动恢复；请按上方提示手动关闭并重新打开目标项目。')
   })
 
@@ -813,11 +818,11 @@ describe('openIde', () => {
 
     expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
     expect(parseMock).toHaveBeenCalledTimes(1)
-    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在自动关闭并重新打开目标项目'))
+    expect(loggerMock.info).not.toHaveBeenCalledWith(expect.stringContaining('正在重试打开目标项目（保留现有窗口）'))
     expect(loggerMock.warn).toHaveBeenCalledWith('已跳过微信开发者工具自动恢复；请按上方提示手动关闭并重新打开目标项目。')
   })
 
-  it('closes the current ide window before plain reopen when automator open is disabled', async () => {
+  it('preserves current IDE windows during plain reopen when automator open is disabled', async () => {
     const { openIde } = await import('./openIde')
 
     await openIde('weapp', 'dist/dev/mp-weixin', {
@@ -825,7 +830,7 @@ describe('openIde', () => {
       useAutomatorOpen: false,
     })
 
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
     expect(connectOpenedAutomatorMock).toHaveBeenCalled()
     expect(launchAutomatorMock).not.toHaveBeenCalled()
     expect(compileWechatIdeByAutomatorMock).not.toHaveBeenCalled()
@@ -1033,84 +1038,19 @@ describe('openIde', () => {
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
   })
 
-  it('falls back to AppleScript when close command fails on macOS', async () => {
-    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
-    Object.defineProperty(process, 'platform', { value: 'darwin' })
+  it.each(['darwin', 'linux', 'win32'])('preserves all IDE hosts when explicit close fails on %s', async (platform) => {
+    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')!
+    Object.defineProperty(process, 'platform', { value: platform })
     closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
 
     try {
       const { closeIde } = await import('./openIde')
-      const result = await closeIde()
-
-      expect(result).toBe(true)
-      expect(execFileMock).toHaveBeenCalledWith(
-        'osascript',
-        ['-e', 'tell application "wechatwebdevtools" to quit'],
-        expect.any(Function),
-      )
+      await expect(closeIde()).resolves.toBe(false)
+      expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
+      expect(execFileMock).not.toHaveBeenCalled()
     }
     finally {
-      if (platformDescriptor) {
-        Object.defineProperty(process, 'platform', platformDescriptor)
-      }
-    }
-  })
-
-  it('falls back to process kill when AppleScript close also fails', async () => {
-    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
-    Object.defineProperty(process, 'platform', { value: 'darwin' })
-    closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
-    let callCount = 0
-    execFileMock.mockImplementation((_file: string, args: string[], callback: (error: any, stdout?: string, stderr?: string) => void) => {
-      callCount += 1
-      if (callCount === 1) {
-        callback(new Error('osascript failed'))
-        return {} as any
-      }
-      callback(null, '', '')
-      expect(args).toEqual(['-f', '/Applications/wechatwebdevtools.app'])
-      return {} as any
-    })
-
-    try {
-      const { closeIde } = await import('./openIde')
-      const result = await closeIde()
-
-      expect(result).toBe(true)
-      expect(execFileMock).toHaveBeenCalledTimes(2)
-      expect(execFileMock.mock.calls[1][0]).toBe('pkill')
-    }
-    finally {
-      if (platformDescriptor) {
-        Object.defineProperty(process, 'platform', platformDescriptor)
-      }
-    }
-  })
-
-  it('returns false when close command and all fallback closers fail', async () => {
-    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
-    Object.defineProperty(process, 'platform', { value: 'linux' })
-    closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
-    execFileMock.mockImplementation((_file: string, _args: string[], callback: (error: any) => void) => {
-      callback(new Error('pkill failed'))
-      return {} as any
-    })
-
-    try {
-      const { closeIde } = await import('./openIde')
-      const result = await closeIde()
-
-      expect(result).toBe(false)
-      expect(execFileMock).toHaveBeenCalledWith(
-        'pkill',
-        ['-f', '/Applications/wechatwebdevtools.app'],
-        expect.any(Function),
-      )
-    }
-    finally {
-      if (platformDescriptor) {
-        Object.defineProperty(process, 'platform', platformDescriptor)
-      }
+      Object.defineProperty(process, 'platform', platformDescriptor)
     }
   })
 
@@ -1125,28 +1065,6 @@ describe('openIde', () => {
     expect(result).toBe(true)
     expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(2)
     expect(parseMock).not.toHaveBeenCalled()
-  })
-
-  it('returns false when close fallback has no cli path to kill process', async () => {
-    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
-    Object.defineProperty(process, 'platform', { value: 'linux' })
-    closeWechatIdeProjectMock.mockRejectedValueOnce(new Error('close failed'))
-    getConfigMock.mockResolvedValueOnce({
-      cliPath: '   ',
-    })
-
-    try {
-      const { closeIde } = await import('./openIde')
-      const result = await closeIde()
-
-      expect(result).toBe(false)
-      expect(execFileMock).not.toHaveBeenCalled()
-    }
-    finally {
-      if (platformDescriptor) {
-        Object.defineProperty(process, 'platform', platformDescriptor)
-      }
-    }
   })
 
   it('retries open flow when login is required and user presses r', async () => {
