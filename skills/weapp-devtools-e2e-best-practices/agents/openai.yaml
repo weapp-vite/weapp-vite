@@ -1,7 +1,7 @@
 interface:
   display_name: 'Weapp DevTools E2E Best Practices'
   short_description: 'DevTools 与 Headless Runtime E2E、Parity 和验收'
-  default_prompt: 'Use $weapp-devtools-e2e-best-practices to design serialized DevTools and headless runtime E2E coverage with residual-process cleanup, shared sessions, provider parity, stable assertions, and mpcore unit/browser/type regression layers.'
+  default_prompt: 'Use $weapp-devtools-e2e-best-practices for serialized DevTools and headless E2E. Verify the latest official stable IDE for each run unless the user explicitly selects another version. Clean only resources owned by this task, preserve manual IDE instances, reuse sessions, and maintain provider parity and mpcore regression coverage.'
 
 policy:
   allow_implicit_invocation: true

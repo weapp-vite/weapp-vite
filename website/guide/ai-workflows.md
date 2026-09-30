@@ -119,11 +119,13 @@ CI 只执行 `repo release ci`。需要恢复某个 npm 未发布版本时，使
 
 1. 使用 `$weapp-devtools-e2e-best-practices`。
 2. 如果 IDE 已打开但 automator 未连接，先运行 `wv ide doctor --json`，根据 CLI、登录和服务端口结果修复环境。
-3. 先确认没有残留 E2E、DevTools 或 watch 进程。
+3. 检查其他 E2E、automator 和 watch 是否占用资源；只清理本任务明确持有的资源，保留手动 IDE 和未知归属实例。启动失败不允许按进程名终止全部开发者工具。
 4. 同一个 app suite 内只启动一次 automator。
 5. 多页面场景通过 `miniProgram.reLaunch(...)` 切换。
 6. 截图优先用 `wv screenshot` 或 `take_weapp_screenshot`。
 7. 日志优先用 `wv ide logs --open` 或 MCP DevTools runtime tools。
+
+真实 IDE E2E 默认使用执行时[官方最新稳定版](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)，仅在用户明确指定时使用其他版本。每轮先核对稳定渠道、版本及查询时间，再通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择对应 CLI，让预检、启动、构建和恢复使用同一安装。默认路径和已登录状态不能证明版本渠道；报告须记录实际连接的 IDE 与基础库版本。稳定版无法确认、未安装或未登录时报告阻塞，不自行切换 RC、nightly 或旧版本。恢复只释放会话登记资源，不清空全局 session、port-lease、登录信息或用户缓存；已有固定性能运行不因此重采。
 
 ```sh
 wv screenshot --json

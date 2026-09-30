@@ -162,8 +162,11 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - `pnpm e2e:ci` must not overlap with any `pnpm e2e:ide*`, `pnpm e2e`, other `pnpm e2e:*`, or other long-lived E2E/dev-watch commands.
   - `pnpm e2e:ide` / `pnpm e2e:ide:full` must not overlap with `pnpm e2e:ci`, other DevTools E2E commands, or any other command that may start DevTools, automator bridges, dev servers, file watchers, or local verification servers for E2E.
   - For long-running E2E commands, especially `pnpm e2e:ide:full`, keep the computer awake for the whole run. On macOS, prefer wrapping the command with `caffeinate -dimsu -- pnpm e2e:ide:full`; on other platforms, use the equivalent OS-level sleep inhibitor before starting the task and release it after the command exits.
-  - Before starting any E2E command, first check for active residual E2E/dev-watch processes and stop them; if an E2E command is already running, wait for it to finish or terminate it intentionally before launching another one.
+  - Before starting any E2E command, inspect active E2E/dev-watch processes. Stop only resources explicitly owned by this task; wait for another task's active run. Preserve manually opened IDEs and processes with unknown ownership. Never use process-name, command-substring, or image-name matching as permission for global cleanup.
   - When diagnosing flaky HMR, dev-watch, DevTools, or automator failures, treat concurrent or residual E2E processes as the first suspect and eliminate concurrency before changing product code or test assertions.
+  - 启动失败、超时、恢复与 teardown 只能释放当前会话登记且仍持有的资源；禁止全局删除 session、port-lease、登录信息或用户缓存。已退出的 CLI PID 不能被当作宿主 PID，释放操作应幂等。恢复回归须覆盖手动实例、另一项目、不同安装版本和重复清理均不受影响。
+  - 真实 IDE E2E 默认使用执行时官方最新稳定版微信开发者工具；每轮核对官方下载页的渠道、版本和查询时间，并核对所选安装及实际连接宿主版本。通过 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH` 显式选择，预检、启动、构建与恢复共用同一 CLI，报告记录实际 IDE 与基础库版本。默认安装路径、已登录状态或较大版本号不证明属于最新稳定版。
+  - 只有用户明确指定才使用 RC、nightly、开发版或旧稳定版；不得为求绿自行换版。最新稳定版无法确认、缺失或未登录时保留证据并报告阻塞，不静默回退、不绕过登录。固定性能运行仍保持原批准目标，不因选版策略重新采样。
 
 ### 4.1 Issue 修复完成判据与测试沉淀
 
