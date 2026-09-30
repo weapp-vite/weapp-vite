@@ -82,8 +82,7 @@ function normalizeChangedPath(id: string) {
     return undefined
   }
 
-  const [pathWithoutQuery] = id.split('?')
-  return pathWithoutQuery
+  return toPosixPath(id.split('?')[0]!)
 }
 
 function getAutoImportCandidateKind(filePath: string) {
@@ -384,7 +383,8 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       },
     }))
 
-    const registerAndRefreshComponent = (filePath: string, action: '新增' | '变更') => {
+    const registerAndRefreshComponent = (rawFilePath: string, action: '新增' | '变更') => {
+      const filePath = toPosixPath(rawFilePath)
       if (!getAutoImportCandidateKind(filePath)) {
         return
       }
@@ -409,7 +409,8 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       registerAndRefreshComponent(filePath, '变更')
     })
 
-    watcher.on('unlink', (filePath) => {
+    watcher.on('unlink', (rawFilePath) => {
+      const filePath = toPosixPath(rawFilePath)
       if (!getAutoImportCandidateKind(filePath)) {
         return
       }

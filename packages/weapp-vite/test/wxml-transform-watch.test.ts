@@ -43,10 +43,13 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       const independentSource = path.join(project.tempDir, 'src/independent/index.wxml')
       expect(compiler.ctx.runtimeState.build.independent.watchFiles.get('independent')).toContain(independentSource)
       for (const marker of ['independent-first', 'independent-second']) {
+        const previousProfile = compiler.ctx.runtimeState.build.hmr.recentProfiles.at(-1)
         await fs.appendFile(independentSource, `<view>${marker}</view>`)
         await expect.poll(async () => fs.readFile(path.join(project.tempDir, 'dist/independent/index.wxml'), 'utf8'), { timeout: 45_000 }).toContain(marker)
         await waitForOutputs(project.tempDir, 'initial')
         if (runtime === 'classic') {
+          // 产物写入先于 END；等待本轮 profile，不能读取上一轮样本。
+          await expect.poll(() => compiler.ctx.runtimeState.build.hmr.recentProfiles.at(-1), { timeout: 45_000, interval: 100 }).not.toBe(previousProfile)
           const profile = compiler.ctx.runtimeState.build.hmr.recentProfiles.at(-1)
           expect(profile?.dirtyReasonSummary).not.toContainEqual(expect.stringMatching(/^snapshot-full:/))
           expect(profile?.dirtyCount ?? 0).toBe(0)

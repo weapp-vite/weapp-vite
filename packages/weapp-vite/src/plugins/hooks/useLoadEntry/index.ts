@@ -560,6 +560,7 @@ export function useLoadEntry(
     dirtyEntrySet,
     resolvedEntryMap,
     jsonEmitFilesMap: jsonEmitManager.map,
+    pendingJsonEmitFilesMap: jsonEmitManager.pendingMap,
     entryChunkLifecycle,
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {

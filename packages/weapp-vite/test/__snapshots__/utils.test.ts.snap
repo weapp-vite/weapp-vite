@@ -3,6 +3,142 @@
 exports[`utils > getProjectConfig > vite-native 1`] = `
 [
   {
+    "op": "replace",
+    "path": [
+      "libVersion",
+    ],
+    "value": "3.15.0",
+  },
+  {
+    "op": "add",
+    "path": [
+      "packOptions",
+      "include",
+      0,
+    ],
+    "value": {
+      "type": "file",
+      "value": "packageA/index.js",
+    },
+  },
+  {
+    "op": "add",
+    "path": [
+      "packOptions",
+      "include",
+      1,
+    ],
+    "value": {
+      "type": "file",
+      "value": "packageB/index.js",
+    },
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "compileHotReLoad",
+    ],
+    "value": true,
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "skylineRenderEnable",
+    ],
+    "value": false,
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "urlCheck",
+    ],
+    "value": false,
+  },
+  {
+    "op": "add",
+    "path": [
+      "condition",
+      "miniprogram",
+    ],
+    "value": {
+      "list": [
+        {
+          "launchMode": "default",
+          "name": "pages/test/test",
+          "pathName": "pages/test/test",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "pages/index/test",
+          "pathName": "pages/index/test",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "A/cat",
+          "pathName": "packageA/pages/cat",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "A/dog",
+          "pathName": "packageA/pages/dog",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "A/weui",
+          "pathName": "packageA/pages/weui",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "B/apple",
+          "pathName": "packageB/pages/apple",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "B/banana",
+          "pathName": "packageB/pages/banana",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "LoveFromChina.index",
+          "pathName": "pages/LoveFromChina/index",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "LoveFromChina.LoveFromChina",
+          "pathName": "pages/LoveFromChina/LoveFromChina",
+          "query": "",
+          "scene": null,
+        },
+        {
+          "launchMode": "default",
+          "name": "Dayjs",
+          "pathName": "pages/dayjs/index",
+          "query": "",
+          "scene": null,
+        },
+      ],
+    },
+  },
+  {
     "op": "add",
     "path": [
       "description",
@@ -21,6 +157,37 @@ exports[`utils > getProjectConfig > vite-native 1`] = `
 
 exports[`utils > getProjectConfig > vite-native-skyline 1`] = `
 [
+  {
+    "op": "replace",
+    "path": [
+      "libVersion",
+    ],
+    "value": "3.15.0",
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "compileHotReLoad",
+    ],
+    "value": true,
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "skylineRenderEnable",
+    ],
+    "value": true,
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "urlCheck",
+    ],
+    "value": false,
+  },
   {
     "op": "add",
     "path": [
@@ -41,6 +208,36 @@ exports[`utils > getProjectConfig > vite-native-skyline 1`] = `
 exports[`utils > getProjectConfig > vite-native-ts 1`] = `
 [
   {
+    "op": "replace",
+    "path": [
+      "description",
+    ],
+    "value": "项目私有配置文件。此文件中的内容将覆盖 project.config.json 中的相同字段。项目的改动优先同步到此文件中。详见文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html",
+  },
+  {
+    "op": "replace",
+    "path": [
+      "setting",
+      "compileHotReLoad",
+    ],
+    "value": true,
+  },
+  {
+    "op": "replace",
+    "path": [
+      "libVersion",
+    ],
+    "value": "3.15.0",
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "urlCheck",
+    ],
+    "value": false,
+  },
+  {
     "op": "add",
     "path": [
       "projectname",
@@ -52,6 +249,36 @@ exports[`utils > getProjectConfig > vite-native-ts 1`] = `
 
 exports[`utils > getProjectConfig > vite-native-ts-skyline 1`] = `
 [
+  {
+    "op": "replace",
+    "path": [
+      "description",
+    ],
+    "value": "项目私有配置文件。此文件中的内容将覆盖 project.config.json 中的相同字段。项目的改动优先同步到此文件中。详见文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/projectconfig.html",
+  },
+  {
+    "op": "replace",
+    "path": [
+      "setting",
+      "compileHotReLoad",
+    ],
+    "value": true,
+  },
+  {
+    "op": "replace",
+    "path": [
+      "libVersion",
+    ],
+    "value": "3.15.0",
+  },
+  {
+    "op": "add",
+    "path": [
+      "setting",
+      "urlCheck",
+    ],
+    "value": false,
+  },
   {
     "op": "add",
     "path": [

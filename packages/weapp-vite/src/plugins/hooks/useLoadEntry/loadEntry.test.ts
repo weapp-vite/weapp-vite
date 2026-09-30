@@ -1,5 +1,6 @@
 import type { PluginContext } from 'rolldown'
 import type { Mock } from 'vitest'
+import type { CompilerContext } from '../../../context'
 import { realpathSync } from 'node:fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,6 +12,7 @@ import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
 import { toPosixPath } from '../../../utils/path'
 import { clearFileCaches, invalidateFileCache } from '../../utils/cache'
 import { SLOT_HOST_SCRIPTLESS_COMPONENT_STUB } from '../../utils/scriptlessComponent'
+import { createAutoImportAugmenter } from './autoImport'
 import { createExtendedLibManager } from './extendedLib'
 import { createEntryLoader } from './loadEntry'
 
@@ -277,7 +279,7 @@ function createLoader(options?: CreateLoaderOptions) {
 
   const registerJsonAsset = vi.fn()
   const scanTemplateEntry = vi.fn()
-  const applyAutoImports = vi.fn(() => [])
+  const applyAutoImports = vi.fn<(baseName: string, json: Record<string, unknown>) => string[] | Promise<string[]>>(() => [])
   const normalizeEntry = vi.fn(options?.normalizeEntry ?? ((entry: string) => entry))
   const runtimeState = createRuntimeState()
   const scanService: { pluginJsonPath?: string, pluginJson?: any } | undefined = options?.plugin
@@ -622,34 +624,49 @@ describe('createEntryLoader', () => {
     expect(entriesMap.get('app')?.themeJsonPath).toBe(appEntry.themeJsonPath)
   })
 
-  it('reuses cached entry json during direct script hmr', async () => {
-    const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState } = createLoader({ isDev: true })
+  it.each(['entry-direct:1', 'json-sidecar:1'])('removes generated component bindings while retaining explicit bindings after %s', async (dirtyReason) => {
+    const { loader, jsonService, jsonCache, registerJsonAsset, runtimeState, applyAutoImports } = createLoader({ isDev: true })
     const pluginCtx = createPluginContext()
-    const jsonPath = '/project/src/pages/home/index.json'
-    const cachedJson = { usingComponents: { card: '../../components/card/index' } }
-    const structuredCloneSpy = vi.spyOn(globalThis, 'structuredClone')
+    const pageScript = path.resolve('src/pages/auto-import-contract/index.ts')
+    const jsonPath = path.join(path.dirname(pageScript), 'index.json')
+    const sourceJson = { usingComponents: { 'manual-card': '/components/manual-card/index' } }
+    const tags = { 'probe-card': true, 'manual-card': true }
+    let componentsAvailable = true
+    // 这里的受控替身只提供自动导入增强器实际读取的接口。
+    const autoImportService = {
+      getVersion: () => componentsAvailable ? 1 : 2,
+      resolve: (name: string) => componentsAvailable
+        ? { value: { name, from: `/components/auto-${name}/index` } }
+        : undefined,
+    } as CompilerContext['autoImportService']
+    const wxmlService = { getAggregatedComponents: () => tags } as CompilerContext['wxmlService']
+    applyAutoImports.mockImplementation(createAutoImportAugmenter(autoImportService, wxmlService))
+    mockFindJsonEntry.mockResolvedValue({ path: jsonPath, predictions: [jsonPath] })
+    jsonService.read.mockResolvedValue(sourceJson)
+    jsonCache.set(jsonPath, sourceJson)
 
-    mockFindJsonEntry.mockResolvedValue({
-      path: jsonPath,
-      predictions: [jsonPath],
+    await loader.call(pluginCtx, pageScript, 'page')
+    expect(registerJsonAsset.mock.lastCall?.[0].json.usingComponents).toEqual({
+      'manual-card': '/components/manual-card/index',
+      'probe-card': '/components/auto-probe-card/index',
     })
-    jsonCache.set(jsonPath, cachedJson)
+
+    componentsAvailable = false
     runtimeState.build.hmr.profile = {
       event: 'update',
-      dirtyReasonSummary: ['entry-direct:1'],
+      dirtyReasonSummary: [dirtyReason],
     }
+    await loader.call(pluginCtx, pageScript, 'page')
+    expect(registerJsonAsset.mock.lastCall?.[0].json.usingComponents).toEqual({
+      'manual-card': '/components/manual-card/index',
+    })
 
-    await loader.call(pluginCtx, '/project/src/pages/home/index.ts', 'page')
-
-    expect(jsonService.cache.get).toHaveBeenCalledWith(jsonPath)
-    expect(jsonService.read).not.toHaveBeenCalled()
-    expect(structuredCloneSpy).not.toHaveBeenCalled()
-    expect(pluginCtx.addWatchFile).not.toHaveBeenCalledWith(jsonPath)
-    expect(registerJsonAsset).toHaveBeenCalledWith(expect.objectContaining({
-      jsonPath,
-      json: cachedJson,
-    }))
-    structuredCloneSpy.mockRestore()
+    componentsAvailable = true
+    await loader.call(pluginCtx, pageScript, 'page')
+    expect(registerJsonAsset.mock.lastCall?.[0].json.usingComponents).toEqual({
+      'manual-card': '/components/manual-card/index',
+      'probe-card': '/components/auto-probe-card/index',
+    })
   })
 
   it('reuses entry json cached by loadEntry when json service cache misses during direct script hmr', async () => {

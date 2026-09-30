@@ -57,6 +57,7 @@ async function createFixture() {
   const state = {
     ctx,
     jsonEmitFilesMap: new Map(),
+    pendingJsonEmitFilesMap: new Map(),
     // 原生 layout 由页面编译发出，不要求存在独立扫描入口。
     entriesMap: new Map([
       ['pages/index/index', { templatePath: absolute('pages/index/index.wxml') }],

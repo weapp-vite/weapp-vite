@@ -18,6 +18,7 @@ export function createJsonEmitManager(
   configService: CompilerContext['configService'],
 ) {
   const map = new Map<string, JsonEmitRecord>()
+  const pendingMap = new Map<string, JsonEmitRecord>()
 
   function register(entry: JsonEmitFileEntry) {
     if (!entry.jsonPath && !entry.fileName) {
@@ -39,14 +40,19 @@ export function createJsonEmitManager(
         }
       : entry
 
-    map.set(fileName, {
+    const record: JsonEmitRecord = {
       fileName,
       entry: normalizedEntry as Required<JsonEmitFileEntry>,
-    })
+    }
+    map.set(fileName, record)
+    if (configService.isDev) {
+      pendingMap.set(fileName, record)
+    }
   }
 
   return {
     map,
+    pendingMap,
     register,
   }
 }

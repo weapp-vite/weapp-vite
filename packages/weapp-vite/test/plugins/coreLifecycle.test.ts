@@ -46,6 +46,7 @@ describe('core plugin watchChange', () => {
       markEntryDirty,
       emitDirtyEntries: vi.fn(),
       jsonEmitFilesMap: new Map(),
+      pendingJsonEmitFilesMap: new Map(),
       entriesMap: new Map(),
       resolvedEntryMap: new Map(),
     })

@@ -114,6 +114,29 @@ describe('web Vue SFC contracts', () => {
     expect(await ensureWebVueSfcResult({ filename, meta, srcRoot: join(root, 'src'), state })).toBe(compiled)
   })
 
+  it('shares a compiled snapshot between Windows and POSIX path spellings', async () => {
+    const filename = 'C:\\project\\src\\pages\\index.vue'
+    const state = createEmptyScanState()
+    const meta = createMeta('page', filename)
+    await compileWebVueSfc({
+      filename,
+      meta,
+      srcRoot: 'C:/project/src',
+      state,
+      source: '<template><view>published snapshot</view></template>',
+    })
+
+    const cached = await ensureWebVueSfcResult({
+      filename: 'C:/project/src/pages/index.vue',
+      meta,
+      srcRoot: 'C:/project/src',
+      state,
+      source: '<template><view>unpublished replacement</view></template>',
+    })
+    expect(cached.template).toContain('published snapshot')
+    expect(cached.template).not.toContain('unpublished replacement')
+  })
+
   it('resolves alias, relative and root SFC src dependencies', async () => {
     const root = await mkdtemp(join(tmpdir(), 'weapp-web-sfc-src-'))
     const srcRoot = join(root, 'src')

@@ -4,7 +4,7 @@ import path from 'node:path'
 import { runInNewContext } from 'node:vm'
 import { dev } from 'rolldown/experimental'
 import { expect, it, vi } from 'vitest'
-import { CompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
+import { CompilerHmrHost, compilerSourceId } from '../../plugins/compilerPlugin/hmr'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
 
 it.each([false, true])('pins actual DevEngine inputs for virtual source ownership (extra dependency: %s)', async (extraDependency) => {
@@ -12,6 +12,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
   const entry = path.join(root, 'app.js')
   const source = (value: string) => `globalThis.utility = ${JSON.stringify(value)}; if (import.meta.hot) import.meta.hot.accept();`
   await writeFile(entry, source('py-5.5'))
+  const sourceId = compilerSourceId(entry)
   const host = new CompilerHmrHost()
   const batches: Array<{ input: ReturnType<CompilerHmrHost['freeze']>, code: string, filename: string, graphCode?: string | null }> = []
   const runtime: Record<string, unknown> = {}
@@ -77,7 +78,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       await writeFile(`${entry}.pending`, source(utility))
       await rename(`${entry}.pending`, entry)
       await vi.waitFor(() => expect(batches.length).toBe(index + 1), { timeout: 10_000 })
-      expect(batches[index]!.input.sources.get(entry)).toBe(source(utility))
+      expect(batches[index]!.input.sources.get(sourceId)).toBe(source(utility))
       expect(batches[index]!.code).toContain(utility)
       expect(batches[index]!.graphCode).toContain(utility)
       await engine.notifyPayloadDelivered(batches[index]!.filename)
@@ -85,7 +86,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
       await engine.ensureCurrentBuildFinish()
       await engine.getBundleState()
     }
-    expect(batches[0]!.input.sources.get(entry)).toBe(source('py-6.5'))
+    expect(batches[0]!.input.sources.get(sourceId)).toBe(source('py-6.5'))
     expect(batches[1]!.input.revision).toBeGreaterThan(batches[0]!.input.revision)
     expect(batches[0]!.filename).not.toBe(batches[1]!.filename)
   }

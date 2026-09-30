@@ -136,7 +136,7 @@ wv upload -p ./dist -v 1.2.3 -d "release"
 
 需要改用 SDK 时，先按[微信指南](./upload/weapp.md)在**源码项目根目录**安装 `miniprogram-ci`，配置 AppID、代码上传私钥和 IP 白名单，再执行 `wv build --upload -p weapp --uv 1.2.3 --desc "release"`。这是重新构建并使用新凭据的流程，不是 IDE 命令的等价替换；不要把旧 `--project` 的 `dist` 目录直接复制成新命令的 `[root]`。
 
-顶层分流由明确参数决定：旧标记为 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 标记为长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`。两组混用在 IDE、编译或升版副作用前报错，SDK 标记的 `--no-*` 形式也不能绕过检查。`--dry-run`、`--bump`、`--git-desc` 不适用于 IDE。
+顶层分流由明确参数决定：旧标记为 `--version/-v`、`--project`、`--appid`、`--ext-appid`、`--info-output/-i`；SDK 标记为长参数 `--platform`、`--uv`、`--bump`、`--git-desc`、`--dry-run`、`--json`、`--timeout`。两组混用在 IDE、编译或升版副作用前报错，SDK 标记的 `--no-*` 形式也不能绕过检查。这些 SDK 专属选项不适用于 IDE。
 
 `-p` 本身不决定后端：有旧标记时是 IDE 项目目录，否则是平台；不按值是否像平台名或文件是否存在猜测。`--desc` 共用，`-d` 只在旧调用中保留说明含义，原生命令仍将其作为 debug。参数支持分开和 `=` 形式，必填值不当作标记，仅在选项位置遇到 `--` 后停止扫描。完整规则见 [CLI 参考](./cli.md#legacy-upload)。
 
@@ -291,6 +291,51 @@ pnpm exec wv preview -p xhs,tt
 **两个 `all` 含义不同**：`upload -p all` / `preview -p all` 是六个小程序平台；`build -p all --upload` 仍是现有的“小程序 + Web”，等两个构建后端都成功后只上传小程序，不代表六端。`build` 不接受 `-p xhs,tt`，多个小程序目标使用独立 `upload` / `preview` 入口。
 
 批量操作串行执行，重复平台去重；`all` 顺序为微信、支付宝、抖音、小红书、京东、百度。首次失败即停止，已经上传的平台不会回滚。`multiPlatform.targets` 是允许列表，不会自动把 `all` 缩减成该列表；仅配置部分平台时显式传 `-p xhs,tt`。解决失败后只重试未完成的平台，不要误以为整批原子提交。取消命令会停止上传子进程，但不能撤回平台已经接收的版本。
+
+### 结果、进度与本地超时 {#report}
+
+```bash
+# stdout 仅输出一个 JSON 报告，构建日志与官方进度进入 stderr
+pnpm exec wv upload -p xhs,tt --json --timeout 180 > upload-report.json
+
+# 演练也可生成报告，不调用 SDK、不修改业务版本
+pnpm exec wv upload -p all --dry-run --json
+```
+
+`--json` 和 `--timeout` 只属于独立 SDK `upload` 命令，不适用于 `build --upload`、`preview` 或 IDE 上传，也不是 `weapp.upload` 配置字段。不加 `--json` 时仍显示日志，并在结束时逐平台汇总。
+
+报告包含 `schemaVersion: 1`、`action: "upload"`、整批 `status`（`success` / `failed`）及按请求顺序排列的 `results`。失败时退出码非零，前序成功结果保留，后续目标为 `not-run`；不会自动重试、回滚或继续上传。参数校验在平台列表解析前失败时，`results` 可以为空。
+
+| 平台条目字段 | 含义 |
+| --- | --- |
+| `platform` | 已解析的平台；从配置推断且尚未解析时为 `null` |
+| `requestedVersion` | 本次请求版本，不等于平台确认的版本；尚未解析时省略 |
+| `stage` | 最后进入的阶段：`prepare`、`build`、`validate`、`upload` |
+| `status` | `success`、`failed`、`not-run`、`dry-run` 或 `unknown` |
+| `result` | 仅成功上传时提供的平台可选信息，可能为 `{}` |
+| `error` | 失败原因；整批报告也保留首个错误 |
+| `remoteOutcome` | 执行失败时可为 `not-started` 或 `unknown`，不推断远端成功或失败 |
+
+`result` 只选择官方实际返回的字段，不透传 SDK 原始对象：
+
+| 平台 | 可选结果 |
+| --- | --- |
+| 微信 | `subPackages: { name, size }[]`、`plugins: { appid, version, size }[]`，体积单位为字节；不把内部版本标识当作上传版本 |
+| 支付宝 | `sdkVersion`，以及实际返回时的 `qrCodeUrl`；不会主动设置体验版 |
+| 抖音 | `previewUrl`、`qrCodeFile` |
+| 小红书 | 官方成功返回 `null`，归一化为 `{}` |
+| 京东 | `qrCodeUrl`、`qrCodeBase64` |
+| 百度 | `previewUrl`（优先默认优化版本链接）、`fileSize`（字节）、`warnings` |
+
+可选字段缺失或无效时省略，不据此否定已完成的上传。预览链接或二维码不代表提审、发布或正式上线。
+
+进度来自官方公开回调：微信显示任务状态／消息，不推算百分比；小红书显示实际百分比；支付宝分别显示日志、任务创建、版本创建事件。其他平台只保留工具日志，不伪造统一百分比。进度事件甚至 `100%` 都不等于完成，仍须等待 SDK 完成确认和正常退出。
+
+`--timeout <秒>` 限制每个平台的 SDK worker 执行时间，**不包含构建**；未指定则不增加超时。接受正数，精度不超过毫秒，最大 `2147483.647` 秒。SDK 执行期间，超时或 `SIGINT` / `SIGTERM` 会触发本地上传进程树清理；无法确认清理完成时保留错误，不改判成功。信号处理只接管 SDK 执行阶段，构建等前置阶段保持原有进程退出行为，不等待未完成的构建，也不保证生成最终报告。
+
+Windows 使用 PowerShell 查询已退出 worker 的子进程归属，单次查询最多等待 30 秒；这是 SDK 执行结束后的本地清理预算，不包含在 `--timeout` 内。查询或终止失败仍然报错，不会跳过清理或自动重试上传。
+
+SDK 开始后超时或中断，条目标为 `unknown` 且 `remoteOutcome: "unknown"`：请求可能已被平台接收，**本地终止不等于远端取消**。其他 SDK 执行错误可为 `failed` 并携带 `remoteOutcome: "unknown"`，同样需要先核实平台后台，再决定是否重试。上传成功也不代表完成提审或正式发布。
 
 ## 5. CI：明确授权后上传 {#ci}
 
