@@ -35,7 +35,7 @@ pnpm --filter @weapp-vite/dimina-playground preview
 2. DMCC 在独立的 `.cache` 中间目录编译；读取项目元数据、npm 组件、分包与资源，完成后清理中间目录。
 3. 宿主 Vite 插件通过 `emitFile` 输出所有资源，包括独立 SDK、Worker、CSS 和 pageFrame。SDK 不经过宿主二次打包，`mitt` 通过 import map 解析，Worker 保留相对 URL。
 
-`dev` 合并并串行处理 fixture 修改。只有全部编译成功才替换内存中的资源并整体重载；失败显示错误并继续提供上次成功结果。首期不提供状态保持 HMR。宿主分别记录启动与构建状态，异步 openApp 成功不会覆盖先到达的构建错误；成功重建通过整页重载清除错误。
+`dev` 的宿主 watcher 排除 `.cache` 编译中间目录与 `.weapp-vite` 生成类型目录，避免 Windows 在清理临时产物时监听失效文件；真实 watcher 回归同时验证源码仍可触发修改事件。`dev` 合并并串行处理 fixture 修改。只有全部编译成功才替换内存中的资源并整体重载；失败显示错误并继续提供上次成功结果。首期不提供状态保持 HMR。宿主分别记录启动与构建状态，异步 openApp 成功不会覆盖先到达的构建错误；成功重建通过整页重载清除错误。
 
 每次 DMCC 编译使用独立子进程，并设置上游支持的 `ASSETS_PATH_PREFIX=1`，使图片地址相对于 SDK 的 `resourceBaseUrl` 解析，避免落到站点根目录。`openApp` 显式传入首屏路径。微信产物使用每轮新建的目录，关闭重复清空，避免与 npm 组件准备互相覆盖。
 
@@ -79,12 +79,14 @@ setup 每次从干净的固定源码创建独立 `.cache/dimina/build-*` 目录�
 - wevu 具名/作用域插槽、响应式属性更新和插槽事件回传通过；virtualHost 无额外宿主，scoped 样式生效。
 - 原生泛型覆盖多实例不同绑定、默认组件、嵌套转发、事件归属、普通组件保留宿主，以及移除/重新挂载实例后的事件归属和 detached 清理。分包覆盖从主包泛型出口引用分包专属实现、分包默认组件、属性更新和事件；virtualHost 覆盖空根/单根/双根切换、样式与返回后重新进入。
 - 原生完整流程、React 状态/列表/组件事件、wevu `v-model`、Bridge 成功/失败、分包返回状态保留、图片、配置缺失、SDK 加载失败及开发重建失败恢复均通过。Worker、iframe 和资源在 `/dimina/` 下实际加载。
-- setup 首次与重复准备、缓存复用、只复制缓存到另一目录后的直接回归、产物缺失/被修改拒绝、Windows Git CRLF 默认值、工具链/补丁/锁/脚本变更失效、补丁失败/构建失败后的恢复、未知修改保留均有验证；工作区工具测试 23 项、构建选择/CI 契约及 Windows planner 回归 23 项、公开依赖图定向单测 12 项及构建生命周期相关 96 项测试通过。
+- setup 首次与重复准备、缓存复用、只复制缓存到另一目录后的直接回归、产物缺失/被修改拒绝、Windows Git CRLF 默认值、工具链/补丁/锁/脚本变更失效、补丁失败/构建失败后的恢复、未知修改保留均有验证；工作区工具测试 24 项、构建选择/CI 契约及 Windows planner 回归 23 项、公开依赖图定向单测 12 项及构建生命周期相关 96 项测试通过。
 - lint、stylelint、工作区及 weapp-vite typecheck、实验生产构建通过。首轮独立 CI 暴露 pnpm 版本切换未准备原生可执行文件（Linux/macOS）及补丁 CRLF 与索引不一致（Windows），已按上述工具链与换行边界修复；本地新准备和复用通过，33 个 compiler/SDK 产物摘要与此前 19/19 验收版本一致；这次工具链修复未并发重复浏览器测试，第二轮三平台 SDK 准备均通过，Linux/macOS 随后暴露彩色端口日志无法匹配、Windows 暴露相对模块 ID 的分隔符错误。现已分别加入 ANSI 日志清理和上游路径补丁，新增回归先复现再修复，干净准备与复用、上游 21/21、工具 23/23、lint/typecheck/build 及强制彩色输出下的严格浏览器 19/19 均通过；跨平台修复结果仍以草稿 PR #1104 的 checks 为准；本地结果不代表 Windows/Linux 矩阵或原生宿主验收。
 
 远端 run 36687593287：Linux / Node 22.22.3 与 macOS / Node 24 的准备、构建和浏览器 19/19 均通过。Windows 的新增上游回归进一步发现 npm 自定义入口被宿主路径 API 加入盘符，现改用 POSIX 模块 ID 解析，保留原有最近包优先断言；本次修复后本地干净准备、上游 21/21、工具 23/23、lint/build 及强制彩色日志下浏览器 19/19 通过；Windows 完整验收仍需以修复后 CI 为准。
 
 远端 run 36690201133：Windows 已通过上游 21/21、工具 23/23 与完整实验构建，但 Vitest 的反斜杠 include glob 未找到浏览器测试文件并正确失败。配置现复用仓库统一的 glob 规范化，新增 POSIX/Windows 路径下真实文件发现回归；浏览器断言及“没有测试文件即失败”行为保持不变。修复后本地配置/任务选择与 Windows planner 回归 23/23、typecheck、严格浏览器 19/19 通过。该提交的 Windows Shared Compiler Hosts 也已通过（run 36690201918）。
+
+远端 run 36693382202：Windows 首次完整执行浏览器用例，18/19 通过；开发恢复场景因宿主 watcher 扫描被删除的编译缓存而触发 `EBUSY`，现收紧监听范围。保留恢复断言，修复后本地工具 24/24、lint/typecheck/build 与严格浏览器 19/19 通过，Windows 修复效果仍待新 CI。
 
 最小复现：运行 `pnpm e2e:dimina`，或进入 wevu 示例检查具名/作用域插槽；原生首页的“泛型边界测试”提供多实例、默认组件、转发、事件与卸载观察入口。补丁内的 `component-generics.spec.js` 用上游真实编译器和 service/render bridge 构建独立临时小程序，可与上游实现对照。
 

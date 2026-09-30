@@ -13,6 +13,85 @@ index 09f76c0..8104e0e 100644
      },
      "peerDependencies": {
          "react": "^19.3.0",
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/atomic-rename.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/atomic-rename.test.ts
+new file mode 100644
+index 0000000..02cbc43
+--- /dev/null
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/atomic-rename.test.ts
+@@ -0,0 +1,48 @@
++import assert from 'node:assert/strict'
++import fs from 'node:fs/promises'
++import os from 'node:os'
++import path from 'node:path'
++import test from 'node:test'
++import { renameDevelopmentFile } from './atomic-rename.ts'
++
++for (const code of ['EPERM', 'EACCES', 'EBUSY']) {
++    test(`retries a transient Windows ${code} without deleting the old generation`, async (context) => {
++        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vpt-rename-'))
++        const source = path.join(root, 'next.txt')
++        const destination = path.join(root, 'style.wxss')
++        const rename = fs.rename.bind(fs)
++        await fs.writeFile(source, 'next')
++        await fs.writeFile(destination, 'previous')
++        let attempts = 0
++        context.mock.method(fs, 'rename', async (from: string, to: string) => {
++            assert.equal(await fs.readFile(destination, 'utf8'), 'previous')
++            if (attempts++ < 2) throw Object.assign(new Error('locked'), { code })
++            await rename(from, to)
++        })
++        try {
++            await renameDevelopmentFile(source, destination, 'win32')
++            assert.equal(attempts, 3)
++            assert.equal(await fs.readFile(destination, 'utf8'), 'next')
++            assert.deepEqual(await fs.readdir(root), ['style.wxss'])
++        } finally {
++            await fs.rm(root, { recursive: true, force: true })
++        }
++    })
++}
++
++test('bounds retries and preserves the original failure', async (context) => {
++    const failure = Object.assign(new Error('locked'), { code: 'EPERM' })
++    const rename = context.mock.method(fs, 'rename', async () => { throw failure })
++    await assert.rejects(renameDevelopmentFile('source', 'destination', 'win32'), error => error === failure)
++    assert.equal(rename.mock.callCount(), 21)
++})
++
++test('does not retry unrelated errors or non-Windows permission failures', async (context) => {
++    for (const [platform, code] of [['win32', 'ENOENT'], ['darwin', 'EPERM']] as const) {
++        const failure = Object.assign(new Error('failed'), { code })
++        const rename = context.mock.method(fs, 'rename', async () => { throw failure })
++        await assert.rejects(renameDevelopmentFile('source', 'destination', platform), error => error === failure)
++        assert.equal(rename.mock.callCount(), 1)
++        rename.mock.restore()
++    }
++})
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/atomic-rename.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/atomic-rename.ts
+new file mode 100644
+index 0000000..c32d08c
+--- /dev/null
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/atomic-rename.ts
+@@ -0,0 +1,19 @@
++import fs from 'node:fs/promises'
++import process from 'node:process'
++import { setTimeout as delay } from 'node:timers/promises'
++
++/** Windows 读取句柄可能短暂阻止原子替换；重试期间保留完整旧文件，超出预算仍抛出原错误。 */
++export async function renameDevelopmentFile(source: string, destination: string, platform = process.platform): Promise<void> {
++    for (let attempt = 0; ; attempt++) {
++        try {
++            await fs.rename(source, destination)
++            return
++        } catch (error) {
++            const code = (error as NodeJS.ErrnoException).code
++            if (platform !== 'win32' || !['EPERM', 'EACCES', 'EBUSY'].includes(code ?? '') || attempt >= 20) {
++                throw error
++            }
++            await delay(50)
++        }
++    }
++}
 diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/create-hmr-results-stream.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/create-hmr-results-stream.ts
 index 1ec8d5b..edd861f 100644
 --- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/create-hmr-results-stream.ts
@@ -260,19 +339,45 @@ index 408971c..67f2dc1 100644
      }
  
      /**
+diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.test.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.test.ts
+index 0e228b1..3740354 100644
+--- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.test.ts
++++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.test.ts
+@@ -41,3 +41,19 @@ test('atomically replaces a complete development file without leaving temporary
+         await fs.rm(root, { force: true, recursive: true })
+     }
+ })
++
++
++test('failed publication preserves the previous complete file and cleans emitted temporary assets', async (context) => {
++    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'vpt-hmr-failure-'))
++    try {
++        await writeDevelopmentFile(root, 'assets/global.wxss', 'previous')
++        context.mock.method(fs, 'rename', async () => {
++            throw Object.assign(new Error('publication locked'), { code: 'EPERM' })
++        })
++        await assert.rejects(writeDevelopmentFile(root, 'assets/global.wxss', 'next'), /publication locked/)
++        assert.equal(await fs.readFile(path.join(root, 'assets/global.wxss'), 'utf8'), 'previous')
++        assert.deepEqual(await fs.readdir(path.join(root, 'assets')), ['global.wxss'])
++    } finally {
++        await fs.rm(root, { recursive: true, force: true })
++    }
++})
 diff --git a/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts b/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts
-index 1566c52..5b315f8 100644
+index 1566c52..53bd581 100644
 --- a/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts
 +++ b/packages/vite-plugin-taro/src/node/plugins/mini/dev/hmr-files.ts
-@@ -1,6 +1,7 @@
+@@ -1,7 +1,9 @@
  import { randomUUID } from 'node:crypto'
  import fs from 'node:fs/promises'
  import path from 'node:path'
 +import { rolldown } from 'rolldown'
  import type { HmrInfo } from './hmr-protocol.ts'
++import { renameDevelopmentFile } from './atomic-rename.ts'
  
  export const hmrInfoFileName = 'hmr/info.js'
-@@ -24,27 +25,39 @@ export function renderDevelopmentAppStyle(globalStyleFileName: string, buildId:
+ 
+@@ -24,27 +26,39 @@ export function renderDevelopmentAppStyle(globalStyleFileName: string, buildId:
      return `@import "./${globalStyleFileName}";\n/* vpt-build:${buildId} */\n`
  }
  
@@ -309,7 +414,7 @@ index 1566c52..5b315f8 100644
 +                }
 +            },
 +            async writeBundle(_options, bundle) {
-+                await fs.rename(temporaryPath, path.join(outDir, fileName))
++                await renameDevelopmentFile(temporaryPath, path.join(outDir, fileName))
 +                const output = bundle[temporaryName]
 +                if (output) {
 +                    delete bundle[temporaryName]

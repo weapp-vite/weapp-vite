@@ -66,6 +66,7 @@ async function main() {
   await command(taro, 'pnpm', ['prepare:taro'])
   await command(taro, 'pnpm', ['--filter', 'vite-plugin-taro', 'build'])
   await command(taro, 'pnpm', ['--filter', 'vite-plugin-taro', 'typecheck'])
+  await command(path.join(taro, 'packages/vite-plugin-taro'), process.execPath, ['--test', 'src/node/plugins/mini/dev/atomic-rename.test.ts', 'src/node/plugins/mini/dev/hmr-files.test.ts'])
   await writeFile(path.join(destination, 'artifacts.json'), `${JSON.stringify({
     sources,
     artifacts: artifacts.map(artifact => ({ ...artifact, file: path.relative(destination, artifact.file).replaceAll('\\', '/') })),
