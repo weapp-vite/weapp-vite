@@ -1,4 +1,5 @@
 import type { MpPlatform, ProjectConfig } from '@/types'
+import { defuOverrideArray } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { getProjectPlatformOptions } from '../platform'
@@ -55,7 +56,7 @@ export async function getProjectConfig(root: string, options?: ProjectConfigOpti
   const baseJson = await readProjectConfigFile(baseJsonPath, true)
   const privateJson = options?.ignorePrivate ? {} : await readProjectConfigFile(privateJsonPath, false)
 
-  return Object.assign({}, privateJson, baseJson) as ProjectConfig
+  return defuOverrideArray(privateJson, baseJson) as ProjectConfig
 }
 
 export async function getProjectPrivateConfig(root: string, options?: Pick<ProjectConfigOptions, 'privatePath'>) {

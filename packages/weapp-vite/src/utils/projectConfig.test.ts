@@ -57,7 +57,7 @@ describe('projectConfig utils', () => {
     expect(merged).toMatchObject({
       appid: 'wx123',
       projectname: 'demo',
-      mergedFrom: 'base',
+      mergedFrom: 'private',
     })
 
     const ignorePrivate = await getProjectConfig(root, { ignorePrivate: true })
@@ -79,7 +79,7 @@ describe('projectConfig utils', () => {
     const merged = await getProjectConfig(root)
     const privateConfig = await getProjectPrivateConfig(root)
 
-    expect(merged.setting).toEqual({ es6: true })
+    expect(merged.setting).toEqual({ es6: true, compileHotReLoad: true })
     expect(privateConfig.setting).toEqual({ compileHotReLoad: true })
   })
 
