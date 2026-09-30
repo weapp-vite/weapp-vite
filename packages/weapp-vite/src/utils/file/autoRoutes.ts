@@ -88,8 +88,7 @@ function resolveAutoRoutesMacroImportPath() {
 
 export async function resolveAutoRoutesInlineSnapshot(context?: MutableCompilerContext): Promise<AutoRoutesInlineSnapshot> {
   try {
-    const { getCompilerContext } = await import('../../context/getInstance')
-    const compilerContext = context ?? getCompilerContext()
+    const compilerContext = context ?? (await import('../../context/getInstance')).getCompilerContext()
     const service = compilerContext.autoRoutesService
     const reference = service?.getReference?.()
 

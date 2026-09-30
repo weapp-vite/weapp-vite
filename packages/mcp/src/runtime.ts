@@ -72,6 +72,7 @@ export async function startStdioServer(options?: CreateServerOptions): Promise<M
     return {
       transport: 'stdio',
       close: async () => {
+        await factory.close()
         await handle.close()
       },
     }
@@ -181,6 +182,7 @@ async function startStreamableHttpServer(options: StartMcpServerOptions): Promis
   return {
     transport: 'streamable-http',
     close: async () => {
+      await factory.close()
       await mcpHandler.close()
       await new Promise<void>((resolve, reject) => {
         httpServer.close((error) => {

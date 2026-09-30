@@ -8,33 +8,6 @@ import { emitWxmlAssetsWithCache } from '../../utils/wxmlEmit'
 import { emitJsonAssets } from '../helpers'
 import { createGenerateBundleHook } from './emit/generate'
 
-function shouldEmitJsonDuringRenderStart(state: CorePluginState) {
-  const { ctx, hmrState } = state
-  if (
-    !ctx.configService.isDev
-    || !hmrState.hasBuiltOnce
-    || hmrState.didEmitAllEntries
-  ) {
-    return true
-  }
-
-  const dirtyReasons = ctx.runtimeState.build.hmr.profile.dirtyReasonSummary
-  if (!dirtyReasons?.length) {
-    return true
-  }
-
-  return dirtyReasons.some(reason =>
-    reason.startsWith('json-sidecar:')
-    || reason.startsWith('entry-json-only:')
-    || reason.startsWith('config-restart:')
-    || reason.startsWith('auto-routes-topology:')
-    || reason.startsWith('app-shell-dependent:')
-    || reason.startsWith('layout-self:')
-    || reason.startsWith('layout-dependent:')
-    || reason.startsWith('layout-fallback-full:'),
-  )
-}
-
 function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
   const { ctx, hmrState, entriesMap } = state
   if (
@@ -99,9 +72,7 @@ export function createRenderStartHook(state: CorePluginState) {
           this.emitFile(asset)
         },
       }
-      if (shouldEmitJsonDuringRenderStart(state)) {
-        emitJsonAssets.call(this, state)
-      }
+      emitJsonAssets.call(this, state)
       const targetIds = resolveIncrementalHmrWxmlTargetIds(state)
       state.watchFilesSnapshot = emitWxmlAssetsWithCache({
         runtime,

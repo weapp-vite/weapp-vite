@@ -247,7 +247,8 @@ export default await defineEslintConfig({
         'e18e/ban-dependencies': 'off',
       },
     }, {
-      files: ['packages/weapp-ide-cli/package.json'],
+      // Preserve Windows command resolution, abort handling and process cleanup semantics.
+      files: ['packages/weapp-ide-cli/package.json', 'packages/agent-core/package.json', 'packages/agent-mini-program/package.json', 'packages/agent-cli/package.json', 'packages/acceptance/package.json'],
       rules: {
         'e18e/ban-dependencies': 'off',
       },

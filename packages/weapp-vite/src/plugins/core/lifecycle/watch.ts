@@ -15,6 +15,7 @@ import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
+import { resolveRealpath } from '../../../utils/realpathScope'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { getWxmlWatchFiles, isWxmlDependency } from '../../../wxml/processing/dependencies'
 import { isManagedCompilerEntry } from '../../compilerPluginRegistry'
@@ -245,6 +246,9 @@ export function createBuildStartHook(state: CorePluginState) {
         }
         addNormalizedWatchFiles(this, [...configService.configFileDependencies, ...getWxmlWatchFiles(ctx)])
         if (isPluginBuild) {
+          if (ctx.scanService.pluginJsonPath) {
+            addNormalizedWatchFiles(this, [resolveRealpath(ctx.scanService.pluginJsonPath)])
+          }
           if (configService.absolutePluginRoot) {
             ensureSidecarWatcher(ctx, configService.absolutePluginRoot)
           }
@@ -682,7 +686,9 @@ async function processChangedFile(
   const relativeCwd = configService.relativeCwd(normalizedId)
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
-  const isConfigDependency = isConfigFileDependencyChange(state, normalizedId)
+  const isPluginManifest = configService.pluginOnly
+    && configSuffixes.some(suffix => relativeSrc === `plugin${suffix}`)
+  const isConfigDependency = isConfigFileDependencyChange(state, normalizedId) || Boolean(isPluginManifest)
   const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
 
   if (isConfigDependency || isWxmlDependencyFile) {

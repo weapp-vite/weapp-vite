@@ -15,6 +15,7 @@ interface XhsUploadCi {
     version: string
     desc: string
     verbose: false
+    progressCallback?: (progress: number) => void
   }) => Promise<unknown>
 }
 
@@ -36,7 +37,7 @@ export async function prepareXhsUpload(context: UploadContext, action: UploadAct
 
   return {
     secrets: [token],
-    async run() {
+    async run(onProgress) {
       const { CI } = await loadUploadPackage<XhsUploadModule>('xhs-mp-cli/dist/ci.js', context.cwd)
       const sdk = new CI()
       sdk.core.login = async () => {
@@ -59,6 +60,17 @@ export async function prepareXhsUpload(context: UploadContext, action: UploadAct
         version: context.version,
         desc: context.desc,
         verbose: false,
+        progressCallback: onProgress
+          ? (progress) => {
+              // 官方 -1 表示失败；只有真实的 0–100 回调值才是百分比。
+              if (progress === -1) {
+                onProgress({ type: 'log', message: '小红书 SDK 报告上传失败。' })
+              }
+              else if (Number.isFinite(progress) && progress >= 0 && progress <= 100) {
+                onProgress({ type: 'progress', percent: progress })
+              }
+            }
+          : undefined,
       })
     },
   }

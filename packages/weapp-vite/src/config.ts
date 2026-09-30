@@ -65,6 +65,8 @@ export type {
   WxmlRemoveAttrRule,
   WxmlRemoveOptions,
 }
+export type { JsonConfig, JsonMergeContext, JsonMergeFunction, JsonMergeStage, JsonMergeStrategy } from './types/config/foundation'
+
 export type { MultiPlatformProjectConfig, MultiPlatformProjectConfigs } from './types/config/projectConfig'
 
 export type { WxmlAttribute, WxmlAttributeValue, WxmlElementInfo, WxmlSourceLocation, WxmlTransform, WxmlTransformContext, WxmlTransformNode, WxmlTransformResult, WxmlTransformVisitor } from './types/config/wxmlTransform'

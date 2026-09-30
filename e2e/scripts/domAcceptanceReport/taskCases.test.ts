@@ -24,6 +24,23 @@ describe('planned DOM cases versus actual collection', () => {
     }
   })
 
+  it('enumerates both compiler entrypoints with the same names as runtime collection', async () => {
+    const cases = await readPlannedTaskCases({ label: 'ide/vite-plugin.runtime.test.ts', command: 'node', args: [] }, 'headless')
+    expect(cases.map(item => item.name)).toEqual([
+      'vite shared compiler session runtime (weapp e2e) > renders Vue routes and navigates to an ordinary subpackage after build',
+      'wv shared compiler session runtime (weapp e2e) > renders Vue routes and navigates to an ordinary subpackage after build',
+    ])
+  })
+
+  it('enumerates standalone and native Vite classic runtime cases', async () => {
+    const cases = await readPlannedTaskCases({ label: 'ide/hmr-auto-classic.runtime.test.ts', command: 'node', args: [] }, 'headless')
+    expect(cases.map(item => item.name)).toEqual([
+      'wv automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
+      'vite automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
+      'vite-watch automatic classic HMR in real WeChat DevTools > uses direct output and reloads the page instead of preserving its state',
+    ])
+  })
+
   it('expands provider titles and template children from the declared suite source', async () => {
     const jsx = await readPlannedTaskCases({ label: 'ide/wevu-jsx-tsx.runtime.test.ts', command: 'node', args: [] }, 'headless')
     expect(jsx).toHaveLength(3)

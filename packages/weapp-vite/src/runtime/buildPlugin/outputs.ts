@@ -64,6 +64,11 @@ export function shouldCleanOutputs(
   if (configService.inlineConfig.build?.emptyOutDir === false) {
     return false
   }
+  // 嵌套插件输出由子目标拥有；主应用增量只按自身输出清单裁剪，不能清空子目标。
+  if (phase === 'rebuild' && !configService.pluginOnly && configService.absolutePluginOutputRoot
+    && isOutputRootInsideOutDir(configService.outDir, configService.absolutePluginOutputRoot)) {
+    return false
+  }
   return phase === 'rebuild' || !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
 }
 

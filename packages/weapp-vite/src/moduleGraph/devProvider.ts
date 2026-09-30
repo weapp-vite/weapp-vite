@@ -12,6 +12,7 @@ import {
 } from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
+import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import {
   parseLogicalEntryId,
@@ -94,7 +95,7 @@ async function isExternalRequest(
   })
 }
 
-function createProviderPlugin(
+export function createDevModuleGraphPlugin(
   ctx: DevModuleGraphCompilerContext,
   config: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
@@ -212,6 +213,10 @@ export async function createDevModuleGraphProvider(
   buildConfig: InlineConfig,
   onChange: (change: DevModuleGraphChange) => void,
 ): Promise<DevModuleGraphProvider> {
+  const host = connectDevModuleGraphHost(ctx, onChange)
+  if (host) {
+    return host
+  }
   const configService = ctx.configService
   const userWatch = buildConfig.server?.watch
   const pollingWatchOptions = resolvePollingWatchOptions({ inlineConfig: configService?.inlineConfig ?? {} })
@@ -229,7 +234,7 @@ export async function createDevModuleGraphProvider(
     configFile: false,
     customLogger: createLogger('silent'),
     plugins: [
-      createProviderPlugin(ctx, buildConfig, onChange),
+      createDevModuleGraphPlugin(ctx, buildConfig, onChange),
       ...collectResolverPlugins(buildConfig),
     ],
     server: {

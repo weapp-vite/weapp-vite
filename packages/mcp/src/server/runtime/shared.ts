@@ -5,12 +5,17 @@ import type {
 import { Buffer } from 'node:buffer'
 import {
   acquireSharedMiniProgram,
+  closeOwnedSharedMiniProgram,
   closeSharedMiniProgram,
+  hasSharedMiniProgram,
   releaseSharedMiniProgram,
+  releaseSharedMiniProgramByKey,
   resolveDevtoolsProjectPath,
   resolveDevtoolsWorkspacePath,
   resolveSharedMiniProgramSessionKey,
+  retainSharedMiniProgram,
   toDevtoolsSerializableValue,
+  withRuntimeLease,
 } from '@weapp-vite/devtools-runtime'
 import { z } from 'zod'
 
@@ -20,7 +25,6 @@ export interface MiniProgramElement {
   $$?: (selector: string) => Promise<MiniProgramElement[]>
   tap: () => Promise<void>
 }
-
 export interface MiniProgramPage {
   path: string
   query?: unknown
@@ -31,11 +35,9 @@ export interface MiniProgramPage {
   scrollTop: () => Promise<unknown>
   waitFor: (milliseconds: number) => Promise<void>
 }
-
 export interface MiniProgramPageQueryOptions {
   fallback?: boolean
 }
-
 export interface MiniProgramLike {
   on: (name: 'console' | 'exception', handler: (payload: unknown) => void) => void
   off?: (name: 'console' | 'exception', handler: (payload: unknown) => void) => void
@@ -50,7 +52,6 @@ export interface MiniProgramLike {
   screenshot: (options?: { timeout?: number }) => Promise<string | Uint8Array | undefined>
   callWxMethod: (method: string, ...args: unknown[]) => Promise<unknown>
 }
-
 export interface RuntimeConnectionInput {
   projectPath: string
   timeout?: number
@@ -59,30 +60,28 @@ export interface RuntimeConnectionInput {
   preserveProjectRoot?: boolean
   sessionId?: string
 }
-
 export interface RuntimeToolOptions {
   manager?: RuntimeSessionManager
   workspaceRoot: string
   runtimeHooks?: DevtoolsRuntimeHooks
 }
-
 export const DEFAULT_SCREENSHOT_TIMEOUT = 60_000
 const SCREENSHOT_RETRY_DELAY = 500
-
 export interface RuntimeConsoleLogEntry {
   level: string
   message: string
   timestamp: number
   raw: unknown
+  projectPath?: string
+  sessionKey?: string
+  sequence?: number
 }
-
 interface AttachedSession {
   miniProgram: MiniProgramLike
   onConsole: (payload: unknown) => void
   onException: (payload: unknown) => void
   currentPage?: MiniProgramPage
 }
-
 export const connectionSchema = z.object({
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
@@ -91,7 +90,6 @@ export const connectionSchema = z.object({
   preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
 })
-
 export const connectionInputSchema = {
   projectPath: z.string().trim().min(1).describe('小程序项目路径；支持 workspaceRoot 相对路径'),
   timeout: z.number().int().positive().optional(),
@@ -100,30 +98,55 @@ export const connectionInputSchema = {
   preserveProjectRoot: z.boolean().optional(),
   sessionId: z.string().trim().min(1).optional(),
 }
-
 export class RuntimeSessionManager {
   private readonly logs: RuntimeConsoleLogEntry[] = []
   private readonly attachedSessions = new Map<string, AttachedSession>()
   private readonly maxLogs = 1000
-
+  private logSequence = 0
+  private readonly ownedSessions = new Map<string, { input: RuntimeConnectionInput, miniProgram: MiniProgramLike }>()
   constructor(
     private readonly workspaceRoot: string,
     private readonly runtimeHooks: DevtoolsRuntimeHooks = createUnavailableRuntimeHooks(),
-  ) {}
+  ) {
+  }
 
   async close(input: RuntimeConnectionInput) {
     const projectPath = this.resolveProjectPath(input.projectPath)
     const sessionKey = this.resolveSessionKey(projectPath, input)
-    this.detach(sessionKey)
-    await closeSharedMiniProgram(projectPath, input.sessionId || input.port)
+    await withRuntimeLease(projectPath, async () => {
+      this.detach(sessionKey)
+      await closeSharedMiniProgram(projectPath, input.sessionId || input.port)
+    })
   }
 
   clearLogs() {
     this.logs.length = 0
   }
 
-  getLogs() {
-    return [...this.logs]
+  getLogs(projectPath?: string, afterSequence = 0) {
+    return this.logs.filter(entry => (!projectPath || entry.projectPath === this.resolveProjectPath(projectPath)) && (entry.sequence ?? 0) > afterSequence)
+  }
+
+  getLogCursor() {
+    return this.logSequence
+  }
+
+  async prepareProject(projectPath: string, signal: AbortSignal) {
+    await this.runtimeHooks.prepareProject?.(projectPath, signal)
+  }
+
+  fork(workspaceRoot = this.workspaceRoot) {
+    return new RuntimeSessionManager(workspaceRoot, this.runtimeHooks)
+  }
+
+  async dispose() {
+    for (const key of this.attachedSessions.keys()) {
+      this.detach(key)
+    }
+    for (const { input, miniProgram } of this.ownedSessions.values()) {
+      await closeOwnedSharedMiniProgram(input, miniProgram)
+    }
+    this.ownedSessions.clear()
   }
 
   resolveProjectPath(projectPath: string) {
@@ -139,25 +162,29 @@ export class RuntimeSessionManager {
     runner: (miniProgram: MiniProgramLike) => Promise<T>,
   ): Promise<T> {
     const projectPath = this.resolveProjectPath(input.projectPath)
-    const miniProgram = await acquireSharedMiniProgram(this.runtimeHooks, {
-      port: input.port,
-      projectPath,
-      sessionId: input.sessionId,
-      timeout: input.timeout,
-      preferOpenedSession: input.preferOpenedSession,
-      preserveProjectRoot: input.preserveProjectRoot ?? true,
-      sharedSession: true,
+    return withRuntimeLease(projectPath, async () => {
+      const existed = hasSharedMiniProgram({ ...input, projectPath })
+      const miniProgram = await acquireSharedMiniProgram(this.runtimeHooks, {
+        port: input.port,
+        projectPath,
+        sessionId: input.sessionId,
+        timeout: input.timeout,
+        preferOpenedSession: input.preferOpenedSession,
+        preserveProjectRoot: input.preserveProjectRoot ?? true,
+        sharedSession: true,
+      })
+      const sessionKey = this.resolveSessionKey(projectPath, input)
+      if (!existed) {
+        this.ownedSessions.set(sessionKey, { input: { ...input, projectPath }, miniProgram })
+      }
+      this.attach(sessionKey, miniProgram, projectPath)
+      try {
+        return await runner(miniProgram)
+      }
+      finally {
+        releaseSharedMiniProgram(projectPath, input.sessionId || input.port)
+      }
     })
-
-    const sessionKey = this.resolveSessionKey(projectPath, input)
-    this.attach(sessionKey, miniProgram)
-
-    try {
-      return await runner(miniProgram)
-    }
-    finally {
-      releaseSharedMiniProgram(projectPath, input.sessionId || input.port)
-    }
   }
 
   async withPage<T>(
@@ -192,21 +219,19 @@ export class RuntimeSessionManager {
     })
   }
 
-  private attach(sessionKey: string, miniProgram: MiniProgramLike) {
+  private attach(sessionKey: string, miniProgram: MiniProgramLike, projectPath: string) {
     const existing = this.attachedSessions.get(sessionKey)
     if (existing?.miniProgram === miniProgram) {
       return
     }
-
     this.detach(sessionKey)
-
+    retainSharedMiniProgram(sessionKey)
     const onConsole = (payload: unknown) => {
-      this.pushLog(normalizeConsoleEvent(payload))
+      this.pushLog({ ...normalizeConsoleEvent(payload), projectPath, sessionKey })
     }
     const onException = (payload: unknown) => {
-      this.pushLog(normalizeExceptionEvent(payload))
+      this.pushLog({ ...normalizeExceptionEvent(payload), projectPath, sessionKey })
     }
-
     miniProgram.on('console', onConsole)
     miniProgram.on('exception', onException)
     this.attachedSessions.set(sessionKey, {
@@ -236,41 +261,35 @@ export class RuntimeSessionManager {
     if (!attached) {
       return
     }
-
     if (typeof attached.miniProgram.off === 'function') {
       attached.miniProgram.off('console', attached.onConsole)
       attached.miniProgram.off('exception', attached.onException)
     }
-
+    releaseSharedMiniProgramByKey(projectPath)
     this.attachedSessions.delete(projectPath)
   }
 
   private pushLog(entry: RuntimeConsoleLogEntry) {
-    this.logs.push(entry)
+    this.logs.push({ ...entry, sequence: ++this.logSequence })
     while (this.logs.length > this.maxLogs) {
       this.logs.shift()
     }
   }
 }
-
 export function buildUrl(pagePath: string, query?: Record<string, string>) {
   const normalizedPath = pagePath.startsWith('/') ? pagePath : `/${pagePath}`
   if (!query || Object.keys(query).length === 0) {
     return normalizedPath
   }
-
   const search = new URLSearchParams(query).toString()
   if (!search) {
     return normalizedPath
   }
-
   return `${normalizedPath}${normalizedPath.includes('?') ? '&' : '?'}${search}`
 }
-
 function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
-
 function isCaptureScreenshotProtocolTimeout(error: unknown) {
   return error instanceof Error
     && 'code' in error
@@ -278,7 +297,6 @@ function isCaptureScreenshotProtocolTimeout(error: unknown) {
     && 'method' in error
     && error.method === 'App.captureScreenshot'
 }
-
 function isCurrentPageRecoverableError(error: unknown) {
   if (!(error instanceof Error)) {
     return false
@@ -290,13 +308,11 @@ function isCurrentPageRecoverableError(error: unknown) {
   }
   return error.message.includes('page is not on top of page stack')
 }
-
 export async function captureMiniProgramScreenshot(
   miniProgram: MiniProgramLike,
   timeout = DEFAULT_SCREENSHOT_TIMEOUT,
 ) {
   let lastError: unknown
-
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       const screenshot = await miniProgram.screenshot({ timeout })
@@ -310,15 +326,12 @@ export async function captureMiniProgramScreenshot(
       if (!isCaptureScreenshotProtocolTimeout(error) || attempt === 2) {
         throw error
       }
-
       await miniProgram.currentPage().catch(() => undefined)
       await sleep(SCREENSHOT_RETRY_DELAY)
     }
   }
-
   throw lastError
 }
-
 export function parseSelectorWithIndex(selector: string) {
   const match = selector.match(/^(.+?)\[index=(\d+)\]$/)
   if (!match?.[1] || !match[2]) {
@@ -327,13 +340,11 @@ export function parseSelectorWithIndex(selector: string) {
       index: undefined,
     }
   }
-
   return {
     selector: match[1],
     index: Number.parseInt(match[2], 10),
   }
 }
-
 export async function resolveElement(
   page: MiniProgramPage,
   selectorInput: string,
@@ -342,7 +353,6 @@ export async function resolveElement(
 ): Promise<MiniProgramElement> {
   const { selector, index } = parseSelectorWithIndex(selectorInput)
   let element: MiniProgramElement | undefined | null
-
   if (index === undefined) {
     element = await page.$(selector, queryOptions) as MiniProgramElement | null
   }
@@ -353,23 +363,18 @@ export async function resolveElement(
     }
     element = elements[index]
   }
-
   if (!element) {
     throw new Error(`未找到元素: ${selectorInput}`)
   }
-
   if (!innerSelector) {
     return element
   }
-
   const inner = await callOptionalMethod<MiniProgramElement | null>(element, '$', innerSelector)
   if (!inner) {
     throw new Error(`在元素 "${selectorInput}" 内未找到元素: ${innerSelector}`)
   }
-
   return inner
 }
-
 export async function queryElements(
   page: MiniProgramPage,
   selectorInput: string,
@@ -380,18 +385,14 @@ export async function queryElements(
   if (!Array.isArray(elements)) {
     return []
   }
-
   if (index === undefined) {
     return elements
   }
-
   if (index < 0 || index >= elements.length) {
     throw new Error(`选择器 "${selector}" 的 index=${index} 超出范围，当前匹配 ${elements.length} 个元素。`)
   }
-
   return [elements[index]!]
 }
-
 export async function summarizeElement(element: MiniProgramElement, withWxml = false) {
   const [text, value, size, offset, scrollWidth, scrollHeight, markup] = await Promise.all([
     callMaybe(element, 'text'),
@@ -402,7 +403,6 @@ export async function summarizeElement(element: MiniProgramElement, withWxml = f
     callMaybe(element, 'scrollHeight'),
     withWxml ? readElementMarkup(element).catch(() => null) : Promise.resolve(null),
   ])
-
   return compactObject({
     tagName: readProperty(element, 'tagName'),
     text,
@@ -416,7 +416,6 @@ export async function summarizeElement(element: MiniProgramElement, withWxml = f
     wxmlType: withWxml ? markup?.type ?? null : undefined,
   })
 }
-
 export async function readElementMarkup(element: MiniProgramElement, outer = false) {
   if (outer) {
     const outerWxml = await callMaybe(element, 'outerWxml')
@@ -427,18 +426,15 @@ export async function readElementMarkup(element: MiniProgramElement, outer = fal
       }
     }
   }
-
   const wxml = await callRequiredMethod<unknown>(element, 'wxml')
   return {
     type: outer ? 'wxml-fallback' as const : 'wxml' as const,
     wxml: typeof wxml === 'string' ? wxml : String(wxml ?? ''),
   }
 }
-
 export function toSerializableValue(value: unknown): unknown {
   return toDevtoolsSerializableValue(value)
 }
-
 export async function callRequiredMethod<TResult>(
   target: unknown,
   methodName: string,
@@ -450,7 +446,6 @@ export async function callRequiredMethod<TResult>(
   }
   return await method.apply(target, args) as TResult
 }
-
 export async function callOptionalMethod<TResult>(
   target: unknown,
   methodName: string,
@@ -462,7 +457,6 @@ export async function callOptionalMethod<TResult>(
   }
   return await method.apply(target, args) as TResult
 }
-
 export async function callMaybe(target: unknown, methodName: string, ...args: unknown[]) {
   try {
     return await callOptionalMethod(target, methodName, ...args)
@@ -471,18 +465,15 @@ export async function callMaybe(target: unknown, methodName: string, ...args: un
     return undefined
   }
 }
-
 export function compactObject<T extends Record<string, unknown>>(input: T) {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined))
 }
-
 export function readProperty(target: unknown, key: string): unknown {
   if (!target || typeof target !== 'object') {
     return undefined
   }
   return (target as Record<string, unknown>)[key]
 }
-
 function normalizeConsoleEvent(payload: unknown): RuntimeConsoleLogEntry {
   const record = toRecord(payload)
   return {
@@ -492,7 +483,6 @@ function normalizeConsoleEvent(payload: unknown): RuntimeConsoleLogEntry {
     raw: toSerializableValue(payload),
   }
 }
-
 function normalizeExceptionEvent(payload: unknown): RuntimeConsoleLogEntry {
   const record = toRecord(payload)
   const error = toRecord(record.error)
@@ -502,7 +492,6 @@ function normalizeExceptionEvent(payload: unknown): RuntimeConsoleLogEntry {
     typeof error.stack === 'string' ? error.stack : undefined,
     typeof record.stack === 'string' ? record.stack : undefined,
   ].filter(Boolean).join('\n')
-
   return {
     level: 'error',
     message: message || JSON.stringify(toSerializableValue(payload)),
@@ -510,7 +499,6 @@ function normalizeExceptionEvent(payload: unknown): RuntimeConsoleLogEntry {
     raw: toSerializableValue(payload),
   }
 }
-
 function normalizeLogLevel(value: unknown) {
   const normalized = String(value ?? 'log').toLowerCase()
   if (normalized === 'warning') {
@@ -521,7 +509,6 @@ function normalizeLogLevel(value: unknown) {
   }
   return 'log'
 }
-
 function resolveLogMessage(record: Record<string, unknown>, payload: unknown) {
   if (typeof record.text === 'string' && record.text) {
     return record.text
@@ -537,7 +524,6 @@ function resolveLogMessage(record: Record<string, unknown>, payload: unknown) {
   }
   return JSON.stringify(toSerializableValue(payload))
 }
-
 function formatLogArgument(value: unknown) {
   const record = toRecord(value)
   if (record.value !== undefined) {
@@ -548,11 +534,9 @@ function formatLogArgument(value: unknown) {
   }
   return typeof value === 'string' ? value : JSON.stringify(toSerializableValue(value))
 }
-
 function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {}
 }
-
 function createUnavailableRuntimeHooks(): DevtoolsRuntimeHooks {
   return {
     async connectMiniProgram() {

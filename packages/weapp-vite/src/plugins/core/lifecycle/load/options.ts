@@ -7,8 +7,10 @@ import path from 'pathe'
 import { createLogicalEntryId } from '../../../../moduleGraph/protocol'
 import { normalizeSourceId } from '../../../../moduleGraph/traversal'
 import { getSelectedAutoRouteSource } from '../../../../runtime/autoRoutesPlugin/selection'
+import { prepareIndependentOutputs } from '../../../../runtime/buildPlugin/independentPlan'
 import { resolveWeappLibEntries } from '../../../../runtime/lib'
 import { findJsEntry, findVueEntry, normalizeAppJson } from '../../../../utils'
+import { resolveRealpath } from '../../../../utils/realpathScope'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 
 interface LogicalInputSource {
@@ -180,7 +182,7 @@ async function resolvePluginOnlyInput(state: CorePluginState) {
 
 export function createOptionsHook(state: CorePluginState) {
   const { ctx, subPackageMeta } = state
-  const { scanService, configService, buildService } = ctx
+  const { scanService, configService } = ctx
 
   return async function options(this: any, options: any) {
     if (this) {
@@ -214,6 +216,7 @@ export function createOptionsHook(state: CorePluginState) {
         const normalized = normalizeFsResolvedId(entry.input)
         if (normalized) {
           libState.entries.set(normalized, entry)
+          libState.entries.set(normalizeFsResolvedId(resolveRealpath(normalized)), entry)
         }
         return acc
       }, {})
@@ -244,30 +247,11 @@ export function createOptionsHook(state: CorePluginState) {
         )
       }
       else {
-        const independentState = ctx.runtimeState.build.independent
-        independentState.pendingOutputs = []
-        scanService.loadSubPackages()
-        const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
-        // 独立分包按根串行构建，避免第三方插件的进程级状态在配置加载时竞争。
-        const previousSubPackageRoot = configService.currentSubPackageRoot
-        for (const root of dirtyIndependentRoots) {
-          const meta = scanService.independentSubPackageMap.get(root)
-          if (!meta) {
-            continue
-          }
-          const buildTask = buildService.buildIndependentBundle(root, meta)
-          buildTask.catch(() => {})
-          independentState.pendingOutputs.push(buildTask)
-          try {
-            await buildTask
-          }
-          catch {}
+        if (state.resolvedConfig?.build.watch && !configService.isDev) {
+          scanService.loadSubPackages()
         }
-        if (configService.currentSubPackageRoot !== previousSubPackageRoot) {
-          configService.options = {
-            ...configService.options,
-            currentSubPackageRoot: previousSubPackageRoot,
-          }
+        else {
+          await prepareIndependentOutputs(ctx)
         }
         scannedInput = await collectMainLogicalInputs(state, appEntry)
       }
@@ -280,10 +264,16 @@ export function createOptionsHook(state: CorePluginState) {
       if (!sourceId) {
         continue
       }
-      logicalInput[name] = createLogicalEntryId(sourceId, source.type)
+      // 生产 watch 的页面拓扑由每轮 buildStart 注册，静态 input 只保留真实 app 入口。
+      const dynamicWatchEntry = Boolean(state.resolvedConfig?.build.watch && !configService.isDev && source.type !== 'app' && !configService.weappLibConfig?.enabled)
+      if (!dynamicWatchEntry) {
+        logicalInput[name] = createLogicalEntryId(sourceId, source.type)
+      }
       const normalized = normalizeFsResolvedId(sourceId)
       if (normalized) {
-        state.hmrRootInputIds.add(normalizeSourceId(normalized))
+        if (!dynamicWatchEntry) {
+          state.hmrRootInputIds.add(normalizeSourceId(normalized))
+        }
         if (source.type !== 'app' && state.entriesMap) {
           const relativeBase = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(normalized))
           state.entriesMap.set(relativeBase, {

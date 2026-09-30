@@ -627,6 +627,24 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(launchMock).not.toHaveBeenCalled()
   })
 
+  it('uses the selected stable CLI for login and direct launch', async () => {
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', 'stable-cli')
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    launchMock.mockResolvedValue(createMockMiniProgram())
+    try {
+      execaMock.mockResolvedValueOnce({ exitCode: 0, stdout: '{"login":true}', stderr: '' })
+      const { assertDevtoolsLoggedIn, launchAutomator } = await import('../utils/automator')
+      await assertDevtoolsLoggedIn(sandboxRoot)
+      const miniProgram = await launchAutomator({ projectPath: sandboxRoot, skipWarmup: true })
+      expect(execaMock).toHaveBeenCalledWith('stable-cli', ['islogin'], expect.anything())
+      expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({ cliPath: 'stable-cli' }))
+      await miniProgram.close()
+    }
+    finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('confirms a transient logged-out result before failing login preflight', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     execaMock

@@ -1,6 +1,6 @@
 import type { ConfigService } from '../../context'
 import type { UploadCLIOptions } from './options'
-import type { UploadAction, UploadContext, UploadPlatform } from './types'
+import type { UploadAction, UploadContext, UploadExecutionOptions, UploadPlatform } from './types'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import process from 'node:process'
@@ -11,6 +11,7 @@ import { loadUploadEnv } from './env'
 import { prepareUpload, resolveUploadPlatforms } from './index'
 import { executeUpload } from './process'
 import { validateUploadProject } from './project'
+import { printUploadProgress } from './report'
 import { redactUploadSecrets } from './tools'
 
 interface UploadTarget {
@@ -76,7 +77,7 @@ export async function createUploadTarget(config: ConfigService, options: UploadC
 }
 
 /** 只消费本次构建的产物；产物校验通过前不会准备凭据或调用平台工具。 */
-export async function executeUploadTarget(target: UploadTarget, options: UploadCLIOptions, action: UploadAction) {
+export async function executeUploadTarget(target: UploadTarget, options: UploadCLIOptions, action: UploadAction, execution: UploadExecutionOptions & { onUpload?: () => void } = {}) {
   const { platform, context } = target
   if (!target.outDir) {
     throw new Error('本次构建未写出 app.json，已阻止上传或预览旧产物。')
@@ -92,7 +93,11 @@ export async function executeUploadTarget(target: UploadTarget, options: UploadC
     return
   }
   const upload = await prepareUpload(platform, context, action)
-  const result = await executeUpload(platform, context, upload.secrets, action)
+  execution.onUpload?.()
+  const result = await executeUpload(platform, context, upload.secrets, action, {
+    ...execution,
+    onProgress: execution.onProgress ?? (event => printUploadProgress(platform, event)),
+  })
   if (action === 'preview') {
     if (!result) {
       throw new Error('预览工具未返回二维码或预览链接。')
@@ -111,4 +116,5 @@ export async function executeUploadTarget(target: UploadTarget, options: UploadC
   else {
     logger.success(`[upload:${platform}] ${context.version} 上传完成（未提审、未正式发布）。`)
   }
+  return result
 }

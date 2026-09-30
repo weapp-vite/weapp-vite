@@ -84,14 +84,14 @@ function inferTitle(pageData: PageData) {
     return normalizeTitle(pageData.title)
   }
 
-  if (pageData.route === '/') {
+  if (toRoutePath(pageData.relativePath) === '/') {
     return siteName
   }
 
   return normalizeTitle(pageData.relativePath
     .replace(/\.mdx?$/i, '')
     .split('/')
-    .at(-1)
+    .pop()
     ?.replace(/[-_]/g, ' ') || siteName)
 }
 
@@ -170,26 +170,6 @@ function toArticleSchema(pageData: PageData, routePath: string, canonical: strin
   }
 }
 
-export function transformPageDataForSeo(pageData: PageData) {
-  const routePath = toRoutePath(pageData.relativePath)
-  const title = inferTitle(pageData)
-  const excerpt = typeof pageData.description === 'string' ? pageData.description : ''
-  const description = fallbackDescription(pageData.frontmatter.description, excerpt, title, routePath)
-  const existingKeywords = normalizeKeywords(pageData.frontmatter.keywords)
-
-  if (!pageData.frontmatter.title) {
-    pageData.frontmatter.title = title
-  }
-
-  if (!pageData.frontmatter.description) {
-    pageData.frontmatter.description = description
-  }
-
-  if (existingKeywords.length === 0) {
-    pageData.frontmatter.keywords = ['weapp-vite', 'Wevu', '微信小程序']
-  }
-}
-
 export function createSeoHead(pageData: PageData): HeadConfig[] {
   const routePath = toRoutePath(pageData.relativePath)
   const title = inferTitle(pageData)
@@ -233,7 +213,31 @@ export function createSeoHead(pageData: PageData): HeadConfig[] {
     ['meta', { name: 'twitter:image', content: image }],
     ['link', { rel: 'alternate', hreflang: 'zh-CN', href: canonical }],
     ['link', { rel: 'alternate', hreflang: 'x-default', href: canonical }],
-    ['script', { type: 'application/ld+json' }, JSON.stringify(articleSchema)],
-    ['script', { type: 'application/ld+json' }, JSON.stringify(breadcrumbSchema)],
+    ['script', { id: 'seo-article', type: 'application/ld+json' }, JSON.stringify(articleSchema)],
+    ['script', { id: 'seo-breadcrumb', type: 'application/ld+json' }, JSON.stringify(breadcrumbSchema)],
   ]
+}
+
+export function transformPageDataForSeo(pageData: PageData) {
+  const routePath = toRoutePath(pageData.relativePath)
+  const title = inferTitle(pageData)
+  const excerpt = typeof pageData.description === 'string' ? pageData.description : ''
+  const description = fallbackDescription(pageData.frontmatter.description, excerpt, title, routePath)
+  const existingKeywords = normalizeKeywords(pageData.frontmatter.keywords)
+
+  if (!pageData.frontmatter.title) {
+    pageData.frontmatter.title = title
+  }
+
+  if (!pageData.frontmatter.description) {
+    pageData.frontmatter.description = description
+  }
+
+  if (existingKeywords.length === 0) {
+    pageData.frontmatter.keywords = ['weapp-vite', 'Wevu', '微信小程序']
+  }
+
+  // 写入页面数据，让 VitePress 在 SSR 和客户端导航时共同管理页面 head。
+  pageData.description = description
+  pageData.frontmatter.head = [...createSeoHead(pageData), ...pageData.frontmatter.head || []]
 }

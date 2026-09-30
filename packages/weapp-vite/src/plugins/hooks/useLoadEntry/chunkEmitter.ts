@@ -42,6 +42,10 @@ export function createChunkEmitter(
       }
 
       const normalizedId = normalizeSourceId(resolvedId.id)
+      if (this.meta?.watchMode) {
+        // 首轮转换失败时也保留输入依赖，修复源码后可由原生 watcher 恢复。
+        this.addWatchFile(resolvedId.id)
+      }
       const entryChunkId = resolveEntryChunkId(normalizedId, resolvedId)
       const shouldEmitChunk = shouldEmitEntryChunk?.(normalizedId, resolvedId) ?? true
       if (lifecycle && !lifecycle.prepare(normalizedId, shouldEmitChunk, () => this.getModuleInfo?.(entryChunkId)?.isEntry === true)) {
@@ -58,10 +62,11 @@ export function createChunkEmitter(
         const start = shouldPreload ? performance.now() : 0
         if (shouldPreload) {
           const loadStartedAt = performance.now()
-          if (!shouldEmitChunk && preloadAssetOnlyEntry) {
+          const refreshWatchMetadata = Boolean(configService.inlineConfig?.build?.watch && !configService.isDev)
+          if ((!shouldEmitChunk || refreshWatchMetadata) && preloadAssetOnlyEntry) {
             await preloadAssetOnlyEntry.call(this, resolvedId, normalizedId)
           }
-          else {
+          if (shouldEmitChunk || !preloadAssetOnlyEntry) {
             await this.load({ id: entryChunkId })
           }
           stats.loadCount += 1

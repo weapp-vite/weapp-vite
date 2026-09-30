@@ -5,6 +5,7 @@ import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 import { expect, it, vi } from 'vitest'
 
 it('terminates its upload CLI on worker exit even if the CLI handles SIGTERM', async () => {
@@ -27,7 +28,7 @@ it('terminates its upload CLI on worker exit even if the CLI handles SIGTERM', a
     await runUploadCli({ cwd: ${JSON.stringify(root)}, env: process.env }, 'swan-toolkit', 'swan', [${JSON.stringify(readyPath)}], [])
   `)
   const worker = fork(workerPath, [], {
-    execArgv: ['--import', createRequire(import.meta.url).resolve('tsx')],
+    execArgv: ['--import', pathToFileURL(createRequire(import.meta.url).resolve('tsx')).href],
     stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
   })
   let stderr = ''

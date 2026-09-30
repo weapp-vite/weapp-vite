@@ -106,6 +106,7 @@ import type {
   HeadlessWxTabBarOption,
   HeadlessWxUploadFileOption,
 } from './media'
+import type { HeadlessWorkerApis } from './workers'
 
 /** 宿主已接受的一次路由操作；同一次操作的所有阶段共用事件标识。 */
 export interface HeadlessWxRouteEvent {
@@ -159,7 +160,7 @@ export interface HeadlessWxDriver extends HeadlessWxDriverCapabilities, Headless
   uploadFile: (option: HeadlessWxUploadFileOption) => HeadlessWxRequestTask
 }
 
-export interface HeadlessWx extends HeadlessUniEventBus, HeadlessWxRouteListeners {
+export interface HeadlessWx extends HeadlessUniEventBus, HeadlessWxRouteListeners, HeadlessWorkerApis {
   [WEVU_ROUTE_EVENT_CONTRACT_KEY]: 1
   [WEVU_PAGE_SCROLL_EVENT_CONTRACT_KEY]: 1
   canIUse: (schema: string) => boolean

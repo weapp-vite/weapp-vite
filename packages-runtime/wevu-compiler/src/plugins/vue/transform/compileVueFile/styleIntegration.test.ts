@@ -161,7 +161,7 @@ const resolveShade = (primary, backup) => primary || backup
       'tone',
       'resolveShade(palette.primary, fallback)',
     ])
-    expect(external.meta?.sfcSrcDeps).toEqual([styleFilename])
+    expect(external.meta?.sfcSrcDeps?.map(dependency => path.relative(path.dirname(filename), dependency))).toEqual(['theme.css'])
   })
 
   it('rebuilds external CSS variable metadata when the dependency content changes', async () => {

@@ -8,3 +8,8 @@ declare module '*.vue' {
 }
 
 declare module '*.css'
+
+declare module 'virtual:mermaid-config' {
+  const config: import('mermaid').MermaidConfig
+  export default config
+}

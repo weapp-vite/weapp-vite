@@ -13,6 +13,8 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/vite-plugin.runtime.test.ts',
+    'ide/vite-plugin-npm.runtime.test.ts',
     'ide/wevu-runtime.pruning.test.ts',
     'ide/github-issues.runtime.issue1035.test.ts',
     'ide/github-issues.runtime.feature1087.test.ts',
@@ -26,10 +28,14 @@ describe('e2e suite manifest', () => {
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1034-auto-routes.runtime.test.ts',
     'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
+    'ide/issue-1072-json-context.runtime.test.ts',
     'ide/wxml-transform.runtime.test.ts',
     'ide/template-retail-checkout.runtime.test.ts',
     'ide/template-weapp-vite-wevu-template.dynamic-bindings.test.ts',
     'ide/wevu-subpackage-placement.runtime.test.ts',
+    'ide/worker-host.runtime.test.ts',
+    'ide/lib-host.runtime.test.ts',
+    'ide/platform-host.runtime.test.ts',
     'ide/wevu-json-render.runtime.test.ts',
   ])('runs the same %s case in strict headless and exhaustive IDE acceptance', async (label) => {
     const headless = (await getSuiteTasks('ide-dom-headless')).find(task => task.label === label)

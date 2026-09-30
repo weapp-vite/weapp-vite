@@ -1,8 +1,8 @@
 import type { OutputAsset, OutputChunk, Plugin } from 'rolldown'
 import path from 'node:path'
-import { rolldown } from 'rolldown'
 import { build } from 'vite'
 import { pruneOwnedAssetFiles } from '../../plugins/asset/prune'
+import { loadHostRolldownBuild } from '../viteHost/engine'
 
 export type StatefulHmrOutputFile = Pick<OutputAsset, 'fileName' | 'source' | 'type'>
   | (Pick<OutputChunk, 'code' | 'fileName' | 'modules' | 'type'> & Partial<Pick<OutputChunk, 'isEntry' | 'imports' | 'map' | 'sourcemapFileName'>>)
@@ -52,6 +52,7 @@ export async function writeStatefulHmrOutput(
     },
   }
   if (!initialPublicAssets) {
+    const { rolldown } = await loadHostRolldownBuild()
     const bundle = await rolldown({
       input: virtualEntry,
       logLevel: 'silent',

@@ -355,3 +355,7 @@ MCP 服务端做了以下约束：
 4. 如果命令通过，输出 compare-ok；如果对比失败，输出 compare-failed。
 5. 最后汇总：执行命令、关键输出、最终结论。
 ```
+
+## 验收任务
+
+现有服务提供 weapp_project_inspect、weapp_acceptance_start/status/cancel/report，无需模型 Key。验收与其他运行操作按工程互斥；任务使用独立日志订阅。HTTP 请求共享任务服务，断开单次请求不会丢失任务；服务关闭保存取消结果，重启不重放交互。

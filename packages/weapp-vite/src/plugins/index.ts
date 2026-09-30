@@ -4,6 +4,7 @@ import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import { wrapPlugin } from 'vite-plugin-performance'
 import { resolveWeappAutoRoutesConfig } from '@/autoRoutesConfig'
 import { createSelectedRuntimeProviderPlugin, resolveRuntimeProvider } from '@/runtimeProviders'
+import { createAppBuilderPlugin } from '../runtime/buildPlugin/appBuilder'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
@@ -11,13 +12,17 @@ import { createCompilerPluginPlugins } from './compilerPlugin'
 import { weappVite } from './core'
 import { css } from './css'
 import { i18n } from './i18n'
+import { createLibDtsPlugin } from './libDts'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from './outputFinalizer'
+import { createPluginProjectOutputPlugin } from './pluginProjectOutput'
 import { preflight } from './preflight'
+import { createProjectConfigDirectoryPlugin } from './projectConfig/directory'
 import { createReactPlugin, isReactEnabled } from './react'
 import { createTailwindcssPlugin } from './tailwindcss'
 import { uniAppCompatibility } from './uniApp'
 import { vue } from './vue'
 import { wevu } from './wevu'
+import { createWorkerOutputPlugin } from './workerOutput'
 import { workers } from './workers'
 import { wxs } from './wxs'
 
@@ -104,6 +109,9 @@ export function vitePluginWeapp(
     groups.push([tailwindcssPlugins[0]!])
   }
   groups.push(css(ctx))
+  if (!subPackageMeta && !libModeEnabled) {
+    groups.push([createProjectConfigDirectoryPlugin(ctx), createAppBuilderPlugin(ctx), createWorkerOutputPlugin(ctx), createPluginProjectOutputPlugin(ctx)])
+  }
   groups.push([createOutputFinalizerPlugin(ctx, subPackageMeta)])
   if (tailwindcssPlugins.length > 1) {
     groups.push([tailwindcssPlugins[1]!])
@@ -112,6 +120,9 @@ export function vitePluginWeapp(
     groups.push([compilerPlugins[1]!])
   }
 
+  if (!subPackageMeta && libModeEnabled) {
+    groups.push([createLibDtsPlugin(ctx)])
+  }
   groups.push([createOutputPublicationPlugin(ctx, subPackageMeta)])
 
   const assembled = attachRuntimePlugins(ctx, flatten(groups))

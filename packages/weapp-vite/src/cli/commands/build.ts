@@ -8,9 +8,9 @@ import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { readLatestAnalyzeHistorySnapshot, writeAnalyzeHistorySnapshot } from '../../analyze/subpackages/history'
 import { getBackendForCapability } from '../../backends'
-import { createCompilerContext } from '../../createContext'
 import { createDashboardArtifactSnapshot } from '../../dashboard'
 import logger, { colors } from '../../logger'
+import { CompilerSession } from '../../runtime/compilerSession'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { formatDuration } from '../formatDuration'
 import { logBuildAppFinish } from '../logBuildAppFinish'
@@ -18,9 +18,8 @@ import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { setCommandNodeEnv } from '../nodeEnv'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
-import { terminateStaleSassEmbeddedProcess } from '../processCleanup'
-import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
-import { prepareAutoUploadMetadata } from '../upload/autoMetadata'
+import { createInlineConfig, logRuntimeTarget, resolveConfiguredRuntimeTargets, resolveRuntimeTargets } from '../runtime'
+import { prepareAutoUploadMetadataWithRollback, validateAutoUploadMetadata } from '../upload/autoMetadata'
 import { createUploadTarget, executeUploadTarget } from '../upload/builtProject'
 import { resolveBuildUploadOptions } from '../upload/options'
 
@@ -135,9 +134,12 @@ export function registerBuildCommand(cli: CAC) {
     .option('--dry-run', '[boolean] validate upload output without credentials or SDK calls (requires --upload)')
     .action(async (root: string, options: BuildUploadCLIOptions) => {
       let analyzeHandle: AnalyzeDashboardHandle | undefined
-      let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
+      let session: CompilerSession | undefined
+      let ctx: CompilerSession['context'] | undefined
       let targets: ReturnType<typeof resolveRuntimeTargets> | undefined
+      let uploadMetadataRollback: (() => Promise<void>) | undefined
       let buildCompleted = false
+      let buildFailed = false
       try {
         options = { ...options }
         filterDuplicateOptions(options)
@@ -146,17 +148,23 @@ export function registerBuildCommand(cli: CAC) {
         const cwd = root ?? process.cwd()
         const configFile = resolveConfigFile(options)
         targets = resolveRuntimeTargets(options)
+        if (uploadOptions) {
+          validateAutoUploadMetadata(uploadOptions, 'upload')
+        }
         if (uploadOptions && !getBackendForCapability(targets, 'miniprogram', 'build')) {
           throw new Error('--upload 仅支持包含小程序目标的构建，不能用于纯 Web 构建。')
-        }
-        if (uploadOptions) {
-          uploadOptions = await prepareAutoUploadMetadata(cwd, uploadOptions, 'upload')
         }
         const inlineConfig = createInlineConfig(targets, {
           scope: options.scope,
           inlineConfig: createBuildInlineConfig(options),
         })
-        ctx = await createCompilerContext({
+        if (uploadOptions) {
+          const prepared = await prepareAutoUploadMetadataWithRollback(cwd, uploadOptions, 'upload')
+          uploadOptions = prepared.options
+          uploadMetadataRollback = prepared.rollback
+        }
+        session = new CompilerSession()
+        ctx = await session.initialize({
           cwd,
           mode: options.mode ?? 'production',
           configFile,
@@ -166,6 +174,16 @@ export function registerBuildCommand(cli: CAC) {
           emitDefaultAutoImportOutputs: false,
           preloadAppEntry: false,
         })
+        targets = resolveConfiguredRuntimeTargets(targets, ctx.configService.options?.sourceConfig?.weapp?.platform)
+        if (uploadOptions && !getBackendForCapability(targets, 'miniprogram', 'build')) {
+          await uploadMetadataRollback?.()
+          uploadMetadataRollback = undefined
+          throw new Error('--upload 仅支持包含小程序目标的构建，不能用于纯 Web 构建。')
+        }
+        uploadMetadataRollback = undefined
+        for (const backend of targets.select('build')) {
+          session.onClose(() => backend.driver.close(ctx!))
+        }
         const { configService } = ctx
         const uploadTarget = uploadOptions ? await createUploadTarget(configService, uploadOptions, 'upload') : undefined
         const miniBackend = getBackendForCapability(targets, 'miniprogram', 'build')
@@ -175,7 +193,7 @@ export function registerBuildCommand(cli: CAC) {
         for (const backend of targets.select('build')) {
           if (backend.descriptor.id === 'miniprogram') {
             const miniBuildStartedAt = Date.now()
-            const output = await backend.driver.build(ctx, options) as Awaited<ReturnType<typeof ctx.buildService.build>>
+            const output = await session.run(() => backend.driver.build(ctx!, options)) as Awaited<ReturnType<typeof ctx.buildService.build>>
             const miniBuildDurationMs = Date.now() - miniBuildStartedAt
             logger.success(`小程序构建完成，耗时：${colors.green(formatDuration(miniBuildDurationMs))}`)
             if (!Array.isArray(output) && 'output' in output) {
@@ -229,7 +247,7 @@ export function registerBuildCommand(cli: CAC) {
           }
           const webBuildStartedAt = Date.now()
           try {
-            await backend.driver.build(ctx, options)
+            await session.run(() => backend.driver.build(ctx!, options))
             const webBuildDurationMs = Date.now() - webBuildStartedAt
             logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}，耗时：${colors.green(formatDuration(webBuildDurationMs))}`)
             emitDashboardEvents(analyzeHandle, [
@@ -290,13 +308,17 @@ export function registerBuildCommand(cli: CAC) {
         }
         buildCompleted = true
       }
+      catch (error) {
+        buildFailed = true
+        throw error
+      }
       finally {
-        if (ctx && targets) {
-          for (const backend of [...targets.select('build')].reverse()) {
-            await backend.driver.close(ctx)
-          }
+        if (buildFailed) {
+          await session?.close().catch(error => logger.error(error))
         }
-        terminateStaleSassEmbeddedProcess()
+        else {
+          await session?.close()
+        }
         if (buildCompleted) {
           scheduleCompletedProductionBuildExit(options, analyzeHandle)
         }

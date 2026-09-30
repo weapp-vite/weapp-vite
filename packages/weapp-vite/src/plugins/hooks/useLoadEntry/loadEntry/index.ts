@@ -252,7 +252,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     type: 'app' | 'page' | 'component',
     loadOptions?: { metadataOnly?: boolean },
   ) {
-    if (configService.isDev) {
+    if (configService.isDev || configService.inlineConfig?.build?.watch) {
       existsCache.clear()
     }
     const stopwatch = debug ? createStopwatch() : undefined
@@ -316,7 +316,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? cachedJson === undefined
         ? cachedEntryJson === undefined
           ? jsonService.read(jsonPath)
-          : Promise.resolve(cloneJsonValue(cachedEntryJson))
+          : Promise.resolve(cachedEntryJson)
         : Promise.resolve(cachedJson)
       : undefined
     const jsonReadStartedAt = performance.now()
@@ -327,8 +327,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           addJsonWatchTargets,
         ])
         if (json !== undefined && cachedJson === undefined && cachedEntryJson === undefined) {
-          entryJsonCache.set(jsonPath, cloneJsonValue(json))
+          entryJsonCache.set(jsonPath, json)
         }
+        // 缓存只保留源码配置，当前构建的自动绑定等派生字段不能写回缓存。
+        json = cloneJsonValue(json)
       }
       finally {
         recordEntryDuration('entryJsonReadMs', jsonReadStartedAt)
@@ -388,7 +390,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
               return undefined
             }
             const config = await extractConfigFromVue(vueEntryPath, {
-              context: ctx,
+              compilerContext: ctx,
               ...(source === undefined
                 ? { readSource: readVueSource }
                 : { source }),
@@ -426,7 +428,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     const nativeLayoutScriptEntries = new Set<string>()
     let resolvedPageLayoutPlan: ResolvedPageLayoutPlan | null | undefined
     let entryCodeSource: string | undefined
-    let autoRoutesSignature = configService.isDev
+    let autoRoutesSignature = (configService.isDev || configService.inlineConfig?.build?.watch)
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
     const normalizedVueEntryPath = vueEntryPath ? normalizeFsResolvedId(vueEntryPath) : undefined
@@ -485,7 +487,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (vueEntryPath && ctx.autoRoutesService?.isEnabled?.() && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
         await ctx.autoRoutesService.ensureFresh()
         const refreshedConfigFromVue = await extractConfigFromVue(vueEntryPath, {
-          context: ctx,
+          compilerContext: ctx,
           source: await readVueSource(),
           force: true,
         })
@@ -511,7 +513,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       if (appResult.appJson) {
         json = appResult.appJson
       }
-      autoRoutesSignature = configService.isDev
+      autoRoutesSignature = (configService.isDev || configService.inlineConfig?.build?.watch)
         ? ctx.autoRoutesService?.getSignature?.()
         : undefined
       entries.push(...appResult.entries)

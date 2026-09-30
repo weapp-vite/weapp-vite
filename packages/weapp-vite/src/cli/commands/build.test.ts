@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyzeSubpackages } from '../../analyze/subpackages'
-import { createCompilerContext } from '../../createContext'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import {
   registerBuildCommand,
@@ -46,7 +45,7 @@ const resolveRuntimeTargetsMock = vi.hoisted(() => {
 })
 const createInlineConfigMock = vi.hoisted(() => vi.fn(() => ({})))
 const logRuntimeTargetMock = vi.hoisted(() => vi.fn())
-const createCompilerContextMock = vi.hoisted(() => vi.fn())
+const initializeSessionMock = vi.hoisted(() => vi.fn())
 const analyzeSubpackagesMock = vi.hoisted(() => vi.fn())
 const startAnalyzeDashboardMock = vi.hoisted(() => vi.fn())
 const logBuildPackageSizeReportMock = vi.hoisted(() => vi.fn())
@@ -74,14 +73,36 @@ vi.mock('../options', () => ({
   isUiEnabled: isUiEnabledMock,
 }))
 
-vi.mock('../runtime', () => ({
+vi.mock('../runtime', async importOriginal => ({
+  ...await importOriginal<typeof import('../runtime')>(),
   resolveRuntimeTargets: resolveRuntimeTargetsMock,
   createInlineConfig: createInlineConfigMock,
   logRuntimeTarget: logRuntimeTargetMock,
 }))
 
-vi.mock('../../createContext', () => ({
-  createCompilerContext: createCompilerContextMock,
+vi.mock('../../runtime/compilerSession', () => ({
+  CompilerSession: class {
+    context: any
+    cleanup: Array<() => Promise<void>> = []
+    onClose(cleanup: () => Promise<void>) {
+      this.cleanup.push(cleanup)
+    }
+
+    async initialize(options: unknown) {
+      this.context = await initializeSessionMock(options)
+      return this.context
+    }
+
+    run(operation: () => Promise<unknown>) {
+      return operation()
+    }
+
+    async close() {
+      for (const cleanup of this.cleanup.toReversed()) {
+        await cleanup()
+      }
+    }
+  },
 }))
 
 vi.mock('../../analyze/subpackages', () => ({
@@ -143,7 +164,7 @@ describe('build cli command', () => {
     delete process.env.WEAPP_VITE_DISABLE_COMPLETED_BUILD_EXIT
     resolveConfigFileMock.mockReturnValue(undefined)
     const emitRuntimeEvents = vi.fn()
-    createCompilerContextMock.mockResolvedValue({
+    initializeSessionMock.mockResolvedValue({
       buildService: {
         build: vi.fn().mockResolvedValue({ output: [] }),
       },
@@ -193,8 +214,8 @@ describe('build cli command', () => {
       ui: true,
     })
 
-    expect(createCompilerContext).toHaveBeenCalledTimes(1)
-    expect(createCompilerContext).toHaveBeenCalledWith(expect.objectContaining({
+    expect(initializeSessionMock).toHaveBeenCalledTimes(1)
+    expect(initializeSessionMock).toHaveBeenCalledWith(expect.objectContaining({
       cwd: '/project',
       emitDefaultAutoImportOutputs: false,
       preloadAppEntry: false,
@@ -256,7 +277,7 @@ describe('build cli command', () => {
   it('closes compiler watchers when build fails', async () => {
     const closeAll = vi.fn()
     const buildError = new Error('build failed')
-    createCompilerContextMock.mockResolvedValueOnce({
+    initializeSessionMock.mockResolvedValueOnce({
       buildService: {
         build: vi.fn().mockRejectedValue(buildError),
       },
@@ -292,6 +313,17 @@ describe('build cli command', () => {
     expect(closeAll).toHaveBeenCalledTimes(1)
   })
 
+  it('preserves a build failure when owned resource cleanup also fails', async () => {
+    const buildError = new Error('compilation failed')
+    const cleanupError = new Error('cleanup failed')
+    const context = await initializeSessionMock()
+    context.buildService.build.mockRejectedValueOnce(buildError)
+    context.watcherService.closeAll.mockRejectedValueOnce(cleanupError)
+
+    await expect(createBuildActionHandler()('/project', { platform: 'weapp' })).rejects.toBe(buildError)
+    expect(loggerErrorMock).toHaveBeenCalledWith(cleanupError)
+  })
+
   it('executes a web-only build through the web backend capability', async () => {
     const webBuild = vi.fn().mockResolvedValue(undefined)
     const webClose = vi.fn().mockResolvedValue(undefined)
@@ -315,7 +347,7 @@ describe('build cli command', () => {
       has: () => true,
       select: (capability: string) => capability === 'build' ? [webBackend] : [],
     })
-    createCompilerContextMock.mockResolvedValueOnce({
+    initializeSessionMock.mockResolvedValueOnce({
       buildService: { build: vi.fn() },
       configService: {
         platform: 'weapp',
@@ -361,7 +393,7 @@ describe('build cli command', () => {
       get: (id: string) => id === 'web' ? webBackend : undefined,
       select: (capability: string) => capability === 'build' ? [webBackend] : [],
     })
-    createCompilerContextMock.mockResolvedValueOnce({
+    initializeSessionMock.mockResolvedValueOnce({
       configService: {
         platform: 'weapp',
         cwd: '/project',
@@ -395,7 +427,7 @@ describe('build cli command', () => {
       get: (id: string) => id === 'web' ? webBackend : undefined,
       select: (capability: string) => capability === 'build' ? [webBackend] : [],
     })
-    createCompilerContextMock.mockResolvedValueOnce({
+    initializeSessionMock.mockResolvedValueOnce({
       configService: {
         platform: 'weapp',
         relativeCwd: (input: string) => input,
@@ -432,7 +464,7 @@ describe('build cli command', () => {
     expect(customClose).toHaveBeenCalledTimes(1)
   })
 
-  it('terminates stale sass embedded child handles and ignores kill errors', async () => {
+  it('does not inspect or terminate Sass processes owned by other hosts', async () => {
     const kill = vi.fn()
       .mockImplementationOnce(() => undefined)
       .mockImplementationOnce(() => {
@@ -448,7 +480,8 @@ describe('build cli command', () => {
 
     try {
       await action('/project', { platform: 'weapp' })
-      expect(kill).toHaveBeenCalledTimes(2)
+      expect(handlesSpy).not.toHaveBeenCalled()
+      expect(kill).not.toHaveBeenCalled()
     }
     finally {
       handlesSpy.mockRestore()
@@ -473,7 +506,7 @@ describe('build cli command', () => {
       configurable: true,
       value: undefined,
     })
-    createCompilerContextMock.mockRejectedValueOnce(new Error('invalid config'))
+    initializeSessionMock.mockRejectedValueOnce(new Error('invalid config'))
 
     try {
       await expect(createBuildActionHandler()(undefined as any, {})).rejects.toThrow('invalid config')
@@ -486,7 +519,7 @@ describe('build cli command', () => {
   })
 
   it('accepts array build output and an unavailable analyze dashboard', async () => {
-    createCompilerContextMock.mockResolvedValueOnce({
+    initializeSessionMock.mockResolvedValueOnce({
       buildService: { build: vi.fn().mockResolvedValue([]) },
       configService: {
         absolutePluginRoot: '/plugin-root',

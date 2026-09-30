@@ -4,6 +4,7 @@ import { generatedAgentGuidelines } from './generated/agents'
 // Public skill names remain explicit here so the repository contract checker can detect drift.
 const PUBLIC_AGENT_SKILLS = [
   'weapp-vite-best-practices',
+  'weapp-acceptance',
   'docs-and-website-sync',
   'release-and-changeset-best-practices',
   'weapp-devtools-e2e-best-practices',

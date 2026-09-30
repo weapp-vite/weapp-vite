@@ -1,64 +1,17 @@
-import type { LoadConfigOptions } from './runtime/config/types'
+import type { InitializeCompilerContextOptions } from './runtime/compilerSession/context'
 import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
-import logger from './logger'
-import { syncProjectSupportFiles } from './runtime/supportFiles'
-import { hasManagedTsconfigBootstrapCompleted, syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
+import { initializeCompilerContext } from './runtime/compilerSession/context'
 
-interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
+interface CreateCompilerContextOptions extends InitializeCompilerContextOptions {
   key?: string
-  syncSupportFiles?: boolean
-  syncAutoImportSupportFiles?: boolean
-  preloadAppEntry?: boolean
 }
 
-/**
- * @description 创建并初始化编译上下文（加载配置、扫描入口）
- */
+/** 保留历史活动上下文适配；新宿主通过 CompilerSession 创建独立会话。 */
 export async function createCompilerContext(options?: CreateCompilerContextOptions) {
-  const bootstrapManagedTsconfigPromise = options?.cwd && !hasManagedTsconfigBootstrapCompleted(options.cwd)
-    ? Promise.resolve().then(() => syncManagedTsconfigBootstrapFiles(options.cwd!)).catch((error) => {
-        const message = error instanceof Error ? error.message : String(error)
-        logger.warn(`[tsconfig] 跳过 .weapp-vite 支持文件预生成：${message}`)
-        return false
-      })
-    : Promise.resolve(false)
-  // 先初始化 ConfigService
   const key = options?.key ?? 'default'
   if (!options?.key) {
-    // 确保未显式传入 key 的调用方不会复用旧的全局上下文
     resetCompilerContext(key)
   }
   setActiveCompilerContextKey(key)
-  const ctx = getCompilerContext(key)
-  const { configService, scanService } = ctx
-  await configService.load(options)
-  const bootstrapManagedTsconfigChanged = await bootstrapManagedTsconfigPromise
-  if (options?.syncSupportFiles !== false) {
-    try {
-      const supportFiles = await syncProjectSupportFiles(ctx, {
-        syncAutoImport: options?.syncAutoImportSupportFiles,
-      })
-      for (const warning of supportFiles.managedTsconfigWarnings) {
-        logger.warn(warning)
-      }
-      if (supportFiles.managedTsconfigWarnings.length === 0 && (bootstrapManagedTsconfigChanged || supportFiles.managedTsconfigChanged)) {
-        logger.warn('[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 wv prepare 并提交更新。')
-      }
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`[prepare] 自动同步 .weapp-vite 支持文件失败：${message}`)
-    }
-  }
-  // 预检
-  if (options?.preloadAppEntry !== false) {
-    try {
-      await scanService.loadAppEntry()
-    }
-    catch {
-      // 预检失败时忽略
-    }
-  }
-
-  return ctx
+  return initializeCompilerContext(getCompilerContext(key), options)
 }

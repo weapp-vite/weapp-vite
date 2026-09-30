@@ -6,6 +6,7 @@ import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import { resolveModule } from 'local-pkg'
 import path from 'pathe'
+import { waitForBuildTasks } from '../compilerSession/tasks'
 import { getVueCompilerLibOrUndefined, rewriteVueComponentTypeToWevu, shouldRewriteWevuComponentType } from './rewriteWevuComponent'
 import { ensureModuleResolution, isDtsMapOutputFile, isDtsOutputFile, normalizePath, replaceSourceMappingUrl, resolveInternalTsconfig, resolveRelativeBase, resolveVueSourceFile, runVueTsc } from './shared'
 
@@ -78,38 +79,42 @@ export async function generateVueDtsWithVueTsc(
     getVueCompilerLibOrUndefined(vueTsconfig.vueCompilerOptions?.lib),
   )
 
-  await fs.ensureDir(tempOutDir)
-  await fs.writeJson(tsconfigPath, vueTsconfig, { spaces: 2 })
-  await runVueTsc(vueTscBin, tsconfigPath, configService.cwd)
+  try {
+    await fs.ensureDir(tempOutDir)
+    await fs.writeJson(tsconfigPath, vueTsconfig, { spaces: 2 })
+    await runVueTsc(vueTscBin, tsconfigPath, configService.cwd)
 
-  await Promise.all(vueEntries.map(async (entry) => {
-    const relativeBase = resolveRelativeBase(entry.input, libRoot, configService.cwd)
-    const candidate = path.join(tempOutDir, `${relativeBase.replace(FILE_EXTENSION_RE, '')}.d.ts`)
-    const candidateWithExt = path.join(tempOutDir, `${relativeBase}.d.ts`)
-    const sourcePath = await fs.pathExists(candidate)
-      ? candidate
-      : await fs.pathExists(candidateWithExt)
-        ? candidateWithExt
-        : undefined
-    if (!sourcePath) {
-      throw new Error(`[lib] 生成 Vue SFC dts 失败，未找到输出：${relativeBase}`)
-    }
-    const outputPath = path.resolve(configService.outDir, `${entry.outputBase}.d.ts`)
-    await fs.ensureDir(path.dirname(outputPath))
-    const content = await fs.readFile(sourcePath, 'utf8')
-    const normalized = rewriteWevuComponentType
-      ? rewriteVueComponentTypeToWevu(content)
-      : content
-    await fs.writeFile(outputPath, normalized)
-  }))
-
-  await fs.remove(tempRoot)
+    await waitForBuildTasks(vueEntries.map(async (entry) => {
+      const relativeBase = resolveRelativeBase(entry.input, libRoot, configService.cwd)
+      const candidate = path.join(tempOutDir, `${relativeBase.replace(FILE_EXTENSION_RE, '')}.d.ts`)
+      const candidateWithExt = path.join(tempOutDir, `${relativeBase}.d.ts`)
+      const sourcePath = await fs.pathExists(candidate)
+        ? candidate
+        : await fs.pathExists(candidateWithExt)
+          ? candidateWithExt
+          : undefined
+      if (!sourcePath) {
+        throw new Error(`[lib] 生成 Vue SFC dts 失败，未找到输出：${relativeBase}`)
+      }
+      const outputPath = path.resolve(configService.outDir, `${entry.outputBase}.d.ts`)
+      await fs.ensureDir(path.dirname(outputPath))
+      const content = await fs.readFile(sourcePath, 'utf8')
+      const normalized = rewriteWevuComponentType
+        ? rewriteVueComponentTypeToWevu(content)
+        : content
+      await fs.writeFile(outputPath, normalized)
+    }))
+  }
+  finally {
+    await fs.remove(tempRoot)
+  }
 }
 
 export async function generateVueDtsWithInternal(
   configService: ConfigService,
   vueEntries: ResolvedWeappLibEntry[],
   dtsOptions: NonNullable<ConfigService['weappLibConfig']>['dts'],
+  onWatchFile?: (file: string) => void,
 ) {
   const languageCorePkg = resolveModule('@vue/language-core/package.json', { paths: [configService.cwd, process.cwd()] })
   const volarTsPkg = resolveModule('@volar/typescript/package.json', { paths: [configService.cwd, process.cwd()] })
@@ -187,7 +192,18 @@ export async function generateVueDtsWithInternal(
     projectReferences: parsedTs?.projectReferences,
   })
 
-  await Promise.all(vueEntries.map(async (entry) => {
+  if (onWatchFile) {
+    if (tsconfigPath) {
+      onWatchFile(tsconfigPath)
+    }
+    for (const source of program.getSourceFiles()) {
+      if (!program.isSourceFileDefaultLibrary(source)) {
+        onWatchFile(source.fileName)
+      }
+    }
+  }
+
+  await waitForBuildTasks(vueEntries.map(async (entry) => {
     const sourceFile = resolveVueSourceFile(program, entry.input)
     if (!sourceFile) {
       throw new Error(`[lib] internal 方案生成 Vue SFC dts 失败，未找到源文件：${entry.input}`)

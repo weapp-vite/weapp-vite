@@ -37,7 +37,7 @@ it('preserves complete native output after a watched module re-emits a component
   const outputPlugins = [createOutputFinalizerPlugin(context as any), createOutputPublicationPlugin(context as any)]
   for (const plugin of outputPlugins) {
     const configure = plugin.configResolved as ((config: any) => void) | undefined
-    configure?.({ experimental: { bundledDev: true } })
+    configure?.({ root, build: { outDir: path.join(root, 'dist') }, experimental: { bundledDev: true } })
   }
   const engine = await createViteDevEngine({
     cwd: root,

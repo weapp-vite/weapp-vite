@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto'
 import { get, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { finalizeAppConfigForBuild } from '../../../../runtime/appConfig'
+import { applyAutoRoutesToAppConfigIfNeeded } from '../../../../runtime/scanPlugin/service/app'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
 import { collectAppSideFiles, collectMiniappConfigFile } from './watch'
@@ -69,7 +70,7 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   const {
     pluginCtx,
     id,
-    json,
+    json: sourceJson,
     ctx,
     isPluginBuild,
     registerJsonAsset,
@@ -82,6 +83,10 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   } = options
 
   const { jsonService, configService, scanService } = ctx
+  // 初始扫描与 watch 重新加载使用同一份路由合并规则，不修改原始 JSON 缓存。
+  const json = !isPluginBuild && configService.inlineConfig?.build?.watch && !configService.isDev
+    ? await applyAutoRoutesToAppConfigIfNeeded(ctx, { ...sourceJson })
+    : sourceJson
   const entries: string[] = []
   const appSignature = createJsonSignature(json)
   const useCache = configService.isDev && !isPluginBuild

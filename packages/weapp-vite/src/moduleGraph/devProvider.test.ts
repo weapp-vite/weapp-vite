@@ -2,6 +2,7 @@ import type { Plugin } from 'vite'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtime/runtimeState'
 import { createDevModuleGraphProvider } from './devProvider'
+import { attachDevModuleGraphHost, notifyDevModuleGraphHost } from './host'
 import { createLogicalEntryId, createSidecarModuleId, createSidecarSourceSpecifier } from './protocol'
 import { createModuleGraphService } from './service'
 
@@ -87,6 +88,23 @@ describe('dev module graph provider', () => {
     await provider.close()
     expect(watcher.off).not.toHaveBeenCalled()
     expect(close).toHaveBeenCalled()
+  })
+
+  it('borrows a host graph without creating or closing a second Vite server', async () => {
+    const moduleGraphService = createModuleGraphService()
+    const ctx = { moduleGraphService, runtimeState: createRuntimeState() }
+    const detach = attachDevModuleGraphHost(ctx, server as any)
+    const onChange = vi.fn()
+    const provider = await createDevModuleGraphProvider(ctx, {}, onChange)
+    expect(createServerMock).not.toHaveBeenCalled()
+    notifyDevModuleGraphHost(ctx, { event: 'update', file: '/src/page.ts' })
+    expect(onChange).toHaveBeenCalledOnce()
+    await provider.close()
+    await provider.close()
+    notifyDevModuleGraphHost(ctx, { event: 'update', file: '/src/page.ts' })
+    expect(onChange).toHaveBeenCalledOnce()
+    expect(close).not.toHaveBeenCalled()
+    detach()
   })
 
   it('leaves missing-file topology changes to the topology watcher', async () => {

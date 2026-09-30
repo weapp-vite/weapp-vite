@@ -1,0 +1,49 @@
+name: Acceptance and Agent
+on:
+  pull_request:
+    paths:
+      - 'packages/agent-*/**'
+      - 'packages/acceptance/**'
+      - 'packages/mcp/**'
+      - 'packages/devtools-runtime/**'
+      - 'packages/weapp-vite/**'
+      - 'packages/weapp-ide-cli/**'
+      - 'packages/agent-cli/**'
+      - 'scripts/weapp-agent/**'
+      - 'skills/weapp-acceptance/**'
+      - pnpm-lock.yaml
+      - .github/workflows/ci-acceptance.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: acceptance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compatibility:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter weapp-vite... --filter @weapp-agent/cli... -r build
+      - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-agent/cli --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r typecheck
+      - run: pnpm --filter @weapp-agent/core --filter @weapp-agent/providers --filter @weapp-agent/mini-program --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --filter @weapp-vite/devtools-runtime -r test
+      - run: node scripts/weapp-agent/smoke-pack.mjs
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 20.19.0
+      - run: node scripts/weapp-agent/smoke-baseline.mjs
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.12.0
+      - run: node scripts/weapp-agent/smoke-baseline.mjs

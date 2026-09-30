@@ -19,7 +19,30 @@ const state = vi.hoisted(() => ({
   prepare: vi.fn(),
   execute: vi.fn(),
 }))
-vi.mock('../../createContext', () => ({ createCompilerContext: state.createContext }))
+vi.mock('../../runtime/compilerSession', () => ({
+  CompilerSession: class {
+    context: any
+    cleanup: Array<() => Promise<void>> = []
+    onClose(cleanup: () => Promise<void>) {
+      this.cleanup.push(cleanup)
+    }
+
+    async initialize(options: unknown) {
+      this.context = await state.createContext(options)
+      return this.context
+    }
+
+    run(operation: () => Promise<unknown>) {
+      return operation()
+    }
+
+    async close() {
+      for (const cleanup of this.cleanup.toReversed()) {
+        await cleanup()
+      }
+    }
+  },
+}))
 vi.mock('../upload/index', async importOriginal => ({
   ...await importOriginal<typeof UploadModule>(),
   prepareUpload: state.prepare,
@@ -144,21 +167,20 @@ describe('build upload opt-in', () => {
     expect(state.build).toHaveBeenCalledTimes(1)
     expect(state.build).toHaveBeenCalledWith(expect.objectContaining({ skipNpm: true }))
     expect(state.execute).toHaveBeenCalledTimes(1)
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.objectContaining({
+    const { projectPath, version, desc } = state.execute.mock.calls[0]![1]
+    expect({ projectPath, version, desc }).toEqual({
       projectPath: path.join(root, 'release/jd'),
       version: '2.3.4',
       desc: '配置上传说明',
-    }), [], 'upload')
+    })
     expect(state.close).toHaveBeenCalledTimes(1)
   })
 
   it('preserves numeric strings and the last repeated metadata value through CAC', async () => {
     await runBuild('--upload', '--uv', '00123', '--uv=00456', '--desc', '000')
 
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.objectContaining({
-      version: '00456',
-      desc: '000',
-    }), [], 'upload')
+    const { version, desc } = state.execute.mock.calls[0]![1]
+    expect({ version, desc }).toEqual({ version: '00456', desc: '000' })
   })
 
   it('waits for both all-target builds and uploads only the configured mini program', async () => {
@@ -186,7 +208,7 @@ describe('build upload opt-in', () => {
     expect(state.createContext).toHaveBeenCalledTimes(1)
     expect(state.build).toHaveBeenCalledTimes(1)
     expect(state.execute).toHaveBeenCalledTimes(1)
-    expect(state.execute).toHaveBeenCalledWith('jd', expect.anything(), [], 'upload')
+    expect(state.execute.mock.calls[0]![0]).toBe('jd')
     expect(state.webClose).toHaveBeenCalledTimes(1)
   })
 
@@ -230,6 +252,28 @@ describe('build upload opt-in', () => {
 })
 
 describe('build upload CLI guards', () => {
+  it('rejects config-selected Web before bumping the manifest or preparing an upload', async () => {
+    const original = state.createContext.getMockImplementation()!
+    state.createContext.mockImplementation(async (options) => {
+      expect(JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).version).toBe('1.0.1')
+      const ctx = await original(options)
+      ctx.configService.options = { sourceConfig: { weapp: { platform: 'web' } } }
+      return ctx
+    })
+    const manifest = JSON.stringify({ name: 'web-build-fixture', version: '1.0.0' })
+    await writeFile(path.join(root, 'package.json'), manifest)
+    const lock = JSON.stringify({ name: 'web-build-fixture', version: '1.0.0', lockfileVersion: 3, packages: { '': { name: 'web-build-fixture', version: '1.0.0' } } })
+    await writeFile(path.join(root, 'package-lock.json'), lock)
+    await expect(runBuild('--upload', '--bump', 'patch')).rejects.toThrow('纯 Web')
+    expect(await readFile(path.join(root, 'package.json'), 'utf8')).toBe(manifest)
+    expect(await readFile(path.join(root, 'package-lock.json'), 'utf8')).toBe(lock)
+    expect(state.createContext).toHaveBeenCalledTimes(1)
+    expect(state.build).not.toHaveBeenCalled()
+    expect(state.webBuild).not.toHaveBeenCalled()
+    expect(state.prepare).not.toHaveBeenCalled()
+    expect(state.execute).not.toHaveBeenCalled()
+  })
+
   it.each([
     { args: ['--upload', '--watch'] },
     { args: ['--upload', '-p', 'web'] },
