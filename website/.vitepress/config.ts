@@ -16,7 +16,7 @@ import llmstxt, {
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { createVueOxcTsconfigGuard } from '../../scripts/vite/vueOxcTsconfigGuard'
 import { wevuApiSidebarItems } from './data/wevuApiSidebar'
-import { createSeoHead, transformPageDataForSeo } from './seo'
+import { transformPageDataForSeo } from './seo'
 import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
 import { siteBaseUrl } from './site'
 
@@ -792,7 +792,6 @@ export default withMermaid(
     mermaid: {
       theme: 'default',
     },
-    transformHead: ({ pageData }) => createSeoHead(pageData),
     transformPageData(pageData) {
       transformPageDataForSeo(pageData)
     },
@@ -842,6 +841,8 @@ export default withMermaid(
       },
       resolve: {
         alias: {
+          // 保留插件的 Markdown 转换，由网站组件管理渲染和主题监听，避免全局属性触发重绘。
+          'vitepress-plugin-mermaid/Mermaid.vue': fileURLToPath(new URL('./components/mermaid/index.vue', import.meta.url)),
           // Fix SSR build error: mark.js deep import without extension in ESM
           'mark.js/src/vanilla.js': 'mark.js/dist/mark.es6.js',
           // Element Plus references @vue/shared directly in some ESM entries.
@@ -876,7 +877,6 @@ export default withMermaid(
         preprocessorOptions: {
           scss: {
             silenceDeprecations: ['legacy-js-api'],
-            api: 'modern-compiler',
           },
         },
       },

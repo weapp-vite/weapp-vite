@@ -9,11 +9,6 @@ body {
   color: var(--vp-c-text-1);
 }
 
-/* Smooth anchor scrolling across the site */
-html {
-  scroll-behavior: smooth;
-}
-
 /* Better default typography (esp. Chinese) */
 :root {
   --vp-font-family-base:
