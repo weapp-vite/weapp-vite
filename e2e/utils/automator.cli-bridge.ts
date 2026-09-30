@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa, getCancelSignal } from 'execa'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
+import { resolveWechatCliPath } from './devtoolsCli'
 
 interface AutomatorCliBridgePayload {
   projectPath?: string
@@ -235,6 +236,10 @@ function isMissingProcessError(error: unknown) {
   return error instanceof Error && 'code' in error && error.code === 'ESRCH'
 }
 
+export function resolveLiveCliPid(child: Pick<ChildProcessWithoutNullStreams, 'pid' | 'exitCode' | 'signalCode'>) {
+  return child.exitCode === null && child.signalCode === null ? child.pid : undefined
+}
+
 export async function terminateCliProcessTree(cliPid?: number) {
   if (!cliPid || cliPid <= 0) {
     return
@@ -327,16 +332,6 @@ function readJsonDocument(filePath: string) {
 function stringifyJsonDocument(value: Record<string, any>, options: { trailingNewline: boolean }) {
   const source = JSON.stringify(value, null, 2)
   return options.trailingNewline ? `${source}\n` : source
-}
-
-function resolveCliPath(cliPath?: string) {
-  if (cliPath?.trim()) {
-    return cliPath
-  }
-  if (process.platform === 'win32') {
-    return 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
-  }
-  return '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
 }
 
 function shouldUseWindowsCommandShell(cliPath: string) {
@@ -604,7 +599,7 @@ async function main() {
 
   await extendProjectConfig(resolvedProjectPath, payload.projectConfig)
   const autoPort = await reserveLoopbackPort()
-  const cliPath = resolveCliPath(payload.cliPath)
+  const cliPath = resolveWechatCliPath(payload.cliPath)
   const args = resolveBootstrapCliArgs(payload.args || [])
 
   const cancellation = new AbortController()
@@ -640,7 +635,7 @@ async function main() {
     cancellation.signal.throwIfAborted()
   }
   catch (error) {
-    await terminateCliProcessTree(child.pid).catch(() => {})
+    await terminateCliProcessTree(resolveLiveCliPid(child)).catch(() => {})
     throw error
   }
   finally {
@@ -652,7 +647,7 @@ async function main() {
   const result: AutomatorCliBridgeResult = {
     ...(socketReadyResult.servicePort ? { servicePort: socketReadyResult.servicePort } : {}),
     wsEndpoint: `ws://127.0.0.1:${socketReadyResult.port}`,
-    cliPid: typeof child.pid === 'number' && child.pid > 0 ? child.pid : undefined,
+    cliPid: resolveLiveCliPid(child),
   }
   process.stdout.write(JSON.stringify(result))
 }
