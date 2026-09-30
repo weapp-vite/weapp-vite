@@ -7,13 +7,12 @@ const outputs = ['pages/native/index.wxml', 'pages/vue/index.wxml', 'sub/index.w
 
 async function waitForOutputs(root: string, label: string) {
   await expect.poll(async () => {
-    const contents = await Promise.all(outputs.map(file => fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')))
-    return contents.every(code => code.includes(`data-rule="${label}"`))
-  }, { timeout: 45_000, interval: 100 }).toBe(true)
-  for (const file of outputs) {
-    const code = await fs.readFile(path.join(root, 'dist', file), 'utf8')
-    expect(code.match(/<!-- transform-once -->/g), file).toHaveLength(1)
-  }
+    // 原生写出期间文件可能暂时不完整；标签与转换次数必须检查同一次读取。
+    return Promise.all(outputs.map(async (file) => {
+      const code = await fs.readFile(path.join(root, 'dist', file), 'utf8').catch(() => '')
+      return { file, label: code.includes(`data-rule="${label}"`), transforms: code.match(/<!-- transform-once -->/g)?.length ?? 0 }
+    }))
+  }, { timeout: 45_000, interval: 100 }).toEqual(outputs.map(file => ({ file, label: true, transforms: 1 })))
 }
 
 describe('WXML transform external dependencies', { concurrent: false }, () => {
