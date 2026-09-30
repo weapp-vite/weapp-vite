@@ -22,7 +22,9 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   const cache = steps.find(step => step.uses?.startsWith('actions/cache@'))!
   expect(cache.with?.key).toBe('$' + '{{ steps.sdk-key.outputs.key }}')
   expect(cache.with?.['restore-keys']).toBeUndefined()
-  expect(String(cache.with?.path).trim().split('\n')).toEqual(['.cache/dimina/ready.json', '.cache/dimina/build-*/fe'])
+  expect(cache.with?.path).toBe('.cache/dimina/portable-sdk')
+  expect(commandIndex('pnpm --filter @weapp-vite/dimina-playground cache:sdk restore')).toBeLessThan(setup)
+  expect(commandIndex('pnpm --filter @weapp-vite/dimina-playground cache:sdk save')).toBeGreaterThan(setup)
   const evidence = steps.find(step => step.uses?.startsWith('actions/upload-artifact@'))!
   expect(evidence.if).toBe('always()')
   expect(evidence.with?.['include-hidden-files']).toBe(true)

@@ -11,6 +11,13 @@ import { prepareToolchain } from './toolchain'
 import { testUpstream } from './upstreamTests'
 
 const run = (command: string, args: string[], cwd: string) => execa(command, args, { cwd, stdio: 'inherit' })
+async function installDependencies(buildRoot: string) {
+  const pnpm = await prepareToolchain(buildRoot)
+  const cwd = path.join(buildRoot, 'fe')
+  await cp(path.join(root, 'upstream/pnpm-lock.yaml'), path.join(cwd, 'pnpm-lock.yaml'))
+  await pnpm(['install', '--frozen-lockfile'], cwd)
+  return pnpm
+}
 const [major, minor, patch] = process.versions.node.split('.').map(Number)
 if (major! < 22 || (major === 22 && (minor! < 22 || (minor === 22 && patch! < 3)))) {
   throw new Error('Dimina requires Node.js >=22.22.3')
@@ -18,11 +25,13 @@ if (major! < 22 || (major === 22 && (minor! < 22 || (minor === 22 && patch! < 3)
 if (process.argv.includes('--reuse')) {
   let cached: string | undefined
   try {
-    cached = await preparedRoot()
+    cached = await preparedRoot(root, cacheRoot, { allowMissingDependencies: true })
   }
   catch { console.log('No complete matching SDK cache; preparing fresh source.') }
   if (cached) {
     try {
+      // 缓存仅保存源码与构建产物；依赖链接必须由当前 runner 的包管理器重建。
+      await installDependencies(cached)
       await testUpstream(cached)
     }
     catch (error) {
@@ -49,10 +58,8 @@ await run('git', ['fetch', 'origin', upstreamCommit], upstreamRoot)
 await run('git', ['checkout', '--detach', upstreamCommit], upstreamRoot)
 const inputs = await preparationInputs()
 await prepareInstallation({ source: upstreamRoot, cache: cacheRoot, commit: upstreamCommit, ...inputs }, async (buildRoot) => {
-  const pnpm = await prepareToolchain(buildRoot)
+  const pnpm = await installDependencies(buildRoot)
   const cwd = path.join(buildRoot, 'fe')
-  await cp(path.join(root, 'upstream/pnpm-lock.yaml'), path.join(cwd, 'pnpm-lock.yaml'))
-  await pnpm(['install', '--frozen-lockfile'], cwd)
   await pnpm(['--filter', '@dimina/compiler', '--filter', '@dimina/fe-container-sdk^...', 'build'], cwd)
   await testUpstream(buildRoot)
   // 上游库构建保留了 Vue 的环境分支；独立浏览器资源需在编译期明确替换。
