@@ -50,6 +50,12 @@ export default defineConfig({
 
 内置 Tailwind 将对应的样式与 JavaScript 作为一个编译批次处理：先完成资产提交，再发布全部补丁，最后根据客户端执行回报通知 DevEngine。样式生成或写入失败时不发布该批次补丁，后续更新可以重试；最终样式内容未变化时不重复写入。写入成功与页面已经应用新样式是不同的阶段，排查视觉更新时还需检查实际页面的计算样式。
 
+样式合并按真实文件身份判断所有权：已由模块图处理的样式，即使又通过符号链接、目录连接或 Windows 路径别名被发现，也不会作为独立原生样式重复读取并合并。固定输入批次保持该批次的样式内容，不混入同一文件较新的磁盘保存；真正独立的原生同名样式仍参与输出，移除显式样式导入后仍保留原生样式回退。
+
+回退时，同一输出当前收集到的多个 sidecar 按收集顺序合并后一次发布，不会相互覆盖；指向同一真实文件的重复路径只保留一份。常规 HMR 更新按完整合并内容去重，而不是分别缓存每个片段。
+
+上述保证不涵盖原生样式文件删除事件对历史登记集合的清理；本次修复没有验证或改变该上游生命周期。
+
 微信开发者工具[暂不支持 Skyline 热重载](https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/skyline/migration/compatibility.html#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%85%BC%E5%AE%B9%E9%97%AE%E9%A2%98)。首次编译检测到任意生成的应用或页面 JSON 使用 `renderer: 'skyline'` 时，`wv dev` 会输出兼容性警告，将当前项目私有配置中的 `setting.compileHotReLoad` 持久化为 `false`，并强制使用 `classic`，即使用户显式配置了 `stateful-experimental`。其他私有配置字段不会改变；切回 WebView 后需要由开发者按需重新开启热重载。
 
 使用前请确认：

@@ -9,7 +9,7 @@ import { createAnalyzeDashboardDevframe } from '../../dashboard'
 import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
 it('serves native Vite pages and assets beside real Devframe discovery and SSE', async () => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dashboard-bridge-'))
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'dashboard-bridge-')))
   const controller = createAnalyzeDashboardDevframe({
     snapshot: {
       current: {

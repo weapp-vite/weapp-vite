@@ -69,14 +69,15 @@ describe('stateful snapshot component metadata', () => {
       'src/pages/index/index.json': JSON.stringify({ component: true, usingComponents: { 'native-leaf': '../../components/native-leaf/index', 'wevu-leaf': '../../components/wevu-leaf/index' } }),
       'src/pages/index/index.wxml': '<native-leaf /><wevu-leaf />',
       'src/components/native-leaf/index.js': 'Component({ data: { marker: "PINNED" } })',
-      'src/components/native-leaf/index.json': '{"component":true}',
+      'src/components/native-leaf/index.json': '{"component":true,"options":{"styleIsolation":"apply-shared"}}',
       'src/components/native-leaf/index.wxml': '<view>PINNED-TEMPLATE{{marker}}</view>',
+      'src/components/native-leaf/index.wxss': '.native-leaf { width: 19px; }',
     }
     const sources = new Map<string, string>()
     for (const [relative, source] of Object.entries(files)) {
       const file = path.join(root, relative)
       await fs.mkdir(path.dirname(file), { recursive: true })
-      await fs.writeFile(file, source.replace('PINNED', 'FUTURE'))
+      await fs.writeFile(file, source.replaceAll('PINNED', 'FUTURE').replace('19px', '71px').replace('apply-shared', 'isolated'))
       sources.set(compilerSourceId(file), source)
     }
     const result = await buildStatefulHmrSnapshot({ cwd: root, isDev, mode: 'development' }, undefined, undefined, sources)
@@ -85,16 +86,31 @@ describe('stateful snapshot component metadata', () => {
       'components/native-leaf/index.js',
       'components/native-leaf/index.json',
       'components/native-leaf/index.wxml',
+      'components/native-leaf/index.wxss',
     ]))
-    expect((outputs.find(item => item.fileName === 'components/native-leaf/index.js') as OutputChunk).code).toContain('PINNED')
+    const script = outputs.find(item => item.fileName === 'components/native-leaf/index.js') as OutputChunk
+    expect(script.code).toContain('PINNED')
+    expect(script.code).not.toContain('FUTURE')
+    const config = outputs.find(item => item.fileName === 'components/native-leaf/index.json') as OutputAsset
+    expect(JSON.parse(String(config.source))).toMatchObject({ component: true, options: { styleIsolation: 'apply-shared' } })
     expect(outputs.find(item => item.fileName === 'components/native-leaf/index.wxml')).toMatchObject({
       type: 'asset',
       source: '<view>PINNED-TEMPLATE{{marker}}</view>',
     })
+    const style = outputs.find(item => item.fileName === 'components/native-leaf/index.wxss') as OutputAsset
+    expect(String(style.source)).toMatch(/width:\s*19px/)
+    expect(String(style.source)).not.toContain('71px')
   })
 
-  it('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs', async () => {
-    const root = await createProject()
+  it.each(['directory', 'junction'])('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs (%s root)', async (rootKind) => {
+    let root = await createProject()
+    if (rootKind === 'junction') {
+      const aliasRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-alias-'))
+      temporaryRoots.push(aliasRoot)
+      const alias = path.join(aliasRoot, 'project')
+      await fs.symlink(root, alias, 'junction')
+      root = alias
+    }
     const inputs = new Map<string, string>([
       ['src/app.ts', 'App({})'],
       ['src/app.json', JSON.stringify({ pages: ['pages/index/index'], window: { navigationBarTitleText: 'PINNED-CONFIG' } })],
@@ -129,6 +145,7 @@ describe('stateful snapshot component metadata', () => {
     const style = outputs.find(item => item.fileName === 'pages/index/index.wxss') as OutputAsset
     expect(String(style.source)).toContain('19px')
     expect(String(style.source)).not.toContain('71px')
+    expect(String(style.source).match(/width:\s*19px/g)).toHaveLength(1)
   })
 
   it('compiles the pinned SFC instead of a newer disk save', async () => {

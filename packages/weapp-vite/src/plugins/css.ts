@@ -13,6 +13,7 @@ import { getPathExistsTtlMs } from '../utils/cachePolicy'
 import { normalizeWatchPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
+import { compilerSourceId } from './compilerPlugin/hmr'
 import { findManagedCompilerEntryMarker, hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { cssCodeCache, processCssWithCache, renderSharedStyleEntry } from './css/shared/preprocessor'
 import {
@@ -970,7 +971,7 @@ async function generateBundleSharedCss(
     }
     group.fragments.push(prepared.processedCss)
     for (const source of collectRenderedStyleSources(this, prepared.modulePath)) {
-      group.sources.add(source)
+      group.sources.add(compilerSourceId(source))
     }
   }
   for (const [normalizedFileName, group] of ownerStyleGroups) {
@@ -985,7 +986,7 @@ async function generateBundleSharedCss(
     )
     const independentSidecars = Array.from(ctx.runtimeState?.css?.sidecarImports ?? []).filter((stylePath) => {
       const output = resolveOutputStyleFileName(configService, stylePath)
-      return output && toPosixPath(output) === normalizedFileName && !group.sources.has(normalizeFsResolvedId(stylePath))
+      return output && toPosixPath(output) === normalizedFileName && !group.sources.has(compilerSourceId(stylePath))
     })
     const sidecarStyles = await Promise.all(independentSidecars.map(stylePath =>
       prepareStyleSidecarAsset(ctx, this, stylePath, resolvedConfig),
@@ -1031,13 +1032,38 @@ async function emitCollectedStyleSidecars(
     return
   }
 
-  await Promise.all(Array.from(sidecarImports).map(async (stylePath) => {
+  const ownerSidecars = new Map<string, {
+    fileName: string
+    originalFileName: string
+    sources: Map<string, string>
+  }>()
+  for (const stylePath of sidecarImports) {
     const fileName = resolveOutputStyleFileName(ctx.configService, stylePath)
-    // 本轮 owner 产物已包含真实导入和独立原生 sidecar，仅补尚未生成的目标。
-    if (fileName && renderedOwners.has(toPosixPath(fileName))) {
-      return
+    if (!fileName) {
+      continue
     }
-    await emitStyleSidecarAsset(ctx, this, bundle, stylePath, resolvedConfig)
+    const owner = toPosixPath(fileName)
+    // 本轮 owner 产物已包含真实导入和独立原生 sidecar，仅补尚未生成的目标。
+    if (renderedOwners.has(owner)) {
+      continue
+    }
+    let group = ownerSidecars.get(owner)
+    if (!group) {
+      group = { fileName, originalFileName: stylePath, sources: new Map() }
+      ownerSidecars.set(owner, group)
+    }
+    group.sources.set(compilerSourceId(stylePath), stylePath)
+  }
+  await Promise.all(Array.from(ownerSidecars.values(), async (group) => {
+    const sidecars = await Promise.all(Array.from(group.sources.values(), stylePath =>
+      prepareStyleSidecarAsset(ctx, this, stylePath, resolvedConfig)))
+    const fragments = sidecars.flatMap(sidecar => sidecar ? [sidecar.css] : [])
+    if (fragments.length) {
+      // 同一输出合并后只发布一次，避免并发 sidecar 覆盖彼此及完整内容缓存。
+      emitCssAssetIfChanged(ctx, this, bundle, group.fileName, fragments.join('\n'), {
+        originalFileName: group.originalFileName,
+      })
+    }
   }))
 }
 

@@ -101,6 +101,7 @@ function createState(overrides: Record<string, any> = {}) {
     hmrSharedChunksMode: 'auto',
     hmrSharedChunkImporters: new Map(),
     jsonEmitFilesMap: new Map(),
+    pendingJsonEmitFilesMap: new Map(),
   }
 
   return Object.assign(baseState, overrides, { ctx: mergedCtx }) as any

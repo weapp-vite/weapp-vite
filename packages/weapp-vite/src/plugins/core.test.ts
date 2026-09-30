@@ -70,6 +70,7 @@ vi.mock('./hooks/useLoadEntry', () => {
         emitDirtyEntries: mocked.emitDirtyEntries,
         entriesMap: new Map(),
         jsonEmitFilesMap: new Map(),
+        pendingJsonEmitFilesMap: new Map(),
       }
     },
   }

@@ -154,6 +154,7 @@ function createState(overrides: Record<string, any> = {}) {
     loadedEntrySet: new Set<string>(),
     entriesMap: new Map<string, { type: string }>(),
     jsonEmitFilesMap: new Map(),
+    pendingJsonEmitFilesMap: new Map(),
     markEntryDirty: vi.fn(),
     hmrState: {
       didEmitAllEntries: false,
