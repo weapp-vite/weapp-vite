@@ -84,8 +84,11 @@ try {
     assert(runtimeSuite === 'react' || toolchain === 'vite-plus', 'stateful 独立 runtime 消费验证当前用于 Vite+；wv/vite 直接运行共享 fixture')
     const fixtureRoot = path.join(repoRoot, 'e2e-apps', runtimeSuite === 'react' ? 'react-runtime-spike' : 'stateful-hmr')
     await rm(path.join(consumerRoot, 'src'), { recursive: true, force: true })
-    for (const entry of ['src', 'public', 'project.config.json', 'project.private.config.json']) {
+    for (const entry of ['src', 'project.config.json', 'project.private.config.json']) {
       await cp(path.join(fixtureRoot, entry), path.join(consumerRoot, entry), { recursive: true })
+    }
+    if (runtimeSuite === 'stateful') {
+      await cp(path.join(fixtureRoot, 'public'), path.join(consumerRoot, 'public'), { recursive: true })
     }
     if (runtimeSuite === 'react') {
       const config = `import { appendFileSync } from 'node:fs'
