@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { expect } from 'vitest'
 import { root } from '../../packages-private/dimina-playground/config'
+import { findHostUrl } from '../../packages-private/dimina-playground/scripts/hostUrl'
 
 export async function stopHost(process?: Subprocess) {
   if (!process) {
@@ -38,7 +39,7 @@ export async function startHost(mode: 'dev' | 'preview') {
       if (process.nodeChildProcess.exitCode !== null) {
         throw new Error(`Dimina host exited: ${logs}`)
       }
-      const url = logs.match(/http:\/\/(?:127\.0\.0\.1|localhost):\d+\/dimina\//)?.[0]
+      const url = findHostUrl(logs)
       if (url) {
         return { process, url, logs: () => logs }
       }

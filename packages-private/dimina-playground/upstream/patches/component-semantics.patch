@@ -1,3 +1,53 @@
+diff --git a/fe/packages/compiler/__tests__/relative-module-path.spec.js b/fe/packages/compiler/__tests__/relative-module-path.spec.js
+new file mode 100644
+index 0000000..47c54a7
+--- /dev/null
++++ b/fe/packages/compiler/__tests__/relative-module-path.spec.js
+@@ -0,0 +1,31 @@
++import fs from 'node:fs'
++import os from 'node:os'
++import path from 'node:path'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++
++describe('portable relative module IDs', () => {
++  let directory
++
++  afterEach(() => {
++    if (directory) fs.rmSync(directory, { recursive: true, force: true })
++  })
++
++  it.each(['native', 'forward-slashes', 'trailing-separator'])('%s workspace root retains relative dependencies', async (rootStyle) => {
++    vi.resetModules()
++    const { storeInfo } = await import('../src/env.js')
++    const { compileJS } = await import('../src/core/logic-compiler.js')
++    directory = fs.mkdtempSync(path.join(os.tmpdir(), 'dimina-relative-'))
++    fs.mkdirSync(path.join(directory, 'pages/test'), { recursive: true })
++    fs.mkdirSync(path.join(directory, 'lib'))
++    fs.writeFileSync(path.join(directory, 'app.json'), JSON.stringify({ pages: ['pages/test/index'] }))
++    fs.writeFileSync(path.join(directory, 'app.js'), 'App({})')
++    fs.writeFileSync(path.join(directory, 'pages/test/index.json'), '{}')
++    fs.writeFileSync(path.join(directory, 'pages/test/index.js'), `const value = require('../../lib/value.js'); Page({ data: { value } })`)
++    fs.writeFileSync(path.join(directory, 'lib/value.js'), 'module.exports = 42')
++    const root = rootStyle === 'native' ? directory : directory.replace(/\\/g, '/')
++    storeInfo(rootStyle === 'trailing-separator' ? `${root}/` : root)
++    const result = await compileJS([{ path: 'pages/test/index' }], null, null, { completedTasks: 0 })
++    expect(result.find(module => module.path === 'pages/test/index').code).toContain('require("/lib/value")')
++    expect(result.find(module => module.path === '/lib/value').code).toContain('module.exports = 42')
++  })
++})
+diff --git a/fe/packages/compiler/src/core/logic-compiler.js b/fe/packages/compiler/src/core/logic-compiler.js
+index 284dccb..acb23ed 100644
+--- a/fe/packages/compiler/src/core/logic-compiler.js
++++ b/fe/packages/compiler/src/core/logic-compiler.js
+@@ -579,7 +579,7 @@ function isBareModuleSpecifier(specifier) {
+ 
+ function resolveRelativeModuleId(specifier, modulePath) {
+ 	const requireFullPath = resolve(modulePath, `../${specifier}`)
+-	const relativeId = requireFullPath.split(`${getWorkPath()}${sep}`)[1]
++	const relativeId = relative(getWorkPath(), requireFullPath)
+ 	return normalizeModuleId(relativeId)
+ }
+ 
 diff --git a/fe/packages/compiler/src/core/view-compiler.js b/fe/packages/compiler/src/core/view-compiler.js
 index 904c96b..dc64cdb 100644
 --- a/fe/packages/compiler/src/core/view-compiler.js
