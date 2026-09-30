@@ -285,6 +285,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
   beforeEach(() => {
     sandboxRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'weapp-vite-automator-launch-'))
     const reportDir = path.join(sandboxRoot, 'report')
+    vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', undefined)
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG', 'automator-launch-unit')
     vi.stubEnv('WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR', reportDir)
     vi.stubEnv('WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE', path.join(reportDir, 'events.jsonl'))
@@ -628,16 +629,18 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(launchMock).not.toHaveBeenCalled()
   })
 
-  it('uses the selected stable CLI for login and direct launch', async () => {
+  it('uses the selected stable CLI for login, prebuild and direct launch', async () => {
     vi.stubEnv('WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH', 'stable-cli')
+    vi.stubEnv('WEAPP_VITE_E2E_AUTOMATOR_PREBUILD', '1')
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
     launchMock.mockResolvedValue(createMockMiniProgram())
     try {
-      execaMock.mockResolvedValueOnce({ exitCode: 0, stdout: '{"login":true}', stderr: '' })
+      execaMock.mockResolvedValue({ exitCode: 0, stdout: '{"login":true}', stderr: '' })
       const { assertDevtoolsLoggedIn, launchAutomator } = await import('../utils/automator')
       await assertDevtoolsLoggedIn(sandboxRoot)
       const miniProgram = await launchAutomator({ projectPath: sandboxRoot, skipWarmup: true })
       expect(execaMock).toHaveBeenCalledWith('stable-cli', ['islogin'], expect.anything())
+      expect(execaMock).toHaveBeenCalledWith('stable-cli', ['engine', 'build', sandboxRoot], expect.anything())
       expect(launchMock).toHaveBeenCalledWith(expect.objectContaining({ cliPath: 'stable-cli' }))
       await miniProgram.close()
     }
