@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import process from 'node:process'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
 import { cleanupResidualDevProcesses } from './dev-process-cleanup'
 
@@ -24,6 +24,10 @@ function createChild() {
 }
 
 describe('dev process cleanup ownership', () => {
+  beforeEach(() => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
+  })
+
   afterEach(async () => {
     await cleanupTrackedDevProcesses(0)
     vi.restoreAllMocks()
@@ -91,5 +95,47 @@ describe('dev process cleanup ownership', () => {
     await cleanupResidualDevProcesses()
     expect(execaMock).not.toHaveBeenCalled()
     expect(kill).not.toHaveBeenCalled()
+  })
+
+  it('does not force kill a previous process tree after the owned root exits', async () => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    execaMock.mockImplementation(command => command === 'ps'
+      ? Promise.resolve({ stdout: '61 41 pnpm run dev\n62 61 worker' })
+      : owned.child)
+    const kill = vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
+      if (pid === 61 && signal === 'SIGTERM') {
+        owned.exit()
+      }
+      return true
+    })
+    const dev = startDevProcess('pnpm', ['run', 'dev'])
+    const stopping = dev.stop(100)
+    await vi.runAllTimersAsync()
+    await stopping
+    expect(kill.mock.calls.filter(([, signal]) => signal !== 0)).toEqual([
+      [62, 'SIGTERM'],
+      [61, 'SIGTERM'],
+    ])
+  })
+
+  it('uses only the held PID on Windows and disposes it once', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const owned = createChild()
+    execaMock.mockImplementation((command) => {
+      if (command === 'taskkill') {
+        owned.exit()
+        return Promise.resolve({ exitCode: 0 })
+      }
+      return owned.child
+    })
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+    const dev = startDevProcess('pnpm', ['run', 'dev'])
+    await Promise.all([dev.stop(0), cleanupTrackedDevProcesses(0), dev.stop(0)])
+    expect(execaMock.mock.calls.filter(([command]) => command === 'taskkill')).toEqual([
+      ['taskkill', ['/PID', '61', '/T', '/F'], expect.objectContaining({ reject: false })],
+    ])
+    expect(execaMock.mock.calls.some(([command]) => command === 'ps')).toBe(false)
+    expect(kill.mock.calls.every(([, signal]) => signal === 0)).toBe(true)
   })
 })

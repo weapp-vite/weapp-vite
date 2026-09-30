@@ -186,6 +186,9 @@ async function terminatePid(pid: number, forceKillDelayMs: number, isHeld: () =>
 
   try {
     for (const targetPid of targetPidList) {
+      if (!isHeld()) {
+        return
+      }
       process.kill(targetPid, 'SIGTERM')
     }
   }
@@ -201,6 +204,9 @@ async function terminatePid(pid: number, forceKillDelayMs: number, isHeld: () =>
 
   try {
     for (const targetPid of targetPidList) {
+      if (!isHeld()) {
+        return
+      }
       if (isPidAlive(targetPid)) {
         process.kill(targetPid, 'SIGKILL')
       }
@@ -336,7 +342,12 @@ export function startDevProcess(
       stopTask = (async () => {
         TRACKED_DEV_DISPOSERS.delete(stop)
         // 原子持有清理任务，避免 stop 与恢复并发释放；退出的句柄不再授权旧 PID。
-        if (exited || child.nodeChildProcess?.exitCode != null || child.nodeChildProcess?.signalCode != null) {
+        if (exited) {
+          return
+        }
+        if (child.nodeChildProcess?.exitCode != null || child.nodeChildProcess?.signalCode != null) {
+          // 原生进程退出先撤销终止权限，仍等待 execa 排空输出并完成诊断。
+          await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
           return
         }
         if (typeof child.pid === 'number') {

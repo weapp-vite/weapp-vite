@@ -66,4 +66,33 @@ describe('dev process startup diagnostics', () => {
       text: '[error] final compile failure',
     }))
   })
+
+  it('waits for trailing output after native exit without sending a termination signal', async () => {
+    vi.useFakeTimers()
+    let finish!: (result: { exitCode: number }) => void
+    const output = new EventEmitter()
+    const child = Object.assign(new Promise<{ exitCode: number }>((resolve) => {
+      finish = resolve
+    }), {
+      all: output,
+      kill: vi.fn(),
+      nodeChildProcess: { exitCode: 0 },
+    })
+    execaMock.mockReturnValue(child)
+    const dev = startDevProcess('mock-cli', [], { all: true })
+    let stopped = false
+    const stopping = dev.stop(0).then(() => {
+      stopped = true
+    })
+    await vi.advanceTimersByTimeAsync(10)
+    expect(stopped).toBe(false)
+    output.emit('data', '[error] trailing exit diagnostic')
+    finish({ exitCode: 0 })
+    await stopping
+    expect(child.kill).not.toHaveBeenCalled()
+    expect(appendIdeReportEvent).toHaveBeenCalledWith(expect.objectContaining({
+      source: 'build',
+      text: '[error] trailing exit diagnostic',
+    }))
+  })
 })
