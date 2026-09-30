@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run -c vitest.config.ts",
     "test:upstream": "tsx scripts/testUpstream.ts",
-    "cache:key": "tsx scripts/cacheKey.ts"
+    "cache:key": "tsx scripts/cacheKey.ts",
+    "cache:sdk": "tsx scripts/cacheSnapshot.ts"
   },
   "dependencies": {
     "@vant/weapp": "catalog:",
