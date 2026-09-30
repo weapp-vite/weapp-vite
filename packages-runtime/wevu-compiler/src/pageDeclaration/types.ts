@@ -1,6 +1,6 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { CallExpression, ExpressionStatement, File, ImportDeclaration, ImportSpecifier, Node, Program } from '@weapp-vite/ast/babelTypes'
-import type { StaticPageDeclaration } from './public'
+import type { StaticPageDeclaration, StaticPageMeta } from './public'
 
 export type PageDeclarationScriptBlockKind = 'script' | 'scriptSetup'
 
@@ -39,6 +39,7 @@ export interface PageDeclarationTextEdit {
 }
 
 export interface PageDeclarationAnalysis {
+  pageMeta?: StaticPageMeta
   declaration?: StaticPageDeclaration
   declarationSourceFile?: string
   edits: PageDeclarationTextEdit[]

@@ -1,3 +1,5 @@
+import type { StaticPageDeclaration, StaticPageMeta } from '../pageDeclaration/public'
+
 /**
  * JSON 合并阶段枚举。
  */
@@ -17,6 +19,10 @@ export interface JsonMergeContext {
   filename?: string
   kind?: 'app' | 'page' | 'component' | 'unknown'
   stage: JsonMergeStage
+  /** 当前 SFC 页面的静态路由声明。 */
+  routeConfig?: StaticPageDeclaration
+  /** 整个页面元信息对象可静态提取时提供。 */
+  pageMeta?: StaticPageMeta
 }
 
 /**
