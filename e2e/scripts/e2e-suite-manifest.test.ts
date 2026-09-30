@@ -33,6 +33,7 @@ describe('e2e suite manifest', () => {
     'ide/github-issues.runtime.issue1015.test.ts',
     'ide/issue-997-rebuild.runtime.test.ts',
     'ide/issue-1029-auto-routes.runtime.test.ts',
+    'ide/issue-1082-confirmation.runtime.test.ts',
     'ide/issue-1034-auto-routes.runtime.test.ts',
     'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
     'ide/issue-1072-json-context.runtime.test.ts',
