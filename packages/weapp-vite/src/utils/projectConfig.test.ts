@@ -49,13 +49,14 @@ describe('projectConfig utils', () => {
       mergedFrom: 'base',
     })
     await fs.writeJson(path.join(root, 'project.private.config.json'), {
+      appid: 'wx-private',
       projectname: 'demo',
       mergedFrom: 'private',
     })
 
     const merged = await getProjectConfig(root)
     expect(merged).toMatchObject({
-      appid: 'wx123',
+      appid: 'wx-private',
       projectname: 'demo',
       mergedFrom: 'private',
     })
