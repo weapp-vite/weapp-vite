@@ -102,8 +102,15 @@ describe('stateful snapshot component metadata', () => {
     expect(String(style.source)).not.toContain('71px')
   })
 
-  it('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs', async () => {
-    const root = await createProject()
+  it.each(['directory', 'junction'])('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs (%s root)', async (rootKind) => {
+    let root = await createProject()
+    if (rootKind === 'junction') {
+      const aliasRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-snapshot-alias-'))
+      temporaryRoots.push(aliasRoot)
+      const alias = path.join(aliasRoot, 'project')
+      await fs.symlink(root, alias, 'junction')
+      root = alias
+    }
     const inputs = new Map<string, string>([
       ['src/app.ts', 'App({})'],
       ['src/app.json', JSON.stringify({ pages: ['pages/index/index'], window: { navigationBarTitleText: 'PINNED-CONFIG' } })],
@@ -138,6 +145,7 @@ describe('stateful snapshot component metadata', () => {
     const style = outputs.find(item => item.fileName === 'pages/index/index.wxss') as OutputAsset
     expect(String(style.source)).toContain('19px')
     expect(String(style.source)).not.toContain('71px')
+    expect(String(style.source).match(/width:\s*19px/g)).toHaveLength(1)
   })
 
   it('compiles the pinned SFC instead of a newer disk save', async () => {
