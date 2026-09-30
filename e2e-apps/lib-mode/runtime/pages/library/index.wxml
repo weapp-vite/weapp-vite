@@ -1,0 +1,3 @@
+<view class="library-host">Library consumer</view>
+<native-counter id="native-counter" />
+<vue-counter id="vue-counter" />

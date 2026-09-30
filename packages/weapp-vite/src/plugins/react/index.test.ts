@@ -19,7 +19,7 @@ describe('react plugin', () => {
 
   it('transforms TSX with the automatic React runtime', async () => {
     const plugin = createReactPlugin({
-      configService: { weappViteConfig: { react: true } },
+      configService: { weappViteConfig: { react: true }, relativeOutputPath: (file: string) => path.relative('/project/src', file).replaceAll('\\', '/') },
     } as any)[0]
     const result = await plugin.transform!.call({
       warn: vi.fn(),
@@ -31,6 +31,7 @@ describe('react plugin', () => {
     const plugin = createReactPlugin({
       configService: {
         cwd: '/project',
+        relativeOutputPath: (file: string) => path.relative('/project/src', file).replaceAll('\\', '/'),
         weappViteConfig: { react: true },
       },
     } as any)[0]
@@ -53,6 +54,7 @@ describe('react plugin', () => {
     const plugin = createReactPlugin({
       configService: {
         cwd: '/project',
+        relativeOutputPath: (file: string) => path.relative('/project/src', file).replaceAll('\\', '/'),
         weappViteConfig: { react: true },
       },
     } as any)[0]
@@ -82,6 +84,7 @@ describe('react plugin', () => {
     const plugin = createReactPlugin({
       configService: {
         cwd: '/project',
+        relativeOutputPath: (file: string) => path.relative('/project/src', file).replaceAll('\\', '/'),
         weappViteConfig: { react: true },
       },
     } as any)[0]
@@ -119,6 +122,7 @@ describe('react plugin', () => {
     const plugin = createReactPlugin({
       configService: {
         cwd: '/project',
+        relativeOutputPath: (file: string) => path.relative('/project/src', file).replaceAll('\\', '/'),
         weappViteConfig: { react: true },
       },
     } as any)[0]
@@ -140,6 +144,7 @@ describe('react plugin', () => {
     const plugin = createReactPlugin({
       configService: {
         cwd: '/project',
+        relativeOutputPath: (file: string) => path.relative('/project/src', file).replaceAll('\\', '/'),
         weappViteConfig: { react: { renderMode: 'dynamic' } },
       },
     } as any)[0]
@@ -159,6 +164,7 @@ describe('react plugin', () => {
     const plugin = createReactPlugin({
       configService: {
         cwd,
+        relativeOutputPath: (file: string) => path.relative(path.join(cwd, 'src'), file).replaceAll('\\', '/'),
         weappViteConfig: { react: true },
       },
     } as any)[0]

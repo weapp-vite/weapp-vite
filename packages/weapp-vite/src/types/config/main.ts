@@ -247,7 +247,7 @@ export interface WeappViteConfig {
   typescript?: WeappManagedTypeScriptConfig
   lib?: WeappLibConfig
   isAdditionalWxml?: (wxmlFilePath: string) => boolean
-  platform?: MpPlatform
+  platform?: MpPlatform | 'web'
   multiPlatform?: boolean | MultiPlatformConfig
   jsFormat?: JsFormat
   /**

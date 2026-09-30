@@ -7,6 +7,7 @@ import type {
   HeadlessPageDefinition,
   HeadlessWx,
 } from '../host'
+import type { HeadlessWorkerApis } from '../host/wx/workers'
 import type { RuntimeKernel } from '../kernel'
 import type { HeadlessPluginDescriptor } from '../project'
 import type { BrowserVirtualFiles } from './virtualFiles'
@@ -21,6 +22,7 @@ import {
 } from '../host'
 import { resolveMiniProgramModule } from '../runtime/moduleResolution'
 import { createMiniProgramRuntimeGlobals } from '../runtime/runtimeGlobals'
+import { createWorkerHost } from '../runtime/workerHost'
 import { readBrowserVirtualFile } from './virtualFiles'
 import { closeBrowserWxsLoader } from './wxs'
 
@@ -53,9 +55,10 @@ function createExecutionContext(
   wxDriver: Parameters<typeof createHeadlessWx>[0],
   kernel: RuntimeKernel,
   globals: Record<string, unknown>,
+  workers?: HeadlessWorkerApis,
 ) {
   const runtimeConsole = kernel.diagnostics.createConsole()
-  const wx = createHeadlessWx(wxDriver, runtimeConsole)
+  const wx = createHeadlessWx(wxDriver, runtimeConsole, workers)
 
   return createMiniProgramRuntimeGlobals({
     App(definition: HeadlessAppDefinition) {
@@ -99,6 +102,18 @@ export function createBrowserModuleLoader(
     plugins: HeadlessPluginDescriptor[]
   },
 ): BrowserModuleLoader {
+  const workers = createWorkerHost({
+    root: options.miniprogramRootPath,
+    read: file => readBrowserVirtualFile(files, file),
+    console: options.kernel.diagnostics.createConsole(),
+    createExecutor(globals) {
+      return (source, _file, module, require) => {
+        // eslint-disable-next-line no-new-func -- 仅浏览器 simulator 的独立 worker 执行边界，不进入小程序产物。
+        const execute = new Function(`with (this) { return function(module, exports, require) {${source}\n}; }`).call(globals)
+        execute.call(globals, module, module.exports, require)
+      }
+    },
+  })
   const moduleCache = new Map<string, ModuleCacheEntry>()
   const executionContext: Record<string, any> = createExecutionContext(
     registries,
@@ -107,6 +122,7 @@ export function createBrowserModuleLoader(
     wxDriver,
     options.kernel,
     options.globals ?? {},
+    workers.apis,
   )
   executionContext.globalThis = executionContext
 
@@ -206,6 +222,7 @@ export function createBrowserModuleLoader(
 
   const loader: BrowserModuleLoader = {
     close() {
+      workers.close()
       moduleCache.clear()
       closeBrowserWxsLoader(loader)
     },

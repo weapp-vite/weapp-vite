@@ -131,10 +131,10 @@ function normalizeAppConfigSubPackages(
   return config
 }
 
-async function applyAutoRoutesToAppConfigIfNeeded(
+export async function applyAutoRoutesToAppConfigIfNeeded(
   ctx: MutableCompilerContext,
   config: AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] },
-) {
+): Promise<AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] }> {
   const autoRoutesService = ctx.autoRoutesService
   if (!autoRoutesService?.isEnabled()) {
     return config
@@ -203,7 +203,7 @@ export async function loadAppEntry(ctx: MutableCompilerContext, scanState: ScanS
   let configFromVue: Record<string, any> | undefined
   if (!appConfigFile && vueAppPath) {
     const { extractConfigFromVue } = await import('../../../utils/file')
-    configFromVue = await extractConfigFromVue(vueAppPath)
+    configFromVue = await extractConfigFromVue(vueAppPath, { compilerContext: ctx })
     if (configFromVue) {
       appConfigFile = vueAppPath
     }

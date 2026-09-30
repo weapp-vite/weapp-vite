@@ -3,6 +3,7 @@ import type { ModuleNode, Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import type { MutableCompilerContext } from '../context'
 import type { WeappViteRuntime } from '../pluginHost'
 import type { AutoRoutesService } from '../runtime/autoRoutesPlugin/service'
+import { realpath } from 'node:fs/promises'
 import { WEVU_AUTO_ROUTES_MODULE_ID, WEVU_AUTO_ROUTES_VIRTUAL_MODULE_ID } from '@weapp-core/constants'
 import chokidar from 'chokidar'
 import { mayContainPageDeclaration, stripPageDeclaration } from 'wevu/compiler'
@@ -355,6 +356,15 @@ function createAutoRoutesPlugin(ctx: MutableCompilerContext, service: AutoRoutes
 
     buildStart() {
       refreshAutoRoutesAliasTargets()
+      if (this.meta?.watchMode && service.isEnabled()) {
+        return service.ensureFresh(createPageDeclarationSourceResolver(this)).then(async () => {
+          addAutoRoutesWatchTargets(this, {
+            files: service.getWatchFiles(),
+            // 原生 watcher 按真实路径登记目录；符号链接根目录不能漏掉新增文件。
+            directories: await Promise.all([...service.getWatchDirectories()].map(dir => realpath(dir).catch(() => dir))),
+          })
+        })
+      }
       startRouteFileWatcher()
     },
 

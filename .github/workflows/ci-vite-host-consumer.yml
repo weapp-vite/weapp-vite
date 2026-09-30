@@ -1,0 +1,196 @@
+name: Vite Host Consumer
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ci-vite-host-consumer.yml
+      - .github/workflows/reusable-node-command.yml
+      - 'packages/weapp-vite/**'
+      - e2e/ide/stateful-hmr.runtime.test.ts
+      - e2e/ide/react-runtime-spike.runtime.test.ts
+      - e2e/ide/wevu-subpackage-placement.runtime.test.ts
+      - e2e/ide/worker-host.runtime.test.ts
+      - e2e/ide/platform-host.runtime.test.ts
+      - 'templates/weapp-vite-multi-platform-sfc-template/**'
+      - e2e/ide/lib-host.runtime.test.ts
+      - 'e2e-apps/lib-mode/**'
+      - e2e/ide/issue-963-plugin-es6.runtime.test.ts
+      - 'templates/weapp-vite-plugin-template/**'
+      - 'e2e-apps/chunk-modes/**'
+      - 'mpcore/packages/simulator/**'
+      - 'e2e/ide/subpackagePlacementDom/**'
+      - 'e2e-apps/wevu-subpackage-placement/**'
+      - 'e2e/ide/reactRuntimeDom/**'
+      - 'e2e-apps/react-runtime-spike/**'
+      - 'packages-runtime/react/**'
+      - 'e2e/ide/statefulHmrDom/**'
+      - 'e2e-apps/stateful-hmr/**'
+      - 'packages/rolldown-require/**'
+      - 'packages-runtime/wevu/**'
+      - 'packages-runtime/wevu-compiler/**'
+      - '@weapp-core/**'
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: vite-host-consumer-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  consumer:
+    name: Packed consumer (${{ matrix.toolchain }})
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require...
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.toolchain }}
+    secrets: inherit
+
+  stateful-runtime:
+    name: Stateful runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: >-
+        ${{ matrix.host == 'vite-plus' && 'node packages/weapp-vite/scripts/verify-vite-host-install.mjs vite-plus headless' ||
+        format('pnpm exec cross-env WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless WEAPP_VITE_E2E_COMPILER_HOST={0} pnpm vitest run -c e2e/vitest.e2e.devtools.config.ts e2e/ide/stateful-hmr.runtime.test.ts -t "preserves native Component|preserves Wevu local and store|preserves native page state across two template"', matrix.host) }}
+      artifact_name: stateful-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  react-runtime:
+    name: React runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless react
+      artifact_name: react-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  independent-runtime:
+    name: Independent runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless independent
+      artifact_name: independent-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  worker-runtime:
+    name: Worker runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless worker
+      artifact_name: worker-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  plugin-runtime:
+    name: Plugin runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless plugin
+      artifact_name: plugin-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  lib-runtime:
+    name: Library runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless lib
+      artifact_name: lib-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  platform-runtime:
+    name: Platform builds and runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless platform
+      artifact_name: platform-runtime-${{ matrix.host }}
+      artifact_path: docs/reports/dom-acceptance/**
+    secrets: inherit
+
+  web-runtime:
+    name: Web browser runtime (${{ matrix.host }})
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [wv, vite, vite-plus]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ubuntu-latest
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm build:pkgs:ci
+      install_playwright: true
+      playwright_browsers: chromium
+      main_command: node packages/weapp-vite/scripts/verify-vite-host-install.mjs ${{ matrix.host }} headless web
+    secrets: inherit

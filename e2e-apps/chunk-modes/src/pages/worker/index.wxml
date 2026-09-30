@@ -1,0 +1,3 @@
+<view class="worker-message">{{message}}</view>
+<view class="worker-count">{{count}}</view>
+<button id="worker-send" bindtap="send">send</button>

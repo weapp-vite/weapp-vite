@@ -19,7 +19,30 @@ const state = vi.hoisted(() => ({
   prepare: vi.fn(),
   execute: vi.fn(),
 }))
-vi.mock('../../createContext', () => ({ createCompilerContext: state.createContext }))
+vi.mock('../../runtime/compilerSession', () => ({
+  CompilerSession: class {
+    context: any
+    cleanup: Array<() => Promise<void>> = []
+    onClose(cleanup: () => Promise<void>) {
+      this.cleanup.push(cleanup)
+    }
+
+    async initialize(options: unknown) {
+      this.context = await state.createContext(options)
+      return this.context
+    }
+
+    run(operation: () => Promise<unknown>) {
+      return operation()
+    }
+
+    async close() {
+      for (const cleanup of this.cleanup.toReversed()) {
+        await cleanup()
+      }
+    }
+  },
+}))
 vi.mock('../upload/index', async importOriginal => ({
   ...await importOriginal<typeof UploadModule>(),
   prepareUpload: state.prepare,
@@ -229,6 +252,28 @@ describe('build upload opt-in', () => {
 })
 
 describe('build upload CLI guards', () => {
+  it('rejects config-selected Web before bumping the manifest or preparing an upload', async () => {
+    const original = state.createContext.getMockImplementation()!
+    state.createContext.mockImplementation(async (options) => {
+      expect(JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).version).toBe('1.0.1')
+      const ctx = await original(options)
+      ctx.configService.options = { sourceConfig: { weapp: { platform: 'web' } } }
+      return ctx
+    })
+    const manifest = JSON.stringify({ name: 'web-build-fixture', version: '1.0.0' })
+    await writeFile(path.join(root, 'package.json'), manifest)
+    const lock = JSON.stringify({ name: 'web-build-fixture', version: '1.0.0', lockfileVersion: 3, packages: { '': { name: 'web-build-fixture', version: '1.0.0' } } })
+    await writeFile(path.join(root, 'package-lock.json'), lock)
+    await expect(runBuild('--upload', '--bump', 'patch')).rejects.toThrow('纯 Web')
+    expect(await readFile(path.join(root, 'package.json'), 'utf8')).toBe(manifest)
+    expect(await readFile(path.join(root, 'package-lock.json'), 'utf8')).toBe(lock)
+    expect(state.createContext).toHaveBeenCalledTimes(1)
+    expect(state.build).not.toHaveBeenCalled()
+    expect(state.webBuild).not.toHaveBeenCalled()
+    expect(state.prepare).not.toHaveBeenCalled()
+    expect(state.execute).not.toHaveBeenCalled()
+  })
+
   it.each([
     { args: ['--upload', '--watch'] },
     { args: ['--upload', '-p', 'web'] },

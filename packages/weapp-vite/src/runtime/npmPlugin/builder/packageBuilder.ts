@@ -222,7 +222,7 @@ export function createPackageBuilder(
     { dep, outDir, options, isDependenciesCacheOutdate }:
     BuildPackageArgs,
   ) {
-    const packageInfo = await getPackageInfo(dep)
+    const packageInfo = await getPackageInfo(dep, ctx.configService?.cwd ? { paths: [ctx.configService.cwd] } : undefined)
     if (!packageInfo || !ctx.configService) {
       return
     }
@@ -297,7 +297,7 @@ export function createPackageBuilder(
       }
     }
     else {
-      const index = await resolvePreferredPackageEntry(rootPath, targetJson) ?? resolveModule(dep)
+      const index = await resolvePreferredPackageEntry(rootPath, targetJson) ?? resolveModule(dep, { paths: [rootPath] })
       if (!index) {
         npmLogger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
         return

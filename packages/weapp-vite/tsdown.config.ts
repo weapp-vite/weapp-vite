@@ -2,6 +2,7 @@ import { defineConfig } from 'tsdown'
 
 export default defineConfig({
   entry: {
+    'vite': './src/vite/index.ts',
     'index': './src/index.ts',
     'web-apis': './src/webApis.ts',
     'cli': './src/cli.ts',

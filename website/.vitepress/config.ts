@@ -106,6 +106,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/guide/vue-sfc/',
       },
       { text: 'Alias 别名', link: '/guide/alias' },
+      { text: '标准 Vite 插件 / Vite+', link: '/guide/vite-plugin' },
       { text: '自动构建 npm', link: '/guide/npm' },
       { text: '生成脚手架', link: '/guide/generate' },
       { text: '自动路由', link: '/guide/auto-routes' },

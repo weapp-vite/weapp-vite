@@ -1,3 +1,4 @@
+import type { MutableCompilerContext } from '../../context'
 import process from 'node:process'
 import { fs } from '@weapp-core/shared/fs'
 import { recursive as mergeRecursive } from 'merge'
@@ -11,11 +12,13 @@ const vueConfigCache = new Map<string, {
   dependencies: string[]
   dependencyMtimeMs: Map<string, number>
 }>()
+const contextConfigCaches = new WeakMap<MutableCompilerContext, typeof vueConfigCache>()
 const configMtimeInFlight = new Map<string, Promise<number | undefined>>()
 const NODE_MODULES_RE = /[\\/]node_modules[\\/]/
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 
 interface ExtractConfigFromVueOptions {
+  compilerContext?: MutableCompilerContext
   readSource?: () => Promise<string | undefined>
   source?: string
   force?: boolean
@@ -71,7 +74,12 @@ export async function extractConfigFromVue(
   options?: ExtractConfigFromVueOptions,
 ): Promise<Record<string, any> | undefined> {
   try {
-    const cached = options?.force ? undefined : vueConfigCache.get(vueFilePath)
+    const context = options?.compilerContext
+    const cache = context ? contextConfigCaches.get(context) ?? new Map() : vueConfigCache
+    if (context) {
+      contextConfigCaches.set(context, cache)
+    }
+    const cached = options?.force ? undefined : cache.get(vueFilePath)
     if (cached && await isVueConfigCacheValid(vueFilePath, cached)) {
       return cached.config
     }
@@ -122,7 +130,7 @@ export async function extractConfigFromVue(
         // 普通 JSON 宏不依赖路由扫描，也不应触及其他编译上下文的支持文件。
         const autoRoutesInline = hasAutoRoutesMacroImport(setupContent)
           || (preambleContent !== undefined && hasAutoRoutesMacroImport(preambleContent))
-          ? await resolveAutoRoutesInlineSnapshot()
+          ? await resolveAutoRoutesInlineSnapshot(options?.compilerContext)
           : undefined
         const macroEvalPreamble = preambleContent && autoRoutesInline
           ? inlineAutoRoutesImports(preambleContent, autoRoutesInline)
@@ -168,7 +176,7 @@ export async function extractConfigFromVue(
     )
     const fileMtimeMs = await getMtimeCached(vueFilePath)
     const hasConfig = Object.keys(mergedConfig).length > 0
-    vueConfigCache.set(vueFilePath, {
+    cache.set(vueFilePath, {
       config: hasConfig ? mergedConfig : undefined,
       fileMtimeMs,
       dependencies: normalizedDependencies,

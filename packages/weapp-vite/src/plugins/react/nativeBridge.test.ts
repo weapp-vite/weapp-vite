@@ -14,7 +14,7 @@ async function createFixture(json: object = registered) {
     json,
   }]])
   const plugin = createReactPlugin({
-    configService: { cwd: '/project', weappViteConfig: { react: true } },
+    configService: { cwd: '/project', weappViteConfig: { react: true }, relativeOutputPath: (file: string) => file.replace(/^\/project\/src\//, '') },
     runtimeState: { build: { hmr: { entriesMap: entries } } },
     jsonService: { resolve: (entry: Entry) => JSON.stringify(entry.json) },
   } as unknown as CompilerContext)[0]!
