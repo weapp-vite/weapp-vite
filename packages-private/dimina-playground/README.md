@@ -4,7 +4,7 @@
 
 ## 准备
 
-需要 Node.js ≥22.22.3、仓库配置的 pnpm、Git 和 Playwright Chromium。所有命令从仓库根目录运行。
+需要 Node.js ≥22.22.3、随 Node 提供的 npm、仓库配置的 pnpm、Git 和 Playwright Chromium。所有命令从仓库根目录运行。
 
 ```sh
 pnpm install
@@ -15,7 +15,7 @@ pnpm exec playwright install chromium
 
 上游固定为 `didi/dimina@fa34f11e02f480df715d374e11a3f531f63b7a60`，许可证为 Apache-2.0。源码保存在已忽略的 `.cache/dimina/source` 中，不提交 vendor 源码或生成 bundle。当前 npm 上没有可安装的 `@dimina/fe-container-sdk`，因此 setup 从源码构建 compiler、SDK 和依赖。
 
-该上游提交没有提供 pnpm 锁文件；`upstream/pnpm-lock.yaml` 是针对固定提交、pnpm 12.2.0 生成的完整依赖锁，setup 复制后使用 `--frozen-lockfile` 安装。上游源码缓存存在已跟踪或未跟踪修改时拒绝覆盖。setup 是显式操作，不在仓库安装钩子中执行。默认 build、dev、CI、release 与 Windows 构建入口均排除此实验包；仍可用上面的工作区命令显式准备和运行。
+该上游提交没有提供 pnpm 锁文件；`upstream/pnpm-lock.yaml` 是针对固定提交、pnpm 12.2.0 生成的完整依赖锁，setup 复制后使用 `--frozen-lockfile` 安装。`upstream/toolchain` 另锁定 pnpm 12.2.0 及各平台原生包，setup 用 `npm ci` 在新构建目录的独立工具工作区准备并验证该版本，再直接调用其可执行文件。这样不会依赖外层 pnpm 自动切换版本时忽略安装脚本所留下的占位文件，也不会把上游依赖加入全仓安装钩子。上游源码缓存存在已跟踪或未跟踪修改时拒绝覆盖。setup 是显式操作，不在仓库安装钩子中执行。默认 build、dev、CI、release 与 Windows 构建入口均排除此实验包；仍可用上面的工作区命令显式准备和运行。
 
 上游 SDK 的 Vite 库构建会保留 Vue 的 `process.env.NODE_ENV`；setup 通过 Vite `define` 固定生产环境及 Vue feature flags，避免浏览器依赖 Node 全局对象。
 
@@ -68,7 +68,7 @@ React 原生组件 bridge 当前只支持可静态分析的页面结构，动态
 - render 根据声明上下文解析绑定，按实例保存组件表，在 Vue 安装静态选项后恢复实例表；嵌套转发复用已经解析的绑定。泛型实现的事件仍交回出口声明者，保持属性更新与组件生命周期。
 - service 传递实际 `options.virtualHost`；render 在创建 VNode 时展开编译器宿主，不生成额外宿主 DOM，不在挂载后删除节点。普通组件仍保留宿主。
 
-setup 每次从干净的固定源码创建独立 `.cache/dimina/build-*` 目录，先 `git apply --check`，再应用补丁并使用冻结锁文件构建。构建中运行真实 compiler/service/render 回归与元数据测试（7 项），最后才写入就绪标记。准备产物保存 compiler/SDK 完整文件清单与内容摘要，构建前校验必需入口、Worker、CSS、文件清单和依赖标记，资源丢失或被修改时必须重新准备。标记包含上游提交以及锁文件、准备脚本和全部补丁的 SHA-256 摘要；修改输入后，显式构建会要求重新 setup。失败会移除标记，重跑会创建新目录恢复，不覆盖先前目录或未知本地修改。旧构建目录保留供排查，可在确认不再使用后手动清理。
+setup 每次从干净的固定源码创建独立 `.cache/dimina/build-*` 目录，使用 LF checkout，规范化补丁的 CRLF，并以相同的 `--index` 条件先校验、再应用补丁并使用冻结锁文件构建。构建中运行真实 compiler/service/render 回归与元数据测试（7 项），最后才写入就绪标记。准备产物保存 compiler/SDK 完整文件清单与内容摘要，构建前校验必需入口、Worker、CSS、文件清单和依赖标记，资源丢失或被修改时必须重新准备。标记包含上游提交以及锁文件、准备脚本和全部补丁的 SHA-256 摘要；修改输入后，显式构建会要求重新 setup。失败会移除标记，重跑会创建新目录恢复，不覆盖先前目录或未知本地修改。旧构建目录保留供排查，可在确认不再使用后手动清理。
 
 新增浏览器默认组件场景还暴露了 weapp-vite 的独立缺口：只出现在 `componentGenerics.default` 中的组件没有进入入口和增量依赖图。这部分在公开编译器中统一收集依赖，附带构建入口单测、增量依赖移除回归和 `weapp-vite` / `create-weapp-vite` patch changeset；另修复并行构建失败时提前返回的问题：等待 npm、worker、项目配置写入结束后才把目录所有权交还调用方，避免临时目录清理后继续写入导致开发进程退出。未增加公开 API 或平台配置。
 
@@ -78,8 +78,8 @@ setup 每次从干净的固定源码创建独立 `.cache/dimina/build-*` 目录�
 - wevu 具名/作用域插槽、响应式属性更新和插槽事件回传通过；virtualHost 无额外宿主，scoped 样式生效。
 - 原生泛型覆盖多实例不同绑定、默认组件、嵌套转发、事件归属、普通组件保留宿主，以及移除/重新挂载实例后的事件归属和 detached 清理。分包覆盖从主包泛型出口引用分包专属实现、分包默认组件、属性更新和事件；virtualHost 覆盖空根/单根/双根切换、样式与返回后重新进入。
 - 原生完整流程、React 状态/列表/组件事件、wevu `v-model`、Bridge 成功/失败、分包返回状态保留、图片、配置缺失、SDK 加载失败及开发重建失败恢复均通过。Worker、iframe 和资源在 `/dimina/` 下实际加载。
-- setup 首次与重复准备、缓存复用、只复制缓存到另一目录后的直接回归、产物缺失/被修改拒绝、补丁/锁/脚本变更失效、补丁失败/构建失败后的恢复、未知修改保留均有验证；工作区工具测试 15 项、构建选择/CI 契约及 Windows planner 回归 21 项、公开依赖图定向单测 12 项及构建生命周期相关 96 项测试通过。
-- lint、stylelint、工作区及 weapp-vite typecheck、实验生产构建通过。远端 CI 结果以草稿 PR #1104 的 checks 为准；本地结果不代表 Windows/Linux 矩阵或原生宿主验收。
+- setup 首次与重复准备、缓存复用、只复制缓存到另一目录后的直接回归、产物缺失/被修改拒绝、Windows Git CRLF 默认值、工具链/补丁/锁/脚本变更失效、补丁失败/构建失败后的恢复、未知修改保留均有验证；工作区工具测试 20 项、构建选择/CI 契约及 Windows planner 回归 21 项、公开依赖图定向单测 12 项及构建生命周期相关 96 项测试通过。
+- lint、stylelint、工作区及 weapp-vite typecheck、实验生产构建通过。首轮独立 CI 暴露 pnpm 版本切换未准备原生可执行文件（Linux/macOS）及补丁 CRLF 与索引不一致（Windows），已按上述工具链与换行边界修复；本地新准备和复用通过，33 个 compiler/SDK 产物摘要与此前 19/19 验收版本一致；这次工具链修复未并发重复浏览器测试，跨平台修复结果仍以草稿 PR #1104 的 checks 为准；本地结果不代表 Windows/Linux 矩阵或原生宿主验收。
 
 最小复现：运行 `pnpm e2e:dimina`，或进入 wevu 示例检查具名/作用域插槽；原生首页的“泛型边界测试”提供多实例、默认组件、转发、事件与卸载观察入口。补丁内的 `component-generics.spec.js` 用上游真实编译器和 service/render bridge 构建独立临时小程序，可与上游实现对照。
 

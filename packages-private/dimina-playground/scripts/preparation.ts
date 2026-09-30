@@ -8,7 +8,7 @@ export async function preparationInputs(projectRoot = root) {
   const patchRoot = path.join(projectRoot, 'upstream/patches')
   const patches = (await readdir(patchRoot)).filter(name => name.endsWith('.patch')).sort()
   const hash = createHash('sha256').update(upstreamCommit)
-  for (const name of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', ...patches.map(name => `upstream/patches/${name}`)]) {
+  for (const name of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', ...patches.map(name => `upstream/patches/${name}`)]) {
     hash.update(name).update(await readFile(path.join(projectRoot, name)))
   }
   return { fingerprint: hash.digest('hex'), patches: patches.map(name => path.join(patchRoot, name)) }

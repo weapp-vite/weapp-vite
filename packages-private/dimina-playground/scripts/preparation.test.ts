@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { execa } from 'execa'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { upstreamCommit } from '../config'
 import { preparationInputs, preparedRoot } from './preparation'
 import { recordPreparedAssets, requiredAssets } from './preparedAssets'
@@ -11,6 +11,7 @@ import { prepareInstallation } from './prepareSource'
 
 const temporary: string[] = []
 afterEach(async () => {
+  vi.unstubAllEnvs()
   await Promise.all(temporary.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
 })
 async function directory() {
@@ -22,7 +23,8 @@ async function project() {
   const root = await directory()
   await mkdir(path.join(root, 'upstream/patches'), { recursive: true })
   await mkdir(path.join(root, 'scripts'))
-  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'upstream/patches/components.patch']) {
+  await mkdir(path.join(root, 'upstream/toolchain'))
+  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch']) {
     await writeFile(path.join(root, file), file)
   }
   return root
@@ -68,12 +70,35 @@ describe('SDK preparation boundary', () => {
     await expect(preparedRoot(root, cache)).rejects.toThrow('stale SDK')
   })
 
-  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
+  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
     const root = await project()
     const first = await preparationInputs(root)
     expect(await preparationInputs(root)).toEqual(first)
     await writeFile(path.join(root, file), 'changed')
     expect((await preparationInputs(root)).fingerprint).not.toBe(first.fingerprint)
+  })
+
+  it('applies a CRLF patch with LF index/worktree semantics under Windows Git defaults', async () => {
+    const source = await directory()
+    const cache = await directory()
+    const git = (args: string[]) => execa('git', args, { cwd: source })
+    await git(['init'])
+    await git(['config', 'core.autocrlf', 'false'])
+    await writeFile(path.join(source, 'component.js'), 'before\n')
+    await git(['add', '.'])
+    await git(['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture'])
+    const commit = (await git(['rev-parse', 'HEAD'])).stdout
+    await writeFile(path.join(source, 'component.js'), 'after\n')
+    const patch = path.join(cache, 'component.patch')
+    await writeFile(patch, `${(await git(['diff'])).stdout}\n`.replace(/\n/g, '\r\n'))
+    const config = path.join(cache, 'gitconfig')
+    await writeFile(config, '[core]\n  autocrlf = true\n')
+    vi.stubEnv('GIT_CONFIG_GLOBAL', config)
+    await prepareInstallation({ source, cache, commit, patches: [patch], fingerprint: 'test' }, async (build) => {
+      expect(await readFile(path.join(build, 'component.js'), 'utf8')).toBe('after\n')
+      const staged = await execa('git', ['show', ':component.js'], { cwd: build, stripFinalNewline: false })
+      expect(staged.stdout).toBe('after\n')
+    })
   })
 
   it('prepares clean isolated builds repeatedly and recovers from patch/build failures', async () => {

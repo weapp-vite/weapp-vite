@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - .gitattributes
       - .github/workflows/ci-dimina.yml
       - '.github/actions/**'
       - 'packages-private/dimina-playground/**'
@@ -20,6 +21,7 @@ on:
   push:
     branches: [main]
     paths:
+      - .gitattributes
       - 'packages-private/dimina-playground/**'
       - 'e2e/dimina/**'
       - e2e/vitest.e2e.dimina.config.ts

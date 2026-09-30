@@ -7,6 +7,7 @@ import { cacheRoot, root, upstreamCommit, upstreamRoot } from '../config'
 import { preparationInputs, preparedRoot } from './preparation'
 import { recordPreparedAssets } from './preparedAssets'
 import { prepareInstallation } from './prepareSource'
+import { prepareToolchain } from './toolchain'
 import { testUpstream } from './upstreamTests'
 
 const run = (command: string, args: string[], cwd: string) => execa(command, args, { cwd, stdio: 'inherit' })
@@ -48,13 +49,14 @@ await run('git', ['fetch', 'origin', upstreamCommit], upstreamRoot)
 await run('git', ['checkout', '--detach', upstreamCommit], upstreamRoot)
 const inputs = await preparationInputs()
 await prepareInstallation({ source: upstreamRoot, cache: cacheRoot, commit: upstreamCommit, ...inputs }, async (buildRoot) => {
+  const pnpm = await prepareToolchain(buildRoot)
   const cwd = path.join(buildRoot, 'fe')
   await cp(path.join(root, 'upstream/pnpm-lock.yaml'), path.join(cwd, 'pnpm-lock.yaml'))
-  await run('pnpm', ['install', '--frozen-lockfile'], cwd)
-  await run('pnpm', ['--filter', '@dimina/compiler', '--filter', '@dimina/fe-container-sdk^...', 'build'], cwd)
+  await pnpm(['install', '--frozen-lockfile'], cwd)
+  await pnpm(['--filter', '@dimina/compiler', '--filter', '@dimina/fe-container-sdk^...', 'build'], cwd)
   await testUpstream(buildRoot)
   // 上游库构建保留了 Vue 的环境分支；独立浏览器资源需在编译期明确替换。
-  await run('pnpm', ['exec', 'node', '--input-type=module', '--eval', `
+  await pnpm(['exec', 'node', '--input-type=module', '--eval', `
   import { build } from 'vite';
   await build({ define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
@@ -63,7 +65,7 @@ await prepareInstallation({ source: upstreamRoot, cache: cacheRoot, commit: upst
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
   } });
 `], path.join(cwd, 'packages/container-sdk'))
-  await run('pnpm', ['exec', 'tsc', '-p', 'tsconfig.build.json'], path.join(cwd, 'packages/container-sdk'))
+  await pnpm(['exec', 'tsc', '-p', 'tsconfig.build.json'], path.join(cwd, 'packages/container-sdk'))
   await recordPreparedAssets(buildRoot)
 })
 console.log('Dimina compiler and Web SDK are ready.')

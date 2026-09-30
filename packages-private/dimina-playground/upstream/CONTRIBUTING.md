@@ -27,8 +27,8 @@ pnpm --filter @weapp-vite/dimina-playground test:upstream
 
 1. checkout 上述固定提交；工作区需干净。
 2. 将本目录的 `pnpm-lock.yaml` 复制到上游 `fe/pnpm-lock.yaml`。该提交没有随仓库提供锁文件，本目录记录的是 pnpm 12.2.0 的冻结锁。
-3. 在 clone 根目录运行 `git apply --check <component-semantics.patch>`，然后 `git apply <component-semantics.patch>`。尖括号内容替换为补丁实际路径。
-4. 使用 Node ≥22.22.3，在 `fe` 运行 `pnpm install --frozen-lockfile`，再运行 `pnpm --filter @dimina/compiler --filter '@dimina/fe-container-sdk^...' build`。
+3. clone 的源码与补丁均需使用 LF（Windows 设置该 clone 的 `core.autocrlf=false` 后重新 checkout）；在 clone 根目录运行 `git apply --check <component-semantics.patch>`，然后 `git apply <component-semantics.patch>`。尖括号内容替换为补丁实际路径。
+4. 使用 Node ≥22.22.3 和已完成安装脚本的 pnpm 12.2.0（可先通过本实验 setup 准备隔离工具链），在 `fe` 运行 `pnpm install --frozen-lockfile`，再运行 `pnpm --filter @dimina/compiler --filter '@dimina/fe-container-sdk^...' build`。
 5. 在 `fe/packages/render` 运行：
 
 ```sh
