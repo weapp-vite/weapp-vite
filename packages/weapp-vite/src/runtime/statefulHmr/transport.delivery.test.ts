@@ -92,3 +92,62 @@ it.each(['poll', 'ack'])('retries publication and %s confirmation without adding
     transport.close()
   }
 })
+
+it.each(['poll', 'ack'])('keeps %s confirmation pending when the host runs a patch before publication settles', async (action) => {
+  const { transport, report, write } = fixture()
+  const delivered = vi.fn(async () => {})
+  const publication = Promise.withResolvers<void>()
+  const publicationStarted = Promise.withResolvers<void>()
+  write.mockImplementationOnce(async () => {
+    publicationStarted.resolve()
+    await publication.promise
+  })
+  try {
+    await report('register')
+    const executed = transport.addDelta('first()', [], delivered)
+    const publishing = report('poll')
+    await publicationStarted.promise
+    // 宿主的文件监听可在 writeBundle 完成前执行已经写出的补丁。
+    const early = await report(action, 1)
+    expect(early.statusCode).toBe(202)
+    expect(JSON.parse(early.end.mock.calls[0]![0])).toEqual({ type: 'publishing' })
+    expect(delivered).not.toHaveBeenCalled()
+    publication.resolve()
+    await publishing
+    await report('poll', 1)
+    expect(delivered).toHaveBeenCalledOnce()
+    await executed
+    const second = transport.addDelta('second()', [], delivered)
+    await report('poll', 1)
+    await report('poll', 2)
+    await second
+    expect(delivered).toHaveBeenCalledTimes(2)
+  }
+  finally {
+    publication.resolve()
+    transport.close()
+  }
+})
+
+it('confirms replayed execution after DevTools replaces its client session during publication', async () => {
+  const { transport, report } = fixture()
+  const delivered = vi.fn(async () => {})
+  try {
+    await report('register')
+    const executed = transport.addDelta('first()', [], delivered)
+    await report('poll')
+    await report('register', 0, { sessionId: 'replacement' })
+    await report('poll', 1, { sessionId: 'replacement' })
+    expect(delivered).toHaveBeenCalledOnce()
+    await executed
+    expect((await report('ack', 1, { sessionId: 'client' })).statusCode).toBe(409)
+    await report('register', 0, { sessionId: 'third' })
+    const replay = await report('poll', 0, { sessionId: 'third' })
+    expect(JSON.parse(replay.end.mock.calls[0]![0])).toMatchObject({ type: 'batch-published', targetVersion: 1 })
+    expect((await report('ack', 1, { sessionId: 'third' })).statusCode).toBe(200)
+    expect(delivered).toHaveBeenCalledOnce()
+  }
+  finally {
+    transport.close()
+  }
+})
