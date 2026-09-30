@@ -41,6 +41,8 @@ weapp-vite ide logs --open
 
 `wv ide doctor` 的原生 `islogin` 查询可能拉起 IDE；只需要静态诊断时使用 `wv doctor --format json`。只读 automator 连接失败不会删除持久化会话记录。连接成功后若 `Tool.getInfo` 失败，`automator` 仍为 ok，`tool` 单独标记 warning，并释放本次连接；不能据此认定登录失效。
 
+登录诊断仅在原生响应明确包含 `login: true/false` 时确认状态。CLI 退出成功但没有明确结果、查询超时或执行失败均标为 unknown，不再误报已登录或未登录。
+
 如果项目启用了 `weapp.forwardConsole.enabled = 'auto'`，AI 终端场景下 `dev --open` 也可能自动附加日志桥。
 
 ## `.vue` 文件存在，但提示未安装 `wevu`

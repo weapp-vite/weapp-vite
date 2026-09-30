@@ -9,7 +9,7 @@ import {
   getWechatIdeTestAccounts,
   getWechatIdeTicket,
   getWechatIdeToolInfo,
-  isWechatIdeLoggedIn,
+  queryWechatIdeLogin,
   refreshWechatIdeTicket,
   resolveCliPath,
   resolveProjectAutomatorPort,
@@ -90,15 +90,22 @@ async function runIdeDoctor(projectPath: string | undefined, options: GlobalCLIO
   }
   if (resolvedCli.cliPath) {
     try {
-      await isWechatIdeLoggedIn({ nonInteractive: true, silent: true })
-      loginCheck = { status: 'ok', value: true }
+      const result = await queryWechatIdeLogin(resolvedCli.cliPath, { timeout: 3_000 })
+      loginCheck = result.status === 'success'
+        ? {
+            status: result.login ? 'ok' : 'warning',
+            value: result.login,
+            ...(result.login ? {} : { message: '原生 CLI 明确返回未登录，请打开微信开发者工具完成登录。' }),
+          }
+        : {
+            status: 'unknown',
+            message: `登录查询未确认状态（${result.reason}），不能据此认定未登录。`,
+          }
     }
-    catch (error) {
+    catch {
       loginCheck = {
-        fix: '打开微信开发者工具完成登录后重试，或执行 `wv ide doctor --json` 查看 CLI 错误。',
-        message: error instanceof Error ? error.message : String(error),
-        status: 'warning',
-        value: false,
+        message: '登录查询执行失败，登录状态仍未确认。',
+        status: 'unknown',
       }
     }
   }

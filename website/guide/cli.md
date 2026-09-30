@@ -256,6 +256,8 @@ wv ide doctor --strict
 
 连接失败不会删除持久化 automator 会话记录；失败不能证明记录过期，也不授予诊断命令清理其他操作的权限。若连接成功但 `Tool.getInfo` 失败，报告保留 `automator: ok`，单独将 `tool` 标为 warning，并释放本次连接；该结果不证明登录失效。
 
+登录诊断仅在原生响应明确包含 `login: true/false` 时确认状态。CLI 退出成功但没有明确结果、查询超时或执行失败均标为 unknown，不再误报已登录或未登录。
+
 ### 5) `close`
 
 关闭微信开发者工具。
