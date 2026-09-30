@@ -68,11 +68,13 @@ jobs:
         uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           key: ${{ steps.sdk-key.outputs.key }}
-          path: |
-            .cache/dimina/ready.json
-            .cache/dimina/build-*/fe
+          path: .cache/dimina/portable-sdk
+      - name: Restore SDK snapshot into isolated installation
+        run: pnpm --filter @weapp-vite/dimina-playground cache:sdk restore
       - name: Prepare and verify Dimina SDK
         run: pnpm --filter @weapp-vite/dimina-playground setup:dimina --reuse
+      - name: Save portable SDK snapshot without dependency links
+        run: pnpm --filter @weapp-vite/dimina-playground cache:sdk save
       - name: Lint
         run: pnpm --filter @weapp-vite/dimina-playground lint
       - name: Stylelint

@@ -24,7 +24,7 @@ async function project() {
   await mkdir(path.join(root, 'upstream/patches'), { recursive: true })
   await mkdir(path.join(root, 'scripts'))
   await mkdir(path.join(root, 'upstream/toolchain'))
-  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch']) {
+  for (const file of ['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/portableCache.ts', 'scripts/cacheSnapshot.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch']) {
     await writeFile(path.join(root, file), file)
   }
   return root
@@ -64,13 +64,17 @@ describe('SDK preparation boundary', () => {
     expect(await preparedRoot(root, cache)).toBe(build)
     await rm(path.join(build, 'fe/node_modules/.modules.yaml'))
     await expect(preparedRoot(root, cache)).rejects.toThrow('incomplete SDK')
+    expect(await preparedRoot(root, cache, { allowMissingDependencies: true })).toBe(build)
+    await rm(worker)
+    await expect(preparedRoot(root, cache, { allowMissingDependencies: true })).rejects.toThrow('incomplete SDK')
+    await writeFile(worker, 'container-sdk/dist/service.js')
     await writeFile(path.join(build, 'fe/node_modules/.modules.yaml'), '')
     expect(await preparedRoot(root, cache)).toBe(build)
     await writeFile(path.join(root, 'upstream/patches/components.patch'), 'changed')
     await expect(preparedRoot(root, cache)).rejects.toThrow('stale SDK')
   })
 
-  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
+  it.each(['upstream/pnpm-lock.yaml', 'scripts/setup.ts', 'scripts/preparation.ts', 'scripts/portableCache.ts', 'scripts/cacheSnapshot.ts', 'scripts/prepareSource.ts', 'scripts/preparedAssets.ts', 'scripts/upstreamTests.ts', 'scripts/toolchain.ts', 'upstream/toolchain/package.json', 'upstream/toolchain/package-lock.json', 'upstream/toolchain/pnpm-workspace.yaml', 'upstream/patches/components.patch'])('invalidates preparation when %s changes', async (file) => {
     const root = await project()
     const first = await preparationInputs(root)
     expect(await preparationInputs(root)).toEqual(first)
