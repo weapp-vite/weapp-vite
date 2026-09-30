@@ -2,14 +2,14 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { startStdioServer } from './runtime'
 
+export * from './acceptance'
 export * from './catalog'
 export * from './commandOps'
 export * from './constants'
 export * from './fileOps'
 export * from './runtime'
 export * from './server'
-export * from './utils'
-export * from './workspace'
+export { registerAcceptanceTools } from './server/acceptance'
 
 function isDirectExecution() {
   const entry = process.argv[1]
@@ -26,3 +26,6 @@ if (isDirectExecution()) {
     process.exitCode = 1
   })
 }
+
+export * from './utils'
+export * from './workspace'

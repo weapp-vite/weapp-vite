@@ -108,3 +108,8 @@ website/public/seo-quality-report.json
 
 # simulator browser test artifacts
 mpcore/packages/simulator/e2e/__screenshots__/
+
+# Local acceptance fixtures and evidence
+/.cache/acceptance-fixtures/
+/.cache/acceptance-state/
+/artifacts/
