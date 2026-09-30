@@ -1145,7 +1145,8 @@ describe('core lifecycle options hook', () => {
     )
   })
 
-  it('loads lib entries when weapp lib mode is enabled', async () => {
+  it.each(['/real-project/src/components/card.ts', 'C:\\real-project\\src\\components\\card.ts'])('loads lib entries under lexical and canonical identities: %s', async (canonical) => {
+    vi.spyOn(realpathSync, 'native').mockReturnValueOnce(canonical)
     resolveWeappLibEntriesMock.mockResolvedValueOnce([
       {
         name: 'card',
@@ -1188,7 +1189,8 @@ describe('core lifecycle options hook', () => {
       card: createLogicalEntryId('/project/src/components/card.ts', 'component'),
     })
     expect(runtimeState.lib.enabled).toBe(true)
-    expect(runtimeState.lib.entries.size).toBe(1)
+    expect(runtimeState.lib.entries.size).toBe(2)
+    expect(runtimeState.lib.entries.get(canonical.replaceAll('\\', '/'))).toBe(runtimeState.lib.entries.get('/project/src/components/card.ts'))
     expect(configService.options.weappLibOutputMap.get('components/card')).toBe('lib/card')
     expect(Array.from(state.hmrRootInputIds)).toEqual(['/project/src/components/card.ts'])
   })

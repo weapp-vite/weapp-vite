@@ -1,3 +1,4 @@
+import { removeExtensionDeep } from '@weapp-core/shared'
 import { fs } from '@weapp-core/shared/fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseLogicalEntryId } from '../../../moduleGraph/protocol'
@@ -105,7 +106,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const hook = useLoadEntry(ctx)
     const pageId = '/project/src/pages/index/index.ts'
-    hook.entriesMap.set(pageId, { type: 'page', path: pageId } as any)
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(pageId)), { type: 'page', path: pageId } as any)
     hook.resolvedEntryMap.set(pageId, { id: pageId } as any)
     hook.markEntryDirty(pageId, reason)
 
@@ -134,7 +135,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ctx = createContext()
     const hook = useLoadEntry(ctx, {})
     const id = '/project/src/app.vue'
-    hook.entriesMap.set(id, {
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
       type: 'app',
       path: id,
     } as any)
@@ -764,7 +765,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     })
 
     const id = '/project/src/components/x-child/index.ts'
-    hook.entriesMap.set(id, {
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
       type: 'component',
       path: id,
     } as any)
@@ -793,7 +794,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     })
 
     const id = '/project/src/pages/home/home.vue'
-    hook.entriesMap.set(id, {
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
       type: 'page',
       path: id,
     } as any)
@@ -858,7 +859,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     })
 
     const id = '/project/src/components/x-child/index.ts'
-    hook.entriesMap.set(id, {
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
       type: 'component',
       path: id,
     } as any)
@@ -889,7 +890,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
 
     const id = '/project/src/pages/hmr/index.ts'
     const childId = '/project/src/components/x-child/index.ts'
-    hook.entriesMap.set(id, {
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
       type: 'page',
       path: id,
     } as any)
@@ -931,7 +932,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     for (const id of ids) {
-      hook.entriesMap.set(id, {
+      hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
         path: id,
         type: 'page',
       } as any)
@@ -964,7 +965,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     })
 
     const id = '/project/src/pages/hmr-sfc/index.vue'
-    hook.entriesMap.set(id, {
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
       type: 'page',
       path: id,
     } as any)
@@ -993,7 +994,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     })
 
     const id = '/project/src/pages/native/index.ts'
-    hook.entriesMap.set(id, {
+    hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
       type: 'page',
       path: id,
     } as any)
@@ -1392,7 +1393,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     for (const id of ids) {
-      hook.entriesMap.set(id, {
+      hook.entriesMap.set(removeExtensionDeep(ctx.configService.relativeAbsoluteSrcRoot(id)), {
         type: 'page',
         path: id,
       } as any)

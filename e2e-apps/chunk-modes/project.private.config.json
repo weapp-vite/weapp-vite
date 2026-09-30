@@ -23,6 +23,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/worker/index",
+          "pathName": "pages/worker/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

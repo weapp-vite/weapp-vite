@@ -363,6 +363,16 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
     }
 
     const sidecarPlan = createAutoImportSidecarPlan(watchTargets)
+    // 先声明由侧车接管，避免等待旧 watcher 时又向 bundler 登记整目录。
+    fileWatcherStarted = true
+    // 重启会创建新插件实例；替换会话登记前必须等待旧 watcher 退出。
+    try {
+      await sidecarWatcherMap.get(AUTO_IMPORT_WATCHER_KEY)?.close()
+    }
+    catch (error) {
+      fileWatcherStarted = false
+      throw error
+    }
     const watcher = chokidar.watch(sidecarPlan.roots, createSidecarWatchOptions(configService, {
       ignoreInitial: true,
       ignored: sidecarPlan.ignored,
@@ -415,7 +425,6 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
     sidecarWatcherMap.set(AUTO_IMPORT_WATCHER_KEY, {
       close: () => watcher.close(),
     })
-    fileWatcherStarted = true
     await waitForSidecarWatcherReady(watcher)
   }
 

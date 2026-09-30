@@ -15,6 +15,8 @@ import { extractWechatDevtoolsServicePort, terminateCliProcessTree } from './aut
 import { launchHeadlessAutomator } from './automator.headless'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
+import { resolveWechatCliPath } from './devtoolsCli'
+import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
@@ -94,8 +96,6 @@ const CURRENT_PAGE_READY_RETRY_DELAY = 220
 const ROUTE_READY_PAGE_ROOT_PROBE_TIMEOUT = 1_500
 const DEFAULT_BRIDGE_CONNECT_SETTLE_DELAY = 5_000
 const DEVTOOLS_LOG_SCAN_INTERVAL = 500
-const DEFAULT_WECHAT_CLI_MACOS_PATH = '/Applications/wechatwebdevtools.app/Contents/MacOS/cli'
-const DEFAULT_WECHAT_CLI_WINDOWS_PATH = 'C:/Program Files (x86)/Tencent/微信web开发者工具/cli.bat'
 const AUTOMATOR_LAUNCH_MODE_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE'
 const AUTOMATOR_LAUNCH_MODE_BRIDGE = 'bridge'
 const AUTOMATOR_PREBUILD_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_PREBUILD'
@@ -603,16 +603,6 @@ function isLikelyDevtoolsLaunchCacheStaleMessage(message: string) {
     || isLikelySimulatorBootErrorMessage(message)
     || LAUNCH_TIMEOUT_PATTERN.test(message)
     || RELAUNCH_CACHE_RECOVERY_PATTERNS.some(pattern => pattern.test(message))
-}
-
-function resolveWechatCliPath(cliPath?: string) {
-  if (typeof cliPath === 'string' && cliPath.trim()) {
-    return cliPath.trim()
-  }
-  if (process.platform === 'win32') {
-    return DEFAULT_WECHAT_CLI_WINDOWS_PATH
-  }
-  return DEFAULT_WECHAT_CLI_MACOS_PATH
 }
 
 export function extractDevtoolsCliLoginState(output: string | undefined) {
@@ -2639,7 +2629,7 @@ async function disposeLateBridgeBootstrap(result: { stdout?: unknown }) {
   }
 }
 
-function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, cliPid: number) {
+function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, disposeCli: () => Promise<void>) {
   const metaKey = '__weappViteBridgeCliCleanupWrapped'
   if ((miniProgram as Record<string, any>)[metaKey]) {
     return miniProgram
@@ -2652,7 +2642,7 @@ function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, cliPid: number
       return await rawClose(...args)
     }
     finally {
-      await terminateBridgeCliProcess(cliPid).catch(() => {})
+      await disposeCli().catch(() => {})
     }
   }
   return miniProgram
@@ -2702,8 +2692,11 @@ export async function launchAutomatorViaCliBridge(
   if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
     throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
   }
-  if (typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0) {
-    lifecycle.own(() => terminateBridgeCliProcess(bridgeResult.cliPid!))
+  const disposeCli = typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0
+    ? ownDevtoolsCleanup(() => terminateBridgeCliProcess(bridgeResult.cliPid!))
+    : undefined
+  if (disposeCli) {
+    lifecycle.own(disposeCli)
   }
   lifecycle.throwIfAborted()
   if (typeof bridgeResult.servicePort === 'number') {
@@ -2764,8 +2757,8 @@ export async function launchAutomatorViaCliBridge(
     channel: 'launch-bridge',
     text: `connected=${bridgeResult.wsEndpoint}`,
   })
-  if (typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0) {
-    enhanceMiniProgramWithBridgeCliCleanup(miniProgram, bridgeResult.cliPid)
+  if (disposeCli) {
+    enhanceMiniProgramWithBridgeCliCleanup(miniProgram, disposeCli)
   }
   const endpointPort = new URL(bridgeResult.wsEndpoint).port
   Reflect.set(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA', {
@@ -2836,6 +2829,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   const { configureHeadlessSession: _configureHeadlessSession, bridgeProjectMode, disableRelaunchSessionRecovery, engineBuildFallbackSettleMs, launchMode: requestedLaunchMode, maxLaunchRetries, projectConfig, refreshProjectAfterConnect, retryWarmupTimeout, skipRelaunchPageRootCheck, skipWarmup, timeout, trustProject, warmupAllowRelaunch, warmupAnyPage, warmupRootSelectors, warmupRoute, ...rest } = options
+  rest.cliPath = resolveWechatCliPath(rest.cliPath)
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000

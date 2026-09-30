@@ -30,6 +30,7 @@ async function runGenerateBundle(plugins: ReturnType<typeof createOutputPlugins>
     const handler = typeof hook === 'function' ? hook : hook?.handler
     await handler?.call({
       emitFile: createBundleAssetEmitter(bundle),
+      meta: { watchMode: false },
     } as any, {} as any, bundle, false)
   }
 }

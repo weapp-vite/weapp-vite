@@ -112,7 +112,13 @@ function collectPatchModuleIds(code: string): Set<string> {
 }
 
 export class StatefulHmrViteAdapter {
+  private readonly stopping = Promise.withResolvers<void>()
+  private startTask?: Promise<void>
+  private closeTask?: Promise<void>
+  private restore?: () => void
+  private closed = false
   private bundledDev?: BundledDevInternal
+  private engine?: StatefulHmrDevEngine
   private initialOutputError?: Error
   private initialRuntimeValidated = false
   private readonly publication = new StatefulHmrOutputPublication()
@@ -133,25 +139,77 @@ export class StatefulHmrViteAdapter {
     private readonly watchOptions: StatefulHmrDevWatchOptions = {},
     private readonly createDevEngine: typeof dev = createViteDevEngine,
     private readonly initialBuildTimeout = initialBuildTimeoutMs,
-  ) {}
+  ) {
+    void this.stopping.promise.catch(() => {})
+  }
 
   install(): void {
     const bundledDev = this.server.environments.client.bundledDev as unknown as BundledDevInternal | undefined
     if (!bundledDev) {
       throw new Error('stateful-experimental HMR 需要 Vite experimental.bundledDev。')
     }
-    if (typeof bundledDev.getRolldownOptions !== 'function' || typeof bundledDev.storeOutputFiles !== 'function') {
+    if (typeof bundledDev.getRolldownOptions !== 'function' || typeof bundledDev.storeOutputFiles !== 'function' || typeof bundledDev.listen !== 'function') {
       throw new TypeError('当前 Vite bundled-development 私有 API 与 weapp-vite 不兼容。')
+    }
+    if (this.bundledDev || this.closed) {
+      throw new Error('stateful HMR 适配器不能重复安装或在关闭后安装。')
     }
     this.bundledDev = bundledDev
     // DevEngine 直接运行插件 watchChange；Vite 容器不能再为同一文件触发第二轮失效。
     const container = this.server.environments.client.pluginContainer
+    const originalWatchChange = container?.watchChange
+    const originals = {
+      getRolldownOptions: bundledDev.getRolldownOptions,
+      storeOutputFiles: bundledDev.storeOutputFiles,
+      listen: bundledDev.listen,
+    }
+    const ignoreDuplicateChange = async () => {}
     if (container) {
-      container.watchChange = async () => {}
+      container.watchChange = ignoreDuplicateChange
     }
     this.installOptions(bundledDev)
     this.installOutput(bundledDev)
     this.installListener(bundledDev)
+    const installed = {
+      getRolldownOptions: bundledDev.getRolldownOptions,
+      storeOutputFiles: bundledDev.storeOutputFiles,
+      listen: bundledDev.listen,
+    }
+    this.restore = () => {
+      for (const key of Object.keys(originals) as Array<keyof typeof originals>) {
+        if (bundledDev[key] === installed[key]) {
+          Reflect.set(bundledDev, key, originals[key])
+        }
+      }
+      if (container?.watchChange === ignoreDuplicateChange) {
+        container.watchChange = originalWatchChange!
+      }
+    }
+  }
+
+  async start(): Promise<void> {
+    if (!this.bundledDev || this.closed) {
+      throw new Error('stateful HMR 适配器尚未安装或已经关闭。')
+    }
+    await this.bundledDev.listen()
+  }
+
+  close(): Promise<void> {
+    return this.closeTask ??= (async () => {
+      this.closed = true
+      this.stopping.reject(new Error('stateful HMR 适配器已关闭。'))
+      await this.startTask?.catch(() => {})
+      const engine = this.engine
+      try {
+        await engine?.close()
+      }
+      finally {
+        if (this.bundledDev?._devEngine === engine && this.bundledDev) {
+          this.bundledDev._devEngine = undefined
+        }
+        this.restore?.()
+      }
+    })()
   }
 
   async rebuild(prepare?: () => void | Promise<void>): Promise<void> {
@@ -426,6 +484,9 @@ export class StatefulHmrViteAdapter {
   private installOutput(bundledDev: BundledDevInternal): void {
     const original = bundledDev.storeOutputFiles.bind(bundledDev)
     bundledDev.storeOutputFiles = (output, source = 'full') => {
+      if (this.closed) {
+        return
+      }
       try {
         if (!this.initialRuntimeValidated && output.some(item => item.fileName === 'app.js')) {
           assertStatefulHmrRuntimeOutput(output)
@@ -446,7 +507,10 @@ export class StatefulHmrViteAdapter {
   }
 
   private installListener(bundledDev: BundledDevInternal): void {
-    bundledDev.listen = async () => {
+    const listen = async () => {
+      if (this.closed) {
+        throw new Error('stateful HMR 适配器已关闭。')
+      }
       const rolldownOptions = await bundledDev.getRolldownOptions()
       if (Array.isArray(rolldownOptions.output) && rolldownOptions.output.length > 1) {
         throw new Error('stateful-experimental HMR 不支持多组 Rolldown output 配置。')
@@ -474,24 +538,32 @@ export class StatefulHmrViteAdapter {
           ...this.watchOptions,
         },
       }) as StatefulHmrDevEngine
+      this.engine = engine
       bundledDev._devEngine = engine
+      if (this.closed) {
+        throw new Error('stateful HMR 适配器已关闭。')
+      }
       void engine.run().catch((error: unknown) => {
         const message = error instanceof Error ? error.message : String(error)
         this.callbacks.onError(message)
       })
-      await engine.registerClient(clientId)
-      await withInitialBuildTimeout(engine.ensureCurrentBuildFinish(), this.initialBuildTimeout)
+      await Promise.race([engine.registerClient(clientId), this.stopping.promise])
+      await withInitialBuildTimeout(Promise.race([engine.ensureCurrentBuildFinish(), this.stopping.promise]), this.initialBuildTimeout)
       if (this.initialOutputError) {
         throw this.initialOutputError
       }
       if ((await engine.getBundleState()).lastBuildErrored) {
         throw new Error('微信状态保持 HMR 初次构建失败。')
       }
-      await withInitialBuildTimeout(this.callbacks.waitForInitialBundle(), this.initialBuildTimeout)
+      await withInitialBuildTimeout(Promise.race([this.callbacks.waitForInitialBundle(), this.stopping.promise]), this.initialBuildTimeout)
     }
+    bundledDev.listen = () => this.startTask ??= listen()
   }
 
   private handleHmrUpdates(result: Parameters<NonNullable<DevOptions['onHmrUpdates']>>[0]): void {
+    if (this.closed) {
+      return
+    }
     if (result instanceof Error) {
       this.callbacks.onError(result.message)
       return

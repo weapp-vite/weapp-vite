@@ -1,6 +1,6 @@
 import type { UploadCLIOptions } from './options'
 import type { UploadAction } from './types'
-import { readFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import semverInc from 'semver/functions/inc.js'
 import { x } from 'tinyexec'
@@ -22,11 +22,58 @@ async function readPackageVersion(packagePath: string): Promise<string> {
 }
 
 /** 在首次编译配置求值前准备一次元数据；预演不写文件，实际版本由 npm 同步。 */
-export async function prepareAutoUploadMetadata(cwd: string, options: UploadCLIOptions, action: UploadAction): Promise<UploadCLIOptions> {
+export function validateAutoUploadMetadata(options: UploadCLIOptions, action: UploadAction) {
   const { bump, gitDesc } = options
   if (action === 'preview' && (bump !== undefined || gitDesc !== undefined)) {
     throw new Error('--bump 和 --git-desc 仅支持 upload 或 build --upload，不支持 preview。')
   }
+  if (bump !== undefined && options.uv !== undefined) {
+    throw new Error('--bump 不能与 --uv 同时使用。')
+  }
+  if (gitDesc && options.desc !== undefined) {
+    throw new Error('--git-desc 不能与 --desc 同时使用。')
+  }
+  if (bump !== undefined && !['patch', 'minor', 'major'].includes(bump)) {
+    throw new Error('--bump 仅支持 patch、minor 或 major。')
+  }
+}
+
+interface MetadataSnapshot {
+  path: string
+  content?: string
+}
+
+async function captureMetadataSnapshot(root: string): Promise<MetadataSnapshot[]> {
+  const snapshots: MetadataSnapshot[] = []
+  for (const name of ['package.json', 'package-lock.json', 'npm-shrinkwrap.json']) {
+    const filePath = path.join(root, name)
+    try {
+      snapshots.push({ path: filePath, content: await readFile(filePath, 'utf8') })
+    }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error
+      }
+      snapshots.push({ path: filePath })
+    }
+  }
+  return snapshots
+}
+
+async function restoreMetadataSnapshot(snapshots: MetadataSnapshot[]) {
+  for (const snapshot of snapshots) {
+    if (snapshot.content === undefined) {
+      await rm(snapshot.path, { force: true })
+    }
+    else {
+      await writeFile(snapshot.path, snapshot.content)
+    }
+  }
+}
+
+export async function prepareAutoUploadMetadata(cwd: string, options: UploadCLIOptions, action: UploadAction): Promise<UploadCLIOptions> {
+  validateAutoUploadMetadata(options, action)
+  const { bump, gitDesc } = options
   if (bump === undefined && !gitDesc) {
     return options
   }
@@ -102,4 +149,12 @@ export async function prepareAutoUploadMetadata(cwd: string, options: UploadCLIO
     metadata.desc = desc
   }
   return metadata
+}
+
+/** 配置尚未确认可上传时，保留 npm version 所有可能修改文件的回滚点。 */
+export async function prepareAutoUploadMetadataWithRollback(cwd: string, options: UploadCLIOptions, action: UploadAction): Promise<{ options: UploadCLIOptions, rollback: () => Promise<void> }> {
+  validateAutoUploadMetadata(options, action)
+  const snapshots = options.bump !== undefined && !options.dryRun ? await captureMetadataSnapshot(path.resolve(cwd)) : []
+  const metadata = await prepareAutoUploadMetadata(cwd, options, action)
+  return { options: metadata, rollback: () => restoreMetadataSnapshot(snapshots) }
 }

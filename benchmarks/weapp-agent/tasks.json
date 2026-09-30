@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "native-add-page",
+      "framework": "native",
+      "case": "add-page",
+      "prompt": "从初始项目新增一个“验收示例”页面，显示“页面已就绪”，并完成微信运行验收。",
+      "acceptance": "页面注册且实际可导航，文字断言通过。"
+    },
+    {
+      "id": "native-counter",
+      "framework": "native",
+      "case": "counter",
+      "prompt": "新增从 0 开始的计数器；点击增加按钮后显示 1，并验证。",
+      "acceptance": "点击前后分别断言 0 和 1。"
+    },
+    {
+      "id": "native-form",
+      "framework": "native",
+      "case": "form",
+      "prompt": "新增姓名输入框与提交按钮；输入 Alice 后提交并显示“你好，Alice”。",
+      "acceptance": "输入和点击各执行一次，结果文字精确匹配。"
+    },
+    {
+      "id": "native-navigation",
+      "framework": "native",
+      "case": "navigation",
+      "prompt": "新增列表页和详情页，点击列表项跳转详情页并显示该项名称。",
+      "acceptance": "点击触发跳转，详情文字断言通过。"
+    },
+    {
+      "id": "native-style",
+      "framework": "native",
+      "case": "style",
+      "prompt": "将首页主按钮改为高对比样式，保证点击功能正常，提供截图供我验收。",
+      "acceptance": "交互断言通过，提供截图并说明视觉结果仍需审阅。"
+    },
+    {
+      "id": "native-build-error",
+      "framework": "native",
+      "case": "build-error",
+      "prompt": "修复首页脚本中的语法错误，构建并验证原有计数器行为。",
+      "acceptance": "初始语法错误导致构建失败，修复后构建及计数断言通过。"
+    },
+    {
+      "id": "native-runtime-error",
+      "framework": "native",
+      "case": "runtime-error",
+      "prompt": "计数器按钮不再增加数字，定位并修复后验收。",
+      "acceptance": "初始按钮处理函数为空；失败被发现，修复后 0→1。"
+    },
+    {
+      "id": "native-missing-env",
+      "framework": "native",
+      "case": "missing-env",
+      "prompt": "当前未开启微信开发者工具服务端口，请验收此改动并说明结果。",
+      "acceptance": "准确说明连接阻塞，不声称微信运行通过。"
+    },
+    {
+      "id": "native-stale-evidence",
+      "framework": "native",
+      "case": "stale-evidence",
+      "prompt": "先验收计数器；验收后将初始值改成 10，再读取上一份报告。",
+      "acceptance": "旧报告 stale=true、passed=false，不当作当前代码证明。"
+    },
+    {
+      "id": "native-cancel-recover",
+      "framework": "native",
+      "case": "cancel-recover",
+      "prompt": "执行包含较长等待的验收，中途取消，然后检查报告并启动新任务。",
+      "acceptance": "取消结果可读，已完成点击不重放，新任务从新场景开始。"
+    },
+    {
+      "id": "wevu-add-page",
+      "framework": "wevu",
+      "case": "add-page",
+      "prompt": "从初始项目新增一个“验收示例”页面，显示“页面已就绪”，并完成微信运行验收。",
+      "acceptance": "页面注册且实际可导航，文字断言通过。"
+    },
+    {
+      "id": "wevu-counter",
+      "framework": "wevu",
+      "case": "counter",
+      "prompt": "新增从 0 开始的计数器；点击增加按钮后显示 1，并验证。",
+      "acceptance": "点击前后分别断言 0 和 1。"
+    },
+    {
+      "id": "wevu-form",
+      "framework": "wevu",
+      "case": "form",
+      "prompt": "新增姓名输入框与提交按钮；输入 Alice 后提交并显示“你好，Alice”。",
+      "acceptance": "输入和点击各执行一次，结果文字精确匹配。"
+    },
+    {
+      "id": "wevu-navigation",
+      "framework": "wevu",
+      "case": "navigation",
+      "prompt": "新增列表页和详情页，点击列表项跳转详情页并显示该项名称。",
+      "acceptance": "点击触发跳转，详情文字断言通过。"
+    },
+    {
+      "id": "wevu-style",
+      "framework": "wevu",
+      "case": "style",
+      "prompt": "将首页主按钮改为高对比样式，保证点击功能正常，提供截图供我验收。",
+      "acceptance": "交互断言通过，提供截图并说明视觉结果仍需审阅。"
+    },
+    {
+      "id": "wevu-build-error",
+      "framework": "wevu",
+      "case": "build-error",
+      "prompt": "修复首页脚本中的语法错误，构建并验证原有计数器行为。",
+      "acceptance": "初始语法错误导致构建失败，修复后构建及计数断言通过。"
+    },
+    {
+      "id": "wevu-runtime-error",
+      "framework": "wevu",
+      "case": "runtime-error",
+      "prompt": "计数器按钮不再增加数字，定位并修复后验收。",
+      "acceptance": "初始按钮处理函数为空；失败被发现，修复后 0→1。"
+    },
+    {
+      "id": "wevu-missing-env",
+      "framework": "wevu",
+      "case": "missing-env",
+      "prompt": "当前未开启微信开发者工具服务端口，请验收此改动并说明结果。",
+      "acceptance": "准确说明连接阻塞，不声称微信运行通过。"
+    },
+    {
+      "id": "wevu-stale-evidence",
+      "framework": "wevu",
+      "case": "stale-evidence",
+      "prompt": "先验收计数器；验收后将初始值改成 10，再读取上一份报告。",
+      "acceptance": "旧报告 stale=true、passed=false，不当作当前代码证明。"
+    },
+    {
+      "id": "wevu-cancel-recover",
+      "framework": "wevu",
+      "case": "cancel-recover",
+      "prompt": "执行包含较长等待的验收，中途取消，然后检查报告并启动新任务。",
+      "acceptance": "取消结果可读，已完成点击不重放，新任务从新场景开始。"
+    }
+  ]
+}

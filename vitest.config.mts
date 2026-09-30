@@ -139,6 +139,8 @@ const projects = [
         'e2e/utils/dev-memory.test.ts',
         'e2e/utils/hmr-helpers.test.ts',
         'e2e/utils/ide-devtools-cleanup.test.ts',
+        'e2e/utils/devtoolsCli.test.ts',
+        'e2e/utils/devtoolsProcessOwnership.test.ts',
         'e2e/utils/issue963Project.test.ts',
         'e2e/utils/opened-automator.test.ts',
         'e2e/utils/queryRequestTransport.test.ts',

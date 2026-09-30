@@ -7,9 +7,13 @@ import process from 'node:process'
 const DEFAULT_FILE = 'skills/skill-trigger-regression-checklist.md'
 const BACKTICK_REGEX = /`/g
 const WHITESPACE_REGEX = /\s+/g
-const CHECKLIST_ID_REGEX = /^[A-LX]\d+$/
+const CHECKLIST_ID_REGEX = /^[A-MX]\d+$/
 
 const EXPECTED_BY_ID = {
+  M1: 'weapp-acceptance',
+  M2: 'weapp-acceptance',
+  M3: 'weapp-devtools-e2e-best-practices',
+  X14: 'weapp-acceptance',
   A1: 'weapp-vite-best-practices',
   A2: 'weapp-vite-best-practices',
   A3: 'weapp-vite-best-practices',
@@ -89,10 +93,11 @@ const EXPECTED_BY_ID = {
   K9: 'weapp-vite-react-best-practices',
 }
 
-const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5', 'E5', 'F5', 'G5', 'H5', 'I5', 'J5', 'L5'])
-const CONFLICT_IDS = new Set(['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10', 'X11', 'X12', 'X13'])
+const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5', 'E5', 'F5', 'G5', 'H5', 'I5', 'J5', 'L5', 'M3'])
+const CONFLICT_IDS = new Set(['X1', 'X2', 'X3', 'X4', 'X5', 'X6', 'X7', 'X8', 'X9', 'X10', 'X11', 'X12', 'X13', 'X14'])
 
 const MAIN_SKILL_CASES = {
+  'weapp-acceptance': ['M1', 'M2'],
   'weapp-vite-best-practices': ['A1', 'A2', 'A3', 'A4', 'E1', 'E2', 'E3', 'E4'],
   'weapp-vite-vue-sfc-best-practices': ['B1', 'B2', 'B3', 'B4'],
   'weapp-vite-react-best-practices': ['L1', 'L2', 'L3', 'L4'],

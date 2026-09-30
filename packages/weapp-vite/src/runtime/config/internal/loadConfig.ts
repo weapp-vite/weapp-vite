@@ -6,77 +6,23 @@ import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
-import logger from '../../../logger'
-import {
-  createCjsConfigLoadError,
-  getAliasEntries,
-  loadViteConfigFile,
-  resolveWeappConfigFile,
-  TYPELESS_PACKAGE_JSON_WARNING_CODE,
-} from '../../../utils'
+import { DEFAULT_MP_PLATFORM } from '../../../platform'
+import { getAliasEntries } from '../../../utils'
 import { hasLibEntry, resolveWeappLibConfig } from '../../lib'
 import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { resolveWeappWebConfig } from '../web'
 import { configureBuildAndPlugins, resolveCliPlatformRuntime } from './loadConfig/build'
 import { loadProjectConfig, validateProjectConfigSources } from './loadConfig/projectConfig'
 import { loadPackageJson } from './loadConfig/shared'
+import { resolveConfigSource } from './loadConfig/source'
 import { inspectTsconfigPathsUsage } from './tsconfigPaths'
+
+export { resolveConfigFilePath, shouldReuseLoadedWeappConfig } from './loadConfig/source'
 
 export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
   oxcVitePlugin: PluginOption | undefined
-}
-
-export function resolveConfigFilePath(cwd: string, configFile?: string) {
-  if (!configFile) {
-    return configFile
-  }
-  return path.isAbsolute(configFile) ? configFile : path.resolve(cwd, configFile)
-}
-
-export function shouldReuseLoadedWeappConfig(
-  weappConfigFilePath?: string,
-  loadedPath?: string,
-) {
-  if (!weappConfigFilePath || !loadedPath) {
-    return false
-  }
-
-  return path.resolve(loadedPath) === path.resolve(weappConfigFilePath)
-}
-
-function collectConfigFileDependencies(
-  cwd: string,
-  ...entries: Array<{
-    path?: string
-    dependencies?: string[]
-  } | string | null | undefined>
-) {
-  const dependencySet = new Set<string>()
-
-  const add = (filePath: string | undefined) => {
-    if (!filePath) {
-      return
-    }
-    dependencySet.add(path.isAbsolute(filePath) ? path.normalize(filePath) : path.resolve(cwd, filePath))
-  }
-
-  for (const entry of entries) {
-    if (!entry) {
-      continue
-    }
-    if (typeof entry === 'string') {
-      add(entry)
-      continue
-    }
-    add(entry.path)
-    for (const dependency of entry.dependencies ?? []) {
-      add(dependency)
-    }
-  }
-
-  return Array.from(dependencySet)
 }
 
 function injectDefaultSrcAlias(config: InlineConfig, cwd: string, srcRoot: string) {
@@ -189,110 +135,23 @@ function collectManagedTsconfigAliases(config: InlineConfig, cwd: string) {
   }))
 }
 
-async function loadConfigFileWithFallback(
-  configEnv: { command: 'serve' | 'build', mode: string },
-  configFile: string | undefined,
-  cwd: string,
-  configLoader: 'bundle' | 'runner' | 'native',
-) {
-  const suppressedWarningCodes = configLoader === 'native'
-    ? [TYPELESS_PACKAGE_JSON_WARNING_CODE]
-    : undefined
-
-  try {
-    return await loadViteConfigFile(
-      configEnv,
-      configFile,
-      cwd,
-      undefined,
-      undefined,
-      configLoader,
-      suppressedWarningCodes,
-      configLoader === 'native' ? 'silent' : undefined,
-    )
-  }
-  catch (error) {
-    if (configLoader !== 'native') {
-      throw error
-    }
-
-    const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[prepare] 原生配置加载失败，已回退到 runner：${message}`)
-
-    return loadConfigFileWithFallback(configEnv, configFile, cwd, 'runner')
-  }
-}
-
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
   return async function loadConfig(opts: LoadConfigOptions): Promise<LoadConfigResult> {
-    const { cwd, isDev, mode, outputRoot, pluginOnly = false, inlineConfig, configFile, configLoader = 'runner', cliPlatform, projectConfigPath } = opts
+    const { cwd, isDev, mode, outputRoot, pluginOnly = false, inlineConfig, cliPlatform, projectConfigPath } = opts
 
     const { packageJson, packageJsonPath } = await loadPackageJson(cwd)
 
-    const resolvedConfigFile = resolveConfigFilePath(cwd, configFile)
-
-    const weappConfigFilePath = await resolveWeappConfigFile({
-      root: cwd,
-      specified: resolvedConfigFile,
-    })
-
-    let loaded: Awaited<ReturnType<typeof loadViteConfigFile>> | undefined
-    try {
-      loaded = await loadConfigFileWithFallback({
-        command: isDev ? 'serve' : 'build',
-        mode,
-      }, resolvedConfigFile, cwd, configLoader)
-    }
-    catch (error) {
-      const cjsError = createCjsConfigLoadError({
-        error,
-        configPath: resolvedConfigFile,
-        cwd,
-      })
-      if (cjsError) {
-        throw cjsError
-      }
-      throw error
-    }
-
-    const loadedConfig = loaded?.config ?? {}
-
-    let weappLoaded: Awaited<ReturnType<typeof loadViteConfigFile>> | undefined
-    const reuseLoadedWeappConfig = shouldReuseLoadedWeappConfig(weappConfigFilePath, loaded?.path)
-    if (weappConfigFilePath) {
-      if (reuseLoadedWeappConfig) {
-        weappLoaded = loaded
-      }
-      else {
-        try {
-          weappLoaded = await loadConfigFileWithFallback({
-            command: isDev ? 'serve' : 'build',
-            mode,
-          }, weappConfigFilePath, cwd, configLoader)
-        }
-        catch (error) {
-          const cjsError = createCjsConfigLoadError({
-            error,
-            configPath: weappConfigFilePath,
-            cwd,
-          })
-          if (cjsError) {
-            throw cjsError
-          }
-          throw error
-        }
-      }
-    }
-
-    validateProjectConfigSources(inlineConfig, loadedConfig, weappLoaded?.config)
-
-    const mergedLoadedConfig = weappLoaded?.config
-      ? reuseLoadedWeappConfig
-        ? loadedConfig
-        : defu(weappLoaded.config, loadedConfig)
-      : loadedConfig
+    const {
+      loadedConfig,
+      weappConfig,
+      mergedLoadedConfig,
+      configFilePath,
+      configFileDependencies,
+      configMergeInfo,
+    } = await resolveConfigSource(opts)
+    validateProjectConfigSources(inlineConfig, loadedConfig, weappConfig)
 
     const config = defu<InlineConfig, (InlineConfig | undefined)[]>(
       inlineConfig,
@@ -321,30 +180,30 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const chunksConfigured = Boolean(
       inlineConfig?.weapp?.chunks
       || loadedConfig.weapp?.chunks
-      || weappLoaded?.config?.weapp?.chunks,
+      || weappConfig?.weapp?.chunks,
     )
 
     const shouldWarnEnhance = [
       inlineConfig?.weapp?.enhance,
       loadedConfig.weapp?.enhance,
-      weappLoaded?.config?.weapp?.enhance,
+      weappConfig?.weapp?.enhance,
     ].some(hasDeprecatedEnhanceUsage)
 
     const userConfiguredTopLevel = {
       wxml: [
         inlineConfig?.weapp?.wxml,
         loadedConfig.weapp?.wxml,
-        weappLoaded?.config?.weapp?.wxml,
+        weappConfig?.weapp?.wxml,
       ].some(value => value !== undefined),
       wxs: [
         inlineConfig?.weapp?.wxs,
         loadedConfig.weapp?.wxs,
-        weappLoaded?.config?.weapp?.wxs,
+        weappConfig?.weapp?.wxs,
       ].some(value => value !== undefined),
       autoImportComponents: [
         inlineConfig?.weapp?.autoImportComponents,
         loadedConfig.weapp?.autoImportComponents,
-        weappLoaded?.config?.weapp?.autoImportComponents,
+        weappConfig?.weapp?.autoImportComponents,
       ].some(value => value !== undefined),
     }
 
@@ -352,6 +211,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       warn: shouldWarnEnhance,
       userConfigured: userConfiguredTopLevel,
     })
+
+    const selectedPlatform = cliPlatform ?? config.weapp?.platform
+    const webTarget = resolveCliPlatformRuntime(selectedPlatform).isWebRuntime
+    if (config.weapp?.platform === 'web') {
+      config.weapp.platform = DEFAULT_MP_PLATFORM
+    }
 
     const rawLibConfig = config.weapp?.lib
     const libEntryConfigured = hasLibEntry(rawLibConfig?.entry)
@@ -390,7 +255,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       cwd,
       srcRoot,
       config: config.weapp?.web,
-      enableByCli: resolveCliPlatformRuntime(cliPlatform).isWebRuntime,
+      enableByCli: webTarget,
     })
 
     const {
@@ -404,7 +269,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       oxcVitePlugin,
       injectBuiltinAliases,
       resolvedLibConfig,
-      cliPlatform,
+      cliPlatform: webTarget ? 'web' : cliPlatform,
+      explicitPlatform: Boolean(inlineConfig?.weapp?.platform ?? mergedLoadedConfig.weapp?.platform),
       projectConfigPath,
       cwd,
     })
@@ -439,26 +305,6 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       }
     }
 
-    const configFilePath = weappLoaded?.path ?? loaded?.path ?? resolvedConfigFile
-    const configFileDependencies = collectConfigFileDependencies(
-      cwd,
-      loaded,
-      weappLoaded,
-      resolvedConfigFile,
-    )
-    const configMergeInfo = loaded?.path && weappLoaded?.path && !shouldReuseLoadedWeappConfig(weappLoaded.path, loaded.path)
-      ? {
-          merged: true,
-          viteConfigPath: loaded.path,
-          weappConfigPath: weappLoaded.path,
-        }
-      : {
-          merged: false,
-          viteConfigPath: loaded?.path,
-          weappConfigPath: shouldReuseLoadedWeappConfig(weappLoaded?.path, loaded?.path)
-            ? undefined
-            : weappLoaded?.path,
-        }
     const outputExtensions = getOutputExtensions(platform)
 
     const relativeSrcRoot = (p: string) => {
@@ -470,6 +316,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     return {
       config,
+      sourceConfig: mergedLoadedConfig,
       loadOptions: opts,
       aliasEntries,
       outputExtensions,

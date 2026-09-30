@@ -2,7 +2,15 @@
   "description": "lib mode fixture",
   "condition": {
     "miniprogram": {
-      "list": []
+      "list": [
+        {
+          "id": 0,
+          "name": "library consumer",
+          "pathName": "pages/library/index",
+          "query": "",
+          "scene": null
+        }
+      ]
     }
   },
   "setting": {

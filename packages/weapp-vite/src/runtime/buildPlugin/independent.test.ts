@@ -47,6 +47,8 @@ function createConfigService() {
   })
   return {
     defineEnv,
+    options: { sourceConfig: {} },
+    loadOptions: {},
     load: vi.fn(),
     get importMetaEnvDefineOverride() {
       return importMetaEnvDefineOverride
@@ -94,6 +96,7 @@ function createBuilder() {
       runWithoutOutputWrites,
     },
     configService: isolatedConfigService,
+    moduleGraphService: { getEntryDependencies: vi.fn(() => []), resetSession: vi.fn() },
   })
   return {
     builder: createIndependentBuilder(configService, runtimeState.build),
@@ -170,6 +173,7 @@ describe('runtime buildPlugin independent builder', () => {
       isDev: true,
       mode: 'development',
       configFile: '/project/vite.config.ts',
+      hostConfig: { config: {}, path: '/project/vite.config.ts', dependencies: undefined },
       cliPlatform: 'weapp',
       inlineConfig: {
         weapp: {
@@ -195,6 +199,26 @@ describe('runtime buildPlugin independent builder', () => {
     buildMock.mockResolvedValueOnce({ output: [] })
     await builder.buildIndependentBundle('sub', { subPackage: { root: 'sub' } } as any)
     expect(buildMock.mock.calls[0]?.[0].build).toMatchObject({ write: false, watch: null })
+  })
+
+  it('reuses merged user config and CLI overrides without reloading either config file', async () => {
+    const { builder, configService, isolatedConfigService } = createBuilder()
+    const sourceConfig = { define: { SOURCE: 'true' }, weapp: { srcRoot: 'mini' } }
+    const inlineConfig = { build: { sourcemap: true }, weapp: { autoImportComponents: false } }
+    configService.options.sourceConfig = sourceConfig
+    configService.loadOptions.inlineConfig = inlineConfig
+    configService.configFileDependencies = ['vite.config.ts', 'weapp-vite.config.ts']
+    buildMock.mockResolvedValueOnce({ output: [] })
+    await builder.buildIndependentBundle('sub', { subPackage: { root: 'sub' } } as any)
+    expect(isolatedConfigService.load).toHaveBeenCalledWith(expect.objectContaining({
+      hostConfig: {
+        config: sourceConfig,
+        path: configService.configFilePath,
+        dependencies: configService.configFileDependencies,
+      },
+      inlineConfig: { build: { sourcemap: true }, weapp: { autoImportComponents: false, platform: 'weapp' } },
+    }))
+    expect(configService.loadOptions.inlineConfig).toEqual(inlineConfig)
   })
 
   it('initializes scoped auto imports inside the isolated context without output writes', async () => {

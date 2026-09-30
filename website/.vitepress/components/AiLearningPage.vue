@@ -14,6 +14,7 @@ const props = withDefaults(defineProps<{
 const { isDark } = useData()
 
 const mcpActions = [
+  { title: '改动验收', desc: '执行确定性场景并读取断言、截图和日志，无需第二个模型。', href: '/guide/acceptance' },
   {
     title: '/guide/ai',
     desc: '作用、启动、客户端接入与测试建议。',
@@ -58,6 +59,7 @@ const mcpCommands = [
 ]
 
 const directSkills = [
+  'weapp-acceptance',
   'weapp-vite-best-practices',
   'docs-and-website-sync',
   'release-and-changeset-best-practices',

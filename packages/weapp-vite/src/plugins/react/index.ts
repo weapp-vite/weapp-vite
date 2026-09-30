@@ -3,7 +3,6 @@ import type { CompilerContext } from '../../context'
 import type { WeappReactConfig } from '../../types'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import process from 'node:process'
 import { transformWithOxc } from 'vite'
 import { baseTemplate } from './baseTemplate'
 import { validateNativeBridgeConfiguration } from './nativeBridge'
@@ -21,12 +20,11 @@ interface ReactTemplateAsset {
   source: string
 }
 
-function resolveStaticTemplateFileName(cwd: string, id: string) {
+function resolveStaticTemplateFileName(ctx: CompilerContext, id: string) {
   const cleanId = id.split('?', 1)[0] ?? id
-  const relative = path.relative(cwd, cleanId).replaceAll('\\', '/')
+  const relative = ctx.configService.relativeOutputPath(cleanId)
   let fileName = relative
     .replace(/\.(?:jsx|tsx)$/, '.wxml')
-    .replace(/^src\//, '')
   if (fileName.endsWith('/view.wxml')) {
     fileName = fileName.replace(/\/view\.wxml$/, '/index.wxml')
   }
@@ -120,7 +118,7 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
       return
     }
     const cleanId = id.split('?', 1)[0] ?? id
-    const fileName = resolveStaticTemplateFileName(ctx.configService?.cwd ?? process.cwd(), cleanId)
+    const fileName = resolveStaticTemplateFileName(ctx, cleanId)
     if (event === 'delete') {
       templates.delete(fileName)
       return
@@ -168,7 +166,7 @@ export function createReactPlugin(ctx: CompilerContext): Plugin[] {
 
       let transformedSource = source
       const fileName = resolveStaticTemplateFileName(
-        ctx.configService?.cwd ?? process.cwd(),
+        ctx,
         id,
       )
       if (resolved.renderMode === 'dynamic' && hasNativeComponentBridge(source)) {

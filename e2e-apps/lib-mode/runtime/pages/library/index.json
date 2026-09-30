@@ -1,0 +1,1 @@
+{ "usingComponents": { "native-counter": "/library/native/index", "vue-counter": "/library/vue/index" } }

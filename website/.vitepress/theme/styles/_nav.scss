@@ -2,34 +2,17 @@
 @use 'sass:color';
 @use './vars' as *;
 
-/* Top navigation */
+/* 导航背景由新版主题的独立图层承载，避免模糊效果限制全屏菜单的定位。 */
 .VPNav {
+  z-index: 50;
+}
+.VPNavBar::before {
   backdrop-filter: saturate(160%) blur(10px);
   background: linear-gradient(180deg, color.change(#fff, $alpha: 0.72), color.change(#fff, $alpha: 0.62));
   border-bottom: 1px solid color.change($p2, $alpha: 0.12);
   box-shadow: 0 6px 18px color.change(#000, $alpha: 0.04);
-  /* ensure navbar stays above page hero/sections that might create stacking contexts */
-  z-index: 50;
 }
 
-/* Mobile nav screen: ensure it expands even if theme JS fails to set height var */
-@media (max-width: 960px) {
-  .VPNavScreen {
-    /* use dynamic viewport units to avoid iOS 100vh issues; fallback to 100vh */
-    --vp-nav-vh: 100dvh;
-    height: var(--vp-nav-screen-height, calc(var(--vp-nav-vh) - var(--vp-nav-height, 64px)));
-    max-height: var(--vp-nav-screen-height, calc(var(--vp-nav-vh) - var(--vp-nav-height, 64px)));
-    /* keep screen above nav bar */
-    z-index: 60;
-  }
-  /* Fallback for browsers not supporting dvh/svh units */
-  @supports not (height: 100dvh) {
-    .VPNavScreen {
-      height: var(--vp-nav-screen-height, calc(100vh - var(--vp-nav-height, 64px)));
-      max-height: var(--vp-nav-screen-height, calc(100vh - var(--vp-nav-height, 64px)));
-    }
-  }
-}
 .VPNav .group,
 .VPNav .content {
   color: var(--vp-c-text-1);
@@ -68,12 +51,15 @@ html:not(.dark) .VPNavBarTitle > .title {
 }
 
 .VPNavBar .menu {
-  gap: 10px;
   padding: 0;
   border-radius: 10px;
   background: transparent;
   border: none;
   box-shadow: none;
+}
+/* 将间距计入列表项宽度，让导航溢出测量能够正确折叠菜单。 */
+.VPNavBar .menu > .list > li {
+  padding-inline: 5px;
 }
 .VPNavBar .menu :where(.VPNavBarMenuLink) {
   position: relative;
