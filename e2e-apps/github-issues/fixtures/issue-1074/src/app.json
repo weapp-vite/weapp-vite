@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "subPackages": [
+    {
+      "root": "isolated",
+      "independent": true,
+      "pages": [
+        "index"
+      ]
+    }
+  ]
+}

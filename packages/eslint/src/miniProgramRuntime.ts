@@ -1,4 +1,5 @@
 import type { Linter, Rule } from 'eslint'
+import { resolveBuiltinReceiver } from './runtimeReceiver'
 
 export type MiniProgramRuntimeApiDiagnostic = 'off' | 'warn' | 'error'
 export type MiniProgramRuntimeApiKind = 'global' | 'static-method' | 'instance-method'
@@ -203,7 +204,7 @@ function createRuntimeApiRule(entries: readonly MiniProgramRuntimeApiEntry[]): R
   const staticMethods = new Map(entries.filter(item => item.kind === 'static-method').map(item => [item.api, item]))
   const instanceMethods = new Map<string, MiniProgramRuntimeApiEntry>()
   for (const item of entries.filter(item => item.kind === 'instance-method')) {
-    instanceMethods.set(item.api.slice(item.api.lastIndexOf('.') + 1), item)
+    instanceMethods.set(item.api, item)
   }
 
   return {
@@ -256,7 +257,8 @@ function createRuntimeApiRule(entries: readonly MiniProgramRuntimeApiEntry[]): R
               return
             }
           }
-          const instanceEntry = instanceMethods.get(property)
+          const receiver = resolveBuiltinReceiver(context, node.object)
+          const instanceEntry = receiver && instanceMethods.get(`${receiver}.prototype.${property}`)
           if (instanceEntry && node.parent?.type === 'CallExpression' && node.parent.callee === node) {
             report(context, node, instanceEntry)
           }
