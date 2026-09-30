@@ -1,0 +1,51 @@
+{
+  "name": "@weapp-agent/providers",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Weapp Agent providers",
+  "license": "MIT",
+  "homepage": "https://vite.weapp.dev/guide/agent/getting-started",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/agent-providers"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "agent"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {},
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "4.0.68",
+    "@ai-sdk/openai": "4.0.81",
+    "@ai-sdk/openai-compatible": "3.0.59",
+    "@weapp-agent/core": "workspace:*",
+    "ai": "7.0.122"
+  }
+}
