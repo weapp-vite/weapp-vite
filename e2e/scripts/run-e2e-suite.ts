@@ -3,7 +3,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { excludedE2EProjects, isExcludedE2EProject } from '../../scripts/e2eProjectScope'
-import { cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { createAcceptanceIdentity, isStrictDomAcceptanceSuite } from './domAcceptanceReport/helpers'
 import { getSuiteTasks, listE2ESuites, partitionE2ETasks } from './e2e-suite-manifest'
 import { isDevtoolsVitestTask, runTaskSuite } from './suiteRunner'
@@ -38,7 +38,6 @@ export function shouldStopIdeSuiteAfterTaskFailure(tasks: SuiteTask[]) {
 export function createIdeSuiteCleanupHooks(
   tasks: SuiteTask[],
   cleanup: () => Promise<void> = cleanupResidualIdeProcesses,
-  cleanCompileCache: () => Promise<void> = () => cleanDevtoolsCacheAndStop('compile'),
 ) {
   if (!tasks.some(isDevtoolsVitestTask)) {
     return {}
@@ -50,7 +49,6 @@ export function createIdeSuiteCleanupHooks(
         return
       }
       await cleanup()
-      await cleanCompileCache()
     },
     afterAll: cleanup,
   }

@@ -7,7 +7,7 @@ import { assertHostLifecycleForwarding, lifecycleStructure } from '../utils/appL
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { waitForCurrentPagePath } from './github-issues.runtime.shared'
 
@@ -40,10 +40,6 @@ async function launchFreshMiniProgram(root: string) {
   }
 
   if (!sharedBuildPreparedRoots.has(root)) {
-    // 同一路径首次打开前先清理 IDE 缓存，避免 DevTools 复用旧 app.json/compile 状态导致模拟器首启失败。
-    if (isDevtools) {
-      await cleanDevtoolsCache('compile', { cwd: root })
-    }
     await runBuild(root)
     sharedBuildPreparedRoots.add(root)
   }

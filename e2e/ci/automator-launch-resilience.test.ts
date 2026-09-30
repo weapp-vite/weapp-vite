@@ -318,6 +318,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
   afterEach(async () => {
     try {
       await closeActiveMockMiniPrograms()
+      expect(execaMock.mock.calls.some(([, args]) => args?.[0] === 'cache')).toBe(false)
     }
     finally {
       clearLaunchEnv()
@@ -684,16 +685,13 @@ describe('automator launch resilience', { concurrent: false }, () => {
 
     expect(miniProgram).toBeTruthy()
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('cleans devtools compile cache before retrying launch timeout', async () => {
+  it('retries launch timeout without touching shared IDE cache', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
     process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '3000'
@@ -721,10 +719,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000 })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
@@ -936,10 +931,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
   })
 
@@ -980,10 +972,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
   })
 
@@ -1020,10 +1009,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
@@ -1063,10 +1049,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
-    expect(execaMock).toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
   })
 
@@ -1218,14 +1201,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     })).resolves.toBeTruthy()
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(execaMock).toHaveBeenCalledWith(
-      DEFAULT_WECHAT_CLI_PATH,
-      ['cache', '--clean', 'compile'],
-      expect.objectContaining({
-        reject: false,
-        timeout: 20_000,
-      }),
-    )
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
   })
@@ -1349,17 +1325,14 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(3)
-    expect(execaMock).toHaveBeenNthCalledWith(1, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
-    expect(execaMock).toHaveBeenCalledTimes(1)
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
+    expect(execaMock).not.toHaveBeenCalled()
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(2)
     expect(thirdMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(thirdMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('keeps project reopen retries after compile cache recovery without clearing authentication', async () => {
+  it('keeps bounded project reopen retries without clearing shared cache or authentication', async () => {
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '4'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
@@ -1410,11 +1383,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(4)
-    expect(execaMock).toHaveBeenNthCalledWith(1, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
-    expect(execaMock).toHaveBeenCalledTimes(1)
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
+    expect(execaMock).not.toHaveBeenCalled()
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(3)
     expect(fourthMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(fourthMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
@@ -2166,11 +2136,6 @@ describe('automator launch resilience', { concurrent: false }, () => {
       })
       .mockResolvedValueOnce({
         exitCode: 0,
-        stdout: '',
-        stderr: '',
-      })
-      .mockResolvedValueOnce({
-        exitCode: 0,
         stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9421' }),
         stderr: '',
       })
@@ -2183,10 +2148,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
 
     expect(connectMock).toHaveBeenCalledTimes(2)
     expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
-    expect(execaMock).toHaveBeenNthCalledWith(2, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
@@ -2375,7 +2337,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('cleans devtools compile cache and retries when cli bridge exits with path undefined error', async () => {
+  it('retries an owned cli bridge after path undefined without clearing shared cache', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
     process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
@@ -2394,11 +2356,6 @@ describe('automator launch resilience', { concurrent: false }, () => {
       })
       .mockResolvedValueOnce({
         exitCode: 0,
-        stdout: '',
-        stderr: '',
-      })
-      .mockResolvedValueOnce({
-        exitCode: 0,
         stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9527' }),
         stderr: '',
       })
@@ -2408,11 +2365,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345 })
 
     expectBridgeBootstrapCall(0, 12_345)
-    expect(execaMock).toHaveBeenNthCalledWith(2, DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.objectContaining({
-      reject: false,
-      timeout: 20_000,
-    }))
-    expectBridgeBootstrapCall(2, 12_345)
+    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
+    expectBridgeBootstrapCall(1, 12_345)
     expect(connectMock).toHaveBeenCalledWith({
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9527',

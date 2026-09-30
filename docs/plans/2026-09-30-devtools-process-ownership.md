@@ -43,3 +43,14 @@ pnpm vitest run -c e2e/vitest.e2e.ci.config.ts e2e/ci/automator-launch-resilienc
 - 版本例外：只有用户明确指定才使用 RC、nightly、开发版或旧稳定版。失败不能成为自行换版的理由；无法确认最新稳定版、未安装或未登录时保留证据并记录未完成，不静默回退，不绕过登录。既有固定目标的正式性能运行不重新采样。
 
 这些规则同步到 `AGENTS.local.md`、生成 `AGENTS.md` 的源文档、公开 E2E skill 及其 checklist、网站 AI 工作流。后续审查清理代码和运行 E2E 时一并执行。
+
+
+## 后续发现：共享缓存与 dev watcher 的同类边界问题
+
+完整 headless 验证中，`lifecycle-compare` 在启动前仍调用真实 IDE 的 `cache --clean compile`。选择 runtime provider 只约束了 automator 启动，suite 前置操作绕过了该边界。此前只限制缓存种类为 compile 仍不安全：CLI 可能启动另一安装渠道的 IDE，且编译缓存也不是当前测试独占资源。另一个遗漏是 dev watcher 清理仍根据命令行匹配全部进程，同名或同路径不能证明所有权。
+
+自动 E2E 不再提供或调用全局缓存清理 API。启动、恢复、suite 前置与 teardown 只释放登记的资源；headless 不读取或清理 IDE 状态。启动失败继续保留有次数上限的重连和项目就绪判断，失败时报告原错误，不用清缓存制造成功。Dev watcher 使用子进程句柄关联的幂等 disposer 登记，退出即撤销授权，Windows 同样清理自己的子树；重复 stop 和恢复不会重复释放，已退出 PID 不再被当作持有的资源。
+
+回归覆盖 headless 不调用 IDE、没有持有资源时不扫描进程、不修改全局缓存或会话目录、同名非本任务进程保留、重复 close/cleanup 仅一次，以及退出后 PID 复用保护。清理不是环境修复授权；其他任务的活动 watcher 必须等待。
+
+清理修复后的严格生命周期验收另发现 fixture 观测干扰：滚动回调更新日志预览，把日志面板高度从 55.5 增至 85.5，导致滚动参数在原生与 Wevu 页面间漂移。为日志面板预留固定空间，并增加记录前后布局不变的两 provider 检查；同时删除旧的 50 像素取整，保留实际滚动值比较。此修复只改变测试 fixture 的观测布局，不更改产品生命周期或宿主滚动语义。

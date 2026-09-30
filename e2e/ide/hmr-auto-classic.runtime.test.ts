@@ -8,7 +8,7 @@ import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -99,7 +99,6 @@ for (const host of ['wv', 'vite', 'vite-watch'] as const) {
     beforeAll(async () => {
       await cleanupResidualDevProcesses()
       await cleanupResidualIdeProcesses()
-      await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
 
       originalNativeSource = await fs.readFile(NATIVE_SOURCE, 'utf8')
       originalPrivateConfig = await fs.readFile(PRIVATE_CONFIG, 'utf8')

@@ -165,7 +165,7 @@ export default defineComponent({
         Last: {{ __lifecycleSummary.lastHook }}
       </view>
     </view>
-    <view class="panel">
+    <view class="panel lifecycle-log-panel">
       <view class="panel-title">
         E2E Logs (latest)
       </view>
