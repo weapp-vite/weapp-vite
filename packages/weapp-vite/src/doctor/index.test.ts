@@ -140,6 +140,37 @@ describe('Doctor evidence and gates', () => {
     expect(report.diagnostics[0].location?.file).toBe('page.ts')
   })
 
+  it('keeps partial runtime facts and stable diagnostic identities in JSON and SARIF', async () => {
+    const report = await runDoctor({ cwd: await project(), runtime: true }, {
+      runtime: async () => ({
+        host: 'wechat-devtools',
+        provider: 'devtools',
+        route: '',
+        checks: ['Tool.getInfo', 'App.getCurrentPage'],
+        complete: false,
+        facts: [
+          { stage: 'tool-info', status: 'passed', code: 'snapshot-read' },
+          { stage: 'current-page', status: 'failed', code: 'invalid-response' },
+        ],
+      }),
+    })
+    expect(report.exitCode).toBe(2)
+    expect(report.runtime.weapp.host).toBe('wechat-devtools')
+    expect(report.diagnostics).toContainEqual(expect.objectContaining({ ruleId: 'doctor/runtime/current-page', responsibility: { owner: 'unknown', confidence: 'suspected' } }))
+    const json = JSON.parse(formatDoctorReport(report, 'json')) as typeof report
+    expect(json.runtime.weapp.facts).toEqual(report.runtime.weapp.facts)
+    expect(formatDoctorReport(report, 'sarif')).toContain('doctor/runtime/current-page')
+    expect(formatDoctorReport(report, 'terminal')).toContain('current-page: incomplete')
+  })
+
+  it('does not execute a runtime or login probe without explicit runtime selection', async () => {
+    const runtime = vi.fn()
+    const report = await runDoctor({ cwd: await project(), runtimeCliPath: 'selected-cli', runtimeLogin: true }, { runtime })
+    expect(runtime).not.toHaveBeenCalled()
+    expect(report.exitCode).toBe(2)
+    expect(report.coverage).toContainEqual(expect.objectContaining({ layer: 'runtime', check: 'selection', status: 'incomplete' }))
+  })
+
   it('preserves stable fingerprints and valid JSON/SARIF without including source text', async () => {
     const cwd = await project()
     const options = { cwd, build: true }

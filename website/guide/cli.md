@@ -32,6 +32,17 @@ wv doctor --runtime --platform weapp
 
 `--runtime` 只连接已打开的微信 DevTools 项目并读取 Tool.getInfo 与当前页面，不启动 IDE、不切换路由；已有非默认 automator 会话可使用 `--runtime-port <port>`。这不代表应用功能已经通过 E2E。其他宿主无探针、连接失败或未打开项目均为 incomplete。
 
+
+宿主分层证据会保留 CLI 可执行条件、指定服务监听、登录查询与登录状态、项目连接、工具信息、当前页面以及本次连接释放的独立结果。`passed`、`failed`、`unknown`、`not-run` 分开记录；部分失败仍保留成功阶段、实际 IDE/SDK 版本和脱敏证据，退出码为 2。TCP 可达只证明有监听，不证明它属于所选 IDE；Tool.getInfo/页面快照也不证明完整应用功能已通过。
+
+- `--runtime-cli <path>`：只读检查显式选择的 CLI，不执行、不回退其他安装。
+- `--runtime-service-port <port>`：连接指定回环 TCP 端口检查监听，仅释放本次 socket。
+- `--runtime-login`：单独允许执行原生 islogin，需要同时传入 `--runtime-cli`；原生 CLI 可能启动 IDE。没有此开关不会查询或推断登录状态。
+
+上述选项都需要 `--runtime`。JSON/SARIF 中的 `runtime.<target>.bundle` 包含框架/Node 版本、可取得的 IDE/基础库版本、配置选择摘要、最后成功阶段、有限的固定分类事件及通用复现命令。未知版本省略，终端显示 unknown；不保存原始 Tool.getInfo、CLI 输出、凭据、绝对路径或页面查询参数，不自动上传。`not-run` 不代表检查通过；旧的自定义 runtime adapter 仍可使用原证据结构。
+
+连接和页面/工具 RPC 有界等待，迟到连接只断开自身 websocket，迟到 RPC 不会改写已返回的报告。完整操作层的总 deadline、分类重试和跨进程取消由相应操作层负责；此探针不替代 #1141 的完整工作。
+
 退出码：0 为请求范围完整且无错误；1 为发现门禁错误；2 为未完成或执行失败（优先于 1）。未请求的层标为 not-requested。
 
 复用平台注册表、ESLint 兼容规则和包体预算。非微信平台不使用微信 API 基线；尚无完整 API 目录时相应层 incomplete。HarmonyOS 等设备系统不作为编译目标别名。源码风险与产物诊断分离；动态引用、外部插件、自定义 npm 输出等事实不足的范围不判定通过。
