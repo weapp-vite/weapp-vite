@@ -108,3 +108,19 @@ it('updates library templates in classic dev without an application entry', asyn
   }
   finally { await server.close() }
 }, 30_000)
+
+it('builds declarations when the project root is a directory alias', async () => {
+  const { root, config, read } = await fixture()
+  const aliases = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-lib-alias-'))
+  roots.push(aliases)
+  const alias = path.join(aliases, 'project')
+  await symlink(root, alias, 'junction')
+  config.root = alias
+  config.weapp!.lib = { entry: { utils: 'utils/index.ts' }, root: 'src' }
+  const result = await build(config)
+  if (Array.isArray(result) || !('output' in result)) {
+    throw new Error('expected one library bundle')
+  }
+  expect(result.output.map(file => file.fileName)).toContain('utils.d.ts')
+  expect(await read('utils.d.ts')).toContain('export')
+}, 30_000)

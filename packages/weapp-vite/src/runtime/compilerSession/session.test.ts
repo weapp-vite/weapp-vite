@@ -2,6 +2,7 @@ import type { InlineConfig } from 'vite'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { normalize } from 'pathe'
 import { afterEach, expect, it, vi } from 'vitest'
 import { getActiveCompilerContextKey } from '../../context/getInstance'
 import { deferWatcherResourceCleanup } from '../watcherPlugin'
@@ -44,7 +45,7 @@ it('initializes separate projects without changing the active compiler context',
   expect(projects[0]!.session.context).not.toBe(projects[1]!.session.context)
   for (const { session, name, root } of projects) {
     expect(session.context.configService.srcRoot).toBe(name)
-    expect(session.context.configService.cwd).toBe(root)
+    expect(session.context.configService.cwd).toBe(normalize(root))
     await expect(readFile(path.join(root, '.weapp-vite/tsconfig.app.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   }
   await projects[0]!.session.close()
