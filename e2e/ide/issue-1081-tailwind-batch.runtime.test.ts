@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import postcss from 'postcss'
@@ -9,6 +9,7 @@ import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet } from '../utils/emittedStylesheet'
+import { renameAtomicFile } from '../utils/hmrAtomicRename'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { createIssue1081Project, ISSUE_1081_CLI } from '../utils/issue1081Project'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -83,7 +84,7 @@ describe('issue #1081: Tailwind batch delivery', { concurrent: false }, () => {
     for (const color of colors.slice(1)) {
       code = code.replaceAll(previous, color)
       await writeFile(pending, code)
-      await rename(pending, source)
+      await renameAtomicFile(pending, source)
       await expect.poll(() => readEmittedStylesheet(path.join(project, 'dist/app.wxss')), { timeout: 45_000 }).toContain(color)
       await expect.poll(() => host.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getVersion()), { timeout: 30_000 }).toBeGreaterThan(colors.indexOf(color) - 1)
       await expect.poll(async () => {
@@ -106,7 +107,7 @@ describe('issue #1081: Tailwind batch delivery', { concurrent: false }, () => {
     }
     code = code.replace('py-5.5 ', '')
     await writeFile(pending, code)
-    await rename(pending, source)
+    await renameAtomicFile(pending, source)
     await expect.poll(() => readEmittedStylesheet(path.join(project, 'dist/app.wxss')), { timeout: 45_000 }).not.toMatch(/\.py-5/)
     expect(await (await (await host.currentPage()).$('#increment'))!.text()).toBe('1')
     const stylesheet = path.join(project, 'dist/weapp-vite-global.wxss')
@@ -122,7 +123,7 @@ describe('issue #1081: Tailwind batch delivery', { concurrent: false }, () => {
     const version = await host.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getVersion())
     code = code.replace('count.value += 1', 'count.value += 2')
     await writeFile(pending, code)
-    await rename(pending, source)
+    await renameAtomicFile(pending, source)
     await expect.poll(() => host.evaluate(() => (globalThis as any).__WEAPP_VITE_STATEFUL_HMR_CLIENT__.getVersion()), { timeout: 30_000 }).toBeGreaterThan(version)
     expect((await stat(stylesheet)).mtimeMs).toBe(stableStyle.mtimeMs)
     await (await (await host.currentPage()).$('#increment'))!.tap()

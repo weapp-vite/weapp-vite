@@ -9,7 +9,7 @@ import {
   getWechatIdeTestAccounts,
   getWechatIdeTicket,
   getWechatIdeToolInfo,
-  isWechatIdeLoggedIn,
+  queryWechatIdeLogin,
   refreshWechatIdeTicket,
   resolveCliPath,
   resolveProjectAutomatorPort,
@@ -90,15 +90,22 @@ async function runIdeDoctor(projectPath: string | undefined, options: GlobalCLIO
   }
   if (resolvedCli.cliPath) {
     try {
-      await isWechatIdeLoggedIn({ nonInteractive: true, silent: true })
-      loginCheck = { status: 'ok', value: true }
+      const result = await queryWechatIdeLogin(resolvedCli.cliPath, { timeout: 3_000 })
+      loginCheck = result.status === 'success'
+        ? {
+            status: result.login ? 'ok' : 'warning',
+            value: result.login,
+            ...(result.login ? {} : { message: '原生 CLI 明确返回未登录，请打开微信开发者工具完成登录。' }),
+          }
+        : {
+            status: 'unknown',
+            message: `登录查询未确认状态（${result.reason}），不能据此认定未登录。`,
+          }
     }
-    catch (error) {
+    catch {
       loginCheck = {
-        fix: '打开微信开发者工具完成登录后重试，或执行 `wv ide doctor --json` 查看 CLI 错误。',
-        message: error instanceof Error ? error.message : String(error),
-        status: 'warning',
-        value: false,
+        message: '登录查询执行失败，登录状态仍未确认。',
+        status: 'unknown',
       }
     }
   }
@@ -125,11 +132,22 @@ async function runIdeDoctor(projectPath: string | undefined, options: GlobalCLIO
         timeout: 3_000,
       }) as { disconnect?: () => void, toolInfo?: () => Promise<unknown> }
       automatorCheck = { status: 'ok', value: true }
-      if (typeof miniProgram.toolInfo === 'function') {
-        const toolInfo = await miniProgram.toolInfo()
-        toolCheck = { status: 'ok', value: toolInfo }
+      try {
+        if (typeof miniProgram.toolInfo === 'function') {
+          const toolInfo = await miniProgram.toolInfo()
+          toolCheck = { status: 'ok', value: toolInfo }
+        }
       }
-      miniProgram.disconnect?.()
+      catch {
+        toolCheck = {
+          status: 'warning',
+          message: '项目自动化连接已建立，但 Tool.getInfo 未能返回工具信息；宿主版本仍未确认。',
+          fix: '确认目标项目模拟器就绪后重新运行 doctor；此结果不证明登录失效。',
+        }
+      }
+      finally {
+        miniProgram.disconnect?.()
+      }
     }
     catch (error) {
       automatorCheck = {
@@ -353,7 +371,7 @@ export function registerIdeCommand(cli: CAC) {
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--ide-open-strategy <strategy>', '[string] IDE open strategy (cli | automator)', { default: 'cli' })
     .option('--strict', '[boolean] fail when doctor finds blocking environment errors')
-    .option('--no-open-recovery', '[boolean] disable automatic Wechat DevTools close-and-reopen recovery')
+    .option('--no-open-recovery', '[boolean] disable automatic target-project open retry (preserves existing IDE windows)')
     .action(async (action: string | undefined, root: string | undefined, options: GlobalCLIOptions) => {
       await runIdeCommand(action, root, options)
     })

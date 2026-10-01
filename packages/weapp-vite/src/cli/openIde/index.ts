@@ -9,7 +9,6 @@ import {
   isAutomatorLoginError,
   isWechatIdeEngineBuildEndpointMissingError,
   launchAutomator,
-  quitWechatIde,
   resolveProjectAutomatorPort,
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../../createContext'
@@ -77,12 +76,7 @@ function shouldLogAutomatorFallbackError() {
 }
 
 const PREPARE_AUTOMATOR_SESSION_TIMEOUT = 8_000
-const AUTOMATOR_RECOVERY_QUIT_SETTLE_MS = 5_000
 const RESET_FILEUTILS_ENV = 'WEAPP_VITE_RESET_IDE_FILEUTILS'
-
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
 
 function readProjectConfigObject(projectPath: string) {
   try {
@@ -160,23 +154,11 @@ export async function closeIde() {
   return await closeWechatIde()
 }
 
-async function restartWechatIdeForAutomatorRecovery() {
-  try {
-    await quitWechatIde()
-    await sleep(AUTOMATOR_RECOVERY_QUIT_SETTLE_MS)
-    return true
-  }
-  catch {
-    return await closeIde()
-  }
-}
-
 async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIdeOptions) {
   const preserveProjectRoot = !shouldUseAutomatorProjectWrapper(projectPath)
   if (options.reuseOpenedProject === false) {
-    const reopened = await reopenOpenedWechatIde(projectPath, closeIde, {
+    const reopened = await reopenOpenedWechatIde(projectPath, {
       preserveProjectRoot,
-      restartIde: restartWechatIdeForAutomatorRecovery,
       trustProject: options.trustProject,
     })
     if (reopened) {
@@ -184,7 +166,7 @@ async function tryOpenWechatIdeByAutomator(projectPath: string, options: OpenIde
     }
   }
 
-  const reuseResult = await tryReuseOpenedWechatIde(projectPath, closeIde, {
+  const reuseResult = await tryReuseOpenedWechatIde(projectPath, {
     preserveProjectRoot,
     promptReopen: options.reuseOpenedProject !== true,
     trustProject: options.trustProject,
@@ -427,18 +409,14 @@ async function recoverOpenedWechatIdeProject(
     return failedResult
   }
 
-  logger.info(`检测到微信开发者工具打开后状态不稳定（${formatWechatIdeOpenHealthReason(failedResult)}），正在自动关闭并重新打开目标项目...`)
-  const closed = await closeIde()
-  if (!closed) {
-    logger.warn('自动恢复时关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
-  }
+  logger.info(`检测到微信开发者工具打开后状态不稳定（${formatWechatIdeOpenHealthReason(failedResult)}），正在重试打开目标项目（保留现有窗口）...`)
   await runWechatIdeOpenWithRetry(createIdeOpenArgv(platform, projectPath, options))
   const recoveredResult = await verifyOpenedWechatIdeProject(projectPath, servicePortEnabled, options)
   if (recoveredResult.ok) {
     logger.info('微信开发者工具已完成自动恢复。')
   }
   else {
-    logger.warn('微信开发者工具自动恢复未完成；可设置 `WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY=1` 或传入 `--no-open-recovery` 跳过自动关闭重开，并按提示手动处理。')
+    logger.warn('微信开发者工具自动恢复未完成；可设置 `WEAPP_VITE_DISABLE_IDE_OPEN_RECOVERY=1` 或传入 `--no-open-recovery` 跳过自动重试，并按提示手动处理。')
   }
   return recoveredResult
 }
@@ -508,12 +486,6 @@ export async function openIde(platform?: MpPlatform, projectPath?: string, optio
       if (shouldLogAutomatorFallbackError()) {
         logger.error(error)
       }
-    }
-  }
-  else if (platform === 'weapp' && projectPath && normalizedOptions.reuseOpenedProject === false) {
-    const closed = await closeIde()
-    if (!closed) {
-      logger.warn('关闭当前微信开发者工具失败，仍继续尝试打开目标项目。')
     }
   }
 
