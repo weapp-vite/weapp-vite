@@ -124,7 +124,9 @@ jobs:
       node_version: 24.18.0
       timeout_minutes: 30
       build_command: pnpm exec turbo run build --filter=@weapp-vite/react...
-      main_command: pnpm --filter weapp-vite exec vitest run test/vite-native-path-controls.test.ts
+      main_command: >-
+        pnpm --filter weapp-vite exec vitest run test/vite-native-path-controls.test.ts
+        test/vite-native-watch-topology.test.ts
     secrets: inherit
 
   consumer:

@@ -458,7 +458,8 @@ export class StatefulHmrViteAdapter {
       Object.assign(output, desiredOutput)
       const userBanner = output.banner
       const userFooter = output.footer
-      output.format = 'cjs'
+      // DevEngine 以 ESM 生成依赖图；宿主格式由 renderChunk 转换，仍由原生 bundler 写出。
+      output.format = 'esm'
       output.minify = false
       output.sourcemap = Boolean(this.config.build.sourcemap)
       output.banner = async (chunk: { fileName: string, isEntry?: boolean }) => {

@@ -11,7 +11,7 @@ import { createLogicalEntryModuleCode } from '../../moduleGraph/logicalEntry'
 import { createLogicalEntryId } from '../../moduleGraph/protocol'
 import { isStatefulHmrBoundary } from './boundaries'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
-import { createStatefulHmrInitialGraph } from './initialModuleGraph'
+import { createStatefulHmrHostFormatPlugin } from './hostFormat'
 
 describe('registration owners in actual DevEngine output', () => {
   it.each(['component', 'page'] as const)('reexecutes the accepting %s owner across native HMR patches and restoration', async (kind) => {
@@ -63,11 +63,8 @@ describe('registration owners in actual DevEngine output', () => {
             return `${code}\nimport.meta.hot.accept();`
           }
         },
-        renderChunk(code, chunk) {
-          return `${code}${createStatefulHmrInitialGraph(chunk, this, root)}`
-        },
-      }],
-    }, { format: 'cjs', entryFileNames: 'component.js' }, {
+      }, createStatefulHmrHostFormatPlugin()],
+    }, { format: 'esm', entryFileNames: 'component.js' }, {
       // 连续恢复等长源码时比较内容，避免宿主文件事件合并或时间戳精度影响回归结果。
       watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
       onHmrUpdates(result) {
@@ -105,6 +102,8 @@ describe('registration owners in actual DevEngine output', () => {
         return module.exports
       }
       context.require('./component.js')
+      // 首包依赖图由原生 ESM DevEngine 生成，注册所有者必须能够反向追溯源模块。
+      expect(context.__rolldown_runtime__.getImporters(kind === 'component' ? 'index.vue' : 'page.js')).toContain(owner)
       const host = {
         data: { count: 0, input: 'held' },
         setData(data: object) {

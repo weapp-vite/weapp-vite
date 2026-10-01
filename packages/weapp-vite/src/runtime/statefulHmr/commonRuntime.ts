@@ -60,7 +60,8 @@ function assertRolldownRuntimeContract(runtime: { source: string, filePath: stri
   const contracts = [
     [runtime.source, /(?:class\s+DevRuntime|(?:var|let|const)\s+DevRuntime\s*=)/, 'DevRuntime'],
     [runtime.source, /(?:class\s+Module|(?:var|let|const)\s+Module\s*=)/, 'Module'],
-    [helpers, /(?:var|let|const)\s+__exportAll\s*=|function\s+__exportAll\b/, 'common runtime helpers'],
+    // 辅助函数既可来自相对导入，也可由上游直接打包进同一入口。
+    [`${helpers}\n${runtime.source}`, /(?:var|let|const)\s+__exportAll\s*=|function\s+__exportAll\b/, 'common runtime helpers'],
   ] as const
   const missing = contracts.filter(([source, pattern]) => !pattern.test(source))
   if (missing.length > 0) {
