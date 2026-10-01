@@ -1807,6 +1807,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
+    // 标准 Vite 宿主已通过 output-finalizer 登记 WXML 外部依赖，事件只由该宿主负责。
+    const hostOwnsWxmlDependencies = hasDevModuleGraphHost(ctx)
     const moduleGraphProvider = target === 'app'
       ? await createDevModuleGraphProvider(ctx, buildOptions, ({ event, file: id }) => {
           if (isDevOutputFile(id)) {
@@ -1814,6 +1816,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
           const hasModule = ctx.moduleGraphService.hasModule(id)
           debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
+          if (hostOwnsWxmlDependencies && isWxmlDependency(ctx, id)) {
+            for (const root of scanService.independentSubPackageMap.keys()) {
+              invalidateIndependentOutput(root)
+              scanService.markIndependentDirty(root)
+            }
+            scheduleSnapshotBuild({ event, file: id, forceFullRescan: true }, performance.now())
+            return
+          }
           if (!hasModule && !initialBuildFailed) {
             return
           }
@@ -1972,14 +1982,16 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...getWxmlWatchFiles(ctx)],
+        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...hostOwnsWxmlDependencies ? [] : getWxmlWatchFiles(ctx)],
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
           ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
-      const unobserveWxml = observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
+      const unobserveWxml = hostOwnsWxmlDependencies
+        ? () => {}
+        : observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
       const unobserveWorkers = observeWorkerSources(ctx, files => snapshotWatcher.add(files))
       const independentWatch = ctx.runtimeState.build.independent
       const observeIndependent = (files: string[]) => {
@@ -1997,6 +2009,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         const normalizedId = normalizeFsResolvedId(id)
+        if (hostOwnsWxmlDependencies && isWxmlDependency(ctx, normalizedId)) {
+          return
+        }
         const workerSource = ownsWorkerSource(ctx, normalizedId)
         if (workerSource) {
           scheduleSnapshotBuild({ event: event === 'unlink' ? 'delete' : 'update', file: id, forceFullRescan: true }, performance.now())

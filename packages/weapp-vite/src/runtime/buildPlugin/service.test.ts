@@ -1,11 +1,12 @@
 import type { OutputBundle, OutputChunk, RolldownWatcher } from 'rolldown'
-import type { InlineConfig, Plugin } from 'vite'
+import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
 import type { CompilerContext } from '../../context'
 import type { CorePluginState } from '../../plugins/core/helpers'
 import type { DevBuildWatcherController } from './devBuildWatcher'
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { attachDevModuleGraphHost } from '../../moduleGraph/host'
 import { createModuleGraphService } from '../../moduleGraph/service'
 import { getSupportedMiniProgramPlatforms } from '../../platform'
 import { createGenerateBundleHook } from '../../plugins/core/lifecycle/emit/generate'
@@ -92,7 +93,7 @@ const createDevBuildWatcherMock = vi.hoisted(() => vi.fn(() => {
   return { watcher, emitEvent: vi.fn() }
 }))
 const moduleGraphProviderChange = vi.hoisted(() => ({
-  handler: undefined as undefined | ((change: { event: 'create' | 'update', file: string }) => void),
+  handler: undefined as undefined | ((change: { event: 'create' | 'update' | 'delete', file: string }) => void),
 }))
 const createDevModuleGraphProviderMock = vi.hoisted(() => vi.fn(async (_ctx, _config, onChange) => {
   moduleGraphProviderChange.handler = onChange
@@ -1697,6 +1698,54 @@ describe('runtime buildPlugin service', () => {
 
     expect(buildMock).toHaveBeenCalledTimes(1)
     expect(loggerSuccessMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['create', 'update', 'delete'] as const)('routes host-owned WXML dependency %s without a module node', async (event) => {
+    const watcher = createManualWatcher()
+    const sidecarWatcher = createManualSidecarWatcher()
+    const ctx = createMockContext()
+    const dependency = '/project/transform-rules.json'
+    ctx.scanService.independentSubPackageMap = new Map([['independent', {}]])
+    ctx.scanService.markIndependentDirty = vi.fn()
+    ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
+    ctx.moduleGraphService.hasModule.mockReturnValue(false)
+    const detachHost = attachDevModuleGraphHost(ctx, {} as ViteDevServer)
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    buildMock.mockResolvedValue({ output: [] })
+    try {
+      const firstBuild = createBuildService(ctx).build({ skipNpm: true })
+      await watcher.subscribed
+      watcher.emit('START')
+      watcher.emit('END')
+      await firstBuild
+
+      const missingDependency = new Error('WXML dependency is absent')
+      if (event === 'delete') {
+        buildMock.mockRejectedValueOnce(missingDependency)
+      }
+      moduleGraphProviderChange.handler?.({ event, file: dependency })
+      await waitForMockCalls(buildMock, 2)
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      expect(independentInvalidateMock).toHaveBeenCalledWith('independent')
+      expect(ctx.scanService.markIndependentDirty).toHaveBeenCalledWith('independent')
+      expect(chokidarWatchMock.mock.calls[0]?.[0]).not.toContain(dependency)
+      expect(sidecarWatcher.add.mock.calls.flat()).not.toContainEqual([dependency])
+      sidecarWatcher.emit(event === 'delete' ? 'unlink' : event === 'create' ? 'add' : 'change', dependency)
+      await waitForTimers()
+      expect(buildMock).toHaveBeenCalledTimes(2)
+      if (event === 'delete') {
+        const controller = createDevBuildWatcherMock.mock.results.at(-1)?.value
+        expect(controller.emitEvent).toHaveBeenCalledWith(expect.objectContaining({ code: 'ERROR', error: missingDependency }))
+        moduleGraphProviderChange.handler?.({ event: 'create', file: dependency })
+        await waitForMockCalls(buildMock, 3)
+        expect(buildMock).toHaveBeenCalledTimes(3)
+        expect(controller.emitEvent).toHaveBeenLastCalledWith({ code: 'END' })
+      }
+    }
+    finally {
+      await ctx.watcherService.closeAll()
+      detachHost()
+    }
   })
 
   it('routes native logical layout scripts through the dev graph provider', async () => {
