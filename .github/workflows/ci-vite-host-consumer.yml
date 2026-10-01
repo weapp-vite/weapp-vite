@@ -42,6 +42,23 @@ permissions:
   contents: read
 
 jobs:
+  route-topology:
+    name: Route topology (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite...
+      main_command: >-
+        pnpm vitest run packages/weapp-vite/src/plugins/core/lifecycle/autoRoutesTopology.test.ts
+        packages/weapp-vite/test/vite-watch.test.ts
+    secrets: inherit
+
   react-host-paths:
     name: React host paths (${{ matrix.os }})
     strategy:
