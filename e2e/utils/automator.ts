@@ -1,10 +1,11 @@
+import type { ChildProcess } from 'node:child_process'
 import type { HeadlessAutomatorLaunchOptions } from './automator.headless'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-import { Automator } from '@weapp-vite/miniprogram-automator'
+import { Automator, isRecoverableOperationError } from '@weapp-vite/miniprogram-automator'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
@@ -2549,42 +2550,6 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
   return miniProgram
 }
 
-export async function terminateBridgeCliProcess(cliPid: number) {
-  await terminateCliProcessTree(cliPid)
-}
-
-async function disposeLateBridgeBootstrap(result: { stdout?: unknown }) {
-  let cliPid: unknown
-  try {
-    cliPid = (JSON.parse(typeof result.stdout === 'string' ? result.stdout : '') as AutomatorCliBridgeResult).cliPid
-  }
-  catch {
-    return
-  }
-  if (typeof cliPid === 'number' && cliPid > 0) {
-    await terminateBridgeCliProcess(cliPid)
-  }
-}
-
-function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, disposeCli: () => Promise<void>) {
-  const metaKey = '__weappViteBridgeCliCleanupWrapped'
-  if ((miniProgram as Record<string, any>)[metaKey]) {
-    return miniProgram
-  }
-
-  ;(miniProgram as Record<string, any>)[metaKey] = true
-  const rawClose = miniProgram.close.bind(miniProgram)
-  miniProgram.close = async (...args: any[]) => {
-    try {
-      return await rawClose(...args)
-    }
-    finally {
-      await disposeCli().catch(() => {})
-    }
-  }
-  return miniProgram
-}
-
 export async function launchAutomatorViaCliBridge(
   options: AutomatorCliBridgePayload,
   project: string,
@@ -2601,7 +2566,7 @@ export async function launchAutomatorViaCliBridge(
       ...process.env,
       [AUTOMATOR_LAUNCH_MODE_ENV]: '',
     },
-  }), { waitForExit: true })
+  }), { stage: 'bridge-bootstrap', waitForExit: true })
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
 
   if ((result.exitCode ?? 1) !== 0) {
@@ -2645,12 +2610,13 @@ export async function launchAutomatorViaCliBridge(
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-attempt endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       miniProgram = await lifecycle.step(
         () => (automator as typeof automator & {
-          connect: (options: { wsEndpoint: string, timeout?: number }) => Promise<any>
+          connect: (options: { wsEndpoint: string, timeout?: number, signal?: AbortSignal }) => Promise<any>
         }).connect({
           wsEndpoint: bridgeResult.wsEndpoint,
+          signal: lifecycle.signal,
           timeout: lifecycle.remainingMs(4_000),
         }),
-        { waitForExit: true, disposeLate: closeLaunchMiniProgram },
+        { stage: 'bridge-connect', waitForExit: true, disposeLate: closeLaunchMiniProgram },
       )
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-ok endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       break
@@ -2659,10 +2625,8 @@ export async function launchAutomatorViaCliBridge(
       lifecycle.throwIfAborted()
       lastConnectError = error
       const message = error instanceof Error ? error.message : String(error)
-      const handshakeTimedOut = error instanceof Error
-        && 'code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-        && 'method' in error && error.method === 'Tool.getInfo'
-      if (!handshakeTimedOut
+      lifecycle.recordFailure(error)
+      if (!isRecoverableOperationError(error)
         && !DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
         && !BRIDGE_CONNECT_TIMEOUT_PATTERN.test(message)
         && !BRIDGE_CONNECT_FAILURE_PATTERN.test(message)) {

@@ -552,7 +552,8 @@ async function main() {
   const child = spawn(spawnOptions.command, spawnOptions.args, spawnOptions.options)
   child.unref()
 
-  let socketReadyResult: WaitForSocketReadyResult
+  let socketReadyResult!: WaitForSocketReadyResult
+  let launchFailure: unknown
   try {
     socketReadyResult = await waitForSocketReady({
       child,
@@ -570,15 +571,25 @@ async function main() {
     })
     cancellation.signal.throwIfAborted()
   }
+  catch (error) {
+    launchFailure = error
+  }
+  // CLI 句柄始终留在创建它的进程中；清理失败也保留启动的原始原因。
+  try {
+    await terminateOwnedCliProcess(child)
+  }
+  catch (cleanupError) {
+    launchFailure = launchFailure === undefined
+      ? cleanupError
+      : new AggregateError([launchFailure, cleanupError], 'CLI bootstrap and resource cleanup failed', { cause: launchFailure })
+  }
   finally {
-    try {
-      await terminateOwnedCliProcess(child)
-    }
-    finally {
-      cancelSignal?.removeEventListener('abort', onCancel)
-      process.removeListener('SIGTERM', onCancel)
-      process.removeListener('SIGINT', onCancel)
-    }
+    cancelSignal?.removeEventListener('abort', onCancel)
+    process.removeListener('SIGTERM', onCancel)
+    process.removeListener('SIGINT', onCancel)
+  }
+  if (launchFailure !== undefined) {
+    throw launchFailure
   }
 
   const result: AutomatorCliBridgeResult = {

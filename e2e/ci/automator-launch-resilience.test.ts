@@ -1832,6 +1832,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(execaMock).toHaveBeenCalledTimes(1)
     expectBridgeWrapperProjectPath(sandboxRoot, readBridgePayloadFromExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
@@ -1972,9 +1973,36 @@ describe('automator launch resilience', { concurrent: false }, () => {
       publicComponents: {},
     })
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
+  })
+
+  it.each([
+    ['DEVTOOLS_OPERATION_TIMEOUT', true],
+    ['ECONNREFUSED', true],
+    ['Unexpected server response: 403', false],
+  ])('classifies bridge connection failure %s within the shared budget', async (code, retryable) => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const failure = Object.assign(new Error(code), { code })
+    execaMock.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }), stderr: '' })
+    connectMock.mockRejectedValueOnce(failure).mockResolvedValueOnce(createMockMiniProgram())
+    const { launchAutomator } = await import('../utils/automator')
+    const result = launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, maxLaunchRetries: 1 })
+    if (retryable) {
+      await expect(result).resolves.toBeTruthy()
+      expect(connectMock).toHaveBeenCalledTimes(2)
+    }
+    else {
+      await expect(result).rejects.toBe(failure)
+      expect(connectMock).toHaveBeenCalledTimes(1)
+    }
+    expect(execaMock).toHaveBeenCalledTimes(1)
   })
 
   it('keeps cli bridge wrapper dist files synced with the real project dist', async () => {
@@ -2272,6 +2300,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(execaMock).toHaveBeenCalledTimes(2)
     expect(execaMock.mock.calls[0]?.[2]?.cancelSignal).toBe(execaMock.mock.calls[1]?.[2]?.cancelSignal)
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
@@ -2409,6 +2438,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expectBridgeBootstrapCall(1, 12_345)
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9527',
     })
