@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
-import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
+import { packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
 import { verifyWebConsumer } from './verify-vite-host-web.mjs'
 
@@ -16,7 +17,7 @@ const runtimeSuite = process.argv[4] ?? 'stateful'
 assert(['stateful', 'react', 'independent', 'worker', 'plugin', 'lib', 'platform', 'web'].includes(runtimeSuite))
 assert(runtime === undefined || ['headless', 'devtools', 'both'].includes(runtime))
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
-const temporaryRoot = await createConsumerTemporaryRoot()
+const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-host-install-'))
 const consumerRoot = path.join(temporaryRoot, 'consumer')
 
 try {

@@ -1,8 +1,8 @@
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createConsumerTemporaryRoot, readConsumerTarballs, verifyConsumerTarballProvenance } from '../scripts/consumerTarballs.mjs'
+import { readConsumerTarballs, verifyConsumerTarballProvenance } from '../scripts/consumerTarballs.mjs'
 
 const directories: string[] = []
 
@@ -18,17 +18,6 @@ afterEach(async () => {
 })
 
 describe('prepacked consumer dependencies', () => {
-  it('uses one physical path for the consumer when the temporary parent is an alias', async () => {
-    const root = await fixture({})
-    const physical = path.join(root, 'physical')
-    const alias = path.join(root, 'alias')
-    await mkdir(physical)
-    await symlink(physical, alias, 'junction')
-    const temporary = await createConsumerTemporaryRoot(alias)
-    expect(temporary).toBe(await realpath(temporary))
-    expect(path.dirname(temporary)).toBe(await realpath(physical))
-  })
-
   it('loads relocated tarballs without resolving workspace packages', async () => {
     const root = await fixture({ 'weapp-vite': { file: 'framework.tgz', version: '1.0.0' } })
     await writeFile(path.join(root, 'framework.tgz'), 'test archive')
