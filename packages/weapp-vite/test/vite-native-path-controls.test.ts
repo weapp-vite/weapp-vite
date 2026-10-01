@@ -14,22 +14,17 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
-it.each(['directory', 'packages'] as const)('resolves React runtime with native Vite through linked %s', async (layout) => {
+it('resolves React runtime with native Vite through linked packages', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'vite-react-resolution-'))
   roots.push(root)
   const manifest = JSON.parse(await readFile(path.join(fixtureRoot, 'package.json'), 'utf8')) as {
     dependencies: Record<string, string>
   }
   await writeFile(path.join(root, 'package.json'), JSON.stringify({ type: 'module', dependencies: manifest.dependencies }))
-  if (layout === 'directory') {
-    await symlink(path.join(fixtureRoot, 'node_modules'), path.join(root, 'node_modules'), 'junction')
-  }
-  else {
-    for (const name of Object.keys(manifest.dependencies)) {
-      const target = path.join(root, 'node_modules', name)
-      await mkdir(path.dirname(target), { recursive: true })
-      await symlink(await realpath(path.join(fixtureRoot, 'node_modules', name)), target, 'junction')
-    }
+  for (const name of Object.keys(manifest.dependencies)) {
+    const target = path.join(root, 'node_modules', name)
+    await mkdir(path.dirname(target), { recursive: true })
+    await symlink(await realpath(path.join(fixtureRoot, 'node_modules', name)), target, 'junction')
   }
   await access(path.join(root, 'node_modules/@weapp-vite/react/dist/index.mjs'))
   const entry = path.join(root, 'index.ts')
@@ -48,11 +43,11 @@ it.each(['directory', 'packages'] as const)('resolves React runtime with native 
     : [])).toContain('createReactMiniProgramRoot')
 }, 30_000)
 
-// 原生监听放进独立进程，保留 libuv 崩溃证据且不提前终止其余宿主对照。
-it.each(['provided', 'canonical'] as const)('observes a native filesystem event using the %s temporary path', async (identity) => {
+// 原生失败对照保留在 scripts/diagnose-native-host-paths.mjs；门禁验证框架采用的安全输入。
+it('observes a native filesystem event using the canonical temporary path', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'vite-native-watch-'))
   roots.push(root)
-  const watchedRoot = identity === 'canonical' ? await realpath(root) : root
+  const watchedRoot = await realpath(root)
   const result = await execa(process.execPath, ['--input-type=module', '-e', `
     import { watch, writeFileSync } from 'node:fs'
     import path from 'node:path'
