@@ -6,7 +6,7 @@ import { getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { parseJsLike, traverse } from '../../utils/babel'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { isStatefulHmrBoundary } from './boundaries'
-import { createStatefulHmrInitialGraph, resolveStatefulHmrModuleRoot } from './initialModuleGraph'
+import { createStatefulHmrHostFormatPlugin } from './hostFormat'
 import { createStatefulHmrSidecarPlugin } from './sidecarPlugin'
 
 export function redirectNativeComponentRegistration(code: string): string {
@@ -43,7 +43,6 @@ export function redirectNativeComponentRegistration(code: string): string {
 export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   let entryIds = new Set<string>()
   let delegatedEntryIds = new Set<string>()
-  let moduleGraphRoot = ctx.configService.cwd
   const plugins: Plugin[] = [{
     name: 'weapp-vite:hmr-input',
     enforce: 'pre',
@@ -60,9 +59,6 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
   }, createStatefulHmrSidecarPlugin(), {
     name: 'weapp-vite:stateful-hmr-session',
     enforce: 'post',
-    configResolved(config) {
-      moduleGraphRoot = resolveStatefulHmrModuleRoot(config.root, config.build.rolldownOptions.cwd)
-    },
     transform(code, id) {
       if (!isStatefulHmrBoundary(id, ctx.configService.absoluteSrcRoot, entryIds, delegatedEntryIds)
         || code.includes('import.meta.hot.accept')) {
@@ -71,11 +67,7 @@ export function createStatefulHmrHostPlugins(ctx: CompilerContext) {
       const transformed = id.endsWith('.vue') ? code : redirectNativeComponentRegistration(code)
       return `${transformed}\nif (import.meta.hot) import.meta.hot.accept();\n`
     },
-    renderChunk(code, chunk, options) {
-      if (options.format === 'cjs' && chunk.moduleIds.length) {
-        return { code: `${code}${createStatefulHmrInitialGraph(chunk, this, moduleGraphRoot)}`, map: null }
-      }
-    },
+    renderChunk: createStatefulHmrHostFormatPlugin().renderChunk,
   }]
   return {
     plugins,

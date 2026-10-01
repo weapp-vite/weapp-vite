@@ -1,136 +1,90 @@
-import type { ModuleInfo } from 'rolldown'
+import type { RolldownOutput } from 'rolldown'
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { createContext, runInContext } from 'node:vm'
-import { describe, expect, it, vi } from 'vitest'
-import { createLogicalEntryId } from '../../moduleGraph/protocol'
+import path from 'pathe'
+import { dev } from 'rolldown/experimental'
+import { describe, expect, it } from 'vitest'
 import { createStatefulHmrRolldownRuntimeSource } from './commonRuntime'
-import { createStatefulHmrInitialGraph } from './initialModuleGraph'
+import { createStatefulHmrHostFormatPlugin } from './hostFormat'
+import { toStableModuleId } from './initialModuleGraph'
 
-interface GraphRuntime {
-  staticImports: Map<string, { edges: string[] }>
-  dynamicImports: Map<string, { edges: string[] }>
-  getImporters: (id: string) => string[]
-  isExecuted: (id: string) => boolean
-  hasFactory: (id: string) => boolean
-}
-
-function moduleInfo(importedIds: string[] = [], dynamicallyImportedIds: string[] = [], isExternal = false): ModuleInfo {
-  return { importedIds, dynamicallyImportedIds, isExternal } as ModuleInfo
-}
-
-function fixture() {
-  const context = createContext({ console })
-  runInContext(createStatefulHmrRolldownRuntimeSource(), context, { timeout: 5_000 })
-  const runtime = runInContext('globalThis.__rolldown_runtime__', context) as GraphRuntime
-  return {
-    runtime,
-    register(moduleIds: string[], modules: Map<string, ModuleInfo | null>, root: string) {
-      const getModuleInfo = vi.fn((id: string) => modules.get(id) ?? null)
-      const code = createStatefulHmrInitialGraph({ moduleIds }, { getModuleInfo }, root)
-      runInContext(code, context, { timeout: 5_000 })
-      return getModuleInfo
-    },
-  }
-}
-
-describe('initial CJS module graph', () => {
+describe('native initial module graph', () => {
   it.each([
-    { platform: 'POSIX', root: '/project', source: '/project/src/component.vue', dependency: '/project/src/shared.ts' },
-    { platform: 'Windows', root: 'C:\\project', source: 'C:\\project\\src\\component.vue', dependency: 'C:\\project\\src\\shared.ts' },
-  ])('matches registration IDs for $platform physical and logical modules', ({ root, source, dependency }) => {
-    const { runtime, register } = fixture()
-    const owner = createLogicalEntryId(source, 'component')
-    const relativeRequest = 'src/tokens.ts?raw&lang.js'
-    const virtualModule = '\0virtual:tokens'
-    const modules = new Map([
-      [owner, moduleInfo([source])],
-      [source, moduleInfo([dependency, relativeRequest, virtualModule])],
-      [dependency, moduleInfo()],
-      [relativeRequest, moduleInfo()],
-      [virtualModule, moduleInfo()],
-    ])
-
-    register([...modules.keys()], modules, root)
-
-    expect([...runtime.staticImports.keys()]).toEqual([owner, 'src/component.vue', 'src/shared.ts', relativeRequest, virtualModule])
-    expect(runtime.getImporters('src/component.vue')).toEqual([owner])
-    expect(runtime.getImporters('src/shared.ts')).toEqual(['src/component.vue'])
-    expect(runtime.getImporters(relativeRequest)).toEqual(['src/component.vue'])
-    expect(runtime.getImporters(virtualModule)).toEqual(['src/component.vue'])
+    { root: '/project', source: '/project/src/component.vue' },
+    { root: 'C:\\project', source: 'C:\\project\\src\\component.vue' },
+  ])('normalizes physical IDs against $root without changing virtual IDs', ({ root, source }) => {
+    expect(toStableModuleId(source, root)).toBe('src/component.vue')
+    expect(toStableModuleId('\0virtual:tokens', root)).toBe('\0virtual:tokens')
+    expect(toStableModuleId('src/tokens.ts?raw&lang.js', root)).toBe('src/tokens.ts?raw&lang.js')
   })
 
-  it('merges static and dynamic importer edges across separately registered chunks', () => {
-    const { runtime, register } = fixture()
-    const root = '/project'
-    const page = `${root}/page.ts`
-    const otherPage = `${root}/other-page.ts`
-    const shared = `${root}/shared.ts`
-    const lazy = `${root}/lazy.ts`
-    const modules = new Map([
-      [page, moduleInfo([shared], [lazy, shared])],
-      [otherPage, moduleInfo([shared])],
-      [shared, moduleInfo([lazy])],
-      [lazy, moduleInfo()],
-    ])
-
-    register([page, otherPage], modules, root)
-    expect([...runtime.staticImports.keys()]).toEqual(['page.ts', 'other-page.ts'])
-    expect(runtime.staticImports.get('page.ts')?.edges).toEqual(['shared.ts'])
-    expect(runtime.dynamicImports.get('page.ts')?.edges).toEqual(['lazy.ts', 'shared.ts'])
-    expect(runtime.getImporters('shared.ts')).toEqual(['page.ts', 'other-page.ts'])
-
-    register([shared, lazy], modules, root)
-    expect(runtime.getImporters('shared.ts')).toEqual(['page.ts', 'other-page.ts'])
-    expect(runtime.getImporters('lazy.ts').sort()).toEqual(['page.ts', 'shared.ts'])
-    expect(runtime.staticImports.get('shared.ts')?.edges).toEqual(['lazy.ts'])
-  })
-
-  it('omits null synthetic helpers without shifting remaining module rows', () => {
-    const { runtime, register } = fixture()
-    const helper = '\0rolldown/runtime'
-    const source = '/project/source.ts'
-    const importer = '/project/importer.ts'
-    const modules = new Map([
-      [helper, null],
-      [source, moduleInfo()],
-      [importer, moduleInfo([source])],
-    ])
-
-    const getModuleInfo = register([helper, source, importer], modules, '/project')
-
-    expect(getModuleInfo).toHaveBeenCalledWith(helper)
-    expect([...runtime.staticImports.keys()]).toEqual(['source.ts', 'importer.ts'])
-    expect(runtime.getImporters('source.ts')).toEqual(['importer.ts'])
-    expect(runtime.staticImports.has(helper)).toBe(false)
-  })
-
-  it('keeps external references as foreign graph targets without inventing executable modules', () => {
-    const { runtime, register } = fixture()
-    const source = '/project/source.ts'
-    const external = 'external-runtime'
-    const modules = new Map([
-      [source, moduleInfo([external], [external])],
-      [external, moduleInfo([], [], true)],
-    ])
-
-    const getModuleInfo = register([source], modules, '/project')
-
-    expect(getModuleInfo).not.toHaveBeenCalledWith(external)
-    expect([...runtime.staticImports.keys()]).toEqual(['source.ts'])
-    expect(runtime.getImporters(external)).toEqual(['source.ts'])
-    expect(runtime.staticImports.has(external)).toBe(false)
-    expect(runtime.dynamicImports.has(external)).toBe(false)
-    expect(runtime.isExecuted(external)).toBe(false)
-    expect(runtime.hasFactory(external)).toBe(false)
-  })
-
-  it('registers a helper-only chunk without erasing existing graph rows', () => {
-    const { runtime, register } = fixture()
-    const source = '/project/source.ts'
-    register([source], new Map([[source, moduleInfo()]]), '/project')
-
-    register(['\0rolldown/runtime'], new Map(), '/project')
-
-    expect([...runtime.staticImports.keys()]).toEqual(['source.ts'])
-    expect(runtime.getImporters('source.ts')).toEqual([])
+  it('uses native static and dynamic edges across CommonJS chunks without claiming external ownership', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'stateful-native-graph-')))
+    const sources = {
+      'app.js': `import { value } from './shared.js'; import external from 'external-runtime'; globalThis.value = value + external; export const lazy = () => import('./lazy.js');`,
+      'other.js': `import { value } from './shared.js'; globalThis.other = value;`,
+      'shared.js': 'export const value = 2;',
+      'lazy.js': 'export const lazyValue = 3;',
+    }
+    for (const [file, code] of Object.entries(sources)) {
+      await writeFile(path.join(root, file), code)
+    }
+    const outputs: RolldownOutput[] = []
+    const engine = await dev({
+      cwd: root,
+      input: { app: path.join(root, 'app.js'), other: path.join(root, 'other.js') },
+      external: ['external-runtime'],
+      experimental: { devMode: { lazy: false, implement: createStatefulHmrRolldownRuntimeSource() } },
+      plugins: [createStatefulHmrHostFormatPlugin()],
+    }, { format: 'esm', entryFileNames: '[name].js' }, {
+      watch: { skipWrite: true },
+      onOutput(output) {
+        if (output instanceof Error) {
+          throw output
+        }
+        outputs.push(output)
+      },
+    })
+    const running = engine.run()
+    try {
+      await engine.registerClient('native-graph')
+      await engine.ensureCurrentBuildFinish()
+      await engine.getBundleState()
+      const files = new Map(outputs.at(-1)!.output.filter(item => item.type === 'chunk').map(item => [item.fileName, item.code]))
+      const context = createContext({ console, setTimeout: () => {} })
+      const loaded = new Map<string, { exports: unknown }>()
+      const load = (name: string): unknown => {
+        if (name === 'external-runtime') {
+          return 5
+        }
+        if (loaded.has(name)) {
+          return loaded.get(name)!.exports
+        }
+        const code = files.get(name)
+        expect(code).toBeDefined()
+        const module = { exports: {} }
+        loaded.set(name, module)
+        const run = runInContext(`(function(require,module,exports){${code}\n})`, context)
+        run((request: string) => load(request.startsWith('.') ? path.join(path.dirname(name), request) : request), module, module.exports)
+        return module.exports
+      }
+      load('app.js')
+      load('other.js')
+      const runtime = context.__rolldown_runtime__
+      expect(context.value).toBe(7)
+      expect(context.other).toBe(2)
+      expect(runtime.getImporters('shared.js').sort()).toEqual(['app.js', 'other.js'])
+      expect(runtime.dynamicImports.get('app.js').edges).toContain('lazy.js')
+      // 外部模块由宿主 require 提供，不属于原生 HMR 图的可更新源码。
+      expect(runtime.getImporters('external-runtime')).toEqual([])
+      expect(runtime.hasFactory('external-runtime')).toBe(false)
+      expect(runtime.staticImports.has('external-runtime')).toBe(false)
+    }
+    finally {
+      await engine.close()
+      await running
+      await rm(root, { recursive: true, force: true })
+    }
   })
 })
