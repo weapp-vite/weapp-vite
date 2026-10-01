@@ -4,7 +4,6 @@ import { lstat, readdir, readFile, realpath, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { performance } from 'node:perf_hooks'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 const execute = promisify(execFile)
@@ -65,7 +64,7 @@ export async function profileConsumerStartup(root, samples = 5) {
     timings.push({ index, wallMs: performance.now() - started })
   }
   const output = path.join(root, 'consumer-load-profile.json')
-  await execute(process.execPath, ['--import', fileURLToPath(new URL('./consumerLoadProbe.mjs', import.meta.url)), cli, '--help'], {
+  await execute(process.execPath, ['--import', new URL('./consumerLoadProbe.mjs', import.meta.url).href, cli, '--help'], {
     cwd: root,
     timeout: 120_000,
     maxBuffer: 10 * 1024 * 1024,
