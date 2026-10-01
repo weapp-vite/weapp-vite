@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../../context'
+import type { createEntryLoader } from '../../hooks/useLoadEntry/loadEntry'
 import {
   WEVU_AUTO_ROUTES_MODULE_ID,
   WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID,
@@ -13,7 +14,7 @@ import { invalidateFileCache } from '../../utils/cache'
  * 标记 app 入口依赖的 auto-routes 拓扑已变化。
  */
 export function markAppEntryForAutoRoutesTopology(ctx: MutableCompilerContext, options: {
-  loadEntry?: unknown
+  loadEntry?: Pick<ReturnType<typeof createEntryLoader>, 'invalidateResolveCache'>
   markEntryDirty: (entryId: string, reason: 'direct') => void
   resolvedEntryMap: Map<string, unknown>
 }) {
@@ -35,15 +36,7 @@ export function markAppEntryForAutoRoutesTopology(ctx: MutableCompilerContext, o
     invalidateFileCache(normalizeFsResolvedId(target))
   }
 
-  const loadEntry = options.loadEntry
-  if (
-    loadEntry
-    && typeof loadEntry === 'object'
-    && 'invalidateResolveCache' in loadEntry
-    && typeof loadEntry.invalidateResolveCache === 'function'
-  ) {
-    loadEntry.invalidateResolveCache()
-  }
+  options.loadEntry?.invalidateResolveCache()
   ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = undefined
 
   if (!appEntryId || !options.resolvedEntryMap.has(appEntryId)) {
