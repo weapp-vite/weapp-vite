@@ -43,7 +43,7 @@ export function checkWorkersOptions(
 export function checkAppWorkersOptions(
   target: BuildTarget,
   configService: NonNullable<MutableCompilerContext['configService']>,
-  app: AppEntry,
+  app: Pick<AppEntry, 'json'>,
 ): WorkerOptionsResult {
   const workers = app.json?.workers
   return checkWorkersDir(target, configService, typeof workers === 'object' ? workers?.path : workers)
