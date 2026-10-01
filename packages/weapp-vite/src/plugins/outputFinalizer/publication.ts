@@ -33,7 +33,7 @@ export function pruneUneventedDevHmrChunks(
   const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   if (
     !ctx.configService?.isDev
-    || ctx.runtimeState?.build?.hmr?.profile?.event === undefined
+    || ctx.runtimeState?.build?.hmr?.isRebuild !== true
     || !emittedChunkFileNames?.size
   ) {
     return
@@ -64,7 +64,7 @@ export function pruneUnchangedDevHmrOutputs(
     return
   }
 
-  const isHmrBuild = !options?.preserveCompleteBundle && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+  const isHmrBuild = !options?.preserveCompleteBundle && ctx.runtimeState?.build?.hmr?.isRebuild === true
   const emittedChunkFileNames = ctx.runtimeState?.build?.hmr?.lastEmittedChunkFileNames
   if (!options?.runtimeRewriteDone) {
     rewriteWevuInternalRuntimeImports(bundle, rewriteOptions)
@@ -130,7 +130,7 @@ export function createOutputPublicationPlugin(ctx: CompilerContext, subPackageMe
         const outputBundle = bundle as unknown as OutputBundle
         const partial = ctx.configService.isDev && !preserveCompleteBundle
           && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
-          && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+          && ctx.runtimeState?.build?.hmr?.isRebuild === true
         let commitValidation: WxmlDependencyCommit | undefined
         try {
           commitValidation = await validateWxmlBundle(ctx, outputBundle, {

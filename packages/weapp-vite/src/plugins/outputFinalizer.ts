@@ -254,7 +254,7 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
         const assetEntries = collectOutputFinalizerAssetEntries(outputBundle)
         const partial = !preserveCompleteBundle
           && ctx.runtimeState?.build?.hmr?.didEmitAllEntries !== true
-          && ctx.runtimeState?.build?.hmr?.profile?.event !== undefined
+          && ctx.runtimeState?.build?.hmr?.isRebuild === true
         if (ctx.configService.platform === 'weapp') {
           // 在 HMR 裁剪前消费本轮事实；full 也只替换当前构建实例的精确 scope。
           analyzeGlassEaselBundle(ctx, outputBundle, {

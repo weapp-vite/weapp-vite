@@ -669,6 +669,7 @@ describe('core lifecycle emit hook extra branches', () => {
         configService: { isDev: true },
         runtimeState: { build: { hmr: {
           forceFullSharedChunkRefresh,
+          isRebuild: true,
           profile: { event: 'update' },
           lastEmittedChunkFileNames: new Set(['components/example.js']),
         } } },

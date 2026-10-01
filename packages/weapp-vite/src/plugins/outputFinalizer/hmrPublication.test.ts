@@ -7,7 +7,7 @@ import { pruneUnchangedDevHmrOutputs } from '../outputFinalizer'
 describe('HMR chunk publication', () => {
   it.each([false, true])('only forces unchanged chunks for script invalidation (%s)', (forceEmitUnchangedChunks) => {
     const runtimeState = createRuntimeState()
-    runtimeState.build.hmr.profile.event = 'update'
+    runtimeState.build.hmr.isRebuild = true
     runtimeState.build.hmr.forceEmitUnchangedChunks = forceEmitUnchangedChunks
     const previous = {
       'pages/index/index.js': 'Page({ count: 0 })',
@@ -42,7 +42,7 @@ describe('HMR chunk publication', () => {
 
 it.each([false, true])('publishes a changed static plugin main input outside the dynamic entry set (changed=%s)', (changed) => {
   const runtimeState = createRuntimeState()
-  runtimeState.build.hmr.profile.event = 'update'
+  runtimeState.build.hmr.isRebuild = true
   runtimeState.build.hmr.lastEmittedChunkFileNames.add('pages/hello/index.js')
   runtimeState.build.output.emittedSource.set('api/main.js', 'exports.message = "before"')
   const bundle = {

@@ -126,3 +126,44 @@ it('renders mode changes from external CommonJS modules after native Page update
     host.remove()
   }
 })
+
+it('computes native batch styles alongside updated templates and script handlers', () => {
+  const files = createBrowserVirtualFiles(sources as Array<[string, string]>)
+  const initial = new Map(files)
+  const session = createBrowserHeadlessSession({ files })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const shadow = host.attachShadow({ mode: 'open' })
+  const style = document.createElement('style')
+  const preview = document.createElement('div')
+  shadow.append(style, preview)
+  try {
+    const page = session.reLaunch('/pages/batch/index')
+    const markers = ['BATCH_BASE', 'BATCH_FIRST', 'BATCH_NEXT', 'BATCH_BASE']
+    const colors = ['#112233', '#223344', '#334455', '#112233']
+    const computed = ['rgb(17, 34, 51)', 'rgb(34, 51, 68)', 'rgb(51, 68, 85)', 'rgb(17, 34, 51)']
+    for (const [index, marker] of markers.entries()) {
+      if (index) {
+        for (const extension of ['wxml', 'wxss', 'json']) {
+          const file = `pages/batch/index.${extension}`
+          files.set(file, initial.get(file)!.replaceAll('BATCH_BASE', marker).replace('#112233', colors[index]!))
+        }
+        page.patchBatch(marker)
+      }
+      page.increment()
+      const rendered = session.renderCurrentPage()
+      style.textContent = rendered.styles.cssText
+      preview.innerHTML = rendered.wxml
+      expect(preview.querySelector('#batch')?.textContent).toBe(marker)
+      expect(preview.querySelector('#script')?.textContent).toBe(marker)
+      expect(preview.querySelector('#increment')?.textContent).toBe(String(index + 1))
+      expect(getComputedStyle(preview.querySelector('#batch')!).color).toBe(computed[index])
+      expect(files.get('pages/batch/index.json')).toContain(marker)
+      expect(session.getCurrentPages()[0]).toBe(page)
+    }
+  }
+  finally {
+    session.close()
+    host.remove()
+  }
+})

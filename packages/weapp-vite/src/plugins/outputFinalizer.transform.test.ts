@@ -42,7 +42,7 @@ describe('WXML transform output pipeline', () => {
     await run(ctx, first)
     expect(seen[0]).toBe('<view/>')
     expect(first['page.wxml']).toMatchObject({ source: '<view/><text >中文</text>' })
-    ctx.runtimeState.build.hmr.profile.event = 'update'
+    ctx.runtimeState.build.hmr.isRebuild = true
     const next = bundle('<view/>')
     await run(ctx, next)
     expect(seen).toEqual(['<view/>', '<view/>'])

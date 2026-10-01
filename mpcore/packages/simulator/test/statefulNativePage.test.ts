@@ -125,3 +125,34 @@ describe.each(['node', 'browser'] as const)('%s native Page style and script HMR
     }
   })
 })
+
+it('renders each native four-file batch after script replacement while preserving interaction state', () => {
+  const files = createBrowserVirtualFiles(createStatefulNativePageFiles())
+  const session = createBrowserHeadlessSession({ files })
+  const initial = new Map(files)
+  try {
+    const page = session.reLaunch('/pages/batch/index')
+    const markers = ['BATCH_BASE', 'BATCH_FIRST', 'BATCH_NEXT', 'BATCH_BASE']
+    for (const [index, marker] of markers.entries()) {
+      if (index) {
+        for (const extension of ['wxml', 'wxss', 'json']) {
+          const file = `pages/batch/index.${extension}`
+          files.set(file, initial.get(file)!.replaceAll('BATCH_BASE', marker))
+        }
+        page.patchBatch(marker)
+      }
+      page.increment()
+      const rendered = session.renderCurrentPage()
+      const document = parseDocument(rendered.wxml)
+      expect(textContent(selectOne('#batch', document.children)!)).toBe(marker)
+      expect(textContent(selectOne('#script', document.children)!)).toBe(marker)
+      expect(textContent(selectOne('#increment', document.children)!)).toBe(String(index + 1))
+      expect(rendered.styles.cssText).toContain(marker)
+      expect(files.get('pages/batch/index.json')).toContain(marker)
+      expect(session.getCurrentPages()[0]).toBe(page)
+    }
+  }
+  finally {
+    session.close()
+  }
+})

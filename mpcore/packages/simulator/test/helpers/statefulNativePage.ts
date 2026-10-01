@@ -43,6 +43,36 @@ function createExternalNpmPageFiles(): Array<[string, string]> {
   ]
 }
 
+/** 原生四文件批次复用 issue fixture，通过真实 Page bridge 替换脚本闭包。 */
+function createNativeBatchFiles(): Array<[string, string]> {
+  const root = path.resolve(import.meta.dirname, '../../../../../e2e-apps/github-issues/fixtures/issue-1134-native-batch/src/pages/index')
+  const script = readFileSync(path.join(root, 'index.js'), 'utf8')
+    .replace('const marker = \'BATCH_BASE\'', '')
+    .replace('Page({', 'bridge.Page({ patchBatch(marker) { applyBatch(marker); },')
+  return [
+    ...['wxml', 'wxss', 'json'].map(extension => [
+      `pages/batch/index.${extension}`,
+      readFileSync(path.join(root, `index.${extension}`), 'utf8'),
+    ] as [string, string]),
+    ['pages/batch/index.js', `
+      require('../../hmr-runtime.js');
+      const runtime = globalThis.__rolldown_runtime__;
+      const bridge = globalThis.__WEAPP_VITE_STATEFUL_HMR_BRIDGE__;
+      function register(marker) { ${script} }
+      function applyBatch(marker) {
+        const previous = runtime.currentModuleId;
+        bridge.beginUpdate();
+        runtime.currentModuleId = 'pages/batch/index.js';
+        try { register(marker); }
+        finally { runtime.currentModuleId = previous; bridge.endUpdate(); }
+      }
+      runtime.registrationModuleId = 'pages/batch/index.js';
+      bridge.installNative('Page', Page);
+      register('BATCH_BASE');
+    `],
+  ]
+}
+
 /** 复用真实 IDE Page 与 WXSS，通过实际 bridge 验证独立样式更新和脚本往返。 */
 export function createStatefulNativePageFiles(): Array<[string, string]> {
   const original = ts.transpileModule(readFileSync(path.join(fixtureRoot, 'index.ts'), 'utf8'), {
@@ -55,9 +85,10 @@ export function createStatefulNativePageFiles(): Array<[string, string]> {
   const patched = original.replace('this.data.count + 1', 'this.data.count + 2').replace('count: 0', 'count: 7')
   return [
     ['project.config.json', '{"appid":"wx1234567890abcdef","miniprogramRoot":"."}'],
-    ['app.json', '{"pages":["pages/native/index","pages/external/index"]}'],
+    ['app.json', '{"pages":["pages/native/index","pages/external/index","pages/batch/index"]}'],
     ['app.js', 'App({})'],
     ...createExternalNpmPageFiles(),
+    ...createNativeBatchFiles(),
     ['hmr-runtime.js', createStatefulHmrRolldownRuntimeSource()],
     ['pages/native/index.json', '{}'],
     ['pages/native/index.wxml', readFileSync(path.join(fixtureRoot, 'index.wxml'), 'utf8')],

@@ -56,6 +56,7 @@ export function createBuildEndHook(state: CorePluginState) {
   const { subPackageMeta } = state
 
   return async function buildEnd(this: any) {
+    state.ctx.runtimeState.build.hmr.isRebuild = state.hmrState.hasBuiltOnce
     state.ctx.moduleGraphService.bindBuildContext(state, this)
     // 生产 watch 每轮发布完整目标，不能被单个 sidecar 的诊断范围收窄。
     const replacesOutput = (!state.ctx.configService.isDev && Boolean(state.resolvedConfig?.build.watch))

@@ -168,6 +168,8 @@ export interface RuntimeState {
       vueEntryTailwindScriptContentSignatures: Map<string, string>
       appEntryAutoRoutesSignature?: string
       dirtyVueEntryIds: Set<string>
+      /** 当前构建是否为已有输出的后续发布，不依赖单文件诊断事件。 */
+      isRebuild: boolean
       didEmitAllEntries: boolean
       lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>
@@ -438,6 +440,7 @@ export function createRuntimeState(): RuntimeState {
         vueEntryTailwindScriptContentSignatures: new Map<string, string>(),
         appEntryAutoRoutesSignature: undefined,
         dirtyVueEntryIds: new Set<string>(),
+        isRebuild: false,
         didEmitAllEntries: false,
         lastHmrEntryIds: new Set<string>(),
         lastEmittedEntryIds: new Set<string>(),

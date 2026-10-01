@@ -1,0 +1,4 @@
+<view id="batch" class="batch">BATCH_BASE</view>
+<view id="script">{{marker}}</view>
+<button id="increment" bindtap="increment">{{count}}</button>
+<input id="input" value="{{input}}" bindinput="onInput" />

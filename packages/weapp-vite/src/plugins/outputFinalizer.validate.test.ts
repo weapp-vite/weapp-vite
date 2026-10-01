@@ -47,7 +47,7 @@ describe('final template validation publication boundary', () => {
     const code = '<view /><text>compiler output</text>'
     expect(seen).toEqual([code])
     expect(output['page.wxml']).toMatchObject({ source: code })
-    ctx.runtimeState.build.hmr.profile.event = 'update'
+    ctx.runtimeState.build.hmr.isRebuild = true
     const unchanged = bundle(code)
     await publish(ctx, unchanged)
     expect(seen).toEqual([code, code])
@@ -62,7 +62,7 @@ describe('final template validation publication boundary', () => {
       }
     })
     ctx.runtimeState.build.output.emittedSource.set('page.wxml', '<view>previous</view>')
-    ctx.runtimeState.build.hmr.profile.event = 'update'
+    ctx.runtimeState.build.hmr.isRebuild = true
     const output = bundle('<view>next</view>')
     const plugin = pluginContext()
     await expect(publish(ctx, output, plugin)).rejects.toThrow('invalid')
@@ -77,7 +77,7 @@ describe('final template validation publication boundary', () => {
   it('waits for child validation before updating parent fingerprints and does not revalidate merged children', async () => {
     const validate = vi.fn<WxmlValidate>()
     const ctx = context(validate)
-    ctx.runtimeState.build.hmr.profile.event = 'update'
+    ctx.runtimeState.build.hmr.isRebuild = true
     ctx.runtimeState.build.output.emittedSource.set('page.wxml', '<view>previous</view>')
     ctx.runtimeState.build.independent.pendingOutputs = [Promise.reject(new Error('child validation failed'))]
     const plugin = pluginContext()
