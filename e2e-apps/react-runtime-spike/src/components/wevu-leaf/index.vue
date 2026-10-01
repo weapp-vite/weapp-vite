@@ -8,6 +8,8 @@ const emit = defineEmits<{
   change: [detail: { source: string, value: number }]
 }>()
 
+const initialValue = props.value
+
 defineComponentJson({
   options: {
     multipleSlots: true,
@@ -23,7 +25,7 @@ function emitChange() {
 </script>
 
 <template>
-  <view class="leaf" data-e2e-leaf="wevu">
+  <view class="leaf" data-e2e-leaf="wevu" :data-initial-value="initialValue">
     <text class="leaf-label">{{ label }}:{{ value }}</text>
     <slot />
     <button id="wevu-leaf-action" size="mini" @tap="emitChange">

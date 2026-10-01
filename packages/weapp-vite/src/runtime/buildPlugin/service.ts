@@ -39,7 +39,7 @@ import { createHmrProfileEventId, recordHmrProfileDuration, resolveHmrProfileJso
 import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { disableProjectPrivateConfigHotReload, syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
-import { getWxmlWatchFiles, isWxmlDependency, observeWxmlDependencies } from '../../wxml/processing/dependencies'
+import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { waitForBuildTasks } from '../compilerSession/tasks'
 import { findSkylineRendererFiles, formatHmrRuntimeStartupMessages, resolveHmrRuntimeDecision } from '../hmrRuntime'
 import { resetRuntimeStateForFreshBuild } from '../resetRuntimeState'
@@ -1807,6 +1807,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }, SNAPSHOT_BUILD_BATCH_DELAY_MS)
     }
 
+    // 附着宿主与独立 Vite provider 共用同一事件入口，WXML 外部依赖不再交给第二个 watcher。
     const moduleGraphProvider = target === 'app'
       ? await createDevModuleGraphProvider(ctx, buildOptions, ({ event, file: id }) => {
           if (isDevOutputFile(id)) {
@@ -1814,6 +1815,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
           const hasModule = ctx.moduleGraphService.hasModule(id)
           debug?.(`[module-graph-provider] event=${event} change=${configService.relativeAbsoluteSrcRoot(id)} module=${hasModule}`)
+          if (isWxmlDependency(ctx, id)) {
+            for (const root of scanService.independentSubPackageMap.keys()) {
+              invalidateIndependentOutput(root)
+              scanService.markIndependentDirty(root)
+            }
+            scheduleSnapshotBuild({ event, file: id, forceFullRescan: true }, performance.now())
+            return
+          }
           if (!hasModule && !initialBuildFailed) {
             return
           }
@@ -1972,14 +1981,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : '/'
     if (target === 'app' && !watcherService.sidecarWatcherMap.has(snapshotWatcherRoot)) {
       const snapshotWatcher = chokidar.watch(
-        [...createSnapshotSidecarWatchPatterns(configService, buildOptions), ...getWxmlWatchFiles(ctx)],
+        createSnapshotSidecarWatchPatterns(configService, buildOptions),
         createSidecarWatchOptions(configService, {
           persistent: true,
           ignoreInitial: true,
           ignored: createSnapshotSidecarIgnoredMatcher(ctx),
         }),
       )
-      const unobserveWxml = observeWxmlDependencies(ctx, files => snapshotWatcher.add(files))
       const unobserveWorkers = observeWorkerSources(ctx, files => snapshotWatcher.add(files))
       const independentWatch = ctx.runtimeState.build.independent
       const observeIndependent = (files: string[]) => {
@@ -1997,6 +2005,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return
         }
         const normalizedId = normalizeFsResolvedId(id)
+        if (isWxmlDependency(ctx, normalizedId)) {
+          return
+        }
         const workerSource = ownsWorkerSource(ctx, normalizedId)
         if (workerSource) {
           scheduleSnapshotBuild({ event: event === 'unlink' ? 'delete' : 'update', file: id, forceFullRescan: true }, performance.now())
@@ -2009,11 +2020,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           }
         }
         const independentSource = independentRoots.length > 0 && !ctx.moduleGraphService.hasModule(id)
-        if (!independentSource && !isWxmlDependency(ctx, id) && !shouldHandleSnapshotSidecarFile(id, ctx)) {
+        if (!independentSource && !shouldHandleSnapshotSidecarFile(id, ctx)) {
           return
         }
-        const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
-        if (event === 'unlink' && (isWxmlDependencyFile || independentSource)) {
+        if (event === 'unlink' && independentSource) {
           // Chokidar 删除单文件监听后不总是监听其父目录；关闭旧句柄后重新登记缺失文件，才能观察恢复。
           queueMicrotask(() => {
             if (!devWatcherClosed) {
@@ -2023,10 +2033,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         const isConfigDependency = (configService.configFileDependencies ?? [])
           .some(dependency => normalizeFsResolvedId(dependency) === normalizedId)
-        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !isWxmlDependencyFile && !independentSource) {
+        if (!event.startsWith('add') && !event.startsWith('unlink') && !isConfigDependency && !independentSource) {
           return
         }
-        if (event.startsWith('add') && !isConfigDependency && !isWxmlDependencyFile && ctx.moduleGraphService.hasModule(id)) {
+        if (event.startsWith('add') && !isConfigDependency && ctx.moduleGraphService.hasModule(id)) {
           return
         }
         if (isConfigDependency) {
@@ -2040,12 +2050,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           invalidateIndependentOutput(root)
           scanService.markIndependentDirty(root)
         }
-        if (isWxmlDependencyFile) {
-          for (const root of scanService.independentSubPackageMap.keys()) {
-            invalidateIndependentOutput(root)
-            scanService.markIndependentDirty(root)
-          }
-        }
         const sidecarStartedAt = performance.now()
         const normalizedEvent = event.startsWith('unlink')
           ? 'delete'
@@ -2056,7 +2060,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           event: normalizedEvent,
           file: id,
           independentOutput: independentRoots.length > 0,
-          forceFullRescan: !independentSource || isConfigDependency || isWxmlDependencyFile,
+          forceFullRescan: !independentSource || isConfigDependency,
         }, sidecarStartedAt)
       })
       const assetWatcher = watchAssetSources(configService, {
@@ -2071,7 +2075,6 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       watcherService.sidecarWatcherMap.set(snapshotWatcherRoot, {
         close: async () => {
           try {
-            unobserveWxml()
             unobserveWorkers()
             independentWatch.watchListeners.delete(observeIndependent)
             await Promise.all([snapshotWatcher.close(), assetWatcher.close()])

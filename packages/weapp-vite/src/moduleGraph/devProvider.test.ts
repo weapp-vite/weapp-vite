@@ -18,6 +18,7 @@ vi.mock('vite', async (importOriginal) => {
 
 describe('dev module graph provider', () => {
   const watcher = {
+    add: vi.fn(),
     on: vi.fn(),
     off: vi.fn(),
   }
@@ -39,6 +40,7 @@ describe('dev module graph provider', () => {
     const moduleGraphService = createModuleGraphService()
     const userIgnored = (id: string) => id.endsWith('.generated.ts')
     const ctx = {
+      runtimeState: createRuntimeState(),
       configService: {
         cwd: '/project',
         outDir: '/project/dist',
@@ -90,6 +92,27 @@ describe('dev module graph provider', () => {
     expect(close).toHaveBeenCalled()
   })
 
+  it('subscribes external WXML inputs to the provider and releases only its listener', async () => {
+    const runtimeState = createRuntimeState()
+    const dependency = '/external/transform-rules.json'
+    runtimeState.wxmlProcessing.references.set(dependency, 1)
+    const unrelated = vi.fn()
+    runtimeState.wxmlProcessing.listeners.add(unrelated)
+    const provider = await createDevModuleGraphProvider({
+      moduleGraphService: createModuleGraphService(),
+      runtimeState,
+    } as any, {}, vi.fn())
+    expect(watcher.add).toHaveBeenCalledWith([dependency])
+    expect(runtimeState.wxmlProcessing.listeners.size).toBe(2)
+    for (const listener of runtimeState.wxmlProcessing.listeners) {
+      listener(['/external/late-rules.json'])
+    }
+    expect(watcher.add).toHaveBeenCalledWith(['/external/late-rules.json'])
+    await provider.close()
+    await provider.close()
+    expect(runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
+  })
+
   it('borrows a host graph without creating or closing a second Vite server', async () => {
     const moduleGraphService = createModuleGraphService()
     const ctx = { moduleGraphService, runtimeState: createRuntimeState() }
@@ -109,6 +132,7 @@ describe('dev module graph provider', () => {
 
   it('leaves missing-file topology changes to the topology watcher', async () => {
     const ctx = {
+      runtimeState: createRuntimeState(),
       moduleGraphService: {
         bindDevServer: vi.fn(),
         getEntryDependencies: vi.fn(() => []),
@@ -136,6 +160,7 @@ describe('dev module graph provider', () => {
     const templateId = '/project/src/pages/home/index.wxml'
     const styleId = '/project/src/pages/home/index.css'
     const ctx = {
+      runtimeState: createRuntimeState(),
       moduleGraphService: {
         bindDevServer: vi.fn(),
         getEntryDependencies: vi.fn(() => [{ kind: 'template', sourceId: templateId }]),
@@ -163,6 +188,7 @@ describe('dev module graph provider', () => {
 
   it('stubs build externals while leaving normal resolver requests untouched', async () => {
     const ctx = {
+      runtimeState: createRuntimeState(),
       moduleGraphService: {
         bindDevServer: vi.fn(),
         getEntryDependencies: vi.fn(() => []),
@@ -209,6 +235,7 @@ describe('dev module graph provider', () => {
 
   it('turns Vue scripts into valid provider modules for static and dynamic imports', async () => {
     const ctx = {
+      runtimeState: createRuntimeState(),
       moduleGraphService: {
         bindDevServer: vi.fn(),
         getEntryDependencies: vi.fn(() => []),
@@ -241,6 +268,7 @@ console.log(value, lazy)
     const currentNode = { id: '/src/current.ts', file: '/src/current.ts' }
     const oldClose = Promise.withResolvers<void>()
     createServerMock.mockResolvedValueOnce({
+      watcher,
       close: () => oldClose.promise,
       moduleGraph: {
         getModuleById: (id: string) => id === oldNode.id ? oldNode : undefined,
@@ -252,6 +280,7 @@ console.log(value, lazy)
     const closing = oldProvider.close()
     const failedClose = expect(closing).rejects.toThrow('old close failed')
     createServerMock.mockResolvedValueOnce({
+      watcher,
       close: async () => {},
       moduleGraph: {
         getModuleById: (id: string) => id === currentNode.id ? currentNode : undefined,
@@ -273,6 +302,7 @@ console.log(value, lazy)
     const moduleGraphService = createModuleGraphService()
     const source = '/src/failed.ts'
     createServerMock.mockResolvedValueOnce({
+      watcher,
       close: async () => {
         throw new Error('close failed')
       },

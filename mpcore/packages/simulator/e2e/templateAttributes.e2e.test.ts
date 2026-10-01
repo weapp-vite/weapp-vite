@@ -36,7 +36,7 @@ it('renders WXML literal delimiters and escaped attributes without breaking even
     ['app.js', 'App({})'],
     ['pages/index/index.json', '{}'],
     ['pages/index/index.js', 'Page({data:{result:""},tap(e){this.setData({result:e.currentTarget.dataset.literal})}})'],
-    ['pages/index/index.wxml', String.raw`<view id="subtree"><view id="nested-child" data-subtree-visited="{{true}}">nested</view><view id="probe" data-literal="中文 & \"单'双\" \\ {{'{'}}{{'{'}}literal}}" bindtap="tap">probe</view></view><text id="result">{{result}}</text>`],
+    ['pages/index/index.wxml', String.raw`<view id="subtree"><view id="nested-child" data-subtree-visited="{{true}}">nested</view><view id="probe" data-rule="restored" data-literal="中文 & \"单'双\" \\ {{'{'}}{{'{'}}literal}}" bindtap="tap">probe</view></view><text id="result">{{result}}</text>`],
   ]))
   const session = createBrowserHeadlessSession({ files })
   const preview = document.createElement('div')
@@ -59,6 +59,7 @@ it('renders WXML literal delimiters and escaped attributes without breaking even
     expect(nested?.textContent).toBe('nested')
     expect(nested?.getAttribute('data-subtree-visited')).toBe('true')
     expect(preview.querySelector('#probe')?.getAttribute('data-literal')).toBe(literal)
+    expect(preview.querySelector('#probe')?.getAttribute('data-rule')).toBe('restored')
     await probe?.tap()
     render()
     expect(preview.querySelector('#result')?.textContent).toBe(literal)

@@ -12,6 +12,7 @@ import {
 } from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
+import { observeWxmlDependencies } from '../wxml/processing/dependencies'
 import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import {
@@ -254,11 +255,13 @@ export async function createDevModuleGraphProvider(
     },
   })
   const releaseServer = ctx.moduleGraphService.bindDevServer(server)
+  const unobserveWxml = observeWxmlDependencies(ctx, files => server.watcher.add(files))
   let closePromise: Promise<void> | undefined
 
   return {
     close() {
       closePromise ??= (async () => {
+        unobserveWxml()
         try {
           await server.close()
         }

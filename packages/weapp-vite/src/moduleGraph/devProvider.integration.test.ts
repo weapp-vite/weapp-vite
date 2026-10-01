@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createRuntimeState } from '../runtime/runtimeState'
 import { createDevModuleGraphProvider } from './devProvider'
 import { createLogicalEntryId } from './protocol'
 import { createModuleGraphService } from './service'
@@ -40,6 +41,7 @@ describe('dev module graph provider integration', () => {
     const onChange = vi.fn()
     const outDir = path.join(root, 'dist')
     const provider = await createDevModuleGraphProvider({
+      runtimeState: createRuntimeState(),
       configService: {
         cwd: root,
         outDir,
@@ -102,6 +104,41 @@ describe('dev module graph provider integration', () => {
     expect(moduleGraphService.collectAffectedEntries(styleId)).toEqual(new Set())
   })
 
+  it('observes external WXML dependency deletion and recreation without a module node', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-wxml-input-')))
+    temporaryDirectories.push(root)
+    const project = path.join(root, 'project')
+    const dependency = path.join(root, 'rules.json')
+    await mkdir(project)
+    await writeFile(dependency, '{}')
+    const runtimeState = createRuntimeState()
+    runtimeState.wxmlProcessing.references.set(normalizeSourceId(dependency), 1)
+    const moduleGraphService = createModuleGraphService()
+    const onChange = vi.fn()
+    const ready = Promise.withResolvers<void>()
+    const provider = await createDevModuleGraphProvider({
+      runtimeState,
+      configService: { cwd: project, outDir: path.join(project, 'dist') },
+      moduleGraphService,
+    } as unknown as MutableCompilerContext, {
+      root: project,
+      plugins: [{ name: 'test:watch-ready', configureServer(server) { server.watcher.once('ready', () => ready.resolve()) } }],
+    }, onChange)
+    try {
+      await ready.promise
+      expect(moduleGraphService.hasModule(dependency)).toBe(false)
+      await writeFile(dependency, '{"label":"changed"}')
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({ event: 'update', file: normalizeSourceId(dependency) }))
+      await rm(dependency)
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({ event: 'delete', file: normalizeSourceId(dependency) }))
+      await writeFile(dependency, '{"label":"restored"}')
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({ event: 'create', file: normalizeSourceId(dependency) }))
+    }
+    finally {
+      await provider.close()
+    }
+  })
+
   it('tracks named route data through an external SFC script and conflicting router alias', async () => {
     const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-named-route-graph-')))
     temporaryDirectories.push(root)
@@ -113,6 +150,7 @@ describe('dev module graph provider integration', () => {
     ])
     const moduleGraphService = createModuleGraphService()
     const provider = await createDevModuleGraphProvider({
+      runtimeState: createRuntimeState(),
       configService: { cwd: root, outDir: path.join(root, 'dist') },
       moduleGraphService,
       autoRoutesService: {
