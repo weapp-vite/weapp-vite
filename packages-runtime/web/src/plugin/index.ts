@@ -17,6 +17,7 @@ import { createMiniProgramPackageResolver, getAncestorNodeModulesPaths } from '.
 import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveFileWithExtensionsSync, resolveRuntimePolyfillPath, resolveTemplatePathSync, resolveWxsPathSync, toRelativeImport, toViteFsImport } from './path'
 import { transformScriptModule } from './register'
 import { getStableWebComponentId, scanProject } from './scan'
+import { collectSfcHmrFiles } from './sfcHmr'
 import { createEmptyScanState } from './state'
 import { createInlineStyleModule } from './styleModule'
 import { ensureWebVueSfcResult, generateWebVueSfcStyle, generateWebVueSfcTemplate, resolveWebVueSfcStyleLanguage, transformWebVueSfcScript } from './vueSfc'
@@ -59,6 +60,7 @@ interface WebResolvedConfig extends WebUserConfig {
 
 interface WebHmrContext {
   file: string
+  modules?: object[]
 }
 
 interface WebDevServer {
@@ -86,7 +88,7 @@ interface WeappWebVitePlugin {
     sequential: true
     handler: (this: WebPluginContext, id: string, change: { event: 'create' | 'update' | 'delete' }) => Promise<void>
   }
-  handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void>
+  handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void | object[]>
   transform?: (
     this: WebPluginContext,
     code: string,
@@ -312,7 +314,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     if (!isInsideDir(clean, srcRoot) && !state.moduleMeta.has(normalized) && !state.templatePathSet.has(normalized)) {
       return
     }
-    if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
+    if (state.templatePathSet.has(normalized) || clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
       await scan(context)
     }
   }
@@ -505,6 +507,9 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           uniApp: options.__uniApp,
           stylePreprocessOptions,
         })
+        for (const dependency of result.meta?.sfcSrcDeps ?? []) {
+          this.addWatchFile?.(dependency)
+        }
         return generateWebVueSfcStyle(result)
       }
       return null
@@ -520,7 +525,17 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
       },
     },
     async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
+      const affectedFiles = collectSfcHmrFiles(state, ctx.file)
       await scanChangedFile(this, ctx.file)
+      if (affectedFiles.size && devServer?.moduleGraph) {
+        const modules = new Set(ctx.modules ?? [])
+        for (const file of affectedFiles) {
+          for (const module of devServer.moduleGraph.getModulesByFile(file) ?? []) {
+            modules.add(module)
+          }
+        }
+        return [...modules]
+      }
     },
     async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)

@@ -110,6 +110,14 @@ setWebRuntimeHost({
 
 注入对象只覆盖提供的能力，其余能力仍使用浏览器回退。测试结束或宿主卸载时调用 `resetWebRuntimeHost()`。
 
+## 应用样式与组件边界
+
+`app.vue` 的内联 `<style>` 和 `<style src="./app.css">` 会参与 Web 注册与 HMR。页面默认接收应用样式；自定义组件默认保持 `isolated`，可通过 `options.styleIsolation: 'apply-shared' | 'shared'` 或 `addGlobalClass` 接收应用样式。组件自己的样式在应用样式之后应用，Shadow DOM 保持独立。主题 CSS 变量可沿宿主继承到隔离组件。这里的 `shared` 仅支持接收应用样式，尚不支持将组件样式反向传播到页面或其他组件。
+
+组件上的 `@click` / `bind:click` 只接收组件 `emit('click', payload)` / `triggerEvent('click', detail)`，不会再同时收到内部物理点击冒泡造成的重复回调。原生元素的 `@tap` / `bindtap` 仍映射浏览器点击；自定义事件的名称、`detail` 与显式 `bubbles` / `composed` 选项保持原样。Vue SFC 处理函数接收 emit payload，原生 WXML 处理函数接收含 `detail` 的事件对象。
+
+同名 Boolean prop 与 setup 方法分别保存：例如 `back` 属性仍按默认值和父级输入更新，模板中的 `@tap="back"` 可以调用 setup 方法。需要读取属性时使用 props/data；方法不会通过 DOM 属性访问器写入而把 `false` 变为 `true`。
+
 ## 组件兼容
 
 - `image.mode` 会映射到浏览器的 `object-fit` / `object-position`。

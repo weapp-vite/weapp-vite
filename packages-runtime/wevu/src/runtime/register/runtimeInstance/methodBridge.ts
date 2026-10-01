@@ -1,6 +1,7 @@
 import type { InternalRuntimeState, RuntimeInstance } from '../../types'
 import type { SetupInstanceMethodName } from './setupContext'
 import {
+  WEVU_HOST_INSTALL_METHOD_KEY,
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
 } from '@weapp-core/constants'
@@ -72,14 +73,21 @@ export function bridgeRuntimeMethodsToTarget(
       if (setupInstanceMethodNames.includes(name as SetupInstanceMethodName)) {
         continue
       }
-      if (typeof (target as any)[name] !== 'function') {
-        ;(target as any)[name] = function bridged(this: any, ...args: any[]) {
+      const installMethod = (target as any)[WEVU_HOST_INSTALL_METHOD_KEY]
+      if (typeof installMethod === 'function' || typeof (target as any)[name] !== 'function') {
+        const bridged = function (this: any, ...args: any[]) {
           const runtime = this[WEVU_PUBLIC_RUNTIME_KEY] ?? target[WEVU_PUBLIC_RUNTIME_KEY]
           syncRuntimeNativeInstance(runtime, this)
           const bound = (runtime?.methods as any)?.[name]
           if (typeof bound === 'function') {
             return bound.apply(runtime.proxy, args)
           }
+        }
+        if (typeof installMethod === 'function') {
+          installMethod.call(target, name, bridged)
+        }
+        else {
+          ;(target as any)[name] = bridged
         }
       }
     }

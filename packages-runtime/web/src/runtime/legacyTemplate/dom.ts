@@ -2,6 +2,7 @@ import type { Element, Node } from 'domhandler'
 import type { ExtractForResult, LegacyTemplateScope } from './types'
 import {
   CONTROL_ATTRS,
+  EVENT_KIND_ALIAS,
   hasControlAttribute,
   normalizeAttributeName,
   resolveControlAttributeValue,
@@ -14,12 +15,6 @@ import {
 import { escapeAttribute, resolveAttributeValue } from './expression'
 
 const EVENT_PREFIX_RE = /^(bind|catch|mut-bind|capture-bind|capture-catch)([\w-]+)$/
-const EVENT_KIND_ALIAS: Record<string, string> = {
-  tap: 'click',
-  longtap: 'contextmenu',
-  longpress: 'contextmenu',
-}
-
 const EVENT_PREFIX_FLAGS: Record<string, { catch?: boolean, capture?: boolean }> = {
   'bind': {},
   'catch': { catch: true },
@@ -84,7 +79,7 @@ export function buildAttributeString(
     if (eventInfo) {
       const normalizedEvent = eventInfo.rawEvent.toLowerCase()
       const aliasedEvent = EVENT_KIND_ALIAS[normalizedEvent]
-      const runtimeEvent = aliasedEvent ?? eventInfo.rawEvent
+      const runtimeEvent = aliasedEvent ? normalizedEvent : eventInfo.rawEvent
       const encodedEvent = encodeEventAttributeName(runtimeEvent)
       const handlerName = resolveAttributeValue(rawValue, scope).trim()
       if (!handlerName) {
