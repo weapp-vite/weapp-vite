@@ -6,7 +6,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
-import { packConsumerTarballs, readConsumerTarballs } from './consumerTarballs.mjs'
+import { packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
 import { verifyWebConsumer } from './verify-vite-host-web.mjs'
 
@@ -27,7 +27,9 @@ try {
   const dependencies = packedDirectory
     ? await readConsumerTarballs(packedDirectory, entryPackages)
     : await packConsumerTarballs(repoRoot, temporaryRoot, entryPackages)
-  const overrides = { ...dependencies }
+  const candidates = { ...dependencies }
+  // 所有候选已是直接 tarball 依赖；额外覆盖整个闭包会触发 npm 11.6 的 override-set 冲突。
+  const overrides = {}
   dependencies.typescript = '6.0.3'
   if (toolchain !== 'wv') {
     Object.assign(dependencies, { vite: '8.3.1', vitest: '5.0.2' })
@@ -59,6 +61,7 @@ try {
   // 不继承用户或工作区中的 peer 绕过开关，安装失败必须真实阻断验收。
   const env = { npm_config_legacy_peer_deps: 'false', npm_config_force: 'false', npm_config_ignore_scripts: 'false', npm_config_engine_strict: 'true' }
   await execa('npm', ['install', '--strict-peer-deps'], { cwd: consumerRoot, env, stdio: 'inherit' })
+  await verifyConsumerTarballProvenance(consumerRoot, candidates)
   await execa('npm', ['ls', 'vite', 'rolldown', 'rolldown-require', 'vitest'], { cwd: consumerRoot, env, stdio: 'inherit' })
   const installed = JSON.parse(await readFile(path.join(consumerRoot, 'package.json'), 'utf8'))
   if (toolchain === 'wv') {

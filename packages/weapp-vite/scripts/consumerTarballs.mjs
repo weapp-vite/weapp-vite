@@ -58,6 +58,27 @@ export async function readConsumerTarballs(directory, entryPackages = ['weapp-vi
   return dependencies
 }
 
+/** 校验完整安装闭包仍来自候选 tarball，禁止注册表旧包或源码链接混入验收。 */
+export async function verifyConsumerTarballProvenance(consumerRoot, candidates) {
+  const lock = JSON.parse(await readFile(path.join(consumerRoot, 'package-lock.json'), 'utf8'))
+  assert(lock.packages, 'Missing installed package provenance')
+  for (const name of Object.keys(candidates)) {
+    assert(lock.packages[`node_modules/${name}`], `Missing installed candidate: ${name}`)
+  }
+  let verified = 0
+  for (const [location, entry] of Object.entries(lock.packages)) {
+    const name = location.split('node_modules/').at(-1)
+    const expected = candidates[name]
+    if (!expected) {
+      continue
+    }
+    assert(!entry.link && entry.resolved?.startsWith('file:'), `Candidate did not resolve to a tarball: ${location}`)
+    assert.equal(path.resolve(consumerRoot, entry.resolved.slice(5)), path.resolve(expected.slice(5)), `Candidate resolved to a different archive: ${location}`)
+    verified++
+  }
+  return verified
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   assert(process.argv[2], 'Usage: node consumerTarballs.mjs <destination>')
   await packConsumerTarballs(fileURLToPath(new URL('../../../', import.meta.url)), path.resolve(process.argv[2]))
