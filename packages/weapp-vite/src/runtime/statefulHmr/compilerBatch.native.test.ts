@@ -43,7 +43,7 @@ it.each([false, true])('pins actual DevEngine inputs for virtual source ownershi
         host.capture(entry, code)
       },
     }],
-  }, { format: 'cjs', entryFileNames: 'app.js', sourcemap: true }, {
+  }, { format: 'esm', entryFileNames: 'app.js', sourcemap: true }, {
     watch: { exclude: [path.join(root, 'dist'), `${root}/dist/**`], skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: true },
     onOutput(result) {
       if (result instanceof Error) {

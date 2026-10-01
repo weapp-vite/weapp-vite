@@ -10,7 +10,7 @@ describe('stateful HMR common runtime', () => {
   it('owns one complete Rolldown dev runtime without external imports', () => {
     const source = createStatefulHmrRolldownRuntimeSource()
 
-    expect(source.match(/class DevRuntime/g)).toHaveLength(1)
+    expect(source.match(/class\s+DevRuntime|(?:var|let|const)\s+DevRuntime\s*=/g)).toHaveLength(1)
     expect(source.match(/class WeappViteDevRuntime/g)).toHaveLength(1)
     expect(source).toContain('new WeappViteDevRuntime')
     expect(source).toContain('__WEAPP_VITE_STATEFUL_HMR_BRIDGE__')
@@ -47,5 +47,26 @@ describe('stateful HMR common runtime', () => {
     expect(source).toContain('class DevRuntime')
     expect(source).not.toContain('runtime-helper.mjs')
     expect(source).toContain('class WeappViteDevRuntime')
+  })
+
+  it('accepts helpers bundled into the runtime entry itself', () => {
+    const source = composeStatefulHmrRuntimeSource(
+      {
+        filePath: '/rolldown/dist/experimental-runtime.mjs',
+        source: 'var __exportAll = () => {};\nvar Module = class {};\nvar DevRuntime = class {};',
+      },
+      '',
+    )
+
+    expect(source.match(/var __exportAll/g)).toHaveLength(1)
+    expect(source).toContain('new WeappViteDevRuntime')
+    expect(source).not.toMatch(/^\s*(?:import|export)\s/m)
+  })
+
+  it('still rejects a runtime that omits the required helpers', () => {
+    expect(() => composeStatefulHmrRuntimeSource(
+      { filePath: '/rolldown/dist/experimental-runtime.mjs', source: 'class Module {}\nclass DevRuntime {}' },
+      '',
+    )).toThrow('common runtime helpers')
   })
 })
