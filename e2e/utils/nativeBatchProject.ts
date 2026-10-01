@@ -43,7 +43,7 @@ export async function writeNativeBatch(
   for (const extension of extensions) {
     const file = path.join(project, `src/pages/index/index.${extension}`)
     const pending = `${file}.tmp`
-    await writeFile(pending, source[extension].replaceAll('BATCH_BASE', step.marker).replace('#112233', step.color))
+    await writeFile(pending, source[extension].replaceAll('BATCH_BASE', step.marker).replace(/color: #[\da-f]+/i, `color: ${step.color}`))
     await renameAtomicFile(pending, file)
   }
 }

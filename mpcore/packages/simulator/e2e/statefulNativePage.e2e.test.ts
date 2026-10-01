@@ -146,7 +146,7 @@ it('computes native batch styles alongside updated templates and script handlers
       if (index) {
         for (const extension of ['wxml', 'wxss', 'json']) {
           const file = `pages/batch/index.${extension}`
-          files.set(file, initial.get(file)!.replaceAll('BATCH_BASE', marker).replace('#112233', colors[index]!))
+          files.set(file, initial.get(file)!.replaceAll('BATCH_BASE', marker).replace(/color: #[\da-f]+/i, `color: ${colors[index]!}`))
         }
         page.patchBatch(marker)
       }

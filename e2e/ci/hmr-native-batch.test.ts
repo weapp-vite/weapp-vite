@@ -30,6 +30,7 @@ describe.each(['classic', 'stateful-experimental'] as const)('native four-file b
       for (const [index, step] of NATIVE_BATCH_STEPS.slice(1).entries()) {
         await writeNativeBatch(project, source, step, index % 2 === 1)
         await assertBatch(step.marker)
+        expect(await readFile(path.join(project, 'dist/pages/index/index.wxss'), 'utf8')).toContain(step.color)
         expect(await readFile(path.join(project, 'dist/app.json'), 'utf8')).toBe(appJson)
         expect(await readFile(userAsset, 'utf8')).toBe('preserve-user-file')
       }
