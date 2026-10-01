@@ -5,7 +5,8 @@ import os from 'node:os'
 import path from 'node:path'
 import { PassThrough } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { enableAutomatorViaHttp, extendProjectConfig, resolveBootstrapCliArgs, resolveCliSpawnOptions, resolveLiveCliPid, waitForSocketReady } from './automator.cli-bridge'
+import { enableAutomatorViaHttp, extendProjectConfig, resolveBootstrapCliArgs, resolveCliSpawnOptions, waitForSocketReady } from './automator.cli-bridge'
+import { resolveLiveCliPid } from './automatorCliProcess'
 
 const opaqueToken = 'a'.repeat(32)
 
@@ -558,7 +559,7 @@ describe('extendProjectConfig', () => {
   })
 })
 
-describe('CLI process ownership transfer', () => {
+describe('CLI child liveness', () => {
   it('does not retain a reaped bootstrap PID for later cleanup', () => {
     const pid = process.pid
     expect(resolveLiveCliPid({ pid, exitCode: 0, signalCode: null })).toBeUndefined()
