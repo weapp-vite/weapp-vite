@@ -1,0 +1,4 @@
+<view id="initial-style-probe" style="{{style}}">
+  <text id="initial-style-value">{{style}}</text>
+  <button id="initial-style-increment" bindtap="increment">increment</button>
+</view>
