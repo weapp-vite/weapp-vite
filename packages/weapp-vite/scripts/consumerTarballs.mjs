@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -7,6 +8,11 @@ import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 
 const manifestName = 'consumer-tarballs.json'
+
+/** 所有子进程共用物理目录，避免 Windows 临时目录的 8.3 别名与监听事件长路径混用。 */
+export async function createConsumerTemporaryRoot(parent = os.tmpdir()) {
+  return realpath(await mkdtemp(path.join(parent, 'weapp-vite-host-install-')))
+}
 
 /** 打包完整运行时 workspace 闭包，支持在切换到消费者最低 Node 版本前执行。 */
 export async function packConsumerTarballs(repoRoot, destination, entryPackages = ['weapp-vite', 'wevu']) {
