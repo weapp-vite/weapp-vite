@@ -1,6 +1,6 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig } from 'vite'
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { access, cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { build, createServer } from 'vite'
@@ -19,7 +19,17 @@ async function fixture(srcRoot = 'src') {
   for (const file of ['src', 'package.json', 'project.config.json', 'project.private.config.json']) {
     await cp(path.join(fixtureRoot, file), path.join(root, file === 'src' ? srcRoot : file), { recursive: true })
   }
-  await symlink(path.join(fixtureRoot, 'node_modules'), path.join(root, 'node_modules'), 'junction')
+  const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')) as {
+    dependencies: Record<string, string>
+  }
+  // Windows 整目录 junction 会破坏包内的相对 workspace 链接，逐依赖保留真实目标。
+  for (const name of Object.keys(manifest.dependencies)) {
+    const target = path.join(root, 'node_modules', name)
+    await mkdir(path.dirname(target), { recursive: true })
+    await symlink(await realpath(path.join(fixtureRoot, 'node_modules', name)), target, 'junction')
+  }
+  // 先验证夹具入口可读，不把缺失依赖伪装成 Vite/React 转换失败。
+  await access(path.join(root, 'node_modules/@weapp-vite/react/dist/index.mjs'))
   const config: InlineConfig = {
     root,
     configFile: false,

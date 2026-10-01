@@ -1,11 +1,12 @@
 import type { RolldownWatcher } from 'rolldown'
 import type { InlineConfig } from 'vite'
-import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { build, createServer } from 'vite'
+import { build, createServer, resolveConfig } from 'vite'
 import { afterEach, expect, it } from 'vitest'
 import { weapp } from '../src/vite'
+import { WeappBuildSession } from '../src/vite/session'
 
 const roots: string[] = []
 const fixtureRoot = path.resolve(import.meta.dirname, '../../../test/fixture-projects/weapp-vite/lib-mode')
@@ -108,3 +109,56 @@ it('updates library templates in classic dev without an application entry', asyn
   }
   finally { await server.close() }
 }, 30_000)
+
+it('builds declarations when the project root is a directory alias', async () => {
+  const { root, config, read } = await fixture()
+  const aliases = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-lib-alias-'))
+  roots.push(aliases)
+  const alias = path.join(await realpath(aliases), 'project')
+  await symlink(root, alias, 'junction')
+  config.root = alias
+  config.weapp!.lib = { entry: { utils: 'utils/index.ts' }, root: 'src' }
+  const result = await build(config)
+  if (Array.isArray(result) || !('output' in result)) {
+    throw new Error('expected one library bundle')
+  }
+  expect(result.output.map(file => file.fileName)).toContain('utils.d.ts')
+  expect(await read('utils.d.ts')).toContain('export')
+}, 30_000)
+
+it.each([false, true])('updates library templates through an aliased root with preserveSymlinks=%s', async (preserveSymlinks) => {
+  const { root, config, read } = await fixture()
+  const aliases = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-lib-dev-alias-'))
+  roots.push(aliases)
+  const alias = path.join(await realpath(aliases), 'project')
+  await symlink(root, alias, 'junction')
+  config.root = alias
+  config.resolve = { preserveSymlinks }
+  config.weapp!.lib = { entry: { button: 'components/button/index.ts' }, root: 'src', dts: false }
+  const server = await createServer(config)
+  try {
+    expect(await read('button.wxml')).toContain('{{label}}')
+    await writeFile(path.join(alias, 'src/components/button/index.wxml'), '<view>updated through alias</view>')
+    await expect.poll(() => read('button.wxml'), { timeout: 15_000 }).toContain('updated through alias')
+  }
+  finally { await server.close() }
+}, 30_000)
+
+it.each([false, true])('shares the host root identity with compiler sidecars for preserveSymlinks=%s', async (preserveSymlinks) => {
+  const { root, config } = await fixture()
+  const aliases = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-lib-session-alias-'))
+  roots.push(aliases)
+  const alias = path.join(await realpath(aliases), 'project')
+  await symlink(root, alias, 'junction')
+  config.root = alias
+  config.resolve = { preserveSymlinks }
+  config.plugins = []
+  config.weapp!.lib = { entry: { button: 'components/button/index.ts' }, root: 'src', dts: false }
+  const host = await resolveConfig(config, 'serve')
+  const session = new WeappBuildSession()
+  try {
+    await session.prepare(config, alias, 'development', true)
+    expect(session.context.configService.cwd).toBe(host.root)
+  }
+  finally { await session.close() }
+})

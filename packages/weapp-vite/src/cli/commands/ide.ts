@@ -371,7 +371,7 @@ export function registerIdeCommand(cli: CAC) {
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--ide-open-strategy <strategy>', '[string] IDE open strategy (cli | automator)', { default: 'cli' })
     .option('--strict', '[boolean] fail when doctor finds blocking environment errors')
-    .option('--no-open-recovery', '[boolean] disable automatic Wechat DevTools close-and-reopen recovery')
+    .option('--no-open-recovery', '[boolean] disable automatic target-project open retry (preserves existing IDE windows)')
     .action(async (action: string | undefined, root: string | undefined, options: GlobalCLIOptions) => {
       await runIdeCommand(action, root, options)
     })

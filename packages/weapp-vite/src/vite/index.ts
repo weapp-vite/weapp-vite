@@ -59,7 +59,7 @@ export function weapp(): Plugin[] {
           try {
             const merged = await session.prepare(hostConfig, path.resolve(config.root ?? process.cwd()), env.mode, serveRequested)
             // 主构建的用户插件已由宿主安装；子构建仍需复用它们处理各自的输入。
-            session.context.configService.options.sourceConfig = { ...hostConfig, plugins: userPlugins }
+            session.context.configService.options.sourceConfig = { ...hostConfig, root: session.context.configService.cwd, plugins: userPlugins }
             if (session.isWeb) {
               slots.bind((await resolvePlugins(merged.plugins)).filter(plugin => !configuredPlugins.includes(plugin)))
               const { plugins: _plugins, configFile: _configFile, ...normalized } = merged

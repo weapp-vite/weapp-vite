@@ -16,7 +16,7 @@ const OPEN_AUTOMATOR_TIMEOUT = 120_000
 
 function formatReuseOpenedWechatIdePrompt() {
   const highlightedRetryKeys = RETRY_CONFIRM_KEYS.map(key => colors.bold(colors.green(key))).join(' / ')
-  return `目标项目已在微信开发者工具中打开，已跳过重复打开。按 ${highlightedRetryKeys} 关闭当前窗口后重新打开。`
+  return `目标项目已在微信开发者工具中打开，已跳过重复打开。按 ${highlightedRetryKeys} 重新连接目标项目（保留现有窗口）。`
 }
 
 function disconnectMiniProgram(miniProgram: DisconnectableMiniProgram) {
@@ -47,7 +47,6 @@ async function verifyOpenedProjectHealth(miniProgram: DisconnectableMiniProgram)
 
 interface OpenWechatIdeByAutomatorOptions {
   preserveProjectRoot?: boolean
-  restartIde?: () => Promise<boolean>
   trustProject?: boolean
 }
 
@@ -91,7 +90,6 @@ async function connectOpenedProject(projectPath: string): Promise<OpenedProjectC
  */
 export async function tryReuseOpenedWechatIde(
   projectPath: string,
-  closeIde: () => Promise<boolean>,
   options: {
     preserveProjectRoot?: boolean
     trustProject?: boolean
@@ -130,11 +128,7 @@ export async function tryReuseOpenedWechatIde(
     } as const
   }
 
-  logger.info(colors.bold(colors.green('正在关闭当前已打开项目，并重新拉起微信开发者工具...')))
-  const closed = await closeIde()
-  if (!closed) {
-    logger.warn('关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
-  }
+  logger.info(colors.bold(colors.green('正在重新连接目标项目，保留现有微信开发者工具窗口...')))
 
   await openWechatIdeByAutomator(projectPath, {
     preserveProjectRoot: options.preserveProjectRoot,
@@ -147,31 +141,22 @@ export async function tryReuseOpenedWechatIde(
 }
 
 /**
- * @description 对已打开的目标项目执行强制重开，以刷新最新构建产物。
+ * @description 重新连接目标项目以刷新构建产物；连接失败不授予关闭共享宿主的权限。
  */
 export async function reopenOpenedWechatIde(
   projectPath: string,
-  closeIde: () => Promise<boolean>,
   options: OpenWechatIdeByAutomatorOptions = {},
 ) {
   const connection = await connectOpenedProject(projectPath)
   if (connection.status === 'connected') {
     disconnectMiniProgram(connection.miniProgram)
-    logger.info('目标项目已在微信开发者工具中打开，当前命令将主动重开以刷新最新构建产物。')
+    logger.info('目标项目已在微信开发者工具中打开，当前命令将重新连接以刷新最新构建产物，保留现有窗口。')
   }
   else if (connection.status === 'unhealthy') {
-    logger.info('目标项目的 automator 会话未通过健康检查，当前命令将关闭窗口并重新拉起。')
+    logger.info('目标项目的 automator 会话未通过健康检查，将重试连接目标项目，保留现有窗口。')
   }
   else {
-    logger.info('未检测到可复用的 automator 会话，当前命令将关闭现有窗口并重新拉起目标项目。')
-  }
-
-  const closeCurrentSession = connection.status === 'connected'
-    ? closeIde
-    : options.restartIde ?? closeIde
-  const closed = await closeCurrentSession()
-  if (!closed) {
-    logger.warn('关闭当前微信开发者工具失败，仍继续尝试重新打开目标项目。')
+    logger.info('未检测到可复用的 automator 会话，将尝试打开目标项目，保留其他窗口。')
   }
 
   await openWechatIdeByAutomator(projectPath, options)
