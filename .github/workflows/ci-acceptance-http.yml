@@ -32,5 +32,5 @@ jobs:
       build_command: pnpm exec turbo run build --filter=@weapp-vite/mcp...
       main_command: >-
         pnpm --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --workspace-concurrency=1
-        exec vitest run test/completion.test.ts test/acceptance.test.ts
+        exec vitest run test/completion.test.ts test/persistence.test.ts test/acceptance.test.ts
     secrets: inherit

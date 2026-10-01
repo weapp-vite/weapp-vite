@@ -3,7 +3,7 @@ import type { RuntimeConnection, RuntimeConnector } from './runtime.js'
 import type { Scenario, ScenarioStepResult } from './scenario.js'
 import type { CheckResult } from './verify.js'
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import {
@@ -19,6 +19,7 @@ import {
   stateRoot,
   trustProject,
 } from '@weapp-agent/core/project'
+import { atomicJson } from './persistence.js'
 import { defaultVerification, detectProject } from './project.js'
 import { runScenario, runtimeInvoker, scenarioSchema } from './scenario.js'
 import { sourceSnapshot } from './snapshot.js'
@@ -49,11 +50,6 @@ export async function resolveProjectConfig(root: string, file?: string): Promise
   return await loadAcceptanceConfig(root, file) ?? projectConfigSchema.parse({ verification: defaultVerification(await detectProject(root)) })
 }
 
-async function atomicJson(file: string, data: unknown): Promise<void> {
-  const temp = `${file}.${randomUUID()}.tmp`
-  await writeFile(temp, JSON.stringify(redactValue(data), null, 2), { mode: 0o600 })
-  await rename(temp, file)
-}
 function alive(pid: number): boolean {
   try {
     process.kill(pid, 0)
