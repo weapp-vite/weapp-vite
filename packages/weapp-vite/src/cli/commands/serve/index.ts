@@ -38,7 +38,7 @@ export function registerServeCommand(cli: CAC) {
     .option('--login-retry <mode>', '[string] login retry mode for Wechat DevTools (never | once | always)')
     .option('--login-retry-timeout <ms>', '[number] login retry prompt timeout in milliseconds')
     .option('--non-interactive', '[boolean] fail immediately when Wechat DevTools login has expired')
-    .option('--no-open-recovery', '[boolean] disable automatic Wechat DevTools close-and-reopen recovery')
+    .option('--no-open-recovery', '[boolean] disable automatic target-project open retry (preserves existing IDE windows)')
     .option('--mcp', '[boolean] auto start MCP service during dev')
     .option('--no-mcp', '[boolean] disable MCP service during dev')
     .option('--host [host]', `[string] web dev server host`)
