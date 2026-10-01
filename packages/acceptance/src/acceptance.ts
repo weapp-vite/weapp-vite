@@ -110,7 +110,7 @@ export interface AcceptanceOptions {
 }
 
 export class AcceptanceService {
-  private jobs = new Map<string, { controller: AbortController, done: Promise<void>, report: AcceptanceReport }>()
+  private jobs = new Map<string, { controller: AbortController, done: Promise<void>, report: AcceptanceReport, persistenceFailed: boolean }>()
   private starting = new Set<Promise<AcceptanceReport>>()
   private closed = false
   private constructor(readonly root: string, private directory: string, private options: AcceptanceOptions) {}
@@ -230,10 +230,9 @@ export class AcceptanceService {
       const controller = new AbortController()
       await persist()
       const unlock = release
-      let persistenceFailed = false
-      const done = this.execute(report, config, fingerprint, controller, persist)
+      const job = { controller, done: Promise.resolve(), report, persistenceFailed: false }
+      job.done = this.execute(report, config, fingerprint, controller, persist)
         .catch((error) => {
-          persistenceFailed = true
           report.status = 'failed'
           report.passed = false
           report.reason = `Could not persist acceptance result: ${String(error)}`
@@ -244,15 +243,22 @@ export class AcceptanceService {
           }
           catch (error) {
             report.warnings.push(`Project lock cleanup failed: ${String(error)}`)
-            await persist().catch(() => {
-              persistenceFailed = true
-            })
+            report.status = 'failed'
+            report.passed = false
+            report.reason = 'Project ownership could not be released; inspect the cleanup warning before retrying.'
           }
-          if (!persistenceFailed) {
+          // 终态只能在资源释放后发布，跨服务轮询者据此才能安全启动下一任务。
+          await persist().catch((error) => {
+            job.persistenceFailed = true
+            report.status = 'failed'
+            report.passed = false
+            report.reason = `Could not persist acceptance result: ${String(error)}`
+          })
+          if (!job.persistenceFailed) {
             this.jobs.delete(report.jobId)
           }
         })
-      this.jobs.set(report.jobId, { controller, done, report })
+      this.jobs.set(report.jobId, job)
     }
     catch (error) {
       await release?.()
@@ -422,15 +428,14 @@ export class AcceptanceService {
         }
       }
       report.passed = report.status === 'passed' && !report.snapshot.stale
-      await persist()
     }
   }
 
   async report(jobId: string): Promise<AcceptanceReport> {
     const file = path.join(this.jobDirectory(jobId), 'report.json')
-    const live = this.jobs.get(jobId)?.report
-    const report: AcceptanceReport = live?.status === 'failed'
-      ? structuredClone(live)
+    const live = this.jobs.get(jobId)
+    const report: AcceptanceReport = live?.persistenceFailed
+      ? structuredClone(live.report)
       : JSON.parse(await readFile(file, 'utf8'))
     if (report.root !== this.root || report.version !== 2) {
       throw new Error('Report does not belong to this project or has an unsupported version')
