@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { openChunkModesIde, resolveChunkModesIdeCli } from './chunk-modes-ide.mjs'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..')
@@ -369,6 +370,8 @@ const scenarios = {
 function printHelp() {
   console.log(`Usage: node scripts/chunk-modes-project.mjs --scenario <id> [--open]
 
+--open requires WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH for the explicitly selected IDE installation.
+
 Scenarios:
 ${Object.keys(scenarios).map(id => `  - ${id}`).join('\n')}
 `)
@@ -449,6 +452,7 @@ async function prepareScenarioProject(scenarioId) {
 
 async function main() {
   const { scenarioId, shouldOpen } = parseArgs(process.argv.slice(2))
+  const ideCliPath = shouldOpen ? resolveChunkModesIdeCli() : undefined
   const scenarioEnv = scenarios[scenarioId]
   const { targetRoot, targetDist } = await prepareScenarioProject(scenarioId)
 
@@ -479,20 +483,7 @@ async function main() {
     return
   }
 
-  const openResult = await runCommand('node', [
-    cliPath,
-    'open',
-    targetRoot,
-    '--platform',
-    'weapp',
-  ], {
-    cwd: repoRoot,
-    env: process.env,
-  })
-
-  if ((openResult.code ?? 1) !== 0) {
-    throw new Error(`Open failed for scenario ${scenarioId}`)
-  }
+  await openChunkModesIde(targetRoot, ideCliPath)
 }
 
 main().catch((error) => {

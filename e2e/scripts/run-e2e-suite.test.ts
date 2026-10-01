@@ -86,18 +86,16 @@ describe('run-e2e-suite ide cleanup hooks', () => {
     expect(isDevtoolsVitestTask({ ...task, env: { WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'devtools' } })).toBe(true)
   })
 
-  it('cleans processes and compile cache before every IDE task, then processes after the suite', async () => {
+  it('releases owned processes before every IDE task and after the suite', async () => {
     const cleanup = vi.fn(async () => {})
-    const cleanCompileCache = vi.fn(async () => {})
     const [task] = await getSuiteTasks('ide-full')
-    const hooks = createIdeSuiteCleanupHooks([task!], cleanup, cleanCompileCache)
+    const hooks = createIdeSuiteCleanupHooks([task!], cleanup)
 
     await hooks.beforeEachTask?.(task!)
     await hooks.beforeEachTask?.(task!)
     await hooks.afterAll?.()
 
     expect(cleanup).toHaveBeenCalledTimes(3)
-    expect(cleanCompileCache).toHaveBeenCalledTimes(2)
   })
 
   it.each(['ci', 'full', 'full-regression', 'ide-headless-smoke', 'ide-headless-gate', 'ide-headless-full', 'ide-dom-headless'])(
@@ -112,16 +110,13 @@ describe('run-e2e-suite ide cleanup hooks', () => {
 
   it('cleans only the devtools tasks within a mixed suite', async () => {
     const cleanup = vi.fn(async () => {})
-    const cleanCompileCache = vi.fn(async () => {})
     const [devtools] = await getSuiteTasks('ide-full')
     const [headless] = await getSuiteTasks('ide-dom-headless')
-    const hooks = createIdeSuiteCleanupHooks([headless!, devtools!], cleanup, cleanCompileCache)
+    const hooks = createIdeSuiteCleanupHooks([headless!, devtools!], cleanup)
     await hooks.beforeEachTask?.(headless!)
     expect(cleanup).not.toHaveBeenCalled()
-    expect(cleanCompileCache).not.toHaveBeenCalled()
     await hooks.beforeEachTask?.(devtools!)
     expect(cleanup).toHaveBeenCalledOnce()
-    expect(cleanCompileCache).toHaveBeenCalledOnce()
     await hooks.afterAll?.()
     expect(cleanup).toHaveBeenCalledTimes(2)
   })

@@ -11,7 +11,7 @@ import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDevProcessDiagnostics } from '../utils/devProcessDiagnostics'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
 import { launchPtyProcess } from '../utils/ptyProcess'
 import { CLI_HOTKEY_CHECKPOINTS, CLI_WORKFLOW_CHECKPOINTS } from './coreWorkflowDom'
@@ -443,7 +443,6 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
 
   beforeAll(async () => {
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: TEMPLATE_ROOT })
     await fs.rm(SCREENSHOT_OUTPUT, { force: true })
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,

@@ -8,7 +8,7 @@ import { comparePngWithBaseline } from '../../packages/weapp-ide-cli/src/cli/ima
 import { attachRuntimeErrorCollector } from '../ide/runtimeErrors'
 import { launchAutomator, resetAutomatorRuntimeLogs } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { cleanupDevtoolsScreenshotArtifacts } from '../utils/ide-devtools-screenshot-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
@@ -295,7 +295,6 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
       expect(options.scenarios).toHaveLength(options.expectedCount)
       await cleanupResidualIdeProcesses()
       if (runtimeProvider === 'devtools') {
-        await cleanDevtoolsCache('compile', { cwd: appRoot })
         await cleanupResidualIdeProcesses()
         await cleanupWechatScreenshotArtifacts('setup')
       }

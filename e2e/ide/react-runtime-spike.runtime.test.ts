@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { counterCheckpoint, GENERIC_ROUTE, INTEROP_EDGES, INTEROP_ROUTE, interopCheckpoint, REACT_FIXTURE, reactControl, STATIC_ROUTE } from './reactRuntimeDom'
 
@@ -123,7 +123,6 @@ async function launchReactRuntimeSpikeAutomator() {
       process.stdout.write(`[react-runtime-spike:start-retry] attempt=${attempt}/${STARTUP_ATTEMPTS} reason=${message.replace(/\s+/g, ' ').slice(0, 240)}\n`)
       await closeReactRuntimeSpikeAutomator(app)
       if (attempt < STARTUP_ATTEMPTS && runtimeProvider === 'devtools') {
-        await cleanDevtoolsCache('compile', { cwd: APP_ROOT }).catch(() => {})
         await cleanupResidualIdeProcesses().catch(() => {})
       }
     }
@@ -136,7 +135,6 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
   beforeAll(async () => {
     if (runtimeProvider === 'devtools') {
       await cleanupResidualIdeProcesses()
-      await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     }
     await fs.rm(DIST_ROOT, { force: true, recursive: true })
     if (HOST === 'wv') {

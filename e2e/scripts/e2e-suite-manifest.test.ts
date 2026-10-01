@@ -4,6 +4,12 @@ import { describe, expect, it } from 'vitest'
 import { getCiFullTasks, getCiPrTasks, getCiTasks, getDiminaTasks, getFullRegressionTasks, getFullTasks, getIdeComponentLibraryTasks, getIdeComponentLibraryVisualFullTasks, getIdeComponentLibraryVisualTasks, getIdeExhaustiveTasks, getIdeTasks, getSuiteTasks, getWebTasks, IDE_GITHUB_ISSUES_AGGREGATE_LABELS, IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS, partitionE2ETasks } from './e2e-suite-manifest'
 
 describe('e2e suite manifest', () => {
+  it('runs the prepared benchmark CLI entrypoint in PR and full CI suites', async () => {
+    const label = 'ci/benchmark-hmr-entrypoint.test.ts'
+    expect((await getCiPrTasks()).filter(task => task.label === label)).toHaveLength(1)
+    expect((await getCiFullTasks()).filter(task => task.label === label)).toHaveLength(1)
+  })
+
   it('registers Dimina as an explicit suite outside the ordinary Web baseline', async () => {
     expect(await getSuiteTasks('dimina')).toEqual(getDiminaTasks())
     expect(getWebTasks().some(task => task.label.includes('dimina'))).toBe(false)

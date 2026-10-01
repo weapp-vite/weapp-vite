@@ -5,7 +5,6 @@ import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
 import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
-import { isResidualDevProcessCommand } from './dev-process-cleanup'
 import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 
@@ -250,27 +249,6 @@ describe('automator', () => {
     expect(shouldCloseCurrentPageQueryTimeout(true, 220)).toBe(false)
     expect(shouldCloseCurrentPageQueryTimeout(true, 221)).toBe(true)
     expect(shouldCloseCurrentPageQueryTimeout(false, 2_000)).toBe(false)
-  })
-
-  it('matches absolute and repository-relative weapp-vite dev commands for cleanup', () => {
-    expect(isResidualDevProcessCommand(
-      'node --import tsx /workspace/packages/weapp-vite/bin/weapp-vite.js dev /workspace/e2e-apps/wevu-runtime-e2e --platform weapp',
-    )).toBe(true)
-    expect(isResidualDevProcessCommand(
-      'node --import tsx packages/weapp-vite/src/cli.ts dev apps/demo --platform weapp',
-    )).toBe(true)
-  })
-
-  it('matches scoped pnpm dev commands without selecting unrelated processes', () => {
-    expect(isResidualDevProcessCommand(
-      'pnpm --dir /workspace/e2e-apps/demo run dev',
-    )).toBe(true)
-    expect(isResidualDevProcessCommand(
-      'node /workspace/packages/weapp-vite/bin/weapp-vite.js build /workspace/e2e-apps/demo',
-    )).toBe(false)
-    expect(isResidualDevProcessCommand(
-      'pnpm --dir /workspace/website run dev',
-    )).toBe(false)
   })
 
   it('normalizes an explicitly configured bridge runtime root', () => {
