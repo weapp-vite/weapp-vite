@@ -20,7 +20,7 @@ import {
   waitForFileContains,
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { collectRuntimeValueSnapshot } from '../utils/runtimeValueSnapshot'
 
 const BRIDGE_POST_CONNECT_REFRESH_ENV = 'WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_POST_CONNECT_REFRESH'
@@ -331,7 +331,6 @@ describe('app.vue alias import layout HMR runtime', { concurrent: false }, () =>
     }
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     originalAppSource = await fs.readFile(APP_VUE_PATH, 'utf8')
     originalLayoutSource = await fs.readFile(LAYOUT_VUE_PATH, 'utf8')
     originalPageSource = await fs.readFile(PAGE_VUE_PATH, 'utf8')

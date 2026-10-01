@@ -1,63 +1,141 @@
+import { EventEmitter } from 'node:events'
 import process from 'node:process'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanupProcessesByCommandPatterns } from './dev-process'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanupTrackedDevProcesses, startDevProcess } from './dev-process'
+import { cleanupResidualDevProcesses } from './dev-process-cleanup'
 
 const execaMock = vi.hoisted(() => vi.fn())
 vi.mock('execa', () => ({ execa: execaMock }))
-vi.mock('node:process', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:process')>()
-  return { default: { ...actual.default, pid: 41, ppid: 31, platform: 'linux', kill: vi.fn() } }
-})
+vi.mock('./devProcessDiagnostics', () => ({ createDevProcessDiagnostics: () => ({ write() {}, flush() {} }) }))
 
-describe('residual process cleanup ownership', () => {
+function createChild() {
+  let exit!: () => void
+  const result = new Promise<{ exitCode: number, signal: undefined }>((resolve) => {
+    exit = () => resolve({ exitCode: 0, signal: undefined })
+  })
+  const nodeChildProcess = { exitCode: null as number | null, signalCode: null }
+  return {
+    child: Object.assign(result, { pid: 61, all: new EventEmitter(), nodeChildProcess }),
+    exit() {
+      nodeChildProcess.exitCode = 0
+      exit()
+    },
+  }
+}
+
+describe('dev process cleanup ownership', () => {
   beforeEach(() => {
-    execaMock.mockReset()
-    vi.mocked(process.kill).mockReset()
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin')
   })
 
-  function mockProcesses(rows: string[]) {
-    const alive = new Set(rows.map(row => Number(row.split(' ')[0])))
-    execaMock.mockResolvedValue({ stdout: rows.join('\r\n') })
-    vi.mocked(process.kill).mockImplementation((pid, signal) => {
+  afterEach(async () => {
+    await cleanupTrackedDevProcesses(0)
+    vi.restoreAllMocks()
+    vi.clearAllMocks()
+    vi.useRealTimers()
+  })
+
+  it('releases registered children once while preserving identical unowned commands', async () => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    execaMock.mockImplementation(command => command === 'ps'
+      ? Promise.resolve({ stdout: '61 41 pnpm run dev\n62 61 worker\n71 21 pnpm run dev\n72 71 worker' })
+      : owned.child)
+    const alive = new Set([61, 62, 71, 72])
+    const kill = vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
       if (!alive.has(pid)) {
-        throw new Error('Process has exited')
+        throw new Error('exited')
       }
       if (signal !== 0) {
         alive.delete(pid)
+        if (pid === 61) {
+          owned.exit()
+        }
       }
       return true
     })
-  }
+    const dev = startDevProcess('pnpm', ['run', 'dev'])
+    const stopping = Promise.all([dev.stop(0), cleanupTrackedDevProcesses(0), dev.stop(0)])
+    await vi.runAllTimersAsync()
+    await stopping
+    await cleanupResidualDevProcesses()
+    expect(kill.mock.calls.filter(([, signal]) => signal !== 0).map(([pid]) => pid)).toEqual([62, 61])
+    expect(alive).toEqual(new Set([71, 72]))
+  })
 
-  function terminatedPids() {
-    return vi.mocked(process.kill).mock.calls.filter(([, signal]) => signal !== 0).map(([pid]) => pid)
-  }
+  it('does not use an exited child PID after it could have been reused', async () => {
+    const owned = createChild()
+    execaMock.mockReturnValue(owned.child)
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+    const dev = startDevProcess('pnpm', ['run', 'dev'])
+    owned.exit()
+    await dev.stop(0)
+    await cleanupTrackedDevProcesses(0)
+    expect(kill).not.toHaveBeenCalled()
+    expect(execaMock).toHaveBeenCalledOnce()
+  })
 
-  it('protects the caller and all ancestors while cleaning matching siblings and children', async () => {
-    mockProcesses([
-      '1 0 init',
-      '11 1 shell --ide-marker',
-      '21 11 launcher --ide-marker',
-      '31 21 runner --ide-marker',
-      '41 31 worker --ide-marker',
-      '51 21 stale --ide-marker',
-      '52 51 stale-child',
-      '61 41 owned --ide-marker',
-      '71 21 unrelated',
+  it('revokes cleanup authority when the child exits during process discovery', async () => {
+    const owned = createChild()
+    execaMock.mockImplementation((command) => {
+      if (command === 'ps') {
+        owned.exit()
+        return Promise.resolve({ stdout: '61 41 reused-process' })
+      }
+      return owned.child
+    })
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+    const dev = startDevProcess('pnpm', ['run', 'dev'])
+    await dev.stop(0)
+    expect(kill.mock.calls.filter(([, signal]) => signal !== 0)).toEqual([])
+  })
+
+  it('does not inspect or kill unregistered processes', async () => {
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+    await cleanupResidualDevProcesses()
+    expect(execaMock).not.toHaveBeenCalled()
+    expect(kill).not.toHaveBeenCalled()
+  })
+
+  it('does not force kill a previous process tree after the owned root exits', async () => {
+    vi.useFakeTimers()
+    const owned = createChild()
+    execaMock.mockImplementation(command => command === 'ps'
+      ? Promise.resolve({ stdout: '61 41 pnpm run dev\n62 61 worker' })
+      : owned.child)
+    const kill = vi.spyOn(process, 'kill').mockImplementation((pid, signal) => {
+      if (pid === 61 && signal === 'SIGTERM') {
+        owned.exit()
+      }
+      return true
+    })
+    const dev = startDevProcess('pnpm', ['run', 'dev'])
+    const stopping = dev.stop(100)
+    await vi.runAllTimersAsync()
+    await stopping
+    expect(kill.mock.calls.filter(([, signal]) => signal !== 0)).toEqual([
+      [62, 'SIGTERM'],
+      [61, 'SIGTERM'],
     ])
-    await cleanupProcessesByCommandPatterns(['--ide-marker'], 0)
-    expect(terminatedPids()).toEqual([52, 51, 61])
   })
 
-  it('protects the parent chain even when the process snapshot omits the caller', async () => {
-    mockProcesses(['1 0 init', '21 1 shell --ide-marker', '31 21 runner --ide-marker'])
-    await cleanupProcessesByCommandPatterns([/--ide-marker/g], 0)
-    expect(terminatedPids()).toEqual([])
-  })
-
-  it('terminates ancestor traversal if the snapshot contains a cycle', async () => {
-    mockProcesses(['21 31 shell --ide-marker', '31 21 runner --ide-marker', '41 31 worker --ide-marker'])
-    await cleanupProcessesByCommandPatterns(['--ide-marker'], 0)
-    expect(terminatedPids()).toEqual([])
+  it('uses only the held PID on Windows and disposes it once', async () => {
+    vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
+    const owned = createChild()
+    execaMock.mockImplementation((command) => {
+      if (command === 'taskkill') {
+        owned.exit()
+        return Promise.resolve({ exitCode: 0 })
+      }
+      return owned.child
+    })
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
+    const dev = startDevProcess('pnpm', ['run', 'dev'])
+    await Promise.all([dev.stop(0), cleanupTrackedDevProcesses(0), dev.stop(0)])
+    expect(execaMock.mock.calls.filter(([command]) => command === 'taskkill')).toEqual([
+      ['taskkill', ['/PID', '61', '/T', '/F'], expect.objectContaining({ reject: false })],
+    ])
+    expect(execaMock.mock.calls.some(([command]) => command === 'ps')).toBe(false)
+    expect(kill.mock.calls.every(([, signal]) => signal === 0)).toBe(true)
   })
 })

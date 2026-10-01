@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { APP_ROOT, normalizeAutomatorWxml, runBuild } from '../wevu-runtime.utils'
 import { INLINE_OBJECT_BOUND_CHECKPOINTS, INLINE_OBJECT_REPEATED_CHECKPOINTS } from './wevuRuntimeDom/reactivity'
 
@@ -96,7 +96,6 @@ async function launchMiniProgramWithRetry(ctx: { skip: (message?: string) => voi
       try {
         await cleanupResidualIdeProcesses()
         if (attempt > 1) {
-          await cleanDevtoolsCache('compile', { cwd: APP_ROOT }).catch(() => {})
           await sleep(500)
         }
         return await launchAutomator({

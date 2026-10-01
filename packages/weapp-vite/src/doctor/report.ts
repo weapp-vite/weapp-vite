@@ -55,6 +55,13 @@ export function formatDoctorReport(report: DoctorReport, format: 'terminal' | 'j
   return [
     `Doctor: exit ${report.exitCode}`,
     ...report.coverage.map(c => `[${c.target}] ${c.layer}/${c.check}: ${c.status}${c.reason ? ` — ${c.reason}` : ''}`),
+    ...Object.entries(report.runtime).flatMap(([target, evidence]) => evidence.bundle
+      ? [
+          `[${target}] framework=${evidence.bundle.frameworkVersion} node=${evidence.bundle.nodeVersion} IDE=${evidence.bundle.versions.ide ?? 'unknown'} SDK=${evidence.bundle.versions.sdk ?? 'unknown'}`,
+          `最后成功阶段：${evidence.bundle.lastSuccessfulStage ?? 'unknown'}`,
+          `复现：${evidence.bundle.reproduction}`,
+        ]
+      : []),
     ...report.diagnostics.map(d => `[${d.severity}] ${d.target} ${d.ruleId} ${d.location?.file ?? ''} ${d.message}\n  ${d.suggestion}`),
   ].join('\n')
 }

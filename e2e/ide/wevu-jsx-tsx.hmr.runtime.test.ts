@@ -10,7 +10,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { waitForFileContains, waitForStatefulHmrControl } from '../utils/hmr-helpers'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import {
   WEVU_JSX_APP_ROOT,
   WEVU_JSX_CLI_PATH,
@@ -54,7 +54,6 @@ describe('wevu JSX/TSX stateful HMR in real WeChat DevTools', { concurrent: fals
   beforeAll(async () => {
     await cleanupResidualDevProcesses()
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: WEVU_JSX_APP_ROOT })
     originalPageSource = await fs.readFile(PAGE_SOURCE, 'utf8')
     originalSharedSource = await fs.readFile(SHARED_SOURCE, 'utf8')
     originalAppSource = await fs.readFile(APP_SOURCE, 'utf8')

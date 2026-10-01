@@ -312,6 +312,7 @@ const CI_PR_PATTERNS = [
   'ci/wevu-runtime.pruning.test.ts',
   'ci/app-prelude-native.build.test.ts',
   'ci/auto-routes-define-app-json.test.ts',
+  'ci/benchmark-hmr-entrypoint.test.ts',
   'ci/config-merge.e2e.test.ts',
   'ci/github-issues-runtime-shared.test.ts',
   'ci/github-issues.build.test.ts',

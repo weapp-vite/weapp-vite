@@ -14,7 +14,6 @@ import {
 import { captureHmrProbeFailure } from '../utils/hmrProbeFailureDiagnostics'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import {
-  cleanDevtoolsCache,
   cleanupResidualDevtoolsProcesses,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
@@ -478,16 +477,11 @@ async function relaunchIdeRoute(
     }
   }
 
-  const recoveryPasses = [
-    { cleanType: 'compile', settleDelay: 1_200 },
-    { cleanType: 'compile', settleDelay: 1_800 },
-    { cleanType: 'compile', settleDelay: 2_400 },
-  ] as const
+  const recoveryPasses = [1_200, 1_800, 2_400] as const
 
-  for (const { cleanType, settleDelay } of recoveryPasses) {
+  for (const settleDelay of recoveryPasses) {
     await closeMiniProgram()
     await cleanupResidualDevtoolsProcesses()
-    await cleanDevtoolsCache(cleanType, { cwd: APP_ROOT }).catch(() => {})
     await waitForIdeRecompileSettled(settleDelay)
 
     const miniProgram = await ensureMiniProgram(ctx)
