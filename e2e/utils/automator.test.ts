@@ -4,7 +4,8 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { describe, expect, it, vi } from 'vitest'
-import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, terminateBridgeCliProcess, validateLaunchProjectAssets } from './automator'
+import { createBridgeWrapperProjectConfig, enhanceMiniProgramRelaunch, extractDevtoolsCliLoginState, formatRuntimeStatsLine, isDevtoolsHttpPortError, isLikelyRelaunchRetryableError, isWarmupPageRootTimeoutError, isWarmupRelaunchTimeoutError, resolveAutomatorLaunchMode, resolveLaunchRetryCount, shouldCloseCurrentPageQueryTimeout, shouldPrebuildAutomatorProject, validateLaunchProjectAssets } from './automator'
+import { terminateOwnedCliProcess } from './automatorCliProcess'
 import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 
@@ -389,7 +390,7 @@ describe('automator', () => {
     const unrelated = spawnChild()
     const ownedPid = await waitForSpawn(owned)
     const unrelatedPid = await waitForSpawn(unrelated)
-    const dispose = ownDevtoolsCleanup(() => terminateBridgeCliProcess(ownedPid))
+    const dispose = ownDevtoolsCleanup(() => terminateOwnedCliProcess(owned))
     try {
       await cleanupResidualDevtoolsProcesses()
       await expect(waitForProcessGone(ownedPid)).resolves.toBeUndefined()
@@ -399,7 +400,7 @@ describe('automator', () => {
     }
     finally {
       await dispose()
-      await terminateBridgeCliProcess(unrelatedPid)
+      await terminateOwnedCliProcess(unrelated)
     }
   })
 
@@ -411,7 +412,7 @@ describe('automator', () => {
     child.unref()
 
     const pid = await waitForSpawn(child)
-    await terminateBridgeCliProcess(pid)
+    await terminateOwnedCliProcess(child)
 
     await expect(waitForProcessGone(pid)).resolves.toBeUndefined()
   })

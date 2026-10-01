@@ -11,12 +11,11 @@ import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/
 import { openWechatIdeProjectByHttp, resetWechatIdeFileUtilsByHttp } from '../../packages/weapp-ide-cli/src/cli/http'
 import { setRuntimeWechatDevtoolsServicePort } from '../../packages/weapp-ide-cli/src/cli/wechatDevtoolsRuntimePort'
 import { normalizeRuntimeConsoleText } from '../ide/runtimeErrors'
-import { extractWechatDevtoolsServicePort, terminateCliProcessTree } from './automator.cli-bridge'
+import { extractWechatDevtoolsServicePort } from './automator.cli-bridge'
 import { launchHeadlessAutomator } from './automator.headless'
 import { copyDistEntryForBridgeWrapper, safeReadDirectory, safeStat } from './automatorBridgeFiles'
 import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
 import { resolveWechatCliPath } from './devtoolsCli'
-import { ownDevtoolsCleanup } from './devtoolsProcessOwnership'
 import { cleanupResidualDevtoolsProcesses } from './ide-devtools-cleanup'
 import { captureDevtoolsLogBaseline, scanRecentDevtoolsSimulatorBootIssues } from './ide-devtools-logs'
 import {
@@ -348,7 +347,6 @@ interface AutomatorCliBridgePayload {
 interface AutomatorCliBridgeResult {
   servicePort?: number
   wsEndpoint: string
-  cliPid?: number
 }
 
 function patchNetListenToLoopback() {
@@ -2537,10 +2535,6 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
   return miniProgram
 }
 
-export async function terminateBridgeCliProcess(cliPid: number) {
-  await terminateCliProcessTree(cliPid)
-}
-
 async function closeLaunchMiniProgram(miniProgram: any) {
   try {
     await runWithTimeout(() => miniProgram?.close?.(), 5_000, 'close canceled launch session')
@@ -2548,38 +2542,6 @@ async function closeLaunchMiniProgram(miniProgram: any) {
   catch {
     miniProgram?.disconnect?.()
   }
-}
-
-async function disposeLateBridgeBootstrap(result: { stdout?: unknown }) {
-  let cliPid: unknown
-  try {
-    cliPid = (JSON.parse(typeof result.stdout === 'string' ? result.stdout : '') as AutomatorCliBridgeResult).cliPid
-  }
-  catch {
-    return
-  }
-  if (typeof cliPid === 'number' && cliPid > 0) {
-    await terminateBridgeCliProcess(cliPid)
-  }
-}
-
-function enhanceMiniProgramWithBridgeCliCleanup(miniProgram: any, disposeCli: () => Promise<void>) {
-  const metaKey = '__weappViteBridgeCliCleanupWrapped'
-  if ((miniProgram as Record<string, any>)[metaKey]) {
-    return miniProgram
-  }
-
-  ;(miniProgram as Record<string, any>)[metaKey] = true
-  const rawClose = miniProgram.close.bind(miniProgram)
-  miniProgram.close = async (...args: any[]) => {
-    try {
-      return await rawClose(...args)
-    }
-    finally {
-      await disposeCli().catch(() => {})
-    }
-  }
-  return miniProgram
 }
 
 export async function launchAutomatorViaCliBridge(
@@ -2598,7 +2560,7 @@ export async function launchAutomatorViaCliBridge(
       ...process.env,
       [AUTOMATOR_LAUNCH_MODE_ENV]: '',
     },
-  }), { waitForExit: true, disposeLate: disposeLateBridgeBootstrap })
+  }), { waitForExit: true })
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
 
   if ((result.exitCode ?? 1) !== 0) {
@@ -2625,12 +2587,6 @@ export async function launchAutomatorViaCliBridge(
 
   if (!bridgeResult.wsEndpoint || typeof bridgeResult.wsEndpoint !== 'string') {
     throw new Error(`Invalid automator cli bridge output: ${rawStdout}`)
-  }
-  const disposeCli = typeof bridgeResult.cliPid === 'number' && bridgeResult.cliPid > 0
-    ? ownDevtoolsCleanup(() => terminateBridgeCliProcess(bridgeResult.cliPid!))
-    : undefined
-  if (disposeCli) {
-    lifecycle.own(disposeCli)
   }
   lifecycle.throwIfAborted()
   if (typeof bridgeResult.servicePort === 'number') {
@@ -2691,9 +2647,6 @@ export async function launchAutomatorViaCliBridge(
     channel: 'launch-bridge',
     text: `connected=${bridgeResult.wsEndpoint}`,
   })
-  if (disposeCli) {
-    enhanceMiniProgramWithBridgeCliCleanup(miniProgram, disposeCli)
-  }
   const endpointPort = new URL(bridgeResult.wsEndpoint).port
   Reflect.set(miniProgram as object, '__WEAPP_VITE_SESSION_METADATA', {
     port: Number.parseInt(endpointPort, 10),
