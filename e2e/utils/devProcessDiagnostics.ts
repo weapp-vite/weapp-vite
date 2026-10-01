@@ -76,7 +76,8 @@ export function createDevProcessDiagnostics(project: string) {
         project,
         level: build[1]!.toLowerCase() as 'warn' | 'error',
         channel: 'dev-process',
-        text: line,
+        // 严重性已单列，统一 Consola 的终端/CI 外观而不改变错误正文或命名空间。
+        text: line.replace(/^(WARN|ERROR) {2,}/, (_prefix, level: string) => `[${level.toLowerCase()}] `),
       })
     }
   }

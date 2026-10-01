@@ -3,8 +3,12 @@ import { mkdir, mkdtemp, realpath, rename, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { WEVU_AUTO_ROUTES_RESOLVED_MODULE_ID } from '@weapp-core/constants'
+import { createServer } from 'vite'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createOutputFinalizerPlugin } from '../plugins/outputFinalizer'
 import { createRuntimeState } from '../runtime/runtimeState'
+import { beginWxmlDependencies } from '../wxml/processing/dependencies'
+import { ownsExternalWxmlWatch } from '../wxml/processing/watch'
 import { createDevModuleGraphProvider } from './devProvider'
 import { createLogicalEntryId } from './protocol'
 import { createModuleGraphService } from './service'
@@ -136,6 +140,73 @@ describe('dev module graph provider integration', () => {
     }
     finally {
       await provider.close()
+    }
+  })
+
+  it('observes a later registered existing sibling without another directory mutation', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-wxml-late-input-')))
+    temporaryDirectories.push(root)
+    const project = path.join(root, 'project')
+    const initial = path.join(root, 'initial.json')
+    const sibling = path.join(root, 'sibling.json')
+    await mkdir(project)
+    await Promise.all([writeFile(initial, '{}'), writeFile(sibling, '{}')])
+    const runtimeState = createRuntimeState()
+    runtimeState.wxmlProcessing.references.set(normalizeSourceId(initial), 1)
+    const ctx = {
+      runtimeState,
+      configService: { cwd: project, outDir: path.join(project, 'dist') },
+      moduleGraphService: createModuleGraphService(),
+    } as unknown as MutableCompilerContext
+    const onChange = vi.fn()
+    const provider = await createDevModuleGraphProvider(ctx, { root: project }, onChange)
+    try {
+      const transaction = beginWxmlDependencies(ctx, 'main', false)
+      transaction.template('page.wxml')(sibling)
+      transaction.commit()
+      await writeFile(sibling, '{"label":"first-save"}')
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({
+        event: expect.stringMatching(/^(?:create|update)$/),
+        file: normalizeSourceId(sibling),
+      }))
+      await rm(sibling)
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({ event: 'delete', file: normalizeSourceId(sibling) }))
+      await writeFile(sibling, '{"label":"restored"}')
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({ event: 'create', file: normalizeSourceId(sibling) }))
+    }
+    finally {
+      await provider.close()
+    }
+  })
+
+  it('releases external input ownership when a middleware host closes', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-wxml-middleware-')))
+    temporaryDirectories.push(root)
+    const project = path.join(root, 'project')
+    const dependency = path.join(root, 'rules.json')
+    await mkdir(project)
+    await writeFile(dependency, '{}')
+    const runtimeState = createRuntimeState()
+    runtimeState.wxmlProcessing.references.set(normalizeSourceId(dependency), 1)
+    const ctx = { runtimeState, configService: { cwd: project } } as unknown as MutableCompilerContext
+    const unrelated = vi.fn()
+    runtimeState.wxmlProcessing.listeners.add(unrelated)
+    const server = await createServer({
+      configFile: false,
+      root: project,
+      server: { middlewareMode: true },
+      plugins: [createOutputFinalizerPlugin(ctx)],
+    })
+    try {
+      expect(server.httpServer).toBeNull()
+      expect(ownsExternalWxmlWatch(ctx, dependency)).toBe(true)
+      await server.close()
+      expect(ownsExternalWxmlWatch(ctx, dependency)).toBe(false)
+      expect(runtimeState.wxmlProcessing.listeners).toEqual(new Set([unrelated]))
+      await server.close()
+    }
+    finally {
+      await server.close()
     }
   })
 
