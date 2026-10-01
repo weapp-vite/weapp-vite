@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto'
 import { get, removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { finalizeAppConfigForBuild } from '../../../../runtime/appConfig'
+import { checkAppWorkersOptions } from '../../../../runtime/buildPlugin/workers'
 import { applyAutoRoutesToAppConfigIfNeeded } from '../../../../runtime/scanPlugin/service/app'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { analyzeAppJson, analyzePluginJson } from '../../../utils/analyze'
@@ -99,6 +100,8 @@ export async function collectAppEntries(options: CollectAppEntriesOptions): Prom
   let sideJsonPaths: Pick<AppEntryResult, 'sitemapJsonPath' | 'themeJsonPath'> = {}
 
   if (!isPluginBuild) {
+    // 校验实际收集的产物配置；启动扫描后源文件仍可能被用户再次保存。
+    checkAppWorkersOptions('app', configService, { json })
     extendedLibManager.syncFromAppJson(json)
     ;[sideJsonPaths] = await Promise.all([
       collectAppSideFiles(
