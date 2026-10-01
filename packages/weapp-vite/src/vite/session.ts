@@ -1,7 +1,7 @@
 import type { EmittedAsset } from 'rolldown'
 import type { InlineConfig, ViteDevServer } from 'vite'
 import { attachDevModuleGraphHost } from '../moduleGraph/host'
-import { checkWorkersOptions } from '../runtime/buildPlugin/workers'
+import { checkAppWorkersOptions } from '../runtime/buildPlugin/workers'
 import { CompilerSession } from '../runtime/compilerSession'
 import { resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
@@ -63,8 +63,8 @@ export class WeappBuildSession extends CompilerSession {
     this.dependencyBuild = undefined
     return this.validating = this.run(async () => {
       if (!this.isWeb && !this.context.configService.weappLibConfig?.enabled) {
-        await this.context.scanService.loadAppEntry()
-        checkWorkersOptions('app', this.context.configService, this.context.scanService)
+        const app = await this.context.scanService.loadAppEntry()
+        checkAppWorkersOptions('app', this.context.configService, app)
       }
       if (this.isClosing) {
         throw new Error('[weapp-vite] 构建会话已关闭。')

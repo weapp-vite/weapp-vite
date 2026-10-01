@@ -42,6 +42,24 @@ permissions:
   contents: read
 
 jobs:
+  watch-validation:
+    name: Watch validation (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite...
+      main_command: >-
+        pnpm --filter weapp-vite exec vitest run
+        test/vite-watch-validation.test.ts test/vite-watch.test.ts test/vite-worker.test.ts
+        src/vite/session.test.ts src/runtime/buildPlugin/workers.test.ts
+    secrets: inherit
+
   route-topology:
     name: Route topology (${{ matrix.os }})
     strategy:
