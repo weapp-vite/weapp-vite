@@ -1,0 +1,5 @@
+.lifecycle-log-panel {
+  /* 日志记录不能扩展页面布局并触发滚动锚定，否则观测本身会改变 onPageScroll。 */
+  height: 260rpx;
+  overflow: hidden;
+}

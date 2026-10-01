@@ -250,6 +250,8 @@ if (isWeappIdeTopLevelCommand('preview')) {
 console.log(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES)
 ```
 
+登录诊断可使用 `queryWechatIdeLogin(cliPath, { timeout: 3000 })`，显式指定本轮选择的 CLI。只有原生 JSON 中的 `login` 布尔值才返回 `{ status: 'success', login }`；超时、命令失败、空输出或矛盾响应均返回 `{ status: 'unknown', reason }`。`unknown` 不等于未登录。该方法不提示、不重试、不回退安装路径；原生 `islogin` 可能启动 IDE，不属于静态探针。旧的 `isWechatIdeLoggedIn()` 保留 CLI 透传行为，其 Promise 完成不能作为登录事实。
+
 ### 6) opened-session helper
 
 除了官方 CLI 透传，`weapp-ide-cli` 现在也提供面向已打开 DevTools 会话的 Tool 域 helper，可优先复用当前会话完成以下操作：

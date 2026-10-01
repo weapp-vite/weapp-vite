@@ -8,6 +8,7 @@ import { buildDoctorSnapshot } from './build'
 import { parseObject, readDoctorFiles } from './files'
 import { addDiagnostic, finishReport } from './report'
 import { probeDoctorRuntime } from './runtime'
+import { appendDoctorRuntimeEvidence } from './runtimeReport'
 import { checkDoctorScripts, incompleteCoverage } from './source'
 
 export { formatDoctorReport } from './report'
@@ -74,8 +75,11 @@ export async function runDoctor(options: DoctorOptions = {}, adapters: Partial<D
     }
     if (options.runtime) {
       try {
-        report.runtime[target] = await (adapters.runtime ?? probeDoctorRuntime)(cwd, target, options.runtimePort)
-        report.coverage.push({ target, layer: 'runtime', check: 'connected-page-snapshot', status: 'complete', reason: '仅证明工具信息和当前页面可读取；不代表完整应用功能验收。' })
+        const probe = adapters.runtime ?? probeDoctorRuntime
+        const evidence = options.runtimeCliPath !== undefined || options.runtimeLogin !== undefined || options.runtimeServicePort !== undefined
+          ? await probe(cwd, target, options.runtimePort, { cliPath: options.runtimeCliPath, login: options.runtimeLogin, servicePort: options.runtimeServicePort })
+          : await probe(cwd, target, options.runtimePort)
+        appendDoctorRuntimeEvidence(report, target, evidence)
       }
       catch {
         incompleteCoverage(report, target, 'runtime', 'connected-page-snapshot', '没有可连接的受支持宿主或探针执行失败；请先打开目标项目并启用服务端口。')
@@ -87,6 +91,9 @@ export async function runDoctor(options: DoctorOptions = {}, adapters: Partial<D
   }
   if (!report.targets.length) {
     incompleteCoverage(report, 'unknown', 'project', 'target', '至少需要一个注册目标。')
+  }
+  if (!options.runtime && (options.runtimeCliPath !== undefined || options.runtimeLogin || options.runtimeServicePort !== undefined)) {
+    incompleteCoverage(report, 'all', 'runtime', 'selection', '宿主检查选项需要显式 runtime；本轮未执行宿主操作。')
   }
   if (options.build && options.artifact) {
     addDiagnostic(report, {

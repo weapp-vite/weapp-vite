@@ -15,6 +15,7 @@ const refreshWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const resolveProjectAutomatorPortMock = vi.hoisted(() => vi.fn())
 const resolveCliPathMock = vi.hoisted(() => vi.fn())
 const isWechatIdeLoggedInMock = vi.hoisted(() => vi.fn())
+const queryWechatIdeLoginMock = vi.hoisted(() => vi.fn())
 const readCustomConfigMock = vi.hoisted(() => vi.fn())
 const setWechatIdeTicketMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
@@ -41,6 +42,7 @@ vi.mock('weapp-ide-cli', () => ({
   resolveCliPath: resolveCliPathMock,
   resolveProjectAutomatorPort: resolveProjectAutomatorPortMock,
   isWechatIdeLoggedIn: isWechatIdeLoggedInMock,
+  queryWechatIdeLogin: queryWechatIdeLoginMock,
   readCustomConfig: readCustomConfigMock,
   setWechatIdeTicket: setWechatIdeTicketMock,
 }))
@@ -81,6 +83,7 @@ describe('ide logs command', () => {
     resolveProjectAutomatorPortMock.mockReset()
     resolveCliPathMock.mockReset()
     isWechatIdeLoggedInMock.mockReset()
+    queryWechatIdeLoginMock.mockReset()
     readCustomConfigMock.mockReset()
     setWechatIdeTicketMock.mockReset()
     loggerMock.info.mockReset()
@@ -135,6 +138,7 @@ describe('ide logs command', () => {
     resolveProjectAutomatorPortMock.mockReturnValue(10261)
     resolveCliPathMock.mockResolvedValue({ cliPath: 'C:/Program Files/Tencent/微信web开发者工具/cli.bat', source: 'custom' })
     isWechatIdeLoggedInMock.mockResolvedValue(undefined)
+    queryWechatIdeLoginMock.mockResolvedValue({ status: 'success', login: true })
     readCustomConfigMock.mockResolvedValue({ autoBootstrapDevtools: true, autoTrustProject: true })
     setWechatIdeTicketMock.mockResolvedValue(undefined)
     startForwardConsoleBridgeMock.mockResolvedValue({
@@ -167,7 +171,7 @@ describe('ide logs command', () => {
     expect(processOffSpy).toHaveBeenCalled()
   })
 
-  it('runs a non-invasive ide doctor report', async () => {
+  it('queries the selected CLI and connects to the existing project for ide doctor', async () => {
     const { runIdeCommand } = await import('./ide')
     const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
 
@@ -179,9 +183,54 @@ describe('ide logs command', () => {
       port: 10261,
       timeout: 3_000,
     })
-    expect(isWechatIdeLoggedInMock).toHaveBeenCalledWith({ nonInteractive: true, silent: true })
+    expect(queryWechatIdeLoginMock).toHaveBeenCalledWith('C:/Program Files/Tencent/微信web开发者工具/cli.bat', { timeout: 3_000 })
+    expect(isWechatIdeLoggedInMock).not.toHaveBeenCalled()
     expect(stdoutWriteSpy).toHaveBeenCalledWith(expect.stringContaining('2.02.2607271'))
     stdoutWriteSpy.mockRestore()
+  })
+
+  it('preserves the connected fact and disconnects when Tool.getInfo fails', async () => {
+    const disconnect = vi.fn()
+    connectOpenedAutomatorMock.mockResolvedValueOnce({
+      disconnect,
+      toolInfo: vi.fn().mockRejectedValue(new Error('Tool.getInfo unavailable')),
+    })
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    try {
+      const { runIdeCommand } = await import('./ide')
+      await runIdeCommand('doctor', undefined, { json: true })
+      const output = JSON.parse(String(stdoutWriteSpy.mock.calls[0][0])) as {
+        checks: Record<string, { status: string, value?: unknown }>
+      }
+      expect(output.checks.automator).toMatchObject({ status: 'ok', value: true })
+      expect(output.checks.tool.status).toBe('warning')
+      expect(disconnect).toHaveBeenCalledTimes(1)
+      expect(openIdeMock).not.toHaveBeenCalled()
+    }
+    finally {
+      stdoutWriteSpy.mockRestore()
+    }
+  })
+
+  it.each([
+    [{ status: 'success', login: false }, 'warning', false],
+    [{ status: 'unknown', reason: 'timeout' }, 'unknown', undefined],
+    [{ status: 'unknown', reason: 'invalid-response' }, 'unknown', undefined],
+  ])('reports login evidence without guessing from process exit: %j', async (result, status, value) => {
+    queryWechatIdeLoginMock.mockResolvedValueOnce(result)
+    const stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    try {
+      const { runIdeCommand } = await import('./ide')
+      await runIdeCommand('doctor', undefined, { json: true })
+      const report = JSON.parse(String(stdoutWriteSpy.mock.calls[0][0])) as {
+        checks: { login: { status: string, value?: unknown } }
+      }
+      expect(report.checks.login.status).toBe(status)
+      expect(report.checks.login.value).toBe(value)
+    }
+    finally {
+      stdoutWriteSpy.mockRestore()
+    }
   })
 
   it('fails strict ide doctor when the service port is disabled', async () => {

@@ -10,7 +10,7 @@ import { WEAPP_VITE_STATEFUL_HMR_CONTROL_FILE } from '@weapp-core/constants'
 /* eslint-disable-next-line e18e/ban-dependencies -- CI 性能脚本需要跨平台运行一次性 CLI prepare。 */
 import { execa } from 'execa'
 import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
-import { cleanupProcessesByCommandPatterns, startDevProcess } from '../e2e/utils/dev-process'
+import { startDevProcess } from '../e2e/utils/dev-process'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
@@ -274,7 +274,6 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
 
   await prepareWorkspace(template)
   await prepareWorkspaceSupportFiles(template)
-  await cleanupProcessesByCommandPatterns([template.workspaceRoot], 2_500).catch(() => {})
 
   const profilePath = path.join(template.workspaceRoot, '.weapp-vite/hmr-profile.jsonl')
   await rm(profilePath, { force: true }).catch(() => {})
@@ -352,7 +351,6 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
       result.devLog = normalizePath(devLog)
     }
     finally {
-      await cleanupProcessesByCommandPatterns([template.workspaceRoot], 2_500).catch(() => {})
       if (!keepWorkspace) {
         await rm(template.workspaceRoot, { recursive: true, force: true }).catch(() => {})
       }

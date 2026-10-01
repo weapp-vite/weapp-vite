@@ -29,15 +29,13 @@ interface DevProcessSpawnInfo {
   cwd?: string | URL
 }
 
-const TRACKED_DEV_PIDS = new Set<number>()
+const TRACKED_DEV_DISPOSERS = new Set<(forceKillDelayMs: number) => Promise<void>>()
 
 interface ProcessEntry {
   pid: number
   ppid: number
   command: string
 }
-
-type CommandPattern = RegExp | string
 
 const PROCESS_ENTRY_SEPARATOR_RE = /\s+/
 
@@ -84,15 +82,6 @@ function appendRecentOutput(
     : output
 
   return `${message}${spawnDetail ? `\n\nDev process:\n${spawnDetail}` : ''}\n\nRecent dev output:\n${recentOutput}`
-}
-
-function matchesCommandPattern(command: string, pattern: CommandPattern) {
-  if (typeof pattern === 'string') {
-    return command.includes(pattern)
-  }
-
-  pattern.lastIndex = 0
-  return pattern.test(command)
 }
 
 function sleep(ms: number) {
@@ -174,15 +163,13 @@ async function terminateWindowsPid(pid: number, forceKillDelayMs: number) {
   }
 }
 
-async function terminatePid(pid: number, forceKillDelayMs: number) {
-  if (!isPidAlive(pid)) {
-    TRACKED_DEV_PIDS.delete(pid)
+async function terminatePid(pid: number, forceKillDelayMs: number, isHeld: () => boolean) {
+  if (!isHeld() || !isPidAlive(pid)) {
     return
   }
 
   if (process.platform === 'win32') {
     await terminateWindowsPid(pid, forceKillDelayMs)
-    TRACKED_DEV_PIDS.delete(pid)
     return
   }
 
@@ -193,8 +180,15 @@ async function terminatePid(pid: number, forceKillDelayMs: number) {
   }
   catch {}
 
+  if (!isHeld()) {
+    return
+  }
+
   try {
     for (const targetPid of targetPidList) {
+      if (!isHeld()) {
+        return
+      }
       process.kill(targetPid, 'SIGTERM')
     }
   }
@@ -203,7 +197,6 @@ async function terminatePid(pid: number, forceKillDelayMs: number) {
   const deadline = Date.now() + forceKillDelayMs
   while (Date.now() < deadline) {
     if (targetPidList.every(targetPid => !isPidAlive(targetPid))) {
-      TRACKED_DEV_PIDS.delete(pid)
       return
     }
     await sleep(100)
@@ -211,14 +204,15 @@ async function terminatePid(pid: number, forceKillDelayMs: number) {
 
   try {
     for (const targetPid of targetPidList) {
+      if (!isHeld()) {
+        return
+      }
       if (isPidAlive(targetPid)) {
         process.kill(targetPid, 'SIGKILL')
       }
     }
   }
   catch {}
-
-  TRACKED_DEV_PIDS.delete(pid)
 }
 
 async function waitForExitWithTimeout(
@@ -232,35 +226,8 @@ async function waitForExitWithTimeout(
 }
 
 export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
-  const pidList = [...TRACKED_DEV_PIDS]
-  for (const pid of pidList) {
-    await terminatePid(pid, forceKillDelayMs)
-  }
-}
-
-export async function cleanupProcessesByCommandPatterns(
-  commandPatterns: readonly CommandPattern[],
-  forceKillDelayMs = 3_000,
-) {
-  const processList = await listUnixProcesses()
-  const matchedPidSet = new Set<number>()
-  const parentByPid = new Map(processList.map(entry => [entry.pid, entry.ppid]))
-  const protectedPids = new Set([process.pid])
-  let ancestorPid = process.ppid
-  // 启动 shell 的参数也可能包含目标路径，必须保护调用链，避免连带终止当前测试。
-  while (ancestorPid > 0 && !protectedPids.has(ancestorPid)) {
-    protectedPids.add(ancestorPid)
-    ancestorPid = parentByPid.get(ancestorPid) ?? 0
-  }
-
-  for (const processEntry of processList) {
-    if (!protectedPids.has(processEntry.pid) && commandPatterns.some(pattern => matchesCommandPattern(processEntry.command, pattern))) {
-      matchedPidSet.add(processEntry.pid)
-    }
-  }
-
-  for (const pid of matchedPidSet) {
-    await terminatePid(pid, forceKillDelayMs)
+  for (const dispose of [...TRACKED_DEV_DISPOSERS]) {
+    await dispose(forceKillDelayMs)
   }
 }
 
@@ -279,9 +246,8 @@ export function startDevProcess(
     env: options?.env ?? process.env,
     extendEnv: false,
   })
-  if (typeof child.pid === 'number') {
-    TRACKED_DEV_PIDS.add(child.pid)
-  }
+  let exited = false
+  let stopTask: Promise<void> | undefined
   const outputChunks: string[] = []
   const projectPath = options?.cwd instanceof URL ? fileURLToPath(options.cwd) : options?.cwd
   const diagnostics = createDevProcessDiagnostics(resolveReportProjectPath(projectPath))
@@ -327,13 +293,6 @@ export function startDevProcess(
       }
     })
 
-  void settledExit.finally(() => {
-    diagnostics.flush()
-    if (typeof child.pid === 'number') {
-      TRACKED_DEV_PIDS.delete(child.pid)
-    }
-  })
-
   const waitFor = async <T>(task: Promise<T>, description: string) => {
     const winner = await Promise.race([
       task
@@ -378,15 +337,37 @@ export function startDevProcess(
     throw new Error(appendRecentOutput(`Timed out waiting for dev output: ${description}`, outputChunks, spawnInfo))
   }
 
-  const stop = async (forceKillDelayMs = 3_000) => {
-    if (typeof child.pid === 'number') {
-      await terminatePid(child.pid, forceKillDelayMs)
+  const stop = (forceKillDelayMs = 3_000) => {
+    if (!stopTask) {
+      stopTask = (async () => {
+        TRACKED_DEV_DISPOSERS.delete(stop)
+        // 原子持有清理任务，避免 stop 与恢复并发释放；退出的句柄不再授权旧 PID。
+        if (exited) {
+          return
+        }
+        if (child.nodeChildProcess?.exitCode != null || child.nodeChildProcess?.signalCode != null) {
+          // 原生进程退出先撤销终止权限，仍等待 execa 排空输出并完成诊断。
+          await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
+          return
+        }
+        if (typeof child.pid === 'number') {
+          await terminatePid(child.pid, forceKillDelayMs, () => !exited && child.nodeChildProcess?.exitCode == null && child.nodeChildProcess?.signalCode == null)
+        }
+        else {
+          child.kill('SIGTERM')
+        }
+        await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
+      })()
     }
-    else if (child.nodeChildProcess.exitCode == null) {
-      child.kill('SIGTERM')
-    }
-    await waitForExitWithTimeout(settledExit, forceKillDelayMs + 1_000)
+    return stopTask
   }
+  TRACKED_DEV_DISPOSERS.add(stop)
+
+  void settledExit.finally(() => {
+    diagnostics.flush()
+    exited = true
+    TRACKED_DEV_DISPOSERS.delete(stop)
+  })
 
   return {
     pid: child.pid,

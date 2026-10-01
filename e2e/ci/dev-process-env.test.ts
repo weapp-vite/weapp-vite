@@ -221,107 +221,12 @@ describe('dev process env isolation', () => {
     expect(child.kill).not.toHaveBeenCalled()
   })
 
-  it('cleans unix dev processes with regex command patterns', async () => {
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-    })
-
-    execaMock.mockImplementation((command: string) => {
-      if (command === 'ps') {
-        return Promise.resolve({
-          stdout: [
-            '111 1 pnpm --dir /repo/e2e-apps/base run dev -- --platform weapp',
-            '222 1 pnpm --dir /repo/docs-site run dev',
-            '333 1 node /repo/packages/weapp-vite/dist/cli.mjs dev /repo/apps/vite-native-ts --platform weapp',
-          ].join('\n'),
-        })
-      }
-
-      return Promise.resolve({
-        exitCode: 0,
-        signal: undefined,
-      })
-    })
-
-    const alivePids = new Set([111, 333])
-    const killedPids: number[] = []
-    vi.spyOn(process, 'kill').mockImplementation(((pid: number, signal?: NodeJS.Signals | 0) => {
-      if (signal === 0) {
-        if (alivePids.has(pid)) {
-          return true
-        }
-
-        const error = new Error('process is gone') as NodeJS.ErrnoException
-        error.code = 'ESRCH'
-        throw error
-      }
-
-      killedPids.push(pid)
-      alivePids.delete(pid)
-      return true
-    }) as typeof process.kill)
-
-    const { cleanupProcessesByCommandPatterns } = await import('../utils/dev-process')
-
-    await cleanupProcessesByCommandPatterns([
-      /pnpm\s+--dir\s+\S*e2e-apps\/\S+\s+run\s+\S+/,
-      /packages\/weapp-vite\/dist\/cli\.mjs\s+dev[^\n]*apps\//,
-    ])
-
-    expect(killedPids).toEqual([111, 333])
-  })
-
-  it('cleans package-script dev commands from process snapshots without serialized pkill calls', async () => {
-    vi.useFakeTimers()
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-    })
-
-    execaMock.mockImplementation((command: string) => {
-      if (command === 'ps') {
-        return Promise.resolve({
-          stdout: [
-            '111 1 pnpm --dir /repo/e2e-apps/base run dev -- --platform weapp',
-            '222 1 pnpm --dir /repo/docs-site run dev',
-            '333 1 node /repo/packages/weapp-vite/bin/weapp-vite.js mcp --transport streamable-http --workspace-root /repo/templates/weapp-vite-wevu-tailwindcss-tdesign-template --rest-endpoint /api/weapp/devtools',
-          ].join('\n'),
-        })
-      }
-
-      return Promise.resolve({
-        exitCode: 0,
-        signal: undefined,
-      })
-    })
-
-    const alivePids = new Set([111, 333])
-    const killedPids: number[] = []
-    vi.spyOn(process, 'kill').mockImplementation(((pid: number, signal?: NodeJS.Signals | 0) => {
-      if (signal === 0) {
-        if (alivePids.has(pid)) {
-          return true
-        }
-
-        const error = new Error('process is gone') as NodeJS.ErrnoException
-        error.code = 'ESRCH'
-        throw error
-      }
-
-      killedPids.push(pid)
-      alivePids.delete(pid)
-      return true
-    }) as typeof process.kill)
-
+  it('preserves unregistered package-script processes without scanning commands', async () => {
+    const kill = vi.spyOn(process, 'kill').mockImplementation(() => true)
     const { cleanupResidualDevProcesses } = await import('../utils/dev-process-cleanup')
-
-    const cleanup = cleanupResidualDevProcesses()
-    await vi.advanceTimersByTimeAsync(1_000)
-    await cleanup
-
-    expect(execaMock).toHaveBeenCalledWith('ps', ['-Ao', 'pid=,ppid=,command='], {
-      stdin: 'ignore',
-    })
-    expect(execaMock.mock.calls.every(([command]) => command === 'ps')).toBe(true)
-    expect(killedPids).toEqual([111, 333])
+    execaMock.mockClear()
+    await cleanupResidualDevProcesses()
+    expect(execaMock).not.toHaveBeenCalled()
+    expect(kill).not.toHaveBeenCalled()
   })
 })

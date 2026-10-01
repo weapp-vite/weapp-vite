@@ -56,6 +56,9 @@ Modes:
   manual  Build and open one scenario, wait for Enter, then move to the next scenario.
   auto    Build and open one scenario, wait for the interval, then move to the next scenario automatically.
 
+Before opening, verify the official latest stable IDE and set WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH.
+Opened project windows remain running; the carousel never quits the shared IDE.
+
 Examples:
   node scripts/chunk-modes-devtools-carousel.mjs --mode manual
   node scripts/chunk-modes-devtools-carousel.mjs --mode auto --interval 5000
@@ -95,56 +98,6 @@ function parseArgs(argv) {
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-async function closeWechatDevtoolsIfNeeded() {
-  if (process.platform !== 'darwin') {
-    return
-  }
-
-  const appNames = (process.env.WEAPP_DEVTOOLS_APP_NAMES || 'wechatwebdevtools,微信开发者工具')
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean)
-  const processPatterns = (process.env.WEAPP_DEVTOOLS_PROCESS_PATTERNS
-    || '/Applications/wechatwebdevtools.app,wechatwebdevtools Daemon,wechatdevtools')
-    .split(',')
-    .map(item => item.trim())
-    .filter(Boolean)
-
-  let closed = false
-
-  for (const appName of appNames) {
-    const result = await runCommand('osascript', [
-      '-e',
-      `tell application "${appName}" to quit`,
-    ], {
-      cwd: repoRoot,
-      env: process.env,
-    })
-    if ((result.code ?? 0) === 0) {
-      closed = true
-      break
-    }
-  }
-
-  await wait(800)
-
-  for (const pattern of processPatterns) {
-    const result = await runCommand('pkill', ['-f', pattern], {
-      cwd: repoRoot,
-      env: process.env,
-    }).catch(() => ({ code: 1, signal: null }))
-    if ((result.code ?? 1) === 0) {
-      closed = true
-    }
-  }
-
-  await wait(800)
-
-  if (!closed) {
-    console.warn('[chunk-modes] warn: failed to close WeChat DevTools before switching scenarios')
-  }
 }
 
 function waitForEnter(message) {
@@ -244,15 +197,14 @@ async function runScenario(scenario, index, total, options) {
     console.log(`[chunk-modes] ${scenario.id} 已打开独立项目，${options.intervalMs}ms 后自动切换到下一个场景。`)
     await wait(options.intervalMs)
   }
-
-  await closeWechatDevtoolsIfNeeded()
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2))
+export async function runChunkModesCarousel(argv = process.argv.slice(2)) {
+  const options = parseArgs(argv)
 
   console.log(`[chunk-modes] mode=${options.mode}${options.mode === 'auto' ? ` interval=${options.intervalMs}ms` : ''}`)
   console.log(`[chunk-modes] scenarios=${scenarios.map(item => item.id).join(', ')}`)
+  console.log('[chunk-modes] 已打开的项目保持运行；轮播不持有 IDE 独占所有权，请按需手动关闭项目窗口。')
 
   for (let i = 0; i < scenarios.length; i += 1) {
     await runScenario(scenarios[i], i, scenarios.length, options)
@@ -261,7 +213,9 @@ async function main() {
   console.log('\n[chunk-modes] all scenarios completed')
 }
 
-main().catch((error) => {
-  console.error(`[chunk-modes] failed: ${error instanceof Error ? error.message : String(error)}`)
-  process.exit(1)
-})
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runChunkModesCarousel().catch((error) => {
+    console.error(`[chunk-modes] failed: ${error instanceof Error ? error.message : String(error)}`)
+    process.exitCode = 1
+  })
+}

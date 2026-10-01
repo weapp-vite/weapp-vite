@@ -17,7 +17,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { readEmittedStylesheet, waitForEmittedStylesheet } from '../utils/emittedStylesheet'
 import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
 import { createWevuTailwindHmrFileDiagnostics } from '../utils/wevuTailwindHmrDiagnostics'
@@ -249,9 +249,6 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
     let lastError: unknown
     for (let attempt = 1; attempt <= STARTUP_ATTEMPTS; attempt += 1) {
       await stopDevSession()
-      if (!headless) {
-        await cleanDevtoolsCache('compile', { cwd: fixtureRoot })
-      }
       await removeAutomatorSessionFiles()
       await delay(1_600)
       devProcess = startDevProcess(process.execPath, [CLI_PATH, 'dev', '--non-interactive'], {
