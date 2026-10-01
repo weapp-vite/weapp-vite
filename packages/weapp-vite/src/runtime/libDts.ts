@@ -36,7 +36,8 @@ export async function generateLibDts(configService: ConfigService, onWatchFile?:
   const input: Record<string, string> = {}
 
   for (const entry of tsEntries) {
-    input[entry.outputBase] = entry.input
+    // 输入与 tsconfig/cwd 共用真实路径，避免 Windows 短路径与长路径被视为不同源文件。
+    input[entry.outputBase] = resolveRealpath(entry.input)
   }
 
   const inputNames = Object.keys(input)
