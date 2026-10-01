@@ -30,5 +30,7 @@ jobs:
       node_version: 24.18.0
       timeout_minutes: 20
       build_command: pnpm exec turbo run build --filter=@weapp-vite/mcp...
-      main_command: pnpm --filter @weapp-vite/mcp exec vitest run test/acceptance.test.ts
+      main_command: >-
+        pnpm --filter @weapp-vite/acceptance --filter @weapp-vite/mcp --workspace-concurrency=1
+        exec vitest run test/completion.test.ts test/persistence.test.ts test/acceptance.test.ts
     secrets: inherit

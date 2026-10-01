@@ -57,6 +57,7 @@ jobs:
       main_command: >-
         pnpm --filter weapp-vite exec vitest run
         test/vite-watch-validation.test.ts test/vite-watch.test.ts test/vite-worker.test.ts
+        test/wxml-transform-watch.test.ts
         src/vite/session.test.ts src/runtime/buildPlugin/workers.test.ts
     secrets: inherit
 
