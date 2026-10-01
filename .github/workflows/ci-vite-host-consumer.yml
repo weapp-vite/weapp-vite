@@ -75,6 +75,7 @@ jobs:
       build_command: pnpm exec turbo run build --filter=weapp-vite...
       main_command: >-
         pnpm vitest run packages/weapp-vite/src/plugins/core/lifecycle/autoRoutesTopology.test.ts
+        packages/weapp-vite/src/plugins/core/lifecycle/watch.test.ts
         packages/weapp-vite/test/vite-watch.test.ts
     secrets: inherit
 
