@@ -2268,6 +2268,22 @@ describe('runtime buildPlugin service', () => {
     await watcher.close()
   })
 
+  it('records an unaffected source batch without carrying its profile into a later build', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    vi.mocked(ctx.moduleGraphService.collectAffectedEntries).mockReturnValue(new Set())
+    onChange({ event: 'update', file: '/project/src/unreferenced.ts' })
+    await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
+    const sample = JSON.parse(appendFileMock.mock.calls[0][1]) as Record<string, unknown>
+    expect(sample).toMatchObject({ status: 'incomplete', reason: 'no-affected-entries' })
+    expect(sample.totalMs).toBeUndefined()
+    expect(sample.buildCoreMs).toBeUndefined()
+    expect(sample.sourceEvents).toEqual([expect.objectContaining({ file: '/project/src/unreferenced.ts' })])
+    expect(ctx.runtimeState.build.hmr.profile).toEqual({})
+    expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(0)
+    await watcher.close()
+  })
+
   it('writes hmr profile jsonl with default output path when enabled', async () => {
     const nowSpy = vi.spyOn(performance, 'now')
     nowSpy

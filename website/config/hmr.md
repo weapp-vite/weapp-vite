@@ -199,8 +199,24 @@ weapp-vite 的 `weapp.hmr`、`weapp.tailwindcss` 和可选 `prepareHmr` 类型�
 
 `timestamp` 是 UTC 发布时刻，阶段耗时与 `sourceEvents[].receivedAtMs` 使用同进程 `performance.now()` 时钟，`clock.timeOrigin` 给出时钟原点。不同进程的单调时钟值不能直接相减。`batchWaitMs` 表示收集批次的等待，`queueWaitMs` 表示串行构建队列等待；文件稳定等待发生在上游 watcher，当前无法独立观测时保持缺失，不能用外部墙钟减去内部阶段来推断。
 
-`status: 'complete'` 才能进入正常耗时统计。失败记录为 `failed`，只提供 `elapsedMs`，不提供成功的 `totalMs`。未完成、未知版本、损坏行与缺失阶段不会被补为 0；`analyze --hmr-profile --json` 的 `inputCoverage` 报告旧版、兼容、不兼容、未完成和无效行数，各阶段的 `count` 表示实际观测数。没有版本的旧记录继续兼容，旧字段缺失时保持未知。
+`status: 'complete'` 才能进入正常耗时统计。失败记录为 `failed`，只提供 `elapsedMs`，不提供成功的 `totalMs`。未影响任何入口的批次记为 `incomplete`，并附 `reason: 'no-affected-entries'`；其观测状态随批次结束，不混入下一次构建。未完成、未知版本、损坏行与缺失阶段不会被补为 0；`analyze --hmr-profile --json` 的 `inputCoverage` 报告旧版、兼容、不兼容、未完成和无效行数，各阶段的 `count` 表示实际观测数。没有版本的旧记录继续兼容，旧字段缺失时保持未知。
 
 阶段可能相互包含，不能相加当作总时间。`buildCoreMs` 保留旧口径，但由 `estimates.buildCoreMs` 明确标记为残差估算，不是独立计时；`snapshotBuildMs` 包含 snapshot 准备与构建。外部产物可见时间单独记录，不能冒充内部编译时间。当前 stateful benchmark 若没有编译 profile，继续报告 `unavailable-stateful`。
 
 一次编辑的消费方式是先记下 JSONL 当前行位置，再修改源文件，等待输出断言通过后，从新增的兼容、完成记录中按 `sourceEvents[].file` 精确匹配。仓库可运行示例为 `scripts/benchmark-templates-hmr.ts`，匹配逻辑与回归在 `scripts/benchmarkTemplatesHmr/profile.ts`；找不到关联时返回 `missing`，外部观察结果单独保留。
+
+
+### 编辑序列与观测开销
+
+仓库的 `verify:edit-sequence` 复用同一序列驱动器，将长期增量会话的每一步与全新进程基线比较；失败保留首个分歧和可重放输入。新增 `--resource-cycles 60 --report <file.json>` 可记录额外的有界连续编辑：
+
+```sh
+pnpm verify:edit-sequence --engine classic --resource-cycles 60 --report .tmp/edit-classic.json
+pnpm verify:edit-sequence --engine stateful-experimental --resource-cycles 60 --report .tmp/edit-stateful.json
+```
+
+两条命令必须串行执行。每步报告 load/transform 调用及模块集合、原生产物发布文件与字节、stateful 补丁次数与字节、RSS/heap、Node 活动资源类型、进程监听器和会话句柄，结束后检查工具拥有的子进程已退出。它们来自 compiler/native fixture；不能把 load 数量解释为框架脏入口数，Node 活动资源也不等于原生 watcher 的全部内部资源。
+
+资源门禁跳过最初三个样本，按四个样本一个窗口计算中位数。最后三个完整窗口持续上升且超过阈值时失败：RSS 32 MiB、heap 16 MiB，资源/监听器计数为 0。不足三个窗口报告 unknown；一次峰值不能证明泄漏，门禁失败表示需要结合原始样本调查。正确性比较始终逐步执行，不因观测成本而省略失败恢复或完整基线。
+
+比较 profile 开销时，使用相同的 `TEMPLATES_HMR_MARKER_SEED`、场景、迭代次数与源码，分别设置 `TEMPLATES_HMR_PROFILE=1` 和 `0`。每个样本保存输入 SHA-256；关闭 profile 时报告 `profileStatus: 'disabled'`，只比较同口径的 `wallMs`，不等待 profile、不伪造内部阶段。此开关仅控制 JSONL profile；采样器自身的输出轮询和内存探针仍保持一致。

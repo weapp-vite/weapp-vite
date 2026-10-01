@@ -1,0 +1,14 @@
+{
+  "baseCommit": "7d142dbb1a3d433480162a70c0d311e58f71d7cd",
+  "node": "v24.18.0",
+  "platform": "darwin-arm64",
+  "sourceSha256": {
+    "scripts/editSequence/build.ts": "fae8d2239e803365e9f095babff93857513e144a867fd350ca74f91d2f22d667",
+    "scripts/editSequence/measurement.ts": "f5b96353de0e88049c7bce964a95d5da109e288bfb89354a623881060812e916",
+    "scripts/editSequence/resourceSequence.ts": "dbc61c74ca1c61e80312267884ea62fcad844b49993fba514b06dda30c34e0c5",
+    "scripts/benchmark-templates-hmr.ts": "374ef2f1f8353a5c865dc400548073fcb1a69fd95e32f279624e3b8db37b92dd",
+    "scripts/benchmarkTemplatesHmr/profile.ts": "1391d8132a7301da6340b81e3d48b738cd06fe94496d8881853d9e284fbb597a",
+    "packages/weapp-vite/src/runtime/buildPlugin/service.ts": "7e8491d3c39134c2eb4102dea0241c2ab213f744e6e1cafc9143666b2def73c9"
+  },
+  "scope": "compiler-native-fixture and template classic output observations; not final real-host batch acceptance"
+}

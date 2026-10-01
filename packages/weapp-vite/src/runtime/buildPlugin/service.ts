@@ -1184,7 +1184,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     return true
   }
 
-  async function writeHmrProfileJsonSample(totalMs: number, status: 'complete' | 'failed' = 'complete') {
+  async function writeHmrProfileJsonSample(totalMs: number, status: HmrProfileRecordMetadata['status'] = 'complete', reason?: string) {
     const outputPath = resolveHmrProfileJsonPath()
     if (!outputPath) {
       return
@@ -1197,8 +1197,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       : {
           ...sample,
           status,
+          reason,
           totalMs: undefined,
-          elapsedMs: totalMs,
+          buildCoreMs: undefined,
+          elapsedMs: Number.isFinite(totalMs) && totalMs >= 0 ? totalMs : undefined,
         })
     const write = profileWriteChain.then(async () => {
       await mkdir(path.dirname(outputPath), { recursive: true })
@@ -1754,6 +1756,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           return 'snapshot'
         }
         if (!requiresFullRescan && batchReasons.length && batchReasons.every(batchReason => batchReason.event === 'update')) {
+          // 未触发构建的批次也要结束观测所有权；不能污染下一轮或混入成功耗时。
+          const recorded = writeHmrProfileJsonSample(performance.now() - queuedAt, 'incomplete', 'no-affected-entries')
+          resetHmrProfile()
+          await recorded
           return
         }
         markSnapshotEntriesFullDirty()

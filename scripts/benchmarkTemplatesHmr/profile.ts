@@ -2,13 +2,17 @@ import type { HmrProfileJsonSample } from '../../packages/weapp-vite/src/analyze
 import { readHmrProfileLines } from '../../packages/weapp-vite/src/analyze/hmr/reader'
 
 export type BenchmarkHmrRuntime = 'stateful' | 'standard'
-export type BenchmarkProfileStatus = 'available' | 'unavailable-stateful' | 'missing' | 'read-error' | 'incompatible' | 'incomplete'
+export type BenchmarkProfileStatus = 'available' | 'unavailable-stateful' | 'disabled' | 'missing' | 'read-error' | 'incompatible' | 'incomplete'
 
 /** stateful 由传输与输出确认更新，不等待仅标准构建链提供的编译 profile。 */
 export async function collectBenchmarkHmrProfile<T extends { totalMs?: number }>(
   runtime: BenchmarkHmrRuntime,
   readProfile: () => Promise<T>,
+  enabled = true,
 ): Promise<{ profile: T | Record<string, never>, status: BenchmarkProfileStatus }> {
+  if (!enabled) {
+    return { profile: {}, status: 'disabled' }
+  }
   if (runtime === 'stateful') {
     return { profile: {}, status: 'unavailable-stateful' }
   }

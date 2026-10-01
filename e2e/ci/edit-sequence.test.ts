@@ -1,3 +1,4 @@
+import type { SequenceStepResult } from '../../scripts/editSequence/measurement'
 import fs from 'node:fs/promises'
 import { syncBuiltinESMExports } from 'node:module'
 import path from 'node:path'
@@ -6,6 +7,7 @@ import { BuildSequenceSession } from '../../scripts/editSequence/build'
 import { bounded, verifyEditSequence } from '../../scripts/editSequence/driver'
 import { createProcessObserver } from '../../scripts/editSequence/processObserver'
 import { createSequenceProject } from '../../scripts/editSequence/project'
+import { assertResourceSequence, createResourceSequence, summarizeResourceSequence } from '../../scripts/editSequence/resourceSequence'
 import { buildSequences, compilerSequences } from '../../scripts/editSequence/scenarios'
 
 interface BuildSnapshot {
@@ -43,13 +45,40 @@ describe('incremental/fresh edit-sequence equivalence', { concurrent: false }, (
               }
               return snapshot
             },
+          }, {
+            onStep: (step) => {
+              expect(step.measurement?.build).toBeDefined()
+              if (step.label === 'unreferenced dependency edit') {
+                expect(step.measurement?.build).toMatchObject({ loadCalls: 0, transformCalls: 0, publications: 0 })
+              }
+            },
           })
+          expect(observer.resources?.()).toEqual({ children: 0 })
         }
         finally {
           await project.close()
         }
       }, 65_000)
     }
+
+    it(`${engine}: observes warm resource windows without restarting the incremental session`, async () => {
+      const project = await createSequenceProject()
+      const observer = createProcessObserver<BuildSnapshot>(engine, project.root)
+      const steps: SequenceStepResult[] = []
+      try {
+        await verifyEditSequence(createResourceSequence(), observer, { timeoutMs: 90_000, onStep: step => steps.push(step) })
+        expect(steps).toHaveLength(15)
+        expect(steps.every(step => step.status === 'passed')).toBe(true)
+        for (const step of steps) {
+          expect(step.measurement?.session).toEqual(engine === 'classic' ? { watchers: 1, engines: 0 } : { watchers: 0, engines: 1 })
+        }
+        assertResourceSequence(summarizeResourceSequence(steps))
+        expect(observer.resources?.()).toEqual({ children: 0 })
+      }
+      finally {
+        await project.close()
+      }
+    }, 95_000)
 
     it(`${engine}: waits for the final rapid save after an intermediate publication`, async () => {
       const project = await createSequenceProject()

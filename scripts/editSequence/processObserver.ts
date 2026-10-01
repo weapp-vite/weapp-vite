@@ -1,5 +1,6 @@
 import type { ChildProcess } from 'node:child_process'
 import type { SequenceInput, SequenceObserver } from './driver'
+import type { SequenceMeasurement } from './measurement'
 import { fork } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
@@ -7,6 +8,7 @@ interface WorkerReply<T> {
   id: number
   value?: T
   error?: string
+  measurement?: SequenceMeasurement
 }
 
 /** 基线使用新进程、同一文件名，既隔离全局编译缓存，也不改变路径参与的编译语义。 */
@@ -14,6 +16,7 @@ export function createProcessObserver<T>(mode: 'compiler' | 'classic' | 'statefu
   const children = new Set<ChildProcess>()
   let incremental: ChildProcess | undefined
   let requestId = 0
+  let measurement: SequenceMeasurement | undefined
   const start = (role: string) => {
     const child = fork(fileURLToPath(new URL('./worker.ts', import.meta.url)), [mode, root, role], {
       execArgv: ['--import', 'tsx'],
@@ -54,6 +57,9 @@ export function createProcessObserver<T>(mode: 'compiler' | 'classic' | 'statefu
         result.reject(new Error(message.error))
       }
       else {
+        if (child === incremental) {
+          measurement = message.measurement
+        }
         result.resolve(message.value as T)
       }
     }
@@ -75,6 +81,8 @@ export function createProcessObserver<T>(mode: 'compiler' | 'classic' | 'statefu
   }
   return {
     name: mode,
+    measure: () => measurement,
+    resources: () => ({ children: children.size }),
     async incremental(input) {
       incremental ??= start('incremental')
       return request(incremental, input)

@@ -1,6 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
 import type { HmrProfileJsonSample } from '../packages/weapp-vite/src/analyze/hmr'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
+import { createHash } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { access, cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -60,6 +61,7 @@ interface ScenarioCase {
 }
 
 interface ScenarioSample extends HmrProfileJsonSample {
+  inputSha256?: string
   profileStatus: Awaited<ReturnType<typeof collectBenchmarkHmrProfile>>['status']
   timingSource: 'compiler-profile' | 'output-observation'
   phase?: SamplePhase
@@ -123,6 +125,8 @@ interface BenchmarkReport {
   }
   templates: TemplateResult[]
   profileTimeoutMs: number
+  profileEnabled: boolean
+  markerSeed: string
   sampleMode: 'best-of-cycle' | 'edit-only'
   timeoutMs: number
 }
@@ -139,6 +143,11 @@ const iterations = readPositiveIntegerEnv('TEMPLATES_HMR_ITERATIONS', 1)
 const budgetMs = readPositiveIntegerEnv('TEMPLATES_HMR_BUDGET_MS', 500)
 const timeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_TIMEOUT_MS', 30_000)
 const profileTimeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_PROFILE_TIMEOUT_MS', 15_000)
+const profileEnabled = process.env.TEMPLATES_HMR_PROFILE !== '0'
+const markerSeed = process.env.TEMPLATES_HMR_MARKER_SEED ?? Date.now().toString(36)
+if (!/^[\w-]+$/.test(markerSeed)) {
+  throw new Error('TEMPLATES_HMR_MARKER_SEED must contain only letters, digits, underscores or hyphens')
+}
 const startupTimeoutMs = readPositiveIntegerEnv('TEMPLATES_HMR_STARTUP_TIMEOUT_MS', 120_000)
 const settleMs = readPositiveIntegerEnv('TEMPLATES_HMR_SETTLE_MS', 300)
 const sampleMode = process.env.TEMPLATES_HMR_SAMPLE_MODE === 'edit-only' ? 'edit-only' : 'best-of-cycle'
@@ -285,7 +294,7 @@ async function benchmarkTemplate(template: TemplateCase): Promise<TemplateResult
     cwd: repoRoot,
     env: {
       ...createBenchmarkDevEnv(memoryNodeOptions),
-      WEAPP_VITE_HMR_PROFILE_JSON: '1',
+      WEAPP_VITE_HMR_PROFILE_JSON: profileEnabled ? '1' : '0',
     },
     stdout: 'pipe',
     stderr: 'pipe',
@@ -662,9 +671,10 @@ async function benchmarkScenario(
       await waitForOutput(expectedMarker)
       const wallMs = performance.now() - startedAt
       await acknowledgeArtifact(expectedMarker)
-      const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs))
+      const profileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, lineCount, profileTimeoutMs), profileEnabled)
       const editMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const editSample = createScenarioSample(scenario, profileSample, wallMs, 'edit', editMemorySample)
+      editSample.inputSha256 = createHash('sha256').update(updated).digest('hex')
 
       const restoreLineCount = await countJsonlLines(profilePath)
       phase = 'restore'
@@ -673,9 +683,10 @@ async function benchmarkScenario(
       await waitForOutput(expectedMarker, true)
       const restoreWallMs = performance.now() - restoreStartedAt
       await acknowledgeArtifact(expectedMarker, true)
-      const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs))
+      const restoreProfileSample = await collectBenchmarkHmrProfile(runtime, () => waitForHmrProfileSample(template, profilePath, scenario.sourceFile, restoreLineCount, profileTimeoutMs), profileEnabled)
       const restoreMemorySample = await sampleHeapAfterGc(inspectorUrl).catch(() => undefined)
       const restoreSample = createScenarioSample(scenario, restoreProfileSample, restoreWallMs, 'restore', restoreMemorySample)
+      restoreSample.inputSha256 = createHash('sha256').update(original).digest('hex')
       cycles.push({ edit: editSample, restore: restoreSample })
       const sample = sampleMode === 'edit-only' ? editSample : selectBestScenarioSample(editSample, restoreSample)
       samples.push(sample)
@@ -792,6 +803,8 @@ function createReport(templates: TemplateResult[]): BenchmarkReport {
     generatedAt: new Date().toISOString(),
     iterations,
     profileTimeoutMs,
+    profileEnabled,
+    markerSeed,
     sampleMode,
     summary: {
       maxMs,
@@ -1046,7 +1059,7 @@ function insertBeforeClosingTag(source: string, tagName: string, insertion: stri
 }
 
 function createMarker(templateId: string, scenarioId: string, index: number) {
-  return `HMR_BENCH_${toIdentifier(templateId)}_${toIdentifier(scenarioId)}_${index + 1}_${Date.now().toString(36)}`
+  return `HMR_BENCH_${toIdentifier(templateId)}_${toIdentifier(scenarioId)}_${index + 1}_${markerSeed}`
 }
 
 async function runCli(args: string[]) {

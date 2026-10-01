@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { collectBenchmarkHmrProfile, matchesHmrProfileSource } from './profile'
 
 describe('benchmark compiler profile capability', () => {
+  it('does not read a disabled profile during overhead comparisons', async () => {
+    const reader = vi.fn(() => new Promise<{ totalMs?: number }>(() => {}))
+    expect(await collectBenchmarkHmrProfile('standard', reader, false)).toEqual({ profile: {}, status: 'disabled' })
+    expect(reader).not.toHaveBeenCalled()
+  })
   it('does not start a profile timeout for a stateful runtime', async () => {
     const reader = vi.fn(() => new Promise<{ totalMs?: number }>(() => {}))
     expect(await collectBenchmarkHmrProfile('stateful', reader)).toEqual({ profile: {}, status: 'unavailable-stateful' })

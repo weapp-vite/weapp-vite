@@ -4,6 +4,7 @@ import process from 'node:process'
 import path from 'pathe'
 import { BuildSequenceSession } from './build'
 import { observeCompiler } from './compiler'
+import { observeProcessResources } from './measurement'
 
 interface Request {
   id: number
@@ -23,8 +24,14 @@ process.on('message', (request: Request) => {
   active = active.then(async () => {
     try {
       const input = { ...request, signal: AbortSignal.timeout(60_000) }
+      const startedAt = performance.now()
       const value = build ? await build.observe(input) : await observeCompiler(input, root)
-      process.send?.({ id: request.id, value })
+      process.send?.({ id: request.id, value, measurement: {
+        elapsedMs: performance.now() - startedAt,
+        process: observeProcessResources(),
+        build: build?.measurements.snapshot(),
+        session: build?.observeSession(),
+      } })
     }
     catch (error) {
       process.send?.({ id: request.id, error: error instanceof Error ? error.stack : String(error) })
