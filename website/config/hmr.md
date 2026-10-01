@@ -220,3 +220,23 @@ pnpm verify:edit-sequence --engine stateful-experimental --resource-cycles 60 --
 资源门禁跳过最初三个样本，按四个样本一个窗口计算中位数。最后三个完整窗口持续上升且超过阈值时失败：RSS 32 MiB、heap 16 MiB，资源/监听器计数为 0。不足三个窗口报告 unknown；一次峰值不能证明泄漏，门禁失败表示需要结合原始样本调查。正确性比较始终逐步执行，不因观测成本而省略失败恢复或完整基线。
 
 比较 profile 开销时，使用相同的 `TEMPLATES_HMR_MARKER_SEED`、场景、迭代次数与源码，分别设置 `TEMPLATES_HMR_PROFILE=1` 和 `0`。每个样本保存输入 SHA-256；关闭 profile 时报告 `profileStatus: 'disabled'`，只比较同口径的 `wallMs`，不等待 profile、不伪造内部阶段。此开关仅控制 JSONL profile；采样器自身的输出轮询和内存探针仍保持一致。
+
+
+### dev/prod 与外部缓存的输出所有权
+
+发布前运行 production 构建。推荐让开发输出与可缓存的生产输出使用不同目录，例如 `dist-dev` 与 `dist`；Turbo 的 `outputs` 只登记生产目录，开发任务设置 `cache: false`、`persistent: true`。缓存键应包含源码、配置、锁文件、目标平台与影响构建的环境变量。不要把开发目录叠加到缓存命中的生产目录再统计包体积。
+
+Vite/Rolldown 负责构建产物的 emit/write。默认清理策略适用于构建器独占的输出目录；共享目录采用 `build.emptyOutDir: false` 时，当前构建上下文只撤销它已登记的旧产物。新进程、新上下文和 Turbo 恢复的文件不会自动变成本次构建的旧产物，框架不能根据扩展名猜测哪些文件可删除。
+
+必须共用目录时，缓存集成需要持久记录每个任务的产物清单及内容摘要，并负责恢复前后的差集清理。清单来自成功构建的 `writeBundle` 结果，清理只针对上一份清单中的文件；文件已被其他工具改写时应报告冲突并保留，未知文件不得删除。恢复来自可信缓存、路径须校验，恢复操作不能与 dev/watch 同时进行。真实构建仍由原生 emit/write 完成，缓存恢复不应注入到 HMR 兜底逻辑中。
+
+仓库 `scripts/editSequence/outputCache.ts` 是隔离测试目录中的集成示例，并非对任意用户目录开放的缓存 API。它按已登记字节撤销旧文件、恢复先前原生构建的快照，并拒绝同名用户内容冲突；实际缓存系统还需自行处理并发、符号链接、事务失败和缓存可信性。
+
+可串行执行以下组合回归：
+
+```sh
+pnpm --filter weapp-vite build
+pnpm verify:edit-sequence --engine weapp-modes --report .tmp/output-mode-sequence.json
+```
+
+该观察器使用完整 weapp 插件，覆盖 production→dev→production、dev→production、组件移动/删除、页面及分包迁移/删除、共享依赖变化，以及旧生产缓存恢复。每步完整生产磁盘文件集合及字节与独立进程基线比较，检查 emitted JS 引用和路由文件存在性；`emptyOutDir: false` 额外验证每次切换都保留用户文件。它验证的是模式切换后的产物，不测量编辑 HMR 延迟，也不能替代真实 IDE 页面验收。

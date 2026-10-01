@@ -9,20 +9,21 @@ import { createProcessObserver } from './processObserver'
 import { createSequenceProject } from './project'
 import { assertResourceSequence, createResourceSequence, summarizeResourceSequence } from './resourceSequence'
 import { buildSequences, compilerSequences, positionDriftSequence } from './scenarios'
+import { createWeappModeSequence } from './weappModeScenarios'
 
 const argumentsList = process.argv.slice(2)
 const engineIndex = argumentsList.indexOf('--engine')
 const engine = engineIndex < 0 ? 'compiler' : argumentsList[engineIndex + 1]
-if (!engine || !['compiler', 'editor', 'classic', 'stateful-experimental'].includes(engine)) {
-  throw new Error('Usage: node --import tsx scripts/editSequence/run.ts --engine compiler|editor|classic|stateful-experimental [--replay sequence.json] [--resource-cycles 14..120] [--report report.json]')
+if (!engine || !['compiler', 'editor', 'classic', 'stateful-experimental', 'weapp-modes'].includes(engine)) {
+  throw new Error('Usage: node --import tsx scripts/editSequence/run.ts --engine compiler|editor|classic|stateful-experimental|weapp-modes [--replay sequence.json] [--resource-cycles 14..120] [--report report.json]')
 }
 const replayIndex = argumentsList.indexOf('--replay')
 const sequences: EditSequence[] = replayIndex < 0
-  ? engine === 'editor' ? [positionDriftSequence] : engine === 'compiler' ? compilerSequences : buildSequences
+  ? engine === 'editor' ? [positionDriftSequence] : engine === 'compiler' ? compilerSequences : engine === 'weapp-modes' ? [createWeappModeSequence(true), createWeappModeSequence(false)] : buildSequences
   : [JSON.parse(await readFile(argumentsList[replayIndex + 1]!, 'utf8')) as EditSequence]
 const cyclesIndex = argumentsList.indexOf('--resource-cycles')
 if (cyclesIndex >= 0) {
-  if (engine === 'editor' || engine === 'compiler') {
+  if (engine === 'editor' || engine === 'compiler' || engine === 'weapp-modes') {
     throw new Error('Resource cycles require a build engine')
   }
   sequences.push(createResourceSequence(Number(argumentsList[cyclesIndex + 1])))
@@ -49,7 +50,7 @@ for (const sequence of sequences) {
       })
     }
     else {
-      const observer = createProcessObserver(engine as 'compiler' | 'classic' | 'stateful-experimental', project.root)
+      const observer = createProcessObserver(engine as 'compiler' | 'classic' | 'stateful-experimental' | 'weapp-modes', project.root)
       try {
         await verifyEditSequence(sequence, observer, {
           maxSteps: 120,
@@ -81,6 +82,6 @@ for (const sequence of sequences) {
 }
 if (reportFile) {
   await mkdir(path.dirname(reportFile), { recursive: true })
-  await writeFile(reportFile, `${JSON.stringify({ schemaVersion: 1, engine, measurementScope: 'compiler-native-fixture; hook work and process resources, not framework dirty entries', report }, null, 2)}\n`)
+  await writeFile(reportFile, `${JSON.stringify({ schemaVersion: 1, engine, measurementScope: engine === 'weapp-modes' ? 'full weapp build; production bytes after mode/cache transitions, not live edit HMR latency' : 'compiler-native-fixture; hook work and process resources, not framework dirty entries', report }, null, 2)}\n`)
 }
 process.exitCode = failed ? 1 : 0

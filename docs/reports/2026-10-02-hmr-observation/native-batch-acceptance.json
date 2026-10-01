@@ -1,0 +1,242 @@
+[
+  {
+    "schemaVersion": 1,
+    "commitSha": "11fd4eb1603b2c16997a8664c16650d386d74d17",
+    "workingTreeDirty": false,
+    "provider": "devtools",
+    "environment": {
+      "nodeVersion": "v24.18.0",
+      "ideVersion": "2.02.2608080",
+      "baseLibraryVersion": "3.17.2"
+    },
+    "strict": true,
+    "startedAt": "2026-10-01T23:26:52.673Z",
+    "finishedAt": "2026-10-01T23:32:21.518Z",
+    "status": "passed",
+    "errors": [],
+    "cases": [
+      {
+        "name": "issue #1134 native four-file runtime (classic) > renders matching script, template, style and config batches on repeated saves and restoration",
+        "status": "passed",
+        "checkpoints": 4,
+        "violations": []
+      },
+      {
+        "name": "issue #1134 native four-file runtime (stateful-experimental) > renders matching script, template, style and config batches on repeated saves and restoration",
+        "status": "passed",
+        "checkpoints": 5,
+        "violations": []
+      }
+    ],
+    "runtimeStats": [
+      {
+        "recordedAt": "2026-10-01T23:27:10.972Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:29:06.715Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:29:22.303Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:29:38.742Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:29:53.691Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:31:49.042Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:32:04.653Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:32:21.320Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "commitSha": "11fd4eb1603b2c16997a8664c16650d386d74d17",
+    "workingTreeDirty": false,
+    "provider": "headless",
+    "environment": {
+      "nodeVersion": "v24.18.0",
+      "ideVersion": null,
+      "baseLibraryVersion": null
+    },
+    "strict": true,
+    "startedAt": "2026-10-01T23:26:16.690Z",
+    "finishedAt": "2026-10-01T23:26:21.093Z",
+    "status": "passed",
+    "errors": [],
+    "cases": [
+      {
+        "name": "issue #1134 native four-file runtime (classic) > renders matching script, template, style and config batches on repeated saves and restoration",
+        "status": "passed",
+        "checkpoints": 4,
+        "violations": []
+      },
+      {
+        "name": "issue #1134 native four-file runtime (stateful-experimental) > renders matching script, template, style and config batches on repeated saves and restoration",
+        "status": "passed",
+        "checkpoints": 5,
+        "violations": []
+      }
+    ],
+    "runtimeStats": [
+      {
+        "recordedAt": "2026-10-01T23:26:18.164Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:26:18.272Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:26:18.379Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:26:18.385Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:26:19.955Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:26:20.325Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:26:20.695Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-01T23:26:20.909Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      }
+    ]
+  }
+]

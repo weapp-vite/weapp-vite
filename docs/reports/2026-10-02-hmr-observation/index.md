@@ -1,6 +1,6 @@
 # HMR 观测与编辑序列样本（2026-10-02）
 
-此报告记录 #1133/#1135 的本轮实测和已知边界，不作为 #1134、#1140、#1081/#1082 或总验收 #1142 已完成的证明。实现基线与采样源码摘要见 `provenance.json`；路径已脱敏，数值、步骤与失败状态未筛选。
+此报告记录 #1133/#1134/#1135/#1140 的本轮实测和已知边界，不作为 #1134、#1140、#1081/#1082 或总验收 #1142 已完成的证明。实现基线与采样源码摘要见 `provenance.json`；路径已脱敏，数值、步骤与失败状态未筛选。
 
 ## 编辑序列
 
@@ -40,4 +40,13 @@ pnpm exec tsx scripts/benchmark-templates-hmr.ts
 
 ## 验证边界
 
-weapp-vite 包级 typecheck、构建、编辑序列单独 tsconfig 检查和范围 lint 通过。完整 scripts tsconfig 仍有其导入的历史 e2e/automator 类型错误；不将其写为通过，当前改动路径无类型诊断。真实宿主批次一致性、原生 WXSS/JSON 分类实测、dev/prod 与缓存恢复仍需后续验证；本报告不替代这些门槛。
+weapp-vite 包级 typecheck、构建、编辑序列单独 tsconfig 检查和范围 lint 通过。完整 scripts tsconfig 仍有其导入的历史 e2e/automator 类型错误；不将其写为通过，当前改动路径无类型诊断。原生 WXSS/JSON 分类实测、完整宿主矩阵、模式切换的目标页面 runtime 与最新候选 CI 仍需后续验证；本报告不替代这些门槛。
+
+
+## 原生四文件与模式切换补充
+
+`native-batch-acceptance.json` 记录候选 `11fd4eb16` 干净工作区的严格验收：headless 与真实 Stable 2.02.2608080 / 基础库 3.17.2 各 2 场景、9 个检查点通过。覆盖 classic/stateful 的首次、连续、反向保存与恢复，以及 stateful 独立脚本补丁的状态保持；计算样式由真实 DevTools 和 mpcore browser 观察。官方稳定渠道于 2026-10-01 23:12 UTC 核对。真实 IDE 期间发生模拟器启动错误和 bootstrap 超时，自动恢复后所有强断言通过，没有切换渠道、删除全局资源或放宽断言。
+
+`mode-sequences.json` 和 `mode-sequence-provenance.json` 是完整 weapp 插件的新观察器样本，复用同一 driver、首个分歧和 worker 资源管理。默认清理与共享目录两组各 8 个步骤通过，结束后子进程均为 0。覆盖 production→dev→production、dev→production、组件移动/删除、分包及页面迁移/删除、共享依赖变化、旧缓存恢复。每一步完整生产磁盘文件集合与独立进程基线逐字节相等，并检查 emitted JS 引用与 app 路由文件存在。
+
+共享目录组使用集成层产物清单清理，且每个模式完成后都确认用户文件仍在。缓存内容来自先前原生构建，只有缓存恢复示例写入该快照；框架构建仍完全由 Vite/Rolldown emit/write。负向单测证明用户改写与同名未知内容会拒绝清理或覆盖。本轮没有证明核心构建器违反 `emptyOutDir: false` 契约，不以清空共享目录冒充修复。这些步骤的 `rapid` 动作仅组合模式切换前的输入，不声称覆盖活跃 watcher 的快速保存；耗时也不作为 HMR 延迟或提速证据。

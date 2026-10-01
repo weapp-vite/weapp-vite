@@ -12,7 +12,7 @@ interface WorkerReply<T> {
 }
 
 /** 基线使用新进程、同一文件名，既隔离全局编译缓存，也不改变路径参与的编译语义。 */
-export function createProcessObserver<T>(mode: 'compiler' | 'classic' | 'stateful-experimental', root: string): SequenceObserver<T> {
+export function createProcessObserver<T>(mode: 'compiler' | 'classic' | 'stateful-experimental' | 'weapp-modes', root: string): SequenceObserver<T> {
   const children = new Set<ChildProcess>()
   let incremental: ChildProcess | undefined
   let requestId = 0

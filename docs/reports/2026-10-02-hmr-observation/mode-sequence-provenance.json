@@ -1,0 +1,17 @@
+{
+  "parentCommit": "11fd4eb1603b2c16997a8664c16650d386d74d17",
+  "workingTreeDirty": true,
+  "node": "v24.18.0",
+  "platform": "Darwin",
+  "architecture": "arm64",
+  "sources": {
+    "scripts/editSequence/outputCache.ts": "0399876b75deb353d06d7e498fe012dd88953e969bf7f43e7492fe2124ab36e3",
+    "scripts/editSequence/weappModes.ts": "c5bf598ec6efa4ba57e643648feb116ff62adfe270e63d0e478dc0696255f603",
+    "scripts/editSequence/weappModeScenarios.ts": "28d2b8a499e5199871ad29f0710963faf196494b6ad4917afb88e87a9cdb832e",
+    "scripts/editSequence/processObserver.ts": "49e767685e6847246bb72c65b2d5dfe0b11fbcee4e6f774200c6ee1a6e47fb32",
+    "scripts/editSequence/worker.ts": "4320d1a61cfd6ab408b175d48a4a8c49a1bcbf3f8005c99b763bb392f9df1bff",
+    "scripts/editSequence/driver.ts": "91f6928c5c533cda36c4f253242779681b444f3a82b3ea3c6accf5625d4b4ee3",
+    "scripts/editSequence/run.ts": "8d0dffe7dd9cc9e58dffb54dfaf48a3e048202df762522e8e2ea7fe875a3feb3"
+  },
+  "command": "pnpm verify:edit-sequence --engine weapp-modes --report <report.json>"
+}

@@ -14,18 +14,21 @@ interface Request {
 }
 
 const [mode, root, role = 'incremental'] = process.argv.slice(2)
-if (!root || !mode || !['compiler', 'classic', 'stateful-experimental'].includes(mode)) {
+if (!root || !mode || !['compiler', 'classic', 'stateful-experimental', 'weapp-modes'].includes(mode)) {
   throw new Error('Edit sequence worker requires mode, project root and role')
 }
 const outDir = path.join(root, '.sequence-output', role)
-const build = mode === 'compiler' ? undefined : new BuildSequenceSession(mode as 'classic' | 'stateful-experimental', root, outDir)
+const build = mode === 'compiler' || mode === 'weapp-modes' ? undefined : new BuildSequenceSession(mode as 'classic' | 'stateful-experimental', root, outDir)
+const framework = mode === 'weapp-modes'
+  ? new (await import('./weappModes')).WeappModeSequenceSession(path.join(root, role), role !== 'incremental')
+  : undefined
 let active = Promise.resolve()
 process.on('message', (request: Request) => {
   active = active.then(async () => {
     try {
       const input = { ...request, signal: AbortSignal.timeout(60_000) }
       const startedAt = performance.now()
-      const value = build ? await build.observe(input) : await observeCompiler(input, root)
+      const value = framework ? await framework.observe(input) : build ? await build.observe(input) : await observeCompiler(input, root)
       process.send?.({ id: request.id, value, measurement: {
         elapsedMs: performance.now() - startedAt,
         process: observeProcessResources(),
@@ -41,9 +44,13 @@ process.on('message', (request: Request) => {
 process.once('SIGTERM', () => {
   void (async () => {
     await build?.close()
+    await framework?.close()
     // 仅回收工具创建的 fresh 输出目录；不触碰 fixture 的用户自有内容。
     if (role !== 'incremental') {
       await rm(outDir, { recursive: true, force: true })
+      if (framework) {
+        await rm(path.join(root, role), { recursive: true, force: true })
+      }
     }
     process.exit(0)
   })()
