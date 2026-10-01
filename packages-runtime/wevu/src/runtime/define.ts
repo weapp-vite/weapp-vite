@@ -328,7 +328,7 @@ function createComponentDefinition(
           : nativeOwnerId || '',
       }
     : nativeData
-  const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData, methods as Record<string, any> | undefined)
+  const nativeInitialData = resolveNativeInitialData(seededNativeData, computed as ComputedDefinitions, resolvedSetData, methods as Record<string, any> | undefined, bindingManifest)
   const mpOptionsWithProps = nativeInitialData !== undefined
     ? {
         ...normalizedMpOptions,
