@@ -1452,8 +1452,15 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
     expect(state.ctx.runtimeState.build.hmr.profile.dirtyReasonSummary).toEqual(['auto-routes-topology:1'])
   })
 
-  it('marks app entry dirty when a created auto-routes page was already synced by sidecar watcher', async () => {
-    vi.spyOn(fs, 'pathExists').mockResolvedValue(true)
+  it.each([
+    { event: 'create' as const, routeFile: false, stale: true },
+    { event: 'create' as const, routeFile: true, stale: true },
+    { event: 'delete' as const, routeFile: false, stale: true },
+    { event: 'delete' as const, routeFile: true, stale: true },
+    { event: 'create' as const, routeFile: true, stale: false },
+    { event: 'delete' as const, routeFile: true, stale: false },
+  ])('marks app entry dirty after a prior route observer synced $event (routeFile=$routeFile, stale=$stale)', async ({ event, routeFile, stale }) => {
+    vi.spyOn(fs, 'pathExists').mockResolvedValue(event !== 'delete')
     const entryId = '/project/src/pages/logs/hmr-added.vue'
     const appEntry = '/project/src/app.vue'
     const baseState = createState()
@@ -1469,18 +1476,23 @@ defineAppJson({ window: { navigationBarTitleText: '首页' } })
           },
         },
         autoRoutesService: {
-          isRouteFile: vi.fn(() => false),
+          isRouteFile: vi.fn(() => routeFile),
           handleFileChange: vi.fn(async () => false),
           getSignature: vi.fn(() => 'synced-routes'),
         },
       },
     }
-    state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = 'old-routes'
+    state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature = stale ? 'old-routes' : 'synced-routes'
     const hook = createWatchChangeHook(state)
 
-    await hook(entryId, { event: 'create' })
+    await hook(entryId, { event })
 
-    expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, 'create')
+    expect(state.ctx.autoRoutesService.handleFileChange).toHaveBeenCalledWith(entryId, event)
+    if (!stale) {
+      expect(state.markEntryDirty).not.toHaveBeenCalledWith(appEntry, 'direct')
+      expect(state.ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature).toBe('synced-routes')
+      return
+    }
     expect(state.markEntryDirty).toHaveBeenCalledWith(appEntry, 'direct')
     expect(invalidateFileCacheMock).toHaveBeenCalledWith(appEntry)
     expect(invalidateFileCacheMock).toHaveBeenCalledWith('weapp-vite/auto-routes')

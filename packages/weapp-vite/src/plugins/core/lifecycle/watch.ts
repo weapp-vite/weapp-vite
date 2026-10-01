@@ -465,17 +465,12 @@ async function processChangedFile(
     invalidateGlassEaselSource(ctx, normalizedId)
   }
 
-  if ((event === 'create' || isDeletedMissingSelf) && isAutoRouteFile) {
-    const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event)
-    if (didChangeRoutes) {
-      markAppEntryForAutoRoutesTopology()
-    }
-  }
-  else if (
+  if (
     (event === 'create' || isDeletedMissingSelf)
-    && isAutoRoutesPagesRelatedChange(state, normalizedId)
+    && (isAutoRouteFile || isAutoRoutesPagesRelatedChange(state, normalizedId))
   ) {
     const didChangeRoutes = await ctx.autoRoutesService?.handleFileChange(normalizedId, event === 'create' ? 'create' : 'delete')
+    // 前置路由钩子可能已经消费同一事件；入口失效取决于已生成入口的版本。
     const currentSignature = ctx.autoRoutesService?.getSignature?.()
     const appEntrySignature = ctx.runtimeState.build.hmr.appEntryAutoRoutesSignature
     if (didChangeRoutes || (
