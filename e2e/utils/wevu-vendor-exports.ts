@@ -15,8 +15,8 @@ function isVendorPath(distRoot: string, filePath: string) {
   return relative.split('/').includes('weapp-vendors')
 }
 
-async function collectVendorExports(vendorPath: string) {
-  const source = await fs.readFile(vendorPath, 'utf8')
+/** 收集公开 CommonJS 导出名，兼容属性赋值和 getter，不依赖打包器局部变量。 */
+export function collectCommonJsExportNames(source: string) {
   const exports = new Set<string>()
   for (const match of source.matchAll(VENDOR_EXPORT_RE)) {
     const name = match[1] ?? match[2]
@@ -25,6 +25,10 @@ async function collectVendorExports(vendorPath: string) {
     }
   }
   return exports
+}
+
+async function collectVendorExports(vendorPath: string) {
+  return collectCommonJsExportNames(await fs.readFile(vendorPath, 'utf8'))
 }
 
 /**
