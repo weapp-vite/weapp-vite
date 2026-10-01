@@ -97,10 +97,18 @@ it('supports actual HTTP start, polling and report requests with the same servic
   const client = new Client({ name: 'http-acceptance', version: '1' })
   await client.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${address.port}/mcp`)))
   cleanups.push(() => client.close())
-  const started = await client.callTool({ name: 'weapp_acceptance_start', arguments: {} })
-  const id = String((started.structuredContent as Record<string, unknown>)?.jobId)
-  expect((await finish(client, id)).passed).toBe(true)
-})
+  const completed = new Set<string>()
+  for (let iteration = 0; iteration < 8; iteration++) {
+    const started = await client.callTool({ name: 'weapp_acceptance_start', arguments: {} })
+    const id = String((started.structuredContent as Record<string, unknown>)?.jobId)
+    expect(completed.has(id)).toBe(false)
+    const status = await finish(client, id)
+    const saved = await client.callTool({ name: 'weapp_acceptance_report', arguments: { jobId: id } })
+    expect(status.passed, JSON.stringify(saved.structuredContent ?? saved.content)).toBe(true)
+    expect(saved.structuredContent).toMatchObject({ jobId: id, status: 'passed', passed: true })
+    completed.add(id)
+  }
+}, 30_000)
 it('uses runtime callbacks in process with project-scoped artifacts and subscriptions', async () => {
   const root = await fixture(true)
   let count = 0
