@@ -124,3 +124,21 @@ it('builds declarations when the project root is a directory alias', async () =>
   expect(result.output.map(file => file.fileName)).toContain('utils.d.ts')
   expect(await read('utils.d.ts')).toContain('export')
 }, 30_000)
+
+it.each([false, true])('updates library templates through an aliased root with preserveSymlinks=%s', async (preserveSymlinks) => {
+  const { root, config, read } = await fixture()
+  const aliases = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-lib-dev-alias-'))
+  roots.push(aliases)
+  const alias = path.join(aliases, 'project')
+  await symlink(root, alias, 'junction')
+  config.root = alias
+  config.resolve = { preserveSymlinks }
+  config.weapp!.lib = { entry: { button: 'components/button/index.ts' }, root: 'src', dts: false }
+  const server = await createServer(config)
+  try {
+    expect(await read('button.wxml')).toContain('{{label}}')
+    await writeFile(path.join(alias, 'src/components/button/index.wxml'), '<view>updated through alias</view>')
+    await expect.poll(() => read('button.wxml'), { timeout: 15_000 }).toContain('updated through alias')
+  }
+  finally { await server.close() }
+}, 30_000)
