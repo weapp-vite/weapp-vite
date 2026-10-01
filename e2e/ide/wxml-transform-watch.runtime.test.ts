@@ -9,7 +9,7 @@ import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import { createWxmlTransformProject } from '../utils/wxmlTransformProject'
 
-describe('WXML external dependency watch recovery runtime', { concurrent: false }, () => {
+describe.each([false, true])('WXML dependency watch recovery runtime (outside project: %s)', { concurrent: false }, (externalRules) => {
   let project: string
   let dev: ReturnType<typeof startDevProcess> | undefined
   let host: MiniProgram | undefined
@@ -32,7 +32,7 @@ describe('WXML external dependency watch recovery runtime', { concurrent: false 
   }
 
   beforeAll(async () => {
-    project = await createWxmlTransformProject()
+    project = await createWxmlTransformProject(externalRules)
     const root = path.resolve(import.meta.dirname, '../..')
     dev = startDevProcess(process.execPath, [path.join(root, 'packages/weapp-vite/bin/weapp-vite.js'), 'dev', '--non-interactive'], {
       cwd: project,
@@ -47,7 +47,7 @@ describe('WXML external dependency watch recovery runtime', { concurrent: false 
     await host?.close()
     await dev?.stop()
     if (project) {
-      await rm(project, { recursive: true, force: true })
+      await rm(externalRules ? path.dirname(project) : project, { recursive: true, force: true })
     }
   }, 60_000)
 
@@ -57,12 +57,12 @@ describe('WXML external dependency watch recovery runtime', { concurrent: false 
       route: `/pages/${kind}/index`,
       action: '验证外部依赖删除后自然重建恢复的模板与点击事件',
       nodes: [{ selector: '#renamed', text: 'renamed', attributes: { 'data-rule': 'restored' } }, { selector: '#result', text: '1:track' }],
-      expectedErrors: kind === 'native' ? [{ source: 'build', level: 'error', channel: 'dev-process', text: 'ERROR Build failed with 1 error:', count: 1 }] : [],
+      expectedErrors: kind === 'native' ? [{ source: 'build', level: 'error', channel: 'dev-process', text: '[error] Build failed with 1 error:', count: 1 }] : [],
     })))
     context.onTestFailed(() => {
       process.stdout.write(dev!.getOutput().slice(-12_000))
     })
-    const rules = path.join(project, 'transform-rules.json')
+    const rules = path.join(project, externalRules ? '../transform-rules.json' : 'transform-rules.json')
     await writeFile(rules, JSON.stringify({ label: 'changed' }))
     await waitForRule('changed')
     const validTemplates = await templates()
