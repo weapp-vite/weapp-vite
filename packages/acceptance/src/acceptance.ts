@@ -3,7 +3,7 @@ import type { RuntimeConnection, RuntimeConnector } from './runtime.js'
 import type { Scenario, ScenarioStepResult } from './scenario.js'
 import type { CheckResult } from './verify.js'
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import {
@@ -19,6 +19,7 @@ import {
   stateRoot,
   trustProject,
 } from '@weapp-agent/core/project'
+import { atomicJson } from './persistence.js'
 import { defaultVerification, detectProject } from './project.js'
 import { runScenario, runtimeInvoker, scenarioSchema } from './scenario.js'
 import { sourceSnapshot } from './snapshot.js'
@@ -49,11 +50,6 @@ export async function resolveProjectConfig(root: string, file?: string): Promise
   return await loadAcceptanceConfig(root, file) ?? projectConfigSchema.parse({ verification: defaultVerification(await detectProject(root)) })
 }
 
-async function atomicJson(file: string, data: unknown): Promise<void> {
-  const temp = `${file}.${randomUUID()}.tmp`
-  await writeFile(temp, JSON.stringify(redactValue(data), null, 2), { mode: 0o600 })
-  await rename(temp, file)
-}
 function alive(pid: number): boolean {
   try {
     process.kill(pid, 0)
@@ -110,7 +106,7 @@ export interface AcceptanceOptions {
 }
 
 export class AcceptanceService {
-  private jobs = new Map<string, { controller: AbortController, done: Promise<void>, report: AcceptanceReport }>()
+  private jobs = new Map<string, { controller: AbortController, done: Promise<void>, report: AcceptanceReport, persistenceFailed: boolean }>()
   private starting = new Set<Promise<AcceptanceReport>>()
   private closed = false
   private constructor(readonly root: string, private directory: string, private options: AcceptanceOptions) {}
@@ -230,10 +226,9 @@ export class AcceptanceService {
       const controller = new AbortController()
       await persist()
       const unlock = release
-      let persistenceFailed = false
-      const done = this.execute(report, config, fingerprint, controller, persist)
+      const job = { controller, done: Promise.resolve(), report, persistenceFailed: false }
+      job.done = this.execute(report, config, fingerprint, controller, persist)
         .catch((error) => {
-          persistenceFailed = true
           report.status = 'failed'
           report.passed = false
           report.reason = `Could not persist acceptance result: ${String(error)}`
@@ -244,15 +239,22 @@ export class AcceptanceService {
           }
           catch (error) {
             report.warnings.push(`Project lock cleanup failed: ${String(error)}`)
-            await persist().catch(() => {
-              persistenceFailed = true
-            })
+            report.status = 'failed'
+            report.passed = false
+            report.reason = 'Project ownership could not be released; inspect the cleanup warning before retrying.'
           }
-          if (!persistenceFailed) {
+          // 终态只能在资源释放后发布，跨服务轮询者据此才能安全启动下一任务。
+          await persist().catch((error) => {
+            job.persistenceFailed = true
+            report.status = 'failed'
+            report.passed = false
+            report.reason = `Could not persist acceptance result: ${String(error)}`
+          })
+          if (!job.persistenceFailed) {
             this.jobs.delete(report.jobId)
           }
         })
-      this.jobs.set(report.jobId, { controller, done, report })
+      this.jobs.set(report.jobId, job)
     }
     catch (error) {
       await release?.()
@@ -422,15 +424,14 @@ export class AcceptanceService {
         }
       }
       report.passed = report.status === 'passed' && !report.snapshot.stale
-      await persist()
     }
   }
 
   async report(jobId: string): Promise<AcceptanceReport> {
     const file = path.join(this.jobDirectory(jobId), 'report.json')
-    const live = this.jobs.get(jobId)?.report
-    const report: AcceptanceReport = live?.status === 'failed'
-      ? structuredClone(live)
+    const live = this.jobs.get(jobId)
+    const report: AcceptanceReport = live?.persistenceFailed
+      ? structuredClone(live.report)
       : JSON.parse(await readFile(file, 'utf8'))
     if (report.root !== this.root || report.version !== 2) {
       throw new Error('Report does not belong to this project or has an unsupported version')

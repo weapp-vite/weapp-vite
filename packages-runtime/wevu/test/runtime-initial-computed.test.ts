@@ -78,4 +78,41 @@ describe('runtime: initial computed data', () => {
     })
     expect(result).toEqual({ value: 1 })
   })
+
+  it('respects selection and existing data when declaring manifest placeholders', () => {
+    const data = { __wv_style_0: 'color:red', value: 1 }
+    const result = resolveNativeInitialData(data, undefined, {
+      pick: ['__wv_style_0', '__wv_style_1', '__wv_cls_0', 'value'],
+      omit: ['__wv_style_1'],
+    }, undefined, {
+      version: 1,
+      sourceFile: 'src/style.vue',
+      bindings: ['__wv_style_0', '__wv_style_1', '__wv_style_2', '__wv_cls_0', 'value']
+        .map(outputPath => ({ id: outputPath, outputPath })),
+    })
+    expect(result).toEqual({ ...data, __wv_cls_0: '' })
+    expect(data).toEqual({ __wv_style_0: 'color:red', value: 1 })
+  })
+
+  it('does not manufacture nested binding keys or ordinary setup data', () => {
+    const result = resolveNativeInitialData(undefined, undefined, undefined, undefined, {
+      version: 1,
+      sourceFile: 'src/style.vue',
+      bindings: ['__wv_style_0.color', '__wv_style_1[0]', 'value', '*']
+        .map(outputPath => ({ id: outputPath, outputPath })),
+    })
+    expect(result).toBeUndefined()
+  })
+
+  it('keeps ordinary computed evaluation deferred when native data is absent', () => {
+    let calls = 0
+    const result = resolveNativeInitialData(undefined, {
+      ordinary() {
+        calls += 1
+        return 'ready'
+      },
+    }, { pick: ['__wv_style_0'] })
+    expect(result).toEqual({ __wv_style_0: '' })
+    expect(calls).toBe(0)
+  })
 })
