@@ -1,0 +1,34 @@
+name: Acceptance HTTP
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ci-acceptance-http.yml
+      - 'packages/acceptance/**'
+      - 'packages/mcp/**'
+      - 'packages/agent-core/**'
+      - pnpm-lock.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: acceptance-http-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance-http:
+    name: Acceptance HTTP (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 20
+      build_command: pnpm exec turbo run build --filter=@weapp-vite/mcp...
+      main_command: pnpm --filter @weapp-vite/mcp exec vitest run test/acceptance.test.ts
+    secrets: inherit
