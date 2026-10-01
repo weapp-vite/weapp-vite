@@ -1,3 +1,4 @@
+import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { WritableComputedOptions } from '../../reactivity'
 import type { ComputedDefinitions, SetDataSnapshotOptions } from '../types'
 import { WEVU_SLOT_OWNER_ID_KEY } from '@weapp-core/constants'
@@ -48,15 +49,19 @@ function resolveRuntimeBindingPlaceholder(key: string) {
 function resolveRuntimeBindingPlaceholderData(
   data: Record<string, any>,
   setData: SetDataSnapshotOptions | undefined,
+  bindingManifest: WevuRuntimeBindingManifestV1 | undefined,
 ) {
-  const pickKeys = Array.isArray(setData?.pick) ? setData.pick : []
-  if (!pickKeys.length) {
+  const bindingKeys = new Set([
+    ...(Array.isArray(setData?.pick) ? setData.pick : []),
+    ...(bindingManifest?.bindings.map(binding => binding.outputPath) ?? []),
+  ])
+  if (!bindingKeys.size) {
     return undefined
   }
-  const omitKeys = new Set(Array.isArray(setData?.omit) ? setData.omit : [])
+  const { shouldIncludeKey } = resolveSetDataOptions(setData)
   const resolved: Record<string, any> = {}
-  for (const key of pickKeys) {
-    if (omitKeys.has(key) || hasOwn(data, key)) {
+  for (const key of bindingKeys) {
+    if (!shouldIncludeKey(key) || hasOwn(data, key) || key.includes('.') || key.includes('[')) {
       continue
     }
     const placeholder = resolveRuntimeBindingPlaceholder(key)
@@ -191,20 +196,24 @@ export function resolveNativeInitialData(
   computed: ComputedDefinitions | undefined,
   setData: SetDataSnapshotOptions | undefined,
   methods?: Record<string, any>,
+  bindingManifest?: WevuRuntimeBindingManifestV1,
 ) {
-  if (!data || typeof data !== 'object') {
+  if (data !== undefined && (!data || typeof data !== 'object')) {
     return data
   }
-  const initialComputedData = resolveInitialComputedData({
-    data: data as Record<string, any>,
-    computed,
-    methods,
-    setData,
-  })
-  const runtimeBindingPlaceholderData = resolveRuntimeBindingPlaceholderData(data as Record<string, any>, setData)
+  const nativeData = (data ?? {}) as Record<string, any>
+  const initialComputedData = data === undefined
+    ? undefined
+    : resolveInitialComputedData({
+        data: nativeData,
+        computed,
+        methods,
+        setData,
+      })
+  const runtimeBindingPlaceholderData = resolveRuntimeBindingPlaceholderData(nativeData, setData, bindingManifest)
   return initialComputedData || runtimeBindingPlaceholderData
     ? {
-        ...(data as Record<string, any>),
+        ...nativeData,
         ...runtimeBindingPlaceholderData,
         ...initialComputedData,
       }
