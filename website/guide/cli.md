@@ -120,6 +120,13 @@ wv [root]
 - `--scope` 会只保留主包和指定分包进入开发构建，适合日常只调试某几个业务分包。产物 `app.json.subPackages` 也只包含参与 scope 的分包。
 - `--ui` 仅监听 `127.0.0.1`，终端会输出带一次性 OTP 的 magic link；Dashboard 通过分页只读 RPC 获取 Analyze 数据，并在连接中断后自动重连。
 
+#### Dashboard MCP
+
+在 Dashboard 进程和 DevFrame 连接器进程的私有环境中设置同一个非空 `DEVFRAME_MCP_AUTH_TOKEN`，即可让 `wv dev --ui` / `wv build --ui` 在 Dashboard 的同一端口开放只读 MCP。未设置或仅含空白时不开放端点，也不发布 MCP 实例记录。
+
+页面与工具共用当前 revision、分页报告、运行事件及受限文件读取；不提供通用 shared-state 工具或命令执行。MCP 使用 Bearer + loopback Origin，浏览器仍使用 OTP magic link。连接器配置与三个工具的用法见 [Dashboard 实时只读接入](/packages/mcp#dashboard-实时只读接入独立入口)。现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。
+
+
 #### Dashboard 嵌入 Vite DevTools
 
 `--ui` 保持独立工作台模式，页面与 RPC 共同挂载在 `/__weapp-vite/`。需要复用现有 Vite DevTools 宿主时，使用 Node 入口 `weapp-vite/dashboard` 创建报告控制器，再通过 `weapp-vite/dashboard/vite` 的 `createAnalyzeDashboardPlugin` 挂载同一份定义和面板。

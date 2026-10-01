@@ -113,6 +113,13 @@ DevTools `0.7.6` 自身存在程序化重启边界：重复使用同一个 `DevT
 
 仓库内可通过 `apps/dashboard-ui-lab` 的 `dev:inspector` 与 `dev:inspector:host` 验证两种宿主，详见其 [实验说明](../../apps/dashboard-ui-lab/README.md)。
 
+### Dashboard MCP
+
+CLI 独立 Dashboard 可复用上述只读 RPC 向 AI 提供当前状态、分页分析报告和受限文件内容。默认关闭；在 Dashboard 与连接器进程的私有环境中设置同一个非空 `DEVFRAME_MCP_AUTH_TOKEN` 后，运行 `wv dev --ui` / `wv build --ui`，再通过 `devframe connect` 发现实例。MCP 使用独立的 Bearer + loopback Origin 门禁，不接受浏览器 OTP，也不开放通用 shared-state 工具。
+
+工具与页面共享 revision 和内存产物，旧 revision 请求会被拒绝。嵌入 Vite DevTools 时仍由宿主决定是否开放 MCP；现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。客户端配置与工具参数见 [随包 MCP 指南](docs/mcp.md#dashboard-实时只读工具devframe)。
+
+
 ### Vue 项目
 
 ```typescript

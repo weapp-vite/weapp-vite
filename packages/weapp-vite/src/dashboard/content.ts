@@ -17,6 +17,7 @@ import {
   resolveDashboardArtifactPath,
   resolveDashboardSourceContentPaths,
 } from './paths'
+import { dashboardFileRequestSchema } from './schema'
 
 export interface DashboardFileContent {
   content: string
@@ -24,11 +25,6 @@ export interface DashboardFileContent {
   language: string
   path: string
   size: number
-}
-
-interface DashboardFileRequest {
-  kind: DashboardFileKind
-  path: string
 }
 
 export interface DashboardFileReader {
@@ -155,25 +151,13 @@ function resolveDashboardFileLanguage(filePath: string) {
   return 'plaintext'
 }
 
-function normalizeDashboardFileRequest(input: unknown): DashboardFileRequest {
-  if (!input || typeof input !== 'object' || !('kind' in input) || !('path' in input)) {
-    throw new Error('必须传入合法的 kind 和相对路径。')
-  }
-  const kind = input.kind
-  const requestPath = input.path
-  if ((kind !== 'source' && kind !== 'artifact') || typeof requestPath !== 'string') {
-    throw new Error('必须传入合法的 kind 和相对路径。')
-  }
-  return { kind, path: requestPath }
-}
-
 async function readAllowedDashboardFile(
   input: unknown,
   roots: DashboardContentRoots,
   allowlist: DashboardContentAllowlist,
   artifacts: DashboardArtifactFiles,
 ): Promise<DashboardFileContent> {
-  const request = normalizeDashboardFileRequest(input)
+  const request = dashboardFileRequestSchema.parse(input)
   if (request.kind === 'artifact') {
     const filePath = resolveDashboardArtifactPath(request.path, allowlist.artifactPaths)
     if (!filePath) {

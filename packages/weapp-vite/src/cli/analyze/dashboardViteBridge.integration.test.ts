@@ -38,7 +38,7 @@ it('serves native Vite pages and assets beside real Devframe discovery and SSE',
       base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
       configFile: false,
       logLevel: 'silent',
-      plugins: [createAnalyzeDashboardViteBridge(controller)],
+      plugins: [createAnalyzeDashboardViteBridge(controller, { mcpAuthToken: '' })],
       server: { host: '127.0.0.1', port: 0 },
     })
     await server.listen()

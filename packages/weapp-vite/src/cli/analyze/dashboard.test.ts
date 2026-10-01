@@ -118,7 +118,10 @@ interface MockServer {
 }
 
 interface MockServerOptions {
-  plugins?: { configureServer?: (server: MockServer) => unknown }[]
+  plugins?: {
+    configureServer?: (server: MockServer) => unknown
+    closeServer?: (context: { reason: 'restart' | 'close' }) => unknown
+  }[]
 }
 
 function createMockServer(overrides: Partial<MockServer> = {}): MockServer {
@@ -197,7 +200,6 @@ describe('analyze dashboard', () => {
     expect(server.close).toHaveBeenCalledTimes(1)
     expect(disposeMock).toHaveBeenCalledTimes(1)
     expect(process.listenerCount('SIGINT')).toBe(initialSignalListeners)
-    expect(server.httpServer?.listenerCount('close')).toBe(0)
   })
 
   it('releases the core when Vite creation fails without replacing the original error', async () => {
@@ -235,21 +237,29 @@ describe('analyze dashboard', () => {
     expect(process.listenerCount('SIGINT')).toBe(initialSignalListeners)
   })
 
-  it('waits for static host exit even when Vite exposes no resolved URLs', async () => {
+  it('keeps the static session through a restart and exits only when its host closes', async () => {
     const server = createMockServer({ resolvedUrls: undefined })
-    createServerMock.mockResolvedValueOnce(server)
+    let hostOptions: MockServerOptions | undefined
+    createServerMock.mockImplementationOnce(async (options) => {
+      hostOptions = options
+      return server
+    })
     let finished = false
     const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'), { artifacts: new Map() }).then(() => {
       finished = true
     })
-    await vi.waitFor(() => expect(server.httpServer?.listenerCount('close')).toBe(1))
+    await vi.waitFor(() => expect(refreshTempAuthCodeMock).toHaveBeenCalled())
+    for (const plugin of hostOptions?.plugins ?? []) {
+      await plugin.closeServer?.({ reason: 'restart' })
+    }
     expect(finished).toBe(false)
-    server.httpServer?.emit('close')
+    expect(disposeMock).not.toHaveBeenCalled()
+    for (const plugin of hostOptions?.plugins ?? []) {
+      await plugin.closeServer?.({ reason: 'close' })
+    }
     await runPromise
     expect(finished).toBe(true)
-    expect(server.close).toHaveBeenCalledTimes(1)
-    expect(disposeMock).toHaveBeenCalledTimes(1)
-    expect(server.httpServer?.listenerCount('close')).toBe(0)
+    expect(server.close).not.toHaveBeenCalled()
   })
 
   it('logs close errors when cleanup fails on process signal', async () => {

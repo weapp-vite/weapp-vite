@@ -1,9 +1,13 @@
+import type { DevframeInstance } from 'devframe/initiate'
 import type { AnalyzeSubpackagesResult, PackageFileEntry } from '../analyze/subpackages'
+import type { DashboardRuntimeEventProfile } from './events'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { createMcpFetchHandler } from '@devframes/agentic/mcp'
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import { initDevframe } from 'devframe/initiate'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDashboardArtifactSnapshot, MAX_DASHBOARD_ARTIFACT_CONTENT_BYTES, MAX_DASHBOARD_FILE_CONTENT_BYTES } from './artifacts'
@@ -58,6 +62,37 @@ async function createTemporaryProject() {
     projectRoot,
     sourceFile,
     workspaceFile,
+  }
+}
+
+async function connectDashboardMcp(instance: DevframeInstance) {
+  await instance.ready
+  const handler = createMcpFetchHandler(await instance.context, {
+    serverName: 'dashboard-test',
+    serverVersion: '1.0.0',
+    exposeSharedState: false,
+    authorization: 'dashboard-test-token',
+  })
+  const client = new Client({ name: 'dashboard-test', version: '1.0.0' })
+  try {
+    await client.connect(new StreamableHTTPClientTransport(new URL('http://localhost/__mcp'), {
+      requestInit: {
+        headers: { Origin: 'http://localhost', Authorization: 'Bearer dashboard-test-token' },
+      },
+      fetch: (input, init) => handler.fetch(new Request(input, init)),
+    }))
+  }
+  catch (error) {
+    await client.close()
+    await handler.dispose()
+    throw error
+  }
+  return {
+    client,
+    async close() {
+      await client.close()
+      await handler.dispose()
+    },
   }
 }
 
@@ -119,7 +154,7 @@ describe('dashboard Devframe protocol', () => {
       expect(JSON.parse(previous.content)).toEqual(current)
       await expect(dashboard.rpc.call('get-analyze-page', { index: 0, revision: 0, target: 'current' })).rejects.toThrow('Analyze revision')
       await expect(dashboard.rpc.call('get-analyze-page', { index: nextState.analyze.current.pages, revision: 1, target: 'current' })).rejects.toThrow('分页不存在')
-      await expect(dashboard.rpc.call('get-analyze-page', { index: -1, revision: 1, target: 'current' })).rejects.toThrow('合法的 Analyze 分页请求')
+      await expect(dashboard.rpc.call('get-analyze-page', { index: -1, revision: 1, target: 'current' })).rejects.toThrow()
 
       controller.emitRuntimeEvents([{ kind: 'system', level: 'warning', title: 'warning', detail: 'event only' }])
       const eventState = await dashboard.rpc.call('get-dashboard-state')
@@ -190,7 +225,8 @@ describe('dashboard Devframe protocol', () => {
       snapshot,
       roots: { srcRoot: path.join(project.projectRoot, 'src') },
     })
-    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false })
+    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false, mcp: false })
+    const mcp = await connectDashboardMcp(instance)
     let releaseRead: (() => void) | undefined
     try {
       await instance.ready
@@ -209,8 +245,11 @@ describe('dashboard Devframe protocol', () => {
       const readStarted = new Promise<void>((resolve) => {
         markReadStarted = resolve
       })
-      vi.spyOn(fs, 'open').mockImplementationOnce(async (...args) => {
-        markReadStarted()
+      let startedReads = 0
+      vi.spyOn(fs, 'open').mockImplementation(async (...args) => {
+        if (++startedReads === 2) {
+          markReadStarted()
+        }
         await readGate
         return await originalOpen(...args)
       })
@@ -219,31 +258,35 @@ describe('dashboard Devframe protocol', () => {
         path: 'app.ts',
         revision: 0,
       })
-      const rejectedRead = expect(pendingRead).rejects.toThrow('Analyze revision')
+      const rejectedRead = expect(pendingRead).rejects.toThrow()
+      const rejectedMcpRead = expect(mcp.client.callTool({
+        name: 'weapp-vite_read-dashboard-file',
+        arguments: { arg0: { kind: 'source', path: 'app.ts', revision: 0 } },
+      })).resolves.toMatchObject({ isError: true })
       await readStarted
       if (transition === 'dispose') {
         controller.dispose()
         releaseRead()
-        await rejectedRead
+        await Promise.all([rejectedRead, rejectedMcpRead])
         expect(initialArtifacts.files.get('analysis-only.js')?.content).toBe('initial analysis bytes')
         await expect(dashboard.rpc.call('read-dashboard-file', {
           kind: 'artifact',
           path: 'analysis-only.js',
           revision: 0,
-        })).rejects.toThrow('Analyze revision')
+        })).rejects.toThrow()
         return
       }
       const nextArtifacts = createDashboardArtifactSnapshot()
       nextArtifacts.capture('analysis-only.js', 'updated analysis bytes')
       await controller.update(result, nextArtifacts.files)
       releaseRead()
-      await rejectedRead
+      await Promise.all([rejectedRead, rejectedMcpRead])
 
       await expect(dashboard.rpc.call('read-dashboard-file', {
         kind: 'artifact',
         path: 'analysis-only.js',
         revision: 0,
-      })).rejects.toThrow('Analyze revision')
+      })).rejects.toThrow()
       await expect(dashboard.rpc.call('read-dashboard-file', {
         kind: 'artifact',
         path: 'analysis-only.js',
@@ -255,17 +298,18 @@ describe('dashboard Devframe protocol', () => {
         kind: 'artifact',
         path: 'analysis-only.js',
         revision: 2,
-      })).rejects.toThrow('分析快照中没有此产物内容')
+      })).rejects.toThrow()
       controller.dispose()
       await expect(dashboard.rpc.call('read-dashboard-file', {
         kind: 'source',
         path: 'app.ts',
         revision: 2,
-      })).rejects.toThrow('Analyze revision')
+      })).rejects.toThrow()
     }
     finally {
       releaseRead?.()
       vi.restoreAllMocks()
+      await mcp.close()
       controller.dispose()
       await instance.close()
     }
@@ -575,5 +619,252 @@ describe('dashboard Devframe protocol', () => {
     }, {
       srcRoot: path.join(project.projectRoot, 'src'),
     }, result, new Map())).rejects.toThrow(`文件超过 ${MAX_DASHBOARD_FILE_CONTENT_BYTES} 字节`)
+  })
+})
+
+describe('dashboard MCP capabilities', () => {
+  it('discovers precisely the read-only schemas and shares live RPC results across revisions', async () => {
+    const project = await createTemporaryProject()
+    const current = createAnalyzeResult([{
+      file: 'app.js',
+      type: 'chunk',
+      from: 'main',
+      source: 'app.ts',
+      sourceType: 'src',
+    }])
+    const artifacts = createDashboardArtifactSnapshot()
+    artifacts.capture('app.js', 'initial artifact')
+    const profile: Required<DashboardRuntimeEventProfile> = {
+      timestamp: '2026-01-01T00:00:00Z',
+      totalMs: 12,
+      eventId: 'event-1',
+      event: 'change',
+      file: 'app.ts',
+      relativeFile: 'src/app.ts',
+      sourceRootFile: 'app.ts',
+      buildCoreMs: 1,
+      buildStartMs: 2,
+      pluginResolveMs: 3,
+      transformMs: 4,
+      snapshotResolveMs: 5,
+      snapshotBuildMs: 6,
+      writeMs: 7,
+      watchToDirtyMs: 8,
+      emitMs: 9,
+      sharedChunkResolveMs: 10,
+      resolveCount: 11,
+      dirtyCount: 12,
+      pendingCount: 13,
+      emittedCount: 14,
+      dirtyReasonSummary: ['source changed'],
+      pendingReasonSummary: ['dependent chunk'],
+    }
+    const controller = createAnalyzeDashboardDevframe({
+      snapshot: { current, previous: null, artifacts: artifacts.files },
+      roots: { srcRoot: path.join(project.projectRoot, 'src') },
+      initialEvents: [{
+        kind: 'hmr',
+        level: 'success',
+        title: 'profiled update',
+        detail: 'app.ts',
+        source: 'watcher',
+        durationMs: 12,
+        tags: ['hmr'],
+        profile,
+      }, { kind: 'system', level: 'info', title: 'ready', detail: '' }],
+    })
+    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false, mcp: false })
+    const mcp = await connectDashboardMcp(instance)
+    try {
+      const context = await instance.context
+      const dashboard = context.scope('weapp-vite')
+      const keys = [...context.rpc.sharedState.keys()]
+      expect(keys).not.toContain('weapp-vite:dashboard')
+      const { tools } = await mcp.client.listTools()
+      expect(tools.map(tool => tool.name).sort()).toEqual([
+        'weapp-vite_get-analyze-page',
+        'weapp-vite_get-dashboard-state',
+        'weapp-vite_read-dashboard-file',
+      ])
+      for (const tool of tools) {
+        expect(tool.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false })
+        expect(tool.outputSchema).toMatchObject({ type: 'object' })
+      }
+      expect(tools.find(tool => tool.name === 'weapp-vite_get-dashboard-state')?.inputSchema)
+        .toMatchObject({ type: 'object', properties: {} })
+      expect(tools.find(tool => tool.name === 'weapp-vite_get-dashboard-state')?.outputSchema)
+        .toMatchObject({
+          required: ['analyze', 'revision', 'runtimeEvents'],
+          properties: {
+            runtimeEvents: {
+              items: {
+                required: ['id', 'timestamp', 'source', 'kind', 'level', 'title', 'detail'],
+                properties: { profile: { properties: { pendingReasonSummary: { type: 'array', items: { type: 'string' } } } } },
+              },
+            },
+          },
+        })
+      expect(tools.find(tool => tool.name === 'weapp-vite_get-analyze-page')?.inputSchema)
+        .toMatchObject({
+          required: ['arg0'],
+          properties: {
+            arg0: {
+              required: ['index', 'revision', 'target'],
+              properties: {
+                index: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+                revision: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+                target: { enum: ['current', 'previous'] },
+              },
+            },
+          },
+        })
+      expect(tools.find(tool => tool.name === 'weapp-vite_read-dashboard-file')?.inputSchema)
+        .toMatchObject({
+          required: ['arg0'],
+          properties: {
+            arg0: {
+              required: ['kind', 'path', 'revision'],
+              properties: { kind: { enum: ['source', 'artifact'] }, path: { type: 'string' } },
+            },
+          },
+        })
+      const state = await dashboard.rpc.call('get-dashboard-state')
+      const mcpState = await mcp.client.callTool({ name: 'weapp-vite_get-dashboard-state' })
+      expect(mcpState.isError).not.toBe(true)
+      expect(mcpState.structuredContent).toEqual(JSON.parse(JSON.stringify(state)))
+      expect(state.runtimeEvents[0]?.profile).toEqual(profile)
+      for (const request of [
+        { kind: 'source' as const, path: 'app.ts', revision: 0 },
+        { kind: 'artifact' as const, path: 'app.js', revision: 0 },
+      ]) {
+        const file = await mcp.client.callTool({ name: 'weapp-vite_read-dashboard-file', arguments: { arg0: request } })
+        expect(file.isError).not.toBe(true)
+        expect(file.structuredContent).toEqual(await dashboard.rpc.call('read-dashboard-file', request))
+      }
+      const pageRequest = { index: 0, revision: 0, target: 'current' as const }
+      const firstPage = await mcp.client.callTool({ name: 'weapp-vite_get-analyze-page', arguments: { arg0: pageRequest } })
+      expect(firstPage.structuredContent).toEqual(await dashboard.rpc.call('get-analyze-page', pageRequest))
+      expect(firstPage.structuredContent).toMatchObject({ content: JSON.stringify(current) })
+      expect((await mcp.client.listResources()).resources).toEqual([])
+
+      const next = createAnalyzeResult([{ file: 'next.js', type: 'chunk', from: 'main' }])
+      next.packages[0]!.label = 'x'.repeat(MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS + 16)
+      const nextArtifacts = createDashboardArtifactSnapshot()
+      nextArtifacts.capture('next.js', 'next artifact')
+      await controller.update(next, nextArtifacts.files)
+      controller.emitRuntimeEvents([{ kind: 'diagnostic', level: 'warning', title: 'check', detail: 'after update' }])
+      const nextState = await dashboard.rpc.call('get-dashboard-state')
+      expect(nextState.revision).toBe(1)
+      expect(nextState.analyze.previous).toEqual(state.analyze.current)
+      expect((await mcp.client.callTool({ name: 'weapp-vite_get-dashboard-state' })).structuredContent)
+        .toEqual(JSON.parse(JSON.stringify(nextState)))
+      for (const target of ['current', 'previous'] as const) {
+        const descriptor = nextState.analyze[target]!
+        const content: string[] = []
+        for (let index = 0; index < descriptor.pages; index++) {
+          const request = { target, index, revision: 1 }
+          const rpcPage = await dashboard.rpc.call('get-analyze-page', request)
+          const mcpPage = await mcp.client.callTool({ name: 'weapp-vite_get-analyze-page', arguments: { arg0: request } })
+          expect(mcpPage.structuredContent).toEqual(rpcPage)
+          expect(rpcPage.content.length).toBeLessThanOrEqual(MAX_DASHBOARD_ANALYZE_PAGE_CHARACTERS)
+          content.push(rpcPage.content)
+        }
+        expect(JSON.parse(content.join(''))).toEqual(target === 'current' ? next : current)
+      }
+      for (const [name, arg0] of [
+        ['weapp-vite_get-analyze-page', pageRequest],
+        ['weapp-vite_read-dashboard-file', { kind: 'artifact', path: 'app.js', revision: 0 }],
+        ['weapp-vite_read-dashboard-file', { kind: 'artifact', path: 'app.js', revision: 1 }],
+        ['weapp-vite_get-analyze-page', { index: nextState.analyze.current.pages, revision: 1, target: 'current' }],
+      ] as const) {
+        expect((await mcp.client.callTool({ name, arguments: { arg0 } })).isError).toBe(true)
+      }
+      const request = { kind: 'artifact' as const, path: 'next.js', revision: 1 }
+      const file = await mcp.client.callTool({ name: 'weapp-vite_read-dashboard-file', arguments: { arg0: request } })
+      expect(file.structuredContent).toEqual(await dashboard.rpc.call('read-dashboard-file', request))
+      expect(file.structuredContent).toMatchObject({ content: 'next artifact' })
+      expect([...context.rpc.sharedState.keys()]).toEqual(keys)
+      expect(artifacts.files.get('app.js')?.content).toBe('initial artifact')
+    }
+    finally {
+      await mcp.close()
+      controller.dispose()
+      await instance.close()
+    }
+  })
+
+  it('rejects invalid tool arguments before file I/O and retains the authoritative file restrictions', async () => {
+    const project = await createTemporaryProject()
+    const sourceRoot = path.join(project.projectRoot, 'src')
+    const outside = path.join(project.projectRoot, 'outside')
+    await fs.mkdir(outside)
+    await fs.writeFile(path.join(outside, 'secret.ts'), 'secret')
+    await fs.symlink(outside, path.join(sourceRoot, 'linked'), process.platform === 'win32' ? 'junction' : 'dir')
+    await fs.writeFile(path.join(sourceRoot, 'oversized.ts'), Buffer.alloc(MAX_DASHBOARD_FILE_CONTENT_BYTES + 1))
+    const current = createAnalyzeResult([{
+      file: 'app.js',
+      type: 'chunk',
+      from: 'main',
+      modules: ['app.ts', 'linked/secret.ts', 'oversized.ts'].map(source => ({ id: source, source, sourceType: 'src' as const })),
+    }])
+    const artifacts = createDashboardArtifactSnapshot()
+    artifacts.capture('app.js', 'allowed')
+    artifacts.capture('unlisted.js', 'unlisted secret')
+    const controller = createAnalyzeDashboardDevframe({
+      snapshot: { current, previous: null, artifacts: artifacts.files },
+      roots: { srcRoot: sourceRoot },
+    })
+    const instance = initDevframe(controller.definition, { auth: false, base: '/', sse: false, ws: false, mcp: false })
+    const mcp = await connectDashboardMcp(instance)
+    try {
+      const open = vi.spyOn(fs, 'open')
+      for (const arg0 of [
+        { kind: 'source', path: 'app.ts' },
+        { kind: 'source', path: 'app.ts', revision: -1 },
+        { kind: 'source', path: 'app.ts', revision: 0.5 },
+        { kind: 'source', path: 'app.ts', revision: Number.MAX_SAFE_INTEGER + 1 },
+        { kind: 'source', path: 12, revision: 0 },
+        { kind: 'other', path: 'app.ts', revision: 0 },
+      ]) {
+        const result = await mcp.client.callTool({ name: 'weapp-vite_read-dashboard-file', arguments: { arg0 } })
+        expect(result.isError).toBe(true)
+        expect(result.structuredContent).toBeUndefined()
+      }
+      expect(open).not.toHaveBeenCalled()
+      for (const arg0 of [
+        { index: 0, target: 'current' },
+        { index: -1, target: 'current', revision: 0 },
+        { index: 0.5, target: 'current', revision: 0 },
+        { index: Number.MAX_SAFE_INTEGER + 1, target: 'current', revision: 0 },
+        { index: 0, target: 'other', revision: 0 },
+        { index: 0, target: 'previous', revision: 0 },
+      ]) {
+        expect((await mcp.client.callTool({ name: 'weapp-vite_get-analyze-page', arguments: { arg0 } })).isError).toBe(true)
+      }
+      for (const arg0 of [
+        { kind: 'source', path: '../outside/secret.ts', revision: 0 },
+        { kind: 'source', path: project.sourceFile, revision: 0 },
+        { kind: 'artifact', path: 'unlisted.js', revision: 0 },
+        { kind: 'source', path: 'linked/secret.ts', revision: 0 },
+        { kind: 'source', path: 'oversized.ts', revision: 0 },
+      ]) {
+        const result = await mcp.client.callTool({ name: 'weapp-vite_read-dashboard-file', arguments: { arg0 } })
+        expect(result.isError).toBe(true)
+        expect(result.structuredContent).toBeUndefined()
+      }
+      const file = await mcp.client.callTool({
+        name: 'weapp-vite_read-dashboard-file',
+        arguments: { arg0: { kind: 'source', path: 'app.ts', revision: 0 } },
+      })
+      expect(file.structuredContent).toMatchObject({ content: 'export const app = true\n' })
+      expect((await mcp.client.callTool({ name: 'weapp-vite_get-dashboard-state' })).structuredContent)
+        .toMatchObject({ revision: 0, runtimeEvents: [] })
+    }
+    finally {
+      vi.restoreAllMocks()
+      await mcp.close()
+      controller.dispose()
+      await instance.close()
+    }
   })
 })

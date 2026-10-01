@@ -3377,9 +3377,15 @@ importers:
       '@babel/preset-typescript':
         specifier: ^8.0.1
         version: 8.0.1(@babel/core@8.0.6)
+      '@devframes/agentic':
+        specifier: 1.1.0
+        version: 1.1.0(crossws@0.4.12(srvx@0.12.5))(devframe@1.1.0)
       '@jridgewell/remapping':
         specifier: ^2.3.5
         version: 2.3.5
+      '@modelcontextprotocol/node':
+        specifier: ^2.1.0
+        version: 2.1.0(@modelcontextprotocol/server@2.2.0)(hono@4.13.10)
       '@typescript-eslint/parser':
         specifier: ^8.71.0
         version: 8.71.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
@@ -3551,7 +3557,13 @@ importers:
       wevu:
         specifier: workspace:*
         version: link:../../packages-runtime/wevu
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
     devDependencies:
+      '@modelcontextprotocol/client':
+        specifier: ^2.2.0
+        version: 2.2.0
       '@vitejs/devtools-kit':
         specifier: 'catalog:'
         version: 0.7.6(@devframes/agentic@1.1.0)(cac@7.0.0)(crossws@0.4.12(srvx@0.12.5))(srvx@0.12.5)(vite@8.3.1)
@@ -20404,7 +20416,6 @@ snapshots:
     transitivePeerDependencies:
       - crossws
       - ocache
-    optional: true
 
   '@devframes/agentic@1.1.0(crossws@0.4.12(srvx@1.0.5))(devframe@1.1.0)':
     dependencies:

@@ -18,6 +18,13 @@ import {
   serializeDashboardAnalyzeSnapshot,
   STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE,
 } from './payload'
+import {
+  dashboardAnalyzePageRequestSchema,
+  dashboardAnalyzePageSchema,
+  dashboardFileContentSchema,
+  dashboardFileReadRequestSchema,
+  dashboardStateSchema,
+} from './schema'
 
 const DEVFRAME_ID = 'weapp-vite'
 
@@ -94,12 +101,26 @@ export function createAnalyzeDashboardDevframe({
     name: 'get-dashboard-state',
     type: 'query',
     jsonSerializable: true,
+    args: [],
+    returns: dashboardStateSchema,
+    agent: {
+      title: 'Dashboard state',
+      description: 'Read the live Dashboard revision, current and previous report page descriptors, and recent runtime events. Use this revision for subsequent report-page and file reads.',
+      safety: 'read',
+    },
     handler: getState,
   })
   const getAnalyzePage = defineRpcFunction({
     name: 'get-analyze-page',
     type: 'query',
     jsonSerializable: true,
+    args: [dashboardAnalyzePageRequestSchema],
+    returns: dashboardAnalyzePageSchema,
+    agent: {
+      title: 'Analyze report page',
+      description: 'Read one bounded JSON-text page from the current or previous analyze report. Concatenate pages in index order to reconstruct the report; refresh Dashboard state when the revision changes.',
+      safety: 'read',
+    },
     handler: (input: unknown) => {
       if (!serializedSnapshot) {
         throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)
@@ -111,12 +132,14 @@ export function createAnalyzeDashboardDevframe({
     name: 'read-dashboard-file',
     type: 'query',
     jsonSerializable: true,
-    handler: async (input: unknown) => {
-      if (!input || typeof input !== 'object' || !('revision' in input)
-        || typeof input.revision !== 'number'
-        || !Number.isSafeInteger(input.revision) || input.revision < 0) {
-        throw new Error('必须传入合法的文件读取 revision。')
-      }
+    args: [dashboardFileReadRequestSchema],
+    returns: dashboardFileContentSchema,
+    agent: {
+      title: 'Dashboard file content',
+      description: 'Read a report-listed source file or captured build artifact at the current Dashboard revision. Source roots, report allowlists, symlink checks and file-size limits apply; artifacts come only from the analysis snapshot.',
+      safety: 'read',
+    },
+    handler: async (input) => {
       const requestedRevision = input.revision
       if (!snapshot || requestedRevision !== revision) {
         throw new Error(STALE_DASHBOARD_ANALYZE_REVISION_MESSAGE)

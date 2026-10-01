@@ -24,6 +24,53 @@
 5. 仓库级受限命令执行（`pnpm/node/git/rg`）
 6. 面向改造和排障的标准 Prompt 模板
 
+### Dashboard 实时只读工具（DevFrame）
+
+`wv dev --ui` / `wv build --ui` 可通过 DevFrame MCP 读取**当前运行中的 Dashboard**。这与下文的 `wv mcp` 是两个入口：现有工具、Resources、Prompts、REST 和微信 IDE 会话保持不变，`wv mcp init` 不会改为连接 Dashboard。
+
+在项目中安装面板及可选的 stdio 连接器：
+
+```bash
+pnpm add -D @weapp-vite/dashboard devframe@1.1.0 @devframes/agentic@1.1.0
+```
+
+在 Dashboard 进程与 MCP 客户端启动的连接器进程的私有环境中设置同一个高熵 `DEVFRAME_MCP_AUTH_TOKEN`，然后启动 `wv dev --ui`。未设置或仅含空白时，独立 Dashboard 不开放 MCP，也不发布 MCP 实例记录。浏览器仍使用终端提供的 OTP magic link；OTP 不能替代 MCP Bearer 令牌。
+
+在项目目录启动 stdio 连接器：
+
+```bash
+pnpm exec devframe connect
+```
+
+支持 `mcpServers` 配置的客户端可使用：
+
+```json
+{
+  "mcpServers": {
+    "weapp-dashboard": {
+      "command": "pnpm",
+      "args": ["exec", "devframe", "connect"]
+    }
+  }
+}
+```
+
+连接器必须继承上述令牌环境变量。先调用 `devframe_connect_list-instances`，按项目与端口选择实例，再用 `devframe_connect_call-tool` 调用工具。注册记录只包含实例定位信息，不保存令牌；关闭或重启时移除本实例的旧记录。若注册目录不可写，上游会输出诊断，可改用 `devframe connect --port <port> --base /__weapp-vite/` 显式探测终端 UI 地址中的端口。
+
+| 工具 | 输入 | 结果 |
+| --- | --- | --- |
+| `weapp-vite_get-dashboard-state` | `{}` | 当前 revision、当前 / 上次报告的分页描述符与最近运行事件 |
+| `weapp-vite_get-analyze-page` | `{ "arg0": { "target": "current", "index": 0, "revision": 0 } }` | 当前或 `previous` 报告的一页 JSON 文本 |
+| `weapp-vite_read-dashboard-file` | `{ "arg0": { "kind": "artifact", "path": "app.js", "revision": 0 } }` | 报告内的源码（`source`）或该次构建捕获的产物文本 |
+
+表中的 revision、路径仅为格式示例，必须从当前状态与报告取得。参数使用 DevFrame 原生的位置参数包装 `arg0`；结果提供对象型 `structuredContent`。按描述符的 `pages` 数量依次读取、拼接分页文本，再解析完整报告。报告更新后，旧 revision 以及过期异步读取都会被拒绝，应重新查询状态，不能混拼不同 revision 的分页。
+
+三个工具与页面共用同一组只读 RPC，不提供通用 shared-state 工具或写入 / 命令操作。源码仍受报告 allowlist、根目录、符号链接和大小限制；产物仅来自当前分析快照，不回退读取实时 `dist`。运行事件是构建 / HMR / 诊断事件，不是小程序 console/network。
+
+直接使用 Streamable HTTP 时，地址为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`，同时发送 `Authorization: Bearer <token>` 与该地址的规范 loopback `Origin`，例如 `http://127.0.0.1:<port>`。缺少或不合法的 Origin 返回 403，缺少或错误的 Bearer 返回 401。令牌不能放入 URL、实例记录或提交到客户端配置仓库。
+
+嵌入 Vite DevTools 时，同一份定义可由宿主的 MCP 暴露，但认证、Origin、共享状态和发现策略仍由宿主配置持有；该环境变量只控制 CLI 独立 Dashboard，不会打开或收窄共享宿主的 MCP。
+
 ## 2. 快速接入客户端
 
 如果你的目标不是“研究 MCP 地址”，而是尽快让 AI 工具开始可用，推荐直接使用下面这组命令：
