@@ -4,7 +4,6 @@ import type { Compiler, CompilerGenerateRequest, CompilerGenerateResult, Compile
 import type { CompilerContext } from '../../context'
 import type { WeappCompilerHmrPreparation, WeappCompilerHmrRequest } from '../../types/compilerPlugin'
 import { readFileSync } from 'node:fs'
-import { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } from '@weapp-tailwindcss/engine'
 import { createTailwindPreparation, prepareTailwindRoots } from '@weapp-vite/tailwindcss'
 import path from 'pathe'
 import { resolveVueSfcHmrSignatures } from 'wevu/compiler'
@@ -40,6 +39,7 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
   let server: ViteDevServer | undefined
 
   async function rememberRoot(index: number, request: CompilerGenerateRequest, result: CompilerGenerateResult) {
+    const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
     // 初始编译发现的扫描文件也属于下一次更新的完整输入视图。
     const sources = createTailwindV4CompiledSourceEntries(result.root, [...result.sources], request.sourceOptions?.projectRoot ?? ctx.configService.cwd)
     if (ctx.configService.outDir) {
@@ -83,6 +83,10 @@ export function createTailwindHmrAdapter(ctx: CompilerContext, options: Options)
         || (ctx.configService.outDir && isPathInside(ctx.configService.outDir, file))) {
         return
       }
+      if (!roots.size) {
+        return
+      }
+      const { createTailwindV4CompiledSourceEntries, createTailwindV4SourceEntryMatcher, resolveProjectSourceFiles } = await import('@weapp-tailwindcss/engine')
       for (const root of roots.values()) {
         const sources = createTailwindV4CompiledSourceEntries(root.result.root, [...root.result.sources], ctx.configService.cwd)
         const matches = createTailwindV4SourceEntryMatcher(sources)

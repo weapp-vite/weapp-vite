@@ -10,7 +10,7 @@ const weappWebPluginMock = vi.hoisted(() => vi.fn(() => ({
   name: 'weapp-web-plugin',
 })))
 
-vi.mock('@weapp-vite/web', () => ({
+vi.mock('@weapp-vite/web/plugin', () => ({
   weappWebPlugin: weappWebPluginMock,
 }))
 
@@ -30,6 +30,15 @@ describe('runtime config merge web', () => {
     ])
   })
 
+  it('resolves an optional adapter before deduplicating its plugins', async () => {
+    const plugin = { name: 'weapp-web-plugin' }
+    const plugins = mergeWebPlugins([
+      { name: 'weapp-web-plugin' },
+      { name: 'user-plugin' },
+    ], Promise.resolve(plugin))
+    expect((await Promise.all(plugins ?? [])).flat(Infinity)).toEqual([plugin, { name: 'user-plugin' }])
+  })
+
   it('accepts a single raw plugin and optional runtime provider', () => {
     const userPlugin = { name: 'user-plugin' }
     expect(mergeWebPlugins(userPlugin as any, { name: 'web' } as any)).toEqual([
@@ -39,7 +48,7 @@ describe('runtime config merge web', () => {
     expect(mergeWebPlugins(undefined, { name: 'web' } as any)).toEqual([{ name: 'web' }])
   })
 
-  it('keeps the auto-routes generator in the Web plugin chain', () => {
+  it('keeps the auto-routes generator in the Web plugin chain', async () => {
     const configService = {
       weappViteConfig: {
         autoRoutes: true,
@@ -70,14 +79,14 @@ describe('runtime config merge web', () => {
       getDefineImportMetaEnv: () => ({}),
     })
 
-    expect(result?.plugins?.map(plugin => plugin && typeof plugin === 'object' && 'name' in plugin ? plugin.name : undefined)).toEqual([
+    expect((await Promise.all(result?.plugins ?? [])).flat(Infinity).map(plugin => plugin && typeof plugin === 'object' && 'name' in plugin ? plugin.name : undefined)).toEqual([
       'weapp-vite:runtime-provider:web-runtime',
       'weapp-web-plugin',
       'weapp-vite:auto-routes',
     ])
   })
 
-  it('injects weapp-vite host metadata for web runtime', () => {
+  it('injects weapp-vite host metadata for web runtime', async () => {
     const applyRuntimePlatform = vi.fn()
     const injectBuiltinAliases = vi.fn()
     const resolveAppConfig = vi.fn()
@@ -121,7 +130,7 @@ describe('runtime config merge web', () => {
       platform: 'web',
     })
     expect(result?.build?.rolldownOptions?.preserveEntrySignatures).toBe('allow-extension')
-    expect(result?.plugins?.map((plugin: any) => plugin.name)).toEqual([
+    expect((await Promise.all(result?.plugins ?? [])).flat(Infinity).map((plugin: any) => plugin.name)).toEqual([
       'weapp-vite:runtime-provider:web-runtime',
       'weapp-web-plugin',
       'user-plugin',

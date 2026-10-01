@@ -5,7 +5,6 @@ import type { WevuRuntimeAliasMode } from '../../../packageAliases'
 import type { ConfigService, ResolvedWeappWebConfig } from '../../types'
 import { WEAPP_VITE_RUNTIME_VIRTUAL_ID } from '@weapp-core/constants'
 import { defu } from '@weapp-core/shared'
-import { weappWebPlugin } from '@weapp-vite/web'
 import { resolveWeappAutoRoutesConfig } from '../../../../autoRoutesConfig'
 import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { autoRoutes } from '../../../../plugins/autoRoutes'
@@ -37,7 +36,11 @@ export function mergeWebPlugins(
   webPlugin: PluginOption,
   runtimeProviderPlugin?: PluginOption,
   internalPlugins: PluginOption[] = [],
-) {
+): InlineConfig['plugins'] {
+  // Vite 会解析 Promise 插件；等待适配器后再按真实插件名去重，保持既有排序。
+  if (webPlugin instanceof Promise) {
+    return [webPlugin.then(plugin => mergeWebPlugins(rawPlugins, plugin, runtimeProviderPlugin, internalPlugins))] as InlineConfig['plugins']
+  }
   const remaining: PluginOption[] = []
   const ownedPluginNames = new Set(
     [webPlugin, runtimeProviderPlugin, ...internalPlugins]
@@ -114,7 +117,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
 
   const runtimeProvider = resolveRuntimeProvider('web', 'web')
   const runtimeProviderPlugin = createSelectedRuntimeProviderPlugin(runtimeProvider, isDev)
-  const webPlugin = weappWebPlugin({
+  const webPlugin = import('@weapp-vite/web/plugin').then(({ weappWebPlugin }) => weappWebPlugin({
     ...web.pluginOptions,
     __uniApp: options.uniApp || undefined,
     __autoImportResolvers: options.autoImportResolvers,
@@ -123,7 +126,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
       moduleId: WEAPP_VITE_RUNTIME_VIRTUAL_ID,
       hmrAcceptCode: resolveRuntimeProviderHmrFooter(runtimeProvider),
     },
-  })
+  }))
   const autoRoutesPlugins = options.ctx
     && !options.configService?.weappLibConfig?.enabled
     && resolveWeappAutoRoutesConfig(options.configService?.weappViteConfig?.autoRoutes).enabled

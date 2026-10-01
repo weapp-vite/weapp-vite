@@ -64,13 +64,22 @@ jobs:
           build-command: pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require...
       - name: Pack candidates before switching to the consumer runtime
         run: node packages/weapp-vite/scripts/consumerTarballs.mjs .cache/node-support-tarballs
+      - name: Install browser for published Web consumption
+        run: pnpm exec playwright install --with-deps chromium
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: ${{ matrix.node }}
-      - name: Install and verify published native and SFC consumers
+      - name: Install and verify published native, SFC, Tailwind and Web consumers
         run: node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv
         env:
           WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+          WEAPP_VITE_CONSUMER_WEB: '1'
+          WEAPP_VITE_CONSUMER_EVIDENCE: .cache/consumer-evidence.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: consumer-evidence-${{ matrix.os }}-${{ matrix.node }}
+          path: .cache/consumer-evidence.json
 
   react-host-paths:
     name: React host paths (${{ matrix.os }})
