@@ -100,3 +100,4 @@ jobs:
           path: |
             docs/reports/*-e2e-dimina-*-suite-report/**
             .cache/dimina/screenshots/**
+            .cache/dimina/navigation/**
