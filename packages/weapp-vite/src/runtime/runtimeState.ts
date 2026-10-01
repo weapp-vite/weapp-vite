@@ -6,6 +6,7 @@ import type { ComponentStyleOptions, VueSfcBlockSignatures } from 'wevu/compiler
 import type { GlassEaselAnalysisFact } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
 import type { AutoRoutes } from '../types/routes'
+import type { HmrProfileProvenance } from '../utils/hmrProfile/provenance'
 import type { ScanWxmlResult } from '../wxml'
 import type { WxmlDependencyRegistry } from '../wxml/processing/registry'
 import type { LocalAutoImportMatch } from './autoImport/types'
@@ -242,7 +243,7 @@ export interface RuntimeState {
         dirtyReasonSummary?: string[]
         pendingReasonSummary?: string[]
       }>
-      profile: {
+      profile: HmrProfileProvenance & {
         eventId?: string
         event?: ChangeEvent
         file?: string

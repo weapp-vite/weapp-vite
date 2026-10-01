@@ -577,6 +577,8 @@ export default defineConfig({
 
 - `logLevel: 'default' | 'concise' | 'verbose'` 控制终端诊断详细程度。
 - `profileJson: boolean | string` 控制是否输出 JSONL profile，字符串表示自定义输出路径。
+- JSONL v1 保留旧字段，增加 `sessionId` / `buildId` / `batchId` / `sourceEvents` 与时钟来源；按来源精确匹配编辑。失败记录只有 `elapsedMs`，未知版本、未完成或缺失阶段不能按零耗时统计。`buildCoreMs` 是残差估算，阶段可能重叠。
+- `analyze --hmr-profile --json` 的 `inputCoverage` 提供输入覆盖计数；旧版无版本记录仍兼容，未关联样本不归给当前编辑。
 
 ### `mcp`
 

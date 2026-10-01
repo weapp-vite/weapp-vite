@@ -157,6 +157,8 @@ Markdown 和 PR 报告会结合预算、重复模块、Top 增量和历史快照
 
 ## HMR profile 分析 {#hmr-profile}
 
+JSONL v1 的会话、构建、批次来源与计时边界见 [HMR 消费契约](./hmr.md#jsonl-消费契约)。分析结果的 `inputCoverage` 区分旧版、兼容、不兼容、未完成和损坏记录；缺失阶段保持未知，不能从阶段缺失推断零开销。
+
 如果开启了 [开发态 HMR 配置](./hmr.md) 中的 `weapp.hmr.profileJson`，可以直接聚合 JSONL profile：
 
 ```bash

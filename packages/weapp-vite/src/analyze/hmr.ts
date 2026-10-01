@@ -1,6 +1,19 @@
+import type { HmrProfileRecordMetadata } from '../utils/hmrProfile/provenance'
+import type { HmrProfileInputCoverage } from './hmr/reader'
 import { fs } from '@weapp-core/shared/fs'
+import { readHmrProfileLines } from './hmr/reader'
 
-export interface HmrProfileJsonSample {
+export interface HmrProfileJsonSample extends Partial<Omit<HmrProfileRecordMetadata, 'schemaVersion'>> {
+  schemaVersion?: number
+  batchWaitMs?: number
+  queueWaitMs?: number
+  bundlerMs?: number
+  finalizePrepareMs?: number
+  finalizeTemplateMs?: number
+  finalizePublishMs?: number
+  publicationValidateMs?: number
+  publicationIndependentMs?: number
+  publicationPruneMs?: number
   timestamp?: string
   totalMs?: number
   eventId?: string
@@ -86,9 +99,19 @@ export interface HmrProfileAnalyzeResult {
   profilePath: string
   sampleCount: number
   skippedLineCount: number
+  inputCoverage: HmrProfileInputCoverage
   firstTimestamp?: string
   lastTimestamp?: string
   metrics: {
+    batchWaitMs: HmrProfileMetricSummary
+    queueWaitMs: HmrProfileMetricSummary
+    bundlerMs: HmrProfileMetricSummary
+    finalizePrepareMs: HmrProfileMetricSummary
+    finalizeTemplateMs: HmrProfileMetricSummary
+    finalizePublishMs: HmrProfileMetricSummary
+    publicationValidateMs: HmrProfileMetricSummary
+    publicationIndependentMs: HmrProfileMetricSummary
+    publicationPruneMs: HmrProfileMetricSummary
     totalMs: HmrProfileMetricSummary
     buildCoreMs: HmrProfileMetricSummary
     buildStartMs: HmrProfileMetricSummary
@@ -204,31 +227,20 @@ function isFiniteNumber(value: unknown): value is number {
  */
 export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Promise<HmrProfileAnalyzeResult> {
   const content = await fs.readFile(options.profilePath, 'utf8')
-  const lines = content.split(/\r?\n/)
-  const samples: HmrProfileJsonSample[] = []
-  let skippedLineCount = 0
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) {
-      continue
-    }
-    try {
-      const parsed = JSON.parse(trimmed) as HmrProfileJsonSample
-      if (!isFiniteNumber(parsed.totalMs)) {
-        skippedLineCount += 1
-        continue
-      }
-      samples.push(parsed)
-    }
-    catch {
-      skippedLineCount += 1
-    }
-  }
+  const { samples, coverage: inputCoverage, skippedLineCount } = readHmrProfileLines(content)
 
   const eventCounts = new Map<string, number>()
   const dirtyReasonCounts = new Map<string, number>()
   const pendingReasonCounts = new Map<string, number>()
+  const batchWaitValues: number[] = []
+  const queueWaitValues: number[] = []
+  const bundlerValues: number[] = []
+  const finalizePrepareValues: number[] = []
+  const finalizeTemplateValues: number[] = []
+  const finalizePublishValues: number[] = []
+  const publicationValidateValues: number[] = []
+  const publicationIndependentValues: number[] = []
+  const publicationPruneValues: number[] = []
   const totalValues: number[] = []
   const buildCoreValues: number[] = []
   const buildStartValues: number[] = []
@@ -279,6 +291,33 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
   const skippedLoadedCountValues: number[] = []
 
   for (const sample of samples) {
+    if (isFiniteNumber(sample.batchWaitMs)) {
+      batchWaitValues.push(sample.batchWaitMs)
+    }
+    if (isFiniteNumber(sample.queueWaitMs)) {
+      queueWaitValues.push(sample.queueWaitMs)
+    }
+    if (isFiniteNumber(sample.bundlerMs)) {
+      bundlerValues.push(sample.bundlerMs)
+    }
+    if (isFiniteNumber(sample.finalizePrepareMs)) {
+      finalizePrepareValues.push(sample.finalizePrepareMs)
+    }
+    if (isFiniteNumber(sample.finalizeTemplateMs)) {
+      finalizeTemplateValues.push(sample.finalizeTemplateMs)
+    }
+    if (isFiniteNumber(sample.finalizePublishMs)) {
+      finalizePublishValues.push(sample.finalizePublishMs)
+    }
+    if (isFiniteNumber(sample.publicationValidateMs)) {
+      publicationValidateValues.push(sample.publicationValidateMs)
+    }
+    if (isFiniteNumber(sample.publicationIndependentMs)) {
+      publicationIndependentValues.push(sample.publicationIndependentMs)
+    }
+    if (isFiniteNumber(sample.publicationPruneMs)) {
+      publicationPruneValues.push(sample.publicationPruneMs)
+    }
     totalValues.push(sample.totalMs!)
     if (sample.event) {
       eventCounts.set(sample.event, (eventCounts.get(sample.event) ?? 0) + 1)
@@ -447,9 +486,19 @@ export async function analyzeHmrProfile(options: AnalyzeHmrProfileOptions): Prom
     profilePath: options.profilePath,
     sampleCount: samples.length,
     skippedLineCount,
+    inputCoverage,
     firstTimestamp: orderedByTime[0]?.timestamp,
     lastTimestamp: orderedByTime[orderedByTime.length - 1]?.timestamp,
     metrics: {
+      batchWaitMs: createMetricSummary(batchWaitValues),
+      queueWaitMs: createMetricSummary(queueWaitValues),
+      bundlerMs: createMetricSummary(bundlerValues),
+      finalizePrepareMs: createMetricSummary(finalizePrepareValues),
+      finalizeTemplateMs: createMetricSummary(finalizeTemplateValues),
+      finalizePublishMs: createMetricSummary(finalizePublishValues),
+      publicationValidateMs: createMetricSummary(publicationValidateValues),
+      publicationIndependentMs: createMetricSummary(publicationIndependentValues),
+      publicationPruneMs: createMetricSummary(publicationPruneValues),
       totalMs: createMetricSummary(totalValues),
       buildCoreMs: createMetricSummary(buildCoreValues),
       buildStartMs: createMetricSummary(buildStartValues),

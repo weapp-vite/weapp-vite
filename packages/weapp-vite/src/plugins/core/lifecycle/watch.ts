@@ -789,21 +789,14 @@ export function createWatchChangeHook(state: CorePluginState) {
       resolvedEntryMap: state.resolvedEntryMap,
       sharedChunkSourceModuleIds: state.ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds,
     })
-    state.ctx.runtimeState.build.hmr.profile = {
-      ...state.ctx.runtimeState.build.hmr.profile,
-      eventId,
-      event,
-      file: normalizedId,
-    }
+    const profile = state.ctx.runtimeState.build.hmr.profile
+    profile.sourceEvents ??= []
+    profile.sourceEvents.push({ eventId, event, file: normalizedId, receivedAtMs: startedAt })
+    // 旧字段继续指向最后一个事件；完整来源通过 sourceEvents 保留。
+    Object.assign(profile, { eventId, event, file: normalizedId })
     const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
-    state.ctx.runtimeState.build.hmr.profile = {
-      ...state.ctx.runtimeState.build.hmr.profile,
-      eventId,
-      event,
-      file: normalizedId,
-      watchToDirtyMs: performance.now() - startedAt,
-      dirtyReasonSummary,
-    }
+    profile.watchToDirtyMs = performance.now() - Math.min(...profile.sourceEvents.map(source => source.receivedAtMs))
+    profile.dirtyReasonSummary = [...new Set([...(profile.dirtyReasonSummary ?? []), ...(dirtyReasonSummary ?? [])])]
     state.ctx.onStatefulHmrSourceChange?.(normalizedId, dirtyReasonSummary ?? [])
   }
 }

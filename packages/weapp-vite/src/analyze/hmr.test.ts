@@ -198,3 +198,52 @@ describe('analyze hmr profile', () => {
     expect(result.slowestSamples[0]?.file).toBe('/project/src/pages/logs/index.vue')
   })
 })
+
+it('keeps incompatible and incomplete records out of timing statistics while preserving legacy samples', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'hmr-profile-contract-'))
+  const profilePath = path.join(root, 'profile.jsonl')
+  try {
+    await fs.writeFile(profilePath, [
+      { totalMs: 20 },
+      { schemaVersion: 1, status: 'complete', totalMs: 40, transformMs: 10 },
+      { schemaVersion: 99, status: 'complete', totalMs: 0 },
+      { schemaVersion: 1, status: 'incomplete', totalMs: 0, transformMs: 0 },
+      { schemaVersion: 1, status: 'failed', totalMs: 5 },
+      { schemaVersion: 1, status: 'complete' },
+    ].map(value => JSON.stringify(value)).join('\n'))
+    const report = await analyzeHmrProfile({ profilePath })
+    expect(report.sampleCount).toBe(2)
+    expect(report.skippedLineCount).toBe(4)
+    expect(report.metrics.totalMs).toEqual({ count: 2, averageMs: 30, maxMs: 40 })
+    expect(report.metrics.transformMs).toEqual({ count: 1, averageMs: 10, maxMs: 10 })
+    expect(report.metrics.writeMs).toEqual({ count: 0 })
+    expect(report.inputCoverage).toEqual({ legacy: 1, compatible: 1, incompatible: 1, incomplete: 2, invalid: 1 })
+  }
+  finally {
+    await fs.remove(root)
+  }
+})
+
+it('treats malformed collections and negative timing as invalid input instead of crashing or reporting zero', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'hmr-profile-contract-'))
+  const profilePath = path.join(root, 'profile.jsonl')
+  try {
+    await fs.writeFile(profilePath, [
+      { totalMs: 30, dirtyReasonSummary: 1 },
+      { totalMs: 30, pendingReasonSummary: ['valid', {}] },
+      { totalMs: -1 },
+      { totalMs: 10, transformMs: -5 },
+      { totalMs: 10, event: {} },
+      { totalMs: 10, sourceEvents: {} },
+      { totalMs: 10, sourceEvents: [{ eventId: 'bad', receivedAtMs: -1 }] },
+      { totalMs: 12, transformMs: 0 },
+    ].map(value => JSON.stringify(value)).join('\n'))
+    const report = await analyzeHmrProfile({ profilePath })
+    expect(report.sampleCount).toBe(1)
+    expect(report.skippedLineCount).toBe(7)
+    expect(report.metrics.transformMs).toEqual({ count: 1, averageMs: 0, maxMs: 0 })
+  }
+  finally {
+    await fs.remove(root)
+  }
+})

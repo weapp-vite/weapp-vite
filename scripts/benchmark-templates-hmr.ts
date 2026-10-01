@@ -1,4 +1,5 @@
 /* eslint-disable ts/no-use-before-define */
+import type { HmrProfileJsonSample } from '../packages/weapp-vite/src/analyze/hmr'
 import type { StatefulHmrAuditEvent } from './workspace-hmr/statefulAuditUpdate'
 import { existsSync, statSync } from 'node:fs'
 import { access, cp, mkdir, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
@@ -13,6 +14,7 @@ import { sampleHeapAfterGc, waitForInspectorUrl } from '../e2e/utils/dev-memory'
 import { startDevProcess } from '../e2e/utils/dev-process'
 import { readEmittedStylesheet } from '../e2e/utils/emittedStylesheet'
 import { replaceFileByRename } from '../e2e/utils/hmr-helpers'
+import { readHmrProfileLines } from '../packages/weapp-vite/src/analyze/hmr/reader'
 import { sanitizeBenchmarkDevLog } from './benchmarkTemplatesHmr/diagnostics'
 import { createEmittedScriptReader, waitForBenchmarkOutput } from './benchmarkTemplatesHmr/emittedOutput'
 import { createBenchmarkDevEnv } from './benchmarkTemplatesHmr/environment'
@@ -20,7 +22,7 @@ import { captureBenchmarkFailureEvidence } from './benchmarkTemplatesHmr/failure
 import { waitForBenchmarkInitialOutputs } from './benchmarkTemplatesHmr/initialOutput'
 import { mutateJsonMarker } from './benchmarkTemplatesHmr/jsonMutation'
 import { isNativeBenchmarkScriptEntry } from './benchmarkTemplatesHmr/nativeEntry'
-import { collectBenchmarkHmrProfile } from './benchmarkTemplatesHmr/profile'
+import { collectBenchmarkHmrProfile, matchesHmrProfileSource } from './benchmarkTemplatesHmr/profile'
 import { restoreBenchmarkSource } from './benchmarkTemplatesHmr/sourceRestore'
 import { injectVueStyleRule, parseStatefulHmrControlSource } from './workspace-hmr/scenarios'
 import { StatefulHmrAuditClient } from './workspace-hmr/statefulAuditClient'
@@ -37,26 +39,6 @@ type ScenarioGroup
     | 'vue-script'
     | 'vue-style'
     | 'vue-template'
-
-interface HmrProfileJsonSample {
-  buildCoreMs?: number
-  dirtyCount?: number
-  dirtyReasonSummary?: string[]
-  emitMs?: number
-  emittedCount?: number
-  event?: string
-  file?: string
-  pendingCount?: number
-  pendingReasonSummary?: string[]
-  relativeFile?: string
-  sourceRootFile?: string
-  snapshotBuildMs?: number
-  snapshotResolveMs?: number
-  totalMs?: number
-  transformMs?: number
-  watchToDirtyMs?: number
-  writeMs?: number
-}
 
 type SamplePhase = 'edit' | 'restore'
 
@@ -776,6 +758,7 @@ function createScenarioSample(
   const profileSample = profileResult.profile
   return {
     ...profileSample,
+    sourceEvents: profileSample.sourceEvents?.map(event => ({ ...event, file: event.file ? formatReportPath(event.file) : undefined })),
     file: formatReportPath(profileSample.file ?? scenario.sourceFile),
     heapUsedBytes: memorySample?.heapUsed,
     relativeFile: profileSample.relativeFile,
@@ -858,52 +841,18 @@ async function waitForHmrProfileSample(
     if (matched) {
       return matched
     }
-    let unattributed: HmrProfileJsonSample | undefined
-    for (let index = samples.length - 1; index >= 0; index -= 1) {
-      const sample = samples[index]
-      if (isUnattributedProfileSample(sample)) {
-        unattributed = sample
-        break
-      }
-    }
-    if (unattributed) {
-      return {
-        ...unattributed,
-        file: sourceFile,
-        relativeFile: normalizePath(path.relative(template.workspaceRoot, sourceFile)),
-        sourceRootFile: normalizePath(path.relative(template.sourceRoot, sourceFile)),
-      } satisfies HmrProfileJsonSample
-    }
     await sleep(100)
   }
   return {} satisfies HmrProfileJsonSample
 }
 
 function isProfileSampleForSource(template: TemplateCase, sample: HmrProfileJsonSample, sourceFile: string) {
-  const expected = new Set([
+  return matchesHmrProfileSource(sample, [
     normalizePath(sourceFile),
     formatReportPath(sourceFile),
     normalizePath(path.relative(template.workspaceRoot, sourceFile)),
     normalizePath(path.relative(template.sourceRoot, sourceFile)),
   ])
-  const candidates = [sample.file, sample.relativeFile, sample.sourceRootFile]
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .map(normalizePath)
-  const canMatchWithoutExtension = sourceFile.endsWith('.vue')
-  const expectedWithoutExt = canMatchWithoutExtension
-    ? new Set([...expected].map(removeFileExtension))
-    : undefined
-
-  return candidates.some((candidate) => {
-    return expected.has(candidate)
-      || (canMatchWithoutExtension && expectedWithoutExt?.has(removeFileExtension(candidate)))
-      || [...expected].some(item => item.endsWith(`/${candidate}`))
-      || [...expected].some(item => candidate.endsWith(`/${item}`))
-  })
-}
-
-function isUnattributedProfileSample(sample: HmrProfileJsonSample) {
-  return !sample.file && !sample.relativeFile && !sample.sourceRootFile
 }
 
 async function countJsonlLines(filePath: string) {
@@ -920,19 +869,12 @@ async function readJsonlSamplesSince(filePath: string, startLineCount: number) {
   if (!(await pathExists(filePath))) {
     return []
   }
-  return (await readFile(filePath, 'utf8'))
+  const content = (await readFile(filePath, 'utf8'))
     .split(/\r?\n/)
     .filter(line => line.trim().length > 0)
     .slice(Math.max(0, startLineCount))
-    .map((line) => {
-      try {
-        return JSON.parse(line) as HmrProfileJsonSample
-      }
-      catch {
-        return undefined
-      }
-    })
-    .filter((sample): sample is HmrProfileJsonSample => sample !== undefined)
+    .join('\n')
+  return readHmrProfileLines(content).samples
 }
 
 async function listFiles(root: string) {
@@ -1101,11 +1043,6 @@ function insertBeforeClosingTag(source: string, tagName: string, insertion: stri
     return source
   }
   return source.replace(closeTag, `${insertion}${closeTag}`)
-}
-
-function removeFileExtension(filePath: string) {
-  const ext = path.extname(filePath)
-  return ext ? filePath.slice(0, -ext.length) : filePath
 }
 
 function createMarker(templateId: string, scenarioId: string, index: number) {

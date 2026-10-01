@@ -192,3 +192,15 @@ export default defineConfig({
 weapp-vite 的 `weapp.hmr`、`weapp.tailwindcss` 和可选 `prepareHmr` 类型保持兼容。宿主继续创建 DevEngine、接入模块图与监听、通过原生 emit/write 输出，并决定传输与应用确认边界。Taro 的实验接入保留 React Refresh、PatchJournal 和既有 HMR 模式；持久发布确认与应用确认分别记录。
 
 首期针对微信做双宿主运行时验收，支付宝与抖音仅验证编译产物和适配契约。完整重同步仍是完整重同步；已记录的微信 IDE 模板/样式缓存限制不会因为拆包而自动消失。实验接入与固定版本重现脚本见仓库 `integrations/shared-hmr-tailwind`。
+
+### JSONL 消费契约
+
+新记录使用 `schemaVersion: 1`，保留原有平铺耗时、事件和文件字段。`sessionId` 区分构建服务会话，`buildId` 区分一次构建；classic 合并更新还提供 `batchId` 和完整 `sourceEvents`（事件 ID、文件、事件类型、接收时刻）。单文件旧字段继续可读，多文件消费者应从来源列表匹配，不能把没有来源的记录归给当前编辑。`correlation: 'unknown'` 表示没有足够的来源证据。
+
+`timestamp` 是 UTC 发布时刻，阶段耗时与 `sourceEvents[].receivedAtMs` 使用同进程 `performance.now()` 时钟，`clock.timeOrigin` 给出时钟原点。不同进程的单调时钟值不能直接相减。`batchWaitMs` 表示收集批次的等待，`queueWaitMs` 表示串行构建队列等待；文件稳定等待发生在上游 watcher，当前无法独立观测时保持缺失，不能用外部墙钟减去内部阶段来推断。
+
+`status: 'complete'` 才能进入正常耗时统计。失败记录为 `failed`，只提供 `elapsedMs`，不提供成功的 `totalMs`。未完成、未知版本、损坏行与缺失阶段不会被补为 0；`analyze --hmr-profile --json` 的 `inputCoverage` 报告旧版、兼容、不兼容、未完成和无效行数，各阶段的 `count` 表示实际观测数。没有版本的旧记录继续兼容，旧字段缺失时保持未知。
+
+阶段可能相互包含，不能相加当作总时间。`buildCoreMs` 保留旧口径，但由 `estimates.buildCoreMs` 明确标记为残差估算，不是独立计时；`snapshotBuildMs` 包含 snapshot 准备与构建。外部产物可见时间单独记录，不能冒充内部编译时间。当前 stateful benchmark 若没有编译 profile，继续报告 `unavailable-stateful`。
+
+一次编辑的消费方式是先记下 JSONL 当前行位置，再修改源文件，等待输出断言通过后，从新增的兼容、完成记录中按 `sourceEvents[].file` 精确匹配。仓库可运行示例为 `scripts/benchmark-templates-hmr.ts`，匹配逻辑与回归在 `scripts/benchmarkTemplatesHmr/profile.ts`；找不到关联时返回 `missing`，外部观察结果单独保留。

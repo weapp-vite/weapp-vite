@@ -1,21 +1,13 @@
+import type { HmrProfileJsonSample as HmrProfileSample } from '../../packages/weapp-vite/src/analyze/hmr'
 import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
+import { readHmrProfileLines } from '../../packages/weapp-vite/src/analyze/hmr/reader'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createHmrMarker, replaceFileByRename, replaceHmrScriptName, replaceSharedStoreInitialName, waitForFileContains } from '../utils/hmr-helpers'
 import { waitForWevuRuntimeChunkContaining } from '../utils/wevu-vendor'
 import { APP_ROOT, CLI_PATH, DIST_ROOT } from '../wevu-runtime.utils'
-
-interface HmrProfileSample {
-  event?: string
-  file?: string
-  dirtyCount?: number
-  dirtyReasonSummary?: string[]
-  emittedCount?: number
-  pendingCount?: number
-  pendingReasonSummary?: string[]
-}
 
 const CONFIG_PATH = path.join(APP_ROOT, 'weapp-vite.config.ts')
 const HMR_PROFILE_PATH = path.join(APP_ROOT, '.weapp-vite/hmr-profile.jsonl')
@@ -51,21 +43,10 @@ async function readHmrProfileSamples() {
   }
 
   const content = await fs.readFile(HMR_PROFILE_PATH, 'utf8')
-  const samples: HmrProfileSample[] = []
-
-  for (const line of content.split(/\r?\n/)) {
-    const trimmed = line.trim()
-    if (!trimmed) {
-      continue
-    }
-    const parsed = JSON.parse(trimmed) as unknown
-    if (!parsed || typeof parsed !== 'object') {
-      continue
-    }
-    samples.push(parsed as HmrProfileSample)
-  }
-
-  return samples
+  const result = readHmrProfileLines(content)
+  expect(result.coverage.invalid).toBe(0)
+  expect(result.coverage.incompatible).toBe(0)
+  return result.samples
 }
 
 async function waitForHmrProfileSample(
@@ -148,6 +129,10 @@ describe('hmr sharedChunks auto diagnostics (dev watch)', { concurrent: false },
         ),
         'direct page edit shared-chunk auto hmr profile',
       )
+      expect(sample).toMatchObject({ schemaVersion: 1, status: 'complete', correlation: 'known' })
+      expect(sample.sessionId).toEqual(expect.any(String))
+      expect(sample.buildId).toEqual(expect.any(String))
+      expect(sample.sourceEvents).toEqual(expect.arrayContaining([expect.objectContaining({ file: PAGE_HMR_SOURCE_PATH })]))
       expect(sample.dirtyCount).toBe(1)
       expect(sample.pendingCount).toBe(1)
       expect(sample.emittedCount).toBe(1)
@@ -206,6 +191,8 @@ describe('hmr sharedChunks auto diagnostics (dev watch)', { concurrent: false },
         ),
         'shared dependency rebuild hmr profile',
       )
+      expect(sample).toMatchObject({ schemaVersion: 1, status: 'complete', correlation: 'known' })
+      expect(sample.sourceEvents).toEqual(expect.arrayContaining([expect.objectContaining({ file: SHARED_STORE_SOURCE_PATH })]))
       expect(sample.pendingCount).toBeGreaterThan(1)
       expect(sample.emittedCount).toBeGreaterThan(1)
       await dev.waitForOutput(REBUILD_READY_RE, 'shared dependency rebuild log')

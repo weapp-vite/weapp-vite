@@ -1,6 +1,7 @@
 import type { OutputBundle, OutputChunk, RolldownWatcher } from 'rolldown'
 import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
 import type { GlassEaselAnalysisFact } from '../../analyze/glassEasel/types'
+import type { HmrProfileJsonSample } from '../../analyze/hmr'
 import type { CompilerContext } from '../../context'
 import type { CorePluginState } from '../../plugins/core/helpers'
 import type { DevBuildWatcherController } from './devBuildWatcher'
@@ -2210,6 +2211,61 @@ describe('runtime buildPlugin service', () => {
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('cause entry -> shared+1'))
     expect(loggerSuccessMock).toHaveBeenCalledWith(expect.stringContaining('近2次 avg'))
     nowSpy.mockRestore()
+  })
+
+  it('freezes published samples before asynchronous I/O and keeps the next build isolated', async () => {
+    const { ctx, watcher } = await startClassicSnapshotContext()
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    const directory = Promise.withResolvers<void>()
+    mkdirMock.mockImplementationOnce(() => directory.promise)
+    ctx.runtimeState.build.hmr.profile = { file: '/project/src/first.ts', eventId: 'first', event: 'update', dirtyReasonSummary: ['first:1'] }
+    watcher.emit('START')
+    watcher.emit('END')
+    ctx.runtimeState.build.hmr.profile = { file: '/project/src/second.ts', eventId: 'second', event: 'update' }
+    watcher.emit('START')
+    directory.resolve()
+    await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
+    const first = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
+    expect(first).toMatchObject({ schemaVersion: 1, status: 'complete', eventId: 'first', dirtyReasonSummary: ['first:1'] })
+    expect(ctx.runtimeState.build.hmr.profile.eventId).toBe('second')
+    watcher.emit('END')
+    await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(2))
+    const second = JSON.parse(appendFileMock.mock.calls[1][1]) as HmrProfileJsonSample
+    expect(second.sessionId).toBe(first.sessionId)
+    expect(second.buildId).not.toBe(first.buildId)
+    await watcher.close()
+  })
+
+  it('records failed builds without treating their elapsed time as a completed sample', async () => {
+    const { ctx, watcher } = await startClassicSnapshotContext()
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    watcher.emit('START')
+    watcher.emitPayload({ code: 'ERROR', error: new Error('syntax error') })
+    await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
+    const sample = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
+    expect(sample).toMatchObject({ schemaVersion: 1, status: 'failed' })
+    expect(sample.totalMs).toBeUndefined()
+    expect(sample.elapsedMs).toBeGreaterThanOrEqual(0)
+    expect(ctx.runtimeState.build.hmr.recentProfiles).toHaveLength(0)
+    await watcher.close()
+  })
+
+  it('associates all source events with one snapshot batch and includes its completed duration', async () => {
+    const { ctx, watcher, onChange } = await startClassicSnapshotContext()
+    ctx.configService.weappViteConfig.hmr = { profileJson: true }
+    buildMock.mockResolvedValue({ output: [] })
+    const files = ['index.ts', 'index.wxml', 'index.wxss', 'index.json'].map(file => `/project/src/pages/logs/${file}`)
+    for (const file of files) {
+      onChange({ event: 'update', file })
+    }
+    await vi.waitFor(() => expect(appendFileMock).toHaveBeenCalledTimes(1))
+    const sample = JSON.parse(appendFileMock.mock.calls[0][1]) as HmrProfileJsonSample
+    expect(sample.sourceEvents?.map(event => event.file)).toEqual(files)
+    expect(new Set(sample.sourceEvents?.map(event => event.eventId)).size).toBe(4)
+    expect(sample.batchId).toEqual(expect.any(String))
+    expect(sample.snapshotBuildMs).toBeGreaterThanOrEqual(0)
+    expect(sample.clock).toMatchObject({ durations: 'performance.now', timestamp: 'UTC' })
+    await watcher.close()
   })
 
   it('writes hmr profile jsonl with default output path when enabled', async () => {
