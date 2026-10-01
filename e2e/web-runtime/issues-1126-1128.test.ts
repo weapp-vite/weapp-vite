@@ -94,6 +94,10 @@ describe('issues #1126–#1128: Web component boundaries', { concurrent: false }
       all: true,
     })
     const devPage = await browser.newPage()
+    const diagnostics: string[] = []
+    devPage.on('console', message => diagnostics.push(message.text()))
+    devPage.on('pageerror', error => diagnostics.push(error.message))
+    devPage.on('websocket', socket => socket.on('framereceived', frame => diagnostics.push(String(frame.payload))))
     try {
       await dev.waitFor(expect.poll(() => resolveWebDevServerUrl(dev.getOutput()), { timeout: 60_000 }).toBeTypeOf('string'), 'Web server starts')
       await devPage.goto(new URL('/pages/index/index', resolveWebDevServerUrl(dev.getOutput())!).href)
@@ -108,6 +112,9 @@ describe('issues #1126–#1128: Web component boundaries', { concurrent: false }
       await writeFile(app, (await readFile(app, 'utf8')).replace('font-weight: 700', 'font-weight: 400'))
       await expect.poll(() => style(devPage, '#global-style'), { timeout: 15_000 }).toMatchObject({ color: 'rgb(20, 60, 180)', fontWeight: '400' })
       expect(await devPage.locator(`${ACTIVE} #native-count`).textContent()).toBe('1')
+    }
+    catch (error) {
+      throw new Error(`Web HMR diagnostics:\n${dev.getOutput()}\n${diagnostics.join('\n')}`, { cause: error })
     }
     finally {
       await devPage.close()
