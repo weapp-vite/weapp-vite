@@ -5,7 +5,7 @@ import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { RETAIL_CHECKOUT_GOODS } from '../utils/templateAcceptance/retailCheckout'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -579,7 +579,6 @@ describe('e2e app: tdesign-miniprogram-starter-retail', { concurrent: false }, (
             }
             detachRuntimeCollectors(activeMiniProgram)
             await closeSharedMiniProgram()
-            await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
             await cleanupResidualIdeProcesses()
             activeMiniProgram = await getSharedMiniProgram()
             attachRuntimeCollectors(activeMiniProgram)

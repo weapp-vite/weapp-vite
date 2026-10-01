@@ -10,11 +10,9 @@ import path from 'node:path'
 import { i18nText } from '../i18n'
 import logger, { colors } from '../logger'
 import {
-  closeSharedMiniProgram,
   withMiniProgram,
 } from './automator-session'
 import { captureFullPageScreenshotBuffer } from './fullPageScreenshot'
-import { closeWechatIdeProject } from './wechat-commands'
 
 export interface AutomatorCommandOptions extends AutomatorSessionOptions {}
 
@@ -532,19 +530,7 @@ export async function takeScreenshot(options: ScreenshotOptions): Promise<Screen
       }
 
       hasRetriedWithFreshSession = true
-      await closeWechatIdeProject().catch((closeError) => {
-        logger.warn(i18nText(
-          `关闭当前微信开发者工具项目窗口失败：${closeError instanceof Error ? closeError.message : String(closeError)}，仍将继续尝试重建自动化会话。`,
-          `Failed to close the current Wechat DevTools project window: ${closeError instanceof Error ? closeError.message : String(closeError)}. Continuing to rebuild the automation session.`,
-        ))
-      })
-      const sessionIdOrPort = nextOptions.sessionId || nextOptions.port
-      if (sessionIdOrPort) {
-        await closeSharedMiniProgram(nextOptions.projectPath, sessionIdOrPort)
-      }
-      else {
-        await closeSharedMiniProgram(nextOptions.projectPath)
-      }
+      // 会话生命周期已在 withMiniProgram 内释放；此处不能按键关闭后来替换的连接。
       logger.warn(i18nText(
         '当前 DevTools 会话截图超时，正在改用全新自动化会话重试一次...',
         'The current DevTools session timed out while capturing screenshot. Retrying once with a fresh automation session...',

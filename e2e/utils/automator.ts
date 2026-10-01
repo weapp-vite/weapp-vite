@@ -164,7 +164,6 @@ const DEVTOOLS_COMPILE_CACHE_CORRUPTION_PATTERNS = [
   /SummerCompiler\._getPackageFiles/i,
   /miniprogram-builder\/modules\/corecompiler\/summerCompiler/i,
 ] as const
-const DEVTOOLS_CACHE_RECOVERY_STEPS = ['compile'] as const
 const DEVTOOLS_ISLOGIN_JSON_PATTERN = /"login"\s*:\s*(true|false)/i
 const DEVTOOLS_CLI_ENGINE_BUILD_OPENED_PATTERN = /打开项目成功|project\s+opened|open\s+project\s+success/i
 
@@ -685,72 +684,6 @@ function extractExecutionErrorText(error: unknown, seen = new Set<unknown>()) {
   }
 
   return parts.join('\n')
-}
-
-async function recoverDevtoolsCompileCache(options: {
-  cliPath?: string
-  completedSteps?: Set<string>
-  cwd?: string
-  error: unknown
-  project: string
-}) {
-  const message = extractExecutionErrorText(options.error) || String(options.error)
-  if (!isLikelyDevtoolsLaunchCacheStaleMessage(message)) {
-    return false
-  }
-
-  const resolvedCliPath = resolveWechatCliPath(options.cliPath)
-  const completedSteps = options.completedSteps
-  for (const cleanType of DEVTOOLS_CACHE_RECOVERY_STEPS) {
-    if (completedSteps?.has(cleanType)) {
-      continue
-    }
-
-    process.stdout.write(`[warn] [runtime:launch-recover] clean=${cleanType} project=${options.project}\n`)
-    appendIdeReportEvent({
-      source: 'runtime',
-      kind: 'message',
-      project: options.project,
-      level: 'warn',
-      channel: 'launch-recover',
-      text: `clean=${cleanType}`,
-    })
-
-    const result = await execa(resolvedCliPath, ['cache', '--clean', cleanType], {
-      cwd: options.cwd,
-      reject: false,
-      timeout: 20_000,
-    })
-
-    if ((result.exitCode ?? 1) === 0) {
-      completedSteps?.add(cleanType)
-      process.stdout.write(`[info] [runtime:launch-recover] cleaned=${cleanType} project=${options.project}\n`)
-      appendIdeReportEvent({
-        source: 'runtime',
-        kind: 'message',
-        project: options.project,
-        level: 'info',
-        channel: 'launch-recover',
-        text: `cleaned=${cleanType}`,
-      })
-      return true
-    }
-
-    const stderr = typeof result.stderr === 'string' ? result.stderr.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
-    const stdout = typeof result.stdout === 'string' ? result.stdout.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim() : ''
-    const details = (stderr || stdout || `exit=${result.exitCode ?? 1}`).slice(0, 240)
-    process.stdout.write(`[warn] [runtime:launch-recover] clean-failed=${cleanType} project=${options.project} reason=${details}\n`)
-    appendIdeReportEvent({
-      source: 'runtime',
-      kind: 'message',
-      project: options.project,
-      level: 'warn',
-      channel: 'launch-recover',
-      text: `clean-failed=${cleanType} reason=${details}`,
-    })
-  }
-
-  return false
 }
 
 async function cleanupDevtoolsProcessStateAfterLaunchFailure(error: unknown, project: string) {
@@ -1653,6 +1586,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
 
   const message = extractExecutionErrorText(error) || String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
+    || isLikelyDevtoolsLaunchCacheStaleMessage(message)
     || LAUNCH_TIMEOUT_PATTERN.test(message)
     || PROJECT_REFRESH_TIMEOUT_PATTERN.test(message)
     || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
@@ -2836,7 +2770,6 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
   const launchRetries = resolveLaunchRetryCount(maxLaunchRetries)
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
-  const completedRecoverySteps = new Set<string>()
   const startupDiagnostics = new Map<string, ReturnType<typeof createStartupProtocolDiagnostics>>()
   let forceProjectRefreshAfterRetry = false
   return (async () => {
@@ -3015,21 +2948,6 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
 
         if (!retryWarmupTimeout && (isWarmupRelaunchTimeoutError(error) || isWarmupPageRootTimeoutError(error))) {
           handleLaunchError(error, project)
-        }
-
-        if (attempt < launchRetries) {
-          const recovered = await recoverDevtoolsCompileCache({
-            cliPath: rest.cliPath,
-            completedSteps: completedRecoverySteps,
-            cwd: rest.cwd,
-            error,
-            project,
-          })
-          if (recovered) {
-            await cleanupDevtoolsProcessStateAfterLaunchFailure(error, project)
-            await sleep(LAUNCH_RETRY_DELAY)
-            continue
-          }
         }
 
         if (attempt < launchRetries && isLikelyLaunchRetryableError(error)) {

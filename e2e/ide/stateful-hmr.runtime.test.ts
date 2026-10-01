@@ -15,7 +15,7 @@ import {
   waitForFileContains,
   waitForStatefulHmrControl,
 } from '../utils/hmr-helpers'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { relaunchPage } from './github-issues.runtime.shared'
 import { statefulHmrCheckpoints } from './statefulHmrDom'
@@ -248,7 +248,6 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
     await cleanupResidualDevProcesses()
     if (resolveRuntimeProviderName() === 'devtools') {
       await cleanupResidualIdeProcesses()
-      await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     }
     originalComponentSource = normalizeFixtureSource(await fs.readFile(COMPONENT_SOURCE, 'utf8'), 'component')
     originalChildSource = (await fs.readFile(CHILD_SOURCE, 'utf8')).replace('this.data.count + 2', 'this.data.count + 1').replace('step:2', 'step:1')

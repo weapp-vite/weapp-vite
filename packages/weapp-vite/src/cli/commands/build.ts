@@ -122,7 +122,7 @@ export function registerBuildCommand(cli: CAC) {
     .option('-o, --open', `[boolean] open ide`)
     .option('--trust-project', '[boolean] auto trust Wechat DevTools project on open', { default: true })
     .option('--ide-open-strategy <strategy>', '[string] IDE open strategy (cli | automator)', { default: 'cli' })
-    .option('--no-open-recovery', '[boolean] disable automatic Wechat DevTools close-and-reopen recovery')
+    .option('--no-open-recovery', '[boolean] disable automatic target-project open retry (preserves existing IDE windows)')
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
     .option('--scope <scope>', `[string] 局部构建范围，例如 main,packages/order`)

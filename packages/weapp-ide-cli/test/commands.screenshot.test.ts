@@ -591,8 +591,8 @@ describe('captureScreenshotBuffer', () => {
     })
 
     expect(result).toEqual({ base64: expected.toString('base64') })
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
-    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(closeSharedMiniProgramMock).not.toHaveBeenCalled()
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('正在改用全新自动化会话重试一次'))
     expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
   })
@@ -624,8 +624,8 @@ describe('captureScreenshotBuffer', () => {
 
     expect(result).toEqual({ base64: expected.toString('base64') })
     expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
-    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(closeSharedMiniProgramMock).not.toHaveBeenCalled()
   })
 
   it('retries once when screenshot capture times out after the DevTools request hangs', async () => {
@@ -657,8 +657,8 @@ describe('captureScreenshotBuffer', () => {
 
     await expect(pending).resolves.toEqual({ base64: expected.toString('base64') })
     expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
-    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(closeSharedMiniProgramMock).not.toHaveBeenCalled()
   })
 
   it('does not retry more than once when screenshot protocol timeouts persist', async () => {
@@ -672,8 +672,8 @@ describe('captureScreenshotBuffer', () => {
     })).rejects.toThrow('DEVTOOLS_PROTOCOL_TIMEOUT')
 
     expect(withMiniProgramMock).toHaveBeenCalledTimes(2)
-    expect(closeWechatIdeProjectMock).toHaveBeenCalledTimes(1)
-    expect(closeSharedMiniProgramMock).toHaveBeenCalledWith('/workspace/project')
+    expect(closeWechatIdeProjectMock).not.toHaveBeenCalled()
+    expect(closeSharedMiniProgramMock).not.toHaveBeenCalled()
   })
 
   it('does not close and relaunch DevTools when fresh-session retry is disabled', async () => {

@@ -8,7 +8,6 @@ import { runtimeBaseRoutes } from '../chunk-modes.matrix'
 import { launchAutomator } from '../utils/automator'
 import { createDomAcceptance } from '../utils/domAcceptance'
 import {
-  cleanDevtoolsCache,
   cleanupResidualIdeProcesses,
 } from '../utils/ide-devtools-cleanup'
 import { assertNoRecentDevtoolsSimulatorBootIssues } from '../utils/ide-devtools-logs'
@@ -244,19 +243,18 @@ async function getSharedMiniProgram(
   return sharedMiniProgram
 }
 
-async function resetDevtoolsProjectState(projectPath: string) {
+async function resetDevtoolsProjectState() {
   await closeSharedMiniProgram()
-  // chunk mode 会连续切换共享 chunk 拓扑；只清 compile cache 时，DevTools 仍可能沿用旧项目索引启动模拟器。
+  // 拓扑切换只释放当前测试持有的会话，不修改宿主共享缓存。
   if (resolveRuntimeProviderName() === 'devtools') {
-    await cleanDevtoolsCache('compile', { cwd: projectPath }).catch(() => {})
     await cleanupResidualIdeProcesses()
   }
 }
 
-async function recoverRouteLaunch(projectPath: string, runtimeCase: RuntimeMatrixCase, route: string, reason: unknown) {
+async function recoverRouteLaunch(_projectPath: string, runtimeCase: RuntimeMatrixCase, route: string, reason: unknown) {
   const message = reason instanceof Error ? reason.message : String(reason)
   process.stdout.write(`[warn] [chunk-modes:route-recover] scenario=${runtimeCase.id} route=${route} reason=${message.slice(0, 240)}\n`)
-  await resetDevtoolsProjectState(projectPath)
+  await resetDevtoolsProjectState()
 }
 
 async function callRouteRunE2E(miniProgram: any, route: string) {
@@ -382,7 +380,7 @@ export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: Ru
       it(`runs without runtime errors in devtools for ${runtimeCase.id}`, async (ctx) => {
         const dom = createDomAcceptance(ctx, 'e2e-apps/chunk-modes', runtimeCase.routes.map(routeCase => chunkRouteCheckpoint(runtimeCase.id, routeCase)))
         const projectPath = await prepareScenarioProject(runtimeCase)
-        await resetDevtoolsProjectState(projectPath)
+        await resetDevtoolsProjectState()
 
         const launchOptions = {
           skipWarmup: true,

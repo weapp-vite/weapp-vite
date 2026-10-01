@@ -154,16 +154,6 @@ async function readPersistedAutomatorSession(projectPath: string, sessionId?: st
   }
 }
 
-async function removePersistedAutomatorSession(projectPath: string, sessionId?: string, port?: number) {
-  const filePath = resolveAutomatorSessionFilePath(projectPath, sessionId, port)
-
-  try {
-    await fs.rm(filePath, { force: true })
-  }
-  catch {
-  }
-}
-
 /**
  * @description 提取登录失效时最适合展示给用户的一行信息。
  */
@@ -361,7 +351,7 @@ export async function launchAutomator(options: AutomatorOptions) {
 }
 
 /**
- * @description 连接当前项目已打开的开发者工具自动化会话，不触发新的 IDE 拉起。
+ * @description 只读连接当前项目已打开的自动化会话；失败不证明缓存过期，也不删除其他操作持有的会话记录。
  */
 export async function connectOpenedAutomator(options: AutomatorOptions) {
   const { port, projectPath, sessionId, timeout } = options
@@ -369,13 +359,5 @@ export async function connectOpenedAutomator(options: AutomatorOptions) {
   const persistedSession = await readPersistedAutomatorSession(projectPath, sessionId, port)
   const wsEndpoint = persistedSession?.wsEndpoint ?? (port ? `ws://127.0.0.1:${port}` : `ws://127.0.0.1:${DEFAULT_WECHAT_DEVTOOLS_WS_PORT}`)
 
-  try {
-    return await launcher.connect({ timeout, wsEndpoint })
-  }
-  catch (error) {
-    if (persistedSession) {
-      await removePersistedAutomatorSession(projectPath, sessionId, port)
-    }
-    throw error
-  }
+  return await launcher.connect({ timeout, wsEndpoint })
 }

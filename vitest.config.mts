@@ -132,6 +132,7 @@ const projects = [
         'e2e/scripts/hmr-guard-manifest.test.ts',
         'e2e/scripts/run-e2e-suite.test.ts',
         'e2e/scripts/suiteRunner.test.ts',
+        'e2e/utils/agentAcceptanceLifecycle.test.ts',
         'e2e/utils/automator.cli-bridge.test.ts',
         'e2e/utils/automator.test.ts',
         'e2e/utils/automatorWarmup.test.ts',

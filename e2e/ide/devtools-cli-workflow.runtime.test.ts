@@ -6,14 +6,14 @@ import { closeSharedMiniProgram } from '@weapp-vite/devtools-runtime'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { connectMiniProgram, resolveProjectAutomatorPort } from 'weapp-ide-cli'
 import { registerRuntimeTools } from '../../packages/mcp/src/server/runtime'
-import { closeWechatIdeProject } from '../../packages/weapp-ide-cli/src/cli/wechat-commands'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDevProcessDiagnostics } from '../utils/devProcessDiagnostics'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { waitForOpenedAutomator } from '../utils/opened-automator'
 import { launchPtyProcess } from '../utils/ptyProcess'
+import { assertPublicIdeCliSelection } from '../utils/publicIdeCliSelection'
 import { CLI_HOTKEY_CHECKPOINTS, CLI_WORKFLOW_CHECKPOINTS } from './coreWorkflowDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -115,6 +115,7 @@ async function runNodeCli(args: string[], options: {
   timeout?: number
   reject?: boolean
 } = {}) {
+  await assertPublicIdeCliSelection()
   // eslint-disable-next-line e18e/ban-dependencies -- e2e 里需要复用仓库现有 execa CLI 运行方式。
   const { execa } = await import('execa')
   return await execa('node', args, {
@@ -442,8 +443,8 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
   }
 
   beforeAll(async () => {
+    await assertPublicIdeCliSelection()
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: TEMPLATE_ROOT })
     await fs.rm(SCREENSHOT_OUTPUT, { force: true })
     await runWeappViteBuildWithLogCapture({
       cliPath: CLI_PATH,
@@ -507,7 +508,6 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     }
     weappIdeOpenExitCode = weappOpen.exitCode
 
-    await closeWechatIdeProject().catch(() => {})
     await cleanupResidualIdeProcesses()
     await ensureCliWorkflowDomReady()
 
@@ -692,7 +692,6 @@ describe('DevTools CLI workflow runtime', { concurrent: false }, () => {
     await miniProgram?.close()
     miniProgram = undefined
     await closeSharedMiniProgram(TEMPLATE_ROOT)
-    await closeWechatIdeProject()
     await runDevHotkeyScreenshotSmoke({
       beforeScreenshot: async () => {
         miniProgram = (await waitForOpenedAutomator(TEMPLATE_ROOT, { timeoutMs: 60_000 })).miniProgram

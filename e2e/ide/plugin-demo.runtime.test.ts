@@ -4,7 +4,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -104,7 +104,6 @@ async function runAutomatorOp<T>(
 
 async function runBuild() {
   await cleanupResidualIdeProcesses()
-  await cleanDevtoolsCache('compile', { cwd: APP_ROOT }).catch(() => {})
   await fs.remove(DIST_ROOT)
   await fs.remove(PLUGIN_DIST_ROOT)
   await runWeappViteBuildWithLogCapture({

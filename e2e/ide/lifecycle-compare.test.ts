@@ -9,7 +9,7 @@ import {
 } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { createDomAcceptance } from '../utils/domAcceptance'
-import { cleanDevtoolsCache, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { aliasCheckpoint, LIFECYCLE_FIXTURE, lifecycleCheckpoints, namedEventCheckpoint, PAGE_VARIANTS } from './lifecycleDom'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -238,12 +238,16 @@ async function triggerPageEvents(miniProgram: any, pagePath: string, check: (sta
   await miniProgram.callWxMethod('startPullDownRefresh')
   await miniProgram.callWxMethod('stopPullDownRefresh')
   await check('pulled', page)
+  const [logPanelBefore] = await page.renderedNodes('.lifecycle-log-panel')
+  expect(logPanelBefore.height).toBeGreaterThan(0)
 
   await miniProgram.pageScrollTo(600)
   await page?.waitFor(150)
   await miniProgram.pageScrollTo(2000)
   await page?.waitFor(150)
   await check('scrolled', page)
+  const [logPanelAfter] = await page.renderedNodes('.lifecycle-log-panel')
+  expect(logPanelAfter.height, '记录滚动事件不能改变日志面板高度并触发宿主滚动锚定').toBe(logPanelBefore.height)
 
   const fallbackTab = TAB_PATHS.find(p => p !== pagePath)
   if (fallbackTab) {
@@ -298,12 +302,11 @@ function normalizeEntries(entries: any[]) {
       const [options, ...tail] = normalizedEntry.args
       if (options && typeof options === 'object') {
         const { duration, scrollTop, ...others } = options as Record<string, unknown>
-        // DevTools may report a small layout-dependent offset for the same
-        // pageScrollTo target between native and wevu pages.
+        // 只去掉动画选项，保留实际滚动位置，不能用取整掩盖布局变化。
         normalizedEntry.args = [{
           ...others,
           ...(typeof scrollTop === 'number'
-            ? { scrollTop: Math.round(scrollTop / 50) * 50 }
+            ? { scrollTop }
             : {}),
         }, ...tail]
       }
@@ -402,7 +405,6 @@ async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) 
   }
   if (!sharedBuildPrepared) {
     await cleanupResidualIdeProcesses()
-    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
     await runBuild()
     sharedBuildPrepared = true
   }

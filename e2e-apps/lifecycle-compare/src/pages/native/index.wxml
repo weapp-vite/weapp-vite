@@ -11,7 +11,7 @@
     <view class="panel-row">Logs: {{__lifecycleSummary.entries}}</view>
     <view class="panel-row">Last: {{__lifecycleSummary.lastHook}}</view>
   </view>
-  <view class="panel">
+  <view class="panel lifecycle-log-panel">
     <view class="panel-title">E2E Logs (latest)</view>
     <view class="panel-row" wx:for="{{__lifecyclePreview}}" wx:key="order">
       {{item.order}}. {{item.hook}}{{item.skipped ? ' (skipped)' : ''}}

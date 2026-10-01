@@ -11,7 +11,7 @@ import {
   launchAutomator,
 } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
-import { cleanDevtoolsCache, cleanDevtoolsCacheAndStop, cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
+import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { appendIdeReportEvent, resolveReportProjectPath } from '../utils/ideWarningReport'
 import { createRecoverableSession } from '../utils/recoverableSession'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
@@ -600,16 +600,12 @@ export async function prepareGithubIssuesBuild() {
     return
   }
 
-  // 同一路径重复打开 github-issues 项目时，微信开发者工具可能沿用旧 compile cache /
-  // fileutils 状态，先消费旧 app.json，再去索引新的页面产物，出现“app.json 指向的 wxml 未找到”。
+  // 使用隔离项目与完整构建产物，避免启动时读取另一轮测试的 app.json。
   const useDevtools = resolveRuntimeProviderName() === 'devtools'
   if (useDevtools) {
     await cleanupResidualIdeProcesses()
   }
   await prepareIsolatedProjectRoot()
-  if (useDevtools) {
-    await cleanDevtoolsCache('compile', { cwd: APP_ROOT })
-  }
   await runBuild()
   await assertGithubIssuesAppConfigReady()
   const aggregateStableLaunchRoute = resolveAggregateStableLaunchRoute()
@@ -618,11 +614,6 @@ export async function prepareGithubIssuesBuild() {
   }
   // DevTools 的 FileUtils 会扫描项目根；构建完成后只保留运行期输入，避免大目录和依赖链接干扰产物索引。
   await pruneGithubIssuesBuildInputs()
-  if (useDevtools) {
-    // cache 命令会临时启动 DevTools；必须等该维护进程完全退出后再启动 automator，
-    // 否则新版 DevTools 会让 cache worker 与 simulator 初始化并发，触发模拟器启动失败。
-    await cleanDevtoolsCacheAndStop('compile', { cwd: APP_ROOT })
-  }
   sharedBuildPrepared = true
 }
 
