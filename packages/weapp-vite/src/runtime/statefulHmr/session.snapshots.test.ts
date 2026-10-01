@@ -279,6 +279,7 @@ describe('stateful snapshot output transactions', () => {
         middlewares: { use: vi.fn() },
         httpServer: { address: () => undefined },
         close: vi.fn().mockResolvedValue(undefined),
+        restart: vi.fn().mockResolvedValue(undefined),
         async listen() {
           harness.callbacks!.onOutput(appOutput())
           await harness.beforeInitialReady()
