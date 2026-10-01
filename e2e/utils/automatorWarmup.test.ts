@@ -109,17 +109,19 @@ describe('automator warmup readiness', () => {
     expect(miniProgram.reLaunch).not.toHaveBeenCalled()
   })
 
-  it('still rejects and closes a session whose protocol never responds', async () => {
+  it('disconnects an unresponsive session without closing its possibly shared host', async () => {
     vi.useFakeTimers()
     const miniProgram = {
       close: vi.fn(async () => {}),
+      disconnect: vi.fn(),
       currentPage: vi.fn(async () => await new Promise(() => {})),
     }
     const warmup = warmupMiniProgramRoute(miniProgram, '/pages/example/index', 'fixture', { allowRelaunch: false })
     const assertion = expect(warmup).rejects.toThrow('Timeout in read current page for route /pages/example/index after 2000ms')
     await vi.advanceTimersByTimeAsync(2_000)
     await assertion
-    expect(miniProgram.close).toHaveBeenCalledOnce()
+    expect(miniProgram.disconnect).toHaveBeenCalledOnce()
+    expect(miniProgram.close).not.toHaveBeenCalled()
     expect(appendIdeReportEvent).toHaveBeenLastCalledWith(expect.objectContaining({ level: 'error', startupProtocol: expect.objectContaining({ state: 'unresolved' }) }))
   })
 
@@ -129,6 +131,7 @@ describe('automator warmup readiness', () => {
     const diagnostics = createStartupProtocolDiagnostics('fixture', route)
     const failedSession = {
       close: vi.fn(async () => {}),
+      disconnect: vi.fn(),
       currentPage: vi.fn(async () => await new Promise(() => {})),
     }
     const options = { allowRelaunch: false, startupDiagnostics: diagnostics }
@@ -136,7 +139,8 @@ describe('automator warmup readiness', () => {
     const firstAssertion = expect(firstAttempt).rejects.toThrow('Timeout in read current page')
     await vi.advanceTimersByTimeAsync(2_000)
     await firstAssertion
-    expect(failedSession.close).toHaveBeenCalledOnce()
+    expect(failedSession.disconnect).toHaveBeenCalledOnce()
+    expect(failedSession.close).not.toHaveBeenCalled()
     expect(vi.mocked(appendIdeReportEvent).mock.calls.map(([event]) => event.startupProtocol?.state)).toEqual(['retrying'])
 
     const page = { path: 'pages/example/index', $$: vi.fn(async () => [{ id: 'real-page' }]) }
@@ -148,6 +152,9 @@ describe('automator warmup readiness', () => {
     await vi.advanceTimersByTimeAsync(2_000)
     await nextAssertion
     diagnostics.finish(false)
+    // 重复失败只断开一次连接，宿主释放仍归外层拥有者处理。
+    expect(failedSession.disconnect).toHaveBeenCalledOnce()
+    expect(failedSession.close).not.toHaveBeenCalled()
 
     const events = vi.mocked(appendIdeReportEvent).mock.calls.map(([event]) => event)
     expect(events.map(event => event.startupProtocol?.state)).toEqual(recovered

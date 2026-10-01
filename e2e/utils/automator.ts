@@ -1,4 +1,3 @@
-import type { ChildProcess } from 'node:child_process'
 import type { HeadlessAutomatorLaunchOptions } from './automator.headless'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
@@ -1742,7 +1741,7 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
 const disconnectedLaunchSessions = new WeakSet<object>()
 
 /** 启动失败和迟到结果仅释放所持连接，不关闭可能由用户打开的项目。 */
-async function closeLaunchMiniProgram(miniProgram: any) {
+async function disconnectLaunchSession(miniProgram: any) {
   if (!miniProgram || disconnectedLaunchSessions.has(miniProgram)) {
     return
   }
@@ -1790,7 +1789,7 @@ async function waitForCurrentRouteReady(
       options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
-        await closeLaunchMiniProgram(miniProgram).catch(() => {})
+        await disconnectLaunchSession(miniProgram).catch(() => {})
         throw error
       }
       // DevTools 模拟器创建期间 currentPage 可能短暂不可用，继续轮询。
@@ -1837,7 +1836,7 @@ async function waitForAnyCurrentPageReady(
       options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
-        await closeLaunchMiniProgram(miniProgram).catch(() => {})
+        await disconnectLaunchSession(miniProgram).catch(() => {})
         throw error
       }
       // DevTools 模拟器创建期间 currentPage 可能短暂不可用，继续轮询。
@@ -2067,7 +2066,7 @@ async function warmupMiniProgramRouteImpl(
       return false
     }
     try {
-      await closeLaunchMiniProgram(miniProgram)
+      await disconnectLaunchSession(miniProgram)
     }
     catch {
     }
@@ -2111,7 +2110,7 @@ async function warmupMiniProgramRouteImpl(
         if (!retryCurrentPage) {
           if (isWarmupRelaunchTimeoutError(retryError)) {
             try {
-              await closeLaunchMiniProgram(miniProgram)
+              await disconnectLaunchSession(miniProgram)
             }
             catch {
             }
@@ -2124,7 +2123,7 @@ async function warmupMiniProgramRouteImpl(
     else {
       if (isWarmupRelaunchTimeoutError(error)) {
         try {
-          await closeLaunchMiniProgram(miniProgram)
+          await disconnectLaunchSession(miniProgram)
         }
         catch {
         }
@@ -2616,7 +2615,7 @@ export async function launchAutomatorViaCliBridge(
           signal: lifecycle.signal,
           timeout: lifecycle.remainingMs(4_000),
         }),
-        { stage: 'bridge-connect', waitForExit: true, disposeLate: closeLaunchMiniProgram },
+        { stage: 'bridge-connect', waitForExit: true, disposeLate: disconnectLaunchSession },
       )
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-ok endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       break
@@ -2658,7 +2657,7 @@ export async function launchAutomatorViaCliBridge(
     projectPath: options.projectPath,
     wsEndpoint: bridgeResult.wsEndpoint,
   })
-  const releaseSession = lifecycle.own(() => closeLaunchMiniProgram(miniProgram))
+  const releaseSession = lifecycle.own(() => disconnectLaunchSession(miniProgram))
   await lifecycle.pause(BRIDGE_CONNECT_SETTLE_DELAY)
   releaseSession()
   return miniProgram
@@ -2796,13 +2795,13 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
                   devtoolsLogMonitor,
                   async (lateMiniProgram) => {
                     try {
-                      await closeLaunchMiniProgram(lateMiniProgram)
+                      await disconnectLaunchSession(lateMiniProgram)
                     }
                     catch {
                     }
                   },
-                ), { disposeLate: closeLaunchMiniProgram })
-            lifecycle.own(() => closeLaunchMiniProgram(miniProgram), 'automator-session')
+                ), { disposeLate: disconnectLaunchSession })
+            lifecycle.own(() => disconnectLaunchSession(miniProgram), 'automator-session')
             lifecycle.throwIfAborted()
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
