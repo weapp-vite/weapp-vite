@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
+import { expandSuiteParameters } from './inventoryParameters'
 
 export interface CaseInventory {
   source: string
@@ -29,6 +30,9 @@ function readLiteral(node: ts.Expression | undefined, bindings: Bindings): unkno
   node = unwrap(node)
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node.text
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword) {
+    return node.kind === ts.SyntaxKind.TrueKeyword
   }
   if (ts.isNumericLiteral(node)) {
     return Number(node.text)
@@ -304,8 +308,24 @@ export function analyzeCaseSource(content: string, file: string, templateNames: 
       }
       if (called.startsWith('describe') && typeof literalName === 'string') {
         const inherited = expression(node.expression).includes('.skip') ? [...notes, 'Skipped describe'] : notes
-        for (const argument of node.arguments.slice(1)) {
-          visit(argument, bindings, [...suites, literalName], inherited)
+        const method = parameterizedMethod(node.expression)
+        const rows = method ? expandSuiteParameters(node, literalName, value => readLiteral(value, bindings)) : undefined
+        if (rows) {
+          for (const row of rows) {
+            const next = new Map(bindings)
+            for (const [index, parameter] of row.callback.parameters.entries()) {
+              if (ts.isIdentifier(parameter.name)) {
+                next.set(parameter.name.text, row.values[index])
+              }
+            }
+            visit(row.callback.body, next, [...suites, row.name], inherited)
+          }
+        }
+        else {
+          const unresolved = method ? [...inherited, `Dynamic ${method} table: ${expression(node.expression)}`] : inherited
+          for (const argument of node.arguments.slice(1)) {
+            visit(argument, bindings, [...suites, literalName], unresolved)
+          }
         }
         return
       }
