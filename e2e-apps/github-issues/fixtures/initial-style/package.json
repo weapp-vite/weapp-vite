@@ -1,0 +1,9 @@
+{
+  "name": "wevu-initial-style-fixture",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
+  }
+}
