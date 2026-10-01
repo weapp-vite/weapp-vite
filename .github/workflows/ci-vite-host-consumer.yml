@@ -77,6 +77,39 @@ jobs:
         packages/weapp-vite/test/vite-watch.test.ts
     secrets: inherit
 
+  host-paths:
+    name: Host paths (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite...
+      main_command: >-
+        pnpm vitest run packages/weapp-vite/src/runtime/libDts.test.ts
+        packages/weapp-vite/src/runtime/compilerSession/session.test.ts
+        packages/weapp-vite/test/vite-lib.test.ts
+    secrets: inherit
+
+  native-path-controls:
+    name: Native path controls (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=@weapp-vite/react...
+      main_command: pnpm --filter weapp-vite exec vitest run test/vite-native-path-controls.test.ts
+    secrets: inherit
+
   consumer:
     name: Packed consumer (${{ matrix.toolchain }})
     strategy:

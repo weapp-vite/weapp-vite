@@ -16,9 +16,11 @@
 
 ## 验证与依赖
 
-本分支包含 #1151 的实际路由缓存修复，用于避免旧路由删除失败遮挡新的配置问题；该依赖应先独立完成验收并合入 main。修复改变构建行为，提供 weapp-vite 与 create-weapp-vite changeset。源文件均未超过 300 行，不需要拆分。
+本分支包含 #1151 的实际路由缓存修复，用于避免旧路由删除失败遮挡新的配置问题；同时合入 #1150 的实际根路径身份修复。两个依赖都应先独立完成验收并合入 main。修复改变构建行为，提供 weapp-vite 与 create-weapp-vite changeset。源文件均未超过 300 行，不需要拆分。
 
 - 最小复现修复前失败，修复后通过。
 - 定向 session、worker 校验、原生 watch、worker build/watch/dev 共 13 项通过。
 - 包级 typecheck、官方 test:types 脚本、构建与定向 ESLint 通过。
 - 真实打包消费、原生 dev/build-watch/stateful 与严格 headless worker 消息/页面重入用例通过，runtime warning/error/exception 为 0。报告是提交前文件树，不冒充后续提交的精确 HEAD；真实 IDE 最终验收仍待环境恢复。
+
+Windows Watch validation 运行 `36828404776`、job `110259187383` 在 classic worker 测试中触发 `src/win/fs-event.c:72` 断言，进程退出码为 `3221226505`；配置快照最小回归本身通过，同运行 macOS 对照 13 项通过。原分支未包含 #1150，现合入其实际提交并保留 Host paths、Native path controls、Route topology 和 Watch validation 全部门禁。新 Windows 结果仍是必需证据，不能以本地 macOS 通过替代。
