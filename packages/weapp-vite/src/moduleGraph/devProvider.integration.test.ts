@@ -84,17 +84,6 @@ describe('dev module graph provider integration', () => {
         event: 'update',
         file: normalizeSourceId(styleId),
       }))
-
-      onChange.mockClear()
-      const generatedVantConfig = path.join(
-        outDir,
-        'miniprogram_npm/@vant/weapp/field/index.json',
-      )
-      await mkdir(path.dirname(generatedVantConfig), { recursive: true })
-      await writeFile(generatedVantConfig, '{"component":true}\n', 'utf8')
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      expect(onChange).not.toHaveBeenCalled()
     }
     finally {
       await provider.close()
@@ -106,6 +95,53 @@ describe('dev module graph provider integration', () => {
     moduleGraphService.removeEntryDependencies(pageId)
     expect(moduleGraphService.hasModule(templateId)).toBe(false)
     expect(moduleGraphService.collectAffectedEntries(styleId)).toEqual(new Set())
+  })
+
+  it('ignores generated output while observing source changes', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-output-watch-')))
+    temporaryDirectories.push(root)
+    const pageId = path.join(root, 'page.ts')
+    const styleId = path.join(root, 'page.css')
+    await Promise.all([
+      writeFile(pageId, 'export const page = true\n'),
+      writeFile(styleId, '.page { color: red; }\n'),
+    ])
+    const moduleGraphService = createModuleGraphService()
+    moduleGraphService.replaceEntryDependencies(pageId, 'style', [styleId])
+    const onChange = vi.fn()
+    const ready = Promise.withResolvers<void>()
+    const outDir = path.join(root, 'dist')
+    const provider = await createDevModuleGraphProvider({
+      runtimeState: createRuntimeState(),
+      configService: {
+        cwd: root,
+        outDir,
+        inlineConfig: { build: { watch: { chokidar: { usePolling: true, interval: 50 } } } },
+      },
+      moduleGraphService,
+    } as unknown as MutableCompilerContext, {
+      root,
+      plugins: [{ name: 'test:watch-ready', configureServer(server) { server.watcher.once('ready', () => ready.resolve()) } }],
+    }, onChange)
+    try {
+      await ready.promise
+      await moduleGraphService.syncDevGraph({ getModuleIds: () => [createLogicalEntryId(pageId, 'page')] })
+      // 独立会话内先验证输出忽略，避免前一次源码变更的延迟通知进入负断言窗口。
+      const generatedVantConfig = path.join(outDir, 'miniprogram_npm/@vant/weapp/field/index.json')
+      await mkdir(path.dirname(generatedVantConfig), { recursive: true })
+      await writeFile(generatedVantConfig, '{"component":true}\n', 'utf8')
+      await new Promise(resolve => setTimeout(resolve, 500))
+      expect(onChange).not.toHaveBeenCalled()
+
+      await writeFile(styleId, '.page { color: blue; }\n', 'utf8')
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith({
+        event: 'update',
+        file: normalizeSourceId(styleId),
+      }))
+    }
+    finally {
+      await provider.close()
+    }
   })
 
   it('observes external WXML dependency deletion and recreation without a module node', async () => {
