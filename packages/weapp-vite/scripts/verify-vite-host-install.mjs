@@ -10,7 +10,6 @@ import { inspectConsumerInstallation, profileConsumerStartup, verifyConsumerExpo
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
 import { verifyTailwindConsumer } from './verify-vite-host-tailwind.mjs'
-import { verifyWebConsumer } from './verify-vite-host-web.mjs'
 
 const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
@@ -105,7 +104,13 @@ try {
     await verifyTailwindConsumer(consumerRoot, toolchain)
   }
   if (runtimeSuite === 'web' || process.env.WEAPP_VITE_CONSUMER_WEB === '1') {
-    await verifyWebConsumer(consumerRoot, toolchain, repoRoot)
+    // Windows 会锁住进程已加载的原生库；验证进程退出后，安装目录 owner 才能完整清理。
+    await execa(process.execPath, [
+      fileURLToPath(new URL('./verify-vite-host-web.mjs', import.meta.url)),
+      consumerRoot,
+      toolchain,
+      repoRoot,
+    ], { cwd: repoRoot, stdio: 'inherit' })
   }
   else if (runtime && runtimeSuite === 'platform') {
     await verifyPlatformConsumer(consumerRoot, toolchain, repoRoot, runtime)
