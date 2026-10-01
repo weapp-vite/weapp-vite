@@ -7,6 +7,7 @@ import { resolveHmrRuntimeDecision } from '../runtime/hmrRuntime'
 import { createSharedBuildConfig } from '../runtime/sharedBuildConfig'
 import { attachStatefulHmrHost, createStatefulHmrHostPlugins, getStatefulHmrHost } from '../runtime/statefulHmr/hostPlugins'
 import { syncManagedTsconfigFiles } from '../runtime/tsconfigSupport'
+import { resolveRealpath } from '../utils/realpathScope'
 import { prepareNpmAssets } from './npm'
 
 /** 标准插件的目标校验和依赖准备，共享底层编译会话生命周期。 */
@@ -17,13 +18,22 @@ export class WeappBuildSession extends CompilerSession {
   statefulController?: ReturnType<typeof createStatefulHmrHostPlugins>
 
   async prepare(config: InlineConfig, cwd: string, mode: string, isDev = false): Promise<InlineConfig> {
+    // 与 Vite 的根目录解析一致，扫描和侧车监听不能继续持有另一条目录身份。
+    if (!config.resolve?.preserveSymlinks) {
+      try {
+        cwd = resolveRealpath(cwd)
+      }
+      catch {
+        // 与宿主一致：不存在或不可解析的路径由后续配置/构建给出原有诊断。
+      }
+    }
     this.isWeb = config.weapp?.platform === 'web'
     await this.initialize({
       cwd,
       mode,
       isDev,
       emitDefaultAutoImportOutputs: false,
-      hostConfig: { config },
+      hostConfig: { config: { ...config, root: cwd } },
       cliPlatform: this.isWeb ? 'web' : undefined,
       syncSupportFiles: false,
       preloadAppEntry: false,

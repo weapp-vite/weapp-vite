@@ -1,3 +1,4 @@
+import { WEVU_BINDING_MANIFEST_KEY } from '@weapp-core/constants'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createIsolatedWevuComponentDefinition,
@@ -10,6 +11,25 @@ afterEach(() => {
 })
 
 describe('runtime: component definition factory', () => {
+  it.each([undefined, { count: 0 }])('seeds manifest style bindings before native rendering with data %j', (data) => {
+    const setup = vi.fn(() => ({ color: 'red' }))
+    const styleGetter = vi.fn(() => 'color:red')
+    const definition = createWevuComponentDefinition({
+      data,
+      setup,
+      computed: { __wv_style_0: styleGetter },
+      [WEVU_BINDING_MANIFEST_KEY]: {
+        version: 1,
+        sourceFile: 'src/pages/style.vue',
+        bindings: [{ id: 'style', outputPath: '__wv_style_0' }],
+      },
+    })
+    const nativeDefinition = getWevuComponentLifecycleDefinition(definition)
+    expect(nativeDefinition?.data).toEqual({ ...data, __wv_style_0: '' })
+    expect(styleGetter).not.toHaveBeenCalled()
+    expect(setup).not.toHaveBeenCalled()
+  })
+
   it('creates the production lifecycle definition without native registration', () => {
     const componentConstructor = vi.fn()
     vi.stubGlobal('Component', componentConstructor)

@@ -147,6 +147,7 @@ describe('runtime lib dts generation', () => {
     const candidatePath = path.resolve(outDir, `${outputBase}1.d.ts`)
     const jsStubPath = path.resolve(outDir, 'plain/index.d.ts')
 
+    await fs.outputFile(path.resolve(root, 'src/components/button/index.ts'), 'export interface Props { value: string }')
     resolveWeappLibEntriesMock.mockResolvedValue([
       {
         input: path.resolve(root, 'src/components/button/index.ts'),
@@ -178,7 +179,7 @@ describe('runtime lib dts generation', () => {
     expect(buildMock).toHaveBeenCalledTimes(1)
     const buildArgs = buildMock.mock.calls[0]?.[0] as any
     expect(buildArgs.input).toEqual({
-      [outputBase]: path.resolve(root, 'src/components/button/index.ts'),
+      [outputBase]: await realpath(path.resolve(root, 'src/components/button/index.ts')),
     })
     expect(dtsMock).toHaveBeenCalledTimes(1)
     expect(dtsMock.mock.calls[0]?.[0]?.tsconfig).toBe(false)
@@ -196,6 +197,7 @@ describe('runtime lib dts generation', () => {
     const customTsconfig = path.resolve(root, 'tsconfig.lib.json')
     await fs.writeJson(customTsconfig, {}, { spaces: 2 })
 
+    await fs.outputFile(path.resolve(root, 'src/components/card/index.ts'), 'export interface Props { value: string }')
     resolveWeappLibEntriesMock.mockResolvedValue([
       {
         input: path.resolve(root, 'src/components/card/index.ts'),
@@ -229,6 +231,25 @@ describe('runtime lib dts generation', () => {
     expect(options.compilerOptions.preserveSymlinks).toBe(true)
   })
 
+  it('uses the same real project identity for dts inputs, cwd and tsconfig', async () => {
+    const root = await createTempDir()
+    const project = path.join(root, 'project')
+    const alias = path.join(root, 'alias')
+    const entry = path.join(project, 'src/index.ts')
+    await fs.outputFile(entry, 'export interface Value { count: number }')
+    await fs.writeJson(path.join(project, 'tsconfig.json'), { include: ['src'] })
+    await fs.symlink(project, alias, 'junction')
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      { input: path.join(alias, 'src/index.ts'), outputBase: 'index' },
+    ])
+
+    await generateLibDts(createConfig({ cwd: alias }))
+
+    expect((buildMock.mock.calls[0]?.[0] as any).input).toEqual({ index: await realpath(entry) })
+    expect(dtsMock.mock.calls[0]?.[0]?.cwd).toBe(await realpath(project))
+    expect(dtsMock.mock.calls[0]?.[0]?.tsconfig).toBe(await realpath(path.join(project, 'tsconfig.json')))
+  })
+
   it('enables rolldown dts build mode when tsconfig uses project references', async () => {
     const root = await createTempDir()
     const outDir = path.resolve(root, 'dist')
@@ -240,6 +261,7 @@ describe('runtime lib dts generation', () => {
       files: [],
     }, { spaces: 2 })
 
+    await fs.outputFile(path.resolve(root, 'src/components/card/index.ts'), 'export interface Props { value: string }')
     resolveWeappLibEntriesMock.mockResolvedValue([
       {
         input: path.resolve(root, 'src/components/card/index.ts'),
@@ -272,6 +294,7 @@ describe('runtime lib dts generation', () => {
     const expectedPath = path.resolve(outDir, `${outputBase}.d.ts`)
     const candidatePath = path.resolve(outDir, `${outputBase}1.d.ts`)
 
+    await fs.outputFile(path.resolve(root, 'src/components/input/index.ts'), 'export interface Props { value: string }')
     resolveWeappLibEntriesMock.mockResolvedValue([
       {
         input: path.resolve(root, 'src/components/input/index.ts'),
