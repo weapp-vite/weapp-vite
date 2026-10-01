@@ -242,10 +242,13 @@ function compileStaticElement(element: JSXElement, context: StaticTemplateRender
   if (resolvedTag.kind === 'slot' && children.length > 0) {
     throw new Error('static template 的 <Slot> 不支持子节点')
   }
-  if (element.openingElement.selfClosing) {
-    return `<${tag}${attributeSegment} />`
-  }
-  return `<${tag}${attributeSegment}>${content}</${tag}>`
+  const template = element.openingElement.selfClosing
+    ? `<${tag}${attributeSegment} />`
+    : `<${tag}${attributeSegment}>${content}</${tag}>`
+  // 原生组件必须从首次已提交的绑定快照挂载；以 slot 对象判断，保留 0/false/空字符串属性。
+  return resolvedTag.kind === 'native' && bindingFields.size > 0
+    ? `<block wx:if="{{slots.${slot}}}">${template}</block>`
+    : template
 }
 
 export function renderStaticTemplate(root: JSXElement | JSXFragment, context: StaticTemplateRenderContext) {

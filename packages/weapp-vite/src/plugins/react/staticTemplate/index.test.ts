@@ -86,6 +86,20 @@ describe('static React template compiler', () => {
     expect(result.code).toContain('__bindingFields="data-e2e-result,label"')
   })
 
+  it('mounts dynamic native props only after their first atomic slot snapshot', () => {
+    const result = compileStaticReactPage(`
+      import { createNativeComponent } from '@weapp-vite/react'
+      const NativeValue = createNativeComponent('native-value')
+      export function BindingView({ value }) {
+        return <><NativeValue value={value} /><NativeValue value={0} /></>
+      }
+    `, 'initial-native.tsx')
+    const dynamicSlot = result.slots.find(slot => slot.bindings.includes('value'))!
+    expect(result.template).toContain(`<block wx:if="{{slots.${dynamicSlot.id}}}"><native-value value="{{slots.${dynamicSlot.id}.value}}" /></block>`)
+    expect(result.template).toContain('<native-value value="0" />')
+    expect(result.template).not.toContain(`wx:if="{{slots.${dynamicSlot.id}.value}}"`)
+  })
+
   it('does not let bridge files fall back when no static component can be selected', () => {
     expect(() => compileStaticReactPage(`
       import { createNativeComponent } from '@weapp-vite/react'
