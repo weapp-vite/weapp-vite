@@ -56,6 +56,7 @@ async function readInteropE2E(currentPage: any) {
 
   return {
     nativeParent: nativeParent.data,
+    reactWevuInitialValue: reactWevu.data.initialValue,
     props,
     reactResults,
     slots: slots.map(slot => ({
