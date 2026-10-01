@@ -2,7 +2,7 @@ import type { MpPlatform } from '../types'
 import type { DoctorRuntimeEvidence, DoctorRuntimeFact, DoctorRuntimeProbeOptions, DoctorRuntimeStage } from './types'
 import process from 'node:process'
 import { connectOpenedAutomator, queryWechatIdeLogin, resolveProjectAutomatorPort } from 'weapp-ide-cli'
-import { VERSION } from '../constants'
+import packageJson from '../../package.json'
 import { DoctorProbeTimeout, inspectDoctorCli, inspectDoctorListener, readDoctorHostVersions, readDoctorRoute, withProbeTimeout } from './runtimeProbes'
 
 interface DoctorSession {
@@ -41,7 +41,7 @@ export async function probeDoctorRuntime(cwd: string, target: MpPlatform, port?:
   const events: DoctorRuntimeFact[] = []
   const provider = target === 'weapp' ? 'devtools' : 'unsupported'
   const bundle = {
-    frameworkVersion: VERSION,
+    frameworkVersion: packageJson.version,
     nodeVersion: process.version,
     versions: {} as { ide?: string, sdk?: string },
     configuration: { target, provider, explicitCli: !!options.cliPath, explicitAutomatorPort: port !== undefined, explicitServicePort: options.servicePort !== undefined, loginRequested: options.login === true },

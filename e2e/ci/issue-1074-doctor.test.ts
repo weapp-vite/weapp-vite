@@ -6,6 +6,7 @@ import process from 'node:process'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import { afterEach, describe, expect, it } from 'vitest'
+import packageJson from '../../packages/weapp-vite/package.json'
 import { createIssue1074Project, ISSUE_1074_CLI } from '../utils/issue1074Project'
 
 let project: string
@@ -40,6 +41,7 @@ describe('issue #1074: real Doctor CLI', () => {
     expect(result.stdout).not.toContain(project)
     expect(result.stdout).not.toContain(missingCli)
     expect(report.runtime.weapp.bundle?.reproduction).toContain('--runtime-cli <selected-cli>')
+    expect(report.runtime.weapp.bundle?.frameworkVersion).toBe(packageJson.version)
     expect(report.diagnostics.every(diagnostic => diagnostic.responsibility.owner === 'unknown')).toBe(true)
   })
 

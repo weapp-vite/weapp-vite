@@ -3,6 +3,7 @@ import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import packageJson from '../../package.json'
 import { probeDoctorRuntime } from './runtime'
 
 const mocks = vi.hoisted(() => ({ connect: vi.fn(), login: vi.fn(), port: vi.fn() }))
@@ -39,7 +40,7 @@ describe('Doctor runtime facts', () => {
     expect(evidence).toMatchObject({
       route: 'pages/home',
       complete: true,
-      bundle: { versions: { ide: '2.02.2608080', sdk: '3.17.3' }, lastSuccessfulStage: 'current-page' },
+      bundle: { frameworkVersion: packageJson.version, versions: { ide: '2.02.2608080', sdk: '3.17.3' }, lastSuccessfulStage: 'current-page' },
     })
     expect(JSON.stringify(evidence)).not.toMatch(/secret-ticket|private\/example/)
     expect(mocks.login).not.toHaveBeenCalled()
