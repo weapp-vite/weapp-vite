@@ -1,3 +1,5 @@
+import { OPERATION_TIMEOUT_CODE } from '@weapp-vite/miniprogram-automator'
+
 const SUBSCRIPTION_METHODS = new Set(['App.enableLog', 'App.CDPEnable', 'App.CDPCommand'])
 
 export class RuntimeLogSubscriptionDeadlineError extends Error {
@@ -101,7 +103,7 @@ export function createRuntimeLogSubscription(options: Omit<RuntimeLogSubscriptio
     get pending() { return pending },
     abort(reason?: unknown) { controller.abort(reason) },
     normalizeError(error: unknown) {
-      if (!pending || !(error instanceof Error) || 'code' in error || !options.timeoutMessages.includes(error.message)) {
+      if (!pending || !(error instanceof Error) || ('code' in error && error.code !== OPERATION_TIMEOUT_CODE) || !options.timeoutMessages.includes(error.message)) {
         return error
       }
       return new RuntimeLogSubscriptionDeadlineError(state.attempts, error, state.lastError)

@@ -104,7 +104,7 @@ describe('automator session diagnostics', () => {
     expect(result).toMatchObject({
       disconnect: disconnectMock,
     })
-    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ signal: expect.any(AbortSignal), timeout: expect.any(Number), projectPath: '/workspace/project' })
     expect(launchAutomatorMock).not.toHaveBeenCalled()
   })
 
@@ -120,8 +120,10 @@ describe('automator session diagnostics', () => {
     expect(result).toMatchObject({
       disconnect: disconnectMock,
     })
-    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ projectPath: '/workspace/project' })
+    expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({ signal: expect.any(AbortSignal), timeout: expect.any(Number), projectPath: '/workspace/project' })
     expect(launchAutomatorMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+      timeout: expect.any(Number),
       persistAsDefaultSession: true,
       port: expect.any(Number),
       projectPath: '/workspace/project',
@@ -137,6 +139,8 @@ describe('automator session diagnostics', () => {
     })).rejects.toThrow('DEVTOOLS_WS_CONNECT_ERROR')
 
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+      timeout: expect.any(Number),
       openedOnly: true,
       projectPath: '/workspace/project',
     })
@@ -161,6 +165,8 @@ describe('automator session diagnostics', () => {
       disconnect: disconnectMock,
     })
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+      timeout: expect.any(Number),
       openedOnly: true,
       port: 19510,
       preferOpenedSession: false,
@@ -178,6 +184,8 @@ describe('automator session diagnostics', () => {
     })).rejects.toThrow('DEVTOOLS_WS_CONNECT_ERROR')
 
     expect(connectOpenedAutomatorMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+      timeout: expect.any(Number),
       port: 19510,
       projectPath: '/workspace/project',
     })
@@ -204,6 +212,8 @@ describe('automator session diagnostics', () => {
       disconnect: disconnectMock,
     })
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+      retryTimeoutMs: expect.any(Number),
       error: loginError,
       logger: loggerMock,
       promptOpenIdeLogin: true,

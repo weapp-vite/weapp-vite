@@ -37,7 +37,7 @@ describe('Launcher connect ownership', () => {
     const closedAtDeadline = transport.close.mock.calls.length
     await vi.runAllTimersAsync()
     const outcome = await result
-    expect(outcome.error).toMatchObject({ message: expect.stringContaining('Tool.getInfo within 40ms') })
+    expect(outcome.error).toMatchObject({ code: 'DEVTOOLS_OPERATION_TIMEOUT', operation: { stage: 'version', remainingMs: 0 } })
     expect(outcome.elapsed).toBe(100)
     expect(closedAtDeadline).toBe(1)
     expect(vi.getTimerCount()).toBe(0)
@@ -52,7 +52,7 @@ describe('Launcher connect ownership', () => {
     })
     const result = new Launcher().connect({ wsEndpoint: 'ws://127.0.0.1:1', timeout: 100 }).catch(error => error)
     await vi.advanceTimersByTimeAsync(100)
-    await expect(result).resolves.toMatchObject({ message: 'Timed out connecting to automator after 100ms' })
+    await expect(result).resolves.toMatchObject({ code: 'DEVTOOLS_OPERATION_TIMEOUT', operation: { stage: 'websocket' } })
     expect(transport.send).not.toHaveBeenCalled()
     expect(transport.close).toHaveBeenCalledOnce()
   })
@@ -63,6 +63,29 @@ describe('Launcher connect ownership', () => {
     await expect(new Launcher().connect({ wsEndpoint: 'ws://127.0.0.1:1' })).rejects.toThrow('requires at least version')
     expect(transport.close).toHaveBeenCalledOnce()
     expect(transport.send.mock.calls.map(([payload]) => (JSON.parse(payload) as { method: string }).method)).toEqual(['Tool.getInfo'])
+  })
+
+  it('preserves the original websocket failure as cause', async () => {
+    const cause = Object.assign(new Error('connection refused'), { code: 'ECONNREFUSED' })
+    vi.spyOn(Connection, 'create').mockRejectedValueOnce(cause)
+    await expect(new Launcher().connect({ wsEndpoint: 'ws://127.0.0.1:1' })).rejects.toMatchObject({ cause })
+  })
+
+  it('bounds an uncooperative version probe and disconnects only its own session', async () => {
+    vi.useFakeTimers()
+    const transport = createTransport('dev')
+    vi.spyOn(Connection, 'create').mockResolvedValueOnce(new Connection(transport as unknown as Transport))
+    vi.spyOn(MiniProgram.prototype, 'checkVersion').mockImplementation(() => new Promise(() => {}))
+    let settled = false
+    const result = new Launcher().connect({ wsEndpoint: 'ws://127.0.0.1:1', timeout: 100 }).catch((error) => {
+      settled = true
+      return error
+    })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(settled).toBe(true)
+    expect(transport.close).toHaveBeenCalledOnce()
+    await expect(result).resolves.toBeInstanceOf(Error)
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('transfers a successful connection to the caller', async () => {

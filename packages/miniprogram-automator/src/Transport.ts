@@ -21,6 +21,7 @@ export default class Transport extends EventEmitter {
   }
 
   close() {
-    this.ws.close()
+    // 释放本地连接不等待宿主关闭握手，避免超过操作总预算。
+    this.ws.terminate()
   }
 }

@@ -23,3 +23,6 @@ expectAssignable<DoctorRuntimeEvidence>({
 })
 expectError(runDoctor({ runtimeLogin: 'yes' }))
 expectError(runDoctor({ runtimeServicePort: '12345' }))
+
+expectAssignable<DoctorRuntimeProbeOptions>({ timeout: 100, signal: new AbortController().signal })
+expectError({ timeout: '100' } satisfies DoctorRuntimeProbeOptions)

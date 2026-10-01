@@ -13,3 +13,5 @@ else {
   expectError(result.login)
 }
 expectError(queryWechatIdeLogin('selected-cli', { timeout: '500' }))
+
+queryWechatIdeLogin('cli', { timeout: 100, signal: new AbortController().signal })

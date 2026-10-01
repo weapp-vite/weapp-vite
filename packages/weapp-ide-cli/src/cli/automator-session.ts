@@ -38,7 +38,9 @@ export type MiniProgramLike = AutomatorMiniProgram
 export type MiniProgramPage = AutomatorPage
 export type MiniProgramElement = AutomatorElement
 
-export interface AutomatorSessionOptions extends DevtoolsRuntimeSessionOptions {}
+export interface AutomatorSessionOptions extends DevtoolsRuntimeSessionOptions {
+  signal?: AbortSignal
+}
 
 type AutomatorConnectionResult
   = { kind: 'result', value: MiniProgramLike }
@@ -72,7 +74,7 @@ function normalizeMiniProgramConnectionError(error: unknown, background = false)
       'Wechat DevTools login has expired. Please login and retry.',
     ))
     diagnostics.warn(formatAutomatorLoginError(error))
-    return new Error('DEVTOOLS_LOGIN_REQUIRED')
+    return new Error('DEVTOOLS_LOGIN_REQUIRED', { cause: error })
   }
 
   if (isDevtoolsHttpPortError(error)) {
@@ -84,7 +86,7 @@ function normalizeMiniProgramConnectionError(error: unknown, background = false)
       '请在微信开发者工具中：设置 -> 安全设置 -> 开启服务端口',
       'Please enable service port in Wechat DevTools: Settings -> Security -> Service Port',
     ))
-    return new Error('DEVTOOLS_HTTP_PORT_ERROR')
+    return new Error('DEVTOOLS_HTTP_PORT_ERROR', { cause: error })
   }
 
   if (isDevtoolsExtensionContextInvalidatedError(error)) {
@@ -96,7 +98,7 @@ function normalizeMiniProgramConnectionError(error: unknown, background = false)
       '请稍后重试；若持续失败，关闭多余的开发者工具窗口后重试。',
       'Please retry shortly. If it keeps failing, close extra DevTools windows and try again.',
     ))
-    return new Error('DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED')
+    return new Error('DEVTOOLS_EXTENSION_CONTEXT_INVALIDATED', { cause: error })
   }
 
   if (isAutomatorWsConnectError(error) || isAutomatorPortInUseError(error)) {
@@ -108,7 +110,7 @@ function normalizeMiniProgramConnectionError(error: unknown, background = false)
       '请确认当前打开的是目标项目；若之前跑过其他 e2e / screenshot 任务，关闭多余的微信开发者工具窗口，或结束残留的 `wechatwebdevtools cli auto --project ...` 进程后重试。',
       'Please confirm the current DevTools window is the target project. If you recently ran other e2e / screenshot tasks, close extra windows or stop stale `wechatwebdevtools cli auto --project ...` processes and retry.',
     ))
-    return new Error('DEVTOOLS_WS_CONNECT_ERROR')
+    return new Error('DEVTOOLS_WS_CONNECT_ERROR', { cause: error })
   }
 
   if (isAutomatorProtocolTimeoutError(error)) {
@@ -121,7 +123,7 @@ function normalizeMiniProgramConnectionError(error: unknown, background = false)
       '这通常表示当前 DevTools 自动化会话已卡住、窗口不在目标项目、或当前 DevTools 版本对该协议调用无响应。请重开目标项目窗口后重试；若仍复现，优先记录当前 DevTools 版本与协议方法名继续排查。',
       'This usually means the current DevTools automation session is stuck, the window is not on the target project, or the current DevTools version is not responding to that protocol method. Reopen the target project window and retry. If it still reproduces, record the current DevTools version and protocol method name for follow-up debugging.',
     ))
-    return new Error('DEVTOOLS_PROTOCOL_TIMEOUT')
+    return new Error('DEVTOOLS_PROTOCOL_TIMEOUT', { cause: error })
   }
 
   return error instanceof Error ? error : new Error(String(error))
@@ -132,16 +134,24 @@ function normalizeMiniProgramConnectionError(error: unknown, background = false)
  */
 async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOptions, background: boolean): Promise<MiniProgramLike> {
   const result = await runRetryableCommand<AutomatorConnectionResult, 'retry' | 'cancel' | 'timeout'>({
+    timeout: options.timeout,
+    signal: options.signal,
+    disposeLate: (result) => {
+      if (result.kind === 'result') {
+        result.value.disconnect()
+      }
+    },
     createCancelError: result => createWechatIdeLoginRequiredExitError(
       unwrapAutomatorConnectionError(result),
       'cancelled',
     ),
-    execute: async () => {
+    execute: async (operation) => {
+      const operationOptions = () => ({ ...options, timeout: operation.remainingMs(), signal: operation.signal })
       if (options.preferOpenedSession === false && options.openedOnly !== true) {
         try {
           return {
             kind: 'result',
-            value: await launchFreshAutomator(options),
+            value: await launchFreshAutomator(operationOptions()),
           } as const
         }
         catch (error) {
@@ -158,7 +168,7 @@ async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOption
       try {
         return {
           kind: 'result',
-          value: await connectOpenedAutomator(options) as MiniProgramLike,
+          value: await connectOpenedAutomator(operationOptions()) as MiniProgramLike,
         } as const
       }
       catch (error) {
@@ -175,7 +185,7 @@ async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOption
         try {
           return {
             kind: 'result',
-            value: await launchFreshAutomator(options),
+            value: await launchFreshAutomator(operationOptions()),
           } as const
         }
         catch (launchError) {
@@ -193,8 +203,10 @@ async function connectMiniProgramWithDiagnostics(options: AutomatorSessionOption
     onRetry: () => {
       logger.info(i18nText('正在重试连接微信开发者工具...', 'Retrying to connect Wechat DevTools...'))
     },
-    promptRetry: async result => await promptWechatIdeLoginRetry({
+    promptRetry: async (result, _retryCount, operation) => await promptWechatIdeLoginRetry({
       error: unwrapAutomatorConnectionError(result),
+      retryTimeoutMs: operation.remainingMs(),
+      signal: operation.signal,
       logger,
       promptOpenIdeLogin: true,
     }),

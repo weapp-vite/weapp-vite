@@ -39,6 +39,7 @@ const APP_SERVICE_PAGE_PROTOCOL_VERSIONS = new Set([
 const APP_SERVICE_PAGE_METHOD_VERSIONS = new Set(['2.02.2608070', '2.02.2609231'])
 /** Connection 的实现。 */
 export default class Connection extends EventEmitter {
+  private disposed = false
   private callbacks = new Map<string, PendingCallback>()
   private useAppServicePageProtocol = false
   private useAppServicePageMethod = false
@@ -49,6 +50,9 @@ export default class Connection extends EventEmitter {
   }
 
   send(method: string, params: Record<string, any> = {}, options: SendOptions = {}) {
+    if (this.disposed) {
+      return Promise.reject(new Error(closeErrTip))
+    }
     const id = uuid()
     const payload = stringify({ id, method, params })
     const requestTimeout = options.timeout ?? REQUEST_TIMEOUT
@@ -69,15 +73,22 @@ export default class Connection extends EventEmitter {
       try {
         this.transport.send(payload)
       }
-      catch {
+      catch (cause) {
         clearTimeout(timeout)
         this.callbacks.delete(id)
-        reject(new Error(closeErrTip))
+        reject(new Error(closeErrTip, { cause }))
       }
     })
   }
 
   dispose() {
+    if (this.disposed) {
+      return
+    }
+    this.disposed = true
+    this.onClose()
+    this.transport.off('message', this.onMessage)
+    this.transport.off('close', this.onClose)
     this.transport.close()
   }
 
@@ -126,34 +137,54 @@ export default class Connection extends EventEmitter {
     this.callbacks.clear()
   }
 
-  static create(url: string, timeout = CONNECT_TIMEOUT) {
+  static create(url: string, timeout = CONNECT_TIMEOUT, signal?: AbortSignal) {
+    signal?.throwIfAborted()
     return new Promise<Connection>((resolve, reject) => {
       const ws = new WebSocket(url)
       let settled = false
-      const timer = setTimeout(() => {
-        if (settled) {
-          return
-        }
-        settled = true
-        ws.close()
-        reject(new Error(`Timed out connecting to DevTools websocket ${url} after ${timeout}ms`))
-      }, timeout)
-      ws.on('open', () => {
-        if (settled) {
-          return
-        }
-        settled = true
+      let timer: ReturnType<typeof setTimeout>
+      let onAbort: () => void
+      let onOpen: () => void
+      let onClose: () => void
+      function cleanup() {
         clearTimeout(timer)
-        resolve(new Connection(new Transport(ws)))
-      })
-      ws.on('error', (error) => {
+        signal?.removeEventListener('abort', onAbort)
+        ws.off('open', onOpen)
+        ws.off('close', onClose)
+      }
+      function fail(error: unknown) {
         if (settled) {
           return
         }
         settled = true
-        clearTimeout(timer)
+        cleanup()
+        // 握手尚未完成时必须终止套接字，不能等待关闭握手。
+        ws.terminate()
         reject(error)
-      })
+      }
+      onAbort = () => {
+        fail(signal?.reason)
+      }
+      onClose = () => {
+        fail(new Error('DevTools websocket closed before handshake completed'))
+      }
+      onOpen = () => {
+        if (settled) {
+          return
+        }
+        settled = true
+        cleanup()
+        resolve(new Connection(new Transport(ws)))
+      }
+      timer = setTimeout(() => fail(new Error(`Timed out connecting to DevTools websocket ${url} after ${timeout}ms`)), timeout)
+      ws.on('open', onOpen)
+      // 终止尚未完成的握手也会产生 error；保留监听直到套接字回收。
+      ws.on('error', fail)
+      ws.on('close', onClose)
+      signal?.addEventListener('abort', onAbort, { once: true })
+      if (signal?.aborted) {
+        onAbort()
+      }
     })
   }
 }

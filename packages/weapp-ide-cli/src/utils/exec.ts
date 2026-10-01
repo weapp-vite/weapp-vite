@@ -4,6 +4,7 @@ interface ExecuteOptions {
   pipeStdout?: boolean
   pipeStderr?: boolean
   timeout?: number
+  signal?: AbortSignal
 }
 
 /**
@@ -20,6 +21,8 @@ export async function execute(cliPath: string, argv: string[], options: ExecuteO
   const { execa } = await import('execa')
   const task = execa(cliPath, argv, {
     timeout,
+    cancelSignal: options.signal,
+    forceKillAfterDelay: 100,
   })
 
   if (pipeStdout) {

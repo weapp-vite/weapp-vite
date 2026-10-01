@@ -123,6 +123,7 @@ describe('runWechatCliWithRetry', () => {
     })
 
     expect(executeMock).toHaveBeenCalledWith('/Applications/wechat-cli', ['quit'], {
+      signal: expect.any(AbortSignal),
       pipeStderr: false,
       pipeStdout: false,
       timeout: 10_000,

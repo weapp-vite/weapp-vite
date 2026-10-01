@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AutomatorLaunchLifecycle } from './automatorLaunchLifecycle'
+import { OperationLifecycle as AutomatorLaunchLifecycle } from './index'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -149,4 +149,42 @@ describe('automator launch lifecycle', () => {
     await expect(result).resolves.toBe('ready')
     expect(vi.getTimerCount()).toBe(0)
   })
+})
+
+it('bounds uncooperative exits and cleanup, while releasing only registered resources once', async () => {
+  vi.useFakeTimers()
+  const lifecycle = new AutomatorLaunchLifecycle(100, 'launch')
+  const owned = vi.fn(() => new Promise<void>(() => {}))
+  const unrelated = vi.fn()
+  const reason = new Error('handshake rejected')
+  const result = lifecycle.run(async (scope) => {
+    scope.own(owned, 'owned-socket')
+    scope.own(owned, 'owned-socket')
+    scope.recordFailure(reason)
+    return await scope.step(() => new Promise(() => {}), { waitForExit: true, stage: 'app-ready' })
+  }).catch(error => error)
+  await vi.advanceTimersByTimeAsync(100)
+  await expect(result).resolves.toMatchObject({
+    cause: reason,
+    operation: { stage: 'app-ready', elapsedMs: 100, remainingMs: 0, pendingOperations: 1, cleanup: [{ resource: 'owned-socket', status: 'pending' }] },
+  })
+  expect(owned).toHaveBeenCalledOnce()
+  expect(unrelated).not.toHaveBeenCalled()
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('records remaining budget and the last failed attempt without renewing the deadline', async () => {
+  vi.useFakeTimers()
+  const lifecycle = new AutomatorLaunchLifecycle(100, 'launch')
+  const cause = new Error('ECONNREFUSED')
+  const result = lifecycle.run(async (scope) => {
+    scope.attempt()
+    await scope.pause(60)
+    scope.recordFailure(cause)
+    scope.attempt()
+    expect(scope.remainingMs()).toBe(40)
+    await scope.step(() => new Promise(() => {}), { stage: 'websocket' })
+  }).catch(error => error)
+  await vi.advanceTimersByTimeAsync(100)
+  await expect(result).resolves.toMatchObject({ cause, operation: { attempts: 2, elapsedMs: 100 } })
 })

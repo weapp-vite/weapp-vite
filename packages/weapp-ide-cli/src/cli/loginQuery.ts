@@ -1,4 +1,4 @@
-import { stripVTControlCharacters } from 'node:util'
+import { readWechatLoginState } from '@weapp-vite/miniprogram-automator'
 import { execute } from '../utils'
 
 export type WechatIdeLoginQueryResult
@@ -7,30 +7,21 @@ export type WechatIdeLoginQueryResult
 
 /** 读取原生 CLI 的明确登录结果；日志、空输出与相互矛盾的响应均不能证明登录状态。 */
 function parseLoginOutput(stdout: string): WechatIdeLoginQueryResult {
-  const results = new Set<boolean>()
-  for (const line of stripVTControlCharacters(stdout).split(/\r?\n/)) {
-    try {
-      const value: unknown = JSON.parse(line)
-      if (value && typeof value === 'object' && 'login' in value && typeof value.login === 'boolean') {
-        results.add(value.login)
-      }
-    }
-    catch {}
-  }
-  if (results.size === 1) {
-    return { status: 'success', login: [...results][0]! }
+  const login = readWechatLoginState(stdout)
+  if (login !== undefined) {
+    return { status: 'success', login }
   }
   return { status: 'unknown', reason: 'invalid-response' }
 }
 
 /** 显式调用指定 CLI 查询登录语义，不重试、不提示登录；原生 CLI 可能启动 IDE。 */
-export async function queryWechatIdeLogin(cliPath: string, options: { timeout?: number } = {}): Promise<WechatIdeLoginQueryResult> {
+export async function queryWechatIdeLogin(cliPath: string, options: { timeout?: number, signal?: AbortSignal } = {}): Promise<WechatIdeLoginQueryResult> {
   const timeout = options.timeout ?? 3_000
   if (!Number.isFinite(timeout) || timeout <= 0) {
     throw new TypeError('登录查询 timeout 必须是有限正数。')
   }
   try {
-    const result = await execute(cliPath, ['islogin'], { pipeStdout: false, pipeStderr: false, timeout })
+    const result = await execute(cliPath, ['islogin'], { pipeStdout: false, pipeStderr: false, timeout, signal: options.signal })
     return parseLoginOutput(result.stdout)
   }
   catch (error) {

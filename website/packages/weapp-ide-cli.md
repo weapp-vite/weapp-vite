@@ -322,6 +322,8 @@ weapp build-npm -p ./dist/build/mp-weixin --non-interactive
 | `--login-retry=<strategy>`   | 登录重试策略：`never` / `once` / `always` |
 | `--login-retry-timeout=<ms>` | 交互重试等待超时，默认 `30000`            |
 
+CLI 命令、登录提示与重试共享总预算（API `timeout`，默认 30 秒），提示等待取剩余预算与 `--login-retry-timeout` 的较小值。`always` 仍受总预算及最多三次执行限制；不会因重试重新获得完整预算。路径错误、明确未登录和协议拒绝不会自动重复启动；交互登录重试必须由用户输入确认。错误保留 `cause`，并附带 `operation` 的阶段、耗时、剩余预算、尝试次数与清理结果。嵌套操作的诊断保留在 `inner`。超时只取消本次请求、CLI 子进程和连接，不终止共享 IDE、不删除其他会话或登录配置。
+
 自动启用非交互模式的场景：
 
 - `CI=true`

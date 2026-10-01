@@ -14,6 +14,8 @@ import Transport from './Transport'
 export { Automator, Connection, ContextElement, CustomElement, Element, InputElement, Launcher, MiniProgram, MovableViewElement, Native, Page, ScrollViewElement, SliderElement, SwiperElement, SwitchElement, TextareaElement, Transport }
 export const SmartappAutomator = smartappAutomatorRuntime
 export * from './Launcher'
+export * from './operation'
 export * from './platform'
 export type { ConsoleLogOptions, ConsoleRemoteObject, StructuredConsoleEntry } from './structuredConsole'
+
 export * from './util'

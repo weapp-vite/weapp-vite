@@ -164,3 +164,9 @@ pnpm --filter @weapp-vite/miniprogram-automator typecheck
 
 - 仓库：https://github.com/weapp-vite/weapp-vite
 - `weapp-ide-cli`：[../weapp-ide-cli/README.md](../weapp-ide-cli/README.md)
+
+## 启动预算与取消
+
+微信 DevTools 的 `launch` / `connect` 使用一次总 `timeout`（默认 30 秒）。路径准备、端口租约、HTTP 适配、WebSocket、版本与 App ready 均消耗剩余预算，自动重试不重置 deadline。可传 `signal` 取消；成功后连接归调用方管理。
+
+失败保留 `cause`，`error.operation` 包含阶段、最后成功阶段、耗时、剩余预算、尝试次数、未退出操作数量及本次资源清理状态。清理 `pending` 表示在预算内未确认退出，不能当作资源已释放。迟到连接只断开自身 WebSocket；启动器只终止持有句柄的 CLI 子进程，不据此认领 IDE 宿主或清理其他项目。无需在 App ready 后再固定等待五秒。

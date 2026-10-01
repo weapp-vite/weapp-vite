@@ -5,6 +5,7 @@ import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const webSocketInstances = vi.hoisted(() => [] as Array<EventEmitter & {
+  terminate: ReturnType<typeof vi.fn>
   close: ReturnType<typeof vi.fn>
   url: string
 }>)
@@ -18,11 +19,13 @@ vi.mock('./internal/compat', () => ({
 vi.mock('ws', async () => {
   const { EventEmitter } = await import('node:events')
   function MockWebSocket(this: EventEmitter & {
+    terminate: ReturnType<typeof vi.fn>
     close: ReturnType<typeof vi.fn>
     url: string
   }, url: string) {
     this.url = url
     this.close = vi.fn()
+    this.terminate = vi.fn()
     webSocketInstances.push(this)
   }
   MockWebSocket.prototype = Object.create(EventEmitter.prototype)
@@ -153,11 +156,50 @@ describe('Connection', () => {
 
       await vi.advanceTimersByTimeAsync(1_000)
       await assertion
-      expect(webSocketInstances[0]?.close).toHaveBeenCalledTimes(1)
+      expect(webSocketInstances[0]?.terminate).toHaveBeenCalledTimes(1)
     }
     finally {
       vi.useRealTimers()
     }
+  })
+
+  it('aborts a handshake, preserves its cause and ignores late socket events', async () => {
+    const { default: Connection } = await import('./Connection')
+    const controller = new AbortController()
+    const cause = new Error('caller canceled')
+    const result = Connection.create('ws://127.0.0.1:1234', 1_000, controller.signal)
+    const assertion = expect(result).rejects.toBe(cause)
+    controller.abort(cause)
+    await assertion
+    const socket = webSocketInstances[0]!
+    expect(socket.terminate).toHaveBeenCalledOnce()
+    socket.emit('open')
+    socket.emit('error', new Error('late error'))
+    expect(socket.listenerCount('open')).toBe(0)
+    expect(socket.terminate).toHaveBeenCalledOnce()
+  })
+
+  it('does not open a websocket when the caller is already canceled', async () => {
+    const { default: Connection } = await import('./Connection')
+    const controller = new AbortController()
+    controller.abort(new Error('canceled'))
+    expect(() => Connection.create('ws://127.0.0.1:1234', 1_000, controller.signal)).toThrow('canceled')
+    expect(webSocketInstances).toHaveLength(0)
+  })
+
+  it('disposes pending protocol work and transport exactly once', async () => {
+    const { default: Connection } = await import('./Connection')
+    const transport = new FakeTransport()
+    const connection = new Connection(transport as any)
+    const result = connection.send('Tool.getInfo')
+    const assertion = expect(result).rejects.toThrow('Connection closed')
+    connection.dispose()
+    connection.dispose()
+    await assertion
+    expect(transport.close).toHaveBeenCalledOnce()
+    expect(transport.listenerCount('message')).toBe(0)
+    await expect(connection.send('App.getCurrentPage')).rejects.toThrow('Connection closed')
+    expect(transport.send).toHaveBeenCalledOnce()
   })
 
   it('emits protocol events without request ids', async () => {
