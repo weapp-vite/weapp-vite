@@ -474,7 +474,7 @@ describe('automator helpers', () => {
       })
     })
 
-    it('removes stale persisted endpoint when connect fails', async () => {
+    it('preserves persisted endpoint when a read-only connection fails', async () => {
       const error = new Error('connect failed')
       readFileMock.mockResolvedValueOnce(JSON.stringify({
         projectPath: path.resolve('/workspace/project'),
@@ -487,7 +487,7 @@ describe('automator helpers', () => {
         projectPath: '/workspace/project',
       })).rejects.toThrow(error)
 
-      expect(rmMock).toHaveBeenCalledTimes(1)
+      expect(rmMock).not.toHaveBeenCalled()
     })
   })
 })
