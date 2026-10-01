@@ -1700,7 +1700,7 @@ describe('runtime buildPlugin service', () => {
     expect(loggerSuccessMock).not.toHaveBeenCalled()
   })
 
-  it.each(['create', 'update', 'delete'] as const)('routes host-owned WXML dependency %s without a module node', async (event) => {
+  it.each([true, false].flatMap(host => (['create', 'update', 'delete'] as const).map(event => ({ host, event }))))('routes WXML dependency $event without a module node (attached host: $host)', async ({ host, event }) => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()
     const ctx = createMockContext()
@@ -1709,7 +1709,7 @@ describe('runtime buildPlugin service', () => {
     ctx.scanService.markIndependentDirty = vi.fn()
     ctx.runtimeState.wxmlProcessing.references.set(dependency, 1)
     ctx.moduleGraphService.hasModule.mockReturnValue(false)
-    const detachHost = attachDevModuleGraphHost(ctx, {} as ViteDevServer)
+    const detachHost = host ? attachDevModuleGraphHost(ctx, {} as ViteDevServer) : () => {}
     chokidarWatchMock.mockReturnValue(sidecarWatcher)
     buildMock.mockResolvedValue({ output: [] })
     try {
