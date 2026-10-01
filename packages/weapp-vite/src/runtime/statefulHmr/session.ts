@@ -28,13 +28,14 @@ import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compil
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { setTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
-import { parseJsLike, traverse } from '../../utils/babel'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { composeSourceMaps, normalizeEncodedSourceMapLike } from '../../utils/sourcemap'
+import { bindHostLifecycle } from '../../vite/lifecycle'
 import { isWxmlDependency } from '../../wxml/processing/dependencies'
 import { watchAssetSources } from '../watch/assets'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../watch/options'
+import { installIdeAssetWatch } from './assetWatch'
 import { observeChildSources } from './childSources'
 import { compileHmrBatch } from './compileBatch'
 import { HmrDeliveryCoordinator } from './deliveryCoordinator'
@@ -136,6 +137,11 @@ export async function runStatefulHmrDev(
       pollInterval: pollingWatchOptions.interval,
       usePolling: pollingWatchOptions.usePolling,
     }, delegatedComponentEntryIds, buildEvents)
+    if (!host) {
+      const active = session
+      bindHostLifecycle(server, () => active.close())
+    }
+    await session.prepareIdeAssetWatch()
     session.install()
     if (host) {
       await session.startEngine()
@@ -164,11 +170,13 @@ class StatefulHmrSession {
   private readonly publicAssetSources: ReturnType<typeof createPublicAssetSourcePlan>
   private childSources?: ReturnType<typeof observeChildSources>
   private assetWatcher?: ReturnType<typeof watchAssetSources>
+  private restoreIdeAssetWatch?: () => Promise<void>
   private activeSnapshotBatch?: ActiveSnapshotBatch
   private readonly adapter: StatefulHmrViteAdapter
   private readonly delivery: HmrDeliveryCoordinator
   private resynchronizing = false
   private closed = false
+  private closing?: Promise<void>
   private readonly initialBundle = Promise.withResolvers<void>()
   private readonly snapshotScheduler: StatefulHmrSnapshotScheduler
   private readonly diagnostics: ReturnType<typeof createStatefulHmrSnapshotDiagnostics>
@@ -254,6 +262,22 @@ class StatefulHmrSession {
     })
   }
 
+  async prepareIdeAssetWatch(): Promise<void> {
+    const config = this.ctx.configService
+    if (!config.projectPrivateConfigPath) {
+      return
+    }
+    const configPath = config.multiPlatform.enabled
+      ? path.join(path.dirname(config.outDir), 'project.private.config.json')
+      : config.projectPrivateConfigPath
+    this.restoreIdeAssetWatch = await installIdeAssetWatch({
+      configPath,
+      outDir: config.outDir,
+      inheritedWatchOptions: config.projectConfig?.watchOptions,
+      output: this.snapshots.initial.output,
+    })
+  }
+
   install(): void {
     this.childSources = observeChildSources(this.server, file => this.requestFullBuild([file]))
     this.childSources.adopt(this.initialSnapshot?.childSources)
@@ -293,7 +317,20 @@ class StatefulHmrSession {
     await this.assetWatcher.ready
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
+    return this.closing ??= (async () => {
+      try {
+        await this.closeResources()
+      }
+      finally {
+        const restore = this.restoreIdeAssetWatch
+        this.restoreIdeAssetWatch = undefined
+        await restore?.()
+      }
+    })()
+  }
+
+  private async closeResources(): Promise<void> {
     this.closed = true
     this.childSources?.close()
     getCompilerHmrHost(this.ctx).onDependencyChange = undefined
