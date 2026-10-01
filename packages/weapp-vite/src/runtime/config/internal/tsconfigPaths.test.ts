@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import ts from 'typescript'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { normalizePath } from '../../../utils/path'
 import {
@@ -12,7 +13,7 @@ describe('tsconfigPaths', () => {
   let tempRoot: string
 
   beforeEach(async () => {
-    tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tsconfig-paths-'))
+    tempRoot = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-tsconfig-paths-')))
   })
 
   afterEach(async () => {
@@ -128,6 +129,53 @@ describe('tsconfigPaths', () => {
     })
   })
 
+  it('resolves ordered extends arrays using the last complete paths mapping', async () => {
+    await fs.mkdir(path.join(tempRoot, 'configs'))
+    await fs.writeFile(path.join(tempRoot, 'configs/first.json'), JSON.stringify({ compilerOptions: { paths: { '@first/*': ['./first/*'], '@shared/*': ['./old/*'] } } }))
+    await fs.writeFile(path.join(tempRoot, 'configs/last.json'), JSON.stringify({ compilerOptions: { paths: { '@shared/*': ['./last/*'] } } }))
+    await fs.writeFile(path.join(tempRoot, 'tsconfig.json'), JSON.stringify({ extends: ['./configs/first.json', './configs/last.json'] }))
+    expect((await inspectTsconfigPathsUsage(tempRoot)).aliases).toEqual([
+      { find: '@shared', replacement: normalizePath(path.join(tempRoot, 'configs/last')) },
+    ])
+  })
+
+  it('resolves package tsconfig inheritance without treating it as a runtime module', async () => {
+    const configRoot = path.join(tempRoot, 'node_modules/@probe/tsconfig')
+    await fs.mkdir(configRoot, { recursive: true })
+    await fs.writeFile(path.join(configRoot, 'package.json'), JSON.stringify({ name: '@probe/tsconfig', version: '1.0.0', tsconfig: 'base.json' }))
+    await fs.writeFile(path.join(configRoot, 'base.json'), JSON.stringify({ compilerOptions: { paths: { '@package/*': ['./source/*'] } } }))
+    await fs.writeFile(path.join(tempRoot, 'tsconfig.json'), JSON.stringify({ extends: '@probe/tsconfig' }))
+    expect((await inspectTsconfigPathsUsage(tempRoot)).aliases).toEqual([
+      { find: '@package', replacement: normalizePath(path.join(configRoot, 'source')) },
+    ])
+  })
+
+  it('replaces inherited paths as a complete mapping when a child defines paths', async () => {
+    await fs.writeFile(path.join(tempRoot, 'base.json'), JSON.stringify({ compilerOptions: { paths: { '@obsolete/*': ['./old/*'] } } }))
+    await fs.writeFile(path.join(tempRoot, 'tsconfig.json'), JSON.stringify({ extends: './base.json', compilerOptions: { paths: { '@current/*': ['./src/*'] } } }))
+    expect((await inspectTsconfigPathsUsage(tempRoot)).aliases).toEqual([
+      { find: '@current', replacement: normalizePath(path.join(tempRoot, 'src')) },
+    ])
+  })
+
+  it('matches TypeScript 6 when a child baseUrl changes inherited paths resolution', async () => {
+    await fs.mkdir(path.join(tempRoot, 'configs'))
+    await fs.mkdir(path.join(tempRoot, 'source'))
+    const target = path.join(tempRoot, 'source/value.ts')
+    const importer = path.join(tempRoot, 'index.ts')
+    const configFile = path.join(tempRoot, 'tsconfig.json')
+    await fs.writeFile(target, 'export const value = 1')
+    await fs.writeFile(importer, 'import { value } from "@shared/value"; void value')
+    await fs.writeFile(path.join(tempRoot, 'configs/base.json'), JSON.stringify({ compilerOptions: { paths: { '@shared/*': ['./*'] }, baseUrl: './obsolete' } }))
+    await fs.writeFile(configFile, JSON.stringify({ extends: './configs/base.json', compilerOptions: { baseUrl: './source', ignoreDeprecations: '6.0' } }))
+    const config = ts.getParsedCommandLineOfConfigFile(configFile, {}, { ...ts.sys, onUnRecoverableConfigFileDiagnostic: diagnostic => expect.fail(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')) })!
+    const resolved = ts.resolveModuleName('@shared/value', importer, config.options, ts.sys).resolvedModule
+    expect(resolved?.resolvedFileName).toBe(normalizePath(target))
+    expect((await inspectTsconfigPathsUsage(tempRoot)).aliases).toEqual([
+      { find: '@shared', replacement: normalizePath(path.dirname(target)) },
+    ])
+  })
+
   it('marks references usage when referenced tsconfig defines path aliases', async () => {
     await fs.mkdir(path.join(tempRoot, 'packages/pkg-a'), { recursive: true })
     await fs.writeFile(path.join(tempRoot, 'packages/pkg-a/tsconfig.json'), JSON.stringify({
@@ -199,6 +247,11 @@ describe('tsconfigPaths', () => {
         { find: '@ref', replacement: normalizePath(path.join(tempRoot, 'packages/pkg-a/ref-only')) },
       ],
     })
+  })
+
+  it.each([null, [], { compilerOptions: { paths: { '@bad/*': null } } }, { compilerOptions: { paths: { '@bad/*': [42] } } }])('ignores malformed config shapes without breaking prepare: %j', async (config) => {
+    await fs.writeFile(path.join(tempRoot, 'tsconfig.json'), JSON.stringify(config))
+    await expect(inspectTsconfigPathsUsage(tempRoot)).resolves.toMatchObject({ aliases: [] })
   })
 
   it('handles invalid json, missing extends, and circular references safely', async () => {

@@ -75,11 +75,30 @@ jobs:
           WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
           WEAPP_VITE_CONSUMER_WEB: '1'
           WEAPP_VITE_CONSUMER_EVIDENCE: .cache/consumer-evidence.json
+          WEAPP_VITE_CONSUMER_DEPENDENCIES: '1'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: consumer-evidence-${{ matrix.os }}-${{ matrix.node }}
           path: .cache/consumer-evidence.json
+
+  dependency-compatibility:
+    name: Strict dependency consumer (${{ matrix.os }} / ${{ matrix.manager }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        manager: [pnpm, npm]
+    uses: ./.github/workflows/reusable-node-command.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      node_version: 24.18.0
+      timeout_minutes: 30
+      build_command: pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require...
+      main_command: pnpm exec cross-env WEAPP_VITE_DEPENDENCY_EVIDENCE=.cache/dependency-compatibility.json node packages/weapp-vite/scripts/verify-dependency-install.mjs ${{ matrix.manager }}
+      artifact_name: dependency-compatibility-${{ matrix.os }}-${{ matrix.manager }}
+      artifact_path: .cache/dependency-compatibility.json
+    secrets: inherit
 
   react-host-paths:
     name: React host paths (${{ matrix.os }})

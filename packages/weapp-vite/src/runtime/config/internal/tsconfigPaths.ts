@@ -1,13 +1,8 @@
+import type { TsConfigJson, TsConfigJsonResolved } from 'get-tsconfig'
 import fs from 'node:fs/promises'
 import { parse as parseJson } from 'comment-json'
+import { createPathsMatcher, parseTsconfig } from 'get-tsconfig'
 import path from 'pathe'
-
-const PATHS_RE = /"paths"\s*:/
-const BASE_URL_RE = /"baseUrl"\s*:/
-
-function withJsonExtension(filePath: string) {
-  return path.extname(filePath) ? filePath : `${filePath}.json`
-}
 
 function resolveReferencePath(baseDir: string, referencePath: string) {
   const resolved = path.resolve(baseDir, referencePath)
@@ -15,19 +10,6 @@ function resolveReferencePath(baseDir: string, referencePath: string) {
     return resolved
   }
   return path.join(resolved, 'tsconfig.json')
-}
-
-function resolveExtendsPath(baseDir: string, extendsPath: string) {
-  if (!extendsPath) {
-    return undefined
-  }
-  if (extendsPath.startsWith('.') || path.isAbsolute(extendsPath)) {
-    const resolved = path.isAbsolute(extendsPath)
-      ? extendsPath
-      : path.resolve(baseDir, extendsPath)
-    return withJsonExtension(resolved)
-  }
-  return undefined
 }
 
 export interface TsconfigPathsUsage {
@@ -39,50 +21,43 @@ export interface TsconfigPathsUsage {
 }
 
 function normalizePathAliasKey(key: string) {
-  if (!key || (key.includes('*') && !key.endsWith('/*'))) {
+  if (!key || (key.includes('*') && (!key.endsWith('/*') || key.indexOf('*') !== key.length - 1))) {
     return undefined
   }
   return key.endsWith('/*') ? key.slice(0, -2) : key
 }
 
-function normalizePathAliasTarget(target: string) {
-  if (!target || (target.includes('*') && !(target === '*' || target.endsWith('/*')))) {
-    return undefined
-  }
-  if (target === '*') {
-    return ''
-  }
-  return target.endsWith('/*') ? target.slice(0, -2) : target
-}
-
-function resolvePathAliasBaseDir(configDir: string, compilerOptions: any) {
-  const baseUrl = compilerOptions?.baseUrl
-  return typeof baseUrl === 'string' && baseUrl
-    ? path.resolve(configDir, baseUrl)
-    : configDir
-}
-
-function extractPathAliases(configDir: string, compilerOptions: any) {
+function extractPathAliases(filePath: string, config: TsConfigJsonResolved) {
   const aliases: Array<{ find: string, replacement: string }> = []
-  const paths = compilerOptions?.paths
-  if (!paths || typeof paths !== 'object') {
+  const options = config?.compilerOptions
+  if (!options?.paths || typeof options.paths !== 'object' || Array.isArray(options.paths)) {
     return aliases
   }
-
-  const baseDir = resolvePathAliasBaseDir(configDir, compilerOptions)
-  for (const [key, value] of Object.entries(paths)) {
-    const find = normalizePathAliasKey(key)
-    const target = Array.isArray(value) ? value.find(item => typeof item === 'string') : undefined
-    const normalizedTarget = typeof target === 'string' ? normalizePathAliasTarget(target) : undefined
-    if (!find || normalizedTarget === undefined) {
+  // 保持既有无 baseUrl 时接受 src/* 写法的别名契约；继承锚点由解析器保存。
+  const baseUrl = typeof options.baseUrl === 'string' ? options.baseUrl : undefined
+  const paths: Record<string, string[]> = {}
+  for (const [key, targets] of Object.entries(options.paths)) {
+    if (!normalizePathAliasKey(key) || !Array.isArray(targets)) {
       continue
     }
-    aliases.push({
-      find,
-      replacement: path.resolve(baseDir, normalizedTarget),
-    })
+    const target = targets.find((value): value is string => typeof value === 'string')
+    if (!target || (target.includes('*') && (target.indexOf('*') !== target.length - 1 || (target !== '*' && !target.endsWith('/*'))))) {
+      continue
+    }
+    paths[key] = [!baseUrl && !target.startsWith('.') && !path.isAbsolute(target) ? `./${target}` : target]
   }
-
+  const match = createPathsMatcher({ path: filePath, config: { ...config, compilerOptions: { ...options, baseUrl, paths } } })
+  for (const key of Object.keys(paths)) {
+    const find = normalizePathAliasKey(key)
+    const target = paths[key]?.[0]
+    if (!find || !target || (target.includes('*') && target !== '*' && !target.endsWith('/*'))) {
+      continue
+    }
+    const replacement = match?.(key.endsWith('/*') ? `${find}/` : find)[0]
+    if (replacement) {
+      aliases.push({ find, replacement: path.resolve(replacement) })
+    }
+  }
   return aliases
 }
 
@@ -140,9 +115,16 @@ async function inspectTsconfigPathsState(
     }
   }
 
-  let parsed: any
+  let parsed: TsConfigJsonResolved
   try {
-    parsed = parseJson(content)
+    const local = parseJson(content) as TsConfigJson
+    try {
+      parsed = parseTsconfig(filePath)
+    }
+    catch {
+      // 受管 extends 可能尚未生成；保留当前配置及 references 的既有 prepare 容错。
+      parsed = local
+    }
   }
   catch {
     return {
@@ -153,24 +135,9 @@ async function inspectTsconfigPathsState(
   }
 
   const compilerOptions = parsed?.compilerOptions
-  let aliases = extractPathAliases(path.dirname(filePath), compilerOptions)
-  let root = Boolean(
-    PATHS_RE.test(content)
-    || BASE_URL_RE.test(content)
-    || compilerOptions?.paths
-    || compilerOptions?.baseUrl,
-  )
-
+  let aliases = extractPathAliases(filePath, parsed)
+  const root = Boolean(compilerOptions?.paths || compilerOptions?.baseUrl)
   const baseDir = path.dirname(filePath)
-
-  const extendsPath = typeof parsed?.extends === 'string'
-    ? resolveExtendsPath(baseDir, parsed.extends)
-    : undefined
-  if (extendsPath) {
-    const extendsState = await inspectTsconfigPathsState(extendsPath, visited)
-    root = root || extendsState.root
-    aliases = mergeAliases(aliases, extendsState.aliases)
-  }
 
   let references = false
   const refs = Array.isArray(parsed?.references) ? parsed.references : []
