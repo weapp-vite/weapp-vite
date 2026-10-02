@@ -7,6 +7,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { build } from 'vite'
 import { createStatefulHmrRolldownRuntimeSource } from '../../packages/weapp-vite/src/runtime/statefulHmr/commonRuntime'
+import { createStatefulHmrHostFormatPlugin } from '../../packages/weapp-vite/src/runtime/statefulHmr/hostFormat'
 import { toStableModuleId } from '../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
 import { StatefulHmrOutputPublication } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputPublication'
 import { writeStatefulHmrOutput } from '../../packages/weapp-vite/src/runtime/statefulHmr/outputWriter'
@@ -30,6 +31,7 @@ interface PublicationReceipt {
 
 export class BuildSequenceSession {
   private engine?: DevEngine
+  private engineRun?: Promise<void>
   private watcher?: RolldownWatcher
   private sourceFiles: Record<string, string> = {}
   private completion = Promise.withResolvers<void>()
@@ -346,8 +348,12 @@ export class BuildSequenceSession {
         recordBundle(bundle, this)
       },
     }
-    const plugins = [createSequenceFixturePlugin(this.root, this.stateful, id => this.readSource(id)), observer]
-    const output = { dir: this.outDir, format: 'cjs' as const, entryFileNames: '[name].js', chunkFileNames: '[name].js', sourcemap: false as const }
+    const plugins: Plugin[] = [createSequenceFixturePlugin(this.root, id => this.readSource(id)), observer]
+    // 原生 ESM DevEngine 持有依赖图，宿主格式与生产路径在 bundler 写出前统一转换。
+    if (this.stateful) {
+      plugins.push(createStatefulHmrHostFormatPlugin())
+    }
+    const output = { dir: this.outDir, format: this.stateful ? 'esm' as const : 'cjs' as const, entryFileNames: '[name].js', chunkFileNames: '[name].js', sourcemap: false as const }
     if (!this.stateful) {
       const result = await build({
         root: this.root,
@@ -421,8 +427,10 @@ export class BuildSequenceSession {
         void updates().catch(error => receipt.completion.reject(error))
       },
     })
+    // run 的生命周期持续到 close；先启动引擎，再由发布回调确认当前输入已经可观察。
+    this.engineRun = this.engine.run()
+    void this.engineRun.catch(error => this.completion.reject(error))
     await this.engine.registerClient('edit-sequence')
-    await this.engine.run()
   }
 
   private publish(result: Error | RolldownOutput, additional = false) {
@@ -459,9 +467,11 @@ export class BuildSequenceSession {
   async close() {
     await this.watcher?.close()
     await this.engine?.close()
+    await this.engineRun
     await this.outputTask
     this.watcher = undefined
     this.engine = undefined
+    this.engineRun = undefined
     this.started = false
   }
 }

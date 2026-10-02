@@ -2,10 +2,9 @@ import type { Plugin } from 'vite'
 import path from 'pathe'
 import { invalidateFileCache } from '../../packages-runtime/wevu-compiler/src/plugins/utils/cache'
 import { compileVueFile } from '../../packages-runtime/wevu-compiler/src/plugins/vue/transform/compileVueFile'
-import { createStatefulHmrInitialGraph } from '../../packages/weapp-vite/src/runtime/statefulHmr/initialModuleGraph'
 
 /** 复用 compiler/native integration fixture 的真实编译入口，不模拟 compiler 或 DevEngine。 */
-export function createSequenceFixturePlugin(root: string, stateful: boolean, readSource: (filename: string) => Promise<string>): Plugin {
+export function createSequenceFixturePlugin(root: string, readSource: (filename: string) => Promise<string>): Plugin {
   return {
     name: 'edit-sequence-compiler-fixture',
     watchChange(id) {
@@ -39,11 +38,6 @@ export function createSequenceFixturePlugin(root: string, stateful: boolean, rea
         throw new Error(`SFC compilation did not emit a script: ${id}`)
       }
       return { code: compiled.script, map: null, meta: { editSequenceWatchFiles: compiled.meta?.sfcSrcDeps } }
-    },
-    renderChunk(code, chunk) {
-      if (stateful) {
-        return { code: `${code}${createStatefulHmrInitialGraph(chunk, this, root)}`, map: null }
-      }
     },
   }
 }
