@@ -23,6 +23,34 @@ function fixture() {
 }
 
 describe('exact expected IDE errors', () => {
+  it.each(['[error] ', 'ERROR ', 'ERROR  '])('matches the build message without the reporter framing %s', (prefix) => {
+    const { cases, plan, diagnostics } = fixture()
+    const expected = { source: 'build' as const, level: 'error' as const, channel: 'dev-process', text: '[weapp-vite] stateful HMR: Build failed with 1 error:', count: 1 }
+    plan.checkpoints[0]!.expectedErrors = [expected]
+    diagnostics[1]!.event = { ...diagnostics[1]!.event, ...expected, text: prefix + expected.text }
+    expect(evaluateExpectedErrors(cases, diagnostics)).toEqual([])
+    expect(diagnostics[1]!.event.text).toBe(prefix + expected.text)
+    diagnostics[1]!.event.text += ' unexpected detail'
+    expect(evaluateExpectedErrors(cases, diagnostics).some(error => error.startsWith('Unclassified'))).toBe(true)
+  })
+
+  it.each(['runtime', 'different-channel', 'wrong-severity', 'unknown-prefix'])('does not strip build framing for %s', (difference) => {
+    const { cases, plan, diagnostics } = fixture()
+    const expected = { source: 'build' as const, level: 'error' as const, channel: 'dev-process', text: 'intentional failure', count: 1 }
+    plan.checkpoints[0]!.expectedErrors = [expected]
+    diagnostics[1]!.event = { ...diagnostics[1]!.event, ...expected, text: 'ERROR intentional failure' }
+    if (difference === 'runtime') {
+      diagnostics[1]!.event.source = 'runtime'
+    }
+    else if (difference === 'different-channel') {
+      diagnostics[1]!.event.channel = 'runtime'
+    }
+    else {
+      diagnostics[1]!.event.text = difference === 'wrong-severity' ? '[warn] intentional failure' : 'FAIL intentional failure'
+    }
+    expect(evaluateExpectedErrors(cases, diagnostics).some(error => error.startsWith('Unclassified'))).toBe(true)
+  })
+
   it('consumes only the exact error count in a completed case checkpoint action', () => {
     const { cases, diagnostics } = fixture()
     expect(evaluateExpectedErrors(cases, diagnostics)).toEqual([])
