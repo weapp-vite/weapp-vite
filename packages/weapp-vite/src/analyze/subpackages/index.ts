@@ -2,10 +2,13 @@ import type { RolldownOutput } from 'rolldown'
 import type { CompilerContext } from '../../context'
 import type { AnalyzeComponentJsonConfig } from '../components'
 import type { AnalyzeSubpackagesResult, ModuleAccumulator, PackageAccumulator, PackageClassifierContext } from './types'
+import { createHash } from 'node:crypto'
 import { build } from 'vite'
 import { createSharedBuildConfig } from '../../runtime/sharedBuildConfig'
 import { analyzeComponentUsage, collectAnalyzeComponentJsonConfigs } from '../components'
 import { createGlassEaselAnalyzeResult } from '../glassEasel'
+import { createArtifactAnalysis } from './artifacts'
+import { createAnalyzeBudgetCheck } from './budget'
 import { createAnalyzeMetadata } from './metadata'
 import { processOutput } from './output'
 import { expandVirtualModulePlacements, summarizeModules, summarizePackages, summarizeSubPackages } from './summary'
@@ -35,10 +38,7 @@ export interface AnalyzeSubpackagesOptions {
   onArtifact?: (fileName: string, content: string | Uint8Array) => void
 }
 
-export async function analyzeSubpackages(
-  ctx: CompilerContext,
-  options?: AnalyzeSubpackagesOptions,
-): Promise<AnalyzeSubpackagesResult> {
+async function analyzeBuild(ctx: CompilerContext, options?: AnalyzeSubpackagesOptions): Promise<AnalyzeSubpackagesResult> {
   const { configService, scanService, buildService } = ctx
 
   if (!configService || !scanService || !buildService) {
@@ -114,9 +114,18 @@ export async function analyzeSubpackages(
   expandVirtualModulePlacements(modules, packages, classifierContext)
   const subPackages = summarizeSubPackages(subPackageMetas)
 
-  return {
+  const packageReports = summarizePackages(packages)
+  const artifacts = createArtifactAnalysis(packageReports)
+  const result: AnalyzeSubpackagesResult = {
+    schemaVersion: 2,
+    build: {
+      id: createHash('sha256').update(JSON.stringify([configService.platform, configService.mode, artifacts.files.map(file => [file.file, file.sha256])])).digest('hex'),
+      platform: configService.platform,
+      mode: configService.mode,
+    },
+    artifacts,
     metadata: createAnalyzeMetadata(ctx.configService),
-    packages: summarizePackages(packages),
+    packages: packageReports,
     modules: summarizeModules(modules),
     subPackages,
     components: analyzeComponentUsage({
@@ -124,5 +133,21 @@ export async function analyzeSubpackages(
       subPackages,
     }),
     glassEasel: createGlassEaselAnalyzeResult(ctx),
+  }
+  result.budgetChecks = createAnalyzeBudgetCheck(result)
+  return result
+}
+
+export async function analyzeSubpackages(
+  ctx: CompilerContext,
+  options?: AnalyzeSubpackagesOptions,
+): Promise<AnalyzeSubpackagesResult> {
+  const previous = ctx.runtimeState.build.output.analysisChunks
+  ctx.runtimeState.build.output.analysisChunks = new Map()
+  try {
+    return await analyzeBuild(ctx, options)
+  }
+  finally {
+    ctx.runtimeState.build.output.analysisChunks = previous
   }
 }

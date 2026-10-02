@@ -1,4 +1,4 @@
-import type { OutputBundle, PluginContext } from 'rolldown'
+import type { OutputBundle, OutputChunk, PluginContext } from 'rolldown'
 import type { SharedChunkStrategy } from '../../../../types'
 
 export interface SharedChunkDuplicateDetail {
@@ -26,6 +26,7 @@ export interface SharedChunkFallbackPayload {
 }
 
 export interface ApplySharedChunkStrategyOptions {
+  onEmitChunk?: (fileName: string, chunk: OutputChunk) => void
   strategy: SharedChunkStrategy
   subPackageRoots: Iterable<string>
   onDuplicate?: (payload: SharedChunkDuplicatePayload) => void
@@ -33,6 +34,7 @@ export interface ApplySharedChunkStrategyOptions {
 }
 
 export interface SharedChunkRuntimeContext {
+  onEmitChunk?: (fileName: string, chunk: OutputChunk) => void
   pluginContext: PluginContext
   bundle: OutputBundle
   subPackageRoots: string[]

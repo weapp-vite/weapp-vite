@@ -117,6 +117,10 @@ export interface WeappAnalyzeBudgetConfig {
    * 独立分包预算阈值（字节）。
    */
   independentBytes?: number
+  /** 包含已识别 runtime 模块的文件字节上界预算，包含混合 chunk 的业务部分。 */
+  runtimeBytes?: number
+  /** 按分包 root 覆盖单包预算；主包使用 __main__。 */
+  packageBytes?: Record<string, number>
   /**
    * 预算预警比例，默认 0.85。
    */
