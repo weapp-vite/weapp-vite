@@ -21,7 +21,8 @@ const writeFileMock = vi.hoisted(() => vi.fn())
 const readFileMock = vi.hoisted(() => vi.fn())
 const rmMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@weapp-vite/miniprogram-automator', () => ({
+vi.mock('@weapp-vite/miniprogram-automator', async importOriginal => ({
+  ...await importOriginal<typeof import('@weapp-vite/miniprogram-automator')>(),
   Launcher: class {
     connect = connectMock
     launch = launchMock
@@ -215,10 +216,11 @@ describe('automator helpers', () => {
       })
       expect(resolveCliPathMock).toHaveBeenCalledTimes(1)
       expect(launchMock).toHaveBeenCalledWith({
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         cliPath: '/Applications/wechat-cli',
         port: 19_510,
         projectPath: mockProjectPath,
-        timeout: 12_345,
         trustProject: false,
       })
     })
@@ -235,9 +237,10 @@ describe('automator helpers', () => {
       })
       expect(resolveCliPathMock).not.toHaveBeenCalled()
       expect(launchMock).toHaveBeenCalledWith({
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         cliPath: '/custom/cli',
         projectPath: mockProjectPath,
-        timeout: 30_000,
         trustProject: false,
       })
     })
@@ -332,7 +335,7 @@ describe('automator helpers', () => {
           projectPath: '/workspace/project',
           timeout: 30_000,
         })
-        const expectation = expect(launchPromise).rejects.toThrow('Wait timed out after 30000 ms')
+        const expectation = expect(launchPromise).rejects.toMatchObject({ code: 'DEVTOOLS_OPERATION_TIMEOUT' })
 
         await vi.advanceTimersByTimeAsync(30_000)
         await expectation
@@ -357,9 +360,10 @@ describe('automator helpers', () => {
       })
 
       expect(launchMock).toHaveBeenCalledWith({
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         cliPath: '/Applications/wechat-cli',
         projectPath: mockProjectPath,
-        timeout: 30_000,
         trustProject: true,
       })
       expect(mkdirMock).toHaveBeenCalledTimes(1)
@@ -405,7 +409,8 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenCalledWith({
-        timeout: 3_000,
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
       expect(rmMock).not.toHaveBeenCalled()
@@ -418,7 +423,8 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenCalledWith({
-        timeout: undefined,
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
     })
@@ -439,7 +445,8 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenCalledWith({
-        timeout: undefined,
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
     })
@@ -465,11 +472,13 @@ describe('automator helpers', () => {
       })
 
       expect(connectMock).toHaveBeenNthCalledWith(1, {
-        timeout: undefined,
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         wsEndpoint: 'ws://127.0.0.1:19510',
       })
       expect(connectMock).toHaveBeenNthCalledWith(2, {
-        timeout: undefined,
+        signal: expect.any(AbortSignal),
+        timeout: expect.any(Number),
         wsEndpoint: 'ws://127.0.0.1:19511',
       })
     })

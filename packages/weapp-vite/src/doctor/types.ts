@@ -1,3 +1,4 @@
+import type { OperationDiagnostics } from '@weapp-vite/miniprogram-automator'
 import type { AnalyzeBudgetConfig } from '../analyze/subpackages/types'
 import type { MpPlatform } from '../types'
 
@@ -59,6 +60,9 @@ export interface DoctorRuntimeFact {
   code: string
 }
 export interface DoctorRuntimeProbeOptions {
+  /** 所有已请求探针的总预算，包含本次连接清理。 */
+  timeout?: number
+  signal?: AbortSignal
   /** 只读检查的显式 CLI；仅 login 为 true 时执行原生查询。 */
   cliPath?: string
   /** 显式允许原生 islogin，可能启动 IDE，必须同时指定 cliPath。 */
@@ -67,6 +71,8 @@ export interface DoctorRuntimeProbeOptions {
   servicePort?: number
 }
 export interface DoctorRuntimeBundle {
+  /** 仅含固定阶段、预算与资源类别，不包含原始错误文本。 */
+  operation?: OperationDiagnostics
   frameworkVersion: string
   nodeVersion: string
   versions: { ide?: string, sdk?: string }

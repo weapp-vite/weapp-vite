@@ -26,8 +26,9 @@ const { captureDevtoolsLogBaselineMock, cleanupResidualDevtoolsProcessesMock, co
   }
 })
 
-vi.mock('@weapp-vite/miniprogram-automator', () => {
+vi.mock('@weapp-vite/miniprogram-automator', async (importOriginal) => {
   return {
+    ...await importOriginal<typeof import('@weapp-vite/miniprogram-automator')>(),
     Automator: class {
       connect = connectMock
       launch = launchMock
@@ -369,7 +370,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     }
   })
 
-  it('drains a canceled bootstrap before recovery and never connects its late result', async () => {
+  it('exhausts the total budget without retrying a canceled bootstrap or connecting its late result', async () => {
     process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
     process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
@@ -408,7 +409,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     })
     try {
       const task = launchAutomator({ projectPath: sandboxRoot, timeout: 1_000, maxLaunchRetries: 2 })
-      const assertion = expect(task).rejects.toThrow('intentional final bootstrap failure')
+      const assertion = expect(task).rejects.toMatchObject({ code: 'DEVTOOLS_OPERATION_TIMEOUT' })
       await bootstrapStarted
       await vi.advanceTimersByTimeAsync(1_000)
       expect(events).toEqual(['cancel'])
@@ -416,7 +417,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
       expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
       await vi.advanceTimersByTimeAsync(2_000)
       await assertion
-      expect(events.indexOf('exit')).toBeLessThan(events.indexOf('recovery'))
+      expect(events).toEqual(['cancel', 'exit'])
+      expect(execaMock).toHaveBeenCalledOnce()
       expect(connectMock).not.toHaveBeenCalled()
       expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
     }
@@ -425,7 +427,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     }
   })
 
-  it('bounds an uncooperative direct launch and closes its late session without warmup', async () => {
+  it('bounds an uncooperative direct launch and disconnects its late session without warmup', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '1000'
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
     const miniProgram = createMockMiniProgram()
@@ -448,7 +450,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
       await assertion
       connected(miniProgram)
       await vi.advanceTimersByTimeAsync(0)
-      expect(miniProgram.__rawClose).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+      expect(miniProgram.__rawClose).not.toHaveBeenCalled()
       expect(miniProgram.enableLog).not.toHaveBeenCalled()
       expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
       expect(openWechatIdeProjectByHttpMock).not.toHaveBeenCalled()
@@ -522,7 +525,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     const { launchAutomator } = await import('../utils/automator')
     await expect(launchAutomator({ projectPath: sandboxRoot, maxLaunchRetries: 1 })).rejects.toThrow('App.enableLog unavailable')
     expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
-    expect(miniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
     const journal = fs.readFileSync(path.join(sandboxRoot, 'report/events.jsonl'), 'utf8')
     expect(journal).toContain('App.enableLog unavailable')
   })
@@ -566,8 +570,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     }
   })
 
-  it.each(['monitor', 'attempt'] as const)('retains subscription diagnostics when the %s timer wins and does not relaunch', async (timer) => {
-    process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = timer === 'monitor' ? '60000' : '16000'
+  it.each(['60000', '16000'])('retains subscription diagnostics with attempt setting %s and does not exceed the total budget', async (attemptSetting) => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = attemptSetting
     createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
     const miniProgram = createMockMiniProgram()
     launchMock.mockResolvedValue(miniProgram)
@@ -591,7 +595,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
         code: 'E2E_RUNTIME_LOG_SUBSCRIPTION_DEADLINE',
         attempts: 2,
         lastCause,
-        cause: { message: timer === 'monitor' ? 'Timeout in runtime log subscription after 16000ms' : 'Timeout in launch automator#1 after 16000ms' },
+        cause: { message: expect.stringMatching(/Timeout in (?:runtime log subscription|launch automator#1) after 16000ms/) },
       })
       await firstSubscription
       await vi.advanceTimersByTimeAsync(16_000)
@@ -599,7 +603,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
       await vi.advanceTimersByTimeAsync(60_000)
       expect(launchMock).toHaveBeenCalledTimes(1)
       expect(miniProgram.enableLog).toHaveBeenCalledTimes(2)
-      expect(miniProgram.__rawClose).toHaveBeenCalledTimes(1)
+      expect(miniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+      expect(miniProgram.__rawClose).not.toHaveBeenCalled()
       expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
       expect(miniProgram.__rawReLaunch).not.toHaveBeenCalled()
       expect(execaMock).not.toHaveBeenCalled()
@@ -620,7 +625,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await expect(launchAutomator({ projectPath: sandboxRoot, maxLaunchRetries: 3 })).rejects.toBe(failure)
     expect(launchMock).toHaveBeenCalledTimes(1)
     expect(miniProgram.enableLog).toHaveBeenCalledTimes(1)
-    expect(miniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
     expect(miniProgram.__rawCurrentPage).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalled()
     expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
@@ -717,38 +723,35 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
   })
 
-  it('retries launch timeout without touching shared IDE cache', async () => {
+  it('does not retry past the total launch deadline or touch shared IDE cache', async () => {
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
     process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT = '3000'
-    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
-
-    createProjectFixture(sandboxRoot, {
-      pages: ['pages/index/index'],
-      subPackages: [],
-    })
-
-    const secondMiniProgram = createMockMiniProgram()
-    launchMock
-      .mockImplementationOnce(async () => {
-        await new Promise(resolve => setTimeout(resolve, 6_000))
-        return createMockMiniProgram()
-      })
-      .mockResolvedValueOnce(secondMiniProgram)
-    execaMock.mockResolvedValueOnce({
-      exitCode: 0,
-      stdout: '',
-      stderr: '',
-    })
-
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'], subPackages: [] })
+    const lateMiniProgram = createMockMiniProgram()
     const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000 })
-
-    expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
-    expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
-    expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
-    expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    vi.useFakeTimers()
+    try {
+      launchMock.mockImplementationOnce(async () => {
+        await new Promise(resolve => setTimeout(resolve, 6_000))
+        return lateMiniProgram
+      })
+      const result = launchAutomator({ projectPath: sandboxRoot, timeout: 3_000 })
+      const assertion = expect(result).rejects.toMatchObject({ code: 'DEVTOOLS_OPERATION_TIMEOUT', operation: { elapsedMs: 3_000 } })
+      await vi.advanceTimersByTimeAsync(3_000)
+      await assertion
+      expect(launchMock).toHaveBeenCalledOnce()
+      expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
+      expect(execaMock).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(3_000)
+      expect(lateMiniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+      expect(lateMiniProgram.__rawClose).not.toHaveBeenCalled()
+      expect(lateMiniProgram.__rawCurrentPage).not.toHaveBeenCalled()
+      expect(lateMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('retries launch when DevTools cli exits before the automator socket is ready', async () => {
@@ -801,7 +804,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
@@ -847,7 +851,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenNthCalledWith(1, sandboxRoot, {
       timeoutMs: 20,
@@ -880,7 +885,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(2)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
   })
@@ -928,7 +934,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(launchMock).not.toHaveBeenCalled()
   })
 
-  it('retries when warmup current page never becomes ready and closes previous miniProgram', async () => {
+  it('retries when warmup current page never becomes ready and disconnects the previous session', async () => {
+    process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT = '20'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
     process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
@@ -954,7 +961,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
@@ -995,7 +1003,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
@@ -1032,7 +1041,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       .mockReturnValue([])
 
     const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, warmupAllowRelaunch: false })
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 10_000, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
@@ -1072,7 +1081,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
@@ -1183,7 +1193,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
 
     expect(launchMock).toHaveBeenCalledTimes(1)
     expect(miniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
-    expect(miniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(miniProgram.__rawDisconnect).toHaveBeenCalledOnce()
+    expect(miniProgram.__rawClose).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).not.toHaveBeenCalled()
   })
@@ -1269,7 +1280,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     })).resolves.toBeTruthy()
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledTimes(1)
     expect(openWechatIdeProjectByHttpMock).toHaveBeenCalledWith(sandboxRoot, {
@@ -1348,7 +1360,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       })
 
     const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, warmupAllowRelaunch: false })
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 10_000, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(3)
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
@@ -1406,7 +1418,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
       })
 
     const { launchAutomator } = await import('../utils/automator')
-    await launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, warmupAllowRelaunch: false })
+    await launchAutomator({ projectPath: sandboxRoot, timeout: 10_000, warmupAllowRelaunch: false })
 
     expect(launchMock).toHaveBeenCalledTimes(4)
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
@@ -1439,7 +1451,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot })
 
     expect(launchMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
     expect(secondMiniProgram.__rawReLaunch).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalledWith(DEFAULT_WECHAT_CLI_PATH, ['cache', '--clean', 'compile'], expect.anything())
@@ -1669,6 +1682,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
   })
 
   it('uses explicit warmup route when launch options provide one', async () => {
+    process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT = '20'
     process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
 
     createProjectFixture(sandboxRoot, {
@@ -1818,6 +1832,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(execaMock).toHaveBeenCalledTimes(1)
     expectBridgeWrapperProjectPath(sandboxRoot, readBridgePayloadFromExecaCall()?.projectPath)
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
@@ -1958,9 +1973,36 @@ describe('automator launch resilience', { concurrent: false }, () => {
       publicComponents: {},
     })
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
+  })
+
+  it.each([
+    ['DEVTOOLS_OPERATION_TIMEOUT', true],
+    ['ECONNREFUSED', true],
+    ['Unexpected server response: 403', false],
+  ])('classifies bridge connection failure %s within the shared budget', async (code, retryable) => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_SKIP_WARMUP = '1'
+    process.env.WEAPP_VITE_E2E_BRIDGE_CONNECT_SETTLE_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const failure = Object.assign(new Error(code), { code })
+    execaMock.mockResolvedValueOnce({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:9420' }), stderr: '' })
+    connectMock.mockRejectedValueOnce(failure).mockResolvedValueOnce(createMockMiniProgram())
+    const { launchAutomator } = await import('../utils/automator')
+    const result = launchAutomator({ projectPath: sandboxRoot, timeout: 3_000, maxLaunchRetries: 1 })
+    if (retryable) {
+      await expect(result).resolves.toBeTruthy()
+      expect(connectMock).toHaveBeenCalledTimes(2)
+    }
+    else {
+      await expect(result).rejects.toBe(failure)
+      expect(connectMock).toHaveBeenCalledTimes(1)
+    }
+    expect(execaMock).toHaveBeenCalledTimes(1)
   })
 
   it('keeps cli bridge wrapper dist files synced with the real project dist', async () => {
@@ -2173,7 +2215,8 @@ describe('automator launch resilience', { concurrent: false }, () => {
     await launchAutomator({ projectPath: sandboxRoot, timeout: 12_345, warmupAllowRelaunch: false })
 
     expect(connectMock).toHaveBeenCalledTimes(2)
-    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawDisconnect).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expect(cleanupResidualDevtoolsProcessesMock).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawCurrentPage).toHaveBeenCalled()
@@ -2257,6 +2300,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(execaMock).toHaveBeenCalledTimes(2)
     expect(execaMock.mock.calls[0]?.[2]?.cancelSignal).toBe(execaMock.mock.calls[1]?.[2]?.cancelSignal)
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9420',
     })
@@ -2394,6 +2438,7 @@ describe('automator launch resilience', { concurrent: false }, () => {
     expect(execaMock).not.toHaveBeenCalledWith(expect.anything(), ['cache', '--clean', 'compile'], expect.anything())
     expectBridgeBootstrapCall(1, 12_345)
     expect(connectMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       timeout: 4_000,
       wsEndpoint: 'ws://127.0.0.1:9527',
     })

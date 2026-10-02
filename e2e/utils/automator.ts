@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-import { Automator } from '@weapp-vite/miniprogram-automator'
+import { Automator, isRecoverableOperationError } from '@weapp-vite/miniprogram-automator'
 // eslint-disable-next-line e18e/ban-dependencies
 import { execa } from 'execa'
 import { runWechatIdeEngineBuildByHttp } from '../../packages/weapp-ide-cli/src/cli/engine'
@@ -250,6 +250,7 @@ interface RuntimeLogMeta {
   dispose: () => void
   reset: () => void
   closed: boolean
+  closing: boolean
   closeWrapped: boolean
 }
 
@@ -575,6 +576,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
       stats.total = 0
     },
     closed: false,
+    closing: false,
     closeWrapped: false,
   }
 
@@ -1738,6 +1740,17 @@ async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIM
   return null
 }
 
+const disconnectedLaunchSessions = new WeakSet<object>()
+
+/** 启动失败和迟到结果仅释放所持连接，不关闭可能由用户打开的项目。 */
+async function disconnectLaunchSession(miniProgram: any) {
+  if (!miniProgram || disconnectedLaunchSessions.has(miniProgram)) {
+    return
+  }
+  disconnectedLaunchSessions.add(miniProgram)
+  miniProgram.disconnect?.()
+}
+
 async function waitForCurrentRouteReady(
   miniProgram: any,
   route: string,
@@ -1778,7 +1791,7 @@ async function waitForCurrentRouteReady(
       options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
-        await miniProgram.close?.().catch(() => {})
+        await disconnectLaunchSession(miniProgram).catch(() => {})
         throw error
       }
       // DevTools 模拟器创建期间 currentPage 可能短暂不可用，继续轮询。
@@ -1825,7 +1838,7 @@ async function waitForAnyCurrentPageReady(
       options.onStartupProtocolError?.(error)
       options.signal?.throwIfAborted()
       if (shouldCloseCurrentPageQueryTimeout(options.closeOnQueryTimeout, queryTimeout) && isRunWithTimeoutError(error, label)) {
-        await miniProgram.close?.().catch(() => {})
+        await disconnectLaunchSession(miniProgram).catch(() => {})
         throw error
       }
       // DevTools 模拟器创建期间 currentPage 可能短暂不可用，继续轮询。
@@ -1883,6 +1896,15 @@ function logRuntimeStats(meta: RuntimeLogMeta) {
   }
 }
 
+function finalizeRuntimeLogMeta(meta: RuntimeLogMeta) {
+  if (meta.closed) {
+    return
+  }
+  meta.closed = true
+  meta.dispose()
+  logRuntimeStats(meta)
+}
+
 export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
   const meta = ensureRuntimeLogMeta(miniProgram, project)
   if (meta.closeWrapped) {
@@ -1894,23 +1916,22 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
   const rawDisconnect = typeof miniProgram.disconnect === 'function' ? miniProgram.disconnect.bind(miniProgram) : undefined
   if (rawDisconnect) {
     miniProgram.disconnect = (...args: any[]) => {
+      if (meta.closed) {
+        return
+      }
       try {
         return rawDisconnect(...args)
       }
       finally {
-        if (!meta.closed) {
-          meta.closed = true
-          meta.dispose()
-          logRuntimeStats(meta)
-        }
+        finalizeRuntimeLogMeta(meta)
       }
     }
   }
   miniProgram.close = async (...args: any[]) => {
-    if (meta.closed) {
+    if (meta.closed || meta.closing) {
       return
     }
-    meta.closed = true
+    meta.closing = true
     try {
       let flushFailed = false
       let flushError: unknown
@@ -1937,8 +1958,8 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
       return result
     }
     finally {
-      meta.dispose()
-      logRuntimeStats(meta)
+      meta.closing = false
+      finalizeRuntimeLogMeta(meta)
     }
   }
 
@@ -2052,7 +2073,7 @@ async function warmupMiniProgramRouteImpl(
       return false
     }
     try {
-      await miniProgram.close?.()
+      await disconnectLaunchSession(miniProgram)
     }
     catch {
     }
@@ -2096,7 +2117,7 @@ async function warmupMiniProgramRouteImpl(
         if (!retryCurrentPage) {
           if (isWarmupRelaunchTimeoutError(retryError)) {
             try {
-              await miniProgram.close?.()
+              await disconnectLaunchSession(miniProgram)
             }
             catch {
             }
@@ -2109,7 +2130,7 @@ async function warmupMiniProgramRouteImpl(
     else {
       if (isWarmupRelaunchTimeoutError(error)) {
         try {
-          await miniProgram.close?.()
+          await disconnectLaunchSession(miniProgram)
         }
         catch {
         }
@@ -2535,13 +2556,13 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
   return miniProgram
 }
 
-async function closeLaunchMiniProgram(miniProgram: any) {
-  try {
-    await runWithTimeout(() => miniProgram?.close?.(), 5_000, 'close canceled launch session')
+function isRecoverableBridgeConnectError(error: unknown) {
+  // 通用分类会把所有协议超时都标记为可重试，但桥接握手只能重试 Tool.getInfo
+  // 探测；后续方法（例如 App.getCurrentPage）的超时属于真实协议错误，需原样抛出。
+  if (error instanceof Error && 'code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT' && 'method' in error) {
+    return error.method === 'Tool.getInfo'
   }
-  catch {
-    miniProgram?.disconnect?.()
-  }
+  return isRecoverableOperationError(error)
 }
 
 export async function launchAutomatorViaCliBridge(
@@ -2560,7 +2581,7 @@ export async function launchAutomatorViaCliBridge(
       ...process.env,
       [AUTOMATOR_LAUNCH_MODE_ENV]: '',
     },
-  }), { waitForExit: true })
+  }), { stage: 'bridge-bootstrap', waitForExit: true })
   process.stdout.write(`[info] [runtime:launch-bridge-step] bootstrap-exit code=${result.exitCode ?? 1} project=${project}\n`)
 
   if ((result.exitCode ?? 1) !== 0) {
@@ -2604,12 +2625,13 @@ export async function launchAutomatorViaCliBridge(
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-attempt endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       miniProgram = await lifecycle.step(
         () => (automator as typeof automator & {
-          connect: (options: { wsEndpoint: string, timeout?: number }) => Promise<any>
+          connect: (options: { wsEndpoint: string, timeout?: number, signal?: AbortSignal }) => Promise<any>
         }).connect({
           wsEndpoint: bridgeResult.wsEndpoint,
+          signal: lifecycle.signal,
           timeout: lifecycle.remainingMs(4_000),
         }),
-        { waitForExit: true, disposeLate: closeLaunchMiniProgram },
+        { stage: 'bridge-connect', waitForExit: true, disposeLate: disconnectLaunchSession },
       )
       process.stdout.write(`[info] [runtime:launch-bridge-step] connect-ok endpoint=${bridgeResult.wsEndpoint} project=${project}\n`)
       break
@@ -2618,10 +2640,8 @@ export async function launchAutomatorViaCliBridge(
       lifecycle.throwIfAborted()
       lastConnectError = error
       const message = error instanceof Error ? error.message : String(error)
-      const handshakeTimedOut = error instanceof Error
-        && 'code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT'
-        && 'method' in error && error.method === 'Tool.getInfo'
-      if (!handshakeTimedOut
+      lifecycle.recordFailure(error)
+      if (!isRecoverableBridgeConnectError(error)
         && !DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
         && !BRIDGE_CONNECT_TIMEOUT_PATTERN.test(message)
         && !BRIDGE_CONNECT_FAILURE_PATTERN.test(message)) {
@@ -2653,7 +2673,7 @@ export async function launchAutomatorViaCliBridge(
     projectPath: options.projectPath,
     wsEndpoint: bridgeResult.wsEndpoint,
   })
-  const releaseSession = lifecycle.own(() => closeLaunchMiniProgram(miniProgram))
+  const releaseSession = lifecycle.own(() => disconnectLaunchSession(miniProgram))
   await lifecycle.pause(BRIDGE_CONNECT_SETTLE_DELAY)
   releaseSession()
   return miniProgram
@@ -2725,12 +2745,14 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
   const launchMode = requestedLaunchMode ?? resolveAutomatorLaunchMode()
   const startupDiagnostics = new Map<string, ReturnType<typeof createStartupProtocolDiagnostics>>()
   let forceProjectRefreshAfterRetry = false
+  const operation = new AutomatorLaunchLifecycle(launchTimeout, 'launch automator')
   return (async () => {
     for (let attempt = 1; attempt <= launchRetries; attempt += 1) {
       let miniProgram: any = null
       let bridgeWrapperProject: BridgeWrapperProject | undefined
       let runtimeLogSubscription: ReturnType<typeof createRuntimeLogSubscription> | undefined
-      const lifecycle = new AutomatorLaunchLifecycle(launchAttemptTimeout, `launch automator#${attempt}`)
+      const attemptBudget = operation.remainingMs(launchAttemptTimeout)
+      const lifecycle = new AutomatorLaunchLifecycle(attemptBudget, `launch automator#${attempt}`, operation.signal)
       const attemptDeadlineAt = lifecycle.deadlineAt
       try {
         return await lifecycle.run(
@@ -2783,18 +2805,19 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             miniProgram = launchMode === AUTOMATOR_LAUNCH_MODE_BRIDGE
               ? await launchAutomatorViaCliBridge(launchOptions, project, lifecycle, devtoolsLogMonitor)
               : await lifecycle.step(() => runWithDevtoolsLogMonitor(
-                  () => automator.launch({ ...launchOptions, timeout: lifecycle.remainingMs(launchTimeout) }),
+                  () => automator.launch({ ...launchOptions, signal: lifecycle.signal, timeout: lifecycle.remainingMs(launchTimeout) }),
                   lifecycle.remainingMs(launchTimeout),
                   'connect direct',
                   devtoolsLogMonitor,
                   async (lateMiniProgram) => {
                     try {
-                      await closeLaunchMiniProgram(lateMiniProgram)
+                      await disconnectLaunchSession(lateMiniProgram)
                     }
                     catch {
                     }
                   },
-                ), { disposeLate: closeLaunchMiniProgram })
+                ), { disposeLate: disconnectLaunchSession })
+            lifecycle.own(() => disconnectLaunchSession(miniProgram), 'automator-session')
             lifecycle.throwIfAborted()
             devtoolsLogMonitor.assertClean(`connect ${launchMode || 'direct'}`)
             process.stdout.write(`[info] [runtime:launch-step] connect-ready mode=${launchMode || 'direct'} project=${project}\n`)
@@ -2806,7 +2829,7 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
               deadlineAt: subscriptionDeadlineAt,
               timeoutMessages: [
                 `Timeout in runtime log subscription after ${subscriptionTimeout}ms`,
-                `Timeout in launch automator#${attempt} after ${launchAttemptTimeout}ms`,
+                `Timeout in launch automator#${attempt} after ${attemptBudget}ms`,
               ],
               subscribe: timeoutMs => miniProgram.enableLog(timeoutMs, { structured: true }),
               assertClean: () => devtoolsLogMonitor.assertClean('runtime log subscription', true),
@@ -2886,14 +2909,6 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           forceProjectRefreshAfterRetry = true
         }
         bridgeWrapperProject?.stopSync?.()
-        if (miniProgram) {
-          try {
-            await closeLaunchMiniProgram(miniProgram)
-          }
-          catch {
-          }
-        }
-
         // 日志订阅已在同一连接内等待完整预算；失败时保留真实错误，不再重启 IDE 掩盖启动结果。
         if (runtimeLogSubscription?.pending) {
           handleLaunchError(error, project)
@@ -2903,6 +2918,10 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
           handleLaunchError(error, project)
         }
 
+        operation.recordFailure(error)
+        if (performance.now() >= operation.deadlineAt) {
+          handleLaunchError(error, project)
+        }
         if (attempt < launchRetries && isLikelyLaunchRetryableError(error)) {
           const rawMessage = error instanceof Error ? error.message : String(error)
           const compactMessage = rawMessage.replace(COMPACT_WHITESPACE_PATTERN, ' ').trim()
@@ -2916,8 +2935,11 @@ export function launchAutomator(options: LaunchAutomatorOptions) {
             channel: 'launch-retry',
             text: `attempt=${attempt}/${launchRetries} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`,
           })
-          await cleanupDevtoolsProcessStateAfterLaunchFailure(error, project)
-          await sleep(LAUNCH_RETRY_DELAY)
+          const recovery = new AutomatorLaunchLifecycle(operation.remainingMs(), 'launch recovery')
+          await recovery.run(async (scope) => {
+            await scope.step(() => cleanupDevtoolsProcessStateAfterLaunchFailure(error, project), { waitForExit: true })
+            await scope.pause(LAUNCH_RETRY_DELAY)
+          })
           continue
         }
 

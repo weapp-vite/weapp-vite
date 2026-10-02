@@ -80,7 +80,8 @@ vi.mock('../src/cli/run-mcp', () => ({
   runMcpCommand: runMcpCommandMock,
 }))
 
-vi.mock('@weapp-vite/miniprogram-automator', () => ({
+vi.mock('@weapp-vite/miniprogram-automator', async importOriginal => ({
+  ...await importOriginal<typeof import('@weapp-vite/miniprogram-automator')>(),
   Launcher: class Launcher {},
   MiniProgram: class MiniProgram {},
   Page: class Page {},
@@ -299,6 +300,8 @@ describe('cli parsing', () => {
       {
         pipeStdout: false,
         pipeStderr: false,
+        timeout: expect.any(Number),
+        signal: expect.any(AbortSignal),
       },
     )
   })
@@ -707,11 +710,14 @@ describe('cli parsing', () => {
       {
         pipeStdout: false,
         pipeStderr: false,
+        timeout: expect.any(Number),
+        signal: expect.any(AbortSignal),
       },
     )
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledTimes(1)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       error: loginRequiredError,
       logger: loggerMock,
       promptOpenIdeLogin: true,
@@ -738,6 +744,7 @@ describe('cli parsing', () => {
     expect(executeMock).toHaveBeenCalledTimes(2)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledTimes(1)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       error: { stderr: '[error] code: 10\n需要重新登录' },
       logger: loggerMock,
       promptOpenIdeLogin: true,
@@ -785,6 +792,7 @@ describe('cli parsing', () => {
     expect(executeMock).toHaveBeenCalledTimes(1)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledTimes(1)
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       error: loginRequiredError,
       logger: loggerMock,
       promptOpenIdeLogin: true,
@@ -899,6 +907,7 @@ describe('cli parsing', () => {
     })
 
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       allowRetry: false,
       error: { stderr: '[error] code: 10\n需要重新登录' },
       logger: loggerMock,
@@ -947,6 +956,7 @@ describe('cli parsing', () => {
     })
 
     expect(promptWechatIdeLoginRetryMock).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
       error: { stderr: '[error] code: 10\n需要重新登录' },
       logger: loggerMock,
       promptOpenIdeLogin: true,

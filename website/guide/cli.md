@@ -41,7 +41,7 @@ wv doctor --runtime --platform weapp
 
 上述选项都需要 `--runtime`。JSON/SARIF 中的 `runtime.<target>.bundle` 包含框架/Node 版本、可取得的 IDE/基础库版本、配置选择摘要、最后成功阶段、有限的固定分类事件及通用复现命令。未知版本省略，终端显示 unknown；不保存原始 Tool.getInfo、CLI 输出、凭据、绝对路径或页面查询参数，不自动上传。`not-run` 不代表检查通过；旧的自定义 runtime adapter 仍可使用原证据结构。
 
-连接和页面/工具 RPC 有界等待，迟到连接只断开自身 websocket，迟到 RPC 不会改写已返回的报告。完整操作层的总 deadline、分类重试和跨进程取消由相应操作层负责；此探针不替代 #1141 的完整工作。
+运行时探针共用默认 10 秒总预算，CLI/监听、登录、连接和页面/工具 RPC 的局部上限受剩余预算约束。`bundle.operation` 记录阶段、累计耗时、剩余预算、尝试次数、未退出操作数及本次资源清理状态；`pending` 明确表示退出时尚未确认释放，不视为通过。超时取消本次请求并断开自身 websocket，迟到连接会被释放，迟到 RPC 不会改写已返回的报告。静态 Doctor 不创建这些操作。
 
 退出码：0 为请求范围完整且无错误；1 为发现门禁错误；2 为未完成或执行失败（优先于 1）。未请求的层标为 not-requested。
 

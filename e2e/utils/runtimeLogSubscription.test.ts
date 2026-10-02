@@ -1,3 +1,4 @@
+import { OPERATION_TIMEOUT_CODE } from '@weapp-vite/miniprogram-automator'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeLogSubscription, isRuntimeLogSubscriptionResponseTimeout, RuntimeLogSubscriptionDeadlineError, waitForRuntimeLogSubscription } from './runtimeLogSubscription'
 
@@ -74,9 +75,9 @@ describe('startup runtime log subscription', () => {
     expect(subscribe).toHaveBeenCalledTimes(1)
   })
 
-  it('preserves outer timeout and last protocol failure while leaving unrelated errors intact', async () => {
+  it.each([undefined, OPERATION_TIMEOUT_CODE])('preserves outer timeout (%s) and last protocol failure while leaving unrelated errors intact', async (code) => {
     const lastCause = new Error('timeout waiting for automator response')
-    const outer = new Error('Timeout in runtime log subscription after 16000ms')
+    const outer = Object.assign(new Error('Timeout in runtime log subscription after 16000ms'), code ? { code } : {})
     const session = createRuntimeLogSubscription({
       subscribe: vi.fn().mockRejectedValueOnce(lastCause).mockImplementation(() => new Promise<void>(() => {})),
       deadlineAt: performance.now() + 16_000,

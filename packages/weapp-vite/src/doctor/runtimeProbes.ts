@@ -40,20 +40,25 @@ export async function inspectDoctorCli(cliPath: string) {
 }
 
 /** TCP 可达只证明监听存在，不证明宿主身份；仅销毁本次创建的 socket。 */
-export async function inspectDoctorListener(port: number): Promise<'listening' | 'not-listening' | 'timeout' | 'unavailable' | 'invalid-port'> {
+export async function inspectDoctorListener(port: number, signal?: AbortSignal): Promise<'listening' | 'not-listening' | 'timeout' | 'unavailable' | 'invalid-port'> {
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     return 'invalid-port'
   }
+  signal?.throwIfAborted()
   return new Promise((resolve) => {
+    let abort: () => void
     const socket = createConnection({ host: '127.0.0.1', port })
     let settled = false
-    const finish = (result: 'listening' | 'not-listening' | 'timeout' | 'unavailable') => {
+    function finish(result: 'listening' | 'not-listening' | 'timeout' | 'unavailable') {
       if (!settled) {
         settled = true
+        signal?.removeEventListener('abort', abort)
         socket.destroy()
         resolve(result)
       }
     }
+    abort = () => finish('timeout')
+    signal?.addEventListener('abort', abort, { once: true })
     socket.setTimeout(1_000, () => finish('timeout'))
     socket.once('connect', () => finish('listening'))
     socket.once('error', (error: NodeJS.ErrnoException) => finish(error.code === 'ECONNREFUSED' ? 'not-listening' : 'unavailable'))
