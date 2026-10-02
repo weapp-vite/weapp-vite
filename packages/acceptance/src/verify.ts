@@ -66,6 +66,7 @@ export async function verifyProject(
       cancelSignal: context.signal,
       timeout: command.timeoutMs,
       forceKillAfterDelay: 2000,
+      killDescendants: true,
       reject: false,
       maxBuffer: 2_000_000,
     })
@@ -74,7 +75,7 @@ export async function verifyProject(
 
     checks.push({
       kind: command.kind,
-      status: result.exitCode === 0 ? 'passed' : 'failed',
+      status: result.failed ? 'failed' : 'passed',
       command: `${command.command} ${command.args.join(' ')}`,
       exitCode: result.exitCode,
       ...(result.timedOut ? { timedOut: true } : {}),

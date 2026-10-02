@@ -1,19 +1,40 @@
 # 2026-10-03 依赖升级与兼容迁移
 
-本轮盘点 233 份 package manifest、268 个外部依赖名称，覆盖 npm workspace、Cargo、独立 npm runner 和 GitHub Actions。目标为最新稳定且兼容的版本，保持各包现有 Node、公开 API、类型和 VS Code 支持底线。版本信息于 2026-10-03 查询官方 npm registry、crates.io 和上游 Actions release。
+本轮盘点 233 份 package manifest、268 个外部依赖名称，覆盖 npm workspace、Cargo、独立 npm runner 和 GitHub Actions。首轮目标为最新稳定且兼容的版本，保持当时各包的 Node、公开 API、类型和 VS Code 支持底线；后续已确认的 Node 与环境展开策略修订见下节。版本信息于 2026-10-03 查询官方 npm registry、crates.io 和上游 Actions release。
 
-## 兼容边界
+## 后续策略修订
+
+首轮升级记录形成后，用户确认继续迁移至 Execa 10.0.1 与 dotenv-expand 1000.0.0，接受相应运行要求与环境文件语义变化：
+
+- acceptance 的直接 Execa 由 9.6.1 升至 10.0.1；`@weapp-vite/acceptance` 和 `@weapp-vite/mcp` 的 Node 范围由 `^20.19.0 || >=22.12.0` 改为 `>=22.12.0`，其他包的 Node 范围不因本次修订改变。
+- 上传环境文件采用 dotenv-expand 1000.0.0 的官方展开语义：`$(...)` 自动执行命令替换，提供 `DOTENV_PRIVATE_KEY` 时解密 `encrypted:` 前缀值。该版本没有公开禁用开关，反斜杠也不能阻止命令替换。
+- 新增直接依赖 `dotenv ^18.0.5`，仅调用保留声明顺序的纯 `parse`，不调用会加载配置或展开环境的入口。原生 `parseEnv` 会按键排序，回归由此发现命令可能重复执行、引用可能拿到原密文；逐文件合并时先删除旧键再赋值，保留最后生效声明的位置，让后续引用复用命令输出和解密结果。
+- 已有进程同名值（包括空字符串）在展开前排除对应文件值，保持原样最高优先级，不执行被覆盖文件值的命令替换或解密；文件优先级和不修改 `process.env` 的契约保留。`envDir: false` 完全跳过此入口的环境文件加载与展开。
+- 含字面 `$(...)` 的凭据直接通过 CI Secrets 或进程环境提供，并避免从其他文件变量再次引用；引用展开后的命令文本仍可能执行。网站与随包上传文档同步这一边界。
+- 单层反向引用保留，但不保证任意多级反向链递归展开：`A=$B`、`B=$C`、`C=value` 在新版得到 `A=$C`、`B=value`、`C=value`。多级引用应先声明基础值，再声明依赖它的变量。默认值与替代值也按新版语义区分 unset / empty：空变量的 `${VAR-fallback}` 为空、`${VAR:-fallback}` 为 fallback、`${VAR+alternate}` 为 alternate、`${VAR:+alternate}` 为空。
+- 独立硬超时探针确认上游在带后缀的循环引用下可能同步无限循环。因此上传指南要求引用无环，同一文件避免重复声明，覆盖值放入更高优先级文件；这是配置约束，不宣称新版具备循环检测或自动恢复。
+
+以下版本表、审计计数、引擎闭包和首轮验证记录保留**首轮快照**含义，包括 dotenv-expand 13.0.0、acceptance 的 Execa 9.6.1 与 Node 20 兼容结论。后续迁移的独立验证如下：
+
+- `pnpm install --frozen-lockfile --ignore-scripts` 与 `node scripts/postinstall-sync.mjs --check` 通过。锁文件只保留本次 Execa、dotenv-expand 及新增 dotenv 的依赖变化。
+- acceptance 包级测试 19 项、MCP acceptance 集成测试 6 项、上传目录 13 个文件 / 137 项测试通过，共 162 项。覆盖真实进程树取消与超时、超时后零退出码仍判失败、环境覆盖、跨文件解密引用、命令只执行一次及 unset / empty 语义。
+- acceptance、MCP、weapp-vite 的包级 typecheck、build 和 test:types 均通过。实际 Node 22.12.0 下通过 acceptance / MCP 公开构建入口、成功与失败命令、取消后的父子进程退出，以及 MCP 服务创建 / 关闭冒烟。
+- `pnpm --filter website-weapp-vite build` 通过，生成的上传页面包含最新迁移约束；随包文档通过既有同步脚本刷新。变更文件 ESLint、changeset frontmatter 与差异检查通过。
+- 发布预演保持 weapp-vite / wevu 固定组为 7.5.0 minor；MCP 因取消 Node 20 支持记录为 2.0.0 major，acceptance 为 0.1.0 minor，并联动 create-weapp-vite patch。
+- 本次验证为 macOS 本地结果，未运行完整根单测、E2E 或 Windows / Linux 矩阵；未替代下文首轮仍待完成的 runtime 验收。上游循环引用风险按前述配置约束记录，未宣称已修复。
+
+## 首轮兼容边界
 
 - TypeScript 保持 6.0.3。7.0.2 不再提供旧 Compiler API，最新 ESLint parser、repoctl、Volar 与 Vue SFC 类型检查尚不能共同迁移。
-- dotenv-expand 升至 13.0.0：官方 tarball 的变量展开实现与 12.0.3 完全相同，仅更新 dotenv 依赖。1000.0.0 自动执行命令替换及解密，不适用于当前上传凭据契约。回归覆盖字面命令文本、加密前缀、转义、默认值、环境覆盖及不修改 process.env。
+- dotenv-expand 升至 13.0.0：官方 tarball 的变量展开实现与 12.0.3 完全相同，仅更新 dotenv 依赖。1000.0.0 自动执行命令替换及解密，不适用于当时的上传凭据契约。回归覆盖字面命令文本、加密前缀、转义、默认值、环境覆盖及不修改 process.env。
 - acceptance 使用 Execa 9.6.1，保持 Node 20 支持；IDE CLI 和 Dimina 自有工具使用 10.0.1。公开 peer 范围不收窄。
 - 保留 VitePress 2.0.0-alpha.20、vite-tsconfig-paths 7.0.0-alpha.3 的现有兼容基线；不降级、不引入新的预发布依赖。
 - Dimina upstream 为独立上游快照，保留其固定 commit、工具链和锁文件。初始化 fixture 的 latest 哨兵、local file/workspace 依赖和上游来源标记维持原有测试语义。
 - Rolldown 保持 1.2.12，保留 catalog override 与单版本检查；Vue、React、Babel 等已到本轮稳定目标的依赖不重复改动。
 
-完整的 533 项 pnpm 项目依赖版本集合变化和 75 项独立 npm runner 变化见[解析版本对照](./2026-10-03-dependency-upgrade-versions.md)。以下列出直接声明的变化。
+完整的 533 项 pnpm 项目依赖版本集合变化和 75 项独立 npm runner 变化见[解析版本对照](./2026-10-03-dependency-upgrade-versions.md)。以下列出首轮直接声明的变化，后续修订不回写这份历史快照。
 
-## 直接依赖版本
+## 首轮直接依赖版本
 
 | 依赖 | 升级前声明 | 升级后声明 |
 | --- | --- | --- |
@@ -99,7 +120,7 @@
 - minidev 2.2.5 已为最新，其 request、decompress、ip 以及旧 tar / got / 代理依赖链仍有上游未修复问题。vm2 在 degenerator 的原有 ^3.9.17 范围内刷新至 3.12.2，不保留覆盖。
 - 其他受上游精确版本或窄范围限制的审计项：repoctl 的 pnpm 子包链固定 @yarnpkg/shell 4.0.0 → cross-spawn 7.0.3、adm-zip 0.5 和 UUID 9；cos-wx-sdk-v5 1.8.0 固定 fast-xml-parser 4.5.0；monaco-editor 0.57.0 固定 dompurify 3.4.15；miniprogram-simulate 保持 PostCSS 7；request 限制 form-data ~2.3.2、旧 qs / cookie / UUID。保留上游声明，不用跨范围覆盖隐藏告警。
 
-## 验证记录
+## 首轮验证记录
 
 验证分为原工作区的定向检查和隔离 worktree 的最终复核。原工作区后续出现其他任务并发修改源码与 dist，因此将本任务改动迁至以 `90ff982d7` 为基线的隔离 worktree，并重新安装、构建和验证。以下分开记录已经完成的证据、主动中断的运行与仍待执行的项目；迁移前通过的局部检查不能替代隔离后的完整回归结果。
 

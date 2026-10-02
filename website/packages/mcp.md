@@ -69,6 +69,8 @@ wv mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 
 ## 安装
 
+直接使用 `@weapp-vite/mcp` 或 `@weapp-vite/acceptance` 需要 **Node.js >=22.12.0**，不再支持 Node 20。使用集成入口 `wv mcp` 时，仍须满足 `weapp-vite` 的 Node 范围 `^22.18.0 || ^24.11.0 || >=26.0.0`。
+
 ```bash
 pnpm add @weapp-vite/mcp
 ```
