@@ -13,6 +13,7 @@ import { createWebDevServerEnv, resolveWebDevServerUrl } from '../utils/webDevSe
 
 const ROOT = path.resolve(import.meta.dirname, '../..')
 const ACTIVE_PAGE = '[data-weapp-page-active="true"]'
+const IMPORT_STYLESHEET_URL = 'https://styles.example.test/issue-1126.css'
 
 async function readStyle(page: Page, selector: string) {
   return await page.locator(`${ACTIVE_PAGE} ${selector}`).evaluate((element) => {
@@ -41,12 +42,32 @@ describe('issue #1126: application style ownership', { concurrent: false }, () =
 
   beforeAll(async () => {
     project = await createIssueRegressionProject(1126)
+    // 外部 @import 保留至浏览器，由测试提供样式响应，不写入共用的小程序 fixture。
+    const pageFile = path.join(project, 'src/pages/index/index.vue')
+    const pageSource = await readFile(pageFile, 'utf8')
+    await writeFile(pageFile, pageSource.replace('</template>', `
+  <view class="cascade-container">
+    <text id="cascade-probe" class="cascade-probe">Local cascade</text>
+  </view>
+  <text id="import-probe" class="import-probe">Imported local style</text>
+</template>`))
+    const cssFile = path.join(project, 'src/pages/index/index.css')
+    const localStyle = await readFile(cssFile, 'utf8')
+    await writeFile(cssFile, `@import url("${IMPORT_STYLESHEET_URL}");
+${localStyle}
+page .cascade-probe { color: red; }
+.cascade-container .cascade-probe { color: blue; }
+`)
     browser = await chromium.launch({ channel: process.env.WEAPP_VITE_WEB_E2E_CHANNEL })
     server = await serveProject(project)
   })
 
   beforeEach(async () => {
     page = await browser!.newPage()
+    await page.route(IMPORT_STYLESHEET_URL, route => route.fulfill({
+      contentType: 'text/css',
+      body: '.import-probe { color: rgb(1, 2, 3); }',
+    }))
     errors = []
     page.on('pageerror', error => errors.push(error.message))
   })
@@ -68,6 +89,23 @@ describe('issue #1126: application style ownership', { concurrent: false }, () =
     await page.goto(server!.resolvedUrls!.local[0])
     expect(await readStyle(page, '#global-probe')).toMatchObject({ color: 'rgb(231, 17, 83)', fontSize: '32px' })
     expect(await readStyle(page, '#local-probe')).toMatchObject({ color: 'rgb(15, 121, 37)', fontSize: '32px' })
+  })
+
+  it('1126.page-selector-specificity', async () => {
+    await page.goto(server!.resolvedUrls!.local[0])
+    expect(await readStyle(page, '#cascade-probe')).toMatchObject({ color: 'rgb(0, 0, 255)' })
+  })
+
+  it('1126.local-stylesheet-import', async () => {
+    await page.goto(server!.resolvedUrls!.local[0])
+    await expect.poll(() => readStyle(page, '#import-probe')).toMatchObject({ color: 'rgb(1, 2, 3)' })
+    const importedUrls = await page.locator(ACTIVE_PAGE).evaluate((host) => {
+      return Array.from(host.shadowRoot!.querySelectorAll('style'))
+        .flatMap(style => Array.from(style.sheet?.cssRules ?? []))
+        .filter(rule => rule.type === CSSRule.IMPORT_RULE)
+        .map(rule => (rule as CSSImportRule).href)
+    })
+    expect(importedUrls).toContain(IMPORT_STYLESHEET_URL)
   })
 
   it('1126.inline-style', async () => {

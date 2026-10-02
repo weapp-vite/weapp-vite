@@ -124,6 +124,7 @@ export function createComponentElementClass({
         this,
         WeappWebComponent.prototype,
         key => typeof key === 'string' ? this.#methods[key] : undefined,
+        this.#properties,
       )
       for (const [propName] of runtimeState.propertyEntries) {
         Object.defineProperty(this, propName, {
@@ -292,8 +293,7 @@ export function createComponentElementClass({
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
       this.#usesLegacyTemplate = typeof result === 'string'
-      return html`<style>${appStyle}
-${runtimeState.styleRef}</style>${typeof result === 'string' ? unsafeHTML(result) : result}`
+      return html`<style>${appStyle}</style><style>${runtimeState.styleRef}</style>${typeof result === 'string' ? unsafeHTML(result) : result}`
     }
 
     requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: unknown) {
@@ -453,7 +453,7 @@ ${runtimeState.styleRef}</style>${typeof result === 'string' ? unsafeHTML(result
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const root = resolveRenderRoot(this)
       const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
-      const styleMarkup = `<style>${appStyle}\n${runtimeState.styleRef}</style>`
+      const styleMarkup = `<style>${appStyle}</style><style>${runtimeState.styleRef}</style>`
       if (typeof result === 'string') {
         root.innerHTML = `${styleMarkup}${result}`
         bindRuntimeEvents(root as ShadowRoot, this.#methods, this)

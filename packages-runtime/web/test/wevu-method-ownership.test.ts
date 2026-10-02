@@ -328,3 +328,48 @@ it('replaces and removes installed methods across host updates without touching 
   element.back = true
   expect(element.properties.back).toBe(true)
 })
+
+it.each(['static', 'runtime'])('respects explicit overrides of ordinary %s methods', async (source) => {
+  const tag = `wv-method-override-${source}`
+  let publicInstance!: ComponentPublicInstance & { calculate: () => string }
+  defineComponent(tag, {
+    template: state => html`<span>${state.prefix}</span>`,
+    component: {
+      data: { prefix: 'owner' },
+      methods: source === 'static' ? { calculate() { return `${this.data.prefix}:original` } } : {},
+      lifetimes: {
+        created() {
+          publicInstance = this as typeof publicInstance
+        },
+      },
+    },
+  })
+  const host = document.createElement(tag) as MethodHost
+  document.body.append(host)
+  await host.updateComplete
+  if (source === 'runtime') {
+    host[WEVU_INSTALL_RUNTIME_METHODS_KEY]({ calculate: () => `${host.data.prefix}:original` })
+    await host.updateComplete
+  }
+  expect(publicInstance.calculate()).toBe('owner:original')
+
+  publicInstance.calculate = function () {
+    return `${this.data.prefix}:replacement`
+  }
+  expect(publicInstance.calculate()).toBe('owner:replacement')
+
+  Object.defineProperty(publicInstance, 'calculate', {
+    configurable: true,
+    get() {
+      return () => `${this.localName}:accessor`
+    },
+  })
+  expect(publicInstance.calculate()).toBe(`${tag}:accessor`)
+
+  Object.defineProperty(publicInstance, 'calculate', {
+    configurable: false,
+    writable: false,
+    value: () => 'locked',
+  })
+  expect(publicInstance.calculate()).toBe('locked')
+})
