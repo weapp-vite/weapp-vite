@@ -53,6 +53,21 @@ Page({ data: { greeting: 'ready' }, onLoad() { console.info('page:load') } })
     await expect(handle?.currentPage()).rejects.toThrow(/closed/i)
   })
 
+  it('exposes DevTools-compatible systemInfo on the headless handle', async () => {
+    const projectPath = createBaseFixture()
+    directories.push(projectPath)
+    const session = await launch({ projectPath })
+    try {
+      await expect(session.systemInfo()).resolves.toMatchObject({
+        platform: 'devtools',
+        SDKVersion: expect.any(String),
+      })
+    }
+    finally {
+      await session.close()
+    }
+  })
+
   it('launches updated classic output in a fresh runtime after closing the previous session', async () => {
     const projectPath = createBaseFixture()
     directories.push(projectPath)
