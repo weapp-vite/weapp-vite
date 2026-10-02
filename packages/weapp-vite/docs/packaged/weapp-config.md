@@ -895,3 +895,11 @@ export default defineConfig({
 `wxml-policy.json` 例如 `["debug-panel"]`。同一文件跨模板或阶段登记会去重；修改、删除、恢复触发完整模板重建与校验。局部构建保留未触及模板的依赖，成功完整构建清理失效登记。不要监听输出目录，也不要把一次读取的结果永久缓存而忽略规则更新。
 
 “最终”指框架管理的输出链完成后的模板，不保证覆盖任意排在该阶段之后的第三方 Vite 插件修改。不保证跨文件／分包回调顺序，不追踪任意文件读取、环境变量或网络响应；第一版不提供内置业务规则、跨文件全局校验、独立 CLI 或报告文件，也不能替代宿主完整语法和运行时检查。
+
+## Analyze 产物消费与预算
+
+小程序 `wv analyze --json --budget-check` 输出 schema v2 的 `artifacts.files`、`build` 与 `budgetChecks`，日志进入 stderr。每个物理文件保留路径、包归属、字节和 SHA-256；runtime 依据模块所属包分类，不依赖 chunk 名称。分包复制的 JS asset 仍保留原模块来源。
+
+`weapp.analyze.budgets.runtimeBytes` 限制包含 runtime 模块的文件字节上界（包含混合 chunk 的业务部分）；`packageBytes` 按分包 root 覆盖单包预算，主包键为 `__main__`。超限或缺少归因时 `--budget-check` 返回非零。
+
+`estimatedBytes` 是按打包器长度分摊的模块估算，`unattributedBytes` 显式保留未知部分。单份共享文件计一次，真正的分包副本分别计入总包；runtime 和重复模块估算不能再加到总包上。旧的无版本报告仍保留兼容读取，但不能作为新 runtime 预算通过证据。

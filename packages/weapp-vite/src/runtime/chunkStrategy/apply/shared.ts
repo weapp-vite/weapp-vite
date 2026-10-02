@@ -48,6 +48,7 @@ export function applySharedChunkStrategy(
   const reservedFileNames = new Set(entries.map(([fileName]) => fileName))
   const localizedDuplicateFileMap = new Map<string, string>()
   const runtimeContext: SharedChunkRuntimeContext = {
+    onEmitChunk: options.onEmitChunk,
     pluginContext: this,
     bundle,
     subPackageRoots,
@@ -256,6 +257,7 @@ export function applySharedChunkStrategy(
   }
 
   localizeCrossSubPackageChunkLeaks.call(this, bundle, {
+    onEmitChunk: options.onEmitChunk,
     subPackageRoots,
     reservedFileNames,
     localizedDuplicateFileMap,

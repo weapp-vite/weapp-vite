@@ -1,14 +1,9 @@
-import type { AnalyzeBudgetConfig, AnalyzeSubpackagesResult, ModuleSourceType, PackageType } from './types'
+import type { AnalyzeBudgetCheckItem } from './budget'
+import type { AnalyzeSubpackagesResult, ModuleSourceType, PackageType } from './types'
+import { createAnalyzeBudgetCheck } from './budget'
 
-export interface AnalyzeBudgetCheckItem {
-  id: string
-  label: string
-  scope: 'total' | PackageType
-  currentBytes: number
-  limitBytes: number
-  ratio: number
-  status: 'ok' | 'warning' | 'exceeded'
-}
+export { createAnalyzeBudgetCheck } from './budget'
+export type { AnalyzeBudgetCheckItem } from './budget'
 
 export interface DuplicateModuleInsight {
   id: string
@@ -68,21 +63,6 @@ function getFileSize(file: AnalyzeSubpackagesResult['packages'][number]['files']
 
 function getCompressedSize(file: AnalyzeSubpackagesResult['packages'][number]['files'][number]) {
   return file.brotliSize ?? file.gzipSize ?? 0
-}
-
-function getBudgetLimit(type: PackageType, budgets: AnalyzeBudgetConfig | undefined) {
-  if (!budgets) {
-    return undefined
-  }
-  if (type === 'main') {
-    return budgets.mainBytes
-  }
-  if (type === 'subPackage') {
-    return budgets.subPackageBytes
-  }
-  if (type === 'independent') {
-    return budgets.independentBytes
-  }
 }
 
 function createPackageSizeMap(result: AnalyzeSubpackagesResult | null | undefined) {
@@ -209,6 +189,9 @@ function createDuplicateAdvice(
 }
 
 function formatBudgetStatus(item: AnalyzeBudgetCheckItem) {
+  if (item.status === 'unknown') {
+    return '归因或产物字节不足，无法验收'
+  }
   if (item.status === 'ok') {
     return '正常'
   }
@@ -237,55 +220,6 @@ function createActionItems(options: {
     actions.push('当前没有预算超限或高收益重复模块，保持观察即可。')
   }
   return actions
-}
-
-export function createAnalyzeBudgetCheck(result: Pick<AnalyzeSubpackagesResult, 'packages' | 'metadata'>): AnalyzeBudgetCheckItem[] {
-  const budgets = result.metadata?.budgets
-  if (!budgets) {
-    return []
-  }
-
-  const items: AnalyzeBudgetCheckItem[] = []
-  const totalBytes = result.packages.flatMap(pkg => pkg.files).reduce((sum, file) => sum + getFileSize(file), 0)
-  const warningRatio = budgets.warningRatio
-
-  const createItem = (options: Omit<AnalyzeBudgetCheckItem, 'ratio' | 'status'>) => {
-    const ratio = options.limitBytes > 0 ? options.currentBytes / options.limitBytes : 0
-    const status: AnalyzeBudgetCheckItem['status'] = ratio >= 1
-      ? 'exceeded'
-      : ratio >= warningRatio
-        ? 'warning'
-        : 'ok'
-    return {
-      ...options,
-      ratio,
-      status,
-    }
-  }
-
-  items.push(createItem({
-    id: '__total__',
-    label: '总包',
-    scope: 'total',
-    currentBytes: totalBytes,
-    limitBytes: budgets.totalBytes,
-  }))
-
-  for (const pkg of result.packages) {
-    const limitBytes = getBudgetLimit(pkg.type, budgets)
-    if (!limitBytes) {
-      continue
-    }
-    items.push(createItem({
-      id: pkg.id,
-      label: pkg.label,
-      scope: pkg.type,
-      currentBytes: pkg.files.reduce((sum, file) => sum + getFileSize(file), 0),
-      limitBytes,
-    }))
-  }
-
-  return items.sort((a, b) => b.ratio - a.ratio || a.label.localeCompare(b.label))
 }
 
 export function createDuplicateModuleInsights(result: AnalyzeSubpackagesResult): DuplicateModuleInsight[] {

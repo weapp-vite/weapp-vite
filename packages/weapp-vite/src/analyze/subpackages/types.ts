@@ -1,6 +1,8 @@
 import type { SubPackageMetaValue } from '../../types'
 import type { AnalyzeComponentUsage } from '../components'
 import type { GlassEaselAnalyzeResult } from '../glassEasel/types'
+import type { AnalyzeArtifactAnalysis } from './artifacts'
+import type { AnalyzeBudgetCheckItem } from './report'
 
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
@@ -11,6 +13,8 @@ export interface AnalyzeBudgetConfig {
   mainBytes: number
   subPackageBytes: number
   independentBytes: number
+  runtimeBytes?: number
+  packageBytes?: Record<string, number>
   warningRatio: number
   source: 'config' | 'default'
 }
@@ -42,6 +46,9 @@ export interface PackageFileEntry {
   type: 'chunk' | 'asset'
   from: BuildOrigin
   size?: number
+  sha256?: string
+  /** 包含虚拟模块在内的打包器长度总和，用于保留无法归因的份额。 */
+  moduleRenderedLength?: number
   gzipSize?: number
   brotliSize?: number
   isEntry?: boolean
@@ -73,6 +80,10 @@ export interface SubPackageDescriptor {
 }
 
 export interface AnalyzeSubpackagesResult {
+  schemaVersion?: 2
+  build?: { id: string, platform: string, mode: string }
+  artifacts?: AnalyzeArtifactAnalysis
+  budgetChecks?: AnalyzeBudgetCheckItem[]
   metadata?: AnalyzeSubpackagesMetadata
   packages: PackageReport[]
   modules: ModuleUsage[]

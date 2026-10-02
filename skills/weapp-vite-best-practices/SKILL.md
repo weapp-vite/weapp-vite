@@ -85,6 +85,7 @@ description: 面向采用 weapp-vite 项目布局仓库或已安装 `weapp-vite`
    - Wot UI / uview-plus / uni-app 组件库异常：同时检查 `weapp.uniApp.include`、resolver 的真实 `resolvedId` / `sourceType: 'wevu-sfc'`，以及目标端条件分支
    - AI 无法稳定操作：查 `AGENTS.md`、`dist/docs`、CLI 路由、MCP
    - 分包体积或 HMR 变慢：先跑 `wv analyze --markdown` / `wv analyze --budget-check`，HMR profile 已开启时再跑 `wv analyze --hmr-profile`
+   - 外部体积消费使用小程序 analyze schema v2 的 `artifacts.files`，按模块所属包识别 runtime，不能猜测 chunk 文件名；实际字节与模块估算分开，runtime 预算采用含混合 chunk 的文件上界，unknown 不能作为通过
    - `preloadRule` 或跨分包跳转：先跑 `wv analyze --preload`，只把宿主导航 API 和可证明路由 binding 作为证据；结合按触发包聚合的实际体积与 2 MB 额度后，再显式配置 `weapp.routeRules.<pattern>.preload`
    - glass-easel 迁移：WebView glass-easel 默认不启用；开发者工具与真机基础库均不低于 `3.8.12` 时，才由用户在宿主 JSON 成对配置 `componentFramework: 'glass-easel'` 与 `glassEaselWebview: true`，再跑 `wv analyze --glass-easel-check`；低版本保持回退，不要新增重复的 `weapp.glassEasel` 配置
    - 状态保持 HMR 不生效：先确认生成的应用/页面 JSON 未使用 Skyline；WebView 项目再确认平台为微信、DevTools 开启服务端口与热重载、`compileHotReLoad: true`，并区分安全 JS/Vue 补丁与 CSS/资源/配置的完整重载回退

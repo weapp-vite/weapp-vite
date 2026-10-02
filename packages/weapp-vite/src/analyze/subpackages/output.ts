@@ -2,6 +2,7 @@ import type { OutputAsset, OutputChunk, RolldownOutput } from 'rolldown'
 import type { CompilerContext } from '../../context'
 import type { BuildOrigin, ModuleAccumulator, ModuleInFile, PackageAccumulator, PackageClassifierContext, PackageFileEntry } from './types'
 import { Buffer } from 'node:buffer'
+import { createHash } from 'node:crypto'
 import { brotliCompressSync, gzipSync } from 'node:zlib'
 import { classifyPackage, normalizeModuleId, resolveAssetSource, resolveModuleSourceType } from './classifier'
 import { ensurePackage, registerModuleInPackage } from './registry'
@@ -46,6 +47,7 @@ function processChunk(
     type: 'chunk',
     from: origin,
     size: typeof chunk.code === 'string' ? Buffer.byteLength(chunk.code, 'utf8') : undefined,
+    sha256: createHash('sha256').update(chunk.code).digest('hex'),
     ...getCompressedSizes(chunk.code),
     isEntry: chunk.isEntry,
     modules: [],
@@ -59,13 +61,17 @@ function processChunk(
   }
 
   const moduleEntries = Object.entries(chunk.modules ?? {})
+  chunkEntry.moduleRenderedLength = moduleEntries.reduce((sum, [, info]) => sum + (typeof info.renderedLength === 'number' && Number.isFinite(info.renderedLength) && info.renderedLength > 0 ? info.renderedLength : 0), 0)
   for (const [rawModuleId, info] of moduleEntries) {
-    const absoluteId = normalizeModuleId(rawModuleId)
+    const generatedRuntime = rawModuleId === '\0rolldown/runtime.js'
+    const absoluteId = generatedRuntime ? rawModuleId : normalizeModuleId(rawModuleId)
     if (!absoluteId) {
       continue
     }
 
-    const { source, sourceType } = resolveModuleSourceType(absoluteId, ctx)
+    const { source, sourceType } = generatedRuntime
+      ? { source: 'rolldown:runtime', sourceType: 'workspace' as const }
+      : resolveModuleSourceType(absoluteId, ctx)
     const moduleEntry: ModuleInFile = {
       id: absoluteId,
       source,
@@ -112,6 +118,7 @@ function processAsset(
     type: 'asset',
     from: origin,
     size: assetBuffer?.byteLength,
+    sha256: assetBuffer ? createHash('sha256').update(assetBuffer).digest('hex') : undefined,
     ...getCompressedSizes(assetBuffer),
   }
 
@@ -157,7 +164,15 @@ export function processOutput(
       onArtifact?.(item.fileName, item.code)
     }
     else if (item.type === 'asset') {
-      processAsset(item, origin, ctx, classifierContext, packages, modules)
+      const originalChunk = ctx.runtimeState?.build?.output?.analysisChunks?.get(item.fileName)
+      if (originalChunk) {
+        processChunk({ ...originalChunk, fileName: item.fileName, code: Buffer.from(item.source).toString('utf8') }, origin, ctx, classifierContext, packages, modules)
+        const classification = classifyPackage(item.fileName, origin, classifierContext)
+        packages.get(classification.id)!.files.get(item.fileName)!.type = 'asset'
+      }
+      else {
+        processAsset(item, origin, ctx, classifierContext, packages, modules)
+      }
       onArtifact?.(item.fileName, item.source)
     }
   }

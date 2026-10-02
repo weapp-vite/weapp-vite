@@ -1,7 +1,7 @@
 import type { Plugin as PluginJson } from '@weapp-core/schematics'
 import type { Buffer } from 'node:buffer'
 import type { DetectResult } from 'package-manager-detector'
-import type { ResolvedId, RolldownOutput } from 'rolldown'
+import type { OutputChunk, ResolvedId, RolldownOutput } from 'rolldown'
 import type { ComponentStyleOptions, VueSfcBlockSignatures } from 'wevu/compiler'
 import type { GlassEaselAnalysisFact } from '../analyze/glassEasel/types'
 import type { AppEntry, ChangeEvent, ComponentsMap, Entry, StyleEntry, SubPackageMetaValue } from '../types'
@@ -142,6 +142,8 @@ export interface RuntimeState {
     }
     output: {
       emittedSource: Map<string, string>
+      /** 仅 analyze 启用，保留转为 asset 的 chunk 模块来源。 */
+      analysisChunks?: Map<string, OutputChunk>
       wevuInternalRuntimeFileName?: string
       wevuInternalRuntimeFileNames?: Map<string, string>
     }

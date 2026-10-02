@@ -21,6 +21,7 @@ export function localizeCrossSubPackageChunkLeaks(
     subPackageRoots: string[]
     reservedFileNames: Set<string>
     localizedDuplicateFileMap: Map<string, string>
+    onEmitChunk?: (fileName: string, chunk: OutputChunk) => void
     importerIndex?: ChunkImporterIndex
     onDuplicate?: (payload: SharedChunkDuplicatePayload) => void
   },
@@ -107,6 +108,7 @@ export function localizeCrossSubPackageChunkLeaks(
           fileName: uniqueFileName,
           source: duplicatedChunk.code,
         })
+        options.onEmitChunk?.(uniqueFileName, duplicatedChunk)
 
         if (duplicatedChunk.map) {
           const sourceMapFileName = reserveUniqueFileName(reservedFileNames, `${uniqueFileName}.map`)
