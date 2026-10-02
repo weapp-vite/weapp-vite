@@ -20,14 +20,10 @@ export async function initializeCompilerContext(ctx: CompilerContext, options?: 
       })
     : Promise.resolve(false)
   const { configService, scanService } = ctx
-  let bootstrapManagedTsconfigChanged = false
-  try {
-    await configService.load(options)
-  }
-  finally {
-    // 配置加载失败也等待自己启动的支持文件任务，避免关闭后继续落盘。
-    bootstrapManagedTsconfigChanged = await bootstrapManagedTsconfigPromise
-  }
+  // 配置加载会根据托管 tsconfig 是否存在决定 Rolldown 的类型配置路径。
+  // 先完成 bootstrap，避免根 tsconfig 已写入而 .weapp-vite/tsconfig.app.json 仍在落盘的窗口。
+  const bootstrapManagedTsconfigChanged = await bootstrapManagedTsconfigPromise
+  await configService.load(options)
   if (options?.syncSupportFiles !== false) {
     try {
       const supportFiles = await syncProjectSupportFiles(ctx, {

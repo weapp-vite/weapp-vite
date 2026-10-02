@@ -69,7 +69,7 @@ describe('createCompilerContext', () => {
     })
   })
 
-  it('loads config while managed tsconfig bootstrap is still pending', async () => {
+  it('waits for managed tsconfig bootstrap before loading config', async () => {
     let resolveBootstrap!: (changed: boolean) => void
     syncManagedTsconfigBootstrapFilesMock.mockReturnValueOnce(new Promise<boolean>((resolve) => {
       resolveBootstrap = resolve
@@ -91,15 +91,16 @@ describe('createCompilerContext', () => {
     })
 
     await Promise.resolve()
-    expect(ctx.configService.load).toHaveBeenCalledWith({
-      cwd: '/project',
-      mode: 'development',
-    })
+    expect(ctx.configService.load).not.toHaveBeenCalled()
     expect(syncProjectSupportFilesMock).not.toHaveBeenCalled()
 
     resolveBootstrap(false)
     await createPromise
 
+    expect(ctx.configService.load).toHaveBeenCalledWith({
+      cwd: '/project',
+      mode: 'development',
+    })
     expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
   })
 
