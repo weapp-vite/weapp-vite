@@ -60,7 +60,7 @@ weapp-vite dev --analyze
 - 单文件上限为 2 MiB，当前 revision 的产物保留预算按原始字节计为 32 MiB；超限明确报错，不读取其他 revision 或磁盘上的替代内容
 - 独立宿主显式启用 OTP 与 loopback Origin 门禁；终端会输出可直接打开的 magic link
 - 页面不再依赖 HTML 全局变量、业务 SSE 或 Vite HMR 作为业务数据通道
-- 独立宿主默认不开放 MCP；仅在进程环境配置非空 `DEVFRAME_MCP_AUTH_TOKEN` 后，在同一端口开放 Bearer + loopback Origin 保护的 MCP，不暴露通用 shared-state 工具
+- 独立宿主自动在同一端口开放本机只读 MCP，无需配置令牌；校验真实 loopback 连接对端与规范 loopback Origin，不暴露通用 shared-state 工具
 
 前端使用 Devframe 的已有连接继承与相对元数据发现，不再写死独立 bridge 地址。路由和复制视图链接保留实际挂载前缀；复制链接仅包含页面路径与查询参数，不携带认证 fragment。`devframe connect --base` 是 MCP connector 的探测选项，不是 Dashboard 的挂载配置。
 
@@ -70,7 +70,7 @@ weapp-vite dev --analyze
 
 独立 Dashboard 的三个只读查询同时提供 DevFrame MCP schema 与 `structuredContent`：`weapp-vite_get-dashboard-state`、`weapp-vite_get-analyze-page`、`weapp-vite_read-dashboard-file`。页面与工具共用报告 revision、事件与文件读取边界，不启动另一份分析服务或 IDE 会话。
 
-在项目中安装 `devframe@1.1.0` 与 `@devframes/agentic@1.1.0` 后，可使用 `pnpm exec devframe connect` 发现正在监听的实例。Dashboard 与连接器进程必须通过私有环境继承同一个令牌。直接 HTTP 地址为 `/__weapp-vite/__mcp`；浏览器 OTP 与 MCP Bearer 不能互相替代。关闭 / 重启清理旧实例记录，记录不包含令牌。
+在项目中安装 `devframe@1.1.0` 与 `@devframes/agentic@1.1.0` 后，可使用 `pnpm exec devframe connect` 发现正在监听的实例，无需配置认证环境变量。直接 HTTP 地址为 `/__weapp-vite/__mcp`；浏览器仍使用 OTP 授权。关闭 / 重启清理旧实例记录。本机模式信任同机进程，不区分本机用户；不要通过代理、隧道或端口转发对外发布 Dashboard。
 
 完整客户端配置、`arg0` 参数与分页顺序见 [MCP 使用指南](../weapp-vite/docs/mcp.md#dashboard-实时只读工具devframe)。既有 `wv mcp` / REST / 微信 IDE 自动化不受影响。嵌入 Vite DevTools 时仍由宿主决定 MCP、认证和发现策略，不能把共享宿主视为只读沙箱。
 

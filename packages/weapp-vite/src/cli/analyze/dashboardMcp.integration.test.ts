@@ -15,7 +15,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { createAnalyzeDashboardDevframe, createDashboardArtifactSnapshot } from '../../dashboard'
 import { ANALYZE_DASHBOARD_DEVFRAME_BASE, createAnalyzeDashboardViteBridge } from './dashboardViteBridge'
 
-const token = 'dashboard-integration-bearer'
 const stateTool = 'weapp-vite_get-dashboard-state'
 const pageTool = 'weapp-vite_get-analyze-page'
 const fileTool = 'weapp-vite_read-dashboard-file'
@@ -30,7 +29,6 @@ beforeEach(async () => {
   await fs.mkdir(instancesDir)
   vi.stubEnv('DEVFRAME_INSTANCES_DIR', instancesDir)
   vi.stubEnv('DEVFRAME_DISABLE_INSTANCE_REGISTRY', '')
-  vi.stubEnv('DEVFRAME_MCP_AUTH_TOKEN', '')
 })
 
 afterEach(async () => {
@@ -63,7 +61,7 @@ function analyzeResult(label = 'initial'): AnalyzeSubpackagesResult {
   }
 }
 
-async function createHost(options: { mcpAuthToken?: string, port?: number, failSetup?: boolean, plugins?: Plugin[] } = {}) {
+async function createHost(options: { port?: number, failSetup?: boolean, plugins?: Plugin[], peerAddress?: string } = {}) {
   const uiRoot = path.join(root, `ui-${servers.length}`)
   const projectRoot = path.join(root, 'source-project')
   await fs.mkdir(uiRoot)
@@ -97,8 +95,20 @@ async function createHost(options: { mcpAuthToken?: string, port?: number, failS
     logLevel: 'silent',
     appType: 'spa',
     plugins: [
-      { name: 'capture-dashboard-test-host', configureServer: (server) => { servers.push(server) } },
-      createAnalyzeDashboardViteBridge({ ...controller, definition }, { mcpAuthToken: options.mcpAuthToken, projectRoot }),
+      {
+        name: 'capture-dashboard-test-host',
+        configureServer(server) {
+          servers.push(server)
+          if ('peerAddress' in options) {
+            server.middlewares.use((request, _response, next) => {
+              // 模拟宿主取得的 socket 元数据，而不是从请求头推导连接对端。
+              Object.defineProperty(request.socket, 'remoteAddress', { value: options.peerAddress, configurable: true })
+              next()
+            })
+          }
+        },
+      },
+      createAnalyzeDashboardViteBridge({ ...controller, definition }, { projectRoot }),
       ...(options.plugins ?? []),
     ],
     server: { host: '127.0.0.1', port: options.port ?? 0, strictPort: true, watch: { ignored: ['**/*'] } },
@@ -136,69 +146,62 @@ async function connectClient(server: ViteDevServer, legacy = false) {
     : { versionNegotiation: { mode: { pin: '2026-07-28' } } })
   clients.push(client)
   await client.connect(new StreamableHTTPClientTransport(new URL('__mcp', baseUrl(server)), {
-    requestInit: { headers: { Origin: new URL(baseUrl(server)).origin, Authorization: `Bearer ${token}` } },
+    requestInit: { headers: { Origin: new URL(baseUrl(server)).origin } },
   }))
   return client
 }
 
-it.each([undefined, '', '   '])('does not mount or advertise MCP for a blank token (%j)', async (envToken) => {
-  vi.stubEnv('DEVFRAME_MCP_AUTH_TOKEN', envToken)
-  const { server } = await createHost()
-  await server.listen()
-  const metadata: unknown = await (await fetch(new URL(DEVFRAME_CONNECTION_META_FILENAME, baseUrl(server)))).json()
-  expect(metadata).not.toHaveProperty('mcp')
-  const missing = await fetch(new URL('__mcp', baseUrl(server)), { method: 'POST' })
-  expect(missing.status).toBe(404)
-  expect(await records()).toEqual([])
-})
-
-it('lets an explicit empty token disable the environment opt-in', async () => {
-  vi.stubEnv('DEVFRAME_MCP_AUTH_TOKEN', token)
-  const { server } = await createHost({ mcpAuthToken: '' })
-  await server.listen()
-  const response = await fetch(new URL('__mcp', baseUrl(server)), { method: 'POST' })
-  expect(response.status).toBe(404)
-  expect(await records()).toEqual([])
-})
-
-it('requires a canonical loopback Origin before checking the independent bearer credential', async () => {
-  vi.stubEnv('DEVFRAME_MCP_AUTH_TOKEN', token)
+it('requires a canonical loopback Origin without a bearer credential', async () => {
   const { server } = await createHost()
   await server.listen()
   const endpoint = new URL('__mcp', baseUrl(server))
-  const cases = [
-    { origin: undefined, authorization: `Bearer ${token}`, status: 403 },
-    { origin: '', authorization: `Bearer ${token}`, status: 403 },
-    { origin: 'null', authorization: `Bearer ${token}`, status: 403 },
-    { origin: 'https://attacker.example', authorization: `Bearer ${token}`, status: 403 },
-    { origin: 'http://127.0.0.1.attacker.example', authorization: `Bearer ${token}`, status: 403 },
-    { origin: 'ftp://localhost', authorization: `Bearer ${token}`, status: 403 },
-    { origin: 'http://localhost/path', authorization: `Bearer ${token}`, status: 403 },
-    { origin: endpoint.origin, authorization: undefined, status: 401 },
-    { origin: endpoint.origin, authorization: 'Bearer incorrect', status: 401 },
-    { origin: endpoint.origin, authorization: 'Basic dashboard-integration-bearer', status: 401 },
+  const origins = [
+    undefined,
+    '',
+    'null',
+    'https://attacker.example',
+    'http://127.0.0.1.attacker.example',
+    'ftp://localhost',
+    'http://localhost/path',
   ]
-  for (const { origin, authorization, status } of cases) {
+  for (const origin of origins) {
     const headers = new Headers({ 'Accept': 'application/json, text/event-stream', 'Content-Type': 'application/json' })
     if (origin !== undefined) {
       headers.set('Origin', origin)
     }
-    if (authorization !== undefined) {
-      headers.set('Authorization', authorization)
-    }
     const response = await fetch(endpoint, { method: 'POST', headers, body: '{}' })
-    expect(response.status).toBe(status)
-    if (status === 401) {
-      expect(response.headers.get('www-authenticate')).toBe('Bearer')
-    }
-    expect(await response.text()).not.toContain(token)
+    expect(response.status).toBe(403)
   }
   const client = await connectClient(server)
   expect((await client.listTools()).tools.map(tool => tool.name).sort()).toEqual([stateTool, pageTool, fileTool].sort())
 })
 
+it.each(['192.0.2.1', '::ffff:192.0.2.1', '2001:db8::1', undefined])('rejects an untrusted socket peer (%s) despite forged locality headers', async (peerAddress) => {
+  const { server } = await createHost({ peerAddress })
+  await server.listen()
+  const response = await fetch(new URL('__mcp', baseUrl(server)), {
+    method: 'POST',
+    headers: {
+      'Origin': new URL(baseUrl(server)).origin,
+      'Content-Type': 'application/json',
+      'Forwarded': 'for=127.0.0.1;host=localhost',
+      'X-Forwarded-For': '127.0.0.1',
+      'X-Real-IP': '127.0.0.1',
+    },
+    body: '{}',
+  })
+  expect(response.status).toBe(403)
+})
+
+it.each(['::1', '::ffff:127.0.0.1'])('accepts a loopback socket peer (%s) without credentials', async (peerAddress) => {
+  const { server } = await createHost({ peerAddress })
+  await server.listen()
+  const client = await connectClient(server)
+  expect((await client.listTools()).tools.map(tool => tool.name).sort()).toEqual([stateTool, pageTool, fileTool].sort())
+})
+
 it.each([false, true])('uses the live RPC authority through initialized MCP (legacy=%s)', async (legacy) => {
-  const host = await createHost({ mcpAuthToken: token })
+  const host = await createHost()
   const { server, controller } = host
   await server.listen()
   const { dashboard } = host
@@ -237,7 +240,7 @@ it.each([false, true])('uses the live RPC authority through initialized MCP (leg
 })
 
 it('advertises only the listening native endpoint and preserves Vite pages, assets and history', async () => {
-  const { server, projectRoot } = await createHost({ mcpAuthToken: token })
+  const { server, projectRoot } = await createHost()
   expect(await records()).toEqual([])
   await server.listen()
   const url = baseUrl(server)
@@ -252,7 +255,6 @@ it('advertises only the listening native endpoint and preserves Vite pages, asse
     rootDir: projectRoot.replace(/\\/g, '/'),
     mcp: { path: `${ANALYZE_DASHBOARD_DEVFRAME_BASE}__mcp` },
   })])
-  expect(JSON.stringify({ registered, metadata })).not.toContain(token)
   for (const route of ['', 'analyze?tab=treemap']) {
     const page = await fetch(new URL(route, url))
     expect(page.status).toBe(200)
@@ -266,7 +268,7 @@ it('advertises only the listening native endpoint and preserves Vite pages, asse
 })
 
 it('releases the replaced host while keeping the controller live through Vite restart', async () => {
-  const { server, controller } = await createHost({ mcpAuthToken: token })
+  const { server, controller } = await createHost()
   await server.listen()
   const oldHttpServer = server.httpServer
   await server.restart()
@@ -286,7 +288,6 @@ it('releases the replaced host while keeping the controller live through Vite re
 it.each(['configure', 'post-configure'] as const)('keeps the live host authoritative after a rejected %s replacement', async (stage) => {
   let generation = 0
   const host = await createHost({
-    mcpAuthToken: token,
     plugins: [{
       name: 'reject-dashboard-replacement',
       configureServer() {
@@ -332,7 +333,6 @@ it('rejects a delayed start after shutdown without opening a Dashboard transport
     closed = resolve
   })
   const { server } = await createHost({
-    mcpAuthToken: token,
     plugins: [{
       name: 'gate-dashboard-start',
       enforce: 'pre',
@@ -390,9 +390,9 @@ it('cleans startup failures without publishing a record or closing a foreign lis
     startedAt: Date.now(),
   })
   try {
-    const failed = await createHost({ mcpAuthToken: token, failSetup: true })
+    const failed = await createHost({ failSetup: true })
     await expect(failed.server.listen()).rejects.toThrow()
-    const { server } = await createHost({ mcpAuthToken: token, port: address.port })
+    const { server } = await createHost({ port: address.port })
     await expect(server.listen()).rejects.toThrow()
     await server.close()
     expect(await records()).toEqual([expect.objectContaining({ id: 'foreign', origin })])

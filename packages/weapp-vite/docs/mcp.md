@@ -34,7 +34,7 @@
 pnpm add -D @weapp-vite/dashboard devframe@1.1.0 @devframes/agentic@1.1.0
 ```
 
-在 Dashboard 进程与 MCP 客户端启动的连接器进程的私有环境中设置同一个高熵 `DEVFRAME_MCP_AUTH_TOKEN`，然后启动 `wv dev --ui`。未设置或仅含空白时，独立 Dashboard 不开放 MCP，也不发布 MCP 实例记录。浏览器仍使用终端提供的 OTP magic link；OTP 不能替代 MCP Bearer 令牌。
+启动 `wv dev --ui` / `wv build --ui` 后，独立 Dashboard 自动开放本机只读 MCP，无需生成令牌或配置认证环境变量。浏览器仍使用终端提供的 OTP magic link；MCP 不需要先完成浏览器授权。
 
 在项目目录启动 stdio 连接器：
 
@@ -55,7 +55,7 @@ pnpm exec devframe connect
 }
 ```
 
-连接器必须继承上述令牌环境变量。先调用 `devframe_connect_list-instances`，按项目与端口选择实例，再用 `devframe_connect_call-tool` 调用工具。注册记录只包含实例定位信息，不保存令牌；关闭或重启时移除本实例的旧记录。若注册目录不可写，上游会输出诊断，可改用 `devframe connect --port <port> --base /__weapp-vite/` 显式探测终端 UI 地址中的端口。
+先调用 `devframe_connect_list-instances`，按项目与端口选择实例，再用 `devframe_connect_call-tool` 调用工具。实例只在真实监听后注册；关闭或重启时移除本实例的旧记录。若注册目录不可写，上游会输出诊断，可改用 `devframe connect --port <port> --base /__weapp-vite/` 显式探测终端 UI 地址中的端口。
 
 | 工具 | 输入 | 结果 |
 | --- | --- | --- |
@@ -67,9 +67,11 @@ pnpm exec devframe connect
 
 三个工具与页面共用同一组只读 RPC，不提供通用 shared-state 工具或写入 / 命令操作。源码仍受报告 allowlist、根目录、符号链接和大小限制；产物仅来自当前分析快照，不回退读取实时 `dist`。运行事件是构建 / HMR / 诊断事件，不是小程序 console/network。
 
-直接使用 Streamable HTTP 时，地址为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`，同时发送 `Authorization: Bearer <token>` 与该地址的规范 loopback `Origin`，例如 `http://127.0.0.1:<port>`。缺少或不合法的 Origin 返回 403，缺少或错误的 Bearer 返回 401。令牌不能放入 URL、实例记录或提交到客户端配置仓库。
+直接使用 Streamable HTTP 时，地址为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`，不需要 `Authorization`，但必须发送规范 loopback `Origin`，例如 `http://127.0.0.1:<port>`。MCP 协议请求（POST / GET / DELETE）缺少或携带不合法的 Origin，或 socket 对端非 loopback / 无法识别时返回 403；`Forwarded` / `X-Forwarded-For` 等请求头不能替代真实连接对端。OPTIONS 预检由 Vite 原生 CORS 处理，可能返回空的 204；它不执行 MCP 工具，也不放宽后续协议请求的门禁。
 
-嵌入 Vite DevTools 时，同一份定义可由宿主的 MCP 暴露，但认证、Origin、共享状态和发现策略仍由宿主配置持有；该环境变量只控制 CLI 独立 Dashboard，不会打开或收窄共享宿主的 MCP。
+该模式信任同机进程，不区分本机用户。不要通过代理、隧道或端口转发对外发布 Dashboard：本机代理会使远端请求表现为本机连接。共享机器上需要身份隔离时，应使用具有相应认证策略的宿主，而不是将独立 Dashboard 当作用户级权限边界。
+
+嵌入 Vite DevTools 时，同一份定义可由宿主的 MCP 暴露，但认证、Origin、共享状态和发现策略仍由宿主配置持有；独立 Dashboard 的本机策略不会打开或收窄共享宿主的 MCP。
 
 ## 2. 快速接入客户端
 

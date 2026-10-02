@@ -13,9 +13,14 @@ import {
 } from './dashboardViteBridge'
 
 const initDevframeMock = vi.hoisted(() => vi.fn())
+const createDashboardMcpMock = vi.hoisted(() => vi.fn())
 
 vi.mock('devframe/initiate', () => ({
   initDevframe: initDevframeMock,
+}))
+
+vi.mock('./dashboardMcp', () => ({
+  createDashboardMcp: createDashboardMcpMock,
 }))
 
 const definition = { id: 'weapp-vite' } as unknown as DevframeDefinition
@@ -53,6 +58,11 @@ async function createHost(plugin: Plugin) {
 describe('analyze Dashboard Vite bridge', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
+    createDashboardMcpMock.mockResolvedValue({
+      route: `${ANALYZE_DASHBOARD_DEVFRAME_BASE}__mcp`,
+      register: vi.fn(),
+      close: vi.fn(async () => {}),
+    })
     root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'dashboard-lifecycle-')))
   })
 
@@ -64,7 +74,7 @@ describe('analyze Dashboard Vite bridge', () => {
   it('closes the owned instance only once through native Vite shutdown', async () => {
     const instance = createInstance()
     initDevframeMock.mockReturnValue(instance)
-    const server = await createHost(createAnalyzeDashboardViteBridge(controller, { mcpAuthToken: '' }))
+    const server = await createHost(createAnalyzeDashboardViteBridge(controller))
     await server.listen()
     await server.close()
     await server.close()
@@ -74,7 +84,7 @@ describe('analyze Dashboard Vite bridge', () => {
 
   it('releases controller state even when transport cleanup fails', async () => {
     initDevframeMock.mockReturnValue(createInstance({ close: vi.fn().mockRejectedValue(new Error('transport close failed')) }))
-    const server = await createHost(createAnalyzeDashboardViteBridge(controller, { mcpAuthToken: '' }))
+    const server = await createHost(createAnalyzeDashboardViteBridge(controller))
     await server.listen()
     await server.close().catch(() => {})
     expect(controller.dispose).toHaveBeenCalledTimes(1)
@@ -85,7 +95,7 @@ describe('analyze Dashboard Vite bridge', () => {
     initDevframeMock.mockImplementationOnce(() => {
       throw failure
     })
-    const server = await createHost(createAnalyzeDashboardViteBridge(controller, { mcpAuthToken: '' }))
+    const server = await createHost(createAnalyzeDashboardViteBridge(controller))
     await expect(server.listen()).rejects.toBe(failure)
     expect(controller.dispose).toHaveBeenCalledTimes(1)
   })
@@ -97,7 +107,7 @@ describe('analyze Dashboard Vite bridge', () => {
     })
     Object.defineProperty(instance, 'ready', { get: () => Promise.reject(failure) })
     initDevframeMock.mockReturnValue(instance)
-    const server = await createHost(createAnalyzeDashboardViteBridge(controller, { mcpAuthToken: '' }))
+    const server = await createHost(createAnalyzeDashboardViteBridge(controller))
     await expect(server.listen()).rejects.toBe(failure)
     expect(instance.close).toHaveBeenCalledTimes(1)
     expect(controller.dispose).toHaveBeenCalledTimes(1)

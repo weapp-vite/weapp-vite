@@ -97,9 +97,9 @@ pnpm --filter @weapp-vite/mcp start
 pnpm add -D @weapp-vite/dashboard devframe@1.1.0 @devframes/agentic@1.1.0
 ```
 
-在 Dashboard 与连接器进程的私有环境中设置同一个高熵 `DEVFRAME_MCP_AUTH_TOKEN`，再启动带 `--ui` 的命令。未配置或仅含空白时，不开放 MCP，也不发布实例记录。不要把令牌写入 URL、日志或提交到仓库。
+启动 `wv dev --ui` / `wv build --ui` 后，Dashboard 自动在同一端口开放本机只读 MCP，无需生成令牌或配置认证环境变量。
 
-MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`，并继承该环境变量。支持 `mcpServers` 的客户端配置示例：
+MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`。支持 `mcpServers` 的客户端配置示例：
 
 ```json
 {
@@ -122,9 +122,11 @@ MCP 客户端在项目目录通过 stdio 执行 `pnpm exec devframe connect`，�
 
 示例中的 revision、路径必须替换为当前状态与报告中的值；`target` 还支持 `previous`，`kind` 还支持 `source`。工具提供对象型 `structuredContent`，与页面共用同一组处理函数。报告更新会拒绝旧 revision 及过期异步读取，不应混拼不同版本的分页。源码保留 allowlist、根目录、符号链接和大小限制，产物不回退到实时 `dist`。事件是构建 / HMR / 诊断信息，不是应用 console/network。
 
-独立端点为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`。直接 HTTP 客户端必须同时提供 `Authorization: Bearer <token>` 与规范 loopback `Origin`；Origin 缺失 / 不合法返回 403，Bearer 缺失 / 错误返回 401。浏览器 OTP 仅用于页面，不是 MCP 凭据。独立 MCP 不开放通用 shared-state 工具、命令或写入能力。
+独立端点为 `http://127.0.0.1:<port>/__weapp-vite/__mcp`。直接 HTTP 客户端不需要 `Authorization`，但必须提供规范 loopback `Origin`。MCP 协议请求（POST / GET / DELETE）的 Origin 缺失 / 不合法，或实际 socket 对端非 loopback / 无法识别时返回 403；不信任转发头提供的地址。OPTIONS 预检由 Vite 原生 CORS 处理，可能返回空的 204，不执行 MCP 工具或放宽后续请求的门禁。浏览器仍通过 OTP 授权，独立 MCP 不开放通用 shared-state 工具、命令或写入能力。
 
-实例只在真实监听后注册，记录不保存令牌；关闭 / 重启清理旧记录。若注册目录不可写，可按上游诊断使用 `devframe connect --port <port> --base /__weapp-vite/` 显式探测。嵌入 Vite DevTools 时，由宿主决定 MCP、认证与发现策略；独立 Dashboard 的环境变量不替共享宿主作决定。
+本机模式信任同机进程，不区分本机用户。不要通过代理、隧道或端口转发对外发布 Dashboard；本机代理会使远端请求表现为本机连接。需要用户身份隔离时，应选择具有相应认证策略的宿主。
+
+实例只在真实监听后注册；关闭 / 重启清理旧记录。若注册目录不可写，可按上游诊断使用 `devframe connect --port <port> --base /__weapp-vite/` 显式探测。嵌入 Vite DevTools 时，仍由宿主决定 MCP、认证与发现策略。
 
 ## 主要能力
 

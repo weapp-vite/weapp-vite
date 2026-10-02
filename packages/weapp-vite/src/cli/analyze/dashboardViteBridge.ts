@@ -18,7 +18,6 @@ const transportPaths = new Set([
 ])
 
 interface AnalyzeDashboardViteBridgeOptions {
-  mcpAuthToken?: string
   projectRoot?: string
 }
 
@@ -39,8 +38,6 @@ export function createAnalyzeDashboardViteBridge(
     apply: 'serve',
     configureServer(server) {
       const httpServer = server.httpServer instanceof Server ? server.httpServer : undefined
-      const authToken = options.mcpAuthToken ?? process.env.DEVFRAME_MCP_AUTH_TOKEN
-      const mcpEnabled = !!authToken?.trim()
       let instance: DevframeInstance | undefined
       let mcp: DashboardMcp | undefined
       let starting: Promise<void> | undefined
@@ -54,30 +51,25 @@ export function createAnalyzeDashboardViteBridge(
           }
           starting ??= (async () => {
             try {
-              if (mcpEnabled && !httpServer) {
+              if (!httpServer) {
                 throw new Error('Dashboard MCP requires the Dashboard Vite HTTP server.')
               }
               instance = initDevframe(withStandaloneDashboardPolicy(controller.definition), {
                 base: ANALYZE_DASHBOARD_DEVFRAME_BASE,
                 distDir: false,
-                ...(httpServer
-                  ? { server: httpServer }
-                  : { host: '127.0.0.1', ws: { sidecar: true } as const }),
+                server: httpServer,
                 allowedOrigins: [],
                 auth: true,
                 mcp: false,
                 register: false,
               })
               await instance.ready
-              if (mcpEnabled) {
-                mcp = await createDashboardMcp(instance, httpServer!, {
-                  authToken: authToken!,
-                  projectRoot: options.projectRoot ?? process.cwd(),
-                  id: controller.definition.id,
-                  name: controller.definition.name,
-                  version: controller.definition.version,
-                })
-              }
+              mcp = await createDashboardMcp(instance, httpServer, {
+                projectRoot: options.projectRoot ?? process.cwd(),
+                id: controller.definition.id,
+                name: controller.definition.name,
+                version: controller.definition.version,
+              })
               if (closed) {
                 await mcp?.close()
                 return

@@ -122,9 +122,9 @@ wv [root]
 
 #### Dashboard MCP
 
-在 Dashboard 进程和 DevFrame 连接器进程的私有环境中设置同一个非空 `DEVFRAME_MCP_AUTH_TOKEN`，即可让 `wv dev --ui` / `wv build --ui` 在 Dashboard 的同一端口开放只读 MCP。未设置或仅含空白时不开放端点，也不发布 MCP 实例记录。
+运行 `wv dev --ui` / `wv build --ui` 后，Dashboard 自动在同一端口开放本机只读 MCP，并在实际监听后发布实例记录，无需配置令牌或认证环境变量。
 
-页面与工具共用当前 revision、分页报告、运行事件及受限文件读取；不提供通用 shared-state 工具或命令执行。MCP 使用 Bearer + loopback Origin，浏览器仍使用 OTP magic link。连接器配置与三个工具的用法见 [Dashboard 实时只读接入](/packages/mcp#dashboard-实时只读接入独立入口)。现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。
+页面与工具共用当前 revision、分页报告、运行事件及受限文件读取；不提供通用 shared-state 工具或命令执行。MCP 校验真实 loopback 连接对端与规范 loopback Origin，浏览器仍使用 OTP magic link。本机模式信任同机进程，不区分本机用户，请勿通过代理、隧道或端口转发对外发布。连接器配置与三个工具的用法见 [Dashboard 实时只读接入](/packages/mcp#dashboard-实时只读接入独立入口)。现有 `wv mcp`、REST 与微信 IDE 自动化入口保持不变。
 
 
 #### Dashboard 嵌入 Vite DevTools
