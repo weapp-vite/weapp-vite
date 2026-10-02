@@ -9,6 +9,33 @@ import { createStatefulHmrControlSource } from './runtimeSource'
 import { StatefulHmrTransport } from './transport'
 
 describe('stateful HMR client failure reporting', () => {
+  it('re-registers the current page after a full rebuild response', async () => {
+    vi.useFakeTimers()
+    const requests: any[] = []
+    const context: Record<string, any> = {
+      setTimeout,
+      clearTimeout,
+      wx: {
+        request(options: any) {
+          requests.push(options)
+          return { abort: vi.fn() }
+        },
+      },
+    }
+    try {
+      runInNewContext(createStatefulHmrControlSource({ buildId: 'build', token: 'test-token', url: 'http://localhost/hmr' }), context)
+      requests[0].success({ statusCode: 200, data: { type: 'registered' } })
+      expect(requests[1].data.action).toBe('poll')
+      requests[1].success({ statusCode: 409, data: { type: 'rebuilding', buildId: 'next-build' } })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(requests.at(-1).data).toMatchObject({ action: 'register', buildId: 'next-build', version: 0 })
+    }
+    finally {
+      context[WEAPP_VITE_STATEFUL_HMR_CLIENT_KEY]?.stop()
+      vi.useRealTimers()
+    }
+  })
+
   it.each(['sync', 'async'] as const)('keeps stopped clients inactive when abort reports a %s failure, allowing a new client to register', async (abortTiming) => {
     vi.useFakeTimers()
     const requests: any[] = []

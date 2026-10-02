@@ -44,3 +44,23 @@ it('forgets explicitly retired partial outputs before a later full build', async
   await prepareOutputOwnership(context, root, [], false)()
   expect(await readFile(file, 'utf8')).toBe('now owned by user')
 })
+
+it('preserves files still owned by a parallel publication scope', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'weapp-output-ownership-scopes-'))
+  roots.push(root)
+  const context = {} as CompilerContext
+  const shared = path.join(root, 'shared.js')
+  const normal = path.join(root, 'normal.js')
+  await writeFile(shared, 'shared')
+  await writeFile(normal, 'normal')
+
+  await prepareOutputOwnership(context, root, ['shared.js', 'normal.js'], false, [], 'normal')()
+  await prepareOutputOwnership(context, root, ['shared.js'], false, [], 'stateful-hmr')()
+  await prepareOutputOwnership(context, root, [], false, [], 'normal')()
+
+  await expect(readFile(shared, 'utf8')).resolves.toBe('shared')
+  await expect(readFile(normal)).rejects.toMatchObject({ code: 'ENOENT' })
+
+  await prepareOutputOwnership(context, root, [], false, [], 'stateful-hmr')()
+  await expect(readFile(shared)).rejects.toMatchObject({ code: 'ENOENT' })
+})

@@ -769,7 +769,9 @@ class StatefulHmrSession {
     removedAssets: string[] = [],
   ): Promise<void> {
     const outDir = this.ctx.configService!.outDir
-    const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), kind !== 'full', removedAssets)
+    // DevEngine 的 full 回调是本轮原生批次输出，不是完整目录清单；
+    // 始终合并所有权，只有显式 removedAssets 才允许删除旧产物。
+    const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), true, removedAssets, 'stateful-hmr')
     const write = async () => {
       await writeStatefulHmrOutput(outDir, output, initialPublicAssets, removedAssets)
       await commitOwnership()

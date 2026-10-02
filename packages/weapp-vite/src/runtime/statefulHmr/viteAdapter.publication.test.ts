@@ -62,13 +62,30 @@ describe('stateful adapter output publication', () => {
     const state = await setup((_output, source) => {
       received.push(source)
     })
-    state.engine.ensureLatestBuildOutput.mockImplementation(async () => {
+    state.engine.ensureCurrentBuildFinish.mockImplementationOnce(async () => {
+      // 这是显式完整请求之前遗留的 partial，不能被新的请求重分类。
       state.callbacks.onOutput!(additional() as any)
+    })
+    state.engine.ensureLatestBuildOutput.mockImplementation(async () => {
       state.callbacks.onOutput!(full() as any)
       state.callbacks.onOutput!(additional() as any)
     })
     await state.adapter.rebuild()
     expect(received).toEqual(['partial', 'full', 'partial'])
+    expect(state.onError).not.toHaveBeenCalled()
+  })
+
+  it('promotes a partial callback from the requested full build without replacing chunk tracking', async () => {
+    const received: string[] = []
+    const state = await setup((_output, source) => {
+      received.push(source)
+    })
+    state.engine.ensureLatestBuildOutput.mockImplementation(async () => {
+      // Rolldown 可能在完整重建中只交付受影响 chunk；该回调仍是完整快照提交边界。
+      state.callbacks.onOutput!(additional() as any)
+    })
+    await state.adapter.rebuild()
+    expect(received).toEqual(['full'])
     expect(state.onError).not.toHaveBeenCalled()
   })
 

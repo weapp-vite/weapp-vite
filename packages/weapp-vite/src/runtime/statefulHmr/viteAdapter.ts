@@ -3,7 +3,7 @@
 import type { dev, DevEngine, DevOptions } from 'rolldown/experimental'
 import type { ResolvedConfig, ViteDevServer } from 'vite'
 import type { GlassEaselNativeScriptUpdate } from '../../analyze/glassEasel/types'
-import type { StatefulHmrOutputSource } from './outputPublication'
+import type { StatefulHmrOutputPublicationHooks, StatefulHmrOutputSource } from './outputPublication'
 import type { StatefulHmrOutputFile } from './outputWriter'
 import {
   WEAPP_VITE_STATEFUL_HMR_BRIDGE_KEY,
@@ -121,6 +121,7 @@ export class StatefulHmrViteAdapter {
   private engine?: StatefulHmrDevEngine
   private initialOutputError?: Error
   private initialRuntimeValidated = false
+  private expectingFullOutput = false
   private readonly publication = new StatefulHmrOutputPublication()
   private readonly chunkModulesByFile = new Map<string, TrackedChunkModules>()
   private readonly outputFilesByModuleId = new Map<string, Set<string>>()
@@ -217,7 +218,19 @@ export class StatefulHmrViteAdapter {
     if (!engine) {
       throw new Error('Vite DevEngine 未初始化，无法执行 stateful HMR 完整刷新。')
     }
-    await this.publication.rebuild(engine, this.initialBuildTimeout, prepare)
+    try {
+      await this.publication.rebuild(engine, this.initialBuildTimeout, prepare, {
+        onFullBuildRequested: () => {
+          this.expectingFullOutput = true
+        },
+        onFullOutputReceived: () => {
+          this.expectingFullOutput = false
+        },
+      } satisfies StatefulHmrOutputPublicationHooks)
+    }
+    finally {
+      this.expectingFullOutput = false
+    }
   }
 
   async registerBundleModules(output: StatefulHmrOutputFile[]): Promise<number> {
@@ -494,8 +507,11 @@ export class StatefulHmrViteAdapter {
           this.initialRuntimeValidated = true
         }
         original(output)
+        const publicationSource = source === 'partial' && this.expectingFullOutput ? 'full' : source
+        // partial 输出只在显式完整重建请求的首个回调中升级为 publication full；
+        // chunk 追踪仍保留原生 source，避免不完整批次清空既有完整映射。
         this.rememberChunkModules(output, source)
-        void this.publication.publish(source, () => this.callbacks.onOutput(output, source)).catch((error) => {
+        void this.publication.publish(publicationSource, () => this.callbacks.onOutput(output, publicationSource)).catch((error) => {
           this.initialOutputError = error instanceof Error ? error : new Error(String(error))
           this.callbacks.onError(this.initialOutputError.message)
         })

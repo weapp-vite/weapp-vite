@@ -2,6 +2,13 @@ import type { DevEngine } from 'rolldown/experimental'
 
 export type StatefulHmrOutputSource = 'full' | 'partial' | 'additional'
 
+export interface StatefulHmrOutputPublicationHooks {
+  /** 在触发原生完整构建前调用。 */
+  onFullBuildRequested?: () => void
+  /** 原生输出回调被完整输出确认接收后调用。 */
+  onFullOutputReceived?: () => void
+}
+
 /** 完整输出确认独立于增量资产，只有原生完整回调及持久化都结束才可提交重建。 */
 export class StatefulHmrOutputPublication {
   private readonly fullOutputs = new Set<(task: Promise<void>) => void>()
@@ -31,6 +38,7 @@ export class StatefulHmrOutputPublication {
     engine: Pick<DevEngine, 'ensureCurrentBuildFinish' | 'triggerFullBuild' | 'ensureLatestBuildOutput'>,
     timeoutMs: number,
     prepare?: () => void | Promise<void>,
+    hooks: StatefulHmrOutputPublicationHooks = {},
   ): Promise<void> {
     let expired = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -54,10 +62,12 @@ export class StatefulHmrOutputPublication {
       const fullOutput = new Promise<void>((resolve, reject) => {
         receiveFullOutput = (task) => {
           this.fullOutputs.delete(receiveFullOutput!)
+          hooks.onFullOutputReceived?.()
           task.then(resolve, reject)
         }
         this.fullOutputs.add(receiveFullOutput)
       })
+      hooks.onFullBuildRequested?.()
       engine.triggerFullBuild()
       await Promise.all([engine.ensureLatestBuildOutput(), fullOutput])
     }
