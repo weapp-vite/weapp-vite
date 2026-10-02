@@ -1,5 +1,6 @@
 import type { ComponentPublicInstance } from './component'
 import type { TemplateScope } from './template'
+import { nameRuntimeEventHandler } from './componentEvents'
 import { getRuntimeExecutionMode, warnRuntimeExecutionOnce } from './execution'
 import { invokeMiniProgramEventHandler } from './inputHandlerResult'
 import { emitRuntimeWarning } from './warning'
@@ -130,7 +131,7 @@ function createEventHandler(
   if (typeof handler !== 'function') {
     return () => {}
   }
-  return (nativeEvent: Event) => {
+  return nameRuntimeEventHandler((nativeEvent: Event) => {
     if (flags?.catch) {
       nativeEvent.stopPropagation()
     }
@@ -150,7 +151,7 @@ function createEventHandler(
       originalEvent: nativeEvent,
     }
     invokeMiniProgramEventHandler(handler, instance, syntheticEvent, nativeEvent)
-  }
+  }, eventName)
 }
 
 function createWxsModule(code: string, id: string, requireMap?: Record<string, any>) {

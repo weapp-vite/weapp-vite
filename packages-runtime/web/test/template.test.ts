@@ -107,11 +107,11 @@ describe('createTemplate', () => {
 </view>`)
 
     const html = render({})
-    expect(html).toContain('class="bind" data-mp-on-click="onBind"')
-    expect(html).toContain('class="catch" data-mp-on-click="onCatch" data-mp-on-flags-click="catch"')
-    expect(html).toContain('class="capture" data-mp-on-click="onCapture" data-mp-on-flags-click="capture"')
-    expect(html).toContain('class="capture-catch" data-mp-on-click="onCaptureCatch" data-mp-on-flags-click="capture,catch"')
-    expect(html).toContain('class="longpress" data-mp-on-contextmenu="onLongPress"')
+    expect(html).toContain('class="bind" data-mp-on-tap="onBind"')
+    expect(html).toContain('class="catch" data-mp-on-tap="onCatch" data-mp-on-flags-tap="catch"')
+    expect(html).toContain('class="capture" data-mp-on-tap="onCapture" data-mp-on-flags-tap="capture"')
+    expect(html).toContain('class="capture-catch" data-mp-on-tap="onCaptureCatch" data-mp-on-flags-tap="capture,catch"')
+    expect(html).toContain('class="longpress" data-mp-on-longpress="onLongPress"')
   })
 
   it('suppresses expression parse errors in safe mode', () => {

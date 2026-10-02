@@ -158,7 +158,7 @@ export async function transformWebVueSfcScript(options: {
   })
   const s = new MagicString(code)
   const templateIdent = meta.kind === 'app' ? undefined : '__weapp_sfc_template__'
-  const styleIdent = meta.kind === 'app' ? undefined : '__weapp_sfc_style__'
+  const styleIdent = '__weapp_sfc_style__'
   const registerName = getSfcRegisterName(meta.kind)
   const factoryName = getSfcFactoryName(meta.kind)
   const registerMetaCode = createRegisterMetaCode(meta, templateIdent, styleIdent)

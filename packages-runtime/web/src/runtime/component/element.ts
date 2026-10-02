@@ -10,9 +10,11 @@ import type {
   TriggerEventOptions,
 } from './types'
 import type { ClassAttributeElement } from './virtualHost'
-import { WEVU_HOST_COMMIT_PROMISE_KEY } from '@weapp-core/constants'
+import { WEVU_HOST_COMMIT_PROMISE_KEY, WEVU_HOST_INSTALL_METHOD_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
+import { getComponentAppStyle, subscribeAppStyle } from '../appStyle'
+import { markComponentEvent, registerComponentEventTarget } from '../componentEvents'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
 import { createRenderContext } from '../renderContext'
 import { hasOwn } from '../utils/object'
@@ -78,6 +80,7 @@ export function createComponentElementClass({
     #state: DataRecord
     #properties: DataRecord
     #methods: Record<string, (event: any) => any> = {}
+    #setupMethods: Record<string, (...args: any[]) => any> = {}
     #publicInstance: ComponentPublicInstance
     #exposedMethodNames = new Set<string>()
     #isMounted = false
@@ -92,11 +95,13 @@ export function createComponentElementClass({
     #needsSetDataRecovery = false
     #hostCommitPromise: Promise<void> | undefined
     #hostCommitUpdate: Promise<boolean> | undefined
+    #stopAppStyle: (() => void) | undefined
     readonly data!: DataRecord
     readonly properties!: DataRecord
 
     constructor() {
       super()
+      registerComponentEventTarget(this)
       const dataOption = runtimeState.componentRef.data ?? {}
       this.#properties = { ...runtimeState.defaultPropertyValues }
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
@@ -180,11 +185,17 @@ export function createComponentElementClass({
     }
 
     triggerEvent(name: string, detail?: any, options: TriggerEventOptions = {}) {
-      this.dispatchEvent(new CustomEvent(name, {
+      this.dispatchEvent(markComponentEvent(new CustomEvent(name, {
         detail,
         bubbles: options.bubbles ?? false,
         composed: options.composed ?? false,
-      }))
+      })))
+    }
+
+    [WEVU_HOST_INSTALL_METHOD_KEY](name: string, method: (...args: any[]) => any) {
+      const bound = method.bind(this.#publicInstance)
+      this.#setupMethods[name] = bound
+      this.#syncMethods(runtimeState.componentRef.methods ?? {})
     }
 
     createSelectorQuery() {
@@ -226,6 +237,9 @@ export function createComponentElementClass({
     }
 
     connectedCallback() {
+      instances.add(this)
+      this.#stopAppStyle?.()
+      this.#stopAppStyle = subscribeAppStyle(() => this.requestUpdate())
       const superConnected = (BaseElement.prototype as { connectedCallback?: () => void }).connectedCallback
       if (supportsLit && typeof superConnected === 'function') {
         superConnected.call(this)
@@ -236,12 +250,17 @@ export function createComponentElementClass({
       }
       runtimeState.lifetimes.attached?.call(this.#publicInstance)
       this.#isMounted = true
-      if (!supportsLit) {
+      if (supportsLit) {
+        this.requestUpdate()
+      }
+      else {
         this.#renderLegacy()
       }
     }
 
     disconnectedCallback() {
+      this.#stopAppStyle?.()
+      this.#stopAppStyle = undefined
       const superDisconnected = (BaseElement.prototype as { disconnectedCallback?: () => void }).disconnectedCallback
       if (supportsLit && typeof superDisconnected === 'function') {
         superDisconnected.call(this)
@@ -280,8 +299,9 @@ export function createComponentElementClass({
 
     render() {
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
-      const styleMarkup = runtimeState.styleRef
-        ? html`<style>${runtimeState.styleRef}</style>`
+      const style = this.#resolveStyle()
+      const styleMarkup = style
+        ? html`<style>${style}</style>`
         : null
       if (typeof result === 'string') {
         this.#usesLegacyTemplate = true
@@ -390,6 +410,7 @@ export function createComponentElementClass({
           bound[name] = fn.bind(this.#publicInstance)
         }
       }
+      Object.assign(bound, this.#setupMethods)
       for (const name of this.#exposedMethodNames) {
         if (name in bound) {
           continue
@@ -436,7 +457,8 @@ export function createComponentElementClass({
     #renderLegacy() {
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const root = resolveRenderRoot(this)
-      const styleMarkup = runtimeState.styleRef ? `<style>${runtimeState.styleRef}</style>` : ''
+      const style = this.#resolveStyle()
+      const styleMarkup = style ? `<style>${style}</style>` : ''
       if (typeof result === 'string') {
         root.innerHTML = `${styleMarkup}${result}`
         bindRuntimeEvents(root as ShadowRoot, this.#methods, this)
@@ -469,6 +491,10 @@ export function createComponentElementClass({
         this.#virtualHostRootElement,
         this.#virtualHostPartTokens,
       )
+    }
+
+    #resolveStyle() {
+      return [getComponentAppStyle(runtimeState.componentRef.options), runtimeState.styleRef].filter(Boolean).join('\n')
     }
   }
 
