@@ -10,6 +10,7 @@ import { verifyFilms } from './verify'
 
 async function main() {
   const command = process.argv[2]
+  const byFormat = (format: 'landscape' | 'portrait') => films.filter(film => film.name === format)
   switch (command) {
     case 'studio': {
       validateTimeline()
@@ -23,10 +24,10 @@ async function main() {
       await renderFilms(films, false)
       break
     case 'render:landscape':
-      await renderFilms([films[0]], false)
+      await renderFilms(byFormat('landscape'), false)
       break
     case 'render:portrait':
-      await renderFilms([films[1]], false)
+      await renderFilms(byFormat('portrait'), false)
       break
     case 'render:stills':
       await renderFilms(films, true)

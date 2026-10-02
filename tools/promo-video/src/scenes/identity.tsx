@@ -1,10 +1,11 @@
 import type { ShotProps } from '../timeline'
 import { useCurrentFrame } from 'remotion'
 import { colors, enter, Label, Logo, mono, Reveal } from '../brand'
+import { copyFor } from '../copy'
 import { BeatStage, Burst } from '../motion'
 import { shotPhase } from '../timeline'
 
-function Emblem({ portrait, outro }: { portrait: boolean, outro: boolean }) {
+function Emblem({ portrait, outro, language }: { portrait: boolean, outro: boolean, language: 'zh' | 'en' }) {
   const frame = Math.min(useCurrentFrame(), 180)
   const size = portrait ? 570 : 700
   const x = portrait ? 224 : 1105
@@ -23,7 +24,7 @@ function Emblem({ portrait, outro }: { portrait: boolean, outro: boolean }) {
         <path d="M1 4 L18 7 L35 4 L18 34 Z" fill="none" stroke="#eaffd9" strokeWidth="0.15" pathLength="1" strokeDasharray="1" strokeDashoffset={1 - enter(frame, 0, 50)} />
         <path d="M21 4 L10 19 L17 22 L17 30 L28 15 L21 12 Z" fill="none" stroke="#ffed98" strokeWidth="0.15" pathLength="1" strokeDasharray="1" strokeDashoffset={1 - enter(frame, 10, 45)} />
       </svg>
-      <Label style={{ position: 'absolute', top: size - 40, width: '100%', textAlign: 'center', fontSize: 16, color: '#809378' }}>ENGINEERED FOR MINI PROGRAMS</Label>
+      <Label style={{ position: 'absolute', top: size - 40, width: '100%', textAlign: 'center', fontSize: 16, color: '#809378' }}>{copyFor(language).brand.engineered}</Label>
     </div>
   )
 }
@@ -32,16 +33,17 @@ export function Intro({ portrait, shot }: ShotProps) {
   const frame = useCurrentFrame()
   const phase = shotPhase(frame, shot)
   const local = frame - shot.cues[phase]
-  const title = phase === 0 ? ['小程序开发，', '进入现代节奏。'] : phase === 1 ? ['原生底色。', '现代锋芒。'] : ['weapp-vite', '给小程序现代化的开发体验']
+  const copy = copyFor(shot.language)
+  const title = copy.intro.phases[phase]
   return (
     <BeatStage shot={shot}>
       <div style={{ position: 'absolute', left: portrait ? 80 : 96, top: portrait ? 400 : 220, width: portrait ? 820 : 1728 }}>
-        <Label style={{ color: colors.green, fontSize: portrait ? 25 : 28, letterSpacing: 6 }}>CREATE. BUILD. GO.</Label>
+        <Label style={{ color: colors.green, fontSize: portrait ? 25 : 28, letterSpacing: 6 }}>{copy.intro.kicker}</Label>
         <div style={{ marginTop: portrait ? 70 : 42, fontFamily: phase === 2 ? mono : undefined, fontSize: phase === 2 ? (portrait ? 116 : 195) : (portrait ? 80 : 97), fontWeight: phase === 2 ? 400 : 800, letterSpacing: -6, lineHeight: 1.2 }}>{title[0]}</div>
         <div style={{ marginTop: 22, color: colors.green, fontSize: phase === 2 ? (portrait ? 44 : 66) : (portrait ? 106 : 151), fontWeight: 850, letterSpacing: -5, lineHeight: 1.24 }}>{title[1]}</div>
         <div style={{ marginTop: portrait ? 75 : 60, display: 'flex', alignItems: 'center', gap: 27 }}>
           <div style={{ height: 5, width: 80 + enter(local, 0, 28) * 220, background: colors.yellow }} />
-          <span style={{ color: '#c3d0c3', fontFamily: mono, fontSize: portrait ? 24 : 30 }}>{['NATIVE × MODERN', 'YOUR IDEAS, IN MOTION', 'START SOMETHING NEW'][phase]}</span>
+          <span style={{ color: '#c3d0c3', fontFamily: mono, fontSize: portrait ? 24 : 30 }}>{copy.intro.sublines[phase]}</span>
         </div>
       </div>
       <Logo size={portrait ? 350 : 290} style={{ position: 'absolute', left: portrait ? 495 : 1490, top: portrait ? 1120 : 690, transform: `rotate(${-12 + enter(local, 0, 12) * 8}deg) scale(${1.2 - enter(local, 0, 10) * 0.2})`, filter: 'drop-shadow(0 0 60px #95ec6925)' }} />
@@ -54,20 +56,21 @@ export function Intro({ portrait, shot }: ShotProps) {
   )
 }
 
-export function Outro({ portrait }: { portrait: boolean }) {
+export function Outro({ portrait, shot }: ShotProps) {
   const frame = useCurrentFrame()
-  const command = 'pnpm create weapp-vite'
+  const copy = copyFor(shot.language)
+  const command = copy.outro.command
   const chars = Math.floor(enter(frame, 60, 50) * command.length)
   return (
     <>
-      <Emblem portrait={portrait} outro />
+      <Emblem portrait={portrait} language={shot.language} outro />
       <div style={{ position: 'absolute', left: portrait ? 80 : 96, top: portrait ? 900 : 285, right: portrait ? 180 : 800 }}>
-        <Reveal><Label style={{ color: colors.green }}>YOUR NEXT PROJECT STARTS HERE</Label></Reveal>
+        <Reveal><Label style={{ color: colors.green }}>{copy.outro.kicker}</Label></Reveal>
         <Reveal delay={5} style={{ marginTop: 20, fontFamily: mono, fontSize: portrait ? 99 : 112, fontWeight: 400, letterSpacing: -7 }}>weapp-vite</Reveal>
         <Reveal delay={12} style={{ marginTop: 28, fontSize: portrait ? 49 : 46, lineHeight: 1.45, fontWeight: 650 }}>
-          给小程序
+          {copy.outro.tagline[0]}
           <br />
-          <span style={{ color: colors.green }}>现代化的开发体验</span>
+          <span style={{ color: colors.green }}>{copy.outro.tagline[1]}</span>
         </Reveal>
         <Reveal delay={24} style={{ marginTop: 55, padding: portrait ? '26px 23px' : '25px 30px', background: '#95ec690d', border: '1px solid #95ec6944', borderRadius: 12, display: 'flex', gap: 20, alignItems: 'center' }}>
           <span style={{ color: colors.green, fontFamily: mono, fontSize: 30 }}>›</span>
@@ -75,7 +78,7 @@ export function Outro({ portrait }: { portrait: boolean }) {
           {frame < 110 && <span style={{ background: colors.green, width: 12, height: 30, opacity: frame % 30 < 15 ? 1 : 0 }} />}
         </Reveal>
         <Reveal delay={36} style={{ marginTop: 30, fontFamily: mono, color: colors.green, fontSize: portrait ? 32 : 31, display: 'flex', justifyContent: 'space-between' }}>
-          <span>vite.weapp.dev</span>
+          <span>{copy.outro.url}</span>
           <span>↗</span>
         </Reveal>
       </div>

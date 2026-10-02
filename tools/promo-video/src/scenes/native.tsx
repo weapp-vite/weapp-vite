@@ -1,6 +1,7 @@
 import type { ShotProps } from '../timeline'
 import { useCurrentFrame } from 'remotion'
 import { colors, Label, mono } from '../brand'
+import { copyFor } from '../copy'
 import { BeatStage, Burst } from '../motion'
 import { shotPhase } from '../timeline'
 
@@ -15,6 +16,8 @@ export function Native({ portrait, shot }: ShotProps) {
   const frame = useCurrentFrame()
   const phase = shotPhase(frame, shot)
   const local = frame - shot.cues[phase]
+  const copy = copyFor(shot.language)
+  const shotCopy = copy.shots[shot.kind]
   const tools = shot.kind === 'toolchain' || (shot.kind === 'native-toolchain' && phase > 0)
   const tool = toolchain[shot.kind === 'native-toolchain' ? phase - 1 : phase] ?? toolchain[0]
   const left = portrait ? 80 : 96
@@ -24,13 +27,14 @@ export function Native({ portrait, shot }: ShotProps) {
         ? (
             <div style={{ position: 'absolute', left, top: portrait ? 525 : 345, width: portrait ? 820 : 1728 }}>
               <Label style={{ color: colors.green, fontSize: 23 }}>
-                MODERN TOOLCHAIN / 0
+                {copy.ui.toolchain}
+                {' / 0'}
                 {phase + 1}
               </Label>
               <div style={{ display: 'flex', flexDirection: portrait ? 'column-reverse' : 'row', alignItems: portrait ? 'flex-start' : 'center', gap: portrait ? 38 : 65, marginTop: 40 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: mono, fontSize: portrait ? 65 : 111, letterSpacing: -6, color: colors.white }}>{tool.name}</div>
-                  <div style={{ marginTop: 34, fontSize: portrait ? 32 : 42, color: colors.green }}>{tool.caption}</div>
+                  <div style={{ marginTop: 34, fontSize: portrait ? 32 : 42, color: colors.green }}>{[copy.ui.typeCaption, copy.ui.buildCaption, copy.ui.ecosystemCaption][phase]}</div>
                 </div>
                 <div style={{ width: portrait ? 300 : 360, height: portrait ? 300 : 360, background: phase === 2 ? colors.yellow : colors.green, color: '#122014', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: mono, fontSize: portrait ? 145 : 180, transform: `rotate(${phase % 2 ? -7 : 5}deg)`, borderRadius: 20 }}>{tool.badge}</div>
               </div>
@@ -43,7 +47,7 @@ export function Native({ portrait, shot }: ShotProps) {
         : phase === 0
           ? (
               <div style={{ position: 'absolute', left, top: portrait ? 550 : 325, width: portrait ? 820 : 1540 }}>
-                <Label style={{ fontSize: 24, color: colors.green }}>YOUR PROJECT</Label>
+                <Label style={{ fontSize: 24, color: colors.green }}>{copy.ui.project}</Label>
                 {files.map((file, i) => (
                   <div key={file} style={{ display: 'flex', alignItems: 'center', height: portrait ? 145 : 120, gap: 35, borderBottom: '1px solid #95ec6925' }}>
                     <span style={{ color: '#5f8565', fontFamily: mono, fontSize: 25 }}>
@@ -58,19 +62,18 @@ export function Native({ portrait, shot }: ShotProps) {
           : phase === 1
             ? (
                 <div style={{ position: 'absolute', left, top: portrait ? 580 : 350, width: portrait ? 820 : 1728 }}>
-                  <Label style={{ color: colors.green, fontSize: 25 }}>原生的写法，原生的能力。</Label>
+                  <Label style={{ color: colors.green, fontSize: 25 }}>{copy.ui.nativeDetail}</Label>
                   {['Page({ ... })', 'Component({ ... })'].map((text, i) => <div key={text} style={{ marginTop: 45, fontFamily: mono, fontSize: portrait ? 70 : 110, color: i ? colors.green : colors.white, letterSpacing: -4 }}>{text}</div>)}
-                  <div style={{ marginTop: 50, fontSize: 36, color: '#8fa694' }}>WXML · WXSS · JSON</div>
+                  <div style={{ marginTop: 50, fontSize: 36, color: '#8fa694' }}>{copy.ui.nativeFiles}</div>
                 </div>
               )
             : (
                 <div style={{ position: 'absolute', left, top: portrait ? 620 : 345, width: portrait ? 820 : 1728 }}>
                   <div style={{ fontSize: portrait ? 90 : 125, fontWeight: 850, letterSpacing: -4 }}>
-                    原生能力
-                    <span style={{ color: colors.green }}>，</span>
+                    {shotCopy.title[0]}
                   </div>
-                  <div style={{ fontSize: portrait ? 112 : 180, fontWeight: 850, color: colors.green, letterSpacing: -6 }}>继续用。</div>
-                  <div style={{ marginTop: 50, fontSize: portrait ? 31 : 40, color: '#a2b6a6' }}>从现有项目开始，渐进升级。</div>
+                  <div style={{ fontSize: portrait ? 112 : 180, fontWeight: 850, color: colors.green, letterSpacing: -6 }}>{shotCopy.title[1]}</div>
+                  <div style={{ marginTop: 50, fontSize: portrait ? 31 : 40, color: '#a2b6a6' }}>{shotCopy.phases[phase].detail}</div>
                 </div>
               )}
       <Burst x={portrait ? 700 : 1610} y={portrait ? 820 : 600} frame={local} yellow={phase === 2} />

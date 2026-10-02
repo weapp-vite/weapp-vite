@@ -4,7 +4,7 @@ import { open, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { bpm, fps } from '../src/timeline'
-import { films, outputDir, videoPath } from './paths'
+import { filmLanguage, films, outputDir, videoPath } from './paths'
 import { runProcess } from './process'
 import { validateTimeline } from './validateTimeline'
 
@@ -162,7 +162,7 @@ export async function verifyFilms() {
     generatedAt: new Date().toISOString(),
     passed: results.every(result => result.passed),
     scope: 'Automated technical verification only. Visual and listening review are separate.',
-    timeline: films.map(film => ({ format: film.name, shots: film.shots.length, cuts: film.cuts })),
+    timeline: films.map(film => ({ id: film.id, language: filmLanguage(film), format: film.name, shots: film.shots.length, cuts: film.cuts })),
     expected: { fps, bpm, framesPerShot: 300, audioSampleRate: 48000, integratedLufs: '-14 ±1', maxTruePeakDbtp: -1 },
     results,
   }

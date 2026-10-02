@@ -5,7 +5,7 @@ import process from 'node:process'
 import { bundle } from '@remotion/bundler'
 import { openBrowser, renderMedia, selectComposition } from '@remotion/renderer'
 import { fps } from '../src/timeline'
-import { cacheDir, entryPoint, publicDir, videoPath } from './paths'
+import { cacheDir, entryPoint, filmLanguage, publicDir, videoPath } from './paths'
 import { prepareAssets } from './prepare'
 import { renderFilmStills } from './stills'
 import { validateTimeline } from './validateTimeline'
@@ -41,6 +41,7 @@ export async function renderFilms(selected: readonly Film[], stillsOnly: boolean
   })
   try {
     for (const film of selected) {
+      const language = filmLanguage(film)
       const composition = await selectComposition({ serveUrl, id: film.id, puppeteerInstance: browser })
       if (composition.width !== film.width || composition.height !== film.height
         || composition.fps !== fps || composition.durationInFrames !== film.frames) {
@@ -85,11 +86,11 @@ export async function renderFilms(selected: readonly Film[], stillsOnly: boolean
           const percentage = Math.floor(progress * 20) * 5
           if (percentage !== lastProgress) {
             lastProgress = percentage
-            console.log(`${film.id}: ${percentage}%`)
+            console.log(`${film.id} (${language}): ${percentage}%`)
           }
         },
       })
-      console.log(`${film.id}: complete`)
+      console.log(`${film.id} (${language}): complete`)
     }
   }
   finally {

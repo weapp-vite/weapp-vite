@@ -11,7 +11,8 @@ import { BPM, SAMPLE_RATE } from './audio/synth'
 
 const repositoryRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const defaultOutput = path.join(repositoryRoot, '.cache/promo-video/public/audio')
-const formats = filmSpecs.map(film => film.name)
+// 中文与英文版本共享同一画幅的配乐编排；只生成每种画幅一份音轨。
+const formats = [...new Set(filmSpecs.map(film => film.name))]
 
 /** 指纹仅包含相对文件名、源码和音频参数，与本机目录无关。 */
 async function sourceFingerprint(): Promise<string> {

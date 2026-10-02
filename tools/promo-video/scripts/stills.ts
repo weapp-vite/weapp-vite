@@ -6,8 +6,9 @@ import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { renderStill } from '@remotion/renderer'
 import sharp from 'sharp'
+import { copyFor } from '../src/copy'
 import { fps } from '../src/timeline'
-import { outputDir } from './paths'
+import { filmKey, filmLanguage, outputDir } from './paths'
 
 interface Still {
   frame: number
@@ -45,13 +46,15 @@ async function contactSheet(stills: Still[], target: string, portrait: boolean, 
 }
 
 export async function renderFilmStills(film: Film, serveUrl: string, composition: VideoConfig, browser: HeadlessBrowser) {
-  const folder = path.join(outputDir, 'frames', film.name)
+  const key = filmKey(film)
+  const copy = copyFor(filmLanguage(film))
+  const folder = path.join(outputDir, 'frames', key)
   await rm(folder, { recursive: true, force: true })
   await mkdir(folder, { recursive: true })
   const middleFrames = film.shots.map(shot => shot.startFrame + Math.floor(shot.frames / 2))
   const cues = film.shots.flatMap(shot => shot.cues.map((cue, index) => ({
     frame: Math.min(shot.endFrame - 1, shot.startFrame + cue + 70),
-    label: `${shot.label} / cue ${index + 1}`,
+    label: `${copy.shots[shot.kind].label} / cue ${index + 1}`,
   })))
   const cutFrames = film.shots.slice(1).flatMap(shot => [shot.startFrame - 1, shot.startFrame, shot.startFrame + 1])
   const lastFrame = film.frames - 1
@@ -69,21 +72,23 @@ export async function renderFilmStills(film: Film, serveUrl: string, composition
       logLevel: 'error',
     })
     const shot = film.shots.find(shot => frame >= shot.startFrame && frame < shot.endFrame)!
-    stills.push({ frame, shotId: shot.id, label: `${shot.label} / ${(frame / fps).toFixed(2)}s`, path: target })
+    stills.push({ frame, shotId: shot.id, label: `${copy.shots[shot.kind].label} / ${(frame / fps).toFixed(2)}s`, path: target })
   }
   const storyboard = middleFrames.map((frame, index) => ({
     ...stills.find(still => still.frame === frame)!,
-    label: `${String(index + 1).padStart(2, '0')} / ${film.shots[index]!.label} / ${(frame / fps).toFixed(1)}s`,
+    label: `${String(index + 1).padStart(2, '0')} / ${copy.shots[film.shots[index]!.kind].label} / ${(frame / fps).toFixed(1)}s`,
   }))
   const cueStills = cues.map(cue => ({ ...stills.find(still => still.frame === cue.frame)!, label: cue.label }))
   const boundaryFrames = new Set([0, 30, ...cutFrames, lastFrame])
-  await contactSheet(storyboard, path.join(outputDir, `storyboard-${film.name}.png`), film.name === 'portrait', 3)
-  await contactSheet(cueStills, path.join(outputDir, `cues-${film.name}.png`), film.name === 'portrait', 3)
-  await contactSheet(stills.filter(still => boundaryFrames.has(still.frame)), path.join(outputDir, `transitions-${film.name}.png`), film.name === 'portrait', 4)
+  await contactSheet(storyboard, path.join(outputDir, `storyboard-${key}.png`), film.name === 'portrait', 3)
+  await contactSheet(cueStills, path.join(outputDir, `cues-${key}.png`), film.name === 'portrait', 3)
+  await contactSheet(stills.filter(still => boundaryFrames.has(still.frame)), path.join(outputDir, `transitions-${key}.png`), film.name === 'portrait', 4)
   await sharp(stills.find(still => still.frame === lastFrame)!.path)
     .png()
-    .toFile(path.join(outputDir, `cover-${film.name}.png`))
+    .toFile(path.join(outputDir, `cover-${key}.png`))
   await writeFile(path.join(folder, 'index.json'), `${JSON.stringify(stills.map(still => ({
+    language: filmLanguage(film),
+    format: film.name,
     frame: still.frame,
     seconds: still.frame / fps,
     shotId: still.shotId,

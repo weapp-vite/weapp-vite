@@ -1,5 +1,6 @@
-import type { FilmSpec } from '../src/timeline'
+import type { Film } from './paths'
 import { bpm, filmSpecs, fps } from '../src/timeline'
+import { filmLanguage } from './paths'
 
 function requireTimeline(condition: boolean, detail: string): asserts condition {
   if (!condition) {
@@ -8,11 +9,19 @@ function requireTimeline(condition: boolean, detail: string): asserts condition 
 }
 
 /** 在生成素材前检查完整时间线，避免漏镜头、重叠或节拍漂移进入成片。 */
-export function validateTimeline(specs: readonly FilmSpec[] = filmSpecs): void {
+export function validateTimeline(specs: readonly Film[] = filmSpecs): void {
   requireTimeline(fps === 60 && bpm === 144, 'expected 60 fps and 144 BPM')
-  requireTimeline(specs.length === 2, 'expected landscape and portrait films')
+  requireTimeline(specs.length === 4, 'expected landscape and portrait films in Chinese and English variants')
   const names = specs.map(film => film.name)
   requireTimeline(new Set(names).size === 2 && names.includes('landscape') && names.includes('portrait'), 'film formats must be unique')
+  const variants = new Set(specs.map(film => `${film.name}:${filmLanguage(film)}`))
+  requireTimeline(variants.size === specs.length, 'film format and language variants must be unique')
+  const expectedIds = new Set(['PromoLandscape', 'PromoPortrait', 'PromoLandscapeEn', 'PromoPortraitEn'])
+  requireTimeline(specs.every(film => expectedIds.has(film.id)) && expectedIds.size === new Set(specs.map(film => film.id)).size, 'expected PromoLandscape/Portrait IDs in Chinese and English variants')
+  for (const format of ['landscape', 'portrait'] as const) {
+    requireTimeline(specs.filter(film => film.name === format).length === 2, `${format}: expected Chinese and English variants`)
+    requireTimeline(new Set(specs.filter(film => film.name === format).map(film => filmLanguage(film))).size === 2, `${format}: expected distinct languages`)
+  }
 
   for (const film of specs) {
     const expectedShots = film.name === 'landscape' ? 12 : 6
@@ -28,7 +37,7 @@ export function validateTimeline(specs: readonly FilmSpec[] = filmSpecs): void {
       const shotContext = `${context} shot ${index + 1}`
       requireTimeline(Boolean(shot.id) && !ids.has(shot.id), `${shotContext}: shot id must be unique`)
       ids.add(shot.id)
-      requireTimeline(Boolean(shot.label.trim()), `${shotContext}: label is required`)
+      requireTimeline(Boolean(shot.kind), `${shotContext}: shot kind is required`)
       requireTimeline(shot.frames === 300 && shot.endFrame - shot.startFrame === 300, `${shotContext}: expected 300 frames`)
       requireTimeline(shot.startFrame === nextFrame, `${shotContext}: non-contiguous shot boundary`)
       requireTimeline(shot.cues.length === 3 && shot.cues[0] === 0, `${shotContext}: expected three cues starting at frame 0`)

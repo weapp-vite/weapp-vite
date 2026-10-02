@@ -7,6 +7,17 @@ describe('promo timeline delivery contract', () => {
     expect(() => validateTimeline()).not.toThrow()
   })
 
+  it('accepts distinct Chinese and English variants for both formats', () => {
+    expect(filmSpecs).toHaveLength(4)
+    expect(() => validateTimeline(filmSpecs)).not.toThrow()
+  })
+
+  it('rejects a missing English composition ID', () => {
+    const specs = structuredClone(filmSpecs)
+    specs[2].id = 'PromoLandscape'
+    expect(() => validateTimeline(specs)).toThrow('expected PromoLandscape/Portrait IDs')
+  })
+
   it.each([-1, 1])('rejects a %i-frame overlap or gap between shots', (offset) => {
     const specs = structuredClone(filmSpecs)
     specs[0].shots[1]!.startFrame += offset

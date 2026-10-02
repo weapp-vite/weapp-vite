@@ -1,10 +1,13 @@
+import type { Language } from './timeline'
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion'
 import { colors, Label, Logo, mono } from './brand'
+import { copyFor } from './copy'
 
-export function Background({ portrait }: { portrait: boolean }) {
+export function Background({ portrait, language }: { portrait: boolean, language: Language }) {
   const currentFrame = useCurrentFrame()
   const { durationInFrames } = useVideoConfig()
   const frame = Math.min(currentFrame, durationInFrames - 120)
+  const copy = copyFor(language)
   const drift = Math.sin(frame / 240) * 70
   return (
     <AbsoluteFill style={{ backgroundColor: colors.bg, overflow: 'hidden' }}>
@@ -14,10 +17,10 @@ export function Background({ portrait }: { portrait: boolean }) {
         <Logo size={34} />
         <span style={{ fontSize: 27, fontFamily: mono, letterSpacing: -1, color: colors.white }}>weapp-vite</span>
       </div>
-      {!portrait && <Label style={{ position: 'absolute', top: 60, right: 96, fontSize: 15 }}>NATIVE ROOTS. MODERN FLOW.</Label>}
+      {!portrait && <Label style={{ position: 'absolute', top: 60, right: 96, fontSize: 15 }}>{copy.brand.topTag}</Label>}
       <div style={{ position: 'absolute', left: portrait ? 80 : 96, right: portrait ? 180 : 96, bottom: portrait ? 268 : 52, display: 'flex', alignItems: 'center', gap: 20 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors.green }} />
-        <Label style={{ fontSize: portrait ? 17 : 14, letterSpacing: 2 }}>BUILD WITH POSSIBILITY</Label>
+        <Label style={{ fontSize: portrait ? 17 : 14, letterSpacing: 2 }}>{copy.brand.bottomTag}</Label>
         <div style={{ height: 1, flex: 1, background: '#ffffff16' }}><div style={{ height: 1, width: `${frame / (durationInFrames - 120) * 100}%`, background: colors.green }} /></div>
       </div>
     </AbsoluteFill>

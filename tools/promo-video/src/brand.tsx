@@ -1,5 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react'
+import type { Language, Shot } from './timeline'
 import { Img, interpolate, staticFile, useCurrentFrame } from 'remotion'
+import { copyFor } from './copy'
+import { shotPhase } from './timeline'
 
 export const colors = { bg: '#070a08', green: '#95ec69', yellow: '#facc15', white: '#f0f5ef', muted: '#89968d' }
 export const mono = '"JetBrains Mono", monospace'
@@ -24,7 +27,9 @@ export function Label({ children, style }: { children: ReactNode, style?: CSSPro
   return <div style={{ color: colors.muted, fontFamily: mono, fontSize: 19, letterSpacing: 3, ...style }}>{children}</div>
 }
 
-export function Heading({ portrait, eyebrow, first, accent }: { portrait: boolean, eyebrow: string, first: string, accent: string }) {
+export function Heading({ portrait, eyebrow, first, accent, language, shot }: { portrait: boolean, eyebrow: string, first: string, accent: string, language: Language, shot: Shot }) {
+  const phase = shotPhase(useCurrentFrame(), shot)
+  const phaseRail = copyFor(language).shots[shot.kind].phases[phase].rail
   return (
     <div style={{ position: 'absolute', left: portrait ? 80 : 96, top: portrait ? 178 : 128, right: portrait ? 168 : 96 }}>
       <Reveal><Label style={{ fontSize: portrait ? 20 : 18, color: colors.green }}>{eyebrow}</Label></Reveal>
@@ -33,6 +38,7 @@ export function Heading({ portrait, eyebrow, first, accent }: { portrait: boolea
         {portrait ? <br /> : ' '}
         <span style={{ color: colors.green }}>{accent}</span>
       </Reveal>
+      <Reveal delay={8} style={{ marginTop: 8, fontFamily: mono, color: colors.muted, fontSize: portrait ? 18 : 20, letterSpacing: 1.5, whiteSpace: 'nowrap' }}>{phaseRail}</Reveal>
     </div>
   )
 }
