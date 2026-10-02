@@ -1,5 +1,5 @@
 import type { MiniProgram } from '@weapp-vite/miniprogram-automator'
-import { access, readFile, rm, writeFile } from 'node:fs/promises'
+import { access, readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -7,6 +7,7 @@ import { launchAutomator } from '../utils/automator'
 import { startDevProcess } from '../utils/dev-process'
 import { createDevProcessEnv } from '../utils/dev-process-env'
 import { createDomAcceptance } from '../utils/domAcceptance'
+import { replaceFileByRename } from '../utils/hmr-helpers'
 import { createWxmlTransformProject } from '../utils/wxmlTransformProject'
 
 describe.each([false, true])('WXML dependency watch recovery runtime (outside project: %s)', { concurrent: false }, (externalRules) => {
@@ -63,7 +64,7 @@ describe.each([false, true])('WXML dependency watch recovery runtime (outside pr
       process.stdout.write(dev!.getOutput().slice(-12_000))
     })
     const rules = path.join(project, externalRules ? '../transform-rules.json' : 'transform-rules.json')
-    await writeFile(rules, JSON.stringify({ label: 'changed' }))
+    await replaceFileByRename(rules, JSON.stringify({ label: 'changed' }))
     await waitForRule('changed')
     const validTemplates = await templates()
     await acceptance.act('native', async () => {
@@ -71,7 +72,7 @@ describe.each([false, true])('WXML dependency watch recovery runtime (outside pr
       await rm(rules)
       await expect.poll(() => dev!.getOutput().slice(outputOffset), { timeout: 45_000 }).toMatch(/ENOENT[^\n]*transform-rules\.json/)
       expect(await templates()).toEqual(validTemplates)
-      await writeFile(rules, JSON.stringify({ label: 'restored' }))
+      await replaceFileByRename(rules, JSON.stringify({ label: 'restored' }))
       await waitForRule('restored')
       await dev!.stop()
     })
