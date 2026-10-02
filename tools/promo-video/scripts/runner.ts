@@ -5,12 +5,14 @@ import { entryPoint, films, projectDir, publicDir } from './paths'
 import { prepareAssets } from './prepare'
 import { runProcess } from './process'
 import { renderFilms } from './render'
+import { validateTimeline } from './validateTimeline'
 import { verifyFilms } from './verify'
 
 async function main() {
   const command = process.argv[2]
   switch (command) {
     case 'studio': {
+      validateTimeline()
       await prepareAssets()
       const require = createRequire(import.meta.url)
       const cli = path.join(path.dirname(require.resolve('@remotion/cli/package.json')), 'remotion-cli.js')

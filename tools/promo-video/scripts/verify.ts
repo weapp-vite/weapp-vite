@@ -3,8 +3,10 @@ import { Buffer } from 'node:buffer'
 import { open, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { bpm, fps } from '../src/timeline'
 import { films, outputDir, videoPath } from './paths'
 import { runProcess } from './process'
+import { validateTimeline } from './validateTimeline'
 
 interface ProbeStream {
   codec_type: string
@@ -96,9 +98,9 @@ async function verifyFilm(film: Film) {
   const audio = probe.streams.find(stream => stream.codec_type === 'audio')
   const checks: Record<string, boolean> = {
     dimensions: video?.width === film.width && video.height === film.height,
-    frameRate: video?.avg_frame_rate === '60/1',
-    frameCount: Number(video?.nb_frames) === film.seconds * 60,
-    duration: Math.abs(Number(probe.format.duration) - film.seconds) <= 1 / 60,
+    frameRate: video?.avg_frame_rate === `${fps}/1`,
+    frameCount: Number(video?.nb_frames) === film.frames,
+    duration: Math.abs(Number(probe.format.duration) - film.seconds) <= 1 / fps,
     h264: video?.codec_name === 'h264',
     yuv420p: video?.pix_fmt === 'yuv420p',
     aac48kStereo: audio?.codec_name === 'aac' && audio.sample_rate === '48000' && audio.channels === 2,
@@ -111,7 +113,7 @@ async function verifyFilm(film: Film) {
     '-i',
     file,
     '-vf',
-    'blackdetect=d=0.08:pix_th=0.025:pic_th=0.995',
+    'blackdetect=d=0:pix_th=0.025:pic_th=0.995',
     '-af',
     'loudnorm=I=-14:TP=-1:LRA=11:print_format=json',
     '-f',
@@ -146,6 +148,7 @@ async function verifyFilm(film: Film) {
 }
 
 export async function verifyFilms() {
+  validateTimeline()
   const results = []
   for (const film of films) {
     try {
@@ -159,7 +162,8 @@ export async function verifyFilms() {
     generatedAt: new Date().toISOString(),
     passed: results.every(result => result.passed),
     scope: 'Automated technical verification only. Visual and listening review are separate.',
-    expected: { fps: 60, audioSampleRate: 48000, integratedLufs: '-14 ±1', maxTruePeakDbtp: -1 },
+    timeline: films.map(film => ({ format: film.name, shots: film.shots.length, cuts: film.cuts })),
+    expected: { fps, bpm, framesPerShot: 300, audioSampleRate: 48000, integratedLufs: '-14 ±1', maxTruePeakDbtp: -1 },
     results,
   }
   await writeFile(path.join(outputDir, 'verification.json'), `${JSON.stringify(report, null, 2)}\n`)

@@ -12,7 +12,6 @@ export const entryPoint = path.join(projectDir, 'src/index.tsx')
 export const films = filmSpecs
 
 export type Film = typeof films[number]
-export const sceneLabels = ['Opening', 'Native upgrade', 'Vue SFC', 'Toolchain', 'AI workflow', 'Start creating']
 
 export function videoPath(film: Film) {
   return path.join(outputDir, `weapp-vite-${film.name}.mp4`)

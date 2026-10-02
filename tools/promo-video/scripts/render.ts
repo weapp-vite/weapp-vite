@@ -4,9 +4,11 @@ import path from 'node:path'
 import process from 'node:process'
 import { bundle } from '@remotion/bundler'
 import { openBrowser, renderMedia, selectComposition } from '@remotion/renderer'
+import { fps } from '../src/timeline'
 import { cacheDir, entryPoint, publicDir, videoPath } from './paths'
 import { prepareAssets } from './prepare'
 import { renderFilmStills } from './stills'
+import { validateTimeline } from './validateTimeline'
 
 function renderConcurrency() {
   const requested = process.env.PROMO_RENDER_CONCURRENCY
@@ -21,6 +23,7 @@ function renderConcurrency() {
 }
 
 export async function renderFilms(selected: readonly Film[], stillsOnly: boolean) {
+  validateTimeline()
   await prepareAssets()
   const serveUrl = await bundle({
     entryPoint,
@@ -40,7 +43,7 @@ export async function renderFilms(selected: readonly Film[], stillsOnly: boolean
     for (const film of selected) {
       const composition = await selectComposition({ serveUrl, id: film.id, puppeteerInstance: browser })
       if (composition.width !== film.width || composition.height !== film.height
-        || composition.fps !== 60 || composition.durationInFrames !== film.seconds * 60) {
+        || composition.fps !== fps || composition.durationInFrames !== film.frames) {
         throw new Error(`${film.id} does not match the approved delivery dimensions, fps or duration`)
       }
       if (stillsOnly) {

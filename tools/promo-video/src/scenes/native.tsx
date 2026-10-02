@@ -1,44 +1,79 @@
+import type { ShotProps } from '../timeline'
 import { useCurrentFrame } from 'remotion'
-import { colors, enter, Label, mono, Reveal } from '../brand'
+import { colors, Label, mono } from '../brand'
+import { BeatStage, Burst } from '../motion'
+import { shotPhase } from '../timeline'
 
-const files = [['01', 'app.ts', '入口'], ['02', 'pages/index/', '页面'], ['03', '  index.wxml', '模板'], ['04', '  index.wxss', '样式'], ['05', '  index.ts', '逻辑'], ['06', '  index.json', '配置']]
+const files = ['app.ts', 'pages/index/index.wxml', 'pages/index/index.wxss', 'pages/index/index.ts']
+const toolchain = [
+  { name: 'TypeScript', code: 'const count: number = 0', caption: '让类型，成为你的助手。', badge: 'TS' },
+  { name: 'Vite + Rolldown', code: 'wv dev', caption: '现代构建，进入小程序。', badge: 'V' },
+  { name: 'ESM + Tailwind', code: 'import dayjs from \'dayjs\'', caption: '熟悉的生态，继续创造。', badge: '{ }' },
+]
 
-export function Native({ portrait }: { portrait: boolean }) {
+export function Native({ portrait, shot }: ShotProps) {
   const frame = useCurrentFrame()
-  const progress = enter(frame, 35, 100)
+  const phase = shotPhase(frame, shot)
+  const local = frame - shot.cues[phase]
+  const tools = shot.kind === 'toolchain' || (shot.kind === 'native-toolchain' && phase > 0)
+  const tool = toolchain[shot.kind === 'native-toolchain' ? phase - 1 : phase] ?? toolchain[0]
   const left = portrait ? 80 : 96
-  const top = portrait ? 500 : 320
-  const width = portrait ? 820 : 775
   return (
-    <>
-      <Reveal delay={12} style={{ position: 'absolute', left, top, width, height: portrait ? 570 : 558, borderTop: '1px solid #91ba9340', borderBottom: '1px solid #91ba9325', background: 'linear-gradient(115deg, #152117b3, #111a1240)', padding: portrait ? '25px 30px' : '30px 35px', boxSizing: 'border-box' }}>
-        <Label style={{ fontSize: 18 }}>YOUR PROJECT / 原生工程</Label>
-        <div style={{ marginTop: 24 }}>
-          {files.map(([n, file, hint], i) => (
-            <Reveal key={file} delay={18 + i * 6} style={{ display: 'flex', gap: 27, height: 66, alignItems: 'center', borderBottom: '1px solid #ffffff07' }}>
-              <span style={{ fontFamily: mono, fontSize: 17, color: '#56705b' }}>{n}</span>
-              <span style={{ fontFamily: mono, fontSize: portrait ? 34 : 35, whiteSpace: 'pre', color: i < 2 ? '#c7d4ca' : colors.white }}>{file}</span>
-              <span style={{ marginLeft: 'auto', color: '#78957e', fontSize: 19 }}>{hint}</span>
-            </Reveal>
-          ))}
-        </div>
-        <div style={{ marginTop: 15, fontSize: 22, color: colors.green }}>Page / Component · 原生能力继续使用</div>
-      </Reveal>
-      <svg width={portrait ? 1080 : 1920} height={portrait ? 1920 : 1080} style={{ position: 'absolute', inset: 0 }}>
-        <path d={portrait ? 'M490 1070 L490 1148 L765 1148' : 'M870 600 L998 600 L1058 540 L1190 540'} stroke="#95ec6925" strokeWidth="2" fill="none" />
-        <path d={portrait ? 'M490 1070 L490 1148 L765 1148' : 'M870 600 L998 600 L1058 540 L1190 540'} stroke={colors.green} strokeWidth="3" fill="none" pathLength="1" strokeDasharray="1" strokeDashoffset={1 - progress} />
-      </svg>
-      <div style={{ position: 'absolute', left: portrait ? 80 : 1160, top: portrait ? 1180 : 375, width: portrait ? 820 : 600 }}>
-        <Reveal delay={45}><Label style={{ color: colors.green, fontSize: 18 }}>MODERN TOOLCHAIN</Label></Reveal>
-        <Reveal delay={55} style={{ marginTop: 20, fontFamily: mono, fontSize: portrait ? 73 : 103, letterSpacing: -5, lineHeight: 1.25 }}>
-          Vite
-          <span style={{ color: colors.green }}> + </span>
-          TS
-        </Reveal>
-        <Reveal delay={66} style={{ marginTop: 22, fontSize: portrait ? 28 : 30, color: '#c6d5c7' }}>ESM · Rolldown · Tailwind CSS</Reveal>
-        <Reveal delay={78} style={{ marginTop: 38, height: 1, background: '#95ec6940', width: `${progress * 100}%` }} />
-        <Reveal delay={90} style={{ marginTop: 26, fontSize: portrait ? 25 : 30, color: '#7f9486' }}>从现有项目开始，让工具链向前。</Reveal>
-      </div>
-    </>
+    <BeatStage shot={shot}>
+      {tools
+        ? (
+            <div style={{ position: 'absolute', left, top: portrait ? 525 : 345, width: portrait ? 820 : 1728 }}>
+              <Label style={{ color: colors.green, fontSize: 23 }}>
+                MODERN TOOLCHAIN / 0
+                {phase + 1}
+              </Label>
+              <div style={{ display: 'flex', flexDirection: portrait ? 'column-reverse' : 'row', alignItems: portrait ? 'flex-start' : 'center', gap: portrait ? 38 : 65, marginTop: 40 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: mono, fontSize: portrait ? 65 : 111, letterSpacing: -6, color: colors.white }}>{tool.name}</div>
+                  <div style={{ marginTop: 34, fontSize: portrait ? 32 : 42, color: colors.green }}>{tool.caption}</div>
+                </div>
+                <div style={{ width: portrait ? 300 : 360, height: portrait ? 300 : 360, background: phase === 2 ? colors.yellow : colors.green, color: '#122014', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: mono, fontSize: portrait ? 145 : 180, transform: `rotate(${phase % 2 ? -7 : 5}deg)`, borderRadius: 20 }}>{tool.badge}</div>
+              </div>
+              <div style={{ marginTop: portrait ? 64 : 60, borderTop: '1px solid #95ec6950', paddingTop: 30, fontFamily: mono, fontSize: portrait ? 33 : 42, color: '#9baa9d' }}>
+                ›
+                {tool.code}
+              </div>
+            </div>
+          )
+        : phase === 0
+          ? (
+              <div style={{ position: 'absolute', left, top: portrait ? 550 : 325, width: portrait ? 820 : 1540 }}>
+                <Label style={{ fontSize: 24, color: colors.green }}>YOUR PROJECT</Label>
+                {files.map((file, i) => (
+                  <div key={file} style={{ display: 'flex', alignItems: 'center', height: portrait ? 145 : 120, gap: 35, borderBottom: '1px solid #95ec6925' }}>
+                    <span style={{ color: '#5f8565', fontFamily: mono, fontSize: 25 }}>
+                      0
+                      {i + 1}
+                    </span>
+                    <span style={{ fontFamily: mono, fontSize: portrait ? 39 : 65, letterSpacing: -2, color: i === Math.min(3, Math.floor(local / 23)) ? colors.green : colors.white }}>{file}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          : phase === 1
+            ? (
+                <div style={{ position: 'absolute', left, top: portrait ? 580 : 350, width: portrait ? 820 : 1728 }}>
+                  <Label style={{ color: colors.green, fontSize: 25 }}>原生的写法，原生的能力。</Label>
+                  {['Page({ ... })', 'Component({ ... })'].map((text, i) => <div key={text} style={{ marginTop: 45, fontFamily: mono, fontSize: portrait ? 70 : 110, color: i ? colors.green : colors.white, letterSpacing: -4 }}>{text}</div>)}
+                  <div style={{ marginTop: 50, fontSize: 36, color: '#8fa694' }}>WXML · WXSS · JSON</div>
+                </div>
+              )
+            : (
+                <div style={{ position: 'absolute', left, top: portrait ? 620 : 345, width: portrait ? 820 : 1728 }}>
+                  <div style={{ fontSize: portrait ? 90 : 125, fontWeight: 850, letterSpacing: -4 }}>
+                    原生能力
+                    <span style={{ color: colors.green }}>，</span>
+                  </div>
+                  <div style={{ fontSize: portrait ? 112 : 180, fontWeight: 850, color: colors.green, letterSpacing: -6 }}>继续用。</div>
+                  <div style={{ marginTop: 50, fontSize: portrait ? 31 : 40, color: '#a2b6a6' }}>从现有项目开始，渐进升级。</div>
+                </div>
+              )}
+      <Burst x={portrait ? 700 : 1610} y={portrait ? 820 : 600} frame={local} yellow={phase === 2} />
+    </BeatStage>
   )
 }

@@ -1,135 +1,199 @@
-import type { CSSProperties } from 'react'
-import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion'
+import type { CSSProperties, ReactNode } from 'react'
+import type { ShotProps } from '../timeline'
+import { interpolate, useCurrentFrame } from 'remotion'
+import { shotPhase } from '../timeline'
 
 const green = '#95ec69'
 const yellow = '#facc15'
 const white = '#f0f5ef'
 const gray = '#85968b'
 const mono = 'JetBrains Mono, monospace'
+const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const
+const position: CSSProperties = { position: 'absolute' }
 
-function SyntaxLine({ text, active, number, portrait, tint }: {
-  text: string
-  active: boolean
-  number: number
-  portrait: boolean
-  tint: string
-}) {
-  const parts = text.split(/('wevu'|#[\da-f]{6}|ref|computed|count|doubled|import|from|const|<\/?\w+|>|\{\{.*?\}\})/g)
+function Label({ children, style }: { children: ReactNode, style?: CSSProperties }) {
+  return <div style={{ fontFamily: mono, fontSize: 25, letterSpacing: 2, color: gray, ...style }}>{children}</div>
+}
+
+function Code({ lines, portrait, label = 'index.vue', tint = green }: { lines: string[], portrait: boolean, label?: string, tint?: string }) {
   return (
-    <div style={{ display: 'flex', height: portrait ? 31 : 35, alignItems: 'center', background: active ? `${tint}12` : 'transparent', borderLeft: `3px solid ${active ? tint : 'transparent'}` }}>
-      <span style={{ width: portrait ? 44 : 56, flexShrink: 0, color: '#435348', fontSize: 17, textAlign: 'right', paddingRight: 18 }}>{number}</span>
-      <span style={{ whiteSpace: 'pre', color: '#cbd6ce', fontSize: portrait ? 26 : 28, letterSpacing: '-0.7px' }}>
-        {parts.map((part, index) => (
-          <span key={`${index}-${part}`} style={{ color: /^(?:import|from|const)$/.test(part) ? '#bda5ef' : /^(?:ref|computed)$/.test(part) ? '#c4d9f7' : part === '\'wevu\'' || part.startsWith('#') ? tint : part.startsWith('<') || part === '>' ? '#899e90' : undefined }}>{part}</span>
-        ))}
-      </span>
+    <div style={{ width: '100%', border: `1px solid ${tint}55`, background: '#0c1510', borderRadius: 22, overflow: 'hidden', boxShadow: `0 28px 100px ${tint}0c` }}>
+      <div style={{ display: 'flex', gap: 9, padding: portrait ? '24px 26px' : '23px 34px', borderBottom: '1px solid #ffffff14', alignItems: 'center' }}>
+        <span style={{ width: 8, height: 8, background: tint, borderRadius: '50%' }} />
+        <span style={{ fontFamily: mono, fontSize: portrait ? 23 : 25, color: '#bccbbc', marginLeft: 10 }}>{label}</span>
+        <span style={{ marginLeft: 'auto', fontFamily: mono, color: gray, fontSize: 18 }}>WEVU</span>
+      </div>
+      <div style={{ padding: portrait ? '29px 25px' : '26px 34px', fontFamily: mono, fontSize: portrait ? 33 : 40, letterSpacing: '-0.9px', lineHeight: portrait ? 1.85 : 1.8 }}>
+        {lines.map((line, index) => <div key={line} style={{ whiteSpace: 'pre', color: index === lines.length - 1 ? tint : white }}>{line}</div>)}
+      </div>
     </div>
   )
 }
 
-export function Experience({ portrait }: { portrait: boolean }) {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const seconds = frame / fps
-  const steps = portrait ? [1.5, 3, 4.5, 8] : [2, 4, 6, 12.4]
-  const count = steps.filter(step => seconds >= step).length
-  const themeAt = portrait ? 6.4 : 9
-  const theme = interpolate(seconds, [themeAt, themeAt + 0.6], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-  const tint = theme > 0.5 ? yellow : green
-  const enter = interpolate(frame, [0, 34], [0, 1], { extrapolateRight: 'clamp' })
-  const lastStep = [...steps].reverse().find(step => seconds >= step) ?? -10
-  const click = Math.max(0, 1 - (seconds - lastStep) / 0.45)
-  const styleActive = seconds >= themeAt && seconds < themeAt + 1.8
-  const panel: CSSProperties = { position: 'absolute', border: '1px solid #334139', borderRadius: 25, overflow: 'hidden', boxShadow: '0 34px 100px #0008', opacity: enter }
-  const lines = [
-    '<script setup>',
-    'import { ref, computed } from \'wevu\'',
-    'const count = ref(0)',
-    'const doubled = computed(',
-    '  () => count.value * 2)',
-    '</script>',
-    '<template>',
-    '  <view class="count">{{ doubled }}</view>',
-    '  <button @tap="count++">+1</button>',
-    '</template>',
-    '<style>',
-    `.count { color: ${theme > 0.5 ? yellow : green}; }`,
-    '</style>',
-  ]
+function ClickButton({ portrait, age }: { portrait: boolean, age: number }) {
+  const hit = interpolate(age, [0, 6, 14], [0, 1, 0], clamp)
   return (
-    <div style={{ position: 'absolute', inset: 0, color: white, fontFamily: 'Noto Sans SC, sans-serif' }}>
-      <div style={{ ...panel, left: portrait ? 80 : 96, top: portrait ? 470 : 300, width: portrait ? 840 : 970, height: portrait ? 522 : 602, background: '#0c120f', transform: `translateY(${(1 - enter) * 28}px)` }}>
-        <div style={{ height: portrait ? 61 : 70, display: 'flex', alignItems: 'center', padding: '0 28px', borderBottom: '1px solid #243128', gap: 9 }}>
-          {['#485b4c', '#485b4c', green].map((color, index) => <span key={index} style={{ width: 9, height: 9, borderRadius: 9, background: color }} />)}
-          <span style={{ marginLeft: 20, fontSize: portrait ? 25 : 27, color: '#d6e1d7', fontFamily: mono }}>index.vue</span>
-          <span style={{ marginLeft: 'auto', fontSize: 17, color: gray, fontFamily: mono }}>VUE SFC</span>
-        </div>
-        <div style={{ padding: portrait ? '13px 8px 0' : '18px 12px 0', fontFamily: mono }}>
-          {lines.map((line, index) => <SyntaxLine key={index} text={line} number={index + 1} portrait={portrait} tint={tint} active={styleActive ? index === 11 : (index === 2 || index === 8) && click > 0} />)}
-        </div>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: portrait ? 36 : 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', background: '#131d16', borderTop: '1px solid #233227', fontSize: portrait ? 19 : 22 }}>
-          <span style={{ color: tint }}>{styleActive || theme > 0.5 ? '样式已更新' : '响应式已连接'}</span>
-          <span style={{ color: '#9aac9c', fontFamily: mono }}>
-            count →
-            {' '}
-            {count}
-            {' · '}
-            doubled →
-            {' '}
-            {count * 2}
-          </span>
-        </div>
-      </div>
+    <div style={{ position: 'relative', width: portrait ? 740 : 1100, height: portrait ? 245 : 225, borderRadius: 30, background: green, color: '#091308', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 30, transform: `scale(${1 - hit * 0.035})`, boxShadow: `0 25px 130px ${green}1b` }}>
+      <span style={{ fontSize: portrait ? 84 : 110, fontWeight: 800 }}>点击</span>
+      <span style={{ fontFamily: mono, fontSize: portrait ? 104 : 140, letterSpacing: -7 }}>+1</span>
+      <svg width="93" height="122" viewBox="0 0 93 122" style={{ position: 'absolute', right: portrait ? 26 : 64, bottom: -47, transform: `translate(${(1 - hit) * 5}px,${(1 - hit) * 9}px) rotate(-10deg)` }}>
+        <path d="M8 8 79 78 43 79 30 111Z" fill={white} stroke="#101a11" strokeWidth="7" strokeLinejoin="round" />
+      </svg>
+    </div>
+  )
+}
 
-      {!portrait && (
-        <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0, opacity: enter }}>
-          <path d="M 1066 601 L 1150 601" stroke="#364b39" strokeWidth="2" strokeDasharray="3 8" />
-          <circle cx={1066 + ((frame % 100) / 100) * 84} cy="601" r="4" fill={tint} />
-          <path d="M 1134 591 L 1146 601 L 1134 611" fill="none" stroke={tint} strokeWidth="2" />
-        </svg>
+function Result({ portrait, value, name, tint = green, caption }: { portrait: boolean, value: number, name: string, tint?: string, caption: string }) {
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <Label style={{ color: tint, fontSize: portrait ? 34 : 36 }}>{name}</Label>
+      <div style={{ fontFamily: mono, fontSize: portrait ? 330 : 360, lineHeight: 1.12, letterSpacing: -26, color: tint, fontWeight: 600, textShadow: `0 0 110px ${tint}18` }}>{value}</div>
+      <div style={{ color: white, fontSize: portrait ? 38 : 46, fontWeight: 550, letterSpacing: -1 }}>{caption}</div>
+    </div>
+  )
+}
+
+function Sfc({ phase }: { phase: number }) {
+  if (phase === 0) {
+    return (
+      <div style={{ ...position, left: 95, top: 34, width: 1530 }}>
+        <Label style={{ color: green, marginBottom: 28 }}>FAMILIAR SYNTAX. NEW POSSIBILITIES.</Label>
+        <Code portrait={false} lines={['<script setup>', 'import { ref } from \'wevu\'', 'const count = ref(0)', '</script>']} />
+        <div style={{ marginTop: 32, fontSize: 51 }}>从你熟悉的写法开始。</div>
+      </div>
+    )
+  }
+  if (phase === 1) {
+    return (
+      <>
+        {['逻辑', '模板', '样式'].map((text, index) => (
+          <div key={text} style={{ ...position, left: 82, top: 44 + index * 160, fontSize: 87, fontWeight: 750, color: index === 1 ? green : '#c7d7c9', letterSpacing: -5 }}>
+            {text}
+            <span style={{ color: '#46664a', marginLeft: 80, fontWeight: 400 }}>↘</span>
+          </div>
+        ))}
+        <div style={{ ...position, left: 750, top: 2, width: 460, height: 540, border: `2px solid ${green}88`, borderRadius: '24px 90px 24px 24px', background: 'linear-gradient(135deg,#1c3320,#0b170d)', transform: 'rotate(5deg)', boxShadow: '0 40px 100px #0008' }}>
+          <div style={{ margin: '68px 38px 0', fontFamily: mono, fontSize: 140, color: green, letterSpacing: -13 }}>.vue</div>
+          <div style={{ margin: '58px 38px 0', height: 1, background: '#95ec6950' }} />
+          <Label style={{ margin: '28px 38px', fontSize: 37, color: white }}>index.vue</Label>
+        </div>
+        <div style={{ ...position, right: 26, top: 125, fontSize: 44, color: gray, writingMode: 'vertical-rl', letterSpacing: 5 }}>一份文件，完整表达。</div>
+      </>
+    )
+  }
+  return (
+    <>
+      <div style={{ ...position, top: 55, left: 74 }}>
+        <Label style={{ color: green }}>VUE SFC → MINI PROGRAM</Label>
+        <div style={{ marginTop: 38, fontSize: 118, fontWeight: 800, lineHeight: 1.14, letterSpacing: -7 }}>
+          写下想法。
+          <br />
+          <span style={{ color: green }}>看见界面。</span>
+        </div>
+        <div style={{ marginTop: 36, fontSize: 32, color: gray }}>Vue 语法，连接小程序。</div>
+      </div>
+      <div style={{ ...position, left: 1060, top: 12, width: 585, height: 566, background: '#dcecd5', borderRadius: 35, color: '#112915', padding: '32px 37px', boxSizing: 'border-box', transform: 'rotate(-2deg)' }}>
+        <div style={{ fontSize: 26, fontWeight: 600 }}>
+          灵感计数器
+          <span style={{ float: 'right' }}>•••</span>
+        </div>
+        <Label style={{ color: '#456247', marginTop: 42, fontSize: 21 }}>MAKE SOMETHING NEW</Label>
+        <div style={{ fontSize: 116, fontFamily: mono, lineHeight: 1.45 }}>
+          0
+          <span style={{ fontSize: 26, marginLeft: 25 }}>次灵感</span>
+        </div>
+        <div style={{ height: 97, background: '#17391c', color: green, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, fontWeight: 600 }}>+ 记录一次灵感</div>
+        <div style={{ marginTop: 30, color: '#4b7150', fontSize: 22 }}>让每一个想法开始生长。</div>
+      </div>
+    </>
+  )
+}
+
+export function Experience({ portrait, shot }: ShotProps) {
+  const frame = useCurrentFrame()
+  const phase = shotPhase(frame, shot)
+  const age = frame - shot.cues[phase]!
+  const settle = interpolate(age, [0, 8], [0, 1], clamp)
+  const style = shot.kind === 'style'
+  const vue = shot.kind === 'vue'
+  return (
+    <div style={{ ...position, left: portrait ? 80 : 96, top: portrait ? 470 : 305, width: portrait ? 820 : 1728, height: portrait ? 1050 : 615, color: white, fontFamily: 'Noto Sans SC, sans-serif', transform: `translateY(${(1 - settle) * 24}px) scale(${1 + (1 - settle) * 0.045})`, opacity: 0.4 + settle * 0.6 }}>
+      <div style={{ ...position, left: portrait ? 440 : 1200, top: portrait ? 130 : -55, fontFamily: mono, fontSize: portrait ? 480 : 650, color: '#95ec6905', lineHeight: 1 }}>{phase + 1}</div>
+      {shot.kind === 'sfc' && <Sfc phase={phase} />}
+      {vue && phase === 0 && (
+        <div style={{ ...position, top: 106, left: 0, width: 820 }}>
+          <Label style={{ color: green, fontSize: 27, marginBottom: 29 }}>WEVU / REF + COMPUTED</Label>
+          <Code portrait label="Wevu · 响应式片段" lines={['const count = ref(0)', 'const doubled = computed(', '  () => count.value * 2)']} />
+          <div style={{ marginTop: 60, fontSize: 88, fontWeight: 800, letterSpacing: -4, lineHeight: 1.22 }}>
+            写下状态。
+            <br />
+            <span style={{ color: green }}>让界面流动。</span>
+          </div>
+        </div>
       )}
-
-      <div style={{ ...panel, left: portrait ? 80 : 1160, top: portrait ? 1030 : 282, width: portrait ? 840 : 648, height: portrait ? 484 : 638, borderRadius: portrait ? 32 : 42, background: 'linear-gradient(140deg,#16201a,#0b110d 76%)', transform: `translateY(${(1 - enter) * 46}px)` }}>
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', padding: '0 30px', borderBottom: '1px solid #26392b' }}>
-          <span style={{ fontSize: 22, letterSpacing: 1, color: '#c6d4c8' }}>灵感计数器</span>
-          <div style={{ marginLeft: 'auto', width: 90, height: 31, borderRadius: 22, border: '1px solid #526558', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 15 }}>
-            <span style={{ fontFamily: mono, fontSize: 16, letterSpacing: 2 }}>•••</span>
-            <span style={{ width: 12, height: 12, border: '2px solid #dce7df', borderRadius: 20 }} />
+      {((shot.kind === 'reactivity' && phase === 0) || (vue && phase === 1)) && (
+        <div style={{ ...position, left: portrait ? 40 : 314, top: portrait ? 140 : 98 }}>
+          <Label style={{ color: green, fontSize: portrait ? 29 : 31, marginBottom: 35 }}>EVENT / @tap="count++"</Label>
+          <ClickButton portrait={portrait} age={age} />
+          <div style={{ fontFamily: mono, fontSize: portrait ? 80 : 60, textAlign: 'center', marginTop: portrait ? 90 : 56 }}>
+            {'count = '}
+            <span style={{ color: '#58735e' }}>0 → </span>
+            <span style={{ color: green }}>1</span>
           </div>
         </div>
-        <div style={{ position: 'absolute', top: portrait ? 98 : 102, left: 34, right: 34 }}>
-          <div style={{ color: gray, fontSize: portrait ? 22 : 22, letterSpacing: 2 }}>让每一次灵感，即刻发生</div>
-          <div style={{ position: 'absolute', top: portrait ? 49 : 53, left: portrait ? 7 : 0, width: portrait ? 330 : '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 24 }}>
-              <span style={{ color: tint, fontSize: portrait ? 130 : 156, fontWeight: 600, lineHeight: 1.25, letterSpacing: -9, fontFamily: mono, transform: `scale(${1 + click * 0.06})`, transformOrigin: 'center' }}>{count * 2}</span>
-              <span style={{ fontSize: 25, color: '#b9c9bc' }}>灵感值</span>
+      )}
+      {shot.kind === 'reactivity' && phase === 1 && (
+        <>
+          <div style={{ ...position, top: 0, left: 112, width: 500 }}><Result portrait={false} name="count" value={1} caption="状态已更新" /></div>
+          <div style={{ ...position, left: 780, top: 168, width: 770 }}>
+            <Label style={{ color: green, marginBottom: 27 }}>ONE SOURCE OF TRUTH</Label>
+            <Code portrait={false} label="reactivity" lines={['count.value++']} />
+          </div>
+        </>
+      )}
+      {(shot.kind === 'reactivity' || vue) && phase === 2 && (
+        <>
+          <div style={{ ...position, left: portrait ? 0 : 850, top: portrait ? 228 : 0, width: portrait ? 820 : 650 }}><Result portrait={portrait} name="computed" value={2} caption="状态联动，结果即现。" /></div>
+          <div style={{ ...position, left: portrait ? 38 : 90, top: portrait ? 28 : 171, fontFamily: mono, fontSize: portrait ? 49 : 70, lineHeight: 1.5 }}>
+            {'count = '}
+            <span>1</span>
+            <br />
+            <span style={{ color: gray }}>× 2</span>
+            <span style={{ color: green, marginLeft: 32 }}>{portrait ? '↓' : '→'}</span>
+          </div>
+          {!portrait && <Label style={{ ...position, left: 93, top: 432, color: gray, fontSize: 25 }}>computed(() =&gt; count.value * 2)</Label>}
+        </>
+      )}
+      {style && phase === 0 && (
+        <>
+          <div style={{ ...position, left: 56, top: 0, width: 580 }}><Result portrait={false} name="CURRENT STATE" value={1} caption="保持当前状态" /></div>
+          <div style={{ ...position, left: 805, top: 120, width: 780 }}>
+            <Label style={{ marginBottom: 26, color: green }}>BEFORE / 当前主题</Label>
+            <Code portrait={false} label="style" lines={['.count {', '  color: #95ec69;', '}']} />
+          </div>
+        </>
+      )}
+      {style && phase === 1 && (
+        <div style={{ ...position, left: 220, top: 8, width: 1280 }}>
+          <Label style={{ color: yellow, marginBottom: 27 }}>EDIT / 改变风格</Label>
+          <Code portrait={false} tint={yellow} label="style" lines={['.count {', '  color: #facc15;', '}']} />
+          <div style={{ fontSize: 55, color: yellow, marginTop: 39, fontWeight: 700 }}>给界面，一点新颜色。</div>
+        </div>
+      )}
+      {style && phase === 2 && (
+        <>
+          <div style={{ ...position, top: 0, left: 225, width: 600 }}><Result portrait={false} name="SAME STATE. NEW LOOK." value={1} tint={yellow} caption="状态保留。风格焕新。" /></div>
+          <div style={{ ...position, left: 1050, top: 73, width: 505, height: 452, background: yellow, borderRadius: 35, transform: 'rotate(5deg)', color: '#191607', padding: 42, boxSizing: 'border-box' }}>
+            <Label style={{ color: '#63531c', fontSize: 24 }}>YOUR NEW PALETTE</Label>
+            <div style={{ fontSize: 72, fontWeight: 850, marginTop: 30, lineHeight: 1.08, letterSpacing: -3 }}>
+              灵感，
+              <br />
+              <span style={{ whiteSpace: 'nowrap' }}>正在闪光。</span>
             </div>
-            <div style={{ marginTop: portrait ? 9 : 2, fontFamily: mono, color: '#789880', fontSize: 21 }}>
-              computed · count × 2
-            </div>
+            <div style={{ fontFamily: mono, fontSize: 26, marginTop: 20 }}>#facc15 ↗</div>
           </div>
-        </div>
-        <div style={{ position: 'absolute', left: portrait ? 420 : 34, right: 34, top: portrait ? 177 : 400 }}>
-          <div style={{ fontSize: 20, color: gray, marginBottom: 16 }}>
-            已收集
-            {' '}
-            <span style={{ color: white, fontFamily: mono, fontSize: 28 }}>{count}</span>
-            {' '}
-            次灵感
-          </div>
-          <div style={{ height: portrait ? 82 : 85, borderRadius: 17, color: '#10180b', background: tint, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 15, fontSize: portrait ? 29 : 31, fontWeight: 700, transform: `scale(${1 - click * 0.035})`, boxShadow: `0 12px 50px ${tint}15` }}>
-            <span style={{ fontSize: 37, fontFamily: mono }}>+</span>
-            记录一次灵感
-          </div>
-          <div style={{ marginTop: 21, display: 'flex', alignItems: 'center', gap: 9, fontSize: 18, color: '#829b88' }}>
-            <span style={{ width: 6, height: 6, borderRadius: 9, background: tint }} />
-            {theme > 0.5 ? '主题已焕新 · 状态依然在线' : '状态更新 · 视图即刻响应'}
-          </div>
-        </div>
-        <div style={{ position: 'absolute', left: '50%', bottom: 14, width: 100, height: 4, marginLeft: -50, borderRadius: 4, background: '#475b4c' }} />
-      </div>
-
-      {portrait && <div style={{ position: 'absolute', top: 998, left: 80, width: 840, height: 27, display: 'flex', justifyContent: 'center', alignItems: 'center', color: tint, fontSize: 20, opacity: enter }}>↓</div>}
+        </>
+      )}
     </div>
   )
 }

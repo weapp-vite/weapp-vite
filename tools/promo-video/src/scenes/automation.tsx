@@ -1,131 +1,207 @@
-import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion'
+import type { CSSProperties, ReactNode } from 'react'
+import type { ShotProps } from '../timeline'
+import { interpolate, useCurrentFrame } from 'remotion'
+import { shotPhase } from '../timeline'
 
 const green = '#95ec69'
+const yellow = '#facc15'
 const white = '#f0f5ef'
-const gray = '#85968b'
+const muted = '#85968b'
 const mono = 'JetBrains Mono, monospace'
-const sources = ['Routes', 'Components', 'npm', 'Packages']
-const outputs = ['app.json', 'index.js', 'index.wxml', 'index.wxss']
+const position: CSSProperties = { position: 'absolute' }
+const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const
 
-function SourceGlyph({ index, color }: { index: number, color: string }) {
+function Label({ children, style }: { children: ReactNode, style?: CSSProperties }) {
+  return <div style={{ fontFamily: mono, fontSize: 26, letterSpacing: 2, color: muted, ...style }}>{children}</div>
+}
+
+function Code({ children, portrait, label }: { children: ReactNode, portrait: boolean, label: string }) {
   return (
-    <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {index === 0 && (
-        <>
-          <circle cx="9" cy="8" r="4" />
-          <circle cx="29" cy="30" r="4" />
-          <path d="M9 12v9a9 9 0 0 0 9 9h7M9 20h14a6 6 0 0 0 6-6V8" />
-          <path d="m24 12 5-5 5 5" />
-        </>
-      )}
-      {index === 1 && (
-        <>
-          <rect x="4" y="4" width="12" height="12" rx="2" />
-          <rect x="22" y="4" width="12" height="12" rx="2" />
-          <rect x="4" y="22" width="12" height="12" rx="2" />
-          <rect x="22" y="22" width="12" height="12" rx="2" />
-        </>
-      )}
-      {index === 2 && (
-        <>
-          <path d="M4 13h30v17H4zM8 13V8h22v5M13 19v6M20 19v6M27 19v6" />
-          <path d="M4 13h30" />
-        </>
-      )}
-      {index === 3 && <><path d="m19 3 15 8v16l-15 8-15-8V11zM4 11l15 8 15-8M19 19v16M12 7l15 8v8" /></>}
+    <div style={{ borderTop: `1px solid ${green}70`, borderBottom: `1px solid ${green}40`, background: 'linear-gradient(125deg,#16251a,#0c130e)', padding: portrait ? '28px 29px' : '30px 42px', boxSizing: 'border-box' }}>
+      <Label style={{ fontSize: portrait ? 23 : 25, color: green, marginBottom: 29 }}>{label}</Label>
+      <div style={{ fontFamily: mono, fontSize: portrait ? 35 : 47, lineHeight: 1.65, color: white, letterSpacing: -1 }}>{children}</div>
+    </div>
+  )
+}
+
+function Folder({ portrait }: { portrait: boolean }) {
+  return (
+    <svg width={portrait ? 430 : 530} height={portrait ? 320 : 394} viewBox="0 0 530 394" fill="none">
+      <path d="M18 61Q18 25 54 25H205L250 77H477Q514 77 514 114V348Q514 374 480 374H51Q18 374 18 342Z" fill="#24462a" stroke={green} strokeWidth="2" />
+      <path d="M18 145Q18 120 45 120H485Q514 120 514 149V348Q514 374 480 374H51Q18 374 18 342Z" fill="#101f13" stroke="#7cb46b" strokeWidth="2" />
+      <path d="M231 220h69m-34-35v70" stroke={green} strokeWidth="6" strokeLinecap="round" />
+      <path d="M75 316h179" stroke="#36583b" strokeWidth="8" strokeLinecap="round" />
     </svg>
   )
 }
 
-export function Automation({ portrait }: { portrait: boolean }) {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const seconds = frame / fps
-  const speed = portrait ? 1.6 : 1
-  const enter = interpolate(frame, [0, 28], [0, 1], { extrapolateRight: 'clamp' })
-  const core = portrait ? { x: 490, y: 1012 } : { x: 950, y: 584 }
-  const inputPoints = portrait
-    ? [{ x: 262, y: 542 }, { x: 718, y: 542 }, { x: 262, y: 691 }, { x: 718, y: 691 }]
-    : [{ x: 372, y: 358 }, { x: 372, y: 498 }, { x: 372, y: 638 }, { x: 372, y: 778 }]
-  const outputPoints = portrait
-    ? [{ x: 160, y: 1400 }, { x: 378, y: 1400 }, { x: 598, y: 1400 }, { x: 818, y: 1400 }]
-    : [{ x: 1460, y: 358 }, { x: 1460, y: 498 }, { x: 1460, y: 638 }, { x: 1460, y: 778 }]
-  const inputPaths = inputPoints.map((point, index) => {
-    if (!portrait) {
-      return `M${point.x} ${point.y} C${point.x + 290} ${point.y} ${core.x - 320} ${core.y} ${core.x - 122} ${core.y}`
-    }
-    if (index === 0) {
-      return 'M262 586 V612 Q262 626 248 626 H110 Q94 626 94 642 V780 Q94 854 490 890'
-    }
-    if (index === 1) {
-      return 'M718 586 V612 Q718 626 732 626 H890 Q906 626 906 642 V780 Q906 854 490 890'
-    }
-    return `M${point.x} ${point.y + 44} C${point.x} 830 ${core.x} 782 ${core.x} ${core.y - 122}`
-  })
-  const outputPaths = outputPoints.map(point => portrait
-    ? `M${core.x} ${core.y + 122} C${core.x} 1260 ${point.x} 1250 ${point.x} ${point.y - 44}`
-    : `M${core.x + 122} ${core.y} C${core.x + 300} ${core.y} ${point.x - 200} ${point.y} ${point.x - 24} ${point.y}`)
-  const pulse = (Math.sin(seconds * Math.PI * 2 * 128 / 60) + 1) / 2
+function ComponentPreview({ portrait }: { portrait: boolean }) {
   return (
-    <div style={{ position: 'absolute', inset: 0, fontFamily: 'Noto Sans SC, sans-serif', color: white, opacity: enter }}>
-      <svg width={portrait ? 1080 : 1920} height={portrait ? 1920 : 1080} style={{ position: 'absolute', inset: 0 }}>
-        <defs>
-          <radialGradient id={`core-glow-${portrait}`}>
-            <stop offset="0%" stopColor={green} stopOpacity="0.13" />
-            <stop offset="100%" stopColor={green} stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <circle cx={core.x} cy={core.y} r={portrait ? 260 : 295} fill={`url(#core-glow-${portrait})`} />
-        {[...inputPaths, ...outputPaths].map((path, index) => {
-          const active = interpolate(seconds * speed, [index < 4 ? index * 0.1 : 1.4 + (index - 4) * 0.12, index < 4 ? 1.2 + index * 0.1 : 2.4 + (index - 4) * 0.12], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-          return (
-            <g key={path} opacity={active}>
-              <path d={path} stroke="#2a3c2f" strokeWidth="1.5" fill="none" />
-              <path d={path} stroke={green} strokeOpacity="0.13" strokeWidth="7" fill="none" />
-              <path d={path} pathLength="100" stroke={green} strokeWidth="2.2" strokeDasharray="7 93" strokeDashoffset={-((seconds * speed * 24 + index * 18) % 100)} fill="none" />
-            </g>
-          )
-        })}
-        <circle cx={core.x} cy={core.y} r="147" stroke="#3e6446" strokeOpacity="0.6" strokeWidth="1" fill="none" />
-        <circle cx={core.x} cy={core.y} r={154 + pulse * 8} stroke={green} strokeOpacity={0.03 + pulse * 0.09} strokeWidth="1" fill="none" />
-        <circle cx={core.x} cy={core.y} r="147" pathLength="100" stroke={green} strokeWidth="2" strokeDasharray="5 45" strokeDashoffset={-seconds * 4} fill="none" />
-        <rect x={core.x - 108} y={core.y - 108} width="216" height="216" rx="47" fill="#132519" stroke={green} strokeWidth="1.4" transform={`rotate(${45 + Math.sin(seconds * 0.5) * 2} ${core.x} ${core.y})`} />
-        <rect x={core.x - 87} y={core.y - 87} width="174" height="174" rx="34" fill="#0a150d" stroke="#42633f" strokeWidth="1" transform={`rotate(${45 + Math.sin(seconds * 0.5) * 2} ${core.x} ${core.y})`} />
-      </svg>
-
-      <div style={{ position: 'absolute', top: portrait ? 472 : 274, left: portrait ? 80 : 125, fontFamily: mono, fontSize: portrait ? 17 : 18, color: gray, letterSpacing: 2 }}>01 / INPUT</div>
-      {sources.map((label, index) => {
-        const point = inputPoints[index]!
-        const show = interpolate(frame, [index * 5, index * 5 + 25], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-        return (
-          <div key={label} style={{ position: 'absolute', left: portrait ? point.x - 147 : 126, top: point.y - (portrait ? 20 : 22), width: portrait ? 316 : 285, height: 58, display: 'flex', alignItems: 'center', gap: portrait ? 16 : 22, opacity: show, transform: `translateY(${(1 - show) * 20}px)` }}>
-            <SourceGlyph index={index} color={green} />
-            <span style={{ fontFamily: mono, fontSize: portrait ? 28 : 33, color: '#dce7dd', letterSpacing: '-0.8px' }}>{label}</span>
-          </div>
-        )
-      })}
-
-      <div style={{ position: 'absolute', left: core.x - 116, top: core.y - 66, width: 232, textAlign: 'center' }}>
-        <div style={{ fontFamily: mono, fontSize: 47, color: green, fontWeight: 700, letterSpacing: -3, lineHeight: 1.05 }}>weapp</div>
-        <div style={{ fontFamily: mono, fontSize: 47, color: white, fontWeight: 700, letterSpacing: -3, lineHeight: 1.05 }}>vite</div>
-        <div style={{ marginTop: 21, color: '#a7c49f', fontSize: 20, letterSpacing: 3 }}>构建核心</div>
+    <div style={{ width: portrait ? 730 : 650, height: portrait ? 490 : 480, borderRadius: 28, background: '#dcebd4', padding: portrait ? 40 : 42, color: '#14311b', boxSizing: 'border-box', boxShadow: '0 35px 100px #0008', transform: 'rotate(-2deg)' }}>
+      <Label style={{ color: '#537953', fontSize: 23 }}>INSPIRE CARD / 01</Label>
+      <div style={{ marginTop: 42, fontSize: portrait ? 87 : 82, fontWeight: 850, lineHeight: 1.16, letterSpacing: -5 }}>
+        下一次灵感，
+        <br />
+        就在此刻。
       </div>
+      <div style={{ marginTop: 35, height: 1, background: '#72956860' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 29, fontSize: 28, color: '#4b6e49' }}>
+        <span>从一个组件开始</span>
+        <span style={{ fontSize: 45, lineHeight: 1 }}>↗</span>
+      </div>
+    </div>
+  )
+}
 
-      {!portrait && <div style={{ position: 'absolute', left: core.x - 190, top: 820, width: 380, textAlign: 'center', fontSize: 24, color: gray, letterSpacing: 5 }}>自动发现 · 统一构建</div>}
+function PackageTree({ portrait }: { portrait: boolean }) {
+  return (
+    <div style={{ position: 'relative', width: portrait ? 820 : 1450, height: portrait ? 660 : 435 }}>
+      <svg width={portrait ? 820 : 1450} height={portrait ? 660 : 435} style={{ position: 'absolute', inset: 0 }}>
+        <path d={portrait ? 'M410 110V265M190 405V265H630V405' : 'M725 75V198M290 300V198H1155V300'} stroke="#3f6946" strokeWidth="3" fill="none" />
+        <circle cx={portrait ? 410 : 725} cy={portrait ? 265 : 198} r="7" fill={yellow} />
+      </svg>
+      <div style={{ ...position, top: 0, left: portrait ? 160 : 460, width: portrait ? 500 : 530, textAlign: 'center', whiteSpace: 'nowrap', fontFamily: mono, fontSize: portrait ? 47 : 60, color: green }}>npm + packages</div>
+      {['主包', '分包'].map((label, index) => (
+        <div key={label} style={{ ...position, left: portrait ? 10 + index * 440 : 65 + index * 865, top: portrait ? 408 : 292, width: portrait ? 360 : 450, textAlign: 'center' }}>
+          <div style={{ fontSize: portrait ? 82 : 83, fontWeight: 800, lineHeight: 1.1, color: index ? yellow : white }}>{label}</div>
+          <Label style={{ marginTop: 21, fontSize: portrait ? 23 : 26 }}>{index ? 'subPackages' : 'pages'}</Label>
+        </div>
+      ))}
+    </div>
+  )
+}
 
-      <div style={{ position: 'absolute', top: portrait ? 1487 : 274, left: portrait ? 80 : 1470, fontFamily: mono, fontSize: portrait ? 17 : 18, color: gray, letterSpacing: 2 }}>{portrait ? '02 / NATIVE OUTPUT' : '02 / OUTPUT'}</div>
-      {outputs.map((label, index) => {
-        const point = outputPoints[index]!
-        const show = interpolate(seconds * speed, [1.4 + index * 0.12, 2.1 + index * 0.12], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
-        return (
-          <div key={label} style={{ position: 'absolute', left: portrait ? point.x - 90 : point.x, top: point.y - (portrait ? 35 : 25), width: portrait ? 180 : 322, opacity: show, transform: `translateY(${(1 - show) * 14}px)`, textAlign: portrait ? 'center' : 'left' }}>
-            <div style={{ display: 'flex', flexDirection: portrait ? 'column' : 'row', alignItems: 'center', justifyContent: portrait ? 'center' : 'flex-start', gap: portrait ? 18 : 22 }}>
-              <svg width="31" height="38" viewBox="0 0 31 38" fill="none" stroke="#88bc73" strokeWidth="1.6"><path d="M4 2h15l8 8v25H4zM19 2v9h8M10 19h11M10 25h8" /></svg>
-              <span style={{ fontFamily: mono, fontSize: portrait ? 23 : 31, letterSpacing: '-0.5px', color: '#e0e9df' }}>{label}</span>
+export function Automation({ portrait, shot }: ShotProps) {
+  const frame = useCurrentFrame()
+  const phase = shotPhase(frame, shot)
+  const age = frame - shot.cues[phase]!
+  const settle = interpolate(age, [0, 9], [0, 1], clamp)
+  const anthology = shot.kind === 'automation'
+  const kind = anthology ? ['routes', 'components', 'packages'][phase] : shot.kind
+  return (
+    <div style={{ ...position, left: portrait ? 80 : 96, top: portrait ? 485 : 310, width: portrait ? 820 : 1728, height: portrait ? 1040 : 610, color: white, fontFamily: 'Noto Sans SC, sans-serif', transform: `translateX(${(1 - settle) * (phase % 2 ? 1 : -1) * (portrait ? 12 : 40)}px) scale(${1 + (1 - settle) * (portrait ? 0.018 : 0.035)})`, opacity: 0.35 + settle * 0.65 }}>
+      {kind === 'routes' && (phase === 0 || anthology) && (
+        <>
+          <div style={{ ...position, left: portrait ? 175 : 70, top: portrait ? 60 : 50, transform: 'rotate(-5deg)' }}><Folder portrait={portrait} /></div>
+          <div style={{ ...position, left: portrait ? 10 : 760, top: portrait ? 458 : 111, width: portrait ? 800 : 885 }}>
+            <Label style={{ color: green, marginBottom: 28 }}>ROUTES / 新页面</Label>
+            <Code portrait={portrait} label="CREATE A FILE">
+              pages/inspire/
+              <br />
+              <span style={{ color: green }}>index.vue</span>
+            </Code>
+            <div style={{ marginTop: 32, fontSize: portrait ? 60 : 63, fontWeight: 750, letterSpacing: -2 }}>{portrait ? '页面，自动发现。' : '新页面，从一个文件开始。'}</div>
+          </div>
+        </>
+      )}
+      {kind === 'routes' && !anthology && phase === 1 && (
+        <>
+          <Label style={{ ...position, top: 38, left: 77, color: green }}>FILE → ROUTE</Label>
+          <div style={{ ...position, top: 119, left: 75, fontSize: 138, fontWeight: 900, letterSpacing: -9 }}>
+            自动
+            <span style={{ color: green }}>发现。</span>
+          </div>
+          <div style={{ ...position, top: 339, left: 95, fontFamily: mono, fontSize: 44, color: '#b5cbb6' }}>
+            pages/inspire/index.vue
+            <span style={{ color: green, padding: '0 35px' }}>→</span>
+            {' '}
+            app.json
+          </div>
+          <div style={{ ...position, top: 488, left: 100, width: 1450, height: 2, background: '#25412c' }}><div style={{ height: 2, width: `${Math.min(1, age / 28) * 100}%`, background: green }} /></div>
+        </>
+      )}
+      {kind === 'routes' && !anthology && phase === 2 && (
+        <div style={{ ...position, left: 168, top: 41, width: 1390 }}>
+          <Code portrait={false} label="app.json">
+            <span style={{ color: '#839b89' }}>&#123; </span>
+            "pages": [
+            <span style={{ color: green }}>"pages/inspire/index"</span>
+            ]
+            <span style={{ color: '#839b89' }}> &#125;</span>
+          </Code>
+          <div style={{ marginTop: 52, display: 'flex', alignItems: 'center', gap: 35 }}>
+            <span style={{ color: green, fontSize: 80 }}>↗</span>
+            <span style={{ fontSize: 105, fontWeight: 800, letterSpacing: -6 }}>新页面，已就位。</span>
+          </div>
+        </div>
+      )}
+      {kind === 'components' && (phase === 0 || anthology) && (
+        <>
+          <div style={{ ...position, left: portrait ? 0 : 72, top: portrait ? 25 : 32, width: portrait ? 820 : 1570 }}>
+            <Label style={{ color: green, fontSize: 27 }}>COMPONENT / WRITE IT</Label>
+            <div style={{ fontFamily: mono, color: green, fontSize: portrait ? 69 : 113, letterSpacing: -6, marginTop: 35 }}>&lt;InspireCard /&gt;</div>
+            {!portrait && <Code portrait={false} label="LOCAL COMPONENT">components/InspireCard.vue</Code>}
+          </div>
+          {portrait && <div style={{ ...position, left: 44, top: 362 }}><ComponentPreview portrait /></div>}
+          {!portrait && <div style={{ ...position, top: 469, left: 79, fontSize: 55 }}>写下组件，连接界面。</div>}
+        </>
+      )}
+      {kind === 'components' && !anthology && phase === 1 && (
+        <div style={{ ...position, left: 117, top: 56, width: 1480 }}>
+          <Label style={{ color: green }}>AUTO IMPORT / 原生组件声明</Label>
+          <div style={{ fontFamily: mono, fontSize: 112, color: green, marginTop: 41, letterSpacing: -7 }}>usingComponents</div>
+          <div style={{ fontFamily: mono, color: '#b6c8b9', fontSize: 44, marginTop: 43 }}>
+            <span style={{ color: yellow }}>'inspire-card'</span>
+            <span style={{ padding: '0 30px' }}>→</span>
+            'components/InspireCard'
+          </div>
+          <div style={{ marginTop: 73, fontSize: 57, fontWeight: 750 }}>关联关系，自动生成。</div>
+        </div>
+      )}
+      {kind === 'components' && !anthology && phase === 2 && (
+        <>
+          <div style={{ ...position, left: 55, top: 116 }}>
+            <Label style={{ color: green }}>READY TO COMPOSE</Label>
+            <div style={{ marginTop: 27, fontSize: 119, fontWeight: 800, lineHeight: 1.15, letterSpacing: -7 }}>
+              组件，
+              <br />
+              <span style={{ color: green }}>就在这里。</span>
             </div>
           </div>
-        )
-      })}
+          <div style={{ ...position, left: 1000, top: 35 }}><ComponentPreview portrait={false} /></div>
+        </>
+      )}
+      {kind === 'packages' && !anthology && phase === 0 && (
+        <div style={{ ...position, left: 109, top: 30, width: 1480 }}>
+          <Label style={{ color: green }}>NPM / YOUR ECOSYSTEM</Label>
+          <div style={{ fontFamily: mono, fontSize: 185, fontWeight: 700, letterSpacing: -13, color: green, lineHeight: 1.3 }}>
+            npm
+            <span style={{ fontSize: 110, color: '#527459', marginLeft: 65 }}>→</span>
+            <span style={{ fontSize: 96, color: white, marginLeft: 64 }}>小程序</span>
+          </div>
+          <Code portrait={false} label="USE WHAT YOU KNOW">
+            import dayjs from
+            {' '}
+            <span style={{ color: yellow }}>'dayjs'</span>
+          </Code>
+        </div>
+      )}
+      {kind === 'packages' && (anthology || phase === 1) && (
+        <div style={{ ...position, left: portrait ? 0 : 135, top: portrait ? 18 : 55 }}>
+          <Label style={{ color: green, marginBottom: portrait ? 58 : 22, fontSize: portrait ? 28 : 27 }}>DEPENDENCIES / 分包组织</Label>
+          <PackageTree portrait={portrait} />
+          <div style={{ textAlign: 'center', marginTop: portrait ? 49 : 15, fontSize: portrait ? 52 : 46, fontWeight: 700 }}>熟悉的依赖，清晰的组织。</div>
+        </div>
+      )}
+      {kind === 'packages' && !anthology && phase === 2 && (
+        <>
+          <div style={{ ...position, top: 27, left: 70 }}>
+            <Label style={{ color: green }}>ONE TOOLCHAIN</Label>
+            <div style={{ fontSize: 125, lineHeight: 1.13, fontWeight: 850, letterSpacing: -7, marginTop: 31 }}>
+              依赖有序。
+              <br />
+              <span style={{ color: green }}>分包有章。</span>
+            </div>
+            <div style={{ fontSize: 34, color: muted, marginTop: 39 }}>npm 与 subPackages，统一处理。</div>
+          </div>
+          {['MAIN', 'PACKAGE A', 'PACKAGE B'].map((label, index) => (
+            <div key={label} style={{ ...position, left: 1115 - index * 20, top: 69 + index * 122, width: 478, height: 112, background: index === 0 ? green : '#1d3524', border: `1px solid ${green}55`, color: index === 0 ? '#0c1d0b' : '#cfe4c7', transform: `rotate(${index * -4}deg)`, borderRadius: 12, fontFamily: mono, fontSize: 35, display: 'flex', alignItems: 'center', paddingLeft: 30, boxSizing: 'border-box' }}>
+              {label}
+              <span style={{ marginLeft: 'auto', marginRight: 30 }}>↗</span>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   )
 }

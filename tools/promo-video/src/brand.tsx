@@ -6,7 +6,7 @@ export const mono = '"JetBrains Mono", monospace'
 export const sans = '"Noto Sans SC", sans-serif'
 export const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const
 
-export function enter(frame: number, delay = 0, duration = 42) {
+export function enter(frame: number, delay = 0, duration = 16) {
   const x = interpolate(frame, [delay, delay + duration], [0, 1], clamp)
   return 1 - (1 - x) ** 4
 }
@@ -28,7 +28,7 @@ export function Heading({ portrait, eyebrow, first, accent }: { portrait: boolea
   return (
     <div style={{ position: 'absolute', left: portrait ? 80 : 96, top: portrait ? 178 : 128, right: portrait ? 168 : 96 }}>
       <Reveal><Label style={{ fontSize: portrait ? 20 : 18, color: colors.green }}>{eyebrow}</Label></Reveal>
-      <Reveal delay={7} style={{ marginTop: 20, fontSize: portrait ? 65 : 64, lineHeight: 1.35, fontWeight: 750, letterSpacing: -2 }}>
+      <Reveal delay={3} style={{ marginTop: 14, fontSize: portrait ? 70 : 76, lineHeight: 1.35, fontWeight: 750, letterSpacing: -2 }}>
         {first}
         {portrait ? <br /> : ' '}
         <span style={{ color: colors.green }}>{accent}</span>

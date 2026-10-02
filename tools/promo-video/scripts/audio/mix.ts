@@ -33,7 +33,7 @@ export function finishMix(bus: StereoBus): StereoBus {
   let lowLeft = 0
   let lowRight = 0
   for (let i = 0; i < bus.left.length; i++) {
-    const fade = Math.min(1, i / (SAMPLE_RATE * 0.06), (end - i) / (SAMPLE_RATE * 0.75))
+    const fade = Math.min(1, i / (SAMPLE_RATE * 0.005), (end - i) / (SAMPLE_RATE * 0.6))
     lowLeft += 0.002 * (bus.left[i] - lowLeft)
     lowRight += 0.002 * (bus.right[i] - lowRight)
     bus.left[i] = Math.tanh((bus.left[i] - lowLeft) * 1.05) * fade

@@ -1,5 +1,7 @@
+import type { Energy, Format, Shot } from '../../src/timeline'
 import type { StereoBus } from './synth'
-import { bass, BEAT, createBus, hat, kick, pad, pluck, snare, sweep } from './synth'
+import { filmSpecs, fps, framesPerBeat } from '../../src/timeline'
+import { bass, BEAT, createBus, hat, impact, kick, pad, pluck, snare, sweep } from './synth'
 
 const harmony = [
   { root: 38, notes: [50, 53, 57, 60, 64], arp: [74, 77, 81, 76, 72, 77, 69, 76] },
@@ -8,19 +10,7 @@ const harmony = [
   { root: 36, notes: [48, 52, 55, 60, 62], arp: [74, 76, 79, 72, 67, 76, 72, 74] },
 ]
 
-interface Arrangement {
-  seconds: number
-  bars: number
-  firstBeat: number
-  coreAt: number
-  endingAt: number
-  cuts: number[]
-}
-
-const arrangements: Record<'landscape' | 'portrait', Arrangement> = {
-  landscape: { seconds: 60, bars: 32, firstBeat: 8, coreAt: 14, endingAt: 52, cuts: [4, 14, 30, 40, 52] },
-  portrait: { seconds: 30, bars: 16, firstBeat: 6, coreAt: 8, endingAt: 26, cuts: [3, 8, 18, 22, 26] },
-}
+const dynamics: Record<Energy, number> = { hook: 0.98, build: 0.84, drive: 1, outro: 0.77 }
 
 function brandMotif(bus: StereoBus, at: number, gain: number) {
   for (const [index, midi] of [74, 81, 76, 86].entries()) {
@@ -28,73 +18,75 @@ function brandMotif(bus: StereoBus, at: number, gain: number) {
   }
 }
 
-/** 两个画幅独立编排，同时共享主题动机与 D 小调和声。 */
-export function compose(format: 'landscape' | 'portrait'): StereoBus {
-  const arrangement = arrangements[format]
-  const { seconds, bars, firstBeat, coreAt, endingAt, cuts } = arrangement
-  const bus = createBus(seconds)
-  const endingBar = Math.floor(endingAt / (BEAT * 4))
-
-  for (let bar = 0; bar < bars; bar += 2) {
-    const chord = harmony[Math.floor(bar / 2) % harmony.length]
-    const start = bar * 4 * BEAT
-    if (start >= endingAt) {
-      break
-    }
-    const gain = start < 4 ? 0.019 : 0.026
-    for (const [index, note] of chord.notes.entries()) {
-      pad(bus, start, Math.min(8 * BEAT + 1, endingAt - start + 0.3), note, (index - 2) * 0.36, gain)
-    }
+function scoreShot(bus: StereoBus, shot: Shot, index: number, endingAt: number) {
+  const at = shot.startFrame / fps
+  const chord = harmony[shot.energy === 'outro' ? 0 : index % harmony.length]
+  const gain = dynamics[shot.energy]
+  const length = Math.min(shot.frames / fps + 0.24, endingAt - at + 0.2)
+  for (const [voice, note] of chord.notes.entries()) {
+    pad(bus, at, length, note, (voice - 2) * 0.36, 0.025 * gain)
   }
 
-  for (let beat = firstBeat; beat < bars * 4; beat++) {
-    const at = beat * BEAT
-    if (at >= endingAt - BEAT / 2) {
+  for (const [cueIndex, frame] of shot.cues.entries()) {
+    const cueAt = (shot.startFrame + frame) / fps
+    if (cueAt >= endingAt) {
+      continue
+    }
+    const cueGain = cueIndex === 0 ? 1 : 0.7
+    impact(bus, cueAt + 0.003, 9901 + index * 7 + cueIndex, 0.12 * gain * cueGain)
+    sweep(bus, cueAt, 1701 + index * 7 + cueIndex, 0.13 * gain * cueGain)
+    pluck(bus, cueAt, chord.arp[(cueIndex * 2) % chord.arp.length], 0.058 * gain, 0, true)
+  }
+
+  for (let beat = 0; beat < shot.frames / framesPerBeat; beat++) {
+    const beatAt = at + beat * BEAT
+    if (beatAt >= endingAt) {
       break
     }
-    const bar = Math.floor(beat / 4)
-    const chord = harmony[Math.floor(bar / 2) % harmony.length]
-    const energy = at < coreAt ? 0.66 : at > endingAt - 4 ? 0.85 : 1
-    const breakBeforeCut = cuts.some(cut => at > cut - BEAT * 0.7 && at < cut)
-    const breakdown = format === 'landscape' && at >= 37.5 && at < 39.5
-    if (!breakBeforeCut && !breakdown) {
-      kick(bus, at, 0.32 * energy)
-      bass(bus, at + BEAT * 0.11, chord.root, BEAT * 0.73, 0.13 * energy)
-      if (beat % 2 === 1) {
-        snare(bus, at, 0.15 * energy, 1000 + beat)
-      }
-      for (let half = 0; half < 2; half++) {
-        hat(bus, at + half * BEAT / 2, (half ? 0.22 : 0.1) * energy, half ? 0.33 : -0.3, beat * 39 + half, half === 1 && beat % 4 === 3)
-      }
-      if (at > coreAt && beat % 4 === 3) {
-        bass(bus, at + BEAT * 0.8, chord.root + 12, BEAT * 0.19, 0.05)
-      }
+    const actionBeat = shot.cues.includes(beat * framesPerBeat)
+    const transientGain = actionBeat ? 1.16 : 1
+    // 第一拍直接进入，快剪版本不等待铺垫完成才加入鼓组。
+    kick(bus, beatAt + 0.003, 0.34 * gain * transientGain)
+    bass(bus, beatAt + BEAT * 0.1, chord.root, BEAT * 0.65, 0.15 * gain)
+    if (beat % 2 === 1) {
+      snare(bus, beatAt, 0.2 * gain, 1000 + index * 31 + beat)
+    }
+    const subdivisions = shot.energy === 'drive' || shot.energy === 'hook' ? 4 : 2
+    for (let tick = 0; tick < subdivisions; tick++) {
+      const strong = tick * 2 === subdivisions
+      const strength = strong ? 0.2 : tick % 2 ? 0.065 : 0.12
+      hat(bus, beatAt + tick * BEAT / subdivisions, strength * gain, tick % 2 ? 0.35 : -0.3, index * 71 + beat * 13 + tick, strong && beat % 4 === 3)
+    }
+    if (shot.energy === 'drive' && beat % 4 === 3) {
+      bass(bus, beatAt + BEAT * 0.75, chord.root + 12, BEAT * 0.22, 0.065)
+      snare(bus, beatAt + BEAT * 0.75, 0.05, 1103 + index * 31 + beat)
     }
     for (let half = 0; half < 2; half++) {
       const step = beat * 2 + half
-      if (at < coreAt && step % 2 === 1) {
-        continue
-      }
-      const note = chord.arp[step % chord.arp.length]
       const accent = step % 4 === 0 ? 1 : 0.65
-      pluck(bus, at + half * BEAT / 2, note, 0.036 * energy * accent, half ? 0.42 : -0.42)
-    }
-    if (bar >= endingBar - 4 && beat % 4 === 0) {
-      pluck(bus, at + BEAT / 4, chord.notes[3] + 12, 0.023, -0.1, true)
+      pluck(bus, beatAt + half * BEAT / 2, chord.arp[step % chord.arp.length], 0.047 * gain * accent, half ? 0.42 : -0.42)
     }
   }
+}
 
-  brandMotif(bus, 0.7, 0.075)
-  brandMotif(bus, endingAt + 0.38, 0.095)
-  for (const [index, cut] of cuts.entries()) {
-    sweep(bus, cut, 1701 + index, index === cuts.length - 1 ? 0.16 : 0.11)
+/** 时长、镜头节奏、动作拍点与能量完全取自视频共享时间线。 */
+export function compose(format: Format): StereoBus {
+  const film = filmSpecs.find(candidate => candidate.name === format)
+  if (!film) {
+    throw new Error(`未知视频画幅：${format}`)
   }
-
-  // 片尾在 Dm9 上解决，短版与长版均为专门编排的落点。
+  const bus = createBus(film.seconds)
+  const endingAt = film.seconds - 2
+  for (const [index, shot] of film.shots.entries()) {
+    scoreShot(bus, shot, index, endingAt)
+  }
+  brandMotif(bus, BEAT / 2, 0.066)
+  brandMotif(bus, endingAt + 0.08, 0.073)
+  sweep(bus, endingAt, 1907, 0.1)
+  impact(bus, endingAt, 1983, 0.1)
+  bass(bus, endingAt + 0.01, harmony[0].root, 0.65, 0.11)
   for (const [index, note] of harmony[0].notes.entries()) {
-    pad(bus, endingAt, seconds - endingAt, note, (index - 2) * 0.35, 0.03)
+    pad(bus, endingAt - 0.25, 2.25, note, (index - 2) * 0.35, 0.025)
   }
-  bass(bus, endingAt + 0.02, 38, Math.min(1.5, seconds - endingAt), 0.12)
-  kick(bus, endingAt, 0.25)
   return bus
 }

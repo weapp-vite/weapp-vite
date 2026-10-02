@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { filmSpecs, fps, framesPerBeat } from '../src/timeline'
 import { encodeWave, finishMix } from './audio/mix'
 import { normalizeAudio } from './audio/normalize'
 import { compose } from './audio/score'
@@ -10,7 +11,7 @@ import { BPM, SAMPLE_RATE } from './audio/synth'
 
 const repositoryRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const defaultOutput = path.join(repositoryRoot, '.cache/promo-video/public/audio')
-const formats = ['landscape', 'portrait'] as const
+const formats = filmSpecs.map(film => film.name)
 
 /** 指纹仅包含相对文件名、源码和音频参数，与本机目录无关。 */
 async function sourceFingerprint(): Promise<string> {
@@ -21,8 +22,9 @@ async function sourceFingerprint(): Promise<string> {
   const files = ['audio.ts', ...modules].sort()
   const contents = await Promise.all(files.map(name => readFile(path.join(scriptDirectory, name), 'utf8')))
   const hash = createHash('sha256').update(JSON.stringify({
-    formats,
-    durations: [60, 30],
+    filmSpecs,
+    fps,
+    framesPerBeat,
     sampleRate: SAMPLE_RATE,
     bpm: BPM,
     channels: 2,
@@ -57,10 +59,12 @@ export async function generateAudio(outputDir: string): Promise<void> {
     return
   }
   await mkdir(outputDir, { recursive: true })
+  // 先失效旧清单，避免合成中断后将残缺文件误判为有效缓存。
+  await rm(path.join(outputDir, 'manifest.json'), { force: true })
   for (const format of formats) {
     const intermediate = path.join(outputDir, `${format}.raw.wav`)
     const output = path.join(outputDir, `${format}.wav`)
-    console.log(`Synthesizing ${format}: 128 BPM / 48 kHz stereo`)
+    console.log(`Synthesizing ${format}: ${BPM} BPM / 48 kHz stereo`)
     try {
       await writeFile(intermediate, encodeWave(finishMix(compose(format))))
       await normalizeAudio(intermediate, output)

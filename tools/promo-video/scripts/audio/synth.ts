@@ -1,5 +1,7 @@
+import { bpm } from '../../src/timeline'
+
 export const SAMPLE_RATE = 48_000
-export const BPM = 128
+export const BPM = bpm
 export const BEAT = 60 / BPM
 const TAU = Math.PI * 2
 
@@ -64,9 +66,9 @@ export function pad(bus: StereoBus, start: number, duration: number, midi: numbe
 
 export function pluck(bus: StereoBus, start: number, midi: number, gain: number, pan = 0, long = false) {
   const hz = frequency(midi)
-  const duration = long ? 1.4 : 0.8
+  const duration = long ? 0.9 : 0.5
   voice(bus, start, duration, gain, pan, (t) => {
-    const envelope = (1 - Math.exp(-t * 450)) * Math.exp(-t * (long ? 3 : 7))
+    const envelope = (1 - Math.exp(-t * 600)) * Math.exp(-t * (long ? 4 : 10))
     const brightness = Math.exp(-t * 10)
     return envelope * (Math.sin(TAU * hz * t)
       + 0.35 * brightness * Math.sin(TAU * hz * 2 * t)
@@ -88,9 +90,9 @@ export function bass(bus: StereoBus, start: number, midi: number, length: number
 }
 
 export function kick(bus: StereoBus, start: number, gain: number) {
-  voice(bus, start, 0.43, gain, 0, (t) => {
-    const phase = TAU * (47 * t + 90 * 0.022 * (1 - Math.exp(-t / 0.022)))
-    return Math.sin(phase) * (1 - Math.exp(-t * 900)) * Math.exp(-t * 11)
+  voice(bus, start, 0.32, gain, 0, (t) => {
+    const phase = TAU * (49 * t + 108 * 0.018 * (1 - Math.exp(-t / 0.018)))
+    return Math.sin(phase) * (1 - Math.exp(-t * 1200)) * Math.exp(-t * 14)
   })
 }
 
@@ -123,13 +125,25 @@ export function sweep(bus: StereoBus, at: number, seed: number, gain = 0.16) {
   const random = randomSource(seed)
   let lower = 0
   let upper = 0
-  voice(bus, at - 0.55, 1.25, gain, 0, (t) => {
+  voice(bus, at - 0.22, 0.55, gain, 0, (t) => {
     const noise = random()
-    const shape = t < 0.55 ? (t / 0.55) ** 2 : Math.exp(-(t - 0.55) * 8)
-    const cutoff = 600 + 2200 * Math.sin(Math.PI * t / 1.25) ** 2
+    const shape = t < 0.22 ? (t / 0.22) ** 2 : Math.exp(-(t - 0.22) * 21)
+    const cutoff = 700 + 3000 * Math.sin(Math.PI * t / 0.55) ** 2
     const alpha = 1 - Math.exp(-TAU * cutoff / SAMPLE_RATE)
     lower += 0.03 * (noise - lower)
     upper += alpha * (noise - upper)
     return (upper - lower) * shape
+  })
+}
+
+/** 每个画面主动作触发短促低频冲击和受控空气瞬态。 */
+export function impact(bus: StereoBus, at: number, seed: number, gain: number) {
+  const random = randomSource(seed)
+  let smooth = 0
+  voice(bus, at, 0.24, gain, 0, (t) => {
+    smooth += 0.16 * (random() - smooth)
+    const attack = Math.min(1, t / 0.003)
+    const sub = Math.sin(TAU * (68 * t + 26 * 0.03 * (1 - Math.exp(-t / 0.03))))
+    return attack * (sub * Math.exp(-t * 24) * 0.7 + smooth * Math.exp(-t * 38) * 1.1)
   })
 }

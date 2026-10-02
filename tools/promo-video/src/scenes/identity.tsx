@@ -1,12 +1,15 @@
+import type { ShotProps } from '../timeline'
 import { useCurrentFrame } from 'remotion'
 import { colors, enter, Label, Logo, mono, Reveal } from '../brand'
+import { BeatStage, Burst } from '../motion'
+import { shotPhase } from '../timeline'
 
 function Emblem({ portrait, outro }: { portrait: boolean, outro: boolean }) {
-  const frame = useCurrentFrame()
+  const frame = Math.min(useCurrentFrame(), 180)
   const size = portrait ? 570 : 700
   const x = portrait ? 224 : 1105
   const y = portrait ? (outro ? 260 : 300) : 155
-  const rotation = frame / 12
+  const rotation = (outro ? Math.min(frame, 180) : frame) / 8
   return (
     <div style={{ position: 'absolute', left: x, top: y, width: size, height: size, transform: `scale(${0.85 + enter(frame) * 0.15})`, opacity: 0.2 + enter(frame) * 0.8 }}>
       <div style={{ position: 'absolute', inset: 50, borderRadius: '50%', background: 'radial-gradient(circle, #95ec6930, #95ec6907 50%, transparent 70%)', transform: `scale(${1 + Math.sin(frame / 50) * 0.06})` }} />
@@ -25,28 +28,36 @@ function Emblem({ portrait, outro }: { portrait: boolean, outro: boolean }) {
   )
 }
 
-export function Intro({ portrait }: { portrait: boolean }) {
+export function Intro({ portrait, shot }: ShotProps) {
+  const frame = useCurrentFrame()
+  const phase = shotPhase(frame, shot)
+  const local = frame - shot.cues[phase]
+  const title = phase === 0 ? ['小程序开发，', '进入现代节奏。'] : phase === 1 ? ['原生底色。', '现代锋芒。'] : ['weapp-vite', '给小程序现代化的开发体验']
   return (
-    <>
-      <Emblem portrait={portrait} outro={false} />
-      <div style={{ position: 'absolute', left: portrait ? 80 : 96, top: portrait ? 930 : 310, right: portrait ? 170 : 770 }}>
-        <Reveal><Label style={{ color: colors.green, fontSize: portrait ? 19 : 22 }}>THE NEXT CHAPTER OF MINI PROGRAMS</Label></Reveal>
-        <Reveal delay={8} style={{ marginTop: 36, fontSize: portrait ? 67 : 72, lineHeight: 1.35, fontWeight: 550, letterSpacing: -2 }}>小程序开发，</Reveal>
-        <Reveal delay={16} style={{ marginTop: 4, fontSize: portrait ? 91 : 98, lineHeight: 1.22, fontWeight: 850, letterSpacing: -5 }}>
-          也该拥有
-          <br />
-          <span style={{ color: colors.green }}>现代体验。</span>
-        </Reveal>
-        <Reveal delay={27} style={{ marginTop: 38, color: '#9ead9f', fontSize: portrait ? 25 : 27 }}>原生能力，现代工具，自由创造。</Reveal>
+    <BeatStage shot={shot}>
+      <div style={{ position: 'absolute', left: portrait ? 80 : 96, top: portrait ? 400 : 220, width: portrait ? 820 : 1728 }}>
+        <Label style={{ color: colors.green, fontSize: portrait ? 25 : 28, letterSpacing: 6 }}>CREATE. BUILD. GO.</Label>
+        <div style={{ marginTop: portrait ? 70 : 42, fontFamily: phase === 2 ? mono : undefined, fontSize: phase === 2 ? (portrait ? 116 : 195) : (portrait ? 80 : 97), fontWeight: phase === 2 ? 400 : 800, letterSpacing: -6, lineHeight: 1.2 }}>{title[0]}</div>
+        <div style={{ marginTop: 22, color: colors.green, fontSize: phase === 2 ? (portrait ? 44 : 66) : (portrait ? 106 : 151), fontWeight: 850, letterSpacing: -5, lineHeight: 1.24 }}>{title[1]}</div>
+        <div style={{ marginTop: portrait ? 75 : 60, display: 'flex', alignItems: 'center', gap: 27 }}>
+          <div style={{ height: 5, width: 80 + enter(local, 0, 28) * 220, background: colors.yellow }} />
+          <span style={{ color: '#c3d0c3', fontFamily: mono, fontSize: portrait ? 24 : 30 }}>{['NATIVE × MODERN', 'YOUR IDEAS, IN MOTION', 'START SOMETHING NEW'][phase]}</span>
+        </div>
       </div>
-    </>
+      <Logo size={portrait ? 350 : 290} style={{ position: 'absolute', left: portrait ? 495 : 1490, top: portrait ? 1120 : 690, transform: `rotate(${-12 + enter(local, 0, 12) * 8}deg) scale(${1.2 - enter(local, 0, 10) * 0.2})`, filter: 'drop-shadow(0 0 60px #95ec6925)' }} />
+      <div style={{ position: 'absolute', left: portrait ? 80 : 96, top: portrait ? 1160 : 760, fontFamily: mono, fontSize: portrait ? 128 : 142, color: 'transparent', WebkitTextStroke: '1px #95ec6940', lineHeight: 1 }}>
+        0
+        {phase + 1}
+      </div>
+      <Burst x={portrait ? 670 : 1620} y={portrait ? 1300 : 830} frame={local} yellow={phase === 1} />
+    </BeatStage>
   )
 }
 
 export function Outro({ portrait }: { portrait: boolean }) {
   const frame = useCurrentFrame()
   const command = 'pnpm create weapp-vite'
-  const chars = Math.floor(enter(frame, 28, 65) * command.length)
+  const chars = Math.floor(enter(frame, 60, 50) * command.length)
   return (
     <>
       <Emblem portrait={portrait} outro />
