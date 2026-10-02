@@ -24,6 +24,7 @@ describe('e2e suite manifest', () => {
   })
 
   it.each([
+    'ide/issue-1065-provider.runtime.test.ts',
     'ide/vite-plugin.runtime.test.ts',
     'ide/vite-plugin-npm.runtime.test.ts',
     'ide/wevu-runtime.pruning.test.ts',

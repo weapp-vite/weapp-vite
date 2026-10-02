@@ -97,6 +97,44 @@ describe('dev module graph provider integration', () => {
     expect(moduleGraphService.collectAffectedEntries(styleId)).toEqual(new Set())
   })
 
+  it('lets Vite replace compiler transform dependency edges without retaining stale owners', async () => {
+    const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-compiler-graph-')))
+    temporaryDirectories.push(root)
+    const pageId = path.join(root, 'page.ts')
+    const styleId = path.join(root, 'page.css')
+    const first = path.join(root, 'first.tokens')
+    const second = path.join(root, 'second.tokens')
+    await Promise.all([
+      writeFile(pageId, 'export default {}'),
+      writeFile(styleId, '.page { color: red; }'),
+      writeFile(first, 'red'),
+      writeFile(second, 'blue'),
+    ])
+    const moduleGraphService = createModuleGraphService()
+    moduleGraphService.replaceEntryDependencies(pageId, 'style', [styleId])
+    moduleGraphService.replaceTransformDependencies(styleId, [first])
+    const provider = await createDevModuleGraphProvider({
+      runtimeState: createRuntimeState(),
+      configService: { cwd: root, outDir: path.join(root, 'dist') },
+      moduleGraphService,
+    } as unknown as MutableCompilerContext, { root }, () => {})
+    const graph = { getModuleIds: () => [createLogicalEntryId(pageId, 'page')] }
+    try {
+      await moduleGraphService.syncDevGraph(graph)
+      expect(moduleGraphService.collectAffectedEntries(first)).toEqual(new Set([normalizeSourceId(pageId)]))
+      moduleGraphService.replaceTransformDependencies(styleId, [second])
+      await moduleGraphService.syncDevGraph(graph)
+      expect(moduleGraphService.collectAffectedEntries(first)).toEqual(new Set())
+      expect(moduleGraphService.collectAffectedEntries(second)).toEqual(new Set([normalizeSourceId(pageId)]))
+      moduleGraphService.replaceTransformDependencies(styleId, [])
+      await moduleGraphService.syncDevGraph(graph)
+      expect(moduleGraphService.collectAffectedEntries(second)).toEqual(new Set())
+    }
+    finally {
+      await provider.close()
+    }
+  })
+
   it('ignores generated output while observing source changes', async () => {
     const root = await realpath(await mkdtemp(path.join(tmpdir(), 'weapp-vite-output-watch-')))
     temporaryDirectories.push(root)

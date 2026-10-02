@@ -1,0 +1,8 @@
+{
+  "name": "issue-1065-provider",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "wevu": "workspace:*"
+  }
+}
