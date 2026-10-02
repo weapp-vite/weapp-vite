@@ -23,17 +23,20 @@ export async function hasEntryTopologyChange(ctx: MutableCompilerContext, files:
   if (!ctx.jsonService) {
     return false
   }
-  const entryConfigPaths = new Set<string>()
+  const entryConfigs = new Map<string, unknown>()
   for (const entry of ctx.runtimeState?.build.hmr.entriesMap.values() ?? []) {
     if (!entry) {
       continue
     }
     if (entry.jsonPath) {
-      entryConfigPaths.add(normalizeFsResolvedId(entry.jsonPath))
+      entryConfigs.set(normalizeFsResolvedId(entry.jsonPath), entry.declaredJson ?? entry.json)
     }
     const basename = normalizeFsResolvedId(entry.path).replace(/\.[^/.]+$/, '')
     for (const extension of ['.json', '.json.js', '.json.ts']) {
-      entryConfigPaths.add(`${basename}${extension}`)
+      const candidate = `${basename}${extension}`
+      if (!entryConfigs.has(candidate)) {
+        entryConfigs.set(candidate, undefined)
+      }
     }
   }
   let changed = false
@@ -41,9 +44,11 @@ export async function hasEntryTopologyChange(ctx: MutableCompilerContext, files:
     if (!/\.json(?:\.[jt]s)?$/.test(file)) {
       continue
     }
-    const before = ctx.jsonService.cache.get(file) as unknown
+    const cached = ctx.jsonService.cache.get(file) as unknown
+    const normalizedFile = normalizeFsResolvedId(file)
+    const before = cached === undefined ? entryConfigs.get(normalizedFile) : cached
     // 外部转换输入即使是 JSON，也不属于入口配置；解析、错误恢复由声明它的转换器负责。
-    if (before === undefined && !entryConfigPaths.has(normalizeFsResolvedId(file))) {
+    if (before === undefined && !entryConfigs.has(normalizedFile)) {
       continue
     }
     const after = await ctx.jsonService.read(file) as unknown

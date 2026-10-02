@@ -43,3 +43,18 @@ it('detects the first configuration added to a previously compiled native entry'
   expect(await hasEntryTopologyChange(ctx, ['/project/pages/home.json.ts'])).toBe(true)
   expect(read).toHaveBeenCalledWith('/project/pages/home.json.ts')
 })
+
+it('retains the compiled topology baseline after its JSON cache entry is evicted', async () => {
+  const ctx = {
+    jsonService: { cache: new Map(), read: async () => undefined },
+    runtimeState: { build: { hmr: { entriesMap: new Map([
+      ['/project/pages/home.ts', {
+        path: '/project/pages/home.ts',
+        type: 'page',
+        jsonPath: '/project/pages/home.json',
+        declaredJson: { usingComponents: { card: '/card' } },
+      }],
+    ]) } } },
+  } as any
+  expect(await hasEntryTopologyChange(ctx, ['/project/pages/home.json'])).toBe(true)
+})

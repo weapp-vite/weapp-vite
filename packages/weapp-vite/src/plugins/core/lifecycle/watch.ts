@@ -12,6 +12,7 @@ import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '
 import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
+import { resolveScanPluginBasename } from '../../../runtime/scanPlugin/service'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
@@ -681,9 +682,10 @@ async function processChangedFile(
   const relativeCwd = configService.relativeCwd(normalizedId)
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
-  const isPluginManifest = configService.pluginOnly
-    && scanService.pluginJsonPath !== undefined
-    && normalizedId === normalizeFsResolvedId(scanService.pluginJsonPath)
+  const pluginBasename = configService.pluginOnly ? resolveScanPluginBasename(configService.absolutePluginRoot) : undefined
+  // 清单缺失或切换扩展名时扫描结果尚不存在，仍须依据配置的插件根目录识别恢复事件。
+  const isPluginManifest = pluginBasename !== undefined
+    && configSuffixes.some(suffix => normalizedId === normalizeFsResolvedId(`${pluginBasename}${suffix}`))
   const isConfigDependency = isConfigFileDependencyChange(state, normalizedId) || Boolean(isPluginManifest)
   const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
 

@@ -2,6 +2,10 @@ import type { CompilerContext } from '../context'
 import { describe, expect, it, vi } from 'vitest'
 import { createLibDtsPlugin } from './libDts'
 
+vi.mock('../runtime/libDts/assets', () => ({
+  prepareLibDtsAssets: vi.fn(async () => []),
+}))
+
 describe('library declaration watch inputs', () => {
   it.each([
     { config: undefined, watch: true, expected: [] },
