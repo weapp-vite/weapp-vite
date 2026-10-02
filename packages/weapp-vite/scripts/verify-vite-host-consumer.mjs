@@ -129,9 +129,7 @@ else {
 }
 assert.equal(existsSync(path.join(root, 'dist')), false)
 assert.equal(existsSync(path.join(root, '.weapp-vite')), false)
-if (!standalone) {
-  await command(require.resolve('typescript/bin/tsc'), ['-p', 'tsconfig.types.json'])
-}
+await command(require.resolve('typescript/bin/tsc'), ['-p', 'tsconfig.types.json'])
 await command(path.join(root, 'probe-host.mjs'), [])
 // 测试宿主必须使用有效 tsconfig；构建阶段再验证受管引用尚未生成的干净安装路径。
 await writeFile(path.join(root, 'tsconfig.json'), JSON.stringify({ references: [{ path: './.weapp-vite/tsconfig.app.json' }], files: [] }))

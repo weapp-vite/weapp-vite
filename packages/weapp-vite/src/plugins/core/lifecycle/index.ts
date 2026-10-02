@@ -1,5 +1,4 @@
 import type { Plugin } from 'vite'
-import type { BuildGraphContext } from '../../../moduleGraph/types'
 import type { CorePluginState } from '../helpers'
 import { parseSidecarSourceRequest } from '../../../moduleGraph/protocol'
 import { createGenerateBundleHook, createRenderStartHook } from './emit'
@@ -18,8 +17,9 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
   const buildEnd = createBuildEndHook(state)
   let releaseServer: (() => void) | undefined
 
-  const releaseScope = (context?: BuildGraphContext) => {
-    state.ctx.moduleGraphService.unbindBuildContext(state, context)
+  const releaseScope = () => {
+    // scope 属于本插件实例；不同 hook 的 JS context 身份不能作为构建存活凭据。
+    state.ctx.moduleGraphService.unbindBuildContext(state)
     releaseServer?.()
     releaseServer = undefined
   }
@@ -61,11 +61,11 @@ export function createCoreLifecyclePlugin(state: CorePluginState): Plugin {
     closeBundle() {
       // watch 构建每轮都可能关闭 bundle；scope 必须保留到 watcher 真正关闭。
       if (!this.meta.watchMode || state.resolvedConfig?.command === 'serve') {
-        releaseScope(this)
+        releaseScope()
       }
     },
     closeWatcher() {
-      releaseScope(this)
+      releaseScope()
     },
   }
 }

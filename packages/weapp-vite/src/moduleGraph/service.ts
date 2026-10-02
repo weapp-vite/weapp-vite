@@ -82,11 +82,8 @@ export function createModuleGraphService(): ModuleGraphService {
     if (context && currentContext !== context) {
       return
     }
-    const token = buildContextTokens.get(scope)
-    if (token) {
-      releaseBuildContext(scope, token)
-      return
-    }
+    // 显式关闭整个 scope 时，所有 hook 包装对象都随其释放。
+    buildContextTokens.delete(scope)
     buildContexts.delete(scope)
     if (pluginContexts.delete(scope)) {
       pluginContextTokens.delete(scope)
@@ -265,8 +262,8 @@ export function createModuleGraphService(): ModuleGraphService {
       }
     },
     bindPluginContext(scope, context) {
-      const buildToken = buildContextTokens.get(scope)
-      const token = buildContexts.get(scope) === context && buildToken ? buildToken : {}
+      // 同一构建的各 hook 可提供不同包装对象，能力仍归当前 scope 的构建租约。
+      const token = buildContextTokens.get(scope) ?? {}
       pluginContexts.delete(scope)
       pluginContextTokens.set(scope, token)
       pluginContexts.set(scope, context)
@@ -371,10 +368,15 @@ export function createModuleGraphService(): ModuleGraphService {
       topologyRescan.reasons.add(reason)
     },
     async resolve(source, importer, options) {
-      if (typeof pluginContext?.resolve !== 'function') {
-        throw new TypeError('ModuleGraphService 尚未绑定支持 resolve 的 PluginContext。')
+      if (typeof pluginContext?.resolve === 'function') {
+        return await pluginContext.resolve(source, importer, options)
       }
-      return await pluginContext.resolve(source, importer, options)
+      // snapshot 之间没有活动构建，源码预分析由仍存活的 dev 宿主解析。
+      const container = devServer?.environments?.client?.pluginContainer ?? devServer?.pluginContainer
+      if (container) {
+        return await container.resolveId(source, importer)
+      }
+      throw new TypeError('ModuleGraphService 尚未绑定支持 resolve 的 PluginContext 或 dev 宿主。')
     },
     async syncDevGraph(context) {
       // bundledDev 的模块图由 DevEngine 编译维护，不能在 buildEnd 再执行 unbundled transform。

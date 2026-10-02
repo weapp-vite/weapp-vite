@@ -18,6 +18,9 @@ on:
       - 'templates/weapp-vite-plugin-template/**'
       - 'e2e-apps/chunk-modes/**'
       - 'mpcore/packages/simulator/**'
+      - 'mpcore/packages/test/**'
+      - 'mpcore/packages/vitest/**'
+      - 'mpcore/packages/weapp-vite/**'
       - 'e2e/ide/subpackagePlacementDom/**'
       - 'e2e-apps/wevu-subpackage-placement/**'
       - 'e2e/ide/reactRuntimeDom/**'
@@ -42,6 +45,33 @@ permissions:
   contents: read
 
 jobs:
+  node-support:
+    name: Published Node support (${{ matrix.os }} / Node ${{ matrix.node }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22.18.0, 24.11.0, 26.0.0, '22', '24']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: '24'
+      - uses: ./.github/actions/refresh-workspace-deps
+        with:
+          build-command: pnpm exec turbo run build --filter=weapp-vite... --filter=rolldown-require...
+      - name: Pack candidates before switching to the consumer runtime
+        run: node packages/weapp-vite/scripts/consumerTarballs.mjs .cache/node-support-tarballs
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install and verify published native and SFC consumers
+        run: node packages/weapp-vite/scripts/verify-vite-host-install.mjs wv
+        env:
+          WEAPP_VITE_CONSUMER_TARBALLS: .cache/node-support-tarballs
+
   react-host-paths:
     name: React host paths (${{ matrix.os }})
     strategy:

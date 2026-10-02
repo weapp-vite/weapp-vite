@@ -1,3 +1,9 @@
+import { readFileSync } from 'node:fs'
+// eslint-disable-next-line e18e/ban-dependencies -- 启动检查使用与发布 engines 完全相同的 npm semver 语义。
+import satisfies from 'semver/functions/satisfies.js'
+
+const { engines } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+
 export function isPrepareCommand(argv) {
   return Array.isArray(argv) && argv[0] === 'prepare'
 }
@@ -105,11 +111,16 @@ export function guardPrepareProcessExit(argv) {
 export async function runWeappViteCLI(options = {}) {
   const {
     argv = getGlobalProcess().argv.slice(2),
+    nodeVersion = getGlobalProcess().versions.node,
     importer = () => ['accept', 'mcp'].includes(argv[0])
       ? import('../dist/cli-acceptance.mjs')
       : import('../dist/cli.mjs'),
     write = message => getGlobalProcess().stderr.write(`\n WARN  ${message}\n\n`),
   } = options
+  // 在加载 Babel 等依赖前校验同一份发布声明；prepare 的容错不能吞掉不受支持的运行时。
+  if (!satisfies(nodeVersion, engines.node)) {
+    throw new Error(`weapp-vite requires Node.js ${engines.node}; current version is ${nodeVersion}. Please upgrade Node.js before running this command.`)
+  }
   const restorePrepareGuard = guardPrepareProcessExit(argv)
   const restoreKnownNoiseGuard = guardKnownLocalPkgResolveNoise()
 
