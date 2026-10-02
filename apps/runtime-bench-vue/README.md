@@ -21,7 +21,7 @@ wevu Vue SFC benchmark 基准工程。
 ```sh
 pnpm build:pkgs
 node packages/weapp-vite/scripts/consumerTarballs.mjs .tmp/runtime-bench/tarballs
-WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless pnpm e2e:runtime-bench --published-presets --tarballs=.tmp/runtime-bench/tarballs --output=.tmp/runtime-bench/headless-presets.json
+WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless pnpm e2e:runtime-bench -- --published-presets --tarballs=.tmp/runtime-bench/tarballs --output=.tmp/runtime-bench/headless-presets.json
 ```
 
 随后按仓库规范核实当轮官方最新 Stable 渠道、安装与实际连接宿主，设置 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH`，将 provider 改为 `devtools` 再执行同一命令。所有运行全局串行；真实 IDE 环境失败保留未完成状态。入口与直接 worker 都执行登录预检，不自行绕过登录或切换版本。
