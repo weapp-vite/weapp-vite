@@ -32,6 +32,8 @@ export const CONTROL_ATTRS = new Set([
 export const EVENT_PREFIX_RE = /^(?:bind|catch|mut-bind|capture-bind|capture-catch)([\w-]+)$/
 export const EVENT_KIND_ALIAS: Record<string, string> = {
   tap: 'click',
+  longtap: 'contextmenu',
+  longpress: 'contextmenu',
 }
 
 export const SELF_CLOSING_TAGS = new Set([

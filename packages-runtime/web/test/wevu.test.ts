@@ -14,6 +14,9 @@ const takePendingRuntimeAppRegistrationMock = vi.hoisted(() => vi.fn())
 const registerAppMock = vi.hoisted(() => vi.fn())
 const registerComponentMock = vi.hoisted(() => vi.fn())
 const registerPageMock = vi.hoisted(() => vi.fn())
+const setAppStyleMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../src/runtime/appStyle', () => ({ setAppStyle: setAppStyleMock }))
 
 vi.mock('wevu/internal-runtime', () => ({
   createApp: createAppMock,
@@ -91,6 +94,13 @@ describe('wevu web registration bridge', () => {
     )
     restoreComponent()
     expect(target.Component).toBe('previous-component')
+  })
+
+  it('updates app styles when Wevu suppresses duplicate host registration during HMR', () => {
+    createAppMock.mockImplementationOnce(() => ({}))
+    registerWebWevuApp({}, { kind: 'app', id: 'app', style: '.probe { color: blue; }' })
+    expect(registerAppMock).not.toHaveBeenCalled()
+    expect(setAppStyleMock).toHaveBeenCalledExactlyOnceWith('.probe { color: blue; }')
   })
 
   it('does not overwrite a constructor replaced after installation', () => {
