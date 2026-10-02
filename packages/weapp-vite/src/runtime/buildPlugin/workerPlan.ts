@@ -48,7 +48,7 @@ export function observeWorkerSources(ctx: MutableCompilerContext, listener: (fil
 }
 
 /** worker 只返回内存产物；主构建统一写出，并接管成功或失败后的输入监听。 */
-export async function buildWorkerAssets(ctx: CompilerContext): Promise<EmittedAsset[]> {
+export async function buildWorkerAssets(ctx: CompilerContext): Promise<Array<EmittedAsset & { fileName: string }>> {
   const state = plan(ctx)
   const { workersDir } = checkWorkersOptions(ctx.currentBuildTarget ?? 'app', ctx.configService, ctx.scanService)
   if (!workersDir) {

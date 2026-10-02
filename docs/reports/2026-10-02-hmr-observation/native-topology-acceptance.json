@@ -1,0 +1,1156 @@
+[
+  {
+    "schemaVersion": 1,
+    "commitSha": "9f3c9ab03e51971df10c2cb068d6f7bea6749760",
+    "workingTreeDirty": false,
+    "provider": "devtools",
+    "environment": {
+      "nodeVersion": "v24.18.0",
+      "ideVersion": "2.02.2608080",
+      "baseLibraryVersion": "3.17.2"
+    },
+    "strict": true,
+    "startedAt": "2026-10-02T01:18:22.406Z",
+    "finishedAt": "2026-10-02T01:25:34.529Z",
+    "status": "passed",
+    "errors": [],
+    "sourceReport": "8d7de937-1be6-4829-b6a4-6bd0ff71e0a0/fc21dc01-9e77-41dd-9d7d-61ca48715a1d.json",
+    "cases": [
+      {
+        "name": "issue #1134 native dependencies runtime (classic) > renders imported style updates and added components and routes after restoration",
+        "status": "passed",
+        "acceptance": {
+          "fixture": "e2e-apps/github-issues/fixtures/issue-1134-profile",
+          "provider": "devtools",
+          "checkpoints": [
+            {
+              "id": "style-0",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline",
+                  "styles": {
+                    "color": "rgb(17, 34, 51)"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline",
+                  "styles": {
+                    "color": "rgb(68, 85, 102)"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline",
+                  "styles": {
+                    "color": "rgb(17, 34, 51)"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "/pages/plain/index",
+              "action": "检查新增组件真实渲染",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                },
+                {
+                  "selector": "#optional-component",
+                  "text": "optional-component"
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "/pages/optional/index",
+              "action": "检查新增页面真实导航",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "/pages/plain/index",
+              "action": "撤销组件与页面后恢复原页面",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                }
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "style-0",
+              "route": "pages/imported/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:18:43.021Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline",
+                      "styles": {
+                        "color": "rgb(17, 34, 51)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "pages/imported/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:18:58.458Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline",
+                      "styles": {
+                        "color": "rgb(68, 85, 102)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "pages/imported/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:19:14.059Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline",
+                      "styles": {
+                        "color": "rgb(17, 34, 51)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "pages/plain/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:21:09.596Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                },
+                {
+                  "selector": "#optional-component",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "optional-component"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "pages/optional/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:21:25.231Z",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "pages/plain/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:21:40.821Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "runtime": {
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.2"
+          }
+        },
+        "violations": []
+      },
+      {
+        "name": "issue #1134 native dependencies runtime (stateful-experimental) > renders imported style updates and added components and routes after restoration",
+        "status": "passed",
+        "acceptance": {
+          "fixture": "e2e-apps/github-issues/fixtures/issue-1134-profile",
+          "provider": "devtools",
+          "checkpoints": [
+            {
+              "id": "style-0",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline",
+                  "styles": {
+                    "color": "rgb(17, 34, 51)"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline",
+                  "styles": {
+                    "color": "rgb(68, 85, 102)"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline",
+                  "styles": {
+                    "color": "rgb(17, 34, 51)"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "/pages/plain/index",
+              "action": "检查新增组件真实渲染",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                },
+                {
+                  "selector": "#optional-component",
+                  "text": "optional-component"
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "/pages/optional/index",
+              "action": "检查新增页面真实导航",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "/pages/plain/index",
+              "action": "撤销组件与页面后恢复原页面",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                }
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "style-0",
+              "route": "pages/imported/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:22:21.812Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline",
+                      "styles": {
+                        "color": "rgb(17, 34, 51)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "pages/imported/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:22:37.556Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline",
+                      "styles": {
+                        "color": "rgb(68, 85, 102)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "pages/imported/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:24:34.540Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline",
+                      "styles": {
+                        "color": "rgb(17, 34, 51)"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "pages/plain/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:24:54.177Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                },
+                {
+                  "selector": "#optional-component",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "optional-component"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "pages/optional/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:25:13.774Z",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "pages/plain/index",
+              "source": "devtools-page-frame",
+              "capturedAt": "2026-10-02T01:25:33.326Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "runtime": {
+            "ideVersion": "2.02.2608080",
+            "baseLibraryVersion": "3.17.2"
+          }
+        },
+        "violations": []
+      }
+    ],
+    "runtimeStats": [
+      {
+        "recordedAt": "2026-10-02T01:18:43.240Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:18:58.626Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:19:14.428Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:21:10.017Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:21:25.649Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:21:41.838Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:22:22.181Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:22:37.927Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:24:38.928Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:24:58.310Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:25:18.003Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:25:34.342Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 2,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "commitSha": "9f3c9ab03e51971df10c2cb068d6f7bea6749760",
+    "workingTreeDirty": false,
+    "provider": "headless",
+    "environment": {
+      "nodeVersion": "v24.18.0",
+      "ideVersion": null,
+      "baseLibraryVersion": null
+    },
+    "strict": true,
+    "startedAt": "2026-10-02T01:13:40.012Z",
+    "finishedAt": "2026-10-02T01:14:02.648Z",
+    "status": "passed",
+    "errors": [],
+    "sourceReport": "05a5f93f-3be2-4ae3-bb59-31441bf4b058/ad0f743a-0c75-4bfa-bd65-f81a24d0759f.json",
+    "cases": [
+      {
+        "name": "issue #1134 native dependencies runtime (classic) > renders imported style updates and added components and routes after restoration",
+        "status": "passed",
+        "acceptance": {
+          "fixture": "e2e-apps/github-issues/fixtures/issue-1134-profile",
+          "provider": "headless",
+          "checkpoints": [
+            {
+              "id": "style-0",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "/pages/plain/index",
+              "action": "检查新增组件真实渲染",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                },
+                {
+                  "selector": "#optional-component",
+                  "text": "optional-component"
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "/pages/optional/index",
+              "action": "检查新增页面真实导航",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "/pages/plain/index",
+              "action": "撤销组件与页面后恢复原页面",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                }
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "style-0",
+              "route": "pages/imported/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:42.034Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "pages/imported/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:42.194Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "pages/imported/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:42.455Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "pages/plain/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:42.872Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                },
+                {
+                  "selector": "#optional-component",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "optional-component"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "pages/optional/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:43.239Z",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "pages/plain/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:43.600Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "violations": []
+      },
+      {
+        "name": "issue #1134 native dependencies runtime (stateful-experimental) > renders imported style updates and added components and routes after restoration",
+        "status": "passed",
+        "acceptance": {
+          "fixture": "e2e-apps/github-issues/fixtures/issue-1134-profile",
+          "provider": "headless",
+          "checkpoints": [
+            {
+              "id": "style-0",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "/pages/imported/index",
+              "action": "检查样式导入链更新及恢复",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "/pages/plain/index",
+              "action": "检查新增组件真实渲染",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                },
+                {
+                  "selector": "#optional-component",
+                  "text": "optional-component"
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "/pages/optional/index",
+              "action": "检查新增页面真实导航",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "text": "baseline"
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "/pages/plain/index",
+              "action": "撤销组件与页面后恢复原页面",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "text": "baseline"
+                }
+              ]
+            }
+          ],
+          "evidence": [
+            {
+              "id": "style-0",
+              "route": "pages/imported/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:48.643Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-1",
+              "route": "pages/imported/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:49.012Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "style-2",
+              "route": "pages/imported/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:49.376Z",
+              "nodes": [
+                {
+                  "selector": ".imported",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "component-added",
+              "route": "pages/plain/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:53.616Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                },
+                {
+                  "selector": "#optional-component",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "optional-component"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "route-added",
+              "route": "pages/optional/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:13:57.887Z",
+              "nodes": [
+                {
+                  "selector": ".optional",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "restored",
+              "route": "pages/plain/index",
+              "source": "headless-logical-tree",
+              "capturedAt": "2026-10-02T01:14:02.453Z",
+              "nodes": [
+                {
+                  "selector": ".plain",
+                  "query": "css",
+                  "count": 1,
+                  "nodes": [
+                    {
+                      "text": "baseline"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "violations": []
+      }
+    ],
+    "runtimeStats": [
+      {
+        "recordedAt": "2026-10-02T01:13:42.190Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:42.452Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:42.865Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:43.234Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:43.597Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:43.601Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:49.008Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:49.372Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:53.608Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:13:57.881Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:14:02.448Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      },
+      {
+        "recordedAt": "2026-10-02T01:14:02.453Z",
+        "source": "runtime",
+        "kind": "stats",
+        "log": 0,
+        "info": 0,
+        "warn": 0,
+        "error": 0,
+        "exception": 0,
+        "total": 0
+      }
+    ]
+  }
+]

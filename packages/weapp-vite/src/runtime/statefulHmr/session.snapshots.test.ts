@@ -42,6 +42,7 @@ vi.mock('vite', async importOriginal => ({
   createServer: harness.createServer,
 }))
 vi.mock('./outputWriter', () => ({ writeStatefulHmrOutput: harness.writeOutput }))
+vi.mock('../../plugins/asset/prune', () => ({ pruneOwnedAssetFiles: vi.fn(async () => {}) }))
 vi.mock('./viteAdapter', () => ({
   StatefulHmrViteAdapter: class {
     constructor(_config: unknown, _server: unknown, callbacks: AdapterCallbacks) {
@@ -185,6 +186,26 @@ describe('stateful snapshot output transactions', () => {
     expect(session.rebuild).toHaveBeenCalledWith([file], expect.any(Map))
     expect(writtenAssets().findLast(asset => asset.fileName === fileName)?.source).toContain(source)
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('rejects compiler-owned metadata assets until a changed entry graph replaces the engine', async () => {
+    const page = path.join(root, 'src/page.js')
+    const child = path.join(root, 'src/child.js')
+    const session = await start(snapshot('red'), [page])
+    const file = path.join(root, 'src/page.json')
+    const compiler = getCompilerHmrHost(session.ctx)
+    const dispose = vi.fn()
+    compiler.register('scan-only-provider', async () => ({ dispose }))
+    compiler.seed(file, '{}')
+    compiler.capture(file, '{"usingComponents":{"child":"./child"}}')
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
+    harness.writeOutput.mockClear()
+    session.sourceChange(file, 'update', ['entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(dispose).toHaveBeenCalledTimes(1)
+    expect(session.patch([])).toBe(false)
   })
 
   it('retires assets removed by a compiler-owned native snapshot batch', async () => {
@@ -436,6 +457,104 @@ describe('stateful snapshot output transactions', () => {
     }))
     expect(delta).toHaveBeenCalledTimes(1)
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it.each(['script-first', 'asset-first', 'asset-running'] as const)('persists native scripts when watcher batches split a mixed update (%s)', async (order) => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const nativeOutput = (marker: string): StatefulHmrOutputFile[] => [{
+      type: 'chunk',
+      fileName: 'pages/index/index.js',
+      code: `Page({ data: { marker: '${marker}' } });`,
+      modules: {},
+    }]
+    harness.nativeOutput = nativeOutput('before')
+    const session = await start(snapshot('red'), [script])
+    const published = new Map(harness.nativeOutput.map(item => [item.fileName, item.type === 'chunk' ? item.code : item.source]))
+    harness.writeOutput.mockImplementation(async (_outDir, output) => {
+      for (const item of output) {
+        published.set(item.fileName, item.type === 'chunk' ? item.code : item.source)
+      }
+    })
+    vi.spyOn(StatefulHmrTransport.prototype, 'addDelta').mockImplementation(async (_code, _ids, delivered) => {
+      await delivered?.()
+    })
+    harness.nativeOutput = nativeOutput('after')
+    const changeScript = () => {
+      session.sourceChange(script, 'update', ['entry-direct:1'])
+      harness.callbacks!.onPatch([script], {
+        type: 'Patch',
+        code: 'void 0',
+        filename: 'script-update.js',
+        changedIds: [script],
+      })
+    }
+    const changeAsset = () => {
+      session.sourceChange(style, 'update', ['style-sidecar:1'])
+      harness.callbacks!.onPatch([style], { type: 'Noop' })
+    }
+    if (order === 'script-first') {
+      changeScript()
+      await vi.advanceTimersByTimeAsync(100)
+      expect(harness.fullBuild).not.toHaveBeenCalled()
+      changeAsset()
+    }
+    else {
+      const ready = Promise.withResolvers<StatefulHmrSnapshot>()
+      if (order === 'asset-running') {
+        session.rebuild.mockImplementationOnce(async () => ready.promise)
+      }
+      changeAsset()
+      if (order === 'asset-running') {
+        await vi.advanceTimersByTimeAsync(50)
+        expect(session.rebuild).toHaveBeenCalledTimes(1)
+      }
+      changeScript()
+      ready.resolve(snapshot('blue'))
+    }
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+    expect(published.get('pages/index/index.js')).toContain('after')
+
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['failed', 'superseded'] as const)('retains unpersisted native scripts across a %s full build', async (outcome) => {
+    const script = path.join(root, 'src/pages/index/index.js')
+    const style = path.join(root, 'src/pages/index/index.wxss')
+    const session = await start(snapshot('red'), [script])
+    const ready = Promise.withResolvers<void>()
+    harness.fullBuild.mockImplementationOnce(async () => {
+      await ready.promise
+      if (outcome === 'failed') {
+        throw new Error('native publication failed')
+      }
+      await harness.callbacks!.onOutput(appOutput())
+    })
+    session.sourceChange(script, 'update', ['entry-direct:1'])
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    await vi.advanceTimersByTimeAsync(50)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+
+    if (outcome === 'superseded') {
+      session.sourceChange(script, 'update', ['entry-direct:1'])
+    }
+    ready.resolve()
+    await vi.advanceTimersByTimeAsync(1)
+    if (outcome === 'failed') {
+      expect(harness.fullBuild).toHaveBeenCalledTimes(1)
+      session.sourceChange(style, 'update', ['style-sidecar:1'])
+    }
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
+    expect(session.rebuild.mock.calls[1]?.[0]).toContain(script)
+
+    session.sourceChange(style, 'update', ['style-sidecar:1'])
+    await vi.advanceTimersByTimeAsync(100)
+    expect(harness.fullBuild).toHaveBeenCalledTimes(2)
   })
 
   it.each(['running', 'written'] as const)('builds one mixed snapshot at the native patch boundary (%s)', async (phase) => {

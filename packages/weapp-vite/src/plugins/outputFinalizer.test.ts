@@ -172,7 +172,7 @@ describe('weapp-vite output finalizer', () => {
       source: String.raw`<view title="{{ value === \"初始\" }}" />`,
     })
 
-    runtimeState.build.hmr.profile.event = 'change'
+    runtimeState.build.hmr.isRebuild = true
     const updated = {
       'pages/index.wxml': {
         type: 'asset',
@@ -665,6 +665,7 @@ describe('weapp-vite output finalizer', () => {
             emittedSource: new Map(),
           },
           hmr: {
+            isRebuild: true,
             profile: {
               event: 'update',
             },
@@ -709,6 +710,7 @@ describe('weapp-vite output finalizer', () => {
             emittedSource: new Map(),
           },
           hmr: {
+            isRebuild: true,
             profile: {
               event: 'update',
             },
@@ -764,6 +766,7 @@ describe('weapp-vite output finalizer', () => {
             emittedSource,
           },
           hmr: {
+            isRebuild: true,
             profile: {
               event: 'update',
             },
@@ -829,6 +832,7 @@ describe('weapp-vite output finalizer', () => {
             emittedSource,
           },
           hmr: {
+            isRebuild: true,
             profile: {
               event: 'update',
             },
@@ -885,6 +889,7 @@ describe('weapp-vite output finalizer', () => {
               'pages/index/index.js',
               'weapp-vendors/weapp-vite-runtime.js',
             ]),
+            isRebuild: true,
             profile: {
               event: 'update',
             },
@@ -929,6 +934,7 @@ describe('weapp-vite output finalizer', () => {
           },
           hmr: {
             lastEmittedChunkFileNames: new Set(['pages/index/index.js']),
+            isRebuild: true,
             profile: {
               event: 'update',
             },
@@ -969,6 +975,7 @@ describe('weapp-vite output finalizer', () => {
           },
           hmr: {
             lastEmittedChunkFileNames: new Set(['pages/index/index.js']),
+            isRebuild: true,
             profile: {
               event: 'update',
             },

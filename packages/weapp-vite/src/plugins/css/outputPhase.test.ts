@@ -76,6 +76,7 @@ describe('CSS ownership after Vite output finalization', () => {
       const stylesheet = initial.output.find(output => output.fileName === 'pages/index/index.wxss')
       expect(stylesheet).toMatchObject({ type: 'asset', source: '.page { color: red; }\n' })
       expect(observed).toEqual(['.page { color: red; }\n'])
+      runtimeState.build.hmr.isRebuild = true
       runtimeState.build.hmr.profile = {
         event: 'update',
         file: path.join(src, 'pages/index/index.wxml'),

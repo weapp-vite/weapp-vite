@@ -15,6 +15,7 @@ import { createViteDevEngine } from '../../packages/weapp-vite/src/runtime/state
 import { createSequenceFixturePlugin } from './buildFixture'
 import { applyAction, bounded } from './driver'
 import { observeError } from './editor'
+import { SequenceMeasurements } from './measurement'
 import { observePublishedFiles, PublishedRuntime } from './published'
 
 interface ModuleObservation {
@@ -51,12 +52,15 @@ export class BuildSequenceSession {
   private inputRevision = 0
   private publishedRevision = -1
   private writing = false
+  readonly measurements: SequenceMeasurements
 
   constructor(mode: 'classic' | 'stateful-experimental', private readonly root: string, private readonly outDir: string) {
     this.stateful = mode === 'stateful-experimental'
+    this.measurements = new SequenceMeasurements(root)
   }
 
   async observe(input: SequenceInput) {
+    this.measurements.reset()
     const topologyChange = this.started && (
       Object.keys(input.files).some(file => !Object.hasOwn(this.sourceFiles, file))
       || Object.keys(this.sourceFiles).some(file => !Object.hasOwn(input.files, file))
@@ -325,9 +329,16 @@ export class BuildSequenceSession {
     const observer: Plugin = {
       name: 'edit-sequence-read-only-observer',
       load: async (id) => {
+        this.measurements.load(id)
         this.recordSourceInput(id)
         await this.acknowledgeSourceChange(id)
         return null
+      },
+      transform: (_code, id) => {
+        this.measurements.transform(id)
+      },
+      writeBundle: (_options, bundle) => {
+        this.measurements.publish(Object.values(bundle))
       },
       watchChange: id => this.acknowledgeSourceChange(id),
       buildStart: async () => {
@@ -413,6 +424,7 @@ export class BuildSequenceSession {
             const update = item.update as StatefulHmrDevEngineUpdate
             if (update.type === 'Patch') {
               this.runtime.apply(update)
+              this.measurements.patch(update.code)
               await this.engine!.notifyPayloadDelivered(update.filename)
             }
             else if (update.type === 'FullReload') {
@@ -446,6 +458,7 @@ export class BuildSequenceSession {
     this.outputTask = this.publication.publish(additional ? 'additional' : 'full', async () => {
       await previous
       await writeStatefulHmrOutput(this.outDir, result.output)
+      this.measurements.publish(result.output)
       if (!additional) {
         this.entries = Object.fromEntries(result.output.flatMap(item => item.type === 'chunk' && item.isEntry
           ? [[item.fileName, item.facadeModuleId && toStableModuleId(item.facadeModuleId, this.root)]]
@@ -462,6 +475,10 @@ export class BuildSequenceSession {
     })
     void this.outputTask.catch(error => receipt.completion.reject(error))
     return this.outputTask
+  }
+
+  observeSession() {
+    return { watchers: this.watcher ? 1 : 0, engines: this.engine ? 1 : 0 }
   }
 
   async close() {

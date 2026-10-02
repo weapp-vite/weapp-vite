@@ -90,6 +90,8 @@ describe('Tailwind content HMR through the CSS owner', () => {
     await generate(output, initial)
     expect(declarations(initial, '.updated', 'color')).toEqual(['red'])
 
+    ctx.runtimeState.build.hmr.isRebuild = true
+
     ctx.runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: dirty ? ['tailwind-content:1'] : ['entry-direct:1'] }
     compiler.generate.mockResolvedValueOnce({ css: '.updated { color: blue; }', rawCss: '.updated { color: blue; }', snapshot, dependencies: [] })
     const updated = {
@@ -128,6 +130,7 @@ describe('Tailwind content HMR through the CSS owner', () => {
     const source = String((initial['app.wxss'] as OutputAsset).source)
 
     for (const eventId of ['first-update', 'second-update']) {
+      ctx.runtimeState.build.hmr.isRebuild = true
       ctx.runtimeState.build.hmr.profile = { event: 'update', eventId, dirtyReasonSummary: dirty ? ['tailwind-content:1'] : ['entry-direct:1'] }
       const updated = {
         'pages/index/index.js': { type: 'chunk', fileName: 'pages/index/index.js', code: `Page({ update: '${eventId}' })` },
@@ -155,6 +158,8 @@ describe('Tailwind content HMR through the CSS owner', () => {
     await generate(owner, initial)
     await generate(output, initial)
     expect(declarations(initial, '.updated', 'color')).toEqual(['red'])
+
+    ctx.runtimeState.build.hmr.isRebuild = true
 
     ctx.runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
     const replaced = ownerBundle(source)
@@ -187,6 +192,8 @@ describe('Tailwind content HMR through the CSS owner', () => {
     await generate(owner, initial)
     await generate(output, initial)
     expect(declarations(initial, '.updated', 'color')).toEqual(['red'])
+
+    ctx.runtimeState.build.hmr.isRebuild = true
 
     ctx.runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
     const removed = {
@@ -232,6 +239,8 @@ describe('Tailwind content HMR through the CSS owner', () => {
     await generate(output, initial)
     expect(declarations(initial, '.updated', 'color')).toEqual(['red'])
 
+    ctx.runtimeState.build.hmr.isRebuild = true
+
     ctx.runtimeState.build.hmr.profile = {
       event: 'update',
       dirtyReasonSummary: dirty ? ['tailwind-content:1'] : ['entry-direct:1'],
@@ -249,15 +258,19 @@ describe('Tailwind content HMR through the CSS owner', () => {
     expect(compiler.generate).toHaveBeenCalledTimes(2)
   })
 
-  it('still suppresses unchanged final author styles', async () => {
-    const { ctx, owner } = fixture('src/styles/tailwind.css')
+  it('suppresses unchanged final author styles at publication after retaining CSS ownership', async () => {
+    const { ctx, owner, output } = fixture('src/styles/tailwind.css')
     const source = '.author { color: green; }'
+    ctx.runtimeState.build.hmr.isRebuild = true
     ctx.runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
     ctx.runtimeState.css.emittedSource.set('pages/index/index.wxss', source)
+    ctx.runtimeState.build.output.emittedSource.set('pages/index/index.wxss', source)
     const bundle = {
       'pages/index/index.wxss': { type: 'asset', fileName: 'pages/index/index.wxss', source },
     } as OutputBundle
     await generate(owner, bundle)
+    expect(bundle['pages/index/index.wxss']).toBeDefined()
+    await generate(output, bundle)
     expect(bundle).toEqual({})
   })
 })

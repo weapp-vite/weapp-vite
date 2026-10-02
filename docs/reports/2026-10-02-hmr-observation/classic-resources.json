@@ -1,0 +1,6253 @@
+{
+  "schemaVersion": 1,
+  "engine": "classic",
+  "measurementScope": "compiler-native-fixture; hook work and process resources, not framework dirty entries",
+  "report": [
+    {
+      "name": "build-content-newlines-external",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 642.828459,
+          "measurement": {
+            "elapsedMs": 63.35400000000004,
+            "process": {
+              "memory": {
+                "rss": 351518720,
+                "heapTotal": 216891392,
+                "heapUsed": 82357440,
+                "external": 29890201,
+                "arrayBuffers": 8848928
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 683.151959
+        },
+        {
+          "step": 1,
+          "label": "unchanged save",
+          "status": "passed",
+          "incrementalMs": 1.0714170000001104,
+          "measurement": {
+            "elapsedMs": 0.7729590000001281,
+            "process": {
+              "memory": {
+                "rss": 351518720,
+                "heapTotal": 216891392,
+                "heapUsed": 82492864,
+                "external": 29896389,
+                "arrayBuffers": 8853674
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 0,
+              "loadedModules": [],
+              "transformCalls": 0,
+              "transformedModules": [],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 692.5578750000002
+        },
+        {
+          "step": 2,
+          "label": "ordinary dependency edit",
+          "status": "passed",
+          "incrementalMs": 48.728000000000065,
+          "measurement": {
+            "elapsedMs": 48.30404199999998,
+            "process": {
+              "memory": {
+                "rss": 354467840,
+                "heapTotal": 217153536,
+                "heapUsed": 84026096,
+                "external": 29906748,
+                "arrayBuffers": 8862752
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 704.6014999999998
+        },
+        {
+          "step": 3,
+          "label": "insert newline",
+          "status": "passed",
+          "incrementalMs": 51.58845900000006,
+          "measurement": {
+            "elapsedMs": 50.96374999999989,
+            "process": {
+              "memory": {
+                "rss": 356876288,
+                "heapTotal": 217415680,
+                "heapUsed": 85952432,
+                "external": 29917679,
+                "arrayBuffers": 8872281
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 678.7757919999999
+        },
+        {
+          "step": 4,
+          "label": "delete newline",
+          "status": "passed",
+          "incrementalMs": 44.04741700000022,
+          "measurement": {
+            "elapsedMs": 43.681082999999944,
+            "process": {
+              "memory": {
+                "rss": 358006784,
+                "heapTotal": 217677824,
+                "heapUsed": 86902568,
+                "external": 29928608,
+                "arrayBuffers": 8881808
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 686.8127500000005
+        },
+        {
+          "step": 5,
+          "label": "external SFC style edit",
+          "status": "passed",
+          "incrementalMs": 47.774209000000155,
+          "measurement": {
+            "elapsedMs": 47.432707999999366,
+            "process": {
+              "memory": {
+                "rss": 359104512,
+                "heapTotal": 217939968,
+                "heapUsed": 88424008,
+                "external": 29939076,
+                "arrayBuffers": 8890874
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 765,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 654.4963749999997
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-missing-delete-rename-recovery",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 644.0098750000006,
+          "measurement": {
+            "elapsedMs": 55.590374999999995,
+            "process": {
+              "memory": {
+                "rss": 351961088,
+                "heapTotal": 219545600,
+                "heapUsed": 81682936,
+                "external": 29887497,
+                "arrayBuffers": 8846224
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 638.3439159999998
+        },
+        {
+          "step": 1,
+          "label": "import missing dependency",
+          "status": "passed",
+          "incrementalMs": 44.55937499999982,
+          "measurement": {
+            "elapsedMs": 44.215374999999995,
+            "process": {
+              "memory": {
+                "rss": 354828288,
+                "heapTotal": 219545600,
+                "heapUsed": 82040440,
+                "external": 29893035,
+                "arrayBuffers": 8850320
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 2,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 615.8355000000001
+        },
+        {
+          "step": 2,
+          "label": "create missing dependency",
+          "status": "passed",
+          "incrementalMs": 19.28070800000023,
+          "measurement": {
+            "elapsedMs": 18.928916999999956,
+            "process": {
+              "memory": {
+                "rss": 361054208,
+                "heapTotal": 219774976,
+                "heapUsed": 85360432,
+                "external": 29952189,
+                "arrayBuffers": 8901218
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 848,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 640.5717910000003
+        },
+        {
+          "step": 3,
+          "label": "delete dependency",
+          "status": "passed",
+          "incrementalMs": 11.555124999999862,
+          "measurement": {
+            "elapsedMs": 11.185040999999728,
+            "process": {
+              "memory": {
+                "rss": 365707264,
+                "heapTotal": 220004352,
+                "heapUsed": 87367616,
+                "external": 30001544,
+                "arrayBuffers": 8945138
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 2,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 613.565834
+        },
+        {
+          "step": 4,
+          "label": "restore dependency",
+          "status": "passed",
+          "incrementalMs": 17.539667000000918,
+          "measurement": {
+            "elapsedMs": 17.199792000000343,
+            "process": {
+              "memory": {
+                "rss": 370343936,
+                "heapTotal": 220233728,
+                "heapUsed": 90606448,
+                "external": 30060702,
+                "arrayBuffers": 8996040
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 849,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 626.7626250000012
+        },
+        {
+          "step": 5,
+          "label": "rename dependency",
+          "status": "passed",
+          "incrementalMs": 11.579083999999057,
+          "measurement": {
+            "elapsedMs": 11.242832999999791,
+            "process": {
+              "memory": {
+                "rss": 374161408,
+                "heapTotal": 220463104,
+                "heapUsed": 92631440,
+                "external": 30107139,
+                "arrayBuffers": 9041062
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 2,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 614.8555410000008
+        },
+        {
+          "step": 6,
+          "label": "repair renamed reference",
+          "status": "passed",
+          "incrementalMs": 41.15008400000079,
+          "measurement": {
+            "elapsedMs": 40.78062500000033,
+            "process": {
+              "memory": {
+                "rss": 375635968,
+                "heapTotal": 220463104,
+                "heapUsed": 93985888,
+                "external": 30125393,
+                "arrayBuffers": 9051060
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "renamed.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "renamed.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 849,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 648.3399170000012
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-erroneous-config-rapid",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 635.1865419999995,
+          "measurement": {
+            "elapsedMs": 55.847875000000045,
+            "process": {
+              "memory": {
+                "rss": 352354304,
+                "heapTotal": 218759168,
+                "heapUsed": 81694024,
+                "external": 29888537,
+                "arrayBuffers": 8847264
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 623.4081250000017
+        },
+        {
+          "step": 1,
+          "label": "syntax failure",
+          "status": "passed",
+          "incrementalMs": 46.403166000000056,
+          "measurement": {
+            "elapsedMs": 46.03649999999993,
+            "process": {
+              "memory": {
+                "rss": 355024896,
+                "heapTotal": 218759168,
+                "heapUsed": 82721808,
+                "external": 29894046,
+                "arrayBuffers": 8851331
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 643.3734170000007
+        },
+        {
+          "step": 2,
+          "label": "unchanged failed input",
+          "status": "passed",
+          "incrementalMs": 0.5404589999998279,
+          "measurement": {
+            "elapsedMs": 0.2815419999999449,
+            "process": {
+              "memory": {
+                "rss": 355024896,
+                "heapTotal": 218759168,
+                "heapUsed": 82762648,
+                "external": 29897535,
+                "arrayBuffers": 8852624
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 0,
+              "loadedModules": [],
+              "transformCalls": 0,
+              "transformedModules": [],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 631.1653750000005
+        },
+        {
+          "step": 3,
+          "label": "syntax recovery",
+          "status": "passed",
+          "incrementalMs": 37.68833300000006,
+          "measurement": {
+            "elapsedMs": 37.34429200000022,
+            "process": {
+              "memory": {
+                "rss": 357072896,
+                "heapTotal": 218759168,
+                "heapUsed": 84312192,
+                "external": 29908944,
+                "arrayBuffers": 8861926
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 848,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 633.7489590000005
+        },
+        {
+          "step": 4,
+          "label": "config restart",
+          "status": "passed",
+          "incrementalMs": 21.780249999999796,
+          "measurement": {
+            "elapsedMs": 21.40633300000036,
+            "process": {
+              "memory": {
+                "rss": 362086400,
+                "heapTotal": 218988544,
+                "heapUsed": 87537760,
+                "external": 29961242,
+                "arrayBuffers": 8912816
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 796,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 642.3889999999992
+        },
+        {
+          "step": 5,
+          "label": "unreferenced dependency edit",
+          "status": "passed",
+          "incrementalMs": 1.807582999999795,
+          "measurement": {
+            "elapsedMs": 1.4361659999999574,
+            "process": {
+              "memory": {
+                "rss": 362086400,
+                "heapTotal": 218988544,
+                "heapUsed": 87688360,
+                "external": 29969051,
+                "arrayBuffers": 8919214
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 0,
+              "loadedModules": [],
+              "transformCalls": 0,
+              "transformedModules": [],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 641.5525420000013
+        },
+        {
+          "step": 6,
+          "label": "rapid saves",
+          "status": "passed",
+          "incrementalMs": 51.003999999998996,
+          "measurement": {
+            "elapsedMs": 50.66383400000086,
+            "process": {
+              "memory": {
+                "rss": 363921408,
+                "heapTotal": 219512832,
+                "heapUsed": 89226464,
+                "external": 29981204,
+                "arrayBuffers": 8930077
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 792,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 638.0243750000009
+        },
+        {
+          "step": 7,
+          "label": "rapid restore of original bytes",
+          "status": "passed",
+          "incrementalMs": 45.13954199999898,
+          "measurement": {
+            "elapsedMs": 44.80195800000001,
+            "process": {
+              "memory": {
+                "rss": 364986368,
+                "heapTotal": 219774976,
+                "heapUsed": 90577488,
+                "external": 29993464,
+                "arrayBuffers": 8940930
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 792,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 657.4765830000015
+        },
+        {
+          "step": 8,
+          "label": "rapid error recovery",
+          "status": "passed",
+          "incrementalMs": 49.227374999998574,
+          "measurement": {
+            "elapsedMs": 48.8344589999997,
+            "process": {
+              "memory": {
+                "rss": 365412352,
+                "heapTotal": 220037120,
+                "heapUsed": 91907848,
+                "external": 30005717,
+                "arrayBuffers": 8951776
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 795,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 675.5011249999989
+        },
+        {
+          "step": 9,
+          "label": "rapidly import and edit an existing unused dependency",
+          "status": "passed",
+          "incrementalMs": 49.96350000000166,
+          "measurement": {
+            "elapsedMs": 49.614167000000634,
+            "process": {
+              "memory": {
+                "rss": 366215168,
+                "heapTotal": 220299264,
+                "heapUsed": 93373840,
+                "external": 30019799,
+                "arrayBuffers": 8964448
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 4,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "unused.js",
+                "value.js"
+              ],
+              "transformCalls": 5,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "unused.js",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 924,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 653.6721670000006
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-external-script-error-recovery",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 625.7798339999972,
+          "measurement": {
+            "elapsedMs": 57.01208399999996,
+            "process": {
+              "memory": {
+                "rss": 352747520,
+                "heapTotal": 219545600,
+                "heapUsed": 81674920,
+                "external": 29888537,
+                "arrayBuffers": 8847264
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 636.4850839999999
+        },
+        {
+          "step": 1,
+          "label": "request existing erroneous external script",
+          "status": "passed",
+          "incrementalMs": 50.296666999998706,
+          "measurement": {
+            "elapsedMs": 49.90533400000004,
+            "process": {
+              "memory": {
+                "rss": 355106816,
+                "heapTotal": 219545600,
+                "heapUsed": 83013448,
+                "external": 29895024,
+                "arrayBuffers": 8852309
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 3,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 612.8845000000001
+        },
+        {
+          "step": 2,
+          "label": "repair only external script",
+          "status": "passed",
+          "incrementalMs": 42.48341699999946,
+          "measurement": {
+            "elapsedMs": 42.18083300000012,
+            "process": {
+              "memory": {
+                "rss": 356679680,
+                "heapTotal": 219545600,
+                "heapUsed": 84738672,
+                "external": 29910356,
+                "arrayBuffers": 8862817
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 779,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 661.728833000001
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-warm-resource-trend",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 621.6415420000012,
+          "measurement": {
+            "elapsedMs": 55.02645800000005,
+            "process": {
+              "memory": {
+                "rss": 351191040,
+                "heapTotal": 219021312,
+                "heapUsed": 81628736,
+                "external": 29887497,
+                "arrayBuffers": 8846224
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 764,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 630.6313750000008
+        },
+        {
+          "step": 1,
+          "label": "continuous dependency edit 1",
+          "status": "passed",
+          "incrementalMs": 47.92266599999857,
+          "measurement": {
+            "elapsedMs": 47.59283299999993,
+            "process": {
+              "memory": {
+                "rss": 353533952,
+                "heapTotal": 219021312,
+                "heapUsed": 83148136,
+                "external": 29898193,
+                "arrayBuffers": 8855478
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 644.9441660000011
+        },
+        {
+          "step": 2,
+          "label": "continuous dependency edit 2",
+          "status": "passed",
+          "incrementalMs": 45.77333400000134,
+          "measurement": {
+            "elapsedMs": 45.45045900000014,
+            "process": {
+              "memory": {
+                "rss": 354779136,
+                "heapTotal": 219021312,
+                "heapUsed": 84697592,
+                "external": 29908857,
+                "arrayBuffers": 8864736
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 636.6409170000006
+        },
+        {
+          "step": 3,
+          "label": "continuous dependency edit 3",
+          "status": "passed",
+          "incrementalMs": 48.49024999999892,
+          "measurement": {
+            "elapsedMs": 48.176124999999956,
+            "process": {
+              "memory": {
+                "rss": 356564992,
+                "heapTotal": 219021312,
+                "heapUsed": 86017832,
+                "external": 29919521,
+                "arrayBuffers": 8873994
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 656.043999999998
+        },
+        {
+          "step": 4,
+          "label": "continuous dependency edit 4",
+          "status": "passed",
+          "incrementalMs": 50.109042000000045,
+          "measurement": {
+            "elapsedMs": 49.63020800000004,
+            "process": {
+              "memory": {
+                "rss": 357449728,
+                "heapTotal": 219021312,
+                "heapUsed": 87532216,
+                "external": 29930185,
+                "arrayBuffers": 8883252
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 664.4107920000024
+        },
+        {
+          "step": 5,
+          "label": "continuous dependency edit 5",
+          "status": "passed",
+          "incrementalMs": 47.16620800000237,
+          "measurement": {
+            "elapsedMs": 46.80545800000027,
+            "process": {
+              "memory": {
+                "rss": 358055936,
+                "heapTotal": 219545600,
+                "heapUsed": 88835848,
+                "external": 29940849,
+                "arrayBuffers": 8892510
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 645.3872499999998
+        },
+        {
+          "step": 6,
+          "label": "continuous dependency edit 6",
+          "status": "passed",
+          "incrementalMs": 37.19908299999952,
+          "measurement": {
+            "elapsedMs": 36.83150000000023,
+            "process": {
+              "memory": {
+                "rss": 358744064,
+                "heapTotal": 219545600,
+                "heapUsed": 90148016,
+                "external": 29951513,
+                "arrayBuffers": 8901768
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 648.6685420000031
+        },
+        {
+          "step": 7,
+          "label": "continuous dependency edit 7",
+          "status": "passed",
+          "incrementalMs": 48.043916999999055,
+          "measurement": {
+            "elapsedMs": 47.66908400000011,
+            "process": {
+              "memory": {
+                "rss": 359464960,
+                "heapTotal": 219807744,
+                "heapUsed": 91427768,
+                "external": 29962177,
+                "arrayBuffers": 8911026
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 635.6502089999994
+        },
+        {
+          "step": 8,
+          "label": "continuous dependency edit 8",
+          "status": "passed",
+          "incrementalMs": 43.07629200000156,
+          "measurement": {
+            "elapsedMs": 42.727333999999246,
+            "process": {
+              "memory": {
+                "rss": 360710144,
+                "heapTotal": 220594176,
+                "heapUsed": 93356072,
+                "external": 29972841,
+                "arrayBuffers": 8920284
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 643.6119580000013
+        },
+        {
+          "step": 9,
+          "label": "continuous dependency edit 9",
+          "status": "passed",
+          "incrementalMs": 48.205165999999736,
+          "measurement": {
+            "elapsedMs": 47.869792000000416,
+            "process": {
+              "memory": {
+                "rss": 361316352,
+                "heapTotal": 220856320,
+                "heapUsed": 94684624,
+                "external": 29983505,
+                "arrayBuffers": 8929542
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 846,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 648.5901669999985
+        },
+        {
+          "step": 10,
+          "label": "continuous dependency edit 10",
+          "status": "passed",
+          "incrementalMs": 47.80329100000017,
+          "measurement": {
+            "elapsedMs": 47.50025000000005,
+            "process": {
+              "memory": {
+                "rss": 362004480,
+                "heapTotal": 221118464,
+                "heapUsed": 96027936,
+                "external": 29994174,
+                "arrayBuffers": 8938805
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 642.9422500000001
+        },
+        {
+          "step": 11,
+          "label": "continuous dependency edit 11",
+          "status": "passed",
+          "incrementalMs": 45.844750000000204,
+          "measurement": {
+            "elapsedMs": 45.57133299999987,
+            "process": {
+              "memory": {
+                "rss": 362397696,
+                "heapTotal": 221380608,
+                "heapUsed": 97276352,
+                "external": 30004845,
+                "arrayBuffers": 8948069
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 640.4152499999982
+        },
+        {
+          "step": 12,
+          "label": "continuous dependency edit 12",
+          "status": "passed",
+          "incrementalMs": 43.23008299999856,
+          "measurement": {
+            "elapsedMs": 42.938874999999825,
+            "process": {
+              "memory": {
+                "rss": 362889216,
+                "heapTotal": 221642752,
+                "heapUsed": 98513968,
+                "external": 30015516,
+                "arrayBuffers": 8957333
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 650.0316669999993
+        },
+        {
+          "step": 13,
+          "label": "continuous dependency edit 13",
+          "status": "passed",
+          "incrementalMs": 44.573999999996886,
+          "measurement": {
+            "elapsedMs": 44.25591600000007,
+            "process": {
+              "memory": {
+                "rss": 363364352,
+                "heapTotal": 221904896,
+                "heapUsed": 99788000,
+                "external": 30026187,
+                "arrayBuffers": 8966597
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 702.2358750000021
+        },
+        {
+          "step": 14,
+          "label": "continuous dependency edit 14",
+          "status": "passed",
+          "incrementalMs": 49.38225000000239,
+          "measurement": {
+            "elapsedMs": 49.05774999999994,
+            "process": {
+              "memory": {
+                "rss": 364445696,
+                "heapTotal": 222167040,
+                "heapUsed": 101029840,
+                "external": 30036858,
+                "arrayBuffers": 8975861
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 671.0131660000006
+        },
+        {
+          "step": 15,
+          "label": "continuous dependency edit 15",
+          "status": "passed",
+          "incrementalMs": 43.141208000000915,
+          "measurement": {
+            "elapsedMs": 42.80937500000073,
+            "process": {
+              "memory": {
+                "rss": 364904448,
+                "heapTotal": 222691328,
+                "heapUsed": 102270704,
+                "external": 30047529,
+                "arrayBuffers": 8985125
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 661.760792000001
+        },
+        {
+          "step": 16,
+          "label": "continuous dependency edit 16",
+          "status": "passed",
+          "incrementalMs": 43.12708300000304,
+          "measurement": {
+            "elapsedMs": 42.83129200000076,
+            "process": {
+              "memory": {
+                "rss": 365346816,
+                "heapTotal": 222691328,
+                "heapUsed": 103506640,
+                "external": 30058200,
+                "arrayBuffers": 8994389
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 641.5907090000001
+        },
+        {
+          "step": 17,
+          "label": "continuous dependency edit 17",
+          "status": "passed",
+          "incrementalMs": 45.75174999999945,
+          "measurement": {
+            "elapsedMs": 45.468667000001005,
+            "process": {
+              "memory": {
+                "rss": 365903872,
+                "heapTotal": 222953472,
+                "heapUsed": 104748224,
+                "external": 30068871,
+                "arrayBuffers": 9003653
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 640.9067499999983
+        },
+        {
+          "step": 18,
+          "label": "continuous dependency edit 18",
+          "status": "passed",
+          "incrementalMs": 45.89079199999833,
+          "measurement": {
+            "elapsedMs": 45.613499999999476,
+            "process": {
+              "memory": {
+                "rss": 366231552,
+                "heapTotal": 223215616,
+                "heapUsed": 105972592,
+                "external": 30079542,
+                "arrayBuffers": 9012917
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 643.8238750000019
+        },
+        {
+          "step": 19,
+          "label": "continuous dependency edit 19",
+          "status": "passed",
+          "incrementalMs": 47.11737500000163,
+          "measurement": {
+            "elapsedMs": 46.8226250000007,
+            "process": {
+              "memory": {
+                "rss": 366804992,
+                "heapTotal": 223215616,
+                "heapUsed": 107193760,
+                "external": 30090213,
+                "arrayBuffers": 9022181
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 652.4529580000017
+        },
+        {
+          "step": 20,
+          "label": "continuous dependency edit 20",
+          "status": "passed",
+          "incrementalMs": 46.349332999998296,
+          "measurement": {
+            "elapsedMs": 46.045374999999694,
+            "process": {
+              "memory": {
+                "rss": 367067136,
+                "heapTotal": 223477760,
+                "heapUsed": 108404072,
+                "external": 30100884,
+                "arrayBuffers": 9031445
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 632.7652499999967
+        },
+        {
+          "step": 21,
+          "label": "continuous dependency edit 21",
+          "status": "passed",
+          "incrementalMs": 47.12712499999907,
+          "measurement": {
+            "elapsedMs": 46.856957999998485,
+            "process": {
+              "memory": {
+                "rss": 367591424,
+                "heapTotal": 223739904,
+                "heapUsed": 109616168,
+                "external": 30111555,
+                "arrayBuffers": 9040709
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 632.6932500000039
+        },
+        {
+          "step": 22,
+          "label": "continuous dependency edit 22",
+          "status": "passed",
+          "incrementalMs": 47.83774999999878,
+          "measurement": {
+            "elapsedMs": 47.532374999998865,
+            "process": {
+              "memory": {
+                "rss": 368001024,
+                "heapTotal": 224002048,
+                "heapUsed": 110829344,
+                "external": 30122226,
+                "arrayBuffers": 9049973
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 637.6282080000019
+        },
+        {
+          "step": 23,
+          "label": "continuous dependency edit 23",
+          "status": "passed",
+          "incrementalMs": 34.77033300000039,
+          "measurement": {
+            "elapsedMs": 34.4553330000017,
+            "process": {
+              "memory": {
+                "rss": 368541696,
+                "heapTotal": 224002048,
+                "heapUsed": 112047400,
+                "external": 30132897,
+                "arrayBuffers": 9059237
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 632.3835830000025
+        },
+        {
+          "step": 24,
+          "label": "continuous dependency edit 24",
+          "status": "passed",
+          "incrementalMs": 46.70375000000058,
+          "measurement": {
+            "elapsedMs": 46.34783299999981,
+            "process": {
+              "memory": {
+                "rss": 240566272,
+                "heapTotal": 93978624,
+                "heapUsed": 81499608,
+                "external": 29843537,
+                "arrayBuffers": 8802224
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 644.0354999999981
+        },
+        {
+          "step": 25,
+          "label": "continuous dependency edit 25",
+          "status": "passed",
+          "incrementalMs": 46.92112500000076,
+          "measurement": {
+            "elapsedMs": 46.60583400000178,
+            "process": {
+              "memory": {
+                "rss": 241598464,
+                "heapTotal": 93978624,
+                "heapUsed": 82720240,
+                "external": 29854208,
+                "arrayBuffers": 8811488
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 636.7727089999971
+        },
+        {
+          "step": 26,
+          "label": "continuous dependency edit 26",
+          "status": "passed",
+          "incrementalMs": 43.56833400000323,
+          "measurement": {
+            "elapsedMs": 43.267917000001034,
+            "process": {
+              "memory": {
+                "rss": 241860608,
+                "heapTotal": 93978624,
+                "heapUsed": 82746280,
+                "external": 29844182,
+                "arrayBuffers": 8802869
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 643.362000000001
+        },
+        {
+          "step": 27,
+          "label": "continuous dependency edit 27",
+          "status": "passed",
+          "incrementalMs": 36.99975000000268,
+          "measurement": {
+            "elapsedMs": 36.7199580000015,
+            "process": {
+              "memory": {
+                "rss": 242597888,
+                "heapTotal": 93978624,
+                "heapUsed": 82781504,
+                "external": 29843537,
+                "arrayBuffers": 8802224
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 640.2350000000006
+        },
+        {
+          "step": 28,
+          "label": "continuous dependency edit 28",
+          "status": "passed",
+          "incrementalMs": 42.38658399999986,
+          "measurement": {
+            "elapsedMs": 42.08129200000258,
+            "process": {
+              "memory": {
+                "rss": 242663424,
+                "heapTotal": 93978624,
+                "heapUsed": 84001648,
+                "external": 29854208,
+                "arrayBuffers": 8811488
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 638.7361250000031
+        },
+        {
+          "step": 29,
+          "label": "continuous dependency edit 29",
+          "status": "passed",
+          "incrementalMs": 42.82729200000176,
+          "measurement": {
+            "elapsedMs": 42.508624999998574,
+            "process": {
+              "memory": {
+                "rss": 242728960,
+                "heapTotal": 93978624,
+                "heapUsed": 84171496,
+                "external": 29845462,
+                "arrayBuffers": 8804149
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 626.1128749999989
+        },
+        {
+          "step": 30,
+          "label": "continuous dependency edit 30",
+          "status": "passed",
+          "incrementalMs": 47.137290999999095,
+          "measurement": {
+            "elapsedMs": 46.83683399999791,
+            "process": {
+              "memory": {
+                "rss": 243187712,
+                "heapTotal": 98172928,
+                "heapUsed": 84075856,
+                "external": 29843537,
+                "arrayBuffers": 8802224
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 630.7235000000001
+        },
+        {
+          "step": 31,
+          "label": "continuous dependency edit 31",
+          "status": "passed",
+          "incrementalMs": 43.85108400000172,
+          "measurement": {
+            "elapsedMs": 43.534458999998606,
+            "process": {
+              "memory": {
+                "rss": 243367936,
+                "heapTotal": 98172928,
+                "heapUsed": 85295984,
+                "external": 29854208,
+                "arrayBuffers": 8811488
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 638.8817909999998
+        },
+        {
+          "step": 32,
+          "label": "continuous dependency edit 32",
+          "status": "passed",
+          "incrementalMs": 47.64441700000316,
+          "measurement": {
+            "elapsedMs": 47.33754200000112,
+            "process": {
+              "memory": {
+                "rss": 244350976,
+                "heapTotal": 98172928,
+                "heapUsed": 86524040,
+                "external": 29864880,
+                "arrayBuffers": 8820753
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 646.5116249999992
+        },
+        {
+          "step": 33,
+          "label": "continuous dependency edit 33",
+          "status": "passed",
+          "incrementalMs": 47.71758399999817,
+          "measurement": {
+            "elapsedMs": 47.40704199999891,
+            "process": {
+              "memory": {
+                "rss": 245055488,
+                "heapTotal": 98172928,
+                "heapUsed": 85343760,
+                "external": 29843537,
+                "arrayBuffers": 8802224
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 663.3813329999975
+        },
+        {
+          "step": 34,
+          "label": "continuous dependency edit 34",
+          "status": "passed",
+          "incrementalMs": 43.08916599999793,
+          "measurement": {
+            "elapsedMs": 42.78420799999731,
+            "process": {
+              "memory": {
+                "rss": 245170176,
+                "heapTotal": 98172928,
+                "heapUsed": 86564688,
+                "external": 29854210,
+                "arrayBuffers": 8811489
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 652.1374170000054
+        },
+        {
+          "step": 35,
+          "label": "continuous dependency edit 35",
+          "status": "passed",
+          "incrementalMs": 48.05604100000346,
+          "measurement": {
+            "elapsedMs": 47.78399999999965,
+            "process": {
+              "memory": {
+                "rss": 246104064,
+                "heapTotal": 98172928,
+                "heapUsed": 87775136,
+                "external": 29864883,
+                "arrayBuffers": 8820754
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 633.0346669999999
+        },
+        {
+          "step": 36,
+          "label": "continuous dependency edit 36",
+          "status": "passed",
+          "incrementalMs": 45.681750000003376,
+          "measurement": {
+            "elapsedMs": 45.38579100000061,
+            "process": {
+              "memory": {
+                "rss": 247021568,
+                "heapTotal": 98435072,
+                "heapUsed": 86579784,
+                "external": 29843537,
+                "arrayBuffers": 8802224
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 639.3842500000028
+        },
+        {
+          "step": 37,
+          "label": "continuous dependency edit 37",
+          "status": "passed",
+          "incrementalMs": 47.7586669999946,
+          "measurement": {
+            "elapsedMs": 47.4431250000016,
+            "process": {
+              "memory": {
+                "rss": 238796800,
+                "heapTotal": 91357184,
+                "heapUsed": 81607424,
+                "external": 29850793,
+                "arrayBuffers": 8808072
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 690.331041999998
+        },
+        {
+          "step": 38,
+          "label": "continuous dependency edit 38",
+          "status": "passed",
+          "incrementalMs": 45.845916999998735,
+          "measurement": {
+            "elapsedMs": 45.49616700000115,
+            "process": {
+              "memory": {
+                "rss": 239730688,
+                "heapTotal": 91357184,
+                "heapUsed": 82832600,
+                "external": 29861466,
+                "arrayBuffers": 8817337
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 711.3994579999999
+        },
+        {
+          "step": 39,
+          "label": "continuous dependency edit 39",
+          "status": "passed",
+          "incrementalMs": 45.257041999997455,
+          "measurement": {
+            "elapsedMs": 44.97045900000012,
+            "process": {
+              "memory": {
+                "rss": 240009216,
+                "heapTotal": 91357184,
+                "heapUsed": 82864232,
+                "external": 29851438,
+                "arrayBuffers": 8808717
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 629.2069580000025
+        },
+        {
+          "step": 40,
+          "label": "continuous dependency edit 40",
+          "status": "passed",
+          "incrementalMs": 46.54925000000367,
+          "measurement": {
+            "elapsedMs": 46.265957999999955,
+            "process": {
+              "memory": {
+                "rss": 240680960,
+                "heapTotal": 91357184,
+                "heapUsed": 82905928,
+                "external": 29850793,
+                "arrayBuffers": 8808072
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 644.0750829999961
+        },
+        {
+          "step": 41,
+          "label": "continuous dependency edit 41",
+          "status": "passed",
+          "incrementalMs": 49.56633299999521,
+          "measurement": {
+            "elapsedMs": 49.25470800000039,
+            "process": {
+              "memory": {
+                "rss": 240762880,
+                "heapTotal": 91357184,
+                "heapUsed": 84129104,
+                "external": 29861466,
+                "arrayBuffers": 8817337
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 645.1164579999968
+        },
+        {
+          "step": 42,
+          "label": "continuous dependency edit 42",
+          "status": "passed",
+          "incrementalMs": 47.7141249999986,
+          "measurement": {
+            "elapsedMs": 47.383042000001296,
+            "process": {
+              "memory": {
+                "rss": 240828416,
+                "heapTotal": 91357184,
+                "heapUsed": 84243728,
+                "external": 29853582,
+                "arrayBuffers": 8810861
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 646.7893750000003
+        },
+        {
+          "step": 43,
+          "label": "continuous dependency edit 43",
+          "status": "passed",
+          "incrementalMs": 54.9207910000041,
+          "measurement": {
+            "elapsedMs": 54.60941699999967,
+            "process": {
+              "memory": {
+                "rss": 241385472,
+                "heapTotal": 95551488,
+                "heapUsed": 84141448,
+                "external": 29850793,
+                "arrayBuffers": 8808072
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 645.292042000001
+        },
+        {
+          "step": 44,
+          "label": "continuous dependency edit 44",
+          "status": "passed",
+          "incrementalMs": 47.44908299999952,
+          "measurement": {
+            "elapsedMs": 47.14158300000054,
+            "process": {
+              "memory": {
+                "rss": 241532928,
+                "heapTotal": 95551488,
+                "heapUsed": 85365768,
+                "external": 29861466,
+                "arrayBuffers": 8817337
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 646.674791999998
+        },
+        {
+          "step": 45,
+          "label": "continuous dependency edit 45",
+          "status": "passed",
+          "incrementalMs": 44.83191600000282,
+          "measurement": {
+            "elapsedMs": 44.5367499999993,
+            "process": {
+              "memory": {
+                "rss": 242565120,
+                "heapTotal": 95551488,
+                "heapUsed": 86581688,
+                "external": 29872139,
+                "arrayBuffers": 8826602
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 641.7874579999989
+        },
+        {
+          "step": 46,
+          "label": "continuous dependency edit 46",
+          "status": "passed",
+          "incrementalMs": 46.24966599999607,
+          "measurement": {
+            "elapsedMs": 45.90558299999975,
+            "process": {
+              "memory": {
+                "rss": 243564544,
+                "heapTotal": 96600064,
+                "heapUsed": 85393360,
+                "external": 29850793,
+                "arrayBuffers": 8808072
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 642.4276250000039
+        },
+        {
+          "step": 47,
+          "label": "continuous dependency edit 47",
+          "status": "passed",
+          "incrementalMs": 45.09945799999696,
+          "measurement": {
+            "elapsedMs": 44.809416999996756,
+            "process": {
+              "memory": {
+                "rss": 243875840,
+                "heapTotal": 96600064,
+                "heapUsed": 86608240,
+                "external": 29861466,
+                "arrayBuffers": 8817337
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 629.7649579999998
+        },
+        {
+          "step": 48,
+          "label": "continuous dependency edit 48",
+          "status": "passed",
+          "incrementalMs": 45.818584000000556,
+          "measurement": {
+            "elapsedMs": 45.53566700000374,
+            "process": {
+              "memory": {
+                "rss": 245006336,
+                "heapTotal": 96600064,
+                "heapUsed": 87825616,
+                "external": 29872139,
+                "arrayBuffers": 8826602
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 637.3480000000054
+        },
+        {
+          "step": 49,
+          "label": "continuous dependency edit 49",
+          "status": "passed",
+          "incrementalMs": 47.95416600000317,
+          "measurement": {
+            "elapsedMs": 47.65016699999978,
+            "process": {
+              "memory": {
+                "rss": 246087680,
+                "heapTotal": 96862208,
+                "heapUsed": 86604248,
+                "external": 29850793,
+                "arrayBuffers": 8808072
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 639.8030419999996
+        },
+        {
+          "step": 50,
+          "label": "continuous dependency edit 50",
+          "status": "passed",
+          "incrementalMs": 47.532333000002836,
+          "measurement": {
+            "elapsedMs": 47.21433400000387,
+            "process": {
+              "memory": {
+                "rss": 246202368,
+                "heapTotal": 96862208,
+                "heapUsed": 83278760,
+                "external": 29848169,
+                "arrayBuffers": 8805448
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 642.0772499999948
+        },
+        {
+          "step": 51,
+          "label": "continuous dependency edit 51",
+          "status": "passed",
+          "incrementalMs": 42.78991600000154,
+          "measurement": {
+            "elapsedMs": 42.49345799999719,
+            "process": {
+              "memory": {
+                "rss": 246235136,
+                "heapTotal": 96862208,
+                "heapUsed": 84507376,
+                "external": 29858842,
+                "arrayBuffers": 8814713
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 633.8574159999989
+        },
+        {
+          "step": 52,
+          "label": "continuous dependency edit 52",
+          "status": "passed",
+          "incrementalMs": 45.9700840000005,
+          "measurement": {
+            "elapsedMs": 45.68020799999795,
+            "process": {
+              "memory": {
+                "rss": 246300672,
+                "heapTotal": 96862208,
+                "heapUsed": 85722064,
+                "external": 29869515,
+                "arrayBuffers": 8823978
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 641.2604999999967
+        },
+        {
+          "step": 53,
+          "label": "continuous dependency edit 53",
+          "status": "passed",
+          "incrementalMs": 43.90283400000044,
+          "measurement": {
+            "elapsedMs": 43.57983400000376,
+            "process": {
+              "memory": {
+                "rss": 246300672,
+                "heapTotal": 96862208,
+                "heapUsed": 84273672,
+                "external": 29846025,
+                "arrayBuffers": 8803304
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 643.554250000001
+        },
+        {
+          "step": 54,
+          "label": "continuous dependency edit 54",
+          "status": "passed",
+          "incrementalMs": 45.478832999993756,
+          "measurement": {
+            "elapsedMs": 45.14091599999665,
+            "process": {
+              "memory": {
+                "rss": 246300672,
+                "heapTotal": 96862208,
+                "heapUsed": 85487832,
+                "external": 29856698,
+                "arrayBuffers": 8812569
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 650.3070420000004
+        },
+        {
+          "step": 55,
+          "label": "continuous dependency edit 55",
+          "status": "passed",
+          "incrementalMs": 46.299958999996306,
+          "measurement": {
+            "elapsedMs": 46.0177909999984,
+            "process": {
+              "memory": {
+                "rss": 246349824,
+                "heapTotal": 96862208,
+                "heapUsed": 84579440,
+                "external": 29845380,
+                "arrayBuffers": 8802659
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 627.5047500000001
+        },
+        {
+          "step": 56,
+          "label": "continuous dependency edit 56",
+          "status": "passed",
+          "incrementalMs": 47.765417000002344,
+          "measurement": {
+            "elapsedMs": 47.40433299999859,
+            "process": {
+              "memory": {
+                "rss": 246579200,
+                "heapTotal": 97124352,
+                "heapUsed": 85795936,
+                "external": 29856053,
+                "arrayBuffers": 8811924
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 633.935249999995
+        },
+        {
+          "step": 57,
+          "label": "continuous dependency edit 57",
+          "status": "passed",
+          "incrementalMs": 46.875999999996566,
+          "measurement": {
+            "elapsedMs": 46.58112500000425,
+            "process": {
+              "memory": {
+                "rss": 246743040,
+                "heapTotal": 97386496,
+                "heapUsed": 87017800,
+                "external": 29866726,
+                "arrayBuffers": 8821189
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 635.5425830000022
+        },
+        {
+          "step": 58,
+          "label": "continuous dependency edit 58",
+          "status": "passed",
+          "incrementalMs": 42.71154199999728,
+          "measurement": {
+            "elapsedMs": 42.435040999997,
+            "process": {
+              "memory": {
+                "rss": 247644160,
+                "heapTotal": 106037248,
+                "heapUsed": 85929088,
+                "external": 29845380,
+                "arrayBuffers": 8802659
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 630.366915999999
+        },
+        {
+          "step": 59,
+          "label": "continuous dependency edit 59",
+          "status": "passed",
+          "incrementalMs": 47.78712500000256,
+          "measurement": {
+            "elapsedMs": 47.11283299999923,
+            "process": {
+              "memory": {
+                "rss": 235307008,
+                "heapTotal": 106299392,
+                "heapUsed": 87153080,
+                "external": 29856053,
+                "arrayBuffers": 8811924
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 662.1677500000005
+        },
+        {
+          "step": 60,
+          "label": "continuous dependency edit 60",
+          "status": "passed",
+          "incrementalMs": 45.4397919999974,
+          "measurement": {
+            "elapsedMs": 45.1348749999961,
+            "process": {
+              "memory": {
+                "rss": 235503616,
+                "heapTotal": 106299392,
+                "heapUsed": 88379248,
+                "external": 29866726,
+                "arrayBuffers": 8821189
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 847,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 1,
+              "engines": 0
+            }
+          },
+          "freshMs": 639.737083
+        }
+      ],
+      "status": "passed",
+      "resources": {
+        "rss": {
+          "status": "stable",
+          "medians": [
+            357752832,
+            361013248,
+            363126784,
+            365625344,
+            367329280,
+            241729536,
+            242696192,
+            244703232,
+            242917376,
+            240721920,
+            242049024,
+            245547008,
+            246300672,
+            246661120
+          ],
+          "growth": 1114112
+        },
+        "heapUsed": {
+          "status": "stable",
+          "medians": [
+            88184032,
+            94020348,
+            99150984,
+            104127432,
+            109010120,
+            82733260,
+            84038752,
+            85933900,
+            84706192,
+            83517516,
+            85379564,
+            86606244,
+            84997604,
+            85862512
+          ],
+          "growth": -743732
+        },
+        "resources": {
+          "CloseReq": {
+            "status": "stable",
+            "medians": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "growth": 0
+          },
+          "PipeWrap": {
+            "status": "stable",
+            "medians": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ],
+            "growth": 0
+          }
+        },
+        "processListeners": {
+          "status": "stable",
+          "medians": [
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24
+          ],
+          "growth": 0
+        }
+      },
+      "childrenAfterClose": 0
+    }
+  ]
+}

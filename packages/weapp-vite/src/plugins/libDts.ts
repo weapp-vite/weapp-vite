@@ -14,7 +14,7 @@ export function createLibDtsPlugin(ctx: CompilerContext): Plugin {
         // 声明图包含被擦除的 type-only 依赖，原生 bundle 不会把它们纳入模块监听。
         // 提前登记 lib 根目录，避免生产 watch 在首次构建完成前错过 FSEvents 注册窗口。
         const libConfig = ctx.configService.weappLibConfig
-        if (this.meta.watchMode && libConfig?.dts?.enabled !== false) {
+        if (this.meta.watchMode && libConfig && libConfig.dts?.enabled !== false) {
           const root = libConfig.root
           if (root) {
             addNormalizedWatchFile(this, root)

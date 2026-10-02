@@ -1,0 +1,5642 @@
+{
+  "schemaVersion": 1,
+  "engine": "stateful-experimental",
+  "measurementScope": "compiler-native-fixture; hook work and process resources, not framework dirty entries",
+  "report": [
+    {
+      "name": "build-content-newlines-external",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 652.77175,
+          "measurement": {
+            "elapsedMs": 83.0748339999999,
+            "process": {
+              "memory": {
+                "rss": 353894400,
+                "heapTotal": 218497024,
+                "heapUsed": 107349648,
+                "external": 30230642,
+                "arrayBuffers": 9239849
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 41307,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 694.935834
+        },
+        {
+          "step": 1,
+          "label": "unchanged save",
+          "status": "passed",
+          "incrementalMs": 1.449666999999863,
+          "measurement": {
+            "elapsedMs": 1.0453750000001492,
+            "process": {
+              "memory": {
+                "rss": 353894400,
+                "heapTotal": 218497024,
+                "heapUsed": 107526056,
+                "external": 30277540,
+                "arrayBuffers": 9285138
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 0,
+              "loadedModules": [],
+              "transformCalls": 0,
+              "transformedModules": [],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 701.8882499999997
+        },
+        {
+          "step": 2,
+          "label": "ordinary dependency edit",
+          "status": "passed",
+          "incrementalMs": 20.96179200000006,
+          "measurement": {
+            "elapsedMs": 20.567708999999695,
+            "process": {
+              "memory": {
+                "rss": 354402304,
+                "heapTotal": 218497024,
+                "heapUsed": 107875544,
+                "external": 30326410,
+                "arrayBuffers": 9332561
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 1438
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 685.003667
+        },
+        {
+          "step": 3,
+          "label": "insert newline",
+          "status": "passed",
+          "incrementalMs": 14.84091699999999,
+          "measurement": {
+            "elapsedMs": 14.442791999999827,
+            "process": {
+              "memory": {
+                "rss": 354484224,
+                "heapTotal": 218497024,
+                "heapUsed": 108098856,
+                "external": 30375752,
+                "arrayBuffers": 9380435
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 696.0498339999999
+        },
+        {
+          "step": 4,
+          "label": "delete newline",
+          "status": "passed",
+          "incrementalMs": 22.833208000000013,
+          "measurement": {
+            "elapsedMs": 22.445000000000164,
+            "process": {
+              "memory": {
+                "rss": 354516992,
+                "heapTotal": 218497024,
+                "heapUsed": 108371952,
+                "external": 30425089,
+                "arrayBuffers": 9428307
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 671.8873750000002
+        },
+        {
+          "step": 5,
+          "label": "external SFC style edit",
+          "status": "passed",
+          "incrementalMs": 19.203083000000333,
+          "measurement": {
+            "elapsedMs": 18.863374999999905,
+            "process": {
+              "memory": {
+                "rss": 355581952,
+                "heapTotal": 218497024,
+                "heapUsed": 109629536,
+                "external": 30474610,
+                "arrayBuffers": 9476363
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "page.vue"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "page.vue"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "page.wxss"
+              ],
+              "outputBytes": 22,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 682.9250830000001
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-missing-delete-rename-recovery",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 680.0899579999996,
+          "measurement": {
+            "elapsedMs": 83.387292,
+            "process": {
+              "memory": {
+                "rss": 354779136,
+                "heapTotal": 219021312,
+                "heapUsed": 107303792,
+                "external": 30228354,
+                "arrayBuffers": 9237561
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 41307,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 652.8437910000002
+        },
+        {
+          "step": 1,
+          "label": "import missing dependency",
+          "status": "passed",
+          "incrementalMs": 17.355749999999716,
+          "measurement": {
+            "elapsedMs": 17.008041999999932,
+            "process": {
+              "memory": {
+                "rss": 355581952,
+                "heapTotal": 219021312,
+                "heapUsed": 107486336,
+                "external": 30234059,
+                "arrayBuffers": 9241657
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 597.6327499999998
+        },
+        {
+          "step": 2,
+          "label": "create missing dependency",
+          "status": "passed",
+          "incrementalMs": 31.215041999999812,
+          "measurement": {
+            "elapsedMs": 30.87200000000007,
+            "process": {
+              "memory": {
+                "rss": 359907328,
+                "heapTotal": 219545600,
+                "heapUsed": 130855088,
+                "external": 30683187,
+                "arrayBuffers": 9682696
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js"
+              ],
+              "outputBytes": 41294,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 650.8759169999994
+        },
+        {
+          "step": 3,
+          "label": "delete dependency",
+          "status": "passed",
+          "incrementalMs": 5.435375000000022,
+          "measurement": {
+            "elapsedMs": 5.048874999999953,
+            "process": {
+              "memory": {
+                "rss": 360267776,
+                "heapTotal": 219545600,
+                "heapUsed": 131211144,
+                "external": 30690002,
+                "arrayBuffers": 9683923
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 2,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 605.3369170000005
+        },
+        {
+          "step": 4,
+          "label": "restore dependency",
+          "status": "passed",
+          "incrementalMs": 53.89495900000111,
+          "measurement": {
+            "elapsedMs": 53.55966699999999,
+            "process": {
+              "memory": {
+                "rss": 365346816,
+                "heapTotal": 221380608,
+                "heapUsed": 129380664,
+                "external": 30274477,
+                "arrayBuffers": 9279623
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 4,
+              "loadedModules": [
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "transformCalls": 5,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "missing.js",
+                "page.vue"
+              ],
+              "publications": 2,
+              "outputFiles": [
+                "main.js"
+              ],
+              "outputBytes": 82590,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 672.5145840000005
+        },
+        {
+          "step": 5,
+          "label": "rename dependency",
+          "status": "passed",
+          "incrementalMs": 5.6021249999994325,
+          "measurement": {
+            "elapsedMs": 5.276417000000038,
+            "process": {
+              "memory": {
+                "rss": 365674496,
+                "heapTotal": 221380608,
+                "heapUsed": 129498856,
+                "external": 30277750,
+                "arrayBuffers": 9281328
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "main.js"
+              ],
+              "transformCalls": 2,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 596.6142080000009
+        },
+        {
+          "step": 6,
+          "label": "repair renamed reference",
+          "status": "passed",
+          "incrementalMs": 62.50258399999984,
+          "measurement": {
+            "elapsedMs": 62.11054199999944,
+            "process": {
+              "memory": {
+                "rss": 388907008,
+                "heapTotal": 226623488,
+                "heapUsed": 83596096,
+                "external": 30232350,
+                "arrayBuffers": 9234978
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "renamed.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "renamed.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js"
+              ],
+              "outputBytes": 41295,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 680.7188750000005
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-erroneous-config-rapid",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 671.6686249999984,
+          "measurement": {
+            "elapsedMs": 85.74579199999994,
+            "process": {
+              "memory": {
+                "rss": 356352000,
+                "heapTotal": 218497024,
+                "heapUsed": 107389016,
+                "external": 30229394,
+                "arrayBuffers": 9238601
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 41307,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 693.0630419999998
+        },
+        {
+          "step": 1,
+          "label": "syntax failure",
+          "status": "passed",
+          "incrementalMs": 34.7795410000017,
+          "measurement": {
+            "elapsedMs": 34.30320799999981,
+            "process": {
+              "memory": {
+                "rss": 356745216,
+                "heapTotal": 218497024,
+                "heapUsed": 107566712,
+                "external": 30234425,
+                "arrayBuffers": 9242023
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 652.8722079999989
+        },
+        {
+          "step": 2,
+          "label": "unchanged failed input",
+          "status": "passed",
+          "incrementalMs": 0.9508330000007845,
+          "measurement": {
+            "elapsedMs": 0.46416599999997743,
+            "process": {
+              "memory": {
+                "rss": 356761600,
+                "heapTotal": 218497024,
+                "heapUsed": 107772248,
+                "external": 30237777,
+                "arrayBuffers": 9243316
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 0,
+              "loadedModules": [],
+              "transformCalls": 0,
+              "transformedModules": [],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 655.8626250000016
+        },
+        {
+          "step": 3,
+          "label": "syntax recovery",
+          "status": "passed",
+          "incrementalMs": 24.740125000000262,
+          "measurement": {
+            "elapsedMs": 24.30279100000007,
+            "process": {
+              "memory": {
+                "rss": 357154816,
+                "heapTotal": 218497024,
+                "heapUsed": 107908040,
+                "external": 30287295,
+                "arrayBuffers": 9290795
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 1444
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 703.6267079999998
+        },
+        {
+          "step": 4,
+          "label": "config restart",
+          "status": "passed",
+          "incrementalMs": 44.376625000000786,
+          "measurement": {
+            "elapsedMs": 44.013124999999945,
+            "process": {
+              "memory": {
+                "rss": 362086400,
+                "heapTotal": 219545600,
+                "heapUsed": 131753576,
+                "external": 30378132,
+                "arrayBuffers": 9380158
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 41275,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 695.8000420000008
+        },
+        {
+          "step": 5,
+          "label": "unreferenced dependency edit",
+          "status": "passed",
+          "incrementalMs": 2.3119169999990845,
+          "measurement": {
+            "elapsedMs": 1.9980839999998352,
+            "process": {
+              "memory": {
+                "rss": 362135552,
+                "heapTotal": 219545600,
+                "heapUsed": 131768328,
+                "external": 30426587,
+                "arrayBuffers": 9427035
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 0,
+              "loadedModules": [],
+              "transformCalls": 0,
+              "transformedModules": [],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 673.6662090000009
+        },
+        {
+          "step": 6,
+          "label": "rapid saves",
+          "status": "passed",
+          "incrementalMs": 33.991416000000754,
+          "measurement": {
+            "elapsedMs": 33.647249999999985,
+            "process": {
+              "memory": {
+                "rss": 362496000,
+                "heapTotal": 219545600,
+                "heapUsed": 132294768,
+                "external": 30477163,
+                "arrayBuffers": 9476155
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 1438
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 663.6710830000011
+        },
+        {
+          "step": 7,
+          "label": "rapid restore of original bytes",
+          "status": "passed",
+          "incrementalMs": 27.98124999999891,
+          "measurement": {
+            "elapsedMs": 27.622541000000638,
+            "process": {
+              "memory": {
+                "rss": 362594304,
+                "heapTotal": 219545600,
+                "heapUsed": 132425848,
+                "external": 30527746,
+                "arrayBuffers": 9525265
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 661.1352079999997
+        },
+        {
+          "step": 8,
+          "label": "rapid error recovery",
+          "status": "passed",
+          "incrementalMs": 35.644334000000526,
+          "measurement": {
+            "elapsedMs": 35.2895410000001,
+            "process": {
+              "memory": {
+                "rss": 362627072,
+                "heapTotal": 219545600,
+                "heapUsed": 132719024,
+                "external": 30578315,
+                "arrayBuffers": 9574362
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 665.1727920000012
+        },
+        {
+          "step": 9,
+          "label": "rapidly import and edit an existing unused dependency",
+          "status": "passed",
+          "incrementalMs": 35.16533300000083,
+          "measurement": {
+            "elapsedMs": 34.78104100000019,
+            "process": {
+              "memory": {
+                "rss": 362856448,
+                "heapTotal": 219545600,
+                "heapUsed": 133118144,
+                "external": 30630456,
+                "arrayBuffers": 9625027
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 2,
+              "loadedModules": [
+                "main.js",
+                "unused.js"
+              ],
+              "transformCalls": 2,
+              "transformedModules": [
+                "main.js",
+                "unused.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 1624
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 672.705417000001
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-external-script-error-recovery",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 660.2570830000004,
+          "measurement": {
+            "elapsedMs": 85.239958,
+            "process": {
+              "memory": {
+                "rss": 354811904,
+                "heapTotal": 218497024,
+                "heapUsed": 107420896,
+                "external": 30232306,
+                "arrayBuffers": 9241513
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 41307,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 662.8742920000004
+        },
+        {
+          "step": 1,
+          "label": "request existing erroneous external script",
+          "status": "passed",
+          "incrementalMs": 38.48983399999997,
+          "measurement": {
+            "elapsedMs": 38.12820899999997,
+            "process": {
+              "memory": {
+                "rss": 355352576,
+                "heapTotal": 219021312,
+                "heapUsed": 108549872,
+                "external": 30238960,
+                "arrayBuffers": 9246558
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "page.vue"
+              ],
+              "transformCalls": 0,
+              "transformedModules": [],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 611.8068329999987
+        },
+        {
+          "step": 2,
+          "label": "repair only external script",
+          "status": "passed",
+          "incrementalMs": 39.8282500000023,
+          "measurement": {
+            "elapsedMs": 39.460207999999966,
+            "process": {
+              "memory": {
+                "rss": 356614144,
+                "heapTotal": 219021312,
+                "heapUsed": 109554888,
+                "external": 30292631,
+                "arrayBuffers": 9295474
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "page.vue"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "page.vue"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 1808
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 668.0525830000006
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "build-warm-resource-trend",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 656.2492920000004,
+          "measurement": {
+            "elapsedMs": 82.36183400000004,
+            "process": {
+              "memory": {
+                "rss": 355303424,
+                "heapTotal": 218234880,
+                "heapUsed": 107369568,
+                "external": 30228146,
+                "arrayBuffers": 9237353
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 3,
+              "loadedModules": [
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "transformCalls": 4,
+              "transformedModules": [
+                "../../../\u0000rolldown/runtime.js",
+                "main.js",
+                "page.vue",
+                "value.js"
+              ],
+              "publications": 1,
+              "outputFiles": [
+                "main.js",
+                "page.wxml",
+                "page.wxss"
+              ],
+              "outputBytes": 41307,
+              "patches": 0,
+              "patchBytes": 0
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 656.6600829999988
+        },
+        {
+          "step": 1,
+          "label": "continuous dependency edit 1",
+          "status": "passed",
+          "incrementalMs": 17.906208999997034,
+          "measurement": {
+            "elapsedMs": 17.590083999999933,
+            "process": {
+              "memory": {
+                "rss": 355811328,
+                "heapTotal": 218234880,
+                "heapUsed": 107696792,
+                "external": 30277190,
+                "arrayBuffers": 9284788
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 1442
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 660.5422079999989
+        },
+        {
+          "step": 2,
+          "label": "continuous dependency edit 2",
+          "status": "passed",
+          "incrementalMs": 27.183249999998225,
+          "measurement": {
+            "elapsedMs": 26.820375000000013,
+            "process": {
+              "memory": {
+                "rss": 355893248,
+                "heapTotal": 218234880,
+                "heapUsed": 108076816,
+                "external": 30326101,
+                "arrayBuffers": 9332227
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 660.3657920000005
+        },
+        {
+          "step": 3,
+          "label": "continuous dependency edit 3",
+          "status": "passed",
+          "incrementalMs": 23.736375000000407,
+          "measurement": {
+            "elapsedMs": 23.404667000000245,
+            "process": {
+              "memory": {
+                "rss": 355942400,
+                "heapTotal": 218234880,
+                "heapUsed": 108264960,
+                "external": 30375012,
+                "arrayBuffers": 9379666
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 668.271166999999
+        },
+        {
+          "step": 4,
+          "label": "continuous dependency edit 4",
+          "status": "passed",
+          "incrementalMs": 19.68995800000266,
+          "measurement": {
+            "elapsedMs": 19.37429199999997,
+            "process": {
+              "memory": {
+                "rss": 356007936,
+                "heapTotal": 218234880,
+                "heapUsed": 108573296,
+                "external": 30423923,
+                "arrayBuffers": 9427105
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 672.5857080000023
+        },
+        {
+          "step": 5,
+          "label": "continuous dependency edit 5",
+          "status": "passed",
+          "incrementalMs": 29.67858299999716,
+          "measurement": {
+            "elapsedMs": 29.329291999999896,
+            "process": {
+              "memory": {
+                "rss": 356122624,
+                "heapTotal": 218497024,
+                "heapUsed": 109459904,
+                "external": 30472834,
+                "arrayBuffers": 9474544
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 670.4326660000006
+        },
+        {
+          "step": 6,
+          "label": "continuous dependency edit 6",
+          "status": "passed",
+          "incrementalMs": 30.783917000000656,
+          "measurement": {
+            "elapsedMs": 30.4467080000004,
+            "process": {
+              "memory": {
+                "rss": 356220928,
+                "heapTotal": 218497024,
+                "heapUsed": 109155416,
+                "external": 30521756,
+                "arrayBuffers": 9521983
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 676.5860420000026
+        },
+        {
+          "step": 7,
+          "label": "continuous dependency edit 7",
+          "status": "passed",
+          "incrementalMs": 25.86816700000054,
+          "measurement": {
+            "elapsedMs": 25.543958000000202,
+            "process": {
+              "memory": {
+                "rss": 356368384,
+                "heapTotal": 218497024,
+                "heapUsed": 109412824,
+                "external": 30570667,
+                "arrayBuffers": 9569422
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 662.4253339999996
+        },
+        {
+          "step": 8,
+          "label": "continuous dependency edit 8",
+          "status": "passed",
+          "incrementalMs": 26.174667000002955,
+          "measurement": {
+            "elapsedMs": 25.838208000000122,
+            "process": {
+              "memory": {
+                "rss": 356433920,
+                "heapTotal": 218497024,
+                "heapUsed": 109695160,
+                "external": 30619578,
+                "arrayBuffers": 9616861
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 658.5260000000017
+        },
+        {
+          "step": 9,
+          "label": "continuous dependency edit 9",
+          "status": "passed",
+          "incrementalMs": 25.010792000000947,
+          "measurement": {
+            "elapsedMs": 24.658833000000413,
+            "process": {
+              "memory": {
+                "rss": 356581376,
+                "heapTotal": 218497024,
+                "heapUsed": 110003720,
+                "external": 30668489,
+                "arrayBuffers": 9664300
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 524
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 668.5330839999988
+        },
+        {
+          "step": 10,
+          "label": "continuous dependency edit 10",
+          "status": "passed",
+          "incrementalMs": 23.02049999999872,
+          "measurement": {
+            "elapsedMs": 22.716957999999977,
+            "process": {
+              "memory": {
+                "rss": 356614144,
+                "heapTotal": 218497024,
+                "heapUsed": 110263240,
+                "external": 30717414,
+                "arrayBuffers": 9711742
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 660.8475829999988
+        },
+        {
+          "step": 11,
+          "label": "continuous dependency edit 11",
+          "status": "passed",
+          "incrementalMs": 33.57745799999975,
+          "measurement": {
+            "elapsedMs": 33.273708000000624,
+            "process": {
+              "memory": {
+                "rss": 356663296,
+                "heapTotal": 218497024,
+                "heapUsed": 110512248,
+                "external": 30766330,
+                "arrayBuffers": 9759185
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 681.7411250000005
+        },
+        {
+          "step": 12,
+          "label": "continuous dependency edit 12",
+          "status": "passed",
+          "incrementalMs": 24.87445800000205,
+          "measurement": {
+            "elapsedMs": 24.51337500000045,
+            "process": {
+              "memory": {
+                "rss": 225607680,
+                "heapTotal": 85327872,
+                "heapUsed": 80521760,
+                "external": 30186329,
+                "arrayBuffers": 9195496
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 692.5292499999996
+        },
+        {
+          "step": 13,
+          "label": "continuous dependency edit 13",
+          "status": "passed",
+          "incrementalMs": 27.03033299999879,
+          "measurement": {
+            "elapsedMs": 26.721208999999362,
+            "process": {
+              "memory": {
+                "rss": 224985088,
+                "heapTotal": 84803584,
+                "heapUsed": 79937960,
+                "external": 30186329,
+                "arrayBuffers": 9195496
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 676.6467919999996
+        },
+        {
+          "step": 14,
+          "label": "continuous dependency edit 14",
+          "status": "passed",
+          "incrementalMs": 15.60333399999945,
+          "measurement": {
+            "elapsedMs": 15.27112500000112,
+            "process": {
+              "memory": {
+                "rss": 225214464,
+                "heapTotal": 84803584,
+                "heapUsed": 80202864,
+                "external": 30235245,
+                "arrayBuffers": 9242939
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 684.3000409999986
+        },
+        {
+          "step": 15,
+          "label": "continuous dependency edit 15",
+          "status": "passed",
+          "incrementalMs": 27.215416999999434,
+          "measurement": {
+            "elapsedMs": 26.913040999999794,
+            "process": {
+              "memory": {
+                "rss": 225443840,
+                "heapTotal": 84803584,
+                "heapUsed": 80450536,
+                "external": 30284161,
+                "arrayBuffers": 9290382
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 670.4287079999995
+        },
+        {
+          "step": 16,
+          "label": "continuous dependency edit 16",
+          "status": "passed",
+          "incrementalMs": 34.636500000000524,
+          "measurement": {
+            "elapsedMs": 34.30804199999875,
+            "process": {
+              "memory": {
+                "rss": 225804288,
+                "heapTotal": 85852160,
+                "heapUsed": 79933088,
+                "external": 30186957,
+                "arrayBuffers": 9196124
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 669.0747499999961
+        },
+        {
+          "step": 17,
+          "label": "continuous dependency edit 17",
+          "status": "passed",
+          "incrementalMs": 23.207915999999386,
+          "measurement": {
+            "elapsedMs": 22.909084000000803,
+            "process": {
+              "memory": {
+                "rss": 226017280,
+                "heapTotal": 85852160,
+                "heapUsed": 80185800,
+                "external": 30235873,
+                "arrayBuffers": 9243567
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 664.6680829999968
+        },
+        {
+          "step": 18,
+          "label": "continuous dependency edit 18",
+          "status": "passed",
+          "incrementalMs": 28.81550000000425,
+          "measurement": {
+            "elapsedMs": 28.50420799999847,
+            "process": {
+              "memory": {
+                "rss": 226263040,
+                "heapTotal": 85852160,
+                "heapUsed": 80433200,
+                "external": 30284789,
+                "arrayBuffers": 9291010
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 683.705667000002
+        },
+        {
+          "step": 19,
+          "label": "continuous dependency edit 19",
+          "status": "passed",
+          "incrementalMs": 36.97816600000078,
+          "measurement": {
+            "elapsedMs": 36.64979200000016,
+            "process": {
+              "memory": {
+                "rss": 226312192,
+                "heapTotal": 84803584,
+                "heapUsed": 79931440,
+                "external": 30184841,
+                "arrayBuffers": 9194008
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 659.7969159999993
+        },
+        {
+          "step": 20,
+          "label": "continuous dependency edit 20",
+          "status": "passed",
+          "incrementalMs": 23.538000000000466,
+          "measurement": {
+            "elapsedMs": 23.211750000000393,
+            "process": {
+              "memory": {
+                "rss": 226312192,
+                "heapTotal": 84803584,
+                "heapUsed": 80179376,
+                "external": 30233768,
+                "arrayBuffers": 9241451
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 671.8549580000035
+        },
+        {
+          "step": 21,
+          "label": "continuous dependency edit 21",
+          "status": "passed",
+          "incrementalMs": 34.455832999999984,
+          "measurement": {
+            "elapsedMs": 34.13879199999974,
+            "process": {
+              "memory": {
+                "rss": 226328576,
+                "heapTotal": 84803584,
+                "heapUsed": 80426920,
+                "external": 30282684,
+                "arrayBuffers": 9288894
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 658.061916000006
+        },
+        {
+          "step": 22,
+          "label": "continuous dependency edit 22",
+          "status": "passed",
+          "incrementalMs": 17.523874999998952,
+          "measurement": {
+            "elapsedMs": 17.24029200000041,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 79946064,
+                "external": 30184185,
+                "arrayBuffers": 9193352
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 669.3999590000021
+        },
+        {
+          "step": 23,
+          "label": "continuous dependency edit 23",
+          "status": "passed",
+          "incrementalMs": 25.045334000002185,
+          "measurement": {
+            "elapsedMs": 24.744041999998444,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 80193608,
+                "external": 30233101,
+                "arrayBuffers": 9240795
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 652.958584
+        },
+        {
+          "step": 24,
+          "label": "continuous dependency edit 24",
+          "status": "passed",
+          "incrementalMs": 32.93304100000387,
+          "measurement": {
+            "elapsedMs": 32.60816700000214,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 80441912,
+                "external": 30282028,
+                "arrayBuffers": 9288238
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 662.3889169999966
+        },
+        {
+          "step": 25,
+          "label": "continuous dependency edit 25",
+          "status": "passed",
+          "incrementalMs": 17.34479200000351,
+          "measurement": {
+            "elapsedMs": 16.985749999999825,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 79945816,
+                "external": 30183335,
+                "arrayBuffers": 9192502
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 677.3359169999967
+        },
+        {
+          "step": 26,
+          "label": "continuous dependency edit 26",
+          "status": "passed",
+          "incrementalMs": 37.878624999997555,
+          "measurement": {
+            "elapsedMs": 37.59270800000013,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 80192960,
+                "external": 30232251,
+                "arrayBuffers": 9239945
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 668.5218329999989
+        },
+        {
+          "step": 27,
+          "label": "continuous dependency edit 27",
+          "status": "passed",
+          "incrementalMs": 36.84741599999688,
+          "measurement": {
+            "elapsedMs": 36.55229099999997,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 80440808,
+                "external": 30281178,
+                "arrayBuffers": 9287388
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 670.7185830000017
+        },
+        {
+          "step": 28,
+          "label": "continuous dependency edit 28",
+          "status": "passed",
+          "incrementalMs": 18.145416999999725,
+          "measurement": {
+            "elapsedMs": 17.809541999999055,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 80688568,
+                "external": 30330094,
+                "arrayBuffers": 9334831
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 660.4585420000003
+        },
+        {
+          "step": 29,
+          "label": "continuous dependency edit 29",
+          "status": "passed",
+          "incrementalMs": 36.0778749999954,
+          "measurement": {
+            "elapsedMs": 35.79570799999783,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 80177888,
+                "external": 30186957,
+                "arrayBuffers": 9196124
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 667.2198750000025
+        },
+        {
+          "step": 30,
+          "label": "continuous dependency edit 30",
+          "status": "passed",
+          "incrementalMs": 37.68762499999866,
+          "measurement": {
+            "elapsedMs": 37.39545899999939,
+            "process": {
+              "memory": {
+                "rss": 226344960,
+                "heapTotal": 84803584,
+                "heapUsed": 80425312,
+                "external": 30235884,
+                "arrayBuffers": 9243567
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 665.9264169999951
+        },
+        {
+          "step": 31,
+          "label": "continuous dependency edit 31",
+          "status": "passed",
+          "incrementalMs": 28.880833999995957,
+          "measurement": {
+            "elapsedMs": 28.601834000000963,
+            "process": {
+              "memory": {
+                "rss": 226394112,
+                "heapTotal": 84803584,
+                "heapUsed": 80721728,
+                "external": 30284800,
+                "arrayBuffers": 9291010
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 682.6562080000003
+        },
+        {
+          "step": 32,
+          "label": "continuous dependency edit 32",
+          "status": "passed",
+          "incrementalMs": 33.85825000000477,
+          "measurement": {
+            "elapsedMs": 33.55483300000196,
+            "process": {
+              "memory": {
+                "rss": 226394112,
+                "heapTotal": 84803584,
+                "heapUsed": 80225832,
+                "external": 30184185,
+                "arrayBuffers": 9193352
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 668.1102910000045
+        },
+        {
+          "step": 33,
+          "label": "continuous dependency edit 33",
+          "status": "passed",
+          "incrementalMs": 34.99445900000137,
+          "measurement": {
+            "elapsedMs": 34.69995800000106,
+            "process": {
+              "memory": {
+                "rss": 226394112,
+                "heapTotal": 84803584,
+                "heapUsed": 80473424,
+                "external": 30233114,
+                "arrayBuffers": 9240796
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 668.679458999999
+        },
+        {
+          "step": 34,
+          "label": "continuous dependency edit 34",
+          "status": "passed",
+          "incrementalMs": 27.900334000005387,
+          "measurement": {
+            "elapsedMs": 27.58470899999884,
+            "process": {
+              "memory": {
+                "rss": 226394112,
+                "heapTotal": 84803584,
+                "heapUsed": 80725528,
+                "external": 30282032,
+                "arrayBuffers": 9288240
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 678.0950410000005
+        },
+        {
+          "step": 35,
+          "label": "continuous dependency edit 35",
+          "status": "passed",
+          "incrementalMs": 35.95245900000009,
+          "measurement": {
+            "elapsedMs": 35.64154100000087,
+            "process": {
+              "memory": {
+                "rss": 226426880,
+                "heapTotal": 84803584,
+                "heapUsed": 80204040,
+                "external": 30183543,
+                "arrayBuffers": 9192710
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 689.4110410000067
+        },
+        {
+          "step": 36,
+          "label": "continuous dependency edit 36",
+          "status": "passed",
+          "incrementalMs": 21.284417000002577,
+          "measurement": {
+            "elapsedMs": 20.990499999999884,
+            "process": {
+              "memory": {
+                "rss": 226426880,
+                "heapTotal": 84803584,
+                "heapUsed": 80451224,
+                "external": 30232461,
+                "arrayBuffers": 9240154
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 667.6980419999963
+        },
+        {
+          "step": 37,
+          "label": "continuous dependency edit 37",
+          "status": "passed",
+          "incrementalMs": 38.77399999999761,
+          "measurement": {
+            "elapsedMs": 38.48612499999945,
+            "process": {
+              "memory": {
+                "rss": 226476032,
+                "heapTotal": 84803584,
+                "heapUsed": 80698472,
+                "external": 30281379,
+                "arrayBuffers": 9287598
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 663.1600829999952
+        },
+        {
+          "step": 38,
+          "label": "continuous dependency edit 38",
+          "status": "passed",
+          "incrementalMs": 25.4935420000038,
+          "measurement": {
+            "elapsedMs": 25.19066699999894,
+            "process": {
+              "memory": {
+                "rss": 226476032,
+                "heapTotal": 84803584,
+                "heapUsed": 80222808,
+                "external": 30140156,
+                "arrayBuffers": 9149323
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 656.7592919999952
+        },
+        {
+          "step": 39,
+          "label": "continuous dependency edit 39",
+          "status": "passed",
+          "incrementalMs": 26.96295800000371,
+          "measurement": {
+            "elapsedMs": 26.669624999998632,
+            "process": {
+              "memory": {
+                "rss": 226492416,
+                "heapTotal": 84803584,
+                "heapUsed": 80470112,
+                "external": 30189074,
+                "arrayBuffers": 9196767
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 670.2822499999966
+        },
+        {
+          "step": 40,
+          "label": "continuous dependency edit 40",
+          "status": "passed",
+          "incrementalMs": 16.348541999999725,
+          "measurement": {
+            "elapsedMs": 16.070749999998952,
+            "process": {
+              "memory": {
+                "rss": 226492416,
+                "heapTotal": 84803584,
+                "heapUsed": 80717200,
+                "external": 30237992,
+                "arrayBuffers": 9244211
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 669.8181659999973
+        },
+        {
+          "step": 41,
+          "label": "continuous dependency edit 41",
+          "status": "passed",
+          "incrementalMs": 20.78070800000569,
+          "measurement": {
+            "elapsedMs": 20.499250000000757,
+            "process": {
+              "memory": {
+                "rss": 226492416,
+                "heapTotal": 84803584,
+                "heapUsed": 80964344,
+                "external": 30286910,
+                "arrayBuffers": 9291655
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 661.8755830000009
+        },
+        {
+          "step": 42,
+          "label": "continuous dependency edit 42",
+          "status": "passed",
+          "incrementalMs": 18.475666999998793,
+          "measurement": {
+            "elapsedMs": 18.169832999999926,
+            "process": {
+              "memory": {
+                "rss": 226508800,
+                "heapTotal": 84803584,
+                "heapUsed": 80483600,
+                "external": 30185465,
+                "arrayBuffers": 9194632
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 674.0570000000007
+        },
+        {
+          "step": 43,
+          "label": "continuous dependency edit 43",
+          "status": "passed",
+          "incrementalMs": 17.884124999996857,
+          "measurement": {
+            "elapsedMs": 17.57379099999889,
+            "process": {
+              "memory": {
+                "rss": 226508800,
+                "heapTotal": 84803584,
+                "heapUsed": 80730824,
+                "external": 30234383,
+                "arrayBuffers": 9242076
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 663.3840839999975
+        },
+        {
+          "step": 44,
+          "label": "continuous dependency edit 44",
+          "status": "passed",
+          "incrementalMs": 25.779542000003858,
+          "measurement": {
+            "elapsedMs": 25.491667000002053,
+            "process": {
+              "memory": {
+                "rss": 226525184,
+                "heapTotal": 84803584,
+                "heapUsed": 80978096,
+                "external": 30283301,
+                "arrayBuffers": 9289520
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 676.4941670000044
+        },
+        {
+          "step": 45,
+          "label": "continuous dependency edit 45",
+          "status": "passed",
+          "incrementalMs": 26.472500000003492,
+          "measurement": {
+            "elapsedMs": 26.140167000001384,
+            "process": {
+              "memory": {
+                "rss": 226525184,
+                "heapTotal": 84803584,
+                "heapUsed": 80490752,
+                "external": 30184185,
+                "arrayBuffers": 9193352
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 680.9000839999935
+        },
+        {
+          "step": 46,
+          "label": "continuous dependency edit 46",
+          "status": "passed",
+          "incrementalMs": 26.576458999996248,
+          "measurement": {
+            "elapsedMs": 26.238750000000437,
+            "process": {
+              "memory": {
+                "rss": 226541568,
+                "heapTotal": 84803584,
+                "heapUsed": 80739968,
+                "external": 30233103,
+                "arrayBuffers": 9240796
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 659.6055420000048
+        },
+        {
+          "step": 47,
+          "label": "continuous dependency edit 47",
+          "status": "passed",
+          "incrementalMs": 23.890791999998328,
+          "measurement": {
+            "elapsedMs": 23.62091700000019,
+            "process": {
+              "memory": {
+                "rss": 226557952,
+                "heapTotal": 84803584,
+                "heapUsed": 80988448,
+                "external": 30282021,
+                "arrayBuffers": 9288240
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 679.1752500000002
+        },
+        {
+          "step": 48,
+          "label": "continuous dependency edit 48",
+          "status": "passed",
+          "incrementalMs": 19.07354199999827,
+          "measurement": {
+            "elapsedMs": 18.794542000003275,
+            "process": {
+              "memory": {
+                "rss": 226557952,
+                "heapTotal": 84803584,
+                "heapUsed": 80481752,
+                "external": 30183543,
+                "arrayBuffers": 9192710
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 663.0637080000015
+        },
+        {
+          "step": 49,
+          "label": "continuous dependency edit 49",
+          "status": "passed",
+          "incrementalMs": 21.87529199999699,
+          "measurement": {
+            "elapsedMs": 21.57720800000243,
+            "process": {
+              "memory": {
+                "rss": 226574336,
+                "heapTotal": 84803584,
+                "heapUsed": 80729080,
+                "external": 30232472,
+                "arrayBuffers": 9240154
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 669.9695419999989
+        },
+        {
+          "step": 50,
+          "label": "continuous dependency edit 50",
+          "status": "passed",
+          "incrementalMs": 35.899790999996185,
+          "measurement": {
+            "elapsedMs": 35.591709000000264,
+            "process": {
+              "memory": {
+                "rss": 226590720,
+                "heapTotal": 84803584,
+                "heapUsed": 80980824,
+                "external": 30281401,
+                "arrayBuffers": 9287598
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 670.0726250000007
+        },
+        {
+          "step": 51,
+          "label": "continuous dependency edit 51",
+          "status": "passed",
+          "incrementalMs": 32.299499999993714,
+          "measurement": {
+            "elapsedMs": 32.011500000000524,
+            "process": {
+              "memory": {
+                "rss": 226607104,
+                "heapTotal": 84803584,
+                "heapUsed": 80502064,
+                "external": 30140823,
+                "arrayBuffers": 9149990
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 672.8205420000013
+        },
+        {
+          "step": 52,
+          "label": "continuous dependency edit 52",
+          "status": "passed",
+          "incrementalMs": 24.490292000002228,
+          "measurement": {
+            "elapsedMs": 24.197291999997105,
+            "process": {
+              "memory": {
+                "rss": 226639872,
+                "heapTotal": 84803584,
+                "heapUsed": 80749144,
+                "external": 30189741,
+                "arrayBuffers": 9197434
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 685.2992079999967
+        },
+        {
+          "step": 53,
+          "label": "continuous dependency edit 53",
+          "status": "passed",
+          "incrementalMs": 17.66191699999763,
+          "measurement": {
+            "elapsedMs": 17.332249999999476,
+            "process": {
+              "memory": {
+                "rss": 226639872,
+                "heapTotal": 84803584,
+                "heapUsed": 80996368,
+                "external": 30238659,
+                "arrayBuffers": 9244878
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 666.2339579999971
+        },
+        {
+          "step": 54,
+          "label": "continuous dependency edit 54",
+          "status": "passed",
+          "incrementalMs": 16.543375000001106,
+          "measurement": {
+            "elapsedMs": 16.224042000001646,
+            "process": {
+              "memory": {
+                "rss": 226639872,
+                "heapTotal": 84803584,
+                "heapUsed": 81243528,
+                "external": 30287577,
+                "arrayBuffers": 9292322
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 674.0986660000053
+        },
+        {
+          "step": 55,
+          "label": "continuous dependency edit 55",
+          "status": "passed",
+          "incrementalMs": 37.80066699999588,
+          "measurement": {
+            "elapsedMs": 37.49433300000237,
+            "process": {
+              "memory": {
+                "rss": 226639872,
+                "heapTotal": 85852160,
+                "heapUsed": 80762256,
+                "external": 30186329,
+                "arrayBuffers": 9195496
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 673.5619580000057
+        },
+        {
+          "step": 56,
+          "label": "continuous dependency edit 56",
+          "status": "passed",
+          "incrementalMs": 24.57958299999882,
+          "measurement": {
+            "elapsedMs": 24.269916999997804,
+            "process": {
+              "memory": {
+                "rss": 226656256,
+                "heapTotal": 85852160,
+                "heapUsed": 81011496,
+                "external": 30235247,
+                "arrayBuffers": 9242940
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 658.896166999999
+        },
+        {
+          "step": 57,
+          "label": "continuous dependency edit 57",
+          "status": "passed",
+          "incrementalMs": 17.103750000002037,
+          "measurement": {
+            "elapsedMs": 16.800624999996217,
+            "process": {
+              "memory": {
+                "rss": 226672640,
+                "heapTotal": 85852160,
+                "heapUsed": 81260208,
+                "external": 30284165,
+                "arrayBuffers": 9290384
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3,
+                "Timeout": 1
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 688.442916999993
+        },
+        {
+          "step": 58,
+          "label": "continuous dependency edit 58",
+          "status": "passed",
+          "incrementalMs": 15.989583999995375,
+          "measurement": {
+            "elapsedMs": 15.698749999995925,
+            "process": {
+              "memory": {
+                "rss": 226672640,
+                "heapTotal": 84803584,
+                "heapUsed": 80780440,
+                "external": 30184569,
+                "arrayBuffers": 9193736
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 673.5507499999949
+        },
+        {
+          "step": 59,
+          "label": "continuous dependency edit 59",
+          "status": "passed",
+          "incrementalMs": 20.97741700000188,
+          "measurement": {
+            "elapsedMs": 20.66670800000429,
+            "process": {
+              "memory": {
+                "rss": 226672640,
+                "heapTotal": 84803584,
+                "heapUsed": 81027784,
+                "external": 30233487,
+                "arrayBuffers": 9241180
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 717.5289580000026
+        },
+        {
+          "step": 60,
+          "label": "continuous dependency edit 60",
+          "status": "passed",
+          "incrementalMs": 19.474750000001222,
+          "measurement": {
+            "elapsedMs": 19.188499999996566,
+            "process": {
+              "memory": {
+                "rss": 226672640,
+                "heapTotal": 84803584,
+                "heapUsed": 81276528,
+                "external": 30282405,
+                "arrayBuffers": 9288624
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            },
+            "build": {
+              "loadCalls": 1,
+              "loadedModules": [
+                "value.js"
+              ],
+              "transformCalls": 1,
+              "transformedModules": [
+                "value.js"
+              ],
+              "publications": 0,
+              "outputFiles": [],
+              "outputBytes": 0,
+              "patches": 1,
+              "patchBytes": 525
+            },
+            "session": {
+              "watchers": 0,
+              "engines": 1
+            }
+          },
+          "freshMs": 712.1815839999981
+        }
+      ],
+      "status": "passed",
+      "resources": {
+        "rss": {
+          "status": "stable",
+          "medians": [
+            356065280,
+            356507648,
+            225411072,
+            225910784,
+            226320384,
+            226344960,
+            226344960,
+            226394112,
+            226451456,
+            226492416,
+            226525184,
+            226566144,
+            226639872,
+            226664448
+          ],
+          "growth": 98304
+        },
+        "heapUsed": {
+          "status": "stable",
+          "medians": [
+            108864356,
+            109849440,
+            80362312,
+            80309500,
+            80062720,
+            80193284,
+            80433060,
+            80597576,
+            80337016,
+            80600400,
+            80735396,
+            80854952,
+            80872756,
+            80895968
+          ],
+          "growth": 41016
+        },
+        "resources": {
+          "CloseReq": {
+            "status": "stable",
+            "medians": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ],
+            "growth": 0
+          },
+          "PipeWrap": {
+            "status": "stable",
+            "medians": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ],
+            "growth": 0
+          },
+          "Timeout": {
+            "status": "stable",
+            "medians": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0.5,
+              0.5,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "growth": -1
+          }
+        },
+        "processListeners": {
+          "status": "stable",
+          "medians": [
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24,
+            24
+          ],
+          "growth": 0
+        }
+      },
+      "childrenAfterClose": 0
+    }
+  ]
+}

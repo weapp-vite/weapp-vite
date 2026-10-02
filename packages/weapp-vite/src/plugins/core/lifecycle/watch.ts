@@ -12,6 +12,7 @@ import { isAutoRoutesGeneratedPath, resolveAutoRoutesManagedOutputPaths } from '
 import { getSelectedAutoRouteSource } from '../../../runtime/autoRoutesPlugin/selection'
 import { isAutoRoutesPagesRelatedPath, resolveAutoRoutesMatcherContext } from '../../../runtime/autoRoutesPlugin/shared'
 import { resetTakeImportRegistry } from '../../../runtime/chunkStrategy'
+import { resolveScanPluginBasename } from '../../../runtime/scanPlugin/service'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../utils'
 import { findCssEntry, findJsEntry, findVueEntry } from '../../../utils/file'
 import { createHmrProfileEventId, recordHmrProfileDuration } from '../../../utils/hmrProfile'
@@ -681,8 +682,10 @@ async function processChangedFile(
   const relativeCwd = configService.relativeCwd(normalizedId)
   let handledByIndependentWatcher = false
   let independentMeta: SubPackageMetaValue | undefined
-  const isPluginManifest = configService.pluginOnly
-    && configSuffixes.some(suffix => relativeSrc === `plugin${suffix}`)
+  const pluginBasename = configService.pluginOnly ? resolveScanPluginBasename(configService.absolutePluginRoot) : undefined
+  // 清单缺失或切换扩展名时扫描结果尚不存在，仍须依据配置的插件根目录识别恢复事件。
+  const isPluginManifest = pluginBasename !== undefined
+    && configSuffixes.some(suffix => normalizedId === normalizeFsResolvedId(`${pluginBasename}${suffix}`))
   const isConfigDependency = isConfigFileDependencyChange(state, normalizedId) || Boolean(isPluginManifest)
   const isWxmlDependencyFile = isWxmlDependency(ctx, normalizedId)
 
@@ -789,21 +792,14 @@ export function createWatchChangeHook(state: CorePluginState) {
       resolvedEntryMap: state.resolvedEntryMap,
       sharedChunkSourceModuleIds: state.ctx.runtimeState.build.hmr.sharedChunkSourceModuleIds,
     })
-    state.ctx.runtimeState.build.hmr.profile = {
-      ...state.ctx.runtimeState.build.hmr.profile,
-      eventId,
-      event,
-      file: normalizedId,
-    }
+    const profile = state.ctx.runtimeState.build.hmr.profile
+    profile.sourceEvents ??= []
+    profile.sourceEvents.push({ eventId, event, file: normalizedId, receivedAtMs: startedAt })
+    // 旧字段继续指向最后一个事件；完整来源通过 sourceEvents 保留。
+    Object.assign(profile, { eventId, event, file: normalizedId })
     const dirtyReasonSummary = await processChangedFile(state, normalizedId, event)
-    state.ctx.runtimeState.build.hmr.profile = {
-      ...state.ctx.runtimeState.build.hmr.profile,
-      eventId,
-      event,
-      file: normalizedId,
-      watchToDirtyMs: performance.now() - startedAt,
-      dirtyReasonSummary,
-    }
+    profile.watchToDirtyMs = performance.now() - Math.min(...profile.sourceEvents.map(source => source.receivedAtMs))
+    profile.dirtyReasonSummary = [...new Set([...(profile.dirtyReasonSummary ?? []), ...(dirtyReasonSummary ?? [])])]
     state.ctx.onStatefulHmrSourceChange?.(normalizedId, dirtyReasonSummary ?? [])
   }
 }

@@ -8,9 +8,11 @@ import type { InlineConfig } from 'vite'
 import type { BuildTarget, CompilerContext, MutableCompilerContext } from '../../context'
 import type { PublicAssetOptions } from '../../plugins/asset/publicSources'
 import type { ChangeEvent, SubPackageMetaValue } from '../../types'
+import type { HmrProfileRecordMetadata, HmrProfileSourceEvent } from '../../utils/hmrProfile/provenance'
 import type { HmrRuntimeDecision } from '../hmrRuntime'
 import type { StatefulHmrOutputFile } from '../statefulHmr/outputWriter'
 import type { DevBuildWatcherController } from './devBuildWatcher'
+import { randomUUID } from 'node:crypto'
 import { appendFile, mkdir } from 'node:fs/promises'
 import process from 'node:process'
 import { removeExtensionDeep } from '@weapp-core/shared'
@@ -75,7 +77,7 @@ export interface BuildService {
   invalidateIndependentOutput: (root: string) => void
 }
 
-interface HmrProfileJsonSample {
+interface HmrProfileJsonSample extends HmrProfileRecordMetadata {
   timestamp: string
   totalMs: number
   eventId?: string
@@ -194,6 +196,7 @@ interface HmrPhaseRegressionCandidate {
 }
 
 interface SnapshotBuildReason {
+  sourceEvent?: HmrProfileSourceEvent
   event?: ChangeEvent
   file?: string
   forceFullRescan?: boolean
@@ -394,6 +397,9 @@ function createSnapshotSidecarIgnoredMatcher(ctx: MutableCompilerContext) {
 }
 
 export function createBuildService(ctx: MutableCompilerContext): BuildService {
+  const profileSessionId = randomUUID()
+  let profileBuildSequence = 0
+  let profileWriteChain = Promise.resolve()
   let lastHmrSlowTipProfileCount = 0
   let devHmrDecision: HmrRuntimeDecision | undefined
   let devHmrRuntimeNoticeLogged = false
@@ -481,6 +487,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       ? ctx.configService.relativeAbsoluteSrcRoot(profile.file)
       : undefined
     return {
+      schemaVersion: 1,
+      sessionId: profileSessionId,
+      buildId: profile.buildId,
+      batchId: profile.batchId,
+      sourceEvents: profile.sourceEvents?.map(event => ({ ...event })),
+      batchWaitMs: profile.batchWaitMs,
+      queueWaitMs: profile.queueWaitMs,
+      clock: { durations: 'performance.now', timestamp: 'UTC', timeOrigin: performance.timeOrigin },
+      correlation: profile.sourceEvents?.length ? 'known' : 'unknown',
+      estimates: { buildCoreMs: 'residual-overlapping-phases' },
+      status: 'complete',
       timestamp: new Date().toISOString(),
       totalMs,
       eventId: profile.eventId,
@@ -545,8 +562,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       dirtyCount: profile.dirtyCount,
       pendingCount: profile.pendingCount,
       emittedCount: profile.emittedCount,
-      dirtyReasonSummary: profile.dirtyReasonSummary,
-      pendingReasonSummary: profile.pendingReasonSummary,
+      dirtyReasonSummary: profile.dirtyReasonSummary?.slice(),
+      pendingReasonSummary: profile.pendingReasonSummary?.slice(),
     }
   }
 
@@ -1167,14 +1184,30 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     return true
   }
 
-  async function writeHmrProfileJsonSample(totalMs: number) {
+  async function writeHmrProfileJsonSample(totalMs: number, status: HmrProfileRecordMetadata['status'] = 'complete', reason?: string) {
     const outputPath = resolveHmrProfileJsonPath()
     if (!outputPath) {
       return
     }
 
-    await mkdir(path.dirname(outputPath), { recursive: true })
-    await appendFile(outputPath, `${JSON.stringify(createHmrProfileJsonSample(totalMs))}\n`, 'utf8')
+    // 发布边界即刻序列化，目录创建和写盘不能重新读取下一轮的可变 profile。
+    const sample = createHmrProfileJsonSample(totalMs)
+    const payload = JSON.stringify(status === 'complete'
+      ? sample
+      : {
+          ...sample,
+          status,
+          reason,
+          totalMs: undefined,
+          buildCoreMs: undefined,
+          elapsedMs: Number.isFinite(totalMs) && totalMs >= 0 ? totalMs : undefined,
+        })
+    const write = profileWriteChain.then(async () => {
+      await mkdir(path.dirname(outputPath), { recursive: true })
+      await appendFile(outputPath, `${payload}\n`, 'utf8')
+    })
+    profileWriteChain = write.catch(() => {})
+    await write
   }
 
   function assertRuntimeServices(target: MutableCompilerContext): asserts target is MutableCompilerContext & {
@@ -1541,6 +1574,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
     let failedSnapshotReasons: SnapshotBuildReason[] = []
+    let failedEntryTopologyChange = false
     let initialBuildFailed = false
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
@@ -1601,6 +1635,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (devWatcherClosed) {
         return snapshotBuildChain
       }
+      const queuedAt = performance.now()
       const currentSnapshotBuild = snapshotBuildChain.then(async () => {
         if (devWatcherClosed) {
           return
@@ -1620,14 +1655,17 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             }
           }
         }
-        if (reason?.event || reason?.file) {
-          ctx.runtimeState.build.hmr.profile = {
-            ...ctx.runtimeState.build.hmr.profile,
-            eventId: createHmrProfileEventId(),
-            event: reason.event,
-            file: reason.file,
-            watchToDirtyMs: performance.now() - eventStartedAt,
-          }
+        const sourceEvents = batchReasons.flatMap(item => item.sourceEvent ? [item.sourceEvent] : [])
+        ctx.runtimeState.build.hmr.profile = {
+          ...ctx.runtimeState.build.hmr.profile,
+          batchId: createHmrProfileEventId(),
+          sourceEvents,
+          eventId: sourceEvents.length === 1 ? sourceEvents[0]?.eventId : undefined,
+          event: reason?.event,
+          file: reason?.file,
+          batchWaitMs: sourceEvents.length ? queuedAt - eventStartedAt : undefined,
+          queueWaitMs: performance.now() - queuedAt,
+          watchToDirtyMs: sourceEvents.length ? performance.now() - eventStartedAt : undefined,
         }
         const snapshotResolveStartedAt = performance.now()
         const graphAffectedEntries = new Set<string>()
@@ -1645,16 +1683,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         debug?.(`[module-graph-provider] affected=${graphAffectedEntries.size} files=${batchReasons.length}`)
         recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotResolveMs', performance.now() - snapshotResolveStartedAt)
         const snapshotBuildStartedAt = performance.now()
-        const requiresFullRescan = batchReasons.some(batchReason =>
+        let requiresFullRescan = batchReasons.some(batchReason =>
           batchReason.forceFullRescan
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
-        const { routeSignature, routeDependentEntries } = await refreshSnapshotSources(
+        const { routeSignature, routeDependentEntries, entryTopologyChanged } = await refreshSnapshotSources(
           ctx,
           batchReasons.filter((batchReason): batchReason is SnapshotBuildReason & { file: string } => Boolean(batchReason.file)),
           emittedAutoRoutesSignature,
         )
+        const fullEntryScan = entryTopologyChanged || failedEntryTopologyChange
+        requiresFullRescan ||= fullEntryScan
+        if (fullEntryScan) {
+          scanService.markDirty()
+        }
         for (const entryId of graphAffectedEntries) {
           routeDependentEntries.delete(entryId)
         }
@@ -1705,6 +1748,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             devBuildWatcher?.emitEvent({ code: 'START' })
             await build(snapshotBuildOptions)
             emittedAutoRoutesSignature = routeSignature
+            recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
             devBuildWatcher?.emitEvent({ code: 'END' })
           }
           catch (error) {
@@ -1715,12 +1759,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             })
             throw error
           }
-          finally {
-            recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
-          }
           return 'snapshot'
         }
         if (!requiresFullRescan && batchReasons.length && batchReasons.every(batchReason => batchReason.event === 'update')) {
+          // 未触发构建的批次也要结束观测所有权；不能污染下一轮或混入成功耗时。
+          const recorded = writeHmrProfileJsonSample(performance.now() - queuedAt, 'incomplete', 'no-affected-entries')
+          resetHmrProfile()
+          await recorded
           return
         }
         markSnapshotEntriesFullDirty()
@@ -1728,6 +1773,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         resetEmittedOutputCaches(ctx.runtimeState)
         const hmr = ctx.runtimeState.build.hmr
         hmr.forceFullSharedChunkRefresh = true
+        hmr.fullEntryScan = fullEntryScan
         try {
           devBuildWatcher?.emitEvent({ code: 'START' })
           await build({
@@ -1738,10 +1784,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
             },
           })
           emittedAutoRoutesSignature = routeSignature
+          recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
+          failedEntryTopologyChange = false
           devBuildWatcher?.emitEvent({ code: 'END' })
           return 'snapshot'
         }
         catch (error) {
+          failedEntryTopologyChange ||= fullEntryScan
           devBuildWatcher?.emitEvent({
             code: 'ERROR',
             error: error instanceof Error ? error : new Error(String(error)),
@@ -1750,8 +1799,8 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           throw error
         }
         finally {
-          recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
           hmr.forceFullSharedChunkRefresh = false
+          hmr.fullEntryScan = false
         }
       })
       snapshotBuildChain = currentSnapshotBuild.catch(() => {
@@ -1779,6 +1828,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       if (devWatcherClosed) {
         return
       }
+      reason.sourceEvent ??= { eventId: createHmrProfileEventId(), event: reason.event, file: reason.file, receivedAtMs: startedAt }
       if (pendingSnapshotBatch) {
         pendingSnapshotBatch.reasons.push(reason)
         pendingSnapshotBatch.startedAt = Math.min(pendingSnapshotBatch.startedAt, startedAt)
@@ -1897,6 +1947,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       if (e.code === 'START') {
         startTime = performance.now()
+        ctx.runtimeState.build.hmr.profile.buildId = `${profileSessionId}:${++profileBuildSequence}`
       }
       else if (e.code === 'END') {
         initialBuildFailed = false
@@ -1944,7 +1995,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           if (firstBuildCompleted) {
             finalizeHmrProfile(bundlerDurationMs)
             recordHmrProfile(durationMs)
-            await writeHmrProfileJsonSample(durationMs).catch((error) => {
+            void writeHmrProfileJsonSample(durationMs).catch((error) => {
               debug?.(`write hmr profile json failed: ${String(error)}`)
             })
             logger.success(formatHmrLogLine(durationMs))
@@ -1966,6 +2017,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       }
       else if (e.code === 'ERROR') {
         reportDevModuleGraphBuild(ctx, false)
+        void writeHmrProfileJsonSample(Math.max(0, performance.now() - startTime), 'failed').catch((error) => {
+          debug?.(`write failed hmr profile json: ${String(error)}`)
+        })
         resetHmrProfile()
         if (target !== 'app') {
           rejectWatcher(e)

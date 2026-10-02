@@ -1,64 +1,13 @@
+import type { HmrProfileJsonSample } from '../analyze/hmr'
 import type { WeappViteConfig } from '../types'
 import { fs } from '@weapp-core/shared/fs'
+import { readHmrProfileLines } from '../analyze/hmr/reader'
 import { resolveHmrProfileJsonPath } from '../utils/hmrProfile'
 
 export interface HmrLatestProfileSummary {
   file?: string
   line: string
   profilePath: string
-}
-
-interface HmrProfileJsonSample {
-  totalMs?: number
-  event?: string
-  file?: string
-  buildCoreMs?: number
-  buildStartMs?: number
-  pluginResolveMs?: number
-  transformMs?: number
-  coreTransformMs?: number
-  wevuTransformMs?: number
-  vueTransformMs?: number
-  vueReadSourceMs?: number
-  vueCompileMs?: number
-  vueFinalizeCompiledMs?: number
-  vueFinalizeCodeMs?: number
-  coreLoadMs?: number
-  entryLoadMs?: number
-  entryCodeReadMs?: number
-  entrySidecarResolveMs?: number
-  entryJsonReadMs?: number
-  entryVueConfigMs?: number
-  entryTemplateScanMs?: number
-  entryScriptSetupMs?: number
-  entryVueSignatureMs?: number
-  entryAutoImportMs?: number
-  entryPrepareMs?: number
-  entryEmitOutputMs?: number
-  entryStyleScanMs?: number
-  entryStyleReadMs?: number
-  entryResolveMs?: number
-  entryChunkEmitMs?: number
-  entryChunkLoadMs?: number
-  entryChunkEmitFileMs?: number
-  entryLayoutMs?: number
-  requestGlobalsMs?: number
-  weapiResolveMs?: number
-  renderStartMs?: number
-  generateBundleMs?: number
-  generateSharedMs?: number
-  generateRewriteMs?: number
-  generateModuleGraphMs?: number
-  snapshotResolveMs?: number
-  snapshotBuildMs?: number
-  writeMs?: number
-  watchToDirtyMs?: number
-  emitMs?: number
-  sharedChunkResolveMs?: number
-  chunkEmitCount?: number
-  loadCount?: number
-  resolveCount?: number
-  skippedLoadedCount?: number
 }
 
 interface ReadLatestHmrProfileSummaryOptions {
@@ -69,26 +18,6 @@ interface ReadLatestHmrProfileSummaryOptions {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
-}
-
-function parseLatestHmrProfileSample(content: string) {
-  const lines = content.split(/\r?\n/)
-  for (let index = lines.length - 1; index >= 0; index -= 1) {
-    const trimmed = lines[index]?.trim()
-    if (!trimmed) {
-      continue
-    }
-    try {
-      const parsed = JSON.parse(trimmed) as HmrProfileJsonSample
-      if (isFiniteNumber(parsed.totalMs)) {
-        return parsed
-      }
-    }
-    catch {
-      continue
-    }
-  }
-  return undefined
 }
 
 function formatPhaseHint(sample: HmrProfileJsonSample) {
@@ -295,7 +224,8 @@ export async function readLatestHmrProfileSummary(
     return undefined
   }
 
-  const sample = parseLatestHmrProfileSample(content)
+  const { samples, skippedLineCount } = readHmrProfileLines(content)
+  const sample = samples.at(-1)
   if (!sample || !isFiniteNumber(sample.totalMs)) {
     return undefined
   }
@@ -320,7 +250,11 @@ export async function readLatestHmrProfileSummary(
     || isFiniteNumber(sample.chunkEmitCount)
     || isFiniteNumber(sample.skippedLoadedCount)
   ) {
-    segments.push(`load/resolve/chunk/skip ${sample.loadCount ?? 0}/${sample.resolveCount ?? 0}/${sample.chunkEmitCount ?? 0}/${sample.skippedLoadedCount ?? 0}`)
+    segments.push(`load/resolve/chunk/skip ${sample.loadCount ?? 'unknown'}/${sample.resolveCount ?? 'unknown'}/${sample.chunkEmitCount ?? 'unknown'}/${sample.skippedLoadedCount ?? 'unknown'}`)
+  }
+
+  if (skippedLineCount) {
+    segments.push(`忽略 ${skippedLineCount} 条不兼容、未完成或无效记录`)
   }
 
   return {

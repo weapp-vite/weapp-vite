@@ -3,6 +3,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { LoadConfigOptions } from '../config/types'
 import { readFile } from 'node:fs/promises'
 import { removeExtensionDeep } from '@weapp-core/shared'
+import { fs } from '@weapp-core/shared/node'
 import path from 'pathe'
 import { build } from 'vite'
 import { createCompilerContextInstance } from '../../context/createCompilerContextInstance'
@@ -27,12 +28,23 @@ export async function buildStatefulHmrSnapshot(
   sources?: ReadonlyMap<string, string | null>,
 ) {
   const ctx = createCompilerContextInstance()
+  const ownerConfig = owner?.configService
+  const inheritedVueEntryIds = owner && ownerConfig
+    ? (await Promise.all(Array.from(owner.runtimeState.build.hmr.resolvedEntryMap.keys())
+        .filter(id => /\.(?:vue|jsx|tsx)$/.test(id))
+        .filter(id => owner.runtimeState.build.hmr.entriesMap.get(
+          ownerConfig.relativeAbsoluteSrcRoot(removeExtensionDeep(id)),
+        )?.type === 'component')
+        .map(async id => await fs.pathExists(id) ? normalizeFsResolvedId(id) : undefined))).filter((id): id is string => Boolean(id))
+    : []
   if (owner) {
     shareWxmlDependencies(owner, ctx)
+    // 入口快照在独立上下文中重建，但组件解析注册表属于活动 DevEngine。
+    // 复用同一注册表，确保仅更新共享模块时仍能生成原有组件 logical entry。
+    ctx.runtimeState.build.hmr.externalComponentEntryMap = owner.runtimeState.build.hmr.externalComponentEntryMap
   }
   return await ctx.autoImportService.runWithoutOutputWrites(async () => {
     ctx.currentBuildTarget = 'app'
-    const ownerConfig = owner?.configService
     await ctx.configService.load(ownerConfig?.options.sourceConfig
       ? {
           ...loadOptions,
@@ -116,11 +128,11 @@ export async function buildStatefulHmrSnapshot(
         roots: [...ctx.scanService.independentSubPackageMap.keys()].map(root => path.resolve(ctx.configService.absoluteSrcRoot, root)).concat(getWorkerSources(ctx).roots),
       }),
       getGlassEaselAnalysisByOwner: () => ctx.runtimeState.glassEasel.analysisByOwner,
-      getEntryIds: () => ctx.runtimeState.build.hmr.resolvedEntryMap.keys(),
+      getEntryIds: () => new Set([...ctx.runtimeState.build.hmr.resolvedEntryMap.keys(), ...inheritedVueEntryIds]),
       getDelegatedComponentEntryIds: () => Array.from(ctx.runtimeState.build.hmr.resolvedEntryMap.keys()).filter(id =>
         /\.(?:vue|jsx|tsx)$/.test(id)
         && ctx.runtimeState.build.hmr.entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(id)))?.type === 'component',
-      ),
+      ).concat(inheritedVueEntryIds),
       getGlobalStyleRoutes: () => globalStyleRoutes,
       getTailwindStyleOwners: () => getTailwindStyleOwners(ctx),
     }

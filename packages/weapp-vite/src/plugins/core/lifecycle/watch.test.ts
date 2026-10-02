@@ -230,6 +230,54 @@ describe('core lifecycle watch hook', () => {
     expect(state.ctx.runtimeState.build.hmr.profile.buildStartMs).toBeTypeOf('number')
   })
 
+  it.each([
+    ['/project/src/plugin', 'update'],
+    ['/project/src/plugin', 'create'],
+    ['/project/src/plugin', 'delete'],
+    ['/shared/plugin', 'update'],
+    ['/shared/plugin', 'create'],
+    ['/shared/plugin', 'delete'],
+  ] as const)('restarts the plugin manifest at %s after %s', async (pluginRoot, event) => {
+    const state = createState({ buildTarget: 'plugin' })
+    state.ctx.configService.pluginOnly = true
+    state.ctx.configService.absolutePluginRoot = pluginRoot
+    state.ctx.scanService.pluginJsonPath = event === 'create' ? undefined : `${pluginRoot}/plugin.json`
+    const entry = `${pluginRoot}/main.ts`
+    state.resolvedEntryMap.set(entry, {})
+
+    await createWatchChangeHook(state)(`${pluginRoot}/plugin.json`, { event })
+
+    expect(state.ctx.scanService.markDirty).toHaveBeenCalled()
+    expect(state.ctx.buildService.requestConfigRestart).toHaveBeenCalledExactlyOnceWith('plugin')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entry, 'direct')
+  })
+
+  it('restarts when a plugin manifest switches to another supported config extension', async () => {
+    const state = createState({ buildTarget: 'plugin' })
+    state.ctx.configService.pluginOnly = true
+    state.ctx.configService.absolutePluginRoot = '/shared/plugin'
+    state.ctx.scanService.pluginJsonPath = '/shared/plugin/plugin.json'
+
+    await createWatchChangeHook(state)('/shared/plugin/plugin.json.ts', { event: 'create' })
+
+    expect(state.ctx.buildService.requestConfigRestart).toHaveBeenCalledExactlyOnceWith('plugin')
+  })
+
+  it.each([
+    [true, '/project/src/plugin.json'],
+    [true, '/shared/plugin/config.json'],
+    [false, '/shared/plugin/plugin.json'],
+  ] as const)('does not restart another manifest owner (pluginOnly=%s, %s)', async (pluginOnly, file) => {
+    const state = createState({ buildTarget: 'plugin' })
+    state.ctx.configService.pluginOnly = pluginOnly
+    state.ctx.configService.absolutePluginRoot = '/shared/plugin'
+    state.ctx.scanService.pluginJsonPath = '/shared/plugin/plugin.json'
+
+    await createWatchChangeHook(state)(file, { event: 'create' })
+
+    expect(state.ctx.buildService.requestConfigRestart).not.toHaveBeenCalled()
+  })
+
   afterEach(() => {
     vi.restoreAllMocks()
   })

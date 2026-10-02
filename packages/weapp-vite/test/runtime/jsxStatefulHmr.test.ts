@@ -94,26 +94,43 @@ function createBundleRuntime(root: string) {
   }
 }
 
-it('updates shared JSX and page handlers without replacing the active DevEngine build', async () => {
+it.each(['minimal', 'demo'] as const)('updates %s shared JSX and page handlers without replacing the active DevEngine build', async (fixture) => {
   const root = path.resolve(import.meta.dirname, '../../../..')
   const fixtureParent = path.join(root, '.tmp/jsx-stateful-probe')
   await fs.ensureDir(fixtureParent)
   const cwd = await fs.mkdtemp(path.join(fixtureParent, 'fixture-'))
-  const source = path.join(cwd, 'src/pages/index.tsx')
+  const demo = fixture === 'demo'
+  const route = demo ? 'pages/tsx-basic/index' : 'pages/index'
+  const source = path.join(cwd, `src/${route}.tsx`)
   const shared = path.join(cwd, 'src/shared.tsx')
-  const output = path.join(cwd, 'dist/pages/index.wxml')
+  const output = path.join(cwd, `dist/${route}.wxml`)
   const controlPath = path.join(cwd, 'dist/__weapp_vite_hmr/control.js')
   const errors: string[] = []
   const errorSpy = vi.spyOn(logger, 'error').mockImplementation((...messages) => {
     errors.push(messages.map(String).join(' '))
   })
-  const page = `import {defineComponent} from 'wevu'
+  const minimalPage = `import {definePageJson} from 'weapp-vite'
+import {defineComponent} from 'wevu'
 import Card from '../components/card.vue'
 import {sharedFragment, createDynamicBlock} from '../shared'
+definePageJson({navigationBarTitleText:'JSX HMR'})
 export default defineComponent({data(){return {count:0}},methods:{increment(){this.count++}},render(){return <view><view className="title">initial-page</view><Card title="card"/>{sharedFragment}{createDynamicBlock(()=><button onTap={this.increment}>count:{this.count}</button>)}</view>}})`
+  const demoRoot = path.join(root, 'apps/wevu-jsx-tsx-demo')
+  const page = demo
+    ? (await fs.readFile(path.join(demoRoot, 'src/pages/tsx-basic/index.tsx'), 'utf8')).replace('纯 TSX（.tsx）', 'initial-page')
+    : minimalPage
+  const initialStep = demo ? 'this.islandCount += 1' : 'this.count++'
+  const updatedStep = demo ? 'this.islandCount += 2' : 'this.count += 2'
+  const sharedSource = demo
+    ? (await fs.readFile(path.join(demoRoot, 'src/shared.tsx'), 'utf8')).replace('跨文件静态 JSX fragment', 'initial-shared')
+    : 'export const sharedFragment=<text>initial-shared</text>;export const createDynamicBlock=(factory)=>factory()'
+  const sharedWith = (marker: string) => sharedSource.replace('initial-shared', marker)
   let ctx: Awaited<ReturnType<typeof createCompilerContext>> | undefined
   let runtime: ReturnType<typeof createBundleRuntime> | undefined
   try {
+    if (demo) {
+      await fs.copy(path.join(demoRoot, 'src'), path.join(cwd, 'src'))
+    }
     await fs.ensureDir(path.dirname(source))
     await fs.ensureDir(path.join(cwd, 'src/components'))
     await fs.ensureSymlink(path.join(root, 'node_modules'), path.join(cwd, 'node_modules'), 'junction')
@@ -121,11 +138,13 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     await fs.writeJSON(path.join(cwd, 'project.config.json'), { appid: 'wx123', miniprogramRoot: 'dist/' })
     await fs.writeJSON(path.join(cwd, 'project.private.config.json'), { setting: { compileHotReLoad: true } })
     // 内容轮询确保等长修改可观察，测试仍验证真实引擎补丁及构建状态身份。
-    await fs.writeFile(path.join(cwd, 'vite.config.ts'), 'export default {build:{watch:{chokidar:{usePolling:true,interval:50}}},weapp:{srcRoot:"src",hmr:{runtime:"stateful-experimental"}}}')
-    await fs.writeJSON(path.join(cwd, 'src/app.json'), { pages: ['pages/index'] })
+    await fs.writeFile(path.join(cwd, 'vite.config.ts'), 'export default {esbuild:{jsx:"preserve"},build:{watch:{chokidar:{usePolling:true,interval:50}}},weapp:{srcRoot:"src",hmr:{runtime:"stateful-experimental"}}}')
+    if (!demo) {
+      await fs.writeJSON(path.join(cwd, 'src/app.json'), { pages: [route] })
+    }
     await fs.writeFile(path.join(cwd, 'src/app.ts'), 'App({})')
     await fs.writeFile(source, page)
-    await fs.writeFile(shared, 'export const sharedFragment=<text>initial-shared</text>;export const createDynamicBlock=(factory)=>factory()')
+    await fs.writeFile(shared, sharedSource)
     await fs.writeFile(path.join(cwd, 'src/components/card.vue'), '<script setup>defineProps({title:String})</script><template><view>{{title}}</view></template>')
     ctx = await createCompilerContext({ cwd, isDev: true, syncSupportFiles: false, emitDefaultAutoImportOutputs: false })
     await ctx.buildService.build({ skipNpm: true })
@@ -136,14 +155,14 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     const controlHash = createHash('sha256').update(await fs.readFile(controlPath)).digest('hex')
     runtime = createBundleRuntime(path.join(cwd, 'dist'))
     runtime.load('app.js')
-    runtime.load('pages/index.js')
+    runtime.load(`${route}.js`)
     // 编译器 cwd 与 Vite root 不同时，首包依赖图仍须使用引擎的模块 ID。
     expect(runtime.getImporters(path.relative(cwd, shared))).toContain(path.relative(cwd, source))
     await expect.poll(() => runtime!.requests.some(request =>
-      request.payloads?.includes('app.js') && request.payloads.includes('pages/index.js'),
+      request.payloads?.includes('app.js') && request.payloads.includes(`${route}.js`),
     ), { timeout: 30_000 }).toBe(true)
     await expect.poll(() => runtime!.isInitialReady(), { timeout: 30_000 }).toBe(true)
-    await fs.writeFile(shared, 'export const sharedFragment=<text>updated-shared</text>;export const createDynamicBlock=(factory)=>factory()')
+    await fs.writeFile(shared, sharedWith('updated-shared'))
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-shared')
     expect(ctx.runtimeState.build.hmr).toBe(hmrState)
     expect(ctx.runtimeState.build.hmr.externalComponentEntryMap).toBe(componentEntries)
@@ -154,20 +173,20 @@ export default defineComponent({data(){return {count:0}},methods:{increment(){th
     }, { timeout: 30_000 }).toBeGreaterThan(0)
     const sharedVersion = runtime.getVersion()
     runtime.assertHealthy()
-    await fs.writeFile(source, page.replace('initial-page', 'updated-page').replace('this.count++', 'this.count += 2'))
+    await fs.writeFile(source, page.replace('initial-page', 'updated-page').replace(initialStep, updatedStep))
     await expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 30_000 }).toContain('updated-page')
     await expect.poll(() => {
       runtime!.assertHealthy()
       expect(errors).toEqual([])
       return runtime!.getVersion()
     }, { timeout: 30_000 }).toBeGreaterThan(sharedVersion)
-    expect(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8')).toContain('this.count += 2')
+    expect(await fs.readFile(path.join(cwd, 'dist/__weapp_vite_hmr/update.js'), 'utf8')).toContain(updatedStep)
     runtime.assertHealthy()
     // 源码 transform 继续拥有共享 JSX；恢复也必须由实际客户端执行并确认。
     expect(ctx.moduleGraphService.getEntryDependencies(source)).toContainEqual({ kind: 'jsx', sourceId: shared })
     let version = runtime.getVersion()
     for (const [file, content, marker] of [
-      [shared, 'export const sharedFragment=<text>restored-shared</text>;export const createDynamicBlock=(factory)=>factory()', 'restored-shared'],
+      [shared, sharedWith('restored-shared'), 'restored-shared'],
       [source, page, 'initial-page'],
     ]) {
       await fs.writeFile(file, content)

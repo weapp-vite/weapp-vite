@@ -26,6 +26,7 @@ import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGra
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
+import { prepareOutputOwnership } from '../../plugins/outputFinalizer/ownership'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { setTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
@@ -192,6 +193,8 @@ class StatefulHmrSession {
   private rebuiltEntryGraphRevision = 0
   // 分类由实际源事件持有，避免其他侧车事件覆盖全局诊断信息后误判当前批次。
   private readonly sourceDirtyReasons = new Map<string, { reasons: string[] }>()
+  // 原生脚本 patch 只写 delta；独立资产刷新前仍需将这些源码交给完整构建持久化。
+  private readonly unpersistedNativeScripts = new Map<string, object>()
   private readonly sourceChangeListener = (file: string, dirtyReasonSummary: string[]) => {
     this.handleSourceUpdate(file, dirtyReasonSummary)
   }
@@ -346,6 +349,7 @@ class StatefulHmrSession {
     await this.snapshotScheduler.close()
     await this.adapter.close()
     this.sourceDirtyReasons.clear()
+    this.unpersistedNativeScripts.clear()
     await this.outputChain
   }
 
@@ -401,6 +405,13 @@ class StatefulHmrSession {
     if (!getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) && shouldRebuildStatefulDependency(normalizedFile, this.entryIds, affectedEntries, hasTrackedModule, isEmittedDependency)) {
       this.requestFullBuild([normalizedFile])
       return
+    }
+    if (/\.[cm]?[jt]s$/.test(normalizedFile) && (this.entryIds.has(normalizedFile) || isEmittedDependency)) {
+      this.unpersistedNativeScripts.set(normalizedFile, {})
+      if (this.snapshotScheduler.isPending()) {
+        this.requestFullBuild([normalizedFile])
+        return
+      }
     }
     if (getCompilerHmrHost(this.ctx).ownsDependency(normalizedFile) || dirtyReasonSummary.some(reason => isCompilerContentDirtyReason(reason) || reason.startsWith('entry-mixed-asset:'))) {
       // 同批次的视觉资产由原生更新回调交付，不能提前启动独立快照。
@@ -613,6 +624,10 @@ class StatefulHmrSession {
             sourcemap: Boolean(this.server.config.build.sourcemap),
           })
           const { compilerAssets, snapshot, code, changedIds, filenames } = compiled
+          if (snapshot && this.restartForEntryGraph(snapshot)) {
+            // reset 已撤销本代交付；保留 dispose 供协调器释放预编译资源。
+            return { commit: async () => {}, publish: async () => {}, dispose: compiled.dispose }
+          }
           if (shouldResetStatefulHmrRetention(this.transport.retainedDeltaCount, this.transport.retainedDeltaBytes, Buffer.byteLength(code))) {
             this.requestFullBuild(files)
           }
@@ -696,11 +711,31 @@ class StatefulHmrSession {
   }
 
   private requestSnapshotRefresh(files: Iterable<string> = []): void {
+    if (this.unpersistedNativeScripts.size) {
+      this.requestFullBuild([...this.unpersistedNativeScripts.keys(), ...files])
+      return
+    }
     if (this.diagnostics) {
       files = [...files]
       this.diagnostics.request('refresh', files as string[])
     }
     this.snapshotScheduler.request('refresh', files)
+  }
+
+  private restartForEntryGraph(snapshot: StatefulHmrSnapshot): boolean {
+    const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
+    if (!nextEntryIds || (nextEntryIds.length === this.entryIds.size && nextEntryIds.every(id => this.entryIds.has(id)))) {
+      return false
+    }
+    if (this.entryGraphRevision === this.rebuiltEntryGraphRevision) {
+      this.entryGraphRevision += 1
+    }
+    // DevEngine 的入口图固定；所有快照交付路径必须先撤销旧引擎批次，再交给新引擎完整发布。
+    this.delivery.reset()
+    this.transport.cancelPendingDeliveries()
+    // 延迟重启，避免 close 等待正在执行的批次形成自锁。
+    this.requestServerRestart()
+    return true
   }
 
   private requestServerRestart(): void {
@@ -733,7 +768,12 @@ class StatefulHmrSession {
     batchId?: number,
     removedAssets: string[] = [],
   ): Promise<void> {
-    const write = () => writeStatefulHmrOutput(this.ctx.configService!.outDir, output, initialPublicAssets, removedAssets)
+    const outDir = this.ctx.configService!.outDir
+    const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), kind !== 'full', removedAssets)
+    const write = async () => {
+      await writeStatefulHmrOutput(outDir, output, initialPublicAssets, removedAssets)
+      await commitOwnership()
+    }
     const pending = this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
     return pending.catch((error) => {
       // 原生写盘失败可能已有部分输出落盘，不能继续用旧字节快照省略下一次写入。
@@ -749,6 +789,7 @@ class StatefulHmrSession {
   }, traceBatchId?: number): Promise<void> {
     this.buildEvents.emitEvent({ code: 'START' })
     const entryGraphRevision = this.entryGraphRevision
+    const nativeScriptChanges = new Map(this.unpersistedNativeScripts)
     // 完整构建只消费启动时捕获的事件；同一路径的新事件仍归后续批次所有。
     const sourceChanges = new Map(batch.files.map(file => [file, this.sourceDirtyReasons.get(file)]))
     const releaseSourceChanges = () => {
@@ -768,17 +809,7 @@ class StatefulHmrSession {
       return
     }
     const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
-    const entryGraphChanged = nextEntryIds !== undefined && (
-      nextEntryIds.length !== this.entryIds.size || nextEntryIds.some(id => !this.entryIds.has(id))
-    )
-    if (entryGraphChanged) {
-      if (this.entryGraphRevision === this.rebuiltEntryGraphRevision) {
-        // app.json 等元数据可能直接暴露拓扑差异；显式冻结旧引擎的 patch 接受窗口。
-        this.entryGraphRevision += 1
-      }
-      // DevEngine 的入口图在创建时固定；拓扑变化必须由全新扫描与引擎接管。
-      // 延迟重启让当前批次先退出，避免 close() 等待本批次形成自锁。
-      this.requestServerRestart()
+    if (this.restartForEntryGraph(snapshot)) {
       return
     }
     if (batch.mode === 'full') {
@@ -809,6 +840,11 @@ class StatefulHmrSession {
           }
           this.resynchronizing = false
           this.rebuiltEntryGraphRevision = entryGraphRevision
+          for (const [file, change] of nativeScriptChanges) {
+            if (this.unpersistedNativeScripts.get(file) === change) {
+              this.unpersistedNativeScripts.delete(file)
+            }
+          }
           releaseSourceChanges()
           this.commitSnapshotMetadata(snapshot, 'full')
           this.buildEvents.emitEvent({ code: 'END' })

@@ -1,0 +1,1498 @@
+{
+  "budgetMs": 500,
+  "generatedAt": "2026-10-01T22:10:49.283Z",
+  "iterations": 10,
+  "profileTimeoutMs": 15000,
+  "profileEnabled": false,
+  "markerSeed": "issues1133compare",
+  "sampleMode": "edit-only",
+  "summary": {
+    "maxMs": 302.32637500000055,
+    "maxWallMs": 302.32637500000055,
+    "measuredScenarioCount": 4,
+    "overBudgetCount": 0,
+    "failedTemplateCount": 0,
+    "failedScenarioCount": 0,
+    "templateCount": 1,
+    "scenarioCount": 4
+  },
+  "templates": [
+    {
+      "id": "weapp-vite-wevu-template",
+      "project": {
+        "source": "templates/weapp-vite-wevu-template",
+        "workspace": ".cache/profile-paired-workspaces/weapp-vite-wevu-template"
+      },
+      "scenarioCount": 4,
+      "scenarios": [
+        {
+          "averageMs": 227.0395790000003,
+          "averageWallMs": 227.0395790000003,
+          "group": "vue-json",
+          "id": "vue-page-json-macro",
+          "label": "pages/index/index.vue definePageJson",
+          "maxMs": 295.3768749999999,
+          "maxWallMs": 295.3768749999999,
+          "outputFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/dist/pages/index/index.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 90443568,
+              "rssBytes": 491831296,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 215.8800409999999,
+              "wallMs": 215.8800409999999,
+              "inputSha256": "cecde2b1fcddc1bd971e62485199c45b95a6934dd736b43539ca77e83d6eefa0"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 92188880,
+              "rssBytes": 518569984,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 288.0723340000004,
+              "wallMs": 288.0723340000004,
+              "inputSha256": "f9c0286e3f40493b5e0b749c47142caeb4a1885f3239a67de9c896e5142920ca"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 94084136,
+              "rssBytes": 541196288,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 261.5172080000002,
+              "wallMs": 261.5172080000002,
+              "inputSha256": "ef7f56867ca31ec4da7606405d349c5b310819afa3c346598db93b7d9b7f4478"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 95960872,
+              "rssBytes": 554369024,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.1723750000001,
+              "wallMs": 183.1723750000001,
+              "inputSha256": "bc4ab3bb9ff0b6fb4c59016ece455950b8db68301dca7161f73dca28afe8dd25"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 97830880,
+              "rssBytes": 568672256,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.25733300000047,
+              "wallMs": 183.25733300000047,
+              "inputSha256": "ca29c72b021fbce821579a95f60fab751354e2a57636997966e1449224f57b3d"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 99211264,
+              "rssBytes": 579960832,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 184.6199999999999,
+              "wallMs": 184.6199999999999,
+              "inputSha256": "d4bfe6afc631661bfe3b54f245bca32edbc711f76082765ea6949326a75b6e7b"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 100565648,
+              "rssBytes": 587399168,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 295.3768749999999,
+              "wallMs": 295.3768749999999,
+              "inputSha256": "4da3fec9c44dfefc64a3d9367f7fb3d5ec294afaee5aec39ada33dde5d5577c7"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 101779568,
+              "rssBytes": 596901888,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 182.74404099999992,
+              "wallMs": 182.74404099999992,
+              "inputSha256": "3143be55d915708dcdd59583984872712b17747f39b97ef6d3071b7a2b36cf36"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 103061408,
+              "rssBytes": 607059968,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.89187500000116,
+              "wallMs": 183.89187500000116,
+              "inputSha256": "7b58139cb2b51cb27d0a5c21c4fc1244723f92630d3ede78309389898eb71a96"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 104320024,
+              "rssBytes": 613138432,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 291.86370800000077,
+              "wallMs": 291.86370800000077,
+              "inputSha256": "6123fc8a3100e35060eb912feba32b23037d5422cb5c0e1b400842dac28890bb"
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 90443568,
+                "rssBytes": 491831296,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 215.8800409999999,
+                "wallMs": 215.8800409999999,
+                "inputSha256": "cecde2b1fcddc1bd971e62485199c45b95a6934dd736b43539ca77e83d6eefa0"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 91108360,
+                "rssBytes": 506953728,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 182.94900000000007,
+                "wallMs": 182.94900000000007,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 92188880,
+                "rssBytes": 518569984,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 288.0723340000004,
+                "wallMs": 288.0723340000004,
+                "inputSha256": "f9c0286e3f40493b5e0b749c47142caeb4a1885f3239a67de9c896e5142920ca"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 93031088,
+                "rssBytes": 531562496,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 235.78058299999975,
+                "wallMs": 235.78058299999975,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 94084136,
+                "rssBytes": 541196288,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 261.5172080000002,
+                "wallMs": 261.5172080000002,
+                "inputSha256": "ef7f56867ca31ec4da7606405d349c5b310819afa3c346598db93b7d9b7f4478"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 94938984,
+                "rssBytes": 547028992,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 236.40745800000013,
+                "wallMs": 236.40745800000013,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 95960872,
+                "rssBytes": 554369024,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.1723750000001,
+                "wallMs": 183.1723750000001,
+                "inputSha256": "bc4ab3bb9ff0b6fb4c59016ece455950b8db68301dca7161f73dca28afe8dd25"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 96976808,
+                "rssBytes": 561004544,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.38158400000066,
+                "wallMs": 210.38158400000066,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 97830880,
+                "rssBytes": 568672256,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.25733300000047,
+                "wallMs": 183.25733300000047,
+                "inputSha256": "ca29c72b021fbce821579a95f60fab751354e2a57636997966e1449224f57b3d"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 98445920,
+                "rssBytes": 573964288,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 208.05312500000036,
+                "wallMs": 208.05312500000036,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 99211264,
+                "rssBytes": 579960832,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 184.6199999999999,
+                "wallMs": 184.6199999999999,
+                "inputSha256": "d4bfe6afc631661bfe3b54f245bca32edbc711f76082765ea6949326a75b6e7b"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 99764920,
+                "rssBytes": 583155712,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 235.33379200000036,
+                "wallMs": 235.33379200000036,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 100565648,
+                "rssBytes": 587399168,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 295.3768749999999,
+                "wallMs": 295.3768749999999,
+                "inputSha256": "4da3fec9c44dfefc64a3d9367f7fb3d5ec294afaee5aec39ada33dde5d5577c7"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 101087768,
+                "rssBytes": 592461824,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 209.81383300000016,
+                "wallMs": 209.81383300000016,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 101779568,
+                "rssBytes": 596901888,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 182.74404099999992,
+                "wallMs": 182.74404099999992,
+                "inputSha256": "3143be55d915708dcdd59583984872712b17747f39b97ef6d3071b7a2b36cf36"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 102345984,
+                "rssBytes": 602767360,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 208.46629100000064,
+                "wallMs": 208.46629100000064,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 103061408,
+                "rssBytes": 607059968,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.89187500000116,
+                "wallMs": 183.89187500000116,
+                "inputSha256": "7b58139cb2b51cb27d0a5c21c4fc1244723f92630d3ede78309389898eb71a96"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 103616792,
+                "rssBytes": 609861632,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 235.7179580000011,
+                "wallMs": 235.7179580000011,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 104320024,
+                "rssBytes": 613138432,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 291.86370800000077,
+                "wallMs": 291.86370800000077,
+                "inputSha256": "6123fc8a3100e35060eb912feba32b23037d5422cb5c0e1b400842dac28890bb"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 104841272,
+                "rssBytes": 615809024,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.8393329999999,
+                "wallMs": 210.8393329999999,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            }
+          ],
+          "sourceFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 191.5457457999999,
+          "averageWallMs": 191.5457457999999,
+          "group": "vue-template",
+          "id": "vue-page-template",
+          "label": "pages/index/index.vue template",
+          "maxMs": 290.9778330000008,
+          "maxWallMs": 290.9778330000008,
+          "outputFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/dist/pages/index/index.wxml",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 105715952,
+              "rssBytes": 617840640,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 185.44012499999917,
+              "wallMs": 185.44012499999917,
+              "inputSha256": "574ffa5c26a771a716b9343f0f06df5dd1b0bdd951f9685bd06c7cbcc0e846a0"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 107084040,
+              "rssBytes": 625033216,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 182.38595800000076,
+              "wallMs": 182.38595800000076,
+              "inputSha256": "9854dbf9f11ebf874f618d2ea116346c54b8d0d7bdc69a2e7597865da685683e"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 108429144,
+              "rssBytes": 629358592,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 182.9983749999992,
+              "wallMs": 182.9983749999992,
+              "inputSha256": "53c6606e87cf2757299e72a8a146462ef98637f278ea30d96c8d6b03e1c2f6d9"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 109738008,
+              "rssBytes": 633487360,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 184.35733299999993,
+              "wallMs": 184.35733299999993,
+              "inputSha256": "975674e23446a6e420f7d04891f61e207960e8330d2b9fe38cd60715225e1dd1"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 111108920,
+              "rssBytes": 637026304,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 157.66762500000004,
+              "wallMs": 157.66762500000004,
+              "inputSha256": "6693b8134ef9c2a878762ab9f9fd9bf17916a1b55cde8b189bab7361ffd6b32a"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 112431000,
+              "rssBytes": 642957312,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.54695899999933,
+              "wallMs": 183.54695899999933,
+              "inputSha256": "403085d3e52bc052dffafe458102981b6c2e98e11b51d5159f8d42102e32baa1"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 113770256,
+              "rssBytes": 646053888,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 181.89374999999927,
+              "wallMs": 181.89374999999927,
+              "inputSha256": "4258d218fadc2d2657fe29f9d9f792c6a6fee838c0c7809a48caee49238b340d"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 115150888,
+              "rssBytes": 649953280,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 290.9778330000008,
+              "wallMs": 290.9778330000008,
+              "inputSha256": "546a6779d986426c1b90dbc73a6d4ac1030b7144735abf32335545e0657a8518"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 116423432,
+              "rssBytes": 651657216,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.10862500000076,
+              "wallMs": 183.10862500000076,
+              "inputSha256": "676ecf9cb592b32de6d797968c766a48a09c00b751d1174828b2f86d100c4055"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 117807488,
+              "rssBytes": 656424960,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.08087499999965,
+              "wallMs": 183.08087499999965,
+              "inputSha256": "958eecb8a0fef21c2fa9ad31ec442b3d17c8fffcfbcd0c1d41fb1f58c3d4b9ff"
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 105715952,
+                "rssBytes": 617840640,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 185.44012499999917,
+                "wallMs": 185.44012499999917,
+                "inputSha256": "574ffa5c26a771a716b9343f0f06df5dd1b0bdd951f9685bd06c7cbcc0e846a0"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 106303896,
+                "rssBytes": 621330432,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.0377499999995,
+                "wallMs": 210.0377499999995,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 107084040,
+                "rssBytes": 625033216,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 182.38595800000076,
+                "wallMs": 182.38595800000076,
+                "inputSha256": "9854dbf9f11ebf874f618d2ea116346c54b8d0d7bdc69a2e7597865da685683e"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 107634728,
+                "rssBytes": 627556352,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.14616699999897,
+                "wallMs": 210.14616699999897,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 108429144,
+                "rssBytes": 629358592,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 182.9983749999992,
+                "wallMs": 182.9983749999992,
+                "inputSha256": "53c6606e87cf2757299e72a8a146462ef98637f278ea30d96c8d6b03e1c2f6d9"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 108995096,
+                "rssBytes": 631455744,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 209.50216700000055,
+                "wallMs": 209.50216700000055,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 109738008,
+                "rssBytes": 633487360,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 184.35733299999993,
+                "wallMs": 184.35733299999993,
+                "inputSha256": "975674e23446a6e420f7d04891f61e207960e8330d2b9fe38cd60715225e1dd1"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 110290816,
+                "rssBytes": 635191296,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 209.62624999999935,
+                "wallMs": 209.62624999999935,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 111108920,
+                "rssBytes": 637026304,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 157.66762500000004,
+                "wallMs": 157.66762500000004,
+                "inputSha256": "6693b8134ef9c2a878762ab9f9fd9bf17916a1b55cde8b189bab7361ffd6b32a"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 111608904,
+                "rssBytes": 640827392,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 235.71349999999984,
+                "wallMs": 235.71349999999984,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 112431000,
+                "rssBytes": 642957312,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.54695899999933,
+                "wallMs": 183.54695899999933,
+                "inputSha256": "403085d3e52bc052dffafe458102981b6c2e98e11b51d5159f8d42102e32baa1"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 112935008,
+                "rssBytes": 644087808,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 208.4611249999998,
+                "wallMs": 208.4611249999998,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 113770256,
+                "rssBytes": 646053888,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 181.89374999999927,
+                "wallMs": 181.89374999999927,
+                "inputSha256": "4258d218fadc2d2657fe29f9d9f792c6a6fee838c0c7809a48caee49238b340d"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 114304584,
+                "rssBytes": 648282112,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 234.75587499999892,
+                "wallMs": 234.75587499999892,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 115150888,
+                "rssBytes": 649953280,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 290.9778330000008,
+                "wallMs": 290.9778330000008,
+                "inputSha256": "546a6779d986426c1b90dbc73a6d4ac1030b7144735abf32335545e0657a8518"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 115650496,
+                "rssBytes": 650461184,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 208.2313749999994,
+                "wallMs": 208.2313749999994,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 116423432,
+                "rssBytes": 651657216,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.10862500000076,
+                "wallMs": 183.10862500000076,
+                "inputSha256": "676ecf9cb592b32de6d797968c766a48a09c00b751d1174828b2f86d100c4055"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 116971752,
+                "rssBytes": 653869056,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.19674999999916,
+                "wallMs": 210.19674999999916,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 117807488,
+                "rssBytes": 656424960,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.08087499999965,
+                "wallMs": 183.08087499999965,
+                "inputSha256": "958eecb8a0fef21c2fa9ad31ec442b3d17c8fffcfbcd0c1d41fb1f58c3d4b9ff"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 118382064,
+                "rssBytes": 658407424,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.92545800000153,
+                "wallMs": 210.92545800000153,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            }
+          ],
+          "sourceFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 254.7667624999991,
+          "averageWallMs": 254.7667624999991,
+          "group": "vue-script",
+          "id": "vue-page-script",
+          "label": "pages/index/index.vue script",
+          "maxMs": 302.32637500000055,
+          "maxWallMs": 302.32637500000055,
+          "outputFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/dist/pages/index/index.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 119134848,
+              "rssBytes": 660176896,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 247.20699999999852,
+              "wallMs": 247.20699999999852,
+              "inputSha256": "49d7a36ede68dd6e5c6eacd33fba223e328c245a172f25d20a1f1ea2c3f08a78"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 120348600,
+              "rssBytes": 665616384,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 277.69716699999844,
+              "wallMs": 277.69716699999844,
+              "inputSha256": "3e69428d11da8d700fce5d92bda13690157837887e4536d3977e04ce347fbf9d"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 121662288,
+              "rssBytes": 672595968,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 302.32637500000055,
+              "wallMs": 302.32637500000055,
+              "inputSha256": "9ef20898d64851a396b7fe6e9b62dfd2cc17e1eae21d262cc14895cf7642f4a3"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 123021512,
+              "rssBytes": 676970496,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 163.1134579999998,
+              "wallMs": 163.1134579999998,
+              "inputSha256": "7ccaca6dadc8d9bc1ee7a68eeb7fea5a2b29ce657a2f34b8d3e5538cb25c398b"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 124287576,
+              "rssBytes": 680722432,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 272.86116700000275,
+              "wallMs": 272.86116700000275,
+              "inputSha256": "3d93b32df81724f0a78fbcf4a1ff90285999eea7534366475575ee6353b7eb00"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 125573600,
+              "rssBytes": 682541056,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 274.1678749999992,
+              "wallMs": 274.1678749999992,
+              "inputSha256": "09217e2b7e83626defa8ab18d6ba4cfe0c11e9771c8d8a96ed97204e32419ab2"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 126802272,
+              "rssBytes": 686047232,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 274.0734999999986,
+              "wallMs": 274.0734999999986,
+              "inputSha256": "69e9d5fd4230aee71ee3e111d9c270438e3b2efb1626d6473910bf9326b60488"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 128099120,
+              "rssBytes": 688979968,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 160.62574999999924,
+              "wallMs": 160.62574999999924,
+              "inputSha256": "5e8245331d30951e345445fba21777c93f442cd375eb27aff6fcef910ec546c7"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 129392032,
+              "rssBytes": 692207616,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 298.1208749999969,
+              "wallMs": 298.1208749999969,
+              "inputSha256": "4d88f2399e84a1472db690516c8a5de165a6b243c4aed3e34efc47aa00541e2c"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 130649240,
+              "rssBytes": 697188352,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 277.47445799999696,
+              "wallMs": 277.47445799999696,
+              "inputSha256": "65878854710d7b7b9f6778e39df6a3400fc505c20f3d9af517ec50faad9682a2"
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 119134848,
+                "rssBytes": 660176896,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 247.20699999999852,
+                "wallMs": 247.20699999999852,
+                "inputSha256": "49d7a36ede68dd6e5c6eacd33fba223e328c245a172f25d20a1f1ea2c3f08a78"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 119617264,
+                "rssBytes": 662011904,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 221.99562499999956,
+                "wallMs": 221.99562499999956,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 120348600,
+                "rssBytes": 665616384,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 277.69716699999844,
+                "wallMs": 277.69716699999844,
+                "inputSha256": "3e69428d11da8d700fce5d92bda13690157837887e4536d3977e04ce347fbf9d"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 120896840,
+                "rssBytes": 670744576,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 243.7267920000013,
+                "wallMs": 243.7267920000013,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 121662288,
+                "rssBytes": 672595968,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 302.32637500000055,
+                "wallMs": 302.32637500000055,
+                "inputSha256": "9ef20898d64851a396b7fe6e9b62dfd2cc17e1eae21d262cc14895cf7642f4a3"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 122241176,
+                "rssBytes": 674119680,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 187.69587500000125,
+                "wallMs": 187.69587500000125,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 123021512,
+                "rssBytes": 676970496,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 163.1134579999998,
+                "wallMs": 163.1134579999998,
+                "inputSha256": "7ccaca6dadc8d9bc1ee7a68eeb7fea5a2b29ce657a2f34b8d3e5538cb25c398b"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 123535480,
+                "rssBytes": 679002112,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 243.33895800000028,
+                "wallMs": 243.33895800000028,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 124287576,
+                "rssBytes": 680722432,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 272.86116700000275,
+                "wallMs": 272.86116700000275,
+                "inputSha256": "3d93b32df81724f0a78fbcf4a1ff90285999eea7534366475575ee6353b7eb00"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 124863432,
+                "rssBytes": 681459712,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 243.30583300000217,
+                "wallMs": 243.30583300000217,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 125573600,
+                "rssBytes": 682541056,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 274.1678749999992,
+                "wallMs": 274.1678749999992,
+                "inputSha256": "09217e2b7e83626defa8ab18d6ba4cfe0c11e9771c8d8a96ed97204e32419ab2"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 126075128,
+                "rssBytes": 684507136,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 256.632834,
+                "wallMs": 256.632834,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 126802272,
+                "rssBytes": 686047232,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 274.0734999999986,
+                "wallMs": 274.0734999999986,
+                "inputSha256": "69e9d5fd4230aee71ee3e111d9c270438e3b2efb1626d6473910bf9326b60488"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 127338120,
+                "rssBytes": 687210496,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 189.26791700000103,
+                "wallMs": 189.26791700000103,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 128099120,
+                "rssBytes": 688979968,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 160.62574999999924,
+                "wallMs": 160.62574999999924,
+                "inputSha256": "5e8245331d30951e345445fba21777c93f442cd375eb27aff6fcef910ec546c7"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 128625992,
+                "rssBytes": 690356224,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 243.53404199999932,
+                "wallMs": 243.53404199999932,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 129392032,
+                "rssBytes": 692207616,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 298.1208749999969,
+                "wallMs": 298.1208749999969,
+                "inputSha256": "4d88f2399e84a1472db690516c8a5de165a6b243c4aed3e34efc47aa00541e2c"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 129978280,
+                "rssBytes": 694714368,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 214.73708299999998,
+                "wallMs": 214.73708299999998,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 130649240,
+                "rssBytes": 697188352,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 277.47445799999696,
+                "wallMs": 277.47445799999696,
+                "inputSha256": "65878854710d7b7b9f6778e39df6a3400fc505c20f3d9af517ec50faad9682a2"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 131158904,
+                "rssBytes": 698318848,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 214.02624999999898,
+                "wallMs": 214.02624999999898,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            }
+          ],
+          "sourceFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        },
+        {
+          "averageMs": 234.33234150000135,
+          "averageWallMs": 234.33234150000135,
+          "group": "vue-style",
+          "id": "vue-page-style",
+          "label": "pages/index/index.vue style",
+          "maxMs": 291.81445800000074,
+          "maxWallMs": 291.81445800000074,
+          "outputFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/dist/pages/index/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 131916632,
+              "rssBytes": 699351040,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 291.81445800000074,
+              "wallMs": 291.81445800000074,
+              "inputSha256": "9aaf34972138b97f15deb223e6180963ffb2f5e3f3e232e913d7ca0a0b1f0e60"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 133237392,
+              "rssBytes": 702038016,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 156.5590000000011,
+              "wallMs": 156.5590000000011,
+              "inputSha256": "6b93e85c7c09b33f05a3e7d2fd38e34811c2dd777e498317c37e69b61662f271"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 134475936,
+              "rssBytes": 705232896,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 291.059916000002,
+              "wallMs": 291.059916000002,
+              "inputSha256": "e1d815b60a8d7b4239d53168579c4b8f6b6fd4456d4606425183e372f2931264"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 135889968,
+              "rssBytes": 708542464,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 187.68766700000197,
+              "wallMs": 187.68766700000197,
+              "inputSha256": "18eb32b5bb825038f9f0bb24139dd4acc7c97964fd713ea5832dc987c051ad50"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 137143648,
+              "rssBytes": 712392704,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 289.03191700000025,
+              "wallMs": 289.03191700000025,
+              "inputSha256": "922db385b104c9a80c6ad31d971686d6d7bb01596533961e44d1dbaa967bfd2a"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 138444960,
+              "rssBytes": 716554240,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 288.9324160000033,
+              "wallMs": 288.9324160000033,
+              "inputSha256": "5e5606f8e55f5d5b6ac39ddda2e19f6d6ec38da2059957be71f22457966660ef"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 139699144,
+              "rssBytes": 720650240,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.06500000000233,
+              "wallMs": 183.06500000000233,
+              "inputSha256": "2f693499cd26529c426478c0f376f0100099f11e18680751fc7f04ff464773c5"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 140935608,
+              "rssBytes": 724598784,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.00754099999904,
+              "wallMs": 183.00754099999904,
+              "inputSha256": "b448c4febcfd5908e1f62e80a55907ca02bf01a3ce93d5885f806821c3613e86"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 142192504,
+              "rssBytes": 728858624,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 288.3090000000011,
+              "wallMs": 288.3090000000011,
+              "inputSha256": "58216a9e10e831923181d809038108cc9b4dc84b939e7a9b9aac9e882c4a1a39"
+            },
+            {
+              "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+              "heapUsedBytes": 143408800,
+              "rssBytes": 734789632,
+              "phase": "edit",
+              "profileStatus": "disabled",
+              "timingSource": "output-observation",
+              "totalMs": 183.8565000000017,
+              "wallMs": 183.8565000000017,
+              "inputSha256": "e65f5e4147a18b7c18cb1ad9fe62d3110877aac73414412f4d2de523a8cc0fac"
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 131916632,
+                "rssBytes": 699351040,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 291.81445800000074,
+                "wallMs": 291.81445800000074,
+                "inputSha256": "9aaf34972138b97f15deb223e6180963ffb2f5e3f3e232e913d7ca0a0b1f0e60"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 132432312,
+                "rssBytes": 700841984,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 211.75425000000178,
+                "wallMs": 211.75425000000178,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 133237392,
+                "rssBytes": 702038016,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 156.5590000000011,
+                "wallMs": 156.5590000000011,
+                "inputSha256": "6b93e85c7c09b33f05a3e7d2fd38e34811c2dd777e498317c37e69b61662f271"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 133746448,
+                "rssBytes": 703496192,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 237.47208300000057,
+                "wallMs": 237.47208300000057,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 134475936,
+                "rssBytes": 705232896,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 291.059916000002,
+                "wallMs": 291.059916000002,
+                "inputSha256": "e1d815b60a8d7b4239d53168579c4b8f6b6fd4456d4606425183e372f2931264"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 135085648,
+                "rssBytes": 706510848,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 208.7413749999978,
+                "wallMs": 208.7413749999978,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 135889968,
+                "rssBytes": 708542464,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 187.68766700000197,
+                "wallMs": 187.68766700000197,
+                "inputSha256": "18eb32b5bb825038f9f0bb24139dd4acc7c97964fd713ea5832dc987c051ad50"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 136436752,
+                "rssBytes": 709492736,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.7217500000006,
+                "wallMs": 210.7217500000006,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 137143648,
+                "rssBytes": 712392704,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 289.03191700000025,
+                "wallMs": 289.03191700000025,
+                "inputSha256": "922db385b104c9a80c6ad31d971686d6d7bb01596533961e44d1dbaa967bfd2a"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 137683576,
+                "rssBytes": 714276864,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 209.1944590000021,
+                "wallMs": 209.1944590000021,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 138444960,
+                "rssBytes": 716554240,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 288.9324160000033,
+                "wallMs": 288.9324160000033,
+                "inputSha256": "5e5606f8e55f5d5b6ac39ddda2e19f6d6ec38da2059957be71f22457966660ef"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 138932808,
+                "rssBytes": 719142912,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 209.4226669999989,
+                "wallMs": 209.4226669999989,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 139699144,
+                "rssBytes": 720650240,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.06500000000233,
+                "wallMs": 183.06500000000233,
+                "inputSha256": "2f693499cd26529c426478c0f376f0100099f11e18680751fc7f04ff464773c5"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 140195104,
+                "rssBytes": 722452480,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 209.3177080000023,
+                "wallMs": 209.3177080000023,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 140935608,
+                "rssBytes": 724598784,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.00754099999904,
+                "wallMs": 183.00754099999904,
+                "inputSha256": "b448c4febcfd5908e1f62e80a55907ca02bf01a3ce93d5885f806821c3613e86"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 141459320,
+                "rssBytes": 726794240,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 210.9931669999969,
+                "wallMs": 210.9931669999969,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 142192504,
+                "rssBytes": 728858624,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 288.3090000000011,
+                "wallMs": 288.3090000000011,
+                "inputSha256": "58216a9e10e831923181d809038108cc9b4dc84b939e7a9b9aac9e882c4a1a39"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 142683656,
+                "rssBytes": 731348992,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 208.6097919999993,
+                "wallMs": 208.6097919999993,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 143408800,
+                "rssBytes": 734789632,
+                "phase": "edit",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 183.8565000000017,
+                "wallMs": 183.8565000000017,
+                "inputSha256": "e65f5e4147a18b7c18cb1ad9fe62d3110877aac73414412f4d2de523a8cc0fac"
+              },
+              "restore": {
+                "file": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue",
+                "heapUsedBytes": 143906480,
+                "rssBytes": 736493568,
+                "phase": "restore",
+                "profileStatus": "disabled",
+                "timingSource": "output-observation",
+                "totalMs": 212.14224999999715,
+                "wallMs": 212.14224999999715,
+                "inputSha256": "a85dc5da22b737992c5325b8eab73b2d212a814616896a5504dc28707ef6bf56"
+              }
+            }
+          ],
+          "sourceFile": ".cache/profile-paired-workspaces/weapp-vite-wevu-template/src/pages/index/index.vue"
+        }
+      ],
+      "startupMs": 1301.0337920000002,
+      "devLog": "logs/weapp-vite-wevu-template.dev.log"
+    }
+  ],
+  "timeoutMs": 30000
+}

@@ -38,6 +38,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     entryChunkLifecycle,
   } = useLoadEntry(ctx, {
     buildTarget,
+    isSubPackage: Boolean(subPackageMeta),
     hmr: {
       sharedChunks: hmrSharedChunksMode,
       sharedChunkImporters: hmrSharedChunkImporters,

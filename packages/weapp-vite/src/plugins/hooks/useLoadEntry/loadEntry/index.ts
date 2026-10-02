@@ -414,6 +414,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       }
     }
 
+    const declaredJson = cloneJsonValue(json)
     const entries: string[] = []
     const explicitEntryTypes = new Map<string, Entry['type']>()
     let templatePath = ''
@@ -751,6 +752,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       type,
       path: id,
       json,
+      declaredJson,
       ...(jsonPath ? { jsonPath } : {}),
       ...(templatePath ? { templatePath } : {}),
     } as Entry)

@@ -1,0 +1,725 @@
+{
+  "schemaVersion": 1,
+  "engine": "weapp-modes",
+  "measurementScope": "full weapp build; production bytes after mode/cache transitions, not live edit HMR latency",
+  "report": [
+    {
+      "name": "weapp-mode-cache-equivalence-empty-true",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 1133.273458,
+          "measurement": {
+            "elapsedMs": 530.105208,
+            "process": {
+              "memory": {
+                "rss": 525860864,
+                "heapTotal": 354762752,
+                "heapUsed": 226692456,
+                "external": 49628775,
+                "arrayBuffers": 10804202
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1097.28875,
+          "elapsedMs": 2230.665666
+        },
+        {
+          "step": 1,
+          "label": "production to dev to production",
+          "status": "passed",
+          "incrementalMs": 328.0832499999997,
+          "measurement": {
+            "elapsedMs": 327.6796669999999,
+            "process": {
+              "memory": {
+                "rss": 551583744,
+                "heapTotal": 310067200,
+                "heapUsed": 154074120,
+                "external": 40627042,
+                "arrayBuffers": 9033806
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1119.1036669999999,
+          "elapsedMs": 1447.2286669999999
+        },
+        {
+          "step": 2,
+          "label": "dev to production with changed shared chunk",
+          "status": "passed",
+          "incrementalMs": 208.12437499999987,
+          "measurement": {
+            "elapsedMs": 207.743833,
+            "process": {
+              "memory": {
+                "rss": 560054272,
+                "heapTotal": 310558720,
+                "heapUsed": 185138808,
+                "external": 40829618,
+                "arrayBuffers": 9236382
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1108.4157920000002,
+          "elapsedMs": 1316.5700829999996
+        },
+        {
+          "step": 3,
+          "label": "move a used component",
+          "status": "passed",
+          "incrementalMs": 215.6002499999995,
+          "measurement": {
+            "elapsedMs": 215.20150000000012,
+            "process": {
+              "memory": {
+                "rss": 565575680,
+                "heapTotal": 290897920,
+                "heapUsed": 194726168,
+                "external": 40869795,
+                "arrayBuffers": 9272477
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1127.7099589999998,
+          "elapsedMs": 1343.3307910000003
+        },
+        {
+          "step": 4,
+          "label": "remove the moved component",
+          "status": "passed",
+          "incrementalMs": 180.45979199999965,
+          "measurement": {
+            "elapsedMs": 180.0654999999997,
+            "process": {
+              "memory": {
+                "rss": 569720832,
+                "heapTotal": 291717120,
+                "heapUsed": 165387912,
+                "external": 40696939,
+                "arrayBuffers": 9099698
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1125.7142080000003,
+          "elapsedMs": 1306.1962919999996
+        },
+        {
+          "step": 5,
+          "label": "move subpackage and its page",
+          "status": "passed",
+          "incrementalMs": 202.19325000000026,
+          "measurement": {
+            "elapsedMs": 201.7696249999999,
+            "process": {
+              "memory": {
+                "rss": 574717952,
+                "heapTotal": 297222144,
+                "heapUsed": 165256424,
+                "external": 40839687,
+                "arrayBuffers": 9242446
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1101.2318750000013,
+          "elapsedMs": 1303.4478749999998
+        },
+        {
+          "step": 6,
+          "label": "remove subpackage and chunk dependency",
+          "status": "passed",
+          "incrementalMs": 132.78108300000167,
+          "measurement": {
+            "elapsedMs": 132.37562499999876,
+            "process": {
+              "memory": {
+                "rss": 578224128,
+                "heapTotal": 297222144,
+                "heapUsed": 161250424,
+                "external": 40823090,
+                "arrayBuffers": 9225879
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1093.0116669999989,
+          "elapsedMs": 1225.8100410000006
+        },
+        {
+          "step": 7,
+          "label": "restore old production cache before rebuilding changed topology",
+          "status": "passed",
+          "incrementalMs": 71.7489999999998,
+          "measurement": {
+            "elapsedMs": 71.41412499999933,
+            "process": {
+              "memory": {
+                "rss": 580698112,
+                "heapTotal": 297451520,
+                "heapUsed": 184679576,
+                "external": 41003413,
+                "arrayBuffers": 9405376
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1078.6786250000005,
+          "elapsedMs": 1150.439875
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    },
+    {
+      "name": "weapp-mode-cache-equivalence-empty-false",
+      "steps": [
+        {
+          "step": 0,
+          "label": "initial",
+          "status": "passed",
+          "incrementalMs": 1110.2202500000003,
+          "measurement": {
+            "elapsedMs": 515.9470839999999,
+            "process": {
+              "memory": {
+                "rss": 526188544,
+                "heapTotal": 354238464,
+                "heapUsed": 226862440,
+                "external": 49627777,
+                "arrayBuffers": 10803204
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1115.2783750000017,
+          "elapsedMs": 2225.519708
+        },
+        {
+          "step": 1,
+          "label": "production to dev to production",
+          "status": "passed",
+          "incrementalMs": 314.0486669999991,
+          "measurement": {
+            "elapsedMs": 313.63949999999977,
+            "process": {
+              "memory": {
+                "rss": 548585472,
+                "heapTotal": 307445760,
+                "heapUsed": 154541200,
+                "external": 40637710,
+                "arrayBuffers": 9044474
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1107.6434579999986,
+          "elapsedMs": 1421.7109999999993
+        },
+        {
+          "step": 2,
+          "label": "dev to production with changed shared chunk",
+          "status": "passed",
+          "incrementalMs": 195.73320799999965,
+          "measurement": {
+            "elapsedMs": 195.3748340000002,
+            "process": {
+              "memory": {
+                "rss": 557531136,
+                "heapTotal": 307937280,
+                "heapUsed": 183033976,
+                "external": 40830228,
+                "arrayBuffers": 9236992
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1118.2085420000021,
+          "elapsedMs": 1313.9608329999992
+        },
+        {
+          "step": 3,
+          "label": "move a used component",
+          "status": "passed",
+          "incrementalMs": 206.46608299999934,
+          "measurement": {
+            "elapsedMs": 206.07741700000042,
+            "process": {
+              "memory": {
+                "rss": 563953664,
+                "heapTotal": 293519360,
+                "heapUsed": 195225704,
+                "external": 40881221,
+                "arrayBuffers": 9283903
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1102.5161660000012,
+          "elapsedMs": 1309.0104580000007
+        },
+        {
+          "step": 4,
+          "label": "remove the moved component",
+          "status": "passed",
+          "incrementalMs": 177.1974169999994,
+          "measurement": {
+            "elapsedMs": 176.83216599999923,
+            "process": {
+              "memory": {
+                "rss": 567230464,
+                "heapTotal": 293814272,
+                "heapUsed": 165962472,
+                "external": 40703078,
+                "arrayBuffers": 9105837
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1103.9824580000022,
+          "elapsedMs": 1281.1991249999992
+        },
+        {
+          "step": 5,
+          "label": "move subpackage and its page",
+          "status": "passed",
+          "incrementalMs": 180.9805419999975,
+          "measurement": {
+            "elapsedMs": 180.6040840000005,
+            "process": {
+              "memory": {
+                "rss": 571375616,
+                "heapTotal": 297484288,
+                "heapUsed": 165366776,
+                "external": 40842851,
+                "arrayBuffers": 9245610
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1122.3555000000015,
+          "elapsedMs": 1303.3603750000002
+        },
+        {
+          "step": 6,
+          "label": "remove subpackage and chunk dependency",
+          "status": "passed",
+          "incrementalMs": 129.02725000000282,
+          "measurement": {
+            "elapsedMs": 128.65283299999828,
+            "process": {
+              "memory": {
+                "rss": 573128704,
+                "heapTotal": 297484288,
+                "heapUsed": 161285640,
+                "external": 40826461,
+                "arrayBuffers": 9229250
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1083.0692079999972,
+          "elapsedMs": 1212.1140410000007
+        },
+        {
+          "step": 7,
+          "label": "restore old production cache before rebuilding changed topology",
+          "status": "passed",
+          "incrementalMs": 68.33100000000195,
+          "measurement": {
+            "elapsedMs": 67.90458299999955,
+            "process": {
+              "memory": {
+                "rss": 575275008,
+                "heapTotal": 297713664,
+                "heapUsed": 184963880,
+                "external": 41018692,
+                "arrayBuffers": 9420609
+              },
+              "resources": {
+                "CloseReq": 1,
+                "PipeWrap": 3
+              },
+              "processListeners": {
+                "newListener": 4,
+                "removeListener": 3,
+                "warning": 1,
+                "internalMessage": 1,
+                "SIGHUP": 1,
+                "SIGINT": 1,
+                "SIGTERM": 2,
+                "SIGALRM": 1,
+                "SIGABRT": 1,
+                "SIGVTALRM": 1,
+                "SIGXCPU": 1,
+                "SIGXFSZ": 1,
+                "SIGUSR2": 1,
+                "SIGTRAP": 1,
+                "SIGSYS": 1,
+                "SIGQUIT": 1,
+                "SIGIOT": 1,
+                "message": 1
+              }
+            }
+          },
+          "freshMs": 1090.2210000000014,
+          "elapsedMs": 1158.5658750000002
+        }
+      ],
+      "status": "passed",
+      "childrenAfterClose": 0
+    }
+  ]
+}

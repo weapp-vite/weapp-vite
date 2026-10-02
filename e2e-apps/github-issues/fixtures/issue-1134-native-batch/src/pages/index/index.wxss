@@ -1,0 +1,5 @@
+.batch {
+  --batch-marker: 'BATCH_BASE';
+
+  color: #123;
+}

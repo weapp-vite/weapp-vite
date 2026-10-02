@@ -12,15 +12,18 @@ import {
 } from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
+import { isCSSRequest } from '../utils/regexp'
 import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processing/watch'
 import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import {
+  createSidecarSourceSpecifier,
   parseLogicalEntryId,
   parseSidecarModuleId,
   parseSidecarSourceRequest,
   resolveVirtualModuleId,
 } from './protocol'
+import { normalizeSourceId } from './traversal'
 
 const DEV_EXTERNAL_PREFIX = '\0weapp-vite:module-graph-external:'
 
@@ -170,6 +173,12 @@ export function createDevModuleGraphPlugin(
       }
       const sidecar = parseSidecarModuleId(id)
       if (sidecar) {
+        if (sidecar.kind === 'style') {
+          // 此宿主仅分析依赖，不发射小程序产物。交由 Vite CSS 管线登记嵌套
+          // import、预处理器和 PostCSS 依赖，避免 raw 字符串截断样式模块图。
+          const source = createSidecarSourceSpecifier(sidecar.ownerId, sidecar.sourceId, 'style')
+          return `import ${JSON.stringify(source)};\nexport default ${JSON.stringify(sidecar.sourceId)};\n`
+        }
         return createSidecarModuleCode(sidecar.ownerId, sidecar.sourceId, sidecar.kind)
       }
       const sidecarSource = parseSidecarSourceRequest(id)
@@ -182,6 +191,11 @@ export function createDevModuleGraphPlugin(
       return null
     },
     async transform(code, id) {
+      if (isCSSRequest(id) && !id.startsWith('\0')) {
+        // CSS 本身始终是转换输入。Vite 在本轮没有 watch 声明时不会替换 CSS
+        // 依赖集合，因此保留源码声明，让最后一个外部依赖移除后也由 Vite 清理旧边。
+        this.addWatchFile(normalizeSourceId(id))
+      }
       for (const dependency of ctx.moduleGraphService.getTransformDependencies?.(id) ?? []) {
         this.addWatchFile(dependency)
       }

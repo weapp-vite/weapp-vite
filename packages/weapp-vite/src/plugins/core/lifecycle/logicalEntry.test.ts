@@ -115,6 +115,58 @@ describe('core logical entry lifecycle', () => {
     expect(state.ctx.moduleGraphService.replaceEntryDependencies).toHaveBeenCalledWith(sourceId, 'using-component', [])
   })
 
+  it.each(['jsx', 'tsx', 'vue'])('keeps compiler-discovered components out of the %s logical wrapper', async (extension) => {
+    const sourceId = `/project/src/pages/home/index.${extension}`
+    const declared = '/project/src/components/declared.vue'
+    const discovered = '/project/src/components/discovered.vue'
+    const entry = {
+      type: 'page',
+      path: sourceId,
+      declaredJson: { usingComponents: { declared } },
+      json: { usingComponents: { declared } } as { usingComponents: Record<string, string> },
+    }
+    let pending: Array<{ kind: string, sourceId: string }> = []
+    findCssEntryMock.mockResolvedValue({ path: undefined, predictions: [] })
+    const state = {
+      resolvedEntryMap: new Map(),
+      entriesMap: new Map([['pages/home/index', entry]]),
+      loadEntry: vi.fn(),
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          isDev: true,
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+        },
+        moduleGraphService: {
+          bindPluginContext: vi.fn(),
+          getEntryDependencies: () => pending,
+          replaceEntryDependencies: vi.fn(),
+        },
+        runtimeState: { build: { hmr: { externalComponentEntryMap: new Map([
+          [declared.slice(1).replace(/\.vue$/, ''), declared],
+          [discovered.slice(1).replace(/\.vue$/, ''), discovered],
+        ]) } } },
+      },
+    }
+    const pluginContext = { addWatchFile: vi.fn(), resolve: vi.fn(async (id: string) => ({ id })) }
+    const load = createLogicalEntryLoadHook(state as any)
+    const id = createLogicalEntryId(sourceId, 'page')
+    const initial = await load.call(pluginContext as any, id)
+    expect(initial?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, declared, 'using-component')))
+    // 源码编译后的自动导入结果不能在下次读取元数据时提升为包装模块依赖。
+    entry.json = { usingComponents: { declared, discovered } }
+    pending = [
+      { kind: 'using-component', sourceId: discovered },
+      { kind: 'json', sourceId: '/project/src/app.json' },
+    ]
+    const updated = await load.call(pluginContext as any, id)
+    expect(updated?.code).toBe(initial?.code)
+    entry.declaredJson = { usingComponents: { declared: discovered } }
+    const changedDeclaration = await load.call(pluginContext as any, id)
+    expect(changedDeclaration?.code).toContain(JSON.stringify(createSidecarModuleId(sourceId, discovered, 'using-component')))
+    expect(changedDeclaration?.code).not.toContain(JSON.stringify(createSidecarModuleId(sourceId, declared, 'using-component')))
+  })
+
   it('models a Vue physical source through the script sidecar protocol', async () => {
     const sourceId = '/project/src/pages/home/index.vue'
     findCssEntryMock.mockResolvedValue({ path: undefined, predictions: [] })

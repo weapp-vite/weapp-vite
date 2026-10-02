@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
+import { createNativeTopologyFiles } from './test/helpers/nativeTopology'
 import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
 import { createRuntimePruningFiles } from './test/helpers/runtimePruning'
 import { createRuntimePublicFactoryFiles } from './test/helpers/runtimePublicFactory'
@@ -37,6 +38,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), {
     name: 'stateful-native-component-fixture',
     resolveId(id) {
+      if (id === 'virtual:native-topology-fixture') {
+        return `\0${id}`
+      }
       if (id === 'virtual:stateful-batch-delivery-fixture') {
         return `\0${id}`
       }
@@ -54,6 +58,9 @@ export default defineConfig({
       }
     },
     async load(id) {
+      if (id === '\0virtual:native-topology-fixture') {
+        return `export default ${JSON.stringify(createNativeTopologyFiles())}`
+      }
       if (id === '\0virtual:stateful-batch-delivery-fixture') {
         return `export default ${JSON.stringify(createStatefulBatchDeliveryFiles())}`
       }

@@ -1,0 +1,149 @@
+{
+  "commit": "9f3c9ab03e51971df10c2cb068d6f7bea6749760",
+  "cleanCheckout": true,
+  "node": "v24.18.0",
+  "matchedInputSamples": 90,
+  "matrix": [
+    {
+      "scenario": "native-script",
+      "classic": {
+        "editWallMedianMs": 181.9814590000001,
+        "restoreWallMedianMs": 233.26350000000002,
+        "editChangedBytesMedian": 219,
+        "overBudget": false
+      },
+      "stateful": {
+        "editWallMedianMs": 186.61279100000002,
+        "restoreWallMedianMs": 103.29362499999979,
+        "editChangedBytesMedian": 3546,
+        "overBudget": false
+      }
+    },
+    {
+      "scenario": "native-template",
+      "classic": {
+        "editWallMedianMs": 288.1180000000004,
+        "restoreWallMedianMs": 209.97420899999997,
+        "editChangedBytesMedian": 135,
+        "overBudget": false
+      },
+      "stateful": {
+        "editWallMedianMs": 407.259,
+        "restoreWallMedianMs": 373.3486249999987,
+        "editChangedBytesMedian": 135,
+        "overBudget": false
+      }
+    },
+    {
+      "scenario": "plain-wxss",
+      "classic": {
+        "editWallMedianMs": 290.682041,
+        "restoreWallMedianMs": 210.80141600000024,
+        "editChangedBytesMedian": 109,
+        "overBudget": false
+      },
+      "stateful": {
+        "editWallMedianMs": 323.62054200000057,
+        "restoreWallMedianMs": 351.4697500000002,
+        "editChangedBytesMedian": 2483,
+        "overBudget": false
+      }
+    },
+    {
+      "scenario": "import-chain-wxss",
+      "classic": {
+        "editWallMedianMs": 289.5575830000016,
+        "restoreWallMedianMs": 314.44566699999996,
+        "editChangedBytesMedian": 119,
+        "overBudget": false
+      },
+      "stateful": {
+        "editWallMedianMs": 326.8550409999989,
+        "restoreWallMedianMs": 352.6133750000008,
+        "editChangedBytesMedian": 2493,
+        "overBudget": false
+      }
+    },
+    {
+      "scenario": "scss",
+      "classic": {
+        "editWallMedianMs": 393.9680410000001,
+        "restoreWallMedianMs": 341.2270000000026,
+        "editChangedBytesMedian": 105,
+        "overBudget": false
+      },
+      "stateful": {
+        "editWallMedianMs": 402.6398749999971,
+        "restoreWallMedianMs": 346.5567919999994,
+        "editChangedBytesMedian": 2480,
+        "overBudget": false
+      }
+    },
+    {
+      "scenario": "tailwind-content",
+      "classic": {
+        "editWallMedianMs": 421.04049999999916,
+        "restoreWallMedianMs": 445.97033400000146,
+        "editChangedBytesMedian": 2406,
+        "overBudget": false
+      },
+      "stateful": {
+        "editWallMedianMs": 436.1643330000006,
+        "restoreWallMedianMs": 351.8970420000005,
+        "editChangedBytesMedian": 12158,
+        "overBudget": false
+      }
+    },
+    {
+      "scenario": "local-json",
+      "classic": {
+        "editWallMedianMs": 414.64095799999996,
+        "restoreWallMedianMs": 469.61762499999895,
+        "editChangedBytesMedian": 92,
+        "overBudget": false
+      },
+      "stateful": {
+        "editWallMedianMs": 428.4236250000031,
+        "restoreWallMedianMs": 349.5118750000038,
+        "editChangedBytesMedian": 92,
+        "overBudget": false
+      }
+    },
+    {
+      "scenario": "component-topology-json",
+      "classic": {
+        "editWallMedianMs": 708.9243339999957,
+        "restoreWallMedianMs": 679.8761250000025,
+        "editChangedBytesMedian": 415,
+        "overBudget": true
+      },
+      "stateful": {
+        "editWallMedianMs": 1081.0405829999945,
+        "restoreWallMedianMs": 1099.8834160000042,
+        "editChangedBytesMedian": 215845,
+        "overBudget": true
+      }
+    },
+    {
+      "scenario": "route-topology-json",
+      "classic": {
+        "editWallMedianMs": 865.627999999997,
+        "restoreWallMedianMs": 759.7139159999933,
+        "editChangedBytesMedian": 591,
+        "overBudget": true
+      },
+      "stateful": {
+        "editWallMedianMs": 1098.559957999998,
+        "restoreWallMedianMs": 1149.9100830000025,
+        "editChangedBytesMedian": 202373,
+        "overBudget": true
+      }
+    }
+  ],
+  "limitations": [
+    "顺序采样，未随机交替或独立重复，不声称加速或无需优化",
+    "stateful 内部 profile 不可用，保留 unavailable-stateful，仅比较外部 wall",
+    "outputChanges 描述磁盘字节差异，不等于实际 write 调用或全部转换成本",
+    "未优化基线导入链和拓扑场景功能失败，不能将超时当作基线性能"
+  ]
+}

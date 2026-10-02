@@ -577,6 +577,8 @@ export default defineConfig({
 
 - `logLevel: 'default' | 'concise' | 'verbose'` 控制终端诊断详细程度。
 - `profileJson: boolean | string` 控制是否输出 JSONL profile，字符串表示自定义输出路径。
+- JSONL v1 保留旧字段，增加 `sessionId` / `buildId` / `batchId` / `sourceEvents` 与时钟来源；按来源精确匹配编辑。失败记录只有 `elapsedMs`；无受影响入口的批次以 `incomplete` / `reason: no-affected-entries` 结束观测，不污染后续构建。未知版本、未完成或缺失阶段不能按零耗时统计。`buildCoreMs` 是残差估算，阶段可能重叠。
+- `analyze --hmr-profile --json` 的 `inputCoverage` 提供输入覆盖计数；旧版无版本记录仍兼容，未关联样本不归给当前编辑。
 
 ### `mcp`
 
@@ -903,3 +905,11 @@ export default defineConfig({
 `weapp.analyze.budgets.runtimeBytes` 限制包含 runtime 模块的文件字节上界（包含混合 chunk 的业务部分）；`packageBytes` 按分包 root 覆盖单包预算，主包键为 `__main__`。超限或缺少归因时 `--budget-check` 返回非零。
 
 `estimatedBytes` 是按打包器长度分摊的模块估算，`unattributedBytes` 显式保留未知部分。单份共享文件计一次，真正的分包副本分别计入总包；runtime 和重复模块估算不能再加到总包上。旧的无版本报告仍保留兼容读取，但不能作为新 runtime 预算通过证据。
+
+## 构建目录与外部缓存
+
+默认清理策略适合构建器独占的输出目录。共享目录使用 `build.emptyOutDir: false` 时，构建上下文只清理它已登记的旧产物，不能删除新进程开始前由其他工具或外部缓存写入的未知文件。
+
+推荐 dev 输出到独立目录，Turbo 只缓存生产目录，dev 任务设置 `cache: false`、`persistent: true`。必须共用目录时，由缓存集成持久记录成功构建的 emitted 文件清单与内容摘要，恢复及清理仅针对该任务拥有的文件；用户改写或同名冲突必须保留并报告。不要把无条件清空输出目录加入 HMR 兜底逻辑。最终构建产物仍由 Vite/Rolldown emit/write 持久化。
+
+仓库组合回归入口为 `pnpm verify:edit-sequence --engine weapp-modes --report .tmp/output-mode-sequence.json`，运行前重建 weapp-vite。它逐步比较模式切换、组件/页面/分包拓扑变化和旧缓存恢复后的完整生产文件，与独立进程基线按字节核对；共享目录额外检查用户文件保护。此项不是真实 IDE runtime 验收。

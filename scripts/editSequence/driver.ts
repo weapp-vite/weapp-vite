@@ -1,3 +1,4 @@
+import type { SequenceMeasurement, SequenceStepResult } from './measurement'
 import { Buffer } from 'node:buffer'
 
 export type EditAction
@@ -23,6 +24,8 @@ export interface SequenceInput {
 
 export interface SequenceObserver<T> {
   name: string
+  measure?: () => SequenceMeasurement | undefined
+  resources?: () => { children: number }
   incremental: (input: SequenceInput) => Promise<T>
   fresh: (input: SequenceInput) => Promise<T>
   close: () => Promise<void>
@@ -147,7 +150,7 @@ export async function bounded<T>(operation: () => Promise<T>, signal: AbortSigna
 export async function verifyEditSequence<T>(
   sequence: EditSequence,
   observer: SequenceObserver<T>,
-  options: { maxSteps?: number, maxFiles?: number, maxBytes?: number, maxSaves?: number, timeoutMs?: number, compare?: SequenceComparator<T> } = {},
+  options: { maxSteps?: number, maxFiles?: number, maxBytes?: number, maxSaves?: number, timeoutMs?: number, compare?: SequenceComparator<T>, onStep?: (result: SequenceStepResult) => void } = {},
 ): Promise<void> {
   const { maxSteps = 24, maxFiles = 64, maxBytes = 256 * 1024, maxSaves = 16, timeoutMs = 60_000, compare = firstDifference } = options
   if (sequence.steps.length > maxSteps) {
@@ -182,19 +185,30 @@ export async function verifyEditSequence<T>(
       }
       const input = { files: { ...files }, step, action: current?.action, signal }
       const replay = { ...sequence, steps: sequence.steps.slice(0, step) }
+      const stepResult: SequenceStepResult = { step, label: current?.name ?? 'initial', status: 'failed' }
+      const startedAt = performance.now()
       try {
         const incremental = await bounded(() => observer.incremental(input), signal)
+        stepResult.incrementalMs = performance.now() - startedAt
+        stepResult.measurement = observer.measure?.()
+        const freshStartedAt = performance.now()
         const fresh = await bounded(() => observer.fresh(input), signal)
+        stepResult.freshMs = performance.now() - freshStartedAt
         const difference = compare(incremental, fresh)
         if (difference) {
           throw new EditSequenceDivergence(sequence.name, observer.name, step, current?.name ?? 'initial', difference, replay)
         }
+        stepResult.status = 'passed'
       }
       catch (error) {
         if (error instanceof EditSequenceDivergence) {
           throw error
         }
         throw new Error(`${sequence.name}: ${observer.name}: step ${step} (${current?.name ?? 'initial'}) failed before comparison\\n${JSON.stringify({ replay }, null, 2)}`, { cause: error })
+      }
+      finally {
+        stepResult.elapsedMs = performance.now() - startedAt
+        options.onStep?.(stepResult)
       }
     }
   }

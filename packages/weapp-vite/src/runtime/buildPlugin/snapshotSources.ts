@@ -9,6 +9,7 @@ import { configSuffixes } from '../../plugins/utils/invalidateEntry/shared'
 import { isTemplate } from '../../utils'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
 import { resolveScanAppBasename } from '../scanPlugin/service'
+import { hasEntryTopologyChange } from './entryTopology'
 
 function isAppConfigSource(ctx: MutableCompilerContext, file: string) {
   const appBasename = normalizeFsResolvedId(resolveScanAppBasename(ctx.configService!.absoluteSrcRoot))
@@ -28,6 +29,11 @@ export async function refreshSnapshotSources(
   }
   for (const file of changedFiles.keys()) {
     invalidateFileCache(file)
+  }
+  const entryTopologyChanged = await hasEntryTopologyChange(ctx, changedFiles.keys())
+  if (entryTopologyChanged) {
+    // options 钩子先于 buildStart 读取页面 input，必须先撤销扫描快照。
+    ctx.scanService?.markDirty()
   }
   for (const [file, event] of changedFiles) {
     // module-graph provider 直接调度 snapshot 时不会经过 lifecycle watchChange；
@@ -62,5 +68,5 @@ export async function refreshSnapshotSources(
       }
     }
   }
-  return { routeSignature, routeDependentEntries }
+  return { routeSignature, routeDependentEntries, entryTopologyChanged }
 }

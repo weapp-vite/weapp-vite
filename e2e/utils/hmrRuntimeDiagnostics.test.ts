@@ -20,7 +20,7 @@ describe('HMR runtime diagnostics', () => {
     vi.stubGlobal('__WEAPP_VITE_STATEFUL_HMR_CONTROL__', { token: 'private-token', url: 'private-url' })
     vi.stubGlobal('__WEAPP_VITE_STATEFUL_HMR_CLIENT__', {
       getVersion: () => 3,
-      getTransportState: () => ({ phase: 'polling', lastResponse: { type: 'idle' } }),
+      getTransportState: () => ({ phase: 'polling', lastResponse: { type: 'rebuilding', statusCode: 409 } }),
     })
     const currentPage = vi.fn(async () => ({ pageId: 1 }))
     const diagnostics = createHmrRuntimeDiagnostics({
@@ -29,7 +29,7 @@ describe('HMR runtime diagnostics', () => {
     }, 'fixture')
     await diagnostics.initialize()
     const retained = await diagnostics.capture('same-instance')
-    expect(retained.runtime).toMatchObject({ appMarkerRetained: true, pageMarkerRetained: true, clientVersion: 3 })
+    expect(retained.runtime).toMatchObject({ appMarkerRetained: true, pageMarkerRetained: true, clientVersion: 3, lastResponseType: 'rebuilding', lastResponseStatus: 409 })
     nativePage = { route: 'pages/index/index' }
     const replacedPage = await diagnostics.capture('page-replaced')
     expect(replacedPage.runtime).toMatchObject({ appMarkerRetained: true, pageMarkerRetained: false, appLaunchProbe: 11 })

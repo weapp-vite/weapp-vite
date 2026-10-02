@@ -1,0 +1,1 @@
+{"pages": ["pages/plain/index", "pages/imported/index", "pages/sass/index", "pages/tailwind/index"], "window": {"navigationBarTitleText": "Profile"}, "subPackages": [{"root": "isolated", "independent": true, "pages": ["pages/home/index"]}]}

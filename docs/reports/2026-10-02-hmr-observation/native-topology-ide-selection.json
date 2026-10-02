@@ -1,0 +1,46 @@
+{
+  "queriedAt": "2026-10-02T01:00:12.217130+00:00",
+  "sources": [
+    "https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html",
+    "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/nightly/versions/config.json"
+  ],
+  "stable": {
+    "id": "stable",
+    "name": "稳定版 Stable Build",
+    "name_en": "Stable Build",
+    "version": "2.02.2608080",
+    "date": "2026-09-30",
+    "tags": [
+      {
+        "text": "推荐",
+        "text_en": "Recommended",
+        "color": "green"
+      },
+      {
+        "text": "Stable",
+        "color": "gray"
+      }
+    ],
+    "description": "测试版缺陷收敛后转为稳定版。Stable 版本从 2.02 版本开始基于 Electron 版本进行迭代， 从 1.06 开始不支持Windows7，建议开发者升级Windows版本。",
+    "description_en": "The beta version transitions to the stable version once the defect count has stabilized. Starting with version 2.02, the Stable version is built upon Electron; support for Windows 7 was dropped beginning with version 1.06, so developers are advised to upgrade their Windows version.",
+    "history_file": "history_stable.json",
+    "downloads": [
+      {
+        "os": "Windows",
+        "arch": "64",
+        "url": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/release/be1ec64cf6184b0fa64091919793f068/wechat_devtools_2.02.2608080_win32_x64.exe"
+      },
+      {
+        "os": "macOS",
+        "arch": "x64",
+        "url": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/release/be1ec64cf6184b0fa64091919793f068/wechat_devtools_2.02.2608080_darwin_x64.pkg"
+      },
+      {
+        "os": "macOS",
+        "arch": "ARM64",
+        "url": "https://devtools.wxqcloud.qq.com.cn/WechatWebDev/release/be1ec64cf6184b0fa64091919793f068/wechat_devtools_2.02.2608080_darwin_arm64.pkg"
+      }
+    ]
+  },
+  "installationPackageVersion": "2.02.2608080"
+}
