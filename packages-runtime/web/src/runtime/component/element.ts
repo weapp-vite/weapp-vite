@@ -13,7 +13,7 @@ import type { ClassAttributeElement } from './virtualHost'
 import { WEVU_HOST_COMMIT_PROMISE_KEY, WEVU_HOST_INSTALL_METHOD_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
-import { getComponentAppStyle, subscribeAppStyle } from '../appStyle'
+import { getAppStyle, trackAppStyle } from '../appStyle'
 import { markComponentEvent, registerComponentEventTarget } from '../componentEvents'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
 import { createRenderContext } from '../renderContext'
@@ -30,7 +30,7 @@ import { runComponentObservers } from './observers'
 import { createComponentPublicInstance } from './publicInstance'
 import { resolveRelationNodes } from './relations'
 import { createWebSlotsProxy } from './slots'
-import { assignDataPath, cloneValue, coerceValue, parseDataPath, resolveDataPath, toCamelCase } from './utils'
+import { assignDataPath, cloneCommittedValue, cloneValue, coerceValue, parseDataPath, resolveDataPath, toCamelCase } from './utils'
 import {
   clearVirtualHostClasses,
   clearVirtualHostParts,
@@ -95,7 +95,6 @@ export function createComponentElementClass({
     #needsSetDataRecovery = false
     #hostCommitPromise: Promise<void> | undefined
     #hostCommitUpdate: Promise<boolean> | undefined
-    #stopAppStyle: (() => void) | undefined
     readonly data!: DataRecord
     readonly properties!: DataRecord
 
@@ -126,6 +125,7 @@ export function createComponentElementClass({
         this,
         WeappWebComponent.prototype,
         key => typeof key === 'string' ? this.#methods[key] : undefined,
+        this.#properties,
       )
       for (const [propName] of runtimeState.propertyEntries) {
         Object.defineProperty(this, propName, {
@@ -192,10 +192,14 @@ export function createComponentElementClass({
       })))
     }
 
-    [WEVU_HOST_INSTALL_METHOD_KEY](name: string, method: (...args: any[]) => any) {
-      const bound = method.bind(this.#publicInstance)
-      this.#setupMethods[name] = bound
-      this.#syncMethods(runtimeState.componentRef.methods ?? {})
+    [WEVU_HOST_INSTALL_METHOD_KEY](methods: Readonly<Record<string, (...args: any[]) => any>>) {
+      const bound: Record<string, (...args: any[]) => any> = {}
+      for (const [name, method] of Object.entries(methods)) {
+        bound[name] = method.bind(this.#publicInstance)
+      }
+      this.#setupMethods = bound
+      this.#syncMethods(runtimeState.componentRef.methods)
+      this.requestUpdate()
     }
 
     createSelectorQuery() {
@@ -238,8 +242,6 @@ export function createComponentElementClass({
 
     connectedCallback() {
       instances.add(this)
-      this.#stopAppStyle?.()
-      this.#stopAppStyle = subscribeAppStyle(() => this.requestUpdate())
       const superConnected = (BaseElement.prototype as { connectedCallback?: () => void }).connectedCallback
       if (supportsLit && typeof superConnected === 'function') {
         superConnected.call(this)
@@ -250,22 +252,17 @@ export function createComponentElementClass({
       }
       runtimeState.lifetimes.attached?.call(this.#publicInstance)
       this.#isMounted = true
-      if (supportsLit) {
-        this.requestUpdate()
-      }
-      else {
-        this.#renderLegacy()
-      }
+      trackAppStyle(this, runtimeState.inheritAppStyle)
+      this.requestUpdate()
     }
 
     disconnectedCallback() {
-      this.#stopAppStyle?.()
-      this.#stopAppStyle = undefined
       const superDisconnected = (BaseElement.prototype as { disconnectedCallback?: () => void }).disconnectedCallback
       if (supportsLit && typeof superDisconnected === 'function') {
         superDisconnected.call(this)
       }
       this.#isMounted = false
+      trackAppStyle(this, false)
       instances.delete(this)
       runtimeState.lifetimes.detached?.call(this.#publicInstance)
     }
@@ -299,19 +296,9 @@ export function createComponentElementClass({
 
     render() {
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
-      const style = this.#resolveStyle()
-      const styleMarkup = style
-        ? html`<style>${style}</style>`
-        : null
-      if (typeof result === 'string') {
-        this.#usesLegacyTemplate = true
-        return html`${styleMarkup}${unsafeHTML(result)}`
-      }
-      this.#usesLegacyTemplate = false
-      if (styleMarkup) {
-        return html`${styleMarkup}${result as any}`
-      }
-      return result
+      const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
+      this.#usesLegacyTemplate = typeof result === 'string'
+      return html`<style>${appStyle}</style><style>${runtimeState.styleRef}</style>${typeof result === 'string' ? unsafeHTML(result) : result}`
     }
 
     requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: unknown) {
@@ -341,16 +328,29 @@ export function createComponentElementClass({
       let changed = false
       const changedKeys: string[] = []
       const previousProperties: DataRecord = {}
+      let copiedContainers: WeakSet<object> | undefined
       for (const [path, value] of Object.entries(patch)) {
         const segments = parseDataPath(path)
         const topKey = segments[0]
-        if (!topKey || topKey === '$slots' || Object.is(resolveDataPath(this.#state, segments), value)) {
+        if (!topKey || topKey === '$slots') {
+          continue
+        }
+        let nextValue = value
+        if (value !== null && typeof value === 'object') {
+          // 整体提交需刷新整个子树，新的外层对象也可能复用已原地修改的后代。
+          // 快照可保留内部别名，路径更新仍需按分支取得写入所有权。
+          nextValue = cloneCommittedValue(value)
+        }
+        else if (Object.is(resolveDataPath(this.#state, segments), value)) {
           continue
         }
         if (hasOwn(this.#properties, topKey) && !hasOwn(previousProperties, topKey)) {
           previousProperties[topKey] = this.#properties[topKey]
         }
-        assignDataPath(this.#state, segments, value)
+        if (segments.length > 1) {
+          copiedContainers ??= new WeakSet<object>()
+        }
+        assignDataPath(this.#state, segments, nextValue, copiedContainers)
         if (hasOwn(this.#properties, topKey)) {
           this.#properties[topKey] = this.#state[topKey]
         }
@@ -427,8 +427,15 @@ export function createComponentElementClass({
         }
       }
       for (const [key, fn] of Object.entries(bound)) {
+        const previous = this.#methods[key]
         this.#methods[key] = fn
-        if (!this.#exposedMethodNames.has(key) && key in this) {
+        if (this.#exposedMethodNames.has(key)) {
+          const descriptor = Object.getOwnPropertyDescriptor(this, key)
+          if (!descriptor?.configurable || descriptor.value !== previous) {
+            continue
+          }
+        }
+        else if (key in this) {
           continue
         }
         Object.defineProperty(this, key, {
@@ -444,6 +451,7 @@ export function createComponentElementClass({
 
     __weappSync(nextMethods: ComponentOptions['methods']) {
       this.#syncMethods(nextMethods)
+      trackAppStyle(this, this.#isMounted && runtimeState.inheritAppStyle)
       this.requestUpdate()
     }
 
@@ -457,8 +465,8 @@ export function createComponentElementClass({
     #renderLegacy() {
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const root = resolveRenderRoot(this)
-      const style = this.#resolveStyle()
-      const styleMarkup = style ? `<style>${style}</style>` : ''
+      const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
+      const styleMarkup = `<style>${appStyle}</style><style>${runtimeState.styleRef}</style>`
       if (typeof result === 'string') {
         root.innerHTML = `${styleMarkup}${result}`
         bindRuntimeEvents(root as ShadowRoot, this.#methods, this)
@@ -491,10 +499,6 @@ export function createComponentElementClass({
         this.#virtualHostRootElement,
         this.#virtualHostPartTokens,
       )
-    }
-
-    #resolveStyle() {
-      return [getComponentAppStyle(runtimeState.componentRef.options), runtimeState.styleRef].filter(Boolean).join('\n')
     }
   }
 

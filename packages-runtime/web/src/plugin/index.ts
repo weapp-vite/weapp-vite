@@ -58,9 +58,9 @@ interface WebResolvedConfig extends WebUserConfig {
   }
 }
 
-interface WebHmrContext {
+interface WebHmrContext<Module extends object = object> {
   file: string
-  modules?: object[]
+  modules?: Module[]
 }
 
 interface WebDevServer {
@@ -88,7 +88,7 @@ interface WeappWebVitePlugin {
     sequential: true
     handler: (this: WebPluginContext, id: string, change: { event: 'create' | 'update' | 'delete' }) => Promise<void>
   }
-  handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void | object[]>
+  handleHotUpdate?: <Module extends object>(this: WebPluginContext, ctx: WebHmrContext<Module>) => Module[] | void | Promise<Module[] | void>
   transform?: (
     this: WebPluginContext,
     code: string,
@@ -507,6 +507,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           uniApp: options.__uniApp,
           stylePreprocessOptions,
         })
+        this.addWatchFile?.(filename)
         for (const dependency of result.meta?.sfcSrcDeps ?? []) {
           this.addWatchFile?.(dependency)
         }
@@ -524,18 +525,20 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         }
       },
     },
-    async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
-      const affectedFiles = collectSfcHmrFiles(state, ctx.file)
-      await scanChangedFile(this, ctx.file)
-      if (affectedFiles.size && devServer?.moduleGraph) {
-        const modules = new Set(ctx.modules ?? [])
-        for (const file of affectedFiles) {
-          for (const module of devServer.moduleGraph.getModulesByFile(file) ?? []) {
-            modules.add(module)
+    async handleHotUpdate<Module extends object>(this: WebPluginContext, ctx: WebHmrContext<Module>) {
+      const graph = devServer?.moduleGraph
+      const affected = new Set(ctx.modules)
+      if (graph) {
+        for (const file of collectSfcHmrFiles(state, cleanUrl(ctx.file))) {
+          // 在扫描替换入口快照前保留旧节点，覆盖外部块删除及样式后缀变更。
+          for (const module of graph.getModulesByFile(file) ?? []) {
+            // 图与本次 HMR 上下文来自同一 Vite server，保留宿主模块节点的具体类型。
+            affected.add(module as Module)
           }
         }
-        return [...modules]
       }
+      await scanChangedFile(this, ctx.file)
+      return ctx.modules || affected.size ? [...affected] : undefined
     },
     async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)

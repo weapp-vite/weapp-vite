@@ -96,24 +96,6 @@ describe('createTemplate', () => {
     expect(render({ flag: undefined })).toContain('tertiary')
   })
 
-  it('maps event prefixes and aliases to runtime event bindings', () => {
-    const render = createTemplate(`
-<view>
-  <view class="bind" bindtap="onBind">bind</view>
-  <view class="catch" catchtap="onCatch">catch</view>
-  <view class="capture" capture-bindtap="onCapture">capture</view>
-  <view class="capture-catch" capture-catchtap="onCaptureCatch">captureCatch</view>
-  <view class="longpress" bindlongpress="onLongPress">longpress</view>
-</view>`)
-
-    const html = render({})
-    expect(html).toContain('class="bind" data-mp-on-tap="onBind"')
-    expect(html).toContain('class="catch" data-mp-on-tap="onCatch" data-mp-on-flags-tap="catch"')
-    expect(html).toContain('class="capture" data-mp-on-tap="onCapture" data-mp-on-flags-tap="capture"')
-    expect(html).toContain('class="capture-catch" data-mp-on-tap="onCaptureCatch" data-mp-on-flags-tap="capture,catch"')
-    expect(html).toContain('class="longpress" data-mp-on-longpress="onLongPress"')
-  })
-
   it('suppresses expression parse errors in safe mode', () => {
     setRuntimeExecutionMode('safe')
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})

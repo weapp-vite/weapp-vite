@@ -22,6 +22,28 @@ export function cloneValue(value: any) {
   return value
 }
 
+export function cloneCommittedValue(value: unknown, snapshots = new WeakMap<object, Record<string, unknown>>()): unknown {
+  if (value === null || typeof value !== 'object') {
+    return value
+  }
+  if (!Array.isArray(value)) {
+    const prototype = Object.getPrototypeOf(value)
+    if (prototype !== Object.prototype && prototype !== null) {
+      return value
+    }
+  }
+  const existing = snapshots.get(value)
+  if (existing) {
+    return existing
+  }
+  const snapshot: Record<string, unknown> = cloneValue(value)
+  snapshots.set(value, snapshot)
+  for (const key of Object.keys(snapshot)) {
+    snapshot[key] = cloneCommittedValue(snapshot[key], snapshots)
+  }
+  return snapshot
+}
+
 export function parseDataPath(path: string) {
   return path
     .replace(ARRAY_INDEX_PATH_RE, '.$1')
@@ -49,7 +71,7 @@ export function resolveDataPath(target: Record<string, any>, segments: string[])
   return current
 }
 
-export function assignDataPath(target: Record<string, any>, segments: string[], value: unknown) {
+export function assignDataPath(target: Record<string, any>, segments: string[], value: unknown, copiedContainers?: WeakSet<object>) {
   if (!segments.length) {
     return
   }
@@ -57,8 +79,15 @@ export function assignDataPath(target: Record<string, any>, segments: string[], 
   for (let index = 0; index < segments.length - 1; index += 1) {
     const segment = normalizePathSegment(segments[index]!)
     const nextSegment = segments[index + 1]
-    if (current[segment] == null || typeof current[segment] !== 'object') {
+    const next = current[segment]
+    if (next == null || typeof next !== 'object') {
       current[segment] = createPathContainer(nextSegment)
+      copiedContainers?.add(current[segment])
+    }
+    else if (!copiedContainers?.has(next)) {
+      // 保留已传给子组件的输入快照，每批只复制一次变更路径上的容器。
+      current[segment] = cloneValue(next)
+      copiedContainers?.add(current[segment])
     }
     current = current[segment]
   }

@@ -39,6 +39,14 @@ Node/browser 宿主提供 `BeforeAppRoute`、`BeforePageUnload`、`AppRoute`、`
 
 测试节点与真实预览点击共用原生 tap 分发：保留原始 `target`，逐层更新 `currentTarget`，遵守 `catchtap/catch:tap`，仅在事件到达 `navigator` 时执行其默认导航。一次交互先确定原始页面/组件归属，业务回调中的销毁、重新渲染或同路由重建不将剩余冒泡发送给新实例。测试节点 `tap()` 仍等待异步业务处理并传递结果或错误；导航的原生默认动作不等待异步业务 Promise。
 
+组件 `triggerEvent` 在 Node/browser 中共用声明树分发：默认只触发宿主直接绑定；`capturePhase: true` 按外到内执行捕获，`bubbles: true` 再按内到外冒泡，`composed: true` 才允许越过声明组件边界。普通视图与组件宿主均参与；`catch` 停止后续冒泡，`capture-catch` 同时阻止后续冒泡阶段。宿主与模板根即使合并渲染，仍保留各自的绑定和声明所有者。
+
+事件保留原始 `detail` 与源组件宿主的 `target.id/dataset`，各监听节点提供自己的 `currentTarget`。一次分发先固定路径和实例所有者，回调中的重渲染或移除不把剩余事件发送给新实例。公开 renderer context 的 `eventBindings` 仍保存原有 `{ method, stopAfter }` 冒泡绑定，捕获绑定独立存放于可选的 `captureEventBindings`。
+
+包根公开的 `collectMiniProgramEventBindings` 与 `resolveMiniProgramEventBinding` 继续返回 `{ method, stopAfter }` 冒泡绑定；只有捕获绑定时，公开 resolver 仍返回 `null`。内部的分阶段解析不会改变这些既有调用者的返回类型或优先级规则。
+
+上述默认、仅捕获、局部冒泡、跨组件冒泡与宿主两种 catch 边界已对照微信开发者工具稳定版 `2.02.2608080`，并覆盖同一 issue runtime suite 的 headless provider 和实际浏览器预览。此对照不扩展为原生 tap、scroll、video 的捕获支持，也不表示已验证同节点 Vue 内联捕获/冒泡处理函数的编译语义。
+
 ## 分块请求 mock
 
 `session.mockRequest()` 支持为 `enableChunked: true` 的请求声明分块，默认仍不访问网络：

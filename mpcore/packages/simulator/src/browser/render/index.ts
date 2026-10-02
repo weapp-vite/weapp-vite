@@ -8,6 +8,7 @@ import { flushComponentAttachments, flushComponentReady, hasPendingComponentAtta
 import { flushDiscardedComponentReady, scheduleDiscardedComponentReady } from '../../runtime/componentInstance/discardedReady'
 import { syncComponentRelations } from '../../runtime/componentInstance/relations'
 import { isPageBeforeReady } from '../../runtime/pageLifecycle'
+import { mergeComponentEventRoot, registerComponentEventNode } from '../../view/componentEvent'
 import { selectConditionalChildren } from '../../view/conditionalChildren'
 import { customTabBarHostScope, customTabBarScopeId, hasCustomTabBar } from '../../view/customTabBar'
 import { resolveLoopEntries } from '../../view/loopEntries'
@@ -67,6 +68,7 @@ function renderNodeVariants(
   instancePath: string,
   seenComponentScopes: Set<string>,
   templateRenderState: TemplateRenderState<DomNodeLike>,
+  parent: DomNodeLike,
 ) {
   // eslint-disable-next-line ts/no-use-before-define
   return expandNodeByFor(node, scope).map(({ node: expandedNode, scope: expandedScope, instanceSuffix }) => renderNodeTree(
@@ -78,6 +80,7 @@ function renderNodeVariants(
     `${instancePath}${instanceSuffix}`,
     seenComponentScopes,
     templateRenderState,
+    parent,
   ))
 }
 
@@ -90,12 +93,13 @@ function renderChildren(
   instancePath: string,
   seenComponentScopes: Set<string>,
   templateRenderState: TemplateRenderState<DomNodeLike>,
+  parent: DomNodeLike,
 ) {
   const renderedChildren: DomNodeLike[] = []
 
   for (const { node: child, index } of selectConditionalChildren(children, node => evaluateConditionalBranch(node, scope))) {
     if (!isTagNode(child)) {
-      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState))
+      renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState, parent))
       continue
     }
 
@@ -103,7 +107,7 @@ function renderChildren(
       continue
     }
 
-    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState))
+    renderedChildren.push(...renderNodeVariants(child, scope, context, ownerJsonPath, ownerFilePath, `${instancePath}/node-${index}`, seenComponentScopes, templateRenderState, parent))
   }
 
   return renderedChildren
@@ -163,23 +167,23 @@ function renderNodeTree(
   instancePath: string,
   seenComponentScopes: Set<string>,
   templateRenderState: TemplateRenderState<DomNodeLike>,
+  parent?: DomNodeLike,
 ): DomNodeLike {
   if (scope.wxs !== templateRenderState.wxsModules) {
     scope = { ...scope, wxs: templateRenderState.wxsModules }
   }
   const clonedNode = cloneNode(node)
+  registerComponentEventNode(clonedNode, scope, parent)
   if (!isTagNode(clonedNode)) {
     applyNodeBindings(clonedNode, scope)
     return clonedNode
   }
 
   if (isTemplateDefinition(clonedNode)) {
-    return {
-      type: 'tag',
-      name: 'block',
-      attribs: {},
-      children: [],
-    }
+    clonedNode.name = 'block'
+    clonedNode.attribs = {}
+    clonedNode.children = []
+    return clonedNode
   }
 
   const templateName = resolveTemplateCall(clonedNode, wxsScopeData(scope))
@@ -190,7 +194,12 @@ function renderNodeTree(
       data: resolveTemplateData(clonedNode, wxsScopeData(scope)),
       wxs: definition && templateRenderState.definitionWxsScopes?.get(definition),
     }
-    const children = definition && !templateRenderState.stack.includes(templateName)
+    clonedNode.name = 'block'
+    clonedNode.attribs = {
+      'data-sim-node': instancePath,
+      'data-sim-scope': scope.getScopeId(),
+    }
+    clonedNode.children = definition && !templateRenderState.stack.includes(templateName)
       ? renderChildren(
           definition.children ?? [],
           templateScope,
@@ -206,23 +215,21 @@ function renderNodeTree(
             wxsModules: templateScope.wxs,
             stack: [...templateRenderState.stack, templateName],
           },
+          clonedNode,
         )
       : []
-    return {
-      type: 'tag',
-      name: 'block',
-      attribs: {
-        'data-sim-node': instancePath,
-        'data-sim-scope': scope.getScopeId(),
-      },
-      children,
-    }
+    return clonedNode
   }
 
   if (clonedNode.name === 'slot') {
     const slotName = clonedNode.attribs?.name?.trim() || 'default'
     const projected = scope.slots?.get(slotName) ?? []
-    const children = projected.length
+    const fallbackChildren = clonedNode.children ?? []
+    clonedNode.name = 'block'
+    clonedNode.attribs = {
+      'data-sim-scope': scope.getScopeId(),
+    }
+    clonedNode.children = projected.length
       ? selectConditionalChildren(
           projected.map(entry => entry.node),
           (node, index) => evaluateConditionalBranch(node, projected[index]!.scope),
@@ -237,10 +244,11 @@ function renderNodeTree(
             entry.instancePath,
             seenComponentScopes,
             entry.templateRenderState,
+            clonedNode,
           )
         })
       : renderChildren(
-          clonedNode.children ?? [],
+          fallbackChildren,
           scope,
           context,
           ownerJsonPath,
@@ -248,13 +256,9 @@ function renderNodeTree(
           `${instancePath}/slot-fallback-${slotName}`,
           seenComponentScopes,
           templateRenderState,
+          clonedNode,
         )
-    return {
-      type: 'tag',
-      name: 'block',
-      attribs: { 'data-sim-scope': scope.getScopeId() },
-      children,
-    }
+    return clonedNode
   }
 
   const componentEntry = resolveComponentRegistryEntry(
@@ -285,13 +289,13 @@ function renderNodeTree(
       componentScopeId,
       templateRenderState,
     )
+    applyNodeBindings(clonedNode, scope)
 
     let componentInstance = context.componentCache.get(componentScopeId)
     if (!componentInstance) {
       componentInstance = createBrowserComponentInstance(
         componentScopeId,
         context,
-        clonedNode,
         componentEntry,
         nextProperties,
         ownerScopeId,
@@ -304,6 +308,14 @@ function renderNodeTree(
       )
     }
     else {
+      context.componentScopes.set(componentScopeId, createComponentScope(
+        clonedNode,
+        scope,
+        componentScopeId,
+        componentInstance,
+        genericComponents,
+        slots,
+      ))
       syncComponentProperties(
         componentInstance,
         componentInstance.__definition__ ?? componentEntry.definition,
@@ -333,8 +345,8 @@ function renderNodeTree(
       componentScopeId,
       seenComponentScopes,
     )
+    mergeComponentEventRoot(renderedComponentRoot, clonedNode)
     if (renderedComponentRoot.attribs) {
-      applyNodeBindings(clonedNode, scope)
       renderedComponentRoot.attribs = { ...clonedNode.attribs, ...renderedComponentRoot.attribs }
       if (clonedNode.dataset || renderedComponentRoot.dataset) {
         renderedComponentRoot.dataset = { ...clonedNode.dataset, ...renderedComponentRoot.dataset }
@@ -356,6 +368,7 @@ function renderNodeTree(
     `${instancePath}/${clonedNode.name}`,
     seenComponentScopes,
     templateRenderState,
+    clonedNode,
   )
   return clonedNode
 }

@@ -1,0 +1,12 @@
+page {
+  --probe-theme: rgb(23 91 167);
+}
+
+.global-probe {
+  font-size: 32px;
+  color: rgb(231 17 83);
+}
+
+.app-box {
+  padding-left: 13px;
+}

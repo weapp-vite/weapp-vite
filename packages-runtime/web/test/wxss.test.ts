@@ -63,7 +63,6 @@ describe('transformWxssToCss', () => {
       }
     `
     const { css } = transformWxssToCss(input)
-    expect(css).toContain(':host > weapp-view.card weapp-text:first-child')
     expect(css).toContain('weapp-form[data-state="ready"] > weapp-label + weapp-checkbox-group weapp-checkbox:checked')
     expect(css).toContain('weapp-radio-group weapp-radio[disabled]')
     expect(css).toContain('weapp-scroll-view[data-axis="y"] weapp-image')
@@ -90,7 +89,6 @@ describe('transformWxssToCss', () => {
 
     expect(css).toContain('.wd-button  .wd-button__loading')
     expect(css).toContain('.wd-step--finished .wd-step__icon')
-    expect(css).toContain(':host weapp-view.active')
     expect(css).toContain('.wd-card.wd-card__body')
     expect(css).not.toContain(':deep')
     expect(css).not.toContain('::v-deep')

@@ -165,7 +165,7 @@ export const WEVU_ON_UPDATED_HOOK = '__wevuOnUpdated'
 export const WEVU_HOOKS_KEY = '__wevuHooks'
 export const WEVU_EXPOSED_KEY = '__wevuExposed'
 export const WEVU_PUBLIC_RUNTIME_KEY = '$wevu'
-/** 宿主可将 setup 方法安装到独立方法表，避免与属性访问器混用。 */
+/** 宿主整体替换运行时方法快照，空快照清除旧方法，不写入同名输入属性。 */
 export const WEVU_HOST_INSTALL_METHOD_KEY = '__wevuHostInstallMethod'
 export const WEVU_RUNTIME_APP_KEY = '__wevuRuntimeApp'
 export const WEVU_IS_APP_INSTANCE_KEY = '__wevuIsAppInstance'

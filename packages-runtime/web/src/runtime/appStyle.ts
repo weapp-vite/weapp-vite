@@ -1,12 +1,22 @@
-import type { ComponentBehaviorOptions } from './component/types'
 import { injectStyle, removeStyle } from './style'
 
+interface AppStyleConsumer {
+  requestUpdate: () => unknown
+}
+
 const styleId = 'weapp-web-app-style'
-const subscribers = new Set<() => void>()
+const consumers = new Set<AppStyleConsumer>()
 let appStyle = ''
+
+export function getAppStyle() {
+  return appStyle
+}
 
 /** 应用样式是页面及非隔离组件的共享输入；主题变量通过 document 自然继承。 */
 export function setAppStyle(style: string) {
+  if (style === appStyle) {
+    return
+  }
   appStyle = style
   if (style) {
     injectStyle(style, styleId)
@@ -14,19 +24,16 @@ export function setAppStyle(style: string) {
   else {
     removeStyle(styleId)
   }
-  for (const update of subscribers) {
-    update()
+  for (const consumer of consumers) {
+    consumer.requestUpdate()
   }
 }
 
-export function getComponentAppStyle(options?: ComponentBehaviorOptions) {
-  const isolation = options?.styleIsolation ?? (options?.addGlobalClass ? 'apply-shared' : 'isolated')
-  return isolation === 'isolated' ? '' : appStyle
-}
-
-export function subscribeAppStyle(update: () => void) {
-  subscribers.add(update)
-  return () => {
-    subscribers.delete(update)
+export function trackAppStyle(consumer: AppStyleConsumer, enabled: boolean) {
+  if (enabled) {
+    consumers.add(consumer)
+  }
+  else {
+    consumers.delete(consumer)
   }
 }
