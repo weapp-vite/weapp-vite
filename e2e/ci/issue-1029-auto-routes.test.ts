@@ -198,7 +198,13 @@ Page({ data: { routeMarker: '${name}' } })
     const profilePage = path.join(project, 'src/subpackages/account/pages/profile/index.vue')
     await writeFile(profilePage, (await readFile(profilePage, 'utf8')).replace('profile.ts', 'profile.cjs'))
     const declaration = path.join(project, '.weapp-vite/typed-router.d.ts')
+    // GC 确保旧 Rolldown driver 不再存活，跨平台稳定覆盖两轮 snapshot 之间的解析所有权。
+    const gcPreload = path.join(project, 'collect-old-build.cjs')
+    await writeFile(gcPreload, 'setInterval(() => global.gc(), 50).unref()\n')
     const dev = startDevProcess(process.execPath, [
+      '--expose-gc',
+      '--require',
+      gcPreload,
       path.join(ROOT, 'packages/weapp-vite/bin/weapp-vite.js'),
       'dev',
       project,
