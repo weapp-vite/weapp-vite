@@ -250,6 +250,7 @@ interface RuntimeLogMeta {
   dispose: () => void
   reset: () => void
   closed: boolean
+  closing: boolean
   closeWrapped: boolean
 }
 
@@ -575,6 +576,7 @@ function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta
       stats.total = 0
     },
     closed: false,
+    closing: false,
     closeWrapped: false,
   }
 
@@ -1894,6 +1896,15 @@ function logRuntimeStats(meta: RuntimeLogMeta) {
   }
 }
 
+function finalizeRuntimeLogMeta(meta: RuntimeLogMeta) {
+  if (meta.closed) {
+    return
+  }
+  meta.closed = true
+  meta.dispose()
+  logRuntimeStats(meta)
+}
+
 export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
   const meta = ensureRuntimeLogMeta(miniProgram, project)
   if (meta.closeWrapped) {
@@ -1912,19 +1923,15 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
         return rawDisconnect(...args)
       }
       finally {
-        if (!meta.closed) {
-          meta.closed = true
-          meta.dispose()
-          logRuntimeStats(meta)
-        }
+        finalizeRuntimeLogMeta(meta)
       }
     }
   }
   miniProgram.close = async (...args: any[]) => {
-    if (meta.closed) {
+    if (meta.closed || meta.closing) {
       return
     }
-    meta.closed = true
+    meta.closing = true
     try {
       let flushFailed = false
       let flushError: unknown
@@ -1951,8 +1958,8 @@ export function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: str
       return result
     }
     finally {
-      meta.dispose()
-      logRuntimeStats(meta)
+      meta.closing = false
+      finalizeRuntimeLogMeta(meta)
     }
   }
 
@@ -2549,6 +2556,15 @@ export function enhanceMiniProgramRelaunch(miniProgram: any, options: RelaunchRe
   return miniProgram
 }
 
+function isRecoverableBridgeConnectError(error: unknown) {
+  // 通用分类会把所有协议超时都标记为可重试，但桥接握手只能重试 Tool.getInfo
+  // 探测；后续方法（例如 App.getCurrentPage）的超时属于真实协议错误，需原样抛出。
+  if (error instanceof Error && 'code' in error && error.code === 'DEVTOOLS_PROTOCOL_TIMEOUT' && 'method' in error) {
+    return error.method === 'Tool.getInfo'
+  }
+  return isRecoverableOperationError(error)
+}
+
 export async function launchAutomatorViaCliBridge(
   options: AutomatorCliBridgePayload,
   project: string,
@@ -2625,7 +2641,7 @@ export async function launchAutomatorViaCliBridge(
       lastConnectError = error
       const message = error instanceof Error ? error.message : String(error)
       lifecycle.recordFailure(error)
-      if (!isRecoverableOperationError(error)
+      if (!isRecoverableBridgeConnectError(error)
         && !DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
         && !BRIDGE_CONNECT_TIMEOUT_PATTERN.test(message)
         && !BRIDGE_CONNECT_FAILURE_PATTERN.test(message)) {
