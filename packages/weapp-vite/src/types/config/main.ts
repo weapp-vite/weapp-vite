@@ -1,6 +1,5 @@
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { WrapPluginOptions } from 'vite-plugin-performance'
-import type { PluginOptions as TsconfigPathsOptions } from 'vite-tsconfig-paths'
 import type { CreateCompilerOptions } from 'weapp-tailwindcss/core'
 import type { UserDefinedOptions } from 'weapp-tailwindcss/types'
 import type { WeappCompilerPluginOption } from '../compilerPlugin'
@@ -40,6 +39,7 @@ import type {
   WeappManagedTypeScriptConfig,
   WeappWebConfig,
 } from './foundation'
+import type { TsconfigPathsOptions } from './tsconfigPaths'
 import type { WeappAstConfig } from '@/ast'
 import type { WeappI18nConfig } from '@/i18n/types'
 import type { LoggerConfig } from '@/logger'

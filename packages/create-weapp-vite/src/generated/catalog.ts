@@ -73,7 +73,7 @@ export const TEMPLATE_CATALOG = {
   picocolors: '^1.1.1',
   postcss: '^8.5.28',
   react: '19.3.0',
-  rolldown: '1.2.11',
+  rolldown: '1.2.12',
   sass: '^1.105.0',
   sharp: '^0.35.5',
   stylelint: '^17.15.0',

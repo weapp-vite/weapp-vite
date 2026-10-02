@@ -76,12 +76,15 @@ it('keeps declarations in memory for build.write=false and honors entry renaming
   await expect(read('widgets/button.js')).rejects.toMatchObject({ code: 'ENOENT' })
 }, 30_000)
 
-it('rebuilds declarations when a type-only dependency changes in production watch', async () => {
+it('keeps type-only edits during the first publication and recovers declarations in production watch', async () => {
   const { root, config, read } = await fixture()
   config.weapp!.lib = { entry: { utils: 'utils/index.ts' }, root: 'src' }
   const types = path.join(root, 'src/utils/types.ts')
   await writeFile(types, 'export interface PublicValue { initial: string }')
   await writeFile(path.join(root, 'src/utils/index.ts'), 'export type { PublicValue } from "./types"; export const value = 1')
+  const publication = Promise.withResolvers<void>()
+  const publishing = Promise.withResolvers<void>()
+  let firstPublication = true
   const started = performance.now()
   const timeline: { phase: string, elapsed: number, watchesTypes?: boolean }[] = []
   const record = (phase: string, watchesTypes?: boolean) => {
@@ -96,7 +99,14 @@ it('rebuilds declarations when a type-only dependency changes in production watc
       order: 'post',
       handler() { record('generateBundle') },
     },
-    writeBundle() { record('writeBundle') },
+    async writeBundle() {
+      record('writeBundle')
+      if (firstPublication) {
+        firstPublication = false
+        publishing.resolve()
+        await publication.promise
+      }
+    },
   })
   const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
   const errors: unknown[] = []
@@ -109,8 +119,10 @@ it('rebuilds declarations when a type-only dependency changes in production watc
   try {
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('initial: string')
     record('initial declaration observed')
+    await publishing.promise
     await writeFile(types, 'export interface PublicValue { updated: number }')
     record('type dependency edited')
+    publication.resolve()
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('updated: number')
     expect(errors).toEqual([])
     await writeFile(types, 'export interface PublicValue { broken: }')

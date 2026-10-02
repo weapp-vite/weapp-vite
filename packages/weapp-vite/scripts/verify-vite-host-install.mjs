@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { execa } from 'execa'
 import { inspectConsumerInstallation, profileConsumerStartup, verifyConsumerExports, verifyConsumerNegativeControls } from './consumerEvidence.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
+import { verifyDependencySemantics } from './verify-dependency-semantics.mjs'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
 import { verifyTailwindConsumer } from './verify-vite-host-tailwind.mjs'
 
@@ -216,6 +217,9 @@ export default defineConfig({
         },
       })
     }
+  }
+  if (process.env.WEAPP_VITE_CONSUMER_DEPENDENCIES === '1') {
+    console.log(JSON.stringify(await verifyDependencySemantics(consumerRoot), null, 2))
   }
 }
 finally {
