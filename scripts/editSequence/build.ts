@@ -405,9 +405,9 @@ export class BuildSequenceSession {
       cwd: this.root,
       input: { main: path.join(this.root, 'main.js') },
       transform: { define: config.define },
-      plugins: [...plugins, createStatefulHmrHostFormatPlugin()],
+      plugins,
       experimental: { devMode: { lazy: false, implement: createStatefulHmrRolldownRuntimeSource() } },
-    }, { ...output, format: 'esm' }, {
+    }, output, {
       watch: { skipWrite: true, usePolling: true, pollInterval: 20, compareContentsForPolling: false },
       onOutput: result => this.publish(result),
       onAdditionalAssets: result => this.publish(result, true),
