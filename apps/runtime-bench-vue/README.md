@@ -26,7 +26,7 @@ WEAPP_VITE_E2E_RUNTIME_PROVIDER=headless pnpm e2e:runtime-bench --published-pres
 
 随后按仓库规范核实当轮官方最新 Stable 渠道、安装与实际连接宿主，设置 `WEAPP_VITE_E2E_DEVTOOLS_CLI_PATH`，将 provider 改为 `devtools` 再执行同一命令。所有运行全局串行；真实 IDE 环境失败保留未完成状态。入口与直接 worker 都执行登录预检，不自行绕过登录或切换版本。
 
-输出保留源码与归档哈希、安装闭包、安装耗时、每个产物文件的实际字节、运行时系统信息，以及每个样本的调用数、载荷 UTF-8 字节、revision 阶段事件和 DOM 验证结果。消费者内部路径不会写入成功报告；消费者 CLI 从自身物理 `node_modules` 解析。失败时仍保存 `complete: false` 的报告，然后清理本次创建的临时消费者。
+输出保留源码与归档哈希、安装闭包、安装耗时、消费者 automator 启动耗时、每个产物文件的实际字节、运行时系统信息，以及每个样本的调用数、载荷 UTF-8 字节、revision 阶段事件和 DOM 验证结果。消费者内部路径不会写入成功报告；消费者 CLI 从自身物理 `node_modules` 解析。失败时仍保存 `complete: false` 的报告，然后清理本次创建的临时消费者。
 
 指标采用 schema 2，旧 checkpoint 自动失效：
 

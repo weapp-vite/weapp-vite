@@ -62,6 +62,6 @@ export interface WorkerResult {
   updateMicroCommit: { diff: BenchUpdateSummary, patch?: BenchUpdateSummary }
   workloads?: Record<string, BenchUpdateSummary>
   artifact?: { files: Array<{ path: string, bytes: number }>, totalBytes: number }
-  runtime?: { provider: string, systemInfo: unknown }
+  runtime?: { provider: string, systemInfo: unknown, launchMs?: number }
   staticBinding?: { updateSingleCommit: BenchUpdateSummary, updateMicroCommit: BenchUpdateSummary }
 }

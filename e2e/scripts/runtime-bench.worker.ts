@@ -126,7 +126,9 @@ async function main() {
     await assertDevtoolsLoggedIn(projectRoot)
   }
   logStep(projectRoot, 'launch automator')
+  const launchStartedAt = Date.now()
   const session = await createBenchSession(projectRoot)
+  const launchMs = Date.now() - launchStartedAt
 
   try {
     const project = process.env.WEVU_BENCH_PROJECT ?? path.basename(projectRoot)
@@ -137,7 +139,7 @@ async function main() {
       schemaVersion: 2,
       project,
       preset: process.env.WEVU_BENCH_PRESET ?? 'normal',
-      runtime: { provider: runtimeProvider, systemInfo },
+      runtime: { provider: runtimeProvider, systemInfo, launchMs },
       artifact: { files, totalBytes: files.reduce((sum, file) => sum + file.bytes, 0) },
       firstScreen: await measureFirstScreen(session, projectRoot),
       detailNavigation: (logStep(projectRoot, 'measure detail navigation'), await measureDetailNavigation(session, projectRoot)),
