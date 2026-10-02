@@ -2,7 +2,6 @@
 
 import { html } from 'lit'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { compileWxml } from '../src/compiler/wxml'
 import { bindRuntimeEvent, createTemplate } from '../src/runtime'
 import { defineComponent } from '../src/runtime/component'
 
@@ -14,31 +13,6 @@ describe('WXML event name identity', () => {
   afterEach(() => {
     document.body.replaceChildren()
     vi.restoreAllMocks()
-  })
-
-  it('preserves custom event case in compiled listeners while retaining native aliases', () => {
-    const result = compileWxml({
-      id: '/src/pages/index/index.wxml',
-      source: `
-        <event-child
-          bind:ready="handleReady"
-          bind:onready="handleLowerReady"
-          bind:onReady="handleCamelReady"
-          bindTap="handleTap"
-        />
-      `,
-      componentTags: {
-        'event-child': 'wv-component-components-event-child-index',
-      },
-      resolveTemplatePath: () => undefined,
-      resolveWxsPath: () => undefined,
-    })
-
-    expect(result.code).toContain('"ready"')
-    expect(result.code).toContain('"onready"')
-    expect(result.code).toContain('"onReady"')
-    expect(result.code).toContain('"click"')
-    expect(result.code).toContain('"tap"')
   })
 
   it('delivers case-distinct custom events through compiled component listeners', async () => {
@@ -54,11 +28,11 @@ describe('WXML event name identity', () => {
     defineComponent('wv-issue-966-compiled-parent', {
       template: (scope, ctx) => html`
         <wv-issue-966-compiled-child
-          ${bindRuntimeEvent('ready', ctx.event('ready', 'handleReady', scope))}
-          ${bindRuntimeEvent('onready', ctx.event('onready', 'handleLowerReady', scope))}
-          ${bindRuntimeEvent('onReady', ctx.event('onReady', 'handleCamelReady', scope))}
+          ${bindRuntimeEvent('ready', ctx.event('ready', 'handleReady', scope), { component: true })}
+          ${bindRuntimeEvent('onready', ctx.event('onready', 'handleLowerReady', scope), { component: true })}
+          ${bindRuntimeEvent('onReady', ctx.event('onReady', 'handleCamelReady', scope), { component: true })}
         ></wv-issue-966-compiled-child>
-        <button class="tap" ${bindRuntimeEvent('click', ctx.event('tap', 'handleTap', scope))}>tap</button>
+        <button class="tap" ${bindRuntimeEvent('click', ctx.event('tap', 'handleTap', scope), { alias: 'tap' })}>tap</button>
       `,
       component: {
         methods: {

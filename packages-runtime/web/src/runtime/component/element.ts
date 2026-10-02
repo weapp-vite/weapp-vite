@@ -10,9 +10,11 @@ import type {
   TriggerEventOptions,
 } from './types'
 import type { ClassAttributeElement } from './virtualHost'
-import { WEVU_HOST_COMMIT_PROMISE_KEY } from '@weapp-core/constants'
+import { WEVU_HOST_COMMIT_PROMISE_KEY, WEVU_INSTALL_RUNTIME_METHODS_KEY } from '@weapp-core/constants'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
+import { getAppStyle, trackAppStyle } from '../appStyle'
+import { markComponentEvent } from '../componentEvent'
 import { createIntersectionObserverBridge } from '../polyfill/intersectionObserver'
 import { createRenderContext } from '../renderContext'
 import { hasOwn } from '../utils/object'
@@ -28,7 +30,7 @@ import { runComponentObservers } from './observers'
 import { createComponentPublicInstance } from './publicInstance'
 import { resolveRelationNodes } from './relations'
 import { createWebSlotsProxy } from './slots'
-import { assignDataPath, cloneValue, coerceValue, parseDataPath, resolveDataPath, toCamelCase } from './utils'
+import { assignDataPath, cloneCommittedValue, cloneValue, coerceValue, parseDataPath, resolveDataPath, toCamelCase } from './utils'
 import {
   clearVirtualHostClasses,
   clearVirtualHostParts,
@@ -78,6 +80,7 @@ export function createComponentElementClass({
     #state: DataRecord
     #properties: DataRecord
     #methods: Record<string, (event: any) => any> = {}
+    #runtimeMethods: Record<string, (event: any) => any> = {}
     #publicInstance: ComponentPublicInstance
     #exposedMethodNames = new Set<string>()
     #isMounted = false
@@ -180,11 +183,17 @@ export function createComponentElementClass({
     }
 
     triggerEvent(name: string, detail?: any, options: TriggerEventOptions = {}) {
-      this.dispatchEvent(new CustomEvent(name, {
+      this.dispatchEvent(markComponentEvent(new CustomEvent(name, {
         detail,
         bubbles: options.bubbles ?? false,
         composed: options.composed ?? false,
-      }))
+      })))
+    }
+
+    [WEVU_INSTALL_RUNTIME_METHODS_KEY](methods: Record<string, (event: any) => any>) {
+      this.#runtimeMethods = methods
+      this.#syncMethods(runtimeState.componentRef.methods)
+      this.requestUpdate()
     }
 
     createSelectorQuery() {
@@ -236,9 +245,9 @@ export function createComponentElementClass({
       }
       runtimeState.lifetimes.attached?.call(this.#publicInstance)
       this.#isMounted = true
-      if (!supportsLit) {
-        this.#renderLegacy()
-      }
+      instances.add(this)
+      trackAppStyle(this, runtimeState.inheritAppStyle)
+      this.requestUpdate()
     }
 
     disconnectedCallback() {
@@ -247,6 +256,7 @@ export function createComponentElementClass({
         superDisconnected.call(this)
       }
       this.#isMounted = false
+      trackAppStyle(this, false)
       instances.delete(this)
       runtimeState.lifetimes.detached?.call(this.#publicInstance)
     }
@@ -280,18 +290,10 @@ export function createComponentElementClass({
 
     render() {
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
-      const styleMarkup = runtimeState.styleRef
-        ? html`<style>${runtimeState.styleRef}</style>`
-        : null
-      if (typeof result === 'string') {
-        this.#usesLegacyTemplate = true
-        return html`${styleMarkup}${unsafeHTML(result)}`
-      }
-      this.#usesLegacyTemplate = false
-      if (styleMarkup) {
-        return html`${styleMarkup}${result as any}`
-      }
-      return result
+      const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
+      this.#usesLegacyTemplate = typeof result === 'string'
+      return html`<style>${appStyle}
+${runtimeState.styleRef}</style>${typeof result === 'string' ? unsafeHTML(result) : result}`
     }
 
     requestUpdate(name?: PropertyKey, oldValue?: unknown, options?: unknown) {
@@ -321,16 +323,29 @@ export function createComponentElementClass({
       let changed = false
       const changedKeys: string[] = []
       const previousProperties: DataRecord = {}
+      let copiedContainers: WeakSet<object> | undefined
       for (const [path, value] of Object.entries(patch)) {
         const segments = parseDataPath(path)
         const topKey = segments[0]
-        if (!topKey || topKey === '$slots' || Object.is(resolveDataPath(this.#state, segments), value)) {
+        if (!topKey || topKey === '$slots') {
+          continue
+        }
+        let nextValue = value
+        if (value !== null && typeof value === 'object') {
+          // 整体提交需刷新整个子树，新的外层对象也可能复用已原地修改的后代。
+          // 快照可保留内部别名，路径更新仍需按分支取得写入所有权。
+          nextValue = cloneCommittedValue(value)
+        }
+        else if (Object.is(resolveDataPath(this.#state, segments), value)) {
           continue
         }
         if (hasOwn(this.#properties, topKey) && !hasOwn(previousProperties, topKey)) {
           previousProperties[topKey] = this.#properties[topKey]
         }
-        assignDataPath(this.#state, segments, value)
+        if (segments.length > 1) {
+          copiedContainers ??= new WeakSet<object>()
+        }
+        assignDataPath(this.#state, segments, nextValue, copiedContainers)
         if (hasOwn(this.#properties, topKey)) {
           this.#properties[topKey] = this.#state[topKey]
         }
@@ -384,7 +399,7 @@ export function createComponentElementClass({
 
     #syncMethods(nextMethods: ComponentOptions['methods']) {
       const resolved = nextMethods ?? {}
-      const bound: Record<string, (event: any) => any> = {}
+      const bound = { ...this.#runtimeMethods }
       for (const [name, fn] of Object.entries(resolved)) {
         if (typeof fn === 'function') {
           bound[name] = fn.bind(this.#publicInstance)
@@ -423,6 +438,7 @@ export function createComponentElementClass({
 
     __weappSync(nextMethods: ComponentOptions['methods']) {
       this.#syncMethods(nextMethods)
+      trackAppStyle(this, this.#isMounted && runtimeState.inheritAppStyle)
       this.requestUpdate()
     }
 
@@ -436,7 +452,8 @@ export function createComponentElementClass({
     #renderLegacy() {
       const result = runtimeState.templateRef(this.#state, this.#renderContext)
       const root = resolveRenderRoot(this)
-      const styleMarkup = runtimeState.styleRef ? `<style>${runtimeState.styleRef}</style>` : ''
+      const appStyle = runtimeState.inheritAppStyle ? getAppStyle() : ''
+      const styleMarkup = `<style>${appStyle}\n${runtimeState.styleRef}</style>`
       if (typeof result === 'string') {
         root.innerHTML = `${styleMarkup}${result}`
         bindRuntimeEvents(root as ShadowRoot, this.#methods, this)

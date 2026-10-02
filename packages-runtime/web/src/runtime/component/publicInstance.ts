@@ -20,11 +20,12 @@ export function createComponentPublicInstance(
   const publicInstance = new Proxy(target, {
     get(instance, key) {
       const ownDescriptor = Reflect.getOwnPropertyDescriptor(instance, key)
-      if (ownDescriptor) {
+      // 不可配置的宿主字段仍遵循 Proxy 自有属性约束。
+      if (ownDescriptor && !ownDescriptor.configurable) {
         return Reflect.get(instance, key, instance)
       }
       const runtimeDescriptor = Reflect.getOwnPropertyDescriptor(runtimePrototype, key)
-      if (runtimeDescriptor) {
+      if (runtimeDescriptor && !ownDescriptor) {
         const value = Reflect.get(instance, key, instance)
         if (typeof value !== 'function') {
           return value
@@ -37,9 +38,13 @@ export function createComponentPublicInstance(
         runtimeMethods.set(key, { source: value, bound })
         return bound
       }
+      // 公共实例解析方法；DOM 同名属性仍由父级输入驱动。
       const componentMethod = resolveComponentMethod?.(key)
       if (typeof componentMethod === 'function') {
         return componentMethod
+      }
+      if (ownDescriptor) {
+        return Reflect.get(instance, key, instance)
       }
       return typeof key === 'symbol' ? Reflect.get(instance, key, instance) : undefined
     },

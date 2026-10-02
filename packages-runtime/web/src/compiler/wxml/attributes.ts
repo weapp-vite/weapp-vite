@@ -89,6 +89,7 @@ export function renderAttributes(
   options?: {
     skipControl?: boolean
     preferProperty?: boolean
+    component?: boolean
     propertyAttributes?: readonly string[]
   },
 ) {
@@ -108,7 +109,12 @@ export function renderAttributes(
         catch: eventInfo.prefix.includes('catch'),
         capture: eventInfo.prefix.includes('capture'),
       }
-      buffer += ` \${bindRuntimeEvent(${JSON.stringify(domEvent)}, ctx.event(${JSON.stringify(event)}, ${handlerExpr}, ${scopeVar}, ${wxsVar}, ${JSON.stringify(flags)}), ${JSON.stringify(flags)})}`
+      const bindingFlags = {
+        ...flags,
+        component: Boolean(options?.component),
+        alias: aliasedEvent ? event : undefined,
+      }
+      buffer += ` \${bindRuntimeEvent(${JSON.stringify(domEvent)}, ctx.event(${JSON.stringify(event)}, ${handlerExpr}, ${scopeVar}, ${wxsVar}, ${JSON.stringify(flags)}), ${JSON.stringify(bindingFlags)})}`
       continue
     }
     const useProperty = shouldBindAsProperty(rawName)

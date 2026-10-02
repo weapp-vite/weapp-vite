@@ -181,6 +181,7 @@ export class Renderer {
     const attrs = renderAttributes(attribs, scopeVar, wxsVar, {
       skipControl: true,
       preferProperty: Boolean(customTag),
+      component: Boolean(customTag),
       propertyAttributes: customTag
         ? undefined
         : resolveNativeComponentPropertyAttributes(node.name ?? ''),

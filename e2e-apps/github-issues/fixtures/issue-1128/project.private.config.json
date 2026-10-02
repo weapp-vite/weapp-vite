@@ -1,0 +1,16 @@
+{
+  "libVersion": "3.17.2",
+  "projectname": "issue-1128",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "Issue 1128",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

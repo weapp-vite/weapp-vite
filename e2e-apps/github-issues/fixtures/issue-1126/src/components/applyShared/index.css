@@ -1,0 +1,3 @@
+.theme-probe {
+  color: var(--probe-theme, rgb(0 0 0));
+}

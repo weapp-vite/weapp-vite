@@ -54,6 +54,27 @@ defineComponent('wv-hello-world', {
 document.body.innerHTML = '<wv-hello-world title="文档地址"></wv-hello-world>'
 ```
 
+## 应用样式与隔离
+
+`app.vue` 的内联 `<style>`、`<style src="...">`，以及原生 `App` 入口对应的样式文件，共用应用样式注册链路。样式进入页面的 Shadow Root，不依赖向 `document.head` 注入 CSS 来穿透 Shadow DOM。
+
+- 页面先应用 app 样式，再应用自身样式；相同优先级时页面声明可以覆盖 app 声明。
+- 自定义组件默认隔离 app 的选择器。`options.styleIsolation` 为 `apply-shared` 或 `shared` 时接收 app 样式；未设置 `styleIsolation` 时，`options.addGlobalClass: true` 也可开启。显式 `isolated` 优先于 `addGlobalClass`。
+- `page` 选择器只命中页面宿主，不会在共享样式的子组件上重新设置页面主题。CSS 自定义属性仍按浏览器规则继承，局部主题可以覆盖继承值。
+- 应用样式更新与一次性的 `App()` 生命周期分开：HMR 可以修改、移除、重新添加样式，已挂载和后续挂载的消费方读取同一份最新状态；卸载时解除订阅。
+- legacy 字符串模板保留节点时，事件监听器按绑定所有权复用；样式更新不会叠加监听器或丢失输入值与选区，方法、别名或捕获配置变化时替换旧绑定，移除后不再拦截事件。
+
+这些规则描述 app 样式的可见范围，不会取消 Shadow DOM，也不扩展页面样式向组件、组件样式向外传播的现有支持范围。
+
+## 组件事件与属性
+
+- 自定义组件上的 `click`、`input` 等事件绑定只接收组件通过 `triggerEvent` 或 Vue `emit` 发出的事件，不会再被内部同名原生 DOM 事件额外触发。原生控件事件和 `tap` 等已有手势别名保持原有交互。
+- 组件事件保留原始名称、大小写和 `detail`，并遵循显式的 `bubbles`、`composed` 选项。捕获、`catch` 与 `capture-catch` 先区分事件来源，再决定是否处理或停止传播，不会吞掉另一通道的原生事件。
+- DOM 宿主属性承载 props 输入，公开实例的方法表承载组件方法。两者同名时，Boolean、String、Number、Object、Array 和 Function props 不会被方法安装改写，模板和公开实例仍可调用对应方法。
+- 父级 `setData` 的嵌套 Object / Array 路径更新只复制本批变更路径上的容器；显式提交整个对象或数组时，为该子树创建输入快照。原地修改后的同引用提交，以及新外层对象复用旧嵌套值的提交，都能更新子组件的深层投影和继续转发的输入。函数引用保持可调用，未提交的分支不复制，普通未变值不重复触发观察器；大对象增量更新优先使用具体路径，避免整棵已提交子树的复制成本。
+
+现有限制：`<script setup>` 的同节点同名事件捕获/冒泡处理器，以及 legacy 字符串模板中的同类组合，仍存在独立的处理器键冲突；该组合暂需使用不同层级的节点。这不属于上述原生事件与组件事件的来源隔离。
+
 ## 设备视口
 
 默认配置模拟小程序页面视口：移动宽度下铺满，浏览器宽度达到 600px 后使用 375px 居中容器。页面、导航栏、`fixed` 元素和 `rpx` 共用这一区域。

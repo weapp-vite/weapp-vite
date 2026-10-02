@@ -1,5 +1,6 @@
 import type { RegisterMeta } from './polyfill/routeRuntime/options'
 import { createApp, createWevuComponent, takePendingRuntimeAppRegistration } from 'wevu/internal-runtime'
+import { setAppStyle } from './appStyle'
 import { registerApp, registerComponent, registerPage } from './polyfill/routeRuntime'
 
 interface WevuRegisterMeta extends RegisterMeta {
@@ -49,6 +50,8 @@ function withRuntimeConstructor<T>(
  * 将 Wevu App 注册过程接入 Web 页面栈。
  */
 export function registerWebWevuApp(options: Record<string, any>, meta: WevuRegisterMeta): void {
+  // 样式属于可热更新的模块；Wevu 的 App 构造器只注册一次，不能用它承载后续样式更新。
+  setAppStyle(meta.style ?? '')
   const pendingRegistration = takePendingRuntimeAppRegistration()
   withRuntimeConstructor('App', definition => registerApp(definition, meta), () => {
     if (pendingRegistration) {

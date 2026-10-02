@@ -135,6 +135,8 @@ export const WEVU_RUNTIME_KEY = '__wevuRuntime'
 export const WEVU_RUNTIME_OWNER_ID_KEY = '__wevuRuntimeOwnerId'
 export const WEVU_RESOLVE_PUBLIC_INSTANCE_METHOD = '__weapp_vite_resolvePublicInstance'
 export const WEVU_HOST_COMMIT_PROMISE_KEY = '__wevuHostCommitPromise'
+/** 宿主独立安装运行时方法，避免写入同名输入属性。 */
+export const WEVU_INSTALL_RUNTIME_METHODS_KEY = '__wevuInstallRuntimeMethods'
 /** 宿主按原生页面认领首次滚动恢复；函数返回可重复调用的释放回调。 */
 export const WEVU_PAGE_SCROLL_RESTORATION_OWNER_KEY = '__wevuPageScrollRestorationOwner'
 /** 宿主值为 1 时，实现带 routeEventId 的路由阶段契约；不代表微信 SDK 版本。 */

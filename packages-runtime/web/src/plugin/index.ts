@@ -57,8 +57,9 @@ interface WebResolvedConfig extends WebUserConfig {
   }
 }
 
-interface WebHmrContext {
+interface WebHmrContext<Module extends object = object> {
   file: string
+  modules?: Module[]
 }
 
 interface WebDevServer {
@@ -86,7 +87,7 @@ interface WeappWebVitePlugin {
     sequential: true
     handler: (this: WebPluginContext, id: string, change: { event: 'create' | 'update' | 'delete' }) => Promise<void>
   }
-  handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void>
+  handleHotUpdate?: <Module extends object>(this: WebPluginContext, ctx: WebHmrContext<Module>) => Module[] | void | Promise<Module[] | void>
   transform?: (
     this: WebPluginContext,
     code: string,
@@ -312,7 +313,7 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
     if (!isInsideDir(clean, srcRoot) && !state.moduleMeta.has(normalized) && !state.templatePathSet.has(normalized)) {
       return
     }
-    if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
+    if (state.templatePathSet.has(normalized) || clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
       await scan(context)
     }
   }
@@ -505,6 +506,10 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
           uniApp: options.__uniApp,
           stylePreprocessOptions,
         })
+        this.addWatchFile?.(filename)
+        for (const dependency of result.meta?.sfcSrcDeps ?? []) {
+          this.addWatchFile?.(dependency)
+        }
         return generateWebVueSfcStyle(result)
       }
       return null
@@ -519,8 +524,30 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVit
         }
       },
     },
-    async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
+    async handleHotUpdate<Module extends object>(this: WebPluginContext, ctx: WebHmrContext<Module>) {
+      const graph = devServer?.moduleGraph
+      if (graph && ctx.modules) {
+        const changedFile = normalizePath(cleanUrl(ctx.file))
+        const affected = new Set(ctx.modules)
+        for (const [filename, result] of state.sfcResults) {
+          if (filename !== changedFile && !result.meta?.sfcSrcDeps?.some(dependency => normalizePath(dependency) === changedFile)) {
+            continue
+          }
+          // 外部块没有独立 JS 模块；把所属 SFC 与合成样式交还 Vite 的原生 HMR 边界。
+          for (const file of [filename, `${filename}.${resolveWebVueSfcStyleLanguage(result, filename)}`]) {
+            for (const module of graph.getModulesByFile(file) ?? []) {
+              // 图与本次 HMR 上下文来自同一 Vite server，保留宿主模块节点的具体类型。
+              const nativeModule = module as Module
+              if (!affected.has(nativeModule)) {
+                affected.add(nativeModule)
+                ctx.modules.push(nativeModule)
+              }
+            }
+          }
+        }
+      }
       await scanChangedFile(this, ctx.file)
+      return ctx.modules
     },
     async transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)

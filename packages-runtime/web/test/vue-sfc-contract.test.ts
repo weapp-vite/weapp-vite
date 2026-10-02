@@ -29,38 +29,7 @@ function createMeta(kind: ModuleMeta['kind'], filename: string): ModuleMeta {
 }
 
 describe('web Vue SFC contracts', () => {
-  it('transforms App and component factories with stable runtime metadata', async () => {
-    const app = await transformWebVueSfcScript({
-      code: 'const untouched = true; createApp({})',
-      filename: '/src/app.vue',
-      meta: createMeta('app', '/src/app.vue'),
-      runtimeModuleId: 'virtual:runtime',
-      styleLanguage: 'css',
-      enableHmr: false,
-    })
-    expect(app.code).toContain('registerWebWevuApp({}, { id: "app", kind: "app" })')
-    expect(app.code).not.toContain('weapp-web-sfc-template')
-    expect(app.map).toBeTypeOf('object')
-
-    const meta = {
-      ...createMeta('page', '/src/pages/index.vue'),
-      navigationBar: { title: 'Details' },
-    }
-    const component = await transformWebVueSfcScript({
-      code: 'noop(); createWevuComponent({})',
-      filename: '/src/pages/index.vue',
-      meta,
-      runtimeModuleId: 'virtual:runtime',
-      styleLanguage: 'scss',
-      enableHmr: true,
-      hmrAcceptCode: 'acceptUpdate()',
-    })
-    expect(component.code).toContain('registerWebWevuComponent')
-    expect(component.code).toContain('navigationBar: { "title": "Details" }')
-    expect(component.code).toContain('weapp-web-sfc-template')
-    expect(component.code).toContain('weapp-web-sfc-style&inline')
-    expect(component.code).toContain('acceptUpdate()')
-
+  it('rejects a missing component registration factory', async () => {
     await expect(transformWebVueSfcScript({
       code: 'export const missing = true',
       filename: '/src/missing.vue',

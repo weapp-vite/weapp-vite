@@ -26,6 +26,7 @@ export interface WxssTransformResult {
 
 const RPX_RE = /(-?(?:\d+(?:\.\d+)?|\.\d+))rpx/gi
 const SAFE_AREA_ENV_RE = /env\(\s*safe-area-inset-(top|right|bottom|left)(?:\s*,[^)]*)?\)/gi
+const PAGE_HOST_SELECTOR = selectorParser().astSync(':host([data-weapp-page-active])').nodes[0]!.nodes[0]!
 
 function isDeepPseudo(pseudo: selectorParser.Pseudo) {
   return pseudo.value === ':deep' || pseudo.value === '::v-deep'
@@ -51,7 +52,7 @@ function transformNativeTags(selector: selectorParser.Selector) {
       return
     }
     if (tag.value === 'page') {
-      tag.replaceWith(selectorParser.pseudo({ value: ':host' }))
+      tag.replaceWith(PAGE_HOST_SELECTOR.clone())
       return
     }
     const webTag = resolveNativeComponentWebTag(tag.value)

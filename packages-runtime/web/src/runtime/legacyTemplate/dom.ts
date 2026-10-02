@@ -84,8 +84,8 @@ export function buildAttributeString(
     if (eventInfo) {
       const normalizedEvent = eventInfo.rawEvent.toLowerCase()
       const aliasedEvent = EVENT_KIND_ALIAS[normalizedEvent]
-      const runtimeEvent = aliasedEvent ?? eventInfo.rawEvent
-      const encodedEvent = encodeEventAttributeName(runtimeEvent)
+      const eventName = aliasedEvent ? normalizedEvent : eventInfo.rawEvent
+      const encodedEvent = encodeEventAttributeName(eventName)
       const handlerName = resolveAttributeValue(rawValue, scope).trim()
       if (!handlerName) {
         continue
@@ -95,6 +95,7 @@ export function buildAttributeString(
       const flagTokens = [
         flags.capture ? 'capture' : '',
         flags.catch ? 'catch' : '',
+        aliasedEvent ? `native:${aliasedEvent}` : '',
       ].filter(Boolean)
       if (flagTokens.length) {
         result += ` ${MINI_PROGRAM_EVENT_FLAG_ATTRIBUTE_PREFIX}${encodedEvent}="${flagTokens.join(',')}"`

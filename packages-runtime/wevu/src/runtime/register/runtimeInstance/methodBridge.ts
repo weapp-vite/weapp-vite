@@ -1,6 +1,7 @@
 import type { InternalRuntimeState, RuntimeInstance } from '../../types'
 import type { SetupInstanceMethodName } from './setupContext'
 import {
+  WEVU_INSTALL_RUNTIME_METHODS_KEY,
   WEVU_NATIVE_INSTANCE_KEY,
   WEVU_PUBLIC_RUNTIME_KEY,
 } from '@weapp-core/constants'
@@ -66,8 +67,20 @@ export function bridgeRuntimeMethodsToTarget(
   target: InternalRuntimeState,
   runtime: RuntimeInstance<any, any, any>,
 ) {
+  const methods = runtime.methods as Record<string, (...args: unknown[]) => unknown>
+  const installRuntimeMethods: unknown = Reflect.get(target, WEVU_INSTALL_RUNTIME_METHODS_KEY)
+  if (typeof installRuntimeMethods === 'function') {
+    const componentMethods: typeof methods = {}
+    for (const name of Object.keys(methods)) {
+      if (!setupInstanceMethodNames.includes(name as SetupInstanceMethodName)) {
+        componentMethods[name] = methods[name]
+      }
+    }
+    installRuntimeMethods.call(target, componentMethods)
+    return
+  }
+
   try {
-    const methods = (runtime.methods as unknown) as Record<string, any>
     for (const name of Object.keys(methods)) {
       if (setupInstanceMethodNames.includes(name as SetupInstanceMethodName)) {
         continue

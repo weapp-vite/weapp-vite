@@ -15,7 +15,7 @@ import {
 } from '../../runtime/componentInstance'
 import { resolveNativeComponentSelection } from '../../runtime/componentInstance/selection'
 import { resolveMiniProgramComponent } from '../../runtime/componentResolution'
-import { collectMiniProgramEventBindings } from '../../view/eventBinding'
+import { bindComponentEventHost, buildComponentTrigger } from '../../view/componentEvent'
 import { setSelectorQueryScopeId } from '../../view/selectorQueryScope'
 import { wxsScopeData } from '../../view/wxs'
 import { readBrowserVirtualFile } from '../virtualFiles'
@@ -140,70 +140,6 @@ export function resolveComponentGenerics(
   return resolved.size > 0 ? resolved : undefined
 }
 
-export function collectComponentEventBindings(hostNode: DomNodeLike) {
-  return collectMiniProgramEventBindings(hostNode.attribs)
-}
-
-export function buildComponentTrigger(
-  componentScopeId: string,
-  context: BrowserRendererContext,
-  hostNode: DomNodeLike,
-) {
-  const hostDataset = collectDataset(hostNode)
-  const hostId = hostNode.attribs?.id ?? ''
-
-  return (
-    instance: HeadlessComponentInstance,
-    eventName: string,
-    detail?: unknown,
-    triggerOptions?: Record<string, any>,
-  ) => {
-    const originScope = context.componentScopes.get(componentScopeId)
-    const interactionMark = instance.__lastInteractionEvent__?.mark
-    // 自定义事件由组件宿主派发，转发的原生事件仅保留在 detail 中。
-    const target = {
-      dataset: originScope?.dataset ?? hostDataset,
-      id: originScope?.hostId ?? hostId,
-    }
-    let currentScopeId: string | undefined = componentScopeId
-
-    while (currentScopeId) {
-      const currentScope = context.componentScopes.get(currentScopeId)
-      const binding = currentScope?.eventBindings?.get(eventName)
-      const listenerScope = currentScope?.listenerScopeId
-        ? context.componentScopes.get(currentScope.listenerScopeId)
-        : null
-      const handler = binding && listenerScope
-        ? listenerScope.getMethod(binding.method)
-        : undefined
-
-      if (handler) {
-        handler({
-          bubbles: triggerOptions?.bubbles ?? false,
-          capturePhase: false,
-          composed: triggerOptions?.composed ?? false,
-          detail,
-          mark: interactionMark,
-          target,
-          type: eventName,
-          currentTarget: {
-            dataset: currentScope?.dataset ?? hostDataset,
-            id: currentScope?.hostId ?? hostId,
-          },
-        })
-      }
-
-      if (binding?.stopAfter) {
-        break
-      }
-      if (!triggerOptions?.bubbles || !triggerOptions?.composed) {
-        break
-      }
-      currentScopeId = currentScope?.ownerScopeId
-    }
-  }
-}
-
 export function syncComponentProperties(
   instance: HeadlessComponentInstance,
   definition: HeadlessComponentDefinition,
@@ -260,7 +196,7 @@ export function createComponentScope(
       .filter(Boolean),
     data: { ...componentInstance.data },
     dataset: collectDataset(clonedNode, wxsScopeData(scope)),
-    eventBindings: collectComponentEventBindings(clonedNode),
+    ...bindComponentEventHost(clonedNode),
     getMethod: (methodName: string) => {
       const method = componentInstance?.[methodName]
       return typeof method === 'function' ? method.bind(componentInstance) : undefined
@@ -268,6 +204,7 @@ export function createComponentScope(
     getScopeId: () => componentScopeId,
     genericComponents,
     hostId: typeof clonedNode.attribs?.id === 'string' ? clonedNode.attribs.id : undefined,
+    hostNode: clonedNode,
     id: typeof clonedNode.attribs?.id === 'string' ? clonedNode.attribs.id : undefined,
     listenerScopeId: scope.getScopeId(),
     ownerScopeId,
@@ -302,7 +239,6 @@ export function resolveComponentProperties(
 export function createBrowserComponentInstance(
   componentScopeId: string,
   context: BrowserRendererContext,
-  clonedNode: DomNodeLike,
   componentEntry: NonNullable<ReturnType<typeof resolveComponentRegistryEntry>>,
   nextProperties: Record<string, any>,
   ownerScopeId: string | undefined,
@@ -318,7 +254,7 @@ export function createBrowserComponentInstance(
   const componentInstance = createComponentInstance({
     definition: componentEntry.definition,
     requestRender: callback => context.session.requestRender(callback),
-    triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
+    triggerEvent: buildComponentTrigger(componentScopeId, context),
   })
   setSelectorQueryScopeId(componentInstance, componentScopeId)
   componentInstance.is = componentEntry.filePath.replace(JS_FILE_RE, '')
@@ -352,6 +288,7 @@ export function renderBrowserComponentTemplate(
     instancePath: string,
     seenComponentScopes: Set<string>,
     templateRenderState: TemplateRenderState<DomNodeLike>,
+    parent?: DomNodeLike,
   ) => DomNodeLike,
   componentScope: BrowserRenderScope,
   componentScopeId: string,
@@ -371,5 +308,6 @@ export function renderBrowserComponentTemplate(
     componentScopeId,
     seenComponentScopes,
     templateRenderState,
+    componentScope.hostNode,
   )
 }
