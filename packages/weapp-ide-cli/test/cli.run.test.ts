@@ -129,6 +129,7 @@ async function loadRunModule() {
 
 describe('cli parsing', () => {
   let cwdSpy: ReturnType<typeof vi.spyOn>
+  let clockSpy: ReturnType<typeof vi.spyOn> | undefined
   let originalStdinIsTTY: PropertyDescriptor | undefined
 
   beforeEach(() => {
@@ -230,6 +231,8 @@ describe('cli parsing', () => {
 
   afterEach(() => {
     cwdSpy.mockRestore()
+    clockSpy?.mockRestore()
+    clockSpy = undefined
     if (originalStdinIsTTY) {
       Object.defineProperty(process.stdin, 'isTTY', originalStdinIsTTY)
     }
@@ -693,9 +696,13 @@ describe('cli parsing', () => {
   it('retries wechat cli execution when thrown error indicates login required', async () => {
     const { parse } = await loadRunModule()
     const loginRequiredError = new Error('需要重新登录 (code 10)')
+    clockSpy = vi.spyOn(performance, 'now').mockReturnValue(0)
 
     executeMock
-      .mockRejectedValueOnce(loginRequiredError)
+      .mockImplementationOnce(async () => {
+        clockSpy!.mockReturnValue(1250)
+        throw loginRequiredError
+      })
       .mockResolvedValueOnce(undefined)
     isWechatIdeLoginRequiredErrorMock
       .mockReturnValueOnce(true)
@@ -721,7 +728,11 @@ describe('cli parsing', () => {
       error: loginRequiredError,
       logger: loggerMock,
       promptOpenIdeLogin: true,
-      retryTimeoutMs: 30000,
+      retryTimeoutMs: 28750,
+    })
+    expect(executeMock.mock.calls[1]?.[2]).toMatchObject({
+      timeout: 28750,
+      signal: executeMock.mock.calls[0]?.[2].signal,
     })
     expect(loggerMock.info).toHaveBeenCalledWith(
       '正在重试连接微信开发者工具...',
@@ -730,9 +741,13 @@ describe('cli parsing', () => {
 
   it('retries when execution output indicates login required', async () => {
     const { parse } = await loadRunModule()
+    clockSpy = vi.spyOn(performance, 'now').mockReturnValue(0)
 
     executeMock
-      .mockResolvedValueOnce({ stderr: '[error] code: 10\n需要重新登录' })
+      .mockImplementationOnce(async () => {
+        clockSpy!.mockReturnValue(1250)
+        return { stderr: '[error] code: 10\n需要重新登录' }
+      })
       .mockResolvedValueOnce(undefined)
     isWechatIdeLoginRequiredErrorMock
       .mockReturnValueOnce(true)
@@ -748,7 +763,11 @@ describe('cli parsing', () => {
       error: { stderr: '[error] code: 10\n需要重新登录' },
       logger: loggerMock,
       promptOpenIdeLogin: true,
-      retryTimeoutMs: 30000,
+      retryTimeoutMs: 28750,
+    })
+    expect(executeMock.mock.calls[1]?.[2]).toMatchObject({
+      timeout: 28750,
+      signal: executeMock.mock.calls[0]?.[2].signal,
     })
     expect(loggerMock.info).toHaveBeenCalledWith(
       '正在重试连接微信开发者工具...',
@@ -758,8 +777,12 @@ describe('cli parsing', () => {
   it('stops retry loop when login is required and user cancels', async () => {
     const { parse } = await loadRunModule()
     const loginRequiredError = new Error('需要重新登录 (code 10)')
+    clockSpy = vi.spyOn(performance, 'now').mockReturnValue(0)
 
-    executeMock.mockRejectedValueOnce(loginRequiredError)
+    executeMock.mockImplementationOnce(async () => {
+      clockSpy!.mockReturnValue(1250)
+      throw loginRequiredError
+    })
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
     createWechatIdeLoginRequiredExitErrorMock.mockReturnValue(
       Object.assign(new Error('login required'), { code: 10, exitCode: 10 }),
@@ -796,7 +819,7 @@ describe('cli parsing', () => {
       error: loginRequiredError,
       logger: loggerMock,
       promptOpenIdeLogin: true,
-      retryTimeoutMs: 30000,
+      retryTimeoutMs: 28750,
     })
   })
 
