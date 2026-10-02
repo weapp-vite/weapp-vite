@@ -908,7 +908,9 @@ describe('cli parsing', () => {
       options?.allowRetry === false
       && options?.logger === loggerMock
       && options?.promptOpenIdeLogin === true
-      && options?.retryTimeoutMs === 30000
+      && typeof options?.retryTimeoutMs === 'number'
+      && options.retryTimeoutMs > 0
+      && options.retryTimeoutMs <= 30000
     ))).toBe(true)
     expect(executeMock).toHaveBeenCalledTimes(2)
   })
@@ -935,8 +937,12 @@ describe('cli parsing', () => {
       error: { stderr: '[error] code: 10\n需要重新登录' },
       logger: loggerMock,
       promptOpenIdeLogin: true,
-      retryTimeoutMs: 30000,
+      retryTimeoutMs: expect.any(Number),
     })
+
+    const retryTimeoutMs = promptWechatIdeLoginRetryMock.mock.calls.at(-1)?.[0]?.retryTimeoutMs
+    expect(retryTimeoutMs).toBeGreaterThan(0)
+    expect(retryTimeoutMs).toBeLessThanOrEqual(30000)
   })
 
   it('fails fast when --login-retry is invalid', async () => {

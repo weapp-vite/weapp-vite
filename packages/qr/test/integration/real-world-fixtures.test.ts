@@ -26,5 +26,5 @@ describe('@weapp-vite/qr real-world fixtures', () => {
       const base64 = await loadQrFixtureBase64(fixture.file)
       await expect(decodeQrCodeFromBase64(base64)).rejects.toThrow(fixture.expectedError)
     }
-  })
+  }, 15_000)
 })

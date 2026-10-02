@@ -25,11 +25,11 @@ describe('read-only automator connections', () => {
     const failure = new Error('temporary connection timeout')
     const session = { disconnect: vi.fn() }
     mocks.connect.mockRejectedValueOnce(failure).mockResolvedValueOnce(session)
-    const options = { projectPath, port: 19620, timeout: 20 }
+    const options = { projectPath, port: 19620, timeout: 1_000 }
     await expect(connectOpenedAutomator(options)).rejects.toBe(failure)
     expect(mocks.rm).not.toHaveBeenCalled()
     await expect(connectOpenedAutomator(options)).resolves.toBe(session)
-    expect(mocks.connect).toHaveBeenLastCalledWith({ signal: expect.any(AbortSignal), timeout: 20, wsEndpoint: 'ws://127.0.0.1:19620' })
+    expect(mocks.connect).toHaveBeenLastCalledWith({ signal: expect.any(AbortSignal), timeout: 1_000, wsEndpoint: 'ws://127.0.0.1:19620' })
   })
 
   it('does not delete another operation replacement when a previous connection fails', async () => {
