@@ -47,7 +47,10 @@ export default defineConfig({
     visualizer(() => {
       // console.log(options)
       return {
-        emitFile: true,
+        // State-preserving HMR also bundles the configured worker outputs. The
+        // visualizer report is diagnostic output and must not be emitted into
+        // each runtime bundle with the same file name.
+        emitFile: false,
         filename: `stats${idx++}.html`,
       }
     }),
