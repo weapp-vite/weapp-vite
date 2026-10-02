@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "scope": "runtime-bench-vue dist consumer output, uncompressed file bytes",
+  "normalBytes": 214256,
+  "performanceBytes": 219032,
+  "deltaBytes": 4776,
+  "deltaPercent": 2.23,
+  "externalPublishedRuntime": {
+    "sourceCommit": "ae0ba52baa5db501d8e202b3cec9c4a888a555ff",
+    "normalBytes": 170668,
+    "performanceBytes": 188063,
+    "deltaBytes": 17395,
+    "deltaPercent": 10.2
+  }
+}

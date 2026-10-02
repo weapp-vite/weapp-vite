@@ -11,18 +11,17 @@ const tracker = createUpdateBenchTracker()
 
 export default defineComponent({
   setData: {
-    strategy: 'diff',
     debugWhen: 'always',
     debug: createUpdateBenchDebug({ tracker }),
   },
   setup: createUpdateBenchSetup({
-    strategyLabel: 'diff',
+    strategyLabel: 'default',
     tracker,
   }),
   data() {
     return createUpdateBenchData({
-      strategyLabel: 'diff',
-      title: 'Vue Update Benchmark (diff)',
+      strategyLabel: 'default',
+      title: 'Vue Update Benchmark (default)',
     })()
   },
 })
