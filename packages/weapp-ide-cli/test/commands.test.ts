@@ -290,7 +290,8 @@ describe('automator commands', () => {
       mockMiniProgram.currentPage.mockResolvedValue(mockPage)
       mockPage.$.mockResolvedValue(null)
 
-      await expect(tap({ projectPath: mockCwd, selector: '.not-exist', timeout: 1 })).rejects.toThrow('未找到元素: .not-exist')
+      // 给统一 IDE deadline 留出连接与一次完整元素查询的时间，避免 1ms 边界在 CI 上先变成总预算超时。
+      await expect(tap({ projectPath: mockCwd, selector: '.not-exist', timeout: 5_000 })).rejects.toThrow('未找到元素: .not-exist')
 
       expect(mockMiniProgram.disconnect).toHaveBeenCalled()
     })
