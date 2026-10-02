@@ -8,6 +8,7 @@ import { createRouterBootstrapFiles } from './test/helpers/routerBootstrap'
 import { createRuntimePruningFiles } from './test/helpers/runtimePruning'
 import { createRuntimePublicFactoryFiles } from './test/helpers/runtimePublicFactory'
 import { createRuntimeValueSnapshotFiles } from './test/helpers/runtimeValueSnapshot'
+import { createSetDataPhaseFiles } from './test/helpers/setDataPhases'
 import { createStatefulAppBootstrapFiles } from './test/helpers/statefulAppBootstrap'
 import { createStatefulBatchDeliveryFiles } from './test/helpers/statefulBatchDelivery'
 import { createStatefulNativeComponentFiles } from './test/helpers/statefulNativeComponent'
@@ -45,7 +46,7 @@ export default defineConfig({
       if (id === 'virtual:store-definition-reload-fixture') {
         return `\0${id}`
       }
-      if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture' || id === 'virtual:runtime-value-snapshot-fixture') {
+      if (id === 'virtual:store-hmr-fixture' || id === 'virtual:stateful-store-binding-fixture' || id === 'virtual:runtime-value-snapshot-fixture' || id === 'virtual:set-data-phases-fixture') {
         return `\0${id}`
       }
       if (id === 'virtual:store-lifecycle-fixture' || id === 'virtual:stateful-native-component-fixture' || id === 'virtual:stateful-vue-component-fixture' || id === 'virtual:stateful-native-page-fixture' || id === 'virtual:stateful-app-bootstrap-fixture' || id === 'virtual:router-bootstrap-fixture') {
@@ -62,6 +63,9 @@ export default defineConfig({
       }
       if (id === '\0virtual:store-definition-reload-fixture') {
         return `export default ${JSON.stringify(await createStoreDefinitionReloadFiles())}`
+      }
+      if (id === '\0virtual:set-data-phases-fixture') {
+        return `export default ${JSON.stringify(await createSetDataPhaseFiles())}`
       }
       if (id === '\0virtual:runtime-value-snapshot-fixture') {
         return `export default ${JSON.stringify(await createRuntimeValueSnapshotFiles())}`

@@ -151,6 +151,13 @@ export interface SetDataSnapshotOptions {
   debug?: (info: SetDataDebugInfo) => void
 
   /**
+   * 通过 debug 回调额外观测 prepare、物理 dispatch 与提交结算，默认关闭。
+   * 按 revision 采样一次；同一次物理调用可关联多个 revision，按 dispatch.id 去重。
+   * callback / Promise / 同步返回均不等于可见视图完成；visibleAt 始终为 null。
+   */
+  debugPhases?: boolean
+
+  /**
    * 内建诊断日志开关（默认 off）。
    *
    * - off：关闭内建日志
@@ -260,4 +267,28 @@ export interface SetDataDebugInfo {
   bindings?: SetDataBindingDiagnostic[]
   revision?: number
   committedRevision?: number
+  /** 阶段观测；仅在显式开启 debugPhases 时提供。 */
+  phase?: {
+    version: 1
+    observerId: number
+    name: 'prepare' | 'dispatch' | 'commit'
+    result: 'prepared' | 'pending' | 'committed' | 'failed' | 'abandoned' | 'disposed' | 'late-committed' | 'late-failed' | 'out-of-order'
+    completion: 'unknown' | 'callback' | 'promise' | 'return' | 'throw'
+    /** Date.now 毫秒时间；不可用或时钟倒退时，持续时间为 null。 */
+    prepareStartedAt: number | null
+    preparedAt: number
+    prepareDurationMs: number | null
+    settledAt: number | null
+    commitDurationMs: number | null
+    visibleAt: null
+    /** 一个运行时模块实例内唯一的物理调用；缺失表示尚未下发或适配器无法观测。 */
+    dispatch: {
+      id: number
+      startedAt: number
+      returnedAt: number | null
+      durationMs: number | null
+      /** JSON 载荷 UTF-8 字节数；不含宿主协议封装，序列化失败时为 null。 */
+      payloadBytes: number | null
+    } | null
+  }
 }

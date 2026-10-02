@@ -1,4 +1,6 @@
 import type { MiniProgramAdapter, SetDataDebugInfo } from '../../types'
+import type { PhysicalSetDataObserver, SetDataRevisionObservation } from './observation'
+import { observePhysicalDispatch } from './observation'
 import { cloneSnapshotValue } from './snapshot'
 
 export type SetDataSnapshot = Record<string, unknown>
@@ -16,6 +18,7 @@ export interface CommitAwareSetDataAdapter extends MiniProgramAdapter {
   __wevu_dispatchSetData?: (
     payload: SetDataPayload,
     settle: SetDataAdapterSettler,
+    observer?: PhysicalSetDataObserver,
   ) => void
   __wevu_reportSetDataError?: (error: Error) => void
   __wevu_disposeSetData?: () => void
@@ -75,6 +78,7 @@ interface RevisionRecord {
   inLedger: boolean
   next: RevisionRecord | undefined
   commitPromise?: Promise<void>
+  observation?: SetDataRevisionObservation
   resolveCommit?: () => void
 }
 
@@ -115,16 +119,21 @@ export function observeSetDataCompletion(options: {
   invoke: (callback: () => void) => unknown
   completion: 'return' | 'callback'
   settle: SetDataAdapterSettler
+  observer?: PhysicalSetDataObserver
+  payload?: SetDataPayload
 }): void {
   let settled = false
   let invoking = true
   let callbackCalled = false
+  let observedReturn = false
   let returnIsAuthoritative = false
+  let boundary: Parameters<PhysicalSetDataObserver['complete']>[0] = options.completion
   const settleOnce: SetDataAdapterSettler = (settlement, cause) => {
     if (settled) {
       return
     }
     settled = true
+    options.observer?.complete(boundary)
     options.settle(settlement, cause)
   }
   const callback = () => {
@@ -141,11 +150,19 @@ export function observeSetDataCompletion(options: {
   }
 
   try {
+    if (options.observer && options.payload) {
+      observePhysicalDispatch(options.observer, options.payload)
+    }
     const result = options.invoke(callback)
     const resultIsThenable = isThenable(result)
     returnIsAuthoritative = resultIsThenable
     invoking = false
+    if (options.observer && !observedReturn) {
+      observedReturn = true
+      options.observer.returned(Date.now())
+    }
     if (resultIsThenable) {
+      boundary = 'promise'
       result.then(
         () => settleOnce('committed'),
         cause => settleOnce('failed', cause),
@@ -157,7 +174,12 @@ export function observeSetDataCompletion(options: {
     }
   }
   catch (cause) {
+    boundary = 'throw'
     invoking = false
+    if (options.observer && !observedReturn) {
+      observedReturn = true
+      options.observer.returned(Date.now())
+    }
     settleOnce('failed', cause)
   }
 }
@@ -166,6 +188,7 @@ export function createSetDataCommitTracker(options: {
   initialSnapshot?: SetDataSnapshot
   adapter: CommitAwareSetDataAdapter
   onFailure: (failure: SetDataCommitFailure) => void
+  observe?: (update: PreparedSetDataUpdate, revision: number) => SetDataRevisionObservation | undefined
 }): SetDataCommitTracker {
   const initialSnapshot = options.initialSnapshot ? cloneSnapshotValue(options.initialSnapshot) : {}
   const knownHostTopKeys = new Set(Object.keys(initialSnapshot))
@@ -247,6 +270,8 @@ export function createSetDataCommitTracker(options: {
   }
 
   const invalidateLedger = () => {
+    let abandonedObservations: SetDataRevisionObservation[] | undefined
+    const result = state.disposed ? 'disposed' : 'abandoned'
     let current = head
     while (current) {
       const next = current.next
@@ -254,6 +279,9 @@ export function createSetDataCommitTracker(options: {
       current.next = undefined
       if (!current.physicalSettled) {
         current.status = 'abandoned'
+        if (current.observation) {
+          (abandonedObservations ??= []).push(current.observation)
+        }
       }
       resolveRecord(current)
       current = next
@@ -262,6 +290,8 @@ export function createSetDataCommitTracker(options: {
     tail = undefined
     epoch += 1
     highestCompletedRevision = state.committedRevision
+    // 先清空旧账本，再交付诊断，避免回调重入时误删新 revision。
+    abandonedObservations?.forEach(observation => observation.finish(result))
   }
 
   const armRecovery = () => {
@@ -326,7 +356,7 @@ export function createSetDataCommitTracker(options: {
     }
   }
 
-  const settleRecord = (
+  const applySettlement = (
     record: RevisionRecord,
     settlement: SetDataAdapterSettlement,
     cause?: unknown,
@@ -368,6 +398,26 @@ export function createSetDataCommitTracker(options: {
       return
     }
     drainSucceededPrefix()
+  }
+
+  const settleRecord = (record: RevisionRecord, settlement: SetDataAdapterSettlement, cause?: unknown) => {
+    if (state.disposed || record.physicalSettled) {
+      return
+    }
+    if (!record.observation) {
+      applySettlement(record, settlement, cause)
+      return
+    }
+    const late = !record.inLedger || record.epoch !== epoch
+    const outOfOrder = settlement === 'committed' && (late
+      ? state.committedRevision > record.revision
+      : highestCompletedRevision > record.revision)
+    applySettlement(record, settlement, cause)
+    record.observation?.finish(outOfOrder
+      ? 'out-of-order'
+      : late
+        ? settlement === 'failed' ? 'late-failed' : settlement === 'committed' ? 'late-committed' : 'abandoned'
+        : settlement)
   }
 
   const createFullPayload = (snapshot: SetDataSnapshot): SetDataPayload => {
@@ -417,6 +467,7 @@ export function createSetDataCommitTracker(options: {
       knownHostTopKeys.add(key.split('.', 1)[0]!)
     }
 
+    record.observation = options.observe?.(update, revision)
     const settle: SetDataAdapterSettler = (settlement, cause) => {
       settleRecord(record, settlement, cause)
     }
@@ -424,7 +475,7 @@ export function createSetDataCommitTracker(options: {
     const hostPayload = cloneSnapshotValue(update.payload)
     if (typeof options.adapter.__wevu_dispatchSetData === 'function') {
       try {
-        options.adapter.__wevu_dispatchSetData(hostPayload, settle)
+        options.adapter.__wevu_dispatchSetData(hostPayload, settle, record.observation?.physical)
       }
       catch (cause) {
         settle('failed', cause)
@@ -435,6 +486,8 @@ export function createSetDataCommitTracker(options: {
         invoke: () => options.adapter.setData?.(hostPayload),
         completion: 'return',
         settle,
+        payload: hostPayload,
+        observer: options.adapter.setData ? record.observation?.physical : undefined,
       })
     }
     return revision

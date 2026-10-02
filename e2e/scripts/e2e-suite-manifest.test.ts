@@ -29,6 +29,7 @@ describe('e2e suite manifest', () => {
     'ide/vite-plugin-npm.runtime.test.ts',
     'ide/wevu-runtime.pruning.test.ts',
     'ide/github-issues.runtime.issue1035.test.ts',
+    'ide/github-issues.runtime.issue1138.test.ts',
     'ide/github-issues.runtime.feature1087.test.ts',
     'ide/issue-963-plugin-es6.runtime.test.ts',
     'ide/issue-1074-doctor.runtime.test.ts',

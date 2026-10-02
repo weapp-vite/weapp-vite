@@ -1,13 +1,14 @@
 import type { WevuRuntimeBindingManifestV1 } from '@weapp-core/constants'
 import type { SetDataScheduler } from '../../capabilities'
 import type { SetDataDebugInfo } from '../../types'
-import type { CommitAwareSetDataAdapter, PreparedSetDataUpdate, SetDataCommitFailure, SetDataSnapshot } from './commitTracker'
+import type { CommitAwareSetDataAdapter, PreparedSetDataUpdate, SetDataCommitFailure, SetDataCommitTracker, SetDataSnapshot } from './commitTracker'
 import { getReactiveVersion, isReactive, isRef, toRaw } from '../../../reactivity'
 import { hasOwn } from '../../../utils'
 import { resolveBindingDiagnostics } from '../../bindingManifest'
 import { diffSnapshots, toPlain } from '../../diff'
 import { hasTrackableSetupBinding } from '../../setupTracking'
 import { createSetDataCommitTracker } from './commitTracker'
+import { createSetDataObservation } from './observation'
 import { collectSnapshot } from './snapshot'
 
 export interface SetDataSchedulerOptions {
@@ -39,6 +40,7 @@ export interface SetDataSchedulerOptions {
   debug: ((info: SetDataDebugInfo) => void) | undefined
   debugWhen: 'fallback' | 'always'
   debugSampleRate: number
+  debugPhases?: boolean
   bindingManifest?: WevuRuntimeBindingManifestV1
   loopWarning: false | {
     sampleWindowMs: number
@@ -283,7 +285,13 @@ export function createSetDataScheduler(options: SetDataSchedulerOptions): SetDat
     }
   }
 
-  const commitTracker = createSetDataCommitTracker({
+  let commitTracker: SetDataCommitTracker
+  const observation = options.debugPhases && debug
+    ? createSetDataObservation({ debug, debugWhen, debugSampleRate, targetLabel, committedRevision: () => commitTracker.state.committedRevision })
+    : undefined
+
+  commitTracker = createSetDataCommitTracker({
+    observe: observation?.revision,
     initialSnapshot: initialSnapshotBaseline,
     adapter: currentAdapter,
     onFailure: (failure: SetDataCommitFailure) => {
@@ -512,6 +520,7 @@ export function createSetDataScheduler(options: SetDataSchedulerOptions): SetDat
     if (!isMounted()) {
       return false
     }
+    observation?.prepare()
     recordFlushForLoopWarning(pendingPatchKeys, pathSource)
     // 生成快照前刷新依赖（setup 中的 ref / 新增 key）
     runTracker()
