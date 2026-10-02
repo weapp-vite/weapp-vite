@@ -1,0 +1,3271 @@
+{
+  "budgetMs": 500,
+  "generatedAt": "2026-10-02T01:17:42.876Z",
+  "iterations": 5,
+  "profileTimeoutMs": 15000,
+  "profileEnabled": true,
+  "outputScopeEnabled": true,
+  "markerSeed": "issues1134native",
+  "sampleMode": "edit-only",
+  "summary": {
+    "maxMs": 1234.310083999997,
+    "maxWallMs": 1234.310083999997,
+    "measuredScenarioCount": 9,
+    "overBudgetCount": 2,
+    "failedTemplateCount": 0,
+    "failedScenarioCount": 0,
+    "templateCount": 1,
+    "scenarioCount": 9
+  },
+  "templates": [
+    {
+      "id": "issue-1134-profile",
+      "project": {
+        "source": "e2e-apps/github-issues/fixtures/issue-1134-profile",
+        "workspace": ".cache/native-profile-stateful-work/issue-1134-profile"
+      },
+      "scenarioCount": 9,
+      "scenarios": [
+        {
+          "averageMs": 183.28273299999992,
+          "averageWallMs": 183.28273299999992,
+          "group": "native-script",
+          "id": "native-script",
+          "label": "native-script: pages/plain/index.js",
+          "maxMs": 192.63004199999978,
+          "maxWallMs": 192.63004199999978,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/pages/plain/index.js",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+              "heapUsedBytes": 121640080,
+              "rssBytes": 501039104,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 170.7964579999998,
+              "wallMs": 170.7964579999998,
+              "inputSha256": "74fb1aba92c116d5099f6b65148fe50a55bfe97cf8b800d3ae8ecf77b284b25e",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "__weapp_vite_hmr/update.js"
+                ],
+                "removed": [],
+                "changedBytes": 3546
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+              "heapUsedBytes": 121344304,
+              "rssBytes": 501497856,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 186.61279100000002,
+              "wallMs": 186.61279100000002,
+              "inputSha256": "9c5114a73d1b644a7face50c1cc868db789a0b204036a831efb29ac99c132f68",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "__weapp_vite_hmr/update.js"
+                ],
+                "removed": [],
+                "changedBytes": 3546
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+              "heapUsedBytes": 121718464,
+              "rssBytes": 501547008,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 175.31441600000016,
+              "wallMs": 175.31441600000016,
+              "inputSha256": "e12bd6c983768ff77d1ff897bb9b102ed8a519138575e5915f25636603069ea2",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "__weapp_vite_hmr/update.js"
+                ],
+                "removed": [],
+                "changedBytes": 3546
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+              "heapUsedBytes": 122142568,
+              "rssBytes": 501645312,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 191.05995799999982,
+              "wallMs": 191.05995799999982,
+              "inputSha256": "81c2c401952a1ca22be3f38f8c60f4aab760b410d8d2d31e25ba1d022f446191",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "__weapp_vite_hmr/update.js"
+                ],
+                "removed": [],
+                "changedBytes": 3546
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+              "heapUsedBytes": 122686896,
+              "rssBytes": 501710848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 192.63004199999978,
+              "wallMs": 192.63004199999978,
+              "inputSha256": "3c04cc2c8301b992ffded262c6a1f488fcee5dd41b705d253d02d83d25c76329",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "__weapp_vite_hmr/update.js"
+                ],
+                "removed": [],
+                "changedBytes": 3546
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 121640080,
+                "rssBytes": 501039104,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 170.7964579999998,
+                "wallMs": 170.7964579999998,
+                "inputSha256": "74fb1aba92c116d5099f6b65148fe50a55bfe97cf8b800d3ae8ecf77b284b25e",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3546
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 120878664,
+                "rssBytes": 501284864,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 98.1863330000001,
+                "wallMs": 98.1863330000001,
+                "inputSha256": "8d172609930ae45e14fab3d7f5cf23bdd5f0b2c5b233e7605b27a9ef008e0a6d",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3466
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 121344304,
+                "rssBytes": 501497856,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 186.61279100000002,
+                "wallMs": 186.61279100000002,
+                "inputSha256": "9c5114a73d1b644a7face50c1cc868db789a0b204036a831efb29ac99c132f68",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3546
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 121318248,
+                "rssBytes": 501530624,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 109.16737499999999,
+                "wallMs": 109.16737499999999,
+                "inputSha256": "8d172609930ae45e14fab3d7f5cf23bdd5f0b2c5b233e7605b27a9ef008e0a6d",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3466
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 121718464,
+                "rssBytes": 501547008,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 175.31441600000016,
+                "wallMs": 175.31441600000016,
+                "inputSha256": "e12bd6c983768ff77d1ff897bb9b102ed8a519138575e5915f25636603069ea2",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3546
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 121823056,
+                "rssBytes": 501563392,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 103.29362499999979,
+                "wallMs": 103.29362499999979,
+                "inputSha256": "8d172609930ae45e14fab3d7f5cf23bdd5f0b2c5b233e7605b27a9ef008e0a6d",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3466
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 122142568,
+                "rssBytes": 501645312,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 191.05995799999982,
+                "wallMs": 191.05995799999982,
+                "inputSha256": "81c2c401952a1ca22be3f38f8c60f4aab760b410d8d2d31e25ba1d022f446191",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3546
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 122294624,
+                "rssBytes": 501678080,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 106.78933299999971,
+                "wallMs": 106.78933299999971,
+                "inputSha256": "8d172609930ae45e14fab3d7f5cf23bdd5f0b2c5b233e7605b27a9ef008e0a6d",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3466
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 122686896,
+                "rssBytes": 501710848,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 192.63004199999978,
+                "wallMs": 192.63004199999978,
+                "inputSha256": "3c04cc2c8301b992ffded262c6a1f488fcee5dd41b705d253d02d83d25c76329",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3546
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js",
+                "heapUsedBytes": 122694304,
+                "rssBytes": 501743616,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 94.99387500000012,
+                "wallMs": 94.99387500000012,
+                "inputSha256": "8d172609930ae45e14fab3d7f5cf23bdd5f0b2c5b233e7605b27a9ef008e0a6d",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/update.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 3467
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.js"
+        },
+        {
+          "averageMs": 396.1195414000007,
+          "averageWallMs": 396.1195414000007,
+          "group": "native-template",
+          "id": "native-template",
+          "label": "native-template: pages/plain/index.wxml",
+          "maxMs": 429.27716600000167,
+          "maxWallMs": 429.27716600000167,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/pages/plain/index.wxml",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+              "heapUsedBytes": 124816688,
+              "rssBytes": 508510208,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 398.2144580000004,
+              "wallMs": 398.2144580000004,
+              "inputSha256": "8b836b2604ce58c31f76ff579cb677ec6e932795c099e3e6f1dc25e10d303d0c",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxml"
+                ],
+                "removed": [],
+                "changedBytes": 135
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+              "heapUsedBytes": 128404032,
+              "rssBytes": 516784128,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 407.259,
+              "wallMs": 407.259,
+              "inputSha256": "c3fcaa15534f3bde130a1704fb8fb59684c4b6c2cbd692b27cd55c20584e0ec1",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxml"
+                ],
+                "removed": [],
+                "changedBytes": 135
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+              "heapUsedBytes": 130783968,
+              "rssBytes": 523403264,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 316.8407500000003,
+              "wallMs": 316.8407500000003,
+              "inputSha256": "d94611b5f90d1d3d2cd17f4578fe82b5eb60004732e0395c8cbefa28e811bcad",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxml"
+                ],
+                "removed": [],
+                "changedBytes": 135
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+              "heapUsedBytes": 133198800,
+              "rssBytes": 527253504,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 429.27716600000167,
+              "wallMs": 429.27716600000167,
+              "inputSha256": "9580c148cf2a03895c0d6a494bc58226aa4b3aac3def91940310de2b605ba291",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxml"
+                ],
+                "removed": [],
+                "changedBytes": 135
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+              "heapUsedBytes": 135258632,
+              "rssBytes": 530382848,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 429.0063330000012,
+              "wallMs": 429.0063330000012,
+              "inputSha256": "bef738ffbd2ae07c3bfe71c8e0d3c7b842ad9869c67f014114d8d0515d7cd05c",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxml"
+                ],
+                "removed": [],
+                "changedBytes": 135
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 124816688,
+                "rssBytes": 508510208,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 398.2144580000004,
+                "wallMs": 398.2144580000004,
+                "inputSha256": "8b836b2604ce58c31f76ff579cb677ec6e932795c099e3e6f1dc25e10d303d0c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 135
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 126610256,
+                "rssBytes": 513130496,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 396.79341699999986,
+                "wallMs": 396.79341699999986,
+                "inputSha256": "ce9204539336b697f1d19d07aa38786009d675fb790c38da4467441b725aae7c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 50
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 128404032,
+                "rssBytes": 516784128,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 407.259,
+                "wallMs": 407.259,
+                "inputSha256": "c3fcaa15534f3bde130a1704fb8fb59684c4b6c2cbd692b27cd55c20584e0ec1",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 135
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 129589752,
+                "rssBytes": 520503296,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 370.5643339999997,
+                "wallMs": 370.5643339999997,
+                "inputSha256": "ce9204539336b697f1d19d07aa38786009d675fb790c38da4467441b725aae7c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 50
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 130783968,
+                "rssBytes": 523403264,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 316.8407500000003,
+                "wallMs": 316.8407500000003,
+                "inputSha256": "d94611b5f90d1d3d2cd17f4578fe82b5eb60004732e0395c8cbefa28e811bcad",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 135
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 131988264,
+                "rssBytes": 525090816,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 374.22037499999897,
+                "wallMs": 374.22037499999897,
+                "inputSha256": "ce9204539336b697f1d19d07aa38786009d675fb790c38da4467441b725aae7c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 50
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 133198800,
+                "rssBytes": 527253504,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 429.27716600000167,
+                "wallMs": 429.27716600000167,
+                "inputSha256": "9580c148cf2a03895c0d6a494bc58226aa4b3aac3def91940310de2b605ba291",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 135
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 134134544,
+                "rssBytes": 528678912,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 373.3486249999987,
+                "wallMs": 373.3486249999987,
+                "inputSha256": "ce9204539336b697f1d19d07aa38786009d675fb790c38da4467441b725aae7c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 50
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 135258632,
+                "rssBytes": 530382848,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 429.0063330000012,
+                "wallMs": 429.0063330000012,
+                "inputSha256": "bef738ffbd2ae07c3bfe71c8e0d3c7b842ad9869c67f014114d8d0515d7cd05c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 135
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml",
+                "heapUsedBytes": 136323720,
+                "rssBytes": 531890176,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 352.02087500000016,
+                "wallMs": 352.02087500000016,
+                "inputSha256": "ce9204539336b697f1d19d07aa38786009d675fb790c38da4467441b725aae7c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxml"
+                  ],
+                  "removed": [],
+                  "changedBytes": 50
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxml"
+        },
+        {
+          "averageMs": 340.59015020000004,
+          "averageWallMs": 340.59015020000004,
+          "group": "native-style",
+          "id": "plain-wxss",
+          "label": "plain-wxss: pages/plain/index.wxss",
+          "maxMs": 435.1374999999989,
+          "maxWallMs": 435.1374999999989,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/pages/plain/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+              "heapUsedBytes": 137238720,
+              "rssBytes": 534380544,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 435.1374999999989,
+              "wallMs": 435.1374999999989,
+              "inputSha256": "d0ccfc3eade2a4a08161ec0ac1dcb4e8bca5702aaa4318461033b9b9855cdb44",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2483
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+              "heapUsedBytes": 139179480,
+              "rssBytes": 538230784,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 323.62054200000057,
+              "wallMs": 323.62054200000057,
+              "inputSha256": "d4a86f3a748b3c9a3f47da721e31cdeb547c9bf382365a278d78bddf742f97c9",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2483
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+              "heapUsedBytes": 141257880,
+              "rssBytes": 542785536,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 326.1469589999997,
+              "wallMs": 326.1469589999997,
+              "inputSha256": "f79041cb7687b1dbb92b41474f93cb3a2cd8b55f65acef8d9188ccbca748591e",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2483
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+              "heapUsedBytes": 143239864,
+              "rssBytes": 545685504,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 320.6084170000013,
+              "wallMs": 320.6084170000013,
+              "inputSha256": "4de187383aca29a9336157871d83b94879a64be74c70d9acd766687573a37eba",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2483
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+              "heapUsedBytes": 145227680,
+              "rssBytes": 547930112,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 297.43733299999985,
+              "wallMs": 297.43733299999985,
+              "inputSha256": "16903900c4096ec5571f4d686c8971aaa6c0ed449647e83e0db7c0709eb560df",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2483
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 137238720,
+                "rssBytes": 534380544,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 435.1374999999989,
+                "wallMs": 435.1374999999989,
+                "inputSha256": "d0ccfc3eade2a4a08161ec0ac1dcb4e8bca5702aaa4318461033b9b9855cdb44",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2483
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 138254200,
+                "rssBytes": 536854528,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 350.15750000000116,
+                "wallMs": 350.15750000000116,
+                "inputSha256": "4aa924e97e40156eee8f226502d367be0a1dc4fabccd95c2c8316a3253736dc8",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2398
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 139179480,
+                "rssBytes": 538230784,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 323.62054200000057,
+                "wallMs": 323.62054200000057,
+                "inputSha256": "d4a86f3a748b3c9a3f47da721e31cdeb547c9bf382365a278d78bddf742f97c9",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2483
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 140151168,
+                "rssBytes": 540770304,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 348.3322500000013,
+                "wallMs": 348.3322500000013,
+                "inputSha256": "4aa924e97e40156eee8f226502d367be0a1dc4fabccd95c2c8316a3253736dc8",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2398
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 141257880,
+                "rssBytes": 542785536,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 326.1469589999997,
+                "wallMs": 326.1469589999997,
+                "inputSha256": "f79041cb7687b1dbb92b41474f93cb3a2cd8b55f65acef8d9188ccbca748591e",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2483
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 142278152,
+                "rssBytes": 544784384,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 353.56416699999863,
+                "wallMs": 353.56416699999863,
+                "inputSha256": "4aa924e97e40156eee8f226502d367be0a1dc4fabccd95c2c8316a3253736dc8",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2398
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 143239864,
+                "rssBytes": 545685504,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 320.6084170000013,
+                "wallMs": 320.6084170000013,
+                "inputSha256": "4de187383aca29a9336157871d83b94879a64be74c70d9acd766687573a37eba",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2483
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 144226432,
+                "rssBytes": 547373056,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 351.4697500000002,
+                "wallMs": 351.4697500000002,
+                "inputSha256": "4aa924e97e40156eee8f226502d367be0a1dc4fabccd95c2c8316a3253736dc8",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2398
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 145227680,
+                "rssBytes": 547930112,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 297.43733299999985,
+                "wallMs": 297.43733299999985,
+                "inputSha256": "16903900c4096ec5571f4d686c8971aaa6c0ed449647e83e0db7c0709eb560df",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2483
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss",
+                "heapUsedBytes": 146132992,
+                "rssBytes": 550404096,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 373.4065420000006,
+                "wallMs": 373.4065420000006,
+                "inputSha256": "4aa924e97e40156eee8f226502d367be0a1dc4fabccd95c2c8316a3253736dc8",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2398
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.wxss"
+        },
+        {
+          "averageMs": 367.1439579999998,
+          "averageWallMs": 367.1439579999998,
+          "group": "native-style",
+          "id": "import-chain-wxss",
+          "label": "import-chain-wxss: styles/theme.wxss",
+          "maxMs": 432.5379159999975,
+          "maxWallMs": 432.5379159999975,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/pages/imported/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+              "heapUsedBytes": 147046624,
+              "rssBytes": 551337984,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 320.916709000001,
+              "wallMs": 320.916709000001,
+              "inputSha256": "9a7ba42845b12e6701297570310940bd60d7bd0f46d8580a45dad05814276379",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2493
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+              "heapUsedBytes": 149037792,
+              "rssBytes": 552665088,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 323.2921660000029,
+              "wallMs": 323.2921660000029,
+              "inputSha256": "dbaefa1de83c5b31eb0271ecdcb1f4be02aa8526ad9a04641bdf452a53d9a84e",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2493
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+              "heapUsedBytes": 151003648,
+              "rssBytes": 556285952,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 326.8550409999989,
+              "wallMs": 326.8550409999989,
+              "inputSha256": "8a1792b7b55652244e95cdb7c97efba0ee83bfee352e10083741e344e3336026",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2493
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+              "heapUsedBytes": 152881744,
+              "rssBytes": 561889280,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 432.1179579999989,
+              "wallMs": 432.1179579999989,
+              "inputSha256": "77109b5da7e2209ac12fefe933e931b5a2453a45bc2524022c9768d2a84d0082",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2493
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+              "heapUsedBytes": 154885944,
+              "rssBytes": 565067776,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 432.5379159999975,
+              "wallMs": 432.5379159999975,
+              "inputSha256": "c971a33fb89b6fb529232a53f2c901db7d795116bb9d96eaebb3bb3fba3d0920",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2493
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 147046624,
+                "rssBytes": 551337984,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 320.916709000001,
+                "wallMs": 320.916709000001,
+                "inputSha256": "9a7ba42845b12e6701297570310940bd60d7bd0f46d8580a45dad05814276379",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2493
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 148052256,
+                "rssBytes": 551976960,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 350.286333,
+                "wallMs": 350.286333,
+                "inputSha256": "fa462920db610c569e8c92825bc0332ced18b3c5c7b3c1bcd30d46be100edabd",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2401
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 149037792,
+                "rssBytes": 552665088,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 323.2921660000029,
+                "wallMs": 323.2921660000029,
+                "inputSha256": "dbaefa1de83c5b31eb0271ecdcb1f4be02aa8526ad9a04641bdf452a53d9a84e",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2493
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 150031480,
+                "rssBytes": 553959424,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 374.56866699999955,
+                "wallMs": 374.56866699999955,
+                "inputSha256": "fa462920db610c569e8c92825bc0332ced18b3c5c7b3c1bcd30d46be100edabd",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2401
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 151003648,
+                "rssBytes": 556285952,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 326.8550409999989,
+                "wallMs": 326.8550409999989,
+                "inputSha256": "8a1792b7b55652244e95cdb7c97efba0ee83bfee352e10083741e344e3336026",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2493
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 151996160,
+                "rssBytes": 560152576,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 352.6133750000008,
+                "wallMs": 352.6133750000008,
+                "inputSha256": "fa462920db610c569e8c92825bc0332ced18b3c5c7b3c1bcd30d46be100edabd",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2401
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 152881744,
+                "rssBytes": 561889280,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 432.1179579999989,
+                "wallMs": 432.1179579999989,
+                "inputSha256": "77109b5da7e2209ac12fefe933e931b5a2453a45bc2524022c9768d2a84d0082",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2493
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 153883528,
+                "rssBytes": 563642368,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 382.7212500000023,
+                "wallMs": 382.7212500000023,
+                "inputSha256": "fa462920db610c569e8c92825bc0332ced18b3c5c7b3c1bcd30d46be100edabd",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2401
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 154885944,
+                "rssBytes": 565067776,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 432.5379159999975,
+                "wallMs": 432.5379159999975,
+                "inputSha256": "c971a33fb89b6fb529232a53f2c901db7d795116bb9d96eaebb3bb3fba3d0920",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2493
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss",
+                "heapUsedBytes": 155794496,
+                "rssBytes": 566378496,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 350.78199999999924,
+                "wallMs": 350.78199999999924,
+                "inputSha256": "fa462920db610c569e8c92825bc0332ced18b3c5c7b3c1bcd30d46be100edabd",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2401
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/styles/theme.wxss"
+        },
+        {
+          "averageMs": 391.48888339999974,
+          "averageWallMs": 391.48888339999974,
+          "group": "native-style",
+          "id": "scss",
+          "label": "scss: pages/sass/index.scss",
+          "maxMs": 455.7296669999996,
+          "maxWallMs": 455.7296669999996,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/pages/sass/index.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+              "heapUsedBytes": 156709176,
+              "rssBytes": 566591488,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 319.73149999999805,
+              "wallMs": 319.73149999999805,
+              "inputSha256": "931be584940cbd55d0e1ffc7a62c4be7c097e5e8157d99cc86692ae387fdc9b0",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/sass/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2480
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+              "heapUsedBytes": 158671192,
+              "rssBytes": 567787520,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 350.57529200000135,
+              "wallMs": 350.57529200000135,
+              "inputSha256": "54306f0a47935e38d61103be5c78c648fe868b5242fbff1c693e8e5c0815ef1a",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/sass/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2480
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+              "heapUsedBytes": 160513856,
+              "rssBytes": 569163776,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 455.7296669999996,
+              "wallMs": 455.7296669999996,
+              "inputSha256": "8f2eacfa096f7fef11cb2b843511fd30a025627d3e921301996e6739dccd54d4",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/sass/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2480
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+              "heapUsedBytes": 162493656,
+              "rssBytes": 572620800,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 428.76808300000266,
+              "wallMs": 428.76808300000266,
+              "inputSha256": "09f55f3e4bedb38b09f726ec616be15dbd3bd944d3b91d58c238e8abc8c8ec4d",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/sass/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2480
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+              "heapUsedBytes": 164398088,
+              "rssBytes": 578797568,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 402.6398749999971,
+              "wallMs": 402.6398749999971,
+              "inputSha256": "cf6a8f5b6a76c227ba2b97556f60a22a7626b6bea8d40af424c7aec775e3067f",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/sass/index.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 2480
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 156709176,
+                "rssBytes": 566591488,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 319.73149999999805,
+                "wallMs": 319.73149999999805,
+                "inputSha256": "931be584940cbd55d0e1ffc7a62c4be7c097e5e8157d99cc86692ae387fdc9b0",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2480
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 157657144,
+                "rssBytes": 567279616,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 341.78008399999817,
+                "wallMs": 341.78008399999817,
+                "inputSha256": "0b6e1a7ae2b4da892761960023eb343a6a5b455d7c5371fb6cc739d1a321b75b",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2399
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 158671192,
+                "rssBytes": 567787520,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 350.57529200000135,
+                "wallMs": 350.57529200000135,
+                "inputSha256": "54306f0a47935e38d61103be5c78c648fe868b5242fbff1c693e8e5c0815ef1a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2480
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 159550776,
+                "rssBytes": 568655872,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 319.50445799999943,
+                "wallMs": 319.50445799999943,
+                "inputSha256": "0b6e1a7ae2b4da892761960023eb343a6a5b455d7c5371fb6cc739d1a321b75b",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2399
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 160513856,
+                "rssBytes": 569163776,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 455.7296669999996,
+                "wallMs": 455.7296669999996,
+                "inputSha256": "8f2eacfa096f7fef11cb2b843511fd30a025627d3e921301996e6739dccd54d4",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2480
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 161520968,
+                "rssBytes": 571031552,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 346.91745900000024,
+                "wallMs": 346.91745900000024,
+                "inputSha256": "0b6e1a7ae2b4da892761960023eb343a6a5b455d7c5371fb6cc739d1a321b75b",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2399
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 162493656,
+                "rssBytes": 572620800,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 428.76808300000266,
+                "wallMs": 428.76808300000266,
+                "inputSha256": "09f55f3e4bedb38b09f726ec616be15dbd3bd944d3b91d58c238e8abc8c8ec4d",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2480
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 163461704,
+                "rssBytes": 575799296,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 376.84154099999796,
+                "wallMs": 376.84154099999796,
+                "inputSha256": "0b6e1a7ae2b4da892761960023eb343a6a5b455d7c5371fb6cc739d1a321b75b",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2399
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 164398088,
+                "rssBytes": 578797568,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 402.6398749999971,
+                "wallMs": 402.6398749999971,
+                "inputSha256": "cf6a8f5b6a76c227ba2b97556f60a22a7626b6bea8d40af424c7aec775e3067f",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2480
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss",
+                "heapUsedBytes": 165393752,
+                "rssBytes": 580698112,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 346.5567919999994,
+                "wallMs": 346.5567919999994,
+                "inputSha256": "0b6e1a7ae2b4da892761960023eb343a6a5b455d7c5371fb6cc739d1a321b75b",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/sass/index.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 2399
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/sass/index.scss"
+        },
+        {
+          "averageMs": 422.6740334000002,
+          "averageWallMs": 422.6740334000002,
+          "group": "native-style",
+          "id": "tailwind-content",
+          "label": "tailwind-content: pages/tailwind/index.wxml",
+          "maxMs": 465.3742089999978,
+          "maxWallMs": 465.3742089999978,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/app.wxss",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+              "heapUsedBytes": 166802320,
+              "rssBytes": 586072064,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 465.3742089999978,
+              "wallMs": 465.3742089999978,
+              "inputSha256": "64eccef3e2e78c4abbdba1f6b4b73a5c296d8a785cff98183815b2a733676532",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss",
+                  "pages/plain/index.wxss",
+                  "pages/sass/index.wxss",
+                  "pages/tailwind/index.wxml",
+                  "pages/tailwind/index.wxss",
+                  "weapp-vite-global.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 12158
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+              "heapUsedBytes": 169033464,
+              "rssBytes": 590364672,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 427.796583000003,
+              "wallMs": 427.796583000003,
+              "inputSha256": "1598e8e7958e12e7e1b6cdffe73ce19381a4cd7335f634539fe458cb62fb076b",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss",
+                  "pages/plain/index.wxss",
+                  "pages/sass/index.wxss",
+                  "pages/tailwind/index.wxml",
+                  "pages/tailwind/index.wxss",
+                  "weapp-vite-global.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 12158
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+              "heapUsedBytes": 172178504,
+              "rssBytes": 638287872,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 461.58258299999943,
+              "wallMs": 461.58258299999943,
+              "inputSha256": "7f1266e733d5bed8069cc3fa3151f28b418f57a95c8bc04e14f28331494dadb5",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss",
+                  "pages/plain/index.wxss",
+                  "pages/sass/index.wxss",
+                  "pages/tailwind/index.wxml",
+                  "pages/tailwind/index.wxss",
+                  "weapp-vite-global.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 12147
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+              "heapUsedBytes": 174444088,
+              "rssBytes": 648986624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 436.1643330000006,
+              "wallMs": 436.1643330000006,
+              "inputSha256": "a0c35a1551e46260fd5a0d1fb3ae632a6a4a3f1f5750e734c7214b3b52fba2f1",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss",
+                  "pages/plain/index.wxss",
+                  "pages/sass/index.wxss",
+                  "pages/tailwind/index.wxml",
+                  "pages/tailwind/index.wxss",
+                  "weapp-vite-global.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 12158
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+              "heapUsedBytes": 176598592,
+              "rssBytes": 655720448,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 322.4524590000001,
+              "wallMs": 322.4524590000001,
+              "inputSha256": "4143f03a0b2d4d6a54733e7508e09ccaa6d7ecfe6385894ed293801060af9e38",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/imported/index.wxss",
+                  "pages/plain/index.wxss",
+                  "pages/sass/index.wxss",
+                  "pages/tailwind/index.wxml",
+                  "pages/tailwind/index.wxss",
+                  "weapp-vite-global.wxss"
+                ],
+                "removed": [],
+                "changedBytes": 12158
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 166802320,
+                "rssBytes": 586072064,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 465.3742089999978,
+                "wallMs": 465.3742089999978,
+                "inputSha256": "64eccef3e2e78c4abbdba1f6b4b73a5c296d8a785cff98183815b2a733676532",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 12158
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 167685576,
+                "rssBytes": 589594624,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 351.8970420000005,
+                "wallMs": 351.8970420000005,
+                "inputSha256": "c1a56de68559a33b7725ec858cd6d406bed1b240805d3ef2009e92924123fc0c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 11831
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 169033464,
+                "rssBytes": 590364672,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 427.796583000003,
+                "wallMs": 427.796583000003,
+                "inputSha256": "1598e8e7958e12e7e1b6cdffe73ce19381a4cd7335f634539fe458cb62fb076b",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 12158
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 170017448,
+                "rssBytes": 595132416,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 352.5229169999984,
+                "wallMs": 352.5229169999984,
+                "inputSha256": "c1a56de68559a33b7725ec858cd6d406bed1b240805d3ef2009e92924123fc0c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 11831
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 172178504,
+                "rssBytes": 638287872,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 461.58258299999943,
+                "wallMs": 461.58258299999943,
+                "inputSha256": "7f1266e733d5bed8069cc3fa3151f28b418f57a95c8bc04e14f28331494dadb5",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 12147
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 173121584,
+                "rssBytes": 643874816,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 326.8832079999993,
+                "wallMs": 326.8832079999993,
+                "inputSha256": "c1a56de68559a33b7725ec858cd6d406bed1b240805d3ef2009e92924123fc0c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 11831
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 174444088,
+                "rssBytes": 648986624,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 436.1643330000006,
+                "wallMs": 436.1643330000006,
+                "inputSha256": "a0c35a1551e46260fd5a0d1fb3ae632a6a4a3f1f5750e734c7214b3b52fba2f1",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 12158
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 175386600,
+                "rssBytes": 652967936,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 350.546875,
+                "wallMs": 350.546875,
+                "inputSha256": "c1a56de68559a33b7725ec858cd6d406bed1b240805d3ef2009e92924123fc0c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 11831
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 176598592,
+                "rssBytes": 655720448,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 322.4524590000001,
+                "wallMs": 322.4524590000001,
+                "inputSha256": "4143f03a0b2d4d6a54733e7508e09ccaa6d7ecfe6385894ed293801060af9e38",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 12158
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml",
+                "heapUsedBytes": 177523712,
+                "rssBytes": 659177472,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 352.8977909999994,
+                "wallMs": 352.8977909999994,
+                "inputSha256": "c1a56de68559a33b7725ec858cd6d406bed1b240805d3ef2009e92924123fc0c",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/imported/index.wxss",
+                    "pages/plain/index.wxss",
+                    "pages/sass/index.wxss",
+                    "pages/tailwind/index.wxml",
+                    "pages/tailwind/index.wxss",
+                    "weapp-vite-global.wxss"
+                  ],
+                  "removed": [],
+                  "changedBytes": 11831
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/tailwind/index.wxml"
+        },
+        {
+          "averageMs": 403.3896500000017,
+          "averageWallMs": 403.3896500000017,
+          "group": "json",
+          "id": "local-json",
+          "label": "local-json: pages/plain/index.json",
+          "maxMs": 433.39529200000106,
+          "maxWallMs": 433.39529200000106,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/pages/plain/index.json",
+          "overBudget": false,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 178501728,
+              "rssBytes": 661274624,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 426.28408299999865,
+              "wallMs": 426.28408299999865,
+              "inputSha256": "8e3c8ae17810519c5c192df2adeb7ff37a77d08e36210ae796846d03b866f913",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.json"
+                ],
+                "removed": [],
+                "changedBytes": 92
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 180393880,
+              "rssBytes": 666648576,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 433.39529200000106,
+              "wallMs": 433.39529200000106,
+              "inputSha256": "11937793ddb6a490107a2a877c1e9dd770406107c1250f7c008919f8bbf8b55e",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.json"
+                ],
+                "removed": [],
+                "changedBytes": 92
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 182110608,
+              "rssBytes": 671875072,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 429.5427500000005,
+              "wallMs": 429.5427500000005,
+              "inputSha256": "4e2cafa6c4121baf24a6c703b628216612f4d1310a141bdafff23373cd86e002",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.json"
+                ],
+                "removed": [],
+                "changedBytes": 92
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 184031920,
+              "rssBytes": 676216832,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 299.30250000000524,
+              "wallMs": 299.30250000000524,
+              "inputSha256": "bd31412f8951cd2d1d2706bf85f5e47505f4a7413603b1cff16cfed36ca0a7f4",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.json"
+                ],
+                "removed": [],
+                "changedBytes": 92
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 185856352,
+              "rssBytes": 680280064,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 428.4236250000031,
+              "wallMs": 428.4236250000031,
+              "inputSha256": "1de0926261fafc354ca2c112c4e295144bcb5c5ace3d7169e3701d57a6f6309e",
+              "outputChanges": {
+                "added": [],
+                "changed": [
+                  "pages/plain/index.json"
+                ],
+                "removed": [],
+                "changedBytes": 92
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 178501728,
+                "rssBytes": 661274624,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 426.28408299999865,
+                "wallMs": 426.28408299999865,
+                "inputSha256": "8e3c8ae17810519c5c192df2adeb7ff37a77d08e36210ae796846d03b866f913",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 92
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 179401680,
+                "rssBytes": 664600576,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 349.5118750000038,
+                "wallMs": 349.5118750000038,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 42
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 180393880,
+                "rssBytes": 666648576,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 433.39529200000106,
+                "wallMs": 433.39529200000106,
+                "inputSha256": "11937793ddb6a490107a2a877c1e9dd770406107c1250f7c008919f8bbf8b55e",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 92
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 181225456,
+                "rssBytes": 669941760,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 350.8051669999986,
+                "wallMs": 350.8051669999986,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 42
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 182110608,
+                "rssBytes": 671875072,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 429.5427500000005,
+                "wallMs": 429.5427500000005,
+                "inputSha256": "4e2cafa6c4121baf24a6c703b628216612f4d1310a141bdafff23373cd86e002",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 92
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 183080016,
+                "rssBytes": 674643968,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 348.1933330000029,
+                "wallMs": 348.1933330000029,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 42
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 184031920,
+                "rssBytes": 676216832,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 299.30250000000524,
+                "wallMs": 299.30250000000524,
+                "inputSha256": "bd31412f8951cd2d1d2706bf85f5e47505f4a7413603b1cff16cfed36ca0a7f4",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 92
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 184888040,
+                "rssBytes": 678084608,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 374.01829200000066,
+                "wallMs": 374.01829200000066,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 42
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 185856352,
+                "rssBytes": 680280064,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 428.4236250000031,
+                "wallMs": 428.4236250000031,
+                "inputSha256": "1de0926261fafc354ca2c112c4e295144bcb5c5ace3d7169e3701d57a6f6309e",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 92
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 186676144,
+                "rssBytes": 683212800,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 323.0416669999977,
+                "wallMs": 323.0416669999977,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "pages/plain/index.json"
+                  ],
+                  "removed": [],
+                  "changedBytes": 42
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json"
+        },
+        {
+          "averageMs": 1080.6222749999986,
+          "averageWallMs": 1080.6222749999986,
+          "group": "json",
+          "id": "component-topology-json",
+          "label": "component-topology-json: pages/plain/index.json",
+          "maxMs": 1097.4884590000001,
+          "maxWallMs": 1097.4884590000001,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/pages/plain/index.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 195121144,
+              "rssBytes": 708870144,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1096.052917000001,
+              "wallMs": 1096.052917000001,
+              "inputSha256": "ae213feab6a66d1781216869a892d316a33050c031240f5ab43a6a11cfe4e937",
+              "outputChanges": {
+                "added": [
+                  "components/optional/index.js",
+                  "components/optional/index.json",
+                  "components/optional/index.wxml",
+                  "components/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "__weapp_vite_hmr/update.js",
+                  "app.js",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/plain/index.json",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 215853
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 208518136,
+              "rssBytes": 765755392,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1078.525499999996,
+              "wallMs": 1078.525499999996,
+              "inputSha256": "54ef97559e3454d6e42bcafc37b8057333b110340d4eee347698e26d9c4a6e76",
+              "outputChanges": {
+                "added": [
+                  "components/optional/index.js",
+                  "components/optional/index.json",
+                  "components/optional/index.wxml",
+                  "components/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/plain/index.json",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 215845
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 221752968,
+              "rssBytes": 803143680,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1081.0405829999945,
+              "wallMs": 1081.0405829999945,
+              "inputSha256": "f2ea84d6255faf9000994fe7202f7b7b04f13f8e57684aea81e8850ab1e9cc43",
+              "outputChanges": {
+                "added": [
+                  "components/optional/index.js",
+                  "components/optional/index.json",
+                  "components/optional/index.wxml",
+                  "components/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/plain/index.json",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 215845
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 235105152,
+              "rssBytes": 847659008,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1050.0039160000015,
+              "wallMs": 1050.0039160000015,
+              "inputSha256": "fb355d9fa34933bf07ceaedd8c3de50898e92387b5e70ac2aa23e9b557e429f7",
+              "outputChanges": {
+                "added": [
+                  "components/optional/index.js",
+                  "components/optional/index.json",
+                  "components/optional/index.wxml",
+                  "components/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/plain/index.json",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 215841
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+              "heapUsedBytes": 248682648,
+              "rssBytes": 881197056,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1097.4884590000001,
+              "wallMs": 1097.4884590000001,
+              "inputSha256": "3c6f2992035764017280d16f5bb4c1203fd7056235572d2fba276d60a80817ba",
+              "outputChanges": {
+                "added": [
+                  "components/optional/index.js",
+                  "components/optional/index.json",
+                  "components/optional/index.wxml",
+                  "components/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/plain/index.json",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 215841
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 195121144,
+                "rssBytes": 708870144,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1096.052917000001,
+                "wallMs": 1096.052917000001,
+                "inputSha256": "ae213feab6a66d1781216869a892d316a33050c031240f5ab43a6a11cfe4e937",
+                "outputChanges": {
+                  "added": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "__weapp_vite_hmr/update.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 215853
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 201246800,
+                "rssBytes": 740687872,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1116.1693749999977,
+                "wallMs": 1116.1693749999977,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changedBytes": 176732
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 208518136,
+                "rssBytes": 765755392,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1078.525499999996,
+                "wallMs": 1078.525499999996,
+                "inputSha256": "54ef97559e3454d6e42bcafc37b8057333b110340d4eee347698e26d9c4a6e76",
+                "outputChanges": {
+                  "added": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 215845
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 214835608,
+                "rssBytes": 788905984,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1048.3842500000028,
+                "wallMs": 1048.3842500000028,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changedBytes": 176728
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 221752968,
+                "rssBytes": 803143680,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1081.0405829999945,
+                "wallMs": 1081.0405829999945,
+                "inputSha256": "f2ea84d6255faf9000994fe7202f7b7b04f13f8e57684aea81e8850ab1e9cc43",
+                "outputChanges": {
+                  "added": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 215845
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 228042032,
+                "rssBytes": 824229888,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1087.868957999999,
+                "wallMs": 1087.868957999999,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changedBytes": 176732
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 235105152,
+                "rssBytes": 847659008,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1050.0039160000015,
+                "wallMs": 1050.0039160000015,
+                "inputSha256": "fb355d9fa34933bf07ceaedd8c3de50898e92387b5e70ac2aa23e9b557e429f7",
+                "outputChanges": {
+                  "added": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 215841
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 241538672,
+                "rssBytes": 863174656,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1099.8834160000042,
+                "wallMs": 1099.8834160000042,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changedBytes": 176728
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 248682648,
+                "rssBytes": 881197056,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1097.4884590000001,
+                "wallMs": 1097.4884590000001,
+                "inputSha256": "3c6f2992035764017280d16f5bb4c1203fd7056235572d2fba276d60a80817ba",
+                "outputChanges": {
+                  "added": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 215841
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json",
+                "heapUsedBytes": 254993104,
+                "rssBytes": 898138112,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1123.2612920000029,
+                "wallMs": 1123.2612920000029,
+                "inputSha256": "a1b7ebb738b962ac72e3e6468ee5ab4bfeee8c0fa345068af904dfa5d0fcbc5a",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/plain/index.json",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "components/optional/index.js",
+                    "components/optional/index.json",
+                    "components/optional/index.wxml",
+                    "components/optional/index.wxss"
+                  ],
+                  "changedBytes": 176732
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/pages/plain/index.json"
+        },
+        {
+          "averageMs": 1119.177958399999,
+          "averageWallMs": 1119.177958399999,
+          "group": "json",
+          "id": "route-topology-json",
+          "label": "route-topology-json: app.json",
+          "maxMs": 1234.310083999997,
+          "maxWallMs": 1234.310083999997,
+          "outputFile": ".cache/native-profile-stateful-work/issue-1134-profile/dist/app.json",
+          "overBudget": true,
+          "samples": [
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+              "heapUsedBytes": 261843520,
+              "rssBytes": 912392192,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1069.1711250000008,
+              "wallMs": 1069.1711250000008,
+              "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+              "outputChanges": {
+                "added": [
+                  "pages/optional/index.js",
+                  "pages/optional/index.json",
+                  "pages/optional/index.wxml",
+                  "pages/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "app.json",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 202373
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+              "heapUsedBytes": 274315016,
+              "rssBytes": 951287808,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1095.1356249999953,
+              "wallMs": 1095.1356249999953,
+              "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+              "outputChanges": {
+                "added": [
+                  "pages/optional/index.js",
+                  "pages/optional/index.json",
+                  "pages/optional/index.wxml",
+                  "pages/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "app.json",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 202373
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+              "heapUsedBytes": 286929992,
+              "rssBytes": 984842240,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1098.559957999998,
+              "wallMs": 1098.559957999998,
+              "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+              "outputChanges": {
+                "added": [
+                  "pages/optional/index.js",
+                  "pages/optional/index.json",
+                  "pages/optional/index.wxml",
+                  "pages/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "app.json",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 202373
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+              "heapUsedBytes": 299236768,
+              "rssBytes": 1023246336,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1234.310083999997,
+              "wallMs": 1234.310083999997,
+              "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+              "outputChanges": {
+                "added": [
+                  "pages/optional/index.js",
+                  "pages/optional/index.json",
+                  "pages/optional/index.wxml",
+                  "pages/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "app.json",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 202373
+              }
+            },
+            {
+              "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+              "heapUsedBytes": 311505984,
+              "rssBytes": 1056882688,
+              "phase": "edit",
+              "profileStatus": "unavailable-stateful",
+              "timingSource": "output-observation",
+              "totalMs": 1098.7130000000034,
+              "wallMs": 1098.7130000000034,
+              "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+              "outputChanges": {
+                "added": [
+                  "pages/optional/index.js",
+                  "pages/optional/index.json",
+                  "pages/optional/index.wxml",
+                  "pages/optional/index.wxss"
+                ],
+                "changed": [
+                  "__weapp_vite_hmr/control.js",
+                  "app.js",
+                  "app.json",
+                  "pages/imported/index.js",
+                  "pages/plain/index.js",
+                  "pages/sass/index.js",
+                  "pages/tailwind/index.js",
+                  "rolldown-runtime.js"
+                ],
+                "removed": [],
+                "changedBytes": 202373
+              }
+            }
+          ],
+          "cycles": [
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 261843520,
+                "rssBytes": 912392192,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1069.1711250000008,
+                "wallMs": 1069.1711250000008,
+                "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+                "outputChanges": {
+                  "added": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 202373
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 268066824,
+                "rssBytes": 928481280,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1122.2753750000047,
+                "wallMs": 1122.2753750000047,
+                "inputSha256": "0871272b2c480bb7b71c133054e96e598c74a32623a5021e8acea8ed9859a3ee",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changedBytes": 177010
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 274315016,
+                "rssBytes": 951287808,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1095.1356249999953,
+                "wallMs": 1095.1356249999953,
+                "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+                "outputChanges": {
+                  "added": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 202373
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 280514864,
+                "rssBytes": 966885376,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1149.9100830000025,
+                "wallMs": 1149.9100830000025,
+                "inputSha256": "0871272b2c480bb7b71c133054e96e598c74a32623a5021e8acea8ed9859a3ee",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changedBytes": 177010
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 286929992,
+                "rssBytes": 984842240,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1098.559957999998,
+                "wallMs": 1098.559957999998,
+                "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+                "outputChanges": {
+                  "added": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 202373
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 292850800,
+                "rssBytes": 1006354432,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1150.6677090000012,
+                "wallMs": 1150.6677090000012,
+                "inputSha256": "0871272b2c480bb7b71c133054e96e598c74a32623a5021e8acea8ed9859a3ee",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changedBytes": 177014
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 299236768,
+                "rssBytes": 1023246336,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1234.310083999997,
+                "wallMs": 1234.310083999997,
+                "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+                "outputChanges": {
+                  "added": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 202373
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 305118688,
+                "rssBytes": 1035288576,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1158.8177499999947,
+                "wallMs": 1158.8177499999947,
+                "inputSha256": "0871272b2c480bb7b71c133054e96e598c74a32623a5021e8acea8ed9859a3ee",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changedBytes": 177014
+                }
+              }
+            },
+            {
+              "edit": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 311505984,
+                "rssBytes": 1056882688,
+                "phase": "edit",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1098.7130000000034,
+                "wallMs": 1098.7130000000034,
+                "inputSha256": "6bdbb0d0974e5fb0b22db39f2017e0cb5f3be4f0ac42df57cc7b7e96b35af5ee",
+                "outputChanges": {
+                  "added": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [],
+                  "changedBytes": 202373
+                }
+              },
+              "restore": {
+                "file": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json",
+                "heapUsedBytes": 317595328,
+                "rssBytes": 1073856512,
+                "phase": "restore",
+                "profileStatus": "unavailable-stateful",
+                "timingSource": "output-observation",
+                "totalMs": 1147.4086249999964,
+                "wallMs": 1147.4086249999964,
+                "inputSha256": "0871272b2c480bb7b71c133054e96e598c74a32623a5021e8acea8ed9859a3ee",
+                "outputChanges": {
+                  "added": [],
+                  "changed": [
+                    "__weapp_vite_hmr/control.js",
+                    "app.js",
+                    "app.json",
+                    "pages/imported/index.js",
+                    "pages/plain/index.js",
+                    "pages/sass/index.js",
+                    "pages/tailwind/index.js",
+                    "rolldown-runtime.js"
+                  ],
+                  "removed": [
+                    "pages/optional/index.js",
+                    "pages/optional/index.json",
+                    "pages/optional/index.wxml",
+                    "pages/optional/index.wxss"
+                  ],
+                  "changedBytes": 177014
+                }
+              }
+            }
+          ],
+          "sourceFile": ".cache/native-profile-stateful-work/issue-1134-profile/src/app.json"
+        }
+      ],
+      "startupMs": 1631.4199589999998,
+      "devLog": "logs/issue-1134-profile.dev.log"
+    }
+  ],
+  "timeoutMs": 30000
+}

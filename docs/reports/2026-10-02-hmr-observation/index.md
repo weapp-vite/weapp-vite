@@ -40,7 +40,7 @@ pnpm exec tsx scripts/benchmark-templates-hmr.ts
 
 ## 验证边界
 
-weapp-vite 包级 typecheck、构建、编辑序列单独 tsconfig 检查和范围 lint 通过。完整 scripts tsconfig 仍有其导入的历史 e2e/automator 类型错误；不将其写为通过，当前改动路径无类型诊断。原生 WXSS/JSON 分类实测、完整宿主矩阵、模式切换的目标页面 runtime 与最新候选 CI 仍需后续验证；本报告不替代这些门槛。
+weapp-vite 包级 typecheck、构建、编辑序列单独 tsconfig 检查和范围 lint 通过。完整 scripts tsconfig 仍有其导入的历史 e2e/automator 类型错误；不将其写为通过，当前改动路径无类型诊断。完整宿主矩阵、模式切换的目标页面 runtime 与最新候选 CI 仍需后续验证；本报告不替代这些门槛。
 
 
 ## 原生四文件与模式切换补充
@@ -50,3 +50,27 @@ weapp-vite 包级 typecheck、构建、编辑序列单独 tsconfig 检查和范�
 `mode-sequences.json` 和 `mode-sequence-provenance.json` 是完整 weapp 插件的新观察器样本，复用同一 driver、首个分歧和 worker 资源管理。默认清理与共享目录两组各 8 个步骤通过，结束后子进程均为 0。覆盖 production→dev→production、dev→production、组件移动/删除、分包及页面迁移/删除、共享依赖变化、旧缓存恢复。每一步完整生产磁盘文件集合与独立进程基线逐字节相等，并检查 emitted JS 引用与 app 路由文件存在。
 
 共享目录组使用集成层产物清单清理，且每个模式完成后都确认用户文件仍在。缓存内容来自先前原生构建，只有缓存恢复示例写入该快照；框架构建仍完全由 Vite/Rolldown emit/write。负向单测证明用户改写与同名未知内容会拒绝清理或覆盖。本轮没有证明核心构建器违反 `emptyOutDir: false` 契约，不以清空共享目录冒充修复。这些步骤的 `rapid` 动作仅组合模式切换前的输入，不声称覆盖活跃 watcher 的快速保存；耗时也不作为 HMR 延迟或提速证据。
+
+## 原生依赖与入口拓扑
+
+候选 `9f3c9ab03` 干净工作区的严格 headless 与 Stable 验收各 2 场景、12 个检查点通过，运行时 error/exception 均为 0。原始检查点及观察值见 `native-topology-acceptance.json`；Stable 渠道于 2026-10-02 01:00 UTC 核对，版本 2.02.2608080、基础库 3.17.2，官方来源和安装核对见 `native-topology-ide-selection.json`。涵盖 classic/stateful 样式导入链更新与恢复、新增组件渲染、新增页面导航、撤销后原页面恢复；headless 不提供计算样式，计算颜色另由 Stable 与 mpcore Chromium 用例验证。
+
+真实 IDE 验收期间出现模拟器启动错误和 bridge bootstrap 重试。Computer Use 读取 Stable 窗口，重新打开本轮测试项目后复查；自动重试完成后全部强断言通过。没有重启共享宿主、删除全局资源或修改验收断言。此前诊断运行因 warmup 选择器错误失败，修正为各 fixture 页面共同根节点后重新执行本次严格验收；旧诊断通过不作为候选证据。
+
+`native-classic-samples.json`、`native-stateful-samples.json` 保存同候选、Node 24.18.0、darwin arm64 的九类原生编辑完整样本。每类 5 轮并包含恢复，各 90 样本；两组 90 对输入 SHA256 全部一致。开启 profile 和输出范围观察，使用固定 marker seed `issues1134native`。汇总与限制见 `native-profile-provenance.json`。
+
+| 编辑类别 | classic wall 中位数 ms | stateful wall 中位数 ms |
+| --- | --- | --- |
+| 原生脚本 | 182.0 | 186.6 |
+| 原生模板 | 288.1 | 407.3 |
+| 普通 WXSS | 290.7 | 323.6 |
+| WXSS 导入链 | 289.6 | 326.9 |
+| SCSS | 394.0 | 402.6 |
+| Tailwind 内容 | 421.0 | 436.2 |
+| 局部 JSON | 414.6 | 428.4 |
+| 组件拓扑 JSON | 708.9 | 1081.0 |
+| 页面拓扑 JSON | 865.6 | 1098.6 |
+
+两组组件及页面拓扑都超过默认 500 ms 观察预算，保留为待调查项。classic 内部 profile 全部 available；stateful 全部 `unavailable-stateful`，未知阶段没有折算为零。磁盘范围记录实际 added/changed/removed 及字节差异，不代表 write 次数或全部转换成本。基线在导入链及拓扑场景功能失败，因此不能将其超时作为性能基线，也没有据此宣称提速或无需优化。
+
+复现入口为 `scripts/benchmark-templates-hmr.ts`，指定 `TEMPLATES_HMR_PROJECT_ROOT=e2e-apps/github-issues/fixtures/issue-1134-profile`、`TEMPLATES_HMR_RUNTIME=classic` 或 `stateful-experimental`、`TEMPLATES_HMR_ITERATIONS=5`、`TEMPLATES_HMR_SAMPLE_MODE=edit-only`、`TEMPLATES_HMR_PROFILE=1`、`TEMPLATES_HMR_OUTPUT_SCOPE=1`、`TEMPLATES_HMR_MARKER_SEED=issues1134native`，两组全局串行。运行器复制 fixture 到临时项目后构建，不在受版本管理 fixture 内启动 watcher。
