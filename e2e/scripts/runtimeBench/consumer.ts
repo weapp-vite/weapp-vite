@@ -58,7 +58,7 @@ export async function verifyRuntimeBenchConsumer(projectRoot: string) {
 export async function createRuntimeBenchConsumer(options: { root: string, fixtureRoot: string, tarballDirectory: string }) {
   const candidates = await readConsumerTarballs(options.tarballDirectory) as Record<string, string>
   await fs.mkdir(options.root, { recursive: true })
-  for (const entry of ['src', 'vite.config.ts', 'tsconfig.json', 'project.config.json', 'project.private.config.json']) {
+  for (const entry of ['src', 'auto-import-components.json', 'vite.config.ts', 'tsconfig.json', 'project.config.json', 'project.private.config.json']) {
     await fs.cp(path.join(options.fixtureRoot, entry), path.join(options.root, entry), { recursive: true })
   }
   await fs.writeFile(path.join(options.root, 'package.json'), `${JSON.stringify({
