@@ -64,7 +64,7 @@ export default defineComponent({
       state.metrics = {
         ...state.metrics,
         loadToReadyMs: now() - loadStartedAt,
-        firstCommitMs: setDataCounter.firstCommitAt ? setDataCounter.firstCommitAt - loadStartedAt : 0,
+        firstCommitMs: null,
       }
     })
 

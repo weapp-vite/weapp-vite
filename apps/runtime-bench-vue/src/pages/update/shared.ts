@@ -1,5 +1,5 @@
 import type { SetDataDebugInfo } from 'wevu'
-import type { BenchMetrics, BenchSetDataDiagnosticsSummary, SetDataCounter } from '../../utils/bench'
+import type { SetDataCounter } from '../../utils/bench'
 import { nextTick, onLoad, onReady } from 'wevu'
 import {
   createBenchCards,
@@ -21,62 +21,7 @@ export interface UpdateBenchPageOptions {
   title: string
 }
 
-function createEmptyDiagnosticsSummary(): BenchSetDataDiagnosticsSummary {
-  return {
-    flushes: 0,
-    patchFlushes: 0,
-    diffFlushes: 0,
-    fallbackFlushes: 0,
-    fallbackReasons: {},
-    avgPayloadKeys: 0,
-    maxPayloadKeys: 0,
-    avgPendingPatchKeys: 0,
-    maxPendingPatchKeys: 0,
-    avgBytes: 0,
-    maxBytes: 0,
-    avgComputedDirtyKeys: 0,
-    maxComputedDirtyKeys: 0,
-    avgMergedSiblingParents: 0,
-    maxMergedSiblingParents: 0,
-  }
-}
-
-function buildSnapshot(data: {
-  cards: unknown[]
-  metrics: BenchMetrics
-  readyMarker: string
-  summary: string
-}, setDataCounter: SetDataCounter) {
-  return {
-    readyMarker: data.readyMarker,
-    cardCount: data.cards.length,
-    summary: data.summary,
-    metrics: data.metrics,
-    totalSetDataCalls: setDataCounter.total,
-  }
-}
-
-function buildUpdateSnapshot(data: {
-  cards: unknown[]
-  metrics: BenchMetrics
-  readyMarker: string
-  summary: string
-  setDataDiagnostics: {
-    singleCommit: BenchSetDataDiagnosticsSummary
-    microCommit: BenchSetDataDiagnosticsSummary
-  }
-  strategyLabel: string
-}, setDataCounter: SetDataCounter) {
-  return {
-    readyMarker: data.readyMarker,
-    cardCount: data.cards.length,
-    summary: data.summary,
-    metrics: data.metrics,
-    totalSetDataCalls: setDataCounter.total,
-    setDataDiagnostics: data.setDataDiagnostics,
-    strategyLabel: data.strategyLabel,
-  }
-}
+type Workload = 'replace' | 'frequent' | 'small-field' | 'batch' | 'append' | 'reorder'
 
 export function createUpdateBenchData(options: UpdateBenchPageOptions) {
   return () => ({
@@ -87,166 +32,143 @@ export function createUpdateBenchData(options: UpdateBenchPageOptions) {
     metrics: createEmptyMetrics(),
     totalSetDataCalls: 0,
     strategyLabel: options.strategyLabel,
-    setDataDiagnostics: {
-      singleCommit: createEmptyDiagnosticsSummary(),
-      microCommit: createEmptyDiagnosticsSummary(),
-    },
   })
 }
 
 export function createUpdateBenchDebug(options: {
   tracker: ReturnType<typeof createSetDataDiagnosticsTracker>
 }) {
-  return (info: SetDataDebugInfo) => {
-    recordSetDataDebugEvent(options.tracker, info)
-  }
+  return (info: SetDataDebugInfo) => recordSetDataDebugEvent(options.tracker, info)
 }
 
 export function createUpdateBenchSetup(options: {
   strategyLabel: string
   tracker: ReturnType<typeof createSetDataDiagnosticsTracker>
 }) {
-  const setDataCounter: SetDataCounter = {
-    total: 0,
-    firstCommitAt: null,
-  }
-
   return (_props: any, ctx: any) => {
     const state = ctx.state as any
     const instance = ctx.instance as any
+    const counter: SetDataCounter = { total: 0, firstCommitAt: null }
     let loadStartedAt = 0
+    let lastRun: {
+      workload: Workload
+      prefix: 'singleCommit' | 'microCommit'
+      computeMs: number
+      assignmentMs: number
+      schedulerFlushMs: number
+      elapsedMs: number
+      startCalls: number
+    } | undefined
 
-    const resetSetDataDiagnostics = () => {
-      resetSetDataDiagnosticsTracker(options.tracker)
-    }
-
-    patchSetData(instance, setDataCounter, () => {
-      recordSetDataFlushEvent(options.tracker)
-    })
+    patchSetData(instance, counter, () => recordSetDataFlushEvent(options.tracker))
 
     onLoad(() => {
       loadStartedAt = now()
-      setDataCounter.total = 0
-      setDataCounter.firstCommitAt = null
-      resetSetDataDiagnostics()
-      patchSetData(instance, setDataCounter, () => {
-        recordSetDataFlushEvent(options.tracker)
-      })
-
+      counter.total = 0
+      counter.firstCommitAt = null
+      resetSetDataDiagnosticsTracker(options.tracker)
       const cards = createBenchCards(11, UPDATE_CARD_COUNT)
       state.readyMarker = 'vue-update-ready'
       state.summary = summarizeBenchCards(cards)
       state.cards = cards
       state.metrics = createEmptyMetrics()
-      state.totalSetDataCalls = 0
       state.strategyLabel = options.strategyLabel
-      state.setDataDiagnostics = {
-        singleCommit: createEmptyDiagnosticsSummary(),
-        microCommit: createEmptyDiagnosticsSummary(),
-      }
     })
 
     onReady(() => {
-      state.metrics = {
-        ...state.metrics,
-        loadToReadyMs: now() - loadStartedAt,
-        firstCommitMs: setDataCounter.firstCommitAt ? setDataCounter.firstCommitAt - loadStartedAt : 0,
-      }
-      state.totalSetDataCalls = setDataCounter.total
+      state.metrics = { ...state.metrics, loadToReadyMs: now() - loadStartedAt }
     })
 
-    async function readBenchState() {
-      state.totalSetDataCalls = setDataCounter.total
-      return buildSnapshot(state, setDataCounter)
+    function readBenchState() {
+      const diagnostics = summarizeSetDataDiagnostics(options.tracker)
+      // 观测结果保留在闭包中；读取或汇总指标不能再向被测页面下发 setData。
+      return {
+        readyMarker: state.readyMarker,
+        cardCount: state.cards.length,
+        firstCardTitle: state.cards[0]?.title,
+        summary: state.summary,
+        metrics: {
+          ...state.metrics,
+          ...(lastRun
+            ? {
+                [`${lastRun.prefix}Ms`]: lastRun.elapsedMs,
+                [`${lastRun.prefix}ComputeMs`]: lastRun.computeMs,
+                [`${lastRun.prefix}CommitMs`]: diagnostics.phases.commitMs,
+                [`${lastRun.prefix}DispatchMs`]: diagnostics.phases.dispatchMs,
+                [`${lastRun.prefix}FlushMs`]: lastRun.schedulerFlushMs,
+                [`${lastRun.prefix}SetDataCalls`]: counter.total - lastRun.startCalls,
+              }
+            : {}),
+        },
+        totalSetDataCalls: counter.total,
+        strategyLabel: options.strategyLabel,
+        measurement: lastRun ? { version: 2, ...lastRun, phases: diagnostics.phases } : null,
+        setDataDiagnostics: lastRun ? { [lastRun.prefix]: diagnostics } : {},
+      }
     }
 
-    async function runSingleCommitBench(rounds = 180) {
-      resetSetDataDiagnostics()
-      const startCalls = setDataCounter.total
-      const startAt = now()
-      let cards = state.cards
-      const computeStartedAt = now()
-
-      for (let index = 0; index < rounds; index += 1) {
-        cards = mutateBenchCards(cards, index + 1)
+    async function runWorkloadBench(workload: Workload = 'replace', rounds = 1) {
+      if (!['replace', 'frequent', 'small-field', 'batch', 'append', 'reorder'].includes(workload)) {
+        throw new Error(`Unknown workload: ${workload}`)
       }
-      const computeMs = now() - computeStartedAt
-
-      const dispatchStartedAt = now()
-      state.cards = cards
-      state.summary = summarizeBenchCards(cards)
-      const dispatchMs = now() - dispatchStartedAt
-
-      const flushStartedAt = now()
       await nextTick()
-      const flushMs = now() - flushStartedAt
-      const commitMs = dispatchMs + flushMs
-
-      state.metrics = {
-        ...state.metrics,
-        singleCommitMs: now() - startAt,
-        singleCommitComputeMs: computeMs,
-        singleCommitCommitMs: commitMs,
-        singleCommitDispatchMs: dispatchMs,
-        singleCommitFlushMs: flushMs,
-        singleCommitSetDataCalls: setDataCounter.total - startCalls,
+      resetSetDataDiagnosticsTracker(options.tracker)
+      const startedAt = now()
+      lastRun = {
+        workload,
+        prefix: workload === 'frequent' ? 'microCommit' : 'singleCommit',
+        computeMs: 0,
+        assignmentMs: 0,
+        schedulerFlushMs: 0,
+        elapsedMs: 0,
+        startCalls: counter.total,
       }
-      state.totalSetDataCalls = setDataCounter.total
-      state.setDataDiagnostics = {
-        ...state.setDataDiagnostics,
-        singleCommit: summarizeSetDataDiagnostics(options.tracker),
-      }
-
-      return buildUpdateSnapshot(state, setDataCounter)
-    }
-
-    async function runMicroCommitBench(rounds = 40) {
-      resetSetDataDiagnostics()
-      const startCalls = setDataCounter.total
-      const startAt = now()
-      let cards = state.cards
-      let computeMs = 0
-      let dispatchMs = 0
-      let flushMs = 0
-
-      for (let index = 0; index < rounds; index += 1) {
+      const count = Math.max(1, Math.floor(Number(rounds) || 1))
+      const iterations = workload === 'frequent' ? count : 1
+      for (let index = 0; index < iterations; index++) {
         const computeStartedAt = now()
-        cards = mutateBenchCards(cards, index + 1)
-        computeMs += now() - computeStartedAt
-
-        const dispatchStartedAt = now()
-        state.cards = cards
-        state.summary = summarizeBenchCards(cards)
-        dispatchMs += now() - dispatchStartedAt
-
-        const flushStartedAt = now()
+        let cards = state.cards
+        if (workload === 'replace' || workload === 'frequent') {
+          const mutations = workload === 'replace' ? count : 1
+          for (let step = 0; step < mutations; step++) {
+            cards = mutateBenchCards(cards, index + step + 1)
+          }
+        }
+        lastRun.computeMs += now() - computeStartedAt
+        const assignmentStartedAt = now()
+        if (workload === 'small-field') {
+          state.cards[0].score += 1
+        }
+        else if (workload === 'batch') {
+          for (let card = 0; card < 20; card++) {
+            state.cards[card].score += 1
+          }
+        }
+        else if (workload === 'append') {
+          state.cards.push(...createBenchCards(23, 10))
+        }
+        else if (workload === 'reorder') {
+          state.cards.reverse()
+        }
+        else {
+          state.cards = cards
+        }
+        state.summary = `${summarizeBenchCards(state.cards)} first=${state.cards[0].id}`
+        lastRun.assignmentMs += now() - assignmentStartedAt
+        const schedulerStartedAt = now()
         await nextTick()
-        flushMs += now() - flushStartedAt
+        lastRun.schedulerFlushMs += now() - schedulerStartedAt
       }
-      const commitMs = dispatchMs + flushMs
-
-      state.metrics = {
-        ...state.metrics,
-        microCommitMs: now() - startAt,
-        microCommitComputeMs: computeMs,
-        microCommitCommitMs: commitMs,
-        microCommitDispatchMs: dispatchMs,
-        microCommitFlushMs: flushMs,
-        microCommitSetDataCalls: setDataCounter.total - startCalls,
-      }
-      state.totalSetDataCalls = setDataCounter.total
-      state.setDataDiagnostics = {
-        ...state.setDataDiagnostics,
-        microCommit: summarizeSetDataDiagnostics(options.tracker),
-      }
-
-      return buildUpdateSnapshot(state, setDataCounter)
+      lastRun.elapsedMs = now() - startedAt
+      return readBenchState()
     }
 
     return {
       readBenchState,
-      runSingleCommitBench,
-      runMicroCommitBench,
+      readUpdateBenchObservation: readBenchState,
+      runWorkloadBench,
+      runSingleCommitBench: (rounds = 180) => runWorkloadBench('replace', rounds),
+      runMicroCommitBench: (rounds = 40) => runWorkloadBench('frequent', rounds),
     }
   }
 }

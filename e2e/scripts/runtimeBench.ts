@@ -1,55 +1,9 @@
+import type { WorkerResult } from './runtimeBench/types'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 
-export interface BenchUpdateSummary {
-  wallMsMedian: number
-  metricMsMedian: number
-  computeMsMedian: number
-  commitMsMedian: number
-  dispatchMsMedian: number
-  flushMsMedian: number
-  setDataCallsMedian: number
-  setDataDiagnosticsMedian: {
-    flushes: number
-    patchFlushes: number
-    diffFlushes: number
-    fallbackFlushes: number
-    avgPayloadKeys: number
-    maxPayloadKeys: number
-    avgPendingPatchKeys: number
-    maxPendingPatchKeys: number
-    avgBytes: number
-    maxBytes: number
-  }
-  fallbackReasons: Record<string, number>
-}
-
-export interface WorkerResult {
-  project: string
-  firstScreen: {
-    wallMsMedian: number
-    readyMsMedian: number
-    firstCommitMsMedian: number
-  }
-  detailNavigation: {
-    wallMsMedian: number
-    readyMsMedian: number
-    firstCommitMsMedian: number
-  }
-  updateSingleCommit: {
-    diff: BenchUpdateSummary
-    patch?: BenchUpdateSummary
-  }
-  updateMicroCommit: {
-    diff: BenchUpdateSummary
-    patch?: BenchUpdateSummary
-  }
-  staticBinding?: {
-    updateSingleCommit: BenchUpdateSummary
-    updateMicroCommit: BenchUpdateSummary
-  }
-}
+export type { BenchUpdateSummary, WorkerResult } from './runtimeBench/types'
 
 export interface RecoverableSession<T> {
   close: () => Promise<void>
@@ -96,13 +50,15 @@ export function resolveRuntimeBenchCheckpointPath(options: {
   commit: string
   project: string
   provider: string
+  identity?: string
 }) {
-  return path.join(options.checkpointRoot, options.commit, options.provider, `${options.project}.json`)
+  return path.join(options.checkpointRoot, options.commit, options.provider, options.identity ?? 'workspace-v2', `${options.project}.json`)
 }
 
 export async function readRuntimeBenchCheckpoint(filePath: string): Promise<WorkerResult | undefined> {
   try {
-    return JSON.parse(await fs.readFile(filePath, 'utf8')) as WorkerResult
+    const result = JSON.parse(await fs.readFile(filePath, 'utf8')) as Partial<WorkerResult>
+    return result.schemaVersion === 2 ? result as WorkerResult : undefined
   }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {

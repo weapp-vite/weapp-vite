@@ -12,6 +12,7 @@ const tracker = createUpdateBenchTracker()
 export default defineComponent({
   setData: {
     debugWhen: 'always',
+    debugPhases: true,
     debug: createUpdateBenchDebug({ tracker }),
   },
   setup: createUpdateBenchSetup({
@@ -33,7 +34,7 @@ export default defineComponent({
       <view class="hero__title">
         {{ title }}
       </view>
-      <view class="hero__summary">
+      <view id="bench-visible-marker" class="hero__summary">
         strategy: {{ strategyLabel }} / {{ summary }}
       </view>
       <view class="hero__metric">
