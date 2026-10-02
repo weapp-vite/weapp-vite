@@ -139,7 +139,10 @@ describe('Launcher', () => {
       wsEndpoint: 'ws://127.0.0.1:1234',
     })
 
-    expect(checkVersion).toHaveBeenCalledWith(1_234)
+    expect(checkVersion).toHaveBeenCalledWith(expect.any(Number))
+    const [remainingTimeout] = checkVersion.mock.calls[0] ?? []
+    expect(remainingTimeout).toBeGreaterThan(0)
+    expect(remainingTimeout).toBeLessThanOrEqual(1_234)
   })
 
   it('passes explicit connect timeout to websocket creation', async () => {
