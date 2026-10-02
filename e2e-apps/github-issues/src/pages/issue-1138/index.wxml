@@ -1,0 +1,1 @@
+<view id="issue1138-page"><text id="issue1138-count">count: {{count}}</text><button id="issue1138-increment" bindtap="increment">increment</button></view>

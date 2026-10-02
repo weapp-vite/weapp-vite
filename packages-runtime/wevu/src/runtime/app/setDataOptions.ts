@@ -16,6 +16,7 @@ export interface ResolvedSetDataOptions {
   prelinkMaxDepth: number | undefined
   prelinkMaxKeys: number | undefined
   debug: SetDataSnapshotOptions['debug']
+  debugPhases: boolean
   diagnostics: 'off' | 'fallback' | 'always'
   loopWarning: false | {
     sampleWindowMs: number
@@ -134,6 +135,7 @@ export function resolveSetDataOptions(
     prelinkMaxDepth,
     prelinkMaxKeys,
     debug,
+    debugPhases: setDataOptions?.debugPhases === true,
     diagnostics,
     loopWarning,
     debugWhen,

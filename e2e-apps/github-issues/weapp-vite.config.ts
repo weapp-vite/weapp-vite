@@ -172,6 +172,9 @@ const githubIssuesRouteGroups: Record<string, string[]> = {
     'pages/issue-868/**',
     'components/issue-868/**',
   ],
+  'github-issues.runtime.issue1138.test.ts': [
+    'pages/issue-1138/**',
+  ],
   'github-issues.runtime.issue941.test.ts': [
     'pages/issue-941/**',
   ],

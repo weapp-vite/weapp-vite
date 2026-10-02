@@ -180,6 +180,7 @@ const onActiveChange = bindModel.model<boolean>('isActive').onChange
 
 - 更新被批量加入微任务队列；`nextTick` 只等待当前 JavaScript/响应式任务队列排空，不等待小程序 `setData` 回调或视图提交。
 - 对状态做快照 diff，只把变更路径传给 `setData`；宿主提交失败时，下一次响应式更新会发送完整恢复快照。
+- 可用 `setData.debugPhases: true` 在现有 `debug` 回调中关联 prepare、物理 dispatch 与 commit。合并调用按 ID 去重；callback/Promise/同步返回不等于可见视图完成，未观测边界保持 `null`。参见 [阶段观测与测量示例](../../docs/wevu/setdata-observation.md)。
 - 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`getCurrentScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，`setup()` 同步阶段内创建的副作用会自动归属到实例级 scope，便于避免泄漏。
 
 ## 开发产物与源码调试

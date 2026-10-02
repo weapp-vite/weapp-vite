@@ -1,0 +1,2809 @@
+{
+  "version": 1,
+  "source": {
+    "wevuSourceSha256": "940011c0176ad0a057ea0c680a80252b1f102587f057546cd1218152ea993e33",
+    "lockfileSha256": "a9b96023dd342bbd38218ad60392af70c39476fac6b434a2b487ffaaf2b43758",
+    "runnerSha256": "078b114a09b15496b6e5a67621c6535a06535ef87818e41a4c940015c7f35aab"
+  },
+  "capturedAt": "2026-10-02T05:25:07.588Z",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4 Max",
+    "gcAvailable": true
+  },
+  "scope": "Node adapter observation overhead; source runtime; not a preset or host rendering benchmark",
+  "notes": [
+    "Date.now phase resolution is milliseconds",
+    "heap deltas include allocation and natural GC, not retained memory",
+    "enabled includes measurement callback and JSON byte counting",
+    "disabled bytes and phases are unknown"
+  ],
+  "samples": [
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 56.38191699999999,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132579328,
+        "heapTotal": 50233344,
+        "heapUsed": 14081048,
+        "external": 3924712,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132628480,
+        "heapTotal": 50233344,
+        "heapUsed": 21387568,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 73.22854099999995,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 71,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132612096,
+        "heapTotal": 50495488,
+        "heapUsed": 14170568,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132710400,
+        "heapTotal": 50495488,
+        "heapUsed": 22428600,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 62.54454099999998,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 61,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132726784,
+        "heapTotal": 50495488,
+        "heapUsed": 14217296,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132792320,
+        "heapTotal": 50757632,
+        "heapUsed": 22369056,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 59.786500000000046,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132841472,
+        "heapTotal": 51019776,
+        "heapUsed": 14319640,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132841472,
+        "heapTotal": 51019776,
+        "heapUsed": 21368360,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 56.73487499999999,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132841472,
+        "heapTotal": 51019776,
+        "heapUsed": 14341744,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132841472,
+        "heapTotal": 51019776,
+        "heapUsed": 21372144,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 60.091249999999945,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 57,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132857856,
+        "heapTotal": 51019776,
+        "heapUsed": 14345232,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132874240,
+        "heapTotal": 51019776,
+        "heapUsed": 22147240,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 60.29804200000001,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 58,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132890624,
+        "heapTotal": 51019776,
+        "heapUsed": 14357712,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132907008,
+        "heapTotal": 51019776,
+        "heapUsed": 22612360,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 59.38266699999997,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132907008,
+        "heapTotal": 51019776,
+        "heapUsed": 14358232,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132923392,
+        "heapTotal": 51019776,
+        "heapUsed": 21454320,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 57.6384589999999,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132988928,
+        "heapTotal": 51019776,
+        "heapUsed": 14470880,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 132988928,
+        "heapTotal": 51019776,
+        "heapUsed": 21536864,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 60.928290999999945,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 58,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 132988928,
+        "heapTotal": 51019776,
+        "heapUsed": 14477248,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 133021696,
+        "heapTotal": 51019776,
+        "heapUsed": 22559112,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 61.45524999999998,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 61,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 133201920,
+        "heapTotal": 51019776,
+        "heapUsed": 14495952,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 133201920,
+        "heapTotal": 51019776,
+        "heapUsed": 22512152,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 58.062875000000076,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 133201920,
+        "heapTotal": 51019776,
+        "heapUsed": 14495264,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 133201920,
+        "heapTotal": 51019776,
+        "heapUsed": 21658360,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 60.93466599999988,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 133201920,
+        "heapTotal": 51019776,
+        "heapUsed": 14497696,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 133201920,
+        "heapTotal": 51019776,
+        "heapUsed": 21527344,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 65.48216699999989,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 63,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 151420928,
+        "heapTotal": 84574208,
+        "heapUsed": 14497408,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167149568,
+        "heapTotal": 84574208,
+        "heapUsed": 22026816,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 64.70654200000013,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 63,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167149568,
+        "heapTotal": 84574208,
+        "heapUsed": 14502688,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167149568,
+        "heapTotal": 84574208,
+        "heapUsed": 22091256,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 60.77720799999997,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167100416,
+        "heapTotal": 84574208,
+        "heapUsed": 14493048,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167100416,
+        "heapTotal": 84574208,
+        "heapUsed": 21220904,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 59.38333399999988,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167116800,
+        "heapTotal": 84312064,
+        "heapUsed": 14493112,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167133184,
+        "heapTotal": 84574208,
+        "heapUsed": 21222168,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 62.78562499999998,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 60,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167133184,
+        "heapTotal": 84574208,
+        "heapUsed": 14494944,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167133184,
+        "heapTotal": 84574208,
+        "heapUsed": 22151152,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 60.44462499999986,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 58,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167247872,
+        "heapTotal": 84312064,
+        "heapUsed": 14495632,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167280640,
+        "heapTotal": 84312064,
+        "heapUsed": 21954992,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 64.6725829999998,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167280640,
+        "heapTotal": 84312064,
+        "heapUsed": 14495136,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167280640,
+        "heapTotal": 84312064,
+        "heapUsed": 21231368,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 60.68399999999997,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167280640,
+        "heapTotal": 84574208,
+        "heapUsed": 14499920,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167297024,
+        "heapTotal": 84574208,
+        "heapUsed": 21228112,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 61.28224999999975,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 61,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167297024,
+        "heapTotal": 84049920,
+        "heapUsed": 14499672,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167313408,
+        "heapTotal": 84049920,
+        "heapUsed": 21958024,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 66.63491699999986,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 67,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167313408,
+        "heapTotal": 84049920,
+        "heapUsed": 14500184,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167313408,
+        "heapTotal": 84049920,
+        "heapUsed": 21896128,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 65.31879200000003,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167313408,
+        "heapTotal": 84049920,
+        "heapUsed": 14501488,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167313408,
+        "heapTotal": 84049920,
+        "heapUsed": 21238112,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 98.34279199999992,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167346176,
+        "heapTotal": 84312064,
+        "heapUsed": 14509800,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167460864,
+        "heapTotal": 84312064,
+        "heapUsed": 46064640,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 98.29654200000004,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 75,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167510016,
+        "heapTotal": 84312064,
+        "heapUsed": 14607872,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167510016,
+        "heapTotal": 84312064,
+        "heapUsed": 18651960,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 104.59908300000006,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 76,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167510016,
+        "heapTotal": 84312064,
+        "heapUsed": 14613488,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167526400,
+        "heapTotal": 84312064,
+        "heapUsed": 18663184,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 85.35933299999988,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167526400,
+        "heapTotal": 84049920,
+        "heapUsed": 14616352,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167526400,
+        "heapTotal": 84049920,
+        "heapUsed": 45958000,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 88.63508300000012,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167526400,
+        "heapTotal": 84312064,
+        "heapUsed": 14617768,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167575552,
+        "heapTotal": 84312064,
+        "heapUsed": 45994080,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 97.63250000000016,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 71,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167624704,
+        "heapTotal": 84312064,
+        "heapUsed": 14984872,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167739392,
+        "heapTotal": 84312064,
+        "heapUsed": 18861368,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 102.8128340000003,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 81,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167755776,
+        "heapTotal": 84574208,
+        "heapUsed": 14681632,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167755776,
+        "heapTotal": 84574208,
+        "heapUsed": 18481800,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 81.58662500000037,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167755776,
+        "heapTotal": 84312064,
+        "heapUsed": 14682728,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 167755776,
+        "heapTotal": 84312064,
+        "heapUsed": 45762560,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 81.0077080000001,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 167772160,
+        "heapTotal": 84574208,
+        "heapUsed": 14679064,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168460288,
+        "heapTotal": 84574208,
+        "heapUsed": 45927984,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 94.16212499999983,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 69,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168509440,
+        "heapTotal": 84312064,
+        "heapUsed": 14674024,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168509440,
+        "heapTotal": 84312064,
+        "heapUsed": 18297968,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 92.71054099999992,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 69,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 14673312,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 18223672,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 76.59545799999978,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84312064,
+        "heapUsed": 14685128,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84312064,
+        "heapUsed": 45664752,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 78.70729200000005,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 14696304,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 45937608,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 90.04129200000034,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 61,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84049920,
+        "heapUsed": 14697512,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84049920,
+        "heapUsed": 17733064,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 90.59654199999977,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 65,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 14696960,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 18387936,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 74.13795800000025,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 14696344,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 45853736,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 73.75504199999978,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84312064,
+        "heapUsed": 14697864,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84312064,
+        "heapUsed": 45677632,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 84.45216700000037,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 64,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 14698984,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168525824,
+        "heapTotal": 84574208,
+        "heapUsed": 17792224,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 83.5806249999996,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 64,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168624128,
+        "heapTotal": 84312064,
+        "heapUsed": 14699152,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168624128,
+        "heapTotal": 84312064,
+        "heapUsed": 17571312,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 71.3847080000005,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168624128,
+        "heapTotal": 84574208,
+        "heapUsed": 14701888,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168624128,
+        "heapTotal": 84574208,
+        "heapUsed": 45773248,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 71.65804200000002,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168624128,
+        "heapTotal": 84574208,
+        "heapUsed": 14703696,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168624128,
+        "heapTotal": 84574208,
+        "heapUsed": 45859128,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 83.14637500000026,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 55,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168738816,
+        "heapTotal": 84312064,
+        "heapUsed": 14704920,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168755200,
+        "heapTotal": 84312064,
+        "heapUsed": 18431536,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": true,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 120.17437500000051,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 83,
+      "commitMs": 2,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168771584,
+        "heapTotal": 84836352,
+        "heapUsed": 14719384,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168804352,
+        "heapTotal": 84836352,
+        "heapUsed": 17551096,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "diff",
+      "workload": "list",
+      "enabled": false,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 79.50995799999964,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168820736,
+        "heapTotal": 84049920,
+        "heapUsed": 14741432,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168820736,
+        "heapTotal": 84049920,
+        "heapUsed": 45590640,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 31.129249999999956,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168853504,
+        "heapTotal": 84049920,
+        "heapUsed": 14781592,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168853504,
+        "heapTotal": 84049920,
+        "heapUsed": 20606552,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 50.8432499999999,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 45,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168853504,
+        "heapTotal": 84049920,
+        "heapUsed": 14820152,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168902656,
+        "heapTotal": 84049920,
+        "heapUsed": 20603008,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 61.69358300000022,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 58,
+      "commitMs": 2,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168902656,
+        "heapTotal": 84049920,
+        "heapUsed": 14866784,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168935424,
+        "heapTotal": 84312064,
+        "heapUsed": 20634568,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 33.91949999999997,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168935424,
+        "heapTotal": 84574208,
+        "heapUsed": 14899976,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168935424,
+        "heapTotal": 84574208,
+        "heapUsed": 20591048,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 30.139874999999847,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168935424,
+        "heapTotal": 84574208,
+        "heapUsed": 14901336,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168935424,
+        "heapTotal": 84574208,
+        "heapUsed": 20593304,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 41.69874999999956,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 37,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168935424,
+        "heapTotal": 84574208,
+        "heapUsed": 14905920,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 168935424,
+        "heapTotal": 84574208,
+        "heapUsed": 20721464,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 40.145166000000245,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 38,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 168951808,
+        "heapTotal": 84574208,
+        "heapUsed": 14918176,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 20673848,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 29.069166000000223,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169181184,
+        "heapTotal": 84836352,
+        "heapUsed": 14931400,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169181184,
+        "heapTotal": 84836352,
+        "heapUsed": 20622504,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 31.91766699999971,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 14942232,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 20633384,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 40.074540999999954,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 37,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169181184,
+        "heapTotal": 84312064,
+        "heapUsed": 14943856,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169181184,
+        "heapTotal": 84312064,
+        "heapUsed": 20674952,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 29.054333000000042,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 29,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 14953592,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 20679544,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 29.449999999999818,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 14953336,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 20644680,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 28.349459000000024,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 14953688,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 20645080,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 27.63591699999961,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 28,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169181184,
+        "heapTotal": 84574208,
+        "heapUsed": 14954912,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169197568,
+        "heapTotal": 84574208,
+        "heapUsed": 20784088,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 27.269000000000233,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 27,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169197568,
+        "heapTotal": 84836352,
+        "heapUsed": 14961216,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169197568,
+        "heapTotal": 84836352,
+        "heapUsed": 20695504,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 27.505209000000832,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 14958464,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 20651088,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 27.36870799999997,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 14959816,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 20651040,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 29.701500000000124,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 28,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 14960960,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 20687264,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 28.908249999999498,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 27,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 14961440,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 20779000,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 30.2061249999997,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 14961528,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 20652832,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 28.131000000000313,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 14961928,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 20653232,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 31.148459000000003,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 31,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 169213952,
+        "heapTotal": 84574208,
+        "heapUsed": 14962888,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 179011584,
+        "heapTotal": 151683072,
+        "heapUsed": 54235528,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": true,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 30.963583000000654,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 2531,
+      "prepareMs": 30,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 201785344,
+        "heapTotal": 151683072,
+        "heapUsed": 14963352,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237060096,
+        "heapTotal": 151683072,
+        "heapUsed": 20717384,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "scalar",
+      "enabled": false,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 29.97624999999971,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237060096,
+        "heapTotal": 151683072,
+        "heapUsed": 14985544,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237060096,
+        "heapTotal": 151683072,
+        "heapUsed": 20676768,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 72.11745900000005,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237125632,
+        "heapTotal": 151420928,
+        "heapUsed": 14942408,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237207552,
+        "heapTotal": 151420928,
+        "heapUsed": 77520392,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 0,
+      "iterations": 200,
+      "elapsedMs": 105.07783300000028,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 64,
+      "commitMs": 2,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237240320,
+        "heapTotal": 151420928,
+        "heapUsed": 14896648,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237240320,
+        "heapTotal": 151420928,
+        "heapUsed": 16069856,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 151.3393329999999,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 106,
+      "commitMs": 2,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237240320,
+        "heapTotal": 151420928,
+        "heapUsed": 14942728,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237273088,
+        "heapTotal": 151420928,
+        "heapUsed": 16071688,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 1,
+      "iterations": 200,
+      "elapsedMs": 310.2731250000006,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237273088,
+        "heapTotal": 151683072,
+        "heapUsed": 14948384,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237305856,
+        "heapTotal": 151683072,
+        "heapUsed": 78094912,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 449.82437500000015,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237305856,
+        "heapTotal": 151945216,
+        "heapUsed": 14961288,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237322240,
+        "heapTotal": 151945216,
+        "heapUsed": 78028968,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 2,
+      "iterations": 200,
+      "elapsedMs": 596.5656250000002,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 376,
+      "commitMs": 10,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237338624,
+        "heapTotal": 151945216,
+        "heapUsed": 14962552,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237338624,
+        "heapTotal": 151945216,
+        "heapUsed": 15648008,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 409.8577089999999,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 240,
+      "commitMs": 19,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237338624,
+        "heapTotal": 151945216,
+        "heapUsed": 14972144,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237338624,
+        "heapTotal": 151945216,
+        "heapUsed": 15635048,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 3,
+      "iterations": 200,
+      "elapsedMs": 420.83795800000007,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237355008,
+        "heapTotal": 151683072,
+        "heapUsed": 14971880,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237436928,
+        "heapTotal": 151683072,
+        "heapUsed": 78065648,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 288.0438329999997,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237436928,
+        "heapTotal": 151683072,
+        "heapUsed": 14972232,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237535232,
+        "heapTotal": 151683072,
+        "heapUsed": 78034896,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 4,
+      "iterations": 200,
+      "elapsedMs": 445.80566700000054,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 269,
+      "commitMs": 2,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237535232,
+        "heapTotal": 151945216,
+        "heapUsed": 14973456,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237535232,
+        "heapTotal": 151945216,
+        "heapUsed": 15645224,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 117.52333299999918,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 64,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237535232,
+        "heapTotal": 151945216,
+        "heapUsed": 14973968,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237535232,
+        "heapTotal": 151945216,
+        "heapUsed": 15675016,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 5,
+      "iterations": 200,
+      "elapsedMs": 223.1997080000001,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237535232,
+        "heapTotal": 151683072,
+        "heapUsed": 14974528,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237535232,
+        "heapTotal": 151683072,
+        "heapUsed": 78100456,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 130.99541599999975,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237535232,
+        "heapTotal": 151683072,
+        "heapUsed": 14978032,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237535232,
+        "heapTotal": 151683072,
+        "heapUsed": 78040840,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 6,
+      "iterations": 200,
+      "elapsedMs": 105.79408300000068,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 57,
+      "commitMs": 2,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237535232,
+        "heapTotal": 151945216,
+        "heapUsed": 14979304,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237535232,
+        "heapTotal": 151945216,
+        "heapUsed": 15640952,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 105.82329199999913,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 49,
+      "commitMs": 0,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237568000,
+        "heapTotal": 151945216,
+        "heapUsed": 15280768,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237568000,
+        "heapTotal": 151945216,
+        "heapUsed": 15947624,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 7,
+      "iterations": 200,
+      "elapsedMs": 107.74229100000048,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237568000,
+        "heapTotal": 151945216,
+        "heapUsed": 14980448,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237568000,
+        "heapTotal": 151945216,
+        "heapUsed": 78106472,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 75.06479099999888,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237568000,
+        "heapTotal": 151420928,
+        "heapUsed": 14980232,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237568000,
+        "heapTotal": 151420928,
+        "heapUsed": 78046992,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 8,
+      "iterations": 200,
+      "elapsedMs": 321.0410000000011,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 202,
+      "commitMs": 1,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237568000,
+        "heapTotal": 151683072,
+        "heapUsed": 14981456,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237568000,
+        "heapTotal": 151683072,
+        "heapUsed": 15645960,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 428.0787500000006,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 225,
+      "commitMs": 3,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237568000,
+        "heapTotal": 151683072,
+        "heapUsed": 14993288,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237568000,
+        "heapTotal": 151683072,
+        "heapUsed": 82552928,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 9,
+      "iterations": 200,
+      "elapsedMs": 342.14350000000013,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237584384,
+        "heapTotal": 151683072,
+        "heapUsed": 14987248,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237584384,
+        "heapTotal": 151683072,
+        "heapUsed": 78054328,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 86.4945000000007,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237584384,
+        "heapTotal": 151683072,
+        "heapUsed": 14992200,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237600768,
+        "heapTotal": 151683072,
+        "heapUsed": 78077424,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 10,
+      "iterations": 200,
+      "elapsedMs": 244.18783299999996,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 135,
+      "commitMs": 9,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237600768,
+        "heapTotal": 151683072,
+        "heapUsed": 15011056,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237617152,
+        "heapTotal": 151683072,
+        "heapUsed": 15751768,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": true,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 174.69004200000018,
+      "physicalCalls": 200,
+      "phaseEvents": 600,
+      "payloadBytes": 4182531,
+      "prepareMs": 125,
+      "commitMs": 2,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237617152,
+        "heapTotal": 151683072,
+        "heapUsed": 15011232,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237617152,
+        "heapTotal": 151683072,
+        "heapUsed": 15678920,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    },
+    {
+      "strategy": "patch",
+      "workload": "list",
+      "enabled": false,
+      "round": 11,
+      "iterations": 200,
+      "elapsedMs": 93.61491700000079,
+      "physicalCalls": 200,
+      "phaseEvents": 0,
+      "payloadBytes": null,
+      "prepareMs": null,
+      "commitMs": null,
+      "completion": "return",
+      "visibleAt": null,
+      "memoryBefore": {
+        "rss": 237617152,
+        "heapTotal": 151683072,
+        "heapUsed": 15012448,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      },
+      "memoryAfter": {
+        "rss": 237617152,
+        "heapTotal": 151683072,
+        "heapUsed": 78075080,
+        "external": 3727728,
+        "arrayBuffers": 1192735
+      }
+    }
+  ]
+}

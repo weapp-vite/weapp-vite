@@ -43,3 +43,23 @@ expectType<string>(bindingDiagnostic.outputPath)
 expectType<'exact-path' | 'top-level' | 'snapshot-fallback'>(bindingDiagnostic.updateMode)
 expectType<string>(bindingDiagnostic.sourceFile)
 expectType<number | undefined>(bindingDiagnostic.sourceLocation?.start.column)
+
+createApp({
+  setData: {
+    debugPhases: true,
+    debugWhen: 'always',
+    debug(info) {
+      if (!info.phase) {
+        return
+      }
+      expectType<1>(info.phase.version)
+      expectType<'prepare' | 'dispatch' | 'commit'>(info.phase.name)
+      expectType<'unknown' | 'callback' | 'promise' | 'return' | 'throw'>(info.phase.completion)
+      expectType<number | null>(info.phase.prepareDurationMs)
+      expectType<number | null>(info.phase.commitDurationMs)
+      expectType<null>(info.phase.visibleAt)
+      expectType<number | null | undefined>(info.phase.dispatch?.payloadBytes)
+      expectType<number | undefined>(info.phase.dispatch?.id)
+    },
+  },
+})

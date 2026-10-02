@@ -43,6 +43,7 @@ description: 面向小程序中 wevu 运行时的实践手册，覆盖生命周�
    - 区分原生 router helpers 与 `wevu/router`
 6. 性能问题先分层：
    - `setData` 路径：是否高频整对象回写、是否启用 `autoSetDataPick`
+   - 阶段测量：显式开启 `debugPhases`，按 observer/revision 关联，按物理 `dispatch.id` 去重；callback、Promise 和同步返回不代表可见视图，缺少边界保持未知，参见 `docs/wevu/setdata-observation.md`。保持既有 `nextTick` 语义，独立执行真实视图断言。
    - render 路径：是否把重逻辑放进 `onPageScroll`
    - navigation 路径：`onHide/onUnload` 是否阻塞
    - resource / memory：图片尺寸、缓存、监听与定时器是否清理

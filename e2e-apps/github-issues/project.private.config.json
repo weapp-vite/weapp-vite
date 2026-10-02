@@ -1037,6 +1037,18 @@
           "pathName": "pages/issue-1049/result/index",
           "query": "",
           "scene": null
+        },
+        {
+          "name": "issue-1138 phases",
+          "pathName": "pages/issue-1138/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "issue-1138 delayed adapter",
+          "pathName": "pages/issue-1138/delayed",
+          "query": "",
+          "scene": null
         }
       ]
     }
