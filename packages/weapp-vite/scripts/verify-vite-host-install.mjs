@@ -51,7 +51,9 @@ try {
     Object.assign(dependencies, { dayjs: '1.11.21', sass: '1.104.1' })
   }
   if (runtimeSuite === 'worker') {
-    const vendor = path.join(temporaryRoot, 'worker-vendor')
+    // file: 依赖供应目录必须属于消费者本身；否则 npm 会创建越出消费者根目录的链接，
+    // 既不反映发布包消费语义，也会被安装闭包的越界链接检查拒绝。
+    const vendor = path.join(consumerRoot, 'worker-vendor')
     await cp(path.join(repoRoot, 'e2e-apps/chunk-modes/node_modules/fake-pkg'), vendor, { recursive: true })
     dependencies['fake-pkg'] = `file:${vendor.replaceAll('\\', '/')}`
   }
