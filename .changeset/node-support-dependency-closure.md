@@ -1,10 +1,10 @@
 ---
-"weapp-vite": major
-"@weapp-vite/ast": major
+"weapp-vite": minor
+"@weapp-vite/ast": minor
 "@weapp-vite/web": major
 "@weapp-vite/tailwindcss": major
-"@wevu/compiler": major
-"wevu": major
+"@wevu/compiler": minor
+"wevu": minor
 "@wevu/test-utils": major
 "@mpcore/simulator": major
 "@mpcore/test": major
