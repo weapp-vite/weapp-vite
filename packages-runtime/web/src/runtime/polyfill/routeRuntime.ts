@@ -12,6 +12,7 @@ import {
   getTabBarPagePaths,
   syncTabBarRoute,
 } from '../appShell/tabBar'
+import { setAppStyle } from '../appStyle'
 import { setButtonFormConfig } from '../button'
 import { defineComponent } from '../component'
 import { setRuntimeExecutionMode } from '../execution'
@@ -220,6 +221,7 @@ export function registerPage<T extends PageRawOptions | undefined>(options: T, m
   const tag = slugify(meta.id, 'wv-page')
   const template = meta.template ?? (() => '')
   const normalized = normalizePageOptions(options)
+  normalized.component.options = { styleIsolation: 'shared', ...normalized.component.options }
   const existing = pageRegistry.get(meta.id)
   if (existing) {
     existing.hooks = normalized.hooks
@@ -278,7 +280,8 @@ export function registerComponent<T extends ComponentRawOptions | undefined>(opt
   return options
 }
 
-export function registerApp<T extends AppRuntime | undefined>(options: T, _meta?: RegisterMeta): T {
+export function registerApp<T extends AppRuntime | undefined>(options: T, meta?: RegisterMeta): T {
+  setAppStyle(meta?.style ?? '')
   return appLifecycle.register(options)
 }
 

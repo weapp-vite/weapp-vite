@@ -1,6 +1,7 @@
 import type { ElementPart, PartInfo } from 'lit/async-directive.js'
 import { nothing } from 'lit'
 import { AsyncDirective, directive, PartType } from 'lit/async-directive.js'
+import { listenRuntimeEvent } from './componentEvents'
 
 interface RuntimeEventFlags {
   capture?: boolean
@@ -12,6 +13,7 @@ class RuntimeEventBindingDirective extends AsyncDirective {
   #eventName?: string
   #listener?: EventListener
   #listening = false
+  #dispose?: () => void
 
   constructor(partInfo: PartInfo) {
     super(partInfo)
@@ -57,7 +59,7 @@ class RuntimeEventBindingDirective extends AsyncDirective {
     if (!this.isConnected || this.#listening || !this.#element || !this.#eventName || !this.#listener) {
       return
     }
-    this.#element.addEventListener(this.#eventName, this.#listener, this.#capture)
+    this.#dispose = listenRuntimeEvent(this.#element, this.#eventName, this.#listener, this.#capture)
     this.#listening = true
   }
 
@@ -65,7 +67,8 @@ class RuntimeEventBindingDirective extends AsyncDirective {
     if (!this.#listening || !this.#element || !this.#eventName || !this.#listener) {
       return
     }
-    this.#element.removeEventListener(this.#eventName, this.#listener, this.#capture)
+    this.#dispose?.()
+    this.#dispose = undefined
     this.#listening = false
   }
 }

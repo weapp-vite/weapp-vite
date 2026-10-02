@@ -1,0 +1,6 @@
+:root { --issue-theme: rgb(15 130 80); }
+
+.global-probe {
+  font-size: 32px;
+  color: rgb(231 17 83);
+}

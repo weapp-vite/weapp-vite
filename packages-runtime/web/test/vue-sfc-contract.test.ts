@@ -38,7 +38,7 @@ describe('web Vue SFC contracts', () => {
       styleLanguage: 'css',
       enableHmr: false,
     })
-    expect(app.code).toContain('registerWebWevuApp({}, { id: "app", kind: "app" })')
+    expect(app.code).toContain('registerWebWevuApp({}, { id: "app", kind: "app", style:')
     expect(app.code).not.toContain('weapp-web-sfc-template')
     expect(app.map).toBeTypeOf('object')
 
