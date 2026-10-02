@@ -136,7 +136,6 @@ it('keeps type-only edits during the first publication and recovers declarations
     throw error
   }
   finally { await watcher.close() }
-  
 }, 80_000)
 
 it('updates library templates in classic dev without an application entry', async () => {
