@@ -9,7 +9,6 @@ import { attachRuntimeErrorCollector } from '../ide/runtimeErrors'
 import { launchAutomator, resetAutomatorRuntimeLogs } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
-import { cleanupDevtoolsScreenshotArtifacts } from '../utils/ide-devtools-screenshot-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import {
   resolveComponentLibraryRuntimeMode,
@@ -146,13 +145,6 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
   let warmupScenarioPage: any
   let warmupScenarioRoute = ''
 
-  async function cleanupWechatScreenshotArtifacts(label: string) {
-    const result = await cleanupDevtoolsScreenshotArtifacts()
-    if (result.files > 0) {
-      reportProgress(`${label} screenshot-temp files=${result.files} bytes=${result.bytes}`)
-    }
-  }
-
   async function captureWechatScreenshot(miniProgram: any, component: string) {
     const baselinePath = path.join(baselineRoot, `${component}.png`)
     const currentPath = path.join(outputRoot, `${component}.current.png`)
@@ -286,7 +278,6 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
       warmupScenarioRoute = ''
       if (runtimeProvider === 'devtools') {
         await cleanupResidualIdeProcesses()
-        await cleanupWechatScreenshotArtifacts(label)
       }
       reportProgress(`${label} closed`)
     }
@@ -294,10 +285,6 @@ export function defineComponentLibraryRuntimeSuite(options: ComponentLibraryRunt
     beforeAll(async () => {
       expect(options.scenarios).toHaveLength(options.expectedCount)
       await cleanupResidualIdeProcesses()
-      if (runtimeProvider === 'devtools') {
-        await cleanupResidualIdeProcesses()
-        await cleanupWechatScreenshotArtifacts('setup')
-      }
       reportProgress('build')
       await fs.rm(outputRoot, { recursive: true, force: true })
       await fs.rm(distRoot, { recursive: true, force: true })

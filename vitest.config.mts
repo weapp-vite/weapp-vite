@@ -128,6 +128,7 @@ const projects = [
       name: 'e2e-hmr-infra',
       include: [
         'e2e/scripts/e2e-suite-manifest.test.ts',
+        'e2e/scripts/domAcceptanceReport/inventory.test.ts',
         'e2e/scripts/githubIssuesRouteScope.test.ts',
         'e2e/scripts/hmr-guard-manifest.test.ts',
         'e2e/scripts/run-e2e-suite.test.ts',
@@ -135,6 +136,7 @@ const projects = [
         'e2e/utils/agentAcceptanceLifecycle.test.ts',
         'e2e/utils/automator.cli-bridge.test.ts',
         'e2e/utils/automator.test.ts',
+        'e2e/utils/automatorCliProcess.test.ts',
         'e2e/utils/automatorWarmup.test.ts',
         'e2e/utils/cleanupSteps.test.ts',
         'e2e/utils/dev-memory.test.ts',

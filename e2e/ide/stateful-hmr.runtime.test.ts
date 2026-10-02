@@ -789,7 +789,12 @@ describe('stateful HMR in real WeChat DevTools', { concurrent: false }, () => {
       finally {
         // 成功路径已恢复并验收；再次原子替换会把无变化的 WXML 带入下一场景的补丁批次。
         if (await fs.readFile(source, 'utf8') !== original) {
+          const restoreVersion = runtime === 'wevu' ? await readClientVersion() : undefined
           await replaceFileByRename(source, original)
+          await devProcess!.waitFor(expect.poll(async () => await fs.readFile(output, 'utf8'), { timeout: 90_000 }).not.toContain('TEMPLATE-CYCLE-'), 'failed template case source restored')
+          if (restoreVersion !== undefined) {
+            await waitForClientVersion(restoreVersion + 1)
+          }
         }
       }
     })

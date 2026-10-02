@@ -28,7 +28,11 @@ it('keeps explicit SDK preparation, strict browser acceptance and bounded cache/
   const evidence = steps.find(step => step.uses?.startsWith('actions/upload-artifact@'))!
   expect(evidence.if).toBe('always()')
   expect(evidence.with?.['include-hidden-files']).toBe(true)
-  expect(String(evidence.with?.path).trim().split('\n')).toEqual(['docs/reports/*-e2e-dimina-*-suite-report/**', '.cache/dimina/screenshots/**'])
+  expect(String(evidence.with?.path).trim().split('\n')).toEqual([
+    'docs/reports/*-e2e-dimina-*-suite-report/**',
+    '.cache/dimina/screenshots/**',
+    '.cache/dimina/navigation/**',
+  ])
 })
 
 afterEach(() => {

@@ -1,6 +1,7 @@
 import type { WatcherInstance } from '../src/runtime/watcherPlugin'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
+import { getWxmlWatchFiles } from '../src/wxml/processing/dependencies'
 import { createTempFixtureProject, createTestCompilerContext, getFixture } from './utils'
 
 const outputs = ['pages/native/index.wxml', 'pages/vue/index.wxml', 'sub/index.wxml', 'independent/index.wxml']
@@ -18,11 +19,22 @@ async function waitForOutputs(root: string, label: string) {
 describe('WXML transform external dependencies', { concurrent: false }, () => {
   it.each(['classic', 'stateful-experimental'] as const)('rebuilds all templates and recovers from missing dependencies with %s', async (runtime) => {
     const project = await createTempFixtureProject(getFixture('wxml-remove'), 'wxml-transform-watch')
+    const dependencyEvents: string[] = []
     const compiler = await createTestCompilerContext({
       cwd: project.tempDir,
       mode: 'transform',
       isDev: true,
       inlineConfig: {
+        plugins: [{
+          name: 'test:wxml-dependency-watch-diagnostics',
+          configureServer(server) {
+            server.watcher.on('all', (event, file) => {
+              if (path.basename(file) === 'transform-rules.json') {
+                dependencyEvents.push(event)
+              }
+            })
+          },
+        }],
         weapp: { hmr: { runtime } },
         build: { watch: { chokidar: { usePolling: true, interval: 100 } } },
       },
@@ -67,7 +79,20 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       await waitForOutputs(project.tempDir, 'changed')
       const previousFailures = failures.length
       await fs.remove(rules)
-      await expect.poll(() => failures.length, { timeout: 45_000 }).toBeGreaterThan(previousFailures)
+      // 超时时保留宿主事件与依赖登记状态，区分漏报事件、依赖丢失与构建未报错。
+      const removalState = () => ({
+        newFailure: failures.length > previousFailures,
+        failureCount: failures.length,
+        dependencyRegistered: getWxmlWatchFiles(compiler.ctx).includes(rules),
+        hostEvents: [...dependencyEvents],
+      })
+      try {
+        await expect.poll(() => removalState().newFailure, { timeout: 45_000 }).toBe(true)
+      }
+      catch (cause) {
+        // 匹配器会省略未参与比较的属性，错误正文必须显式保留完整诊断。
+        throw new Error(`WXML dependency removal: ${JSON.stringify(removalState())}`, { cause })
+      }
       const previous = await fs.readFile(path.join(project.tempDir, 'dist/pages/native/index.wxml'), 'utf8')
       expect(previous).toContain('data-rule="changed"')
       await fs.writeJSON(rules, { label: 'restored' })
