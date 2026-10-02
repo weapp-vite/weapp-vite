@@ -632,9 +632,10 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           }
         }
 
+        const analysisChunks = ctx.runtimeState?.build?.output?.analysisChunks
         applySharedChunkStrategy.call(this, rolldownBundle, {
-          onEmitChunk: ctx.runtimeState.build.output.analysisChunks
-            ? (fileName, chunk) => ctx.runtimeState.build.output.analysisChunks!.set(fileName, chunk)
+          onEmitChunk: analysisChunks
+            ? (fileName, chunk) => analysisChunks.set(fileName, chunk)
             : undefined,
           strategy: sharedStrategy,
           subPackageRoots,
@@ -672,8 +673,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         })
 
         applyRuntimeChunkLocalization.call(this, rolldownBundle, {
-          onEmitChunk: ctx.runtimeState.build.output.analysisChunks
-            ? (fileName, chunk) => ctx.runtimeState.build.output.analysisChunks!.set(fileName, chunk)
+          onEmitChunk: analysisChunks
+            ? (fileName, chunk) => analysisChunks.set(fileName, chunk)
             : undefined,
           subPackageRoots,
           forceRoots: runtimeLocalizationRoots,
