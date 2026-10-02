@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "candidateCommit": "451056b65cd06d238bdb0de6828a59912e67a31d",
+  "candidateCommit": "ecfb1c5702c1436667c4c22e7082ec27e97a1312",
   "runs": [
     {
       "provider": "headless",
-      "commitSha": "451056b65cd06d238bdb0de6828a59912e67a31d",
+      "commitSha": "ecfb1c5702c1436667c4c22e7082ec27e97a1312",
       "workingTreeDirty": false,
       "strict": true,
       "status": "passed",
@@ -74,7 +74,7 @@
                 "id": "count-0",
                 "route": "pages/issue-1138/index",
                 "source": "headless-logical-tree",
-                "capturedAt": "2026-10-02T05:42:15.040Z",
+                "capturedAt": "2026-10-02T06:23:41.994Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -92,7 +92,7 @@
                 "id": "count-1",
                 "route": "pages/issue-1138/index",
                 "source": "headless-logical-tree",
-                "capturedAt": "2026-10-02T05:42:15.043Z",
+                "capturedAt": "2026-10-02T06:23:41.997Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -110,7 +110,7 @@
                 "id": "count-2",
                 "route": "pages/issue-1138/index",
                 "source": "headless-logical-tree",
-                "capturedAt": "2026-10-02T05:42:15.047Z",
+                "capturedAt": "2026-10-02T06:23:42.001Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -165,7 +165,7 @@
                 "id": "native-visible",
                 "route": "pages/issue-1138/delayed",
                 "source": "headless-logical-tree",
-                "capturedAt": "2026-10-02T05:42:23.239Z",
+                "capturedAt": "2026-10-02T06:23:50.185Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -183,7 +183,7 @@
                 "id": "adapter-settled",
                 "route": "pages/issue-1138/delayed",
                 "source": "headless-logical-tree",
-                "capturedAt": "2026-10-02T05:42:23.241Z",
+                "capturedAt": "2026-10-02T06:23:50.187Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -201,11 +201,11 @@
           }
         }
       ],
-      "originalReportSha256": "9a6003a7229ce2a76fce787f60ae10bb90c09f775cdb9c734c7d42c589ecf6d7"
+      "originalReportSha256": "742429294cf78a047887ca2fb0246b3772d38280418f0e475befb56684f2c22c"
     },
     {
       "provider": "devtools",
-      "commitSha": "451056b65cd06d238bdb0de6828a59912e67a31d",
+      "commitSha": "ecfb1c5702c1436667c4c22e7082ec27e97a1312",
       "workingTreeDirty": false,
       "strict": true,
       "status": "passed",
@@ -275,7 +275,7 @@
                 "id": "count-0",
                 "route": "pages/issue-1138/index",
                 "source": "devtools-page-frame",
-                "capturedAt": "2026-10-02T05:43:39.157Z",
+                "capturedAt": "2026-10-02T06:24:55.917Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -293,7 +293,7 @@
                 "id": "count-1",
                 "route": "pages/issue-1138/index",
                 "source": "devtools-page-frame",
-                "capturedAt": "2026-10-02T05:43:39.177Z",
+                "capturedAt": "2026-10-02T06:24:55.934Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -311,7 +311,7 @@
                 "id": "count-2",
                 "route": "pages/issue-1138/index",
                 "source": "devtools-page-frame",
-                "capturedAt": "2026-10-02T05:43:39.302Z",
+                "capturedAt": "2026-10-02T06:24:56.060Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -370,7 +370,7 @@
                 "id": "native-visible",
                 "route": "pages/issue-1138/delayed",
                 "source": "devtools-page-frame",
-                "capturedAt": "2026-10-02T05:43:48.595Z",
+                "capturedAt": "2026-10-02T06:25:05.352Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -388,7 +388,7 @@
                 "id": "adapter-settled",
                 "route": "pages/issue-1138/delayed",
                 "source": "devtools-page-frame",
-                "capturedAt": "2026-10-02T05:43:48.609Z",
+                "capturedAt": "2026-10-02T06:25:05.371Z",
                 "nodes": [
                   {
                     "selector": "#issue1138-count",
@@ -410,7 +410,7 @@
           }
         }
       ],
-      "originalReportSha256": "528d1df943ae6639c78796e55482a8e255de863f7027f6f70607c95bc284a8f5"
+      "originalReportSha256": "e3789f1217aeeea25416cb99a8381c4c225f3ccf7fafa998c356cfebb47579e6"
     }
   ]
 }
