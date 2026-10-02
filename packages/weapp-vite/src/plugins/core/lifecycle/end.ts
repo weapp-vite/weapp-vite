@@ -61,6 +61,7 @@ export function createBuildEndHook(state: CorePluginState) {
     // 生产 watch 每轮发布完整目标，不能被单个 sidecar 的诊断范围收窄。
     const replacesOutput = (!state.ctx.configService.isDev && Boolean(state.resolvedConfig?.build.watch))
       || (state.resolvedConfig?.build.emptyOutDir === true && !state.resolvedConfig.build.watch)
+      || state.ctx.runtimeState.build.hmr.fullEntryScan === true
     if (replacesOutput) {
       state.hmrState.didEmitAllEntries = true
       state.hmrState.skipSharedChunkRefresh = false

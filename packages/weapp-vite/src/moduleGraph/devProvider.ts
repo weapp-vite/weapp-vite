@@ -16,6 +16,7 @@ import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processi
 import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import {
+  createSidecarSourceSpecifier,
   parseLogicalEntryId,
   parseSidecarModuleId,
   parseSidecarSourceRequest,
@@ -170,6 +171,12 @@ export function createDevModuleGraphPlugin(
       }
       const sidecar = parseSidecarModuleId(id)
       if (sidecar) {
+        if (sidecar.kind === 'style') {
+          // 此宿主仅分析依赖，不发射小程序产物。交由 Vite CSS 管线登记嵌套
+          // import、预处理器和 PostCSS 依赖，避免 raw 字符串截断样式模块图。
+          const source = createSidecarSourceSpecifier(sidecar.ownerId, sidecar.sourceId, 'style')
+          return `import ${JSON.stringify(source)};\nexport default ${JSON.stringify(sidecar.sourceId)};\n`
+        }
         return createSidecarModuleCode(sidecar.ownerId, sidecar.sourceId, sidecar.kind)
       }
       const sidecarSource = parseSidecarSourceRequest(id)

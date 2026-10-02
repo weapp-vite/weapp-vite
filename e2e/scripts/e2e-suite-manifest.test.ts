@@ -43,6 +43,7 @@ describe('e2e suite manifest', () => {
     'ide/issue-1029-auto-routes.runtime.test.ts',
     'ide/issue-1082-confirmation.runtime.test.ts',
     'ide/issue-1134-native-batch.runtime.test.ts',
+    'ide/issue-1134-native-topology.runtime.test.ts',
     'ide/issue-1034-auto-routes.runtime.test.ts',
     'ide/issue-1034-auto-routes-hmr.runtime.test.ts',
     'ide/issue-1072-json-context.runtime.test.ts',

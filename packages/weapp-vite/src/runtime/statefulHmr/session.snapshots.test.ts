@@ -42,6 +42,7 @@ vi.mock('vite', async importOriginal => ({
   createServer: harness.createServer,
 }))
 vi.mock('./outputWriter', () => ({ writeStatefulHmrOutput: harness.writeOutput }))
+vi.mock('../../plugins/asset/prune', () => ({ pruneOwnedAssetFiles: vi.fn(async () => {}) }))
 vi.mock('./viteAdapter', () => ({
   StatefulHmrViteAdapter: class {
     constructor(_config: unknown, _server: unknown, callbacks: AdapterCallbacks) {
@@ -185,6 +186,26 @@ describe('stateful snapshot output transactions', () => {
     expect(session.rebuild).toHaveBeenCalledWith([file], expect.any(Map))
     expect(writtenAssets().findLast(asset => asset.fileName === fileName)?.source).toContain(source)
     expect(harness.fullBuild).not.toHaveBeenCalled()
+  })
+
+  it('rejects compiler-owned metadata assets until a changed entry graph replaces the engine', async () => {
+    const page = path.join(root, 'src/page.js')
+    const child = path.join(root, 'src/child.js')
+    const session = await start(snapshot('red'), [page])
+    const file = path.join(root, 'src/page.json')
+    const compiler = getCompilerHmrHost(session.ctx)
+    const dispose = vi.fn()
+    compiler.register('scan-only-provider', async () => ({ dispose }))
+    compiler.seed(file, '{}')
+    compiler.capture(file, '{"usingComponents":{"child":"./child"}}')
+    session.rebuild.mockResolvedValueOnce({ ...snapshot('blue'), entryIds: [page, child] })
+    harness.writeOutput.mockClear()
+    session.sourceChange(file, 'update', ['entry-local-asset:1'])
+    expect(harness.callbacks!.onPatch([file], { type: 'Noop' })).toBe(true)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(harness.writeOutput).not.toHaveBeenCalled()
+    expect(dispose).toHaveBeenCalledTimes(1)
+    expect(session.patch([])).toBe(false)
   })
 
   it('retires assets removed by a compiler-owned native snapshot batch', async () => {

@@ -149,6 +149,32 @@ describe('stateful snapshot component metadata', () => {
     expect(String(style.source)).not.toContain('71px')
   })
 
+  it('reports native component entry additions and removals from successive metadata snapshots', async () => {
+    const root = await fs.realpath(await createProject())
+    const pageJson = path.join(root, 'src/pages/index/index.json')
+    const original = await fs.readFile(pageJson, 'utf8')
+    const component = path.join(root, 'src/components/native-leaf/index.js')
+    await fs.mkdir(path.dirname(component), { recursive: true })
+    await fs.writeFile(component, 'Component({})')
+    await fs.writeFile(component.replace('.js', '.json'), '{"component":true}')
+    await fs.writeFile(component.replace('.js', '.wxml'), '<view>native leaf</view>')
+    const options = { cwd: root, isDev: true, mode: 'development' }
+    const owner = createCompilerContextInstance()
+    await owner.configService.load(options)
+    try {
+      for (const enabled of [false, true, false]) {
+        await fs.writeFile(pageJson, enabled
+          ? JSON.stringify({ usingComponents: { 'native-leaf': '/components/native-leaf/index' } })
+          : original)
+        const result = await buildStatefulHmrSnapshot(options, undefined, owner)
+        expect([...result.getEntryIds()].includes(component)).toBe(enabled)
+      }
+    }
+    finally {
+      owner.moduleGraphService.resetSession()
+    }
+  })
+
   it.each(['directory', 'junction'])('preserves native entry lifecycle while compiling fixed script, JSON, template and style inputs (%s root)', async (rootKind) => {
     let root = await createProject()
     if (rootKind === 'junction') {

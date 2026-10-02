@@ -170,6 +170,8 @@ export interface RuntimeState {
       dirtyVueEntryIds: Set<string>
       /** 当前构建是否为已有输出的后续发布，不依赖单文件诊断事件。 */
       isRebuild: boolean
+      /** 当前快照从根入口重建可达图；完整发布后才撤销旧产物。 */
+      fullEntryScan?: boolean
       didEmitAllEntries: boolean
       lastHmrEntryIds: Set<string>
       lastEmittedEntryIds: Set<string>

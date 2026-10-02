@@ -1574,6 +1574,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     let devWatcherClosed = false
     let pendingSnapshotBatch: SnapshotBuildBatch | undefined
     let failedSnapshotReasons: SnapshotBuildReason[] = []
+    let failedEntryTopologyChange = false
     let initialBuildFailed = false
     let snapshotBatchTimer: ReturnType<typeof setTimeout> | undefined
     // Web 可能先刷新共享服务，native 快照必须比较自身已成功写出的路由版本。
@@ -1682,16 +1683,21 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         debug?.(`[module-graph-provider] affected=${graphAffectedEntries.size} files=${batchReasons.length}`)
         recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotResolveMs', performance.now() - snapshotResolveStartedAt)
         const snapshotBuildStartedAt = performance.now()
-        const requiresFullRescan = batchReasons.some(batchReason =>
+        let requiresFullRescan = batchReasons.some(batchReason =>
           batchReason.forceFullRescan
           || batchReason.event === 'create'
           || batchReason.event === 'delete',
         )
-        const { routeSignature, routeDependentEntries } = await refreshSnapshotSources(
+        const { routeSignature, routeDependentEntries, entryTopologyChanged } = await refreshSnapshotSources(
           ctx,
           batchReasons.filter((batchReason): batchReason is SnapshotBuildReason & { file: string } => Boolean(batchReason.file)),
           emittedAutoRoutesSignature,
         )
+        const fullEntryScan = entryTopologyChanged || failedEntryTopologyChange
+        requiresFullRescan ||= fullEntryScan
+        if (fullEntryScan) {
+          scanService.markDirty()
+        }
         for (const entryId of graphAffectedEntries) {
           routeDependentEntries.delete(entryId)
         }
@@ -1767,6 +1773,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         resetEmittedOutputCaches(ctx.runtimeState)
         const hmr = ctx.runtimeState.build.hmr
         hmr.forceFullSharedChunkRefresh = true
+        hmr.fullEntryScan = fullEntryScan
         try {
           devBuildWatcher?.emitEvent({ code: 'START' })
           await build({
@@ -1778,10 +1785,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
           })
           emittedAutoRoutesSignature = routeSignature
           recordHmrProfileDuration(ctx.runtimeState.build.hmr.profile, 'snapshotBuildMs', performance.now() - snapshotBuildStartedAt)
+          failedEntryTopologyChange = false
           devBuildWatcher?.emitEvent({ code: 'END' })
           return 'snapshot'
         }
         catch (error) {
+          failedEntryTopologyChange ||= fullEntryScan
           devBuildWatcher?.emitEvent({
             code: 'ERROR',
             error: error instanceof Error ? error : new Error(String(error)),
@@ -1791,6 +1800,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         }
         finally {
           hmr.forceFullSharedChunkRefresh = false
+          hmr.fullEntryScan = false
         }
       })
       snapshotBuildChain = currentSnapshotBuild.catch(() => {

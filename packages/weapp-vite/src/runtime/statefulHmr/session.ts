@@ -26,6 +26,7 @@ import { parseSidecarModuleId, parseSidecarSourceRequest } from '../../moduleGra
 import { createPublicAssetSourcePlan } from '../../plugins/asset/publicSources'
 import { CompilerHmrResyncError, getCompilerHmrHost } from '../../plugins/compilerPlugin/hmr'
 import { ENTRY_GRAPH_CHANGE_REASON } from '../../plugins/hooks/useLoadEntry/entryChunkLifecycle'
+import { prepareOutputOwnership } from '../../plugins/outputFinalizer/ownership'
 import { isReactStaticTemplateSource } from '../../plugins/react'
 import { setTailwindStyleOwners } from '../../plugins/tailwindcss/styleOwners'
 import { resolveOutputExtensions } from '../../utils/outputExtensions'
@@ -613,6 +614,10 @@ class StatefulHmrSession {
             sourcemap: Boolean(this.server.config.build.sourcemap),
           })
           const { compilerAssets, snapshot, code, changedIds, filenames } = compiled
+          if (snapshot && this.restartForEntryGraph(snapshot)) {
+            // reset 已撤销本代交付；保留 dispose 供协调器释放预编译资源。
+            return { commit: async () => {}, publish: async () => {}, dispose: compiled.dispose }
+          }
           if (shouldResetStatefulHmrRetention(this.transport.retainedDeltaCount, this.transport.retainedDeltaBytes, Buffer.byteLength(code))) {
             this.requestFullBuild(files)
           }
@@ -703,6 +708,22 @@ class StatefulHmrSession {
     this.snapshotScheduler.request('refresh', files)
   }
 
+  private restartForEntryGraph(snapshot: StatefulHmrSnapshot): boolean {
+    const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
+    if (!nextEntryIds || (nextEntryIds.length === this.entryIds.size && nextEntryIds.every(id => this.entryIds.has(id)))) {
+      return false
+    }
+    if (this.entryGraphRevision === this.rebuiltEntryGraphRevision) {
+      this.entryGraphRevision += 1
+    }
+    // DevEngine 的入口图固定；所有快照交付路径必须先撤销旧引擎批次，再交给新引擎完整发布。
+    this.delivery.reset()
+    this.transport.cancelPendingDeliveries()
+    // 延迟重启，避免 close 等待正在执行的批次形成自锁。
+    this.requestServerRestart()
+    return true
+  }
+
   private requestServerRestart(): void {
     if (this.restartTimer) {
       return
@@ -733,7 +754,12 @@ class StatefulHmrSession {
     batchId?: number,
     removedAssets: string[] = [],
   ): Promise<void> {
-    const write = () => writeStatefulHmrOutput(this.ctx.configService!.outDir, output, initialPublicAssets, removedAssets)
+    const outDir = this.ctx.configService!.outDir
+    const commitOwnership = prepareOutputOwnership(this.ctx, outDir, output.map(item => item.fileName), kind !== 'full', removedAssets)
+    const write = async () => {
+      await writeStatefulHmrOutput(outDir, output, initialPublicAssets, removedAssets)
+      await commitOwnership()
+    }
     const pending = this.diagnostics ? this.diagnostics.write({ kind, batchId }, output, write) : write()
     return pending.catch((error) => {
       // 原生写盘失败可能已有部分输出落盘，不能继续用旧字节快照省略下一次写入。
@@ -768,17 +794,7 @@ class StatefulHmrSession {
       return
     }
     const nextEntryIds = snapshot.entryIds?.map(id => normalizeFsResolvedId(id))
-    const entryGraphChanged = nextEntryIds !== undefined && (
-      nextEntryIds.length !== this.entryIds.size || nextEntryIds.some(id => !this.entryIds.has(id))
-    )
-    if (entryGraphChanged) {
-      if (this.entryGraphRevision === this.rebuiltEntryGraphRevision) {
-        // app.json 等元数据可能直接暴露拓扑差异；显式冻结旧引擎的 patch 接受窗口。
-        this.entryGraphRevision += 1
-      }
-      // DevEngine 的入口图在创建时固定；拓扑变化必须由全新扫描与引擎接管。
-      // 延迟重启让当前批次先退出，避免 close() 等待本批次形成自锁。
-      this.requestServerRestart()
+    if (this.restartForEntryGraph(snapshot)) {
       return
     }
     if (batch.mode === 'full') {

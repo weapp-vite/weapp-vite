@@ -1533,6 +1533,53 @@ describe('runtime buildPlugin service', () => {
     expect(dirtySummaries).toEqual([['sidecar-direct:1', 'style-sidecar:1']])
   })
 
+  it('retries a failed topology publication with a complete entry scan after the JSON cache has advanced', async () => {
+    const watcher = createManualWatcher()
+    chokidarWatchMock.mockReturnValue(createManualSidecarWatcher())
+    const ctx = createMockContext()
+    ctx.scanService.markDirty = vi.fn()
+    const file = '/project/src/pages/logs/index.json'
+    const cache = new Map<string, unknown>([[file, {}]])
+    ctx.jsonService = {
+      cache,
+      read: async () => {
+        const value = { usingComponents: { card: '/components/card/index' } }
+        cache.set(file, value)
+        return value
+      },
+    }
+    ctx.runtimeState.build.hmr.resolvedEntryMap.set(HMR_PAGE_ID, { id: HMR_PAGE_ID })
+    ctx.moduleGraphService.collectAffectedEntries.mockReturnValue(new Set([HMR_PAGE_ID]))
+    const scans: boolean[] = []
+    buildMock.mockResolvedValueOnce(watcher).mockImplementation(async () => {
+      scans.push(ctx.runtimeState.build.hmr.fullEntryScan === true)
+      if (scans.length === 1) {
+        throw new Error('fixture topology build failed')
+      }
+      return { output: [] }
+    })
+    const service = createBuildService(ctx)
+    const firstBuild = service.build({ skipNpm: true })
+    await watcher.subscribed
+    watcher.emit('START')
+    watcher.emit('END')
+    await firstBuild
+    try {
+      moduleGraphProviderChange.handler?.({ event: 'update', file })
+      await waitForMockCalls(buildMock, 2)
+      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      await waitForMockCalls(buildMock, 3)
+      expect(scans).toEqual([true, true])
+      moduleGraphProviderChange.handler?.({ event: 'update', file: HMR_PAGE_ID })
+      await waitForMockCalls(buildMock, 4)
+      expect(scans).toEqual([true, true, false])
+      expect(ctx.runtimeState.build.hmr.fullEntryScan).toBe(false)
+    }
+    finally {
+      await watcher.close()
+    }
+  })
+
   it('keeps full snapshot fallback for sidecar topology changes', async () => {
     const watcher = createManualWatcher()
     const sidecarWatcher = createManualSidecarWatcher()

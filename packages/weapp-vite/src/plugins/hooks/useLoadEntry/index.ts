@@ -424,6 +424,7 @@ export function useLoadEntry(
   ctx: CompilerContext,
   options?: {
     buildTarget?: BuildTarget
+    isSubPackage?: boolean
     hmr?: HmrOptions
   },
 ) {
@@ -578,7 +579,7 @@ export function useLoadEntry(
     async emitDirtyEntries(this: PluginContext) {
       entryChunkLifecycle.beginBuild()
       ctx.runtimeState.build.hmr.forceEmitUnchangedChunks = false
-      if (this.meta?.watchMode && !ctx.configService.isDev && buildTarget === 'app' && !ctx.configService.weappLibConfig?.enabled) {
+      if (!options?.isSubPackage && (ctx.runtimeState.build.hmr.fullEntryScan || (this.meta?.watchMode && !ctx.configService.isDev)) && buildTarget === 'app' && !ctx.configService.weappLibConfig?.enabled) {
         // 生产 watch 每轮发布完整目标；模块转换缓存与产物元数据的所有权分开处理。
         resetEmittedOutputCaches(ctx.runtimeState)
         ctx.runtimeState.css.sidecarImports.clear()
@@ -591,6 +592,18 @@ export function useLoadEntry(
         lastEmittedChunkFileNames.clear()
         metadataEntryIds.clear()
         jsonEmitManager.map.clear()
+        jsonEmitManager.pendingMap.clear()
+        if (ctx.runtimeState.build.hmr.fullEntryScan) {
+          // 拓扑重建从 app 的当前引用重新发现入口，不能复活已脱离可达图的旧组件。
+          loadEntry.invalidateResolveCache()
+          for (const ownerId of resolvedEntryMap.keys()) {
+            ctx.moduleGraphService.invalidate(ownerId)
+            ctx.moduleGraphService.removeEntryDependencies(ownerId)
+          }
+          resolvedEntryMap.clear()
+          entriesMap.clear()
+          ctx.runtimeState.wxml.tokenMap.clear()
+        }
         ctx.autoRoutesService?.markDirty()
         ctx.scanService.markDirty()
         const app = await ctx.scanService.loadAppEntry()

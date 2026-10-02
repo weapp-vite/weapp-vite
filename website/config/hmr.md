@@ -240,3 +240,11 @@ pnpm verify:edit-sequence --engine weapp-modes --report .tmp/output-mode-sequenc
 ```
 
 该观察器使用完整 weapp 插件，覆盖 production→dev→production、dev→production、组件移动/删除、页面及分包迁移/删除、共享依赖变化，以及旧生产缓存恢复。每步完整生产磁盘文件集合及字节与独立进程基线比较，检查 emitted JS 引用和路由文件存在性；`emptyOutDir: false` 额外验证每次切换都保留用户文件。它验证的是模式切换后的产物，不测量编辑 HMR 延迟，也不能替代真实 IDE 页面验收。
+
+### 原生编辑类别与输出范围采样
+
+仓库内的 `scripts/benchmark-templates-hmr.ts` 支持 `TEMPLATES_HMR_PROJECT_ROOT` 指定独立工程。工程中的 `hmr-benchmark.json` 显式列出源文件、目标产物和变更类型；参考 `e2e-apps/github-issues/fixtures/issue-1134-profile`，包含原生 JS、WXML、普通 WXSS、WXSS 导入链、SCSS、Tailwind 内容、局部 JSON、组件引用和页面路由九类编辑。
+
+拓扑编辑只有在目标 JS/JSON/WXML 全部生成后才完成；恢复阶段也须确认这组产物已撤销。classic 刷新当前可达入口，stateful 的入口集合变化会完整重载引擎，不承诺保持旧实例状态。`emptyOutDir: false` 下仅移除当前构建持有且已不可达的文件，保留用户资产。
+
+启用 `TEMPLATES_HMR_OUTPUT_SCOPE=1` 后，报告在计时窗口外记录实际磁盘文件的新增、内容变化、删除及变更后字节数。它不代表底层 write 调用次数，不计相同字节的重复写入；也不能把它直接解释为模块转换成本。使用相同 marker seed 与输入摘要比较样本。完整重载、局部资源更新和脚本补丁分别解释，不混用其延迟或状态保持语义。

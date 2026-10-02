@@ -1,0 +1,58 @@
+[
+  {
+    "id": "native-script",
+    "source": "pages/plain/index.js",
+    "output": "pages/plain/index.js",
+    "mutation": "script"
+  },
+  {
+    "id": "native-template",
+    "source": "pages/plain/index.wxml",
+    "output": "pages/plain/index.wxml",
+    "mutation": "template"
+  },
+  {
+    "id": "plain-wxss",
+    "source": "pages/plain/index.wxss",
+    "output": "pages/plain/index.wxss",
+    "mutation": "style"
+  },
+  {
+    "id": "import-chain-wxss",
+    "source": "styles/theme.wxss",
+    "output": "pages/imported/index.wxss",
+    "mutation": "style"
+  },
+  {
+    "id": "scss",
+    "source": "pages/sass/index.scss",
+    "output": "pages/sass/index.wxss",
+    "mutation": "style"
+  },
+  {
+    "id": "tailwind-content",
+    "source": "pages/tailwind/index.wxml",
+    "output": "app.wxss",
+    "mutation": "tailwind"
+  },
+  {
+    "id": "local-json",
+    "source": "pages/plain/index.json",
+    "output": "pages/plain/index.json",
+    "mutation": "title"
+  },
+  {
+    "id": "component-topology-json",
+    "source": "pages/plain/index.json",
+    "output": "pages/plain/index.json",
+    "mutation": "component",
+    "target": "components/optional/index"
+  },
+  {
+    "id": "route-topology-json",
+    "source": "app.json",
+    "output": "app.json",
+    "mutation": "route",
+    "target": "pages/optional/index"
+  }
+]

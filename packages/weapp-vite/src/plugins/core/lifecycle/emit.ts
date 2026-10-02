@@ -19,9 +19,11 @@ function resolveIncrementalHmrWxmlTargetIds(state: CorePluginState) {
   }
 
   const targets = new Set<string>()
-  const entryIds = hmrState.lastHmrEntryIds?.size
-    ? hmrState.lastHmrEntryIds
-    : hmrState.lastEmittedEntryIds
+  // 本轮受影响的旧入口与新发现的组件共同拥有输出；不能用前者覆盖后者。
+  const entryIds = new Set([
+    ...hmrState.lastHmrEntryIds ?? [],
+    ...hmrState.lastEmittedEntryIds ?? [],
+  ])
 
   for (const entryId of entryIds ?? []) {
     // 原生 layout 通过组件包裹页面，不在页面 WXML 的 import/include 图中。
