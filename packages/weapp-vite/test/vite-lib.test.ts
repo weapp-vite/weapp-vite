@@ -82,10 +82,18 @@ it('rebuilds declarations when a type-only dependency changes in production watc
   await writeFile(types, 'export interface PublicValue { initial: string }')
   await writeFile(path.join(root, 'src/utils/index.ts'), 'export type { PublicValue } from "./types"; export const value = 1')
   const watcher = await build({ ...config, build: { ...config.build, watch: {} } }) as RolldownWatcher
+  let initialBuildFinished = false
+  watcher.on('event', (event) => {
+    if (event.code === 'END') {
+      initialBuildFinished = true
+    }
+  })
   const errors: unknown[] = []
   watcher.on('event', event => event.code === 'ERROR' && errors.push(event.error))
   try {
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('initial: string')
+    // 声明产物写出早于纯类型依赖的原生监听注册，首轮必须等待完整构建结束。
+    await expect.poll(() => initialBuildFinished, { timeout: 20_000 }).toBe(true)
     await writeFile(types, 'export interface PublicValue { updated: number }')
     await expect.poll(() => read('utils.d.ts'), { timeout: 20_000 }).toContain('updated: number')
     expect(errors).toEqual([])
