@@ -56,9 +56,15 @@ describe('dev process diagnostics', () => {
     const collector = createDevProcessDiagnostics('apps/demo')
     collector.write(' ERROR  compile failed\n[compile]  WARN  missing source\nError handling enabled\nERROR handling enabled\n')
     expect(vi.mocked(appendIdeReportEvent).mock.calls.map(([entry]) => [entry.level, entry.text])).toEqual([
-      ['error', 'ERROR  compile failed'],
+      ['error', '[error] compile failed'],
       ['warn', '[compile]  WARN  missing source'],
     ])
+  })
+
+  it.each(['[error] Build failed with 1 error:', ' ERROR  Build failed with 1 error:'])('normalizes only logger severity framing: %s', (line) => {
+    const collector = createDevProcessDiagnostics('apps/demo')
+    collector.write(`${line}\n`)
+    expect(appendIdeReportEvent).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ source: 'build', level: 'error', text: '[error] Build failed with 1 error:' }))
   })
 
   it('collects the actual stateful HMR client failure and stack across chunks', () => {

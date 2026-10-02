@@ -5,11 +5,13 @@ import type { SubPackageMetaValue } from '../types'
 import type { RewriteWevuInternalRuntimeImportsOptions } from './core/helpers'
 import type { OutputAssetEntry } from './outputFinalizer/templates'
 import { analyzeGlassEaselBundle } from '../analyze/glassEasel'
+import { notifyDevModuleGraphHost } from '../moduleGraph/host'
 import { parseGraphOutputModuleId, resolveGraphOutputOwner } from '../moduleGraph/outputMetadata'
 import { parseSidecarModuleId } from '../moduleGraph/protocol'
 import { changeFileExtension } from '../utils'
 import { createHmrProfileCheckpoint } from '../utils/hmrProfile'
-import { deferWxmlDependencyCommit, observeWxmlDependencies } from '../wxml/processing/dependencies'
+import { deferWxmlDependencyCommit } from '../wxml/processing/dependencies'
+import { bindWxmlDependencyWatch } from '../wxml/processing/watch'
 import { hasManagedCompilerOutputMarker, isManagedCompilerEntry } from './compilerPluginRegistry'
 import { rewriteWevuInternalRuntimeImports, stabilizeWevuRuntimeChunkAccess } from './core/helpers'
 import { consumePendingOwnerStyleSources } from './css'
@@ -184,7 +186,7 @@ export async function normalizeTemplateAssets(
 
 export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta?: SubPackageMetaValue): Plugin {
   let preserveCompleteBundle = false
-  let unobserve: (() => void) | undefined
+  let unobserve: (() => Promise<void>) | undefined
   const wevuRuntimeRewriteOptions: RewriteWevuInternalRuntimeImportsOptions = {
     get runtimeFileName() {
       return ctx.runtimeState?.build?.output?.wevuInternalRuntimeFileName
@@ -213,12 +215,25 @@ export function createOutputFinalizerPlugin(ctx: CompilerContext, subPackageMeta
   return {
     name: 'weapp-vite:output-finalizer',
     enforce: 'post',
-    configureServer(server) {
-      unobserve = observeWxmlDependencies(ctx, files => server.watcher.add(files))
-      server.httpServer?.once('close', () => unobserve?.())
+    async configureServer(server) {
+      const subscription = bindWxmlDependencyWatch(ctx, server, change => notifyDevModuleGraphHost(ctx, change))
+      unobserve = subscription
+      try {
+        await subscription.ready
+      }
+      catch (error) {
+        await subscription()
+        throw error
+      }
+      server.httpServer?.once('close', () => {
+        void unobserve?.()
+      })
     },
-    closeWatcher() {
-      unobserve?.()
+    async closeWatcher() {
+      await unobserve?.()
+    },
+    async closeBundle() {
+      await unobserve?.()
     },
     configResolved(config) {
       // 原生引擎发布完整模块注册图；classic 按源事件裁剪会破坏其重载输出。

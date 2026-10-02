@@ -80,12 +80,19 @@ describe('WXML transform external dependencies', { concurrent: false }, () => {
       const previousFailures = failures.length
       await fs.remove(rules)
       // 超时时保留宿主事件与依赖登记状态，区分漏报事件、依赖丢失与构建未报错。
-      await expect.poll(() => ({
+      const removalState = () => ({
         newFailure: failures.length > previousFailures,
         failureCount: failures.length,
         dependencyRegistered: getWxmlWatchFiles(compiler.ctx).includes(rules),
         hostEvents: [...dependencyEvents],
-      }), { timeout: 45_000 }).toMatchObject({ newFailure: true })
+      })
+      try {
+        await expect.poll(() => removalState().newFailure, { timeout: 45_000 }).toBe(true)
+      }
+      catch (cause) {
+        // 匹配器会省略未参与比较的属性，错误正文必须显式保留完整诊断。
+        throw new Error(`WXML dependency removal: ${JSON.stringify(removalState())}`, { cause })
+      }
       const previous = await fs.readFile(path.join(project.tempDir, 'dist/pages/native/index.wxml'), 'utf8')
       expect(previous).toContain('data-rule="changed"')
       await fs.writeJSON(rules, { label: 'restored' })
