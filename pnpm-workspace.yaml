@@ -13,6 +13,7 @@ packages:
   - '@weapp-core/*'
   - extensions/*
   - website
+  - tools/promo-video
   - '!packages/**/test/**'
   - '!packages-runtime/**/test/**'
   - '!benchmarks/**/test/**'
