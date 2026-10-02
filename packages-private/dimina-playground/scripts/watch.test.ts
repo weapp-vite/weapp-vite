@@ -44,9 +44,9 @@ it.each([false, true])('watches fixture edits without subscribing to disposable 
     nativeWatcher = watch(fixture, (event, file) => nativeEvents.push(`${event}:${String(file)}`))
     nativeWatcher.on('error', error => errors.push(error))
     await expect.poll(() => ready, { timeout: 10_000 }).toBe(true)
-    // 缺失 env 文件可使 ready 早于目录扫描结束；首次保存必须在目标文件已登记后发生。
+    // Vite 初始路径并行扫描时，ready 可能先于嵌套目录注册；真实保存必须在目标已订阅后发生。
     await expect.poll(() => Object.entries(server.watcher.getWatched()).some(([directory, files]) =>
-      path.resolve(directory) === fixture && files.includes('index.js'),
+      path.resolve(directory) === path.resolve(fixture) && files.includes('index.js'),
     ), { timeout: 10_000 }).toBe(true)
     const watched = Object.keys(server.watcher.getWatched()).map(directory => path.relative(root, directory).replaceAll('\\', '/'))
     expect(watched.some(directory => directory.split('/').some(part => part === '.cache' || part === '.weapp-vite'))).toBe(false)

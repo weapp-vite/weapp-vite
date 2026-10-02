@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict'
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { performance } from 'node:perf_hooks'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费安装需在各平台正确解析 npm/pnpm 启动器。
 import { execa } from 'execa'
+import { inspectConsumerInstallation, profileConsumerStartup, verifyConsumerExports, verifyConsumerNegativeControls } from './consumerEvidence.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
 import { verifyPlatformConsumer } from './verify-vite-host-platform.mjs'
-import { verifyWebConsumer } from './verify-vite-host-web.mjs'
+import { verifyTailwindConsumer } from './verify-vite-host-tailwind.mjs'
 
 const toolchain = process.argv[2]
 assert(['wv', 'vite', 'vite-plus'].includes(toolchain), 'Usage: node verify-vite-host-install.mjs <wv|vite|vite-plus>')
@@ -30,6 +32,9 @@ try {
   // 所有候选已是直接 tarball 依赖；额外覆盖整个闭包会触发 npm 11.6 的 override-set 冲突。
   const overrides = {}
   dependencies.typescript = '6.0.3'
+  if (!runtime || runtimeSuite === 'web') {
+    dependencies.tailwindcss = '4.3.3'
+  }
   if (toolchain !== 'wv') {
     Object.assign(dependencies, { vite: '8.3.1', vitest: '5.0.2' })
   }
@@ -46,7 +51,9 @@ try {
     Object.assign(dependencies, { dayjs: '1.11.21', sass: '1.104.1' })
   }
   if (runtimeSuite === 'worker') {
-    const vendor = path.join(temporaryRoot, 'worker-vendor')
+    // file: 依赖供应目录必须属于消费者本身；否则 npm 会创建越出消费者根目录的链接，
+    // 既不反映发布包消费语义，也会被安装闭包的越界链接检查拒绝。
+    const vendor = path.join(consumerRoot, 'worker-vendor')
     await cp(path.join(repoRoot, 'e2e-apps/chunk-modes/node_modules/fake-pkg'), vendor, { recursive: true })
     dependencies['fake-pkg'] = `file:${vendor.replaceAll('\\', '/')}`
   }
@@ -59,9 +66,32 @@ try {
   }, null, 2)}\n`)
   // 不继承用户或工作区中的 peer 绕过开关，安装失败必须真实阻断验收。
   const env = { npm_config_legacy_peer_deps: 'false', npm_config_force: 'false', npm_config_ignore_scripts: 'false', npm_config_engine_strict: 'true' }
+  const installStarted = performance.now()
   await execa('npm', ['install', '--strict-peer-deps'], { cwd: consumerRoot, env, stdio: 'inherit' })
+  const installWallMs = performance.now() - installStarted
   await verifyConsumerTarballProvenance(consumerRoot, candidates)
   await execa('npm', ['ls', 'vite', 'rolldown', 'rolldown-require', 'vitest'], { cwd: consumerRoot, env, stdio: 'inherit' })
+  const evidence = {
+    schemaVersion: 1,
+    node: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    toolchain,
+    installation: { wallMs: installWallMs, ...await inspectConsumerInstallation(consumerRoot) },
+    exports: await verifyConsumerExports(consumerRoot, candidates),
+    negativeControls: await verifyConsumerNegativeControls(consumerRoot, candidates),
+    startup: await profileConsumerStartup(consumerRoot),
+  }
+  const loadedPackages = new Set(evidence.startup.trace.modules.map(module => module.package))
+  for (const adapter of ['@weapp-vite/web', '@weapp-tailwindcss/engine', 'vite-tsconfig-paths', 'tsconfck']) {
+    assert(!loadedPackages.has(adapter), `Inactive adapter loaded by CLI help: ${adapter}`)
+  }
+  if (process.env.WEAPP_VITE_CONSUMER_EVIDENCE) {
+    const output = path.resolve(process.env.WEAPP_VITE_CONSUMER_EVIDENCE)
+    await mkdir(path.dirname(output), { recursive: true })
+    await writeFile(output, `${JSON.stringify(evidence, null, 2)}\n`)
+  }
+  console.log(`Published targets and negative controls passed; installed ${evidence.installation.fileBytes} logical bytes; CLI loaded ${evidence.startup.trace.modules.length} modules (instrumented).`)
   const installed = JSON.parse(await readFile(path.join(consumerRoot, 'package.json'), 'utf8'))
   if (toolchain === 'wv') {
     assert.equal(installed.dependencies.vite, undefined)
@@ -72,8 +102,17 @@ try {
     consumerRoot,
     ...(toolchain === 'wv' ? ['wv'] : []),
   ], { cwd: repoRoot, stdio: 'inherit' })
-  if (runtimeSuite === 'web') {
-    await verifyWebConsumer(consumerRoot, toolchain, repoRoot)
+  if (!runtime || runtimeSuite === 'web') {
+    await verifyTailwindConsumer(consumerRoot, toolchain)
+  }
+  if (runtimeSuite === 'web' || process.env.WEAPP_VITE_CONSUMER_WEB === '1') {
+    // Windows 会锁住进程已加载的原生库；验证进程退出后，安装目录 owner 才能完整清理。
+    await execa(process.execPath, [
+      fileURLToPath(new URL('./verify-vite-host-web.mjs', import.meta.url)),
+      consumerRoot,
+      toolchain,
+      repoRoot,
+    ], { cwd: repoRoot, stdio: 'inherit' })
   }
   else if (runtime && runtimeSuite === 'platform') {
     await verifyPlatformConsumer(consumerRoot, toolchain, repoRoot, runtime)
@@ -180,5 +219,10 @@ export default defineConfig({
   }
 }
 finally {
-  await rm(temporaryRoot, { recursive: true, force: true })
+  if (process.env.WEAPP_VITE_CONSUMER_KEEP === '1') {
+    console.log(`Retained isolated consumer: ${consumerRoot}`)
+  }
+  else {
+    await rm(temporaryRoot, { recursive: true, force: true })
+  }
 }

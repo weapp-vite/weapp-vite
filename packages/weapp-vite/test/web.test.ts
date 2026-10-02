@@ -1,21 +1,19 @@
+import type { PluginOption } from 'vite'
 import { mkdtemp } from 'node:fs/promises'
 import { fs } from '@weapp-core/shared/fs'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createTestCompilerContext, getApp } from './utils'
 
-function collectPluginNames(option: any, bucket: string[] = []): string[] {
-  if (!option) {
-    return bucket
+async function collectPluginNames(option: PluginOption): Promise<string[]> {
+  const resolved = await option
+  if (!resolved) {
+    return []
   }
-  if (Array.isArray(option)) {
-    option.forEach(item => collectPluginNames(item, bucket))
-    return bucket
+  if (Array.isArray(resolved)) {
+    return (await Promise.all(resolved.map(collectPluginNames))).flat()
   }
-  if (typeof option === 'object' && option !== null && typeof option.name === 'string') {
-    bucket.push(option.name)
-  }
-  return bucket
+  return [resolved.name]
 }
 
 describe('web integration', () => {
@@ -33,7 +31,7 @@ describe('web integration', () => {
     expect(inline).toBeDefined()
 
     if (inline) {
-      const pluginNames = collectPluginNames(inline.plugins)
+      const pluginNames = await collectPluginNames(inline.plugins)
       expect(pluginNames).toContain('@weapp-vite/web')
       expect(inline.root).toBe(webConfig?.root)
       expect(inline.build?.outDir).toBe(webConfig?.outDir)

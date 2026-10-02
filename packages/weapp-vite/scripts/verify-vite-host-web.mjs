@@ -4,7 +4,7 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { stripVTControlCharacters } from 'node:util'
 // eslint-disable-next-line e18e/ban-dependencies -- 消费验证需要跨平台原生命令和完整进程清理。
 import { execa } from 'execa'
@@ -152,4 +152,10 @@ export default defineConfig({
   }
   finally { await browser.close() }
   console.log(`${host}: strict packed Web build, browser counter/component and dev template update passed${host === 'wv' ? '' : ', including native build watch'}`)
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const [root, host, repoRoot] = process.argv.slice(2)
+  assert(root && repoRoot && ['wv', 'vite', 'vite-plus'].includes(host), 'Expected consumer root, host and repository root')
+  await verifyWebConsumer(root, host, repoRoot)
 }

@@ -4,7 +4,6 @@ import type { AliasOptions } from '../../../types'
 import type { LoadConfigOptions, LoadConfigResult } from '../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { getOutputExtensions, getWeappViteConfig } from '../../../defaults'
 import { DEFAULT_MP_PLATFORM } from '../../../platform'
 import { getAliasEntries } from '../../../utils'
@@ -297,6 +296,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     if (tsconfigPathsOptions !== false) {
       const usesAdvancedTsconfigPathsOptions = typeof tsconfigPathsOptions === 'object' && tsconfigPathsOptions !== null
       if (usesAdvancedTsconfigPathsOptions) {
+        const { default: tsconfigPaths } = await import('vite-tsconfig-paths')
         config.plugins.push(tsconfigPaths(tsconfigPathsOptions))
       }
       else if (shouldDelegateToNativeTsconfigPaths) {
