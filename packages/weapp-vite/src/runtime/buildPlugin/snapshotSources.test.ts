@@ -12,7 +12,7 @@ import { createRuntimeState } from '../runtimeState'
 import { refreshSnapshotSources } from './snapshotSources'
 
 const { createServerMock } = vi.hoisted(() => ({
-  createServerMock: vi.fn(async (_config: Vite.InlineConfig) => ({ close: async () => {} })),
+  createServerMock: vi.fn(async (_config: Vite.InlineConfig) => ({ watcher: { add: vi.fn() }, close: async () => {} })),
 }))
 vi.mock('vite', async importOriginal => ({
   ...await importOriginal<typeof Vite>(),

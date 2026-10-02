@@ -8,6 +8,7 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { cacheRoot, repositoryRoot, root } from '../../packages-private/dimina-playground/config'
 import { content, startHost, stopHost, visible } from './helpers'
+import { observeNavigation } from './navigationEvidence'
 
 for (const mode of ['preview', 'dev'] as const) {
   describe(`Dimina ${mode}`, () => {
@@ -28,6 +29,7 @@ for (const mode of ['preview', 'dev'] as const) {
     async function withPage(example: string, run: (page: Page) => Promise<void>) {
       const page = await browser.newPage({ viewport: { width: 900, height: 1000 } })
       page.setDefaultTimeout(15_000)
+      const navigation = observeNavigation(page)
       const errors: string[] = []
       const consoleErrors: string[] = []
       page.on('console', (message) => {
@@ -42,6 +44,17 @@ for (const mode of ['preview', 'dev'] as const) {
         expect(errors).toEqual([])
       }
       catch (error) {
+        // 在读取可能尚未就绪的 iframe 前，先保存请求和加载事件，保留原始超时。
+        const evidenceDirectory = path.join(cacheRoot, 'navigation')
+        const name = (expect.getState().currentTestName ?? example).replace(/[^\w-]+/g, '-')
+        try {
+          await mkdir(evidenceDirectory, { recursive: true })
+          await writeFile(path.join(evidenceDirectory, `${name}.json`), JSON.stringify(navigation.snapshot(), null, 2))
+        }
+        catch (diagnosticError) {
+          // eslint-disable-next-line no-console -- 诊断落盘失败不能替换原始导航或运行时错误。
+          console.error({ diagnosticError })
+        }
         const frames = await Promise.all(page.frames().map(async frame => ({
           url: frame.url(),
           text: (await frame.locator('body').textContent().catch(() => '') ?? '').replace(/\s+/g, ' ').slice(0, 2000),
@@ -51,6 +64,7 @@ for (const mode of ['preview', 'dev'] as const) {
         throw error
       }
       finally {
+        navigation.stop()
         const screenshots = path.join(cacheRoot, 'screenshots')
         await mkdir(screenshots, { recursive: true })
         const name = (expect.getState().currentTestName ?? example).replace(/[^\w-]+/g, '-')

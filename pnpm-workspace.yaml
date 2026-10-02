@@ -92,7 +92,7 @@ catalog:
   postcss-selector-parser: ^7.1.6
   react: 19.3.0
   react-reconciler: 0.34.0
-  rolldown: 1.2.11
+  rolldown: 1.2.12
   sass: ^1.105.0
   sass-embedded: ^1.105.0
   sharp: ^0.35.5

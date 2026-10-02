@@ -126,7 +126,8 @@ describe('stateful HMR Vite adapter', () => {
     const options = await bundledDev.getRolldownOptions() as any
 
     expect(options.experimental.devMode.skipCommonRuntimeInjection).toBe(true)
-    expect(options.experimental.devMode.implement.match(/class DevRuntime/g)).toHaveLength(1)
+    expect(options.output.format).toBe('esm')
+    expect(options.experimental.devMode.implement.match(/class\s+DevRuntime|(?:var|let|const)\s+DevRuntime\s*=/g)).toHaveLength(1)
     expect(options.experimental.devMode.implement).toContain('class WeappViteDevRuntime')
   })
 

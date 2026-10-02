@@ -12,6 +12,7 @@ import {
 } from '../plugins/autoRoutes.shared'
 import { resolveNpmBuildCandidateDependenciesSync } from '../runtime/npmPlugin/service/dependencies'
 import { createViteWatchIgnored, resolvePollingWatchOptions } from '../runtime/watch/options'
+import { bindWxmlDependencyWatch, ownsExternalWxmlWatch } from '../wxml/processing/watch'
 import { connectDevModuleGraphHost } from './host'
 import { createLogicalEntryModuleCode, createSidecarModuleCode } from './logicalEntry'
 import {
@@ -187,7 +188,7 @@ export function createDevModuleGraphPlugin(
       return await transformVueSource(code, id, this?.environment?.config)
     },
     async hotUpdate({ type, file, read }) {
-      if (this.environment.name !== 'client') {
+      if (this.environment.name !== 'client' || ownsExternalWxmlWatch(ctx, file)) {
         return
       }
       if (type === 'delete') {
@@ -254,11 +255,26 @@ export async function createDevModuleGraphProvider(
     },
   })
   const releaseServer = ctx.moduleGraphService.bindDevServer(server)
+  const unobserveWxml = bindWxmlDependencyWatch(ctx, server, onChange)
+  try {
+    await unobserveWxml.ready
+  }
+  catch (error) {
+    await unobserveWxml()
+    try {
+      await server.close()
+    }
+    finally {
+      releaseServer()
+    }
+    throw error
+  }
   let closePromise: Promise<void> | undefined
 
   return {
     close() {
       closePromise ??= (async () => {
+        await unobserveWxml()
         try {
           await server.close()
         }

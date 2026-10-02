@@ -100,6 +100,7 @@ export const IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS = [
 const IDE_GITHUB_ISSUES_AGGREGATED_PATTERN_SET = new Set<string>(IDE_GITHUB_ISSUES_AGGREGATED_PATTERNS)
 const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/wxml-transform.runtime.test.ts',
+  'ide/wxml-transform-watch.runtime.test.ts',
   'ide/wevu-runtime.pruning.test.ts',
   'ide/github-issues.runtime.issue1035.test.ts',
   'ide/issue-963-plugin-es6.runtime.test.ts',
@@ -273,6 +274,7 @@ const IDE_DOM_HEADLESS_PATTERNS = [
   'ide/template-retail-checkout.runtime.test.ts',
   'ide/app-prelude-native.runtime.test.ts',
   'ide/wxml-transform.runtime.test.ts',
+  'ide/wxml-transform-watch.runtime.test.ts',
   'ide/auto-routes-define-app-json.runtime.test.ts',
   'ide/react-runtime-spike.runtime.test.ts',
   'ide/wevu-features.runtime.behavior.test.ts',

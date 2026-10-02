@@ -20,6 +20,7 @@ import { createHmrRuntimeDiagnostics } from '../utils/hmrRuntimeDiagnostics'
 import { cleanupResidualIdeProcesses } from '../utils/ide-devtools-cleanup'
 import { resolveRuntimeProviderName } from '../utils/runtimeProvider'
 import { installStatefulHmrTransport } from '../utils/statefulHmrTransport'
+import { collectCommonJsExportNames } from '../utils/wevu-vendor-exports'
 import { createWevuTailwindHmrFileDiagnostics } from '../utils/wevuTailwindHmrDiagnostics'
 import { attachRuntimeErrorCollector } from './runtimeErrors'
 
@@ -167,9 +168,9 @@ describe('template wevu TailwindCSS TDesign HMR in real WeChat DevTools', { conc
         && latestAppJson.includes('pages/index/index')
         && latestPage.includes('require("../../weapp-vendors/wevu-runtime.js")')
         && latestPage.includes('createWevuComponent')
-        && latestPage.includes('module.exports = __wevuOptions')
-        && latestRuntime.includes('Object.defineProperty(exports, "createApp"')
-        && latestRuntime.includes('Object.defineProperty(exports, "setWevuDefaults"')
+        && (collectCommonJsExportNames(latestPage).has('default') || /\bmodule\.exports\s*=/.test(latestPage))
+        && collectCommonJsExportNames(latestRuntime).has('createApp')
+        && collectCommonJsExportNames(latestRuntime).has('setWevuDefaults')
         && latestWxml.includes(PROBE_ID)
         && latestWxss.includes('background-color: #f6f7fb')
         && !latestApp.includes('from "wevu/internal-runtime"')
@@ -460,7 +461,7 @@ onLaunch(function (this: Record<string, unknown>) {
         expect(collector.getAllLogs().join('\n')).not.toContain(forbidden)
       }
       expect(initialRuntime.app).not.toContain('from "wevu/internal-runtime"')
-      expect(initialRuntime.runtime).toContain('Object.defineProperty(exports, "setWevuDefaults"')
+      expect(collectCommonJsExportNames(initialRuntime.runtime).has('setWevuDefaults')).toBe(true)
     }
     finally {
       await fileDiagnostics.capture('finally')

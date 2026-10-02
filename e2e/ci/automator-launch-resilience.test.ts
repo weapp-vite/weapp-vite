@@ -330,11 +330,11 @@ describe('automator launch resilience', { concurrent: false }, () => {
   })
 
   it('terminates the complete CLI process tree on Windows', async () => {
-    const { terminateBridgeCliProcess } = await import('../utils/automator')
+    const { terminateOwnedCliProcess } = await import('../utils/automatorCliProcess')
     const platform = vi.spyOn(process, 'platform', 'get').mockReturnValue('win32')
     execaMock.mockResolvedValue({ exitCode: 0 })
     try {
-      await terminateBridgeCliProcess(12345)
+      await terminateOwnedCliProcess({ pid: 12345, exitCode: null, signalCode: null } as import('node:child_process').ChildProcess)
       expect(execaMock).toHaveBeenCalledWith('taskkill', ['/PID', '12345', '/T', '/F'], {
         reject: false,
         timeout: 5_000,
@@ -343,6 +343,29 @@ describe('automator launch resilience', { concurrent: false }, () => {
     }
     finally {
       platform.mockRestore()
+    }
+  })
+
+  it('does not acquire cleanup authority from a completed bootstrap PID snapshot', async () => {
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_LAUNCH_MODE = 'bridge'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_PREBUILD = '0'
+    process.env.WEAPP_VITE_E2E_AUTOMATOR_BRIDGE_WRAPPER = '0'
+    createProjectFixture(sandboxRoot, { pages: ['pages/index/index'] })
+    const { launchAutomator } = await import('../utils/automator')
+    const miniProgram = createMockMiniProgram()
+    connectMock.mockResolvedValue(miniProgram)
+    execaMock.mockResolvedValue({ exitCode: 0, stdout: JSON.stringify({ wsEndpoint: 'ws://127.0.0.1:43210', cliPid: 12345 }) })
+    const signal = vi.spyOn(process, 'kill').mockImplementation(() => {
+      throw Object.assign(new Error('original process exited'), { code: 'ESRCH' })
+    })
+    try {
+      const session = await launchAutomator({ projectPath: sandboxRoot, timeout: 10_000, maxLaunchRetries: 1, skipWarmup: true })
+      await session.close()
+      expect(signal).not.toHaveBeenCalled()
+      expect(execaMock.mock.calls.some(([command]) => command === 'taskkill')).toBe(false)
+    }
+    finally {
+      signal.mockRestore()
     }
   })
 

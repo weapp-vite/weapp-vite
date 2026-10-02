@@ -250,6 +250,7 @@ describe('react runtime spike (weapp e2e)', { concurrent: false }, () => {
 
     const result = await page.callMethodWithOptions('_readInteropE2E', { routeOnly: true, timeout: 30_000 }) as Record<string, any>
 
+    expect(result.reactWevuInitialValue).toBe(2)
     expect(result.props).toEqual([
       { label: 'react-to-native', value: 1 },
       { label: 'react-to-wevu', value: 2 },
