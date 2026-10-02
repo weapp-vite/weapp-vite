@@ -96,6 +96,25 @@ it.each(['E403 Forbidden', '404 Not Found'])('does not retry permanent failures:
   expect(fixture.sleep).not.toHaveBeenCalled()
 })
 
+it.each(['npm error code E503\nnpm error 503 Service Unavailable', ''])('does not retry uploads when registry state is unknown: %j', async (stderr) => {
+  const fixture = await createReleaseFixture()
+  fixture.setRegistry(() => ({ status: 1, stdout: '', stderr }))
+  fixture.setPublish(() => {
+    fixture.summary([packages[0]])
+    return { status: 1, stdout: '', stderr: 'HTTP 503 Service Unavailable' }
+  })
+
+  await expect(fixture.run()).rejects.toThrow(`npm registry state is unknown; refusing to retry uploads for: ${packages[1].name}@${packages[1].version}`)
+  expect(fixture.publishes).toHaveLength(1)
+  expect(fixture.sleep).toHaveBeenCalledTimes(1)
+  expect(await fixture.readSummary()).toEqual({ publishedPackages: [packages[0]] })
+  expect(await fixture.progress()).toMatchObject({
+    status: 'failed',
+    acceptedPackages: [packages[0]],
+    confirmedPackages: [],
+  })
+})
+
 it('does not accept another version or an attempted upload as an acknowledgement', async () => {
   const fixture = await createReleaseFixture()
   fixture.setPublish(() => ({

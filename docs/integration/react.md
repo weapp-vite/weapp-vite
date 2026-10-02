@@ -15,7 +15,7 @@ export default defineConfig({
 })
 ```
 
-React 项目中的 `.jsx` 和 `.tsx` 会由 React 编译链统一处理，不能与同一构建中的 Wevu JSX 混用。运行时使用 React 19.2.x 和 `react-reconciler` 0.33.x，不依赖 `react-dom`。
+React 项目中的 `.jsx` 和 `.tsx` 会由 React 编译链统一处理，不能与同一构建中的 Wevu JSX 混用。当前工作区验证组合为 React 19.3.x 和 `react-reconciler` 0.34.x，不依赖 `react-dom`。
 
 ## 原生与 Wevu 组件
 

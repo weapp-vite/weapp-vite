@@ -8,16 +8,16 @@ publish = false
 crate-type = [ "cdylib" ]
 
 [dependencies]
-napi = { version = "3.9.2", default-features = false, features = [ "napi4" ] }
-napi-derive = "3.5.6"
-oxc_allocator = "0.136.0"
-oxc_ast = "0.136.0"
-oxc_ast_visit = "0.136.0"
-oxc_parser = "0.136.0"
-oxc_span = "0.136.0"
-oxc_syntax = "0.136.0"
-serde = { version = "1.0.228", features = [ "derive" ] }
-serde_json = "1.0.145"
+napi = { version = "3.14.0", default-features = false, features = [ "napi4" ] }
+napi-derive = "3.6.10"
+oxc_allocator = "0.152.0"
+oxc_ast = "0.152.0"
+oxc_ast_visit = "0.152.0"
+oxc_parser = "0.152.0"
+oxc_span = "0.152.0"
+oxc_syntax = "0.152.0"
+serde = { version = "1.0.229", features = [ "derive" ] }
+serde_json = "1.0.151"
 
 [build-dependencies]
-napi-build = "2.2.3"
+napi-build = "2.6.0"

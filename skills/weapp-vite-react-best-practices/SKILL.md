@@ -18,7 +18,7 @@ description: 面向使用 `weapp-vite` 与 `@weapp-vite/react` 开发 React 19 �
 
 ## 核心流程
 
-1. 先确认项目使用 React 19.2.x、`react-reconciler` 0.33.x 和 `@weapp-vite/react`，不要引入 `react-dom`。
+1. 当前工作区验证组合为 React 19.3.x、`react-reconciler` 0.34.x 和 `@weapp-vite/react`，不要引入 `react-dom`。
 2. 在项目级 `weapp.react` 启用 React owner；同一构建中的 `.jsx` / `.tsx` 全部归 React 编译链，不要与 Wevu JSX 混用。
 3. 从 `auto` 建立基线：稳定结构生成原生 WXML/binding slots，无法静态证明且不含 bridge 的结构进入 dynamic tree。
 4. 页面原生入口负责创建 root、转发宿主事件和卸载；React 视图放在相邻 TSX 模块，避免把 Page 生命周期藏进组件树。

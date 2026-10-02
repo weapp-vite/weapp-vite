@@ -4,11 +4,21 @@
   "version": "0.2.0",
   "description": "小程序宿主共享的编译批次、资产提交与交付协调内核",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "packages/hmr"
   },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "mini-program",
+    "hmr"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {

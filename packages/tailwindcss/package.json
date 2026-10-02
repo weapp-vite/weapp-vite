@@ -4,11 +4,21 @@
   "version": "0.2.0",
   "description": "基于 weapp-tailwindcss/core 的宿主无关编译控制器",
   "license": "MIT",
+  "homepage": "https://github.com/weapp-vite/weapp-vite#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
     "directory": "packages/tailwindcss"
   },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "weapp",
+    "mini-program",
+    "tailwindcss"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {

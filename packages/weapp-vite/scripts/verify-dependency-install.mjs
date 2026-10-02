@@ -5,7 +5,8 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 // eslint-disable-next-line e18e/ban-dependencies -- 独立消费者必须跨平台执行包管理器。
 import { execa } from 'execa'
-import { parse, stringify } from 'yaml'
+import { stringify } from 'yaml'
+import { parsePnpmLockfile } from '../../../scripts/pnpmLockfile/index.mjs'
 import { createConsumerTemporaryRoot, packConsumerTarballs, readConsumerTarballs, verifyConsumerTarballProvenance } from './consumerTarballs.mjs'
 import { verifyDependencySemantics } from './verify-dependency-semantics.mjs'
 
@@ -32,7 +33,7 @@ try {
     packages = JSON.parse(await readFile(path.join(root, 'package-lock.json'), 'utf8')).packages
   }
   else {
-    packages = parse(await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8')).packages
+    packages = parsePnpmLockfile(await readFile(path.join(root, 'pnpm-lock.yaml'), 'utf8')).packages
     for (const [name, archive] of Object.entries(candidates)) {
       const matches = Object.entries(packages).filter(([key]) => key.startsWith(`${name}@`))
       assert(matches.length, `Missing installed candidate: ${name}`)

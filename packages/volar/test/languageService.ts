@@ -1,59 +1,11 @@
-import type { VueCompilerOptions } from '@vue/language-core'
 import process from 'node:process'
 import { createLanguage } from '@volar/language-core'
 import { createProxyLanguageService, decorateLanguageServiceHost } from '@volar/typescript'
 import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
-import plugin from '../src/index'
+import { createTestVueCompilerOptions } from './compilerOptions'
 
-const vueCompilerOptions = {
-  target: 3.5,
-  lib: 'vue',
-  typesRoot: '',
-  extensions: ['.vue'],
-  vitePressExtensions: [],
-  petiteVueExtensions: [],
-  vapor: false,
-  jsxSlots: false,
-  strictVModel: false,
-  strictCssModules: false,
-  checkUnknownProps: false,
-  checkUnknownEvents: false,
-  checkUnknownDirectives: false,
-  checkUnknownComponents: false,
-  inferComponentDollarEl: false,
-  inferComponentDollarRefs: false,
-  inferTemplateDollarAttrs: false,
-  inferTemplateDollarEl: false,
-  inferTemplateDollarRefs: false,
-  inferTemplateDollarSlots: false,
-  skipTemplateCodegen: false,
-  fallthroughAttributes: false,
-  checkRequiredFallthroughAttributes: false,
-  resolveStyleImports: false,
-  resolveStyleClassNames: false,
-  fallthroughComponentNames: [],
-  dataAttributes: [],
-  htmlAttributes: [],
-  optionsWrapper: [],
-  macros: {
-    defineProps: ['defineProps'],
-    defineSlots: ['defineSlots'],
-    defineEmits: ['defineEmits'],
-    defineExpose: ['defineExpose'],
-    defineModel: ['defineModel'],
-    defineOptions: ['defineOptions'],
-    withDefaults: ['withDefaults'],
-  },
-  composables: {
-    useAttrs: ['useAttrs'],
-    useCssModule: ['useCssModule'],
-    useSlots: ['useSlots'],
-    useTemplateRef: ['useTemplateRef'],
-  },
-  plugins: [plugin],
-  experimentalModelPropName: {},
-} satisfies VueCompilerOptions
+const vueCompilerOptions = createTestVueCompilerOptions()
 
 export function normalizeFileName(fileName: string) {
   return fileName.replace(/\\/g, '/')

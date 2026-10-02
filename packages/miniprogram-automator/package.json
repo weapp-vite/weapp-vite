@@ -63,7 +63,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@types/ws": "^8.18.1",
+    "@types/ws": "^8.18.2",
     "sharp": "catalog:"
   }
 }

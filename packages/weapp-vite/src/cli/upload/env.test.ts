@@ -38,4 +38,30 @@ describe('upload credential environment', () => {
     expect((await loadUploadEnv(directory, 'production', undefined, false)).UPLOAD_TEST_PROCESS).toBe('')
     expect((await loadUploadEnv(directory, 'production')).UPLOAD_TEST_PROCESS).toBe('')
   })
+
+  it('preserves command substitution and encrypted values as literal credentials', async () => {
+    await writeFile(path.join(directory, '.env'), [
+      'UPLOAD_TEST_COMMAND=$(echo upload-env-command)',
+      'UPLOAD_TEST_ENCRYPTED=encrypted:opaque-upload-token',
+    ].join('\n'))
+
+    const result = await loadUploadEnv(directory, 'production')
+    expect(result.UPLOAD_TEST_COMMAND).toBe('$(echo upload-env-command)')
+    expect(result.UPLOAD_TEST_ENCRYPTED).toBe('encrypted:opaque-upload-token')
+  })
+
+  it('preserves escaped dollar signs and expands default values', async () => {
+    vi.stubEnv('UPLOAD_TEST_PROCESS', 'ci-secret')
+    vi.stubEnv('UPLOAD_TEST_MISSING', undefined)
+    await writeFile(path.join(directory, '.env'), [
+      'UPLOAD_TEST_LITERAL=\\$UPLOAD_TEST_PROCESS',
+      `UPLOAD_TEST_FALLBACK=\${UPLOAD_TEST_MISSING:-fallback-secret}`,
+      `UPLOAD_TEST_DEFINED=\${UPLOAD_TEST_PROCESS:-fallback-secret}`,
+    ].join('\n'))
+
+    const result = await loadUploadEnv(directory, 'production')
+    expect(result.UPLOAD_TEST_LITERAL).toBe('$UPLOAD_TEST_PROCESS')
+    expect(result.UPLOAD_TEST_FALLBACK).toBe('fallback-secret')
+    expect(result.UPLOAD_TEST_DEFINED).toBe('ci-secret')
+  })
 })

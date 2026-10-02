@@ -4,6 +4,7 @@ import type { HostProps, MiniProgramEventLike, MiniProgramPageAdapter } from './
 import { createContext } from 'react'
 import Reconciler from 'react-reconciler'
 import { DefaultEventPriority, NoEventPriority } from 'react-reconciler/constants'
+import { name as rendererPackageName, version as rendererVersion } from '../package.json'
 import { dispatchHostEvent } from './event'
 import { HostElement, HostRoot, HostText } from './hostTree'
 
@@ -27,24 +28,24 @@ type MiniProgramHostConfig = Reconciler.HostConfig<
   never,
   never,
   never,
+  never,
   HostNode,
   HostContext,
   never,
   ReturnType<typeof setTimeout>,
   -1,
-  null
+  null,
+  null,
+  never,
+  never,
+  never,
+  never
 >
-
-interface React19HostConfigExtensions {
-  getSuspendedCommitReason: () => null
-  maySuspendCommitInSyncRender: () => false
-  maySuspendCommitOnUpdate: () => false
-}
 
 let currentUpdatePriority = NoEventPriority
 const hostContext: HostContext = {}
 
-const hostConfig: MiniProgramHostConfig & React19HostConfigExtensions = {
+const hostConfig: MiniProgramHostConfig = {
   HostTransitionContext: createContext(null) as never,
   NotPendingTransition: null,
   afterActiveInstanceBlur() {},
@@ -58,6 +59,11 @@ const hostConfig: MiniProgramHostConfig & React19HostConfigExtensions = {
     parent.append(child, false)
   },
   beforeActiveInstanceBlur() {},
+  bindToConsole(methodName, args) {
+    // eslint-disable-next-line no-console -- Reconciler 的日志重放需要保留宿主 console 的方法和调用接收者。
+    const method: unknown = console[methodName as keyof typeof console]
+    return typeof method === 'function' ? method.bind(console, ...args) : () => {}
+  },
   cancelTimeout: clearTimeout,
   clearContainer(container: HostRoot) {
     container.clear()
@@ -84,6 +90,7 @@ const hostConfig: MiniProgramHostConfig & React19HostConfigExtensions = {
     return new HostText(root, root.nextSid(), text)
   },
   detachDeletedInstance() {},
+  extraDevToolsConfig: null,
   finalizeInitialChildren() {
     return false
   },
@@ -161,6 +168,8 @@ const hostConfig: MiniProgramHostConfig & React19HostConfigExtensions = {
   removeChildFromContainer(parent: HostRoot, child: HostElement | HostText) {
     parent.remove(child)
   },
+  rendererPackageName,
+  rendererVersion,
   resetAfterCommit(container: HostRoot) {
     container.flush()
   },
@@ -183,7 +192,10 @@ const hostConfig: MiniProgramHostConfig & React19HostConfigExtensions = {
   supportsMutation: true,
   supportsPersistence: false,
   suspendInstance() {},
-  startSuspendingCommit() {},
+  suspendOnActiveViewTransition() {},
+  startSuspendingCommit() {
+    return null
+  },
   trackSchedulerEvent() {},
   unhideInstance(instance: HostElement, props: HostProps) {
     instance.updateProps(props)
@@ -227,6 +239,7 @@ function createContainer(root: HostRoot) {
       throw error
     },
     () => {},
+    null,
   )
 }
 

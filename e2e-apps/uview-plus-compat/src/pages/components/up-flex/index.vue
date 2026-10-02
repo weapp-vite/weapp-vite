@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'wevu'
 
-definePageJson({ navigationBarTitleText: 'up-qrcode' })
+definePageJson({ navigationBarTitleText: 'up-flex' })
 
 const interactionCount = ref(0)
 const scenarioState = ref('pending')
 const e2eComponent = ref<Record<string, unknown> | null>(null)
+function markInteraction() {
+  interactionCount.value += 1
+}
 
 async function runE2E() {
+  const before = interactionCount.value
   await nextTick()
   for (let attempt = 0; attempt < 20 && !e2eComponent.value; attempt += 1) {
     await new Promise<void>(resolve => setTimeout(resolve, 25))
@@ -22,24 +26,65 @@ async function runE2E() {
   const slotOwner = parent?.selectComponent?.('scoped-slots-default') as SelectorOwner | null | undefined
   const parentProxy = (parent as any)?.__wevu?.proxy
   const registeredChild = Array.isArray(parentProxy?.children)
-    ? parentProxy.children.find((child: any) => ['up-qrcode', 'u-qrcode'].includes(child?.$options?.name))
+    ? parentProxy.children.find((child: any) => ['up-flex', 'u-flex'].includes(child?.$options?.name))
     : null
   const target = e2eComponent.value
     ?? page?.selectComponent?.('#e2e-component')
     ?? parent?.selectComponent?.('#e2e-component')
     ?? slotOwner?.selectComponent?.('#e2e-component')
-    ?? page?.selectComponent?.('up-qrcode')
-    ?? page?.selectComponent?.('up-qrcode')
+    ?? page?.selectComponent?.('up-flex')
+    ?? page?.selectComponent?.('up-flex')
     ?? registeredChild
     ?? null
   const rendered = target !== null
-  scenarioState.value = rendered ? 'pass:render' : 'fail:render'
-  await nextTick()
+  const commandReceiver = target
+  const command = commandReceiver?.clickHandler
+  const callable = typeof command === 'function'
+  let commandError = ''
+  if (callable) {
+    try {
+      const commandResult = command.apply(commandReceiver, [])
+      if (commandResult && typeof (commandResult as PromiseLike<unknown>).then === 'function') {
+        await Promise.race([
+          Promise.resolve(commandResult).catch((error) => {
+            commandError = error instanceof Error ? error.message : String(error)
+          }),
+          new Promise<void>(resolve => setTimeout(resolve, 100)),
+        ])
+      }
+      await new Promise<void>(resolve => setTimeout(resolve, 50))
+    }
+    catch (error) {
+      commandError = error instanceof Error ? error.message : String(error)
+    }
+  }
+  const eventMatched = interactionCount.value > before
+  const stateMatched = true
+  const targetStateMatched = true
+  const ok = rendered && callable && !commandError && eventMatched && stateMatched && targetStateMatched
+  if (ok) {
+    scenarioState.value = 'pass:command:clickHandler'
+  }
+  else if (commandError) {
+    scenarioState.value = `fail:error:${commandError}`
+  }
+  else if (!callable) {
+    scenarioState.value = 'fail:missing-command:clickHandler'
+  }
+  else if (!eventMatched) {
+    scenarioState.value = 'fail:event:click'
+  }
+  else if (!stateMatched) {
+    scenarioState.value = 'fail:state:none'
+  }
+  else {
+    scenarioState.value = 'fail:target-state:none'
+  }
   return {
-    ok: rendered,
-    component: 'up-qrcode',
+    ok,
+    component: 'up-flex',
     rendered,
-    capability: 'render' as const,
+    capability: 'command' as const,
     state: scenarioState.value,
     interactionCount: interactionCount.value,
   }
@@ -47,13 +92,13 @@ async function runE2E() {
 </script>
 
 <template>
-  <view id="e2e-root" class="scenario-page" data-component="up-qrcode">
+  <view id="e2e-root" class="scenario-page" data-component="up-flex">
     <view class="scenario-header">
-      <view class="scenario-title">up-qrcode</view>
+      <view class="scenario-title">up-flex</view>
       <view class="scenario-status">rendered / interactive</view>
     </view>
     <view id="e2e-target" class="scenario-subject">
-      <up-qrcode id="e2e-component" ref="e2eComponent" value="uview-plus-3.8.127" :size="128" />
+      <up-flex id="e2e-component" ref="e2eComponent" justify="space-between" align="center" :gap="16" @click="markInteraction"><view class="grid-block">Left</view><view class="grid-block">Right</view></up-flex>
     </view>
     <button id="e2e-action" class="scenario-action" @click="runE2E">
       Exercise interaction

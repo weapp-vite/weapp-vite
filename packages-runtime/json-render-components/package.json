@@ -17,6 +17,12 @@
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
+  "keywords": [
+    "wevu",
+    "json-render",
+    "mini-program",
+    "components"
+  ],
   "sideEffects": true,
   "miniprogram": "dist/miniprogram",
   "exports": {

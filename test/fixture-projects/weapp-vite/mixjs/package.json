@@ -12,7 +12,7 @@
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "dependencies": {
-    "tdesign-miniprogram": "latest"
+    "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
     "weapp-vite": "workspace:*"

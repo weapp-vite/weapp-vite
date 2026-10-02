@@ -267,6 +267,12 @@
           "scene": null
         },
         {
+          "name": "up-flex",
+          "pathName": "pages/components/up-flex/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "up-float-button",
           "pathName": "pages/components/up-float-button/index",
           "query": "",

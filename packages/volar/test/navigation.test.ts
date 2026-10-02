@@ -38,8 +38,17 @@ defineEmits<{ selectgoods: [] }>()
       parentFile,
       findOffset(parentSource, 'store-goods'),
     )
-    expect(propDefinitions?.some(definition => definition.fileName === parentFile
-      && definition.name === 'storeGoods')).toBe(true)
+    expect(propDefinitions?.some(definition => definition.fileName === childFile
+      && definition.name === 'storeGoods'
+      && definition.textSpan.start === findOffset(childSource, 'storeGoods'))).toBe(true)
+
+    const propValueDefinitions = service.getDefinitionAtPosition(
+      parentFile,
+      findOffset(parentSource, 'storeGoods', 1),
+    )
+    expect(propValueDefinitions?.some(definition => definition.fileName === parentFile
+      && definition.name === 'storeGoods'
+      && definition.textSpan.start === findOffset(parentSource, 'storeGoods'))).toBe(true)
 
     const handlerDefinitions = service.getDefinitionAtPosition(
       parentFile,

@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({ readFile: vi.fn(), rm: vi.fn(), connect: vi.fn() }))
 vi.mock('node:fs/promises', async (original) => {
@@ -20,8 +20,18 @@ describe('read-only automator connections', () => {
     mocks.readFile.mockResolvedValue(persisted)
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('preserves session metadata on failure and permits a later successful read-only connection', async () => {
     const { connectOpenedAutomator } = await import('../src/cli/automator')
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    mocks.readFile.mockImplementation(async () => {
+      now += 25
+      return persisted
+    })
     const failure = new Error('temporary connection timeout')
     const session = { disconnect: vi.fn() }
     mocks.connect.mockRejectedValueOnce(failure).mockResolvedValueOnce(session)
@@ -29,7 +39,7 @@ describe('read-only automator connections', () => {
     await expect(connectOpenedAutomator(options)).rejects.toBe(failure)
     expect(mocks.rm).not.toHaveBeenCalled()
     await expect(connectOpenedAutomator(options)).resolves.toBe(session)
-    expect(mocks.connect).toHaveBeenLastCalledWith({ signal: expect.any(AbortSignal), timeout: 1_000, wsEndpoint: 'ws://127.0.0.1:19620' })
+    expect(mocks.connect).toHaveBeenLastCalledWith({ signal: expect.any(AbortSignal), timeout: 975, wsEndpoint: 'ws://127.0.0.1:19620' })
   })
 
   it('does not delete another operation replacement when a previous connection fails', async () => {

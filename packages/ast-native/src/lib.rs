@@ -6,12 +6,13 @@ use std::{
 use napi_derive::napi;
 use oxc_allocator::Allocator;
 use oxc_ast::ast::{
-    Argument, ArrowFunctionExpression, CallExpression, Expression, Function, FunctionBody,
-    ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program, PropertyKey, Statement,
+    Argument, ArrowFunctionBody, ArrowFunctionExpression, CallExpression, Expression, Function,
+    FunctionBody, ImportDeclarationSpecifier, ModuleExportName, ObjectProperty, Program, PropertyKey,
+    Statement,
 };
 use oxc_ast_visit::{Visit, walk};
 use oxc_parser::Parser;
-use oxc_span::{GetSpan, SourceType, Span};
+use oxc_span::{GetSpan, SourceType};
 use oxc_syntax::scope::ScopeFlags;
 
 mod vue_sfc_signature;
@@ -50,7 +51,7 @@ fn parse_program<'a>(
     let source_type =
         SourceType::from_path(Path::new(&filename)).unwrap_or_else(|_| SourceType::ts());
     let parsed = Parser::new(allocator, code, source_type).parse();
-    if parsed.panicked {
+    if parsed.fatal_error {
         return None;
     }
     Some(parsed.program)
@@ -91,18 +92,14 @@ struct Inspection {
 }
 
 struct PageScrollInspectionVisitor {
-    root_span: Span,
-    depth: usize,
     inspection: Inspection,
 }
 
 impl PageScrollInspectionVisitor {
-    fn new(root: &FunctionBody) -> Self {
+    fn new(empty: bool) -> Self {
         Self {
-            root_span: root.span,
-            depth: 0,
             inspection: Inspection {
-                empty: root.statements.is_empty(),
+                empty,
                 first_set_data_call_start: None,
                 sync_api_call_starts: BTreeMap::new(),
             },
@@ -111,29 +108,10 @@ impl PageScrollInspectionVisitor {
 }
 
 impl<'a> Visit<'a> for PageScrollInspectionVisitor {
-    fn visit_function(&mut self, function: &Function<'a>, _flags: ScopeFlags) {
-        if self.depth > 0 || function.span != self.root_span {
-            return;
-        }
-        walk::walk_function(self, function, ScopeFlags::Function);
-    }
+    // 遍历从回调体开始，函数节点始终属于不应进入的嵌套作用域。
+    fn visit_function(&mut self, _function: &Function<'a>, _flags: ScopeFlags) {}
 
-    fn visit_arrow_function_expression(&mut self, arrow: &ArrowFunctionExpression<'a>) {
-        if self.depth > 0 || arrow.body.span != self.root_span {
-            return;
-        }
-        walk::walk_arrow_function_expression(self, arrow);
-    }
-
-    fn visit_function_body(&mut self, body: &FunctionBody<'a>) {
-        if self.depth > 0 && body.span != self.root_span {
-            return;
-        }
-
-        self.depth += 1;
-        walk::walk_function_body(self, body);
-        self.depth -= 1;
-    }
+    fn visit_arrow_function_expression(&mut self, _arrow: &ArrowFunctionExpression<'a>) {}
 
     fn visit_call_expression(&mut self, call: &CallExpression<'a>) {
         if callee_name(&call.callee) == Some("setData") {
@@ -165,11 +143,14 @@ struct OnPageScrollVisitor<'a> {
 
 impl<'a> OnPageScrollVisitor<'a> {
     fn report_function_body(&mut self, body: &FunctionBody<'a>, source_label: &str, start: u32) {
-        let mut inspector = PageScrollInspectionVisitor::new(body);
+        let mut inspector = PageScrollInspectionVisitor::new(body.statements.is_empty());
         inspector.visit_function_body(body);
+        self.report_inspection(inspector.inspection, source_label, start);
+    }
 
+    fn report_inspection(&mut self, inspection: Inspection, source_label: &str, start: u32) {
         let (line, column) = self.line_starts.location(start);
-        if inspector.inspection.empty {
+        if inspection.empty {
             self.diagnostics.push(NativeOnPageScrollDiagnostic {
                 kind: "empty".to_string(),
                 line,
@@ -178,7 +159,7 @@ impl<'a> OnPageScrollVisitor<'a> {
                 sync_api: None,
             });
         }
-        if let Some(start) = inspector.inspection.first_set_data_call_start {
+        if let Some(start) = inspection.first_set_data_call_start {
             let (line, column) = self.line_starts.location(start);
             self.diagnostics.push(NativeOnPageScrollDiagnostic {
                 kind: "setData".to_string(),
@@ -189,7 +170,7 @@ impl<'a> OnPageScrollVisitor<'a> {
             });
         }
 
-        for (sync_api, start) in inspector.inspection.sync_api_call_starts {
+        for (sync_api, start) in inspection.sync_api_call_starts {
             let (line, column) = self.line_starts.location(start);
             self.diagnostics.push(NativeOnPageScrollDiagnostic {
                 kind: "syncApi".to_string(),
@@ -218,7 +199,14 @@ impl<'a> OnPageScrollVisitor<'a> {
         source_label: &str,
         start: u32,
     ) {
-        self.report_function_body(&arrow.body, source_label, start);
+        if let ArrowFunctionBody::FunctionBody(body) = &arrow.body {
+            self.report_function_body(body, source_label, start);
+            return;
+        }
+
+        let mut inspector = PageScrollInspectionVisitor::new(false);
+        inspector.visit_arrow_function_body(&arrow.body);
+        self.report_inspection(inspector.inspection, source_label, start);
     }
 }
 

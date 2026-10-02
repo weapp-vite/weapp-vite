@@ -10,6 +10,7 @@ import { gunzipSync } from 'node:zlib'
 
 import { globSync } from 'tinyglobby'
 import { parseAllDocuments } from 'yaml'
+import { parsePnpmLockfile } from './pnpmLockfile/index.mjs'
 
 const DEFAULT_MODE = 'strict'
 const PUBLISH_ROOTS = ['packages', '@weapp-core', 'mpcore/packages']
@@ -324,21 +325,7 @@ function readLockfile(projectRoot) {
   if (!existsSync(lockfilePath)) {
     throw new Error(`pnpm lockfile not found: ${lockfilePath}`)
   }
-  const documents = parseAllDocuments(readFileSync(lockfilePath, 'utf8'))
-  const parsed = documents
-    .map(document => document.toJS())
-    .filter(document => document && typeof document === 'object')
-  if (parsed.length === 0) {
-    throw new Error(`pnpm lockfile is empty: ${lockfilePath}`)
-  }
-  return parsed.reduce((lockfile, document) => ({
-    ...lockfile,
-    ...document,
-    importers: {
-      ...(lockfile.importers ?? {}),
-      ...(document.importers ?? {}),
-    },
-  }), {})
+  return parsePnpmLockfile(readFileSync(lockfilePath, 'utf8'), lockfilePath)
 }
 
 function readWorkspaceManifest(projectRoot) {

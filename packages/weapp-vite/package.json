@@ -201,7 +201,7 @@
     "chokidar": "^5.0.0",
     "comment-json": "catalog:",
     "devframe": "catalog:",
-    "dotenv-expand": "^12.0.3",
+    "dotenv-expand": "^13.0.0",
     "eslint": "catalog:",
     "fdir": "catalog:",
     "get-tsconfig": "^4.14.3",
@@ -235,7 +235,7 @@
     "wevu": "workspace:*"
   },
   "optionalDependencies": {
-    "@swc/core": "^1.16.2"
+    "@swc/core": "^1.16.13"
   },
   "devDependencies": {
     "@vitejs/devtools-kit": "catalog:",

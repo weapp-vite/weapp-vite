@@ -28,13 +28,13 @@
     "g": "wv generate"
   },
   "dependencies": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.18.1"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
-    "weapp-tailwindcss": "^5.0.4",
+    "weapp-tailwindcss": "^5.5.11",
     "weapp-vite": "latest",
     "miniprogram-api-typings": "latest",
     "typescript": "latest"

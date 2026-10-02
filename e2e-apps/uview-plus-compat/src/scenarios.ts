@@ -74,6 +74,7 @@ export const componentScenarios = [
   { component: 'up-dropdown', route: '/pages/components/up-dropdown/index', parent: 'up-dropdown', capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-dropdown-item', route: '/pages/components/up-dropdown-item/index', parent: 'up-dropdown', capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-empty', route: '/pages/components/up-empty/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
+  { component: 'up-flex', route: '/pages/components/up-flex/index', parent: null, capability: 'command', action: { type: 'command', method: 'clickHandler', event: 'click' }, expectedState: 'pass:command:clickHandler' },
   { component: 'up-float-button', route: '/pages/components/up-float-button/index', parent: null, capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-form', route: '/pages/components/up-form/index', parent: 'up-form', capability: 'render', action: null, expectedState: 'pass:render' },
   { component: 'up-form-item', route: '/pages/components/up-form-item/index', parent: 'up-form', capability: 'render', action: null, expectedState: 'pass:render' },

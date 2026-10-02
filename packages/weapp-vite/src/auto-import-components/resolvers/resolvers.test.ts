@@ -187,8 +187,8 @@ describe('UviewPlusResolver', () => {
   const resolver = UviewPlusResolver()
 
   it('maps all published Vue SFC entries under both supported prefixes', () => {
-    expect(Object.keys(resolver.components ?? {})).toHaveLength(278)
-    expect(uviewPlusComponents).toHaveLength(139)
+    expect(Object.keys(resolver.components ?? {})).toHaveLength(280)
+    expect(uviewPlusComponents).toHaveLength(140)
     expect(resolveWithResolver(resolver, 'u-button')).toEqual({
       name: 'u-button',
       from: 'uview-plus/components/u-button/u-button.vue',
@@ -210,6 +210,16 @@ describe('UviewPlusResolver', () => {
     expect(resolveWithResolver(resolver, 'up-tabs-pro')?.from)
       .toBe('uview-plus/components/u-tabs-pro/u-tabs-pro.vue')
     expect(resolveWithResolver(resolver, 'up-unknown')).toBeUndefined()
+  })
+
+  it.each(['u-flex', 'up-flex'])('resolves the flex layout component as %s', (name) => {
+    expect(resolveWithResolver(resolver, name)).toEqual({
+      name,
+      from: 'uview-plus/components/u-flex/u-flex.vue',
+      resolvedId: expect.stringMatching(/uview-plus[\\/]components[\\/]u-flex[\\/]u-flex\.vue$/),
+      sourceType: 'wevu-sfc',
+      typeImport: false,
+    })
   })
 
   it('supports full support-file generation', () => {
