@@ -31,12 +31,10 @@ export async function buildStatefulHmrSnapshot(
   const inheritedVueEntryIds = owner
     ? (await Promise.all(Array.from(owner.runtimeState.build.hmr.resolvedEntryMap.keys())
         .filter(id => /\.(?:vue|jsx|tsx)$/.test(id))
+        .filter(id => owner.runtimeState.build.hmr.entriesMap.get(
+          owner.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(id)),
+        )?.type === 'component')
         .map(async id => await fs.pathExists(id) ? normalizeFsResolvedId(id) : undefined))).filter((id): id is string => Boolean(id))
-    : []
-  const inheritedDelegatedComponentEntryIds = owner
-    ? inheritedVueEntryIds.filter(id => owner.runtimeState.build.hmr.entriesMap.get(
-        owner.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(id)),
-      )?.type === 'component')
     : []
   if (owner) {
     shareWxmlDependencies(owner, ctx)
@@ -134,7 +132,7 @@ export async function buildStatefulHmrSnapshot(
       getDelegatedComponentEntryIds: () => Array.from(ctx.runtimeState.build.hmr.resolvedEntryMap.keys()).filter(id =>
         /\.(?:vue|jsx|tsx)$/.test(id)
         && ctx.runtimeState.build.hmr.entriesMap.get(ctx.configService.relativeAbsoluteSrcRoot(removeExtensionDeep(id)))?.type === 'component',
-      ).concat(inheritedDelegatedComponentEntryIds),
+      ).concat(inheritedVueEntryIds),
       getGlobalStyleRoutes: () => globalStyleRoutes,
       getTailwindStyleOwners: () => getTailwindStyleOwners(ctx),
     }
