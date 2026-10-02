@@ -4,6 +4,7 @@ import path from 'node:path'
 import postcss from 'postcss'
 import { describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../runtime/runtimeState'
+import { normalizeRelativePath } from '../../utils/path'
 import { css } from '../css'
 import { createOutputFinalizerPlugin, createOutputPublicationPlugin } from '../outputFinalizer'
 import { createTailwindcssPlugin } from '../tailwindcss'
@@ -31,8 +32,10 @@ async function generate(plugin: Plugin | Plugin[], bundle: OutputBundle, imports
   } as any, {} as any, bundle as any, false)
 }
 
-function fixture(entry: string) {
+function fixture(entry: string, relative = path.relative) {
   const cwd = path.resolve('tailwind-output-hmr-fixture')
+  // 与真实 configService 一致，输出路径在所有平台都使用正斜杠。
+  const relativeSource = (file: string) => normalizeRelativePath(relative(path.join(cwd, 'src'), file))
   const snapshot = { classSet: new Set(), roots: [], sources: [], target: 'weapp' }
   const compiler = {
     generate: vi.fn(async () => ({ css: '.updated { color: red; }', rawCss: '.updated { color: red; }', snapshot, dependencies: [] })),
@@ -49,8 +52,8 @@ function fixture(entry: string) {
       isDev: true,
       platform: 'weapp',
       outputExtensions: { wxml: 'wxml', wxss: 'wxss' },
-      relativeOutputPath: (file: string) => path.relative(path.join(cwd, 'src'), file),
-      relativeAbsoluteSrcRoot: (file: string) => path.relative(path.join(cwd, 'src'), file),
+      relativeOutputPath: relativeSource,
+      relativeAbsoluteSrcRoot: relativeSource,
       weappViteConfig: { tailwindcss: { cssEntries: [entry] } },
     },
     scanService: { subPackageMap: new Map() },
@@ -258,8 +261,11 @@ describe('Tailwind content HMR through the CSS owner', () => {
     expect(compiler.generate).toHaveBeenCalledTimes(2)
   })
 
-  it('suppresses unchanged final author styles at publication after retaining CSS ownership', async () => {
-    const { ctx, owner, output } = fixture('src/styles/tailwind.css')
+  it.each([
+    ['native', path.relative],
+    ['win32', path.win32.relative],
+  ] as const)('suppresses unchanged final author styles at publication after retaining CSS ownership (%s paths)', async (_platform, relative) => {
+    const { ctx, owner, output } = fixture('src/styles/tailwind.css', relative)
     const source = '.author { color: green; }'
     ctx.runtimeState.build.hmr.isRebuild = true
     ctx.runtimeState.build.hmr.profile = { event: 'update', dirtyReasonSummary: ['entry-direct:1'] }
