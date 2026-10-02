@@ -2,6 +2,7 @@
 "weapp-vite": major
 "@weapp-vite/ast": major
 "@weapp-vite/web": major
+"@weapp-vite/tailwindcss": major
 "@wevu/compiler": major
 "wevu": major
 "@wevu/test-utils": major
