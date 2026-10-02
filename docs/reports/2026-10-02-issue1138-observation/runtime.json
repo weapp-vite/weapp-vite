@@ -1,430 +1,416 @@
-[
-  {
-    "schemaVersion": 1,
-    "commitSha": "8c21fd9e09c905c7e57fda577c03297378f2e76a",
-    "workingTreeDirty": true,
-    "provider": "headless",
-    "environment": {
-      "nodeVersion": "v24.18.0",
-      "ideVersion": null,
-      "baseLibraryVersion": null
-    },
-    "strict": true,
-    "startedAt": "2026-10-02T05:23:04.054Z",
-    "finishedAt": "2026-10-02T05:23:30.191Z",
-    "status": "passed",
-    "errors": [],
-    "summary": {
-      "plannedCount": 2,
-      "executedCount": 2,
-      "passedCount": 2,
-      "failedCount": 0,
-      "blockedCount": 0,
-      "skippedCount": 0,
-      "notExecutedCount": 0,
-      "plannedCheckpointCount": 5,
-      "capturedCheckpointCount": 5
-    },
-    "source": {
-      "wevuSourceSha256": "940011c0176ad0a057ea0c680a80252b1f102587f057546cd1218152ea993e33",
-      "lockfileSha256": "a9b96023dd342bbd38218ad60392af70c39476fac6b434a2b487ffaaf2b43758",
-      "runnerSha256": "078b114a09b15496b6e5a67621c6535a06535ef87818e41a4c940015c7f35aab"
-    },
-    "originalReportSha256": "c2e84809002e99a04b9c4c188fe2583d03e00862aad0cfd07d1013ece83642aa",
-    "cases": [
-      {
-        "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
-        "name": "e2e app: github-issues / issue #1138 > correlates real native callback phases and separately checks visible updates",
-        "state": "passed",
-        "status": "passed",
-        "violations": [],
-        "acceptance": {
-          "fixture": "e2e-apps/github-issues",
-          "provider": "headless",
-          "checkpoints": [
-            {
-              "id": "count-0",
-              "route": "/pages/issue-1138/index",
-              "action": "检查第 0 次更新后的真实文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 0"
-                }
-              ]
-            },
-            {
-              "id": "count-1",
-              "route": "/pages/issue-1138/index",
-              "action": "检查第 1 次更新后的真实文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 1"
-                }
-              ]
-            },
-            {
-              "id": "count-2",
-              "route": "/pages/issue-1138/index",
-              "action": "检查第 2 次更新后的真实文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 2"
-                }
-              ]
-            }
-          ],
-          "evidence": [
-            {
-              "id": "count-0",
-              "route": "pages/issue-1138/index",
-              "source": "headless-logical-tree",
-              "capturedAt": "2026-10-02T05:23:21.970Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 0"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "count-1",
-              "route": "pages/issue-1138/index",
-              "source": "headless-logical-tree",
-              "capturedAt": "2026-10-02T05:23:21.976Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 1"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "count-2",
-              "route": "pages/issue-1138/index",
-              "source": "headless-logical-tree",
-              "capturedAt": "2026-10-02T05:23:21.981Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 2"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
+{
+  "schemaVersion": 1,
+  "candidateCommit": "451056b65cd06d238bdb0de6828a59912e67a31d",
+  "runs": [
+    {
+      "provider": "headless",
+      "commitSha": "451056b65cd06d238bdb0de6828a59912e67a31d",
+      "workingTreeDirty": false,
+      "strict": true,
+      "status": "passed",
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 2,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 5,
+        "capturedCheckpointCount": 5
       },
-      {
-        "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
-        "name": "e2e app: github-issues / issue #1138 > keeps nextTick independent from a deliberately delayed adapter Promise",
-        "state": "passed",
-        "status": "passed",
-        "violations": [],
-        "acceptance": {
-          "fixture": "e2e-apps/github-issues",
-          "provider": "headless",
-          "checkpoints": [
-            {
-              "id": "native-visible",
-              "route": "/pages/issue-1138/delayed",
-              "action": "适配器 Promise 尚未完成时独立检查宿主文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 1"
-                }
-              ]
-            },
-            {
-              "id": "adapter-settled",
-              "route": "/pages/issue-1138/delayed",
-              "action": "释放 Promise 后复核同一可见文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 1"
-                }
-              ]
-            }
-          ],
-          "evidence": [
-            {
-              "id": "native-visible",
-              "route": "pages/issue-1138/delayed",
-              "source": "headless-logical-tree",
-              "capturedAt": "2026-10-02T05:23:30.182Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 1"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "adapter-settled",
-              "route": "pages/issue-1138/delayed",
-              "source": "headless-logical-tree",
-              "capturedAt": "2026-10-02T05:23:30.184Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 1"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      }
-    ]
-  },
-  {
-    "schemaVersion": 1,
-    "commitSha": "8c21fd9e09c905c7e57fda577c03297378f2e76a",
-    "workingTreeDirty": true,
-    "provider": "devtools",
-    "environment": {
-      "nodeVersion": "v24.18.0",
-      "ideVersion": "2.02.2608080",
-      "baseLibraryVersion": "3.17.2"
-    },
-    "strict": true,
-    "startedAt": "2026-10-02T05:23:50.555Z",
-    "finishedAt": "2026-10-02T05:24:36.057Z",
-    "status": "passed",
-    "errors": [],
-    "summary": {
-      "plannedCount": 2,
-      "executedCount": 2,
-      "passedCount": 2,
-      "failedCount": 0,
-      "blockedCount": 0,
-      "skippedCount": 0,
-      "notExecutedCount": 0,
-      "plannedCheckpointCount": 5,
-      "capturedCheckpointCount": 5
-    },
-    "source": {
-      "wevuSourceSha256": "940011c0176ad0a057ea0c680a80252b1f102587f057546cd1218152ea993e33",
-      "lockfileSha256": "a9b96023dd342bbd38218ad60392af70c39476fac6b434a2b487ffaaf2b43758",
-      "runnerSha256": "078b114a09b15496b6e5a67621c6535a06535ef87818e41a4c940015c7f35aab"
-    },
-    "originalReportSha256": "8a62b390fd519a48a3443577426c8741074559f8f944b2065973ce17853893be",
-    "cases": [
-      {
-        "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
-        "name": "e2e app: github-issues / issue #1138 > correlates real native callback phases and separately checks visible updates",
-        "state": "passed",
-        "status": "passed",
-        "violations": [],
-        "acceptance": {
-          "fixture": "e2e-apps/github-issues",
-          "provider": "devtools",
-          "checkpoints": [
-            {
-              "id": "count-0",
-              "route": "/pages/issue-1138/index",
-              "action": "检查第 0 次更新后的真实文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 0"
-                }
-              ]
-            },
-            {
-              "id": "count-1",
-              "route": "/pages/issue-1138/index",
-              "action": "检查第 1 次更新后的真实文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 1"
-                }
-              ]
-            },
-            {
-              "id": "count-2",
-              "route": "/pages/issue-1138/index",
-              "action": "检查第 2 次更新后的真实文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 2"
-                }
-              ]
-            }
-          ],
-          "evidence": [
-            {
-              "id": "count-0",
-              "route": "pages/issue-1138/index",
-              "source": "devtools-page-frame",
-              "capturedAt": "2026-10-02T05:24:23.861Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 0"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "count-1",
-              "route": "pages/issue-1138/index",
-              "source": "devtools-page-frame",
-              "capturedAt": "2026-10-02T05:24:23.889Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 1"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "count-2",
-              "route": "pages/issue-1138/index",
-              "source": "devtools-page-frame",
-              "capturedAt": "2026-10-02T05:24:24.030Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 2"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "runtime": {
-            "ideVersion": "2.02.2608080",
-            "baseLibraryVersion": "3.17.2"
+      "environment": {
+        "nodeVersion": "v24.18.0",
+        "ideVersion": null,
+        "baseLibraryVersion": null
+      },
+      "cases": [
+        {
+          "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
+          "name": "e2e app: github-issues / issue #1138 > correlates real native callback phases and separately checks visible updates",
+          "state": "passed",
+          "status": "passed",
+          "violations": [],
+          "acceptance": {
+            "fixture": "e2e-apps/github-issues",
+            "provider": "headless",
+            "checkpoints": [
+              {
+                "id": "count-0",
+                "route": "/pages/issue-1138/index",
+                "action": "检查第 0 次更新后的真实文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 0"
+                  }
+                ]
+              },
+              {
+                "id": "count-1",
+                "route": "/pages/issue-1138/index",
+                "action": "检查第 1 次更新后的真实文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 1"
+                  }
+                ]
+              },
+              {
+                "id": "count-2",
+                "route": "/pages/issue-1138/index",
+                "action": "检查第 2 次更新后的真实文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 2"
+                  }
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "id": "count-0",
+                "route": "pages/issue-1138/index",
+                "source": "headless-logical-tree",
+                "capturedAt": "2026-10-02T05:42:15.040Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 0"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "count-1",
+                "route": "pages/issue-1138/index",
+                "source": "headless-logical-tree",
+                "capturedAt": "2026-10-02T05:42:15.043Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 1"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "count-2",
+                "route": "pages/issue-1138/index",
+                "source": "headless-logical-tree",
+                "capturedAt": "2026-10-02T05:42:15.047Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 2"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
+          "name": "e2e app: github-issues / issue #1138 > keeps nextTick independent from a deliberately delayed adapter Promise",
+          "state": "passed",
+          "status": "passed",
+          "violations": [],
+          "acceptance": {
+            "fixture": "e2e-apps/github-issues",
+            "provider": "headless",
+            "checkpoints": [
+              {
+                "id": "native-visible",
+                "route": "/pages/issue-1138/delayed",
+                "action": "适配器 Promise 尚未完成时独立检查宿主文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 1"
+                  }
+                ]
+              },
+              {
+                "id": "adapter-settled",
+                "route": "/pages/issue-1138/delayed",
+                "action": "释放 Promise 后复核同一可见文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 1"
+                  }
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "id": "native-visible",
+                "route": "pages/issue-1138/delayed",
+                "source": "headless-logical-tree",
+                "capturedAt": "2026-10-02T05:42:23.239Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 1"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "adapter-settled",
+                "route": "pages/issue-1138/delayed",
+                "source": "headless-logical-tree",
+                "capturedAt": "2026-10-02T05:42:23.241Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         }
+      ],
+      "originalReportSha256": "9a6003a7229ce2a76fce787f60ae10bb90c09f775cdb9c734c7d42c589ecf6d7"
+    },
+    {
+      "provider": "devtools",
+      "commitSha": "451056b65cd06d238bdb0de6828a59912e67a31d",
+      "workingTreeDirty": false,
+      "strict": true,
+      "status": "passed",
+      "summary": {
+        "plannedCount": 2,
+        "executedCount": 2,
+        "passedCount": 2,
+        "failedCount": 0,
+        "blockedCount": 0,
+        "skippedCount": 0,
+        "notExecutedCount": 0,
+        "plannedCheckpointCount": 5,
+        "capturedCheckpointCount": 5
       },
-      {
-        "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
-        "name": "e2e app: github-issues / issue #1138 > keeps nextTick independent from a deliberately delayed adapter Promise",
-        "state": "passed",
-        "status": "passed",
-        "violations": [],
-        "acceptance": {
-          "fixture": "e2e-apps/github-issues",
-          "provider": "devtools",
-          "checkpoints": [
-            {
-              "id": "native-visible",
-              "route": "/pages/issue-1138/delayed",
-              "action": "适配器 Promise 尚未完成时独立检查宿主文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 1"
-                }
-              ]
-            },
-            {
-              "id": "adapter-settled",
-              "route": "/pages/issue-1138/delayed",
-              "action": "释放 Promise 后复核同一可见文本",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "text": "count: 1"
-                }
-              ]
+      "environment": {
+        "nodeVersion": "v24.18.0",
+        "ideVersion": "2.02.2608080",
+        "baseLibraryVersion": "3.17.2"
+      },
+      "cases": [
+        {
+          "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
+          "name": "e2e app: github-issues / issue #1138 > correlates real native callback phases and separately checks visible updates",
+          "state": "passed",
+          "status": "passed",
+          "violations": [],
+          "acceptance": {
+            "fixture": "e2e-apps/github-issues",
+            "provider": "devtools",
+            "checkpoints": [
+              {
+                "id": "count-0",
+                "route": "/pages/issue-1138/index",
+                "action": "检查第 0 次更新后的真实文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 0"
+                  }
+                ]
+              },
+              {
+                "id": "count-1",
+                "route": "/pages/issue-1138/index",
+                "action": "检查第 1 次更新后的真实文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 1"
+                  }
+                ]
+              },
+              {
+                "id": "count-2",
+                "route": "/pages/issue-1138/index",
+                "action": "检查第 2 次更新后的真实文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 2"
+                  }
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "id": "count-0",
+                "route": "pages/issue-1138/index",
+                "source": "devtools-page-frame",
+                "capturedAt": "2026-10-02T05:43:39.157Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 0"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "count-1",
+                "route": "pages/issue-1138/index",
+                "source": "devtools-page-frame",
+                "capturedAt": "2026-10-02T05:43:39.177Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 1"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "count-2",
+                "route": "pages/issue-1138/index",
+                "source": "devtools-page-frame",
+                "capturedAt": "2026-10-02T05:43:39.302Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 2"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "runtime": {
+              "ideVersion": "2.02.2608080",
+              "baseLibraryVersion": "3.17.2"
             }
-          ],
-          "evidence": [
-            {
-              "id": "native-visible",
-              "route": "pages/issue-1138/delayed",
-              "source": "devtools-page-frame",
-              "capturedAt": "2026-10-02T05:24:33.357Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 1"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "adapter-settled",
-              "route": "pages/issue-1138/delayed",
-              "source": "devtools-page-frame",
-              "capturedAt": "2026-10-02T05:24:33.377Z",
-              "nodes": [
-                {
-                  "selector": "#issue1138-count",
-                  "query": "css",
-                  "count": 1,
-                  "nodes": [
-                    {
-                      "text": "count: 1"
-                    }
-                  ]
-                }
-              ]
+          }
+        },
+        {
+          "file": "e2e/ide/github-issues.runtime.issue1138.test.ts",
+          "name": "e2e app: github-issues / issue #1138 > keeps nextTick independent from a deliberately delayed adapter Promise",
+          "state": "passed",
+          "status": "passed",
+          "violations": [],
+          "acceptance": {
+            "fixture": "e2e-apps/github-issues",
+            "provider": "devtools",
+            "checkpoints": [
+              {
+                "id": "native-visible",
+                "route": "/pages/issue-1138/delayed",
+                "action": "适配器 Promise 尚未完成时独立检查宿主文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 1"
+                  }
+                ]
+              },
+              {
+                "id": "adapter-settled",
+                "route": "/pages/issue-1138/delayed",
+                "action": "释放 Promise 后复核同一可见文本",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "text": "count: 1"
+                  }
+                ]
+              }
+            ],
+            "evidence": [
+              {
+                "id": "native-visible",
+                "route": "pages/issue-1138/delayed",
+                "source": "devtools-page-frame",
+                "capturedAt": "2026-10-02T05:43:48.595Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 1"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "adapter-settled",
+                "route": "pages/issue-1138/delayed",
+                "source": "devtools-page-frame",
+                "capturedAt": "2026-10-02T05:43:48.609Z",
+                "nodes": [
+                  {
+                    "selector": "#issue1138-count",
+                    "query": "css",
+                    "count": 1,
+                    "nodes": [
+                      {
+                        "text": "count: 1"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "runtime": {
+              "ideVersion": "2.02.2608080",
+              "baseLibraryVersion": "3.17.2"
             }
-          ],
-          "runtime": {
-            "ideVersion": "2.02.2608080",
-            "baseLibraryVersion": "3.17.2"
           }
         }
-      }
-    ]
-  }
-]
+      ],
+      "originalReportSha256": "528d1df943ae6639c78796e55482a8e255de863f7027f6f70607c95bc284a8f5"
+    }
+  ]
+}
